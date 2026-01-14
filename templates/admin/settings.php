@@ -82,9 +82,9 @@ $app_url = home_url('/' . $slug . '/');
         <div class="flosc-info-box" style="margin-bottom: 20px;">
             <strong>Understanding FLOSC Phases:</strong>
             <ul style="margin: 10px 0 0 20px;">
-                <li><strong>Freeline:</strong> Visitor (not logged in) - Goal: Get them to take the quiz</li>
+                <li><strong>Freeline:</strong> Visitor (not logged in) - Goal: Encourage them to take the quiz</li>
                 <li><strong>Login:</strong> Post-quiz visitors + Logged-in users - Goal: Deliver free lesson, present offer</li>
-                <li><strong>Offer:</strong> Sales pitch - Goal: Get purchase</li>
+                <li><strong>Offer:</strong> Sales pitch - Goal: Encourage purchase</li>
                 <li><strong>Sale:</strong> Post-purchase - Goal: Onboard to content</li>
                 <li><strong>Content:</strong> Ongoing access - Goal: Support and encourage</li>
             </ul>
