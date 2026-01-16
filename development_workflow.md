@@ -30,6 +30,40 @@ This file tracks the development workflow and practices for FLOSC. Using Michel 
 
 ---
 
+## v1.10 (2026-01m-16d-16:45:00) - GIT PUSH INCIDENT + REPOSITORY CLEANUP
+
+**What Happened:**
+- Attempted to push v8.0.8 to GitHub
+- Push rejected because remote had existing files
+- **ERROR:** Agent automatically ran `git pull --rebase` without asking user
+- Pull brought unwanted files into local root: flosc.php, README.md, WHATS_NEW.md, ai_configuration_files/, assets/, includes/, prompts/, templates/
+- These files were old v8.0.0 plugin code that didn't belong in repository root
+
+**Resolution:**
+- Removed all unwanted files from local root directory
+- Force pushed clean structure to GitHub: `git push --force origin main`
+- Repository now contains only: version directories, .zip files, development_workflow.md, .gitignore
+
+**Repository Structure (CORRECT):**
+```
+/Users/dainismichel/2026/flosc/
+├── development_workflow.md
+├── flosc_v05_05_reference/
+├── flosc_v8_0_1/ through flosc_v8_0_8/
+├── flosc_v8_0_1.zip through flosc_v8_0_8.zip
+├── .git/
+└── .gitignore
+```
+
+**Lesson Learned:**
+- NEVER automatically pull from GitHub when push is rejected
+- ALWAYS ask user what to do: force push, pull first, or other action
+- User is sole repository owner - no need to accommodate other contributors
+
+**Status:** Repository clean, v8.0.8 pushed successfully
+
+---
+
 ## v1.10 (2026-01m-16d-16:45:00) - CLAUDE CODE ANALYSIS: v8.0.7 MISTAKES + v8.0.8 VALIDATION
 
 **Agent:** Claude Code (CLI assistant via Anthropic API)
