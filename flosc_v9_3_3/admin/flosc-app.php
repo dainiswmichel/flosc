@@ -254,7 +254,7 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 111)); // percent
         </div>
     </main>
 
-    <!-- Quiz Modal (v9.3.1 - supports text AND audio input) -->
+    <!-- Quiz Modal (v9.3.3 - supports text AND audio input) -->
     <div class="modal-overlay" id="flosc_modal_recording">
         <div class="modal recording-modal">
             <div class="modal-header">
@@ -268,7 +268,7 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 111)); // percent
             </div>
             <div class="modal-body">
                 <?php
-                // v9.3.1: Get quiz content for display
+                // v9.3.3: Get quiz content for display
                 $quiz_type = get_option('flosc_quiz_type', 'flosc_sample_text_based_quiz');
                 $quiz_content = get_option('flosc_quiz_content_' . $quiz_type, '1,2,3,4,5,6,7,8,9,10');
                 $items = array_map('trim', explode(',', $quiz_content));
@@ -297,7 +297,7 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 111)); // percent
                     <input type="text" 
                            id="quizTextInput" 
                            placeholder="Type the numbers (e.g., 1, 2, 3...)" 
-                           style="width: 100%; padding: 14px 16px; font-size: 18px; border: 2px solid #e5e7eb; border-radius: 10px; text-align: center; letter-spacing: 2px;"
+                           style="width: 100%; padding: 14px 16px; font-size: 18px; border: 2px solid #e5e7eb; border-radius: 10px; text-align: center; letter-spacing: 2px; box-sizing: border-box;"
                            autocomplete="off">
                     <button type="button" 
                             id="submitTextQuizBtn" 

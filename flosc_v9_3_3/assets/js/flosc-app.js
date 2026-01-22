@@ -1,12 +1,12 @@
 /**
  * FLOSC App JavaScript
  * Main application controller
- * v9.3.1: Working quiz system with text + audio input, scoring, login gate
+ * v9.3.3: Working quiz system with text + audio input, scoring, login gate
  */
 
-// v9.3.1: Clear FLOSC-specific localStorage on version change
+// v9.3.3: Clear FLOSC-specific localStorage on version change
 (function() {
-    const FLOSC_JS_VERSION = '9.3.1';
+    const FLOSC_JS_VERSION = '9.3.3';
     try {
         const stored = localStorage.getItem('flosc_js_version');
         if (stored !== FLOSC_JS_VERSION) {
@@ -17,7 +17,7 @@
                 }
             });
             localStorage.setItem('flosc_js_version', FLOSC_JS_VERSION);
-            console.log('FLOSC v9.2.1: Storage cleared - fresh session');
+            console.log('FLOSC v9.3.3: Storage cleared - fresh session');
         }
     } catch(e) {
         console.warn('FLOSC: Storage check failed', e);
@@ -76,6 +76,18 @@ class floscApp {
             shownThisSession: {},
             inactivityTimer: null,
             context: {}
+        };
+
+        // v9.3.2: In-Chat Quiz Engine
+        this.quiz = {
+            active: false,
+            id: null,
+            title: '',
+            questions: [],
+            currentIndex: 0,
+            answers: [],
+            startedAt: null,
+            completedAt: null
         };
 
         // Offer timer
@@ -390,6 +402,125 @@ class floscApp {
             }
             .flosc-timer-expired {
                 color: #fca5a5;
+            }
+            
+            /* v9.3.2: In-Chat Quiz Styles */
+            .flosc-quiz-question {
+                background: #f0f9ff;
+                border: 1px solid #bae6fd;
+                border-radius: 12px;
+                padding: 16px;
+                margin: 8px 0;
+            }
+            .flosc-quiz-question-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 12px;
+                font-size: 12px;
+                color: #0369a1;
+                font-weight: 600;
+            }
+            .flosc-quiz-question-text {
+                font-size: 16px;
+                font-weight: 500;
+                color: #0c4a6e;
+                margin-bottom: 16px;
+                line-height: 1.5;
+            }
+            .flosc-quiz-options {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .flosc-quiz-option {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 16px;
+                background: white;
+                border: 2px solid #e0f2fe;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                font-size: 14px;
+                color: #0c4a6e;
+                text-align: left;
+                width: 100%;
+            }
+            .flosc-quiz-option:hover {
+                border-color: #38bdf8;
+                background: #f0f9ff;
+            }
+            .flosc-quiz-option:active {
+                transform: scale(0.98);
+            }
+            .flosc-quiz-option-key {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 28px;
+                height: 28px;
+                background: #0ea5e9;
+                color: white;
+                border-radius: 6px;
+                font-weight: 600;
+                font-size: 13px;
+                flex-shrink: 0;
+            }
+            .flosc-quiz-option-text {
+                flex: 1;
+            }
+            .flosc-quiz-progress {
+                height: 4px;
+                background: #e0f2fe;
+                border-radius: 2px;
+                overflow: hidden;
+                margin-top: 12px;
+            }
+            .flosc-quiz-progress-bar {
+                height: 100%;
+                background: #0ea5e9;
+                transition: width 0.3s ease;
+            }
+            .flosc-quiz-result {
+                background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+                color: white;
+                border-radius: 12px;
+                padding: 20px;
+                margin: 8px 0;
+                text-align: center;
+            }
+            .flosc-quiz-result.low-score {
+                background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            }
+            .flosc-quiz-result.medium-score {
+                background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+            }
+            .flosc-quiz-result-score {
+                font-size: 48px;
+                font-weight: 700;
+                margin-bottom: 8px;
+            }
+            .flosc-quiz-result-label {
+                font-size: 14px;
+                opacity: 0.9;
+                margin-bottom: 16px;
+            }
+            .flosc-quiz-result-cta {
+                display: inline-block;
+                padding: 12px 24px;
+                background: white;
+                color: #059669;
+                border-radius: 8px;
+                font-weight: 600;
+                cursor: pointer;
+                border: none;
+                font-size: 14px;
+                transition: transform 0.2s ease;
+            }
+            .flosc-quiz-result-cta:hover {
+                transform: scale(1.05);
             }
         `;
         document.head.appendChild(baseStyles);
@@ -1048,11 +1179,295 @@ class floscApp {
     }
 
     openQuiz() {
-        const btn = document.querySelector('[data-flosc-action="open-quiz"]');
-        if (btn) {
-            btn.click();
+        // v9.3.2: Start in-chat quiz instead of modal
+        this.startInChatQuiz();
+    }
+
+    // v9.3.2: In-Chat Quiz System
+    async startInChatQuiz(quizId = 'default') {
+        console.log('[FLOSC Quiz] Starting in-chat quiz:', quizId);
+        
+        // Show loading message
+        this.addMessage('assistant', '📋 Loading your quiz...');
+        
+        try {
+            // Fetch quiz questions from API
+            const response = await fetch(`${this.config.apiUrl}/quiz?id=${quizId}`);
+            const data = await response.json();
+            
+            if (data.success && data.questions && data.questions.length > 0) {
+                this.quiz = {
+                    active: true,
+                    id: quizId,
+                    title: data.title || 'Quick Assessment',
+                    questions: data.questions,
+                    currentIndex: 0,
+                    answers: [],
+                    startedAt: Date.now(),
+                    completedAt: null
+                };
+                
+                console.log('[FLOSC Quiz] Loaded', this.quiz.questions.length, 'questions');
+                
+                // Show intro then first question
+                this.addMessage('assistant', `Great! Let's see where you stand. This quick ${this.quiz.questions.length}-question quiz takes about 30 seconds.`);
+                
+                setTimeout(() => {
+                    this.showQuizQuestion();
+                }, 800);
+                
+            } else {
+                // Fallback to hardcoded sample quiz
+                console.log('[FLOSC Quiz] API returned no questions, using sample quiz');
+                this.startSampleQuiz();
+            }
+        } catch (error) {
+            console.error('[FLOSC Quiz] Failed to load quiz:', error);
+            // Fallback to sample quiz
+            this.startSampleQuiz();
+        }
+    }
+
+    startSampleQuiz() {
+        // Hardcoded sample quiz for testing/fallback
+        this.quiz = {
+            active: true,
+            id: 'sample',
+            title: 'Quick Assessment',
+            questions: [
+                {
+                    id: 'q1',
+                    text: 'How would you rate your current skill level?',
+                    options: [
+                        { key: 'A', text: 'Complete beginner' },
+                        { key: 'B', text: 'Some basics' },
+                        { key: 'C', text: 'Intermediate' },
+                        { key: 'D', text: 'Advanced' }
+                    ],
+                    correct: null // No wrong answers for assessment
+                },
+                {
+                    id: 'q2',
+                    text: 'How much time can you dedicate to practice each week?',
+                    options: [
+                        { key: 'A', text: 'Less than 1 hour' },
+                        { key: 'B', text: '1-3 hours' },
+                        { key: 'C', text: '3-5 hours' },
+                        { key: 'D', text: 'More than 5 hours' }
+                    ],
+                    correct: null
+                },
+                {
+                    id: 'q3',
+                    text: 'What is your primary goal?',
+                    options: [
+                        { key: 'A', text: 'Personal improvement' },
+                        { key: 'B', text: 'Professional development' },
+                        { key: 'C', text: 'Academic requirements' },
+                        { key: 'D', text: 'Just curious to learn' }
+                    ],
+                    correct: null
+                }
+            ],
+            currentIndex: 0,
+            answers: [],
+            startedAt: Date.now(),
+            completedAt: null
+        };
+
+        this.addMessage('assistant', `Perfect! Let's do a quick ${this.quiz.questions.length}-question assessment to personalize your experience.`);
+        
+        setTimeout(() => {
+            this.showQuizQuestion();
+        }, 800);
+    }
+
+    showQuizQuestion() {
+        if (!this.quiz.active || this.quiz.currentIndex >= this.quiz.questions.length) {
+            this.finishQuiz();
+            return;
+        }
+
+        const question = this.quiz.questions[this.quiz.currentIndex];
+        const questionNum = this.quiz.currentIndex + 1;
+        const totalQuestions = this.quiz.questions.length;
+        const progressPercent = ((questionNum - 1) / totalQuestions) * 100;
+
+        const optionsHtml = question.options.map(opt => `
+            <button class="flosc-quiz-option" data-quiz-answer="${opt.key}" data-question-id="${question.id}">
+                <span class="flosc-quiz-option-key">${opt.key}</span>
+                <span class="flosc-quiz-option-text">${opt.text}</span>
+            </button>
+        `).join('');
+
+        const questionHtml = `
+            <div class="flosc-quiz-question" data-question-index="${this.quiz.currentIndex}">
+                <div class="flosc-quiz-question-header">
+                    <span>Question ${questionNum} of ${totalQuestions}</span>
+                    <span>${this.quiz.title}</span>
+                </div>
+                <div class="flosc-quiz-question-text">${question.text}</div>
+                <div class="flosc-quiz-options">
+                    ${optionsHtml}
+                </div>
+                <div class="flosc-quiz-progress">
+                    <div class="flosc-quiz-progress-bar" style="width: ${progressPercent}%"></div>
+                </div>
+            </div>
+        `;
+
+        const messageEl = this.addMessage('assistant', questionHtml, true);
+        
+        // Bind click handlers to options
+        if (messageEl) {
+            const options = messageEl.querySelectorAll('.flosc-quiz-option');
+            options.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const answer = e.currentTarget.dataset.quizAnswer;
+                    const questionId = e.currentTarget.dataset.questionId;
+                    this.handleQuizAnswer(answer, questionId, e.currentTarget);
+                });
+            });
+        }
+    }
+
+    handleQuizAnswer(answer, questionId, buttonEl) {
+        if (!this.quiz.active) return;
+
+        const question = this.quiz.questions[this.quiz.currentIndex];
+        const selectedOption = question.options.find(o => o.key === answer);
+        
+        // Disable all options visually
+        const allOptions = buttonEl.closest('.flosc-quiz-options').querySelectorAll('.flosc-quiz-option');
+        allOptions.forEach(opt => {
+            opt.style.pointerEvents = 'none';
+            opt.style.opacity = '0.6';
+        });
+        
+        // Highlight selected
+        buttonEl.style.opacity = '1';
+        buttonEl.style.borderColor = '#0ea5e9';
+        buttonEl.style.background = '#e0f2fe';
+
+        // Store answer
+        this.quiz.answers.push({
+            questionId: questionId,
+            questionText: question.text,
+            answer: answer,
+            answerText: selectedOption?.text || answer,
+            correct: question.correct ? (answer === question.correct) : null
+        });
+
+        // Show user's answer as their message
+        this.addMessage('user', `${answer}) ${selectedOption?.text || answer}`);
+
+        // Move to next question
+        this.quiz.currentIndex++;
+
+        // Short delay then next question or finish
+        setTimeout(() => {
+            if (this.quiz.currentIndex < this.quiz.questions.length) {
+                this.showQuizQuestion();
+            } else {
+                this.finishQuiz();
+            }
+        }, 600);
+    }
+
+    finishQuiz() {
+        this.quiz.active = false;
+        this.quiz.completedAt = Date.now();
+
+        // Calculate score if questions have correct answers
+        const scoredQuestions = this.quiz.answers.filter(a => a.correct !== null);
+        const correctCount = this.quiz.answers.filter(a => a.correct === true).length;
+        
+        let scorePercent = 0;
+        let scoreClass = '';
+        let scoreMessage = '';
+
+        if (scoredQuestions.length > 0) {
+            scorePercent = Math.round((correctCount / scoredQuestions.length) * 100);
+            
+            if (scorePercent >= 70) {
+                scoreClass = '';
+                scoreMessage = "Excellent work! You've got a solid foundation.";
+            } else if (scorePercent >= 40) {
+                scoreClass = 'medium-score';
+                scoreMessage = "Good effort! There's room for improvement.";
+            } else {
+                scoreClass = 'low-score';
+                scoreMessage = "No worries! Everyone starts somewhere.";
+            }
         } else {
-            this.showRecordingModal();
+            // Assessment quiz (no right/wrong)
+            scorePercent = 100;
+            scoreMessage = "Thanks for completing the assessment! Based on your answers, we can personalize your learning path.";
+        }
+
+        // Store quiz results
+        this.storeQuizResults(scorePercent);
+
+        // Update IVR context
+        this.ivr.context.quiz_taken = true;
+        this.ivr.context.score = scorePercent;
+        this.ivr.context.first_message_after_quiz = true;
+
+        // Show results
+        const ctaText = this.state === 'visitor' 
+            ? 'Create free account to see detailed results' 
+            : 'View your personalized recommendations';
+        
+        const ctaAction = this.state === 'visitor' 
+            ? `onclick="window.floscAppInstance.openRegistration()"` 
+            : `onclick="window.floscAppInstance.openFreeLesson()"`;
+
+        const resultHtml = `
+            <div class="flosc-quiz-result ${scoreClass}">
+                <div class="flosc-quiz-result-score">${scorePercent}%</div>
+                <div class="flosc-quiz-result-label">${scoreMessage}</div>
+                <button class="flosc-quiz-result-cta" ${ctaAction}>
+                    ${ctaText} →
+                </button>
+            </div>
+        `;
+
+        this.addMessage('assistant', resultHtml, true);
+
+        // Trigger post-quiz IVR messages after a delay
+        setTimeout(() => {
+            this.checkAutoMessages();
+            this.showSuggestedReplies();
+        }, 1500);
+
+        console.log('[FLOSC Quiz] Completed. Score:', scorePercent, '% Answers:', this.quiz.answers);
+    }
+
+    async storeQuizResults(score) {
+        try {
+            // Store in session/localStorage
+            const quizResult = {
+                id: this.quiz.id,
+                score: score,
+                answers: this.quiz.answers,
+                completedAt: this.quiz.completedAt,
+                duration: this.quiz.completedAt - this.quiz.startedAt
+            };
+
+            localStorage.setItem('flosc_last_quiz', JSON.stringify(quizResult));
+
+            // Send to server if available
+            await fetch(`${this.config.apiUrl}/quiz-result`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': this.config.nonce
+                },
+                body: JSON.stringify(quizResult)
+            });
+
+        } catch (error) {
+            console.error('[FLOSC Quiz] Failed to store results:', error);
         }
     }
 
@@ -1240,28 +1655,28 @@ Purchased: ${ctx.purchased}
         document.querySelectorAll('[data-flosc-action="open-quiz"]').forEach(btn => {
             btn.addEventListener('click', () => this.showRecordingModal());
         });
-
-        // v9.3.1: Quiz modal events
+        
+        // v9.3.3: Quiz modal event bindings
         this.bindQuizEvents();
     }
-
-    // v9.3.1: Quiz system with text + audio support
+    
+    // v9.3.3: Bind quiz modal events
     bindQuizEvents() {
         // Tab switching
-        document.querySelectorAll('.quiz-tab').forEach(tab => {
-            tab.addEventListener('click', (e) => {
-                const tabType = e.currentTarget.dataset.tab;
+        document.querySelectorAll('.quiz-tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tabType = e.target.dataset.tab;
                 this.switchQuizTab(tabType);
             });
         });
-
+        
         // Text quiz submission
         const submitTextBtn = document.getElementById('submitTextQuizBtn');
         if (submitTextBtn) {
             submitTextBtn.addEventListener('click', () => this.submitTextQuiz());
         }
-
-        // Enter key in text input
+        
+        // Text input enter key
         const textInput = document.getElementById('quizTextInput');
         if (textInput) {
             textInput.addEventListener('keypress', (e) => {
@@ -1271,160 +1686,161 @@ Purchased: ${ctx.purchased}
                 }
             });
         }
-
-        // Continue button after quiz
-        const continueBtn = document.getElementById('quizContinueBtn');
-        if (continueBtn) {
-            continueBtn.addEventListener('click', () => this.onQuizComplete());
-        }
-
-        // Audio recording buttons
-        const recordBtn = document.getElementById('recordBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const rerecordBtn = document.getElementById('rerecordBtn');
+        
+        // Audio recording controls
+        const recordBtn = document.getElementById('quizRecordBtn');
+        const stopBtn = document.getElementById('quizStopBtn');
         const submitRecordingBtn = document.getElementById('submitRecordingBtn');
-
+        
         if (recordBtn) {
             recordBtn.addEventListener('click', () => this.startQuizRecording());
         }
         if (stopBtn) {
             stopBtn.addEventListener('click', () => this.stopQuizRecording());
         }
-        if (rerecordBtn) {
-            rerecordBtn.addEventListener('click', () => this.resetRecording());
-        }
         if (submitRecordingBtn) {
-            submitRecordingBtn.addEventListener('click', () => this.submitAudioQuiz());
+            submitRecordingBtn.addEventListener('click', () => this.submitQuizRecording());
+        }
+        
+        // Continue button after quiz
+        const continueBtn = document.getElementById('quizContinueBtn');
+        if (continueBtn) {
+            continueBtn.addEventListener('click', () => this.onQuizComplete());
         }
     }
-
+    
+    // v9.3.3: Switch between text and audio tabs
     switchQuizTab(tabType) {
         // Update tab buttons
-        document.querySelectorAll('.quiz-tab').forEach(tab => {
-            if (tab.dataset.tab === tabType) {
-                tab.classList.add('active');
-                tab.style.background = 'var(--flosc-primary)';
-                tab.style.borderColor = 'var(--flosc-primary)';
-                tab.style.color = 'white';
-            } else {
-                tab.classList.remove('active');
-                tab.style.background = 'white';
-                tab.style.borderColor = '#e5e7eb';
-                tab.style.color = '#374151';
-            }
+        document.querySelectorAll('.quiz-tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabType);
         });
-
-        // Show/hide panels
-        const textPanel = document.getElementById('quizPanelText');
-        const audioPanel = document.getElementById('quizPanelAudio');
-        const resultPanel = document.getElementById('quizResult');
-
+        
+        // Update panels
+        const textPanel = document.getElementById('quizTextPanel');
+        const audioPanel = document.getElementById('quizAudioPanel');
+        
         if (textPanel) textPanel.style.display = tabType === 'text' ? 'block' : 'none';
         if (audioPanel) audioPanel.style.display = tabType === 'audio' ? 'block' : 'none';
-        if (resultPanel) resultPanel.style.display = 'none';
     }
-
+    
+    // v9.3.3: Submit text quiz answer
     submitTextQuiz() {
         const input = document.getElementById('quizTextInput');
-        const answer = input?.value?.trim() || '';
-
-        if (!answer) {
-            input?.focus();
+        if (!input) return;
+        
+        const userAnswer = input.value.trim();
+        if (!userAnswer) {
+            this.addMessage('assistant', 'Please enter your answer first.');
             return;
         }
-
-        // Get expected sequence
-        const sequenceEl = document.getElementById('quizSequence');
-        const expected = sequenceEl?.textContent?.trim() || '1, 2, 3, 4, 5, 6, 7, 8, 9, 10';
-
-        // Score the quiz
-        const result = this.scoreSequenceQuiz(answer, expected);
+        
+        // Get expected sequence from modal data attribute
+        const modal = document.getElementById('flosc_modal_recording');
+        const expected = modal?.dataset.quizContent || '1,2,3,4,5,6,7,8,9,10';
+        
+        // Score the answer
+        const result = this.scoreSequenceQuiz(userAnswer, expected);
+        
+        // Display result
         this.displayQuizResult(result);
+        
+        // Store score
         this.storeQuizScore(result);
     }
-
+    
+    // v9.3.3: Score a sequence quiz (compare user answer to expected)
     scoreSequenceQuiz(userAnswer, expected) {
-        // Parse expected items (handle comma or space separated)
-        const expectedItems = expected.split(/[,\s]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
+        // Normalize both strings: remove spaces, convert to lowercase, handle variations
+        const normalize = (str) => {
+            return str
+                .toLowerCase()
+                .replace(/[,\s\-\.]+/g, ',')  // Normalize separators to commas
+                .replace(/one/g, '1')
+                .replace(/two/g, '2')
+                .replace(/three/g, '3')
+                .replace(/four/g, '4')
+                .replace(/five/g, '5')
+                .replace(/six/g, '6')
+                .replace(/seven/g, '7')
+                .replace(/eight/g, '8')
+                .replace(/nine/g, '9')
+                .replace(/ten/g, '10')
+                .split(',')
+                .map(s => s.trim())
+                .filter(s => s.length > 0);
+        };
         
-        // Parse user answer (handle comma or space separated)
-        const userItems = userAnswer.split(/[,\s]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
-
-        const correct = [];
-        const incorrect = [];
-
-        expectedItems.forEach(item => {
-            if (userItems.includes(item)) {
-                correct.push(item);
-            } else {
-                incorrect.push(item);
+        const userParts = normalize(userAnswer);
+        const expectedParts = normalize(expected);
+        
+        let correctCount = 0;
+        let totalExpected = expectedParts.length;
+        
+        // Compare each position
+        for (let i = 0; i < totalExpected; i++) {
+            if (userParts[i] === expectedParts[i]) {
+                correctCount++;
             }
-        });
-
-        const score = Math.round((correct.length / expectedItems.length) * 100);
-
+        }
+        
+        const percentage = Math.round((correctCount / totalExpected) * 100);
+        
         return {
-            score,
-            correct,
-            incorrect,
-            total: expectedItems.length,
-            userAnswer,
-            expected
+            score: percentage,
+            correct: correctCount,
+            total: totalExpected,
+            userAnswer: userAnswer,
+            expected: expected,
+            passed: percentage >= 70  // 70% threshold
         };
     }
-
+    
+    // v9.3.3: Display quiz result in modal
     displayQuizResult(result) {
         // Hide input panels
-        document.getElementById('quizPanelText')?.style && (document.getElementById('quizPanelText').style.display = 'none');
-        document.getElementById('quizPanelAudio')?.style && (document.getElementById('quizPanelAudio').style.display = 'none');
-
+        document.getElementById('quizTextPanel')?.style.setProperty('display', 'none');
+        document.getElementById('quizAudioPanel')?.style.setProperty('display', 'none');
+        document.querySelector('.quiz-tabs')?.style.setProperty('display', 'none');
+        
         // Show result panel
-        const resultPanel = document.getElementById('quizResult');
-        const scoreDisplay = document.getElementById('quizScoreDisplay');
-        const resultMessage = document.getElementById('quizResultMessage');
-
-        if (resultPanel) resultPanel.style.display = 'block';
-        if (scoreDisplay) {
-            scoreDisplay.textContent = result.score + '%';
-            scoreDisplay.style.color = result.score >= 70 ? '#10b981' : result.score >= 40 ? '#f59e0b' : '#ef4444';
+        const resultPanel = document.getElementById('quizResultPanel');
+        if (resultPanel) {
+            resultPanel.style.display = 'block';
         }
-        if (resultMessage) {
-            if (result.score === 100) {
-                resultMessage.textContent = '🎉 Perfect! You got all ' + result.total + ' correct!';
-            } else if (result.score >= 70) {
-                resultMessage.textContent = '👍 Great job! You got ' + result.correct.length + ' of ' + result.total + ' correct.';
-            } else if (result.score >= 40) {
-                resultMessage.textContent = '📚 Good effort! You got ' + result.correct.length + ' of ' + result.total + '. Keep practicing!';
+        
+        // Update score display
+        const scoreDisplay = document.getElementById('quizScoreDisplay');
+        if (scoreDisplay) {
+            scoreDisplay.textContent = `${result.score}%`;
+            scoreDisplay.className = 'quiz-score-display ' + (result.passed ? 'passed' : 'failed');
+        }
+        
+        // Update message
+        const messageEl = document.getElementById('quizResultMessage');
+        if (messageEl) {
+            if (result.passed) {
+                messageEl.innerHTML = `<strong>Great job!</strong> You got ${result.correct} out of ${result.total} correct.<br>Continue to see your personalized learning path.`;
             } else {
-                resultMessage.textContent = '💪 You got ' + result.correct.length + ' of ' + result.total + '. Let\'s work on this together!';
+                messageEl.innerHTML = `You got ${result.correct} out of ${result.total} correct.<br>Don't worry - we'll help you improve! Continue to get started.`;
             }
         }
-
-        // Store in IVR context
-        this.ivr.context.score = result.score;
-        this.ivr.context.quiz_taken = true;
-        this.ivr.context.correct_items = result.correct.join(', ');
-        this.ivr.context.missed_items = result.incorrect.join(', ');
     }
-
+    
+    // v9.3.3: Store quiz score (localStorage + API)
     async storeQuizScore(result) {
-        // Store locally for login gate
-        const scoreData = {
+        // Store in localStorage as backup
+        const quizData = {
             score: result.score,
             correct: result.correct,
-            incorrect: result.incorrect,
-            quiz_type: 'sequence',
-            timestamp: Date.now()
+            total: result.total,
+            passed: result.passed,
+            timestamp: Date.now(),
+            userAnswer: result.userAnswer
         };
-
-        // Store in localStorage for persistence
-        try {
-            localStorage.setItem('flosc_prelogin_score', JSON.stringify(scoreData));
-        } catch(e) {
-            console.warn('FLOSC: Could not store score locally', e);
-        }
-
-        // Also store via API for server-side
+        localStorage.setItem('flosc_quiz_result', JSON.stringify(quizData));
+        
+        // Also store via API (sets cookie for server-side access)
         try {
             await fetch(this.config.apiUrl + '/store-score', {
                 method: 'POST',
@@ -1432,118 +1848,143 @@ Purchased: ${ctx.purchased}
                     'Content-Type': 'application/json',
                     'X-WP-Nonce': this.config.nonce
                 },
-                body: JSON.stringify(scoreData)
+                body: JSON.stringify({
+                    score: result.score,
+                    quiz_type: 'sequence',
+                    details: quizData
+                })
             });
-        } catch(e) {
-            console.warn('FLOSC: Could not store score on server', e);
+        } catch (e) {
+            console.error('FLOSC: Could not store quiz score', e);
         }
     }
-
+    
+    // v9.3.3: Handle quiz completion - close modal, trigger login gate
     onQuizComplete() {
-        // Hide quiz modal
+        // Hide the modal
         this.hideRecordingModal();
-
-        // Mark quiz as taken
+        
+        // Reset modal state for next time
+        this.resetQuizModal();
+        
+        // Update IVR context
+        this.ivr.context.quiz_completed = true;
         this.ivr.context.first_message_after_quiz = true;
-        this.ivr.context.quiz_taken = true;
-
-        // Trigger login phase if visitor
-        if (this.state === 'visitor') {
-            this.ivr.phase = 'login';
-            
-            // Add score teaser message
-            const score = this.ivr.context.score || 0;
-            this.addMessage('assistant', `You scored **${score}%**! 🎯\n\nTo see your detailed results and get a personalized lesson, please create a free account or log in.`);
-            
-            // Check for login-phase auto messages
-            setTimeout(() => this.checkAutoMessages(), 1000);
-        } else {
-            // Already logged in - go to content/offer
-            this.ivr.phase = this.ivr.context.score >= 70 ? 'offer' : 'content';
+        
+        // Trigger login gate IVR message
+        setTimeout(() => {
             this.checkAutoMessages();
-        }
+        }, 500);
     }
-
-    // Audio quiz methods
+    
+    // v9.3.3: Reset quiz modal to initial state
+    resetQuizModal() {
+        // Show tabs and text panel (default)
+        document.querySelector('.quiz-tabs')?.style.setProperty('display', 'flex');
+        document.getElementById('quizTextPanel')?.style.setProperty('display', 'block');
+        document.getElementById('quizAudioPanel')?.style.setProperty('display', 'none');
+        document.getElementById('quizResultPanel')?.style.setProperty('display', 'none');
+        
+        // Reset tab buttons
+        document.querySelectorAll('.quiz-tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === 'text');
+        });
+        
+        // Clear input
+        const input = document.getElementById('quizTextInput');
+        if (input) input.value = '';
+        
+        // Reset recording UI
+        document.getElementById('quizRecordBtn')?.style.setProperty('display', 'inline-flex');
+        document.getElementById('quizStopBtn')?.style.setProperty('display', 'none');
+        document.getElementById('submitRecordingBtn')?.style.setProperty('display', 'none');
+        const status = document.getElementById('quizRecordingStatus');
+        if (status) status.textContent = '';
+    }
+    
+    // v9.3.3: Start quiz audio recording
     async startQuizRecording() {
         try {
-            this.recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            this.mediaRecorder = new MediaRecorder(this.recordingStream);
-            this.audioChunks = [];
-
-            this.mediaRecorder.ondataavailable = (e) => {
-                this.audioChunks.push(e.data);
+            this.quizRecordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.quizMediaRecorder = new MediaRecorder(this.quizRecordingStream);
+            this.quizAudioChunks = [];
+            
+            this.quizMediaRecorder.ondataavailable = (e) => {
+                this.quizAudioChunks.push(e.data);
             };
-
-            this.mediaRecorder.onstop = () => {
-                const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-                const audioUrl = URL.createObjectURL(audioBlob);
-                const audioEl = document.getElementById('recordingAudio');
-                if (audioEl) audioEl.src = audioUrl;
-                
-                document.getElementById('recordingPlayback').style.display = 'block';
-            };
-
-            this.mediaRecorder.start();
-            this.isRecording = true;
-
-            // UI updates
-            document.getElementById('recordBtn').style.display = 'none';
-            document.getElementById('stopBtn').style.display = 'flex';
-
-            // Start timer
-            this.recordingStartTime = Date.now();
-            this.recordingTimerInterval = setInterval(() => {
-                const elapsed = Math.floor((Date.now() - this.recordingStartTime) / 1000);
-                const mins = Math.floor(elapsed / 60);
-                const secs = elapsed % 60;
-                document.getElementById('recordingTimer').textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
-            }, 100);
-
-        } catch(e) {
-            console.error('FLOSC: Microphone access denied', e);
-            document.getElementById('recordingError').style.display = 'block';
-        }
-    }
-
-    stopQuizRecording() {
-        if (this.mediaRecorder && this.isRecording) {
-            this.mediaRecorder.stop();
-            this.isRecording = false;
-
-            if (this.recordingStream) {
-                this.recordingStream.getTracks().forEach(track => track.stop());
+            
+            this.quizMediaRecorder.start();
+            
+            // Update UI
+            document.getElementById('quizRecordBtn')?.style.setProperty('display', 'none');
+            document.getElementById('quizStopBtn')?.style.setProperty('display', 'inline-flex');
+            const status = document.getElementById('quizRecordingStatus');
+            if (status) {
+                status.textContent = '🔴 Recording...';
+                status.classList.add('recording');
             }
-
-            clearInterval(this.recordingTimerInterval);
-
-            document.getElementById('stopBtn').style.display = 'none';
-            document.getElementById('recordBtn').style.display = 'flex';
+        } catch (e) {
+            console.error('FLOSC: Could not start quiz recording', e);
+            const status = document.getElementById('quizRecordingStatus');
+            if (status) status.textContent = '⚠️ Could not access microphone';
         }
     }
-
-    resetRecording() {
-        document.getElementById('recordingPlayback').style.display = 'none';
-        document.getElementById('recordingTimer').textContent = '0:00';
-        this.audioChunks = [];
+    
+    // v9.3.3: Stop quiz audio recording
+    stopQuizRecording() {
+        if (this.quizMediaRecorder) {
+            this.quizMediaRecorder.stop();
+            
+            if (this.quizRecordingStream) {
+                this.quizRecordingStream.getTracks().forEach(track => track.stop());
+            }
+            
+            // Update UI
+            document.getElementById('quizStopBtn')?.style.setProperty('display', 'none');
+            document.getElementById('submitRecordingBtn')?.style.setProperty('display', 'inline-flex');
+            const status = document.getElementById('quizRecordingStatus');
+            if (status) {
+                status.textContent = '✅ Recording complete - ready to submit';
+                status.classList.remove('recording');
+            }
+        }
     }
-
-    async submitAudioQuiz() {
-        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
+    
+    // v9.3.3: Submit quiz audio recording for transcription and scoring
+    async submitQuizRecording() {
+        const status = document.getElementById('quizRecordingStatus');
+        if (status) status.textContent = '⏳ Processing...';
         
-        // For MVP, just simulate scoring (actual STT would go here)
-        // TODO: Implement actual audio processing via /process-audio endpoint
-        const result = {
-            score: 70,
-            correct: ['1', '2', '3', '4', '5', '6', '7'],
-            incorrect: ['8', '9', '10'],
-            total: 10,
-            userAnswer: '[audio]',
-            expected: '1, 2, 3, 4, 5, 6, 7, 8, 9, 10'
-        };
-
-        this.displayQuizResult(result);
-        this.storeQuizScore(result);
+        const audioBlob = new Blob(this.quizAudioChunks, { type: 'audio/webm' });
+        const formData = new FormData();
+        formData.append('audio', audioBlob);
+        
+        try {
+            const response = await fetch(this.config.apiUrl + '/transcribe', {
+                method: 'POST',
+                headers: { 'X-WP-Nonce': this.config.nonce },
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.transcript) {
+                // Got transcript, now score it
+                const modal = document.getElementById('flosc_modal_recording');
+                const expected = modal?.dataset.quizContent || '1,2,3,4,5,6,7,8,9,10';
+                
+                const result = this.scoreSequenceQuiz(data.transcript, expected);
+                result.userAnswer = data.transcript;  // Store what was transcribed
+                
+                this.displayQuizResult(result);
+                this.storeQuizScore(result);
+            } else {
+                if (status) status.textContent = '⚠️ Could not process audio. Try typing instead.';
+            }
+        } catch (e) {
+            console.error('FLOSC: Quiz transcription failed', e);
+            if (status) status.textContent = '⚠️ Error processing audio. Try typing instead.';
+        }
     }
 
     restartChat() {
@@ -1899,30 +2340,9 @@ Purchased: ${ctx.purchased}
         const modal = document.getElementById('flosc_modal_recording');
         if (modal) {
             modal.style.display = 'flex';
-            
-            // v9.3.1: Reset quiz state when opening
+            // v9.3.3: Reset quiz state when opening
             this.resetQuizModal();
         }
-    }
-
-    // v9.3.1: Reset quiz modal to initial state
-    resetQuizModal() {
-        // Reset text input
-        const textInput = document.getElementById('quizTextInput');
-        if (textInput) textInput.value = '';
-
-        // Show text panel by default
-        this.switchQuizTab('text');
-
-        // Hide result panel
-        const resultPanel = document.getElementById('quizResult');
-        if (resultPanel) resultPanel.style.display = 'none';
-
-        // Reset recording
-        this.resetRecording();
-        document.getElementById('recordingTimer').textContent = '0:00';
-        document.getElementById('recordBtn').style.display = 'flex';
-        document.getElementById('stopBtn').style.display = 'none';
     }
     
     hideRecordingModal() {
@@ -2077,4 +2497,5 @@ Purchased: ${ctx.purchased}
 
 document.addEventListener('DOMContentLoaded', () => {
     window.FLOSC = new floscApp();
+    window.floscAppInstance = window.FLOSC; // v9.3.2: Alias for quiz button handlers
 });

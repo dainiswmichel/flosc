@@ -4,6 +4,82 @@
 
 ---
 
+## v9.3.5 SESSION END - January 22, 2026
+
+### Progress Report: Quiz System + Login Gate
+
+**PAST (Completed This Session):**
+
+1. **v9.3.0-v9.3.3 Foundation (inherited):**
+   - Quiz system with Text Sequence, Audio, Multiple Choice types
+   - IVR integration with `open_quiz` action
+   - Carousel auto-prompt system
+   - Login gate concept established
+
+2. **v9.3.4 Bug Fixes (this session):**
+   - ✅ **Carousel cycling** — Fixed wrap-around logic in `scrollNext()`/`scrollPrev()`
+   - ✅ **IVR action execution** — Added `if (ivrMatch.action) this.performIVRAction(ivrMatch.action)` in `sendMessage()`
+   - ✅ **Quiz type loading** — API now reads `flosc_enabled_quizzes` option correctly
+   - ✅ **Removed "Primary" concept** — User rejected it; only "Enabled" checkboxes remain
+   - ✅ **ABAB rotation** — Implemented `flosc_quiz_rotation_count` for multiple enabled quizzes
+   - ✅ **Scoring bug** — Fixed `explode(',', '')` returning `['']` instead of empty array; added fallback to default `['1','2','3','4','5','6','7','8','9','10']`
+   - ✅ **Login gate flow** — Visitors see "Sign up to see results" (📊 icon), score stored in localStorage
+   - ✅ **Score reveal after signup** — `checkPendingQuizResults()` reads localStorage and displays score on return
+
+**PRESENT (Current State):**
+
+- **Version:** v9.3.4 (deployed, testing)
+- **Key Files:**
+  - `flosc_v9_3_4/flosc.php` — Quiz API with ABAB rotation, fallback for empty content
+  - `flosc_v9_3_4/assets/js/flosc-app.js` — Text sequence quiz, login gate, score reveal
+  - `flosc_v9_3_4/assets/css/flosc-app.css` — Quiz result styling, `.flosc-quiz-gate` purple gradient
+
+- **Quiz Flow (Text Sequence):**
+  ```
+  Visitor → Start Quiz → Type answer → submitTextSequence()
+    → Score calculated (position-based: "1,2" = 20%)
+    → storeQuizScore() saves to localStorage
+    → If visitor: Show login gate ("Sign up to see results")
+    → If logged-in: showQuizResults() with conic-gradient circle
+  
+  After signup:
+    → checkPendingQuizResults() reads localStorage
+    → Shows "🎉 Welcome! Here are your quiz results:"
+    → Displays score circle
+  ```
+
+- **Known Issues Being Tested:**
+  - User reported 0% score with "1, 2" input — fixed with content fallback
+  - User reported results showing before login — fixed with visitor state check
+
+**FUTURE (Roadmap):**
+
+1. **v9.3.5 (Next Session):**
+   - Test login gate flow end-to-end
+   - Audio quiz needs same login gate pattern
+   - Verify score persistence across signup/login flow
+
+2. **v9.4.x (Planned):**
+   - Multiple Choice quiz with randomized options
+   - Quiz result analytics dashboard
+   - Quiz-specific IVR messages based on score ranges
+
+3. **v10.x (Vision):**
+   - AI-powered adaptive quizzes
+   - Personalized lesson recommendations based on quiz performance
+   - Quiz progress tracking for returning users
+
+**Technical Debt:**
+- `storeQuizScore()` signature inconsistency (some calls pass object, some pass individual args)
+- Audio quiz `submitAudioSequence()` may need same login gate treatment
+- Score circle CSS uses JS-set `conic-gradient` (could be CSS custom property)
+
+**Files to Start With Next Session:**
+- `/Users/dainismichel/2026/flosc/flosc_v9_3_4/` — Current working version
+- Iterate to `flosc_v9_3_5/` before making changes
+
+---
+
 ## v9.2.3 COMPLETE - IVR Import Safety (Replace-Only with Auto-Backup) - January 21, 2026
 
 ### Critical Bug Fix: Data Loss Prevention
