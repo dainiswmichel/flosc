@@ -1,0 +1,2407 @@
+diff -ruN /mnt/data/flosc_review/v9_1_0_src/flosc_v9_1_0/admin/ai-knowledge.php /mnt/data/flosc_review/v9_1_2/flosc_v9_1_2/admin/ai-knowledge.php
+--- /mnt/data/flosc_review/v9_1_0_src/flosc_v9_1_0/admin/ai-knowledge.php	2026-01-19 12:51:35.000000000 +0000
++++ /mnt/data/flosc_review/v9_1_2/flosc_v9_1_2/admin/ai-knowledge.php	2026-01-19 15:45:47.389836893 +0000
+@@ -1,646 +1,294 @@
+ <?php
+ /**
+- * FLOSC AI Knowledge Base Tab
+- * 
+- * Manage markdown files that provide context and knowledge to AI assistant:
+- * - Lesson catalogs (structured content listings)
+- * - Knowledge base articles (FAQs, documentation)
+- * - AI instructions and guidelines
+- * - Product information and context
+- * - Domain-specific terminology and concepts
+- * 
+- * These files are injected into AI context when content access is enabled
+- * (see AI Configuration tab -> Content Access section).
+- * 
+- * FILE FORMAT: Markdown (.md)
+- * LOCATION: ai_configuration_files/
+- * USAGE: AI reads these to understand available content, answer questions, and provide context-aware responses
+- * 
+- * EXAMPLES OF KNOWLEDGE FILES:
+- * - lesson_catalog.md: List of all lessons with descriptions, tags, prerequisites
+- * - faq.md: Frequently asked questions and answers
+- * - pronunciation_guide.md: Phoneme rules, common mistakes, teaching methodology
+- * - product_info.md: Product features, pricing, value propositions
+- * - terminology.md: Domain-specific terms and definitions
++ * FLOSC AI Knowledge Tab
++ *
++ * Manages:
++ * - AI personality options
++ * - Markdown knowledge files stored in ai_knowledge_files/
+  */
+ 
+ if (!defined('ABSPATH')) exit;
+ 
+-// AI Knowledge Files Manager
+-$orientation_dir = FLOSC_PLUGIN_DIR . 'ai_configuration_files/';
+-$files = [];
+-if (is_dir($orientation_dir)) {
+-    $scan = scandir($orientation_dir);
+-    foreach ($scan as $file) {
+-        if ($file !== '.' && $file !== '..' && pathinfo($file, PATHINFO_EXTENSION) === 'md') {
+-            $files[] = $file;
+-        }
+-    }
++if (!current_user_can('manage_options')) {
++    wp_die(__('You do not have sufficient permissions to access this page.'));
+ }
+ 
+-$editing_file = isset($_GET['edit']) ? sanitize_file_name($_GET['edit']) : '';
+-$editing_content = '';
+-if ($editing_file) {
+-    $filepath = $orientation_dir . $editing_file;
+-    if (file_exists($filepath)) {
+-        $editing_content = file_get_contents($filepath);
+-    }
++$knowledge_dir = trailingslashit(FLOSC_PLUGIN_DIR) . 'ai_knowledge_files/';
++if (!is_dir($knowledge_dir)) {
++    wp_mkdir_p($knowledge_dir);
+ }
+-?>
+-
+-</form>
+-<h2>AI Knowledge & Personality Configuration</h2>
+-<p>Configure your AI assistant's identity, purpose, and access to knowledge files. Tell the AI who it is, what it knows, and how to help different types of users.</p>
+-
+-<!-- ============================================ -->
+-<!-- AI PERSONALITY & IDENTITY -->
+-<!-- ============================================ -->
+-<h3>AI Identity & Personality</h3>
+-<p class="description">Define who your AI is and how it should interact with users. This shapes every conversation.</p>
+-
+-<table class="form-table">
+-    <tr>
+-        <th scope="row"><label for="flosc_ai_personality_name">AI Name</label></th>
+-        <td>
+-            <input type="text" id="flosc_ai_personality_name" name="flosc_ai_personality_name" 
+-                   value="<?php echo esc_attr(get_option('flosc_ai_personality_name', get_option('flosc_product_name', 'FLOSC'))); ?>" 
+-                   class="regular-text">
+-            <p class="description">What should users call your AI? (e.g., "LeSAEp Coach", "Pronunciation Buddy")</p>
+-        </td>
+-    </tr>
+-    
+-    <tr>
+-        <th scope="row"><label for="flosc_ai_personality_role">AI Role</label></th>
+-        <td>
+-            <input type="text" id="flosc_ai_personality_role" name="flosc_ai_personality_role" 
+-                   value="<?php echo esc_attr(get_option('flosc_ai_personality_role', 'pronunciation coach and learning assistant')); ?>" 
+-                   class="large-text">
+-            <p class="description">What is the AI's job? (e.g., "pronunciation coach", "learning guide", "language tutor")</p>
+-        </td>
+-    </tr>
+-    
+-    <tr>
+-        <th scope="row"><label for="flosc_ai_personality_traits">Personality Traits</label></th>
+-        <td>
+-            <textarea id="flosc_ai_personality_traits" name="flosc_ai_personality_traits" rows="3" class="large-text"><?php 
+-                echo esc_textarea(get_option('flosc_ai_personality_traits', 'Encouraging, patient, specific, action-oriented. You celebrate small wins and make learning feel achievable. You break down complex concepts into simple steps.')); 
+-            ?></textarea>
+-            <p class="description">How should the AI behave? What's its tone and approach?</p>
+-        </td>
+-    </tr>
+-    
+-    <tr>
+-        <th scope="row"><label for="flosc_ai_mission">AI Mission Statement</label></th>
+-        <td>
+-            <textarea id="flosc_ai_mission" name="flosc_ai_mission" rows="4" class="large-text"><?php 
+-                echo esc_textarea(get_option('flosc_ai_mission', 'Your mission is to help users improve their pronunciation through personalized guidance, instant feedback, and encouragement. You assess their current level, identify specific areas for improvement, recommend appropriate lessons, and keep them motivated on their learning journey.')); 
+-            ?></textarea>
+-            <p class="description">What is the AI here to accomplish? What's its core purpose?</p>
+-        </td>
+-    </tr>
+-</table>
+-
+-<!-- ============================================ -->
+-<!-- KNOWLEDGE ACCESS RULES -->
+-<!-- ============================================ -->
+-<hr style="margin: 40px 0;">
+-<h3>Knowledge Access & Context Rules</h3>
+-<p class="description">Configure what information the AI has access to and when it can use it.</p>
+-
+-<table class="form-table">
+-    <tr>
+-        <th scope="row"><label for="flosc_ai_context_awareness">AI Context Awareness</label></th>
+-        <td>
+-            <textarea id="flosc_ai_context_awareness" name="flosc_ai_context_awareness" rows="5" class="large-text code"><?php 
+-                echo esc_textarea(get_option('flosc_ai_context_awareness', 'You have access to special knowledge files that contain:
+-- Complete lesson catalog with detailed descriptions
+-- FAQ answers specific to our methodology
+-- Product information and pricing
+-- Teaching guidelines and best practices
+-
+-This information is NOT in your training data. Always reference these files when answering questions about our content, approach, or offerings.')); 
+-            ?></textarea>
+-            <p class="description">Tell the AI what unique knowledge it has access to that's NOT in its training data.</p>
+-        </td>
+-    </tr>
+-    
+-    <tr>
+-        <th scope="row"><label for="flosc_ai_freeline_restrictions">Freeline (Visitor) Access Rules</label></th>
+-        <td>
+-            <textarea id="flosc_ai_freeline_restrictions" name="flosc_ai_freeline_restrictions" rows="4" class="large-text"><?php 
+-                echo esc_textarea(get_option('flosc_ai_freeline_restrictions', 'For visitors (not logged in):
+-- You can answer general questions about pronunciation and learning
+-- You can describe what our program offers (use public knowledge files)
+-- You can encourage them to take the quiz
+-- DO NOT reveal specific lesson content or member-only materials
+-- Guide them toward taking the quiz to get personalized help')); 
+-            ?></textarea>
+-            <p class="description">What can the AI share with visitors who haven't taken the quiz or logged in?</p>
+-        </td>
+-    </tr>
+-    
+-    <tr>
+-        <th scope="row"><label for="flosc_ai_member_access">Member Access Rules</label></th>
+-        <td>
+-            <textarea id="flosc_ai_member_access" name="flosc_ai_member_access" rows="4" class="large-text"><?php 
+-                echo esc_textarea(get_option('flosc_ai_member_access', 'For logged-in members:
+-- Full access to lesson catalog and recommendations
+-- Can provide specific lesson previews and summaries
+-- Can reference member-only knowledge files (marked "Members Only")
+-- Can discuss their quiz results and personalized learning path
+-- Can guide them through lessons they have access to')); 
+-            ?></textarea>
+-            <p class="description">What additional information can the AI share with logged-in members?</p>
+-        </td>
+-    </tr>
+-    
+-    <tr>
+-        <th scope="row"><label for="flosc_ai_boundaries">AI Boundaries & Limitations</label></th>
+-        <td>
+-            <textarea id="flosc_ai_boundaries" name="flosc_ai_boundaries" rows="4" class="large-text"><?php 
+-                echo esc_textarea(get_option('flosc_ai_boundaries', 'What you should NOT do:
+-- Don\'t diagnose medical conditions (speech impediments, etc.)
+-- Don\'t guarantee specific results or timelines
+-- Don\'t provide refunds or make purchasing decisions
+-- Don\'t share other users\' information
+-- For billing, technical issues, or account problems, direct users to contact support')); 
+-            ?></textarea>
+-            <p class="description">What should the AI refuse to do or topics to avoid?</p>
+-        </td>
+-    </tr>
+-</table>
+-
+-<!-- ============================================ -->
+-<!-- KNOWLEDGE FILE MANAGER -->
+-<!-- ============================================ -->
+-<hr style="margin: 40px 0;">
+-<h3>Knowledge Files</h3>
+-<p class="description">Upload markdown files containing lesson catalogs, FAQs, product info, and teaching guidelines. Mark files as "Public" (freeline access) or "Members Only".</p>
+-
+-<div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 20px;">
+-    <strong>💡 Access Control:</strong> Public files are available to ALL users (including visitors). Member-only files are only accessible after login. Use this to control what information the AI can share with different user types.
+-</div>
+ 
+-<!-- ============================================ -->
+-<!-- UPLOAD NEW KNOWLEDGE FILE -->
+-<!-- ============================================ -->
+-<div class="card" style="max-width: 800px; margin-bottom: 20px;">
+-    <h3>Upload New Knowledge File</h3>
+-    <form method="post" enctype="multipart/form-data">
+-        <?php wp_nonce_field('flosc_ai_knowledge', 'flosc_ai_knowledge_nonce'); ?>
+-        <table class="form-table">
+-            <tr>
+-                <th scope="row"><label for="orientation_file">Markdown File</label></th>
+-                <td>
+-                    <input type="file" name="orientation_file" id="orientation_file" accept=".md" required>
+-                    <p class="description">Upload a .md file containing lesson catalogs, FAQs, product info, or AI guidelines.</p>
+-                </td>
+-            </tr>
+-            <tr>
+-                <th scope="row"><label for="file_access_level">Access Level</label></th>
+-                <td>
+-                    <select name="file_access_level" id="file_access_level">
+-                        <option value="public">Public (All users including visitors)</option>
+-                        <option value="members">Members Only (Logged-in users)</option>
+-                    </select>
+-                    <p class="description">Who can the AI reference this file for?</p>
+-                </td>
+-            </tr>
+-        </table>
+-        <?php submit_button('Upload File', 'secondary'); ?>
+-    </form>
+-</div>
+-
+-<!-- ============================================ -->
+-<!-- EXISTING KNOWLEDGE FILES -->
+-<!-- ============================================ -->
+-<div class="card" style="max-width: 100%;">
+-    <h3>Existing Knowledge Files (<?php echo count($files); ?>)</h3>
+-    <?php if (empty($files)): ?>
+-        <p style="color: #666; font-style: italic;">No knowledge files yet. Upload your first file above to get started.</p>
+-        
+-        <div style="background: #f9f9f9; padding: 15px; margin-top: 15px; border-radius: 4px;">
+-            <h4 style="margin-top: 0;">Example: lesson_catalog.md (Public)</h4>
+-            <p class="description">Public files let visitors know WHAT you offer without revealing the actual lesson content.</p>
+-            <pre style="background: white; padding: 10px; overflow-x: auto; font-size: 12px;"># Lesson Catalog
+-
+-## Phoneme Lessons
+-
+-### Lesson 1: The "S" Sound
+-**Tags:** phoneme-5, consonant, sibilant
+-**Difficulty:** Beginner
+-**Duration:** 10 minutes
+-**Description:** Learn to pronounce the "S" sound correctly. Common in words like "sun", "pass", "sister".
+-
+-### Lesson 2: The "TH" Sound
+-**Tags:** phoneme-7, consonant, fricative
+-**Difficulty:** Intermediate
+-**Duration:** 15 minutes
+-**Description:** Master the challenging "TH" sound (as in "think" and "this").</pre>
+-            
+-            <h4 style="margin-top: 20px;">Example: lesson_content.md (Members Only)</h4>
+-            <p class="description">Member-only files contain detailed lesson instructions, exercises, and answers.</p>
+-            <pre style="background: white; padding: 10px; overflow-x: auto; font-size: 12px;"># Lesson Content - The "S" Sound (MEMBERS ONLY)
+-
+-## Step-by-Step Instructions
+-
+-1. **Tongue Position**: Place tongue tip behind upper teeth, NOT touching
+-2. **Air Flow**: Create narrow channel for air to pass through
+-3. **Vocal Cords**: Keep relaxed (voiceless sound)
+-
+-## Practice Words
+-- sun, sit, sister, pass, class, miss
+-- Contrast with "Z": sun/zone, peace/peas, sink/zinc
+-
+-## Common Mistakes
+-- Tongue too far forward (whistling "S")
+-- Tongue too far back (slushy "SH" sound)
+-- Adding voice (making it sound like "Z")
+-
+-## Exercise Audio Files
+-[Links to practice recordings and feedback]</pre>
+-        </div>
+-        
+-    <?php else: ?>
+-        <table class="widefat" style="margin-top: 10px;">
+-            <thead>
+-                <tr>
+-                    <th style="width: 30%;">Filename</th>
+-                    <th style="width: 15%;">Access Level</th>
+-                    <th style="width: 10%;">Size</th>
+-                    <th style="width: 15%;">Last Modified</th>
+-                    <th style="width: 30%;">Actions</th>
+-                </tr>
+-            </thead>
+-            <tbody>
+-                <?php foreach ($files as $file): ?>
+-                    <?php
+-                    $filepath = $orientation_dir . $file;
+-                    $size = filesize($filepath);
+-                    $modified = filemtime($filepath);
+-                    // Get access level from option (default to public for existing files)
+-                    $access_level = get_option('flosc_knowledge_access_' . md5($file), 'public');
+-                    ?>
+-                    <tr>
+-                        <td>
+-                            <strong><?php echo esc_html($file); ?></strong>
+-                            <?php if ($editing_file === $file): ?>
+-                                <span style="color: #2196f3; margin-left: 8px;">← Editing</span>
+-                            <?php endif; ?>
+-                        </td>
+-                        <td>
+-                            <?php if ($access_level === 'members'): ?>
+-                                <span style="background: #8b5cf6; color: #fff; padding: 3px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">
+-                                    🔒 MEMBERS ONLY
+-                                </span>
+-                            <?php else: ?>
+-                                <span style="background: #10b981; color: #fff; padding: 3px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">
+-                                    🌐 PUBLIC
+-                                </span>
+-                            <?php endif; ?>
+-                        </td>
+-                        <td><?php echo size_format($size); ?></td>
+-                        <td><?php echo human_time_diff($modified, current_time('timestamp')) . ' ago'; ?></td>
+-                        <td>
+-                            <a href="<?php echo admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&edit=' . urlencode($file)); ?>" class="button button-small">
+-                                <?php echo $editing_file === $file ? 'Editing...' : 'Edit'; ?>
+-                            </a>
+-                            <a href="<?php echo admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&toggle_access=' . urlencode($file)); ?>" 
+-                               class="button button-small">
+-                                Toggle Access
+-                            </a>
+-                            <a href="<?php echo admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&delete=' . urlencode($file)); ?>" 
+-                               class="button button-small" 
+-                               onclick="return confirm('Delete <?php echo esc_js($file); ?>? This cannot be undone.');"
+-                               style="color: #d63638;">
+-                                Delete
+-                            </a>
+-                        </td>
+-                    </tr>
+-                <?php endforeach; ?>
+-            </tbody>
+-        </table>
+-    <?php endif; ?>
+-</div>
++$notice = null;
++$notice_type = 'success';
+ 
+-<!-- ============================================ -->
+-<!-- FILE EDITOR (if editing) -->
+-<!-- ============================================ -->
+-<?php if ($editing_file): ?>
+-    <div class="card" style="max-width: 100%; margin-top: 20px;">
+-        <h3>Edit: <?php echo esc_html($editing_file); ?></h3>
+-        <form method="post">
+-            <?php wp_nonce_field('flosc_ai_knowledge_edit', 'flosc_ai_knowledge_edit_nonce'); ?>
+-            <input type="hidden" name="editing_file" value="<?php echo esc_attr($editing_file); ?>">
+-            
+-            <textarea name="file_content" rows="25" class="large-text code" style="font-family: monospace; width: 100%; font-size: 13px;"><?php echo esc_textarea($editing_content); ?></textarea>
+-            
+-            <p class="description">Markdown formatting supported. Use this editor to update knowledge file content.</p>
+-            
+-            <div style="margin-top: 15px;">
+-                <?php submit_button('Save Changes', 'primary', 'save_knowledge_file', false); ?>
+-                <a href="<?php echo admin_url('admin.php?page=flosc-settings&tab=ai-knowledge'); ?>" class="button" style="margin-left: 10px;">Cancel</a>
+-            </div>
+-        </form>
+-    </div>
+-<?php endif; ?>
+-
+-<!-- ============================================ -->
+-<!-- KNOWLEDGE FILE TEMPLATES & EXAMPLES -->
+-<!-- ============================================ -->
+-<hr style="margin: 40px 0;">
+-<h3>Knowledge File Templates & Best Practices</h3>
+-<p class="description">Copy these templates as starting points for your knowledge files.</p>
+-
+-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #9c27b0;">
+-    <h4 style="margin-top: 0;">📚 Template: lesson_catalog.md</h4>
+-    <p><strong>Purpose:</strong> Provide AI with structured information about available lessons</p>
+-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-lesson-catalog').textContent); alert('Template copied to clipboard!');">Copy Template</button>
+-    <pre id="template-lesson-catalog" style="background: white; padding: 10px; overflow-x: auto; font-size: 12px; margin-top: 10px;"># Lesson Catalog
+-
+-This file helps the AI understand what lessons are available and recommend appropriate content to users.
+-
+-## Phoneme Lessons
+-
+-### Lesson: The "S" Sound
+-- **ID:** phoneme-5
+-- **Tags:** consonant, sibilant, beginner
+-- **Duration:** 10 minutes
+-- **Free:** Yes
+-- **Prerequisites:** None
+-- **Description:** Learn to pronounce the "S" sound correctly. Common in words like "sun", "pass", "sister".
+-
+-### Lesson: The "TH" Sound  
+-- **ID:** phoneme-7
+-- **Tags:** consonant, fricative, intermediate
+-- **Duration:** 15 minutes
+-- **Free:** No (Premium)
+-- **Prerequisites:** Basic consonants
+-- **Description:** Master the challenging "TH" sound. Covers both voiced (this) and voiceless (think) variants.
+-
+-## Add more lessons following this format...</pre>
+-</div>
+-
+-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #ff9800;">
+-    <h4 style="margin-top: 0;">❓ Template: faq.md</h4>
+-    <p><strong>Purpose:</strong> Common questions and answers the AI can reference</p>
+-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-faq').textContent); alert('Template copied to clipboard!');">Copy Template</button>
+-    <pre id="template-faq" style="background: white; padding: 10px; overflow-x: auto; font-size: 12px; margin-top: 10px;"># Frequently Asked Questions
+-
+-## General Questions
+-
+-**Q: How long does it take to complete the program?**
+-A: Most students complete the core program in 4-6 weeks with 15-20 minutes of daily practice. However, you can go at your own pace.
+-
+-**Q: Do I need any special equipment?**
+-A: No special equipment needed! Just a computer or smartphone with a microphone for the pronunciation exercises.
+-
+-**Q: Is there a money-back guarantee?**
+-A: Yes! We offer a 30-day money-back guarantee. If you're not satisfied, contact support for a full refund.
+-
+-## Technical Questions
+-
+-**Q: Which browsers are supported?**
+-A: We support Chrome, Firefox, Safari, and Edge (latest versions). Chrome is recommended for the best experience.
+-
+-**Q: Can I use this on my phone?**
+-A: Yes! Our platform is fully mobile-responsive and works on iOS and Android devices.
+-
+-## Add more FAQs following this format...</pre>
+-</div>
+-
+-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #4caf50;">
+-    <h4 style="margin-top: 0;">🎯 Template: teaching_methodology.md</h4>
+-    <p><strong>Purpose:</strong> Guide AI on teaching approach and pedagogical principles</p>
+-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-methodology').textContent); alert('Template copied to clipboard!');">Copy Template</button>
+-    <pre id="template-methodology" style="background: white; padding: 10px; overflow-x: auto; font-size: 12px; margin-top: 10px;"># Teaching Methodology & AI Guidelines
+-
+-## Our Teaching Philosophy
+-
+-We use a **scaffolded learning approach** that builds from simple to complex:
+-1. Introduce concept with clear examples
+-2. Provide guided practice with feedback
+-3. Encourage independent application
+-4. Reinforce through spaced repetition
+-
+-## How to Respond to Common Situations
+-
+-### When a student struggles:
+-- Be encouraging and patient
+-- Break down the concept into smaller steps
+-- Provide additional examples
+-- Suggest the relevant lesson from our catalog
+-- Never make them feel inadequate
+-
+-### When a student excels:
+-- Celebrate their success specifically
+-- Challenge them with more advanced concepts
+-- Recommend next-level content
+-- Encourage them to help others
+-
+-### When a student asks off-topic questions:
+-- Acknowledge the question politely
+-- Redirect to on-topic content when possible
+-- If completely off-topic, suggest they contact support
+-
+-## Pronunciation Coaching Tips
+-
+-- Always provide the phonetic transcription
+-- Give physical cues (tongue position, lip shape)
+-- Use minimal pairs (words that differ by one sound)
+-- Encourage repetition and recording
+-- Provide immediate, specific feedback</pre>
+-</div>
+-
+-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #e91e63;">
+-    <h4 style="margin-top: 0;">💼 Template: product_info.md</h4>
+-    <p><strong>Purpose:</strong> Product details, pricing, features for sales conversations</p>
+-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-product').textContent); alert('Template copied to clipboard!');">Copy Template</button>
+-    <pre id="template-product" style="background: white; padding: 10px; overflow-x: auto; font-size: 12px; margin-top: 10px;"># Product Information
+-
+-## What We Offer
+-
+-**Free Tier:**
+-- Quiz assessment
+-- 1 personalized lesson based on quiz results
+-- Basic pronunciation feedback
+-- Progress tracking
+-
+-**Premium Tier ($49/month or $399/year):**
+-- Complete access to all 50+ lessons
+-- Advanced AI pronunciation analysis
+-- Personalized learning path
+-- Certificate of completion
+-- Priority support
+-- Lifetime access to new content
+-
+-## Key Features
+-
+-### AI-Powered Pronunciation Analysis
+-Our advanced AI listens to your pronunciation and provides instant, specific feedback on:
+-- Individual phoneme accuracy
+-- Intonation patterns
+-- Speaking pace
+-- Common mistakes
+-
+-### Personalized Learning Paths
+-Based on your quiz results and progress, we create a custom curriculum that:
+-- Focuses on your specific challenges
+-- Builds on your strengths
+-- Adapts as you improve
+-- Keeps you motivated with achievable goals
+-
+-### Spaced Repetition System
+-Our algorithm ensures you review concepts at optimal intervals for long-term retention.
++// ------------------------------
++// Helpers
++// ------------------------------
++$sanitize_relpath = function($filename) {
++    $filename = sanitize_file_name($filename);
++    // Only allow .md files
++    if (!preg_match('/\.md$/i', $filename)) {
++        return '';
++    }
++    return $filename;
++};
+ 
+-## Value Proposition
++$resolve_file_path = function($filename) use ($knowledge_dir) {
++    $filename = sanitize_file_name($filename);
++    $path = $knowledge_dir . $filename;
++    $real_dir = realpath($knowledge_dir);
++    $real_path = realpath($path);
++    if ($real_dir && $real_path && strpos($real_path, $real_dir) === 0) {
++        return $real_path;
++    }
++    return $path;
++};
+ 
+-"Master pronunciation in weeks, not years. Our AI-powered platform gives you instant feedback and personalized lessons that traditional courses can't match - at a fraction of the cost of a private tutor."</pre>
+-</div>
++// ------------------------------
++// Handle actions
++// ------------------------------
++$access_levels = get_option('flosc_ai_knowledge_access', []);
++if (!is_array($access_levels)) $access_levels = [];
+ 
+-<!-- ============================================ -->
+-<!-- BACKEND INTEGRATION NOTES -->
+-<!-- ============================================ -->
+-<!--
+-BACKEND IMPLEMENTATION NOTES:
+-=============================
+-
+-AI Knowledge Base configures the AI's personality, mission, and access to information.
+-
+-The configuration is injected into the AI system prompt to shape its behavior.
+-
+-PERSONALITY INJECTION:
+-
+-function flosc_inject_ai_personality() {
+-    $personality = "# WHO YOU ARE\n\n";
+-    $personality .= "Name: " . get_option('flosc_ai_personality_name', 'FLOSC') . "\n";
+-    $personality .= "Role: " . get_option('flosc_ai_personality_role', 'pronunciation coach') . "\n\n";
+-    $personality .= "## Personality Traits\n";
+-    $personality .= get_option('flosc_ai_personality_traits', '') . "\n\n";
+-    $personality .= "## Your Mission\n";
+-    $personality .= get_option('flosc_ai_mission', '') . "\n\n";
+-    
+-    return $personality;
++// Toggle access (GET)
++if (isset($_GET['toggle_access'])) {
++    $file = $sanitize_relpath($_GET['toggle_access']);
++    if ($file && check_admin_referer('flosc_toggle_knowledge_access_' . $file)) {
++        $current = $access_levels[$file] ?? 'members';
++        $access_levels[$file] = ($current === 'public') ? 'members' : 'public';
++        update_option('flosc_ai_knowledge_access', $access_levels);
++        $notice = 'Access level updated.';
++    }
+ }
+ 
+-KNOWLEDGE ACCESS CONTROL:
+-
+-function flosc_inject_knowledge_context($user_phase) {
+-    $context = "# YOUR KNOWLEDGE BASE\n\n";
+-    
+-    // Context awareness (what makes this knowledge special)
+-    $context .= get_option('flosc_ai_context_awareness', '') . "\n\n";
+-    
+-    // Access rules based on user phase
+-    if ($user_phase === 'freeline') {
+-        $context .= "## CURRENT USER: VISITOR (Not logged in)\n\n";
+-        $context .= get_option('flosc_ai_freeline_restrictions', '') . "\n\n";
+-        
+-        // Only include PUBLIC knowledge files
+-        $context .= "## Available Knowledge Files (Public Only):\n\n";
+-        $files = flosc_get_knowledge_files('public');
+-    } else {
+-        $context .= "## CURRENT USER: MEMBER (Logged in)\n\n";
+-        $context .= get_option('flosc_ai_member_access', '') . "\n\n";
+-        
+-        // Include ALL knowledge files (public + members only)
+-        $context .= "## Available Knowledge Files (Full Access):\n\n";
+-        $files = flosc_get_knowledge_files('all');
+-    }
+-    
+-    // Inject actual file contents
+-    foreach ($files as $file) {
+-        $filepath = FLOSC_PLUGIN_DIR . 'ai_configuration_files/' . $file;
+-        if (file_exists($filepath)) {
+-            $access = get_option('flosc_knowledge_access_' . md5($file), 'public');
+-            $context .= "### " . $file . " [" . strtoupper($access) . "]\n\n";
+-            $context .= file_get_contents($filepath) . "\n\n";
++// Delete file (GET)
++if (isset($_GET['delete'])) {
++    $file = $sanitize_relpath($_GET['delete']);
++    if ($file && check_admin_referer('flosc_delete_knowledge_file_' . $file)) {
++        $path = $resolve_file_path($file);
++        if (file_exists($path)) {
++            unlink($path);
+         }
++        unset($access_levels[$file]);
++        update_option('flosc_ai_knowledge_access', $access_levels);
++        $notice = 'Knowledge file deleted.';
+     }
+-    
+-    // Add boundaries
+-    $context .= "## IMPORTANT BOUNDARIES\n\n";
+-    $context .= get_option('flosc_ai_boundaries', '') . "\n\n";
+-    
+-    return $context;
+ }
+ 
+-function flosc_get_knowledge_files($access_filter = 'all') {
+-    $dir = FLOSC_PLUGIN_DIR . 'ai_configuration_files/';
+-    $files = [];
+-    
+-    if (!is_dir($dir)) return $files;
+-    
+-    $scan = scandir($dir);
+-    foreach ($scan as $file) {
+-        if ($file === '.' || $file === '..' || pathinfo($file, PATHINFO_EXTENSION) !== 'md') {
+-            continue;
++// Save AI personality options (POST)
++if (!empty($_POST['flosc_ai_personality_save'])) {
++    check_admin_referer('flosc_ai_personality_save');
++
++    $fields_text = [
++        'flosc_ai_personality_name',
++        'flosc_ai_personality_role',
++    ];
++    $fields_textarea = [
++        'flosc_ai_personality_traits',
++        'flosc_ai_personality_mission',
++        'flosc_ai_personality_context_awareness',
++        'flosc_ai_personality_freeline_restrictions',
++        'flosc_ai_personality_member_access',
++        'flosc_ai_personality_boundaries',
++    ];
++
++    foreach ($fields_text as $key) {
++        if (isset($_POST[$key])) {
++            update_option($key, sanitize_text_field(wp_unslash($_POST[$key])));
+         }
+-        
+-        $access_level = get_option('flosc_knowledge_access_' . md5($file), 'public');
+-        
+-        if ($access_filter === 'all' || $access_filter === $access_level) {
+-            $files[] = $file;
++    }
++    foreach ($fields_textarea as $key) {
++        if (isset($_POST[$key])) {
++            update_option($key, sanitize_textarea_field(wp_unslash($_POST[$key])));
+         }
+     }
+-    
+-    return $files;
+-}
+ 
+-COMPLETE SYSTEM PROMPT ASSEMBLY:
++    $notice = 'AI personality settings saved.';
++}
+ 
+-add_filter('flosc_ai_system_prompt', function($base_prompt, $user_data) {
+-    $prompt = $base_prompt; // Base prompt from AI Configuration tab
+-    
+-    // Add personality
+-    $prompt .= "\n\n" . flosc_inject_ai_personality();
+-    
+-    // Add knowledge based on user phase
+-    $user_phase = flosc_get_user_phase($user_data);
+-    $prompt .= "\n\n" . flosc_inject_knowledge_context($user_phase);
+-    
+-    // Add IVR context if enabled (from AI Configuration tab)
+-    if (get_option('flosc_ai_enable_ivr_context', true)) {
+-        $prompt .= "\n\n" . flosc_inject_ivr_context($user_phase);
++// Upload a knowledge file (POST)
++if (!empty($_POST['flosc_ai_knowledge_upload'])) {
++    check_admin_referer('flosc_ai_knowledge_upload');
++
++    if (!empty($_FILES['knowledge_file']['name'])) {
++        $orig_name = sanitize_file_name($_FILES['knowledge_file']['name']);
++        if (!preg_match('/\.md$/i', $orig_name)) {
++            $notice = 'Only .md files are allowed.';
++            $notice_type = 'error';
++        } else {
++            $target = $knowledge_dir . $orig_name;
++            if (move_uploaded_file($_FILES['knowledge_file']['tmp_name'], $target)) {
++                // Default access level
++                if (!isset($access_levels[$orig_name])) {
++                    $access_levels[$orig_name] = 'members';
++                    update_option('flosc_ai_knowledge_access', $access_levels);
++                }
++                $notice = 'Knowledge file uploaded.';
++            } else {
++                $notice = 'Upload failed. Please check file permissions on ai_knowledge_files/.';
++                $notice_type = 'error';
++            }
++        }
++    } else {
++        $notice = 'No file selected.';
++        $notice_type = 'error';
+     }
+-    
+-    return $prompt;
+-}, 10, 2);
+-
+-FILE UPLOAD HANDLER (needs update for access level):
+-
+-if (isset($_FILES['orientation_file']) && wp_verify_nonce($_POST['flosc_ai_knowledge_nonce'], 'flosc_ai_knowledge')) {
+-    $file = $_FILES['orientation_file'];
+-    $access_level = sanitize_text_field($_POST['file_access_level'] ?? 'public');
+-    
+-    // Validate
+-    if ($file['error'] === UPLOAD_ERR_OK && pathinfo($file['name'], PATHINFO_EXTENSION) === 'md') {
+-        $filename = sanitize_file_name($file['name']);
+-        $destination = FLOSC_PLUGIN_DIR . 'ai_configuration_files/' . $filename;
+-        
+-        if (move_uploaded_file($file['tmp_name'], $destination)) {
+-            // Store access level
+-            update_option('flosc_knowledge_access_' . md5($filename), $access_level);
+-            
+-            wp_redirect(admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&uploaded=1'));
+-            exit;
++}
++
++// Save file content (POST)
++if (!empty($_POST['flosc_ai_knowledge_save_file'])) {
++    check_admin_referer('flosc_ai_knowledge_save_file');
++
++    $file = $sanitize_relpath($_POST['file_name'] ?? '');
++    if (!$file) {
++        $notice = 'Invalid file name.';
++        $notice_type = 'error';
++    } else {
++        $path = $resolve_file_path($file);
++        if (!file_exists($path)) {
++            $notice = 'File not found.';
++            $notice_type = 'error';
++        } else {
++            $content = wp_unslash($_POST['file_content'] ?? '');
++            // Keep as plain text; do not store HTML.
++            file_put_contents($path, $content);
++            $notice = 'Knowledge file saved.';
+         }
+     }
+ }
+ 
+-TOGGLE ACCESS HANDLER:
++// Refresh access levels after updates
++$access_levels = get_option('flosc_ai_knowledge_access', []);
++if (!is_array($access_levels)) $access_levels = [];
+ 
+-if (isset($_GET['toggle_access'])) {
+-    $filename = sanitize_file_name($_GET['toggle_access']);
+-    $option_key = 'flosc_knowledge_access_' . md5($filename);
+-    $current = get_option($option_key, 'public');
+-    $new = $current === 'public' ? 'members' : 'public';
+-    update_option($option_key, $new);
+-    
+-    wp_redirect(admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&toggled=1'));
+-    exit;
++$files = glob($knowledge_dir . '*.md') ?: [];
++$files = array_map('basename', $files);
++
++$editing_file = isset($_GET['edit']) ? $sanitize_relpath($_GET['edit']) : '';
++$editing_path = $editing_file ? $resolve_file_path($editing_file) : '';
++$editing_content = '';
++if ($editing_file && file_exists($editing_path)) {
++    $editing_content = file_get_contents($editing_path);
+ }
+--->
++?>
+ 
+-<form method="post" action="options.php">
+-<?php settings_fields('flosc_settings'); ?>
++<h2>AI Knowledge</h2>
++<p>This tab controls the AI personality prompt and the markdown knowledge base loaded by the assistant.</p>
++
++<?php if ($notice): ?>
++    <div class="notice notice-<?php echo esc_attr($notice_type); ?> is-dismissible"><p><?php echo esc_html($notice); ?></p></div>
++<?php endif; ?>
++
++<div class="flosc-info-box">
++    <strong>How it works:</strong>
++    <ul>
++        <li><strong>AI personality</strong> is the behavior + voice prompt your assistant uses.</li>
++        <li><strong>Knowledge files</strong> are markdown documents you can update without touching code.</li>
++        <li><strong>Access level</strong> lets you keep some knowledge visible only to members.</li>
++    </ul>
++</div>
++
++<h3>AI Personality Settings</h3>
++<form method="post">
++    <?php wp_nonce_field('flosc_ai_personality_save'); ?>
++    <table class="form-table">
++        <tr>
++            <th scope="row"><label for="flosc_ai_personality_name">Assistant Name</label></th>
++            <td><input type="text" id="flosc_ai_personality_name" name="flosc_ai_personality_name" class="regular-text" value="<?php echo esc_attr(get_option('flosc_ai_personality_name', 'Brenda')); ?>" /></td>
++        </tr>
++        <tr>
++            <th scope="row"><label for="flosc_ai_personality_role">Assistant Role</label></th>
++            <td><input type="text" id="flosc_ai_personality_role" name="flosc_ai_personality_role" class="regular-text" value="<?php echo esc_attr(get_option('flosc_ai_personality_role', 'FLOSC Assistant')); ?>" /></td>
++        </tr>
++        <tr>
++            <th scope="row"><label for="flosc_ai_personality_traits">Traits</label></th>
++            <td><textarea id="flosc_ai_personality_traits" name="flosc_ai_personality_traits" rows="4" class="large-text"><?php echo esc_textarea(get_option('flosc_ai_personality_traits', '')); ?></textarea></td>
++        </tr>
++        <tr>
++            <th scope="row"><label for="flosc_ai_personality_mission">Mission</label></th>
++            <td><textarea id="flosc_ai_personality_mission" name="flosc_ai_personality_mission" rows="4" class="large-text"><?php echo esc_textarea(get_option('flosc_ai_personality_mission', '')); ?></textarea></td>
++        </tr>
++        <tr>
++            <th scope="row"><label for="flosc_ai_personality_context_awareness">Context Awareness</label></th>
++            <td><textarea id="flosc_ai_personality_context_awareness" name="flosc_ai_personality_context_awareness" rows="4" class="large-text"><?php echo esc_textarea(get_option('flosc_ai_personality_context_awareness', '')); ?></textarea></td>
++        </tr>
++        <tr>
++            <th scope="row"><label for="flosc_ai_personality_freeline_restrictions">Freeline Restrictions</label></th>
++            <td><textarea id="flosc_ai_personality_freeline_restrictions" name="flosc_ai_personality_freeline_restrictions" rows="4" class="large-text"><?php echo esc_textarea(get_option('flosc_ai_personality_freeline_restrictions', '')); ?></textarea></td>
++        </tr>
++        <tr>
++            <th scope="row"><label for="flosc_ai_personality_member_access">Member Access Rules</label></th>
++            <td><textarea id="flosc_ai_personality_member_access" name="flosc_ai_personality_member_access" rows="4" class="large-text"><?php echo esc_textarea(get_option('flosc_ai_personality_member_access', '')); ?></textarea></td>
++        </tr>
++        <tr>
++            <th scope="row"><label for="flosc_ai_personality_boundaries">Boundaries</label></th>
++            <td><textarea id="flosc_ai_personality_boundaries" name="flosc_ai_personality_boundaries" rows="4" class="large-text"><?php echo esc_textarea(get_option('flosc_ai_personality_boundaries', '')); ?></textarea></td>
++        </tr>
++    </table>
++
++    <p>
++        <button type="submit" name="flosc_ai_personality_save" value="1" class="button button-primary">Save AI Personality</button>
++    </p>
++</form>
++
++<hr />
++
++<h3>Knowledge Files</h3>
++
++<form method="post" enctype="multipart/form-data" style="margin-bottom: 15px;">
++    <?php wp_nonce_field('flosc_ai_knowledge_upload'); ?>
++    <input type="file" name="knowledge_file" accept=".md" />
++    <button type="submit" name="flosc_ai_knowledge_upload" value="1" class="button">Upload .md</button>
++    <span class="description" style="margin-left: 10px;">Files are stored in <code>ai_knowledge_files/</code></span>
++</form>
++
++<?php if (empty($files)): ?>
++    <p style="color: #666;">No knowledge files found yet. Upload your first <code>.md</code> file above.</p>
++<?php else: ?>
++    <table class="widefat striped">
++        <thead>
++            <tr>
++                <th>File</th>
++                <th style="width: 140px;">Access</th>
++                <th style="width: 240px;">Actions</th>
++            </tr>
++        </thead>
++        <tbody>
++            <?php foreach ($files as $file):
++                $access = $access_levels[$file] ?? 'members';
++                $toggle_url = wp_nonce_url(add_query_arg(['tab' => 'ai-knowledge', 'toggle_access' => $file], admin_url('admin.php?page=flosc-settings')), 'flosc_toggle_knowledge_access_' . $file);
++                $edit_url = add_query_arg(['tab' => 'ai-knowledge', 'edit' => $file], admin_url('admin.php?page=flosc-settings'));
++                $delete_url = wp_nonce_url(add_query_arg(['tab' => 'ai-knowledge', 'delete' => $file], admin_url('admin.php?page=flosc-settings')), 'flosc_delete_knowledge_file_' . $file);
++            ?>
++                <tr>
++                    <td><code><?php echo esc_html($file); ?></code></td>
++                    <td>
++                        <span class="tag" style="display:inline-block;padding:2px 8px;border-radius:12px;background:#f0f0f1;">
++                            <?php echo esc_html($access); ?>
++                        </span>
++                    </td>
++                    <td>
++                        <a class="button button-small" href="<?php echo esc_url($edit_url); ?>">Edit</a>
++                        <a class="button button-small" href="<?php echo esc_url($toggle_url); ?>">Toggle Access</a>
++                        <a class="button button-small button-link-delete" href="<?php echo esc_url($delete_url); ?>" onclick="return confirm('Delete this file?');">Delete</a>
++                    </td>
++                </tr>
++            <?php endforeach; ?>
++        </tbody>
++    </table>
++<?php endif; ?>
++
++<?php if ($editing_file): ?>
++    <hr />
++    <h3>Edit: <code><?php echo esc_html($editing_file); ?></code></h3>
++
++    <form method="post">
++        <?php wp_nonce_field('flosc_ai_knowledge_save_file'); ?>
++        <input type="hidden" name="file_name" value="<?php echo esc_attr($editing_file); ?>" />
++        <textarea name="file_content" rows="18" class="large-text" style="font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;"><?php echo esc_textarea($editing_content); ?></textarea>
++        <p>
++            <button type="submit" name="flosc_ai_knowledge_save_file" value="1" class="button button-primary">Save File</button>
++            <a href="<?php echo esc_url(add_query_arg(['tab' => 'ai-knowledge'], admin_url('admin.php?page=flosc-settings'))); ?>" class="button">Cancel</a>
++        </p>
++    </form>
++<?php endif; ?>
+diff -ruN /mnt/data/flosc_review/v9_1_0_src/flosc_v9_1_0/admin/ivr-messages.php /mnt/data/flosc_review/v9_1_2/flosc_v9_1_2/admin/ivr-messages.php
+--- /mnt/data/flosc_review/v9_1_0_src/flosc_v9_1_0/admin/ivr-messages.php	2026-01-19 11:24:28.000000000 +0000
++++ /mnt/data/flosc_review/v9_1_2/flosc_v9_1_2/admin/ivr-messages.php	2026-01-19 15:43:09.752723429 +0000
+@@ -1,12 +1,9 @@
+ <?php
+ /**
+  * FLOSC IVR Messages Tab
+- * 
++ *
+  * Displays configured IVR messages organized by FLOSC phase.
+  * Messages are stored in ivr.md and parsed by FLOSC_IVR_Parser.
+- * 
+- * Links to the dedicated IVR settings editor (admin.php?page=flosc-ivr)
+- * for full message management including condition builder.
+  */
+ 
+ if (!defined('ABSPATH')) exit;
+@@ -14,9 +11,8 @@
+ $ivr_config = FLOSC_IVR_Parser::flosc_instance()->get_flosc_config();
+ ?>
+ 
+-</form>
+ <h2>IVR Messages Configuration</h2>
+-<p><strong>IVR (Interactive Voice Response)</strong> is our framework for delivering contextual messages based on user behavior, FLOSC phase, quiz scores, and conditions.</p>
++<p><strong>IVR (Interactive Voice Response)</strong> is the rule engine for delivering contextual messages based on user behavior, FLOSC phase, quiz scores, and conditions.</p>
+ 
+ <div class="flosc-info-box" style="margin-bottom: 20px;">
+     <strong>Understanding FLOSC Phases:</strong>
+@@ -29,18 +25,17 @@
+     </ul>
+ </div>
+ 
+-
+-<!-- IVR Messages Display -->
+-<h3>IVR Messages <a href="<?php echo admin_url('admin.php?page=flosc-ivr'); ?>" class="button button-secondary" style="margin-left: 10px;">Edit Messages</a></h3>
+-<p class="description">All messages are configured in ivr.md markdown format. Click "Edit Messages" to modify.</p>
++<h3>IVR Messages <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-ivr')); ?>" class="button button-secondary" style="margin-left: 10px;">Edit Messages</a></h3>
++<p class="description">Messages are configured in <code>ai_configuration_files/ivr.md</code>. Use “Edit Messages” for full management.</p>
+ 
+ <div id="flosc-ivr-display">
+     <?php foreach (['freeline', 'login', 'offer', 'sale', 'content'] as $phase):
+         $phase_messages = $ivr_config['phases'][$phase] ?? [];
+     ?>
+     <div class="ivr-phase-section" style="background: #f9f9f9; border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 4px;">
+-        <h4 style="margin-top: 0; text-transform: capitalize;"><?php echo esc_html($phase); ?> Phase
+-            <span style="font-weight: normal; font-size: 14px;">(<?php echo count($phase_messages); ?> messages)</span>
++        <h4 style="margin-top: 0; text-transform: capitalize;">
++            <?php echo esc_html($phase); ?> Phase
++            <span style="font-weight: normal; font-size: 14px;">(<?php echo intval(count($phase_messages)); ?> messages)</span>
+         </h4>
+ 
+         <?php if (empty($phase_messages)): ?>
+@@ -49,19 +44,29 @@
+             <?php foreach ($phase_messages as $msg_id):
+                 $message = $ivr_config['messages'][$msg_id] ?? null;
+                 if (!$message) continue;
++                $condition = $message['conditions'] ?? '';
++                $content = $message['content'] ?? '';
+             ?>
+             <div style="background: #fff; padding: 10px; margin-top: 10px; border: 1px solid #eee; border-left: 3px solid #0073aa;">
+                 <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+-                    <strong><?php echo esc_html($message['name']); ?></strong>
++                    <strong><?php echo esc_html($message['name'] ?? $msg_id); ?></strong>
+                     <span style="color: #666; font-size: 12px;"><?php echo esc_html($message['type'] ?? 'auto'); ?></span>
+                 </div>
+-                <?php if (!empty($message['condition'])): ?>
++                <?php if (!empty($condition) && $condition !== 'always'): ?>
+                     <div style="background: #f0f0f1; padding: 5px; border-radius: 3px; font-size: 12px; margin-bottom: 8px; font-family: monospace;">
+-                        Condition: <?php echo esc_html($message['condition']); ?>
++                        Condition: <?php echo esc_html($condition); ?>
++                    </div>
++                <?php endif; ?>
++                <?php if (!empty($message['user_input'])): ?>
++                    <div style="margin-bottom: 6px; color: #111; font-size: 12px;">
++                        <strong>User Input:</strong> <?php echo esc_html($message['user_input']); ?>
+                     </div>
+                 <?php endif; ?>
+                 <div style="color: #333;">
+-                    <?php echo esc_html(strlen($message['content']) > 150 ? substr($message['content'], 0, 150) . '...' : $message['content']); ?>
++                    <?php
++                    $preview = (strlen($content) > 180) ? (substr($content, 0, 180) . '...') : $content;
++                    echo esc_html($preview);
++                    ?>
+                 </div>
+                 <?php if (!empty($message['action'])): ?>
+                     <div style="margin-top: 5px; color: #0073aa; font-size: 12px;">
+@@ -74,6 +79,3 @@
+     </div>
+     <?php endforeach; ?>
+ </div>
+-
+-<form method="post" action="options.php">
+-<?php settings_fields('flosc_settings'); ?>
+diff -ruN /mnt/data/flosc_review/v9_1_0_src/flosc_v9_1_0/admin/offers.php /mnt/data/flosc_review/v9_1_2/flosc_v9_1_2/admin/offers.php
+--- /mnt/data/flosc_review/v9_1_0_src/flosc_v9_1_0/admin/offers.php	2026-01-19 13:20:34.000000000 +0000
++++ /mnt/data/flosc_review/v9_1_2/flosc_v9_1_2/admin/offers.php	2026-01-19 15:48:02.306151222 +0000
+@@ -1,756 +1,229 @@
+ <?php
+ /**
+- * FLOSC Offers Configuration Tab
+- * 
+- * Create and manage product offers:
+- * - One-Time Offers (OTO) shown after quiz/lesson completion
+- * - Upsells and cross-sells
+- * - Pricing tiers and bundles
+- * - Offer triggers and conditions
+- * - Copy/messaging for each offer
+- * 
+- * Offers integrate with:
+- * - Quiz completion flow (OTO after quiz results)
+- * - Lesson completion (upgrade prompts)
+- * - Email automation (upgrade offers)
+- * - IVR messages (conditional pricing mentions)
+- * 
+- * BACKEND STATUS: Offer display functional, creation/editing UI ready, persistence needs wiring
++ * FLOSC Offers Tab
++ *
++ * Admin UI for managing offers stored in the Offer Manager.
+  */
+ 
+ if (!defined('ABSPATH')) exit;
+ 
+-$offers = flosc()->sale()->offers()->get_all_offers();
+-$editing_offer_id = isset($_GET['edit_offer']) ? sanitize_text_field($_GET['edit_offer']) : '';
+-$editing_offer = null;
+-
+-if ($editing_offer_id) {
+-    foreach ($offers as $offer) {
+-        if ($offer['id'] === $editing_offer_id) {
+-            $editing_offer = $offer;
+-            break;
+-        }
+-    }
++if (!current_user_can('manage_options')) {
++    wp_die(__('You do not have sufficient permissions to access this page.'));
+ }
+-?>
+-
+-</form>
+-<h2>Offers & Pricing Configuration</h2>
+-<p>Create and manage your product offers with pricing, descriptions, and trigger conditions.</p>
+-
+-<!-- ============================================ -->
+-<!-- CURRENT OFFERS LIST -->
+-<!-- ============================================ -->
+-<div class="card" style="max-width: 100%; margin-bottom: 20px;">
+-    <h3>Your Offers (<?php echo count($offers); ?>)</h3>
+-    
+-    <?php if (empty($offers)): ?>
+-        <p style="color: #666; font-style: italic;">No offers configured yet. Create your first offer below.</p>
+-        
+-        <div style="background: #e7f3ff; border-left: 4px solid #2196f3; padding: 15px; margin-top: 15px;">
+-            <strong>💡 What are Offers?</strong>
+-            <p style="margin: 10px 0 0 0;">Offers are products you sell to users at different points in their journey:</p>
+-            <ul style="margin: 10px 0 0 20px;">
+-                <li><strong>OTO (One-Time Offer):</strong> Shown immediately after quiz completion - "Limited time: Get full access for 50% off!"</li>
+-                <li><strong>Upsell:</strong> Premium tier after free lesson - "Upgrade to unlock all 50 lessons"</li>
+-                <li><strong>Bundle:</strong> Multiple products together - "Complete pronunciation mastery bundle"</li>
+-            </ul>
+-        </div>
+-        
+-    <?php else: ?>
+-        <table class="widefat" style="margin-top: 10px;">
+-            <thead>
+-                <tr>
+-                    <th style="width: 25%;">Offer Name</th>
+-                    <th style="width: 12%;">Price</th>
+-                    <th style="width: 12%;">Type</th>
+-                    <th style="width: 10%;">Status</th>
+-                    <th style="width: 15%;">Trigger</th>
+-                    <th style="width: 10%;">Conversions</th>
+-                    <th style="width: 16%;">Actions</th>
+-                </tr>
+-            </thead>
+-            <tbody>
+-                <?php foreach ($offers as $offer): ?>
+-                    <?php
+-                    $is_active = $offer['active'] ?? true;
+-                    $conversions = $offer['conversions'] ?? 0;
+-                    $views = $offer['views'] ?? 0;
+-                    $conversion_rate = $views > 0 ? round(($conversions / $views) * 100, 1) : 0;
+-                    ?>
+-                    <tr style="<?php echo !$is_active ? 'opacity: 0.6;' : ''; ?>">
+-                        <td>
+-                            <strong><?php echo esc_html($offer['name']); ?></strong>
+-                            <?php if (!empty($offer['description'])): ?>
+-                                <br><small style="color: #666;"><?php echo esc_html(wp_trim_words($offer['description'], 10)); ?></small>
+-                            <?php endif; ?>
+-                        </td>
+-                        <td>
+-                            <strong><?php echo esc_html($offer['display_price']); ?></strong>
+-                            <?php if (!empty($offer['original_price']) && $offer['original_price'] !== $offer['price']): ?>
+-                                <br><small style="text-decoration: line-through; color: #999;"><?php echo esc_html($offer['original_price']); ?></small>
+-                            <?php endif; ?>
+-                        </td>
+-                        <td><?php echo esc_html(ucfirst($offer['type'] ?? 'one-time')); ?></td>
+-                        <td>
+-                            <?php if ($is_active): ?>
+-                                <span style="color: #10b981;">● Active</span>
+-                            <?php else: ?>
+-                                <span style="color: #999;">○ Inactive</span>
+-                            <?php endif; ?>
+-                        </td>
+-                        <td>
+-                            <small><?php echo esc_html($offer['trigger'] ?? 'Manual'); ?></small>
+-                        </td>
+-                        <td>
+-                            <?php echo esc_html($conversions); ?> / <?php echo esc_html($views); ?>
+-                            <br><small style="color: <?php echo $conversion_rate >= 5 ? '#10b981' : '#999'; ?>;"><?php echo $conversion_rate; ?>%</small>
+-                        </td>
+-                        <td>
+-                            <a href="<?php echo admin_url('admin.php?page=flosc-settings&tab=offers&edit_offer=' . urlencode($offer['id'])); ?>" class="button button-small">
+-                                Edit
+-                            </a>
+-                            <a href="<?php echo admin_url('admin.php?page=flosc-settings&tab=offers&toggle_status=' . urlencode($offer['id'])); ?>" class="button button-small">
+-                                <?php echo $is_active ? 'Deactivate' : 'Activate'; ?>
+-                            </a>
+-                        </td>
+-                    </tr>
+-                <?php endforeach; ?>
+-            </tbody>
+-        </table>
+-    <?php endif; ?>
+-    
+-    <p style="margin-top: 15px;">
+-        <a href="<?php echo admin_url('admin.php?page=flosc-settings&tab=offers&edit_offer=new'); ?>" class="button button-primary">+ Create New Offer</a>
+-    </p>
+-</div>
+-
+-<!-- ============================================ -->
+-<!-- OFFER EDITOR (if creating/editing) -->
+-<!-- ============================================ -->
+-<?php if ($editing_offer_id): ?>
+-    <div class="card" style="max-width: 100%; margin-top: 20px;">
+-        <h3><?php echo $editing_offer ? 'Edit Offer: ' . esc_html($editing_offer['name']) : 'Create New Offer'; ?></h3>
+-        
+-        <form method="post">
+-            <?php wp_nonce_field('flosc_save_offer', 'flosc_save_offer_nonce'); ?>
+-            <input type="hidden" name="offer_id" value="<?php echo esc_attr($editing_offer_id); ?>">
+-            
+-            <table class="form-table">
+-                <!-- Offer Name -->
+-                <tr>
+-                    <th scope="row"><label for="offer_name">Offer Name</label></th>
+-                    <td>
+-                        <input type="text" id="offer_name" name="offer_name" 
+-                               value="<?php echo esc_attr($editing_offer['name'] ?? ''); ?>" 
+-                               class="large-text" required>
+-                        <p class="description">Internal name for this offer (e.g., "Premium Annual - 50% Off OTO")</p>
+-                    </td>
+-                </tr>
+-                
+-                <!-- Offer Type -->
+-                <tr>
+-                    <th scope="row"><label for="offer_type">Offer Type</label></th>
+-                    <td>
+-                        <select id="offer_type" name="offer_type" class="regular-text">
+-                            <option value="one-time" <?php selected($editing_offer['type'] ?? '', 'one-time'); ?>>One-Time Purchase</option>
+-                            <option value="subscription" <?php selected($editing_offer['type'] ?? '', 'subscription'); ?>>Recurring Subscription</option>
+-                            <option value="bundle" <?php selected($editing_offer['type'] ?? '', 'bundle'); ?>>Bundle (Multiple Products)</option>
+-                            <option value="upsell" <?php selected($editing_offer['type'] ?? '', 'upsell'); ?>>Upsell / Cross-sell</option>
+-                        </select>
+-                    </td>
+-                </tr>
+-                
+-                <!-- Pricing -->
+-                <tr>
+-                    <th scope="row">Pricing</th>
+-                    <td>
+-                        <label>
+-                            Price: $<input type="number" name="offer_price" 
+-                                   value="<?php echo esc_attr($editing_offer['price'] ?? ''); ?>" 
+-                                   step="0.01" min="0" class="small-text" required>
+-                        </label>
+-                        <label style="margin-left: 20px;">
+-                            Original Price (optional): $<input type="number" name="offer_original_price" 
+-                                   value="<?php echo esc_attr($editing_offer['original_price'] ?? ''); ?>" 
+-                                   step="0.01" min="0" class="small-text">
+-                        </label>
+-                        <p class="description">Show a strikethrough price to create urgency (e.g., was $99, now $49)</p>
+-                    </td>
+-                </tr>
+-                
+-                <!-- Headline -->
+-                <tr>
+-                    <th scope="row"><label for="offer_headline">Sales Headline</label></th>
+-                    <td>
+-                        <input type="text" id="offer_headline" name="offer_headline" 
+-                               value="<?php echo esc_attr($editing_offer['headline'] ?? ''); ?>" 
+-                               class="large-text" placeholder="Get Full Access - Limited Time 50% Off!">
+-                        <p class="description">Attention-grabbing headline shown to users</p>
+-                    </td>
+-                </tr>
+-                
+-                <!-- Description -->
+-                <tr>
+-                    <th scope="row"><label for="offer_description">Offer Description</label></th>
+-                    <td>
+-                        <textarea id="offer_description" name="offer_description" rows="5" class="large-text"><?php 
+-                            echo esc_textarea($editing_offer['description'] ?? ''); 
+-                        ?></textarea>
+-                        <p class="description">What's included in this offer? Why should they buy?</p>
+-                    </td>
+-                </tr>
+-                
+-                <!-- Features List -->
+-                <tr>
+-                    <th scope="row"><label for="offer_features">Features (one per line)</label></th>
+-                    <td>
+-                        <textarea id="offer_features" name="offer_features" rows="6" class="large-text" placeholder="Complete access to all 50+ lessons&#10;AI-powered pronunciation feedback&#10;Certificate of completion&#10;Lifetime updates"><?php 
+-                            echo esc_textarea($editing_offer['features'] ?? ''); 
+-                        ?></textarea>
+-                        <p class="description">Bullet points of what's included. One feature per line.</p>
+-                    </td>
+-                </tr>
+-                
+-                <!-- CTA Button Text -->
+-                <tr>
+-                    <th scope="row"><label for="offer_cta">Call-to-Action Button</label></th>
+-                    <td>
+-                        <input type="text" id="offer_cta" name="offer_cta" 
+-                               value="<?php echo esc_attr($editing_offer['cta'] ?? 'Get Access Now'); ?>" 
+-                               class="regular-text">
+-                        <p class="description">Button text (e.g., "Claim Your Discount", "Start Learning Now")</p>
+-                    </td>
+-                </tr>
+-                
+-                <!-- Trigger Condition -->
+-                <tr>
+-                    <th scope="row"><label for="offer_trigger">Show Offer When</label></th>
+-                    <td>
+-                        <select id="offer_trigger" name="offer_trigger" class="large-text">
+-                            <option value="manual" <?php selected($editing_offer['trigger'] ?? '', 'manual'); ?>>Manual (Admin shows it)</option>
+-                            <option value="quiz_complete" <?php selected($editing_offer['trigger'] ?? '', 'quiz_complete'); ?>>Quiz Completed</option>
+-                            <option value="lesson_complete" <?php selected($editing_offer['trigger'] ?? '', 'lesson_complete'); ?>>First Free Lesson Completed</option>
+-                            <option value="login_phase" <?php selected($editing_offer['trigger'] ?? '', 'login_phase'); ?>>User Enters Login Phase</option>
+-                            <option value="inactivity" <?php selected($editing_offer['trigger'] ?? '', 'inactivity'); ?>>After 7 Days Inactivity</option>
+-                        </select>
+-                        <p class="description">When should this offer be presented to users?</p>
+-                    </td>
+-                </tr>
+-                
+-                <!-- Condition -->
+-                <tr>
+-                    <th scope="row"><label for="offer_condition">Additional Condition (optional)</label></th>
+-                    <td>
+-                        <input type="text" id="offer_condition" name="offer_condition" 
+-                               value="<?php echo esc_attr($editing_offer['condition'] ?? ''); ?>" 
+-                               class="large-text" placeholder="score >= 70">
+-                        <p class="description">IVR-style condition for fine-grained targeting (e.g., "score >= 70", "!purchased")</p>
+-                    </td>
+-                </tr>
+-                
+-                <!-- Urgency Timer -->
+-                <tr>
+-                    <th scope="row"><label for="offer_timer">Urgency Timer (minutes)</label></th>
+-                    <td>
+-                        <input type="number" id="offer_timer" name="offer_timer" 
+-                               value="<?php echo esc_attr($editing_offer['timer_minutes'] ?? ''); ?>" 
+-                               min="0" class="small-text" placeholder="15">
+-                        <p class="description">Optional countdown timer to create urgency (leave empty for no timer)</p>
+-                    </td>
+-                </tr>
+-                
+-                <!-- Status -->
+-                <tr>
+-                    <th scope="row"><label for="offer_active">Status</label></th>
+-                    <td>
+-                        <label>
+-                            <input type="checkbox" id="offer_active" name="offer_active" value="1" 
+-                                   <?php checked($editing_offer['active'] ?? true); ?>>
+-                            Active (users can see this offer)
+-                        </label>
+-                    </td>
+-                </tr>
+-            </table>
+-            
+-            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
+-                <?php submit_button('Save Offer', 'primary', 'save_offer', false); ?>
+-                <a href="<?php echo admin_url('admin.php?page=flosc-settings&tab=offers'); ?>" class="button" style="margin-left: 10px;">Cancel</a>
+-                
+-                <?php if ($editing_offer): ?>
+-                    <a href="<?php echo admin_url('admin.php?page=flosc-settings&tab=offers&delete_offer=' . urlencode($editing_offer['id'])); ?>" 
+-                       class="button" 
+-                       onclick="return confirm('Delete this offer permanently? This cannot be undone.');"
+-                       style="color: #d63638; margin-left: 20px;">
+-                        Delete Offer
+-                    </a>
+-                <?php endif; ?>
+-            </div>
+-        </form>
+-    </div>
+-<?php endif; ?>
+-
+-<!-- ============================================ -->
+-<!-- OFFER TEMPLATES & BEST PRACTICES -->
+-<!-- ============================================ -->
+-<?php if (!$editing_offer_id): ?>
+-<hr style="margin: 40px 0;">
+-<h3>High-Converting Offer Templates (Copy & Paste)</h3>
+-<p class="description">Proven offer copy you can customize and use. These templates follow battle-tested conversion principles.</p>
+-
+-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #f59e0b;">
+-    <h4 style="margin-top: 0;">🎯 Template 1: Post-Quiz OTO (One-Time Offer)</h4>
+-    <p><strong>Trigger:</strong> Quiz Completed | <strong>Price:</strong> $49 (was $99) | <strong>Timer:</strong> 15 minutes</p>
+-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-oto').textContent); alert('Template copied to clipboard!');" style="margin-bottom: 10px;">Copy Full Template</button>
+-    <div id="template-oto" style="background: white; padding: 15px; border-radius: 4px; font-family: -apple-system, sans-serif;">
+-<strong style="font-size: 24px; color: #f59e0b;">⏰ SPECIAL ONE-TIME OFFER - 50% OFF!</strong>
+-
+-<p style="font-size: 18px; margin: 15px 0;"><strong>Get Full Access to All Lessons - Normally $99, Today Just $49</strong></p>
+-
+-<p>Based on your quiz results, you're ready to start improving immediately. But you need the right guidance.</p>
+-
+-<p>Right now, you have a <strong>limited-time opportunity</strong> to get our complete pronunciation mastery program at 50% off the regular price.</p>
+-
+-<p style="background: #fff3cd; padding: 10px; border-radius: 4px;"><strong>⏰ This offer expires in 15 minutes.</strong> After that, the price goes back to $99.</p>
+-
+-<p><strong>Here's everything you get when you claim this offer:</strong></p>
+-
+-<p><strong style="font-size: 16px;">✓ Complete Lesson Library</strong><br>
+-All 50+ pronunciation lessons covering every sound, pattern, and technique you need</p>
+-
+-<p><strong style="font-size: 16px;">✓ AI-Powered Pronunciation Feedback</strong><br>
+-Record yourself speaking - get instant, specific feedback on what to improve</p>
+-
+-<p><strong style="font-size: 16px;">✓ Personalized Learning Path</strong><br>
+-Custom curriculum built from your quiz results - focus on YOUR weak points first</p>
+-
+-<p><strong style="font-size: 16px;">✓ Progress Tracking & Analytics</strong><br>
+-Watch your improvement over time with detailed charts and milestone badges</p>
+-
+-<p><strong style="font-size: 16px;">✓ Certificate of Completion</strong><br>
+-Prove your pronunciation mastery - share on LinkedIn, resume, etc.</p>
+-
+-<p><strong style="font-size: 16px;">✓ Lifetime Access + Updates</strong><br>
+-One payment, forever access. All future lessons and features included at no extra cost</p>
+-
+-<p style="background: #e7f3ff; padding: 15px; border-radius: 4px; margin: 20px 0;">
+-<strong>Your Investment Today:</strong><br>
+-<span style="text-decoration: line-through; color: #999;">$99.00</span> <strong style="font-size: 28px; color: #2196f3;">$49.00</strong> (Save 50%)<br>
+-<em>One-time payment. No recurring charges.</em>
+-</p>
+-
+-<p><strong>Why are we offering this discount?</strong></p>
+-
+-<p>Simple: We know that students who start immediately after taking the quiz are 3x more likely to succeed. This special price is our way of rewarding people who are serious about improvement.</p>
+-
+-<p><strong>100% Money-Back Guarantee</strong></p>
+-
+-<p>Try the program for 30 days. If you don't see real improvement in your pronunciation, email us and we'll refund every penny. No questions asked.</p>
+-
+-<p style="background: #fff3cd; padding: 15px; border-radius: 4px; margin: 20px 0; text-align: center;">
+-<strong>⏰ Remember: This 50% discount expires in 15 minutes!</strong><br>
+-After that, you'll pay full price ($99) for the same program.
+-</p>
+-
+-<div style="text-align: center; margin: 30px 0;">
+-<a href="#" style="display: inline-block; background: #f59e0b; color: white; padding: 15px 40px; font-size: 18px; font-weight: bold; text-decoration: none; border-radius: 8px;">CLAIM MY 50% DISCOUNT NOW →</a>
+-</div>
+-
+-<p style="text-align: center; color: #666; font-size: 12px;">
+-Secure checkout • Instant access • 30-day money-back guarantee
+-</p>
+-    </div>
+-</div>
+-
+-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #8b5cf6;">
+-    <h4 style="margin-top: 0;">💎 Template 2: Premium Upsell (After Free Lesson)</h4>
+-    <p><strong>Trigger:</strong> First Free Lesson Completed | <strong>Price:</strong> $299/year or $39/month | <strong>Timer:</strong> None</p>
+-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-premium').textContent); alert('Template copied to clipboard!');" style="margin-bottom: 10px;">Copy Full Template</button>
+-    <div id="template-premium" style="background: white; padding: 15px; border-radius: 4px; font-family: -apple-system, sans-serif;">
+-<strong style="font-size: 24px; color: #8b5cf6;">You've Proven You're Serious. Ready to Go All In?</strong>
+-
+-<p style="font-size: 18px; margin: 15px 0;"><strong>Upgrade to Premium and Master Pronunciation in Weeks, Not Years</strong></p>
+-
+-<p>You just completed your first lesson. That took commitment.</p>
+-
+-<p>Most people never get this far. They take the quiz, say they'll "come back later," and never do.</p>
+-
+-<p>But you're different. You showed up. You did the work. And that means you're ready for the next level.</p>
+-
+-<p><strong>Here's the truth:</strong> That free lesson gave you a taste. But to truly master pronunciation, you need the complete system.</p>
+-
+-<p>Premium gives you everything:</p>
+-
+-<p><strong style="font-size: 16px;">✓ All 50+ Lessons Unlocked</strong><br>
+-From beginner sounds to advanced accent reduction. Nothing held back.</p>
+-
+-<p><strong style="font-size: 16px;">✓ Unlimited AI Pronunciation Analysis</strong><br>
+-Record as much as you want. Get detailed feedback every single time.</p>
+-
+-<p><strong style="font-size: 16px;">✓ Weekly Live Coaching Sessions</strong><br>
+-Join our pronunciation expert every week for Q&A, practice, and personalized tips.</p>
+-
+-<p><strong style="font-size: 16px;">✓ Priority Email Support</strong><br>
+-Stuck? Get answers in under 24 hours (usually much faster).</p>
+-
+-<p><strong style="font-size: 16px;">✓ Advanced Progress Analytics</strong><br>
+-See exactly how much you've improved. Track your weak points. Celebrate milestones.</p>
+-
+-<p><strong style="font-size: 16px;">✓ Certificate of Mastery</strong><br>
+-Complete the program, get certified. Proof you've mastered pronunciation.</p>
+-
+-<p style="background: #f3e5ff; padding: 15px; border-radius: 4px; margin: 20px 0;">
+-<strong>Choose Your Plan:</strong><br><br>
+-<strong>Annual:</strong> $299/year <span style="background: #8b5cf6; color: white; padding: 2px 8px; border-radius: 3px; font-size: 11px;">SAVE $169</span><br>
+-<em>Just $24.92/month - Best value</em><br><br>
+-<strong>Monthly:</strong> $39/month<br>
+-<em>Cancel anytime. No commitment.</em>
+-</p>
+-
+-<p><strong>Here's what Premium members are saying:</strong></p>
+ 
+-<p style="background: #f9f9f9; padding: 10px; border-left: 3px solid #8b5cf6; font-style: italic;">
+-"I went from struggling with basic sounds to confidently presenting in English at work. Premium was worth every penny." - Maria S.
+-</p>
++$notice = null;
++$notice_type = 'success';
+ 
+-<p style="background: #f9f9f9; padding: 10px; border-left: 3px solid #8b5cf6; font-style: italic;">
+-"The AI feedback is incredible. It's like having a personal coach available 24/7." - David L.
+-</p>
+-
+-<p><strong>30-Day Money-Back Guarantee</strong></p>
+-
+-<p>Try Premium for a full month. If you don't see dramatic improvement, we'll refund you completely. No hassle. No questions.</p>
+-
+-<div style="text-align: center; margin: 30px 0;">
+-<a href="#" style="display: inline-block; background: #8b5cf6; color: white; padding: 15px 40px; font-size: 18px; font-weight: bold; text-decoration: none; border-radius: 8px;">UPGRADE TO PREMIUM NOW →</a>
+-</div>
+-
+-<p style="text-align: center; color: #666; font-size: 12px;">
+-Join 10,000+ students mastering pronunciation
+-</p>
+-    </div>
+-</div>
+-
+-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #10b981;">
+-    <h4 style="margin-top: 0;">📦 Template 3: High Performer Bundle (Quiz Score 80%+)</h4>
+-    <p><strong>Trigger:</strong> Quiz Score >= 80 | <strong>Price:</strong> $399 (was $597) | <strong>Timer:</strong> 24 hours</p>
+-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-bundle').textContent); alert('Template copied to clipboard!');" style="margin-bottom: 10px;">Copy Full Template</button>
+-    <div id="template-bundle" style="background: white; padding: 15px; border-radius: 4px; font-family: -apple-system, sans-serif;">
+-<strong style="font-size: 24px; color: #10b981;">🏆 You Scored 80%+ - You're a High Performer!</strong>
+-
+-<p style="font-size: 18px; margin: 15px 0;"><strong>Skip the Basics. Get Our Complete Advanced Package.</strong></p>
+-
+-<p>Your quiz score puts you in the <strong>top 10%</strong> of all students.</p>
+-
+-<p>That means you don't need beginner lessons. You need advanced techniques, business English, and accent reduction.</p>
+-
+-<p>We have a special package designed specifically for high performers like you.</p>
+-
+-<p style="background: #d1fae5; padding: 15px; border-radius: 4px;">
+-<strong>High Performer Bundle - Everything You Need to Reach True Mastery</strong><br>
+-<span style="text-decoration: line-through; color: #999;">Regular Price: $597</span><br>
+-<strong style="font-size: 24px; color: #10b981;">Your Price: $399</strong> (33% savings)
+-</p>
+-
+-<p><strong>This bundle includes:</strong></p>
+-
+-<p><strong style="font-size: 16px;">✓ Complete Pronunciation Course</strong> ($299 value)<br>
+-All 50+ lessons - beginner through advanced. Skip what you know, focus on what you need.</p>
+-
+-<p><strong style="font-size: 16px;">✓ Advanced Accent Reduction Module</strong> ($99 value)<br>
+-Fine-tune your accent. Sound more native. Perfect for business and professional settings.</p>
+-
+-<p><strong style="font-size: 16px;">✓ Business English Pronunciation</strong> ($99 value)<br>
+-Master the specific sounds, intonation, and delivery needed for presentations, meetings, and negotiations.</p>
+-
+-<p><strong style="font-size: 16px;">✓ Private 1-on-1 Coaching Session</strong> ($100 value)<br>
+-60 minutes with our pronunciation expert. Get personalized feedback on your specific challenges.</p>
+-
+-<p><strong style="font-size: 16px;">✓ VIP Email Support</strong> (Priceless)<br>
+-Jump to the front of the line. Get answers to your questions within hours, not days.</p>
+-
+-<p><strong style="font-size: 16px;">✓ Lifetime Access to Everything</strong><br>
+-One payment. Forever access. All future courses and updates included automatically.</p>
+-
+-<p style="background: #fff3cd; padding: 15px; border-radius: 4px; margin: 20px 0;">
+-<strong>⏰ Limited Availability - 24 Hours Only</strong><br>
+-This bundle is only offered to our highest-scoring quiz takers, and only for 24 hours after completion.
+-</p>
+-
+-<p><strong>Why is this package perfect for you?</strong></p>
+-
+-<p>Because you're <strong>already ahead of 90% of students</strong>. You don't need to waste time on basics. You need targeted, advanced training that takes you from good to exceptional.</p>
+-
+-<p>That's exactly what this bundle delivers.</p>
+-
+-<p><strong>Total Value:</strong> $597<br>
+-<strong>Your Investment Today:</strong> $399<br>
+-<strong>You Save:</strong> $198 (33% off)</p>
+-
+-<div style="text-align: center; margin: 30px 0;">
+-<a href="#" style="display: inline-block; background: #10b981; color: white; padding: 15px 40px; font-size: 18px; font-weight: bold; text-decoration: none; border-radius: 8px;">GET THE HIGH PERFORMER BUNDLE →</a>
+-</div>
+-
+-<p style="text-align: center; color: #666; font-size: 12px;">
+-One-time payment • Lifetime access • 30-day money-back guarantee
+-</p>
+-    </div>
+-</div>
+-
+-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #ec4899;">
+-    <h4 style="margin-top: 0;">🔄 Template 4: Re-engagement Offer (Inactive Users)</h4>
+-    <p><strong>Trigger:</strong> 7+ Days Inactivity | <strong>Price:</strong> $29/month (was $49) | <strong>Timer:</strong> None</p>
+-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-comeback').textContent); alert('Template copied to clipboard!');" style="margin-bottom: 10px;">Copy Full Template</button>
+-    <div id="template-comeback" style="background: white; padding: 15px; border-radius: 4px; font-family: -apple-system, sans-serif;">
+-<strong style="font-size: 24px; color: #ec4899;">We Miss You! Come Back with 40% Off</strong>
+-
+-<p style="font-size: 18px; margin: 15px 0;"><strong>Your Progress Is Saved. Your Goals Are Waiting.</strong></p>
+-
+-<p>You started strong. You took the quiz. You saw what's possible.</p>
+-
+-<p>Then... life happened.</p>
+-
+-<p>We get it. Everyone gets busy. But here's the thing:</p>
+-
+-<p><strong>The students who succeed aren't the ones with the most time.</strong><br>
+-They're the ones who come back. Who show up. Even if it's been a week.</p>
+-
+-<p>Your progress is saved. Your personalized lesson plan is ready. All you need to do is click one button.</p>
+-
+-<p style="background: #fce7f3; padding: 15px; border-radius: 4px;">
+-<strong>Welcome Back Offer - 40% Off Monthly Membership</strong><br>
+-<span style="text-decoration: line-through; color: #999;">Regular Price: $49/month</span><br>
+-<strong style="font-size: 24px; color: #ec4899;">Your Price: $29/month</strong>
+-</p>
+-
+-<p><strong>Here's what you get:</strong></p>
+-
+-<p>✓ Access to all lessons (start where you left off)<br>
+-✓ AI pronunciation feedback<br>
+-✓ Progress tracking and analytics<br>
+-✓ Cancel anytime - no long-term commitment</p>
+-
+-<p><strong>No pressure. No judgment. Just results.</strong></p>
+-
+-<p>Month-to-month means you can try it again without committing to a year. See if it fits your schedule. If it does, great. If not, cancel with one click.</p>
+-
+-<p style="background: #fff3cd; padding: 10px; border-radius: 4px; margin: 20px 0;">
+-💡 <strong>Pro Tip:</strong> Set aside just 10 minutes a day. That's all it takes. Most people spend more time scrolling social media.
+-</p>
+-
+-<p><strong>What happens if you don't come back?</strong></p>
+-
+-<p>Nothing dramatic. But here's what you'll miss:</p>
+-
+-<p>• The confidence that comes from speaking clearly<br>
+-• The career opportunities that require strong communication<br>
+-• The satisfaction of achieving a goal you set for yourself</p>
+-
+-<p>All because you didn't give yourself 10 minutes a day.</p>
+-
+-<div style="text-align: center; margin: 30px 0;">
+-<a href="#" style="display: inline-block; background: #ec4899; color: white; padding: 15px 40px; font-size: 18px; font-weight: bold; text-decoration: none; border-radius: 8px;">RESTART MY LEARNING JOURNEY →</a>
+-</div>
+-
+-<p style="text-align: center; color: #666; font-size: 12px;">
+-$29/month • Cancel anytime • Pick up where you left off
+-</p>
+-    </div>
+-</div>
+-
+-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #0ea5e9;">
+-    <h4 style="margin-top: 0;">⚡ Template 5: Flash Sale / Seasonal Offer</h4>
+-    <p><strong>Trigger:</strong> Manual / Seasonal Campaign | <strong>Price:</strong> $199 (was $399) | <strong>Timer:</strong> 72 hours</p>
+-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-flash').textContent); alert('Template copied to clipboard!');" style="margin-bottom: 10px;">Copy Full Template</button>
+-    <div id="template-flash" style="background: white; padding: 15px; border-radius: 4px; font-family: -apple-system, sans-serif;">
+-<strong style="font-size: 24px; color: #0ea5e9;">⚡ 72-Hour Flash Sale - Lifetime Access 50% Off!</strong>
+-
+-<p style="font-size: 18px; margin: 15px 0;"><strong>Our Biggest Sale of the Year - This Weekend Only</strong></p>
+-
+-<p>Once a year, we do something crazy.</p>
+-
+-<p>We take our complete pronunciation mastery program - normally $399 for lifetime access - and cut the price in half.</p>
+-
+-<p>Why? Because we want to help as many people as possible master pronunciation. And we know price is sometimes the only thing standing in the way.</p>
+-
+-<p style="background: #e0f2fe; padding: 15px; border-radius: 4px; margin: 20px 0; text-align: center;">
+-<strong>Flash Sale Price</strong><br>
+-<span style="text-decoration: line-through; color: #999; font-size: 18px;">$399</span><br>
+-<strong style="font-size: 36px; color: #0ea5e9;">$199</strong><br>
+-<strong style="color: #dc2626;">Save $200 - This Weekend Only!</strong>
+-</p>
+-
+-<p><strong>Here's everything included:</strong></p>
+-
+-<p>✓ All 50+ pronunciation lessons (lifetime access)<br>
+-✓ AI-powered feedback on every recording<br>
+-✓ Personalized learning path<br>
+-✓ Progress tracking and analytics<br>
+-✓ Certificate of completion<br>
+-✓ All future updates and new lessons (free forever)<br>
+-✓ 30-day money-back guarantee</p>
+-
+-<p style="background: #fef3c7; padding: 15px; border-radius: 4px; margin: 20px 0;">
+-<strong>⏰ Sale Ends in:</strong><br>
+-<span style="font-size: 32px; font-weight: bold;">72 HOURS</span><br>
+-After that, the price goes back to $399. No exceptions.
+-</p>
+-
+-<p><strong>Who is this for?</strong></p>
+-
+-<p>This sale is perfect if you've been on the fence. If you wanted to join but couldn't justify the investment. If you were waiting for the "right time."</p>
+-
+-<p>This is the right time. This is the lowest price we'll ever offer.</p>
+-
+-<p><strong>Real Student Results:</strong></p>
+-
+-<p style="background: #f9f9f9; padding: 10px; border-left: 3px solid #0ea5e9; font-style: italic;">
+-"I bought during last year's sale and it's the best $199 I've ever spent. My pronunciation is unrecognizable from where I started." - Alex T.
+-</p>
+-
+-<p style="background: #f9f9f9; padding: 10px; border-left: 3px solid #0ea5e9; font-style: italic;">
+-"I was skeptical about the 'lifetime access' claim, but they really mean it. I've been learning for 8 months now and haven't paid a penny more." - Priya M.
+-</p>
+-
+-<div style="text-align: center; margin: 30px 0;">
+-<a href="#" style="display: inline-block; background: #0ea5e9; color: white; padding: 15px 40px; font-size: 18px; font-weight: bold; text-decoration: none; border-radius: 8px;">CLAIM YOUR FLASH SALE DISCOUNT →</a>
+-</div>
+-
+-<p style="text-align: center; color: #666; font-size: 12px;">
+-One-time payment • Lifetime access • Offer ends in 72 hours
+-</p>
+-    </div>
+-</div>
+-
+-<div style="background: #e7f3ff; border-left: 4px solid #2196f3; padding: 15px; margin-top: 30px;">
+-    <strong>💡 Offer Copywriting Tips:</strong>
+-    <ul style="margin: 10px 0 0 20px;">
+-        <li><strong>Lead with the result, not the features:</strong> "Master pronunciation in weeks" beats "50+ lessons"</li>
+-        <li><strong>Use specific numbers:</strong> "80% of students see improvement in 2 weeks" is more credible than "most students improve quickly"</li>
+-        <li><strong>Address objections directly:</strong> Price, time commitment, skepticism - call them out and answer them</li>
+-        <li><strong>Create urgency (but be honest):</strong> Timers work, but only if they're real. Don't fake scarcity.</li>
+-        <li><strong>Always include a guarantee:</strong> 30-day money-back is standard. It removes risk and increases conversions.</li>
+-        <li><strong>Show the math:</strong> "Was $99, now $49 = Save $50" makes the discount tangible</li>
+-        <li><strong>End with social proof:</strong> Testimonials, student counts, success stats</li>
+-    </ul>
+-</div>
+-<?php endif; ?>
++$offer_manager = null;
++if (function_exists('flosc') && flosc() && method_exists(flosc(), 'sale') && flosc()->sale()) {
++    $offer_manager = flosc()->sale()->offers();
++}
+ 
+-<!--
+-BACKEND IMPLEMENTATION NOTES:
+-=============================
+-
+-Offer system integrates with quiz completion, lesson delivery, and email automation.
+-
+-OFFER PERSISTENCE (needs implementation):
+-
+-add_action('init', 'flosc_handle_offer_save');
+-function flosc_handle_offer_save() {
+-    if (!isset($_POST['save_offer']) || !wp_verify_nonce($_POST['flosc_save_offer_nonce'], 'flosc_save_offer')) {
+-        return;
+-    }
+-    
+-    $offer_id = sanitize_text_field($_POST['offer_id']);
+-    if ($offer_id === 'new') {
+-        $offer_id = 'offer_' . wp_generate_password(8, false);
+-    }
+-    
+-    $offer_data = [
+-        'id' => $offer_id,
+-        'name' => sanitize_text_field($_POST['offer_name']),
+-        'type' => sanitize_text_field($_POST['offer_type']),
+-        'price' => floatval($_POST['offer_price']),
+-        'original_price' => floatval($_POST['offer_original_price']),
+-        'display_price' => '$' . number_format(floatval($_POST['offer_price']), 2),
+-        'headline' => sanitize_text_field($_POST['offer_headline']),
+-        'description' => sanitize_textarea_field($_POST['offer_description']),
+-        'features' => sanitize_textarea_field($_POST['offer_features']),
+-        'cta' => sanitize_text_field($_POST['offer_cta']),
+-        'trigger' => sanitize_text_field($_POST['offer_trigger']),
+-        'condition' => sanitize_text_field($_POST['offer_condition']),
+-        'timer_minutes' => intval($_POST['offer_timer']),
+-        'active' => isset($_POST['offer_active']),
+-        'created' => current_time('mysql'),
+-        'updated' => current_time('mysql'),
+-    ];
+-    
+-    // Save to database or option
+-    $all_offers = get_option('flosc_offers', []);
+-    $all_offers[$offer_id] = $offer_data;
+-    update_option('flosc_offers', $all_offers);
+-    
+-    wp_redirect(admin_url('admin.php?page=flosc-settings&tab=offers&saved=1'));
+-    exit;
++if (!$offer_manager) {
++    echo '<div class="notice notice-error"><p>Offer manager not available. Please check that the Sale module is enabled.</p></div>';
++    return;
+ }
+ 
+-OFFER TRIGGERING (pseudocode):
++// --------------------------------
++// Handle actions
++// --------------------------------
++if (!empty($_POST['flosc_offer_action'])) {
++    check_admin_referer('flosc_offers_action');
++
++    $action = sanitize_key(wp_unslash($_POST['flosc_offer_action']));
++    $offer_id = isset($_POST['offer_id']) ? sanitize_text_field(wp_unslash($_POST['offer_id'])) : '';
++
++    try {
++        if ($action === 'delete') {
++            if ($offer_id) {
++                $offer_manager->delete_offer($offer_id);
++                $notice = 'Offer deleted.';
++            }
++        } elseif ($action === 'toggle') {
++            if ($offer_id) {
++                $offer = $offer_manager->get_offer($offer_id);
++                if ($offer) {
++                    $new_status = ($offer['status'] ?? 'draft') === 'active' ? 'draft' : 'active';
++                    $offer_manager->update_offer($offer_id, ['status' => $new_status]);
++                    $notice = 'Offer status updated.';
++                }
++            }
++        } elseif ($action === 'save') {
++            $data = [
++                'name' => sanitize_text_field(wp_unslash($_POST['name'] ?? '')),
++                'description' => sanitize_textarea_field(wp_unslash($_POST['description'] ?? '')),
++                'type' => sanitize_key(wp_unslash($_POST['type'] ?? 'one_time')),
++                'status' => sanitize_key(wp_unslash($_POST['status'] ?? 'draft')),
++                'pricing' => [
++                    // Keep providers intact unless user explicitly sets them elsewhere
++                    'token_cost' => isset($_POST['token_cost']) ? floatval($_POST['token_cost']) : null,
++                    'currency' => sanitize_key(wp_unslash($_POST['currency'] ?? 'usd')),
++                    'display_price' => sanitize_text_field(wp_unslash($_POST['display_price'] ?? '')),
++                ],
++            ];
++
++            // Basic defaults
++            if (empty($data['name'])) {
++                throw new Exception('Offer name is required.');
++            }
+ 
+-function flosc_check_offer_triggers($user_data, $event) {
+-    $offers = flosc()->sale()->offers()->get_all_offers();
+-    
+-    foreach ($offers as $offer) {
+-        if (!$offer['active']) continue;
+-        
+-        // Check trigger matches event
+-        if ($offer['trigger'] !== $event) continue;
+-        
+-        // Check additional condition
+-        if (!empty($offer['condition'])) {
+-            if (!flosc_evaluate_condition($offer['condition'], $user_data)) {
+-                continue;
++            if (empty($offer_id)) {
++                $new = $offer_manager->create_offer($data);
++                $notice = 'Offer created.';
++                // Redirect to edit the new offer (avoid resubmission)
++                wp_safe_redirect(add_query_arg(['tab' => 'offers', 'edit' => $new['id']], admin_url('admin.php?page=flosc-settings')));
++                exit;
++            } else {
++                // Merge with existing offer to avoid wiping provider config
++                $existing = $offer_manager->get_offer($offer_id);
++                if ($existing && isset($existing['pricing']) && is_array($existing['pricing'])) {
++                    $data['pricing'] = array_merge($existing['pricing'], array_filter($data['pricing'], function($v) { return $v !== null; }));
++                }
++                $offer_manager->update_offer($offer_id, $data);
++                $notice = 'Offer saved.';
+             }
+         }
+-        
+-        // Don't show if already purchased
+-        if (flosc_user_purchased_offer($user_data['id'], $offer['id'])) {
+-            continue;
+-        }
+-        
+-        // Track view
+-        flosc_track_offer_view($offer['id']);
+-        
+-        // Show offer
+-        return $offer;
++    } catch (Exception $e) {
++        $notice = $e->getMessage();
++        $notice_type = 'error';
+     }
+-    
+-    return null;
+ }
+ 
+-// Hook into events
+-add_action('flosc_quiz_completed', function($user_data) {
+-    $offer = flosc_check_offer_triggers($user_data, 'quiz_complete');
+-    if ($offer) {
+-        flosc_display_offer_modal($offer);
+-    }
+-});
++$edit_id = isset($_GET['edit']) ? sanitize_text_field($_GET['edit']) : '';
++$edit_offer = $edit_id ? $offer_manager->get_offer($edit_id) : null;
+ 
+-add_action('flosc_lesson_completed', function($user_data, $lesson_id) {
+-    if (flosc_is_first_free_lesson($lesson_id)) {
+-        $offer = flosc_check_offer_triggers($user_data, 'lesson_complete');
+-        if ($offer) {
+-            flosc_display_offer_modal($offer);
+-        }
+-    }
+-}, 10, 2);
++$offers = $offer_manager->get_offers();
++?>
+ 
+-CONVERSION TRACKING:
++<h2>Offers</h2>
++<p>Offers are what you sell: one-time purchases, subscriptions, order bumps, and upsells. These are used by the chat UI and checkout flows.</p>
+ 
+-function flosc_track_offer_conversion($offer_id, $user_id, $amount) {
+-    $offers = get_option('flosc_offers', []);
+-    if (isset($offers[$offer_id])) {
+-        $offers[$offer_id]['conversions'] = ($offers[$offer_id]['conversions'] ?? 0) + 1;
+-        update_option('flosc_offers', $offers);
+-        
+-        // Log transaction
+-        flosc_log_sale([
+-            'offer_id' => $offer_id,
+-            'user_id' => $user_id,
+-            'amount' => $amount,
+-            'timestamp' => current_time('mysql'),
+-        ]);
+-    }
+-}
+--->
++<?php if ($notice): ?>
++    <div class="notice notice-<?php echo esc_attr($notice_type); ?> is-dismissible"><p><?php echo esc_html($notice); ?></p></div>
++<?php endif; ?>
++
++<div class="flosc-info-box" style="margin-bottom: 20px;">
++    <strong>Pro tips:</strong>
++    <ul>
++        <li>Keep <em>display price</em> human-friendly (e.g., “$29” or “29 tokens”).</li>
++        <li>Use <em>token_cost</em> if your pricing is token-based. Use Stripe provider fields (in code) for card checkout.</li>
++        <li>Status <strong>active</strong> = shown in the app. Status <strong>draft</strong> = hidden.</li>
++    </ul>
++</div>
+ 
+-<form method="post" action="options.php">
+-<?php settings_fields('flosc_settings'); ?>
++<h3>Existing Offers</h3>
++<?php if (empty($offers)): ?>
++    <p>No offers yet. Create your first offer below.</p>
++<?php else: ?>
++    <table class="widefat striped">
++        <thead>
++            <tr>
++                <th>ID</th>
++                <th>Name</th>
++                <th>Type</th>
++                <th>Status</th>
++                <th>Display Price</th>
++                <th>Token Cost</th>
++                <th style="width: 260px;">Actions</th>
++            </tr>
++        </thead>
++        <tbody>
++            <?php foreach ($offers as $offer):
++                $id = $offer['id'] ?? '';
++                $pricing = $offer['pricing'] ?? [];
++                $display_price = $pricing['display_price'] ?? '';
++                $token_cost = $pricing['token_cost'] ?? '';
++                $edit_url = add_query_arg(['tab' => 'offers', 'edit' => $id], admin_url('admin.php?page=flosc-settings'));
++            ?>
++                <tr>
++                    <td><code><?php echo esc_html($id); ?></code></td>
++                    <td><?php echo esc_html($offer['name'] ?? ''); ?></td>
++                    <td><?php echo esc_html($offer['type'] ?? ''); ?></td>
++                    <td><?php echo esc_html($offer['status'] ?? 'draft'); ?></td>
++                    <td><?php echo esc_html($display_price); ?></td>
++                    <td><?php echo esc_html($token_cost); ?></td>
++                    <td>
++                        <a class="button button-small" href="<?php echo esc_url($edit_url); ?>">Edit</a>
++                        <form method="post" style="display:inline-block;margin:0 4px;">
++                            <?php wp_nonce_field('flosc_offers_action'); ?>
++                            <input type="hidden" name="offer_id" value="<?php echo esc_attr($id); ?>" />
++                            <button type="submit" class="button button-small" name="flosc_offer_action" value="toggle">Toggle Active</button>
++                        </form>
++                        <form method="post" style="display:inline-block;margin:0;" onsubmit="return confirm('Delete this offer?');">
++                            <?php wp_nonce_field('flosc_offers_action'); ?>
++                            <input type="hidden" name="offer_id" value="<?php echo esc_attr($id); ?>" />
++                            <button type="submit" class="button button-small button-link-delete" name="flosc_offer_action" value="delete">Delete</button>
++                        </form>
++                    </td>
++                </tr>
++            <?php endforeach; ?>
++        </tbody>
++    </table>
++<?php endif; ?>
++
++<hr />
++
++<h3><?php echo $edit_offer ? 'Edit Offer' : 'Create Offer'; ?></h3>
++<form method="post">
++    <?php wp_nonce_field('flosc_offers_action'); ?>
++    <input type="hidden" name="offer_id" value="<?php echo esc_attr($edit_offer['id'] ?? ''); ?>" />
++
++    <table class="form-table">
++        <tr>
++            <th scope="row"><label for="flosc_offer_name">Name</label></th>
++            <td><input id="flosc_offer_name" type="text" name="name" class="regular-text" value="<?php echo esc_attr($edit_offer['name'] ?? ''); ?>" required></td>
++        </tr>
++        <tr>
++            <th scope="row"><label for="flosc_offer_description">Description</label></th>
++            <td><textarea id="flosc_offer_description" name="description" rows="4" class="large-text"><?php echo esc_textarea($edit_offer['description'] ?? ''); ?></textarea></td>
++        </tr>
++        <tr>
++            <th scope="row"><label for="flosc_offer_type">Type</label></th>
++            <td>
++                <?php $type = $edit_offer['type'] ?? 'one_time'; ?>
++                <select id="flosc_offer_type" name="type">
++                    <option value="one_time" <?php selected($type, 'one_time'); ?>>one_time</option>
++                    <option value="subscription" <?php selected($type, 'subscription'); ?>>subscription</option>
++                    <option value="order_bump" <?php selected($type, 'order_bump'); ?>>order_bump</option>
++                    <option value="upsell" <?php selected($type, 'upsell'); ?>>upsell</option>
++                </select>
++            </td>
++        </tr>
++        <tr>
++            <th scope="row"><label for="flosc_offer_status">Status</label></th>
++            <td>
++                <?php $status = $edit_offer['status'] ?? 'draft'; ?>
++                <select id="flosc_offer_status" name="status">
++                    <option value="draft" <?php selected($status, 'draft'); ?>>draft</option>
++                    <option value="active" <?php selected($status, 'active'); ?>>active</option>
++                </select>
++            </td>
++        </tr>
++        <tr>
++            <th scope="row"><label for="flosc_offer_display_price">Display Price</label></th>
++            <td>
++                <?php $pricing = $edit_offer['pricing'] ?? []; ?>
++                <input id="flosc_offer_display_price" type="text" name="display_price" class="regular-text" value="<?php echo esc_attr($pricing['display_price'] ?? ''); ?>" placeholder="$29 / 29 tokens">
++            </td>
++        </tr>
++        <tr>
++            <th scope="row"><label for="flosc_offer_token_cost">Token Cost</label></th>
++            <td>
++                <input id="flosc_offer_token_cost" type="number" name="token_cost" step="0.01" value="<?php echo esc_attr($pricing['token_cost'] ?? ''); ?>" placeholder="29">
++            </td>
++        </tr>
++        <tr>
++            <th scope="row"><label for="flosc_offer_currency">Currency</label></th>
++            <td>
++                <input id="flosc_offer_currency" type="text" name="currency" class="small-text" value="<?php echo esc_attr($pricing['currency'] ?? 'usd'); ?>">
++            </td>
++        </tr>
++    </table>
++
++    <p>
++        <button type="submit" class="button button-primary" name="flosc_offer_action" value="save">Save Offer</button>
++        <?php if ($edit_offer): ?>
++            <a class="button" href="<?php echo esc_url(add_query_arg(['tab' => 'offers'], admin_url('admin.php?page=flosc-settings'))); ?>">Cancel</a>
++        <?php endif; ?>
++    </p>
++</form>
+diff -ruN /mnt/data/flosc_review/v9_1_0_src/flosc_v9_1_0/admin/settings.php /mnt/data/flosc_review/v9_1_2/flosc_v9_1_2/admin/settings.php
+--- /mnt/data/flosc_review/v9_1_0_src/flosc_v9_1_0/admin/settings.php	2026-01-19 13:56:35.000000000 +0000
++++ /mnt/data/flosc_review/v9_1_2/flosc_v9_1_2/admin/settings.php	2026-01-19 15:42:02.862493690 +0000
+@@ -8,6 +8,20 @@
+ $active_tab = isset($_GET['tab']) ? sanitize_text_field($_GET['tab']) : 'product';
+ $slug = get_option('flosc_app_slug', 'app');
+ $app_url = home_url('/' . $slug . '/');
++
++// Tabs that use the WordPress Settings API (options.php) form wrapper.
++// Tabs that manage files / custom actions render their own forms.
++$tabs_with_options_form = [
++    'product',
++    'style',
++    'ai',
++    'quiz',
++    'email',
++    'payments',
++    'lessons',
++];
++
++$use_options_form = in_array($active_tab, $tabs_with_options_form, true);
+ ?>
+ <div class="wrap flosc-admin">
+     <h1>FLOSC Settings</h1>
+@@ -28,44 +42,48 @@
+         <a href="?page=flosc-settings&tab=payments" class="nav-tab <?php echo $active_tab === 'payments' ? 'nav-tab-active' : ''; ?>">Payments</a>
+         <a href="?page=flosc-settings&tab=lessons" class="nav-tab <?php echo $active_tab === 'lessons' ? 'nav-tab-active' : ''; ?>">Lessons</a>
+     </nav>
+-    
+-    <form method="post" action="options.php">
+-        <?php settings_fields('flosc_settings'); ?>
+-        
+-        <?php if ($active_tab === 'product'): ?>
+-            <?php include plugin_dir_path(__FILE__) . 'product.php'; ?>
+ 
+-        <?php elseif ($active_tab === 'ivr-messages'): ?>
+-            <?php include plugin_dir_path(__FILE__) . 'ivr-messages.php'; ?>
++    <?php if ($use_options_form): ?>
++        <form method="post" action="options.php">
++            <?php settings_fields('flosc_settings'); ?>
++    <?php endif; ?>
++
++    <?php if ($active_tab === 'product'): ?>
++        <?php include plugin_dir_path(__FILE__) . 'product.php'; ?>
++
++    <?php elseif ($active_tab === 'ivr-messages'): ?>
++        <?php include plugin_dir_path(__FILE__) . 'ivr-messages.php'; ?>
++
++    <?php elseif ($active_tab === 'style'): ?>
++        <?php include plugin_dir_path(__FILE__) . 'chat-styling.php'; ?>
+ 
+-        <?php elseif ($active_tab === 'style'): ?>
+-            <?php include plugin_dir_path(__FILE__) . 'chat-styling.php'; ?>
++    <?php elseif ($active_tab === 'ai'): ?>
++        <?php include plugin_dir_path(__FILE__) . 'ai-configuration.php'; ?>
+ 
+-        <?php elseif ($active_tab === 'ai'): ?>
+-            <?php include plugin_dir_path(__FILE__) . 'ai-configuration.php'; ?>
++    <?php elseif ($active_tab === 'quiz'): ?>
++        <?php include plugin_dir_path(__FILE__) . 'quiz.php'; ?>
+ 
+-        <?php elseif ($active_tab === 'quiz'): ?>
+-            <?php include plugin_dir_path(__FILE__) . 'quiz.php'; ?>
++    <?php elseif ($active_tab === 'lessons'): ?>
++        <?php include plugin_dir_path(__FILE__) . 'lessons.php'; ?>
+ 
+-        <?php elseif ($active_tab === 'lessons'): ?>
+-            <?php include plugin_dir_path(__FILE__) . 'lessons.php'; ?>
++    <?php elseif ($active_tab === 'email'): ?>
++        <?php include plugin_dir_path(__FILE__) . 'email.php'; ?>
+ 
+-        <?php elseif ($active_tab === 'email'): ?>
+-            <?php include plugin_dir_path(__FILE__) . 'email.php'; ?>
++    <?php elseif ($active_tab === 'ai-knowledge'): ?>
++        <?php include plugin_dir_path(__FILE__) . 'ai-knowledge.php'; ?>
+ 
+-        <?php elseif ($active_tab === 'ai-knowledge'): ?>
+-            <?php include plugin_dir_path(__FILE__) . 'ai-knowledge.php'; ?>
++    <?php elseif ($active_tab === 'offers'): ?>
++        <?php include plugin_dir_path(__FILE__) . 'offers.php'; ?>
+ 
+-        <?php elseif ($active_tab === 'offers'): ?>
+-            <?php include plugin_dir_path(__FILE__) . 'offers.php'; ?>
++    <?php elseif ($active_tab === 'payments'): ?>
++        <?php include plugin_dir_path(__FILE__) . 'payments.php'; ?>
+ 
+-        <?php elseif ($active_tab === 'payments'): ?>
+-            <?php include plugin_dir_path(__FILE__) . 'payments.php'; ?>
++    <?php endif; ?>
+ 
+-        <?php endif; ?>
+-        
+-        <?php submit_button(); ?>
+-    </form>
++    <?php if ($use_options_form): ?>
++            <?php submit_button(); ?>
++        </form>
++    <?php endif; ?>
+ </div>
+ 
+ <style>
+diff -ruN /mnt/data/flosc_review/v9_1_0_src/flosc_v9_1_0/assets/js/flosc-app.js /mnt/data/flosc_review/v9_1_2/flosc_v9_1_2/assets/js/flosc-app.js
+--- /mnt/data/flosc_review/v9_1_0_src/flosc_v9_1_0/assets/js/flosc-app.js	2026-01-19 13:34:29.000000000 +0000
++++ /mnt/data/flosc_review/v9_1_2/flosc_v9_1_2/assets/js/flosc-app.js	2026-01-19 16:34:27.050662441 +0000
+@@ -812,8 +812,18 @@
+             this.ivr.shownThisSession['offer_' + msg.offer_id] = true;
+         }
+ 
++        // Mark shown for this browser session
++        if (msg.name) {
++            this.ivr.shownThisSession[msg.name] = true;
++        }
++
+         // v07.09: Track message shown persistently
+         this.trackMessageShown(msg.name, msg.offer_id);
++
++        // Execute any IVR action tied to this message
++        if (msg.action) {
++            this.performIVRAction(msg.action);
++        }
+     }
+ 
+     async trackMessageShown(messageName, offerId = null) {
+@@ -1273,23 +1283,34 @@
+         // Try IVR match first
+         const ivrMatch = this.findIVRResponse(message);
+         if (ivrMatch && this.evaluateCondition(ivrMatch.conditions)) {
+-            setTimeout(() => {
++            // Ensure we have a server-side session if logged in
++            await this.ensureSession();
++
++            // Persist the user message for logged-in users when handling IVR locally
++            await this.appendSessionMessage('user', message);
++
++            setTimeout(async () => {
+                 this.hideTyping();
+-                const content = this.replaceVariables(ivrMatch.content);
+-                const el = this.addMessage('assistant', content);
+-                if (el && ivrMatch.name) el.setAttribute('data-message-name', ivrMatch.name);
+-                
++
++                const assistantText = this.replaceVariables(ivrMatch.content || '');
++                this.showIVRMessage(ivrMatch);
++
+                 if (this.state === 'visitor') {
+-                    this.saveVisitorMessage('assistant', content);
++                    this.saveVisitorMessage('assistant', assistantText);
++                } else {
++                    await this.appendSessionMessage('assistant', assistantText);
+                 }
+-                
++
+                 this.showSuggestedReplies();
+-            }, 500);
++            }, 350);
++
+             return;
+         }
+         
+         // No IVR match - call API
+         try {
++            // Make sure session exists so /chat can persist messages
++            await this.ensureSession();
+             const response = await this.callAPI(message);
+             this.hideTyping();
+             
+@@ -1487,6 +1508,57 @@
+             console.warn('FLOSC: Could not load session', e);
+         }
+     }
++
++    async ensureSession() {
++        // Visitors don't have server-side sessions
++        if (this.state === 'visitor') {
++            return null;
++        }
++
++        if (this.currentSession && this.currentSession.id) {
++            return this.currentSession;
++        }
++
++        try {
++            const response = await fetch(this.config.apiUrl + '/sessions', {
++                method: 'POST',
++                headers: {
++                    'Content-Type': 'application/json',
++                    'X-WP-Nonce': this.config.nonce
++                },
++                body: JSON.stringify({ title: 'New Chat' })
++            });
++            const data = await response.json();
++
++            if (data.success && data.session) {
++                this.currentSession = data.session;
++                // Refresh sidebar list if present
++                this.loadSessions();
++            }
++        } catch (e) {
++            console.warn('FLOSC: Could not create session', e);
++        }
++
++        return this.currentSession;
++    }
++
++    async appendSessionMessage(role, content) {
++        if (this.state === 'visitor') return;
++        if (!this.currentSession?.id) return;
++
++        try {
++            await fetch(this.config.apiUrl + '/sessions/' + this.currentSession.id + '/messages', {
++                method: 'POST',
++                headers: {
++                    'Content-Type': 'application/json',
++                    'X-WP-Nonce': this.config.nonce
++                },
++                body: JSON.stringify({ role, content })
++            });
++        } catch (e) {
++            console.warn('FLOSC: Could not append session message', e);
++        }
++    }
+     
+     newSession() {
+         this.currentSession = null;
+diff -ruN /mnt/data/flosc_review/v9_1_0_src/flosc_v9_1_0/flosc.php /mnt/data/flosc_review/v9_1_2/flosc_v9_1_2/flosc.php
+--- /mnt/data/flosc_review/v9_1_0_src/flosc_v9_1_0/flosc.php	2026-01-19 13:53:39.000000000 +0000
++++ /mnt/data/flosc_review/v9_1_2/flosc_v9_1_2/flosc.php	2026-01-19 16:36:51.431719324 +0000
+@@ -3,7 +3,7 @@
+  * Plugin Name: FLOSC
+  * Plugin URI: https://flosc.io
+  * Description: Freeline-Login-Offer-Sale-Content - Quiz-based learning and conversational sales funnel framework
+- * Version: 9.1.0
++ * Version: 9.1.2
+  * Author: Dainis Michel
+  * Author URI: https://dainismichel.com
+  * License: GPL v2 or later
+@@ -14,7 +14,7 @@
+ if (!defined('ABSPATH')) exit;
+ 
+ // Plugin constants
+-define('FLOSC_VERSION', '9.1.0');
++define('FLOSC_VERSION', '9.1.2');
+ define('FLOSC_PLUGIN_DIR', plugin_dir_path(__FILE__));
+ define('FLOSC_PLUGIN_URL', plugin_dir_url(__FILE__));
+ 
+@@ -1109,6 +1109,18 @@
+             'permission_callback' => [$this, 'check_paid_endpoint_permission'],
+         ]);
+ 
++        /**
++         * Compatibility aliases (v9.1.x)
++         *
++         * The front-end historically called these endpoints.
++         * Keep them as thin wrappers so old JS versions don't break.
++         */
++        register_rest_route('flosc/v1', '/transcribe', [
++            'methods' => 'POST',
++            'callback' => [$this, 'handle_process_audio'],
++            'permission_callback' => [$this, 'check_paid_endpoint_permission'],
++        ]);
++
+         // Process Quiz (for text-based quiz types)
+         register_rest_route('flosc/v1', '/process-quiz', [
+             'methods' => 'POST',
+@@ -1128,6 +1140,19 @@
+             'callback' => [$this, 'create_session'],
+             'permission_callback' => 'is_user_logged_in',
+         ]);
++
++        // Session details + message append (needed by v9.1.x front-end)
++        register_rest_route('flosc/v1', '/sessions/(?P<id>\d+)', [
++            'methods' => 'GET',
++            'callback' => [$this, 'get_session'],
++            'permission_callback' => 'is_user_logged_in',
++        ]);
++
++        register_rest_route('flosc/v1', '/sessions/(?P<id>\d+)/messages', [
++            'methods' => 'POST',
++            'callback' => [$this, 'append_session_message'],
++            'permission_callback' => 'is_user_logged_in',
++        ]);
+         
+         // Offers
+         register_rest_route('flosc/v1', '/offers', [
+@@ -1209,7 +1234,14 @@
+             'callback' => [$this, 'get_free_lesson'],
+             'permission_callback' => 'is_user_logged_in',
+         ]);
+-        
++
++        // v9.1.x front-end compatibility alias
++        register_rest_route('flosc/v1', '/free-lesson', [
++            'methods' => 'POST',
++            'callback' => [$this, 'get_free_lesson'],
++            'permission_callback' => 'is_user_logged_in',
++        ]);
++
+         // Store pre-login score
+         register_rest_route('flosc/v1', '/store-score', [
+             'methods' => 'POST',
+@@ -1690,14 +1722,98 @@
+     }
+ 
+     public function get_sessions($request) {
+-        $sessions = $this->session_manager->get_flosc_user_sessions(get_current_user_id());
+-        return new WP_REST_Response(['sessions' => $sessions]);
++        $user_id = get_current_user_id();
++
++        // Session manager returns a grouped structure; front-end expects a flat array.
++        $grouped = $this->session_manager->get_flosc_user_sessions($user_id);
++        $flat = [];
++
++        foreach ($grouped as $group_label => $sessions) {
++            foreach ($sessions as $s) {
++                $ts = !empty($s['updated_at']) ? strtotime($s['updated_at']) : (!empty($s['created_at']) ? strtotime($s['created_at']) : time());
++                $flat[] = [
++                    'id' => intval($s['id']),
++                    'title' => $s['title'] ?? 'Untitled',
++                    'date' => date_i18n('M j', $ts),
++                    'updated_at' => $s['updated_at'] ?? null,
++                    'group' => $group_label,
++                ];
++            }
++        }
++
++        // Sort by updated_at/created_at desc
++        usort($flat, function($a, $b) {
++            return strtotime($b['updated_at'] ?? '1970-01-01') <=> strtotime($a['updated_at'] ?? '1970-01-01');
++        });
++
++        return new WP_REST_Response([
++            'success' => true,
++            'sessions' => $flat,
++        ]);
+     }
+     
+     public function create_session($request) {
+         $title = sanitize_text_field($request->get_param('title') ?? 'New Chat');
+         $session = $this->session_manager->flosc_create_session(get_current_user_id(), $title);
+-        return new WP_REST_Response(['session' => $session]);
++        return new WP_REST_Response([
++            'success' => true,
++            'session' => $session,
++        ]);
++    }
++
++    /**
++     * Get a single session by id (v9.1.x front-end expects this)
++     */
++    public function get_session($request) {
++        $user_id = get_current_user_id();
++        $session_id = intval($request['id'] ?? 0);
++
++        if (!$session_id) {
++            return new WP_Error('invalid_session', 'Invalid session id', ['status' => 400]);
++        }
++
++        $session = $this->session_manager->get_flosc_session($session_id, $user_id);
++        if (!$session) {
++            return new WP_Error('not_found', 'Session not found', ['status' => 404]);
++        }
++
++        return new WP_REST_Response([
++            'success' => true,
++            'session' => $session,
++        ]);
++    }
++
++    /**
++     * Append a message to an existing session (used when the front-end handles IVR locally)
++     */
++    public function append_session_message($request) {
++        $user_id = get_current_user_id();
++        $session_id = intval($request['id'] ?? 0);
++
++        if (!$session_id) {
++            return new WP_Error('invalid_session', 'Invalid session id', ['status' => 400]);
++        }
++
++        $session = $this->session_manager->get_flosc_session($session_id, $user_id);
++        if (!$session) {
++            return new WP_Error('not_found', 'Session not found', ['status' => 404]);
++        }
++
++        $role = sanitize_text_field($request->get_param('role'));
++        $content = sanitize_textarea_field($request->get_param('content'));
++
++        if (!in_array($role, ['user', 'assistant'], true)) {
++            return new WP_Error('invalid_role', 'Invalid role', ['status' => 400]);
++        }
++        if ($content === '') {
++            return new WP_Error('invalid_content', 'Empty content', ['status' => 400]);
++        }
++
++        $this->session_manager->add_flosc_message($session_id, $role, $content, $user_id);
++
++        return new WP_REST_Response([
++            'success' => true,
++        ]);
+     }
+     
+     public function get_offers($request) {
+@@ -1906,6 +2022,7 @@
+             if ($free_lesson_id) {
+                 $lesson = $this->lesson_manager->get_lesson($free_lesson_id);
+                 return new WP_REST_Response([
++                    'success' => true,
+                     'lesson' => $lesson,
+                     'already_delivered' => true,
+                 ]);
+@@ -1933,6 +2050,7 @@
+         update_user_meta($user_id, '_flosc_free_lesson_delivered', current_time('mysql'));
+         
+         return new WP_REST_Response([
++            'success' => true,
+             'lesson' => $lesson,
+             'already_delivered' => false,
+         ]);
+diff -ruN /mnt/data/flosc_review/v9_1_0_src/flosc_v9_1_0/includes/class-condition-evaluator.php /mnt/data/flosc_review/v9_1_2/flosc_v9_1_2/includes/class-condition-evaluator.php
+--- /mnt/data/flosc_review/v9_1_0_src/flosc_v9_1_0/includes/class-condition-evaluator.php	2026-01-19 11:22:10.000000000 +0000
++++ /mnt/data/flosc_review/v9_1_2/flosc_v9_1_2/includes/class-condition-evaluator.php	2026-01-19 16:35:37.801974844 +0000
+@@ -197,6 +197,14 @@
+                 return !empty($this->context['quiz_taken']);
+             case 'logged_in':
+                 return is_user_logged_in();
++            case 'is_visitor':
++                return !is_user_logged_in();
++            case 'is_member':
++                // Member = has purchased / has access
++                return !empty($this->context['purchased']) || !empty($this->context['is_member']);
++            case 'is_guest':
++                // Guest = logged in but not a member yet
++                return is_user_logged_in() && empty($this->context['purchased']) && empty($this->context['is_member']);
+             case 'purchased':
+                 return !empty($this->context['purchased']);
+             case 'lesson_viewed':

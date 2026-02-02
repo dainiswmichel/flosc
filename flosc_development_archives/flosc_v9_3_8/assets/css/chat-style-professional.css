@@ -1,0 +1,277 @@
+/**
+ * FLOSC Professional Override
+ * 
+ * This file FIXES the base styling by:
+ * 1. Removing full-width background strips
+ * 2. Clean user bubbles with proper backgrounds
+ * 3. Assistant messages as clean text (no boxes)
+ * 4. Professional spacing and typography
+ * 
+ * Based on diagnosis: Base CSS and presets use different variable names,
+ * so this override directly applies the correct styles.
+ * 
+ * Created: January 23, 2026
+ * Inspiration: Linear, Vercel, Stripe
+ */
+
+/* ============================================
+   CORE VARIABLES - Override base theme
+   ============================================ */
+:root {
+    --flosc-primary: #2563eb;
+    --flosc-primary-hover: #1d4ed8;
+    --flosc-primary-light: rgba(37, 99, 235, 0.1);
+    --flosc-border-color: #e5e7eb;
+    --flosc-text-primary: #111827;
+    --flosc-text-secondary: #4b5563;
+    --flosc-text-muted: #9ca3af;
+    --flosc-bg-hover: #f9fafb;
+    --flosc-bg-active: #f3f4f6;
+}
+
+/* ============================================
+   APP CONTAINER
+   ============================================ */
+.flosc-app {
+    background: #ffffff;
+}
+
+.flosc-app .chat-container {
+    background: #ffffff !important;
+}
+
+/* ============================================
+   MESSAGES AREA - Clean, centered, readable
+   ============================================ */
+.flosc-app .messages {
+    background: transparent !important;
+    max-width: 800px !important;
+    padding: 24px !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+}
+
+/* ============================================
+   MESSAGE ROWS - Remove full-width strips
+   ============================================ */
+.flosc-app .message {
+    background: transparent !important;
+    border: none !important;
+    border-bottom: none !important;
+    padding: 0 !important;
+    margin: 0 0 20px 0 !important;
+    gap: 12px !important;
+    align-items: flex-start !important;
+    animation: none !important;
+}
+
+/* ============================================
+   MESSAGE CONTENT - Constrain width
+   ============================================ */
+.flosc-app .message-content {
+    max-width: 85% !important;
+    min-width: 0 !important;
+}
+
+/* ============================================
+   ASSISTANT MESSAGES - Clean text, no box
+   ============================================ */
+.flosc-app .message.assistant .message-text {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    color: #111827 !important;
+    font-size: 15px !important;
+    line-height: 1.65 !important;
+}
+
+/* ============================================
+   USER MESSAGES - Professional bubble
+   ============================================ */
+.flosc-app .message.user {
+    flex-direction: row-reverse !important;
+}
+
+.flosc-app .message.user .message-content {
+    max-width: 75% !important;
+}
+
+.flosc-app .message.user .message-text {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    padding: 10px 16px !important;
+    border-radius: 18px 18px 4px 18px !important;
+    font-size: 15px !important;
+    line-height: 1.5 !important;
+}
+
+/* ============================================
+   AVATARS - Clean, minimal
+   ============================================ */
+.flosc-app .message-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+.flosc-app .message.assistant .message-avatar {
+    background: #f3f4f6 !important;
+    color: #111827 !important;
+}
+
+.flosc-app .message.user .message-avatar {
+    background: #2563eb !important;
+    color: #ffffff !important;
+}
+
+/* ============================================
+   TYPOGRAPHY - Readable, clean
+   ============================================ */
+.flosc-app .message-text p {
+    margin: 0 0 12px 0 !important;
+}
+
+.flosc-app .message-text p:last-child {
+    margin-bottom: 0 !important;
+}
+
+.flosc-app .message-text ul,
+.flosc-app .message-text ol {
+    margin: 12px 0 !important;
+    padding-left: 24px !important;
+}
+
+.flosc-app .message-text code {
+    font-size: 0.9em !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    background: #f3f4f6 !important;
+    font-family: 'SF Mono', Monaco, 'Courier New', monospace !important;
+}
+
+/* ============================================
+   GREETING / WELCOME AREA
+   ============================================ */
+.flosc-app .greeting {
+    background: transparent !important;
+    text-align: center !important;
+    padding: 40px 20px !important;
+}
+
+.flosc-app .greeting-title {
+    font-size: 24px !important;
+    font-weight: 600 !important;
+    color: #111827 !important;
+    margin-bottom: 8px !important;
+}
+
+/* ============================================
+   SUGGESTED REPLIES - Compact pills
+   ============================================ */
+.flosc-app .flosc_output_chat_suggested_replies_scroll {
+    gap: 8px !important;
+}
+
+.flosc-app .flosc_output_chat_suggested_replies_scroll button,
+.flosc-app .flosc-style-pill {
+    font-size: 13px !important;
+    padding: 8px 14px !important;
+    border-radius: 999px !important;
+    border: 1px solid #e5e7eb !important;
+    background: #ffffff !important;
+    color: #374151 !important;
+    font-weight: 500 !important;
+    transition: all 0.15s ease !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04) !important;
+}
+
+.flosc-app .flosc_output_chat_suggested_replies_scroll button:hover,
+.flosc-app .flosc-style-pill:hover {
+    background: #f9fafb !important;
+    border-color: #d1d5db !important;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.06) !important;
+}
+
+/* ============================================
+   INPUT / COMPOSER AREA
+   ============================================ */
+.flosc-app .flosc_input_composer {
+    background: #ffffff !important;
+    border-top: 1px solid #e5e7eb !important;
+}
+
+.flosc-app .flosc_input_composer_inner {
+    background: #f9fafb !important;
+    border-radius: 12px !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+.flosc-app .flosc_input_composer_inner:focus-within {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+.flosc-app .flosc_input_composer input,
+.flosc-app .flosc_input_composer textarea {
+    background: transparent !important;
+    color: #111827 !important;
+    font-size: 15px !important;
+}
+
+.flosc-app .flosc_input_composer input::placeholder,
+.flosc-app .flosc_input_composer textarea::placeholder {
+    color: #9ca3af !important;
+}
+
+/* ============================================
+   SEND BUTTON
+   ============================================ */
+.flosc-app .flosc-send-btn,
+.flosc-app button[type="submit"] {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+    transition: all 0.15s ease !important;
+}
+
+.flosc-app .flosc-send-btn:hover,
+.flosc-app button[type="submit"]:hover {
+    background: #1d4ed8 !important;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+.flosc-app .flosc-header,
+.flosc-app header {
+    background: #ffffff !important;
+    border-bottom: 1px solid #e5e7eb !important;
+}
+
+/* ============================================
+   SCROLLBAR - Subtle
+   ============================================ */
+.flosc-app .messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.flosc-app .messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.flosc-app .messages::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+}
+
+.flosc-app .messages::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}

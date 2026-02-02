@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+	xmlns:excerpt="http://wordpress.org/export/1.2/excerpt/"
+	xmlns:content="http://purl.org/rss/1.0/modules/content/"
+	xmlns:wfw="http://wellformedweb.org/CommentAPI/"
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:wp="http://wordpress.org/export/1.2/"
+>
+<channel>
+	<title>FLOSC Sample Lessons</title>
+	<description>Magnificent pronunciation lessons for numbers 1-10</description>
+	<language>en-US</language>
+	<wp:wxr_version>1.2</wp:wxr_version>
+
+	<wp:category>
+		<wp:term_id>2</wp:term_id>
+		<wp:category_nicename>flosc-default-data</wp:category_nicename>
+		<wp:category_parent></wp:category_parent>
+		<wp:cat_name><![CDATA[FLOSC Default Data]]></wp:cat_name>
+	</wp:category>
+
+	<!-- Lesson 1 -->
+	<item>
+		<title>🎯 The Lonely Number: Why "ONE" Has Identity Issues</title>
+		<wp:post_type>post</wp:post_type>
+		<wp:status>publish</wp:status>
+		<category domain="category" nicename="flosc-default-data"><![CDATA[FLOSC Default Data]]></category>
+		<content:encoded><![CDATA[Ever notice how "ONE" is spelled with THREE letters? It's like the number itself is having an identity crisis!
+
+Here's the wild part: in Old English, "one" was pronounced "ahn" (like "on"). Then the Great Vowel Shift of the 1400s-1600s came along and said "nah, let's make this confusing!" Now we say "wuhn" but keep the old spelling.
+
+Want to know the SECRET to pronouncing it like a native speaker?
+
+<!--more-->
+
+<h1>🎓 MEMBER-ONLY: Complete IPA Guide</h1>
+
+<strong>ONE = /wʌn/</strong>
+
+[Full content from class-sample-data.php - see file for complete version]
+]]></content:encoded>
+		<wp:postmeta>
+			<wp:meta_key>_flosc_lesson_number</wp:meta_key>
+			<wp:meta_value>1</wp:meta_value>
+		</wp:postmeta>
+		<wp:postmeta>
+			<wp:meta_key>_flosc_access_level</wp:meta_key>
+			<wp:meta_value>member</wp:meta_value>
+		</wp:postmeta>
+	</item>
+
+	<!-- Note: Full XML with all 10 lessons would be very long -->
+	<!-- The complete content is in /includes/class-sample-data.php -->
+	
+</channel>
+</rss>

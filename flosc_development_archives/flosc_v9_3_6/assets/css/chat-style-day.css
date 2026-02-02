@@ -1,0 +1,307 @@
+/**
+ * FLOSC Day Theme - Superclean
+ * =============================
+ * Clean, minimal, professional light theme
+ * Reference: FLOSC_STYLE_GUIDE.md
+ */
+
+/* ============================================
+   CSS VARIABLES - DAY THEME
+   ============================================ */
+
+:root,
+[data-flosc-theme="day"] {
+    /* Global */
+    --flosc-bg: #ffffff;
+    --flosc-text: #111827;
+    --flosc-text-muted: #6b7280;
+    --flosc-border: #e5e7eb;
+    --flosc-accent: #2563eb;
+    --flosc-accent-hover: #1d4ed8;
+
+    /* User Message */
+    --flosc-user-message-bg: #2563eb;
+    --flosc-user-message-text: #ffffff;
+    --flosc-user-message-radius: 18px 18px 4px 18px;
+    --flosc-user-avatar-bg: #2563eb;
+    --flosc-user-avatar-text: #ffffff;
+
+    /* Assistant Message */
+    --flosc-assistant-message-bg: transparent;
+    --flosc-assistant-message-text: #111827;
+    --flosc-assistant-message-border: none;
+    --flosc-assistant-message-radius: 0;
+    --flosc-assistant-avatar-bg: #f3f4f6;
+    --flosc-assistant-avatar-text: #374151;
+
+    /* Input */
+    --flosc-input-bg: #ffffff;
+    --flosc-input-field-bg: #f9fafb;
+    --flosc-input-field-border: #e5e7eb;
+    --flosc-input-field-text: #111827;
+    --flosc-input-placeholder: #9ca3af;
+    --flosc-send-btn-bg: #2563eb;
+    --flosc-send-btn-text: #ffffff;
+
+    /* Sidebar */
+    --flosc-sidebar-bg: #f9fafb;
+    --flosc-sidebar-text: #374151;
+    --flosc-sidebar-hover: #f3f4f6;
+    --flosc-sidebar-active: #e5e7eb;
+    --flosc-sidebar-border: #e5e7eb;
+
+    /* Pills */
+    --flosc-pill-bg: #ffffff;
+    --flosc-pill-text: #374151;
+    --flosc-pill-border: #e5e7eb;
+    --flosc-pill-hover-bg: #f9fafb;
+    --flosc-pill-hover-border: #2563eb;
+}
+
+/* ============================================
+   APP CONTAINER
+   ============================================ */
+
+.flosc-app {
+    background: var(--flosc-bg) !important;
+}
+
+.flosc-app .chat-container {
+    background: var(--flosc-bg) !important;
+}
+
+/* ============================================
+   MESSAGES AREA
+   ============================================ */
+
+.flosc-app .messages {
+    background: var(--flosc-bg) !important;
+    max-width: 800px !important;
+    margin: 0 auto !important;
+    padding: 24px !important;
+}
+
+/* ============================================
+   MESSAGE ROWS - No full-width strips
+   ============================================ */
+
+.flosc-app .message {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 0 20px 0 !important;
+    gap: 12px !important;
+}
+
+/* ============================================
+   USER MESSAGE
+   ============================================ */
+
+.flosc-app .message.user {
+    flex-direction: row-reverse !important;
+}
+
+.flosc-app .message.user .message-content {
+    max-width: 75% !important;
+}
+
+.flosc-app .message.user .message-text {
+    background: var(--flosc-user-message-bg) !important;
+    color: var(--flosc-user-message-text) !important;
+    padding: 10px 16px !important;
+    border-radius: var(--flosc-user-message-radius) !important;
+}
+
+.flosc-app .message.user .message-avatar {
+    background: var(--flosc-user-avatar-bg) !important;
+    color: var(--flosc-user-avatar-text) !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+/* ============================================
+   ASSISTANT MESSAGE
+   ============================================ */
+
+.flosc-app .message.assistant .message-text {
+    background: var(--flosc-assistant-message-bg) !important;
+    color: var(--flosc-assistant-message-text) !important;
+    border: var(--flosc-assistant-message-border) !important;
+    border-radius: var(--flosc-assistant-message-radius) !important;
+    padding: 0 !important;
+}
+
+.flosc-app .message.assistant .message-avatar {
+    background: var(--flosc-assistant-avatar-bg) !important;
+    color: var(--flosc-assistant-avatar-text) !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+}
+
+/* ============================================
+   TYPOGRAPHY
+   ============================================ */
+
+.flosc-app .message-text {
+    font-size: 15px !important;
+    line-height: 1.6 !important;
+    color: var(--flosc-text) !important;
+}
+
+.flosc-app .message-text p {
+    margin: 0 0 12px 0 !important;
+}
+
+.flosc-app .message-text p:last-child {
+    margin-bottom: 0 !important;
+}
+
+.flosc-app .message-text code {
+    background: #f3f4f6 !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-size: 0.9em !important;
+}
+
+/* ============================================
+   INPUT COMPOSER
+   ============================================ */
+
+.flosc-app .flosc_input_composer {
+    background: var(--flosc-input-bg) !important;
+    border-top: 1px solid var(--flosc-border) !important;
+    padding: 16px !important;
+}
+
+.flosc-app .flosc_input_composer_inner {
+    background: var(--flosc-input-field-bg) !important;
+    border: 1px solid var(--flosc-input-field-border) !important;
+    border-radius: 12px !important;
+}
+
+.flosc-app .flosc_input_composer_inner:focus-within {
+    border-color: var(--flosc-accent) !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+.flosc-app .flosc_input_composer input,
+.flosc-app .flosc_input_composer textarea {
+    background: transparent !important;
+    color: var(--flosc-input-field-text) !important;
+    font-size: 15px !important;
+}
+
+.flosc-app .flosc_input_composer input::placeholder,
+.flosc-app .flosc_input_composer textarea::placeholder {
+    color: var(--flosc-input-placeholder) !important;
+}
+
+/* ============================================
+   SEND BUTTON
+   ============================================ */
+
+.flosc-app .flosc-send-btn,
+.flosc-app button[type="submit"] {
+    background: var(--flosc-send-btn-bg) !important;
+    color: var(--flosc-send-btn-text) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 8px 12px !important;
+}
+
+.flosc-app .flosc-send-btn:hover,
+.flosc-app button[type="submit"]:hover {
+    background: var(--flosc-accent-hover) !important;
+}
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+
+.flosc-app .flosc-sidebar {
+    background: var(--flosc-sidebar-bg) !important;
+    border-right: 1px solid var(--flosc-sidebar-border) !important;
+}
+
+.flosc-app .session-item {
+    color: var(--flosc-sidebar-text) !important;
+}
+
+.flosc-app .session-item:hover {
+    background: var(--flosc-sidebar-hover) !important;
+}
+
+.flosc-app .session-item.active {
+    background: var(--flosc-sidebar-active) !important;
+}
+
+/* ============================================
+   SUGGESTED REPLIES / PILLS
+   ============================================ */
+
+.flosc-app .flosc_output_chat_suggested_replies_scroll button,
+.flosc-app .flosc-style-pill {
+    background: var(--flosc-pill-bg) !important;
+    color: var(--flosc-pill-text) !important;
+    border: 1px solid var(--flosc-pill-border) !important;
+    border-radius: 999px !important;
+    padding: 8px 16px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+}
+
+.flosc-app .flosc_output_chat_suggested_replies_scroll button:hover,
+.flosc-app .flosc-style-pill:hover {
+    background: var(--flosc-pill-hover-bg) !important;
+    border-color: var(--flosc-pill-hover-border) !important;
+    color: var(--flosc-accent) !important;
+}
+
+/* ============================================
+   GREETING
+   ============================================ */
+
+.flosc-app .greeting {
+    text-align: center !important;
+    padding: 48px 24px !important;
+}
+
+.flosc-app .greeting-title {
+    font-size: 24px !important;
+    font-weight: 600 !important;
+    color: var(--flosc-text) !important;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+.flosc-app .flosc-header {
+    background: var(--flosc-bg) !important;
+    border-bottom: 1px solid var(--flosc-border) !important;
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+
+.flosc-app .messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.flosc-app .messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.flosc-app .messages::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+}
+
+.flosc-app .messages::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}

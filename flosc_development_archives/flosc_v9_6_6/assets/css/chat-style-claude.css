@@ -1,0 +1,43 @@
+/* Claude Style Preset (v9.4.1) - VARIABLES ONLY */
+:root {
+    --flosc-bg: #f7f6f3;
+    --flosc-text: #22223b;
+    --flosc-text-muted: #6c6f7d;
+    --flosc-border: #e0e0e0;
+    --flosc-accent: #6c47ff;
+    --flosc-accent-hover: #4b2fd6;
+    --flosc-user-message-bg: #6c47ff;
+    --flosc-user-message-text: #fff;
+    --flosc-user-message-radius: 18px 18px 4px 18px;
+    --flosc-user-avatar-bg: #6c47ff;
+    --flosc-user-avatar-text: #fff;
+    --flosc-assistant-message-bg: #fffbe6;
+    --flosc-assistant-message-text: #22223b;
+    --flosc-assistant-message-border: 1px solid #f3eac2;
+    --flosc-assistant-message-radius: 0;
+    --flosc-assistant-avatar-bg: #f3eac2;
+    --flosc-assistant-avatar-text: #6c6f7d;
+    --flosc-input-bg: #fff;
+    --flosc-input-field-bg: #f7f6f3;
+    --flosc-input-field-border: #e0e0e0;
+    --flosc-input-field-text: #22223b;
+    --flosc-input-placeholder: #b0b0b0;
+    --flosc-send-btn-bg: #6c47ff;
+    --flosc-send-btn-text: #fff;
+    --flosc-sidebar-bg: #f3eac2;
+    --flosc-sidebar-text: #22223b;
+    --flosc-sidebar-text-muted: #6c6f7d;
+    --flosc-sidebar-hover: #f7f6f3;
+    --flosc-sidebar-active: #e0e0e0;
+    --flosc-sidebar-border: #e0e0e0;
+    --flosc-pill-bg: #fff;
+    --flosc-pill-text: #6c47ff;
+    --flosc-pill-border: #e0e0e0;
+    --flosc-pill-hover-bg: #f3eac2;
+    --flosc-pill-hover-text: #4b2fd6;
+    --flosc-pill-hover-border: #6c47ff;
+    --flosc-code-bg: #f3eac2;
+    --flosc-code-text: #22223b;
+    --flosc-scrollbar-thumb: #e0e0e0;
+    --flosc-scrollbar-thumb-hover: #b0b0b0;
+}

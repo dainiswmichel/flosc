@@ -1,0 +1,426 @@
+/**
+ * FLOSC Default Chat Style (v9.3.5)
+ * Ultra-professional light theme matching FLOSC brand
+ * - Clean, readable, professional appearance
+ * - White/light backgrounds with dark readable text
+ * - User bubbles for message distinction
+ * - v9.3.5: Superlight styling, 112% base scale
+ */
+
+/* ============================================
+   CSS VARIABLES & SCALING SYSTEM (100%-200%)
+   v9.3.5: Smart scaling with proportional line-height
+   ============================================ */
+
+:root {
+    /* Scaling - 112% base for optimal readability */
+    --flosc-scale: 112%;
+    --flosc-base-font: calc(15px * var(--flosc-scale) / 100);
+    --flosc-line-height: calc(1.55 + (var(--flosc-scale) - 100) * 0.001);
+    --flosc-avatar-size: calc(32px * var(--flosc-scale) / 100);
+    --flosc-gap: calc(16px * var(--flosc-scale) / 100);
+    --flosc-spacing: calc(8px * var(--flosc-scale) / 100);
+
+    /* Light professional theme colors - FLOSC brand */
+    --flosc-bg: #ffffff;
+    --flosc-user-bubble-bg: #1d9bf0;
+    --flosc-user-text: #ffffff;
+    --flosc-assistant-text: #1a1a1a;
+    --flosc-muted-text: #666666;
+
+    /* Font */
+    --flosc-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ============================================
+   STYLE PRESETS (data-flosc-style-preset)
+   ============================================ */
+
+/* FLOSC default (light, brand blue user bubble) */
+[data-flosc-style-preset="flosc"] {
+    --flosc-bg: #ffffff;
+    --flosc-assistant-text: #1a1a1a;
+    --flosc-muted-text: #666666;
+    --flosc-user-bubble-bg: #1d9bf0;
+}
+
+/* Grok-inspired (playful blue accents) */
+[data-flosc-style-preset="grok"] {
+    --flosc-bg: #ffffff;
+    --flosc-assistant-text: #111111;
+    --flosc-muted-text: #555555;
+    --flosc-user-bubble-bg: #0ea5e9; /* sky blue */
+}
+
+/* Claude-inspired (tan paper background, dark text) */
+[data-flosc-style-preset="claude"] {
+    --flosc-bg: #f5efe6; /* tan */
+    --flosc-assistant-text: #1a1a1a;
+    --flosc-muted-text: #4b4b4b;
+    --flosc-user-bubble-bg: #1d9bf0;
+}
+
+/* ChatGPT-inspired (neutral light with teal user bubble) */
+[data-flosc-style-preset="chatgpt"] {
+    --flosc-bg: #ffffff;
+    --flosc-assistant-text: #2d2d2d;
+    --flosc-muted-text: #6b7280;
+    --flosc-user-bubble-bg: #14b8a6; /* teal */
+}
+
+/* Custom acts as pass-through to theme + font selections */
+[data-flosc-style-preset="custom"] {
+    /* No overrides here; rely on theme + font */
+}
+
+/* Font presets */
+[data-flosc-font="ibm-plex-mono"] {
+    --flosc-font-family: 'IBM Plex Mono', 'Courier New', monospace;
+}
+
+[data-flosc-font="source-code-pro"] {
+    --flosc-font-family: 'Source Code Pro', 'Courier New', monospace;
+}
+
+[data-flosc-font="inter"] {
+    --flosc-font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+[data-flosc-font="roboto-mono"] {
+    --flosc-font-family: 'Roboto Mono', 'Courier New', monospace;
+}
+
+[data-flosc-font="fira-code"] {
+    --flosc-font-family: 'Fira Code', 'Courier New', monospace;
+}
+
+/* ============================================
+   MESSAGE CONTAINER
+   ============================================ */
+
+.messages {
+    font-family: var(--flosc-font-family);
+    font-size: var(--flosc-base-font);
+    line-height: 1.6;
+    background: var(--flosc-bg);
+    color: var(--flosc-assistant-text);
+}
+
+/* ============================================
+   MESSAGE LAYOUT
+   ============================================ */
+
+.message {
+    display: flex;
+    gap: var(--flosc-gap);
+    margin-bottom: calc(20px * var(--flosc-scale) / 100);
+    align-items: flex-start;
+    animation: messageSlideIn 0.3s ease-out;
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* User messages aligned right */
+.message.user {
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+}
+
+/* ============================================
+   AVATARS
+   ============================================ */
+
+.message-avatar {
+    width: var(--flosc-avatar-size);
+    height: var(--flosc-avatar-size);
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(16px * var(--flosc-scale) / 100);
+    font-weight: 500;
+}
+
+.message.user .message-avatar {
+    background: var(--flosc-user-bubble-bg);
+    color: var(--flosc-user-text);
+}
+
+.message.assistant .message-avatar {
+    background: #2f3336;
+    color: var(--flosc-assistant-text);
+}
+
+/* ============================================
+   MESSAGE CONTENT
+   ============================================ */
+
+.message-content {
+    max-width: 70%;
+    min-width: 0;
+}
+
+.message.user .message-content {
+    align-items: flex-end;
+}
+
+.message.assistant .message-content {
+    align-items: flex-start;
+}
+
+/* ============================================
+   USER MESSAGE BUBBLE (with tail)
+   ============================================ */
+
+.message.user .message-text {
+    position: relative;
+    padding: calc(12px * var(--flosc-scale) / 100) calc(16px * var(--flosc-scale) / 100);
+    background: var(--flosc-user-bubble-bg);
+    color: var(--flosc-user-text);
+    border-radius: calc(18px * var(--flosc-scale) / 100);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Small cartoon speech bubble tail - bottom-right, points down-right */
+.message.user .message-text::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: calc(-6px * var(--flosc-scale) / 100);
+    width: 0;
+    height: 0;
+    border-left: calc(8px * var(--flosc-scale) / 100) solid var(--flosc-user-bubble-bg);
+    border-bottom: calc(8px * var(--flosc-scale) / 100) solid transparent;
+}
+
+/* ============================================
+   ASSISTANT MESSAGE (NO bubble, just text)
+   ============================================ */
+
+.message.assistant .message-text {
+    padding: 0;
+    background: transparent;
+    color: var(--flosc-assistant-text);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* ============================================
+   TEXT FORMATTING
+   ============================================ */
+
+.message-text p {
+    margin: 0 0 calc(8px * var(--flosc-scale) / 100) 0;
+}
+
+.message-text p:last-child {
+    margin-bottom: 0;
+}
+
+.message-text strong {
+    font-weight: 600;
+}
+
+.message-text em {
+    font-style: italic;
+}
+
+.message-text code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: calc(2px * var(--flosc-scale) / 100) calc(4px * var(--flosc-scale) / 100);
+    border-radius: calc(3px * var(--flosc-scale) / 100);
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: calc(13px * var(--flosc-scale) / 100);
+}
+
+.message.user .message-text code {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.message-text a {
+    color: var(--flosc-user-bubble-bg);
+    text-decoration: underline;
+}
+
+.message.user .message-text a {
+    color: #ffffff;
+    font-weight: 500;
+}
+
+/* ============================================
+   MOBILE OPTIMIZATION
+   ============================================ */
+
+@media (max-width: 768px) {
+    :root {
+        --flosc-avatar-size: calc(28px * var(--flosc-scale) / 100);
+        --flosc-gap: calc(12px * var(--flosc-scale) / 100);
+    }
+
+    .message-content {
+        max-width: 80%;
+    }
+
+    .message {
+        margin-bottom: calc(16px * var(--flosc-scale) / 100);
+    }
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+    .message {
+        animation: none;
+    }
+}
+
+/* ============================================
+   SUGGESTED REPLIES STYLING
+   v9.3.5: Superlight chat bubble style
+   ============================================ */
+
+.flosc_output_chat_suggested_replies_scroll button,
+.flosc-style-pill {
+    font-family: var(--flosc-font-family);
+    font-size: calc(var(--flosc-base-font) * 0.9);
+    padding: calc(8px * var(--flosc-scale) / 100) calc(16px * var(--flosc-scale) / 100);
+    border-radius: calc(18px * var(--flosc-scale) / 100);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.7);
+    color: var(--flosc-assistant-text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+    line-height: 1.4;
+}
+
+.flosc_output_chat_suggested_replies_scroll button:hover,
+.flosc-style-pill:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: rgba(0, 0, 0, 0.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.flosc_output_chat_suggested_replies_scroll button:active,
+.flosc-style-pill:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+}
+
+/* Chip style - smaller, more compact */
+.flosc-style-chip {
+    font-size: calc(var(--flosc-base-font) * 0.8);
+    padding: calc(4px * var(--flosc-scale) / 100) calc(12px * var(--flosc-scale) / 100);
+    border-radius: calc(12px * var(--flosc-scale) / 100);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.5);
+    color: var(--flosc-assistant-text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.flosc-style-chip:hover {
+    background: rgba(255, 255, 255, 0.85);
+    border-color: rgba(0, 0, 0, 0.1);
+}
+/* ============================================
+   THEME VARIANTS (data-flosc-theme)
+   ============================================ */
+
+/* Default theme - Light professional (already defined in :root) */
+[data-flosc-theme="default"] {
+    --flosc-bg: #ffffff;
+    --flosc-assistant-text: #1a1a1a;
+    --flosc-muted-text: #666666;
+}
+
+/* Dark theme */
+[data-flosc-theme="dark"] {
+    --flosc-bg: #1a1a1a;
+    --flosc-assistant-text: #e7e9ea;
+    --flosc-muted-text: #a0a0a0;
+}
+[data-flosc-theme="dark"] .message.assistant .message-avatar {
+    background: #2f3336;
+    color: var(--flosc-assistant-text);
+}
+[data-flosc-theme="dark"] .flosc_output_chat_suggested_replies_scroll button,
+[data-flosc-theme="dark"] .flosc-style-pill {
+    border-color: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--flosc-assistant-text);
+}
+[data-flosc-theme="dark"] .flosc_output_chat_suggested_replies_scroll button:hover,
+[data-flosc-theme="dark"] .flosc-style-pill:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* High contrast theme */
+[data-flosc-theme="high-contrast"] {
+    --flosc-bg: #ffffff;
+    --flosc-assistant-text: #000000;
+    --flosc-muted-text: #333333;
+    --flosc-user-bubble-bg: #003d99;
+}
+[data-flosc-theme="high-contrast"] .message-text code {
+    background: rgba(0, 0, 0, 0.15);
+    color: #000000;
+}
+[data-flosc-theme="high-contrast"] .flosc_output_chat_suggested_replies_scroll button {
+    border: 2px solid #000;
+    color: #000;
+    font-weight: 600;
+}
+[data-flosc-theme="high-contrast"] .flosc_output_chat_suggested_replies_scroll button:hover {
+    background: #000;
+    color: #fff;
+}
+
+/* Additional professional themes */
+[data-flosc-theme="claude-tan"] {
+    --flosc-bg: #f5efe6;
+    --flosc-assistant-text: #1a1a1a;
+    --flosc-muted-text: #4b4b4b;
+}
+
+[data-flosc-theme="ocean"] {
+    --flosc-bg: #f0f9ff;
+    --flosc-assistant-text: #0f172a;
+    --flosc-muted-text: #334155;
+    --flosc-user-bubble-bg: #0ea5e9;
+}
+
+[data-flosc-theme="forest"] {
+    --flosc-bg: #f1f5f2;
+    --flosc-assistant-text: #0b3d2e;
+    --flosc-muted-text: #2f4f4f;
+    --flosc-user-bubble-bg: #10b981;
+}
+
+[data-flosc-theme="sunset"] {
+    --flosc-bg: #fff7ed;
+    --flosc-assistant-text: #1f2937;
+    --flosc-muted-text: #6b7280;
+    --flosc-user-bubble-bg: #f59e0b;
+}
+
+[data-flosc-theme="midnight"] {
+    --flosc-bg: #111827;
+    --flosc-assistant-text: #e5e7eb;
+    --flosc-muted-text: #9ca3af;
+    --flosc-user-bubble-bg: #3b82f6;
+}

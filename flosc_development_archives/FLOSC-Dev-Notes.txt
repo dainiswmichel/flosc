@@ -1,0 +1,118 @@
+  - Freeline messages: "Good messages when user is a visitor, hasn't taken quiz yet"
+The purpose of the (F)reeline messages is to encourage the user to login. 
+They take the quiz -- and to get the quiz results -- they must log in. 
+Freeline = encourage quiz, when user takes quiz -- encourage login to get results
+
+
+  - (After) Login messages: "Good messages after quiz (and after login, encouraging user to consider offer"
+
+User gets quiz results and gets the "overlap" from the "freeline" of a FREE lesson or two -- the admin will set what the user can get for free. 
+
+For example, the quiz assesses that the user does well pronouncing 30 of the 44 SAE sounds - now admin sets that users get on free lesson from the 14 that they need -- and the users are encouraged to purchase the OTO that gives them 3-month access for $100 (for example). 
+
+We are testing this with a "success score" of 10. Users say or type 1,2,3,4,5,6,7,8,9,10
+
+the code assesses the percentage and knows which number the user got correct/incorrect/omitted. 
+
+So if the user puts in 1,2,3
+
+The code says you did a great job on 1,2,3, but your score was 30%, here is your free lesson on (random lesson selected from 4-10), and here is your OTO 
+
+Save 75% for the next 60minutes. Instead of $100 USD for a 3-month unlimited pass, pay only $25 right now...and enjoy some of the best pronunciation lessons in the world...
+
+
+  - Offer messages: "The user has logged in, has received the quiz results, and is consuming the free lesson -- then offer messages come through to encourage purchase"
+
+  - (After) Sale messages: "Good messages after purchase"
+
+  - Content messages: "Good messages for users who are consuming the product content"
+
+
+
+  Offer: Consuming free post-login lesson(s) → Encourage purchase for full access
+
+  - Messages during/after free lesson & making the sale
+
+
+
+
+  ---
+  Freeline Messages
+  Visitor → Quiz → Login. Encourage quiz, then encourage login to see results.
+
+
+  Quick Message Settings
+  - Welcome Message (freeline initial)
+  - Get Started Response
+  - How It Works Response
+  - What You Learn Response
+
+
+## Welcome Message
+MessageName:
+Hi! I'm your FLOSC pronunciation coach. I'm here to help you master English pronunciation through personalized practice. Ready to discover exactly where you can improve?
+MessageConditions: initial_message (anything else here)
+
+
+FLOSC v07.08 - Complete IVR Overhaul
+ComponentStatusLinesclass-ivr-parser.php✅ Created393class-condition-evaluator.php✅ Created336ivr.md✅ Created393flosc-app.js✅ Rewritten1,100ivr-settings.php✅ New editor118flosc-app.php✅ Updated config+15flosc.php✅ Updated requires+2
+New Features:
+
+Markdown-based IVR configuration in ai_configuration_files/ivr.md
+4 message styles: pill, button, chip, card (with CSS)
+Condition evaluator: scores, booleans, counters, time, events, logic operators
+Dynamic suggested replies rendered below chat
+Offer cards with countdown timers
+Variable replacement: {name}, {score}, {product_name}, etc.
+Actions: open_quiz, open_registration, open_free_lesson, checkout_*, etc.
+IntroPanel hidden - replaced by dynamic IVR buttons
+Admin editor: textarea to edit ivr.md directly
+
+
+
+
+FLOSC - Freeline, Login, Offer, Sale, Content WordPress Plugin
+
+  FLOSC is a conversational sales funnel framework for WordPress that connects AI-powered chat interfaces with quiz-based learning and multi-provider payment systems. Built for teachers, coaches, and educators who want to convert visitors into paying customers through personalized, interactive experiences.
+
+  The 5 Phases:
+
+  1. Freeline - Visitors take a free quiz (no login required) to assess their skills or needs
+  2. Login - Post-quiz users login to see results, receive a free lesson, and get personalized recommendations
+  3. Offer - Dynamic sales pitch with countdown timers and contextual messaging based on user behavior
+  4. Sale - Post-purchase onboarding to premium content with access management
+  5. Content - Ongoing support and encouragement for active subscribers
+
+  AI-Powered Conversational Interface:
+
+  FLOSC connects multiple AI providers (OpenAI, Anthropic, xAI) with a sophisticated IVR (Interactive Voice Response) system configured via markdown. The system evaluates complex conditions (user phase, quiz score, purchase history, login status) to deliver the right message at the right time. Messages include variable replacement ({name}, {score}, {product_name}), suggested replies with actions, and auto-triggered content based on events like quiz completion or purchase.
+
+  5 Quiz Types Included:
+
+  - Simple Scoring (comma-separated answer matching)
+  - True/False (knowledge checks)
+  - Multiple Choice (traditional testing)
+  - Word Matching (vocabulary, classification)
+  - Pronunciation (audio-based with Speech-to-Text integration)
+
+  Multi-Provider Payment System:
+
+  - Stripe - Credit cards, Apple Pay, subscriptions
+  - Tokens - Internal credit economy for pay-per-use or gamification
+  - Affiliate - Permission-based purchase intent (users get free access via affiliate commissions)
+
+  Complete REST API:
+
+  Process quiz submissions, check user access, manage offers, track tokens, handle webhooks, and more. Extensible architecture allows custom quiz types and payment providers through abstract base classes.
+
+  Technology Stack:
+
+  WordPress 5.8+, PHP 7.4+, vanilla JavaScript, REST API. Integrates with AssemblyAI, Whisper, and Deepgram for speech-to-text. Modern, responsive UI inspired by Claude.ai's conversational interface.
+
+  FLOSC transforms static WordPress sites into dynamic, AI-driven learning and sales platforms with minimal configuration. Works out of the box with sensible defaults, yet fully customizable for advanced use cases.
+
+
+  FLOSC - Freeline, Login, Offer, Sale, Content WordPress Plugin
+
+  FLOSC is a conversational sales funnel framework for WordPress that connects AI-powered chat interfaces with quiz-based learning and multi-provider payment systems. Built for teachers, coaches, and educators who want to convert visitors into paying customers through personalized, interactive experiences.
+

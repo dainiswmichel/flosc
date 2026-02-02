@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Pronunciation Analysis | Master English Sounds</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎯 Get Your FREE Pronunciation Analysis</h1>
+            <p class="subtitle">Discover exactly which sounds you need to master</p>
+        </header>
+
+        <main id="app">
+            <!-- Welcome Screen -->
+            <div id="welcome-screen" class="screen active">
+                <div class="chat-bubble bot">
+                    <p>👋 Hi there! I'm your pronunciation coach.</p>
+                    <p>Would you like a complimentary pronunciation analysis?</p>
+                    <p><strong>It's 100% free and takes just 2 minutes!</strong></p>
+                </div>
+                <div class="button-group">
+                    <button class="btn btn-primary" onclick="startQuiz()">Yes, Analyze My Pronunciation!</button>
+                    <button class="btn btn-secondary" onclick="handleNo()">No Thanks</button>
+                </div>
+                <div id="no-counter" style="display: none; margin-top: 20px;">
+                    <p class="warning">Are you sure? This free analysis can really help! <span id="attempts-left"></span></p>
+                </div>
+            </div>
+
+            <!-- Quiz Screen -->
+            <div id="quiz-screen" class="screen">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                
+                <div class="quiz-instructions">
+                    <h2>📝 Record 3 Simple Sentences</h2>
+                    <p>Click record, read the sentence out loud, then click stop.</p>
+                </div>
+
+                <div id="sentence-carousel"></div>
+
+                <div class="recording-controls">
+                    <button id="record-btn" class="btn btn-record" onclick="startRecording()">
+                        <span class="record-icon">🎤</span> Start Recording
+                    </button>
+                    <button id="stop-btn" class="btn btn-stop" onclick="stopRecording()" disabled>
+                        <span class="stop-icon">⏹️</span> Stop Recording
+                    </button>
+                    <button id="next-btn" class="btn btn-primary" onclick="nextSentence()" disabled>
+                        Next Sentence →
+                    </button>
+                </div>
+
+                <div id="recording-status"></div>
+            </div>
+
+            <!-- Submit Screen -->
+            <div id="submit-screen" class="screen">
+                <div class="chat-bubble bot">
+                    <h2>🎉 Great job!</h2>
+                    <p>To see your personalized evaluation, please enter your email:</p>
+                </div>
+                
+                <form id="email-form" onsubmit="submitQuiz(event)">
+                    <input type="email" id="email-input" placeholder="your@email.com" required>
+                    <button type="submit" class="btn btn-primary">Get My Results</button>
+                </form>
+            </div>
+
+            <!-- Processing Screen -->
+            <div id="processing-screen" class="screen">
+                <div class="loader"></div>
+                <h2>Analyzing Your Pronunciation...</h2>
+                <p>Our AI is analyzing your recordings. This will take just a moment.</p>
+            </div>
+
+            <!-- Results Redirect Screen -->
+            <div id="results-screen" class="screen">
+                <div class="success-message">
+                    <h2>✅ Analysis Complete!</h2>
+                    <p>Please check your email and click the login link to see your detailed results.</p>
+                    <p class="note">Don't see it? Check your spam folder.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="/js/freeline.js"></script>
+</body>
+</html>

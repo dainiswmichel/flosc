@@ -1,0 +1,1063 @@
+/* Korboc.lv Survey Styles - 1-3-7 Color Palette */
+
+:root {
+    /* 1-3-7 Formative Palette */
+    --color-white: rgb(254, 254, 254);
+    --color-near-white: rgb(249, 249, 249);
+    --color-light-gray: rgb(240, 240, 240);
+    
+    /* Green-dominant folk colors (G > R and G > B) */
+    --color-forest: rgb(28, 77, 28);        /* Dark forest green */
+    --color-meadow: rgb(37, 111, 37);       /* Medium green */
+    --color-spring: rgb(74, 148, 74);       /* Light green */
+    --color-moss: rgb(111, 185, 111);       /* Pale green */
+    
+    /* Warm folk costume accents */
+    --color-earth: rgb(111, 74, 37);        /* Warm brown */
+    --color-rust: rgb(148, 74, 37);         /* Rust orange */
+    --color-amber: rgb(255, 140, 50);       /* Friendly orange */
+    
+    /* Text colors */
+    --color-text: rgb(0, 0, 0);
+    --color-text-light: rgb(74, 74, 74);
+    --color-text-lighter: rgb(111, 111, 111);
+    
+    /* Extended palette (×37 multiplier) for subtle effects */
+    --color-forest-hover: rgb(37, 111, 37);
+    --color-shadow: rgba(0, 0, 0, 0.07);
+    
+    /* Spacing */
+    --space-xs: 0.5rem;
+    --space-sm: 1rem;
+    --space-md: 1.5rem;
+    --space-lg: 2rem;
+    --space-xl: 3rem;
+    
+    /* Typography */
+    --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-heading: Georgia, "Times New Roman", serif;
+}
+
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--color-text);
+    background-color: var(--color-white);
+    padding: var(--space-md);
+}
+
+/* Container */
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: var(--color-white);
+}
+
+/* Header */
+.header {
+    text-align: center;
+    padding: var(--space-xl) var(--space-md);
+    background-color: var(--color-near-white);
+    border-bottom: 3px solid var(--color-forest);
+    margin-bottom: var(--space-lg);
+}
+
+.header h1 {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    color: var(--color-forest);
+    margin-bottom: var(--space-sm);
+}
+
+.tagline {
+    font-size: 1.1rem;
+    color: var(--color-text-light);
+    font-style: italic;
+}
+
+.folk-ornament {
+    color: var(--color-rust);
+    font-size: 1.5rem;
+    letter-spacing: 1rem;
+    margin: var(--space-sm) 0;
+}
+
+/* Intro Section */
+.intro-section {
+    padding: var(--space-lg);
+    background-color: var(--color-near-white);
+    border-left: 4px solid var(--color-meadow);
+    margin-bottom: var(--space-lg);
+}
+
+.intro-section p {
+    margin-bottom: var(--space-sm);
+}
+
+.question-highlight {
+    font-size: 1.2rem;
+    color: var(--color-forest);
+    padding: var(--space-md);
+    background-color: var(--color-white);
+    border-radius: 4px;
+    margin: var(--space-md) 0;
+}
+
+.question-highlight a {
+    color: var(--color-forest);
+    text-decoration: underline;
+}
+
+.question-highlight a:hover {
+    color: var(--color-meadow);
+}
+
+/* Feature and Gift Boxes */
+.features-box, .gift-box {
+    background-color: var(--color-white);
+    padding: var(--space-md);
+    margin: var(--space-md) 0;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px var(--color-shadow);
+}
+
+.features-box h3 {
+    color: var(--color-forest);
+    margin-bottom: var(--space-sm);
+}
+
+.features-box ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.features-box li {
+    padding: var(--space-xs) 0;
+    padding-left: var(--space-md);
+}
+
+.gift-box {
+    border-left: 4px solid var(--color-amber);
+}
+
+/* Alerts */
+.alert {
+    padding: var(--space-md);
+    margin-bottom: var(--space-lg);
+    border-radius: 4px;
+    border-left: 4px solid;
+}
+
+.alert-success {
+    background-color: rgb(222, 247, 222);
+    border-color: var(--color-meadow);
+    color: rgb(28, 77, 28);
+}
+
+.alert-error {
+    background-color: rgb(254, 222, 222);
+    border-color: rgb(185, 37, 37);
+    color: rgb(111, 28, 28);
+}
+
+/* Form Sections */
+.form-section {
+    background-color: var(--color-near-white);
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+    border-radius: 4px;
+    border-top: 2px solid var(--color-forest);
+}
+
+.form-section h2 {
+    font-family: var(--font-heading);
+    color: var(--color-forest);
+    font-size: 1.8rem;
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--color-light-gray);
+}
+
+/* Form Groups */
+.form-group {
+    margin-bottom: var(--space-md);
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--space-xs);
+}
+
+/* Field hints and disclaimers */
+.field-hint {
+    font-size: 0.875rem;
+    color: #667;
+    margin-top: 0.25rem;
+    margin-bottom: 0.5rem;
+    font-style: italic;
+}
+
+.field-disclaimer {
+    font-size: 0.875rem;
+    color: #998;
+    margin-top: 0.5rem;
+    font-style: italic;
+    line-height: 1.4;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="tel"],
+.form-group input[type="number"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: var(--space-sm);
+    border: 2px solid var(--color-light-gray);
+    border-radius: 4px;
+    font-family: var(--font-body);
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--color-meadow);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Checkbox and Radio Groups */
+.checkbox-group,
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.checkbox-label,
+.radio-label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    padding: var(--space-sm);
+    background-color: var(--color-white);
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.checkbox-label:hover,
+.radio-label:hover {
+    background-color: var(--color-light-gray);
+}
+
+.checkbox-label input,
+.radio-label input {
+    margin-right: var(--space-sm);
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.consent-checkbox {
+    background-color: var(--color-near-white);
+    border: 2px solid var(--color-meadow);
+    padding: var(--space-md);
+}
+
+/* Form Actions */
+.form-actions {
+    text-align: center;
+    padding: var(--space-lg) 0;
+}
+
+.btn-submit {
+    background-color: var(--color-forest);
+    color: var(--color-white);
+    font-size: 1.2rem;
+    font-weight: 600;
+    padding: var(--space-md) var(--space-xl);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.1s;
+}
+
+.btn-submit:hover {
+    background-color: var(--color-forest-hover);
+    transform: translateY(-2px);
+}
+
+.btn-submit:active {
+    transform: translateY(0);
+}
+
+.btn-submit.disabled,
+.btn-submit:disabled {
+    background-color: var(--color-text-lighter) !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+    pointer-events: none !important;
+}
+
+.btn-submit.disabled:hover,
+.btn-submit:disabled:hover {
+    transform: none !important;
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    padding: var(--space-xl) var(--space-md);
+    background-color: var(--color-near-white);
+    border-top: 3px solid var(--color-forest);
+    margin-top: var(--space-lg);
+}
+
+.footer p {
+    margin-bottom: var(--space-xs);
+}
+
+.footer-note {
+    color: var(--color-text-light);
+    font-style: italic;
+}
+
+.footer-contact {
+    margin-top: var(--space-md);
+}
+
+.footer-contact a {
+    color: var(--color-forest);
+    text-decoration: none;
+}
+
+.footer-contact a:hover {
+    text-decoration: underline;
+}
+
+/* Success Page Styles */
+.success-container {
+    text-align: center;
+    padding: var(--space-xl);
+}
+
+.success-icon {
+    font-size: 4rem;
+    color: var(--color-meadow);
+    margin-bottom: var(--space-md);
+}
+
+.download-box {
+    background-color: var(--color-near-white);
+    padding: var(--space-lg);
+    margin: var(--space-lg) 0;
+    border-radius: 4px;
+    border: 2px solid var(--color-amber);
+}
+
+.download-links {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    max-width: 400px;
+    margin: var(--space-lg) auto 0;
+}
+
+.btn-download {
+    display: inline-block;
+    background-color: var(--color-amber);
+    color: var(--color-text);
+    padding: var(--space-md) var(--space-lg);
+    border-radius: 4px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background-color 0.3s, transform 0.1s;
+}
+
+.btn-download:hover {
+    background-color: var(--color-rust);
+    color: var(--color-white);
+    transform: translateY(-2px);
+}
+
+.btn-home {
+    display: inline-block;
+    margin-top: var(--space-lg);
+    color: var(--color-forest);
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.btn-home:hover {
+    text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    body {
+        padding: var(--space-sm);
+    }
+    
+    .header h1 {
+        font-size: 2rem;
+    }
+    
+    .folk-ornament {
+        font-size: 1.2rem;
+        letter-spacing: 0.5rem;
+    }
+    
+    .form-section {
+        padding: var(--space-md);
+    }
+    
+    .form-section h2 {
+        font-size: 1.5rem;
+    }
+}
+
+/* Multi-step Progress Bar */
+.progress-bar {
+    display: flex;
+    justify-content: space-between;
+    margin: var(--space-lg) 0;
+    padding: 0 var(--space-md);
+}
+
+.progress-step {
+    flex: 1;
+    text-align: center;
+    position: relative;
+    opacity: 0.5;
+}
+
+.progress-step.active,
+.progress-step.completed {
+    opacity: 1;
+}
+
+.progress-step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 50%;
+    right: -50%;
+    height: 2px;
+    background-color: var(--color-light-gray);
+    z-index: -1;
+}
+
+.progress-step.completed:not(:last-child)::after {
+    background-color: var(--color-meadow);
+}
+
+.step-number {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--color-light-gray);
+    color: var(--color-text-light);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-bottom: var(--space-xs);
+}
+
+.progress-step.active .step-number {
+    background-color: var(--color-forest);
+    color: white;
+}
+
+.progress-step.completed .step-number {
+    background-color: var(--color-meadow);
+    color: white;
+}
+
+.step-label {
+    font-size: 0.9rem;
+    color: var(--color-text-light);
+}
+
+.progress-step.active .step-label {
+    color: var(--color-forest);
+    font-weight: 600;
+}
+
+/* Multi-step Form */
+.form-step {
+    display: none;
+}
+
+.form-step.active {
+    display: block;
+}
+
+.form-navigation {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+}
+
+.btn-prev,
+.btn-next {
+    flex: 1;
+    padding: var(--space-md) var(--space-lg);
+    border: 2px solid var(--color-forest);
+    background-color: white;
+    color: var(--color-forest);
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-prev:hover,
+.btn-next:hover {
+    background-color: var(--color-forest);
+    color: white;
+}
+
+.btn-next {
+    background-color: var(--color-forest);
+    color: white;
+}
+
+.btn-next:hover {
+    background-color: var(--color-meadow);
+}
+
+/* Form Messages */
+.form-message {
+    padding: var(--space-md);
+    border-radius: 4px;
+    margin-top: var(--space-md);
+    text-align: center;
+}
+
+.form-message.success {
+    background-color: rgb(222, 247, 222);
+    border: 2px solid var(--color-meadow);
+    color: rgb(28, 77, 28);
+}
+
+.form-message.error {
+    background-color: rgb(254, 222, 222);
+    border: 2px solid rgb(185, 37, 37);
+    color: rgb(111, 28, 28);
+}
+
+/* Field Errors */
+input.error,
+textarea.error,
+select.error {
+    border-color: rgb(185, 37, 37);
+}
+
+.error-message {
+    display: block;
+    color: rgb(185, 37, 37);
+    font-size: 0.9rem;
+    margin-top: var(--space-xs);
+}
+
+/* Container adjustments */
+.korboc-survey-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Social Login Section */
+.social-login-section {
+    background-color: var(--color-near-white);
+    border: 2px solid var(--color-meadow);
+    border-radius: 4px;
+    padding: var(--space-lg);
+    margin-bottom: var(--space-lg);
+    text-align: center;
+}
+
+.social-login-section h3 {
+    color: var(--color-forest);
+    margin-bottom: var(--space-md);
+}
+
+.social-login-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    padding: var(--space-md) var(--space-lg);
+    border: 2px solid var(--color-light-gray);
+    border-radius: 4px;
+    background-color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.social-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px var(--color-shadow);
+}
+
+.google-btn {
+    color: #333;
+}
+
+.google-btn:hover {
+    border-color: #4285F4;
+}
+
+.facebook-btn {
+    color: #1877F2;
+}
+
+.facebook-btn:hover {
+    border-color: #1877F2;
+}
+
+.social-note {
+    margin-top: var(--space-md);
+    color: var(--color-text-light);
+    font-style: italic;
+}
+
+@media (max-width: 768px) {
+    .social-login-buttons {
+        max-width: 100%;
+    }
+}
+
+.korboc-survey-header {
+    text-align: center;
+    padding: var(--space-xl) var(--space-md);
+    background-color: var(--color-near-white);
+    border-bottom: 3px solid var(--color-forest);
+    margin-bottom: var(--space-lg);
+}
+
+.korboc-survey-intro {
+    padding: var(--space-lg);
+    background-color: var(--color-near-white);
+    border-left: 4px solid var(--color-meadow);
+    margin-bottom: var(--space-lg);
+}
+
+.korboc-survey-footer {
+    text-align: center;
+    padding: var(--space-xl) var(--space-md);
+    background-color: var(--color-near-white);
+    border-top: 3px solid var(--color-forest);
+    margin-top: var(--space-lg);
+}
+
+/* Print Styles */
+@media print {
+    .btn-submit,
+    .btn-download,
+    .btn-home,
+    .btn-prev,
+    .btn-next {
+        display: none;
+    }
+    
+    body {
+        background-color: white;
+    }
+}
+
+/* Sticky Footer for Account Creation */
+.korboc-survey-container {
+    padding-bottom: 120px; /* Space for sticky footer */
+}
+
+.korboc-sticky-footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: white;
+    border-top: 3px solid var(--color-forest);
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    padding: var(--space-md);
+}
+
+.footer-content {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-md);
+    flex-wrap: wrap;
+}
+
+.footer-social-section {
+    display: flex;
+    gap: var(--space-sm);
+}
+
+.footer-divider {
+    color: var(--color-text-light);
+    font-weight: 600;
+}
+
+.footer-email-section {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+}
+
+.sticky-email-input {
+    padding: var(--space-sm) var(--space-md);
+    border: 2px solid var(--color-light-gray);
+    border-radius: 4px;
+    font-size: 1rem;
+    min-width: 200px;
+}
+
+.sticky-email-input:focus {
+    outline: none;
+    border-color: var(--color-meadow);
+}
+
+.btn-create-account {
+    background-color: var(--color-forest);
+    color: white;
+    padding: var(--space-sm) var(--space-lg);
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    white-space: nowrap;
+}
+
+.btn-create-account:hover {
+    background-color: var(--color-meadow);
+}
+
+@media (max-width: 768px) {
+    .footer-content {
+        flex-direction: column;
+        gap: var(--space-sm);
+    }
+    
+    .footer-email-section {
+        width: 100%;
+    }
+    
+    .sticky-email-input {
+        flex: 1;
+        min-width: 0;
+    }
+    
+    .korboc-survey-container {
+        padding-bottom: 180px !important; /* More space on mobile */
+    }
+}
+
+/* ============================================
+   MULTISTEP SURVEY STYLES v3.3
+   ============================================ */
+
+/* Progress Bar */
+.korboc-progress-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+.korboc-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--color-light-gray);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.korboc-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-forest), var(--color-meadow));
+    border-radius: 10px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.korboc-progress-text {
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--color-text-light);
+    font-weight: 500;
+}
+
+/* Survey Pages */
+.survey-page {
+    display: none;
+    opacity: 0;
+    transform: translateX(30px);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.survey-page.active {
+    display: block;
+    opacity: 1;
+    transform: translateX(0);
+    animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Navigation Buttons */
+.survey-navigation {
+    max-width: 800px;
+    margin: 3rem auto 2rem;
+    padding: 0 1rem;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
+}
+
+.btn-prev, .btn-next {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border: 2px solid var(--color-forest);
+    background: white;
+    color: var(--color-forest);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    flex: 1;
+    max-width: 200px;
+}
+
+.btn-prev:hover, .btn-next:hover {
+    background: var(--color-forest);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(28, 77, 28, 0.3);
+}
+
+.btn-next {
+    margin-left: auto;
+}
+
+/* Thank You Page */
+.thank-you-section {
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.thank-you-section h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+    color: var(--color-forest);
+}
+
+.thank-you-message {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    color: var(--color-text);
+}
+
+.consent-info {
+    background: #f5f9f5;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-top: 2rem;
+}
+
+.consent-info p {
+    margin: 0.5rem 0;
+    color: var(--color-meadow);
+    font-size: 0.95rem;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    text-align: center;
+    padding: 2rem;
+}
+
+.spinner {
+    border: 4px solid var(--color-light-gray);
+    border-top: 4px solid var(--color-forest);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Error state */
+.error {
+    border-color: #d32f2f !important;
+    animation: shake 0.5s;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-10px); }
+    75% { transform: translateX(10px); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .survey-navigation {
+        flex-direction: column;
+    }
+    
+    .btn-prev, .btn-next, .btn-submit {
+        max-width: 100%;
+    }
+    
+    .btn-next {
+        margin-left: 0;
+    }
+}
+
+/* ============================================
+   SOCIAL LOGIN BUTTON FIXES
+   ============================================ */
+
+/* Fix Twitter/X: Make X icon white so it shows on black background */
+.footer-social-section .bb-sso-button-twitter svg path {
+    fill: white !important;
+}
+
+/* Fix Google: Change background from blue to white per Google brand guidelines */
+.footer-social-section .bb-sso-button-google {
+    background-color: white !important;
+    border: 1px solid #dadce0; /* Subtle border like Google's style */
+}
+
+
+/* ============================================
+   v5.0.1: AUTO-SAVE INDICATORS
+   ============================================ */
+
+/* Save indicator floating notification */
+.korboc-save-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 12px var(--color-shadow);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+    z-index: 10000;
+    pointer-events: none;
+}
+
+.korboc-save-indicator.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.korboc-save-indicator.saving {
+    background: var(--color-amber);
+    color: var(--color-text);
+}
+
+.korboc-save-indicator.saved {
+    background: var(--color-spring);
+    color: var(--color-white);
+}
+
+/* Message notifications */
+.korboc-message {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-20px);
+    padding: 15px 25px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    box-shadow: 0 4px 16px var(--color-shadow);
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 10001;
+    max-width: 90%;
+    text-align: center;
+}
+
+.korboc-message.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.korboc-message.success {
+    background: var(--color-spring);
+    color: var(--color-white);
+}
+
+.korboc-message.error {
+    background: var(--color-rust);
+    color: var(--color-white);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .korboc-save-indicator {
+        bottom: 10px;
+        right: 10px;
+        padding: 10px 16px;
+        font-size: 13px;
+    }
+
+    .korboc-message {
+        top: 60px;
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+}

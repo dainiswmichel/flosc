@@ -1,0 +1,663 @@
+/**
+ * =============================================================================
+ * FLOSC FRAMEWORK - Chat UI Styles v2.0.4
+ * =============================================================================
+ * 
+ * Clean, modern chat interface styling.
+ * Responsive design works on mobile and desktop.
+ * 
+ * =============================================================================
+ */
+
+
+/* =============================================================================
+ * SECTION: CSS VARIABLES
+ * =============================================================================
+ * Customize colors and sizing in one place
+ */
+
+:root {
+    /* Brand Colors */
+    --flosc-primary: #4f46e5;
+    --flosc-primary-hover: #4338ca;
+    --flosc-secondary: #10b981;
+    --flosc-accent: #f59e0b;
+    
+    /* Chat Colors */
+    --flosc-bg: #f8fafc;
+    --flosc-chat-bg: #ffffff;
+    --flosc-bot-msg: #f1f5f9;
+    --flosc-user-msg: #4f46e5;
+    --flosc-user-text: #ffffff;
+    --flosc-text: #1e293b;
+    --flosc-text-muted: #64748b;
+    
+    /* Sizing */
+    --flosc-max-width: 480px;
+    --flosc-border-radius: 16px;
+    --flosc-msg-radius: 18px;
+    
+    /* Shadows */
+    --flosc-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --flosc-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+
+/* =============================================================================
+ * SECTION: CONTAINER
+ * =============================================================================
+ */
+
+#flosc-container {
+    max-width: var(--flosc-max-width);
+    margin: 0 auto;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    color: var(--flosc-text);
+}
+
+/* Fullpage mode */
+#flosc-container.flosc-fullpage {
+    max-width: 100%;
+    height: 100vh;
+}
+
+#flosc-container.flosc-fullpage .flosc-chat-window {
+    height: 100vh;
+    border-radius: 0;
+    border: none;
+}
+
+
+/* =============================================================================
+ * SECTION: CHAT WINDOW
+ * =============================================================================
+ */
+
+.flosc-chat-window {
+    background: var(--flosc-chat-bg);
+    border-radius: var(--flosc-border-radius);
+    box-shadow: var(--flosc-shadow-lg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 600px;
+    max-height: 80vh;
+}
+
+
+/* =============================================================================
+ * SECTION: HEADER
+ * =============================================================================
+ */
+
+.flosc-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    background: linear-gradient(135deg, var(--flosc-primary) 0%, var(--flosc-primary-hover) 100%);
+    color: white;
+}
+
+.flosc-avatar {
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-right: 12px;
+}
+
+.flosc-info {
+    flex: 1;
+}
+
+.flosc-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.flosc-status {
+    margin: 4px 0 0;
+    font-size: 13px;
+    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.flosc-status-dot {
+    width: 8px;
+    height: 8px;
+    background: #34d399;
+    border-radius: 50%;
+    animation: flosc-pulse 2s infinite;
+}
+
+@keyframes flosc-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+
+/* =============================================================================
+ * SECTION: MESSAGES AREA
+ * =============================================================================
+ */
+
+.flosc-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    background: var(--flosc-bg);
+    scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+.flosc-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.flosc-messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.flosc-messages::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+
+
+/* =============================================================================
+ * SECTION: MESSAGE BUBBLES
+ * =============================================================================
+ */
+
+.flosc-message {
+    display: flex;
+    margin-bottom: 16px;
+    animation: flosc-fadeIn 0.3s ease;
+}
+
+@keyframes flosc-fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Bot message */
+.flosc-message-bot {
+    justify-content: flex-start;
+}
+
+.flosc-message-bot .flosc-message-avatar {
+    width: 32px;
+    height: 32px;
+    background: var(--flosc-primary);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.flosc-message-bot .flosc-message-content {
+    background: var(--flosc-bot-msg);
+    color: var(--flosc-text);
+    padding: 12px 16px;
+    border-radius: var(--flosc-msg-radius);
+    border-top-left-radius: 4px;
+    max-width: 85%;
+}
+
+/* User message */
+.flosc-message-user {
+    justify-content: flex-end;
+}
+
+.flosc-message-user .flosc-message-content {
+    background: var(--flosc-user-msg);
+    color: var(--flosc-user-text);
+    padding: 12px 16px;
+    border-radius: var(--flosc-msg-radius);
+    border-top-right-radius: 4px;
+    max-width: 85%;
+}
+
+
+/* =============================================================================
+ * SECTION: TYPING INDICATOR
+ * =============================================================================
+ */
+
+.flosc-typing {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 16px;
+    background: var(--flosc-bot-msg);
+    border-radius: var(--flosc-msg-radius);
+    width: fit-content;
+    margin-bottom: 16px;
+}
+
+.flosc-typing.hidden {
+    display: none;
+}
+
+.flosc-typing span {
+    width: 8px;
+    height: 8px;
+    background: var(--flosc-text-muted);
+    border-radius: 50%;
+    animation: flosc-typing 1.4s infinite ease-in-out;
+}
+
+.flosc-typing span:nth-child(1) { animation-delay: 0s; }
+.flosc-typing span:nth-child(2) { animation-delay: 0.2s; }
+.flosc-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes flosc-typing {
+    0%, 60%, 100% { transform: translateY(0); }
+    30% { transform: translateY(-6px); }
+}
+
+
+/* =============================================================================
+ * SECTION: INPUT AREA
+ * =============================================================================
+ */
+
+.flosc-input-area {
+    padding: 16px 20px;
+    background: var(--flosc-chat-bg);
+    border-top: 1px solid #e2e8f0;
+}
+
+
+/* =============================================================================
+ * SECTION: QUICK REPLY BUTTONS
+ * =============================================================================
+ */
+
+.flosc-replies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.flosc-reply-btn {
+    background: var(--flosc-primary);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 24px;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--flosc-shadow);
+}
+
+.flosc-reply-btn:hover {
+    background: var(--flosc-primary-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--flosc-shadow-lg);
+}
+
+.flosc-reply-btn:active {
+    transform: translateY(0);
+}
+
+.flosc-reply-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+
+/* =============================================================================
+ * SECTION: TEXT INPUT (v2.0.4)
+ * =============================================================================
+ */
+
+.flosc-text-input {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.flosc-text-input.hidden {
+    display: none;
+}
+
+.flosc-text-input.visible {
+    display: flex;
+}
+
+.flosc-quiz-display {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: 500;
+    text-align: center;
+    letter-spacing: 2px;
+}
+
+.flosc-quiz-field {
+    width: 100%;
+    padding: 14px 18px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 16px;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.flosc-quiz-field:focus {
+    outline: none;
+    border-color: var(--flosc-primary);
+}
+
+.flosc-submit-btn {
+    background: var(--flosc-secondary);
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.flosc-submit-btn:hover {
+    background: #059669;
+}
+
+
+/* =============================================================================
+ * SECTION: AUDIO RECORDER
+ * =============================================================================
+ */
+
+.flosc-recorder {
+    text-align: center;
+    padding: 20px;
+}
+
+.flosc-recorder.hidden {
+    display: none;
+}
+
+.flosc-recorder.visible {
+    display: block;
+}
+
+.flosc-quiz-text {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 16px 20px;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 20px;
+}
+
+.flosc-record-btn {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 4px solid var(--flosc-primary);
+    background: white;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    transition: all 0.3s ease;
+}
+
+.flosc-record-btn:hover {
+    background: #f1f5f9;
+    transform: scale(1.05);
+}
+
+.flosc-record-btn.recording {
+    background: #fef2f2;
+    border-color: #ef4444;
+    animation: flosc-record-pulse 1s infinite;
+}
+
+@keyframes flosc-record-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    50% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+}
+
+.flosc-record-icon {
+    font-size: 36px;
+}
+
+.flosc-record-label {
+    font-size: 11px;
+    color: var(--flosc-text-muted);
+    margin-top: 4px;
+}
+
+.flosc-record-status {
+    color: var(--flosc-text-muted);
+    font-size: 14px;
+    margin: 0;
+}
+
+/* Waveform animation */
+.flosc-waveform {
+    display: none;
+    justify-content: center;
+    gap: 4px;
+    height: 30px;
+    margin-bottom: 16px;
+}
+
+.flosc-waveform.active {
+    display: flex;
+}
+
+.flosc-waveform span {
+    width: 4px;
+    background: var(--flosc-primary);
+    border-radius: 2px;
+    animation: flosc-wave 0.5s infinite ease-in-out alternate;
+}
+
+.flosc-waveform span:nth-child(1) { animation-delay: 0s; height: 10px; }
+.flosc-waveform span:nth-child(2) { animation-delay: 0.1s; height: 20px; }
+.flosc-waveform span:nth-child(3) { animation-delay: 0.2s; height: 30px; }
+.flosc-waveform span:nth-child(4) { animation-delay: 0.3s; height: 20px; }
+.flosc-waveform span:nth-child(5) { animation-delay: 0.4s; height: 10px; }
+
+@keyframes flosc-wave {
+    from { transform: scaleY(0.3); }
+    to { transform: scaleY(1); }
+}
+
+
+/* =============================================================================
+ * SECTION: SOCIAL LOGIN
+ * =============================================================================
+ */
+
+.flosc-social-login {
+    margin-bottom: 16px;
+}
+
+.flosc-social-login.hidden {
+    display: none;
+}
+
+.flosc-social-note {
+    text-align: center;
+    color: var(--flosc-text-muted);
+    font-size: 14px;
+}
+
+.flosc-social-note a {
+    color: var(--flosc-primary);
+}
+
+
+/* =============================================================================
+ * SECTION: COUNTDOWN TIMER
+ * =============================================================================
+ */
+
+.flosc-countdown {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    background: #fef2f2;
+    border-radius: 12px;
+    margin-bottom: 16px;
+}
+
+.flosc-countdown.hidden {
+    display: none;
+}
+
+.flosc-countdown-label {
+    color: #991b1b;
+    font-size: 14px;
+}
+
+.flosc-countdown-time {
+    color: #dc2626;
+    font-size: 20px;
+    font-weight: 700;
+    font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+
+/* =============================================================================
+ * SECTION: LESSON CONTENT
+ * =============================================================================
+ */
+
+.flosc-lesson {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: var(--flosc-shadow);
+}
+
+.flosc-lesson-title {
+    margin: 0 0 12px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--flosc-primary);
+}
+
+.flosc-lesson-body {
+    font-size: 15px;
+    line-height: 1.7;
+}
+
+.flosc-lesson-body p {
+    margin: 0 0 12px;
+}
+
+.flosc-lesson-body img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+.flosc-lesson-excerpt {
+    color: var(--flosc-text-muted);
+    font-size: 14px;
+    margin: 0;
+}
+
+.flosc-lesson-message {
+    margin-bottom: 16px;
+}
+
+.flosc-lesson-message .flosc-message-content {
+    background: white;
+    max-width: 100%;
+    padding: 0;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+
+/* =============================================================================
+ * SECTION: RESPONSIVE
+ * =============================================================================
+ */
+
+@media (max-width: 520px) {
+    #flosc-container {
+        margin: 0;
+    }
+    
+    .flosc-chat-window {
+        border-radius: 0;
+        height: 100vh;
+        max-height: 100vh;
+    }
+    
+    .flosc-header {
+        padding: 12px 16px;
+    }
+    
+    .flosc-messages {
+        padding: 16px;
+    }
+    
+    .flosc-input-area {
+        padding: 12px 16px;
+    }
+    
+    .flosc-reply-btn {
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+}
+
+
+/* =============================================================================
+ * SECTION: LANDING PAGE OVERRIDES
+ * =============================================================================
+ */
+
+body.flosc-landing-page {
+    margin: 0;
+    padding: 0;
+    background: var(--flosc-bg);
+}
+
+body.flosc-landing-page #flosc-container {
+    max-width: 100%;
+}
+
+body.flosc-landing-page .flosc-chat-window {
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+}
+
+body.flosc-landing-page .flosc-messages {
+    height: calc(100vh - 180px);
+}

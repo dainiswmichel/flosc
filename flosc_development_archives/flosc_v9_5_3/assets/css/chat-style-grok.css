@@ -1,0 +1,43 @@
+/* Grok Style Preset (v9.4.1) - VARIABLES ONLY */
+:root {
+    --flosc-bg: #181c1f;
+    --flosc-text: #f3f4f6;
+    --flosc-text-muted: #9ca3af;
+    --flosc-border: #23272a;
+    --flosc-accent: #ff4a4a;
+    --flosc-accent-hover: #d7263d;
+    --flosc-user-message-bg: #ff4a4a;
+    --flosc-user-message-text: #fff;
+    --flosc-user-message-radius: 18px 18px 4px 18px;
+    --flosc-user-avatar-bg: #ff4a4a;
+    --flosc-user-avatar-text: #fff;
+    --flosc-assistant-message-bg: #23272a;
+    --flosc-assistant-message-text: #f3f4f6;
+    --flosc-assistant-message-border: 1px solid #23272a;
+    --flosc-assistant-message-radius: 0;
+    --flosc-assistant-avatar-bg: #23272a;
+    --flosc-assistant-avatar-text: #ff4a4a;
+    --flosc-input-bg: #23272a;
+    --flosc-input-field-bg: #181c1f;
+    --flosc-input-field-border: #23272a;
+    --flosc-input-field-text: #f3f4f6;
+    --flosc-input-placeholder: #9ca3af;
+    --flosc-send-btn-bg: #ff4a4a;
+    --flosc-send-btn-text: #fff;
+    --flosc-sidebar-bg: #23272a;
+    --flosc-sidebar-text: #f3f4f6;
+    --flosc-sidebar-text-muted: #9ca3af;
+    --flosc-sidebar-hover: #181c1f;
+    --flosc-sidebar-active: #ff4a4a;
+    --flosc-sidebar-border: #23272a;
+    --flosc-pill-bg: #23272a;
+    --flosc-pill-text: #ff4a4a;
+    --flosc-pill-border: #23272a;
+    --flosc-pill-hover-bg: #181c1f;
+    --flosc-pill-hover-text: #fff;
+    --flosc-pill-hover-border: #ff4a4a;
+    --flosc-code-bg: #23272a;
+    --flosc-code-text: #f3f4f6;
+    --flosc-scrollbar-thumb: #23272a;
+    --flosc-scrollbar-thumb-hover: #ff4a4a;
+}

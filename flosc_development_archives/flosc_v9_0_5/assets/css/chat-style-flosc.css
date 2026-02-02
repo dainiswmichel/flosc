@@ -1,0 +1,382 @@
+/**
+ * FLOSC Default Chat Style
+ * Professional, classy chat design with scaling system
+ * Focus: 80% of design effort
+ */
+
+/* ============================================
+   CSS VARIABLES & SCALING SYSTEM (100%-200%)
+   ============================================ */
+
+:root {
+    /* Scaling - User adjustable from 100% to 200% */
+    --flosc-scale: 100%;
+
+    /* Base sizes - scale everything proportionally */
+    --flosc-base-font: calc(15px * var(--flosc-scale) / 100);
+    --flosc-base-spacing: calc(12px * var(--flosc-scale) / 100);
+    --flosc-bubble-padding: calc(12px 16px * var(--flosc-scale) / 100);
+    --flosc-avatar-size: calc(36px * var(--flosc-scale) / 100);
+    --flosc-border-radius: calc(18px * var(--flosc-scale) / 100);
+    --flosc-gap: calc(12px * var(--flosc-scale) / 100);
+    --flosc-message-max-width: calc(75% * var(--flosc-scale) / 100);
+
+    /* Colors - FLOSC Default (subtle, professional) */
+    --flosc-user-bg: #4f46e5;
+    --flosc-user-text: #ffffff;
+    --flosc-assistant-bg: #f5f5f5;
+    --flosc-assistant-text: #1a1a1a;
+    --flosc-border-color: #e5e5e5;
+    --flosc-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --flosc-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+    /* Font family - default system fonts, can be overridden */
+    --flosc-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+/* Font presets with I/l/1 differentiation */
+[data-flosc-font="ibm-plex-mono"] {
+    --flosc-font-family: 'IBM Plex Mono', 'Courier New', monospace;
+}
+
+[data-flosc-font="source-code-pro"] {
+    --flosc-font-family: 'Source Code Pro', 'Courier New', monospace;
+}
+
+[data-flosc-font="inter"] {
+    --flosc-font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+[data-flosc-font="roboto-mono"] {
+    --flosc-font-family: 'Roboto Mono', 'Courier New', monospace;
+}
+
+[data-flosc-font="fira-code"] {
+    --flosc-font-family: 'Fira Code', 'Courier New', monospace;
+}
+
+/* Color theme variations (subtle, professional) */
+[data-flosc-theme="default"] {
+    /* Already defined in :root */
+}
+
+[data-flosc-theme="claude-tan"] {
+    --flosc-user-bg: #d4a574;
+    --flosc-user-text: #2d2013;
+    --flosc-assistant-bg: #f8f6f3;
+    --flosc-assistant-text: #2d2013;
+    --flosc-border-color: #e8e4df;
+}
+
+[data-flosc-theme="ocean"] {
+    --flosc-user-bg: #0891b2;
+    --flosc-user-text: #ffffff;
+    --flosc-assistant-bg: #f0f9ff;
+    --flosc-assistant-text: #0c4a6e;
+    --flosc-border-color: #e0f2fe;
+}
+
+[data-flosc-theme="forest"] {
+    --flosc-user-bg: #059669;
+    --flosc-user-text: #ffffff;
+    --flosc-assistant-bg: #f0fdf4;
+    --flosc-assistant-text: #064e3b;
+    --flosc-border-color: #dcfce7;
+}
+
+[data-flosc-theme="sunset"] {
+    --flosc-user-bg: #ea580c;
+    --flosc-user-text: #ffffff;
+    --flosc-assistant-bg: #fff7ed;
+    --flosc-assistant-text: #7c2d12;
+    --flosc-border-color: #fed7aa;
+}
+
+[data-flosc-theme="midnight"] {
+    --flosc-user-bg: #6366f1;
+    --flosc-user-text: #ffffff;
+    --flosc-assistant-bg: #f5f5ff;
+    --flosc-assistant-text: #312e81;
+    --flosc-border-color: #e0e7ff;
+}
+
+/* ============================================
+   MESSAGE CONTAINER
+   ============================================ */
+
+.messages {
+    font-family: var(--flosc-font-family);
+    font-size: var(--flosc-base-font);
+    line-height: 1.6;
+}
+
+/* ============================================
+   MESSAGE BUBBLES - EXCELLENT DESIGN
+   ============================================ */
+
+.message {
+    display: flex;
+    gap: var(--flosc-gap);
+    margin-bottom: calc(20px * var(--flosc-scale) / 100);
+    align-items: flex-start;
+    animation: messageSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes messageSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* User messages - right aligned */
+.message.user {
+    flex-direction: row-reverse;
+    justify-content: flex-start;
+}
+
+/* ============================================
+   AVATARS - CLEAN & PROFESSIONAL
+   ============================================ */
+
+.message-avatar {
+    width: var(--flosc-avatar-size);
+    height: var(--flosc-avatar-size);
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(18px * var(--flosc-scale) / 100);
+    font-weight: 500;
+    box-shadow: var(--flosc-shadow-sm);
+}
+
+.message.user .message-avatar {
+    background: var(--flosc-user-bg);
+    color: var(--flosc-user-text);
+}
+
+.message.assistant .message-avatar {
+    background: var(--flosc-assistant-bg);
+    border: 1px solid var(--flosc-border-color);
+}
+
+/* ============================================
+   MESSAGE CONTENT - PROPER SPACING
+   ============================================ */
+
+.message-content {
+    max-width: var(--flosc-message-max-width);
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.message.user .message-content {
+    align-items: flex-end;
+}
+
+.message.assistant .message-content {
+    align-items: flex-start;
+}
+
+/* ============================================
+   TEXT BUBBLES - BEAUTIFUL STYLING
+   ============================================ */
+
+.message-text {
+    padding: calc(12px * var(--flosc-scale) / 100) calc(16px * var(--flosc-scale) / 100);
+    border-radius: var(--flosc-border-radius);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+/* User bubble - filled background */
+.message.user .message-text {
+    background: var(--flosc-user-bg);
+    color: var(--flosc-user-text);
+    border-top-right-radius: calc(4px * var(--flosc-scale) / 100);
+    box-shadow: var(--flosc-shadow-md);
+}
+
+/* Assistant bubble - subtle background */
+.message.assistant .message-text {
+    background: var(--flosc-assistant-bg);
+    color: var(--flosc-assistant-text);
+    border: 1px solid var(--flosc-border-color);
+    border-top-left-radius: calc(4px * var(--flosc-scale) / 100);
+    box-shadow: var(--flosc-shadow-sm);
+}
+
+/* ============================================
+   TEXT FORMATTING - RICH CONTENT
+   ============================================ */
+
+.message-text p {
+    margin: 0 0 calc(8px * var(--flosc-scale) / 100) 0;
+}
+
+.message-text p:last-child {
+    margin-bottom: 0;
+}
+
+.message-text strong {
+    font-weight: 600;
+}
+
+.message-text em {
+    font-style: italic;
+}
+
+.message-text code {
+    background: rgba(0, 0, 0, 0.05);
+    padding: calc(2px * var(--flosc-scale) / 100) calc(4px * var(--flosc-scale) / 100);
+    border-radius: calc(3px * var(--flosc-scale) / 100);
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: calc(13px * var(--flosc-scale) / 100);
+}
+
+.message.user .message-text code {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.message-text pre {
+    background: rgba(0, 0, 0, 0.05);
+    padding: calc(12px * var(--flosc-scale) / 100);
+    border-radius: calc(6px * var(--flosc-scale) / 100);
+    overflow-x: auto;
+    margin: calc(8px * var(--flosc-scale) / 100) 0;
+}
+
+.message-text pre code {
+    background: none;
+    padding: 0;
+}
+
+.message-text ul,
+.message-text ol {
+    margin: calc(8px * var(--flosc-scale) / 100) 0;
+    padding-left: calc(20px * var(--flosc-scale) / 100);
+}
+
+.message-text li {
+    margin-bottom: calc(4px * var(--flosc-scale) / 100);
+}
+
+.message-text a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: calc(2px * var(--flosc-scale) / 100);
+}
+
+.message.user .message-text a {
+    color: var(--flosc-user-text);
+    font-weight: 500;
+}
+
+.message.assistant .message-text a {
+    color: var(--flosc-user-bg);
+    font-weight: 500;
+}
+
+/* ============================================
+   MOBILE OPTIMIZATION
+   ============================================ */
+
+@media (max-width: 768px) {
+    :root {
+        /* Slightly smaller on mobile for better fit */
+        --flosc-avatar-size: calc(32px * var(--flosc-scale) / 100);
+        --flosc-message-max-width: 85%;
+        --flosc-gap: calc(10px * var(--flosc-scale) / 100);
+    }
+
+    .message {
+        margin-bottom: calc(16px * var(--flosc-scale) / 100);
+    }
+
+    .message-text {
+        padding: calc(10px * var(--flosc-scale) / 100) calc(14px * var(--flosc-scale) / 100);
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --flosc-avatar-size: calc(28px * var(--flosc-scale) / 100);
+        --flosc-message-max-width: 90%;
+    }
+}
+
+/* ============================================
+   ACCESSIBILITY & POLISH
+   ============================================ */
+
+/* Smooth transitions on theme/scale changes */
+.message-text,
+.message-avatar {
+    transition: all 0.2s ease;
+}
+
+/* Focus states for accessibility */
+.message:focus-within {
+    outline: 2px solid var(--flosc-user-bg);
+    outline-offset: 2px;
+    border-radius: var(--flosc-border-radius);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .message-text {
+        border-width: 2px;
+    }
+
+    .message.user .message-text {
+        border: 2px solid var(--flosc-user-bg);
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .message {
+        animation: none;
+    }
+
+    .message-text,
+    .message-avatar {
+        transition: none;
+    }
+}
+
+/* ============================================
+   SUGGESTED REPLIES - STYLED TO MATCH
+   ============================================ */
+
+.flosc_output_chat_suggested_replies_scroll button {
+    font-family: var(--flosc-font-family);
+    font-size: var(--flosc-base-font);
+    padding: calc(8px * var(--flosc-scale) / 100) calc(16px * var(--flosc-scale) / 100);
+    border-radius: calc(16px * var(--flosc-scale) / 100);
+    border: 1px solid var(--flosc-border-color);
+    background: white;
+    color: var(--flosc-assistant-text);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: var(--flosc-shadow-sm);
+}
+
+.flosc_output_chat_suggested_replies_scroll button:hover {
+    background: var(--flosc-assistant-bg);
+    border-color: var(--flosc-user-bg);
+    transform: translateY(-1px);
+    box-shadow: var(--flosc-shadow-md);
+}
+
+.flosc_output_chat_suggested_replies_scroll button:active {
+    transform: translateY(0);
+}

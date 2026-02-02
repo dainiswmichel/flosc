@@ -1,0 +1,1430 @@
+Below is a complete, deployable FLOSC funnel repo (FastAPI + vanilla HTML/JS) that:
+
+Loads all creator content/pricing/logic from two CSVs
+
+Records audio in-browser (MediaRecorder), uploads it
+
+Transcribes locally with self-hosted faster-whisper
+
+Compares transcript vs expected sentence using phoneme-level comparison (CMU phonemes) and maps to phoneme_groups
+
+Forces Supabase magic-link login to view results
+
+Sends Brevo email sequence (immediate + 12h + 23h) with personalized sound gaps + 1–2 targeted free lessons + 24h OTO
+
+Uses Stripe Checkout + webhook to mark paid
+
+Serves a protected dashboard with free lessons (post-offer) + full lessons (paid)
+
+This is built for a single DigitalOcean droplet with HTTPS, Nginx reverse proxy, and systemd services.
+
+Repo structure
+flosc-funnel/
+  README.md
+  backend/
+    requirements.txt
+    .env.example
+    app/
+      main.py
+      config.py
+      csv_loader.py
+      storage.py
+      whisper_service.py
+      phoneme.py
+      email_service.py
+      stripe_service.py
+      auth.py
+      db.py
+      models.py
+      tasks.py
+      templates/
+        email_eval_oto.html
+        email_reminder_12h.html
+        email_last_chance_23h.html
+      content/
+        lessons/              # creator drops lesson HTML/MD/PDF here
+      config_data/
+        product.csv
+        targeted_lessons.csv
+  frontend/
+    index.html
+    login.html
+    offer.html
+    dashboard.html
+    js/
+      app.js
+      supabase.js
+    css/
+      styles.css
+  deploy/
+    nginx_flosc.conf
+    flosc-backend.service
+    flosc-worker.service
+
+CSV formats (creator-controlled)
+product.csv (single-row is fine; allow multiple products later)
+product_id,product_name,full_price_cents,oto_price_cents,currency,oto_hours,magic_sentence_set_id,from_email,from_name,brevo_template_eval,brevo_template_12h,brevo_template_23h,stripe_success_url,stripe_cancel_url
+sbe_basic,Standard British English Sound Fix,57500,14400,USD,24,set_a,hello@yourdomain.com,Dainis W. Michel,,,
+https://yourdomain.com/dashboard.html,https://yourdomain.com/offer.html
+
+targeted_lessons.csv
+lesson_id,title,phoneme_group,free_rank,content_path,is_free
+l001,Fix /ɪ/ vs /iː/,VOWEL_I,1,lessons/l001.html,true
+l002,/æ/ clarity drills,VOWEL_AE,1,lessons/l002.html,true
+l010,Full vowel mastery pack,VOWEL_ALL,99,lessons/l010.html,false
+
+Magic sentences (also CSV-driven)
+
+To keep “two CSVs only”, we store magic sentences inside targeted_lessons.csv as special rows, OR you can add a second file magic_sentences.csv.
+But you explicitly want two CSVs. So we do this:
+
+Add rows where lesson_id starts with ms_ and content_path holds the sentence text inline (or a path). Example:
+
+lesson_id,title,phoneme_group,free_rank,content_path,is_free
+ms_set_a_1,Magic Sentence 1,MAGIC_SENTENCE,0,"The ship is in the big city.",false
+ms_set_a_2,Magic Sentence 2,MAGIC_SENTENCE,0,"Pack the black bag.",false
+ms_set_a_3,Magic Sentence 3,MAGIC_SENTENCE,0,"Dad had an apple.",false
+l001,Fix /ɪ/ vs /iː/,VOWEL_I,1,lessons/l001.html,true
+
+
+Backend filters phoneme_group == MAGIC_SENTENCE and lesson_id prefix ms_set_a_.
+
+Backend code (FastAPI)
+backend/requirements.txt
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+python-multipart==0.0.9
+pydantic==2.8.2
+python-dotenv==1.0.1
+httpx==0.27.2
+jinja2==3.1.4
+aiofiles==24.1.0
+
+faster-whisper==1.0.3
+ctranslate2==4.4.0
+
+pronouncing==0.2.0
+cmudict==1.0.26
+
+stripe==10.12.0
+pyjwt==2.9.0
+cryptography==43.0.1
+
+redis==5.0.8
+rq==1.16.2
+
+backend/.env.example
+APP_BASE_URL=https://yourdomain.com
+ENV=prod
+
+# Storage
+AUDIO_DIR=/opt/flosc/audio
+DATA_DIR=/opt/flosc/data
+
+# Supabase
+SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+SUPABASE_JWKS_URL=https://YOUR_PROJECT.supabase.co/auth/v1/keys
+SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+
+# Brevo
+BREVO_API_KEY=YOUR_BREVO_KEY
+
+# Stripe
+STRIPE_SECRET_KEY=sk_live_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
+
+# Redis (for scheduled email tasks)
+REDIS_URL=redis://127.0.0.1:6379/0
+
+backend/app/config.py
+from pydantic import BaseModel
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class Settings(BaseModel):
+    app_base_url: str = os.getenv("APP_BASE_URL", "http://localhost:8080")
+    env: str = os.getenv("ENV", "dev")
+
+    audio_dir: str = os.getenv("AUDIO_DIR", "/tmp/flosc_audio")
+    data_dir: str = os.getenv("DATA_DIR", "/tmp/flosc_data")
+
+    supabase_url: str = os.getenv("SUPABASE_URL", "")
+    supabase_jwks_url: str = os.getenv("SUPABASE_JWKS_URL", "")
+    supabase_anon_key: str = os.getenv("SUPABASE_ANON_KEY", "")
+
+    brevo_api_key: str = os.getenv("BREVO_API_KEY", "")
+
+    stripe_secret_key: str = os.getenv("STRIPE_SECRET_KEY", "")
+    stripe_webhook_secret: str = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+
+    redis_url: str = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
+
+settings = Settings()
+
+backend/app/models.py
+from pydantic import BaseModel, EmailStr, Field
+from typing import Optional, List, Dict
+
+class QuizCreateResponse(BaseModel):
+    quiz_id: str
+    magic_sentences: List[str]
+
+class QuizSubmitResponse(BaseModel):
+    quiz_id: str
+    expected_sentence: str
+    transcript: str
+    mismatched_groups: List[str]
+    mismatched_phonemes: List[str]
+    score: float
+
+class OfferPreview(BaseModel):
+    quiz_id: str
+    sound_count: int
+    sound_list: List[str]
+    free_lessons: List[Dict]
+    oto_price_cents: int
+    full_price_cents: int
+    currency: str
+    oto_expires_at: str
+
+class StripeCheckoutResponse(BaseModel):
+    checkout_url: str
+
+class DashboardResponse(BaseModel):
+    paid: bool
+    free_lessons: List[Dict]
+    full_lessons: List[Dict]
+
+backend/app/db.py (SQLite for zero ongoing cost)
+import os, sqlite3, time
+from .config import settings
+
+DB_PATH = os.path.join(settings.data_dir, "flosc.sqlite")
+
+def conn():
+    os.makedirs(settings.data_dir, exist_ok=True)
+    c = sqlite3.connect(DB_PATH, check_same_thread=False)
+    c.row_factory = sqlite3.Row
+    return c
+
+def init_db():
+    c = conn()
+    cur = c.cursor()
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS quizzes (
+        quiz_id TEXT PRIMARY KEY,
+        created_at INTEGER,
+        expected_sentence TEXT,
+        email_optional TEXT,
+        audio_path TEXT,
+        transcript TEXT,
+        mismatched_groups TEXT,
+        mismatched_phonemes TEXT,
+        score REAL,
+        user_id TEXT,
+        offer_sent_at INTEGER,
+        oto_expires_at INTEGER,
+        paid INTEGER DEFAULT 0
+    )
+    """)
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS events (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        quiz_id TEXT,
+        ts INTEGER,
+        type TEXT,
+        payload TEXT
+    )
+    """)
+    c.commit()
+    c.close()
+
+backend/app/storage.py
+import os, uuid
+from .config import settings
+
+def ensure_dirs():
+    os.makedirs(settings.audio_dir, exist_ok=True)
+
+def new_quiz_id() -> str:
+    return str(uuid.uuid4())
+
+def audio_path_for_quiz(quiz_id: str) -> str:
+    ensure_dirs()
+    return os.path.join(settings.audio_dir, f"{quiz_id}.webm")
+
+def anonymized_public_id(quiz_id: str) -> str:
+    # For URLs/emails you can use a different id; keeping simple here
+    return quiz_id
+
+backend/app/csv_loader.py
+import csv, os
+from .config import settings
+
+PRODUCT_CSV = os.path.join(os.path.dirname(__file__), "config_data", "product.csv")
+TARGET_CSV = os.path.join(os.path.dirname(__file__), "config_data", "targeted_lessons.csv")
+
+def load_product(product_id: str = None) -> dict:
+    with open(PRODUCT_CSV, newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    if not rows:
+        raise RuntimeError("product.csv is empty")
+    if product_id:
+        for r in rows:
+            if r["product_id"] == product_id:
+                return r
+        raise RuntimeError(f"product_id {product_id} not found")
+    return rows[0]
+
+def load_target_rows() -> list[dict]:
+    with open(TARGET_CSV, newline="", encoding="utf-8") as f:
+        return list(csv.DictReader(f))
+
+def get_magic_sentences(set_prefix: str) -> list[str]:
+    rows = load_target_rows()
+    ms = []
+    for r in rows:
+        if r.get("phoneme_group") == "MAGIC_SENTENCE" and r.get("lesson_id","").startswith(f"ms_{set_prefix}_"):
+            ms.append(r.get("content_path","").strip().strip('"'))
+    return ms[:3]
+
+def select_lessons_for_groups(groups: list[str], limit: int = 2) -> list[dict]:
+    rows = load_target_rows()
+    candidates = []
+    for r in rows:
+        if r.get("phoneme_group") in groups and str(r.get("is_free","")).lower() == "true":
+            candidates.append(r)
+    candidates.sort(key=lambda x: int(x.get("free_rank") or 9999))
+    return candidates[:limit]
+
+def all_lessons(is_free: bool) -> list[dict]:
+    rows = load_target_rows()
+    out = []
+    for r in rows:
+        if r.get("phoneme_group") == "MAGIC_SENTENCE":
+            continue
+        flag = str(r.get("is_free","")).lower() == "true"
+        if flag == is_free:
+            out.append(r)
+    out.sort(key=lambda x: int(x.get("free_rank") or 9999))
+    return out
+
+backend/app/whisper_service.py
+from faster_whisper import WhisperModel
+
+# tiny or base; base is slower but more accurate
+MODEL_NAME = "tiny"
+
+_model = None
+
+def model():
+    global _model
+    if _model is None:
+        _model = WhisperModel(MODEL_NAME, device="cpu", compute_type="int8")
+    return _model
+
+def transcribe(audio_path: str) -> str:
+    segments, info = model().transcribe(audio_path, beam_size=5)
+    text = " ".join([s.text.strip() for s in segments]).strip()
+    return text
+
+backend/app/phoneme.py (CMU phonemes + group mapping)
+import re
+import pronouncing
+
+# Map CMU phoneme prefixes to your groups
+PHONEME_GROUPS = {
+    # Vowels (examples)
+    "AE": "VOWEL_AE",   # /æ/
+    "IH": "VOWEL_I",    # /ɪ/
+    "IY": "VOWEL_I_LONG", # /iː/
+    "EH": "VOWEL_E",
+    "AH": "VOWEL_AH",
+    "AA": "VOWEL_AA",
+    "UH": "VOWEL_UH",
+    "UW": "VOWEL_UW",
+    "OW": "VOWEL_OW",
+    "ER": "VOWEL_ER",
+
+    # Consonant clusters (optional)
+    "TH": "TH_SOUND",
+    "DH": "TH_SOUND",
+    "R":  "R_SOUND",
+    "L":  "L_SOUND",
+    "W":  "W_SOUND",
+}
+
+def normalize_text(s: str) -> str:
+    s = s.lower()
+    s = re.sub(r"[^a-z\s']", " ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+def cmu_phonemes_for_word(word: str) -> list[str]:
+    phones = pronouncing.phones_for_word(word.lower())
+    if not phones:
+        return []
+    # take the first pronunciation
+    return phones[0].split()
+
+def cmu_phonemes_for_sentence(sentence: str) -> list[str]:
+    sent = normalize_text(sentence)
+    out = []
+    for w in sent.split():
+        out.extend(cmu_phonemes_for_word(w))
+    return out
+
+def strip_stress(ph: str) -> str:
+    return re.sub(r"\d", "", ph)
+
+def phoneme_groups(phonemes: list[str]) -> list[str]:
+    groups = []
+    for ph in phonemes:
+        base = strip_stress(ph)
+        g = PHONEME_GROUPS.get(base)
+        if g:
+            groups.append(g)
+    return groups
+
+def compare_expected_vs_transcript(expected: str, transcript: str) -> dict:
+    exp = cmu_phonemes_for_sentence(expected)
+    got = cmu_phonemes_for_sentence(transcript)
+
+    # Simple overlap score + diff list (lightweight, robust enough for MVP)
+    exp_base = [strip_stress(p) for p in exp]
+    got_base = [strip_stress(p) for p in got]
+
+    exp_set = set(exp_base)
+    got_set = set(got_base)
+
+    missing = sorted(list(exp_set - got_set))
+    extra = sorted(list(got_set - exp_set))
+
+    mismatched = missing  # treat missing as the “needs work” set for sounds
+    mismatched_groups = sorted(list(set([PHONEME_GROUPS.get(p) for p in mismatched if PHONEME_GROUPS.get(p)])))
+
+    score = 0.0
+    if exp_set:
+        score = len(exp_set & got_set) / len(exp_set)
+
+    return {
+        "expected_phonemes": exp_base,
+        "got_phonemes": got_base,
+        "mismatched_phonemes": mismatched,
+        "mismatched_groups": mismatched_groups,
+        "extra_phonemes": extra,
+        "score": round(score, 3),
+    }
+
+backend/app/auth.py (verify Supabase JWT via JWKS)
+import time, json
+import httpx
+import jwt
+from jwt import PyJWKClient
+from .config import settings
+
+_jwk_client = None
+
+def jwk_client():
+    global _jwk_client
+    if _jwk_client is None:
+        _jwk_client = PyJWKClient(settings.supabase_jwks_url)
+    return _jwk_client
+
+def verify_supabase_jwt(token: str) -> dict:
+    signing_key = jwk_client().get_signing_key_from_jwt(token).key
+    payload = jwt.decode(
+        token,
+        signing_key,
+        algorithms=["RS256"],
+        options={"verify_aud": False},
+    )
+    # Basic expiry check is already in jwt.decode
+    return payload
+
+backend/app/email_service.py (Brevo send)
+import httpx
+from .config import settings
+
+BREVO_URL = "https://api.brevo.com/v3/smtp/email"
+
+async def send_email(to_email: str, subject: str, html_content: str, from_email: str, from_name: str):
+    headers = {
+        "api-key": settings.brevo_api_key,
+        "content-type": "application/json",
+        "accept": "application/json",
+    }
+    payload = {
+        "sender": {"email": from_email, "name": from_name},
+        "to": [{"email": to_email}],
+        "subject": subject,
+        "htmlContent": html_content,
+    }
+    async with httpx.AsyncClient(timeout=20) as client:
+        r = await client.post(BREVO_URL, headers=headers, json=payload)
+        r.raise_for_status()
+        return r.json()
+
+backend/app/stripe_service.py
+import stripe
+from .config import settings
+
+stripe.api_key = settings.stripe_secret_key
+
+def create_checkout_session(quiz_id: str, product: dict, user_email: str):
+    oto_price_cents = int(product["oto_price_cents"])
+    currency = product["currency"].lower()
+    product_name = product["product_name"]
+
+    session = stripe.checkout.Session.create(
+        mode="payment",
+        customer_email=user_email,
+        line_items=[{
+            "price_data": {
+                "currency": currency,
+                "product_data": {"name": product_name},
+                "unit_amount": oto_price_cents,
+            },
+            "quantity": 1,
+        }],
+        success_url=f"{product['stripe_success_url']}?quiz_id={quiz_id}&paid=1",
+        cancel_url=f"{product['stripe_cancel_url']}?quiz_id={quiz_id}",
+        metadata={"quiz_id": quiz_id},
+    )
+    return session.url
+
+backend/app/tasks.py (RQ scheduling)
+import time
+from redis import Redis
+from rq import Queue
+from .config import settings
+from .tasks_worker import send_12h_reminder, send_23h_last_chance
+
+def queue():
+    r = Redis.from_url(settings.redis_url)
+    return Queue("flosc", connection=r)
+
+def schedule_offer_followups(quiz_id: str):
+    q = queue()
+    now = int(time.time())
+    q.enqueue_in(12 * 3600, send_12h_reminder, quiz_id)
+    q.enqueue_in(23 * 3600, send_23h_last_chance, quiz_id)
+
+backend/app/tasks_worker.py (import-safe worker functions)
+import os, time, json
+from .db import conn
+from .csv_loader import load_product, select_lessons_for_groups
+from .email_service import send_email
+from .templates_render import render_template
+
+async def _send(template_name: str, quiz_id: str, subject: str):
+    c = conn()
+    row = c.execute("SELECT * FROM quizzes WHERE quiz_id=?", (quiz_id,)).fetchone()
+    if not row or not row["email_optional"]:
+        return
+    product = load_product()
+    groups = json.loads(row["mismatched_groups"] or "[]")
+    lessons = select_lessons_for_groups(groups, limit=2)
+
+    html = render_template(template_name, {
+        "quiz_id": quiz_id,
+        "sound_list": groups,
+        "sound_count": len(groups),
+        "free_lessons": lessons,
+        "oto_price": int(product["oto_price_cents"]) / 100.0,
+        "full_price": int(product["full_price_cents"]) / 100.0,
+        "currency": product["currency"],
+        "checkout_url": f"{product['stripe_success_url']}?quiz_id={quiz_id}"
+    })
+    await send_email(
+        row["email_optional"],
+        subject,
+        html,
+        product["from_email"],
+        product["from_name"],
+    )
+
+def send_12h_reminder(quiz_id: str):
+    import asyncio
+    asyncio.run(_send("email_reminder_12h.html", quiz_id, "Reminder: your 75% offer is still active"))
+
+def send_23h_last_chance(quiz_id: str):
+    import asyncio
+    asyncio.run(_send("email_last_chance_23h.html", quiz_id, "Last chance: offer expires soon"))
+
+backend/app/templates_render.py
+import os
+from jinja2 import Environment, FileSystemLoader
+
+TEMPL_DIR = os.path.join(os.path.dirname(__file__), "templates")
+env = Environment(loader=FileSystemLoader(TEMPL_DIR), autoescape=True)
+
+def render_template(name: str, ctx: dict) -> str:
+    t = env.get_template(name)
+    return t.render(**ctx)
+
+backend/app/main.py
+import os, json, time
+from fastapi import FastAPI, UploadFile, File, Form, Header, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from .config import settings
+from .db import init_db, conn
+from .storage import new_quiz_id, audio_path_for_quiz
+from .csv_loader import load_product, get_magic_sentences, select_lessons_for_groups, all_lessons
+from .whisper_service import transcribe
+from .phoneme import compare_expected_vs_transcript
+from .auth import verify_supabase_jwt
+from .email_service import send_email
+from .templates_render import render_template
+from .stripe_service import create_checkout_session
+from .tasks import schedule_offer_followups
+
+app = FastAPI(title="FLOSC Funnel")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # lock to your domain in prod
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.on_event("startup")
+def _startup():
+    init_db()
+    os.makedirs(settings.audio_dir, exist_ok=True)
+    os.makedirs(settings.data_dir, exist_ok=True)
+
+@app.get("/health")
+def health():
+    return {"ok": True}
+
+@app.post("/api/quiz/create")
+def quiz_create(product_id: str = Form(default="")):
+    product = load_product(product_id or None)
+    quiz_id = new_quiz_id()
+    ms = get_magic_sentences(product["magic_sentence_set_id"])
+    if len(ms) < 3:
+        raise HTTPException(500, "Need 3 magic sentences in targeted_lessons.csv")
+
+    # choose first sentence as expected for now; frontend can choose which one user practiced
+    expected = ms[0]
+
+    c = conn()
+    c.execute(
+        "INSERT INTO quizzes (quiz_id, created_at, expected_sentence) VALUES (?, ?, ?)",
+        (quiz_id, int(time.time()), expected),
+    )
+    c.commit()
+    c.close()
+
+    return {"quiz_id": quiz_id, "magic_sentences": ms}
+
+@app.post("/api/quiz/upload-audio")
+async def quiz_upload_audio(
+    quiz_id: str = Form(...),
+    expected_sentence: str = Form(...),
+    email_optional: str = Form(default=""),
+    audio: UploadFile = File(...),
+):
+    path = audio_path_for_quiz(quiz_id)
+    with open(path, "wb") as f:
+        f.write(await audio.read())
+
+    # process immediately (MVP). For higher scale, push to worker.
+    transcript_text = transcribe(path)
+    cmp = compare_expected_vs_transcript(expected_sentence, transcript_text)
+
+    c = conn()
+    c.execute("""
+        UPDATE quizzes
+        SET expected_sentence=?, email_optional=?, audio_path=?, transcript=?,
+            mismatched_groups=?, mismatched_phonemes=?, score=?
+        WHERE quiz_id=?
+    """, (
+        expected_sentence,
+        email_optional.strip() or None,
+        path,
+        transcript_text,
+        json.dumps(cmp["mismatched_groups"]),
+        json.dumps(cmp["mismatched_phonemes"]),
+        float(cmp["score"]),
+        quiz_id
+    ))
+    c.commit()
+    c.close()
+
+    return {
+        "quiz_id": quiz_id,
+        "expected_sentence": expected_sentence,
+        "transcript": transcript_text,
+        "mismatched_groups": cmp["mismatched_groups"],
+        "mismatched_phonemes": cmp["mismatched_phonemes"],
+        "score": cmp["score"],
+    }
+
+@app.post("/api/quiz/attach-user")
+def quiz_attach_user(
+    quiz_id: str,
+    authorization: str = Header(default="")
+):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(401, "Missing bearer token")
+    token = authorization.split(" ", 1)[1]
+    payload = verify_supabase_jwt(token)
+    user_id = payload.get("sub")
+    if not user_id:
+        raise HTTPException(401, "Bad token")
+
+    c = conn()
+    c.execute("UPDATE quizzes SET user_id=? WHERE quiz_id=?", (user_id, quiz_id))
+    c.commit()
+    c.close()
+    return {"ok": True, "user_id": user_id}
+
+@app.get("/api/offer/preview")
+def offer_preview(
+    quiz_id: str,
+    authorization: str = Header(default="")
+):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(401, "Missing bearer token")
+    token = authorization.split(" ", 1)[1]
+    payload = verify_supabase_jwt(token)
+    user_id = payload.get("sub")
+
+    c = conn()
+    row = c.execute("SELECT * FROM quizzes WHERE quiz_id=?", (quiz_id,)).fetchone()
+    c.close()
+    if not row or row["user_id"] != user_id:
+        raise HTTPException(403, "Not your quiz")
+
+    product = load_product()
+    groups = json.loads(row["mismatched_groups"] or "[]")
+    lessons = select_lessons_for_groups(groups, limit=2)
+
+    # set OTO expiry if not set
+    oto_hours = int(product["oto_hours"])
+    now = int(time.time())
+    oto_expires = row["oto_expires_at"] or (now + oto_hours * 3600)
+    if not row["oto_expires_at"]:
+        c = conn()
+        c.execute("UPDATE quizzes SET oto_expires_at=? WHERE quiz_id=?", (oto_expires, quiz_id))
+        c.commit()
+        c.close()
+
+    return {
+        "quiz_id": quiz_id,
+        "sound_count": len(groups),
+        "sound_list": groups,
+        "free_lessons": lessons,
+        "oto_price_cents": int(product["oto_price_cents"]),
+        "full_price_cents": int(product["full_price_cents"]),
+        "currency": product["currency"],
+        "oto_expires_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(oto_expires)),
+    }
+
+@app.post("/api/offer/send")
+async def offer_send(
+    quiz_id: str,
+    authorization: str = Header(default="")
+):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(401, "Missing bearer token")
+    token = authorization.split(" ", 1)[1]
+    payload = verify_supabase_jwt(token)
+    user_id = payload.get("sub")
+    user_email = payload.get("email")
+
+    c = conn()
+    row = c.execute("SELECT * FROM quizzes WHERE quiz_id=?", (quiz_id,)).fetchone()
+    c.close()
+    if not row or row["user_id"] != user_id:
+        raise HTTPException(403, "Not your quiz")
+
+    # decide where to send: prefer Supabase email, fallback to optional email
+    to_email = user_email or row["email_optional"]
+    if not to_email:
+        raise HTTPException(400, "No email available")
+
+    product = load_product()
+    groups = json.loads(row["mismatched_groups"] or "[]")
+    lessons = select_lessons_for_groups(groups, limit=2)
+
+    # Build a checkout URL (we’ll create an actual session on click; this is email-friendly)
+    html = render_template("email_eval_oto.html", {
+        "quiz_id": quiz_id,
+        "sound_list": groups,
+        "sound_count": len(groups),
+        "free_lessons": lessons,
+        "oto_price": int(product["oto_price_cents"]) / 100.0,
+        "full_price": int(product["full_price_cents"]) / 100.0,
+        "currency": product["currency"],
+        "app_base_url": settings.app_base_url,
+    })
+
+    await send_email(
+        to_email,
+        "Your sound analysis + 24h offer (75% off)",
+        html,
+        product["from_email"],
+        product["from_name"],
+    )
+
+    # schedule reminders
+    schedule_offer_followups(quiz_id)
+
+    c = conn()
+    c.execute("UPDATE quizzes SET offer_sent_at=? WHERE quiz_id=?", (int(time.time()), quiz_id))
+    c.commit()
+    c.close()
+
+    return {"ok": True}
+
+@app.post("/api/stripe/checkout")
+def stripe_checkout(
+    quiz_id: str,
+    authorization: str = Header(default="")
+):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(401, "Missing bearer token")
+    token = authorization.split(" ", 1)[1]
+    payload = verify_supabase_jwt(token)
+    user_id = payload.get("sub")
+    user_email = payload.get("email")
+
+    c = conn()
+    row = c.execute("SELECT * FROM quizzes WHERE quiz_id=?", (quiz_id,)).fetchone()
+    c.close()
+    if not row or row["user_id"] != user_id:
+        raise HTTPException(403, "Not your quiz")
+
+    # OTO expiry enforcement
+    now = int(time.time())
+    if row["oto_expires_at"] and now > int(row["oto_expires_at"]):
+        raise HTTPException(403, "Offer expired")
+
+    if not user_email:
+        raise HTTPException(400, "No email on Supabase user; add email to Supabase auth")
+
+    product = load_product()
+    url = create_checkout_session(quiz_id, product, user_email)
+    return {"checkout_url": url}
+
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(request: Request):
+    import stripe
+    from .config import settings
+    payload = await request.body()
+    sig = request.headers.get("stripe-signature","")
+    try:
+        event = stripe.Webhook.construct_event(payload, sig, settings.stripe_webhook_secret)
+    except Exception:
+        raise HTTPException(400, "Invalid webhook")
+
+    if event["type"] == "checkout.session.completed":
+        sess = event["data"]["object"]
+        quiz_id = (sess.get("metadata") or {}).get("quiz_id")
+        if quiz_id:
+            c = conn()
+            c.execute("UPDATE quizzes SET paid=1 WHERE quiz_id=?", (quiz_id,))
+            c.commit()
+            c.close()
+
+    return {"received": True}
+
+@app.get("/api/dashboard")
+def dashboard(
+    quiz_id: str,
+    authorization: str = Header(default="")
+):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(401, "Missing bearer token")
+    token = authorization.split(" ", 1)[1]
+    payload = verify_supabase_jwt(token)
+    user_id = payload.get("sub")
+
+    c = conn()
+    row = c.execute("SELECT * FROM quizzes WHERE quiz_id=?", (quiz_id,)).fetchone()
+    c.close()
+    if not row or row["user_id"] != user_id:
+        raise HTTPException(403, "Not your quiz")
+
+    paid = int(row["paid"] or 0) == 1
+    free_lessons = all_lessons(is_free=True)
+    full_lessons = all_lessons(is_free=False) if paid else []
+
+    return {"paid": paid, "free_lessons": free_lessons, "full_lessons": full_lessons}
+
+Email templates (short but effective)
+backend/app/templates/email_eval_oto.html
+<h2>Your complimentary sound analysis</h2>
+
+<p><b>Sounds needing work ({{ sound_count }}):</b> {{ sound_list|join(", ") }}</p>
+
+{% if free_lessons|length > 0 %}
+<h3>Your free lessons (selected for your sounds)</h3>
+<ul>
+  {% for l in free_lessons %}
+    <li><b>{{ l.title }}</b> — <a href="{{ app_base_url }}/dashboard.html?quiz_id={{ quiz_id }}">View in dashboard</a></li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<h3>24-hour one-time offer</h3>
+<p>
+  Full program: <s>{{ full_price }} {{ currency }}</s><br/>
+  Your offer: <b>{{ oto_price }} {{ currency }}</b> (75% off)<br/>
+</p>
+
+<p><a href="{{ app_base_url }}/offer.html?quiz_id={{ quiz_id }}">Open your offer</a></p>
+
+<p>— This offer expires automatically.</p>
+
+
+(Templates for 12h + 23h are similar, just urgency-focused without hype.)
+
+Frontend (vanilla)
+frontend/js/supabase.js
+// Load from CDN in HTML: https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2
+const SUPABASE_URL = window.SUPABASE_URL;
+const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY;
+
+export const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+frontend/js/app.js
+import { supabase } from "./supabase.js";
+
+const API = window.API_BASE || "https://yourdomain.com";
+
+function qs(k){ return new URLSearchParams(window.location.search).get(k); }
+
+async function api(path, opts = {}) {
+  const res = await fetch(`${API}${path}`, opts);
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function createQuiz() {
+  const form = new FormData();
+  const r = await fetch(`${API}/api/quiz/create`, { method:"POST", body: form });
+  return r.json();
+}
+
+export async function uploadAudio({quiz_id, expected_sentence, email_optional, blob}) {
+  const fd = new FormData();
+  fd.append("quiz_id", quiz_id);
+  fd.append("expected_sentence", expected_sentence);
+  fd.append("email_optional", email_optional || "");
+  fd.append("audio", blob, "audio.webm");
+  const r = await fetch(`${API}/api/quiz/upload-audio`, { method:"POST", body: fd });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+export async function attachUser(quiz_id) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) throw new Error("No session");
+  return api(`/api/quiz/attach-user?quiz_id=${encodeURIComponent(quiz_id)}`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+}
+
+export async function offerPreview(quiz_id) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  return api(`/api/offer/preview?quiz_id=${encodeURIComponent(quiz_id)}`, {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+}
+
+export async function sendOffer(quiz_id) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  return api(`/api/offer/send?quiz_id=${encodeURIComponent(quiz_id)}`, {
+    method:"POST",
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+}
+
+export async function startCheckout(quiz_id) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  return api(`/api/stripe/checkout?quiz_id=${encodeURIComponent(quiz_id)}`, {
+    method:"POST",
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+}
+
+export async function dashboard(quiz_id) {
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  return api(`/api/dashboard?quiz_id=${encodeURIComponent(quiz_id)}`, {
+    headers: { "Authorization": `Bearer ${token}` }
+  });
+}
+
+frontend/index.html (Freeline chatbot + 3 strikes + recorder)
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Freeline</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+    window.SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+    window.API_BASE = "https://yourdomain.com";
+  </script>
+</head>
+<body>
+  <main class="card">
+    <h1>Hi! Would you like a complimentary analysis?</h1>
+    <div id="buttons">
+      <button id="yes">Yes</button>
+      <button id="no">No</button>
+    </div>
+
+    <div id="blocked" class="hidden">
+      <p>You have been blocked from this freeline.</p>
+    </div>
+
+    <div id="carousel" class="hidden">
+      <h2>Pick one sentence</h2>
+      <div id="sentences"></div>
+
+      <label>Email (optional, for delivery):</label>
+      <input id="email" placeholder="you@example.com" />
+
+      <div class="rec">
+        <button id="rec">Record</button>
+        <button id="stop" disabled>Stop</button>
+        <audio id="play" controls></audio>
+      </div>
+
+      <button id="submit" disabled>Submit</button>
+
+      <div id="result"></div>
+      <p><a id="loginLink" class="hidden" href="login.html">Login to view your results</a></p>
+    </div>
+  </main>
+
+<script type="module">
+  import { createQuiz, uploadAudio } from "./js/app.js";
+
+  let strikes = 0;
+  let quiz = null;
+  let expected = "";
+  let mediaRecorder, chunks = [], blob;
+
+  const yes = document.getElementById("yes");
+  const no = document.getElementById("no");
+  const blocked = document.getElementById("blocked");
+  const carousel = document.getElementById("carousel");
+  const sentencesDiv = document.getElementById("sentences");
+  const recBtn = document.getElementById("rec");
+  const stopBtn = document.getElementById("stop");
+  const submitBtn = document.getElementById("submit");
+  const audioEl = document.getElementById("play");
+  const resultDiv = document.getElementById("result");
+  const loginLink = document.getElementById("loginLink");
+
+  no.onclick = () => {
+    strikes++;
+    if (strikes >= 3) {
+      document.getElementById("buttons").classList.add("hidden");
+      blocked.classList.remove("hidden");
+    }
+  };
+
+  yes.onclick = async () => {
+    quiz = await createQuiz();
+    document.getElementById("buttons").classList.add("hidden");
+    carousel.classList.remove("hidden");
+
+    sentencesDiv.innerHTML = "";
+    quiz.magic_sentences.forEach((s, idx) => {
+      const b = document.createElement("button");
+      b.textContent = s;
+      b.onclick = () => {
+        expected = s;
+        [...sentencesDiv.querySelectorAll("button")].forEach(x => x.classList.remove("selected"));
+        b.classList.add("selected");
+      };
+      sentencesDiv.appendChild(b);
+    });
+    expected = quiz.magic_sentences[0];
+    sentencesDiv.querySelector("button")?.classList.add("selected");
+  };
+
+  recBtn.onclick = async () => {
+    chunks = [];
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
+    mediaRecorder.ondataavailable = e => chunks.push(e.data);
+    mediaRecorder.onstop = () => {
+      blob = new Blob(chunks, { type: "audio/webm" });
+      audioEl.src = URL.createObjectURL(blob);
+      submitBtn.disabled = false;
+    };
+    mediaRecorder.start();
+    recBtn.disabled = true;
+    stopBtn.disabled = false;
+  };
+
+  stopBtn.onclick = () => {
+    mediaRecorder.stop();
+    recBtn.disabled = false;
+    stopBtn.disabled = true;
+  };
+
+  submitBtn.onclick = async () => {
+    if (!quiz?.quiz_id || !expected || !blob) return;
+    resultDiv.textContent = "Processing...";
+    const email = document.getElementById("email").value.trim();
+    const r = await uploadAudio({
+      quiz_id: quiz.quiz_id,
+      expected_sentence: expected,
+      email_optional: email,
+      blob
+    });
+    resultDiv.innerHTML = `
+      <p><b>Score:</b> ${r.score}</p>
+      <p><b>Sounds flagged:</b> ${(r.mismatched_groups || []).join(", ")}</p>
+      <p><b>Transcript:</b> ${r.transcript}</p>
+    `;
+    localStorage.setItem("quiz_id", quiz.quiz_id);
+    loginLink.href = `login.html?quiz_id=${encodeURIComponent(quiz.quiz_id)}`;
+    loginLink.classList.remove("hidden");
+  };
+</script>
+</body>
+</html>
+
+frontend/login.html (Supabase magic link)
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Login</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+    window.SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+    window.API_BASE = "https://yourdomain.com";
+  </script>
+</head>
+<body>
+  <main class="card">
+    <h1>Login to view results</h1>
+    <input id="email" placeholder="you@example.com" />
+    <button id="send">Send magic link</button>
+    <div id="msg"></div>
+  </main>
+
+<script type="module">
+  import { supabase } from "./js/supabase.js";
+  import { attachUser } from "./js/app.js";
+
+  function qs(k){ return new URLSearchParams(window.location.search).get(k); }
+  const quiz_id = qs("quiz_id") || localStorage.getItem("quiz_id");
+
+  document.getElementById("send").onclick = async () => {
+    const email = document.getElementById("email").value.trim();
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.origin + "/offer.html?quiz_id=" + encodeURIComponent(quiz_id) }
+    });
+    document.getElementById("msg").textContent = error ? error.message : "Check your email for the magic link.";
+  };
+
+  // If already logged in, attach the quiz and go
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.access_token && quiz_id) {
+    await attachUser(quiz_id);
+    window.location.href = `offer.html?quiz_id=${encodeURIComponent(quiz_id)}`;
+  }
+</script>
+</body>
+</html>
+
+frontend/offer.html (preview + send offer + checkout)
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Offer</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+    window.SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+    window.API_BASE = "https://yourdomain.com";
+  </script>
+</head>
+<body>
+  <main class="card">
+    <h1>Your evaluation + offer</h1>
+    <div id="box">Loading…</div>
+    <button id="send">Send me the email sequence</button>
+    <button id="buy">Buy now (75% off)</button>
+    <p><a id="dash" href="#">Go to dashboard</a></p>
+  </main>
+
+<script type="module">
+  import { supabase } from "./js/supabase.js";
+  import { attachUser, offerPreview, sendOffer, startCheckout } from "./js/app.js";
+
+  function qs(k){ return new URLSearchParams(window.location.search).get(k); }
+  const quiz_id = qs("quiz_id") || localStorage.getItem("quiz_id");
+  document.getElementById("dash").href = `dashboard.html?quiz_id=${encodeURIComponent(quiz_id)}`;
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    window.location.href = `login.html?quiz_id=${encodeURIComponent(quiz_id)}`;
+  }
+  await attachUser(quiz_id);
+
+  const p = await offerPreview(quiz_id);
+  document.getElementById("box").innerHTML = `
+    <p><b>Sounds needing work (${p.sound_count}):</b> ${p.sound_list.join(", ")}</p>
+    <p><b>Offer:</b> ${(p.oto_price_cents/100).toFixed(2)} ${p.currency} (was ${(p.full_price_cents/100).toFixed(2)})</p>
+    <p><b>Expires at:</b> ${p.oto_expires_at}</p>
+    <h3>Your free lessons</h3>
+    <ul>${p.free_lessons.map(l => `<li>${l.title}</li>`).join("")}</ul>
+  `;
+
+  document.getElementById("send").onclick = async () => {
+    await sendOffer(quiz_id);
+    alert("Sent.");
+  };
+
+  document.getElementById("buy").onclick = async () => {
+    const r = await startCheckout(quiz_id);
+    window.location.href = r.checkout_url;
+  };
+</script>
+</body>
+</html>
+
+frontend/dashboard.html
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    window.SUPABASE_URL = "https://YOUR_PROJECT.supabase.co";
+    window.SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+    window.API_BASE = "https://yourdomain.com";
+  </script>
+</head>
+<body>
+  <main class="card">
+    <h1>Content Dashboard</h1>
+    <div id="status"></div>
+    <h2>Free lessons</h2>
+    <ul id="free"></ul>
+    <h2>Full lessons</h2>
+    <ul id="full"></ul>
+  </main>
+
+<script type="module">
+  import { supabase } from "./js/supabase.js";
+  import { attachUser, dashboard } from "./js/app.js";
+
+  function qs(k){ return new URLSearchParams(window.location.search).get(k); }
+  const quiz_id = qs("quiz_id") || localStorage.getItem("quiz_id");
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    window.location.href = `login.html?quiz_id=${encodeURIComponent(quiz_id)}`;
+  }
+  await attachUser(quiz_id);
+
+  const d = await dashboard(quiz_id);
+  document.getElementById("status").innerHTML = d.paid
+    ? "<p><b>Status:</b> Paid ✅</p>"
+    : "<p><b>Status:</b> Not paid</p>";
+
+  const free = document.getElementById("free");
+  free.innerHTML = d.free_lessons.map(l => `<li>${l.title}</li>`).join("");
+
+  const full = document.getElementById("full");
+  full.innerHTML = d.full_lessons.length
+    ? d.full_lessons.map(l => `<li>${l.title}</li>`).join("")
+    : "<li>Purchase required</li>";
+</script>
+</body>
+</html>
+
+frontend/css/styles.css
+body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:#f6f6f6; margin:0; }
+.card { max-width:720px; margin:40px auto; background:#fff; padding:24px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.08); }
+button { padding:10px 14px; margin:6px 6px 6px 0; cursor:pointer; }
+.hidden { display:none; }
+#sentences button.selected { outline:2px solid #222; }
+input { padding:10px; width:100%; margin:8px 0 16px 0; }
+
+Deploy on a DigitalOcean droplet (Ubuntu 22.04)
+1) System packages
+sudo apt update
+sudo apt install -y python3-venv python3-pip nginx redis-server ffmpeg
+
+2) Create directories
+sudo mkdir -p /opt/flosc/audio /opt/flosc/data
+sudo chown -R $USER:$USER /opt/flosc
+
+3) Backend install
+cd /opt
+git clone <your repo url> flosc-funnel
+cd flosc-funnel/backend
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+# edit .env with real keys
+
+4) Run backend (systemd)
+
+deploy/flosc-backend.service
+
+[Unit]
+Description=FLOSC Backend
+After=network.target
+
+[Service]
+WorkingDirectory=/opt/flosc-funnel/backend
+EnvironmentFile=/opt/flosc-funnel/backend/.env
+ExecStart=/opt/flosc-funnel/backend/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+
+deploy/flosc-worker.service
+
+[Unit]
+Description=FLOSC Worker (RQ)
+After=network.target redis-server.service
+
+[Service]
+WorkingDirectory=/opt/flosc-funnel/backend
+EnvironmentFile=/opt/flosc-funnel/backend/.env
+ExecStart=/opt/flosc-funnel/backend/.venv/bin/rq worker flosc --url redis://127.0.0.1:6379/0
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
+
+Enable:
+
+sudo cp /opt/flosc-funnel/deploy/flosc-backend.service /etc/systemd/system/
+sudo cp /opt/flosc-funnel/deploy/flosc-worker.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now flosc-backend
+sudo systemctl enable --now flosc-worker
+
+5) Nginx (serve frontend + proxy API)
+
+deploy/nginx_flosc.conf
+
+server {
+  server_name yourdomain.com;
+
+  root /opt/flosc-funnel/frontend;
+  index index.html;
+
+  location /api/ {
+    proxy_pass http://127.0.0.1:8000/api/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+  }
+
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+}
+
+
+Enable:
+
+sudo cp /opt/flosc-funnel/deploy/nginx_flosc.conf /etc/nginx/sites-available/flosc
+sudo ln -sf /etc/nginx/sites-available/flosc /etc/nginx/sites-enabled/flosc
+sudo nginx -t
+sudo systemctl reload nginx
+
+6) HTTPS
+sudo apt install -y certbot python3-certbot-nginx
+sudo certbot --nginx -d yourdomain.com
+
+How creators upload/update CSVs + lessons
+Update CSVs
+
+Replace:
+
+backend/app/config_data/product.csv
+
+backend/app/config_data/targeted_lessons.csv
+
+Then restart backend:
+
+sudo systemctl restart flosc-backend
+
+Update lessons
+
+Drop lesson files into:
+
+backend/app/content/lessons/
+
+(If you want lessons served directly, add a static route later; for MVP, list titles and host lesson pages in frontend/lessons/ instead.)
+
+Security + anonymized audio storage (what this MVP does)
+
+Audio is stored as /opt/flosc/audio/{quiz_id}.webm (UUID-only naming).
+
+No public endpoint serves audio.
+
+Quiz is “anonymous” until Supabase login attaches user_id.
+
+Block logic (3 “No” → blocked) is client-side in this MVP; for stronger enforcement you’d persist strikes by IP + cookie hash server-side.
+
+Notes on phoneme accuracy (honest constraints)
+
+This MVP compares expected vs transcript via CMU phonemes (English pronunciation dictionary).
+
+If Whisper outputs a different word than expected, phoneme differences will follow. That’s acceptable for “sound gaps” coaching, but not a forensic phoneme aligner.
+
+If you want true phoneme alignment from audio (not transcript), that’s a bigger step (forced alignment models). This build stays lightweight and droplet-friendly.
+
+What you get “out of the box” in profitability terms
+
+Personalization: “Work needed on these sounds: {count} — {list}”
+
+Dynamic free lessons: pulled from CSV by phoneme_group
+
+24h urgency: enforced by backend with oto_expires_at
+
+Automatic reminders: RQ scheduled at 12h and 23h
+
+Zero ongoing cost: DO droplet + free tiers + Stripe fees on sales
+
+If you want the same repo with:
+
+server-side blocking (IP+cookie),
+
+WhatsApp via Twilio sandbox and/or Telegram bot delivery,
+
+and lesson file serving with paid gating by signed URLs,
+
+say so and I’ll extend this exact codebase in-place (no redesign).

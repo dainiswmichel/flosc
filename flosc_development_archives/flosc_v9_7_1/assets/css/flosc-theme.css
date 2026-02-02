@@ -1,0 +1,90 @@
+/*
+ * FLOSC Theme Layer (v9.7.1) - Icon Visibility Fix
+ * ==========================
+ *
+ * This file connects CSS variables to actual DOM elements.
+ * It reads variables from chat-style-*.css presets or inline styles.
+ *
+ * Updated for v9.7.1: Ensures all button backgrounds contrast with icon colors for perfect visibility.
+ */
+
+:root {
+    /* Global */
+    --flosc-bg: #ffffff;
+    --flosc-text: #111827;
+    --flosc-text-muted: #6b7280;
+    --flosc-border: #e5e7eb;
+    --flosc-accent: #2563eb;
+    --flosc-accent-hover: #1d4ed8;
+
+    /* Sidebar */
+    --flosc-sidebar-bg: #f9fafb;
+    --flosc-sidebar-text: #374151;
+    --flosc-sidebar-text-muted: #6b7280;
+    --flosc-sidebar-border: #e5e7eb;
+    --flosc-sidebar-hover: #e5e7eb;
+    --flosc-sidebar-action-bg: #f3f4f6; /* NEW: visible background for sidebar buttons */
+    --flosc-sidebar-action-hover-bg: #e0e7ef;
+
+    /* Send Button */
+    --flosc-send-btn-bg: #2563eb; /* Always dark blue */
+    --flosc-send-btn-text: #ffffff; /* Always white icon */
+
+    /* Voice Button */
+    --flosc-voice-btn-bg: #f3f4f6; /* Light gray */
+    --flosc-voice-btn-text: #6b7280; /* Gray icon */
+}
+
+.flosc-sidebar-action-btn,
+.flosc-sidebar .sidebar-action-btn {
+    background: var(--flosc-sidebar-action-bg);
+    color: var(--flosc-sidebar-text-muted);
+    transition: background 0.15s;
+}
+.flosc-sidebar-action-btn:hover,
+.flosc-sidebar .sidebar-action-btn:hover {
+    background: var(--flosc-sidebar-action-hover-bg);
+    color: var(--flosc-sidebar-text);
+}
+
+.flosc-sidebar-action-btn svg,
+.flosc-sidebar .sidebar-action-btn svg {
+    stroke: var(--flosc-sidebar-text-muted);
+    stroke-width: 2;
+    fill: none;
+}
+.flosc-sidebar-action-btn:hover svg,
+.flosc-sidebar .sidebar-action-btn:hover svg {
+    stroke: var(--flosc-sidebar-text);
+}
+
+.flosc_input_chat_send_button {
+    background: var(--flosc-send-btn-bg);
+    color: var(--flosc-send-btn-text);
+    border: none;
+    border-radius: 8px;
+    transition: background 0.15s;
+}
+.flosc_input_chat_send_button svg {
+    stroke: var(--flosc-send-btn-text);
+    fill: none;
+}
+.flosc_input_chat_send_button:hover {
+    background: var(--flosc-accent-hover);
+}
+
+.flosc_input_chat_voice_button {
+    background: var(--flosc-voice-btn-bg);
+    color: var(--flosc-voice-btn-text);
+    border: none;
+    border-radius: 8px;
+    transition: background 0.15s;
+}
+.flosc_input_chat_voice_button svg {
+    stroke: var(--flosc-voice-btn-text);
+    fill: none;
+}
+.flosc_input_chat_voice_button:hover {
+    background: var(--flosc-sidebar-hover);
+    color: var(--flosc-text);
+}

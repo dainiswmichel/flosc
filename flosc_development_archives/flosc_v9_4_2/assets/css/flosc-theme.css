@@ -1,0 +1,640 @@
+/**
+ * FLOSC Theme Layer (v9.3.9)
+ * ==========================
+ * 
+ * This file connects CSS variables to actual DOM elements.
+ * It reads variables from chat-style-*.css presets or inline styles.
+ * 
+ * ARCHITECTURE:
+ * 1. flosc-layout.css  - Structure only (flexbox, grid, positioning)
+ * 2. flosc-theme.css   - Variable consumption (this file)
+ * 3. chat-style-*.css  - Variable definitions (light/dark presets)
+ * 
+ * BACKWARD COMPATIBILITY:
+ * Supports both legacy class names (HTML/JS) and new prefixed names.
+ * Legacy: .sidebar-header, .message.user, .message-text
+ * New:    .flosc-sidebar-header, .flosc-message-user, .flosc-message-text
+ * 
+ * @see FLOSC_STYLE_GUIDE.md for naming conventions
+ */
+
+/* ============================================
+   CSS VARIABLE DEFAULTS (Fallbacks)
+   ============================================ */
+
+:root {
+    /* Global */
+    --flosc-bg: #ffffff;
+    --flosc-text: #111827;
+    --flosc-text-muted: #6b7280;
+    --flosc-border: #e5e7eb;
+    --flosc-accent: #2563eb;
+    --flosc-accent-hover: #1d4ed8;
+
+    /* User Message */
+    --flosc-user-message-bg: #2563eb;
+    --flosc-user-message-text: #ffffff;
+    --flosc-user-message-radius: 18px 18px 4px 18px;
+    --flosc-user-avatar-bg: #2563eb;
+    --flosc-user-avatar-text: #ffffff;
+
+    /* Assistant Message */
+    --flosc-assistant-message-bg: transparent;
+    --flosc-assistant-message-text: #111827;
+    --flosc-assistant-message-border: none;
+    --flosc-assistant-message-radius: 4px 18px 18px 18px;
+    --flosc-assistant-avatar-bg: #f3f4f6;
+    --flosc-assistant-avatar-text: #374151;
+
+    /* Input */
+    --flosc-input-bg: #ffffff;
+    --flosc-input-field-bg: #f9fafb;
+    --flosc-input-field-border: #e5e7eb;
+    --flosc-input-field-text: #111827;
+    --flosc-input-placeholder: #9ca3af;
+    --flosc-send-btn-bg: #2563eb;
+    --flosc-send-btn-text: #ffffff;
+
+    /* Sidebar */
+    --flosc-sidebar-bg: #f9fafb;
+    --flosc-sidebar-text: #374151;
+    --flosc-sidebar-text-muted: #6b7280;
+    --flosc-sidebar-hover: #f3f4f6;
+    --flosc-sidebar-active: #e5e7eb;
+    --flosc-sidebar-border: #e5e7eb;
+
+    /* Pills / Suggested Replies */
+    --flosc-pill-bg: #ffffff;
+    --flosc-pill-text: #374151;
+    --flosc-pill-border: #e5e7eb;
+    --flosc-pill-hover-bg: #f9fafb;
+    --flosc-pill-hover-text: var(--flosc-accent);
+    --flosc-pill-hover-border: var(--flosc-accent);
+
+    /* Code Blocks */
+    --flosc-code-bg: #f3f4f6;
+    --flosc-code-text: #111827;
+
+    /* Scrollbar */
+    --flosc-scrollbar-thumb: #d1d5db;
+    --flosc-scrollbar-thumb-hover: #9ca3af;
+}
+
+/* ============================================
+   APP CONTAINER
+   ============================================ */
+
+.flosc-app {
+    background: var(--flosc-bg);
+    color: var(--flosc-text);
+}
+
+/* ============================================
+   SIDEBAR
+   Supports: .flosc-sidebar (HTML uses this)
+   ============================================ */
+
+.flosc-sidebar {
+    background: var(--flosc-sidebar-bg);
+    border-right: 1px solid var(--flosc-sidebar-border);
+}
+
+/* Sidebar Header - Legacy: .sidebar-header */
+.flosc-sidebar-header,
+.flosc-sidebar .sidebar-header {
+    border-bottom: 1px solid var(--flosc-sidebar-border);
+}
+
+/* Sidebar Logo - Legacy: .logo */
+.flosc-sidebar-logo,
+.flosc-sidebar .logo {
+    color: var(--flosc-text);
+}
+
+/* Sidebar Action Buttons - Legacy: .sidebar-action-btn */
+.flosc-sidebar-action-btn,
+.flosc-sidebar .sidebar-action-btn {
+    background: transparent;
+    color: var(--flosc-sidebar-text-muted);
+}
+
+.flosc-sidebar-action-btn:hover,
+.flosc-sidebar .sidebar-action-btn:hover {
+    background: var(--flosc-sidebar-hover);
+    color: var(--flosc-sidebar-text);
+}
+
+/* Mobile Sidebar Toggle */
+.flosc-sidebar-toggle,
+.flosc_app_sidebar_toggle {
+    background: var(--flosc-bg);
+    color: var(--flosc-text);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* New Chat Button - Legacy: .new-chat-btn */
+.flosc-new-chat-btn,
+.flosc-sidebar .new-chat-btn {
+    background: var(--flosc-accent);
+    color: #ffffff;
+}
+
+.flosc-new-chat-btn:hover,
+.flosc-sidebar .new-chat-btn:hover {
+    background: var(--flosc-accent-hover);
+}
+
+/* ============================================
+   SESSION LIST
+   Legacy: .flosc_app_session_list, .session-item
+   ============================================ */
+
+.flosc-session-group-title,
+.session-group-title {
+    color: var(--flosc-sidebar-text-muted);
+}
+
+.flosc-session-item,
+.session-item {
+    color: var(--flosc-sidebar-text);
+}
+
+.flosc-session-item:hover,
+.session-item:hover {
+    background: var(--flosc-sidebar-hover);
+}
+
+.flosc-session-item.active,
+.session-item.active {
+    background: var(--flosc-sidebar-active);
+}
+
+/* ============================================
+   USER PROFILE
+   Legacy: .user-profile-card
+   ============================================ */
+
+.flosc-user-profile,
+.user-profile-card {
+    border-top: 1px solid var(--flosc-sidebar-border);
+    background: var(--flosc-sidebar-bg);
+}
+
+.flosc-user-avatar,
+.user-profile-card .profile-avatar {
+    background: var(--flosc-accent);
+    color: #ffffff;
+}
+
+.flosc-user-name,
+.user-profile-card .profile-name {
+    color: var(--flosc-sidebar-text);
+}
+
+.flosc-user-email,
+.user-profile-card .dropdown-email {
+    color: var(--flosc-sidebar-text-muted);
+}
+
+/* ============================================
+   HEADER
+   Legacy: .flosc-header (HTML uses this already)
+   ============================================ */
+
+.flosc-header {
+    background: var(--flosc-bg);
+    border-bottom: 1px solid var(--flosc-border);
+}
+
+.flosc-header-title,
+.flosc-header .header-title {
+    color: var(--flosc-text);
+}
+
+/* ============================================
+   CHAT CONTAINER
+   Legacy: .chat-container
+   ============================================ */
+
+.flosc-chat-container,
+.chat-container {
+    background: var(--flosc-bg);
+}
+
+/* ============================================
+   MESSAGES AREA
+   Legacy: .messages
+   ============================================ */
+
+.flosc-messages,
+.messages {
+    background: var(--flosc-bg);
+}
+
+/* ============================================
+   GREETING / WELCOME
+   Legacy: .greeting, .greeting-title
+   ============================================ */
+
+.flosc-greeting,
+.greeting {
+    text-align: center;
+}
+
+.flosc-greeting-title,
+.greeting-title {
+    color: var(--flosc-text);
+}
+
+.flosc-greeting-subtitle,
+.greeting-subtitle,
+.landing-subtitle {
+    color: var(--flosc-text-muted);
+}
+
+/* ============================================
+   MESSAGES - SHARED STYLES
+   Removes full-width gray strips behind messages
+   ============================================ */
+
+.flosc-message,
+.message {
+    background: transparent !important;
+    border: none !important;
+}
+
+/* ============================================
+   USER MESSAGE
+   Legacy: .message.user
+   New: .flosc-message-user
+   ============================================ */
+
+.flosc-message-user,
+.message.user {
+    flex-direction: row-reverse;
+}
+
+/* User Avatar */
+.flosc-message-user .flosc-message-avatar,
+.flosc-message-user .message-avatar,
+.message.user .message-avatar {
+    background: var(--flosc-user-avatar-bg);
+    color: var(--flosc-user-avatar-text);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+/* User Message Bubble */
+.flosc-message-user .flosc-message-text,
+.flosc-message-user .message-text,
+.message.user .message-text {
+    background: var(--flosc-user-message-bg);
+    color: var(--flosc-user-message-text);
+    padding: 10px 16px;
+    border-radius: var(--flosc-user-message-radius);
+}
+
+/* ============================================
+   ASSISTANT MESSAGE
+   Legacy: .message.assistant
+   New: .flosc-message-assistant
+   ============================================ */
+
+/* Assistant Avatar */
+.flosc-message-assistant .flosc-message-avatar,
+.flosc-message-assistant .message-avatar,
+.message.assistant .message-avatar {
+    background: var(--flosc-assistant-avatar-bg);
+    color: var(--flosc-assistant-avatar-text);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Assistant Message - Transparent (Claude-style) */
+.flosc-message-assistant .flosc-message-text,
+.flosc-message-assistant .message-text,
+.message.assistant .message-text {
+    background: var(--flosc-assistant-message-bg);
+    color: var(--flosc-assistant-message-text);
+    border: var(--flosc-assistant-message-border);
+    border-radius: var(--flosc-assistant-message-radius);
+    padding: 0;
+}
+
+/* ============================================
+   MESSAGE TYPOGRAPHY
+   ============================================ */
+
+.flosc-message-text,
+.message-text {
+    font-size: 15px;
+    line-height: 1.6;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.flosc-message-text p,
+.message-text p {
+    margin: 0 0 12px 0;
+}
+
+.flosc-message-text p:last-child,
+.message-text p:last-child {
+    margin-bottom: 0;
+}
+
+/* Code Blocks */
+.flosc-message-text code,
+.message-text code {
+    background: var(--flosc-code-bg);
+    color: var(--flosc-code-text);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+}
+
+.flosc-message-text pre,
+.message-text pre {
+    background: var(--flosc-code-bg);
+    padding: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 12px 0;
+}
+
+.flosc-message-text pre code,
+.message-text pre code {
+    padding: 0;
+    background: transparent;
+}
+
+/* ============================================
+   INPUT COMPOSER
+   Legacy: .flosc_input_composer (underscore)
+   New: .flosc-input-composer (dash)
+   ============================================ */
+
+.flosc-input-composer,
+.flosc_input_composer {
+    background: var(--flosc-input-bg);
+    border-top: 1px solid var(--flosc-border);
+}
+
+.flosc-input-wrapper,
+.flosc_input_composer_inner {
+    background: var(--flosc-input-field-bg);
+    border: 1px solid var(--flosc-input-field-border);
+    border-radius: 12px;
+}
+
+.flosc-input-wrapper:focus-within,
+.flosc_input_composer_inner:focus-within {
+    border-color: var(--flosc-accent);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.flosc-input-field,
+.flosc_input_composer textarea,
+#flosc_input_chat_field {
+    background: transparent;
+    color: var(--flosc-input-field-text);
+    border: none;
+    outline: none;
+}
+
+.flosc-input-field::placeholder,
+.flosc_input_composer textarea::placeholder,
+#flosc_input_chat_field::placeholder {
+    color: var(--flosc-input-placeholder);
+}
+
+/* Send Button */
+.flosc-send-btn,
+.flosc_input_chat_send_button {
+    background: var(--flosc-send-btn-bg);
+    color: var(--flosc-send-btn-text);
+    border: none;
+    border-radius: 8px;
+}
+
+.flosc-send-btn:hover:not(:disabled),
+.flosc_input_chat_send_button:hover:not(:disabled) {
+    background: var(--flosc-accent-hover);
+}
+
+.flosc-send-btn:disabled,
+.flosc_input_chat_send_button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Voice Button */
+.flosc_input_chat_voice_button {
+    background: transparent;
+    color: var(--flosc-text-muted);
+    border: none;
+}
+
+.flosc_input_chat_voice_button:hover {
+    color: var(--flosc-text);
+}
+
+.flosc_input_chat_voice_button.recording {
+    color: #ef4444;
+}
+
+/* ============================================
+   SUGGESTED REPLIES / PILLS
+   Legacy: Various pill class names from JS
+   ============================================ */
+
+.flosc-pill,
+.flosc-style-pill,
+.flosc-suggested-replies-container button,
+#flosc_output_chat_suggested_replies button {
+    background: var(--flosc-pill-bg);
+    color: var(--flosc-pill-text);
+    border: 1px solid var(--flosc-pill-border);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.flosc-pill:hover,
+.flosc-style-pill:hover,
+.flosc-suggested-replies-container button:hover,
+#flosc_output_chat_suggested_replies button:hover {
+    background: var(--flosc-pill-hover-bg);
+    color: var(--flosc-pill-hover-text);
+    border-color: var(--flosc-pill-hover-border);
+}
+
+/* ============================================
+   TYPING INDICATOR
+   ============================================ */
+
+.flosc-typing-indicator,
+.typing-indicator {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.flosc-typing-dot,
+.typing-dots span {
+    background: var(--flosc-text-muted);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+
+.flosc-messages::-webkit-scrollbar,
+.messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.flosc-messages::-webkit-scrollbar-track,
+.messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.flosc-messages::-webkit-scrollbar-thumb,
+.messages::-webkit-scrollbar-thumb {
+    background: var(--flosc-scrollbar-thumb);
+    border-radius: 3px;
+}
+
+.flosc-messages::-webkit-scrollbar-thumb:hover,
+.messages::-webkit-scrollbar-thumb:hover {
+    background: var(--flosc-scrollbar-thumb-hover);
+}
+
+/* Session List Scrollbar */
+.flosc-session-list::-webkit-scrollbar,
+.flosc_app_session_list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.flosc-session-list::-webkit-scrollbar-track,
+.flosc_app_session_list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.flosc-session-list::-webkit-scrollbar-thumb,
+.flosc_app_session_list::-webkit-scrollbar-thumb {
+    background: var(--flosc-scrollbar-thumb);
+    border-radius: 2px;
+}
+
+/* ============================================
+   OVERLAY (Mobile Sidebar)
+   ============================================ */
+
+.flosc-overlay {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================
+   AUTH BUTTONS (Header)
+   ============================================ */
+
+.auth-buttons .btn-primary {
+    background: var(--flosc-accent);
+    color: #ffffff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+}
+
+.auth-buttons .btn-primary:hover {
+    background: var(--flosc-accent-hover);
+}
+
+.auth-buttons .btn-secondary {
+    background: transparent;
+    color: var(--flosc-text);
+    border: 1px solid var(--flosc-border);
+    padding: 8px 16px;
+    border-radius: 6px;
+}
+
+.auth-buttons .btn-secondary:hover {
+    background: var(--flosc-sidebar-hover);
+}
+
+/* ============================================
+   LANDING STATE
+   ============================================ */
+
+.landing-state {
+    text-align: center;
+    padding: 48px 24px;
+}
+
+.landing-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--flosc-text);
+    margin-bottom: 8px;
+}
+
+/* ============================================
+   PROFILE DROPDOWN
+   ============================================ */
+
+.profile-dropdown {
+    background: var(--flosc-bg);
+    border: 1px solid var(--flosc-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.profile-dropdown-item {
+    color: var(--flosc-text);
+    padding: 10px 16px;
+    display: block;
+    text-decoration: none;
+}
+
+.profile-dropdown-item:hover {
+    background: var(--flosc-sidebar-hover);
+}
+
+/* ============================================
+   UPGRADE BUTTON
+   ============================================ */
+
+.upgrade-btn {
+    background: var(--flosc-accent);
+    color: #ffffff;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.upgrade-btn:hover {
+    background: var(--flosc-accent-hover);
+}

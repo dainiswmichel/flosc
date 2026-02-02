@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLOSC Framework - WordPress Connected</title>
+    <link rel="stylesheet" href="static/css/chatbot.css">
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="bot-avatar">🤖</div>
+            <div class="bot-info">
+                <h1>FLOSC Framework + WordPress</h1>
+                <p class="bot-status">
+                    <span class="status-dot"></span> Connected to dainis.net/lesaep/
+                </p>
+            </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <!-- Messages appear here -->
+        </div>
+
+        <div class="chat-input-area" id="chatInputArea">
+            <div class="typing-indicator hidden" id="typingIndicator">
+                <span></span><span></span><span></span>
+            </div>
+
+            <div class="quick-replies" id="quickReplies">
+                <!-- Quick reply buttons appear here -->
+            </div>
+
+            <div class="recorder-area hidden" id="recorderArea">
+                <div class="sentence-to-record" id="sentenceToRecord"></div>
+                <button class="record-btn" id="recordBtn">
+                    <span class="record-icon">🎤</span>
+                    <span class="record-text">Click to Record</span>
+                </button>
+                <div class="waveform hidden" id="waveform">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
+                <p class="record-status" id="recordStatus"></p>
+            </div>
+
+            <div class="email-capture hidden" id="emailCapture">
+                <input type="email" id="emailInput" placeholder="your@email.com" required>
+                <input type="tel" id="phoneInput" placeholder="+1 (555) 000-0000 (optional)">
+                <button id="submitContactBtn" class="btn-primary">Submit & Get Results</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Countdown Timer Overlay -->
+    <div class="countdown-overlay hidden" id="countdownOverlay">
+        <div class="countdown-box">
+            <h2>⏰ LIMITED TIME OFFER</h2>
+            <div class="countdown-timer" id="countdownTimer">
+                <div class="time-unit">
+                    <span class="time-value" id="hours">00</span>
+                    <span class="time-label">Hours</span>
+                </div>
+                <div class="time-unit">
+                    <span class="time-value" id="minutes">00</span>
+                    <span class="time-label">Minutes</span>
+                </div>
+                <div class="time-unit">
+                    <span class="time-value" id="seconds">00</span>
+                    <span class="time-label">Seconds</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts loaded in order -->
+    <script src="static/js/wordpress-api.js"></script>
+    <script src="static/js/session.js"></script>
+    <script src="static/js/chatbot-wp.js"></script>
+</body>
+</html>

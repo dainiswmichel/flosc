@@ -1,0 +1,43 @@
+/* FLOSC Dark Theme (v9.3.7) - VARIABLES ONLY */
+:root {
+    --flosc-bg: #0f172a;
+    --flosc-text: #f1f5f9;
+    --flosc-text-muted: #94a3b8;
+    --flosc-border: #1e293b;
+    --flosc-accent: #3b82f6;
+    --flosc-accent-hover: #60a5fa;
+    --flosc-user-message-bg: #3b82f6;
+    --flosc-user-message-text: #ffffff;
+    --flosc-user-message-radius: 18px 18px 4px 18px;
+    --flosc-user-avatar-bg: #3b82f6;
+    --flosc-user-avatar-text: #ffffff;
+    --flosc-assistant-message-bg: transparent;
+    --flosc-assistant-message-text: #f1f5f9;
+    --flosc-assistant-message-border: none;
+    --flosc-assistant-message-radius: 0;
+    --flosc-assistant-avatar-bg: #1e293b;
+    --flosc-assistant-avatar-text: #94a3b8;
+    --flosc-input-bg: #0f172a;
+    --flosc-input-field-bg: #1e293b;
+    --flosc-input-field-border: #334155;
+    --flosc-input-field-text: #f1f5f9;
+    --flosc-input-placeholder: #64748b;
+    --flosc-send-btn-bg: #3b82f6;
+    --flosc-send-btn-text: #ffffff;
+    --flosc-sidebar-bg: #1e293b;
+    --flosc-sidebar-text: #cbd5e1;
+    --flosc-sidebar-text-muted: #64748b;
+    --flosc-sidebar-hover: #334155;
+    --flosc-sidebar-active: #475569;
+    --flosc-sidebar-border: #334155;
+    --flosc-pill-bg: #1e293b;
+    --flosc-pill-text: #cbd5e1;
+    --flosc-pill-border: #334155;
+    --flosc-pill-hover-bg: #334155;
+    --flosc-pill-hover-text: #3b82f6;
+    --flosc-pill-hover-border: #3b82f6;
+    --flosc-code-bg: #334155;
+    --flosc-code-text: #e2e8f0;
+    --flosc-scrollbar-thumb: #475569;
+    --flosc-scrollbar-thumb-hover: #64748b;
+}

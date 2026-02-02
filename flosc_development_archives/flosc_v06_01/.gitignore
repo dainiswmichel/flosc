@@ -1,0 +1,108 @@
+# FLOSC WordPress Plugin - Git Ignore Rules
+# v06.02 - Professional repository hygiene
+
+# ============================================================================
+# macOS System Files
+# ============================================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Icon files
+Icon
+
+# Thumbnails
+.Thumbs.db
+
+# ============================================================================
+# WordPress
+# ============================================================================
+*.log
+wp-config-local.php
+debug.log
+error_log
+
+# ============================================================================
+# User Runtime Data (Plugin-Managed)
+# ============================================================================
+# AI knowledge base files are uploaded at runtime, not version controlled
+ai_configuration_files/*.md
+ai_configuration_files/*.txt
+
+# Keep the directory structure and documentation
+!ai_configuration_files/.gitkeep
+!ai_configuration_files/README.md
+
+# ============================================================================
+# IDE & Editor Files
+# ============================================================================
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs (PhpStorm, WebStorm, etc.)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.*.sw?
+
+# Emacs
+*~
+\#*\#
+.\#*
+
+# ============================================================================
+# Temporary & Cache Files
+# ============================================================================
+*.tmp
+*.temp
+*.bak
+*.backup
+*.orig
+*.cache
+.cache/
+
+# ============================================================================
+# Build & Dependency Files (if applicable)
+# ============================================================================
+node_modules/
+vendor/
+composer.lock
+package-lock.json
+
+# ============================================================================
+# Testing (when implemented)
+# ============================================================================
+tests/coverage/
+.phpunit.result.cache
+phpunit.xml
+
+# ============================================================================
+# Documentation Archives (consolidated in CHANGELOG.md)
+# ============================================================================
+archive/
+WHATS_NEW_v*.md
+
+# ============================================================================
+# Environment Variables (if used)
+# ============================================================================
+.env
+.env.local
+.env.*.local
+
+# ============================================================================
+# Custom Ignore Rules
+# ============================================================================
+# Add project-specific ignores below this line
+

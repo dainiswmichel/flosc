@@ -1,0 +1,11 @@
+lesson_id,lesson_title,phoneme_group,video_url,pdf_url,is_premium
+1,The /æ/ Sound Mastery,æ,/static/lessons/ae-sound.mp4,/static/lessons/ae-sound.pdf,0
+2,The /ɪ/ Sound Practice,ɪ,/static/lessons/i-sound.mp4,/static/lessons/i-sound.pdf,0
+3,Master the /θ/ Sound,θ,/static/lessons/th-sound.mp4,/static/lessons/th-sound.pdf,0
+4,The Schwa /ə/ Explained,ə,/static/lessons/schwa.mp4,/static/lessons/schwa.pdf,1
+5,R-Colored Vowels /ɜr/,ɜr,/static/lessons/er-sound.mp4,/static/lessons/er-sound.pdf,1
+6,Diphthong /aɪ/ Training,aɪ,/static/lessons/ai-sound.mp4,/static/lessons/ai-sound.pdf,1
+7,The /ʃ/ Sound (sh),ʃ,/static/lessons/sh-sound.mp4,/static/lessons/sh-sound.pdf,0
+8,Voiced TH /ð/,ð,/static/lessons/voiced-th.mp4,/static/lessons/voiced-th.pdf,1
+9,The /ŋ/ Sound (ng),ŋ,/static/lessons/ng-sound.mp4,/static/lessons/ng-sound.pdf,1
+10,Long /iː/ vs Short /ɪ/,iː,/static/lessons/long-i.mp4,/static/lessons/long-i.pdf,1

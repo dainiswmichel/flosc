@@ -1,0 +1,234 @@
+/**
+ * FLOSC Custom Style
+ * ==================
+ * 
+ * YOUR CANVAS. Edit these values to make FLOSC yours.
+ * 
+ * HOW IT WORKS:
+ * - The base CSS (flosc-app.css) handles layout
+ * - This file overrides colors, spacing, and appearance
+ * - Use !important to ensure your styles win
+ */
+
+
+/* ============================================
+   🎨 YOUR COLOR PALETTE
+   
+   Change these to match your brand:
+   ============================================ */
+
+:root {
+    /* Primary brand color - used for user bubbles, buttons, links */
+    --my-primary: #2563eb;           /* Try: #10b981 (green), #8b5cf6 (purple), #f59e0b (amber) */
+    --my-primary-hover: #1d4ed8;
+    
+    /* Text colors */
+    --my-text-dark: #111827;         /* Main text */
+    --my-text-medium: #4b5563;       /* Secondary text */
+    --my-text-light: #9ca3af;        /* Muted text */
+    
+    /* Background colors */
+    --my-bg-page: #ffffff;           /* Page background */
+    --my-bg-subtle: #f9fafb;         /* Input backgrounds, hover states */
+    --my-bg-muted: #f3f4f6;          /* Assistant avatar, code blocks */
+    
+    /* Borders */
+    --my-border: #e5e7eb;
+}
+
+
+/* ============================================
+   💬 USER MESSAGES (right side)
+   
+   The bubble style for what the user types
+   ============================================ */
+
+.flosc-app .message.user .message-text {
+    background: var(--my-primary) !important;
+    color: #ffffff !important;
+    padding: 10px 16px !important;
+    border-radius: 18px 18px 4px 18px !important;
+}
+
+.flosc-app .message.user .message-avatar {
+    background: var(--my-primary) !important;
+    color: #ffffff !important;
+}
+
+
+/* ============================================
+   🤖 ASSISTANT MESSAGES (left side)
+   
+   Options:
+   A) Clean text (no background) - professional, like Claude
+   B) Light bubble - more separation
+   C) Bordered - subtle distinction
+   
+   Uncomment ONE section below:
+   ============================================ */
+
+/* OPTION A: Clean text (default - recommended) */
+.flosc-app .message.assistant .message-text {
+    background: transparent !important;
+    color: var(--my-text-dark) !important;
+    padding: 0 !important;
+}
+
+/* OPTION B: Light bubble
+.flosc-app .message.assistant .message-text {
+    background: var(--my-bg-muted) !important;
+    color: var(--my-text-dark) !important;
+    padding: 12px 16px !important;
+    border-radius: 18px 18px 18px 4px !important;
+}
+*/
+
+/* OPTION C: Bordered
+.flosc-app .message.assistant .message-text {
+    background: transparent !important;
+    border: 1px solid var(--my-border) !important;
+    color: var(--my-text-dark) !important;
+    padding: 12px 16px !important;
+    border-radius: 12px !important;
+}
+*/
+
+.flosc-app .message.assistant .message-avatar {
+    background: var(--my-bg-muted) !important;
+}
+
+
+/* ============================================
+   📦 MESSAGE CONTAINERS
+   
+   Remove the full-width background strips
+   ============================================ */
+
+.flosc-app .message {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+    margin-bottom: 20px !important;
+}
+
+.flosc-app .messages {
+    background: var(--my-bg-page) !important;
+    max-width: 800px !important;
+    margin: 0 auto !important;
+    padding: 24px !important;
+}
+
+
+/* ============================================
+   ✏️ INPUT / COMPOSER
+   ============================================ */
+
+.flosc-app .flosc_input_composer {
+    background: var(--my-bg-page) !important;
+    border-top: 1px solid var(--my-border) !important;
+}
+
+.flosc-app .flosc_input_composer_inner {
+    background: var(--my-bg-subtle) !important;
+    border: 1px solid var(--my-border) !important;
+    border-radius: 12px !important;
+}
+
+.flosc-app .flosc_input_composer_inner:focus-within {
+    border-color: var(--my-primary) !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+
+/* ============================================
+   🔘 BUTTONS
+   ============================================ */
+
+.flosc-app .flosc-send-btn,
+.flosc-app button[type="submit"] {
+    background: var(--my-primary) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+}
+
+.flosc-app .flosc-send-btn:hover,
+.flosc-app button[type="submit"]:hover {
+    background: var(--my-primary-hover) !important;
+}
+
+
+/* ============================================
+   💊 SUGGESTED REPLIES / PILLS
+   ============================================ */
+
+.flosc-app .flosc_output_chat_suggested_replies_scroll button,
+.flosc-app .flosc-style-pill {
+    background: var(--my-bg-page) !important;
+    border: 1px solid var(--my-border) !important;
+    color: var(--my-text-medium) !important;
+    border-radius: 999px !important;
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+}
+
+.flosc-app .flosc_output_chat_suggested_replies_scroll button:hover,
+.flosc-app .flosc-style-pill:hover {
+    background: var(--my-bg-subtle) !important;
+    border-color: var(--my-primary) !important;
+    color: var(--my-primary) !important;
+}
+
+
+/* ============================================
+   📝 TYPOGRAPHY
+   ============================================ */
+
+.flosc-app .message-text {
+    font-size: 15px !important;
+    line-height: 1.65 !important;
+}
+
+.flosc-app .message-text code {
+    background: var(--my-bg-muted) !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+    font-size: 0.9em !important;
+}
+
+
+/* ============================================
+   🎯 GREETING / WELCOME
+   ============================================ */
+
+.flosc-app .greeting {
+    text-align: center !important;
+    padding: 48px 24px !important;
+}
+
+.flosc-app .greeting-title {
+    font-size: 24px !important;
+    font-weight: 600 !important;
+    color: var(--my-text-dark) !important;
+}
+
+
+/* ============================================
+   🌙 DARK MODE (optional)
+   
+   Uncomment to enable dark mode:
+   ============================================ */
+
+/*
+@media (prefers-color-scheme: dark) {
+    :root {
+        --my-text-dark: #f9fafb;
+        --my-text-medium: #d1d5db;
+        --my-text-light: #6b7280;
+        --my-bg-page: #111827;
+        --my-bg-subtle: #1f2937;
+        --my-bg-muted: #374151;
+        --my-border: #374151;
+    }
+}
+*/
