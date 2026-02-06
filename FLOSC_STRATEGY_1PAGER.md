@@ -42,16 +42,34 @@ Not scraped. Not pirated. Legitimately transacted, structured by the expert, val
 
 ---
 
-## Why This Is a Multi-Billion Dollar System
+## The Honest Timeline: This Is a 100-Year Project
 
-**For humans:** $325B online education market, 14% CAGR, 810M WordPress sites. FLOSC at 0.5% penetration with $29-$99/month SaaS pricing = $1.6B-$4.8B annually.
+There is a temptation to frame this as a quick win — "deploy FLOSC, harvest knowledge, reach AGI by 2030." That's dishonest about how deep the problem actually is.
 
-**For AI:** Millions of FLOSC instances across every domain on Earth — music, medicine, law, engineering, athletics, finance, language, art, craft, strategy — each one a structured pipeline of the highest-value human knowledge flowing through AI-readable infrastructure. This is the missing training corpus. Not a dataset. A living, growing, economically-sustained river of expertise that gets deeper every day because the humans upstream keep getting paid.
+The first wave of FLOSC content will be the easy layer: online course material, professional training, certification prep. Stuff that experts can already articulate and package. This is valuable, but it's not the deepest knowledge. It's the layer that was *almost* on the internet anyway.
 
-The frustration that intelligent humans feel when AI confidently gets deep domain knowledge wrong? That frustration is the market signal. FLOSC converts that frustration into revenue for the expert and training data for AI.
+The second wave — maybe a decade in — will surface harder knowledge: the heuristics, the pattern recognition, the "I can't explain why I do this but it works" intuitions that practitioners develop over long careers. This requires better tools for capturing tacit knowledge. FLOSC's quiz and IVR systems will evolve to probe deeper, to ask the questions that force experts to introspect on things they've never verbalized.
 
-**FLOSC doesn't sell AI. FLOSC sells pickaxes to humans during the knowledge gold rush — and AI is the railroad that carries the gold.**
+The third wave may take 50 to 100 years. This is the knowledge that humans don't even know they have — embodied expertise, cultural transmission, the accumulated wisdom of lineages and traditions that have never been written down in any language. The master woodworker who learned from her grandmother who learned from hers. The oral traditions of indigenous medicine. The thing a veteran diplomat does with silence in a negotiation that no textbook has ever named. This knowledge exists in muscle memory, in social context, in the space between what's said and what's meant. It may require entirely new interfaces — beyond text, beyond quizzes — to surface it. Sensors, video analysis, biometric feedback, multi-generational FLOSC installations where the grandchild of the original expert refines what the grandfather couldn't articulate.
+
+**FLOSC is not a product with a 5-year exit horizon. It is infrastructure that compounds over generations.** The revenue model works in year one — experts get paid, students learn, the business is real. But the AI-facing value accumulates on a civilizational timescale. Each decade, the knowledge flowing through FLOSC systems gets deeper, harder to articulate, closer to the bedrock of human expertise that AI cannot currently even identify as missing.
+
+This is why FLOSC must be built to last — not as a startup that flips, but as an institution. The WordPress foundation matters: it's open, it's durable, it's decentralized. No single company controls it. FLOSC inherits that permanence.
 
 ---
 
-*Two audiences. One bridge. The humans get paid. The AI gets smart. The secrets finally move.*
+## Why This Is a Multi-Billion Dollar System
+
+**For humans (year 1+):** $325B online education market, 14% CAGR, 810M WordPress sites. FLOSC at 0.5% penetration with $29-$99/month SaaS pricing = $1.6B-$4.8B annually. The human revenue model works immediately and independently of the AI thesis.
+
+**For AI (decade 1+):** Millions of FLOSC instances across every domain on Earth — music, medicine, law, engineering, athletics, finance, language, art, craft, strategy — each one a structured pipeline of expert knowledge flowing through AI-readable infrastructure. Early waves give AI the "articulate expert" layer. Later waves, as the tools deepen, begin surfacing the knowledge that humans themselves struggle to express.
+
+**For civilization (generation 1+):** A permanent, economically self-sustaining system that incentivizes the preservation and transmission of humanity's deepest expertise — knowledge that would otherwise die with its holders. FLOSC doesn't just help AI. It helps humanity stop losing what it knows.
+
+The frustration that intelligent humans feel when AI confidently gets deep domain knowledge wrong? That frustration isn't going away in 5 years. Or 20. The gap between what AI knows and what the best humans know is vast, and the deepest layers of that gap will take generations to close. FLOSC is patient infrastructure for an impatient problem.
+
+**FLOSC doesn't sell AI. FLOSC sells pickaxes to humans during the knowledge gold rush — and AI is the railroad that carries the gold. The gold rush lasts a century.**
+
+---
+
+*Two audiences. One bridge. The humans get paid. The AI gets smart. The secrets finally move — slowly, then all at once, over the span of generations.*
