@@ -58,6 +58,45 @@ This is why FLOSC must be built to last — not as a startup that flips, but as 
 
 ---
 
+## The Distribution Hack: Every Non-Buyer Is a Recruiter
+
+The fastest path to 100,000 FLOSC installations is already built into the product. Every FLOSC chatbot serves visitors. Most of those visitors won't buy. In a traditional funnel, those non-buyers are lost. In FLOSC, they become the distribution channel.
+
+When a visitor declines the offer, the chatbot pivots:
+
+> *"No worries! Hey — quick question before you go. Do you know anyone who might benefit from having their own chatbot like this? It works for anyone — your local poet selling a chapbook, a chef sharing secret recipes, a fitness coach, a guitar teacher, even a Fortune 500 running internal training. If you know someone who could use some extra income from their expertise, just drop their name, phone number, and email right here in the chat and we'll reach out to help them get started..."*
+
+This is not a customer referral. This is an **operator referral** — recruiting new FLOSC installations, not new buyers for existing ones. Every FLOSC end-user who doesn't convert becomes a potential recruiter for a new FLOSC site.
+
+**The math to 100k installs:**
+
+- Average FLOSC site: 500 unique visitors/month
+- 70% don't buy (the referral-eligible segment)
+- 2% engage with the referral prompt
+- 5% of referred leads actually install FLOSC
+- = **0.35 new installs per existing install per month**
+
+With a seed of 1,000 installs (WordPress.org launch + Product Hunt + direct outreach):
+
+| Month | Installs | Referral Growth | Cumulative |
+|-------|----------|----------------|------------|
+| 0 | 1,000 | — | 1,000 |
+| 6 | — | +2,100 | 3,100 |
+| 12 | — | +6,500 | 9,600 |
+| 18 | — | +20,000 | 29,600 |
+| 24 | — | +62,000 | 91,600 |
+| **~26** | — | — | **100,000** |
+
+**~24-30 months** with compounding. Faster if:
+- Referrers get token credits or affiliate revenue from the installs they generate
+- New operators get a "warm start" — pre-configured IVR, sample quiz, sample lessons
+- Onboarding-to-first-revenue is under 1 hour
+- The referral prompt is contextual and conversational, not a popup
+
+The key insight: FLOSC doesn't need a marketing department. **The product markets itself through its own chat interface.** Every installation is a distribution node. The network grows from inside.
+
+---
+
 ## Why This Is a Multi-Billion Dollar System
 
 **For humans (year 1+):** $325B online education market, 14% CAGR, 810M WordPress sites. FLOSC at 0.5% penetration with $29-$99/month SaaS pricing = $1.6B-$4.8B annually. The human revenue model works immediately and independently of the AI thesis.

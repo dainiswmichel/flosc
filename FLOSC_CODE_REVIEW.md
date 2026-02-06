@@ -811,7 +811,266 @@ The theme presets (claude, dark, chatgpt, grok, light) define ~42 variables each
 
 ---
 
-## X. SUMMARY PRIORITY MATRIX
+## X. GROWTH ENGINE TODOS — Viral Distribution
+
+### TODO-026: Build Operator Referral System Into the IVR Chat Flow
+**Priority: HIGH | Impact: Distribution — Path to 100k Installs**
+
+When a visitor declines the offer, the chatbot should pivot to recruiting them as a **referral source for new FLOSC operators** — not new customers for this site, but entirely new FLOSC installations. Every non-buyer becomes a distribution node for the network.
+
+This requires:
+1. A new IVR message type (`type: operator_referral`) triggered when `offer_dismissed` is true
+2. A referral capture form rendered inline in the chat
+3. A backend endpoint to store referral leads
+4. An outreach/notification system (email or webhook) to contact referred leads
+5. Token/credit incentive for the referrer
+
+**Desired IVR Configuration (`flosc_default_ivr.md`):**
+```markdown
+## OperatorReferral
+MessageName: operator_referral_prompt
+MessageType: operator_referral
+Conditions: is_visitor && !quiz_taken || (is_guest && !purchased && offer_dismissed_main)
+MessagePanel: prompt
+Icon: 🤝
+MessageContent:
+No worries at all! Quick question before you go —
+
+Do you know anyone who might want their own chatbot like this one?
+
+It works for **anyone with expertise to share**: a local poet selling a chapbook,
+a chef with secret recipes, a fitness coach, a guitar teacher, a corporate
+training department — really anyone who wants to create a try-before-you-buy
+experience around their knowledge.
+
+If you know someone who could use some extra income from what they know,
+just share their info below and we'll reach out to help them get started for free.
+
+[REFERRAL_FORM]
+```
+
+**Desired JS — Referral Form Renderer:**
+```javascript
+/**
+ * OPERATOR REFERRAL SYSTEM
+ * ========================
+ * Turns non-buyers into distribution nodes.
+ *
+ * When a visitor doesn't convert, the chatbot asks them
+ * to refer someone who might want to BUILD a FLOSC site
+ * (not buy from this one). This is how the network grows
+ * from inside — every installation recruits new installations.
+ *
+ * The referral form captures:
+ * - Referred person's name, email, phone
+ * - Referrer's name/email (for credit tracking)
+ * - Context: how the referrer knows the referred person
+ *
+ * Incentive: referrer gets token credits when the referred
+ * person activates a FLOSC installation.
+ */
+renderOperatorReferralForm() {
+    const formHtml = `
+        <div class="flosc-referral-form">
+            <div class="flosc-referral-header">
+                <span class="flosc-referral-icon">🤝</span>
+                <span class="flosc-referral-title">Know someone with expertise to share?</span>
+            </div>
+            <div class="flosc-referral-fields">
+                <input type="text"
+                       class="flosc-referral-input"
+                       id="flosc-ref-name"
+                       placeholder="Their name"
+                       autocomplete="off">
+                <input type="email"
+                       class="flosc-referral-input"
+                       id="flosc-ref-email"
+                       placeholder="Their email"
+                       autocomplete="off">
+                <input type="tel"
+                       class="flosc-referral-input"
+                       id="flosc-ref-phone"
+                       placeholder="Their phone (optional)"
+                       autocomplete="off">
+            </div>
+            <button class="flosc-referral-submit" id="flosc-ref-submit">
+                Send them an invite
+            </button>
+            <div class="flosc-referral-note">
+                We'll reach out with a friendly intro — no spam, ever.
+            </div>
+        </div>
+    `;
+    return formHtml;
+}
+```
+
+**Desired PHP — Referral Storage Endpoint:**
+```php
+/**
+ * REST: Store operator referral lead
+ *
+ * Captures referral data from the chat form and stores it
+ * for outreach. Links referrer to referred for credit tracking.
+ *
+ * POST /wp-json/flosc/v1/operator-referral
+ */
+register_rest_route('flosc/v1', '/operator-referral', [
+    'methods'  => 'POST',
+    'callback' => function(WP_REST_Request $request): WP_REST_Response {
+        $name  = sanitize_text_field($request->get_param('name'));
+        $email = sanitize_email($request->get_param('email'));
+        $phone = sanitize_text_field($request->get_param('phone'));
+
+        if (empty($name) || empty($email)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'Name and email are required'
+            ], 400);
+        }
+
+        // Store referral lead
+        $referral = [
+            'referred_name'  => $name,
+            'referred_email' => $email,
+            'referred_phone' => $phone,
+            'referrer_id'    => get_current_user_id() ?: null,
+            'referrer_ip'    => $_SERVER['REMOTE_ADDR'] ?? '',
+            'source_site'    => home_url(),
+            'source_flow'    => $request->get_param('flow_id') ?? '',
+            'timestamp'      => current_time('mysql'),
+            'status'         => 'pending',  // pending → contacted → installed → active
+        ];
+
+        // Store in options (upgrade to custom table at scale)
+        $referrals = get_option('flosc_operator_referrals', []);
+        $referrals[] = $referral;
+        update_option('flosc_operator_referrals', $referrals);
+
+        // Fire action for email/webhook notification
+        do_action('flosc_operator_referral_submitted', $referral);
+
+        // Credit referrer with tokens
+        if ($referral['referrer_id']) {
+            $token_provider = FLOSC_Sale_Manager::instance()->get_provider('tokens');
+            if ($token_provider) {
+                $token_provider->credit(
+                    $referral['referrer_id'],
+                    50,  // Referral bonus tokens
+                    'Operator referral: ' . $name
+                );
+            }
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => "Thanks! We'll reach out to {$name} with a friendly intro."
+        ]);
+    },
+    'permission_callback' => [$this, 'check_public_endpoint_permission'],
+]);
+```
+
+**Desired CSS — Referral Form Styling:**
+```css
+/*
+ * OPERATOR REFERRAL FORM
+ * ======================
+ * Styled to feel like part of the conversation,
+ * not a jarring form injection. Uses the same
+ * design language as offer cards.
+ */
+.flosc-referral-form {
+    background: var(--flosc-panel-bg, rgba(255, 255, 255, 0.6));
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--flosc-panel-border);
+    border-radius: 16px;
+    padding: 20px;
+    margin: 12px 0;
+}
+
+.flosc-referral-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.flosc-referral-icon {
+    font-size: 24px;
+}
+
+.flosc-referral-title {
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--flosc-text);
+}
+
+.flosc-referral-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.flosc-referral-input {
+    padding: 12px 16px;
+    border: 1px solid var(--flosc-input-field-border);
+    border-radius: 10px;
+    background: var(--flosc-input-field-bg);
+    color: var(--flosc-input-field-text);
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.flosc-referral-input:focus {
+    border-color: var(--flosc-accent);
+}
+
+.flosc-referral-submit {
+    width: 100%;
+    padding: 14px;
+    background: var(--flosc-accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.flosc-referral-submit:hover {
+    background: var(--flosc-accent-hover);
+    transform: translateY(-1px);
+}
+
+.flosc-referral-note {
+    text-align: center;
+    font-size: 12px;
+    color: var(--flosc-text-muted);
+    margin-top: 10px;
+}
+```
+
+---
+
+### TODO-027: Add Referral Tracking Dashboard to Admin
+**Priority: MEDIUM | Impact: Operator Visibility**
+
+FLOSC operators need to see how many referrals their site has generated, their status (pending/contacted/installed/active), and any token credits earned.
+
+**Desired Outcome:** New admin page at `admin.php?page=flosc-referrals` showing:
+- Total referrals submitted
+- Conversion funnel: submitted → contacted → installed → active
+- Token credits earned from referrals
+- Export to CSV for outreach teams
+
+---
+
+## XI. SUMMARY PRIORITY MATRIX
 
 | Priority | Todo | Category | Impact |
 |----------|------|----------|--------|
@@ -820,6 +1079,7 @@ The theme presets (claude, dark, chatgpt, grok, light) define ~42 variables each
 | **HIGH** | TODO-003 | Performance | Remove 80+ production console.logs |
 | **HIGH** | TODO-004 | Architecture | Split 4,227-line JS file |
 | **HIGH** | TODO-013 | Security | Sanitize HTML in addMessage() |
+| **HIGH** | TODO-026 | Growth | Operator referral system in IVR chat |
 | **MEDIUM** | TODO-005 | CSS | Container queries |
 | **MEDIUM** | TODO-006 | CSS | System theme preference |
 | **MEDIUM** | TODO-007 | CSS | Themeable component tokens |
@@ -830,6 +1090,7 @@ The theme presets (claude, dark, chatgpt, grok, light) define ~42 variables each
 | **MEDIUM** | TODO-016 | PHP | Extract REST routes from main file |
 | **MEDIUM** | TODO-018 | Docs | State machine documentation |
 | **MEDIUM** | TODO-021 | CSS | Complete theme preset variables |
+| **MEDIUM** | TODO-027 | Admin | Referral tracking dashboard |
 | **LOW** | TODO-008 | CSS | Scroll-driven animations |
 | **LOW** | TODO-011 | JS | Replace setTimeout patterns |
 | **LOW** | TODO-012 | JS | CSS scroll-snap carousel |
