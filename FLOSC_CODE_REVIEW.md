@@ -813,24 +813,48 @@ The theme presets (claude, dark, chatgpt, grok, light) define ~42 variables each
 
 ## X. GROWTH ENGINE TODOS — Viral Distribution
 
-### TODO-026: Build Operator Referral System Into the IVR Chat Flow
+### TODO-026: Build TWO Operator Referral Flows Into the IVR Chat
 **Priority: HIGH | Impact: Distribution — Path to 100k Installs**
 
-When a visitor declines the offer, the chatbot should pivot to recruiting them as a **referral source for new FLOSC operators** — not new customers for this site, but entirely new FLOSC installations. Every non-buyer becomes a distribution node for the network.
+There are **two distinct referral moments**, and they require different messaging:
+
+**Flow A — Non-Buyer Referral (generic):**
+When a visitor declines the offer, the chatbot pivots to recruiting them as a referral source for new FLOSC operators. Generic ask: "Know anyone with expertise to share?"
+
+**Flow B — Customer Referral (targeted, more powerful):**
+After a customer purchases and engages, the chatbot asks them to refer a **domain expert they personally know**. This is the killer flow because:
+- Customers have **proven** they value the domain (they paid)
+- Customers **personally know** domain experts (a student knows their teacher)
+- The incentive (usage tokens) is **immediately useful** to them
+- The referral is **specific and contextual**, not generic
+
+Example for LeSAEP (English pronunciation):
+> *"Hey — do you know a great English teacher in person? Get 250 complimentary usage tokens for referring your favorite English teacher! Just input their first name, email and phone number below. If your English teacher likes LeSAEP, it can become their hub to teach, find new clients, publish lessons, and get paid!"*
+
+Example for a cooking FLOSC:
+> *"Know a chef or baker who should be sharing their recipes? Get 250 tokens for referring them — they'll get a free platform to publish, teach, and earn!"*
+
+This pattern works because the referral target is **configurable per IVR file**. Each FLOSC operator defines WHO their customers should refer — the domain expert archetype for their niche.
 
 This requires:
-1. A new IVR message type (`type: operator_referral`) triggered when `offer_dismissed` is true
-2. A referral capture form rendered inline in the chat
-3. A backend endpoint to store referral leads
-4. An outreach/notification system (email or webhook) to contact referred leads
-5. Token/credit incentive for the referrer
+1. A new IVR message type (`type: operator_referral`) with two trigger conditions:
+   - **Flow A**: `offer_dismissed` is true (non-buyer pivot)
+   - **Flow B**: `purchased && message_count > 5` (engaged customer)
+2. A configurable `ReferralTarget` field in the IVR markdown (e.g., "English teacher", "chef", "fitness coach")
+3. A configurable `ReferralReward` field (token amount: 250, 500, 1000)
+4. A referral capture form rendered inline in the chat
+5. A backend endpoint to store referral leads
+6. An outreach/notification system (email or webhook) to contact referred leads
+7. Token credit on referral submission (immediate), bonus on referral activation (deferred)
 
-**Desired IVR Configuration (`flosc_default_ivr.md`):**
+**Desired IVR Configuration — Flow A: Non-Buyer (`flosc_default_ivr.md`):**
 ```markdown
-## OperatorReferral
-MessageName: operator_referral_prompt
+## OperatorReferralGeneric
+MessageName: operator_referral_nonbuyer
 MessageType: operator_referral
-Conditions: is_visitor && !quiz_taken || (is_guest && !purchased && offer_dismissed_main)
+ReferralTarget: someone with expertise to share
+ReferralReward: 0
+Conditions: (is_visitor && !quiz_taken) || (is_guest && !purchased && offer_dismissed_main)
 MessagePanel: prompt
 Icon: 🤝
 MessageContent:
@@ -838,13 +862,56 @@ No worries at all! Quick question before you go —
 
 Do you know anyone who might want their own chatbot like this one?
 
-It works for **anyone with expertise to share**: a local poet selling a chapbook,
-a chef with secret recipes, a fitness coach, a guitar teacher, a corporate
-training department — really anyone who wants to create a try-before-you-buy
-experience around their knowledge.
+It works for **anyone with expertise to share**: your local poet selling
+a chapbook, a chef with secret recipes, a fitness coach, a guitar teacher,
+even a Fortune 500 running internal training — really anyone who wants to
+create a try-before-you-buy experience around their knowledge.
 
 If you know someone who could use some extra income from what they know,
 just share their info below and we'll reach out to help them get started for free.
+
+[REFERRAL_FORM]
+```
+
+**Desired IVR Configuration — Flow B: Customer (`lesaep_ivr.md`):**
+```markdown
+## OperatorReferralCustomer
+MessageName: operator_referral_customer
+MessageType: operator_referral
+ReferralTarget: English teacher
+ReferralReward: 250
+Conditions: purchased && message_count > 5 && !offer_shown_operator_referral_customer
+MessagePanel: prompt
+Icon: 🎓
+MessageContent:
+Hey — do you know a great English teacher in person?
+
+Get **250 complimentary usage tokens** for referring your favorite
+English teacher! Just input their first name, email and phone number below.
+
+If your English teacher likes LeSAEP, it can become their hub to **teach,
+find new clients, publish lessons, and get paid!**
+
+[REFERRAL_FORM]
+```
+
+**Desired IVR Configuration — Flow B: Another niche example (`cooking_ivr.md`):**
+```markdown
+## OperatorReferralCustomer
+MessageName: operator_referral_customer
+MessageType: operator_referral
+ReferralTarget: chef or home cook
+ReferralReward: 500
+Conditions: purchased && lessons_completed >= 2 && !offer_shown_operator_referral_customer
+MessagePanel: prompt
+Icon: 👨‍🍳
+MessageContent:
+Quick question — do you know a chef or talented home cook who has
+recipes worth sharing?
+
+Get **500 tokens** for referring them! They'll get a free platform to
+publish their recipes, build an audience, and earn income from their
+culinary expertise.
 
 [REFERRAL_FORM]
 ```

@@ -62,11 +62,22 @@ This is why FLOSC must be built to last — not as a startup that flips, but as 
 
 The fastest path to 100,000 FLOSC installations is already built into the product. Every FLOSC chatbot serves visitors. Most of those visitors won't buy. In a traditional funnel, those non-buyers are lost. In FLOSC, they become the distribution channel.
 
-When a visitor declines the offer, the chatbot pivots:
+There are two referral flows, and the second one is the real weapon:
 
-> *"No worries! Hey — quick question before you go. Do you know anyone who might benefit from having their own chatbot like this? It works for anyone — your local poet selling a chapbook, a chef sharing secret recipes, a fitness coach, a guitar teacher, even a Fortune 500 running internal training. If you know someone who could use some extra income from their expertise, just drop their name, phone number, and email right here in the chat and we'll reach out to help them get started..."*
+**Flow A — Non-Buyer Pivot:** When a visitor declines the offer, the chatbot asks:
+> *"No worries! Do you know anyone who might benefit from having their own chatbot like this? A local poet, a chef, a fitness coach, a guitar teacher, even a Fortune 500. If you know someone who could use some extra income from their expertise, drop their name, phone and email right here..."*
 
-This is not a customer referral. This is an **operator referral** — recruiting new FLOSC installations, not new buyers for existing ones. Every FLOSC end-user who doesn't convert becomes a potential recruiter for a new FLOSC site.
+**Flow B — Customer Referral (the killer):** Even paying customers are asked — and this is where the real growth happens. A LeSAEP student who just bought an English pronunciation course gets:
+> *"Hey — do you know a great English teacher in person? Get 250 complimentary usage tokens for referring your favorite English teacher! If your English teacher likes LeSAEP, it can become their hub to teach, find new clients, publish lessons, and get paid!"*
+
+Flow B is more powerful than Flow A for three reasons:
+1. **The customer already proved the domain has value** (they paid)
+2. **The customer personally knows domain experts** (a student knows their teacher, a cooking student knows chefs, a fitness client knows trainers)
+3. **The incentive is immediately useful** — tokens they can spend on more content right now
+
+Each FLOSC operator configures WHO their customers should refer — the domain expert archetype for their niche. English FLOSC refers English teachers. Cooking FLOSC refers chefs. Music FLOSC refers musicians. The referral target is as specific as the knowledge domain.
+
+This is not a generic "refer a friend" program. This is an **operator referral** — recruiting new FLOSC installations, not new buyers for existing ones. Every FLOSC end-user — buyer or not — becomes a recruiter for new FLOSC sites.
 
 **The math to 100k installs:**
 
