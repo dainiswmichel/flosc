@@ -196,8 +196,8 @@ class FLOSC_Framework {
         add_action('wp_ajax_flosc_unprotect_category', [$this, 'ajax_unprotect_category']);
 
         // v1.4.3: Post visibility meta box
-        add_action('add_meta_boxes', [$this, 'add_visibility_meta_box']);
-        add_action('save_post', [$this, 'save_visibility_meta'], 10, 2);
+        add_action('add_meta_boxes', [$this, 'flosc_add_post_visibility_meta_box']);
+        add_action('save_post', [$this, 'flosc_save_post_visibility_meta'], 10, 2);
 
         // Third-party quiz plugin integrations (v9.3.4)
         $this->init_quiz_plugin_hooks();
@@ -940,13 +940,13 @@ The {product_name} Team";
     }
 
     /**
-     * v1.4.3: Add FLOSC Visibility meta box to post editor
+     * v1.4.3: Add FLOSC post visibility meta box to post editor
      */
-    public function add_visibility_meta_box() {
+    public function flosc_add_post_visibility_meta_box() {
         add_meta_box(
-            'flosc_visibility',
+            'flosc_post_visibility',
             '🔐 FLOSC Content Access',
-            [$this, 'render_visibility_meta_box'],
+            [$this, 'flosc_render_post_visibility_meta_box'],
             'post',
             'side',
             'high'
@@ -954,13 +954,13 @@ The {product_name} Team";
     }
 
     /**
-     * v1.4.3: Render the visibility meta box
+     * v1.4.3: Render the post visibility meta box
      */
-    public function render_visibility_meta_box($post) {
-        wp_nonce_field('flosc_visibility_nonce', 'flosc_visibility_nonce');
+    public function flosc_render_post_visibility_meta_box($post) {
+        wp_nonce_field('flosc_post_visibility_nonce', 'flosc_post_visibility_nonce');
         
-        $visibility = get_post_meta($post->ID, '_flosc_visibility', true) ?: 'default';
-        $is_free = get_post_meta($post->ID, '_flosc_free_sample', true) === 'yes';
+        $visibility = get_post_meta($post->ID, '_flosc_post_visibility', true) ?: 'default';
+        $is_public = get_post_meta($post->ID, '_flosc_public_post', true) === 'yes';
         
         // Check if post is in a protected category
         $categories = wp_get_post_categories($post->ID);
@@ -976,47 +976,47 @@ The {product_name} Team";
         }
         ?>
         <style>
-            .flosc-meta-box label { display: block; margin: 8px 0 4px; font-weight: 500; }
-            .flosc-meta-box select { width: 100%; }
-            .flosc-meta-box .description { color: #666; font-size: 12px; margin-top: 4px; }
-            .flosc-meta-box .free-sample { margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd; }
-            .flosc-meta-box .protected-notice { background: #fff3cd; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-size: 12px; }
+            .flosc-post-visibility-meta-box label { display: block; margin: 8px 0 4px; font-weight: 500; }
+            .flosc-post-visibility-meta-box select { width: 100%; }
+            .flosc-post-visibility-meta-box .flosc-description { color: #666; font-size: 12px; margin-top: 4px; }
+            .flosc-post-visibility-meta-box .flosc-public-post { margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd; }
+            .flosc-post-visibility-meta-box .flosc-protected-notice { background: #fff3cd; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-size: 12px; }
         </style>
-        <div class="flosc-meta-box">
+        <div class="flosc-post-visibility-meta-box">
             <?php if ($in_protected): ?>
-            <div class="protected-notice">
-                ⚠️ This post is in protected category: <strong><?php echo esc_html($protected_cat_name); ?></strong>
+            <div class="flosc-protected-notice">
+                ⚠️ In protected category: <strong><?php echo esc_html($protected_cat_name); ?></strong>
             </div>
             <?php endif; ?>
             
-            <label for="flosc_visibility">Visibility</label>
-            <select name="flosc_visibility" id="flosc_visibility">
+            <label for="flosc_post_visibility">Visibility</label>
+            <select name="flosc_post_visibility" id="flosc_post_visibility">
                 <option value="default" <?php selected($visibility, 'default'); ?>>Default (use category setting)</option>
                 <option value="public" <?php selected($visibility, 'public'); ?>>Public (everyone can access)</option>
                 <option value="preview" <?php selected($visibility, 'preview'); ?>>Preview (show first 30%)</option>
                 <option value="teaser" <?php selected($visibility, 'teaser'); ?>>Teaser (show excerpt only)</option>
                 <option value="hidden" <?php selected($visibility, 'hidden'); ?>>Hidden (members only)</option>
             </select>
-            <p class="description">Override category-level protection for this post.</p>
+            <p class="flosc-description">Override category-level protection for this post.</p>
             
-            <div class="free-sample">
+            <div class="flosc-public-post">
                 <label>
-                    <input type="checkbox" name="flosc_free_sample" value="yes" <?php checked($is_free); ?>>
-                    <strong>Free Sample</strong> - Anyone can access full content
+                    <input type="checkbox" name="flosc_public_post" value="yes" <?php checked($is_public); ?>>
+                    <strong>Public Post</strong> - Full content visible to everyone (with chat CTA)
                 </label>
-                <p class="description">Check this for lessons 1-3 to make them free without login.</p>
+                <p class="flosc-description">Use for free sample lessons that should be publicly accessible.</p>
             </div>
         </div>
         <?php
     }
 
     /**
-     * v1.4.3: Save visibility meta box data
+     * v1.4.3: Save post visibility meta box data
      */
-    public function save_visibility_meta($post_id, $post) {
+    public function flosc_save_post_visibility_meta($post_id, $post) {
         // Security checks
-        if (!isset($_POST['flosc_visibility_nonce']) || 
-            !wp_verify_nonce($_POST['flosc_visibility_nonce'], 'flosc_visibility_nonce')) {
+        if (!isset($_POST['flosc_post_visibility_nonce']) || 
+            !wp_verify_nonce($_POST['flosc_post_visibility_nonce'], 'flosc_post_visibility_nonce')) {
             return;
         }
         
@@ -1029,23 +1029,23 @@ The {product_name} Team";
         }
         
         // Save visibility
-        $visibility = sanitize_text_field($_POST['flosc_visibility'] ?? 'default');
+        $visibility = sanitize_text_field($_POST['flosc_post_visibility'] ?? 'default');
         if (in_array($visibility, ['default', 'public', 'preview', 'teaser', 'hidden'])) {
             if ($visibility === 'default') {
-                delete_post_meta($post_id, '_flosc_visibility');
+                delete_post_meta($post_id, '_flosc_post_visibility');
             } else {
-                update_post_meta($post_id, '_flosc_visibility', $visibility);
+                update_post_meta($post_id, '_flosc_post_visibility', $visibility);
             }
         }
         
-        // Save free sample flag
-        $is_free = isset($_POST['flosc_free_sample']) && $_POST['flosc_free_sample'] === 'yes';
-        if ($is_free) {
-            update_post_meta($post_id, '_flosc_free_sample', 'yes');
-            // Free sample always means public visibility
-            update_post_meta($post_id, '_flosc_visibility', 'public');
+        // Save public post flag
+        $is_public = isset($_POST['flosc_public_post']) && $_POST['flosc_public_post'] === 'yes';
+        if ($is_public) {
+            update_post_meta($post_id, '_flosc_public_post', 'yes');
+            // Public post = public visibility
+            update_post_meta($post_id, '_flosc_post_visibility', 'public');
         } else {
-            delete_post_meta($post_id, '_flosc_free_sample');
+            delete_post_meta($post_id, '_flosc_public_post');
         }
     }
 

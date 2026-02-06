@@ -8,14 +8,15 @@
  * - _flosc_required_level: 'samplecourse' = membership level required
  * 
  * POST VISIBILITY (post meta):
- * - _flosc_visibility: 'hidden' | 'teaser' | 'preview' | 'public'
+ * - _flosc_post_visibility: 'hidden' | 'teaser' | 'preview' | 'public'
  *   - hidden: members only (no content shown to non-members)
  *   - teaser: title + excerpt shown, rest redirects to chatbot
  *   - preview: content up to <!--flosc_read_more--> shown, rest redirects to chatbot
  *   - public: full content shown (admin encouraged to add CTA)
+ * - _flosc_public_post: 'yes' = public post with chat CTA
  * 
  * RESOLUTION ORDER:
- * 1. Post meta _flosc_visibility (if set, use it)
+ * 1. Post meta _flosc_post_visibility (if set, use it)
  * 2. Category is protected → default to 'hidden'
  * 3. No protection → 'public'
  * 
@@ -98,7 +99,7 @@ class FLOSC_Content_Protection {
      */
     public function get_post_visibility($post_id) {
         // First check post meta override
-        $visibility = get_post_meta($post_id, '_flosc_visibility', true);
+        $visibility = get_post_meta($post_id, '_flosc_post_visibility', true);
         
         if ($visibility && in_array($visibility, ['hidden', 'teaser', 'preview', 'public'])) {
             return $visibility;
@@ -123,13 +124,13 @@ class FLOSC_Content_Protection {
      * @return bool
      */
     public function user_can_access($post_id) {
-        // v1.4.3: Free sample posts are always accessible
-        if (get_post_meta($post_id, '_flosc_free_sample', true) === 'yes') {
+        // v1.4.3: Public posts are always accessible
+        if (get_post_meta($post_id, '_flosc_public_post', true) === 'yes') {
             return true;
         }
         
         // v1.4.3: Check explicit public visibility
-        $visibility = get_post_meta($post_id, '_flosc_visibility', true);
+        $visibility = get_post_meta($post_id, '_flosc_post_visibility', true);
         if ($visibility === 'public') {
             return true;
         }
@@ -233,33 +234,33 @@ class FLOSC_Content_Protection {
             case 'public':
             default:
                 // v1.4.3: Add free sample CTAs if this is a free sample post
-                if (get_post_meta($post_id, '_flosc_free_sample', true) === 'yes') {
-                    $content = $this->add_free_sample_ctas($content, $post_id);
+                if (get_post_meta($post_id, '_flosc_public_post', true) === 'yes') {
+                    $content = $this->flosc_add_public_post_ctas($content, $post_id);
                 }
                 return $content;
         }
     }
     
     /**
-     * v1.4.3: Add "Learn More" CTAs to free sample content
-     * These guide visitors to the chat for upsell/engagement
+     * v1.4.3: Add CTAs to public posts
+     * Guides visitors to the chat for engagement
      * 
      * @param string $content
      * @param int $post_id
      * @return string
      */
-    private function add_free_sample_ctas($content, $post_id) {
+    private function flosc_add_public_post_ctas($content, $post_id) {
         $app_slug = get_option('flosc_app_slug', 'app');
         $post = get_post($post_id);
         
         $chat_url = add_query_arg([
-            'from' => 'free-lesson',
+            'from' => 'public-post',
             'post_id' => $post_id,
             'slug' => $post ? $post->post_name : '',
         ], home_url('/' . $app_slug . '/'));
         
-        $cta_box = '<div class="flosc-free-sample-cta" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 24px; border-radius: 12px; margin: 24px 0; text-align: center;">';
-        $cta_box .= '<p style="font-size: 18px; margin: 0 0 12px; font-weight: 500;">🎉 You\'re viewing a free sample lesson!</p>';
+        $cta_box = '<div class="flosc-public-post-cta" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 24px; border-radius: 12px; margin: 24px 0; text-align: center;">';
+        $cta_box .= '<p style="font-size: 18px; margin: 0 0 12px; font-weight: 500;">🎉 Enjoying this free lesson?</p>';
         $cta_box .= '<p style="margin: 0 0 16px; opacity: 0.9;">Want personalized help or access to all lessons?</p>';
         $cta_box .= '<a href="' . esc_url($chat_url) . '" style="display: inline-block; background: #fff; color: #667eea; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600;">💬 Chat with us</a>';
         $cta_box .= '</div>';
@@ -267,7 +268,7 @@ class FLOSC_Content_Protection {
         // Add CTA at the end of content
         $content .= $cta_box;
         
-        return apply_filters('flosc_free_sample_content', $content, $post_id);
+        return apply_filters('flosc_public_post_content', $content, $post_id);
     }
     
     /**
@@ -470,7 +471,7 @@ class FLOSC_Content_Protection {
             return false;
         }
         
-        update_post_meta($post_id, '_flosc_visibility', $visibility);
+        update_post_meta($post_id, '_flosc_post_visibility', $visibility);
         return true;
     }
     
