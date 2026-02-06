@@ -1,0 +1,1184 @@
+/**
+ * FLOSC Theme Layer (v1.0.1)
+ * ==========================
+ * Updated: 2026-01m-30d
+ * 
+ * This file connects CSS variables to actual DOM elements.
+ * It reads variables from chat-style-*.css presets or inline styles.
+ * 
+ * ARCHITECTURE:
+ * 1. flosc-layout.css  - Structure only (flexbox, grid, positioning)
+ * 2. flosc-theme.css   - Variable consumption (this file)
+ * 3. chat-style-*.css  - Variable definitions (light/dark presets)
+ * 
+ * BACKWARD COMPATIBILITY:
+ * Supports both legacy class names (HTML/JS) and new prefixed names.
+ * Legacy: .sidebar-header, .message.user, .message-text
+ * New:    .flosc-sidebar-header, .flosc-message-user, .flosc-message-text
+ * 
+ * ============================================================================
+ * THEMING PATTERN FOR ICON BUTTONS (2026-01m-30d)
+ * ============================================================================
+ * 
+ * This file provides the COLOR layer for buttons. The pattern:
+ *
+ *   .my-button {
+ *       background: var(--some-bg-var);
+ *       color: var(--some-text-var);  [SVG icons inherit this!]
+ *   }
+ *
+ *   .my-button:hover {
+ *       background: var(--some-hover-bg);
+ *       color: var(--some-hover-text);  [Icon color changes on hover]
+ *   }
+ *
+ *   The "color" property is what SVG icons with stroke="currentColor" inherit.
+ *   This is the magic that makes icon theming work across all presets.
+ *
+ *   DO NOT:
+ *   - Set stroke or fill directly on SVG in CSS (breaks theming)
+ *   - Use opacity to "hide" icons (they should just work)
+ *   - Add !important to fix visibility issues (find root cause instead)
+ *
+ * ============================================================================
+ *
+ * @see FLOSC_STYLE_GUIDE.md for naming conventions
+ */
+
+/* ============================================
+   CSS VARIABLE DEFAULTS (Fallbacks)
+   ============================================ */
+
+:root {
+    /* Global */
+    --flosc-bg: #ffffff;
+    --flosc-text: #111827;
+    --flosc-text-muted: #6b7280;
+    --flosc-border: #e5e7eb;
+    --flosc-accent: #2563eb;
+    --flosc-accent-hover: #1d4ed8;
+
+    /* User Message */
+    --flosc-user-message-bg: #2563eb;
+    --flosc-user-message-text: #ffffff;
+    --flosc-user-message-radius: 18px 18px 4px 18px;
+    --flosc-user-avatar-bg: #2563eb;
+    --flosc-user-avatar-text: #ffffff;
+
+    /* Assistant Message */
+    --flosc-assistant-message-bg: transparent;
+    --flosc-assistant-message-text: #111827;
+    --flosc-assistant-message-border: none;
+    --flosc-assistant-message-radius: 4px 18px 18px 18px;
+    --flosc-assistant-avatar-bg: #f3f4f6;
+    --flosc-assistant-avatar-text: #374151;
+
+    /* Input */
+    --flosc-input-bg: #ffffff;
+    --flosc-input-field-bg: #f9fafb;
+    --flosc-input-field-border: #e5e7eb;
+    --flosc-input-field-text: #111827;
+    --flosc-input-placeholder: #9ca3af;
+    --flosc-send-btn-bg: #2563eb;
+    --flosc-send-btn-text: #ffffff;
+
+    /* Sidebar */
+    --flosc-sidebar-bg: #f9fafb;
+    --flosc-sidebar-text: #374151;
+    --flosc-sidebar-text-muted: #6b7280;
+    --flosc-sidebar-hover: #f3f4f6;
+    --flosc-sidebar-active: #e5e7eb;
+    --flosc-sidebar-border: #e5e7eb;
+
+    /* Pills / User AutoPrompts */
+    --flosc-pill-bg: #ffffff;
+    --flosc-pill-text: #374151;
+    --flosc-pill-border: #e5e7eb;
+    --flosc-pill-hover-bg: #f9fafb;
+    --flosc-pill-hover-text: var(--flosc-accent);
+    --flosc-pill-hover-border: var(--flosc-accent);
+
+    /* Cards / User AutoPrompts (larger format) */
+    --flosc-card-bg: #ffffff;
+    --flosc-card-text: #374151;
+    --flosc-card-border: #e5e7eb;
+    --flosc-card-hover-bg: #f9fafb;
+    --flosc-card-hover-text: var(--flosc-accent);
+    --flosc-card-hover-border: var(--flosc-accent);
+    --flosc-card-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    --flosc-card-hover-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+
+    /* Panels (floscVisitorIntroPanel, floscGuestPromptPanel, floscMemberPromptPanel) */
+    --flosc-panel-bg: rgba(255, 255, 255, 0.6);
+    --flosc-panel-border: rgba(0, 0, 0, 0.04);
+    --flosc-panel-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    --flosc-panel-header-text: var(--flosc-text);
+    --flosc-panel-eyebrow-text: var(--flosc-text-muted);
+    --flosc-panel-close-bg: rgba(255, 255, 255, 0.8);
+    --flosc-panel-close-border: rgba(0, 0, 0, 0.08);
+    --flosc-panel-close-text: var(--flosc-text-muted);
+    --flosc-panel-close-hover-bg: rgba(255, 255, 255, 1);
+    --flosc-panel-close-hover-border: rgba(0, 0, 0, 0.15);
+
+    /* Code Blocks */
+    --flosc-code-bg: #f3f4f6;
+    --flosc-code-text: #111827;
+
+    /* Content Formatting (inside .message-text) */
+    --flosc-content-link: var(--flosc-accent);
+    --flosc-content-link-hover: var(--flosc-accent-hover);
+    --flosc-content-blockquote-border: var(--flosc-accent);
+    --flosc-content-blockquote-bg: rgba(37, 99, 235, 0.04);
+    --flosc-content-blockquote-text: var(--flosc-text-muted);
+    --flosc-content-hr: var(--flosc-border);
+    --flosc-content-table-border: var(--flosc-border);
+    --flosc-content-table-header-bg: #f9fafb;
+    --flosc-content-table-stripe-bg: #fafbfc;
+    --flosc-content-list-marker: var(--flosc-text-muted);
+
+    /* Quiz Modal */
+    --flosc-quiz-prompt-bg: #f8fafc;
+    --flosc-quiz-prompt-border: #e2e8f0;
+    --flosc-quiz-sequence-text: #0f172a;
+    --flosc-quiz-tab-bg: #ffffff;
+    --flosc-quiz-tab-border: #e5e7eb;
+    --flosc-quiz-tab-text: #64748b;
+    --flosc-quiz-tab-active-bg: var(--flosc-accent);
+    --flosc-quiz-tab-active-text: #ffffff;
+    --flosc-quiz-input-bg: #ffffff;
+    --flosc-quiz-input-border: #e5e7eb;
+    --flosc-quiz-input-focus-border: var(--flosc-accent);
+    --flosc-quiz-record-bg: #dc2626;
+    --flosc-quiz-record-hover-bg: #b91c1c;
+    --flosc-quiz-stop-bg: #64748b;
+    --flosc-quiz-stop-hover-bg: #475569;
+    --flosc-quiz-waveform-bg: #f8fafc;
+    --flosc-quiz-success: #059669;
+    --flosc-quiz-warning: #d97706;
+    --flosc-quiz-error-bg: #fef2f2;
+    --flosc-quiz-error-text: #991b1b;
+    --flosc-quiz-error-border: #fecaca;
+
+    /* Scrollbar */
+    --flosc-scrollbar-thumb: #d1d5db;
+    --flosc-scrollbar-thumb-hover: #9ca3af;
+}
+
+/* ============================================
+   APP CONTAINER
+   ============================================ */
+
+.flosc-app {
+    background: var(--flosc-bg);
+    color: var(--flosc-text);
+}
+
+/* ============================================
+   SIDEBAR
+   Supports: .flosc-sidebar (HTML uses this)
+   ============================================ */
+
+.flosc-sidebar {
+    background: var(--flosc-sidebar-bg);
+    border-right: 1px solid var(--flosc-sidebar-border);
+}
+
+/* Sidebar Header - Legacy: .sidebar-header */
+.flosc-sidebar-header,
+.flosc-sidebar .sidebar-header {
+    border-bottom: 1px solid var(--flosc-sidebar-border);
+}
+
+/* Sidebar Logo - Legacy: .logo */
+.flosc-sidebar-logo,
+.flosc-sidebar .logo {
+    color: var(--flosc-text);
+}
+
+/*
+ * SIDEBAR ACTION BUTTONS - THEME LAYER (2026-01m-30d)
+ * ====================================================
+ * These buttons contain SVG icons that use stroke="currentColor".
+ * The "color" property here is what makes the icons visible!
+ * 
+ * Pattern:
+ *   Default: muted color (--flosc-sidebar-text-muted)
+ *   Hover: brighter color (--flosc-sidebar-text)
+ *   Background changes too for visual feedback
+ * 
+ * VERIFIED WORKING across all presets: light, dark, claude, chatgpt, grok
+ */
+/* Sidebar Action Buttons - Legacy: .sidebar-action-btn */
+.flosc-sidebar-action-btn,
+.flosc-sidebar .sidebar-action-btn {
+    background: transparent;
+    color: var(--flosc-sidebar-text-muted); /* Icons inherit this! */
+}
+
+.flosc-sidebar-action-btn:hover,
+.flosc-sidebar .sidebar-action-btn:hover {
+    background: var(--flosc-sidebar-hover);
+    color: var(--flosc-sidebar-text); /* Icons get brighter on hover */
+}
+
+/* Mobile Sidebar Toggle */
+.flosc-sidebar-toggle,
+.flosc_app_sidebar_toggle {
+    background: var(--flosc-bg);
+    color: var(--flosc-text);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* New Chat Button - Legacy: .new-chat-btn */
+.flosc-new-chat-btn,
+.flosc-sidebar .new-chat-btn {
+    background: var(--flosc-accent);
+    color: #ffffff;
+}
+
+.flosc-new-chat-btn:hover,
+.flosc-sidebar .new-chat-btn:hover {
+    background: var(--flosc-accent-hover);
+}
+
+/* ============================================
+   SESSION LIST
+   Legacy: .flosc_app_session_list, .session-item
+   ============================================ */
+
+.flosc-session-group-title,
+.session-group-title {
+    color: var(--flosc-sidebar-text-muted);
+}
+
+.flosc-session-item,
+.session-item {
+    color: var(--flosc-sidebar-text);
+}
+
+.flosc-session-item:hover,
+.session-item:hover {
+    background: var(--flosc-sidebar-hover);
+}
+
+.flosc-session-item.active,
+.session-item.active {
+    background: var(--flosc-sidebar-active);
+}
+
+/* ============================================
+   USER PROFILE
+   Legacy: .user-profile-card
+   ============================================ */
+
+.flosc-user-profile,
+.user-profile-card {
+    border-top: 1px solid var(--flosc-sidebar-border);
+    background: var(--flosc-sidebar-bg);
+}
+
+.flosc-user-avatar,
+.user-profile-card .profile-avatar {
+    background: var(--flosc-accent);
+    color: #ffffff;
+}
+
+.flosc-user-name,
+.user-profile-card .profile-name {
+    color: var(--flosc-sidebar-text);
+}
+
+.flosc-user-email,
+.user-profile-card .dropdown-email {
+    color: var(--flosc-sidebar-text-muted);
+}
+
+/* ============================================
+   HEADER
+   Legacy: .flosc-header (HTML uses this already)
+   ============================================ */
+
+.flosc-header {
+    background: var(--flosc-bg);
+    border-bottom: 1px solid var(--flosc-border);
+}
+
+.flosc-header-title,
+.flosc-header .header-title {
+    color: var(--flosc-text);
+}
+
+/* ============================================
+   CHAT CONTAINER
+   Legacy: .chat-container
+   ============================================ */
+
+.flosc-chat-container,
+.chat-container {
+    background: var(--flosc-bg);
+}
+
+/* ============================================
+   MESSAGES AREA
+   Legacy: .messages
+   ============================================ */
+
+.flosc-messages,
+.messages {
+    background: var(--flosc-bg);
+}
+
+/* ============================================
+   GREETING / WELCOME
+   Legacy: .greeting, .greeting-title
+   ============================================ */
+
+.flosc-greeting,
+.greeting {
+    text-align: center;
+}
+
+.flosc-greeting-title,
+.greeting-title {
+    color: var(--flosc-text);
+}
+
+.flosc-greeting-subtitle,
+.greeting-subtitle,
+.landing-subtitle {
+    color: var(--flosc-text-muted);
+}
+
+/* ============================================
+   MESSAGES - SHARED STYLES
+   Removes full-width gray strips behind messages
+   ============================================ */
+
+.flosc-message,
+.message {
+    background: transparent !important;
+    border: none !important;
+}
+
+/* ============================================
+   USER MESSAGE
+   Legacy: .message.user
+   New: .flosc-message-user
+   ============================================ */
+
+.flosc-message-user,
+.message.user {
+    flex-direction: row-reverse;
+}
+
+/* User Avatar */
+.flosc-message-user .flosc-message-avatar,
+.flosc-message-user .message-avatar,
+.message.user .message-avatar {
+    background: var(--flosc-user-avatar-bg);
+    color: var(--flosc-user-avatar-text);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+/* User Message Bubble */
+.flosc-message-user .flosc-message-text,
+.flosc-message-user .message-text,
+.message.user .message-text {
+    background: var(--flosc-user-message-bg);
+    color: var(--flosc-user-message-text);
+    padding: 10px 16px;
+    border-radius: var(--flosc-user-message-radius);
+}
+
+/* ============================================
+   ASSISTANT MESSAGE
+   Legacy: .message.assistant
+   New: .flosc-message-assistant
+   ============================================ */
+
+/* Assistant Avatar */
+.flosc-message-assistant .flosc-message-avatar,
+.flosc-message-assistant .message-avatar,
+.message.assistant .message-avatar {
+    background: var(--flosc-assistant-avatar-bg);
+    color: var(--flosc-assistant-avatar-text);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Assistant Message - Transparent (Claude-style) */
+.flosc-message-assistant .flosc-message-text,
+.flosc-message-assistant .message-text,
+.message.assistant .message-text {
+    background: var(--flosc-assistant-message-bg);
+    color: var(--flosc-assistant-message-text);
+    border: var(--flosc-assistant-message-border);
+    border-radius: var(--flosc-assistant-message-radius);
+    padding: 0;
+}
+
+/* ============================================
+   MESSAGE TYPOGRAPHY
+   ============================================ */
+
+.flosc-message-text,
+.message-text {
+    font-size: 15px;
+    line-height: 1.6;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+.flosc-message-text p,
+.message-text p {
+    margin: 0 0 12px 0;
+}
+
+.flosc-message-text p:last-child,
+.message-text p:last-child {
+    margin-bottom: 0;
+}
+
+/* Code Blocks */
+.flosc-message-text code,
+.message-text code {
+    background: var(--flosc-code-bg);
+    color: var(--flosc-code-text);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+}
+
+.flosc-message-text pre,
+.message-text pre {
+    background: var(--flosc-code-bg);
+    padding: 12px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 12px 0;
+}
+
+.flosc-message-text pre code,
+.message-text pre code {
+    padding: 0;
+    background: transparent;
+}
+
+/* Links */
+.flosc-message-text a,
+.message-text a {
+    color: var(--flosc-content-link);
+    text-decoration: none;
+}
+
+.flosc-message-text a:hover,
+.message-text a:hover {
+    color: var(--flosc-content-link-hover);
+    text-decoration: underline;
+}
+
+/* Strong & Emphasis */
+.flosc-message-text strong,
+.message-text strong {
+    font-weight: 600;
+}
+
+.flosc-message-text em,
+.message-text em {
+    font-style: italic;
+}
+
+/* Blockquotes */
+.flosc-message-text blockquote,
+.message-text blockquote {
+    border-left: 3px solid var(--flosc-content-blockquote-border);
+    background: var(--flosc-content-blockquote-bg);
+    color: var(--flosc-content-blockquote-text);
+    margin: 12px 0;
+    padding: 8px 16px;
+    border-radius: 0 6px 6px 0;
+}
+
+.flosc-message-text blockquote p:last-child,
+.message-text blockquote p:last-child {
+    margin-bottom: 0;
+}
+
+/* Horizontal Rules */
+.flosc-message-text hr,
+.message-text hr {
+    border: none;
+    border-top: 1px solid var(--flosc-content-hr);
+    margin: 16px 0;
+}
+
+/* Tables */
+.flosc-message-text table,
+.message-text table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 0.9em;
+}
+
+.flosc-message-text th,
+.message-text th,
+.flosc-message-text td,
+.message-text td {
+    border: 1px solid var(--flosc-content-table-border);
+    padding: 8px 12px;
+    text-align: left;
+}
+
+.flosc-message-text th,
+.message-text th {
+    background: var(--flosc-content-table-header-bg);
+    font-weight: 600;
+}
+
+.flosc-message-text tr:nth-child(even),
+.message-text tr:nth-child(even) {
+    background: var(--flosc-content-table-stripe-bg);
+}
+
+/* List Markers */
+.flosc-message-text ul,
+.message-text ul {
+    list-style-type: disc;
+}
+
+.flosc-message-text ol,
+.message-text ol {
+    list-style-type: decimal;
+}
+
+.flosc-message-text li::marker,
+.message-text li::marker {
+    color: var(--flosc-content-list-marker);
+}
+
+/* ============================================
+   INPUT COMPOSER
+   Legacy: .flosc_input_composer (underscore)
+   New: .flosc-input-composer (dash)
+   ============================================ */
+
+.flosc-input-composer,
+.flosc_input_composer {
+    background: var(--flosc-input-bg);
+    border-top: 1px solid var(--flosc-border);
+}
+
+.flosc-input-wrapper,
+.flosc_input_composer_inner {
+    background: var(--flosc-input-field-bg);
+    border: 1px solid var(--flosc-input-field-border);
+    border-radius: 12px;
+}
+
+.flosc-input-wrapper:focus-within,
+.flosc_input_composer_inner:focus-within {
+    border-color: var(--flosc-accent);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.flosc-input-field,
+.flosc_input_composer textarea,
+#flosc_input_chat_field {
+    background: transparent;
+    color: var(--flosc-input-field-text);
+    border: none;
+    outline: none;
+}
+
+.flosc-input-field::placeholder,
+.flosc_input_composer textarea::placeholder,
+#flosc_input_chat_field::placeholder {
+    color: var(--flosc-input-placeholder);
+}
+
+/*
+ * SEND & VOICE BUTTONS - THEME LAYER (2026-01m-30d)
+ * ==================================================
+ * Critical UI elements that must always be visible and responsive.
+ * 
+ * SEND BUTTON:
+ * - Accent-colored background (usually blue)
+ * - White icon (stroke="currentColor" inherits white from color property)
+ * - Hover darkens background
+ * - Disabled state uses opacity (icon still visible, just muted)
+ * 
+ * VOICE BUTTON:
+ * - Transparent background
+ * - Muted icon color (--flosc-text-muted)
+ * - Hover brightens
+ * - Recording state: red icon via .recording class
+ */
+/* Send Button */
+.flosc-send-btn,
+.flosc_input_chat_send_button {
+    background: var(--flosc-send-btn-bg);
+    color: var(--flosc-send-btn-text); /* White - icon inherits this */
+    border: none;
+    border-radius: 8px;
+}
+
+.flosc-send-btn:hover:not(:disabled),
+.flosc_input_chat_send_button:hover:not(:disabled) {
+    background: var(--flosc-accent-hover);
+}
+
+.flosc-send-btn:disabled,
+.flosc_input_chat_send_button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Voice Button */
+.flosc_input_chat_voice_button {
+    background: transparent;
+    color: var(--flosc-text-muted); /* Icon inherits this gray */
+    border: none;
+}
+
+.flosc_input_chat_voice_button:hover {
+    color: var(--flosc-text); /* Icon gets darker on hover */
+}
+
+.flosc_input_chat_voice_button.recording {
+    color: #ef4444; /* Red when recording - icon turns red too */
+}
+
+/* ============================================
+   USER AUTOPROMPTS / PILLS
+   Compact single-line buttons in flex layout
+   ============================================ */
+
+.flosc-pills-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.flosc-pill,
+.flosc-style-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--flosc-pill-bg);
+    color: var(--flosc-pill-text);
+    border: 1px solid var(--flosc-pill-border);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.flosc-pill:hover,
+.flosc-style-pill:hover {
+    background: var(--flosc-pill-hover-bg);
+    color: var(--flosc-pill-hover-text);
+    border-color: var(--flosc-pill-hover-border);
+}
+
+.flosc-pill .flosc-autoprompt-icon,
+.flosc-style-pill .flosc-autoprompt-icon {
+    font-size: 16px;
+}
+
+.flosc-pill .flosc-autoprompt-label,
+.flosc-style-pill .flosc-autoprompt-label {
+    font-size: 14px;
+}
+
+
+/* ============================================
+   CARDS (user autoprompts, aka "pills")
+   Grid layout, no fixed height, equal width, flex to content
+   ============================================ */
+
+.flosc-cards-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.flosc-card,
+.flosc-style-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px;
+    background: var(--flosc-card-bg);
+    color: var(--flosc-card-text);
+    border: 1px solid var(--flosc-card-border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: var(--flosc-card-shadow);
+    text-align: center;
+}
+
+.flosc-card:hover,
+.flosc-style-card:hover {
+    background: var(--flosc-card-hover-bg);
+    color: var(--flosc-card-hover-text);
+    border-color: var(--flosc-card-hover-border);
+    box-shadow: var(--flosc-card-hover-shadow);
+}
+
+.flosc-card .flosc-autoprompt-icon,
+.flosc-style-card .flosc-autoprompt-icon {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.flosc-card .flosc-autoprompt-label,
+.flosc-style-card .flosc-autoprompt-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--flosc-card-text);
+}
+
+/* ============================================
+   PANELS (floscVisitorIntroPanel, floscGuestPromptPanel, floscMemberPromptPanel)
+   ============================================
+   Container panels for suggested prompts/pills.
+   Uses CSS variables for theme consistency.
+   ============================================ */
+
+.prompt-panel-inline,
+.intro-panel-inline {
+    background: var(--flosc-panel-bg);
+    border: 1px solid var(--flosc-panel-border);
+    box-shadow: var(--flosc-panel-shadow);
+}
+
+.prompt-panel-header,
+.intro-panel-header {
+    color: var(--flosc-panel-header-text);
+}
+
+.prompt-panel-eyebrow,
+.intro-panel-eyebrow {
+    color: var(--flosc-panel-eyebrow-text);
+}
+
+.prompt-panel-title,
+.intro-panel-title {
+    color: var(--flosc-panel-header-text);
+}
+
+.prompt-panel-close,
+.intro-panel-close {
+    background: var(--flosc-panel-close-bg);
+    border: 1px solid var(--flosc-panel-close-border);
+    color: var(--flosc-panel-close-text);
+}
+
+.prompt-panel-close:hover,
+.intro-panel-close:hover {
+    background: var(--flosc-panel-close-hover-bg);
+    border-color: var(--flosc-panel-close-hover-border);
+    color: var(--flosc-text);
+}
+
+/* ============================================
+   TYPING INDICATOR
+   ============================================ */
+
+/* v9.5.7: REMOVED display:flex - layout.css handles visibility via .show class */
+.flosc-typing-indicator,
+.typing-indicator {
+    /* display controlled by flosc-layout.css: none by default, flex when .show */
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.flosc-typing-dot,
+.typing-dots span {
+    background: var(--flosc-text-muted);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+
+.flosc-messages::-webkit-scrollbar,
+.messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.flosc-messages::-webkit-scrollbar-track,
+.messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.flosc-messages::-webkit-scrollbar-thumb,
+.messages::-webkit-scrollbar-thumb {
+    background: var(--flosc-scrollbar-thumb);
+    border-radius: 3px;
+}
+
+.flosc-messages::-webkit-scrollbar-thumb:hover,
+.messages::-webkit-scrollbar-thumb:hover {
+    background: var(--flosc-scrollbar-thumb-hover);
+}
+
+/* Session List Scrollbar */
+.flosc-session-list::-webkit-scrollbar,
+.flosc_app_session_list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.flosc-session-list::-webkit-scrollbar-track,
+.flosc_app_session_list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.flosc-session-list::-webkit-scrollbar-thumb,
+.flosc_app_session_list::-webkit-scrollbar-thumb {
+    background: var(--flosc-scrollbar-thumb);
+    border-radius: 2px;
+}
+
+/* ============================================
+   OVERLAY (Mobile Sidebar)
+   ============================================ */
+
+.flosc-overlay {
+    background: rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================
+   AUTH BUTTONS (Header)
+   ============================================ */
+
+.auth-buttons .btn-primary {
+    background: var(--flosc-accent);
+    color: #ffffff;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+}
+
+.auth-buttons .btn-primary:hover {
+    background: var(--flosc-accent-hover);
+}
+
+.auth-buttons .btn-secondary {
+    background: transparent;
+    color: var(--flosc-text);
+    border: 1px solid var(--flosc-border);
+    padding: 8px 16px;
+    border-radius: 6px;
+}
+
+.auth-buttons .btn-secondary:hover {
+    background: var(--flosc-sidebar-hover);
+}
+
+/* ============================================
+   LANDING STATE
+   ============================================ */
+
+.landing-state {
+    text-align: center;
+    padding: 48px 24px;
+}
+
+.landing-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: var(--flosc-text);
+    margin-bottom: 8px;
+}
+
+/* ============================================
+   PROFILE DROPDOWN
+   ============================================ */
+
+.profile-dropdown {
+    background: var(--flosc-bg);
+    border: 1px solid var(--flosc-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.profile-dropdown-item {
+    color: var(--flosc-text);
+    padding: 10px 16px;
+    display: block;
+    text-decoration: none;
+}
+
+.profile-dropdown-item:hover {
+    background: var(--flosc-sidebar-hover);
+}
+
+/* ============================================
+   UPGRADE BUTTON
+   ============================================ */
+
+.upgrade-btn {
+    background: var(--flosc-accent);
+    color: #ffffff;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.upgrade-btn:hover {
+    background: var(--flosc-accent-hover);
+}
+
+/* ============================================
+   QUIZ MODAL
+   ============================================
+   Professional light styling for quiz components.
+   All colors use CSS variables for theme consistency.
+   ============================================ */
+
+/* Quiz Prompt Box */
+.quiz-prompt {
+    background: var(--flosc-quiz-prompt-bg);
+    border: 1px solid var(--flosc-quiz-prompt-border);
+}
+
+.quiz-prompt-label {
+    color: var(--flosc-text-muted);
+}
+
+.quiz-sequence {
+    color: var(--flosc-quiz-sequence-text);
+}
+
+/* Quiz Tabs */
+.quiz-tab-btn {
+    background: var(--flosc-quiz-tab-bg);
+    border-color: var(--flosc-quiz-tab-border);
+    color: var(--flosc-quiz-tab-text);
+}
+
+.quiz-tab-btn:hover {
+    border-color: var(--flosc-accent);
+    color: var(--flosc-accent);
+}
+
+.quiz-tab-btn.active {
+    background: var(--flosc-quiz-tab-active-bg);
+    border-color: var(--flosc-quiz-tab-active-bg);
+    color: var(--flosc-quiz-tab-active-text);
+}
+
+/* Quiz Text Input */
+.quiz-text-input {
+    background: var(--flosc-quiz-input-bg);
+    border-color: var(--flosc-quiz-input-border);
+    color: var(--flosc-text);
+}
+
+.quiz-text-input:focus {
+    border-color: var(--flosc-quiz-input-focus-border);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.quiz-text-input::placeholder {
+    color: var(--flosc-input-placeholder);
+}
+
+/* Quiz Submit Button */
+.quiz-submit-btn {
+    background: var(--flosc-accent);
+    color: #ffffff;
+}
+
+.quiz-submit-btn:hover {
+    background: var(--flosc-accent-hover);
+}
+
+/* Quiz Audio Panel */
+.quiz-waveform {
+    background: var(--flosc-quiz-waveform-bg);
+    border: 1px solid var(--flosc-quiz-prompt-border);
+}
+
+.quiz-timer {
+    color: var(--flosc-text);
+}
+
+/* Recording Controls */
+.quiz-record-btn {
+    background: var(--flosc-quiz-record-bg);
+    color: #ffffff;
+}
+
+.quiz-record-btn:hover {
+    background: var(--flosc-quiz-record-hover-bg);
+}
+
+.quiz-stop-btn {
+    background: var(--flosc-quiz-stop-bg);
+    color: #ffffff;
+}
+
+.quiz-stop-btn:hover {
+    background: var(--flosc-quiz-stop-hover-bg);
+}
+
+/* Recording Status */
+.quiz-recording-status {
+    color: var(--flosc-text-muted);
+    font-size: 14px;
+    text-align: center;
+    min-height: 20px;
+}
+
+.quiz-recording-status.recording {
+    color: var(--flosc-quiz-record-bg);
+}
+
+/* Quiz Error State */
+.quiz-error {
+    background: var(--flosc-quiz-error-bg);
+    color: var(--flosc-quiz-error-text);
+    border: 1px solid var(--flosc-quiz-error-border);
+}
+
+/* Quiz Result Panel */
+.quiz-result-panel {
+    background: var(--flosc-bg);
+}
+
+.quiz-score-display {
+    color: var(--flosc-text);
+}
+
+.quiz-score-display.passed {
+    color: var(--flosc-quiz-success);
+}
+
+.quiz-score-display.failed {
+    color: var(--flosc-quiz-warning);
+}
+
+.quiz-result-message {
+    color: var(--flosc-text-muted);
+    line-height: 1.5;
+}
+
+.quiz-continue-btn {
+    background: var(--flosc-accent);
+    color: #ffffff;
+}
+
+.quiz-continue-btn:hover {
+    background: var(--flosc-accent-hover);
+}
+
+/* Secondary Button (Re-record) */
+.quiz-playback-actions .btn-secondary {
+    background: var(--flosc-bg);
+    color: var(--flosc-text);
+    border: 1px solid var(--flosc-border);
+}
+
+.quiz-playback-actions .btn-secondary:hover {
+    background: var(--flosc-sidebar-hover);
+}
+/* ============================================
+   CONTENT PROTECTION - VISIBILITY TIERS (v1.0.1)
+   ============================================ */
+
+/* Base protected content wrapper */
+.flosc-protected-content {
+    background: var(--flosc-bg);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+}
+
+/* Hidden tier - members only message */
+.flosc-protected-content.flosc-hidden {
+    background: var(--flosc-sidebar-bg);
+    border: 1px dashed var(--flosc-border);
+    text-align: center;
+}
+
+/* Teaser tier - excerpt with lock notice */
+.flosc-protected-content.flosc-teaser .flosc-teaser-excerpt {
+    color: var(--flosc-text);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+}
+
+/* Preview tier - content up to read more */
+.flosc-protected-content.flosc-preview .flosc-preview-content {
+    color: var(--flosc-text);
+    line-height: 1.6;
+}
+
+/* Protected notice styling */
+.flosc-protected-notice {
+    background: var(--flosc-quiz-warning-bg, #fff8e6);
+    border: 1px solid var(--flosc-quiz-warning, #ffc107);
+    border-radius: 6px;
+    padding: 1rem;
+    margin: 1rem 0;
+    text-align: center;
+}
+
+.flosc-protected-notice p {
+    margin: 0;
+    color: var(--flosc-text);
+    font-weight: 500;
+}
+
+/* Chatbot CTA button */
+.flosc-chatbot-cta {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.flosc-cta-button {
+    display: inline-block;
+    background: var(--flosc-accent);
+    color: #ffffff !important;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background 0.2s ease;
+}
+
+.flosc-cta-button:hover {
+    background: var(--flosc-accent-hover);
+    text-decoration: none;
+}

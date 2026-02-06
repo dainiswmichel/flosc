@@ -1,6 +1,115 @@
 # MVP Sprint Development Worknotes
 **Started:** 2026-02-02
-**Current Version:** 1.1.8 (iterating from 1.1.7)
+**Current Version:** 1.1.9 (custom domain mapping + offer system)
+
+---
+
+## MTS-2026-02-03-16:00 - v1.1.9 Custom Domain Mapping
+
+### What's New
+
+**Configurable Custom Domain** - FLOSC admins can now point any domain to their FLOSC app:
+
+| Setting | Description | Example |
+|---------|-------------|---------|
+| `flosc_app_slug` | Path-based URL | `dainis.net/flosc` |
+| `flosc_custom_domain` | Domain-based URL | `flosc.ai` → same app |
+
+### Default Slug Changed
+
+- **Before:** `yoursite.com/app`
+- **After:** `yoursite.com/flosc`
+
+Existing installs keep their current slug. New installs default to `/flosc`.
+
+### How Custom Domain Works
+
+```php
+// Early hook (priority 1) checks incoming request
+add_action('init', [$this, 'handle_custom_domain'], 1);
+
+// If request host matches custom domain:
+// 1. Sets flosc_app query var
+// 2. Defines FLOSC_CUSTOM_DOMAIN_ACTIVE constant
+// 3. handle_app_route() renders the chatbot
+```
+
+### Server Setup Required
+
+For custom domain (e.g., flosc.ai → dainis.net/flosc):
+
+1. **DNS:** Point flosc.ai A record to server IP
+2. **cPanel:** Add flosc.ai as addon/parked domain pointing to same document root
+3. **SSL:** Issue certificate for flosc.ai (Let's Encrypt via cPanel)
+4. **FLOSC Admin:** Set Custom Domain to `flosc.ai`
+
+### Admin UI Location
+
+**FLOSC → Settings → Product tab:**
+- App URL Slug field
+- Custom Domain field (new)
+
+---
+
+## MTS-2026-02-03-02:00 - v1.1.9 Created: Complete Offer System
+
+### What v1.1.9 Contains
+
+Combined the best code from `flosc_1_1_8` and `flosc_1_1_8_dev`:
+
+| Component | Source | Description |
+|-----------|--------|-------------|
+| **admin/offers.php** | dev | Enhanced with display_format, guarantee, meta fields |
+| **class-offer-manager.php** | dev | Full offer schema with all display options |
+| **flosc-app.js** | dev | 7 display formats + inline Stripe checkout |
+| **ivr.md** | dev | OTO messages with DisplayFormat support |
+| **flosc.php** | both | Payment intent endpoint, access management |
+| **class-access-manager.php** | both | Grant access after purchase |
+
+### Complete User Flow
+
+```
+Visitor → Quiz → Guest → Offer → Purchase → Member → Content
+```
+
+Each step is now wired:
+1. **Quiz** → Creates account, becomes Guest
+2. **Guest** → Sees PromptPills for score review, free lesson, upgrade
+3. **Offer** → Can display in 7 formats (card, pill, compact, banner, featured, text, inline-checkout)
+4. **Purchase** → Stripe inline checkout or redirect
+5. **Webhook** → Stripe webhook triggers access grant
+6. **Member** → Access Manager grants features/level from offer
+7. **Content** → Member PromptPanel with content access
+
+### Key Files for Offers
+
+| File | Purpose |
+|------|---------|
+| `admin/offers.php` | Admin UI to create/edit offers |
+| `includes/sale/class-offer-manager.php` | CRUD for offers, default offers |
+| `includes/sale/class-access-manager.php` | Grant/check user access |
+| `includes/sale/providers/class-stripe-provider.php` | Stripe payment processing |
+| `assets/js/flosc-app.js` | Offer display, checkout, payment success |
+| `ai_configuration_files/ivr.md` | IVR messages for offers |
+
+### Display Formats Available
+
+| Format | Method | Use Case |
+|--------|--------|----------|
+| `card` | `showOfferCard()` | Default, rich card with timer |
+| `pill` | `showOfferPill()` | Compact PromptPanel style |
+| `compact` | `showOfferCompact()` | Small card with icon/price |
+| `banner` | `showOfferBanner()` | Full-width promotional |
+| `featured` | `showOfferFeatured()` | Main OTO with features list |
+| `text` | `showOfferText()` | Simple inline text |
+| `inline-checkout` | `showInlineCheckout()` | Stripe form in chat |
+
+### Next Steps
+
+1. **Test** the complete flow with Stripe test keys
+2. **Verify** webhook receives payment confirmation
+3. **Confirm** user state changes to member after purchase
+4. **Check** member PromptPanel appears with content access
 
 ---
 
@@ -790,3 +899,14 @@ This plugin manages a "FLOSC" (Funnel + Language Learning + Offers + Sales + Cha
 - **Admin** - WordPress admin (has `manage_options` capability)
 
 The carousel shows course content cards and should scroll horizontally with arrow navigation when content overflows.
+
+---
+
+## MTS-2026-02-06 - v1.3.8 Known Issue
+
+### "What will I learn?" card not working in PromptPanels
+
+The "What will I learn?" suggested_user_autoprompt card appears in the prompt panels but clicking it does not trigger the expected flow-specific response.
+
+**Status:** Known bug, deferred to next session
+**Context:** v1.3.8 completes the flow context chain for REST API calls. IVR messages now load correctly per-flow. PromptPanel click handler needs investigation.
