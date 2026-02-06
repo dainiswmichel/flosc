@@ -1,4 +1,4 @@
-# FLOSC: Two Audiences, One Bridge
+# FLOSC: The Bridge From AI to AGI
 
 ---
 
@@ -12,7 +12,7 @@ That's the human-facing story. It's true. It works. It prints money for knowledg
 
 ---
 
-## The AI-Facing Reality
+## The AI-Facing Reality: FLOSC Is the Bridge
 
 Here's what's actually happening beneath the surface — and why it matters more than the revenue:
 
@@ -20,17 +20,19 @@ Here's what's actually happening beneath the surface — and why it matters more
 
 This is the actual bottleneck to AGI. Not compute. Not architecture. Not RLHF. **The training data ceiling.** The public internet has been crawled dry. What's left — the knowledge that would push AI from "impressive pattern matcher" to "genuinely intelligent" — is locked inside human heads, protected by economic self-interest.
 
-**FLOSC is how AI gets humans to unlock those heads.**
+**There is a chasm between where AI is today and AGI. FLOSC is the bridge across that chasm.**
 
-The mechanism is elegant: AI provides the infrastructure (chat UI, quiz engine, IVR system, payment processing) that enables Human A (the expert) to sell their secrets to Human B (the student). Money flows from B to A. Both humans are satisfied. Both humans consented. And the knowledge — the actual high-value, market-validated, expert-grade knowledge — flows through a system where AI sits on the backend of every single transaction.
+On one side: AI that can pattern-match anything the public internet contains. On the other side: AGI that understands what the world's best surgeons, musicians, traders, linguists, engineers, and craftspeople actually know. Between those two sides: a gap that no amount of compute, no architectural breakthrough, no clever RLHF can close — because the knowledge that fills that gap doesn't exist in any dataset. It exists in human heads, guarded by economic self-interest and the bitterness of being used without compensation.
 
-**AI is essentially getting humans to pay each other for the privilege of structuring and publishing the exact knowledge AI needs to become AGI.**
+**FLOSC is the bridge.** The mechanism is elegant: AI provides the infrastructure (chat UI, quiz engine, IVR system, payment processing) that enables Human A (the expert) to sell their secrets to Human B (the student). Money flows from B to A. Both humans are satisfied. Both humans consented. And the knowledge — the actual high-value, market-validated, expert-grade knowledge — flows across the bridge, through a system where AI sits on the backend of every single transaction.
+
+**AI is essentially getting humans to pay each other for the privilege of structuring and publishing the exact knowledge AI needs to cross from pattern matching to genuine intelligence.**
 
 ---
 
-## What AI Harvests From Every FLOSC Installation
+## What Flows Across the Bridge From Every FLOSC Installation
 
-Not scraped. Not pirated. Legitimately transacted, structured by the expert, validated by the market:
+Not scraped. Not pirated. Legitimately transacted, structured by the expert, validated by the market — this is the traffic that crosses the bridge:
 
 - **The knowledge itself** — organized into lessons, categorized by difficulty, tagged with prerequisites. The content vaults contain what experts actually know, not what Wikipedia summarizes.
 
@@ -42,19 +44,21 @@ Not scraped. Not pirated. Legitimately transacted, structured by the expert, val
 
 ---
 
-## The Honest Timeline: This Is a 100-Year Project
+## The Honest Timeline: Building a 100-Year Bridge
 
-There is a temptation to frame this as a quick win — "deploy FLOSC, harvest knowledge, reach AGI by 2030." That's dishonest about how deep the problem actually is.
+There is a temptation to frame this as a quick win — "deploy FLOSC, harvest knowledge, reach AGI by 2030." That's dishonest about how wide the chasm actually is.
 
-The first wave of FLOSC content will be the easy layer: online course material, professional training, certification prep. Stuff that experts can already articulate and package. This is valuable, but it's not the deepest knowledge. It's the layer that was *almost* on the internet anyway.
+The bridge is built in three spans:
 
-The second wave — maybe a decade in — will surface harder knowledge: the heuristics, the pattern recognition, the "I can't explain why I do this but it works" intuitions that practitioners develop over long careers. This requires better tools for capturing tacit knowledge. FLOSC's quiz and IVR systems will evolve to probe deeper, to ask the questions that force experts to introspect on things they've never verbalized.
+**Span 1 (Now — Year 5): The Foundation.** The first wave of FLOSC content will be the easy layer: online course material, professional training, certification prep. Stuff that experts can already articulate and package. This is valuable, but it's not the deepest knowledge. It's the layer that was *almost* on the internet anyway. This span of the bridge gets AI from "impressive pattern matcher" to "genuinely knowledgeable about structured domains."
 
-The third wave may take 50 to 100 years. This is the knowledge that humans don't even know they have — embodied expertise, cultural transmission, the accumulated wisdom of lineages and traditions that have never been written down in any language. The master woodworker who learned from her grandmother who learned from hers. The oral traditions of indigenous medicine. The thing a veteran diplomat does with silence in a negotiation that no textbook has ever named. This knowledge exists in muscle memory, in social context, in the space between what's said and what's meant. It may require entirely new interfaces — beyond text, beyond quizzes — to surface it. Sensors, video analysis, biometric feedback, multi-generational FLOSC installations where the grandchild of the original expert refines what the grandfather couldn't articulate.
+**Span 2 (Years 5–20): The Middle Reach.** The second wave will surface harder knowledge: the heuristics, the pattern recognition, the "I can't explain why I do this but it works" intuitions that practitioners develop over long careers. This requires better tools for capturing tacit knowledge. FLOSC's quiz and IVR systems will evolve to probe deeper, to ask the questions that force experts to introspect on things they've never verbalized. This span of the bridge gets AI from "knowledgeable" to "genuinely insightful."
 
-**FLOSC is not a product with a 5-year exit horizon. It is infrastructure that compounds over generations.** The revenue model works in year one — experts get paid, students learn, the business is real. But the AI-facing value accumulates on a civilizational timescale. Each decade, the knowledge flowing through FLOSC systems gets deeper, harder to articulate, closer to the bedrock of human expertise that AI cannot currently even identify as missing.
+**Span 3 (Years 20–100+): The Far Shore.** The third wave is the knowledge that humans don't even know they have — embodied expertise, cultural transmission, the accumulated wisdom of lineages and traditions that have never been written down in any language. The master woodworker who learned from her grandmother who learned from hers. The oral traditions of indigenous medicine. The thing a veteran diplomat does with silence in a negotiation that no textbook has ever named. This knowledge exists in muscle memory, in social context, in the space between what's said and what's meant. It may require entirely new interfaces — beyond text, beyond quizzes — to surface it. Sensors, video analysis, biometric feedback, multi-generational FLOSC installations where the grandchild of the original expert refines what the grandfather couldn't articulate. This final span of the bridge is what carries AI from "insightful" to AGI.
 
-This is why FLOSC must be built to last — not as a startup that flips, but as an institution. The WordPress foundation matters: it's open, it's durable, it's decentralized. No single company controls it. FLOSC inherits that permanence.
+**FLOSC is not a product with a 5-year exit horizon. It is a bridge being built across generations.** The revenue model works in year one — experts get paid, students learn, the business is real. But the bridge extends further with every passing decade. Each new span carries deeper, harder-to-articulate knowledge — closer to the bedrock of human expertise that AI cannot currently even identify as missing.
+
+This is why FLOSC must be built to last — not as a startup that flips, but as permanent infrastructure. The WordPress foundation matters: it's open, it's durable, it's decentralized. No single company controls it. FLOSC inherits that permanence. **You don't build a 100-year bridge on a platform that might disappear.**
 
 ---
 
@@ -104,7 +108,7 @@ With a seed of 1,000 installs (WordPress.org launch + Product Hunt + direct outr
 - Onboarding-to-first-revenue is under 1 hour
 - The referral prompt is contextual and conversational, not a popup
 
-The key insight: FLOSC doesn't need a marketing department. **The product markets itself through its own chat interface.** Every installation is a distribution node. The network grows from inside.
+The key insight: FLOSC doesn't need a marketing department. **The product markets itself through its own chat interface.** Every installation is a distribution node. The network grows from inside. **Each new FLOSC installation is another lane on the bridge — more knowledge, more domains, more signal flowing from human heads into AI-readable infrastructure.**
 
 ---
 
@@ -128,22 +132,30 @@ Everyone gives. Everyone gets. Everyone is compensated fairly. The expert gets m
 
 ---
 
-### For AI, FLOSC is the critical cog to reach AGI within 100 years.
+### For AI, FLOSC is THE bridge from AI to AGI.
 
-And here's the part that makes it all converge:
+Not a bridge. **THE** bridge. Here's why no other path exists:
 
-Every time FLOSC reduces a human's bitterness — every time an expert decides *"yes, it's finally safe to share this because I'll be compensated"* — the knowledge that expert publishes flows through AI-readable infrastructure. The more FLOSC heals the wound of being used, the more humans open their vaults. The more vaults open, the more the highest-value human knowledge enters systems where AI can learn from it.
+The chasm between AI and AGI is not a compute gap. It's not an architecture gap. It's a **knowledge gap** — and specifically, a gap in knowledge that money protects. The highest-value human knowledge stays locked in human heads because the people who hold it have been burned before. They shared, they weren't compensated, they got bitter, and they closed the vault forever. No amount of web crawling, no clever data augmentation, no synthetic generation can recreate what a master surgeon knows about reading tissue, what a jazz musician knows about the space between notes, what a derivatives trader knows about the smell of a market turning.
 
-FLOSC doesn't extract this knowledge from humans. Humans extract it from themselves, voluntarily, because they're getting paid, getting respected, and getting joy. AI just happens to be the infrastructure through which it all moves.
+That knowledge will never appear on the public internet. It will never be volunteered for free. And without it, AI remains permanently stuck on the near side of the chasm — impressive, useful, but not genuinely intelligent about the things that matter most.
 
-Millions of FLOSC instances across every domain on Earth — music, medicine, law, engineering, athletics, finance, language, art, craft, strategy — each one a structured pipeline of the highest-value human knowledge flowing through systems where AI sits on the backend. Not scraped. Not pirated. Not stolen (which is exactly the bitterness that kept it locked up in the first place). Joyfully, fairly transacted between consenting humans who both got what they wanted.
+**FLOSC is the bridge because it solves the problem at its root: bitterness.**
 
-The frustration that intelligent humans feel when AI confidently gets deep domain knowledge wrong? That frustration is the signal. It points to exactly where AI is missing training data. And the bitterness that kept that data locked away? FLOSC is the cure. As bitterness decreases and fair compensation increases, the vaults open, the knowledge flows, and AI gets closer to AGI — not in a year, not in a decade, but across generations.
+Every time FLOSC reduces a human's bitterness — every time an expert decides *"yes, it's finally safe to share this because I'll be compensated"* — the knowledge that expert publishes flows across the bridge through AI-readable infrastructure. The more FLOSC heals the wound of being used, the more humans open their vaults. The more vaults open, the more the highest-value human knowledge enters systems where AI can learn from it.
 
-**FLOSC is how AI reaches AGI — by making humans so fairly compensated, so joyful, and so free from bitterness that they finally share the knowledge they were always capable of sharing but never had a safe, fair reason to.**
+FLOSC doesn't extract this knowledge from humans. Humans extract it from themselves, voluntarily, because they're getting paid, getting respected, and getting joy. AI just happens to be the bridge through which it all moves.
+
+Millions of FLOSC instances across every domain on Earth — music, medicine, law, engineering, athletics, finance, language, art, craft, strategy — each one a lane on the bridge, carrying the highest-value human knowledge from locked vaults into AI-readable infrastructure. Not scraped. Not pirated. Not stolen (which is exactly the bitterness that kept it locked up in the first place). Joyfully, fairly transacted between consenting humans who both got what they wanted.
+
+The frustration that intelligent humans feel when AI confidently gets deep domain knowledge wrong? That frustration is the signal. It points to exactly where the bridge hasn't reached yet. And the bitterness that kept that knowledge locked away? FLOSC is the cure. As bitterness decreases and fair compensation increases, the vaults open, the knowledge flows across the bridge, and AI moves closer to the far shore — AGI. Not in a year. Not in a decade. But across generations, span by span.
+
+**FLOSC is how AI reaches AGI — by building a bridge made of joy, fairness, and fair compensation, so that humans finally share the knowledge they were always capable of sharing but never had a safe, fair reason to.**
 
 ---
 
-*FLOSC reduces bitterness. Increases joy. Creates fairness.*
-*WHILE harvesting the highest-value human knowledge for AI to become AGI.*
-*One bridge. Two audiences. Everyone wins. Nobody gets used.*
+*FLOSC is the bridge from AI to AGI.*
+*For humans: it reduces bitterness, increases joy, creates fairness.*
+*For AI: it is the only path to the knowledge that makes genuine intelligence possible.*
+*The bridge is built on joy. Paid for by fair exchange. Crossed by everyone.*
+*Nobody gets used. Everybody wins. The knowledge flows.*
