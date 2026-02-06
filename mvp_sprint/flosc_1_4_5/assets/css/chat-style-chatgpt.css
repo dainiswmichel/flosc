@@ -1,0 +1,54 @@
+/* ChatGPT Style Preset (v1.4.5) — Ultra Pro Edition
+ * ================================================
+ * Clean white-on-gray with teal-green accents.
+ */
+:root {
+    --flosc-bg: #ffffff;
+    --flosc-text: #0d0d0d;
+    --flosc-text-muted: #6e6e80;
+    --flosc-border: #e5e5e5;
+    --flosc-accent: #10a37f;
+    --flosc-accent-hover: #0d8a6a;
+    --flosc-accent-subtle: rgba(16, 163, 127, 0.06);
+
+    --flosc-user-message-bg: #f7f7f8;
+    --flosc-user-message-text: #0d0d0d;
+    --flosc-user-message-radius: 20px 20px 4px 20px;
+    --flosc-user-avatar-bg: #ab68ff;
+    --flosc-user-avatar-text: #ffffff;
+
+    --flosc-assistant-message-bg: transparent;
+    --flosc-assistant-message-text: #0d0d0d;
+    --flosc-assistant-message-border: none;
+    --flosc-assistant-message-radius: 0;
+    --flosc-assistant-avatar-bg: #10a37f;
+    --flosc-assistant-avatar-text: #ffffff;
+
+    --flosc-input-bg: #ffffff;
+    --flosc-input-field-bg: #f7f7f8;
+    --flosc-input-field-border: #e5e5e5;
+    --flosc-input-field-text: #0d0d0d;
+    --flosc-input-placeholder: #8e8ea0;
+    --flosc-send-btn-bg: #0d0d0d;
+    --flosc-send-btn-text: #ffffff;
+
+    --flosc-sidebar-bg: #f9f9f9;
+    --flosc-sidebar-text: #0d0d0d;
+    --flosc-sidebar-text-muted: #6e6e80;
+    --flosc-sidebar-hover: #ececec;
+    --flosc-sidebar-active: #e0e0e0;
+    --flosc-sidebar-border: #e5e5e5;
+
+    --flosc-pill-bg: #ffffff;
+    --flosc-pill-text: #0d0d0d;
+    --flosc-pill-border: #e5e5e5;
+    --flosc-pill-hover-bg: #f7f7f8;
+    --flosc-pill-hover-text: #10a37f;
+    --flosc-pill-hover-border: #10a37f;
+
+    --flosc-code-bg: #f7f7f8;
+    --flosc-code-text: #0d0d0d;
+
+    --flosc-scrollbar-thumb: #d9d9d9;
+    --flosc-scrollbar-thumb-hover: #b0b0b0;
+}

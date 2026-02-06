@@ -1,0 +1,54 @@
+/* Grok Style Preset (v1.4.5) — Ultra Pro Edition
+ * ================================================
+ * Pure black OLED with vibrant orange accents.
+ */
+:root {
+    --flosc-bg: #000000;
+    --flosc-text: #e7e9ea;
+    --flosc-text-muted: #71767b;
+    --flosc-border: #2f3336;
+    --flosc-accent: #f97316;
+    --flosc-accent-hover: #ea580c;
+    --flosc-accent-subtle: rgba(249, 115, 22, 0.08);
+
+    --flosc-user-message-bg: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    --flosc-user-message-text: #ffffff;
+    --flosc-user-message-radius: 20px 20px 4px 20px;
+    --flosc-user-avatar-bg: #f97316;
+    --flosc-user-avatar-text: #ffffff;
+
+    --flosc-assistant-message-bg: transparent;
+    --flosc-assistant-message-text: #e7e9ea;
+    --flosc-assistant-message-border: none;
+    --flosc-assistant-message-radius: 0;
+    --flosc-assistant-avatar-bg: #2f3336;
+    --flosc-assistant-avatar-text: #71767b;
+
+    --flosc-input-bg: #000000;
+    --flosc-input-field-bg: #16181c;
+    --flosc-input-field-border: #2f3336;
+    --flosc-input-field-text: #e7e9ea;
+    --flosc-input-placeholder: #536471;
+    --flosc-send-btn-bg: #f97316;
+    --flosc-send-btn-text: #ffffff;
+
+    --flosc-sidebar-bg: #16181c;
+    --flosc-sidebar-text: #e7e9ea;
+    --flosc-sidebar-text-muted: #71767b;
+    --flosc-sidebar-hover: #2f3336;
+    --flosc-sidebar-active: #3d2608;
+    --flosc-sidebar-border: #2f3336;
+
+    --flosc-pill-bg: #16181c;
+    --flosc-pill-text: #e7e9ea;
+    --flosc-pill-border: #2f3336;
+    --flosc-pill-hover-bg: #3d2608;
+    --flosc-pill-hover-text: #f97316;
+    --flosc-pill-hover-border: #f97316;
+
+    --flosc-code-bg: #16181c;
+    --flosc-code-text: #e7e9ea;
+
+    --flosc-scrollbar-thumb: #2f3336;
+    --flosc-scrollbar-thumb-hover: #536471;
+}
