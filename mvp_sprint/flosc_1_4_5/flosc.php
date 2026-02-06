@@ -2282,9 +2282,9 @@ The {product_name} Team";
             'permission_callback' => 'is_user_logged_in',
         ]);
         
-        // Free Lesson (v9.1.9)
+        // Free Lesson (v9.1.9) — v1.4.5: Accept both GET and POST (JS sends POST)
         register_rest_route('flosc/v1', '/free-lesson', [
-            'methods' => 'GET',
+            'methods' => ['GET', 'POST'],
             'callback' => [$this, 'get_free_lesson'],
             'permission_callback' => 'is_user_logged_in',
         ]);
