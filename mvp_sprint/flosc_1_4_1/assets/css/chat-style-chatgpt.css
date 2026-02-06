@@ -1,0 +1,43 @@
+/* ChatGPT Style Preset (v9.4.1) - VARIABLES ONLY */
+:root {
+    --flosc-bg: #f7fafc;
+    --flosc-text: #202123;
+    --flosc-text-muted: #6b7280;
+    --flosc-border: #e5e7eb;
+    --flosc-accent: #10a37f;
+    --flosc-accent-hover: #0d8c6b;
+    --flosc-user-message-bg: #10a37f;
+    --flosc-user-message-text: #fff;
+    --flosc-user-message-radius: 18px 18px 4px 18px;
+    --flosc-user-avatar-bg: #10a37f;
+    --flosc-user-avatar-text: #fff;
+    --flosc-assistant-message-bg: #fff;
+    --flosc-assistant-message-text: #202123;
+    --flosc-assistant-message-border: 1px solid #e5e7eb;
+    --flosc-assistant-message-radius: 0;
+    --flosc-assistant-avatar-bg: #e5e7eb;
+    --flosc-assistant-avatar-text: #10a37f;
+    --flosc-input-bg: #fff;
+    --flosc-input-field-bg: #f7fafc;
+    --flosc-input-field-border: #e5e7eb;
+    --flosc-input-field-text: #202123;
+    --flosc-input-placeholder: #9ca3af;
+    --flosc-send-btn-bg: #10a37f;
+    --flosc-send-btn-text: #fff;
+    --flosc-sidebar-bg: #e5e7eb;
+    --flosc-sidebar-text: #202123;
+    --flosc-sidebar-text-muted: #6b7280;
+    --flosc-sidebar-hover: #f7fafc;
+    --flosc-sidebar-active: #d1fae5;
+    --flosc-sidebar-border: #e5e7eb;
+    --flosc-pill-bg: #fff;
+    --flosc-pill-text: #10a37f;
+    --flosc-pill-border: #e5e7eb;
+    --flosc-pill-hover-bg: #d1fae5;
+    --flosc-pill-hover-text: #0d8c6b;
+    --flosc-pill-hover-border: #10a37f;
+    --flosc-code-bg: #e5e7eb;
+    --flosc-code-text: #202123;
+    --flosc-scrollbar-thumb: #d1fae5;
+    --flosc-scrollbar-thumb-hover: #10a37f;
+}
