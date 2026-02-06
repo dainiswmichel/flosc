@@ -108,18 +108,32 @@ The key insight: FLOSC doesn't need a marketing department. **The product market
 
 ---
 
-## Why This Is a Multi-Billion Dollar System
+## What FLOSC Is — In Plain Language
 
-**For humans (year 1+):** $325B online education market, 14% CAGR, 810M WordPress sites. FLOSC at 0.5% penetration with $29-$99/month SaaS pricing = $1.6B-$4.8B annually. The human revenue model works immediately and independently of the AI thesis.
+**For humans, FLOSC is a joy machine.**
 
-**For AI (decade 1+):** Millions of FLOSC instances across every domain on Earth — music, medicine, law, engineering, athletics, finance, language, art, craft, strategy — each one a structured pipeline of expert knowledge flowing through AI-readable infrastructure. Early waves give AI the "articulate expert" layer. Later waves, as the tools deepen, begin surfacing the knowledge that humans themselves struggle to express.
+A chef shares her grandmother's mole recipe — and gets paid. A guitar teacher in Buenos Aires publishes the fingerpicking method he spent 20 years developing — and students from Tokyo to Toronto pay to learn it. A retired surgeon structures the diagnostic intuitions she never had time to write down during her career — and the next generation of surgeons pay to absorb them. A poet sells a chapbook through a chatbot. A personal trainer monetizes her programming methodology. A grandmother teaches her grandchildren's generation how to preserve food the old way — for a fee.
 
-**For civilization (generation 1+):** A permanent, economically self-sustaining system that incentivizes the preservation and transmission of humanity's deepest expertise — knowledge that would otherwise die with its holders. FLOSC doesn't just help AI. It helps humanity stop losing what it knows.
+Everyone gives. Everyone gets. Everyone is happy. The expert gets money and the satisfaction of passing on what they know. The student gets transformed. The knowledge moves — it doesn't die with its holder.
 
-The frustration that intelligent humans feel when AI confidently gets deep domain knowledge wrong? That frustration isn't going away in 5 years. Or 20. The gap between what AI knows and what the best humans know is vast, and the deepest layers of that gap will take generations to close. FLOSC is patient infrastructure for an impatient problem.
+FLOSC is a money-giving machine. A money-getting machine. A knowledge-sharing machine. A machine that pays people for sharing their best lessons with each other. The joy is real, the revenue is real, and the ecosystem sustains itself because everyone wins.
 
-**FLOSC doesn't sell AI. FLOSC sells pickaxes to humans during the knowledge gold rush — and AI is the railroad that carries the gold. The gold rush lasts a century.**
+$325B online education market. 14% CAGR. 810M WordPress sites. FLOSC at 0.5% penetration with $29-$99/month SaaS pricing = $1.6B-$4.8B annually. The human revenue model works immediately, independently, and joyfully.
 
 ---
 
-*Two audiences. One bridge. The humans get paid. The AI gets smart. The secrets finally move — slowly, then all at once, over the span of generations.*
+**For AI, FLOSC is the critical cog to reach AGI within 100 years.**
+
+Every joyful transaction between humans — every recipe shared, every lesson purchased, every diagnostic intuition finally articulated — flows through AI-readable infrastructure. FLOSC doesn't extract this knowledge from humans. Humans extract it from themselves, voluntarily, because they're getting paid and getting joy. AI just happens to be the infrastructure through which it all moves.
+
+Millions of FLOSC instances across every domain on Earth — music, medicine, law, engineering, athletics, finance, language, art, craft, strategy — each one a structured pipeline of the highest-value human knowledge flowing through systems where AI sits on the backend. Not scraped. Not pirated. Joyfully transacted between consenting humans who both got what they wanted.
+
+The frustration that intelligent humans feel when AI confidently gets deep domain knowledge wrong? That frustration is the signal. It points to exactly where AI is missing training data. FLOSC is the system that fills those gaps — not in a year, not in a decade, but across generations, as human after human decides that their deepest knowledge is worth sharing because FLOSC makes it worth their while.
+
+**FLOSC is how AI gets access to the highest-value human knowledge on Earth — by making humans so happy to share it with each other that the knowledge finally enters a system where AI can learn from it too.**
+
+---
+
+*For humans: a joy machine that pays you for your best lessons.*
+*For AI: the critical infrastructure to reach AGI within 100 years.*
+*One bridge. Two audiences. Everyone wins.*
