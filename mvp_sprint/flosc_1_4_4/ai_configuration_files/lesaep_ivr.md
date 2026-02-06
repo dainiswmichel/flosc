@@ -48,7 +48,7 @@ MessageName: lesaep_welcome
 MessageType: auto
 MessageStyle: feature
 MessageContent: 🎤 **Welcome to LeSAEp!** Learn Excellent Standard American English Pronunciation. Master the 44 sounds that make up clear, confident American English speech.
-MessageConditions: visit_count == 1
+MessageConditions: is_visitor
 
 ---
 
@@ -57,7 +57,7 @@ MessageName: lesaep_return
 MessageType: auto
 MessageStyle: card
 MessageContent: 👋 **Welcome back, pronunciation champion!** Ready to continue mastering Standard American English? Let's pick up where you left off.
-MessageConditions: visit_count > 1 && !logged_in
+MessageConditions: returning_user && !logged_in
 
 ---
 
@@ -66,7 +66,7 @@ MessageName: sounds_overview
 MessageType: auto
 MessageStyle: card
 MessageContent: 📚 Standard American English has **44 distinct sounds**: 24 consonants and 20 vowels. Each sound has specific mouth positions, tongue placements, and airflow patterns. Would you like to explore consonants or vowels first?
-MessageConditions: visit_count == 1
+MessageConditions: is_visitor
 
 ---
 
@@ -108,7 +108,7 @@ MessageName: stop_consonants
 MessageType: auto
 MessageStyle: card
 MessageContent: 🛑 **Stop Consonants** block airflow completely, then release it. Practice pairs: **p/b** (lips), **t/d** (tongue tip behind teeth), **k/g** (back of tongue). The difference? Voicing! Feel your throat vibrate on b, d, g but not on p, t, k.
-MessageConditions: lesson_progress >= 1
+MessageConditions: lesson_viewed
 
 ---
 
@@ -117,7 +117,7 @@ MessageName: fricative_consonants
 MessageType: auto
 MessageStyle: card
 MessageContent: 💨 **Fricatives** create friction by narrowing the airflow. Key pairs: **f/v** (teeth on lip), **s/z** (tongue near ridge), **ʃ/ʒ** (like "sh" in "ship" and "zh" in "measure"), **θ/ð** (tongue between teeth - "think" vs "this").
-MessageConditions: lesson_progress >= 2
+MessageConditions: lesson_viewed && message_count >= 3
 
 ---
 
@@ -137,7 +137,7 @@ MessageName: r_colored
 MessageType: auto
 MessageStyle: card
 MessageContent: 🔴 **R-colored vowels** are distinctly American! The tongue curls back slightly: **ɝ** (stressed "bird, learn"), **ɚ** (unstressed "mother, better"), **ɑr** ("car, star"), **ɔr** ("for, more"), **ɪr** ("near, fear"). This "rhotic R" is the signature of American English!
-MessageConditions: lesson_progress >= 3
+MessageConditions: lesson_viewed && message_count >= 5
 
 ---
 
@@ -146,7 +146,7 @@ MessageName: schwa_lesson
 MessageType: auto
 MessageStyle: feature
 MessageContent: ⭐ **The Schwa (ə)** is the most common sound in English! It's the relaxed "uh" in unstressed syllables: "**a**bout, sof**a**, comm**a**". Master the schwa and your English will instantly sound more natural and fluent!
-MessageConditions: lesson_progress >= 4
+MessageConditions: lesson_viewed && message_count >= 8
 
 ---
 
@@ -169,7 +169,7 @@ Icon: 📝
 UserInput: Test my pronunciation knowledge
 Action: open_quiz
 MessageContent: Let's test what you've learned! This quiz will check your understanding of American English sounds, mouth positions, and sound distinctions.
-MessageConditions: lesson_progress >= 2
+MessageConditions: !quiz_taken
 
 ---
 
@@ -192,7 +192,7 @@ MessageName: lesaep_login_prompt
 MessageType: auto
 MessageStyle: card
 MessageContent: 🔐 **Track Your Progress!** Log in to save your pronunciation journey, access all 44 sound lessons, and get personalized practice recommendations based on your native language.
-MessageConditions: !logged_in && visit_count >= 2
+MessageConditions: !logged_in && quiz_taken
 
 ---
 
@@ -201,7 +201,7 @@ MessageName: lesaep_login_success
 MessageType: auto
 MessageStyle: feature
 MessageContent: 🎉 **Welcome back, {name}!** Your pronunciation journey continues. You've completed {lessons_completed} lessons. Let's work on the next sound category!
-MessageConditions: logged_in && phase == login
+MessageConditions: logged_in && first_message_after_login
 
 ---
 
@@ -212,7 +212,7 @@ MessageName: lesaep_offer
 MessageType: offer
 MessageStyle: feature
 MessageContent: 🌟 **Master All 44 Sounds!** Get the complete LeSAEp course: Video lessons for every sound, native speaker recordings, practice exercises, and IPA training. Special offer: **${discount_price}** (was ${price}).
-MessageConditions: !is_member && visit_count >= 3
+MessageConditions: !is_member && quiz_taken
 
 ---
 
@@ -233,7 +233,7 @@ MessageName: accent_benefits
 MessageType: auto
 MessageStyle: card
 MessageContent: 💼 Clear pronunciation opens doors: Better job interviews, confident presentations, clearer phone calls, and being understood the first time. LeSAEp gives you the tools for professional-level American English.
-MessageConditions: !is_member && visit_count >= 4
+MessageConditions: !is_member && lesson_viewed
 
 ---
 
@@ -244,7 +244,7 @@ MessageName: lesaep_purchase_thanks
 MessageType: auto
 MessageStyle: feature
 MessageContent: 🎊 **Congratulations, {name}!** You now have full access to all 44 sound lessons, video demonstrations, practice recordings, and pronunciation assessments. Your journey to excellent American English pronunciation starts now!
-MessageConditions: is_member && phase == sale
+MessageConditions: is_member && first_message_after_purchase
 
 ---
 
@@ -255,7 +255,7 @@ MessageName: lesaep_member_welcome
 MessageType: auto
 MessageStyle: feature
 MessageContent: 🎤 **Ready to practice, {name}?** You have access to all pronunciation resources. Choose a sound category to focus on, or continue with your personalized learning path.
-MessageConditions: is_member && phase == content
+MessageConditions: is_member && !first_message_after_purchase
 
 ---
 
@@ -288,7 +288,7 @@ MessageName: ipa_training
 MessageType: auto
 MessageStyle: card
 MessageContent: 🔤 **IPA (International Phonetic Alphabet)** is your secret weapon! Each sound has one symbol. Once you learn IPA, you can pronounce any English word correctly just by reading the dictionary. LeSAEp teaches you practical IPA for American English.
-MessageConditions: lesson_progress >= 5
+MessageConditions: is_member && lessons_completed >= 5
 
 ---
 
@@ -297,6 +297,6 @@ MessageName: daily_practice
 MessageType: auto
 MessageStyle: pill
 MessageContent: 💡 **Daily Tip:** Record yourself and compare to native speakers. Your ears adjust faster when you can hear the difference. Even 5 minutes of focused practice daily beats hours of passive listening!
-MessageConditions: is_member && visit_count > 1
+MessageConditions: is_member && returning_user
 
 ---

@@ -48,7 +48,7 @@ MessageName: solfeggio_welcome
 MessageType: auto
 MessageStyle: feature
 MessageContent: 🎵 **Welcome to Simplified Solfeggio!** The fastest way to improve your sight-singing is also the most ancient. Discover the Michel Hand of Music - putting the piano, the clock, and all of music onto one hand!
-MessageConditions: visit_count == 1
+MessageConditions: is_visitor
 
 ---
 
@@ -57,7 +57,7 @@ MessageName: solfeggio_return
 MessageType: auto
 MessageStyle: card
 MessageContent: 🎼 **Welcome back, musician!** Ready to continue your solfeggio journey? Whether you're a singer, composer, or instrumentalist, let's keep building your musical literacy.
-MessageConditions: visit_count > 1 && !logged_in
+MessageConditions: returning_user && !logged_in
 
 ---
 
@@ -66,7 +66,7 @@ MessageName: ancient_secret
 MessageType: auto
 MessageStyle: card
 MessageContent: ✋ **An Ancient Teaching Secret Rediscovered!** Medieval monks used the Guidonian Hand. Ancient Egyptians used cheironomy (hand signs). The Michel Hand of Music modernizes this thousand-year tradition for today's musicians!
-MessageConditions: visit_count == 1
+MessageConditions: is_visitor
 
 ---
 
@@ -75,7 +75,7 @@ MessageName: solfeggio_problem
 MessageType: auto
 MessageStyle: card
 MessageContent: 🤔 Traditional systems have limitations: **Movable Do** requires on-the-fly key analysis. **Fixed Do** can sprain your tongue with accidentals. **Nashville Numbers** shares movable do's problems. You need something **limitless** that works for ALL music, ALL genres, ALL times!
-MessageConditions: lesson_progress >= 1
+MessageConditions: lesson_viewed
 
 ---
 
@@ -106,7 +106,7 @@ MessageName: clock_piano
 MessageType: auto
 MessageStyle: feature
 MessageContent: ⏰🎹 **The Clock-Piano Connection:** If you can read time on an analog clock, you can learn to "draw the piano" on your hand! The 12-hour layout maps perfectly to music's 12 semitones. This visual-kinesthetic approach accelerates learning dramatically!
-MessageConditions: lesson_progress >= 1
+MessageConditions: lesson_viewed
 
 ---
 
@@ -115,7 +115,7 @@ MessageName: single_syllable
 MessageType: auto
 MessageStyle: card
 MessageContent: 🎤 **Single-Syllable Advantage:** Traditional solfeggio uses multi-syllable names that slow you down. Simplified Solfeggio uses quick, single-syllable sounds that your voice can produce at any tempo. Speed AND accuracy!
-MessageConditions: lesson_progress >= 2
+MessageConditions: lesson_viewed && message_count >= 3
 
 ---
 
@@ -135,7 +135,7 @@ MessageName: write_songs
 MessageType: auto
 MessageStyle: card
 MessageContent: ✍️ **From Imagination to Notation:** Many musicians can hear music in their heads but struggle to write it down. Simplified Solfeggio bridges that gap. If you can hum it, you can learn to notate it - accurately and quickly!
-MessageConditions: lesson_progress >= 2
+MessageConditions: lesson_viewed && message_count >= 5
 
 ---
 
@@ -144,7 +144,7 @@ MessageName: rhythm_method
 MessageType: auto
 MessageStyle: card
 MessageContent: 🥁 **Rhythm Simplified:** If you can write rhythms perfectly, you'll be better at reading them. Dainis' method uses simple dots and slashes on blank paper to internalize rhythm patterns. You'll read, write, and interpret rhythms correctly - quickly!
-MessageConditions: lesson_progress >= 3
+MessageConditions: lesson_viewed && message_count >= 8
 
 ---
 
@@ -153,7 +153,7 @@ MessageName: all_levels
 MessageType: auto
 MessageStyle: pill
 MessageContent: 🌟 Whether you're a **beginner** just starting out, an **intermediate** musician wanting to level up, or a **professional** seeking mastery - Simplified Solfeggio meets you where you are and takes you further than you imagined!
-MessageConditions: visit_count >= 2
+MessageConditions: returning_user
 
 ---
 
@@ -165,7 +165,7 @@ Icon: 📝
 UserInput: Test my solfeggio knowledge
 Action: open_quiz
 MessageContent: Let's see where you are on your solfeggio journey! This quick assessment will help identify which areas to focus on for maximum improvement.
-MessageConditions: lesson_progress >= 2
+MessageConditions: !quiz_taken
 
 ---
 
@@ -186,7 +186,7 @@ MessageName: success_stories
 MessageType: auto
 MessageStyle: card
 MessageContent: 🌟 **Real Results:** Edmund Rumpler, in his mid-70s with no notation skills, wrote his first complete score. Akash Thakkar went from Berklee student to TEDx featured composer and award-nominated game audio designer. Emily Sanders experienced the Golden Buzzer!
-MessageConditions: visit_count >= 3
+MessageConditions: quiz_taken
 
 ---
 
@@ -197,7 +197,7 @@ MessageName: solfeggio_login_prompt
 MessageType: auto
 MessageStyle: card
 MessageContent: 🔐 **Save Your Progress!** Log in to track your solfeggio development, access all lessons, and get personalized practice recommendations based on your goals.
-MessageConditions: !logged_in && visit_count >= 2
+MessageConditions: !logged_in && quiz_taken
 
 ---
 
@@ -206,7 +206,7 @@ MessageName: solfeggio_login_success
 MessageType: auto
 MessageStyle: feature
 MessageContent: 🎵 **Welcome back, {name}!** Your musical journey continues. You've completed {lessons_completed} lessons. Ready to unlock more sight-singing freedom?
-MessageConditions: logged_in && phase == login
+MessageConditions: logged_in && first_message_after_login
 
 ---
 
@@ -217,7 +217,7 @@ MessageName: solfeggio_offer
 MessageType: offer
 MessageStyle: feature
 MessageContent: 🎼 **Complete eLearning Package!** Get "Sight-Singing for the 21st Century," plus bonus eBooks "How to Write YOUR Songs Down" and "Become a Better Songwriter" + 1 year Mastermind access. **$208 value for only ${discount_price}!** That's 87% off!
-MessageConditions: !is_member && visit_count >= 3
+MessageConditions: !is_member && quiz_taken
 
 ---
 
@@ -238,7 +238,7 @@ MessageName: transformation
 MessageType: auto
 MessageStyle: card
 MessageContent: 🚀 Imagine: **No more sight-singing anxiety.** No more holding back at jam sessions. No more feeling musically illiterate. Feel powerful, in charge, creatively free, confident, and connected to the history of music and composition!
-MessageConditions: !is_member && visit_count >= 4
+MessageConditions: !is_member && lesson_viewed
 
 ---
 
@@ -247,7 +247,7 @@ MessageName: professional_benefits
 MessageType: auto
 MessageStyle: card
 MessageContent: 💼 **Professional-level musicianship:** Compose more complex works with a clear connection between imagination and the written page. Stop making excuses about being a "natural" musician - become a complete musician!
-MessageConditions: !is_member && visit_count >= 5
+MessageConditions: !is_member && lesson_viewed && message_count >= 5
 
 ---
 
@@ -258,7 +258,7 @@ MessageName: solfeggio_purchase_thanks
 MessageType: auto
 MessageStyle: feature
 MessageContent: 🎊 **Congratulations, {name}!** You now have full access to Simplified Solfeggio! Your complete eLearning package includes all eBooks, the Michel Hand of Music instruction, and Mastermind group access. From this moment forward, music-making becomes a joy instead of a challenge!
-MessageConditions: is_member && phase == sale
+MessageConditions: is_member && first_message_after_purchase
 
 ---
 
@@ -269,7 +269,7 @@ MessageName: solfeggio_member_welcome
 MessageType: auto
 MessageStyle: feature
 MessageContent: 🎹 **Ready to practice, {name}?** All resources are at your fingertips. Continue with the Michel Hand lessons, rhythm exercises, or explore the bonus songwriting materials.
-MessageConditions: is_member && phase == content
+MessageConditions: is_member && !first_message_after_purchase
 
 ---
 
@@ -302,7 +302,7 @@ MessageName: hand_practice
 MessageType: auto
 MessageStyle: card
 MessageContent: ✋ **Daily Hand Practice:** Draw the piano on your hand for 2 minutes every day. This kinesthetic practice builds neural pathways that make sight-singing automatic. Your hand IS your musical reference - always with you!
-MessageConditions: is_member && lesson_progress >= 2
+MessageConditions: is_member && lesson_viewed
 
 ---
 
@@ -311,7 +311,7 @@ MessageName: mastermind_access
 MessageType: auto
 MessageStyle: pill
 MessageContent: 👥 **Mastermind Group:** Connect with fellow musicians on the same journey! Share your progress, ask questions, and get feedback. Your year of Mastermind access is included!
-MessageConditions: is_member && lesson_progress >= 3
+MessageConditions: is_member && lessons_completed >= 3
 
 ---
 
@@ -329,6 +329,6 @@ MessageName: struggle_to_mastery
 MessageType: auto
 MessageStyle: feature
 MessageContent: 🦋 **Your Transformation:** From feeling insecure about sight-singing to confidently reading any music. From scribbling ideas you'll forget to properly notating your compositions. This is what Simplified Solfeggio delivers!
-MessageConditions: is_member && visit_count >= 5
+MessageConditions: is_member && returning_user
 
 ---
