@@ -35,7 +35,7 @@
  * │  .my-button svg { width: 20px; height: 20px; display: block; }          │
  * ├─────────────────────────────────────────────────────────────────────────┤
  * │  CSS Theme (flosc-theme.css):                                           │
- * │  .my-button { color: var(--some-color); }  /* EXPLICIT color */        │
+ * │  .my-button { color: var(--some-color); }  -- EXPLICIT color --        │
  * │  .my-button:hover { color: var(--hover-color); }                        │
  * └─────────────────────────────────────────────────────────────────────────┘
  * 
