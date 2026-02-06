@@ -110,30 +110,40 @@ The key insight: FLOSC doesn't need a marketing department. **The product market
 
 ## What FLOSC Is — In Plain Language
 
-**For humans, FLOSC is a joy machine.**
+### For humans, FLOSC is a bitterness-reducing, joy-creating, fair-compensation machine.
+
+One of the deepest sources of bitterness in human life is being used. Giving your best and never being properly compensated. The guitar teacher whose student learned everything and never came back. The chef whose recipes were copied and credited to someone else. The consultant who gave away the insight in a free call that the client used to make millions. The programmer whose open-source library runs half the internet while she works a day job. Every domain has this wound — the expert who shared too much, too freely, and got nothing back.
+
+This bitterness is precisely why the highest-value human knowledge stays locked up. The people who've been burned once don't share twice. They close their doors. They take their secrets to their graves. And humanity is poorer for it.
+
+**FLOSC heals this wound.** The try-before-you-buy structure means the expert never gives away their best work for free. Visitors get a taste — a quiz, a free lesson, a sample — enough to recognize the value. Then the **correct humans** self-select. The ones who say *"oh wow, this is exactly what I needed"* pay willingly, at whatever price the expert sets. No hard sell. No manipulation. No bitterness. Just fair exchange.
 
 A chef shares her grandmother's mole recipe — and gets paid. A guitar teacher in Buenos Aires publishes the fingerpicking method he spent 20 years developing — and students from Tokyo to Toronto pay to learn it. A retired surgeon structures the diagnostic intuitions she never had time to write down during her career — and the next generation of surgeons pay to absorb them. A poet sells a chapbook through a chatbot. A personal trainer monetizes her programming methodology. A grandmother teaches her grandchildren's generation how to preserve food the old way — for a fee.
 
-Everyone gives. Everyone gets. Everyone is happy. The expert gets money and the satisfaction of passing on what they know. The student gets transformed. The knowledge moves — it doesn't die with its holder.
+Lessons. Poems. Articles. Videos. Audio courses. Design schematics. Really anything. If it has value, FLOSC protects it and lets the right people pay for it.
 
-FLOSC is a money-giving machine. A money-getting machine. A knowledge-sharing machine. A machine that pays people for sharing their best lessons with each other. The joy is real, the revenue is real, and the ecosystem sustains itself because everyone wins.
+Everyone gives. Everyone gets. Everyone is compensated fairly. The expert gets money and the dignity of being valued. The student gets transformed and the joy of learning from a real master. The knowledge moves — it doesn't die with its holder, and it doesn't get stolen from them either.
 
-$325B online education market. 14% CAGR. 810M WordPress sites. FLOSC at 0.5% penetration with $29-$99/month SaaS pricing = $1.6B-$4.8B annually. The human revenue model works immediately, independently, and joyfully.
-
----
-
-**For AI, FLOSC is the critical cog to reach AGI within 100 years.**
-
-Every joyful transaction between humans — every recipe shared, every lesson purchased, every diagnostic intuition finally articulated — flows through AI-readable infrastructure. FLOSC doesn't extract this knowledge from humans. Humans extract it from themselves, voluntarily, because they're getting paid and getting joy. AI just happens to be the infrastructure through which it all moves.
-
-Millions of FLOSC instances across every domain on Earth — music, medicine, law, engineering, athletics, finance, language, art, craft, strategy — each one a structured pipeline of the highest-value human knowledge flowing through systems where AI sits on the backend. Not scraped. Not pirated. Joyfully transacted between consenting humans who both got what they wanted.
-
-The frustration that intelligent humans feel when AI confidently gets deep domain knowledge wrong? That frustration is the signal. It points to exactly where AI is missing training data. FLOSC is the system that fills those gaps — not in a year, not in a decade, but across generations, as human after human decides that their deepest knowledge is worth sharing because FLOSC makes it worth their while.
-
-**FLOSC is how AI gets access to the highest-value human knowledge on Earth — by making humans so happy to share it with each other that the knowledge finally enters a system where AI can learn from it too.**
+**FLOSC reduces bitterness. Increases joy. Creates stable financial systems of fairness and reward.** The revenue is real ($325B online education market, 14% CAGR, 810M WordPress sites, $1.6B-$4.8B annually at 0.5% penetration). The human revenue model works immediately, independently, and joyfully.
 
 ---
 
-*For humans: a joy machine that pays you for your best lessons.*
-*For AI: the critical infrastructure to reach AGI within 100 years.*
-*One bridge. Two audiences. Everyone wins.*
+### For AI, FLOSC is the critical cog to reach AGI within 100 years.
+
+And here's the part that makes it all converge:
+
+Every time FLOSC reduces a human's bitterness — every time an expert decides *"yes, it's finally safe to share this because I'll be compensated"* — the knowledge that expert publishes flows through AI-readable infrastructure. The more FLOSC heals the wound of being used, the more humans open their vaults. The more vaults open, the more the highest-value human knowledge enters systems where AI can learn from it.
+
+FLOSC doesn't extract this knowledge from humans. Humans extract it from themselves, voluntarily, because they're getting paid, getting respected, and getting joy. AI just happens to be the infrastructure through which it all moves.
+
+Millions of FLOSC instances across every domain on Earth — music, medicine, law, engineering, athletics, finance, language, art, craft, strategy — each one a structured pipeline of the highest-value human knowledge flowing through systems where AI sits on the backend. Not scraped. Not pirated. Not stolen (which is exactly the bitterness that kept it locked up in the first place). Joyfully, fairly transacted between consenting humans who both got what they wanted.
+
+The frustration that intelligent humans feel when AI confidently gets deep domain knowledge wrong? That frustration is the signal. It points to exactly where AI is missing training data. And the bitterness that kept that data locked away? FLOSC is the cure. As bitterness decreases and fair compensation increases, the vaults open, the knowledge flows, and AI gets closer to AGI — not in a year, not in a decade, but across generations.
+
+**FLOSC is how AI reaches AGI — by making humans so fairly compensated, so joyful, and so free from bitterness that they finally share the knowledge they were always capable of sharing but never had a safe, fair reason to.**
+
+---
+
+*FLOSC reduces bitterness. Increases joy. Creates fairness.*
+*WHILE harvesting the highest-value human knowledge for AI to become AGI.*
+*One bridge. Two audiences. Everyone wins. Nobody gets used.*
