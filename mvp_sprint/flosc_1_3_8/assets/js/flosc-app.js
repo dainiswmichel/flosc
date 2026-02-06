@@ -1388,7 +1388,7 @@ class floscApp {
 
         // Button click handlers
         // v9.1.1: Track listeners for cleanup
-        container.querySelectorAll('button.flosc-style-pill, button.flosc-style-chip, button.flosc-style-button, button.flosc-style-card').forEach(btn => {
+        container.querySelectorAll('button.flosc-style-pill, button.flosc-style-chip, button.flosc-style-button, button.flosc-style-card, button.flosc-style-feature').forEach(btn => {
             const handler = () => {
                 const msgName = btn.dataset.message;
                 this.floscHandleUserAutoPrompt(msgName);
