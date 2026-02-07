@@ -4417,6 +4417,8 @@ Example good response:
         // Check if already has access (webhook might have already processed)
         $access_manager = $this->sale_manager->access();
         if ($access_manager->has_offer($user_id, $offer_id)) {
+            // v1.4.6: Still set transient so post-purchase greeting shows on reload
+            set_transient('flosc_just_purchased_' . $user_id, true, 300);
             return new WP_REST_Response([
                 'success' => true,
                 'message' => 'Access already granted',
@@ -4459,6 +4461,19 @@ Example good response:
         ];
         
         $access_manager->grant_from_offer($user_id, $offer, $transaction);
+        
+        // v1.4.6: Set transient so chatbot shows post-purchase greeting on reload
+        set_transient('flosc_just_purchased_' . $user_id, true, 300);
+        
+        // v1.4.6: Fire purchase_completed for any listeners (e.g. FLOSC_Member_Access)
+        do_action('flosc_purchase_completed', $user_id, [
+            'offer_id' => $offer_id,
+            'grants_level' => $offer['grants']['level'] ?? 'member',
+            'provider' => 'stripe',
+            'transaction_id' => $payment_intent['id'],
+            'amount' => $payment_intent['amount'],
+            'timestamp' => time(),
+        ]);
         
         return new WP_REST_Response([
             'success' => true,

@@ -1941,6 +1941,11 @@ class floscApp {
     mountInlineStripeElement(offerId, price) {
         if (!this.stripe) {
             console.warn('[FLOSC-OFFER] Stripe not initialized');
+            // v1.4.6: Show user-facing error instead of silent failure
+            const mountPoint = document.getElementById(`flosc-inline-card-${offerId}`);
+            if (mountPoint) {
+                mountPoint.innerHTML = '<div style="color: #dc2626; padding: 10px; text-align: center; font-size: 14px;">Payment is temporarily unavailable. Please try again later.</div>';
+            }
             return;
         }
         
@@ -3001,15 +3006,21 @@ class floscApp {
     async storeQuizResults(score) {
         try {
             // Store in session/localStorage
+            // v1.4.6: Use 'flosc_quiz_result' key to match checkPendingQuizResults()
+            const correct = this.quiz.answers.filter(a => a.correct).length;
+            const total = this.quiz.answers.length;
             const quizResult = {
                 id: this.quiz.id,
                 score: score,
+                correct: correct,
+                total: total,
                 answers: this.quiz.answers,
                 completedAt: this.quiz.completedAt,
-                duration: this.quiz.completedAt - this.quiz.startedAt
+                duration: this.quiz.completedAt - this.quiz.startedAt,
+                timestamp: Date.now()
             };
 
-            localStorage.setItem('flosc_last_quiz', JSON.stringify(quizResult));
+            localStorage.setItem('flosc_quiz_result', JSON.stringify(quizResult));
 
             // Send to server if available
             await fetch(`${this.config.apiUrl}/quiz-result`, {
@@ -3339,8 +3350,10 @@ class floscApp {
         console.log('[FLOSC SSO] Initiating SSO with:', provider);
         
         // Add redirect_to parameter so user comes back here
+        // v1.4.6: Use & if URL already has query params (e.g. non-pretty permalinks)
         const redirectTo = window.location.href;
-        const fullAuthUrl = `${authUrl}?redirect_to=${encodeURIComponent(redirectTo)}`;
+        const separator = authUrl.includes('?') ? '&' : '?';
+        const fullAuthUrl = `${authUrl}${separator}redirect_to=${encodeURIComponent(redirectTo)}`;
         
         // Redirect to SSO provider
         window.location.href = fullAuthUrl;
@@ -4491,6 +4504,18 @@ Purchased: ${ctx.purchased}
         
         if (this.user?.justCompletedQuiz) {
             this.ivr.context.first_message_after_quiz = true;
+            this.checkAutoMessages();
+        }
+        
+        // v1.4.6: Check if user just logged in (transient set by wp_login hook)
+        if (this.user?.justLoggedIn) {
+            this.ivr.context.first_message_after_login = true;
+            this.checkAutoMessages();
+        }
+        
+        // v1.4.6: Check if user just completed a purchase (transient set by complete_purchase/webhook)
+        if (this.user?.justPurchased) {
+            this.ivr.context.first_message_after_purchase = true;
             this.checkAutoMessages();
         }
     }

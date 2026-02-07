@@ -51,3 +51,6 @@ build/
 *.bak
 *.old
 *-legacy.php
+*.zip
+.DS_Store
+**/.DS_Store
