@@ -1,0 +1,63 @@
+/* FLOSC Light Theme (v1.4.6) — Ultra Pro Edition
+ * ================================================
+ * Refined warm-neutral palette with premium blue accents.
+ * Soft depth, generous whitespace, subtle glass effects.
+ */
+:root {
+    /* ─── Global ──────────────────────────────── */
+    --flosc-bg: #fafafa;
+    --flosc-text: #18181b;
+    --flosc-text-muted: #71717a;
+    --flosc-border: #e4e4e7;
+    --flosc-accent: #2563eb;
+    --flosc-accent-hover: #1d4ed8;
+    --flosc-accent-subtle: rgba(37, 99, 235, 0.06);
+
+    /* ─── User Message ────────────────────────── */
+    --flosc-user-message-bg: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    --flosc-user-message-text: #ffffff;
+    --flosc-user-message-radius: 20px 20px 4px 20px;
+    --flosc-user-avatar-bg: #2563eb;
+    --flosc-user-avatar-text: #ffffff;
+
+    /* ─── Assistant Message ────────────────────── */
+    --flosc-assistant-message-bg: transparent;
+    --flosc-assistant-message-text: #18181b;
+    --flosc-assistant-message-border: none;
+    --flosc-assistant-message-radius: 0;
+    --flosc-assistant-avatar-bg: #f4f4f5;
+    --flosc-assistant-avatar-text: #52525b;
+
+    /* ─── Input ────────────────────────────────── */
+    --flosc-input-bg: #fafafa;
+    --flosc-input-field-bg: #ffffff;
+    --flosc-input-field-border: #e4e4e7;
+    --flosc-input-field-text: #18181b;
+    --flosc-input-placeholder: #a1a1aa;
+    --flosc-send-btn-bg: #2563eb;
+    --flosc-send-btn-text: #ffffff;
+
+    /* ─── Sidebar ──────────────────────────────── */
+    --flosc-sidebar-bg: #ffffff;
+    --flosc-sidebar-text: #3f3f46;
+    --flosc-sidebar-text-muted: #71717a;
+    --flosc-sidebar-hover: #f4f4f5;
+    --flosc-sidebar-active: #eff6ff;
+    --flosc-sidebar-border: #e4e4e7;
+
+    /* ─── Pills / Autoprompts ──────────────────── */
+    --flosc-pill-bg: #ffffff;
+    --flosc-pill-text: #3f3f46;
+    --flosc-pill-border: #e4e4e7;
+    --flosc-pill-hover-bg: #eff6ff;
+    --flosc-pill-hover-text: #2563eb;
+    --flosc-pill-hover-border: #93c5fd;
+
+    /* ─── Code ─────────────────────────────────── */
+    --flosc-code-bg: #f4f4f5;
+    --flosc-code-text: #18181b;
+
+    /* ─── Scrollbar ────────────────────────────── */
+    --flosc-scrollbar-thumb: #d4d4d8;
+    --flosc-scrollbar-thumb-hover: #a1a1aa;
+}
