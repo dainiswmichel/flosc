@@ -943,6 +943,21 @@ The {product_name} Team";
      * v1.4.3: Add FLOSC post visibility meta box to post editor
      */
     public function flosc_add_post_visibility_meta_box() {
+        // v1.4.7: Only show on posts that are in a FLOSC-protected category
+        global $post;
+        if (!$post || !$post->ID) return;
+        
+        $categories = wp_get_post_categories($post->ID);
+        $in_protected = false;
+        foreach ($categories as $cat_id) {
+            if (get_term_meta($cat_id, '_flosc_protected', true) === 'yes') {
+                $in_protected = true;
+                break;
+            }
+        }
+        
+        if (!$in_protected) return;
+        
         add_meta_box(
             'flosc_post_visibility',
             '🔐 FLOSC Content Access',
@@ -959,16 +974,13 @@ The {product_name} Team";
     public function flosc_render_post_visibility_meta_box($post) {
         wp_nonce_field('flosc_post_visibility_nonce', 'flosc_post_visibility_nonce');
         
-        $visibility = get_post_meta($post->ID, '_flosc_post_visibility', true) ?: 'default';
-        $is_public = get_post_meta($post->ID, '_flosc_public_post', true) === 'yes';
+        $is_public_override = get_post_meta($post->ID, '_flosc_public_post', true) === 'yes';
         
-        // Check if post is in a protected category
+        // Find the protected category name for display
         $categories = wp_get_post_categories($post->ID);
-        $in_protected = false;
         $protected_cat_name = '';
         foreach ($categories as $cat_id) {
             if (get_term_meta($cat_id, '_flosc_protected', true) === 'yes') {
-                $in_protected = true;
                 $cat = get_category($cat_id);
                 $protected_cat_name = $cat ? $cat->name : '';
                 break;
@@ -976,35 +988,20 @@ The {product_name} Team";
         }
         ?>
         <style>
-            .flosc-post-visibility-meta-box label { display: block; margin: 8px 0 4px; font-weight: 500; }
-            .flosc-post-visibility-meta-box select { width: 100%; }
             .flosc-post-visibility-meta-box .flosc-description { color: #666; font-size: 12px; margin-top: 4px; }
-            .flosc-post-visibility-meta-box .flosc-public-post { margin-top: 12px; padding-top: 12px; border-top: 1px solid #ddd; }
             .flosc-post-visibility-meta-box .flosc-protected-notice { background: #fff3cd; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-size: 12px; }
         </style>
         <div class="flosc-post-visibility-meta-box">
-            <?php if ($in_protected): ?>
             <div class="flosc-protected-notice">
-                ⚠️ In protected category: <strong><?php echo esc_html($protected_cat_name); ?></strong>
+                🔒 Protected by FLOSC category: <strong><?php echo esc_html($protected_cat_name); ?></strong>
             </div>
-            <?php endif; ?>
+            <p class="flosc-description">This post is hidden from public view because it belongs to a FLOSC-protected category.</p>
             
-            <label for="flosc_post_visibility">Visibility</label>
-            <select name="flosc_post_visibility" id="flosc_post_visibility">
-                <option value="default" <?php selected($visibility, 'default'); ?>>Default (use category setting)</option>
-                <option value="public" <?php selected($visibility, 'public'); ?>>Public (everyone can access)</option>
-                <option value="preview" <?php selected($visibility, 'preview'); ?>>Preview (show first 30%)</option>
-                <option value="teaser" <?php selected($visibility, 'teaser'); ?>>Teaser (show excerpt only)</option>
-                <option value="hidden" <?php selected($visibility, 'hidden'); ?>>Hidden (members only)</option>
-            </select>
-            <p class="flosc-description">Override category-level protection for this post.</p>
-            
-            <div class="flosc-public-post">
+            <div style="margin-top: 12px;">
                 <label>
-                    <input type="checkbox" name="flosc_public_post" value="yes" <?php checked($is_public); ?>>
-                    <strong>Public Post</strong> - Full content visible to everyone (with chat CTA)
+                    <input type="checkbox" name="flosc_public_post" value="yes" <?php checked($is_public_override); ?>>
+                    Override FLOSC category content protection and show the post in accordance with its WordPress settings.
                 </label>
-                <p class="flosc-description">Use for free sample lessons that should be publicly accessible.</p>
             </div>
         </div>
         <?php
@@ -1028,22 +1025,10 @@ The {product_name} Team";
             return;
         }
         
-        // Save visibility
-        $visibility = sanitize_text_field($_POST['flosc_post_visibility'] ?? 'default');
-        if (in_array($visibility, ['default', 'public', 'preview', 'teaser', 'hidden'])) {
-            if ($visibility === 'default') {
-                delete_post_meta($post_id, '_flosc_post_visibility');
-            } else {
-                update_post_meta($post_id, '_flosc_post_visibility', $visibility);
-            }
-        }
-        
-        // Save public post flag
+        // v1.4.7: Simplified — just a public override checkbox
         $is_public = isset($_POST['flosc_public_post']) && $_POST['flosc_public_post'] === 'yes';
         if ($is_public) {
             update_post_meta($post_id, '_flosc_public_post', 'yes');
-            // Public post = public visibility
-            update_post_meta($post_id, '_flosc_post_visibility', 'public');
         } else {
             delete_post_meta($post_id, '_flosc_public_post');
         }
@@ -1408,6 +1393,8 @@ The {product_name} Team";
                 'primary_color' => $flow['product']['primary_color'] ?? '#4f46e5',
                 'share_text' => $flow['product']['share_text'] ?? '',
                 'flow_id' => $flow['id'],
+                'price' => $flow['product']['price'] ?? get_option('flosc_product_price', '25'),
+                'currency_symbol' => $flow['product']['currency_symbol'] ?? get_option('flosc_currency_symbol', '$'),
             ];
         }
         
@@ -1420,6 +1407,8 @@ The {product_name} Team";
             'primary_color' => get_option('flosc_primary_color', '#4f46e5'),
             'share_text' => get_option('flosc_share_text', 'Check out this amazing app!'),
             'flow_id' => 'default',
+            'price' => get_option('flosc_product_price', '25'),
+            'currency_symbol' => get_option('flosc_currency_symbol', '$'),
         ];
     }
 
@@ -5553,6 +5542,12 @@ MD;
 
     // v9.2.3: Import IVR messages to database on first activation
     flosc_import_ivr_to_database(false); // Execute import (not preview)
+
+    // v1.4.7: Auto-protect flosc_sample_data category
+    $sample_cat = get_category_by_slug('flosc_sample_data');
+    if ($sample_cat) {
+        update_term_meta($sample_cat->term_id, '_flosc_protected', 'yes');
+    }
 
     // Flush rewrite rules
     flush_rewrite_rules();

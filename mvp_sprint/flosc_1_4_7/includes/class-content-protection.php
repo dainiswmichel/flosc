@@ -1,24 +1,23 @@
 <?php
 /**
  * FLOSC Content Protection
- * Handles category-level protection and post-level visibility tiers
+ * Handles category-level protection and post-level visibility
  * 
  * CATEGORY PROTECTION (term meta):
- * - _flosc_protected: 'yes' = all posts in category are protected
- * - _flosc_required_level: 'samplecourse' = membership level required
+ * - _flosc_protected: 'yes' = all posts in category are hidden from public
  * 
- * POST VISIBILITY (post meta):
- * - _flosc_post_visibility: 'hidden' | 'teaser' | 'preview' | 'public'
- *   - hidden: members only (no content shown to non-members)
- *   - teaser: title + excerpt shown, rest redirects to chatbot
- *   - preview: content up to <!--flosc_read_more--> shown, rest redirects to chatbot
- *   - public: full content shown (admin encouraged to add CTA)
- * - _flosc_public_post: 'yes' = public post with chat CTA
+ * POST OVERRIDE (post meta):
+ * - _flosc_public_post: 'yes' = override FLOSC category protection,
+ *   show per WordPress settings
  * 
  * RESOLUTION ORDER:
- * 1. Post meta _flosc_post_visibility (if set, use it)
- * 2. Category is protected → default to 'hidden'
- * 3. No protection → 'public'
+ * 1. Post has _flosc_public_post = 'yes' → FLOSC steps aside
+ * 2. Category is protected → hidden (content filtered, excluded from queries)
+ * 3. No protection → public
+ * 
+ * v1.4.7: Added pre_get_posts to hide protected posts from archives/feeds/search
+ * v1.4.7: Auto-protect flosc_sample_data category on first run
+ * v1.4.7: Simplified meta box — single override checkbox
  * 
  * @since 1.0.1
  */
@@ -42,6 +41,140 @@ class FLOSC_Content_Protection {
         
         // Hook into the_excerpt for teaser tier
         add_filter('get_the_excerpt', [$this, 'filter_excerpt'], 20, 2);
+        
+        // v1.4.7: Hide protected-category posts from public queries (archives, feeds, search)
+        add_action('pre_get_posts', [$this, 'hide_protected_from_public_queries']);
+        
+        // v1.4.7: Auto-protect flosc_sample_data category (runs once, stores flag in options)
+        add_action('init', [$this, 'maybe_auto_protect_sample_category'], 20);
+    }
+    
+    /**
+     * v1.4.7: Hide posts in protected categories from public queries
+     * 
+     * Excludes protected-category posts from archives, feeds, and search
+     * unless the post has _flosc_public_post override set to 'yes'.
+     * Skips admin, single post views, and users with manage_options.
+     * 
+     * @param WP_Query $query
+     */
+    public function hide_protected_from_public_queries($query) {
+        // Only modify public front-end queries
+        if (is_admin() || !$query->is_main_query()) {
+            return;
+        }
+        
+        // Don't filter singular post views (content protection handles those)
+        if ($query->is_singular()) {
+            return;
+        }
+        
+        // Admins see everything
+        if (current_user_can('manage_options')) {
+            return;
+        }
+        
+        // Collect all protected category IDs
+        $protected_cat_ids = $this->get_protected_category_ids();
+        
+        if (empty($protected_cat_ids)) {
+            return;
+        }
+        
+        // Find posts in protected categories that have the public override
+        $override_post_ids = get_posts([
+            'post_type'      => 'post',
+            'post_status'    => 'publish',
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+            'meta_key'       => '_flosc_public_post',
+            'meta_value'     => 'yes',
+            'category__in'   => $protected_cat_ids,
+        ]);
+        
+        // Exclude protected categories from the query
+        $existing_cat_not_in = $query->get('category__not_in');
+        if (!is_array($existing_cat_not_in)) {
+            $existing_cat_not_in = [];
+        }
+        $query->set('category__not_in', array_merge($existing_cat_not_in, $protected_cat_ids));
+        
+        // Re-include override posts via post__in (merge with existing if any)
+        if (!empty($override_post_ids)) {
+            // We can't use post__in with category__not_in directly,
+            // so we use a post__not_in exclusion approach instead:
+            // Get ALL post IDs in protected categories that do NOT have the override
+            $hidden_post_ids = get_posts([
+                'post_type'      => 'post',
+                'post_status'    => 'publish',
+                'posts_per_page' => -1,
+                'fields'         => 'ids',
+                'category__in'   => $protected_cat_ids,
+                'meta_query'     => [
+                    'relation' => 'OR',
+                    [
+                        'key'     => '_flosc_public_post',
+                        'compare' => 'NOT EXISTS',
+                    ],
+                    [
+                        'key'     => '_flosc_public_post',
+                        'value'   => 'yes',
+                        'compare' => '!=',
+                    ],
+                ],
+            ]);
+            
+            // Remove category exclusion, use post exclusion instead
+            $query->set('category__not_in', $existing_cat_not_in);
+            
+            if (!empty($hidden_post_ids)) {
+                $existing_not_in = $query->get('post__not_in');
+                if (!is_array($existing_not_in)) {
+                    $existing_not_in = [];
+                }
+                $query->set('post__not_in', array_merge($existing_not_in, $hidden_post_ids));
+            }
+        }
+    }
+    
+    /**
+     * v1.4.7: Get all protected category IDs (cached per request)
+     * 
+     * @return array of category IDs
+     */
+    public function get_protected_category_ids() {
+        static $cached = null;
+        if ($cached !== null) {
+            return $cached;
+        }
+        
+        $all_categories = get_categories(['hide_empty' => false]);
+        $cached = [];
+        
+        foreach ($all_categories as $cat) {
+            if ($this->is_category_protected($cat->term_id)) {
+                $cached[] = $cat->term_id;
+            }
+        }
+        
+        return $cached;
+    }
+    
+    /**
+     * v1.4.7: Auto-protect flosc_sample_data category on first run
+     * Uses an option flag so this only runs once per site.
+     */
+    public function maybe_auto_protect_sample_category() {
+        if (get_option('flosc_sample_data_auto_protected')) {
+            return;
+        }
+        
+        $sample_cat = get_category_by_slug('flosc_sample_data');
+        if ($sample_cat) {
+            update_term_meta($sample_cat->term_id, '_flosc_protected', 'yes');
+        }
+        
+        update_option('flosc_sample_data_auto_protected', '1');
     }
     
     /**

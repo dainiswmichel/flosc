@@ -17,7 +17,7 @@
                 }
             });
             localStorage.setItem('flosc_js_version', FLOSC_JS_VERSION);
-            console.log('FLOSC v9.3.3: Storage cleared - fresh session');
+            console.log('FLOSC v1.4.7: Storage cleared - fresh session');
         }
     } catch(e) {
         console.warn('FLOSC: Storage check failed', e);
@@ -1011,6 +1011,26 @@ class floscApp {
         if (existingMessages.length === 0) {
             console.log('FLOSC: Chat is empty - showing welcome message');
             
+            // v1.4.7: Check URL params for contextual greeting (e.g., ?from=lesson&title=...)
+            const urlParams = new URLSearchParams(window.location.search);
+            const fromParam = urlParams.get('from');
+            const titleParam = urlParams.get('title');
+            
+            if (fromParam === 'lesson' && titleParam) {
+                console.log('[FLOSC] URL param greeting for lesson:', titleParam);
+                const decodedTitle = decodeURIComponent(titleParam);
+                this.addMessage('assistant', `Hey, you're trying to find out more about ${decodedTitle}, right? Ask me anything!`);
+                this.hideTyping();
+                this.floscShowUserAutoPrompts();
+                this.startInactivityTimer();
+                
+                // Clean URL params without reload
+                const cleanUrl = window.location.pathname + window.location.hash;
+                window.history.replaceState({}, '', cleanUrl);
+                
+                return;
+            }
+            
             // Try to find a welcome message from IVR config
             let welcomeShown = false;
             const messages = Object.values(this.ivr.messages);
@@ -1650,6 +1670,21 @@ class floscApp {
         } catch (e) {
             console.warn('FLOSC: Could not track message', e);
         }
+    }
+
+    // MTS-2026-02-08: Bridge from handleAction('show_offer_*') to showOfferMessage()
+    // Called when an IVR pill/button uses Action: show_offer_<offerId>
+    showOffer(offerId) {
+        const offer = this.getOfferData(offerId);
+        const msg = {
+            offer_id: offerId,
+            content: offer?.description || offer?.name || 'Check out this special offer!',
+            display_format: offer?.display_format || 'card',
+            cta: offer?.cta || '🔓 Get Full Access Now',
+            price: offer?.display_price || '',
+            type: 'offer'
+        };
+        this.showOfferMessage(msg);
     }
 
     // MTS-2026-02-03: [OFFER-DISPLAY] Comprehensive offer display system
@@ -2338,7 +2373,11 @@ class floscApp {
                 this.openPersonalizedPath();
                 break;
             case 'resume_last_lesson':
+            case 'open_last_lesson':
                 this.resumeLastLesson();
+                break;
+            case 'open_quiz_library':
+                this.openQuizLibrary();
                 break;
             case 'open_support':
                 this.openSupport();
@@ -3369,6 +3408,11 @@ class floscApp {
 
     openPersonalizedPath() {
         window.location.href = this.config.pathUrl || '/my-path/';
+    }
+
+    // MTS-2026-02-08: Added to match IVR action open_quiz_library
+    openQuizLibrary() {
+        window.location.href = this.config.quizzesUrl || '/quizzes/';
     }
 
     resumeLastLesson() {

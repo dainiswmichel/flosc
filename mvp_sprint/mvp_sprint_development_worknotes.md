@@ -1,6 +1,77 @@
 # MVP Sprint Development Worknotes
 **Started:** 2026-02-02
-**Current Version:** 1.4.7 (SSO overhaul + funnel audit + state hardening)
+**Current Version:** 1.4.7 (SSO overhaul + funnel audit + content protection + state hardening)
+
+---
+
+## MTS-2026-02-08c - v1.4.7: Content Protection Simplification & Funnel Polish
+
+### Goal
+FLOSC category = hidden. Period. Single per-post override checkbox. Hide protected posts from public queries.
+
+### Changes Made
+
+**flosc.php:**
+- Meta box checkbox label updated to user's exact wording: "Override FLOSC category content protection and show the post in accordance with its WordPress settings."
+- Meta box only shows on posts in FLOSC-protected categories (already in place from prior edit)
+- Save handler simplified to checkbox-only (already in place from prior edit)
+- `flosc_activate()`: auto-protect `flosc_sample_data` category on activation
+
+**class-content-protection.php:**
+- Added `pre_get_posts` hook: `hide_protected_from_public_queries()` — excludes protected-category posts from archives, feeds, search. Respects `_flosc_public_post` override. Skips admin, singular, and `manage_options` users.
+- Added `get_protected_category_ids()` with static cache per request
+- Added `maybe_auto_protect_sample_category()` — runs once via `init` hook, sets `_flosc_protected = 'yes'` on `flosc_sample_data` category if it exists. Uses option flag `flosc_sample_data_auto_protected` to run only once.
+- Updated file header comments to reflect simplified model (no more tiers/levels for MVP)
+
+**flosc-app.js:**
+- Added URL param greeting in `startIVR()`: when `?from=lesson&title=X` is in URL, shows "Hey, you're trying to find out more about {title}, right? Ask me anything!" instead of default welcome
+- Cleans URL params after reading (replaceState) so refresh doesn't re-trigger
+
+### Verified
+- `get_product_config()` already has `price` and `currency_symbol` in both return paths — no fix needed
+- Version IIFE already shows v1.4.7 — no fix needed
+
+---
+
+## MTS-2026-02-08b - v1.4.7: End-to-End Funnel Audit & Fix List
+
+### Goal
+"Can I get all the way through FLOSC using default data at flosc.ai?"
+
+### Funnel Audit Results (7 Steps)
+
+| Step | Phase | What Happens | Status |
+|------|-------|-------------|--------|
+| 1. Arrival | Freeline | Visitor gets `freeline` phase, welcome + AutoPrompts display | ✅ WORKS |
+| 2. Quiz | Freeline | `open_quiz` action → quiz starts, runs, stores results in `flosc_quiz_result` localStorage | ✅ WORKS |
+| 3. Login Gate | Login | Email auth modal → `processEmailAuth()` → POST `/register-email` → reload → `checkPendingQuizResults()` | ✅ WORKS |
+| 4. Free Lesson | Offer | `requestFreeLesson()` → POST `/free-lesson` → phase changes to `offer` | ✅ WORKS |
+| 5. Offer Display | Offer | `showOfferMessage()` renders card/pill/banner/compact/featured/text | ⚠️ PARTIAL |
+| 6. Purchase | Sale | Sandbox + Stripe paths → grant access → reload | ✅ WORKS |
+| 7. Member Content | Content | Member gets `content` phase, sees member IVR messages | ✅ WORKS |
+
+**Verdict: The primary happy path works end-to-end.** One code bug in Step 5.
+
+### Bug: `showOffer()` missing method (P0 — crash)
+
+- **Location:** `flosc-app.js` line 2361
+- **Trigger:** IVR message with `Action: show_offer_oto_main` → `handleAction()` → `this.showOffer(offerId)` → TypeError
+- **Impact:** The default IVR data includes `offer_pill_001` with `Action: show_offer_oto_main`, which hits this crash path
+- **Fix:** Add `showOffer(offerId)` method that gets offer data and delegates to `showOfferMessage()`
+- **Status:** ☐ Not yet fixed
+
+### Not Blocking Funnel (defer)
+
+- Profile dropdown: HTML exists, CSS exists, zero JS handler — cosmetic, not funnel-blocking
+- Quiz score circle: 5 CSS classes missing — cosmetic
+- Login gate CSS: 5 classes missing — cosmetic  
+- Offer card CSS: 6 display formats, styles incomplete — cosmetic
+- Version-bump localStorage wipe: IIFE at top of file clears localStorage on version change — only triggers on deploy, low risk
+
+### Plan
+1. Fix `showOffer()` — add method, delegate to `showOfferMessage()`
+2. Test locally / user tests on flosc.ai
+3. Zip ONLY when user says so
 
 ---
 
