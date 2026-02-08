@@ -1,6 +1,171 @@
 # MVP Sprint Development Worknotes
 **Started:** 2026-02-02
-**Current Version:** 1.1.9 (custom domain mapping + offer system)
+**Current Version:** 1.4.7 (SSO overhaul + funnel audit + state hardening)
+
+---
+
+## MTS-2026-02-07/08 - v1.3.9 → v1.4.7: SSO Overhaul, Funnel Audit, State Hardening
+
+### Session Scope
+
+Massive session spanning v1.3.9 through v1.4.7. The focus shifted from general plugin development to **SSO (Social Login)**, **full funnel verification**, and **live deployment testing** on dainis.net.
+
+### Version Progression
+
+| Version | Focus |
+|---------|-------|
+| v1.3.9 | Pre-SSO baseline |
+| v1.4.0 | SSO architecture introduced (5 providers: Facebook, Google, Apple, Microsoft, LinkedIn) |
+| v1.4.1–v1.4.5 | Iterative SSO fixes, settings save bugs, admin UX |
+| v1.4.6 | BuddyBoss-aligned SSO fixes, full funnel audit, post-purchase flow fixes |
+| v1.4.7 | OAuth state validation hardening (nocache_headers, options fallback, debug logging) |
+
+---
+
+### What Was Built & Fixed (v1.4.0–v1.4.7)
+
+#### SSO / Social Login (5 Providers)
+
+**BuddyBoss Platform Pro** was studied as a reference implementation for OAuth2/SSO best practices. This guided the following fixes:
+
+| Provider | Fixes Applied |
+|----------|---------------|
+| **Facebook** | Upgraded to Graph API v19.0, added `appsecret_proof` on every request, fixed long-lived token exchange (`add_query_arg` instead of body in `wp_remote_get`), nested picture object extraction |
+| **Google** | Switched to v2 userinfo endpoint, explicit field requests |
+| **Apple** | Callback changed from GET-only to GET+POST (Apple uses `form_post`), `id_token` now read from `$token_data` parameter, private key saved with `sanitize_textarea_field()` to preserve PEM newlines |
+| **Microsoft** | Signature updated for PHP 8.x compatibility |
+| **LinkedIn** | Signature updated for PHP 8.x compatibility |
+
+**All 5 providers** received matching `get_user_info($access_token, $token_data = array())` signatures to prevent PHP 8.x fatal errors.
+
+#### OAuth2 Handler (class-oauth2-handler.php)
+
+- **Callback route** accepts both GET and POST methods (Apple requirement)
+- **`$token_data`** passed to `get_user_info()` so providers like Apple can read `id_token`
+- **v1.4.7:** `nocache_headers()` on authorize + callback endpoints to prevent caching layers from eating state transients
+- **v1.4.7:** State fallback — if `set_transient()` silently fails (object cache issues), state is also saved via `update_option()` and `verify_state()` checks both locations
+- **v1.4.7:** Debug logging throughout state generation and verification (`[FLOSC SSO]` prefix in error_log)
+
+#### Settings Save (admin/settings.php)
+
+- **Checkbox tab guard:** `if ($active_tab === 'sso')` — prevents loading any tab from mass-unchecking SSO provider checkboxes
+- **`flosc_*` save handler:** All `flosc_*` POST keys are now saved as options (covers SSO, payments, quiz, AI, etc.)
+- **Textarea sanitization:** Apple private key field uses `sanitize_textarea_field()` to preserve PEM newlines
+
+#### Admin UX (admin/sso.php)
+
+- **Save buttons** added at top-right (inline with heading) and after all provider cards — admins don't have to scroll through 5 providers to find Save
+
+#### SSO Manager (class-sso-manager.php)
+
+- Removed dead provider references
+- URL-safe separator for non-pretty permalink compatibility
+
+---
+
+### Full Funnel Audit (Quiz → Login → Offer → Sale → Content)
+
+Every stage of the FLOSC funnel was audited and verified:
+
+| Stage | Status | Fixes Applied |
+|-------|--------|---------------|
+| **Quiz** | ✅ Pass | MCQ localStorage key fixed: `flosc_last_quiz` → `flosc_quiz_result` to match `checkPendingQuizResults()` |
+| **Login** | ✅ Pass | JS now reads `this.user?.justLoggedIn` from PHP transient |
+| **Offer** | ✅ Pass | No changes needed |
+| **Sale** | ✅ Pass | No changes needed |
+| **Content** | ✅ Pass | No changes needed |
+
+#### Post-Purchase Flow (3 bugs fixed)
+
+The chatbot's post-purchase greeting ("Congratulations!") was not triggering reliably:
+
+1. **`complete_purchase()`** now sets `flosc_just_purchased_{user_id}` transient
+2. **`complete_purchase()`** now fires `flosc_purchase_completed` action hook
+3. **Early-return path** in `complete_purchase()` (when webhook already granted access) also sets the transient
+4. **Stripe webhook** `handle_payment_succeeded()` now sets transient + fires action
+5. **JS** reads `this.user?.justPurchased` and sets `first_message_after_purchase = true` in IVR context
+
+#### OSC Phase Transitions
+
+13/13 phase transition checks verified. One UX fix: missing Stripe publishable key now shows a user-facing error message instead of rendering an empty/broken checkout form.
+
+---
+
+### Live Testing on dainis.net
+
+v1.4.6 was deployed to dainis.net for real-world testing:
+
+| Test | Result | Notes |
+|------|--------|-------|
+| **Facebook SSO** | ❌ "URL Blocked" → ❌ "Invalid or expired authentication state" | First error fixed by adding callback URI in Facebook Developer Console. Second error addressed in v1.4.7 (state transient hardening). Not yet re-tested. |
+| **Google SSO** | ⏳ Not yet tested | Google Cloud Console configured with callback URI. Client secret may need regeneration. |
+| **Apple SSO** | ⏳ Not yet tested | Requires Apple Developer account setup (Team ID, Key ID, Service ID, private key). |
+| **Microsoft SSO** | ⏳ Not yet tested | Requires Azure AD app registration. |
+| **LinkedIn SSO** | ⏳ Not yet tested | Requires LinkedIn Developer app. |
+
+#### Facebook Developer Console Configuration
+
+- **App:** "Login to dainis.net" (App ID: 1236855604214182)
+- **App Domains:** dainis.net, www.dainis.net, flosc.ai
+- **Valid OAuth Redirect URIs:** `https://dainis.net/wp-json/flosc/v1/sso/callback/facebook`
+- **Use Strict Mode:** Yes
+- **Key lesson:** The callback URI goes in **Use Cases → Facebook Login → Settings → Valid OAuth Redirect URIs**, NOT in App Settings → Advanced → Authorize Callback URL
+
+#### Google Cloud Console Configuration
+
+- **Project:** "2025 Login to dainisdotnet"
+- **Client ID:** Web application for dainis.net
+- **Authorized redirect URIs:** `https://dainis.net/wp-json/flosc/v1/sso/callback/google`
+- **Status:** Configured but not yet tested end-to-end
+
+---
+
+### Git Status
+
+- **Commit:** `a4477d2` on `main`
+- **Message:** "FLOSC v1.4.7 — SSO fixes, funnel audit, state validation hardening"
+- **207 files committed** (v1.3.9, v1.4.0, v1.4.7 directories + modified v1.4.6 files)
+- **BuddyBoss:** Confirmed removed from workspace before push (paid 3rd party, never committed)
+- **.gitignore:** Updated to exclude `*.zip`, `.DS_Store`
+
+---
+
+### What's Next (Strategy)
+
+#### Immediate (Next Session)
+
+1. **Upload v1.4.7 to dainis.net** and re-test Facebook SSO
+   - The `nocache_headers()` + options fallback should fix the "Invalid or expired authentication state" error
+   - If it fails again, check `wp-content/debug.log` for `[FLOSC SSO]` entries
+   - Enable `WP_DEBUG` and `WP_DEBUG_LOG` in `wp-config.php` if not already set
+
+2. **Test Google SSO** on dainis.net
+   - Verify client secret is saved in FLOSC settings (regenerate in Google Cloud Console if lost)
+   - Add `https://dainis.net` to Authorized JavaScript origins in Google Cloud Console
+
+3. **Get at least Facebook + Google working** — these cover 90%+ of social login usage
+
+#### Short-Term (v1.4.8+)
+
+4. **Remove debug logging** from OAuth handler once SSO is confirmed working (or wrap in `WP_DEBUG` check)
+5. **Apple SSO setup** — requires Apple Developer Program ($99/yr), Service ID, private key generation
+6. **Microsoft + LinkedIn** — lower priority, configure when needed
+7. **SSO error UX** — consider showing provider-specific error messages instead of generic "Login Error" modal
+8. **Caching plugin compatibility** — if the site uses WP Super Cache, W3 Total Cache, or similar, add the FLOSC REST API endpoints to the cache exclusion list
+
+#### Medium-Term (v1.5.x)
+
+9. **SSO account linking UI** — let logged-in users connect/disconnect social accounts from their profile
+10. **flosc.ai deployment** — once SSO works on dainis.net, add flosc.ai callback URIs to all OAuth providers
+11. **Quiz → SSO → Purchase flow** end-to-end automated testing
+12. **Production hardening** — rate limiting on SSO endpoints, nonce expiration tuning, failed login attempt tracking
+
+#### Architecture Notes for Future Sessions
+
+- **Working directory:** `/Users/dainismichel/2026/flosc/mvp_sprint/flosc_1_4_7/`
+- **Do NOT zip until explicitly asked** — premature zipping was a mistake in this session
+- **Version iteration:** Each code change that needs testing should get a new version number before zipping
+- **BuddyBoss reference** was deleted from the workspace — if needed again, it's a paid plugin (BuddyBoss Platform Pro) and must never be committed to GitHub
 
 ---
 
