@@ -1,0 +1,12 @@
+# Development archives - 140 old versions, 380K+ lines
+# These fill Claude Code's context window and cause "Prompt is too long" errors
+flosc_development_archives/
+
+# Old MVP sprint versions (keep only the latest)
+mvp_sprint/flosc_1_4_0/
+mvp_sprint/flosc_1_4_1/
+mvp_sprint/flosc_1_4_2/
+mvp_sprint/flosc_1_4_3/
+mvp_sprint/flosc_1_4_4/
+mvp_sprint/flosc_1_4_5/
+mvp_sprint/flosc_1_4_6/
