@@ -1,15 +1,6 @@
-# Everything except mvp_sprint/ is reference/archive material
+# Only mvp_sprint/ is active development code
 flosc_development_archives/
 flosc_development_worknotes/
 flosc_styling_development/
 login_development/
 quiz_development/
-
-# Old MVP sprint versions (keep only the latest)
-mvp_sprint/flosc_1_4_0/
-mvp_sprint/flosc_1_4_1/
-mvp_sprint/flosc_1_4_2/
-mvp_sprint/flosc_1_4_3/
-mvp_sprint/flosc_1_4_4/
-mvp_sprint/flosc_1_4_5/
-mvp_sprint/flosc_1_4_6/
