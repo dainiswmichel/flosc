@@ -1,0 +1,120 @@
+/* FLOSC Light Theme (v1.4.5) - PREMIUM PALETTE */
+/* ============================================
+   Refined, warm-neutral palette with indigo accent.
+   Designed for readability and a premium SaaS feel.
+   ============================================ */
+:root {
+    /* ── Global ─────────────────────────────── */
+    --flosc-bg: #ffffff;
+    --flosc-text: #0f172a;
+    --flosc-text-muted: #64748b;
+    --flosc-border: #e2e8f0;
+    --flosc-accent: #4f46e5;
+    --flosc-accent-hover: #4338ca;
+    --flosc-accent-subtle: rgba(79, 70, 229, 0.08);
+
+    /* ── User Message ───────────────────────── */
+    --flosc-user-message-bg: #4f46e5;
+    --flosc-user-message-text: #ffffff;
+    --flosc-user-message-radius: 20px 20px 4px 20px;
+    --flosc-user-avatar-bg: #4f46e5;
+    --flosc-user-avatar-text: #ffffff;
+
+    /* ── Assistant Message ───────────────────── */
+    --flosc-assistant-message-bg: transparent;
+    --flosc-assistant-message-text: #0f172a;
+    --flosc-assistant-message-border: none;
+    --flosc-assistant-message-radius: 0;
+    --flosc-assistant-avatar-bg: #f1f5f9;
+    --flosc-assistant-avatar-text: #334155;
+
+    /* ── Input ───────────────────────────────── */
+    --flosc-input-bg: #ffffff;
+    --flosc-input-field-bg: #f8fafc;
+    --flosc-input-field-border: #e2e8f0;
+    --flosc-input-field-text: #0f172a;
+    --flosc-input-placeholder: #94a3b8;
+    --flosc-send-btn-bg: #4f46e5;
+    --flosc-send-btn-text: #ffffff;
+
+    /* ── Sidebar ─────────────────────────────── */
+    --flosc-sidebar-bg: #f8fafc;
+    --flosc-sidebar-text: #334155;
+    --flosc-sidebar-text-muted: #64748b;
+    --flosc-sidebar-hover: #f1f5f9;
+    --flosc-sidebar-active: #e2e8f0;
+    --flosc-sidebar-border: #e2e8f0;
+
+    /* ── Pills ───────────────────────────────── */
+    --flosc-pill-bg: #ffffff;
+    --flosc-pill-text: #334155;
+    --flosc-pill-border: #e2e8f0;
+    --flosc-pill-hover-bg: #f8fafc;
+    --flosc-pill-hover-text: #4f46e5;
+    --flosc-pill-hover-border: #4f46e5;
+
+    /* ── Cards ───────────────────────────────── */
+    --flosc-card-bg: #ffffff;
+    --flosc-card-text: #334155;
+    --flosc-card-border: #e2e8f0;
+    --flosc-card-hover-bg: #fafbff;
+    --flosc-card-hover-text: #4f46e5;
+    --flosc-card-hover-border: #4f46e5;
+    --flosc-card-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.06);
+    --flosc-card-hover-shadow: 0 4px 16px rgba(79, 70, 229, 0.10), 0 2px 4px rgba(15, 23, 42, 0.04);
+
+    /* ── Panels ──────────────────────────────── */
+    --flosc-panel-bg: rgba(248, 250, 252, 0.85);
+    --flosc-panel-border: rgba(226, 232, 240, 0.6);
+    --flosc-panel-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
+    --flosc-panel-header-text: #0f172a;
+    --flosc-panel-eyebrow-text: #64748b;
+    --flosc-panel-close-bg: rgba(255, 255, 255, 0.9);
+    --flosc-panel-close-border: rgba(226, 232, 240, 0.5);
+    --flosc-panel-close-text: #64748b;
+    --flosc-panel-close-hover-bg: #ffffff;
+    --flosc-panel-close-hover-border: #cbd5e1;
+
+    /* ── Code ─────────────────────────────────── */
+    --flosc-code-bg: #f1f5f9;
+    --flosc-code-text: #0f172a;
+
+    /* ── Content ──────────────────────────────── */
+    --flosc-content-link: #4f46e5;
+    --flosc-content-link-hover: #4338ca;
+    --flosc-content-blockquote-border: #4f46e5;
+    --flosc-content-blockquote-bg: rgba(79, 70, 229, 0.04);
+    --flosc-content-blockquote-text: #64748b;
+    --flosc-content-hr: #e2e8f0;
+    --flosc-content-table-border: #e2e8f0;
+    --flosc-content-table-header-bg: #f8fafc;
+    --flosc-content-table-stripe-bg: #fafbfc;
+    --flosc-content-list-marker: #94a3b8;
+
+    /* ── Quiz ─────────────────────────────────── */
+    --flosc-quiz-prompt-bg: #f8fafc;
+    --flosc-quiz-prompt-border: #e2e8f0;
+    --flosc-quiz-sequence-text: #0f172a;
+    --flosc-quiz-tab-bg: #ffffff;
+    --flosc-quiz-tab-border: #e2e8f0;
+    --flosc-quiz-tab-text: #64748b;
+    --flosc-quiz-tab-active-bg: #4f46e5;
+    --flosc-quiz-tab-active-text: #ffffff;
+    --flosc-quiz-input-bg: #ffffff;
+    --flosc-quiz-input-border: #e2e8f0;
+    --flosc-quiz-input-focus-border: #4f46e5;
+    --flosc-quiz-record-bg: #ef4444;
+    --flosc-quiz-record-hover-bg: #dc2626;
+    --flosc-quiz-stop-bg: #64748b;
+    --flosc-quiz-stop-hover-bg: #475569;
+    --flosc-quiz-waveform-bg: #f8fafc;
+    --flosc-quiz-success: #059669;
+    --flosc-quiz-warning: #d97706;
+    --flosc-quiz-error-bg: #fef2f2;
+    --flosc-quiz-error-text: #991b1b;
+    --flosc-quiz-error-border: #fecaca;
+
+    /* ── Scrollbar ────────────────────────────── */
+    --flosc-scrollbar-thumb: #cbd5e1;
+    --flosc-scrollbar-thumb-hover: #94a3b8;
+}
