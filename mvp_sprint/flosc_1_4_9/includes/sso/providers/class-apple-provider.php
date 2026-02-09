@@ -63,10 +63,37 @@ class Apple_Provider extends SSO_Provider_Base {
         
         parent::__construct();
         
-        // Load Apple-specific credentials
+        // Load Apple-specific credentials (global defaults; overridden per-flow at runtime)
         $this->team_id = get_option('flosc_sso_apple_team_id', '');
         $this->key_id = get_option('flosc_sso_apple_key_id', '');
         $this->private_key = get_option('flosc_sso_apple_private_key', '');
+    }
+    
+    /**
+     * v1.4.9: Set flow-specific Apple credentials (overrides global options)
+     * Extends the base set_flow_credentials to include Apple's extra fields.
+     *
+     * @param string $client_id    Flow-specific Client/Service ID
+     * @param string $client_secret Flow-specific Client Secret (unused for Apple, generated from keys)
+     * @param bool   $enabled      Whether Apple SSO is enabled for this flow
+     * @param string $team_id      Flow-specific Apple Team ID
+     * @param string $key_id       Flow-specific Apple Key ID
+     * @param string $private_key  Flow-specific Apple Private Key (.p8 contents)
+     */
+    public function set_flow_apple_credentials($client_id, $client_secret, $enabled, $team_id, $key_id, $private_key) {
+        // Set base credentials (client_id, client_secret, enabled)
+        $this->set_flow_credentials($client_id, $client_secret, $enabled);
+        
+        // Override Apple-specific fields
+        if (!empty($team_id)) {
+            $this->team_id = $team_id;
+        }
+        if (!empty($key_id)) {
+            $this->key_id = $key_id;
+        }
+        if (!empty($private_key)) {
+            $this->private_key = $private_key;
+        }
     }
     
     /**

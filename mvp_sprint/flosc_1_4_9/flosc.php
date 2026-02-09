@@ -4708,7 +4708,9 @@ Example good response:
                 $ivr_source = 'explicit:' . $ivr_file;
             } else {
                 // Log warning but continue to fallback
-                error_log('[FLOSC v1.3.8] IVR file not found: ' . $ivr_file . ' - falling back');
+                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                    error_log('[FLOSC v1.3.8] IVR file not found: ' . $ivr_file . ' - falling back');
+                }
             }
         }
         

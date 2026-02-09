@@ -1,6 +1,132 @@
 # MVP Sprint Development Worknotes
 **Started:** 2026-02-02
-**Current Version:** 1.4.8 (admin styling overhaul — WordPress-native)
+**Current Version:** 1.5.1 (SSO redirect fix)
+
+---
+
+## MTS-2026-02-09c - v1.5.1: SSO Redirect Fix for Custom Domains
+
+### Past
+Google SSO login from flosc.ai redirected users to dainis.net profile page instead of back to flosc.ai. Three root causes:
+1. SSO button JS captured `window.location.href` (the wp-login.php URL) as `redirect_to` — after callback, user bounced through wp-login.php → profile page
+2. SSO callback handler had no awareness of custom domains — returned users to slug-based URLs (`dainis.net/flosc/`) instead of configured custom domain (`flosc.ai`)
+3. flosc-app.php login links hardcoded `home_url(slug)` instead of using `flosc()->get_app_url()`
+
+### Present
+- `class-sso-manager.php`: SSO button JS now extracts `redirect_to` from URL query params (e.g. from `wp-login.php?redirect_to=https://flosc.ai/`) instead of capturing the login page URL itself. Falls back to `window.location.href` when no param exists.
+- `class-oauth2-handler.php`: Callback handler now unwraps wp-login.php URLs to extract inner `redirect_to`, and resolves slug-based URLs to custom domain via `flosc()->get_app_url()`.
+- `admin/flosc-app.php`: Both login links (header + login gate modal) now use `flosc()->get_app_url()` instead of `home_url(get_option('flosc_app_slug'))`.
+
+### Future
+- Facebook SSO pending their app review approval
+- Apple SSO needs testing once Google flow is confirmed working
+- May need similar custom domain awareness in `redirect_with_error()` for SSO error redirects
+
+### Files Changed (from 1.5.0)
+- `includes/sso/class-sso-manager.php` — SSO button redirect logic
+- `includes/sso/class-oauth2-handler.php` — callback redirect resolution
+- `admin/flosc-app.php` — login URL generation
+
+---
+
+## MTS-2026-02-09b - v1.5.0: Per-Flow Admin + Cleanup
+
+### Past
+Admin tabs were a mix of per-flow and global storage. Some tabs had been converted but sloppily — mismatched `id="flosc_"` attributes, stale pseudocode comments, extra closing parens in `esc_textarea()` calls causing PHP parse errors. ivr-messages.php and offers.php hadn't been converted at all. Dead product.php still in the tree. flosc-app.php had stale version labels in error_log calls.
+
+### Present
+- All 11 admin tabs fully per-flow (no global `get_option('flosc_*')` except genuinely global `flosc_protected_categories`)
+- Fixed 5 `'))` syntax errors across ai-knowledge.php (4) and payments.php (1)
+- Fixed id/for attributes across 7 tab files (`id="flosc_"` → `id="flow_"`)
+- Converted ivr-messages.php (14 reads, 12 writes, 1 delete → per-flow)
+- Converted offers.php CRUD handler (hidden flow_key field for init-hook context)
+- Updated pseudocode in ai-configuration.php, quiz.php, email.php to per-flow patterns
+- Deleted dead product.php
+- Fixed stale version labels in flosc-app.php error_log calls (v1.2.3/v1.0.7 → v1.5.0)
+
+### Future
+- 76 runtime `get_option('flosc_*')` calls in flosc.php and includes/*.php still read globally — need flow_id threading for full per-flow runtime
+- Consider runtime per-flow conversion as a separate sprint
+
+### Files Changed (from 1.4.9)
+- `admin/ai-knowledge.php`, `admin/ai-configuration.php`, `admin/chat-styling.php`, `admin/email.php`, `admin/lessons.php`, `admin/offers.php`, `admin/payments.php`, `admin/quiz.php`, `admin/ivr-messages.php`, `admin/sso.php` — per-flow conversion + cleanup
+- `admin/settings.php` — save handler updates
+- `admin/flosc-app.php` — version label fixes
+- `admin/product.php` — deleted (dead file)
+- `readme.md` — version bump
+
+---
+
+## MTS-2026-02-09a - v1.4.9: Deep Audit & Bugfixes
+
+### Goal
+Pre-deployment deep audit of entire v1.4.9 codebase. Read every line of flosc.php (5,646 lines) and all 16 key support files (~5,800 lines). Fix all real bugs found.
+
+### Bugs Fixed
+
+1. **SSO unlink safeguard broken** (`includes/sso/class-sso-manager.php`)
+   - `wp_hash_password('')` generates random salt each call — comparison always fails
+   - Users could unlink their only login method and lock themselves out
+   - Fix: replaced with `wp_check_password('', ...)` which checks against stored hash
+
+2. **Session ID collision** (`includes/class-session-manager.php`)
+   - `count($sessions) + 1` produces duplicate IDs after deletions
+   - Fix: `max(array_column($sessions, 'id')) + 1`
+
+3. **Bare FLOSC_DEBUG check** (`includes/class-flow-manager.php`)
+   - `if (FLOSC_DEBUG)` without `defined()` guard — PHP notice if constant missing
+   - Fix: `if (defined('FLOSC_DEBUG') && FLOSC_DEBUG)`
+
+4. **SSO state tokens logged in production** (`includes/sso/class-oauth2-handler.php`)
+   - 8 `error_log()` calls writing CSRF state values unconditionally
+   - Fix: wrapped all in `FLOSC_DEBUG` guards
+
+5. **Access validator false positives** (`includes/class-access-validator.php`)
+   - `/w/` and `/n/` matched URLs/paths containing those letters
+   - `$` blocked any mention of currency in AI responses
+   - Fix: removed `/w/`, `/n/`, `$` from forbidden keyword lists
+
+6. **Unguarded IVR fallback log** (`flosc.php` L4711)
+   - Would spam production logs on every page load if IVR file misconfigured
+   - Fix: added `FLOSC_DEBUG` guard
+
+7. **Version stamps stale** (`readme.md`, `admin/flosc-app.php`)
+   - readme.md said v1.2.6, admin/flosc-app.php said v1.1.0
+   - Fix: updated both to 1.4.9
+
+### Version Verification (all 1.4.9)
+- `flosc.php` line 6: `Version: 1.4.9`
+- `flosc.php` line 17: `define('FLOSC_VERSION', '1.4.9')`
+- `admin/flosc-app.php` line 6: `Version: 1.4.9`
+- `readme.md` line 1/5: `v1.4.9`
+- `assets/js/flosc-app.js` line 9: `FLOSC_JS_VERSION = '1.4.9'`
+- All admin pages use `FLOSC_VERSION` constant dynamically
+
+### Verified Clean (no action needed)
+- Template variables ($user_data, $offers, $providers) — correctly passed via PHP include scope
+- All 25+ REST endpoints — rate limiting, nonce checks, capability guards present
+- Phase transition logic — aligned frontend/backend (v1.4.9 fix from prior session)
+- Purchase flow, SSO login flow, IVR parser, condition evaluator, bridge data manager — all clean
+- 77 of 78 error_log calls were already properly guarded
+
+### Iteration & Naming Procedure
+
+**Folder naming:** `flosc_X_Y_Z/` (underscores, semantic versioning)
+**Zip naming:** `flosc_X_Y_Z.zip` (matches folder, expands into `flosc_X_Y_Z/`)
+**Zip command:** `zip -r flosc_X_Y_Z.zip flosc_X_Y_Z/ -x "*.DS_Store"` (from OUTSIDE the folder so it expands properly)
+
+**Version locations to update on each iteration:**
+1. `flosc.php` line 6 — plugin header `Version: X.Y.Z`
+2. `flosc.php` line 17 — `define('FLOSC_VERSION', 'X.Y.Z')`
+3. `admin/flosc-app.php` line 6 — template header `Version: X.Y.Z`
+4. `admin/flosc-app.php` line 7 — `Updated: YYYY-MMm-DDd`
+5. `readme.md` line 1 — `# FLOSC vX.Y.Z`
+6. `readme.md` line 5 — `**Version:** X.Y.Z`
+7. `assets/js/flosc-app.js` line 9 — `FLOSC_JS_VERSION = 'X.Y.Z'`
+8. This worknotes file header — `**Current Version:**`
+
+**`@since` tags** record when a file was *introduced* — do NOT update these on version bumps.
+**All admin pages** read `FLOSC_VERSION` constant dynamically — no manual update needed.
 
 ---
 

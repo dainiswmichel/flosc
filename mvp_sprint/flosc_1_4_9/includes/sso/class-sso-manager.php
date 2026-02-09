@@ -474,7 +474,9 @@ class SSO_Manager {
         // Check if this is their only login method
         $linked = $this->user_linker->get_linked_providers($user_id);
         $user = get_userdata($user_id);
-        $has_password = !empty($user->user_pass) && $user->user_pass !== wp_hash_password('');
+        // v1.4.9: wp_hash_password() generates random salt each call, so direct comparison never works.
+        // Instead, use wp_check_password() against empty string to detect if user has a real password.
+        $has_password = !empty($user->user_pass) && !wp_check_password('', $user->user_pass, $user_id);
         
         if (count($linked) <= 1 && !$has_password) {
             wp_send_json_error('Cannot unlink your only login method. Please set a password first.');

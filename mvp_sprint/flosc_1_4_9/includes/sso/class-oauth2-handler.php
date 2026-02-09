@@ -71,6 +71,11 @@ class OAuth2_Handler {
                     'required' => false,
                     'default'  => '',
                 ),
+                // v1.4.9: Flow context for per-flow SSO credentials
+                'flow_id' => array(
+                    'required' => false,
+                    'default'  => '',
+                ),
             ),
         ));
         
@@ -126,11 +131,37 @@ class OAuth2_Handler {
     public function handle_authorize($request) {
         $provider_id = $request->get_param('provider');
         $redirect_to = $request->get_param('redirect_to');
+        $flow_id = $request->get_param('flow_id');
         
         $provider = $this->manager->get_provider($provider_id);
         
         if (!$provider) {
             return new \WP_Error('invalid_provider', 'Invalid SSO provider', array('status' => 400));
+        }
+        
+        // v1.4.9: Load per-flow credentials if flow_id is provided
+        if (!empty($flow_id)) {
+            $flow_settings_key = 'flosc_flow_' . sanitize_key($flow_id);
+            $flow_settings = get_option($flow_settings_key, []);
+            $flow_client_id = $flow_settings["sso_{$provider_id}_client_id"] ?? '';
+            $flow_client_secret = $flow_settings["sso_{$provider_id}_client_secret"] ?? '';
+            $flow_enabled = !empty($flow_settings["sso_{$provider_id}_enabled"]);
+            
+            if (!empty($flow_client_id)) {
+                // v1.4.9: Apple has extra fields (team_id, key_id, private_key)
+                if ($provider_id === 'apple' && method_exists($provider, 'set_flow_apple_credentials')) {
+                    $provider->set_flow_apple_credentials(
+                        $flow_client_id,
+                        $flow_client_secret,
+                        $flow_enabled,
+                        $flow_settings['sso_apple_team_id'] ?? '',
+                        $flow_settings['sso_apple_key_id'] ?? '',
+                        $flow_settings['sso_apple_private_key'] ?? ''
+                    );
+                } elseif (!empty($flow_client_secret)) {
+                    $provider->set_flow_credentials($flow_client_id, $flow_client_secret, $flow_enabled);
+                }
+            }
         }
         
         if (!$provider->is_enabled()) {
@@ -141,7 +172,8 @@ class OAuth2_Handler {
         nocache_headers();
         
         // Generate state for CSRF protection
-        $state = $this->generate_state($provider_id, $redirect_to);
+        // v1.4.9: Include flow_id in state for per-flow credential loading on callback
+        $state = $this->generate_state($provider_id, $redirect_to, $flow_id);
         
         // Get authorization URL
         $auth_url = $provider->get_authorization_url($state, $provider->get_callback_url());
@@ -190,6 +222,32 @@ class OAuth2_Handler {
         if (!$provider) {
             $this->redirect_with_error('Invalid provider.');
             return;
+        }
+        
+        // v1.4.9: Load per-flow credentials from state before token exchange
+        $flow_id = $state_data['flow_id'] ?? '';
+        if (!empty($flow_id)) {
+            $flow_settings_key = 'flosc_flow_' . sanitize_key($flow_id);
+            $flow_settings = get_option($flow_settings_key, []);
+            $flow_client_id = $flow_settings["sso_{$provider_id}_client_id"] ?? '';
+            $flow_client_secret = $flow_settings["sso_{$provider_id}_client_secret"] ?? '';
+            $flow_enabled = !empty($flow_settings["sso_{$provider_id}_enabled"]);
+            
+            if (!empty($flow_client_id)) {
+                // v1.4.9: Apple has extra fields (team_id, key_id, private_key)
+                if ($provider_id === 'apple' && method_exists($provider, 'set_flow_apple_credentials')) {
+                    $provider->set_flow_apple_credentials(
+                        $flow_client_id,
+                        $flow_client_secret,
+                        $flow_enabled,
+                        $flow_settings['sso_apple_team_id'] ?? '',
+                        $flow_settings['sso_apple_key_id'] ?? '',
+                        $flow_settings['sso_apple_private_key'] ?? ''
+                    );
+                } elseif (!empty($flow_client_secret)) {
+                    $provider->set_flow_credentials($flow_client_id, $flow_client_secret, $flow_enabled);
+                }
+            }
         }
         
         // Exchange code for token
@@ -256,14 +314,16 @@ class OAuth2_Handler {
      * 
      * @param string $provider_id Provider ID
      * @param string $redirect_to Redirect URL after login
+     * @param string $flow_id Flow ID for per-flow credential loading (v1.4.9)
      * @return string State token
      */
-    private function generate_state($provider_id, $redirect_to = '') {
+    private function generate_state($provider_id, $redirect_to = '', $flow_id = '') {
         $state = wp_generate_password(32, false);
         
         $state_data = array(
             'provider'    => $provider_id,
             'redirect_to' => $redirect_to,
+            'flow_id'     => $flow_id, // v1.4.9: Per-flow SSO
             'timestamp'   => time(),
             'nonce'       => wp_create_nonce('flosc_sso_' . $provider_id),
         );
@@ -272,15 +332,21 @@ class OAuth2_Handler {
         $saved = set_transient($transient_key, $state_data, self::STATE_EXPIRATION);
         
         // Debug logging for troubleshooting
-        error_log('[FLOSC SSO] State generated: ' . $state . ' | Key: ' . $transient_key . ' | Saved: ' . ($saved ? 'yes' : 'NO'));
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            error_log('[FLOSC SSO] State generated for ' . $provider_id . ' | Saved: ' . ($saved ? 'yes' : 'NO'));
+        }
         
         // Verify it was actually saved
         $verify = get_transient($transient_key);
         if (!$verify) {
-            error_log('[FLOSC SSO] WARNING: State transient not readable immediately after save!');
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                error_log('[FLOSC SSO] WARNING: State transient not readable immediately after save!');
+            }
             // Fallback: write directly to options table
             update_option($transient_key, $state_data, false);
-            error_log('[FLOSC SSO] Fallback: saved state to options table');
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                error_log('[FLOSC SSO] Fallback: saved state to options table');
+            }
         }
         
         return $state;
@@ -294,27 +360,37 @@ class OAuth2_Handler {
      */
     private function verify_state($state) {
         if (empty($state)) {
-            error_log('[FLOSC SSO] State verification failed: empty state parameter');
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                error_log('[FLOSC SSO] State verification failed: empty state parameter');
+            }
             return false;
         }
         
         $transient_key = self::STATE_PREFIX . $state;
-        error_log('[FLOSC SSO] Verifying state: ' . $state . ' | Key: ' . $transient_key);
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            error_log('[FLOSC SSO] Verifying state for key: ' . $transient_key);
+        }
         
         $state_data = get_transient($transient_key);
         
         // Fallback: check options table directly
         if (!$state_data) {
-            error_log('[FLOSC SSO] Transient not found, checking options table fallback');
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                error_log('[FLOSC SSO] Transient not found, checking options table fallback');
+            }
             $state_data = get_option($transient_key);
         }
         
         if (!$state_data) {
-            error_log('[FLOSC SSO] State verification FAILED: no state data found for key ' . $transient_key);
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                error_log('[FLOSC SSO] State verification FAILED for key ' . $transient_key);
+            }
             return false;
         }
         
-        error_log('[FLOSC SSO] State verification SUCCESS for provider: ' . ($state_data['provider'] ?? 'unknown'));
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            error_log('[FLOSC SSO] State verification SUCCESS for provider: ' . ($state_data['provider'] ?? 'unknown'));
+        }
         
         // Delete used state (one-time use)
         delete_transient($transient_key);

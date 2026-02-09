@@ -3,8 +3,8 @@
 ================================================================================
 FLOSC APP - MAIN CHAT APPLICATION TEMPLATE
 ================================================================================
-Version: 1.1.0
-Updated: 2026-02m-02d
+Version: 1.4.9
+Updated: 2026-02m-09d
 
 TEACHABLE CODE PRINCIPLES:
 This file demonstrates proper separation of concerns for a WordPress chat UI.
@@ -609,18 +609,43 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
             }
         ?>
         window.FLOSC_CONFIG = <?php 
-            // v1.4.0: Get SSO providers for frontend
+            // v1.4.9: Get SSO providers from per-flow settings (not global options)
             $sso_providers = [];
             if (class_exists('\FLOSC\SSO\SSO_Manager')) {
                 $sso_manager = \FLOSC\SSO\SSO_Manager::get_instance();
-                foreach ($sso_manager->get_enabled_providers() as $provider) {
-                    $sso_providers[] = [
-                        'id' => $provider->get_id(),
-                        'name' => $provider->get_name(),
-                        'icon' => $provider->get_icon(),
-                        'colors' => $provider->get_button_colors(),
-                        'authUrl' => rest_url("flosc/v1/sso/authorize/{$provider->get_id()}"),
-                    ];
+                $flow_id_for_sso = $current_flow ? ($current_flow['id'] ?? '') : '';
+                
+                // Load per-flow SSO settings
+                $sso_flow_settings = [];
+                if (!empty($flow_id_for_sso)) {
+                    $sso_settings_key = 'flosc_flow_' . sanitize_key($flow_id_for_sso);
+                    $sso_flow_settings = get_option($sso_settings_key, []);
+                }
+                
+                // Check each registered provider against flow settings
+                $sso_provider_ids = ['google', 'facebook', 'apple', 'microsoft', 'linkedin'];
+                foreach ($sso_provider_ids as $pid) {
+                    $flow_enabled = !empty($sso_flow_settings["sso_{$pid}_enabled"]);
+                    $flow_client_id = $sso_flow_settings["sso_{$pid}_client_id"] ?? '';
+                    $flow_client_secret = $sso_flow_settings["sso_{$pid}_client_secret"] ?? '';
+                    
+                    if ($flow_enabled && !empty($flow_client_id) && !empty($flow_client_secret)) {
+                        $provider = $sso_manager->get_provider($pid);
+                        if ($provider) {
+                            $auth_url = rest_url("flosc/v1/sso/authorize/{$pid}");
+                            // v1.4.9: Include flow_id so OAuth handler loads per-flow credentials
+                            if (!empty($flow_id_for_sso)) {
+                                $auth_url = add_query_arg('flow_id', urlencode($flow_id_for_sso), $auth_url);
+                            }
+                            $sso_providers[] = [
+                                'id' => $pid,
+                                'name' => $provider->get_name(),
+                                'icon' => $provider->get_icon(),
+                                'colors' => $provider->get_button_colors(),
+                                'authUrl' => $auth_url,
+                            ];
+                        }
+                    }
                 }
             }
             

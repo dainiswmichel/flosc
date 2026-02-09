@@ -114,11 +114,15 @@ $providers = [
         </button>
     </div>
     
+    <?php
+    // v1.4.9: SSO settings are PER-FLOW, stored in the flow settings array
+    $flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
+    ?>
     <?php foreach ($providers as $provider_id => $provider): ?>
         <?php
-        $is_enabled = get_option("flosc_sso_{$provider_id}_enabled", false);
-        $client_id = get_option("flosc_sso_{$provider_id}_client_id", '');
-        $client_secret = get_option("flosc_sso_{$provider_id}_client_secret", '');
+        $is_enabled = !empty($flow_settings["sso_{$provider_id}_enabled"]);
+        $client_id = $flow_settings["sso_{$provider_id}_client_id"] ?? '';
+        $client_secret = $flow_settings["sso_{$provider_id}_client_secret"] ?? '';
         $callback_url = $callback_base . $provider_id;
         ?>
         
@@ -137,7 +141,7 @@ $providers = [
                     <td>
                         <label>
                             <input type="checkbox" 
-                                   name="flosc_sso_<?php echo $provider_id; ?>_enabled" 
+                                   name="flow_sso_<?php echo $provider_id; ?>_enabled" 
                                    value="1" 
                                    <?php checked($is_enabled, true); ?>>
                             Allow users to sign in with <?php echo esc_html($provider['name']); ?>
@@ -149,7 +153,7 @@ $providers = [
                     <th scope="row">Client ID</th>
                     <td>
                         <input type="text" 
-                               name="flosc_sso_<?php echo $provider_id; ?>_client_id" 
+                               name="flow_sso_<?php echo $provider_id; ?>_client_id" 
                                value="<?php echo esc_attr($client_id); ?>" 
                                class="regular-text"
                                placeholder="<?php echo $provider_id === 'apple' ? 'Service ID (e.g., com.example.app)' : 'Your ' . $provider['name'] . ' Client/App ID'; ?>">
@@ -160,7 +164,7 @@ $providers = [
                     <th scope="row">Client Secret</th>
                     <td>
                         <input type="password" 
-                               name="flosc_sso_<?php echo $provider_id; ?>_client_secret" 
+                               name="flow_sso_<?php echo $provider_id; ?>_client_secret" 
                                value="<?php echo esc_attr($client_secret); ?>" 
                                class="regular-text"
                                placeholder="<?php echo $provider_id === 'apple' ? 'Leave empty - auto-generated from keys' : 'Your ' . $provider['name'] . ' Client Secret'; ?>"
@@ -173,15 +177,15 @@ $providers = [
                 
                 <?php if (isset($provider['extra_fields']) && in_array('team_id', $provider['extra_fields'])): ?>
                     <?php
-                    $team_id = get_option("flosc_sso_{$provider_id}_team_id", '');
-                    $key_id = get_option("flosc_sso_{$provider_id}_key_id", '');
-                    $private_key = get_option("flosc_sso_{$provider_id}_private_key", '');
+                    $team_id = $flow_settings["sso_{$provider_id}_team_id"] ?? '';
+                    $key_id = $flow_settings["sso_{$provider_id}_key_id"] ?? '';
+                    $private_key = $flow_settings["sso_{$provider_id}_private_key"] ?? '';
                     ?>
                     <tr>
                         <th scope="row">Team ID</th>
                         <td>
                             <input type="text" 
-                                   name="flosc_sso_<?php echo $provider_id; ?>_team_id" 
+                                   name="flow_sso_<?php echo $provider_id; ?>_team_id" 
                                    value="<?php echo esc_attr($team_id); ?>" 
                                    class="regular-text"
                                    placeholder="10-character Team ID (e.g., ABCDE12345)">
@@ -193,7 +197,7 @@ $providers = [
                         <th scope="row">Key ID</th>
                         <td>
                             <input type="text" 
-                                   name="flosc_sso_<?php echo $provider_id; ?>_key_id" 
+                                   name="flow_sso_<?php echo $provider_id; ?>_key_id" 
                                    value="<?php echo esc_attr($key_id); ?>" 
                                    class="regular-text"
                                    placeholder="10-character Key ID">
@@ -204,7 +208,7 @@ $providers = [
                     <tr>
                         <th scope="row">Private Key</th>
                         <td>
-                            <textarea name="flosc_sso_<?php echo $provider_id; ?>_private_key" 
+                            <textarea name="flow_sso_<?php echo $provider_id; ?>_private_key" 
                                       rows="5" 
                                       class="large-text code"
                                       placeholder="-----BEGIN PRIVATE KEY-----&#10;Paste your .p8 file contents here&#10;-----END PRIVATE KEY-----"><?php echo esc_textarea($private_key); ?></textarea>
