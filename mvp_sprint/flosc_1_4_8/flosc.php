@@ -3,7 +3,7 @@
  * Plugin Name: FLOSC
  * Plugin URI: https://flosc.ai
  * Description: Freeline-Login-Offer-Sale-Content - Quiz-based learning and conversational sales funnel framework
- * Version: 1.4.8
+ * Version: 1.4.9
  * Author: Dainis Michel
  * Author URI: https://dainis.net
  * License: GPL v2 or later
@@ -14,7 +14,7 @@
 if (!defined('ABSPATH')) exit;
 
 // Plugin constants
-define('FLOSC_VERSION', '1.4.8');
+define('FLOSC_VERSION', '1.4.9');
 define('FLOSC_DEBUG', defined('WP_DEBUG') && WP_DEBUG); // TASK-012: Debug mode toggle
 define('FLOSC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('FLOSC_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -625,31 +625,57 @@ The Team',
     /**
      * v9.5.7: Redirect users to FLOSC app after login
      * v1.0.0: ONLY redirect if user was on FLOSC app or has pre-login quiz score
-     * 
+     * v1.4.9: Use get_app_url() for custom domain support (lesaep.com, flosc.ai)
+     *
      * IMPORTANT: This function does NOT hijack normal WordPress logins.
      * Only redirects to FLOSC app when there's a clear FLOSC context.
      */
     public function handle_login_redirect($redirect_to, $requested_redirect_to, $user) {
         $app_slug = get_option('flosc_app_slug', 'flosc');
-        $app_url = home_url('/' . $app_slug . '/');
-        
+        // v1.4.9: Use flow-aware URL so custom domains redirect correctly
+        $app_url = $this->get_app_url();
+
         // Check 1: If requested redirect is already to FLOSC app, allow it
         if (!empty($requested_redirect_to) && strpos($requested_redirect_to, '/' . $app_slug) !== false) {
             return $requested_redirect_to;
         }
-        
+
+        // v1.4.9: Also check if requested redirect is to a custom domain flow
+        if (!empty($requested_redirect_to)) {
+            $flows = get_option('flosc_flows', []);
+            foreach ($flows as $flow) {
+                if (!empty($flow['custom_domain']) && strpos($requested_redirect_to, $flow['custom_domain']) !== false) {
+                    return $requested_redirect_to;
+                }
+            }
+        }
+
         // Check 2: If user has a pre-login quiz score cookie, redirect to FLOSC app
         $score_data = $this->get_signed_cookie('flosc_prelogin_score');
         if ($score_data && isset($score_data['score'])) {
             return $app_url;
         }
-        
+
         // Check 3: If referrer was the FLOSC app, redirect back there
         $referer = wp_get_referer();
-        if ($referer && strpos($referer, '/' . $app_slug) !== false) {
-            return $app_url;
+        if ($referer) {
+            // Check slug-based URL
+            if (strpos($referer, '/' . $app_slug) !== false) {
+                return $app_url;
+            }
+            // v1.4.9: Check custom domain referrers
+            $referer_host = wp_parse_url($referer, PHP_URL_HOST);
+            if ($referer_host) {
+                $current_flow = $this->get_current_flow();
+                if ($current_flow && !empty($current_flow['custom_domain'])) {
+                    $flow_domain = strtolower(preg_replace('#^https?://#', '', trim($current_flow['custom_domain'])));
+                    if (strtolower($referer_host) === $flow_domain) {
+                        return $app_url;
+                    }
+                }
+            }
         }
-        
+
         // Otherwise, respect WordPress's default redirect behavior
         // This allows normal WordPress posts/pages to work properly
         return $redirect_to;
@@ -658,14 +684,15 @@ The Team',
     /**
      * v9.5.7: Handle WooCommerce-specific login redirect
      * v1.0.0: ONLY redirect to FLOSC app if there's FLOSC context
+     * v1.4.9: Custom domain support
      */
     public function handle_woocommerce_login_redirect($redirect, $user) {
         $app_slug = get_option('flosc_app_slug', 'flosc');
-        
+
         // Only redirect if referrer was FLOSC app
         $referer = wp_get_referer();
         if ($referer && strpos($referer, '/' . $app_slug) !== false) {
-            return home_url('/' . $app_slug . '/');
+            return $this->get_app_url();
         }
         
         // Otherwise, let WooCommerce handle it normally
@@ -1475,6 +1502,9 @@ The {product_name} Team";
 
     /**
      * Determine current FLOSC phase
+     * v1.4.9: Aligned with frontend determinePhase() logic:
+     *   purchased → content, funnelCompleted → sale,
+     *   freeLessonDelivered → offer, logged_in → login, else → freeline
      */
     private function determine_flosc_phase() {
         if (!is_user_logged_in()) {
@@ -1487,31 +1517,27 @@ The {product_name} Team";
 
         $user_id = get_current_user_id();
 
-        // Check if user has purchased (exits bridge state)
+        // v1.4.9: Match frontend — if purchased/member, always 'content'
+        // Frontend: if (this.user?.purchased) return 'content';
         if ($this->sale_manager->access()->can_access($user_id, 'full')) {
-            // Check if onboarded
-            $funnel_complete = get_user_meta($user_id, '_flosc_funnel_completed', true);
-            if ($funnel_complete) {
-                return 'content';
-            }
+            return 'content';
+        }
+
+        // Frontend: if (this.user?.funnelCompleted) return 'sale';
+        $funnel_complete = get_user_meta($user_id, '_flosc_funnel_completed', true);
+        if ($funnel_complete) {
             return 'sale';
         }
 
-        // v1.0.3: Use bridge data manager for logged-in users
-        $bridge_mgr = FLOSC_Bridge_Data_Manager::instance();
-        
-        // Check if user is in bridge state (took quiz, hasn't purchased)
-        if ($bridge_mgr->is_in_flosc_bridge_state($user_id)) {
-            // Check if offer was shown
-            $offer_shown = get_user_meta($user_id, '_flosc_offer_shown', true);
-            if ($offer_shown) {
-                return 'offer';
-            }
-            return 'login'; // In bridge state, show free lesson + offer
+        // Frontend: if (this.user?.freeLessonDelivered) return 'offer';
+        $free_lesson_delivered = get_user_meta($user_id, '_flosc_free_lesson_delivered', true);
+        if ($free_lesson_delivered) {
+            return 'offer';
         }
 
-        // No bridge data = hasn't taken quiz yet
-        return 'freeline';
+        // Frontend: if (this.state !== 'visitor') return 'login';
+        // Logged-in user who hasn't received free lesson yet
+        return 'login';
     }
 
     /**
@@ -4315,12 +4341,15 @@ Example good response:
      * Process pre-login data for newly logged in user (v1.4.0)
      */
     private function process_prelogin_data_for_user($user_id) {
-        // Check for quiz score stored in cookie
-        if (isset($_COOKIE['flosc_prelogin_score'])) {
-            $score = intval($_COOKIE['flosc_prelogin_score']);
+        // v1.4.9 FIX: Use get_signed_cookie() — cookie is signed JSON, not raw integer
+        // Matches handle_user_login() which already uses get_signed_cookie() correctly
+        $score_data = $this->get_signed_cookie('flosc_prelogin_score');
+
+        if ($score_data && isset($score_data['score'])) {
+            $score = intval($score_data['score']);
             update_user_meta($user_id, '_flosc_last_quiz_score', $score);
             update_user_meta($user_id, '_flosc_prelogin_score', $score);
-            
+
             // Store in bridge data if available
             $bridge_manager = FLOSC_Bridge_Data_Manager::instance();
             if ($bridge_manager) {
@@ -4330,7 +4359,14 @@ Example good response:
                     $bridge_manager->update_flosc_bridge_data($user_id, ['score' => $score]);
                 }
             }
-            
+
+            // Clear the cookie after transfer
+            setcookie('flosc_prelogin_score', '', [
+                'expires' => time() - 3600,
+                'path' => '/',
+                'samesite' => 'Lax'
+            ]);
+
             if (FLOSC_DEBUG) {
                 error_log("FLOSC Auth: Transferred pre-login score {$score}% for user {$user_id}");
             }
@@ -4339,23 +4375,32 @@ Example good response:
     
     /**
      * Get free lesson for logged-in user (v9.1.9)
+     * v1.4.9: Use deliver_free_lesson() to persist _flosc_free_lesson_delivered
      */
     public function get_free_lesson($request) {
         $user_id = get_current_user_id();
-        
+
         $free_lesson_mgr = FLOSC_Free_Lesson_Manager::instance();
-        $lesson_data = $free_lesson_mgr->get_free_lesson($user_id);
-        
-        if (!$lesson_data) {
+
+        // v1.4.9 FIX: Call deliver_free_lesson() instead of get_free_lesson()
+        // so _flosc_free_lesson_delivered is set and phase transitions to OFFER on reload
+        $result = $free_lesson_mgr->deliver_free_lesson($user_id, 'chat');
+
+        if (!$result['success']) {
             return new WP_REST_Response([
                 'success' => false,
-                'message' => 'No free lesson available. Please take the quiz first.'
+                'message' => $result['message'] ?? 'No free lesson available. Please take the quiz first.'
             ], 404);
         }
-        
+
         return new WP_REST_Response([
             'success' => true,
-            'lesson' => $lesson_data
+            'lesson' => [
+                'title' => $result['title'],
+                'content' => $result['content'],
+                'url' => $result['url'],
+                'lesson_number' => $result['lesson_number'],
+            ]
         ]);
     }
     
