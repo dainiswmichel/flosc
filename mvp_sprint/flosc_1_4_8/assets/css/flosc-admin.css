@@ -53,7 +53,7 @@
 
 .flosc-card--expandable {
     border: 1px solid #ccc;
-    border-radius: 8px;
+    border-radius: 2px;
     overflow: hidden;
 }
 
@@ -486,7 +486,7 @@
 .flosc-bridge-stat {
     background: #fff;
     border: 1px solid #ddd;
-    border-radius: 8px;
+    border-radius: 4px;
     padding: 20px;
     text-align: center;
 }
@@ -511,7 +511,7 @@
 .flosc-weakness-chart {
     background: #fff;
     border: 1px solid #ddd;
-    border-radius: 8px;
+    border-radius: 4px;
     padding: 20px;
 }
 

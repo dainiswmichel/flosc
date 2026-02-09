@@ -124,11 +124,11 @@ class SSO_Manager {
         // Avatar filter
         add_filter('get_avatar_url', array($this, 'filter_avatar_url'), 10, 3);
         
-        // Login form integration
-        add_action('login_form', array($this, 'add_sso_buttons_to_login'));
-        add_action('register_form', array($this, 'add_sso_buttons_to_login'));
+        // v1.4.8: FLOSC SSO buttons only appear inside FLOSC flows (chat widget auth modal).
+        // Removed login_form and register_form hooks to prevent interference with
+        // BuddyBoss or other site-wide login systems.
         
-        // Handle SSO errors on frontend
+        // Handle SSO errors on frontend (only on FLOSC pages)
         add_action('wp_loaded', array($this, 'handle_sso_error_display'));
         
         // Admin settings

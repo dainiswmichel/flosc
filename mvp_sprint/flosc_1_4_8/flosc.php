@@ -3,7 +3,7 @@
  * Plugin Name: FLOSC
  * Plugin URI: https://flosc.ai
  * Description: Freeline-Login-Offer-Sale-Content - Quiz-based learning and conversational sales funnel framework
- * Version: 1.4.7
+ * Version: 1.4.8
  * Author: Dainis Michel
  * Author URI: https://dainis.net
  * License: GPL v2 or later
@@ -14,7 +14,7 @@
 if (!defined('ABSPATH')) exit;
 
 // Plugin constants
-define('FLOSC_VERSION', '1.4.7');
+define('FLOSC_VERSION', '1.4.8');
 define('FLOSC_DEBUG', defined('WP_DEBUG') && WP_DEBUG); // TASK-012: Debug mode toggle
 define('FLOSC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('FLOSC_PLUGIN_URL', plugin_dir_url(__FILE__));

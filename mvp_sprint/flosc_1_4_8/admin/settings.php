@@ -1,6 +1,6 @@
 <?php
 /**
- * FLOSC Admin Settings Page v1.3.4
+ * FLOSC Admin Settings Page v1.4.8
  * 
  * Simple: IVR file = Flow. Pick file, edit all tabs, save.
  * 
@@ -9,6 +9,7 @@
  * v1.3.2: Identity tab shows URL mapping, DNS help
  * v1.3.3: All Flows = fully expanded inline editing, Domain field
  * v1.3.4: Register rewrite rules for ALL IVR files with default slugs, immediate version-flush
+ * v1.4.8: Admin styling overhaul - WordPress-native colors, no gradients, no emojis in chrome
  */
 
 if (!defined('ABSPATH')) exit;
@@ -28,14 +29,14 @@ if (!function_exists('flosc_tab_header')) {
         $flow_name = $settings['name'] ?? ucwords(str_replace(['_', '-', '.md'], [' ', ' ', ''], $ivr_file));
         $version = defined('FLOSC_VERSION') ? FLOSC_VERSION : '?.?.?';
         
-        echo '<div class="flosc-tab-header" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 12px 18px; border-radius: 8px; margin-bottom: 20px;">';
-        echo '<h2 style="margin: 0; color: white; font-size: 18px; display: flex; justify-content: space-between; align-items: center;">';
-        echo '<span>' . esc_html($emoji . ' ' . $tab_name . ' Configuration') . '</span>';
-        echo '<span style="font-size: 11px; font-weight: normal; opacity: 0.8;">v' . esc_html($version) . '</span>';
+        echo '<div class="flosc-tab-header" style="background: #f0f0f1; border: 1px solid #c3c4c7; padding: 12px 18px; border-radius: 2px; margin-bottom: 20px;">';
+        echo '<h2 style="margin: 0; color: #1d2327; font-size: 16px; display: flex; justify-content: space-between; align-items: center;">';
+        echo '<span>' . esc_html($tab_name . ' Configuration') . '</span>';
+        echo '<span style="font-size: 11px; font-weight: normal; color: #787c82;">v' . esc_html($version) . '</span>';
         echo '</h2>';
-        echo '<p style="margin: 5px 0 0; color: rgba(255,255,255,0.9); font-size: 13px;">';
+        echo '<p style="margin: 5px 0 0; color: #50575e; font-size: 13px;">';
         echo 'Flow: <strong>' . esc_html($flow_name) . '</strong> ';
-        echo '<code style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px; color: white;">(' . esc_html($ivr_file) . ')</code>';
+        echo '<code style="background: #e0e0e0; padding: 2px 8px; border-radius: 2px; color: #1d2327;">(' . esc_html($ivr_file) . ')</code>';
         echo '</p>';
         echo '</div>';
     }
@@ -49,8 +50,8 @@ if (!function_exists('flosc_tab_header')) {
 if (!function_exists('flosc_tab_footer')) {
     function flosc_tab_footer() {
         $version = defined('FLOSC_VERSION') ? FLOSC_VERSION : '?.?.?';
-        echo '<div class="flosc-tab-footer" style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #e5e7eb; text-align: right;">';
-        echo '<span style="color: #9ca3af; font-size: 11px;">FLOSC v' . esc_html($version) . '</span>';
+        echo '<div class="flosc-tab-footer" style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #c3c4c7; text-align: right;">';
+        echo '<span style="color: #787c82; font-size: 11px;">FLOSC v' . esc_html($version) . '</span>';
         echo '</div>';
     }
 }
@@ -114,20 +115,20 @@ if (!function_exists('flosc_permalink_status_indicator')) {
         $last_flush = get_option('flosc_last_permalink_flush', null);
         
         $colors = [
-            'ok' => ['bg' => '#10b981', 'text' => '✓ Permalinks OK'],
-            'missing' => ['bg' => '#ef4444', 'text' => '⚠ Needs Flush'],
-            'unknown' => ['bg' => '#f59e0b', 'text' => '? Status Unknown'],
+            'ok' => ['bg' => '#d4edda', 'text_color' => '#155724', 'text' => '&#10003; Permalinks OK'],
+            'missing' => ['bg' => '#f8d7da', 'text_color' => '#721c24', 'text' => '&#9888; Needs Flush'],
+            'unknown' => ['bg' => '#fff3cd', 'text_color' => '#856404', 'text' => '? Status Unknown'],
         ];
         
         $color = $colors[$status];
         
         echo '<div class="flosc-permalink-status" style="display: inline-flex; align-items: center; gap: 10px; margin-left: 15px;">';
-        echo '<span style="background: ' . $color['bg'] . '; color: white; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: 600;">';
-        echo esc_html($color['text']);
+        echo '<span style="background: ' . $color['bg'] . '; color: ' . $color['text_color'] . '; padding: 4px 10px; border-radius: 2px; font-size: 12px; font-weight: 600;">';
+        echo $color['text'];
         echo '</span>';
         
         if ($last_flush) {
-            echo '<span style="color: #6b7280; font-size: 11px;">Last flush: ' . esc_html($last_flush) . '</span>';
+            echo '<span style="color: #c3c4c7; font-size: 11px;">Last flush: ' . esc_html($last_flush) . '</span>';
         }
         
         // Flush button
@@ -248,7 +249,7 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
 <div class="wrap flosc-admin">
     <h1 style="display: flex; align-items: center; gap: 10px;">
         FLOSC Settings 
-        <span style="font-size: 12px; font-weight: normal; color: #6b7280; background: #f3f4f6; padding: 3px 10px; border-radius: 4px;">v<?php echo esc_html(FLOSC_VERSION); ?></span>
+        <span style="font-size: 12px; font-weight: normal; color: #50575e; background: #f0f0f1; padding: 3px 10px; border-radius: 2px;">v<?php echo esc_html(FLOSC_VERSION); ?></span>
     </h1>
     
     <?php if (isset($saved)): ?>
@@ -258,10 +259,10 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
     <?php endif; ?>
     
     <!-- IVR File Selector = Flow Selector -->
-    <div class="flosc-ivr-selector" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px 20px; border-radius: 8px; margin-bottom: 20px;">
+    <div class="flosc-ivr-selector" style="background: #1d2327; padding: 15px 20px; border-radius: 2px; margin-bottom: 20px;">
         <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-            <label style="color: white; font-weight: 600; font-size: 14px;">Flow:</label>
-            <select id="ivr-select" onchange="switchIVR(this.value);" style="padding: 8px 12px; border-radius: 6px; border: none; min-width: 250px; font-size: 14px;">
+            <label style="color: #f0f0f1; font-weight: 600; font-size: 14px;">Flow:</label>
+            <select id="ivr-select" onchange="switchIVR(this.value);" style="padding: 8px 12px; border-radius: 2px; border: 1px solid #50575e; min-width: 250px; font-size: 14px;">
                 <?php foreach ($ivr_files as $file): ?>
                     <option value="<?php echo esc_attr($file); ?>" <?php selected($selected_ivr, $file); ?>>
                         <?php echo esc_html($file); ?>
@@ -270,14 +271,14 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
             </select>
             
             <?php if ($flow_settings['status'] === 'active' && !empty($flow_settings['slug'])): ?>
-                <a href="<?php echo esc_url($flow_url); ?>" target="_blank" style="background: rgba(255,255,255,0.2); color: white; padding: 8px 16px; border-radius: 6px; text-decoration: none; font-size: 13px;">
-                    View App ↗
+                <a href="<?php echo esc_url($flow_url); ?>" target="_blank" class="button button-small" style="font-size: 13px;">
+                    View App &#8599;
                 </a>
             <?php endif; ?>
         </div>
         
         <!-- Permalink Status Row -->
-        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2);">
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #50575e;">
             <?php flosc_permalink_status_indicator($flow_settings['slug'] ?? ''); ?>
         </div>
     </div>
@@ -293,17 +294,17 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
     <nav class="nav-tab-wrapper">
         <?php
         $tabs = [
-            'identity' => '🏷️ Identity',
-            'ivr-messages' => '💬 IVR Messages',
-            'style' => '🎨 Style',
-            'ai' => '🤖 AI',
-            'knowledge' => '🧠 Knowledge',
-            'quiz' => '❓ Quiz',
-            'email' => '📧 Email',
-            'lessons' => '📚 Lessons',
-            'offers' => '💰 Offers',
-            'payments' => '💳 Payments',
-            'sso' => '🔐 SSO',
+            'identity' => 'Identity',
+            'ivr-messages' => 'IVR Messages',
+            'style' => 'Style',
+            'ai' => 'AI',
+            'knowledge' => 'Knowledge',
+            'quiz' => 'Quiz',
+            'email' => 'Email',
+            'lessons' => 'Lessons',
+            'offers' => 'Offers',
+            'payments' => 'Payments',
+            'sso' => 'SSO',
         ];
         foreach ($tabs as $tab_id => $tab_label):
         ?>
@@ -412,9 +413,9 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
             
             <!-- ALL FLOWS - FULLY EXPANDED INLINE EDITING -->
             <div style="max-width: 1000px;">
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 15px 20px; border-radius: 8px; margin-bottom: 20px;">
-                    <h2 style="margin: 0; color: white; font-size: 18px;">🔀 All FLOSC Flows - Identity Settings</h2>
-                    <p style="margin: 5px 0 0; color: rgba(255,255,255,0.9); font-size: 13px;">
+                <div style="background: #1d2327; padding: 15px 20px; border-radius: 2px; margin-bottom: 20px;">
+                    <h2 style="margin: 0; color: #f0f0f1; font-size: 16px;">All FLOSC Flows &mdash; Identity Settings</h2>
+                    <p style="margin: 5px 0 0; color: #a7aaad; font-size: 13px;">
                         All flows expanded. Edit any field, then save individually or save all at bottom.
                     </p>
                 </div>
@@ -430,16 +431,16 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                     $full_url = !empty($settings['domain']) ? 'https://' . $settings['domain'] . '/' : $flow_url;
                 ?>
                 
-                <div class="flosc-flow-block" style="background: white; border: 2px solid <?php echo $is_current ? '#4f46e5' : '#e5e7eb'; ?>; border-radius: 10px; padding: 25px; margin-bottom: 20px;">
+                <div class="flosc-flow-block" style="background: white; border: 2px solid <?php echo $is_current ? '#2271b1' : '#c3c4c7'; ?>; border-radius: 2px; padding: 25px; margin-bottom: 20px;">
                     
                     <!-- Flow Header with IVR file -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #e5e7eb;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #c3c4c7;">
                         <div>
                             <h3 style="margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px;">
                                 <span style="font-size: 28px;"><?php echo esc_html($settings['emoji'] ?? '🎯'); ?></span>
                                 <?php echo esc_html($settings['name'] ?? $ivr_file); ?>
                                 <?php if ($is_current): ?>
-                                    <span style="background: #4f46e5; color: white; padding: 3px 10px; border-radius: 4px; font-size: 11px;">CURRENT</span>
+                                    <span style="background: #2271b1; color: white; padding: 3px 10px; border-radius: 2px; font-size: 11px;">CURRENT</span>
                                 <?php endif; ?>
                             </h3>
                             <div style="margin-top: 5px;">
@@ -447,23 +448,23 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                             </div>
                         </div>
                         <div style="text-align: right;">
-                            <span style="background: <?php echo ($settings['status'] ?? 'active') === 'active' ? '#10b981' : '#9ca3af'; ?>; color: white; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: 600;">
+                            <span style="background: <?php echo ($settings['status'] ?? 'active') === 'active' ? '#d4edda' : '#f0f0f1'; ?>; color: <?php echo ($settings['status'] ?? 'active') === 'active' ? '#155724' : '#50575e'; ?>; padding: 4px 12px; border-radius: 2px; font-size: 12px; font-weight: 600;">
                                 <?php echo esc_html(ucfirst($settings['status'] ?? 'active')); ?>
                             </span>
                         </div>
                     </div>
                     
                     <!-- URL Mapping Summary -->
-                    <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 15px 20px; border-radius: 8px; color: white; margin-bottom: 20px;">
-                        <div style="font-size: 11px; opacity: 0.9; margin-bottom: 3px;">🌐 This flow is accessible at:</div>
+                    <div style="background: #f0f6fc; border: 1px solid #c3c4c7; padding: 15px 20px; border-radius: 2px; color: #1d2327; margin-bottom: 20px;">
+                        <div style="font-size: 11px; color: #50575e; margin-bottom: 3px;">This flow is accessible at:</div>
                         <div style="font-family: monospace; font-size: 15px; font-weight: 600;">
-                            <a href="<?php echo esc_url($flow_url); ?>" target="_blank" style="color: white; text-decoration: none;">
-                                <?php echo esc_html($flow_url); ?> ↗
+                            <a href="<?php echo esc_url($flow_url); ?>" target="_blank" style="color: #2271b1; text-decoration: none;">
+                                <?php echo esc_html($flow_url); ?> &#8599;
                             </a>
                             <?php if (!empty($settings['domain'])): ?>
-                                <span style="opacity: 0.7; margin: 0 8px;">→</span>
-                                <a href="https://<?php echo esc_attr($settings['domain']); ?>/" target="_blank" style="color: white; text-decoration: none;">
-                                    https://<?php echo esc_html($settings['domain']); ?>/ ↗
+                                <span style="color: #787c82; margin: 0 8px;">&rarr;</span>
+                                <a href="https://<?php echo esc_attr($settings['domain']); ?>/" target="_blank" style="color: #2271b1; text-decoration: none;">
+                                    https://<?php echo esc_html($settings['domain']); ?>/ &#8599;
                                 </a>
                             <?php endif; ?>
                         </div>
@@ -475,25 +476,25 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                         <!-- Left Column -->
                         <div>
                             <div style="margin-bottom: 15px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">⭐ URL Slug <span style="color: #ef4444;">(required)</span></label>
+                                <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">URL Slug <span style="color: #d63638;">(required)</span></label>
                                 <div style="display: flex; align-items: center; gap: 5px;">
                                     <code style="background: #f3f4f6; padding: 8px 10px; border-radius: 4px; font-size: 13px;"><?php echo home_url('/'); ?></code>
                                     <input type="text" name="<?php echo $prefix; ?>slug" 
                                            value="<?php echo esc_attr($slug); ?>"
                                            placeholder="myapp"
-                                           style="width: 250px; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-weight: 600;">
+                                           style="width: 250px; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px; font-weight: 600;">
                                     <code style="background: #f3f4f6; padding: 8px 10px; border-radius: 4px; font-size: 13px;">/</code>
                                 </div>
-                                <p style="font-size: 11px; color: #6b7280; margin: 4px 0 0;">The URL path where this flow is served on your WordPress site</p>
+                                <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">The URL path where this flow is served on your WordPress site</p>
                             </div>
                             
                             <div style="margin-bottom: 15px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">🌐 Custom Domain</label>
+                                <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Custom Domain</label>
                                 <input type="text" name="<?php echo $prefix; ?>domain" 
                                        value="<?php echo esc_attr($settings['domain'] ?? ''); ?>"
                                        placeholder="e.g., flosc.ai or lesaep.com"
-                                       style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px;">
-                                <p style="font-size: 11px; color: #6b7280; margin: 4px 0 0;">Custom domain pointing to this flow</p>
+                                       style="width: 100%; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
+                                <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">Custom domain pointing to this flow</p>
                             </div>
                             
                             <div style="margin-bottom: 15px;">
@@ -501,7 +502,7 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                                 <input type="text" name="<?php echo $prefix; ?>name" 
                                        value="<?php echo esc_attr($settings['name'] ?? ''); ?>"
                                        placeholder="e.g., FLOSC or LeSAEp"
-                                       style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px;">
+                                       style="width: 100%; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
                             </div>
                             
                             <div style="margin-bottom: 15px;">
@@ -509,7 +510,7 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                                 <input type="text" name="<?php echo $prefix; ?>tagline" 
                                        value="<?php echo esc_attr($settings['tagline'] ?? ''); ?>"
                                        placeholder="e.g., AI-Powered Sales Funnels"
-                                       style="width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px;">
+                                       style="width: 100%; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
                             </div>
                         </div>
                         
@@ -520,30 +521,30 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                                     <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Emoji</label>
                                     <input type="text" name="<?php echo $prefix; ?>emoji" 
                                            value="<?php echo esc_attr($settings['emoji'] ?? '🎯'); ?>"
-                                           style="width: 60px; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 20px; text-align: center;">
+                                           style="width: 60px; padding: 8px; border: 1px solid #c3c4c7; border-radius: 2px; font-size: 20px; text-align: center;">
                                 </div>
                                 <div>
                                     <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Color</label>
                                     <input type="color" name="<?php echo $prefix; ?>primary_color" 
                                            value="<?php echo esc_attr($settings['primary_color'] ?? '#4f46e5'); ?>"
-                                           style="width: 60px; height: 38px; padding: 0; border: 1px solid #d1d5db; border-radius: 6px; cursor: pointer;">
+                                           style="width: 60px; height: 38px; padding: 0; border: 1px solid #c3c4c7; border-radius: 2px; cursor: pointer;">
                                 </div>
                                 <div>
                                     <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Status</label>
-                                    <select name="<?php echo $prefix; ?>status" style="padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 6px;">
-                                        <option value="active" <?php selected($settings['status'] ?? '', 'active'); ?>>🟢 Active</option>
-                                        <option value="draft" <?php selected($settings['status'] ?? '', 'draft'); ?>>⚪ Draft</option>
+                                    <select name="<?php echo $prefix; ?>status" style="padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
+                                        <option value="active" <?php selected($settings['status'] ?? '', 'active'); ?>>Active</option>
+                                        <option value="draft" <?php selected($settings['status'] ?? '', 'draft'); ?>>Draft</option>
                                     </select>
                                 </div>
                             </div>
                             
                             <!-- DNS Setup Info (if custom domain set) -->
                             <?php if (!empty($settings['domain'])): ?>
-                            <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 12px 15px; border-radius: 6px; margin-bottom: 15px;">
-                                <div style="font-weight: 600; font-size: 12px; color: #92400e; margin-bottom: 5px;">🔧 DNS Setup for <?php echo esc_html($settings['domain']); ?></div>
-                                <div style="font-size: 11px; color: #78350f;">
+                            <div style="background: #fef3c7; border: 1px solid #dba617; padding: 12px 15px; border-radius: 2px; margin-bottom: 15px;">
+                                <div style="font-weight: 600; font-size: 12px; color: #50575e; margin-bottom: 5px;">DNS Setup for <?php echo esc_html($settings['domain']); ?></div>
+                                <div style="font-size: 11px; color: #50575e;">
                                     Point your domain to: <code style="background: white; padding: 2px 6px; border-radius: 3px;"><?php echo esc_html(parse_url(home_url(), PHP_URL_HOST)); ?></code><br>
-                                    <a href="https://flosc.ai/docs/dns" target="_blank" style="color: #92400e;">Full DNS guide →</a>
+                                    <a href="https://flosc.ai/docs/dns" target="_blank" style="color: #50575e;">Full DNS guide →</a>
                                 </div>
                             </div>
                             <?php endif; ?>
@@ -551,9 +552,9 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                     </div>
                     
                     <!-- Save This Flow Button -->
-                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb;">
+                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #c3c4c7;">
                         <button type="submit" name="flosc_save_flow" value="<?php echo esc_attr($ivr_file); ?>" class="button button-secondary">
-                            💾 Save <?php echo esc_html($settings['name'] ?? $ivr_file); ?>
+                            Save <?php echo esc_html($settings['name'] ?? $ivr_file); ?>
                         </button>
                     </div>
                 </div>
@@ -561,34 +562,34 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                 <?php endforeach; ?>
                 
                 <!-- DNS Setup Guide -->
-                <div style="background: #f0f9ff; border: 1px solid #0284c7; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-                    <h4 style="margin: 0 0 15px; color: #0369a1; font-size: 15px;">🌐 Custom Domain DNS Setup</h4>
+                <div style="background: #f0f6fc; border: 1px solid #c3c4c7; padding: 20px; border-radius: 2px; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 15px; color: #1d2327; font-size: 15px;">Custom Domain DNS Setup</h4>
                     
-                    <p style="font-size: 13px; color: #0c4a6e; margin: 0 0 15px; line-height: 1.6;">
+                    <p style="font-size: 13px; color: #1d2327; margin: 0 0 15px; line-height: 1.6;">
                         <strong>How it works:</strong> Your custom domain (e.g., <code>flosc.ai</code>) will point to this WordPress installation, 
                         and FLOSC will automatically serve the correct flow when visitors access that domain.
                     </p>
                     
-                    <div style="background: white; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
-                        <p style="font-size: 13px; color: #0c4a6e; margin: 0 0 10px;"><strong>Step 1: Configure your DNS records</strong></p>
-                        <ul style="font-size: 12px; color: #0c4a6e; margin: 0; padding-left: 20px; list-style: disc;">
+                    <div style="background: white; padding: 15px; border-radius: 2px; margin-bottom: 15px;">
+                        <p style="font-size: 13px; color: #1d2327; margin: 0 0 10px;"><strong>Step 1: Configure your DNS records</strong></p>
+                        <ul style="font-size: 12px; color: #1d2327; margin: 0; padding-left: 20px; list-style: disc;">
                             <li style="margin-bottom: 5px;">Add a <strong>CNAME record</strong> pointing your domain to: <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 3px;"><?php echo esc_html(parse_url(home_url(), PHP_URL_HOST)); ?></code></li>
                             <li style="margin-bottom: 5px;">Or add an <strong>A record</strong> pointing to your server's IP address</li>
                             <li>For www subdomain, add another CNAME pointing <code>www.yourdomain.com</code> → <code>yourdomain.com</code></li>
                         </ul>
                     </div>
                     
-                    <div style="background: white; padding: 15px; border-radius: 6px; margin-bottom: 15px;">
-                        <p style="font-size: 13px; color: #0c4a6e; margin: 0 0 10px;"><strong>Step 2: Configure your web server</strong></p>
-                        <p style="font-size: 12px; color: #0c4a6e; margin: 0;">
+                    <div style="background: white; padding: 15px; border-radius: 2px; margin-bottom: 15px;">
+                        <p style="font-size: 13px; color: #1d2327; margin: 0 0 10px;"><strong>Step 2: Configure your web server</strong></p>
+                        <p style="font-size: 12px; color: #1d2327; margin: 0;">
                             Your web server (Apache/Nginx) must be configured to accept requests for the custom domain 
                             and route them to this WordPress installation. Contact your hosting provider if needed.
                         </p>
                     </div>
                     
-                    <div style="background: white; padding: 15px; border-radius: 6px;">
-                        <p style="font-size: 13px; color: #0c4a6e; margin: 0 0 10px;"><strong>Step 3: Enter the domain above</strong></p>
-                        <p style="font-size: 12px; color: #0c4a6e; margin: 0;">
+                    <div style="background: white; padding: 15px; border-radius: 2px;">
+                        <p style="font-size: 13px; color: #1d2327; margin: 0 0 10px;"><strong>Step 3: Enter the domain above</strong></p>
+                        <p style="font-size: 12px; color: #1d2327; margin: 0;">
                             Enter just the domain name (e.g., <code>flosc.ai</code>) in the Custom Domain field for your flow. 
                             FLOSC will handle the rest!
                         </p>
@@ -596,11 +597,11 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                 </div>
                 
                 <!-- Save All Flows Button -->
-                <div style="background: #f9fafb; padding: 20px; border-radius: 8px; text-align: center; margin-top: 20px;">
+                <div style="background: #f0f0f1; padding: 20px; border-radius: 2px; text-align: center; margin-top: 20px;">
                     <button type="submit" name="flosc_save_all_flows" value="1" class="button button-primary button-large">
-                        💾 Save All Flows
+                        Save All Flows
                     </button>
-                    <p style="margin: 10px 0 0; font-size: 12px; color: #6b7280;">Saves identity settings for all <?php echo count($all_flows); ?> flows at once</p>
+                    <p style="margin: 10px 0 0; font-size: 12px; color: #50575e;">Saves identity settings for all <?php echo count($all_flows); ?> flows at once</p>
                 </div>
             </div>
             
@@ -617,27 +618,27 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                 $current_slug = $flow_settings['slug'] ?? $default_slug;
                 $flow_url = home_url('/' . $current_slug . '/');
                 ?>
-                <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 20px; border-radius: 8px; color: white; margin-bottom: 25px;">
-                    <div style="font-size: 12px; opacity: 0.9; margin-bottom: 5px;">🌐 This flow is accessible at:</div>
+                <div style="background: #f0f6fc; border: 1px solid #c3c4c7; padding: 20px; border-radius: 2px; color: #1d2327; margin-bottom: 25px;">
+                    <div style="font-size: 12px; color: #50575e; margin-bottom: 5px;">This flow is accessible at:</div>
                     <div style="font-family: monospace; font-size: 18px; font-weight: 600;">
-                        <a href="<?php echo esc_url($flow_url); ?>" target="_blank" style="color: white; text-decoration: none;">
-                            <?php echo esc_html($flow_url); ?> ↗
+                        <a href="<?php echo esc_url($flow_url); ?>" target="_blank" style="color: #2271b1; text-decoration: none;">
+                            <?php echo esc_html($flow_url); ?> &#8599;
                         </a>
                         <?php if (!empty($flow_settings['domain'])): ?>
-                            <span style="opacity: 0.7; margin: 0 10px;">→</span>
-                            <a href="https://<?php echo esc_attr($flow_settings['domain']); ?>/" target="_blank" style="color: white; text-decoration: none;">
-                                https://<?php echo esc_html($flow_settings['domain']); ?>/ ↗
+                            <span style="color: #787c82; margin: 0 10px;">&rarr;</span>
+                            <a href="https://<?php echo esc_attr($flow_settings['domain']); ?>/" target="_blank" style="color: #2271b1; text-decoration: none;">
+                                https://<?php echo esc_html($flow_settings['domain']); ?>/ &#8599;
                             </a>
                         <?php endif; ?>
                     </div>
-                    <div style="font-size: 11px; opacity: 0.8; margin-top: 8px;">
-                        IVR File: <code style="background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 3px;"><?php echo esc_html($selected_ivr); ?></code>
+                    <div style="font-size: 11px; color: #787c82; margin-top: 8px;">
+                        IVR File: <code style="background: #e0e0e0; padding: 2px 6px; border-radius: 2px;"><?php echo esc_html($selected_ivr); ?></code>
                     </div>
                 </div>
                 
                 <table class="form-table">
                     <tr>
-                        <th><label for="flow_slug">⭐ URL Slug</label></th>
+                        <th><label for="flow_slug">URL Slug</label></th>
                         <td>
                             <div style="display: flex; align-items: center; gap: 5px;">
                                 <code style="background: #f3f4f6; padding: 8px 12px; border-radius: 4px;"><?php echo home_url('/'); ?></code>
@@ -650,7 +651,7 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                         </td>
                     </tr>
                     <tr>
-                        <th><label for="flow_domain">🌐 Custom Domain</label></th>
+                        <th><label for="flow_domain">Custom Domain</label></th>
                         <td>
                             <input type="text" id="flow_domain" name="flow_domain" class="regular-text"
                                    value="<?php echo esc_attr($flow_settings['domain'] ?? ''); ?>"
@@ -704,8 +705,8 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                         <th><label for="flow_status">Status</label></th>
                         <td>
                             <select id="flow_status" name="flow_status">
-                                <option value="active" <?php selected($flow_settings['status'] ?? '', 'active'); ?>>🟢 Active</option>
-                                <option value="draft" <?php selected($flow_settings['status'] ?? '', 'draft'); ?>>⚪ Draft</option>
+                                <option value="active" <?php selected($flow_settings['status'] ?? '', 'active'); ?>>Active</option>
+                                <option value="draft" <?php selected($flow_settings['status'] ?? '', 'draft'); ?>>Draft</option>
                             </select>
                             <p class="description">Draft flows are only visible to admins.</p>
                         </td>
@@ -714,13 +715,13 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                 
                 <!-- DNS Setup Info (if custom domain set) -->
                 <?php if (!empty($flow_settings['domain'])): ?>
-                <div style="background: #fef3c7; border: 1px solid #f59e0b; padding: 15px 20px; border-radius: 8px; margin-top: 20px;">
-                    <h4 style="margin: 0 0 10px; color: #92400e; font-size: 14px;">🔧 DNS Setup for <?php echo esc_html($flow_settings['domain']); ?></h4>
-                    <p style="font-size: 13px; color: #78350f; margin: 0;">
+                <div style="background: #fef3c7; border: 1px solid #dba617; padding: 15px 20px; border-radius: 2px; margin-top: 20px;">
+                    <h4 style="margin: 0 0 10px; color: #50575e; font-size: 14px;">DNS Setup for <?php echo esc_html($flow_settings['domain']); ?></h4>
+                    <p style="font-size: 13px; color: #50575e; margin: 0;">
                         Point your domain to: <code style="background: white; padding: 3px 8px; border-radius: 4px;"><?php echo esc_html(parse_url(home_url(), PHP_URL_HOST)); ?></code>
                     </p>
-                    <p style="font-size: 12px; color: #92400e; margin: 8px 0 0;">
-                        <a href="https://flosc.ai/docs/dns" target="_blank" style="color: #92400e;">📚 Full DNS Configuration Guide</a>
+                    <p style="font-size: 12px; color: #50575e; margin: 8px 0 0;">
+                        <a href="https://flosc.ai/docs/dns" target="_blank" style="color: #50575e;">Full DNS Configuration Guide</a>
                     </p>
                 </div>
                 <?php endif; ?>

@@ -68,36 +68,36 @@ if (!$active_quiz_type) {
 ?>
 <style>
     .flosc-quiz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin: 20px 0; }
-    .flosc-quiz-card { background: #fff; border: 2px solid #e5e7eb; border-radius: 12px; padding: 16px; transition: all 0.2s; }
-    .flosc-quiz-card.active { border-color: #10b981; background: #f0fdf4; }
-    .flosc-quiz-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .flosc-quiz-card { background: #fff; border: 1px solid #c3c4c7; border-radius: 2px; padding: 16px; }
+    .flosc-quiz-card.active { border-color: #2271b1; background: #f0f6fc; }
+    .flosc-quiz-card:hover { border-color: #2271b1; }
     .flosc-quiz-card h4 { margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .flosc-quiz-card .icon { font-size: 20px; }
-    .flosc-quiz-card .desc { color: #64748b; font-size: 13px; margin-bottom: 12px; line-height: 1.4; }
-    .flosc-quiz-card .badge { font-size: 10px; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
-    .flosc-quiz-card .badge.native { background: #dbeafe; color: #1e40af; }
-    .flosc-quiz-card .badge.plugin { background: #fef3c7; color: #92400e; }
-    .flosc-quiz-card .badge.mvp { background: #dcfce7; color: #166534; }
-    .flosc-quiz-toggle { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb; }
+    .flosc-quiz-card .desc { color: #50575e; font-size: 13px; margin-bottom: 12px; line-height: 1.4; }
+    .flosc-quiz-card .badge { font-size: 10px; padding: 2px 8px; border-radius: 2px; font-weight: 600; }
+    .flosc-quiz-card .badge.native { background: #e7f3ff; color: #004085; }
+    .flosc-quiz-card .badge.plugin { background: #fff3cd; color: #856404; }
+    .flosc-quiz-card .badge.mvp { background: #d4edda; color: #155724; }
+    .flosc-quiz-toggle { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #c3c4c7; }
     .flosc-quiz-toggle input[type="checkbox"], .flosc-quiz-toggle input[type="radio"] { width: 16px; height: 16px; }
-    .flosc-section-header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+    .flosc-section-header { background: #1d2327; color: #f0f0f1; padding: 20px; border-radius: 2px; margin-bottom: 20px; }
     .flosc-section-header h2 { margin: 0 0 8px 0; }
-    .flosc-section-header p { margin: 0; opacity: 0.9; }
-    .flosc-plugin-status { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; padding: 2px 6px; border-radius: 4px; }
-    .flosc-plugin-status.active { background: #dcfce7; color: #166534; }
-    .flosc-plugin-status.not_installed { background: #f3f4f6; color: #6b7280; }
-    .flosc-flow-preview { background: #f0f9ff; border-radius: 12px; padding: 20px; display: flex; align-items: center; justify-content: space-around; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
+    .flosc-section-header p { margin: 0; color: #a7aaad; }
+    .flosc-plugin-status { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; padding: 2px 6px; border-radius: 2px; }
+    .flosc-plugin-status.active { background: #d4edda; color: #155724; }
+    .flosc-plugin-status.not_installed { background: #f0f0f1; color: #50575e; }
+    .flosc-flow-preview { background: #f0f6fc; border: 1px solid #c3c4c7; border-radius: 2px; padding: 20px; display: flex; align-items: center; justify-content: space-around; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
     .flosc-flow-step { text-align: center; min-width: 70px; }
     .flosc-flow-step .icon { font-size: 28px; }
     .flosc-flow-step .label { font-weight: 600; font-size: 12px; margin-top: 4px; }
-    .flosc-flow-arrow { font-size: 20px; color: #94a3b8; }
+    .flosc-flow-arrow { font-size: 20px; color: #787c82; }
 </style>
 
 <div class="flosc-quiz-config">
     <!-- Section Header -->
     <div class="flosc-section-header">
-        <h2>🎯 Quiz System Configuration</h2>
-        <p>Enable quizzes to power the FLOSC funnel: Quiz → Score → Login Gate → Content → Sale</p>
+        <h2>Quiz System Configuration</h2>
+        <p>Enable quizzes to power the FLOSC funnel: Quiz &rarr; Score &rarr; Login Gate &rarr; Content &rarr; Sale</p>
     </div>
 
     <!-- Funnel Flow Preview -->

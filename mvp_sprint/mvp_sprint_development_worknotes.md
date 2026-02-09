@@ -1,6 +1,50 @@
 # MVP Sprint Development Worknotes
 **Started:** 2026-02-02
-**Current Version:** 1.4.7 (SSO overhaul + funnel audit + content protection + state hardening)
+**Current Version:** 1.4.8 (admin styling overhaul — WordPress-native)
+
+---
+
+## MTS-2026-02-08d - v1.4.8: Admin Styling Overhaul
+
+### Goal
+Remove all "clown show" styling from admin — gradients, emojis, rounded corners. Make it look like a stock WordPress plugin.
+
+### Changes Made
+
+**admin/settings.php:**
+- `flosc_tab_header()`: removed green gradient (`#10b981→#059669`), now uses flat `#f0f0f1` background with `#1d2327` text. Emoji parameter no longer displayed.
+- Flow selector: removed purple gradient (`#667eea→#764ba2`), now uses WP dark `#1d2327` background
+- Tab labels: stripped all emojis (`🏷️ Identity` → `Identity`, etc.)
+- URL mapping boxes (single + all-flows views): replaced green gradient with `#f0f6fc` info box style, links now `#2271b1` (WP blue)
+- All Flows header: replaced purple gradient with `#1d2327` dark header
+- CURRENT badge: `#4f46e5` → `#2271b1` (WP blue)
+- Status badges: replaced solid colored backgrounds with subtle WP notice colors
+- Permalink status indicator: replaced bold colored badges with WP admin notice palette
+- All `border-radius: 6px/8px/10px` → `2px` (WP standard)
+- All Tailwind colors replaced with WP admin palette (`#d1d5db→#c3c4c7`, `#6b7280→#50575e`, `#ef4444→#d63638`, etc.)
+- Removed emojis from field labels, buttons, headings (`⭐`, `🌐`, `🔧`, `💾`, etc.)
+- View App button: now uses WordPress `button button-small` class instead of custom styled link
+- Version badge: uses `#f0f0f1` background
+- Footer: uses `#c3c4c7` border, `#787c82` text
+- Updated file header to v1.4.8
+
+**admin/quiz.php:**
+- `.flosc-section-header`: replaced purple gradient with flat `#1d2327` dark background
+- `.flosc-quiz-card`: removed 12px border-radius → 2px, removed hover box-shadow, use WP border colors
+- All badge colors normalized to WP admin palette
+- Section header text: removed emoji prefix
+
+**assets/css/flosc-admin.css:**
+- `.flosc-card--expandable`: 8px → 2px border-radius
+- `.flosc-bridge-stat`: 8px → 4px border-radius
+- `.flosc-weakness-chart`: 8px → 4px border-radius
+
+### Design Principles Applied
+- No gradients anywhere in admin chrome
+- No emojis in admin chrome (user-configurable emoji field for flows preserved)
+- All border-radius: 2-4px (WordPress standard)
+- Color palette: WordPress admin only (`#1d2327`, `#2271b1`, `#d63638`, `#f0f0f1`, `#c3c4c7`, `#50575e`, `#787c82`)
+- User-facing flow data (primary_color, emoji) unchanged — those are frontend settings
 
 ---
 
