@@ -304,9 +304,19 @@ class OAuth2_Handler {
             }
         }
         
+        // v1.5.2: If redirecting to a different domain, append a one-time login token
+        // because wp_set_auth_cookie() only covers the callback domain (dainis.net),
+        // not the custom domain (flosc.ai, lesaep.com)
+        $callback_host = strtolower($_SERVER['HTTP_HOST'] ?? '');
+        $redirect_host = strtolower(wp_parse_url($redirect_to, PHP_URL_HOST) ?? '');
+        if ($redirect_host && $callback_host && $redirect_host !== $callback_host) {
+            $token = $this->generate_login_token($result);
+            $redirect_to = add_query_arg('flosc_login_token', $token, $redirect_to);
+        }
+
         // Add success flag for frontend to detect
         $redirect_to = add_query_arg('flosc_sso_success', '1', $redirect_to);
-        
+
         wp_redirect($redirect_to);
         exit;
     }
@@ -503,14 +513,29 @@ class OAuth2_Handler {
     
     /**
      * Log a user in programmatically
-     * 
+     *
      * @param int $user_id User ID
      */
     private function log_user_in($user_id) {
         wp_set_current_user($user_id);
         wp_set_auth_cookie($user_id, true);
-        
+
         do_action('wp_login', get_userdata($user_id)->user_login, get_userdata($user_id));
+    }
+
+    /**
+     * Generate a one-time login token for cross-domain redirect
+     * v1.5.2: Solves cookie domain problem — auth cookie set on dainis.net
+     * doesn't travel to flosc.ai/lesaep.com. Token lets the target domain
+     * authenticate the user on arrival.
+     *
+     * @param int $user_id User ID
+     * @return string Token
+     */
+    private function generate_login_token($user_id) {
+        $token = wp_generate_password(40, false);
+        set_transient('flosc_login_token_' . $token, $user_id, 30);
+        return $token;
     }
     
     /**

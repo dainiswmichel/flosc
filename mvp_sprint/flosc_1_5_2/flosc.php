@@ -146,6 +146,9 @@ class FLOSC_Framework {
     }
     
     private function init_hooks() {
+        // v1.5.2: Cross-domain SSO login token — must run before anything else
+        add_action('init', [$this, 'handle_login_token'], 0);
+
         // v1.1.9: Custom domain mapping - check early before WP routing
         add_action('init', [$this, 'handle_custom_domain'], 1);
         
@@ -1392,6 +1395,40 @@ The {product_name} Team";
         }
     }
     
+    /**
+     * v1.5.2: Handle cross-domain SSO login token
+     * When SSO callback on dainis.net redirects to flosc.ai/lesaep.com,
+     * the auth cookie doesn't travel (different domain). This handler
+     * picks up the one-time token from the URL, verifies it, sets the
+     * auth cookie on the current domain, and redirects to a clean URL.
+     */
+    public function handle_login_token() {
+        if (empty($_GET['flosc_login_token'])) {
+            return;
+        }
+
+        $token = sanitize_text_field($_GET['flosc_login_token']);
+        $transient_key = 'flosc_login_token_' . $token;
+        $user_id = get_transient($transient_key);
+
+        if (!$user_id) {
+            return;
+        }
+
+        // One-time use — delete immediately
+        delete_transient($transient_key);
+
+        // Set auth cookie on THIS domain (flosc.ai / lesaep.com)
+        wp_set_current_user($user_id);
+        wp_set_auth_cookie($user_id, true);
+        do_action('wp_login', get_userdata($user_id)->user_login, get_userdata($user_id));
+
+        // Redirect to clean URL (strip token param, keep sso_success)
+        $clean_url = remove_query_arg('flosc_login_token');
+        wp_safe_redirect($clean_url);
+        exit;
+    }
+
     /**
      * v1.3.6: Get the current flow based on request
      * 
