@@ -624,6 +624,9 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
                 }
             }
             
+            // v1.4.9: Use flow-aware app URL for custom domain support
+            $app_url = flosc()->get_app_url();
+            
             echo wp_json_encode([
             'restUrl' => rest_url('flosc/v1/'),
             'apiUrl' => rest_url('flosc/v1'),
@@ -632,7 +635,9 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
             'quizType' => get_option('flosc_quiz_type', 'pronunciation'),
             'product' => $product,
             'offers' => array_values($offers),
-            'loginUrl' => wp_login_url(home_url(get_option('flosc_app_slug', 'flosc'))),
+            'appUrl' => $app_url,
+            'loginUrl' => wp_login_url($app_url),
+            'logoutUrl' => wp_logout_url($app_url),
             'registerUrl' => wp_registration_url(),
             'registrationUrl' => wp_registration_url(),
             'lessonsUrl' => home_url('/lessons/'),
