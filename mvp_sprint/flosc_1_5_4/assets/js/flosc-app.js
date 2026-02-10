@@ -54,8 +54,8 @@ class floscApp {
             // Quiz info
             'score', 'quiz_id', 'initial_score', 'initial_quiz_id', 'quiz_taken',
             // Purchase/access
-            'purchased', 'lesson_viewed', 'onboarded', 'lessons_completed',
-            'has_incomplete_lesson', 'completed_quizzes',
+            'purchased', 'lesson_viewed', 'free_lessons_count', 'onboarded',
+            'lessons_completed', 'has_incomplete_lesson', 'completed_quizzes',
             // Session tracking
             'message_count', 'inactive_seconds', 'session_seconds', 'session_minutes',
             // Product info
@@ -317,6 +317,7 @@ class floscApp {
             // Purchase/access
             purchased: isMember,
             lesson_viewed: !!this.user?.freeLessonDelivered,
+            free_lessons_count: parseInt(this.user?.freeLessonsCount) || 0,
             onboarded: !!this.user?.funnelCompleted,
             lessons_completed: parseInt(this.user?.lessonsCompleted) || 0,
             has_incomplete_lesson: !!this.user?.hasIncompleteLesson,
@@ -1979,7 +1980,7 @@ class floscApp {
             // v1.4.6: Show user-facing error instead of silent failure
             const mountPoint = document.getElementById(`flosc-inline-card-${offerId}`);
             if (mountPoint) {
-                mountPoint.innerHTML = '<div style="color: #dc2626; padding: 10px; text-align: center; font-size: 14px;">Payment is temporarily unavailable. Please try again later.</div>';
+                mountPoint.innerHTML = '<div class="flosc-payment-error">Payment is temporarily unavailable. Please try again later.</div>';
             }
             return;
         }
@@ -3441,7 +3442,7 @@ class floscApp {
             <div class="flosc-sandbox-payment" data-offer-id="${offerId}" data-product-id="${productId}">
                 <h3>${productIcon} Sandbox Payment</h3>
                 <p>Test the full purchase flow for <strong>${productName}</strong>!</p>
-                <p style="font-size: 13px; opacity: 0.8;">Enter any amount you want - it's fake money for testing.</p>
+                <p class="flosc-sandbox-text">Enter any amount you want - it's fake money for testing.</p>
                 <div class="flosc-sandbox-amount">
                     <span>$</span>
                     <input type="text" id="flosc-sandbox-amount" value="1,000,000,000" 
@@ -3457,7 +3458,7 @@ class floscApp {
                 <button class="flosc-sandbox-pay-btn" onclick="window.floscAppInstance.processSandboxPayment('${offerId}', '${productId}')">
                     🎉 Complete Fake Purchase
                 </button>
-                <p style="font-size: 12px; opacity: 0.8; margin-top: 10px;">
+                <p class="flosc-sandbox-subtext">
                     This grants <strong>${memberLevel}</strong> membership level
                 </p>
             </div>
@@ -3535,10 +3536,10 @@ class floscApp {
                         <p>Your sandbox purchase was successful!</p>
                         <div class="amount">${formattedAmount}</div>
                         <p style="opacity: 0.9;">You now have <strong>${memberLevel}</strong> membership!</p>
-                        <p style="font-size: 14px; margin-top: 10px;">
+                        <p class="flosc-success-detail">
                             Full access to: <strong>${productName}</strong>
                         </p>
-                        <p style="font-size: 13px; margin-top: 15px;">
+                        <p class="flosc-celebration">
                             ${this.getSandboxCelebrationMessage(amount)}
                         </p>
                     </div>
@@ -4657,26 +4658,38 @@ Purchased: ${ctx.purchased}
     
     async requestFreeLesson() {
         this.showTyping();
-        
+
         try {
             const response = await fetch(this.config.apiUrl + '/free-lesson', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-WP-Nonce': this.config.nonce
-                }
+                    'X-WP-Nonce': this.config.nonce,
+                },
             });
-            
+
             const data = await response.json();
             this.hideTyping();
-            
-            if (data.success && data.lesson) {
+
+            // v1.5.4: Handle multiple lessons
+            const lessons = data.lessons || (data.lesson ? [data.lesson] : []);
+
+            if (data.success && lessons.length > 0) {
                 this.ivr.context.lesson_viewed = true;
                 this.ivr.context.first_message_after_free_lesson = true;
-                this.addMessage('assistant', `Here's your free lesson: <strong>${data.lesson.title}</strong>\n\n${data.lesson.content}`);
-                
+
+                if (lessons.length === 1) {
+                    this.addMessage('assistant', `Here's your complimentary lesson: **${lessons[0].title}**\n\n${lessons[0].content}`);
+                } else {
+                    let msg = `Here are your **${lessons.length} complimentary lessons**:\n\n`;
+                    lessons.forEach((lesson, i) => {
+                        msg += `---\n\n### Lesson ${i + 1}: ${lesson.title}\n\n${lesson.content}\n\n`;
+                    });
+                    this.addMessage('assistant', msg);
+                }
+
                 this.ivr.phase = 'offer';
-                
+
                 setTimeout(() => this.checkAutoMessages(), 2000);
             } else {
                 this.addMessage('assistant', data.message || 'Could not load your free lesson. Please try again.');
@@ -4696,9 +4709,141 @@ Purchased: ${ctx.purchased}
     
     showPaymentModal(offerId) {
         const modal = document.getElementById('flosc_modal_payment');
-        if (modal) {
-            modal.style.display = 'flex';
-            modal.dataset.offerId = offerId;
+        if (!modal) return;
+
+        modal.style.display = 'flex';
+        modal.dataset.offerId = offerId;
+
+        // v1.5.4: Mount Stripe Elements into the modal card-element div
+        if (!this.stripe) {
+            console.error('[FLOSC-CHECKOUT] Stripe not initialized');
+            return;
+        }
+
+        const mountPoint = document.getElementById('card-element');
+        if (!mountPoint) return;
+
+        // Unmount previous card element if any
+        if (this.cardElement) {
+            this.cardElement.unmount();
+            this.cardElement.destroy();
+        }
+
+        const elements = this.stripe.elements();
+        this.cardElement = elements.create('card', {
+            style: {
+                base: {
+                    fontSize: '16px',
+                    color: '#374151',
+                    '::placeholder': { color: '#9ca3af' },
+                },
+            },
+        });
+        this.cardElement.mount(mountPoint);
+
+        const payBtn = document.getElementById('payBtn');
+        const errorEl = document.getElementById('card-errors');
+
+        // Enable pay button when card is complete
+        this.cardElement.on('change', (event) => {
+            if (event.complete) {
+                payBtn.disabled = false;
+            } else {
+                payBtn.disabled = true;
+            }
+            if (event.error) {
+                errorEl.textContent = event.error.message;
+            } else {
+                errorEl.textContent = '';
+            }
+        });
+
+        // Remove old listener, add new
+        const newPayBtn = payBtn.cloneNode(true);
+        payBtn.parentNode.replaceChild(newPayBtn, payBtn);
+        newPayBtn.disabled = true;
+
+        newPayBtn.addEventListener('click', async () => {
+            await this.processModalPayment(offerId, newPayBtn, errorEl);
+        });
+
+        // Close button
+        const closeBtn = document.getElementById('paymentModalClose');
+        if (closeBtn) {
+            closeBtn.onclick = () => { modal.style.display = 'none'; };
+        }
+    }
+
+    // v1.5.4: Process payment from the modal
+    async processModalPayment(offerId, payBtn, errorEl) {
+        if (this.offers?.checkoutInProgress) return;
+        if (this.offers) this.offers.checkoutInProgress = true;
+
+        const originalText = payBtn.querySelector('.pay-btn-text')?.textContent || 'Pay';
+        if (payBtn.querySelector('.pay-btn-text')) payBtn.querySelector('.pay-btn-text').textContent = 'Processing...';
+        payBtn.disabled = true;
+
+        try {
+            // Create PaymentIntent on the server
+            const intentRes = await fetch(this.config.apiUrl + '/create-payment-intent', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': this.config.nonce,
+                },
+                body: JSON.stringify({ offer_id: offerId }),
+            });
+
+            const intentData = await intentRes.json();
+
+            if (!intentData.client_secret) {
+                throw new Error(intentData.message || 'Failed to create payment intent');
+            }
+
+            // Confirm payment with Stripe
+            const { error, paymentIntent } = await this.stripe.confirmCardPayment(
+                intentData.client_secret,
+                { payment_method: { card: this.cardElement } }
+            );
+
+            if (error) {
+                errorEl.textContent = error.message;
+                if (payBtn.querySelector('.pay-btn-text')) payBtn.querySelector('.pay-btn-text').textContent = originalText;
+                payBtn.disabled = false;
+                return;
+            }
+
+            if (paymentIntent.status === 'succeeded') {
+                // Verify and grant access on the server
+                await fetch(this.config.apiUrl + '/complete-purchase', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-WP-Nonce': this.config.nonce,
+                    },
+                    body: JSON.stringify({
+                        payment_intent_id: paymentIntent.id,
+                        offer_id: offerId,
+                    }),
+                });
+
+                // Close modal
+                const modal = document.getElementById('flosc_modal_payment');
+                if (modal) modal.style.display = 'none';
+
+                // Show success in chat
+                this.addMessage('assistant', '🎉 **Payment successful!** Welcome to full membership! Refreshing your access...');
+
+                // Reload to get updated user state
+                setTimeout(() => window.location.reload(), 2000);
+            }
+        } catch (err) {
+            console.error('[FLOSC-CHECKOUT] Payment error:', err);
+            errorEl.textContent = err.message || 'Payment failed. Please try again.';
+            if (payBtn.querySelector('.pay-btn-text')) payBtn.querySelector('.pay-btn-text').textContent = originalText;
+            payBtn.disabled = false;
+        } finally {
+            if (this.offers) this.offers.checkoutInProgress = false;
         }
     }
     

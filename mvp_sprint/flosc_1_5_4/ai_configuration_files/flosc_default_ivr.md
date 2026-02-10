@@ -246,43 +246,65 @@ FLOSC Phases: Login, Offer
 ## Welcome Back Guest
 MessageName: welcome_back_guest_001
 MessageType: auto
-MessageContent: Welcome back, {name}! 
+MessageContent: Welcome back, {name}! Great to see you again. Your complimentary content is ready for you — just pick up where you left off!
 MessageConditions: is_guest && returning_user && first_show_session
 
 ## First Login Welcome
 MessageName: first_login_welcome_001
 MessageType: auto
-MessageContent: Welcome, {name}! You're now logged in. Let me show you your quiz results!
+MessageContent: Welcome, {name}! We're so glad you're here. You're now our guest, and we have something special for you. Let me show you your quiz results!
 MessageConditions: is_guest && first_message_after_login
 
 ## Quiz Results - High Score
 MessageName: quiz_results_high_001
 MessageType: auto
-MessageContent: Excellent, {name}! You scored {score}%. I've unlocked a FREE lesson based on areas where you can improve even more!
+MessageContent: Wonderful work, {name}! You scored **{score}%** — that's impressive! As our guest, you have complimentary access to exclusive members-only content based on the areas where you can grow even further. It's available right now while you're logged in!
 MessageConditions: is_guest && first_message_after_quiz && score >= 70
 
 ## Quiz Results - Medium Score
 MessageName: quiz_results_medium_001
 MessageType: auto
-MessageContent: Good job, {name}! You scored {score}%. I've prepared a FREE lesson to help you improve!
+MessageContent: Great effort, {name}! You scored **{score}%**. As our guest, we've prepared complimentary exclusive content just for you — personalized lessons based on what you missed. They're yours to explore right now!
 MessageConditions: is_guest && first_message_after_quiz && score >= 40 && score < 70
 
 ## Quiz Results - Low Score
 MessageName: quiz_results_low_001
 MessageType: auto
-MessageContent: Thanks for completing the quiz, {name}! You scored {score}%. Don't worry - everyone starts somewhere! I've prepared a FREE lesson to help you.
+MessageContent: Thank you for completing the quiz, {name}! You scored **{score}%** — and that's a perfect starting point. As our guest, you have complimentary access to exclusive lessons chosen specifically for what you need most. Everyone starts somewhere, and this is your moment!
 MessageConditions: is_guest && first_message_after_quiz && score < 40
 
-## View My Free Lesson
-MessageName: view_free_lesson_001
+## View My Free Lesson (singular)
+MessageName: view_free_lesson_single_001
 MessageType: suggested_user_autoprompt
 MessagePanel: prompt
-MessageStyle: button
-Icon: 📖
-UserInput: View my free lesson
+MessageStyle: pill
+Icon: 🎁
+UserInput: View my free lesson!
 Action: open_free_lesson
-MessageContent: Opening your personalized lesson now...
-MessageConditions: is_guest && quiz_taken
+MessageContent: Opening your complimentary lesson now...
+MessageConditions: is_guest && quiz_taken && !lesson_viewed && free_lessons_count == 1
+
+## View My Free Lessons (plural)
+MessageName: view_free_lessons_plural_001
+MessageType: suggested_user_autoprompt
+MessagePanel: prompt
+MessageStyle: pill
+Icon: 🎁
+UserInput: View my free lessons!
+Action: open_free_lesson
+MessageContent: Opening your complimentary lessons now...
+MessageConditions: is_guest && quiz_taken && !lesson_viewed && free_lessons_count > 1
+
+## View My Free Lesson (fallback — when count unknown)
+MessageName: view_free_lesson_fallback_001
+MessageType: suggested_user_autoprompt
+MessagePanel: prompt
+MessageStyle: pill
+Icon: 🎁
+UserInput: View my free lesson!
+Action: open_free_lesson
+MessageContent: Opening your complimentary lesson now...
+MessageConditions: is_guest && quiz_taken && !lesson_viewed
 
 ## Review My Score
 MessageName: review_score_001
@@ -306,13 +328,13 @@ MessageConditions: is_guest && lesson_viewed
 ## After Free Lesson
 MessageName: after_lesson_001
 MessageType: auto
-MessageContent: How was that lesson? Questions about what we covered?
+MessageContent: We hope you enjoyed that! If you have any questions about what was covered, just ask. We're here for you.
 MessageConditions: is_guest && lesson_viewed && message_count >= 1
 
 ## Want More
 MessageName: want_more_001
 MessageType: auto
-MessageContent: This is just the beginning. The full course has 50+ lessons covering everything you need to master.
+MessageContent: What you just experienced is a taste of what the full course offers. There are 50+ lessons designed to take you from where you are now to complete mastery. We'd love to have you as a full member!
 MessageConditions: is_guest && lesson_viewed && message_count >= 3
 
 ## Main OTO (Offer)

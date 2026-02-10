@@ -140,7 +140,7 @@ class FLOSC_Sale_Manager {
         // Args: $user_id, $purchase_data (array with offer details)
         do_action('flosc_purchase_completed', $user_id, [
             'offer_id' => $offer_id,
-            'grants_level' => $offer['grants_level'] ?? '',
+            'grants_level' => $offer['grants']['level'] ?? '',
             'provider' => $provider_id,
             'transaction_id' => $result['transaction_id'] ?? null,
             'amount' => $offer['price'] ?? 0,

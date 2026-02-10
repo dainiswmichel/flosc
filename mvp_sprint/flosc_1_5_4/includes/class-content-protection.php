@@ -392,10 +392,10 @@ class FLOSC_Content_Protection {
             'slug' => $post ? $post->post_name : '',
         ], home_url('/' . $app_slug . '/'));
         
-        $cta_box = '<div class="flosc-public-post-cta" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; padding: 24px; border-radius: 12px; margin: 24px 0; text-align: center;">';
-        $cta_box .= '<p style="font-size: 18px; margin: 0 0 12px; font-weight: 500;">🎉 Enjoying this free lesson?</p>';
-        $cta_box .= '<p style="margin: 0 0 16px; opacity: 0.9;">Want personalized help or access to all lessons?</p>';
-        $cta_box .= '<a href="' . esc_url($chat_url) . '" style="display: inline-block; background: #fff; color: #667eea; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: 600;">💬 Chat with us</a>';
+        $cta_box = '<div class="flosc-public-post-cta">';
+        $cta_box .= '<p>🎉 Enjoying this free lesson?</p>';
+        $cta_box .= '<p>Want personalized help or access to all lessons?</p>';
+        $cta_box .= '<a href="' . esc_url($chat_url) . '">💬 Chat with us</a>';
         $cta_box .= '</div>';
         
         // Add CTA at the end of content

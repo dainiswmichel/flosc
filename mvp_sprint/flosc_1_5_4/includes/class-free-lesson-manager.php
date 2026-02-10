@@ -45,42 +45,54 @@ class FLOSC_Free_Lesson_Manager {
      * @param int $user_id User ID
      */
     public function handle_quiz_completion($quiz_result, $user_id) {
-        
+
         $score = $quiz_result['score'] ?? 0;
-        
+
         // Only offer free lesson if quiz incomplete (<100%)
         if ($score >= 100) {
             if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) error_log("FLOSC: User {$user_id} scored {$score}% - no free lesson needed");
             return;
         }
-        
+
         // Get missed lessons
         $missed = $this->get_missed_lessons($quiz_result);
-        
+
         if (empty($missed)) {
             if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) error_log("FLOSC: No missed lessons found for user {$user_id}");
             return;
         }
-        
-        // Pick ONE random lesson from missed
-        $selected_lesson = $missed[array_rand($missed)];
-        
-        // Store selected free lesson in user meta
-        update_user_meta($user_id, '_flosc_free_lesson_number', $selected_lesson);
+
+        // v1.5.4: Use admin-configured count instead of hardcoded 1
+        require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
+        $member_access = FLOSC_Member_Access::instance();
+        $count = $member_access->calculate_free_lesson_count(count($missed));
+
+        // Shuffle missed lessons and pick N
+        shuffle($missed);
+        $selected_lessons = array_slice($missed, 0, $count);
+
+        // Store selected free lessons in user meta (array for multiple, single for backward compat)
+        update_user_meta($user_id, '_flosc_free_lesson_number', $selected_lessons[0]);
+        update_user_meta($user_id, '_flosc_free_lesson_numbers', $selected_lessons);
         update_user_meta($user_id, '_flosc_free_lesson_offered', time());
-        
-        // Find the actual post and grant guest access to it
-        $post = $this->find_lesson_post($selected_lesson);
-        if ($post) {
-            require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
-            $member_access = FLOSC_Member_Access::instance();
-            $member_access->grant_guest_access($user_id, $post->ID);
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) error_log("FLOSC: Granted guest access to post {$post->ID} for user {$user_id}");
+
+        // Find and grant guest access to each selected lesson
+        $granted_posts = [];
+        foreach ($selected_lessons as $lesson_num) {
+            $post = $this->find_lesson_post($lesson_num);
+            if ($post) {
+                $member_access->grant_guest_access($user_id, $post->ID);
+                $granted_posts[] = $post->ID;
+                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) error_log("FLOSC: Granted guest access to post {$post->ID} (lesson #{$lesson_num}) for user {$user_id}");
+            }
         }
-        
-        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) error_log("FLOSC: User {$user_id} offered free lesson #{$selected_lesson} (scored {$score}%)");
-        
-        return $selected_lesson;
+
+        // Store granted post IDs for retrieval
+        update_user_meta($user_id, '_flosc_free_lesson_post_ids', $granted_posts);
+
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) error_log("FLOSC: User {$user_id} offered " . count($selected_lessons) . " free lesson(s) (scored {$score}%)");
+
+        return $selected_lessons;
     }
     
     /**
@@ -159,66 +171,51 @@ class FLOSC_Free_Lesson_Manager {
     }
     
     /**
-     * Get free lesson content for user
-     * 
+     * Get free lesson content for user (single — backward compatible)
+     *
      * @param int $user_id
      * @return array|false Post data or false
      */
     public function get_free_lesson($user_id) {
-        
-        $lesson_num = get_user_meta($user_id, '_flosc_free_lesson_number', true);
-        
-        if (!$lesson_num) {
-            return false;
+        $lessons = $this->get_free_lessons($user_id);
+        return !empty($lessons) ? $lessons[0] : false;
+    }
+
+    /**
+     * v1.5.4: Get all free lessons for user
+     *
+     * @param int $user_id
+     * @return array Array of lesson data arrays
+     */
+    public function get_free_lessons($user_id) {
+        $lesson_nums = get_user_meta($user_id, '_flosc_free_lesson_numbers', true);
+
+        // Backward compat: fall back to single lesson number
+        if (empty($lesson_nums)) {
+            $single = get_user_meta($user_id, '_flosc_free_lesson_number', true);
+            $lesson_nums = $single ? [$single] : [];
         }
-        
-        // Find post by lesson number
-        // v1.4.4: Use configured category, with fallback
-        $configured_cat = get_option('flosc_lessons_category', '');
-        $slugs_to_try = array_filter([
-            $configured_cat,
-            'flosc-sample-data',
-            'flosc_sample_data',
-            'flosc-lessons',
-        ]);
-        
-        $posts = [];
-        foreach ($slugs_to_try as $slug) {
-            $posts = get_posts([
-                'category_name' => $slug,
-                'meta_key' => '_flosc_lesson_number',
-                'meta_value' => $lesson_num,
-                'posts_per_page' => 1,
-                'post_status' => 'publish'
-            ]);
-            if (!empty($posts)) break;
+
+        if (empty($lesson_nums)) {
+            return [];
         }
-        
-        // Last resort
-        if (empty($posts)) {
-            $posts = get_posts([
-                'meta_key' => '_flosc_lesson_number',
-                'meta_value' => $lesson_num,
-                'posts_per_page' => 1,
-                'post_status' => 'publish'
-            ]);
+
+        $lessons = [];
+        foreach ($lesson_nums as $lesson_num) {
+            $post = $this->find_lesson_post($lesson_num);
+            if ($post) {
+                $lessons[] = [
+                    'post_id' => $post->ID,
+                    'lesson_number' => $lesson_num,
+                    'title' => $post->post_title,
+                    'content' => $post->post_content,
+                    'url' => get_permalink($post->ID),
+                    'excerpt' => wp_trim_words($post->post_content, 55),
+                ];
+            }
         }
-        
-        if (empty($posts)) {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) error_log("FLOSC: Free lesson #{$lesson_num} not found for user {$user_id}");
-            return false;
-        }
-        
-        $post = $posts[0];
-        
-        return [
-            'post_id' => $post->ID,
-            'lesson_number' => $lesson_num,
-            'title' => $post->post_title,
-            'content' => $post->post_content,
-            'url' => get_permalink($post->ID),
-            'excerpt' => wp_trim_words($post->post_content, 55)
-        ];
+
+        return $lessons;
     }
     
     /**
@@ -233,44 +230,52 @@ class FLOSC_Free_Lesson_Manager {
     }
     
     /**
-     * Deliver free lesson via chat or redirect
-     * 
+     * Deliver free lesson(s) via chat or redirect
+     * v1.5.4: Supports multiple lessons
+     *
      * @param int $user_id
      * @param string $delivery_mode 'chat' or 'redirect'
      * @return array Response data
      */
     public function deliver_free_lesson($user_id, $delivery_mode = 'chat') {
-        
-        $lesson = $this->get_free_lesson($user_id);
-        
-        if (!$lesson) {
+
+        $lessons = $this->get_free_lessons($user_id);
+
+        if (empty($lessons)) {
             return [
                 'success' => false,
-                'message' => 'No free lesson available.'
+                'message' => 'No free lesson available.',
             ];
         }
-        
+
         // Mark as delivered
         update_user_meta($user_id, '_flosc_free_lesson_delivered', time());
-        
+
+        $count = count($lessons);
+
         if ($delivery_mode === 'redirect') {
             return [
                 'success' => true,
                 'mode' => 'redirect',
-                'url' => $lesson['url'],
-                'message' => "Redirecting to your free lesson: {$lesson['title']}"
+                'url' => $lessons[0]['url'],
+                'message' => "Redirecting to your free lesson: {$lessons[0]['title']}",
             ];
         }
-        
-        // Chat delivery - return full content
+
+        // Chat delivery - return all lessons
         return [
             'success' => true,
             'mode' => 'chat',
-            'lesson_number' => $lesson['lesson_number'],
-            'title' => $lesson['title'],
-            'content' => $lesson['content'],
-            'url' => $lesson['url'],
-            'message' => "Here's your free lesson on {$lesson['title']}!"
+            'lessons' => $lessons,
+            'count' => $count,
+            // Backward compat: single lesson fields
+            'lesson_number' => $lessons[0]['lesson_number'],
+            'title' => $lessons[0]['title'],
+            'content' => $lessons[0]['content'],
+            'url' => $lessons[0]['url'],
+            'message' => $count === 1
+                ? "Here's your free lesson on {$lessons[0]['title']}!"
+                : "Here are your {$count} free lessons!",
         ];
     }
 }

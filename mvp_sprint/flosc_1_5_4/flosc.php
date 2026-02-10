@@ -1682,6 +1682,7 @@ The {product_name} Team";
                 'access' => $this->sale_manager->access()->get_user_access($user->ID),
                 'tokens' => $this->sale_manager->get_provider('tokens')->get_balance($user->ID),
                 'freeLessonDelivered' => (bool) get_user_meta($user->ID, '_flosc_free_lesson_delivered', true),
+                'freeLessonsCount' => count(get_user_meta($user->ID, '_flosc_free_lesson_numbers', true) ?: []),
                 'lastQuizScore' => get_user_meta($user->ID, '_flosc_last_quiz_score', true),
                 'lastQuizId' => get_user_meta($user->ID, '_flosc_last_quiz_id', true),
                 'initialScore' => get_user_meta($user->ID, '_flosc_initial_score', true),
@@ -1849,9 +1850,10 @@ The {product_name} Team";
 
         $user_id = get_current_user_id();
 
-        // v1.4.9: Match frontend — if purchased/member, always 'content'
+        // v1.5.4: Match frontend — if purchased/member, always 'content'
         // Frontend: if (this.user?.purchased) return 'content';
-        if ($this->sale_manager->access()->can_access($user_id, 'full')) {
+        // Frontend purchased = (user_state === 'member'), so backend must check is_member()
+        if ($this->sale_manager->access()->is_member($user_id)) {
             return 'content';
         }
 
@@ -4721,18 +4723,37 @@ Example good response:
         if (!$result['success']) {
             return new WP_REST_Response([
                 'success' => false,
-                'message' => $result['message'] ?? 'No free lesson available. Please take the quiz first.'
+                'message' => $result['message'] ?? 'No free lesson available. Please take the quiz first.',
             ], 404);
         }
 
-        return new WP_REST_Response([
-            'success' => true,
-            'lesson' => [
+        // v1.5.4: Return multiple lessons
+        $lessons_data = [];
+        if (!empty($result['lessons'])) {
+            foreach ($result['lessons'] as $lesson) {
+                $lessons_data[] = [
+                    'title' => $lesson['title'],
+                    'content' => $lesson['content'],
+                    'url' => $lesson['url'],
+                    'lesson_number' => $lesson['lesson_number'],
+                ];
+            }
+        } else {
+            // Backward compat: single lesson
+            $lessons_data[] = [
                 'title' => $result['title'],
                 'content' => $result['content'],
                 'url' => $result['url'],
                 'lesson_number' => $result['lesson_number'],
-            ]
+            ];
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'count' => count($lessons_data),
+            'lessons' => $lessons_data,
+            // Backward compat
+            'lesson' => $lessons_data[0],
         ]);
     }
     
@@ -4831,6 +4852,13 @@ Example good response:
         // v1.4.6: Set transient so chatbot shows post-purchase greeting on reload
         set_transient('flosc_just_purchased_' . $user_id, true, 300);
         
+        // v1.5.4: Store which flow this purchase belongs to
+        $current_flow = $this->get_current_flow();
+        $flow_id = $current_flow ? ($current_flow['id'] ?? '') : '';
+        if ($flow_id) {
+            update_user_meta($user_id, '_flosc_purchased_flow_id', $flow_id);
+        }
+
         // v1.4.6: Fire purchase_completed for any listeners (e.g. FLOSC_Member_Access)
         do_action('flosc_purchase_completed', $user_id, [
             'offer_id' => $offer_id,
@@ -4838,6 +4866,7 @@ Example good response:
             'provider' => 'stripe',
             'transaction_id' => $payment_intent['id'],
             'amount' => $payment_intent['amount'],
+            'flow_id' => $flow_id,
             'timestamp' => time(),
         ]);
         
