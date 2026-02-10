@@ -3,7 +3,7 @@
 ================================================================================
 FLOSC APP - MAIN CHAT APPLICATION TEMPLATE
 ================================================================================
-Version: 1.6.1
+Version: 1.5.4
 Updated: 2026-02m-10d
 
 TEACHABLE CODE PRINCIPLES:
@@ -242,7 +242,7 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
                 </div>
 
                 <!-- Logged in: share button -->
-                <button class="share-btn" id="flosc_app_share_button">
+                <button class="flosc-share-btn" id="flosc_app_share_button">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="18" cy="5" r="3"></circle>
                         <circle cx="6" cy="12" r="3"></circle>
@@ -360,18 +360,18 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
     </main>
 
     <!-- Quiz Modal (v9.3.3 - supports text AND audio input) -->
-    <div class="modal-overlay" id="flosc_modal_recording">
-        <div class="modal recording-modal">
-            <div class="modal-header">
+    <div class="flosc-modal-overlay" id="flosc_modal_recording">
+        <div class="flosc-modal flosc-recording-modal">
+            <div class="flosc-modal-header">
                 <h3>🎯 Quick Quiz</h3>
-                <button class="modal-close" id="floscQuizModalClose" aria-label="Close">
+                <button class="flosc-modal-close" id="floscQuizModalClose" aria-label="Close">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
                 </button>
             </div>
-            <div class="modal-body">
+            <div class="flosc-modal-body">
                 <?php
                 // v9.3.3: Get quiz content for display
                 $quiz_type = get_option('flosc_quiz_type', 'flosc_sample_text_based_quiz');
@@ -463,22 +463,22 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
     </div>
 
     <!-- Share Modal -->
-    <div class="modal-overlay" id="flosc_modal_share">
-        <div class="modal">
-            <div class="modal-header">
+    <div class="flosc-modal-overlay" id="flosc_modal_share">
+        <div class="flosc-modal">
+            <div class="flosc-modal-header">
                 <h3>Share <?php echo esc_html($product['name'] ?: 'FLOSC'); ?></h3>
-                <button class="modal-close" id="shareModalClose" aria-label="Close">
+                <button class="flosc-modal-close" id="shareModalClose" aria-label="Close">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
                 </button>
             </div>
-            <div class="modal-body">
-                <p class="share-text"><?php echo esc_html($product['share_text'] ?? 'Check out this amazing app!'); ?></p>
-                <div class="share-link-container">
-                    <input type="text" id="shareLink" readonly class="share-link-input" value="">
-                    <button class="copy-btn" id="copyBtn">
+            <div class="flosc-modal-body">
+                <p class="flosc-share-text"><?php echo esc_html($product['share_text'] ?? 'Check out this amazing app!'); ?></p>
+                <div class="flosc-share-link-container">
+                    <input type="text" id="shareLink" readonly class="flosc-share-link-input" value="">
+                    <button class="flosc-copy-btn" id="copyBtn">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                             <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
@@ -491,43 +491,43 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
     </div>
 
     <!-- Payment Modal (In-Chat Stripe) -->
-    <div class="modal-overlay" id="flosc_modal_payment">
-        <div class="modal payment-modal">
-            <div class="modal-header">
+    <div class="flosc-modal-overlay" id="flosc_modal_payment">
+        <div class="flosc-modal flosc-payment-modal">
+            <div class="flosc-modal-header">
                 <h3>Complete Your Purchase</h3>
-                <button class="modal-close" id="paymentModalClose" aria-label="Close">
+                <button class="flosc-modal-close" id="paymentModalClose" aria-label="Close">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
                 </button>
             </div>
-            <div class="modal-body">
-                <div class="payment-summary">
-                    <div class="payment-product">
-                        <span class="product-icon"><?php echo esc_html($product['emoji']); ?></span>
-                        <div class="product-info">
-                            <div class="product-name"><?php echo esc_html($product['name'] ?: 'FLOSC'); ?> Full Access</div>
-                            <div class="product-desc">Lifetime access to all content</div>
+            <div class="flosc-modal-body">
+                <div class="flosc-payment-summary">
+                    <div class="flosc-payment-product">
+                        <span class="flosc-product-icon"><?php echo esc_html($product['emoji']); ?></span>
+                        <div class="flosc-product-info">
+                            <div class="flosc-product-name"><?php echo esc_html($product['name'] ?: 'FLOSC'); ?> Full Access</div>
+                            <div class="flosc-product-desc">Lifetime access to all content</div>
                         </div>
                     </div>
-                    <div class="payment-price" id="paymentPrice"><?php echo esc_html($product['currency_symbol'] . $product['price']); ?></div>
+                    <div class="flosc-payment-price" id="paymentPrice"><?php echo esc_html($product['currency_symbol'] . $product['price']); ?></div>
                 </div>
                 
-                <div class="payment-form">
+                <div class="flosc-payment-form">
                     <label for="card-element">Card details</label>
-                    <div id="card-element" class="stripe-card-element">
+                    <div id="card-element" class="flosc-stripe-card-element">
                         <!-- Stripe Elements will mount here -->
                     </div>
-                    <div id="card-errors" class="stripe-errors" role="alert"></div>
+                    <div id="card-errors" class="flosc-stripe-errors" role="alert"></div>
                 </div>
                 
-                <button class="pay-btn" id="payBtn" disabled>
-                    <span class="pay-btn-text">Pay <?php echo esc_html($product['currency_symbol'] . $product['price']); ?></span>
-                    <span class="pay-btn-spinner"></span>
+                <button class="flosc-pay-btn" id="payBtn" disabled>
+                    <span class="flosc-pay-btn-text">Pay <?php echo esc_html($product['currency_symbol'] . $product['price']); ?></span>
+                    <span class="flosc-pay-btn-spinner"></span>
                 </button>
                 
-                <div class="payment-footer">
+                <div class="flosc-payment-footer">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
@@ -539,20 +539,20 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
     </div>
 
     <!-- Login Gate Modal (for visitors after 2 interactions) -->
-    <div class="modal-overlay" id="flosc_modal_login_gate">
-        <div class="modal">
-            <div class="modal-header">
+    <div class="flosc-modal-overlay" id="flosc_modal_login_gate">
+        <div class="flosc-modal">
+            <div class="flosc-modal-header">
                 <h3>Continue with <?php echo esc_html($product['name'] ?: 'FLOSC'); ?></h3>
-                <button class="modal-close" id="loginGateModalClose" aria-label="Close">
+                <button class="flosc-modal-close" id="loginGateModalClose" aria-label="Close">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
                 </button>
             </div>
-            <div class="modal-body login-gate-body">
+            <div class="flosc-modal-body flosc-login-gate-body">
                 <p>Create a free account to save your progress and continue the conversation.</p>
-                <div class="login-gate-buttons">
+                <div class="flosc-login-gate-buttons">
                     <a href="<?php echo esc_url(wp_registration_url()); ?>" class="btn-primary btn-large">Create Free Account</a>
                     <a href="<?php echo esc_url(wp_login_url(flosc()->get_app_url())); ?>" class="btn-secondary btn-large">Log In</a>
                 </div>
@@ -561,7 +561,7 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
     </div>
 
     <!-- Sidebar overlay for mobile -->
-    <div class="sidebar-overlay" id="flosc_app_sidebar_overlay"></div>
+    <div class="flosc-sidebar-overlay" id="flosc_app_sidebar_overlay"></div>
 
     <?php wp_footer(); ?>
     
@@ -668,15 +668,7 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
             'lessonsUrl' => home_url('/lessons/'),
             'checkoutUrl' => home_url('/checkout/'),
             'lessonsCategory' => get_option('flosc_lessons_category', ''),
-            // v1.5.5: Read OTO offer ID from per-flow settings first, fall back to global
-            'otoOfferId' => (function() {
-                $fs_key = $GLOBALS['flosc_settings_key'] ?? '';
-                if ($fs_key) {
-                    $fs = get_option($fs_key, []);
-                    if (!empty($fs['oto_offer_id'])) return $fs['oto_offer_id'];
-                }
-                return get_option('flosc_oto_offer_id', '');
-            })(),
+            'otoOfferId' => get_option('flosc_oto_offer_id', ''),
             'tokenName' => get_option('flosc_token_name', 'tokens'),
             // v1.3.7: Flow context for API calls
             'flowId' => $current_flow ? ($current_flow['id'] ?? null) : null,

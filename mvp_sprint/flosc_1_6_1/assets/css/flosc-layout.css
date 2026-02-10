@@ -59,13 +59,14 @@
    RESET & BASE
    ============================================ */
 
-*, *::before, *::after {
+/* v1.6.1: Scoped to .flosc-app to avoid WordPress theme collisions */
+.flosc-app, .flosc-app *, .flosc-app *::before, .flosc-app *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-html, body {
+.flosc-app {
     height: 100%;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
     font-size: 16px;
@@ -475,7 +476,7 @@ html, body {
     gap: 8px;
 }
 
-.share-btn {
+.flosc-share-btn {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -1111,7 +1112,7 @@ html, body {
    MODAL SYSTEM
    ============================================ */
 
-.modal-overlay {
+.flosc-modal-overlay {
     display: none;
     position: fixed;
     top: 0;
@@ -1127,11 +1128,11 @@ html, body {
     -webkit-backdrop-filter: blur(4px);
 }
 
-.modal-overlay.show {
+.flosc-modal-overlay.show {
     display: flex;
 }
 
-.modal {
+.flosc-modal {
     background: var(--flosc-bg, white);
     border-radius: 16px;
     max-width: 440px;
@@ -1153,7 +1154,7 @@ html, body {
     }
 }
 
-.modal-header {
+.flosc-modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1161,7 +1162,7 @@ html, body {
     border-bottom: 1px solid var(--flosc-border, #e5e7eb);
 }
 
-.modal-header h3 {
+.flosc-modal-header h3 {
     font-size: 18px;
     font-weight: 700;
     margin: 0;
@@ -1169,7 +1170,7 @@ html, body {
     letter-spacing: -0.02em;
 }
 
-.modal-close {
+.flosc-modal-close {
     background: none;
     border: none;
     padding: 8px;
@@ -1182,12 +1183,12 @@ html, body {
     transition: all 0.15s ease;
 }
 
-.modal-close:hover {
+.flosc-modal-close:hover {
     background: var(--flosc-sidebar-hover, #f3f4f6);
     color: var(--flosc-text, #111827);
 }
 
-.modal-body {
+.flosc-modal-body {
     padding: 22px;
 }
 
@@ -1195,11 +1196,11 @@ html, body {
    QUIZ MODAL
    ============================================ */
 
-.recording-modal {
+.flosc-recording-modal {
     max-width: 400px;
 }
 
-.recording-instructions {
+.flosc-recording-instructions {
     text-align: center;
     color: var(--flosc-text-muted, #6b7280);
     margin-bottom: 24px;
@@ -1218,7 +1219,7 @@ html, body {
     height: 60px;
 }
 
-.recording-timer {
+.flosc-recording-timer {
     text-align: center;
     font-size: 24px;
     font-weight: 600;
@@ -1227,13 +1228,13 @@ html, body {
     color: var(--flosc-text, #111827);
 }
 
-.recording-controls {
+.flosc-recording-controls {
     display: flex;
     justify-content: center;
     gap: 12px;
 }
 
-.record-btn, .stop-btn {
+.flosc-record-btn, .flosc-stop-btn {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -1246,25 +1247,25 @@ html, body {
     transition: all 0.2s ease;
 }
 
-.record-btn {
+.flosc-record-btn {
     background: #ef4444;
     color: white;
 }
 
-.record-btn:hover {
+.flosc-record-btn:hover {
     background: #dc2626;
 }
 
-.stop-btn {
+.flosc-stop-btn {
     background: var(--flosc-text, #111827);
     color: white;
 }
 
-.recording-playback {
+.flosc-recording-playback {
     margin-top: 20px;
 }
 
-.recording-playback audio {
+.flosc-recording-playback audio {
     width: 100%;
     margin-bottom: 16px;
 }
@@ -1278,7 +1279,7 @@ html, body {
     flex: 1;
 }
 
-.recording-error {
+.flosc-recording-error {
     text-align: center;
     color: #ef4444;
     padding: 20px;
@@ -1497,62 +1498,6 @@ html, body {
     display: inline-block;
 }
 
-/* Quiz Result Breakdown (v1.6.0) */
-.flosc-quiz-result-breakdown {
-    display: flex;
-    justify-content: center;
-    gap: 24px;
-    margin-top: 16px;
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.flosc-quiz-result-correct,
-.flosc-quiz-result-incorrect {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 6px 14px;
-    border-radius: 999px;
-    font-size: 13px;
-    font-weight: 600;
-}
-
-/* Quiz Result Transcript (audio quiz) */
-.flosc-quiz-result-transcript {
-    margin-top: 16px;
-    font-size: 13px;
-    font-style: italic;
-    opacity: 0.85;
-    line-height: 1.5;
-}
-
-/* Quiz Option States (v1.6.0) */
-.flosc-quiz-option--disabled {
-    pointer-events: none;
-    opacity: 0.5;
-}
-
-.flosc-quiz-option--selected {
-    pointer-events: none;
-    opacity: 1;
-}
-
-/* Offer States (v1.6.0) */
-.flosc-offer--dismissing {
-    opacity: 0;
-    transform: translateY(-10px);
-    transition: all 0.3s ease;
-}
-
-.flosc-offer--clickable {
-    cursor: pointer;
-}
-
-.flosc-offer-cta-price {
-    opacity: 0.9;
-}
-
 /* ============================================
    SANDBOX PAYMENT (v1.4.6)
    ============================================ */
@@ -1657,18 +1602,18 @@ html, body {
    SHARE MODAL
    ============================================ */
 
-.share-text {
+.flosc-share-text {
     color: var(--flosc-text-muted, #6b7280);
     margin-bottom: 16px;
     line-height: 1.6;
 }
 
-.share-link-container {
+.flosc-share-link-container {
     display: flex;
     gap: 8px;
 }
 
-.share-link-input {
+.flosc-share-link-input {
     flex: 1;
     padding: 10px 14px;
     border: 1px solid var(--flosc-border, #e5e7eb);
@@ -1678,7 +1623,7 @@ html, body {
     color: var(--flosc-text, #111827);
 }
 
-.copy-btn {
+.flosc-copy-btn {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -1693,7 +1638,7 @@ html, body {
     transition: background 0.15s ease;
 }
 
-.copy-btn:hover {
+.flosc-copy-btn:hover {
     background: var(--flosc-accent-hover, #1d4ed8);
 }
 
@@ -1701,11 +1646,11 @@ html, body {
    PAYMENT MODAL
    ============================================ */
 
-.payment-modal {
+.flosc-payment-modal {
     max-width: 420px;
 }
 
-.payment-summary {
+.flosc-payment-summary {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1715,37 +1660,37 @@ html, body {
     margin-bottom: 20px;
 }
 
-.payment-product {
+.flosc-payment-product {
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-.product-icon {
+.flosc-product-icon {
     font-size: 32px;
 }
 
-.product-name {
+.flosc-product-name {
     font-weight: 600;
     color: var(--flosc-text, #111827);
 }
 
-.product-desc {
+.flosc-product-desc {
     font-size: 13px;
     color: var(--flosc-text-muted, #6b7280);
 }
 
-.payment-price {
+.flosc-payment-price {
     font-size: 24px;
     font-weight: 700;
     color: var(--flosc-text, #111827);
 }
 
-.payment-form {
+.flosc-payment-form {
     margin-bottom: 20px;
 }
 
-.payment-form label {
+.flosc-payment-form label {
     display: block;
     font-size: 14px;
     font-weight: 500;
@@ -1753,21 +1698,21 @@ html, body {
     color: var(--flosc-text, #111827);
 }
 
-.stripe-card-element {
+.flosc-stripe-card-element {
     padding: 12px;
     border: 1px solid var(--flosc-border, #e5e7eb);
     border-radius: 8px;
     background: white;
 }
 
-.stripe-errors {
+.flosc-stripe-errors {
     color: #ef4444;
     font-size: 13px;
     margin-top: 8px;
     min-height: 20px;
 }
 
-.pay-btn {
+.flosc-pay-btn {
     width: 100%;
     padding: 14px;
     background: var(--flosc-accent, #2563eb);
@@ -1781,20 +1726,20 @@ html, body {
     position: relative;
 }
 
-.pay-btn:hover:not(:disabled) {
+.flosc-pay-btn:hover:not(:disabled) {
     background: var(--flosc-accent-hover, #1d4ed8);
 }
 
-.pay-btn:disabled {
+.flosc-pay-btn:disabled {
     background: var(--flosc-text-muted, #6b7280);
     cursor: not-allowed;
 }
 
-.pay-btn.loading .pay-btn-text {
+.flosc-pay-btn.loading .flosc-pay-btn-text {
     visibility: hidden;
 }
 
-.pay-btn-spinner {
+.flosc-pay-btn-spinner {
     display: none;
     position: absolute;
     top: 50%;
@@ -1808,7 +1753,7 @@ html, body {
     animation: spinner 0.8s linear infinite;
 }
 
-.pay-btn.loading .pay-btn-spinner {
+.flosc-pay-btn.loading .flosc-pay-btn-spinner {
     display: block;
 }
 
@@ -1816,7 +1761,7 @@ html, body {
     to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
-.payment-footer {
+.flosc-payment-footer {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1830,24 +1775,24 @@ html, body {
    LOGIN GATE
    ============================================ */
 
-.login-gate-body {
+.flosc-login-gate-body {
     text-align: center;
 }
 
-.login-gate-body p {
+.flosc-login-gate-body p {
     color: var(--flosc-text-muted, #6b7280);
     margin-bottom: 24px;
     line-height: 1.6;
 }
 
-.login-gate-buttons {
+.flosc-login-gate-buttons {
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
-.login-gate-buttons .btn-primary,
-.login-gate-buttons .btn-large {
+.flosc-login-gate-buttons .btn-primary,
+.flosc-login-gate-buttons .btn-large {
     padding: 14px 24px;
     background: var(--flosc-accent, #2563eb);
     color: white;
@@ -1861,11 +1806,11 @@ html, body {
     transition: all 0.2s ease;
 }
 
-.login-gate-buttons .btn-primary:hover {
+.flosc-login-gate-buttons .btn-primary:hover {
     background: var(--flosc-accent-hover, #1d4ed8);
 }
 
-.login-gate-buttons .btn-secondary {
+.flosc-login-gate-buttons .btn-secondary {
     padding: 14px 24px;
     background: transparent;
     color: var(--flosc-accent, #2563eb);
@@ -1879,7 +1824,7 @@ html, body {
     transition: all 0.15s ease;
 }
 
-.login-gate-buttons .btn-secondary:hover {
+.flosc-login-gate-buttons .btn-secondary:hover {
     background: rgba(37, 99, 235, 0.1);
 }
 
@@ -1931,7 +1876,7 @@ html, body {
    SIDEBAR OVERLAY (Mobile)
    ============================================ */
 
-.sidebar-overlay {
+.flosc-sidebar-overlay {
     display: none;
     position: fixed;
     top: 0;
@@ -1942,7 +1887,7 @@ html, body {
     z-index: 99;
 }
 
-.sidebar-overlay.show {
+.flosc-sidebar-overlay.show {
     display: block;
 }
 
@@ -1952,7 +1897,7 @@ html, body {
 
 [data-user-state="visitor"] .user-profile-card,
 [data-user-state="visitor"] .session-history,
-[data-user-state="visitor"] .share-btn,
+[data-user-state="visitor"] .flosc-share-btn,
 [data-user-state="visitor"] .flosc_app_session_list,
 [data-user-state="visitor"] .new-chat-btn {
     display: none !important;
@@ -1967,8 +1912,8 @@ html, body {
     display: none !important;
 }
 
-[data-user-state="guest"] .share-btn,
-[data-user-state="member"] .share-btn {
+[data-user-state="guest"] .flosc-share-btn,
+[data-user-state="member"] .flosc-share-btn {
     display: flex !important;
 }
 

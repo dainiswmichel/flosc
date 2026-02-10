@@ -70,11 +70,13 @@ class FLOSC_Member_Access {
         if (!empty($purchase_data['grants_level'])) {
             $this->grant_level($user_id, $purchase_data['grants_level']);
         } elseif (!empty($purchase_data['offer_id'])) {
-            // v1.5.5: Look up offer via offer manager (reads per-flow, not global)
-            $offer = flosc()->sale()->offers()->get_offer($purchase_data['offer_id']);
-            $level = $offer['grants']['level'] ?? ($offer['grants_level'] ?? '');
-            if (!empty($level)) {
-                $this->grant_level($user_id, $level);
+            // Look up offer to get grants_level
+            $offers = get_option('flosc_offers', []);
+            if (isset($offers[$purchase_data['offer_id']]['grants_level'])) {
+                $level = $offers[$purchase_data['offer_id']]['grants_level'];
+                if (!empty($level)) {
+                    $this->grant_level($user_id, $level);
+                }
             }
         }
         

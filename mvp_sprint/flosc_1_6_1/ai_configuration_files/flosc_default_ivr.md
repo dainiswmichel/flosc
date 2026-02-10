@@ -306,12 +306,12 @@ Action: open_free_lesson
 MessageContent: Opening your complimentary lesson now...
 MessageConditions: is_guest && quiz_taken && !lesson_viewed
 
-## See My Score
+## Review My Score
 MessageName: review_score_001
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 Icon: 📊
-UserInput: See my score
+UserInput: Review my score
 MessageContent: You scored {score}% on the quiz. {missed_items}
 MessageConditions: is_guest && quiz_taken
 
@@ -336,11 +336,6 @@ MessageName: want_more_001
 MessageType: auto
 MessageContent: What you just experienced is a taste of what the full course offers. There are 50+ lessons designed to take you from where you are now to complete mastery. We'd love to have you as a full member!
 MessageConditions: is_guest && lesson_viewed && message_count >= 3
-
----
-
-# Offer Messages
-Guest has received free lesson → present purchase offers
 
 ## Main OTO (Offer)
 MessageName: oto_main_001
@@ -459,8 +454,9 @@ MessageConditions: is_guest && inactive_seconds > 600
 
 ---
 
-# Sale Messages
-Post-purchase onboarding
+# Member Messages
+Member (purchased) → MemberPromptPanel with pills
+FLOSC Phases: Sale, Content
 
 ## Purchase Confirmation (First Login as Member)
 MessageName: purchase_confirm_001
@@ -477,11 +473,6 @@ You can now:
 
 Ready to continue?
 MessageConditions: is_member && first_message_after_purchase
-
----
-
-# Content Messages
-Member (purchased) → ongoing support and learning
 
 ## Welcome Back Member
 MessageName: welcome_member_001

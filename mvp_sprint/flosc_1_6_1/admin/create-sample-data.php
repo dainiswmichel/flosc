@@ -249,7 +249,7 @@ function flosc_generate_post_content($num, $word) {
     $content = "# {$lesson['title']}\n\n";
     $content .= "{$lesson['teaser']}\n\n";
     $content .= "**Spoiler alert:** There's actual linguistic science below. Members get the full IPA breakdown, pronunciation secrets, and fun facts that'll make you the hit of parties (nerdy parties, but still).\n\n";
-    $content .= "<!--flosc_read_more-->\n\n";
+    $content .= "<!--more-->\n\n";
     $content .= "## 🎯 Full IPA Transcription\n\n";
     $content .= "**\"{$word}\" = {$lesson['ipa']}**\n\n";
     $content .= "---\n\n";

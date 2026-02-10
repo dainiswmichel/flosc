@@ -29,14 +29,14 @@ if (!function_exists('flosc_tab_header')) {
         $flow_name = $settings['name'] ?? ucwords(str_replace(['_', '-', '.md'], [' ', ' ', ''], $ivr_file));
         $version = defined('FLOSC_VERSION') ? FLOSC_VERSION : '?.?.?';
         
-        echo '<div class="flosc-tab-header">';
-        echo '<h2>';
+        echo '<div class="flosc-tab-header" style="background: #f0f0f1; border: 1px solid #c3c4c7; padding: 12px 18px; border-radius: 2px; margin-bottom: 20px;">';
+        echo '<h2 style="margin: 0; color: #1d2327; font-size: 16px; display: flex; justify-content: space-between; align-items: center;">';
         echo '<span>' . esc_html($tab_name . ' Configuration') . '</span>';
-        echo '<span class="flosc-version">v' . esc_html($version) . '</span>';
+        echo '<span style="font-size: 11px; font-weight: normal; color: #787c82;">v' . esc_html($version) . '</span>';
         echo '</h2>';
-        echo '<p>';
+        echo '<p style="margin: 5px 0 0; color: #50575e; font-size: 13px;">';
         echo 'Flow: <strong>' . esc_html($flow_name) . '</strong> ';
-        echo '<code>(' . esc_html($ivr_file) . ')</code>';
+        echo '<code style="background: #e0e0e0; padding: 2px 8px; border-radius: 2px; color: #1d2327;">(' . esc_html($ivr_file) . ')</code>';
         echo '</p>';
         echo '</div>';
     }
@@ -50,8 +50,8 @@ if (!function_exists('flosc_tab_header')) {
 if (!function_exists('flosc_tab_footer')) {
     function flosc_tab_footer() {
         $version = defined('FLOSC_VERSION') ? FLOSC_VERSION : '?.?.?';
-        echo '<div class="flosc-tab-footer">';
-        echo '<span class="flosc-version">FLOSC v' . esc_html($version) . '</span>';
+        echo '<div class="flosc-tab-footer" style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #c3c4c7; text-align: right;">';
+        echo '<span style="color: #787c82; font-size: 11px;">FLOSC v' . esc_html($version) . '</span>';
         echo '</div>';
     }
 }
@@ -141,7 +141,6 @@ if (!function_exists('flosc_permalink_status_indicator')) {
 // Get available IVR files
 $ivr_dir = FLOSC_PLUGIN_DIR . 'ai_configuration_files/';
 $ivr_files = [];
-$ivr_backups = [];
 if (is_dir($ivr_dir)) {
     $files = array_merge(
         glob($ivr_dir . '*_ivr.md'),
@@ -151,10 +150,7 @@ if (is_dir($ivr_dir)) {
     sort($files);
     foreach ($files as $file) {
         $filename = basename($file);
-        // v1.5.5: Separate flows from backups
-        if (strpos($filename, 'bckp_') === 0) {
-            $ivr_backups[] = $filename;
-        } else {
+        if (strpos($filename, 'backup') === false) {
             $ivr_files[] = $filename;
         }
     }
@@ -259,13 +255,6 @@ if (isset($_POST['flosc_save']) && wp_verify_nonce($_POST['_wpnonce'], 'flosc_sa
             }
         }
     }
-    if ($active_tab === 'companion') {
-        foreach (['companion_enabled', 'companion_show_for_visitors'] as $cb) {
-            if (!isset($_POST["flow_{$cb}"])) {
-                $new_settings[$cb] = '';
-            }
-        }
-    }
     if ($active_tab === 'quiz') {
         foreach (['wpq_integration', 'ld_integration', 'qsm_integration'] as $cb) {
             if (!isset($_POST["flow_{$cb}"])) {
@@ -299,9 +288,9 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
 
 ?>
 <div class="wrap flosc-admin">
-    <h1 class="flosc-page-header">
+    <h1 style="display: flex; align-items: center; gap: 10px;">
         FLOSC Settings 
-        <span class="flosc-version">v<?php echo esc_html(FLOSC_VERSION); ?></span>
+        <span style="font-size: 12px; font-weight: normal; color: #50575e; background: #f0f0f1; padding: 3px 10px; border-radius: 2px;">v<?php echo esc_html(FLOSC_VERSION); ?></span>
     </h1>
     
     <?php if (isset($saved)): ?>
@@ -311,41 +300,26 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
     <?php endif; ?>
     
     <!-- IVR File Selector = Flow Selector -->
-    <div class="flosc-ivr-selector">
-        <div class="flosc-ivr-selector__row">
-            <label>Flow:</label>
-            <select id="ivr-select" onchange="switchIVR(this.value);">
+    <div class="flosc-ivr-selector" style="background: #1d2327; padding: 15px 20px; border-radius: 2px; margin-bottom: 20px;">
+        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+            <label style="color: #f0f0f1; font-weight: 600; font-size: 14px;">Flow:</label>
+            <select id="ivr-select" onchange="switchIVR(this.value);" style="padding: 8px 12px; border-radius: 2px; border: 1px solid #50575e; min-width: 250px; font-size: 14px;">
                 <?php foreach ($ivr_files as $file): ?>
                     <option value="<?php echo esc_attr($file); ?>" <?php selected($selected_ivr, $file); ?>>
                         <?php echo esc_html($file); ?>
                     </option>
                 <?php endforeach; ?>
-                <?php if (!empty($ivr_backups)): ?>
-                    <optgroup id="ivr-backups-group" label="── Backups (<?php echo count($ivr_backups); ?>)" style="display: none;">
-                        <?php foreach ($ivr_backups as $bfile): ?>
-                            <option value="<?php echo esc_attr($bfile); ?>" <?php selected($selected_ivr, $bfile); ?>>
-                                <?php echo esc_html($bfile); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </optgroup>
-                <?php endif; ?>
             </select>
             
-            <?php if (!empty($ivr_backups)): ?>
-                <button type="button" id="toggle-backups-btn" onclick="toggleBackups()" class="button button-small">
-                    📂 Backups (<?php echo count($ivr_backups); ?>)
-                </button>
-            <?php endif; ?>
-            
             <?php if ($flow_settings['status'] === 'active' && !empty($flow_settings['slug'])): ?>
-                <a href="<?php echo esc_url($flow_url); ?>" target="_blank" class="button button-small">
+                <a href="<?php echo esc_url($flow_url); ?>" target="_blank" class="button button-small" style="font-size: 13px;">
                     View App &#8599;
                 </a>
             <?php endif; ?>
         </div>
         
         <!-- Permalink Status Row -->
-        <div class="flosc-ivr-selector__meta">
+        <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #50575e;">
             <?php flosc_permalink_status_indicator($flow_settings['slug'] ?? ''); ?>
         </div>
     </div>
@@ -355,18 +329,6 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
         const tab = '<?php echo esc_js($active_tab); ?>';
         window.location.href = '<?php echo admin_url('admin.php?page=flosc-settings'); ?>&ivr=' + encodeURIComponent(ivr) + '&tab=' + tab;
     }
-    function toggleBackups() {
-        const group = document.getElementById('ivr-backups-group');
-        const btn = document.getElementById('toggle-backups-btn');
-        if (!group) return;
-        const hidden = group.style.display === 'none';
-        group.style.display = hidden ? '' : 'none';
-        btn.textContent = hidden ? '📂 Hide Backups' : '📂 Backups (<?php echo count($ivr_backups); ?>)';
-    }
-    <?php // v1.5.5: If a backup is currently selected, show the group ?>
-    <?php if (strpos($selected_ivr, 'bckp_') === 0): ?>
-    document.addEventListener('DOMContentLoaded', function() { toggleBackups(); });
-    <?php endif; ?>
     </script>
     
     <!-- Tabs -->
@@ -384,7 +346,6 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
             'offers' => 'Offers',
             'payments' => 'Payments',
             'sso' => 'SSO',
-            'companion' => 'Companion',
         ];
         foreach ($tabs as $tab_id => $tab_label):
         ?>
@@ -493,7 +454,7 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
             
             <!-- ALL FLOWS - FULLY EXPANDED INLINE EDITING -->
             <div style="max-width: 1000px;">
-                <div class="flosc-ivr-selector">
+                <div style="background: #1d2327; padding: 15px 20px; border-radius: 2px; margin-bottom: 20px;">
                     <h2 style="margin: 0; color: #f0f0f1; font-size: 16px;">All FLOSC Flows &mdash; Identity Settings</h2>
                     <p style="margin: 5px 0 0; color: #a7aaad; font-size: 13px;">
                         All flows expanded. Edit any field, then save individually or save all at bottom.
@@ -511,39 +472,39 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                     $full_url = !empty($settings['domain']) ? 'https://' . $settings['domain'] . '/' : $flow_url;
                 ?>
                 
-                <div class="flosc-flow-block<?php echo $is_current ? ' flosc-flow-block--current' : ''; ?>">
+                <div class="flosc-flow-block" style="background: white; border: 2px solid <?php echo $is_current ? '#2271b1' : '#c3c4c7'; ?>; border-radius: 2px; padding: 25px; margin-bottom: 20px;">
                     
                     <!-- Flow Header with IVR file -->
-                    <div class="flosc-flow-block__header">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #c3c4c7;">
                         <div>
-                            <h3 class="flosc-flow-block__title">
-                                <span class="flosc-flow-block__emoji"><?php echo esc_html($settings['emoji'] ?? '🎯'); ?></span>
+                            <h3 style="margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px;">
+                                <span style="font-size: 28px;"><?php echo esc_html($settings['emoji'] ?? '🎯'); ?></span>
                                 <?php echo esc_html($settings['name'] ?? $ivr_file); ?>
                                 <?php if ($is_current): ?>
-                                    <span class="flosc-flow-block__badge--current">CURRENT</span>
+                                    <span style="background: #2271b1; color: white; padding: 3px 10px; border-radius: 2px; font-size: 11px;">CURRENT</span>
                                 <?php endif; ?>
                             </h3>
                             <div style="margin-top: 5px;">
-                                <code><?php echo esc_html($ivr_file); ?></code>
+                                <code style="background: #f3f4f6; padding: 3px 8px; border-radius: 4px; font-size: 12px;"><?php echo esc_html($ivr_file); ?></code>
                             </div>
                         </div>
-                        <div>
-                            <span class="flosc-status flosc-status--<?php echo ($settings['status'] ?? 'active') === 'active' ? 'active' : 'inactive'; ?>">
+                        <div style="text-align: right;">
+                            <span style="background: <?php echo ($settings['status'] ?? 'active') === 'active' ? '#d4edda' : '#f0f0f1'; ?>; color: <?php echo ($settings['status'] ?? 'active') === 'active' ? '#155724' : '#50575e'; ?>; padding: 4px 12px; border-radius: 2px; font-size: 12px; font-weight: 600;">
                                 <?php echo esc_html(ucfirst($settings['status'] ?? 'active')); ?>
                             </span>
                         </div>
                     </div>
                     
                     <!-- URL Mapping Summary -->
-                    <div class="flosc-flow-block__url-info">
-                        <div class="flosc-flow-block__url-label">This flow is accessible at:</div>
-                        <div class="flosc-flow-block__url">
-                            <a href="<?php echo esc_url($flow_url); ?>" target="_blank">
+                    <div style="background: #f0f6fc; border: 1px solid #c3c4c7; padding: 15px 20px; border-radius: 2px; color: #1d2327; margin-bottom: 20px;">
+                        <div style="font-size: 11px; color: #50575e; margin-bottom: 3px;">This flow is accessible at:</div>
+                        <div style="font-family: monospace; font-size: 15px; font-weight: 600;">
+                            <a href="<?php echo esc_url($flow_url); ?>" target="_blank" style="color: #2271b1; text-decoration: none;">
                                 <?php echo esc_html($flow_url); ?> &#8599;
                             </a>
                             <?php if (!empty($settings['domain'])): ?>
-                                <span style="color: var(--flosc-admin-text-muted); margin: 0 8px;">&rarr;</span>
-                                <a href="https://<?php echo esc_attr($settings['domain']); ?>/" target="_blank">
+                                <span style="color: #787c82; margin: 0 8px;">&rarr;</span>
+                                <a href="https://<?php echo esc_attr($settings['domain']); ?>/" target="_blank" style="color: #2271b1; text-decoration: none;">
                                     https://<?php echo esc_html($settings['domain']); ?>/ &#8599;
                                 </a>
                             <?php endif; ?>
@@ -551,21 +512,21 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                     </div>
                     
                     <!-- ALL EDITABLE FIELDS - Slug first -->
-                    <div class="flosc-flow-block__fields">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
                         
                         <!-- Left Column -->
                         <div>
-                            <div class="flosc-field">
-                                <label class="flosc-field__label flosc-field__label--required">URL Slug</label>
-                                <div class="flosc-field__row">
-                                    <span class="flosc-field__prefix"><?php echo home_url('/'); ?></span>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">URL Slug <span style="color: #d63638;">(required)</span></label>
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    <code style="background: #f3f4f6; padding: 8px 10px; border-radius: 4px; font-size: 13px;"><?php echo home_url('/'); ?></code>
                                     <input type="text" name="<?php echo $prefix; ?>slug" 
                                            value="<?php echo esc_attr($slug); ?>"
                                            placeholder="myapp"
-                                           style="width: 250px; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 4px; font-weight: 600;">
-                                    <span class="flosc-field__prefix">/</span>
+                                           style="width: 250px; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px; font-weight: 600;">
+                                    <code style="background: #f3f4f6; padding: 8px 10px; border-radius: 4px; font-size: 13px;">/</code>
                                 </div>
-                                <p class="flosc-field__hint">The URL path where this flow is served on your WordPress site</p>
+                                <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">The URL path where this flow is served on your WordPress site</p>
                             </div>
                             
                             <div style="margin-bottom: 15px;">
@@ -838,9 +799,6 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
             
         <?php elseif ($active_tab === 'sso'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/sso.php'; ?>
-            
-        <?php elseif ($active_tab === 'companion'): ?>
-            <?php include FLOSC_PLUGIN_DIR . 'admin/companion.php'; ?>
             
         <?php endif; ?>
         

@@ -234,7 +234,6 @@ class FLOSC_Flow_Manager {
                 'offers' => ['use_global' => true],
                 'payments' => ['use_global' => true],
                 'lessons' => ['use_global' => true],
-                'companion' => ['use_global' => true], // v1.6.0
             ],
         ];
         

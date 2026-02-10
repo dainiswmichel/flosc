@@ -305,7 +305,7 @@ if (isset($_POST['flosc_clear_ivr_db'])) {
     check_admin_referer('flosc_clear_ivr_db');
     
     // Backup first
-    flosc_export_ivr_backup($flow_key);
+    flosc_export_ivr_backup();
     
     // Clear (per-flow)
     if ($flow_key) {
@@ -323,19 +323,16 @@ if (isset($_POST['flosc_clear_ivr_db'])) {
         update_option($flow_key, $fs);
     }
     
-    add_settings_error('flosc_settings', 'db_cleared', 'FLOSC DB cleared. Backup created automatically. Click "Load MD → FLOSC DB" to restore messages from the .md file.', 'success');
+    add_settings_error('flosc_settings', 'db_cleared', 'FLOSC DB cleared. Backup created automatically.', 'success');
 }
 
 // Handle force resync (this is actually Load File → FLOSC DB)
 if (isset($_POST['flosc_force_resync'])) {
     check_admin_referer('flosc_force_resync');
     
-    $result = flosc_import_ivr_to_database(false, $flow_key);
+    $result = flosc_import_ivr_to_database(false);
     
     if ($result['success']) {
-        // v1.5.4: Refresh flow_settings after import
-        $flow_settings = get_option($flow_key, []);
-        $GLOBALS['flosc_current_settings'] = $flow_settings;
         add_settings_error('flosc_settings', 'load_done', 'Loaded Active IVR Messages MD file → FLOSC DB: ' . $result['message'], 'success');
     } else {
         add_settings_error('flosc_settings', 'load_failed', 'Load failed: ' . $result['message'], 'error');
@@ -349,12 +346,9 @@ $ivr_diagnostics = flosc_run_ivr_diagnostics();
 if (isset($_POST['flosc_confirm_import'])) {
     check_admin_referer('flosc_confirm_import');
     
-    $result = flosc_import_ivr_to_database(false, $flow_key); // Execute import (not preview)
+    $result = flosc_import_ivr_to_database(false); // Execute import (not preview)
     
     if ($result['success']) {
-        // v1.5.4: Refresh flow_settings after import
-        $flow_settings = get_option($flow_key, []);
-        $GLOBALS['flosc_current_settings'] = $flow_settings;
         add_settings_error('flosc_settings', 'ivr_imported', 'Loaded Active IVR Messages MD file → FLOSC DB: ' . esc_html($result['message']), 'success');
     } else {
         add_settings_error('flosc_settings', 'ivr_import_failed', 'Load failed: ' . esc_html($result['message']), 'error');
@@ -366,7 +360,7 @@ $import_preview = null;
 if (isset($_POST['flosc_preview_import'])) {
     check_admin_referer('flosc_preview_import');
     
-    $result = flosc_import_ivr_to_database(true, $flow_key); // Preview only
+    $result = flosc_import_ivr_to_database(true); // Preview only
     
     if ($result['success'] && isset($result['preview'])) {
         $import_preview = $result['stats'];
@@ -474,13 +468,7 @@ if (isset($_POST['save_ivr_message']) || isset($_POST['save_ivr_message_resync']
         $fs = get_option($flow_key, []);
         $fs['ivr_messages'] = $messages;
     
-    // v1.5.5: Remove message from ALL phases first (handles phase reassignment)
-    foreach ($phases as $p_key => &$p_ids) {
-        $p_ids = array_values(array_diff($p_ids, [$msg_id]));
-    }
-    unset($p_ids);
-
-    // Then add to the correct phase
+    // Update phase mapping
     if (!isset($phases[$phase])) {
         $phases[$phase] = [];
     }
@@ -495,7 +483,7 @@ if (isset($_POST['save_ivr_message']) || isset($_POST['save_ivr_message_resync']
     
     // v9.2.10: Only resync to file if user clicked "Save and Resync"
     if ($do_resync) {
-        flosc_auto_export_ivr_to_file($flow_key);
+        flosc_auto_export_ivr_to_file();
         add_settings_error('flosc_settings', 'message_saved', 'Message saved to FLOSC DB and resynced to Active IVR Messages MD file', 'success');
     } else {
         add_settings_error('flosc_settings', 'message_saved', 'Message saved to FLOSC DB. Changes appear on frontend. Click "Resync" when ready to save to file.', 'success');
@@ -526,7 +514,7 @@ if (isset($_GET['delete_message']) && isset($_GET['phase'])) {
     }
     
     // v9.2.10: Delete always resyncs to file (destructive operation)
-    flosc_auto_export_ivr_to_file($flow_key);
+    flosc_auto_export_ivr_to_file();
     
     add_settings_error('flosc_settings', 'message_deleted', 'Message deleted from FLOSC DB and removed from Active IVR Messages MD file', 'success');
 }
@@ -553,7 +541,10 @@ if (is_dir($ivr_files_dir)) {
     sort($files); // Alphabetical order
     foreach ($files as $file) {
         $filename = basename($file);
-        $available_ivr_files[] = $filename;
+        // Skip backup files
+        if (strpos($filename, 'backup') === false) {
+            $available_ivr_files[] = $filename;
+        }
     }
 }
 
@@ -748,11 +739,19 @@ function floscTestAPI() {
 }
 </script>
 
-<h2>IVR Messages</h2>
+<h2>IVR Messages Configuration</h2>
 
-<div class="flosc-info-box" style="margin-bottom: 20px; background: #f0f6ff; border-left: 4px solid #4f46e5; padding: 16px 20px; border-radius: 0 8px 8px 0;">
-    <strong>📝 How IVR Messages Work</strong>
-    <p style="margin: 8px 0 0;">Edit messages in your <code>.md</code> file, then click <strong>"📥 Load MD → FLOSC DB"</strong> above to import them. Only messages in the FLOSC DB are shown to your users. You can also edit messages inline below and click <strong>"🔄 Resync"</strong> to save back to the file.</p>
+<div class="flosc-info-box" style="margin-bottom: 20px;">
+    <strong>💾 FLOSC IVR System (v9.2.10)</strong>
+    <p>Messages are stored in the FLOSC DB for fast API access. Use the controls above to sync with your Active IVR Messages MD file.</p>
+    <p style="margin-top: 10px;"><strong>Workflow:</strong> Edit messages below → Save → Changes appear on frontend → Click "Resync" to save to file</p>
+    <ul style="margin: 10px 0 0 20px;">
+        <li><strong>Freeline:</strong> Visitor (not logged in) - Encourage quiz</li>
+        <li><strong>Login:</strong> Post-quiz + Logged-in - Deliver free lesson, present offer</li>
+        <li><strong>Offer:</strong> Sales pitch</li>
+        <li><strong>Sale:</strong> Post-purchase onboarding</li>
+        <li><strong>Content:</strong> Ongoing member support</li>
+    </ul>
 </div>
 
 <?php if ($import_preview !== null): ?>
@@ -807,8 +806,8 @@ function floscTestAPI() {
         </div>
         
         <div style="background: #d4edda; padding: 12px; margin: 15px 0; border-left: 4px solid #28a745;">
-            <strong>🔒 Auto-Backup Protection:</strong> Before loading, the current FLOSC DB will be saved as a backup file 
-            (e.g. <code>bckp_01_<?php echo pathinfo($active_ivr_file, PATHINFO_FILENAME); ?>.md</code>)
+            <strong>🔒 Auto-Backup Protection:</strong> Before loading, the current FLOSC DB will be saved to 
+            <code>ivr-backup-<?php echo date('Y-m-d_H-i-s'); ?>.md</code>
         </div>
         
         <?php if ($import_preview['has_deletions']): ?>
@@ -837,492 +836,169 @@ function floscTestAPI() {
     </div>
 <?php endif; ?>
 
-<!-- v1.5.5: Flat-scroll layout — all phases, all messages, inline editing -->
-<style>
-.flosc-phase-header {
-    background: #1d2327;
-    color: #fff;
-    padding: 14px 20px;
-    margin: 30px 0 0;
-    border-radius: 8px 8px 0 0;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: sticky;
-    top: 32px; /* below WP admin bar */
-    z-index: 90;
-}
-.flosc-phase-header:first-of-type { margin-top: 0; }
-.flosc-phase-header h3 {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-}
-.flosc-phase-header .flosc-phase-count {
-    background: rgba(255,255,255,0.15);
-    padding: 3px 12px;
-    border-radius: 12px;
-    font-size: 12px;
-}
-.flosc-phase-header .flosc-phase-desc {
-    font-size: 12px;
-    opacity: 0.7;
-    font-weight: normal;
-    margin-left: 12px;
-}
-.flosc-msg-card {
-    background: #fff;
-    border: 1px solid #ddd;
-    border-top: none;
-    padding: 0;
-    transition: border-color 0.15s;
-}
-.flosc-msg-card:last-child {
-    border-radius: 0 0 8px 8px;
-    margin-bottom: 0;
-}
-.flosc-msg-card:hover {
-    border-color: #b0b5ba;
-}
-.flosc-msg-summary {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: start;
-    padding: 14px 20px;
-    cursor: pointer;
-    gap: 16px;
-}
-.flosc-msg-summary:hover {
-    background: #f9f9fb;
-}
-.flosc-msg-meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px;
-    margin-top: 4px;
-}
-.flosc-msg-name {
-    font-weight: 600;
-    font-size: 14px;
-    color: #1d2327;
-}
-.flosc-msg-id {
-    font-size: 11px;
-    color: #999;
-    font-family: monospace;
-}
-.flosc-badge {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 500;
-    line-height: 1.4;
-}
-.flosc-badge-auto { background: #e8f4fd; color: #0369a1; }
-.flosc-badge-autoprompt { background: #f0fdf4; color: #166534; }
-.flosc-badge-offer { background: #fef3c7; color: #92400e; }
-.flosc-badge-pill { background: #f3e8ff; color: #7c3aed; }
-.flosc-badge-button { background: #dbeafe; color: #1d4ed8; }
-.flosc-badge-card { background: #fce7f3; color: #be185d; }
-.flosc-badge-chip { background: #e0e7ff; color: #4338ca; }
-.flosc-msg-preview {
-    font-size: 13px;
-    color: #555;
-    margin-top: 4px;
-    line-height: 1.4;
-    max-height: 2.8em;
-    overflow: hidden;
-}
-.flosc-msg-conditions {
-    font-size: 11px;
-    color: #8b8d91;
-    margin-top: 4px;
-    font-family: monospace;
-}
-.flosc-msg-conditions::before {
-    content: 'if: ';
-    color: #b0b5ba;
-}
-.flosc-msg-actions-col {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    flex-shrink: 0;
-}
-/* Expanded edit form */
-.flosc-msg-edit {
-    display: none;
-    border-top: 2px solid #4f46e5;
-    padding: 20px;
-    background: #fafbff;
-}
-.flosc-msg-card.is-editing .flosc-msg-edit {
-    display: block;
-}
-.flosc-msg-card.is-editing .flosc-msg-summary {
-    background: #f0f2ff;
-    border-bottom: 1px solid #e0e2ef;
-}
-.flosc-edit-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px 20px;
-}
-.flosc-edit-grid .flosc-field-full {
-    grid-column: 1 / -1;
-}
-.flosc-edit-grid label {
-    display: block;
-    font-size: 12px;
-    font-weight: 600;
-    color: #555;
-    margin-bottom: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-}
-.flosc-edit-grid input[type="text"],
-.flosc-edit-grid select,
-.flosc-edit-grid textarea {
-    width: 100%;
-    padding: 8px 10px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 13px;
-    font-family: inherit;
-    background: #fff;
-    transition: border-color 0.15s;
-}
-.flosc-edit-grid input:focus,
-.flosc-edit-grid select:focus,
-.flosc-edit-grid textarea:focus {
-    border-color: #4f46e5;
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
-}
-.flosc-edit-grid textarea {
-    min-height: 80px;
-    resize: vertical;
-}
-.flosc-edit-grid .flosc-field-hint {
-    font-size: 11px;
-    color: #999;
-    margin-top: 3px;
-}
-.flosc-edit-actions {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    margin-top: 16px;
-    padding-top: 16px;
-    border-top: 1px solid #e5e7eb;
-}
-.flosc-edit-actions .button-primary {
-    background: #4f46e5;
-    border-color: #4f46e5;
-}
-.flosc-edit-actions .button-primary:hover {
-    background: #4338ca;
-    border-color: #4338ca;
-}
-.flosc-phase-empty {
-    padding: 30px 20px;
-    text-align: center;
-    color: #999;
-    background: #fff;
-    border: 1px solid #ddd;
-    border-top: none;
-    border-radius: 0 0 8px 8px;
-    font-size: 14px;
-}
-.flosc-add-msg-row {
-    background: #fff;
-    border: 1px solid #ddd;
-    border-top: none;
-    padding: 10px 20px;
-    text-align: center;
-}
-.flosc-add-msg-row:last-child {
-    border-radius: 0 0 8px 8px;
-}
-</style>
+<!-- Phase Tabs -->
+<nav class="nav-tab-wrapper" style="margin-bottom: 20px;">
+    <?php foreach (['freeline', 'login', 'offer', 'sale', 'content'] as $phase): ?>
+        <a href="?page=flosc-settings&tab=ivr-messages&ivr_phase=<?php echo $phase; ?>" 
+           class="nav-tab <?php echo $active_phase === $phase ? 'nav-tab-active' : ''; ?>">
+            <?php echo ucfirst($phase); ?>
+            <span style="opacity: 0.6;">(<?php echo count($phases[$phase] ?? []); ?>)</span>
+        </a>
+    <?php endforeach; ?>
+</nav>
 
-<?php
-$phase_labels = [
-    'freeline' => ['emoji' => '🎯', 'label' => 'Freeline', 'desc' => 'Visitor — not logged in'],
-    'login'    => ['emoji' => '🔑', 'label' => 'Login / Guest', 'desc' => 'Logged in, has quiz score, gets free lesson'],
-    'offer'    => ['emoji' => '🎁', 'label' => 'Offer', 'desc' => 'Present purchase options after free lesson'],
-    'sale'     => ['emoji' => '💳', 'label' => 'Sale', 'desc' => 'Post-purchase onboarding'],
-    'content'  => ['emoji' => '📚', 'label' => 'Content', 'desc' => 'Member — ongoing access & support'],
-];
-
-// Which message is being saved? Scroll back to it after save
-$just_saved_id = '';
-if (isset($_POST['save_ivr_message']) || isset($_POST['save_ivr_message_resync'])) {
-    $just_saved_id = sanitize_text_field($_POST['message_id'] ?? '');
-}
-
-foreach ($phase_labels as $phase_key => $phase_info):
-    $phase_msgs = $phases[$phase_key] ?? [];
-    $phase_count = count($phase_msgs);
-?>
-
-<div class="flosc-phase-header" id="phase-<?php echo $phase_key; ?>">
-    <h3>
-        <?php echo $phase_info['emoji']; ?> <?php echo $phase_info['label']; ?>
-        <span class="flosc-phase-desc"><?php echo $phase_info['desc']; ?></span>
-    </h3>
-    <span class="flosc-phase-count"><?php echo $phase_count; ?> message<?php echo $phase_count !== 1 ? 's' : ''; ?></span>
-</div>
-
-<?php if (empty($phase_msgs)): ?>
-    <div class="flosc-phase-empty">
-        No messages in this phase. Add one below, or load from your <code>.md</code> file.
-    </div>
-<?php else: ?>
-    <?php foreach ($phase_msgs as $msg_id):
-        if (!isset($messages[$msg_id])) continue;
-        $msg = $messages[$msg_id];
-        $is_editing = (isset($_GET['edit_message']) && $_GET['edit_message'] === $msg_id) || $just_saved_id === $msg_id;
-        $type_label = $msg['type'] ?? 'auto';
-        $style_val = $msg['style'] ?? 'default';
-        $badge_class = 'flosc-badge-auto';
-        if ($type_label === 'suggested_user_autoprompt') $badge_class = 'flosc-badge-autoprompt';
-        if ($type_label === 'offer') $badge_class = 'flosc-badge-offer';
-        $style_badge_class = '';
-        if ($style_val === 'pill') $style_badge_class = 'flosc-badge-pill';
-        elseif ($style_val === 'button') $style_badge_class = 'flosc-badge-button';
-        elseif ($style_val === 'card') $style_badge_class = 'flosc-badge-card';
-        elseif ($style_val === 'chip') $style_badge_class = 'flosc-badge-chip';
-    ?>
-    <div class="flosc-msg-card <?php echo $is_editing ? 'is-editing' : ''; ?>" id="msg-<?php echo esc_attr($msg_id); ?>">
-        <div class="flosc-msg-summary" onclick="floscToggleEdit('<?php echo esc_js($msg_id); ?>')">
-            <div>
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <span class="flosc-msg-name"><?php echo esc_html($msg['name'] ?? $msg_id); ?></span>
-                    <?php if (!empty($msg['icon'])): ?>
-                        <span style="font-size: 16px;"><?php echo esc_html($msg['icon']); ?></span>
-                    <?php endif; ?>
-                    <span class="flosc-badge <?php echo $badge_class; ?>"><?php
-                        echo $type_label === 'suggested_user_autoprompt' ? 'autoprompt' : esc_html($type_label);
-                    ?></span>
-                    <?php if ($style_badge_class): ?>
-                        <span class="flosc-badge <?php echo $style_badge_class; ?>"><?php echo esc_html($style_val); ?></span>
-                    <?php endif; ?>
-                </div>
-                <div class="flosc-msg-id"><?php echo esc_html($msg_id); ?></div>
-                <div class="flosc-msg-preview"><?php echo esc_html(wp_trim_words($msg['content'] ?? '', 25)); ?></div>
-                <?php if (!empty($msg['conditions'])): ?>
-                    <div class="flosc-msg-conditions"><?php echo esc_html($msg['conditions']); ?></div>
-                <?php endif; ?>
-                <?php if (!empty($msg['action'])): ?>
-                    <div style="font-size: 11px; color: #6d28d9; margin-top: 2px; font-family: monospace;">⚡ <?php echo esc_html($msg['action']); ?></div>
-                <?php endif; ?>
-            </div>
-            <div class="flosc-msg-actions-col">
-                <button type="button" class="button button-small" onclick="event.stopPropagation(); floscToggleEdit('<?php echo esc_js($msg_id); ?>')">✏️</button>
-            </div>
-        </div>
-
-        <div class="flosc-msg-edit">
-            <form method="post" action="<?php echo admin_url('admin.php?page=flosc-settings&tab=ivr-messages'); ?>#msg-<?php echo esc_attr($msg_id); ?>">
-                <?php wp_nonce_field('flosc_save_ivr_message'); ?>
-                <input type="hidden" name="message_id" value="<?php echo esc_attr($msg_id); ?>">
-
-                <div class="flosc-edit-grid">
-                    <div>
-                        <label>Name</label>
-                        <input type="text" name="message_name" value="<?php echo esc_attr($msg['name'] ?? ''); ?>">
-                    </div>
-                    <div>
-                        <label>Message ID</label>
-                        <input type="text" value="<?php echo esc_attr($msg_id); ?>" disabled style="background: #f0f0f1;">
-                    </div>
-                    <div>
-                        <label>Type</label>
-                        <select name="message_type">
-                            <option value="auto" <?php selected($msg['type'] ?? 'auto', 'auto'); ?>>Auto (bot-initiated)</option>
-                            <option value="suggested_user_autoprompt" <?php selected($msg['type'] ?? '', 'suggested_user_autoprompt'); ?>>AutoPrompt (user button)</option>
-                            <option value="offer" <?php selected($msg['type'] ?? '', 'offer'); ?>>Offer</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label>Phase</label>
+<!-- Message Editor -->
+<?php if ($editing_message && isset($messages[$editing_message])): ?>
+    <?php $msg = $messages[$editing_message]; ?>
+    
+    <div style="background: #fff; border: 1px solid #ccc; padding: 20px; margin-bottom: 20px;">
+        <h3>Edit Message: <?php echo esc_html($msg['name']); ?></h3>
+        
+        <form method="post">
+            <?php wp_nonce_field('flosc_save_ivr_message'); ?>
+            <input type="hidden" name="message_id" value="<?php echo esc_attr($editing_message); ?>">
+            
+            <table class="form-table">
+                <tr>
+                    <th>Message ID</th>
+                    <td><code><?php echo esc_html($editing_message); ?></code></td>
+                </tr>
+                <tr>
+                    <th>Display Name</th>
+                    <td><input type="text" name="message_name" value="<?php echo esc_attr($msg['name']); ?>" class="regular-text"></td>
+                </tr>
+                <tr>
+                    <th>Phase</th>
+                    <td>
                         <select name="message_phase">
                             <?php foreach (['freeline', 'login', 'offer', 'sale', 'content'] as $p): ?>
-                                <option value="<?php echo $p; ?>" <?php selected($phase_key, $p); ?>><?php echo ucfirst($p); ?></option>
+                                <option value="<?php echo $p; ?>" <?php selected($msg['phase'], $p); ?>><?php echo ucfirst($p); ?></option>
                             <?php endforeach; ?>
                         </select>
-                    </div>
-                    <div>
-                        <label>Style</label>
-                        <select name="message_style">
-                            <option value="default" <?php selected($style_val, 'default'); ?>>Default</option>
-                            <option value="pill" <?php selected($style_val, 'pill'); ?>>Pill</option>
-                            <option value="button" <?php selected($style_val, 'button'); ?>>Button</option>
-                            <option value="chip" <?php selected($style_val, 'chip'); ?>>Chip</option>
-                            <option value="card" <?php selected($style_val, 'card'); ?>>Card</option>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Message Type</th>
+                    <td>
+                        <select name="message_type">
+                            <option value="auto" <?php selected($msg['type'], 'auto'); ?>>Auto (bot-initiated)</option>
+                            <option value="suggested_user_autoprompt" <?php selected($msg['type'], 'suggested_user_autoprompt'); ?>>Suggested User AutoPrompt (button)</option>
+                            <option value="offer" <?php selected($msg['type'], 'offer'); ?>>Offer</option>
                         </select>
-                    </div>
-                    <div>
-                        <label>Icon (emoji)</label>
-                        <input type="text" name="message_icon" value="<?php echo esc_attr($msg['icon'] ?? ''); ?>" placeholder="🚀">
-                    </div>
-                    <div class="flosc-field-full">
-                        <label>User Input Text <span style="font-weight: normal; color: #999;">(shown on autoprompt button)</span></label>
-                        <input type="text" name="message_user_input" value="<?php echo esc_attr($msg['user_input'] ?? ''); ?>" placeholder="e.g. Start free quiz">
-                    </div>
-                    <div class="flosc-field-full">
-                        <label>Content</label>
-                        <textarea name="message_content" rows="4"><?php echo esc_textarea($msg['content'] ?? ''); ?></textarea>
-                        <div class="flosc-field-hint">Variables: {name}, {score}, {correct_items}, {missed_items}, {product_name}, {price}, {discount_price}, {timer_remaining}, {user_status_response}</div>
-                    </div>
-                    <div class="flosc-field-full">
-                        <label>Conditions</label>
-                        <input type="text" name="message_conditions" value="<?php echo esc_attr($msg['conditions'] ?? ''); ?>" placeholder="e.g. is_visitor && quiz_taken && score >= 70">
-                        <div class="flosc-field-hint">Combine with <code>&&</code> (and), <code>||</code> (or), <code>!</code> (not). Available: is_visitor, is_guest, is_member, quiz_taken, score > N, lesson_viewed, first_show_session, first_message_after_quiz, free_lessons_count == N, inactive_seconds > N, always</div>
-                    </div>
-                    <div class="flosc-field-full">
-                        <label>Action</label>
-                        <input type="text" name="message_action" value="<?php echo esc_attr($msg['action'] ?? ''); ?>" placeholder="e.g. open_quiz, open_free_lesson, checkout_oto_main">
-                        <div class="flosc-field-hint">Actions: open_quiz, open_registration, open_free_lesson, show_offer_{id}, checkout_{id}, sandbox_purchase_{id}, open_lesson_library, open_quiz_library, open_support</div>
-                    </div>
-                </div>
-
-                <div class="flosc-edit-actions">
-                    <button type="submit" name="save_ivr_message" class="button button-primary">💾 Save to DB</button>
-                    <button type="submit" name="save_ivr_message_resync" class="button button-secondary">💾 Save &amp; Sync to File</button>
-                    <button type="button" class="button" onclick="floscToggleEdit('<?php echo esc_js($msg_id); ?>')">Cancel</button>
-                    <span style="flex: 1;"></span>
-                    <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&delete_message=' . urlencode($msg_id) . '&phase=' . $phase_key . '&_wpnonce=' . wp_create_nonce('flosc_delete_message_' . $msg_id))); ?>"
-                       class="button" style="color: #dc3545; border-color: #dc3545;"
-                       onclick="return confirm('Delete this message permanently?');">🗑️ Delete</a>
-                </div>
-            </form>
-        </div>
-    </div>
-    <?php endforeach; ?>
-<?php endif; ?>
-
-<!-- Add message button for this phase -->
-<div class="flosc-add-msg-row">
-    <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&edit_message=new_' . $phase_key . '_' . time() . '&new_phase=' . $phase_key)); ?>#msg-new_<?php echo $phase_key; ?>_" class="button button-small">+ Add <?php echo $phase_info['label']; ?> Message</a>
-</div>
-
-<?php endforeach; ?>
-
-<!-- Handle "new message" inline -->
-<?php
-$new_msg_id = $_GET['edit_message'] ?? '';
-$new_phase = $_GET['new_phase'] ?? '';
-if ($new_msg_id && $new_phase && !isset($messages[$new_msg_id])):
-?>
-<div class="flosc-phase-header" style="background: #166534;">
-    <h3>➕ New <?php echo ucfirst($new_phase); ?> Message</h3>
-</div>
-<div class="flosc-msg-card is-editing" id="msg-<?php echo esc_attr($new_msg_id); ?>">
-    <div class="flosc-msg-edit" style="display: block; border-top: 2px solid #166534;">
-        <form method="post" action="<?php echo admin_url('admin.php?page=flosc-settings&tab=ivr-messages'); ?>#phase-<?php echo esc_attr($new_phase); ?>">
-            <?php wp_nonce_field('flosc_save_ivr_message'); ?>
-            <input type="hidden" name="message_id" value="<?php echo esc_attr($new_msg_id); ?>">
-            <input type="hidden" name="message_phase" value="<?php echo esc_attr($new_phase); ?>">
-
-            <div class="flosc-edit-grid">
-                <div>
-                    <label>Name</label>
-                    <input type="text" name="message_name" value="" placeholder="e.g. Welcome Visitor">
-                </div>
-                <div>
-                    <label>Message ID</label>
-                    <input type="text" name="message_id_display" value="<?php echo esc_attr($new_msg_id); ?>" disabled style="background: #f0f0f1;">
-                </div>
-                <div>
-                    <label>Type</label>
-                    <select name="message_type">
-                        <option value="auto">Auto (bot-initiated)</option>
-                        <option value="suggested_user_autoprompt">AutoPrompt (user button)</option>
-                        <option value="offer">Offer</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Phase</label>
-                    <select name="message_phase">
-                        <?php foreach (['freeline', 'login', 'offer', 'sale', 'content'] as $p): ?>
-                            <option value="<?php echo $p; ?>" <?php selected($new_phase, $p); ?>><?php echo ucfirst($p); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div>
-                    <label>Style</label>
-                    <select name="message_style">
-                        <option value="default">Default</option>
-                        <option value="pill">Pill</option>
-                        <option value="button">Button</option>
-                        <option value="chip">Chip</option>
-                        <option value="card">Card</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Icon (emoji)</label>
-                    <input type="text" name="message_icon" value="" placeholder="🚀">
-                </div>
-                <div class="flosc-field-full">
-                    <label>User Input Text</label>
-                    <input type="text" name="message_user_input" value="" placeholder="e.g. Start free quiz">
-                </div>
-                <div class="flosc-field-full">
-                    <label>Content</label>
-                    <textarea name="message_content" rows="4" placeholder="The message your users will see..."></textarea>
-                </div>
-                <div class="flosc-field-full">
-                    <label>Conditions</label>
-                    <input type="text" name="message_conditions" value="" placeholder="e.g. is_visitor && first_show_session">
-                    <div class="flosc-field-hint">Combine with <code>&&</code> (and), <code>||</code> (or), <code>!</code> (not)</div>
-                </div>
-                <div class="flosc-field-full">
-                    <label>Action</label>
-                    <input type="text" name="message_action" value="" placeholder="e.g. open_quiz">
-                    <div class="flosc-field-hint">Actions: open_quiz, open_registration, open_free_lesson, show_offer_{id}, checkout_{id}, open_lesson_library</div>
-                </div>
-            </div>
-
-            <div class="flosc-edit-actions">
-                <button type="submit" name="save_ivr_message" class="button button-primary">💾 Create Message</button>
-                <a href="<?php echo admin_url('admin.php?page=flosc-settings&tab=ivr-messages'); ?>" class="button">Cancel</a>
-            </div>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Content</th>
+                    <td>
+                        <textarea name="message_content" rows="5" class="large-text"><?php echo esc_textarea($msg['content']); ?></textarea>
+                        <p class="description">Available variables: {name}, {score}, {product_name}, {price}</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Conditions</th>
+                    <td>
+                        <input type="text" name="message_conditions" value="<?php echo esc_attr($msg['conditions'] ?? ''); ?>" class="large-text">
+                        <p class="description">e.g., is_visitor && first_show_session, score > 70, !quiz_taken</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Style</th>
+                    <td>
+                        <select name="message_style">
+                            <option value="default" <?php selected($msg['style'] ?? 'default', 'default'); ?>>Default</option>
+                            <option value="pill" <?php selected($msg['style'] ?? 'default', 'pill'); ?>>Pill</option>
+                            <option value="button" <?php selected($msg['style'] ?? 'default', 'button'); ?>>Button</option>
+                            <option value="chip" <?php selected($msg['style'] ?? 'default', 'chip'); ?>>Chip</option>
+                            <option value="card" <?php selected($msg['style'] ?? 'default', 'card'); ?>>Card</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Icon (emoji)</th>
+                    <td><input type="text" name="message_icon" value="<?php echo esc_attr($msg['icon'] ?? ''); ?>" class="regular-text"></td>
+                </tr>
+                <tr>
+                    <th>User Input Text</th>
+                    <td>
+                        <input type="text" name="message_user_input" value="<?php echo esc_attr($msg['user_input'] ?? ''); ?>" class="regular-text">
+                        <p class="description">For AutoPrompts: text shown on button</p>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Action</th>
+                    <td>
+                        <input type="text" name="message_action" value="<?php echo esc_attr($msg['action'] ?? ''); ?>" class="regular-text">
+                        <p class="description">e.g., show_offer:offer_001, start_quiz, navigate:/lessons</p>
+                    </td>
+                </tr>
+            </table>
+            
+            <p class="submit">
+                <button type="submit" name="save_ivr_message" class="button button-primary">Save to FLOSC DB</button>
+                <button type="submit" name="save_ivr_message_resync" class="button button-secondary">Save to FLOSC DB and Resync to File</button>
+                <a href="?page=flosc-settings&tab=ivr-messages&ivr_phase=<?php echo esc_attr($active_phase); ?>" class="button">Cancel</a>
+            </p>
+            <p class="description" style="margin-top: 10px;">
+                <strong>Save to FLOSC DB:</strong> Changes appear on frontend immediately. Use this for quick edits.<br>
+                <strong>Save and Resync:</strong> Also writes changes to the Active IVR Messages MD file. Use this to commit your edits to the file.
+            </p>
         </form>
     </div>
-</div>
+    
 <?php endif; ?>
 
-<script>
-function floscToggleEdit(msgId) {
-    const card = document.getElementById('msg-' + msgId);
-    if (!card) return;
-    card.classList.toggle('is-editing');
-    if (card.classList.contains('is-editing')) {
-        // Scroll the card into view with some padding
-        setTimeout(() => {
-            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }, 50);
-    }
-}
-
-// Auto-scroll to saved message after page reload
-document.addEventListener('DOMContentLoaded', function() {
-    if (window.location.hash) {
-        const el = document.querySelector(window.location.hash);
-        if (el) {
-            setTimeout(() => {
-                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 200);
-        }
-    }
-});
-</script>
+<!-- Messages List -->
+<div style="background: #fff; border: 1px solid #ccc; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 style="margin: 0;"><?php echo ucfirst($active_phase); ?> Messages</h3>
+        <a href="?page=flosc-settings&tab=ivr-messages&ivr_phase=<?php echo $active_phase; ?>&edit_message=new_<?php echo time(); ?>" class="button button-primary">+ Add Message</a>
+    </div>
+    
+    <?php 
+    $phase_messages = $phases[$active_phase] ?? [];
+    
+    if (empty($phase_messages)): ?>
+        <p style="color: #999;">No messages configured for this phase yet.</p>
+    <?php else: ?>
+        <div style="overflow-x: auto;">
+        <table class="wp-list-table widefat striped" style="min-width: 700px;">
+            <thead>
+                <tr>
+                    <th style="width: 25%;">Name</th>
+                    <th style="width: 20%;">Type</th>
+                    <th style="width: 35%;">Content Preview</th>
+                    <th style="width: 20%;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($phase_messages as $msg_id): 
+                    if (!isset($messages[$msg_id])) continue;
+                    $msg = $messages[$msg_id];
+                ?>
+                <tr>
+                    <td>
+                        <strong><?php echo esc_html($msg['name']); ?></strong><br>
+                        <code style="font-size: 11px; color: #667;"><?php echo esc_html($msg_id); ?></code>
+                    </td>
+                    <td>
+                        <span style="display: inline-block; padding: 3px 8px; background: #f0f0f1; border-radius: 3px; font-size: 12px;">
+                            <?php echo esc_html($msg['type']); ?>
+                        </span>
+                    </td>
+                    <td><?php echo esc_html(wp_trim_words($msg['content'], 15)); ?></td>
+                    <td>
+                        <a href="?page=flosc-settings&tab=ivr-messages&ivr_phase=<?php echo $active_phase; ?>&edit_message=<?php echo urlencode($msg_id); ?>" class="button button-small">Edit</a>
+                        <a href="?page=flosc-settings&tab=ivr-messages&ivr_phase=<?php echo $active_phase; ?>&delete_message=<?php echo urlencode($msg_id); ?>&phase=<?php echo $active_phase; ?>&_wpnonce=<?php echo wp_create_nonce('flosc_delete_message_' . $msg_id); ?>" 
+                           class="button button-small button-link-delete" 
+                           onclick="return confirm('Delete this message?');">Delete</a>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        </div>
+    <?php endif; ?>
+</div>
 
 <form method="post" action="options.php">
 <?php settings_fields('flosc_settings'); ?>

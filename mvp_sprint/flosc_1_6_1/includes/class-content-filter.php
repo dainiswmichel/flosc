@@ -200,16 +200,11 @@ class flosc_content_filter {
      */
     public function filter_post_content($content, $access_level) {
         
-        // Split by <!--flosc_read_more--> tag, fall back to WordPress <!--more-->
+        // Split by <!--flosc_read_more--> tag
         $parts = preg_split('/<!--flosc_read_more(.*?)?-->/', $content, -1);
         
         if (count($parts) <= 1) {
-            // v1.5.5: Fallback to WordPress <!--more--> tag for compatibility
-            $parts = preg_split('/<!--more(.*?)?-->/', $content, -1);
-        }
-        
-        if (count($parts) <= 1) {
-            // No read-more tag found at all
+            // No <!--flosc_read_more--> tag, return all content
             return $content;
         }
         

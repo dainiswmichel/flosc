@@ -1,8 +1,9 @@
-/* ChatGPT Style Preset (v1.4.6) — Ultra Pro Edition
- * ================================================
+/* ChatGPT Style Preset (v1.6.1) — Complete 90-Variable Preset
+ * ============================================================
  * Clean white-on-gray with teal-green accents.
  */
 :root {
+    /* ─── Global ──────────────────────────────── */
     --flosc-bg: #ffffff;
     --flosc-text: #0d0d0d;
     --flosc-text-muted: #6e6e80;
@@ -11,12 +12,14 @@
     --flosc-accent-hover: #0d8a6a;
     --flosc-accent-subtle: rgba(16, 163, 127, 0.06);
 
+    /* ─── User Message ────────────────────────── */
     --flosc-user-message-bg: #f7f7f8;
     --flosc-user-message-text: #0d0d0d;
     --flosc-user-message-radius: 20px 20px 4px 20px;
     --flosc-user-avatar-bg: #ab68ff;
     --flosc-user-avatar-text: #ffffff;
 
+    /* ─── Assistant Message ────────────────────── */
     --flosc-assistant-message-bg: transparent;
     --flosc-assistant-message-text: #0d0d0d;
     --flosc-assistant-message-border: none;
@@ -24,6 +27,7 @@
     --flosc-assistant-avatar-bg: #10a37f;
     --flosc-assistant-avatar-text: #ffffff;
 
+    /* ─── Input ────────────────────────────────── */
     --flosc-input-bg: #ffffff;
     --flosc-input-field-bg: #f7f7f8;
     --flosc-input-field-border: #e5e5e5;
@@ -32,6 +36,7 @@
     --flosc-send-btn-bg: #0d0d0d;
     --flosc-send-btn-text: #ffffff;
 
+    /* ─── Sidebar ──────────────────────────────── */
     --flosc-sidebar-bg: #f9f9f9;
     --flosc-sidebar-text: #0d0d0d;
     --flosc-sidebar-text-muted: #6e6e80;
@@ -39,6 +44,7 @@
     --flosc-sidebar-active: #e0e0e0;
     --flosc-sidebar-border: #e5e5e5;
 
+    /* ─── Pills / Autoprompts ──────────────────── */
     --flosc-pill-bg: #ffffff;
     --flosc-pill-text: #0d0d0d;
     --flosc-pill-border: #e5e5e5;
@@ -46,9 +52,68 @@
     --flosc-pill-hover-text: #10a37f;
     --flosc-pill-hover-border: #10a37f;
 
+    /* ─── Cards ────────────────────────────────── */
+    --flosc-card-bg: #ffffff;
+    --flosc-card-text: #0d0d0d;
+    --flosc-card-border: #e5e5e5;
+    --flosc-card-hover-bg: #f7f7f8;
+    --flosc-card-hover-text: #10a37f;
+    --flosc-card-hover-border: #10a37f;
+    --flosc-card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+    --flosc-card-hover-shadow: 0 8px 25px rgba(0,0,0,0.06), 0 4px 10px rgba(0,0,0,0.03);
+
+    /* ─── Panels ───────────────────────────────── */
+    --flosc-panel-bg: rgba(255, 255, 255, 0.85);
+    --flosc-panel-border: rgba(0, 0, 0, 0.04);
+    --flosc-panel-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    --flosc-panel-header-text: #0d0d0d;
+    --flosc-panel-eyebrow-text: #6e6e80;
+    --flosc-panel-close-bg: rgba(255, 255, 255, 0.9);
+    --flosc-panel-close-border: rgba(0, 0, 0, 0.06);
+    --flosc-panel-close-text: #6e6e80;
+    --flosc-panel-close-hover-bg: #f7f7f8;
+    --flosc-panel-close-hover-border: rgba(0, 0, 0, 0.12);
+
+    /* ─── Content Formatting ───────────────────── */
+    --flosc-content-link: #10a37f;
+    --flosc-content-link-hover: #0d8a6a;
+    --flosc-content-blockquote-border: #10a37f;
+    --flosc-content-blockquote-bg: rgba(16, 163, 127, 0.04);
+    --flosc-content-blockquote-text: #6e6e80;
+    --flosc-content-hr: #e5e5e5;
+    --flosc-content-table-border: #e5e5e5;
+    --flosc-content-table-header-bg: #f7f7f8;
+    --flosc-content-table-stripe-bg: #fafafa;
+    --flosc-content-list-marker: #6e6e80;
+
+    /* ─── Code ─────────────────────────────────── */
     --flosc-code-bg: #f7f7f8;
     --flosc-code-text: #0d0d0d;
 
+    /* ─── Quiz Modal ───────────────────────────── */
+    --flosc-quiz-prompt-bg: #f7f7f8;
+    --flosc-quiz-prompt-border: #e5e5e5;
+    --flosc-quiz-sequence-text: #0d0d0d;
+    --flosc-quiz-tab-bg: #ffffff;
+    --flosc-quiz-tab-border: #e5e5e5;
+    --flosc-quiz-tab-text: #6e6e80;
+    --flosc-quiz-tab-active-bg: #10a37f;
+    --flosc-quiz-tab-active-text: #ffffff;
+    --flosc-quiz-input-bg: #ffffff;
+    --flosc-quiz-input-border: #e5e5e5;
+    --flosc-quiz-input-focus-border: #10a37f;
+    --flosc-quiz-record-bg: #dc2626;
+    --flosc-quiz-record-hover-bg: #b91c1c;
+    --flosc-quiz-stop-bg: #52525b;
+    --flosc-quiz-stop-hover-bg: #3f3f46;
+    --flosc-quiz-waveform-bg: #f7f7f8;
+    --flosc-quiz-success: #059669;
+    --flosc-quiz-warning: #d97706;
+    --flosc-quiz-error-bg: #fef2f2;
+    --flosc-quiz-error-text: #991b1b;
+    --flosc-quiz-error-border: #fecaca;
+
+    /* ─── Scrollbar ────────────────────────────── */
     --flosc-scrollbar-thumb: #d9d9d9;
     --flosc-scrollbar-thumb-hover: #b0b0b0;
 }

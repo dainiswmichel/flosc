@@ -3,7 +3,7 @@
  * Plugin Name: FLOSC
  * Plugin URI: https://flosc.ai
  * Description: Freeline-Login-Offer-Sale-Content - Quiz-based learning and conversational sales funnel framework
- * Version: 1.6.1
+ * Version: 1.5.4
  * Author: Dainis Michel
  * Author URI: https://dainis.net
  * License: GPL v2 or later
@@ -14,7 +14,7 @@
 if (!defined('ABSPATH')) exit;
 
 // Plugin constants
-define('FLOSC_VERSION', '1.6.1');
+define('FLOSC_VERSION', '1.5.4');
 define('FLOSC_DEBUG', defined('WP_DEBUG') && WP_DEBUG); // TASK-012: Debug mode toggle
 define('FLOSC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('FLOSC_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -70,9 +70,6 @@ class FLOSC_Framework {
     private $user_access_manager;
     private $content_filter;
     private $rag_manager;
-
-    // Companion widget (v1.6.0)
-    private $companion_widget;
     
     public static function instance() {
         if (null === self::$instance) {
@@ -114,9 +111,6 @@ class FLOSC_Framework {
         require_once FLOSC_PLUGIN_DIR . 'includes/class-quiz-manager.php'; // v1.0.2 - external quiz integration
         require_once FLOSC_PLUGIN_DIR . 'includes/class-flow-manager.php'; // v1.2.2 - multi-flow system
 
-        // Companion widget (v1.6.0)
-        require_once FLOSC_PLUGIN_DIR . 'includes/class-companion-widget.php';
-
         // SALE system
         require_once FLOSC_PLUGIN_DIR . 'includes/sale/class-sale-manager.php';
 
@@ -149,9 +143,6 @@ class FLOSC_Framework {
         // Initialize SSO system (v1.4.0)
         $this->sso_manager = \FLOSC\SSO\SSO_Manager::get_instance();
         $this->sso_manager->init();
-
-        // Initialize Companion widget (v1.6.0)
-        $this->companion_widget = FLOSC_Companion_Widget::instance();
     }
     
     private function init_hooks() {
@@ -185,7 +176,8 @@ class FLOSC_Framework {
 
         // Assets
         add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
-        
+        add_action('wp_enqueue_scripts', [$this, 'enqueue_companion']);
+
         // Register shortcodes (v9.2.0)
         add_shortcode('flosc_visitor_only', [$this, 'shortcode_visitor_only']);
         add_shortcode('flosc_member_only', [$this, 'shortcode_member_only']);
@@ -316,7 +308,6 @@ class FLOSC_Framework {
     public function analyzer() { return $this->pronunciation_analyzer; }
     public function sale() { return $this->sale_manager; }
     public function lessons() { return $this->lesson_manager; }
-    public function companion() { return $this->companion_widget; }
 
     /**
      * Rate Limiting Helper
@@ -837,7 +828,7 @@ The {product_name} Team";
             
             foreach ($files as $file) {
                 $filename = basename($file);
-                if (strpos($filename, 'bckp_') === 0 || strpos($filename, 'backup') !== false) continue;
+                if (strpos($filename, 'backup') !== false) continue;
                 
                 // Get settings for this IVR file
                 $settings_key = 'flosc_flow_' . sanitize_key(pathinfo($filename, PATHINFO_FILENAME));
@@ -1506,7 +1497,7 @@ The {product_name} Team";
         
         // Check each IVR file's settings for domain/slug match
         foreach ($ivr_files as $filename) {
-            if (strpos($filename, 'bckp_') === 0 || strpos($filename, 'backup') !== false) continue;
+            if (strpos($filename, 'backup') !== false) continue;
             
             $flow = $this->build_flow_from_ivr_file($filename);
             if (!$flow || ($flow['status'] ?? 'active') !== 'active') continue;
@@ -1725,17 +1716,6 @@ The {product_name} Team";
         
         // Get product config
         $product = $this->get_product_config();
-        
-        // v1.5.5: Ensure flow key is set globally so offer manager can read per-flow offers
-        if (empty($GLOBALS['flosc_settings_key'])) {
-            if (!empty($ivr_file)) {
-                $ivr_basename = basename($ivr_file);
-                $GLOBALS['flosc_settings_key'] = 'flosc_flow_' . sanitize_key(pathinfo($ivr_basename, PATHINFO_FILENAME));
-            } else {
-                // Default flow key when no flow matched
-                $GLOBALS['flosc_settings_key'] = 'flosc_flow_flosc_default_ivr';
-            }
-        }
         
         // Get available offers
         $offers = $this->sale_manager->get_available_offers(
@@ -2394,8 +2374,54 @@ The {product_name} Team";
     }
 
     /**
+     * v1.6.1: Enqueue companion widget on non-app WordPress pages.
+     * Only loads if companion mode is enabled for the current flow.
+     */
+    public function enqueue_companion() {
+        // Don't load on app pages (they get the full experience)
+        if ($this->is_flosc_request()) return;
+
+        $fm = FLOSC_Flow_Manager::instance();
+        $enabled = $fm->get_setting('flosc_companion_enabled', 'style', 'companion_enabled', false);
+        if (!$enabled) return;
+
+        $app_url = '';
+        if (function_exists('get_app_url')) {
+            $app_url = get_app_url();
+        }
+        if (empty($app_url)) return;
+
+        $accent = $fm->get_setting('flosc_chat_style_accent', 'style', 'accent', '#2563eb');
+        $title  = $fm->get_setting('flosc_companion_title', 'style', 'companion_title', 'Chat with us');
+
+        wp_enqueue_style(
+            'flosc-companion',
+            FLOSC_PLUGIN_URL . 'assets/css/flosc-companion.css',
+            [],
+            filemtime(FLOSC_PLUGIN_DIR . 'assets/css/flosc-companion.css')
+        );
+
+        wp_enqueue_script(
+            'flosc-companion',
+            FLOSC_PLUGIN_URL . 'assets/js/flosc-companion.js',
+            [],
+            filemtime(FLOSC_PLUGIN_DIR . 'assets/js/flosc-companion.js'),
+            true
+        );
+
+        wp_add_inline_script('flosc-companion', sprintf(
+            'FloscCompanion.init(%s);',
+            wp_json_encode([
+                'appUrl'      => $app_url,
+                'title'       => $title,
+                'accentColor' => $accent ?: '#2563eb',
+            ])
+        ));
+    }
+
+    /**
      * Enqueue chat styling (v9.3.9 - Bulletproof Architecture)
-     * 
+     *
      * Architecture:
      * 1. flosc-layout.css - Structure only (already enqueued)
      * 2. flosc-theme.css - Variable consumption (already enqueued)
@@ -2405,13 +2431,14 @@ The {product_name} Team";
      * Customization: bubble style, accent color, font, scale, custom CSS
      */
     private function enqueue_chat_style() {
-        // Get settings with safe defaults
-        $preset     = get_option('flosc_chat_style_preset', 'light');
-        $bubble     = get_option('flosc_chat_style_bubble', 'subtle-notch');
-        $accent     = get_option('flosc_chat_style_accent', '');
-        $font       = get_option('flosc_chat_style_font', 'system');
-        $scale      = intval(get_option('flosc_chat_style_scale', 100));
-        $custom_css = get_option('flosc_chat_style_custom_css', '');
+        // v1.6.1: Per-flow settings via FLOSC_Flow_Manager::get_setting()
+        $fm = FLOSC_Flow_Manager::instance();
+        $preset     = $fm->get_setting('flosc_chat_style_preset', 'style', 'preset', 'light');
+        $bubble     = $fm->get_setting('flosc_chat_style_bubble', 'style', 'bubble', 'subtle-notch');
+        $accent     = $fm->get_setting('flosc_chat_style_accent', 'style', 'accent', '');
+        $font       = $fm->get_setting('flosc_chat_style_font', 'style', 'font', 'system');
+        $scale      = intval($fm->get_setting('flosc_chat_style_scale', 'style', 'scale', 100));
+        $custom_css = $fm->get_setting('flosc_chat_style_custom_css', 'style', 'custom_css', '');
 
         // Bubble style presets (border-radius values per FLOSC_STYLE_GUIDE.md)
         $bubble_styles = [
@@ -2462,13 +2489,14 @@ The {product_name} Team";
                     }
                 }
             }
-        } elseif ($preset === 'light' || $preset === 'dark') {
-            // Specific preset: load as external stylesheet
-            $preset_path = FLOSC_PLUGIN_DIR . 'assets/css/chat-style-' . $preset . '.css';
+        } else {
+            // Named preset (light, dark, chatgpt, claude, grok): load as external stylesheet
+            $safe_preset = preg_replace('/[^a-z0-9-]/', '', $preset);
+            $preset_path = FLOSC_PLUGIN_DIR . 'assets/css/chat-style-' . $safe_preset . '.css';
             if (file_exists($preset_path)) {
                 wp_enqueue_style(
                     'flosc-preset',
-                    FLOSC_PLUGIN_URL . 'assets/css/chat-style-' . $preset . '.css',
+                    FLOSC_PLUGIN_URL . 'assets/css/chat-style-' . $safe_preset . '.css',
                     ['flosc-theme'],
                     filemtime($preset_path)
                 );
@@ -2484,13 +2512,33 @@ The {product_name} Team";
         $overrides[] = "--flosc-user-message-radius: {$bubble_config['user']}";
         $overrides[] = "--flosc-assistant-message-radius: {$bubble_config['assistant']}";
         
-        // Accent color
+        // v1.6.1: Full accent color cascade (5→15 derived variables)
         if (!empty($accent) && $accent !== '#2563eb') {
+            // Compute derived colors from hex accent
+            $hover   = $this->adjust_color_brightness($accent, -15);
+            $subtle  = $this->hex_to_rgba($accent, 0.06);
+            $subtle4 = $this->hex_to_rgba($accent, 0.04);
+            $light   = $this->adjust_color_brightness($accent, 40);
+
+            // Core accent
             $overrides[] = "--flosc-accent: {$accent}";
-            $overrides[] = "--flosc-accent-hover: {$accent}";
+            $overrides[] = "--flosc-accent-hover: {$hover}";
+            $overrides[] = "--flosc-accent-subtle: {$subtle}";
+
+            // Components that derive from accent
             $overrides[] = "--flosc-user-message-bg: {$accent}";
             $overrides[] = "--flosc-user-avatar-bg: {$accent}";
             $overrides[] = "--flosc-send-btn-bg: {$accent}";
+            $overrides[] = "--flosc-pill-hover-text: {$accent}";
+            $overrides[] = "--flosc-pill-hover-border: {$light}";
+            $overrides[] = "--flosc-card-hover-text: {$accent}";
+            $overrides[] = "--flosc-card-hover-border: {$light}";
+            $overrides[] = "--flosc-content-link: {$accent}";
+            $overrides[] = "--flosc-content-link-hover: {$hover}";
+            $overrides[] = "--flosc-content-blockquote-border: {$accent}";
+            $overrides[] = "--flosc-content-blockquote-bg: {$subtle4}";
+            $overrides[] = "--flosc-quiz-tab-active-bg: {$accent}";
+            $overrides[] = "--flosc-quiz-input-focus-border: {$accent}";
         }
         
         // Scale factor
@@ -2547,6 +2595,42 @@ The {product_name} Team";
         }
         
         return '';
+    }
+
+    /**
+     * Adjust hex color brightness by a percentage (-100 to +100).
+     * Negative = darker, positive = lighter.
+     * v1.6.1: Used for accent color cascade.
+     */
+    private function adjust_color_brightness($hex, $percent) {
+        $hex = ltrim($hex, '#');
+        if (strlen($hex) === 3) {
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+        }
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+
+        $r = max(0, min(255, $r + round($r * $percent / 100)));
+        $g = max(0, min(255, $g + round($g * $percent / 100)));
+        $b = max(0, min(255, $b + round($b * $percent / 100)));
+
+        return sprintf('#%02x%02x%02x', $r, $g, $b);
+    }
+
+    /**
+     * Convert hex color to rgba string.
+     * v1.6.1: Used for accent-subtle generation.
+     */
+    private function hex_to_rgba($hex, $alpha) {
+        $hex = ltrim($hex, '#');
+        if (strlen($hex) === 3) {
+            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+        }
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        return "rgba({$r}, {$g}, {$b}, {$alpha})";
     }
 
     /**
@@ -5610,21 +5694,11 @@ function flosc_adjust_brightness($hex, $percent) {
  * @param bool $preview_only If true, returns preview without making changes
  * @return array Result with success, stats, message, and preview data
  */
-function flosc_import_ivr_to_database($preview_only = false, $flow_key = '') {
-    // v1.5.4: Use current IVR file from admin context, fallback to default
-    $ivr_filename = $GLOBALS['flosc_current_ivr'] ?? 'flosc_default_ivr.md';
-    $ivr_file = FLOSC_PLUGIN_DIR . 'ai_configuration_files/' . $ivr_filename;
+function flosc_import_ivr_to_database($preview_only = false) {
+    $ivr_file = FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_ivr.md';
     
     if (!file_exists($ivr_file)) {
-        return ['success' => false, 'message' => $ivr_filename . ' file not found'];
-    }
-    
-    // v1.5.4: Resolve per-flow key — admin context, explicit param, or derive from filename
-    if (empty($flow_key)) {
-        $flow_key = $GLOBALS['flosc_settings_key'] ?? '';
-    }
-    if (empty($flow_key)) {
-        $flow_key = 'flosc_flow_' . sanitize_key(pathinfo($ivr_filename, PATHINFO_FILENAME));
+        return ['success' => false, 'message' => 'flosc_default_ivr.md file not found'];
     }
     
     require_once FLOSC_PLUGIN_DIR . 'includes/class-ivr-parser.php';
@@ -5633,12 +5707,11 @@ function flosc_import_ivr_to_database($preview_only = false, $flow_key = '') {
     $config = $parser->flosc_parse($markdown);
     
     if (empty($config)) {
-        return ['success' => false, 'message' => 'Failed to parse ' . $ivr_filename];
+        return ['success' => false, 'message' => 'Failed to parse flosc_default_ivr.md'];
     }
     
-    // v1.5.4: Get current database state from per-flow storage
-    $fs = get_option($flow_key, []);
-    $current_messages = $fs['ivr_messages'] ?? [];
+    // Get current database state
+    $current_messages = get_option('flosc_ivr_messages', []);
     $incoming_messages = $config['messages'] ?? [];
     
     // Calculate changes (ivr.md is source of truth - database will match it)
@@ -5666,15 +5739,14 @@ function flosc_import_ivr_to_database($preview_only = false, $flow_key = '') {
     // EXECUTE IMPORT: Auto-backup first, then replace database
     $backup_file = '';
     if (!empty($current_messages)) {
-        $backup_file = flosc_export_ivr_backup($flow_key);
+        $backup_file = flosc_export_ivr_backup();
     }
     
-    // v1.5.4: REPLACE per-flow storage with ivr.md contents (source of truth)
-    $fs['ivr_messages'] = $incoming_messages;
-    $fs['ivr_phases'] = $config['phases'] ?? [];
-    $fs['ivr_styles'] = $config['styles'] ?? [];
-    $fs['ivr_last_import'] = current_time('mysql');
-    update_option($flow_key, $fs);
+    // REPLACE database with ivr.md contents (source of truth)
+    update_option('flosc_ivr_messages', $incoming_messages);
+    update_option('flosc_ivr_phases', $config['phases'] ?? []);
+    update_option('flosc_ivr_styles', $config['styles'] ?? []);
+    update_option('flosc_ivr_last_import', current_time('mysql'));
     
     // Generate success message
     $message = sprintf(
@@ -5696,18 +5768,10 @@ function flosc_import_ivr_to_database($preview_only = false, $flow_key = '') {
  * 
  * @return string|false Backup filename on success, false on failure
  */
-function flosc_export_ivr_backup($flow_key = '') {
-    // v1.5.4: Read from per-flow storage instead of global options
-    if (empty($flow_key)) {
-        $flow_key = $GLOBALS['flosc_settings_key'] ?? '';
-    }
-    if (empty($flow_key)) {
-        $flow_key = 'flosc_flow_flosc_default_ivr';
-    }
-    $fs = get_option($flow_key, []);
-    $messages = $fs['ivr_messages'] ?? [];
-    $phases = $fs['ivr_phases'] ?? [];
-    $styles = $fs['ivr_styles'] ?? [];
+function flosc_export_ivr_backup() {
+    $messages = get_option('flosc_ivr_messages', []);
+    $phases = get_option('flosc_ivr_phases', []);
+    $styles = get_option('flosc_ivr_styles', []);
     
     if (empty($messages)) {
         return false; // No data to backup
@@ -5763,23 +5827,9 @@ function flosc_export_ivr_backup($flow_key = '') {
         }
     }
     
-    // v1.5.5: Save backup with bckp_NN_originalfilename.md naming
-    $ivr_filename = $GLOBALS['flosc_current_ivr'] ?? 'flosc_default_ivr.md';
-    $base_name = pathinfo($ivr_filename, PATHINFO_FILENAME);
-    $ivr_dir = FLOSC_PLUGIN_DIR . 'ai_configuration_files/';
-    
-    // Find next backup number
-    $existing = glob($ivr_dir . "bckp_*_{$base_name}.md");
-    $next_num = 1;
-    if (!empty($existing)) {
-        foreach ($existing as $ef) {
-            $bn = basename($ef);
-            if (preg_match('/^bckp_(\d+)_/', $bn, $m)) {
-                $next_num = max($next_num, intval($m[1]) + 1);
-            }
-        }
-    }
-    $backup_file = $ivr_dir . sprintf('bckp_%02d_%s.md', $next_num, $base_name);
+    // Save to timestamped backup file
+    $timestamp = current_time('Y-m-d_H-i-s');
+    $backup_file = FLOSC_PLUGIN_DIR . "ai_configuration_files/ivr-backup-{$timestamp}.md";
     
     if (file_put_contents($backup_file, $markdown)) {
         return basename($backup_file);
@@ -5794,18 +5844,10 @@ function flosc_export_ivr_backup($flow_key = '') {
  * 
  * @return bool Success
  */
-function flosc_auto_export_ivr_to_file($flow_key = '') {
-    // v1.5.4: Read from per-flow storage instead of global options
-    if (empty($flow_key)) {
-        $flow_key = $GLOBALS['flosc_settings_key'] ?? '';
-    }
-    if (empty($flow_key)) {
-        $flow_key = 'flosc_flow_flosc_default_ivr';
-    }
-    $fs = get_option($flow_key, []);
-    $messages = $fs['ivr_messages'] ?? [];
-    $phases = $fs['ivr_phases'] ?? [];
-    $styles = $fs['ivr_styles'] ?? [];
+function flosc_auto_export_ivr_to_file() {
+    $messages = get_option('flosc_ivr_messages', []);
+    $phases = get_option('flosc_ivr_phases', []);
+    $styles = get_option('flosc_ivr_styles', []);
     
     if (empty($messages)) {
         return false;
@@ -5896,18 +5938,13 @@ function flosc_auto_export_ivr_to_file($flow_key = '') {
         $markdown .= "---\n\n";
     }
     
-    // v1.5.4: Write to current IVR file (not hardcoded)
-    $ivr_filename = $GLOBALS['flosc_current_ivr'] ?? 'flosc_default_ivr.md';
-    $ivr_file = FLOSC_PLUGIN_DIR . 'ai_configuration_files/' . $ivr_filename;
+    // Write to flosc_default_ivr.md
+    $ivr_file = FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_ivr.md';
     $result = file_put_contents($ivr_file, $markdown);
     
     if ($result !== false) {
-        // v1.5.4: Update last export timestamp in per-flow storage
-        if (!empty($flow_key)) {
-            $fs_export = get_option($flow_key, []);
-            $fs_export['ivr_last_export'] = current_time('mysql');
-            update_option($flow_key, $fs_export);
-        }
+        // Update last export timestamp
+        update_option('flosc_ivr_last_export', current_time('mysql'));
         return true;
     }
     

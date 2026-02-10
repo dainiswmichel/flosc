@@ -6,7 +6,7 @@
 
 // v9.4.7: Clear FLOSC-specific localStorage on version change
 (function() {
-    const FLOSC_JS_VERSION = '1.6.1';
+    const FLOSC_JS_VERSION = '1.5.4';
     try {
         const stored = localStorage.getItem('flosc_js_version');
         if (stored !== FLOSC_JS_VERSION) {
@@ -1226,9 +1226,8 @@ class floscApp {
         const messages = Object.values(this.ivr.messages);
         console.log('FLOSC: Total messages loaded:', messages.length);
 
-        // v1.5.5: Also process 'offer' type messages — they have conditions and should auto-trigger
-        const autoMessages = messages.filter(m => m.type === 'auto' || m.type === 'offer');
-        console.log('FLOSC: Auto/offer messages found:', autoMessages.length);
+        const autoMessages = messages.filter(m => m.type === 'auto');
+        console.log('FLOSC: Auto messages found:', autoMessages.length);
 
         for (const msg of autoMessages) {
             // v8.0.9: Skip if already shown (DOM check - idempotent)
@@ -1772,7 +1771,7 @@ class floscApp {
                 </div>
                 ` : ''}
                 <button class="flosc-offer-cta flosc-style-button" data-action="checkout_${msg.offer_id}">
-                    ${ctaText} ${price ? `<span class="flosc-offer-cta-price">${price}</span>` : ''}
+                    ${ctaText} ${price ? `<span style="opacity:0.9">${price}</span>` : ''}
                 </button>
             </div>
         `;
@@ -2150,7 +2149,7 @@ class floscApp {
             // Clickable cards (pill, compact)
             const clickableCards = document.querySelectorAll(`.flosc-offer-pill[data-offer-id="${msg.offer_id}"], .flosc-offer-compact[data-offer-id="${msg.offer_id}"]`);
             clickableCards.forEach(card => {
-                card.classList.add('flosc-offer--clickable');
+                card.style.cursor = 'pointer';
                 card.addEventListener('click', () => {
                     this.performIVRAction('checkout_' + msg.offer_id);
                 });
@@ -2162,7 +2161,9 @@ class floscApp {
     dismissOffer(msg) {
         const offerEl = document.querySelector(`[data-offer-id="${msg.offer_id}"]`);
         if (offerEl) {
-            offerEl.classList.add('flosc-offer--dismissing');
+            offerEl.style.transition = 'all 0.3s ease';
+            offerEl.style.opacity = '0';
+            offerEl.style.transform = 'translateY(-10px)';
             setTimeout(() => offerEl.remove(), 300);
         }
         
@@ -2398,10 +2399,6 @@ class floscApp {
                 } else if (action.startsWith('show_offer_')) {
                     const offerId = action.replace('show_offer_', '');
                     this.showOffer(offerId);
-                // v1.5.5: View specific lesson in chat
-                } else if (action.startsWith('view_lesson_')) {
-                    const lessonId = parseInt(action.replace('view_lesson_', ''));
-                    this.loadLessonInChat(lessonId, 'Lesson');
                 }
                 break;
         }
@@ -2665,22 +2662,33 @@ class floscApp {
         }
     }
     
-    // v1.6.0: Show quiz results using premium card CSS
+    // v9.3.4: Show quiz results (for logged-in users or after login)
     showQuizResults(score, correct, incorrect) {
-        const tier = score >= 80 ? 'high-score' : score >= 50 ? 'medium-score' : 'low-score';
-        const emoji = score === 100 ? '🎉 Perfect Score!' : score >= 80 ? '👍 Great job!' : score >= 50 ? '📚 Nice effort!' : '💪 Keep practicing!';
         const resultHtml = `
-            <div class="flosc-quiz-result ${tier}">
-                <div class="flosc-quiz-result-score">${score}%</div>
-                <div class="flosc-quiz-result-label">${emoji}</div>
-                <div class="flosc-quiz-result-breakdown">
-                    <span class="flosc-quiz-result-correct">✓ ${correct} correct</span>
-                    <span class="flosc-quiz-result-incorrect">✗ ${incorrect} missed</span>
+            <div class="flosc-quiz-result">
+                <div class="flosc-quiz-score-circle" data-score="${score}">
+                    <span class="flosc-quiz-score-value">${score}%</span>
+                </div>
+                <div class="flosc-quiz-score-label">
+                    ${score === 100 ? '🎉 Perfect Score!' : score >= 70 ? '👍 Great job!' : '📚 Keep practicing!'}
+                </div>
+                <div class="flosc-quiz-breakdown">
+                    <span class="correct">✓ ${correct} correct</span>
+                    <span class="incorrect">✗ ${incorrect} missed</span>
                 </div>
             </div>
         `;
         
         this.addMessage('assistant', resultHtml, true);
+        
+        // Apply score circle styling after render
+        setTimeout(() => {
+            const circle = document.querySelector('.flosc-quiz-score-circle[data-score]');
+            if (circle) {
+                const s = parseInt(circle.dataset.score, 10);
+                circle.style.background = `conic-gradient(#10b981 ${s * 3.6}deg, #e5e7eb ${s * 3.6}deg)`;
+            }
+        }, 50);
     }
     
     // v9.3.4: AUDIO QUIZ - Record and analyze
@@ -2803,14 +2811,15 @@ class floscApp {
     
     displayAudioQuizResult(data) {
         const score = data.score || 0;
-        const tier = score >= 80 ? 'high-score' : score >= 50 ? 'medium-score' : 'low-score';
         let resultHtml = `
-            <div class="flosc-quiz-result ${tier}">
-                <div class="flosc-quiz-result-score">${score}%</div>
-                <div class="flosc-quiz-result-label">
-                    ${score === 100 ? '🎉 Perfect!' : score >= 80 ? '👍 Great!' : score >= 50 ? '📚 Nice effort!' : '💪 Keep practicing!'}
+            <div class="flosc-quiz-result">
+                <div class="flosc-quiz-score-circle" style="--score-percent: ${score}%">
+                    <span class="flosc-quiz-score-value">${score}%</span>
                 </div>
-                ${data.transcript ? `<div class="flosc-quiz-result-transcript">You said: "${data.transcript}"</div>` : ''}
+                <div class="flosc-quiz-score-label">
+                    ${score === 100 ? '🎉 Perfect!' : score >= 70 ? '👍 Great!' : '📚 Keep practicing!'}
+                </div>
+                ${data.transcript ? `<div class="flosc-quiz-transcript">You said: "${data.transcript}"</div>` : ''}
             </div>
         `;
         
@@ -2931,12 +2940,14 @@ class floscApp {
         // Disable all options visually
         const allOptions = buttonEl.closest('.flosc-quiz-options').querySelectorAll('.flosc-quiz-option');
         allOptions.forEach(opt => {
-            opt.classList.add('flosc-quiz-option--disabled');
+            opt.style.pointerEvents = 'none';
+            opt.style.opacity = '0.6';
         });
         
         // Highlight selected
-        buttonEl.classList.remove('flosc-quiz-option--disabled');
-        buttonEl.classList.add('flosc-quiz-option--selected');
+        buttonEl.style.opacity = '1';
+        buttonEl.style.borderColor = '#0ea5e9';
+        buttonEl.style.background = '#e0f2fe';
 
         // Store answer
         this.quiz.answers.push({
@@ -3394,83 +3405,8 @@ class floscApp {
         this.requestFreeLesson();
     }
 
-    // v1.5.5: In-chat lesson browser (replaces hard redirect)
-    async openLessonLibrary() {
-        this.showTyping();
-        try {
-            const response = await fetch(`${this.config.apiUrl}/lessons`, {
-                headers: { 'X-WP-Nonce': this.config.nonce }
-            });
-            const data = await response.json();
-            this.hideTyping();
-
-            const lessons = data.lessons || [];
-            if (lessons.length === 0) {
-                this.addMessage('assistant', 'No lessons available yet. Check back soon!');
-                return;
-            }
-
-            // Build TOC card
-            let tocHtml = `<div class="flosc-lesson-toc">`;
-            tocHtml += `<div class="flosc-lesson-toc-header">📚 Your Lesson Library <span class="flosc-lesson-count">${lessons.length} lessons</span></div>`;
-            tocHtml += `<div class="flosc-lesson-toc-list">`;
-            lessons.forEach((lesson, i) => {
-                const thumb = lesson.thumbnail ? `<img src="${lesson.thumbnail}" class="flosc-lesson-thumb" alt="">` : `<span class="flosc-lesson-num">${i + 1}</span>`;
-                const excerpt = lesson.excerpt ? `<div class="flosc-lesson-excerpt">${lesson.excerpt}</div>` : '';
-                tocHtml += `<div class="flosc-lesson-toc-item" onclick="window.floscAppInstance.loadLessonInChat(${lesson.id}, '${lesson.title.replace(/'/g, "\\'")}')">`;
-                tocHtml += `<div class="flosc-lesson-toc-icon">${thumb}</div>`;
-                tocHtml += `<div class="flosc-lesson-toc-info">`;
-                tocHtml += `<div class="flosc-lesson-toc-title">${lesson.title}</div>`;
-                tocHtml += excerpt;
-                tocHtml += `</div>`;
-                tocHtml += `<div class="flosc-lesson-toc-arrow">→</div>`;
-                tocHtml += `</div>`;
-            });
-            tocHtml += `</div></div>`;
-            this.addMessage('assistant', tocHtml, true);
-        } catch (e) {
-            this.hideTyping();
-            console.error('FLOSC: Failed to load lesson library', e);
-            this.addMessage('assistant', 'Sorry, there was an error loading your lessons. Please try again.');
-        }
-    }
-
-    // v1.5.5: Load a single lesson inline in the chat
-    async loadLessonInChat(lessonId, lessonTitle) {
-        this.addMessage('user', `Open lesson: ${lessonTitle}`);
-        this.showTyping();
-        try {
-            const response = await fetch(`${this.config.apiUrl}/lessons/${lessonId}`, {
-                headers: { 'X-WP-Nonce': this.config.nonce }
-            });
-            const data = await response.json();
-            this.hideTyping();
-
-            if (data.lesson) {
-                const lesson = data.lesson;
-                let lessonHtml = `<div class="flosc-lesson-inline">`;
-                lessonHtml += `<div class="flosc-lesson-inline-header">📖 ${lesson.title}</div>`;
-                lessonHtml += `<div class="flosc-lesson-inline-content">${lesson.content}</div>`;
-                lessonHtml += `<div class="flosc-lesson-inline-footer">`;
-                lessonHtml += `<button class="flosc-btn flosc-btn-sm" onclick="window.floscAppInstance.openLessonLibrary()">← Back to lessons</button>`;
-                lessonHtml += `</div>`;
-                lessonHtml += `</div>`;
-                this.addMessage('assistant', lessonHtml, true);
-
-                // Track last lesson for resume
-                localStorage.setItem('flosc_last_lesson_id', lessonId);
-                localStorage.setItem('flosc_last_lesson_title', lessonTitle);
-            } else if (data.code === 'no_access') {
-                this.addMessage('assistant', `🔒 This lesson requires a membership upgrade. Check out our offers to unlock all lessons!`);
-                this.checkAutoMessages();
-            } else {
-                this.addMessage('assistant', 'Could not load that lesson. Please try again.');
-            }
-        } catch (e) {
-            this.hideTyping();
-            console.error('FLOSC: Failed to load lesson', e);
-            this.addMessage('assistant', 'Sorry, there was an error loading the lesson.');
-        }
+    openLessonLibrary() {
+        window.location.href = this.config.lessonsUrl || '/lessons/';
     }
 
     openPersonalizedPath() {
@@ -3482,16 +3418,8 @@ class floscApp {
         window.location.href = this.config.quizzesUrl || '/quizzes/';
     }
 
-    // v1.5.5: Resume last viewed lesson from localStorage
     resumeLastLesson() {
-        const lastId = localStorage.getItem('flosc_last_lesson_id');
-        const lastTitle = localStorage.getItem('flosc_last_lesson_title');
-        if (lastId) {
-            this.loadLessonInChat(parseInt(lastId), lastTitle || 'Your last lesson');
-        } else {
-            this.addMessage('assistant', "You haven't viewed any lessons yet. Let me show you what's available!");
-            this.openLessonLibrary();
-        }
+        this.addMessage('assistant', 'Resuming your last lesson...');
     }
 
     openSupport() {
@@ -4851,8 +4779,8 @@ Purchased: ${ctx.purchased}
         if (this.offers?.checkoutInProgress) return;
         if (this.offers) this.offers.checkoutInProgress = true;
 
-        const originalText = payBtn.querySelector('.pay-btn-text')?.textContent || 'Pay';
-        if (payBtn.querySelector('.pay-btn-text')) payBtn.querySelector('.pay-btn-text').textContent = 'Processing...';
+        const originalText = payBtn.querySelector('.flosc-pay-btn-text')?.textContent || 'Pay';
+        if (payBtn.querySelector('.flosc-pay-btn-text')) payBtn.querySelector('.flosc-pay-btn-text').textContent = 'Processing...';
         payBtn.disabled = true;
 
         try {
@@ -4880,7 +4808,7 @@ Purchased: ${ctx.purchased}
 
             if (error) {
                 errorEl.textContent = error.message;
-                if (payBtn.querySelector('.pay-btn-text')) payBtn.querySelector('.pay-btn-text').textContent = originalText;
+                if (payBtn.querySelector('.flosc-pay-btn-text')) payBtn.querySelector('.flosc-pay-btn-text').textContent = originalText;
                 payBtn.disabled = false;
                 return;
             }
@@ -4912,7 +4840,7 @@ Purchased: ${ctx.purchased}
         } catch (err) {
             console.error('[FLOSC-CHECKOUT] Payment error:', err);
             errorEl.textContent = err.message || 'Payment failed. Please try again.';
-            if (payBtn.querySelector('.pay-btn-text')) payBtn.querySelector('.pay-btn-text').textContent = originalText;
+            if (payBtn.querySelector('.flosc-pay-btn-text')) payBtn.querySelector('.flosc-pay-btn-text').textContent = originalText;
             payBtn.disabled = false;
         } finally {
             if (this.offers) this.offers.checkoutInProgress = false;

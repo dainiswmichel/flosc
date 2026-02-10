@@ -31,33 +31,15 @@ class FLOSC_Offer_Manager {
     const INTERVAL_WEEKLY = 'week';
     
     /**
-     * Get all offers — reads from per-flow storage first, falls back to global
-     * v1.5.5: Fixed save/read mismatch — admin saves to per-flow, so we read from per-flow
+     * Get all offers
      */
     public function get_all_offers() {
-        // v1.5.5: Try per-flow storage first (where admin/offers.php saves to)
-        $flow_key = $GLOBALS['flosc_settings_key'] ?? '';
-        if ($flow_key) {
-            $fs = get_option($flow_key, []);
-            if (!empty($fs['offers'])) {
-                return $fs['offers'];
-            }
-        }
-        
-        // Fall back to global option
         $offers = get_option($this->option_key, []);
         
-        // Seed defaults if nothing exists anywhere
+        // Ensure default structure
         if (empty($offers)) {
             $offers = $this->get_default_offers();
-            // v1.5.5: Save defaults to per-flow if we have a flow key, otherwise global
-            if ($flow_key) {
-                $fs = get_option($flow_key, []);
-                $fs['offers'] = $offers;
-                update_option($flow_key, $fs);
-            } else {
-                update_option($this->option_key, $offers);
-            }
+            update_option($this->option_key, $offers);
         }
         
         return $offers;
@@ -232,46 +214,6 @@ class FLOSC_Offer_Manager {
      */
     private function get_default_offers() {
         return [
-            // v1.5.5: Main OTO — referenced by default IVR messages as OfferID: oto_main
-            'oto_main' => [
-                'id' => 'oto_main',
-                'name' => 'Full Course Access — Limited Offer',
-                'headline' => 'Special One-Time Offer',
-                'description' => "You just proved you're ready to learn! Based on your quiz results, here's everything you need to master the topics you missed — and more.",
-                'type' => self::TYPE_ONE_TIME,
-                'status' => 'active',
-                'price' => 25.00,
-                'original_price' => 100.00,
-                'display_price' => '$25',
-                'features' => "✅ All lessons — every topic covered\n✅ Lifetime access — learn at your pace\n✅ AI-powered coaching\n✅ Certificate of completion\n✅ Priority support",
-                'pricing' => [
-                    'stripe' => ['price_id' => '', 'product_id' => ''],
-                    'tokens' => ['cost' => 0],
-                    'affiliate' => ['credit_amount' => 10],
-                    'redirect_url' => '',
-                ],
-                'display_format' => 'featured',
-                'cta' => '🔓 Get Full Access — $25',
-                'timer_seconds' => 3600,
-                'timer_minutes' => 60,
-                'guarantee' => '30-day money-back guarantee',
-                'trigger' => 'lesson_complete',
-                'condition' => 'is_guest && lesson_viewed',
-                'grants' => [
-                    'features' => ['all_lessons', 'ai_coach', 'certificates', 'priority_support'],
-                    'level' => 'full_member',
-                    'duration_days' => 0, // Lifetime
-                    'usage_limits' => [],
-                ],
-                'meta' => [
-                    'icon' => '🎓',
-                    'badge' => '75% OFF',
-                    'savings' => 'Save $75',
-                ],
-                'sort_order' => 1,
-                'created_at' => current_time('mysql'),
-            ],
-
             'free_trial' => [
                 'id' => 'free_trial',
                 'name' => 'Free Trial',
@@ -300,11 +242,7 @@ class FLOSC_Offer_Manager {
                 'description' => 'Lifetime access to all lessons',
                 'type' => self::TYPE_ONE_TIME,
                 'status' => 'active',
-                'price' => 49.00,
-                'original_price' => 99.00,
-                'display_price' => '$49',
-                'display_format' => 'card',
-                'cta' => '🔓 Get Full Access',
+                'display_price' => 'Configure in Stripe',
                 'pricing' => [
                     'stripe' => ['price_id' => '', 'product_id' => ''],
                     'tokens' => ['cost' => 1000],
