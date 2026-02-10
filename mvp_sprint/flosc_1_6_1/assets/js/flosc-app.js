@@ -6,7 +6,7 @@
 
 // v9.4.7: Clear FLOSC-specific localStorage on version change
 (function() {
-    const FLOSC_JS_VERSION = '1.5.4';
+    const FLOSC_JS_VERSION = '1.6.1';
     try {
         const stored = localStorage.getItem('flosc_js_version');
         if (stored !== FLOSC_JS_VERSION) {

@@ -1,8 +1,8 @@
-# FLOSC v1.5.4 - Multi-Flow System with Default Flows
+# FLOSC v1.6.1 - Styling Upgrade + Companion Mode
 
 **Freeline-Login-Offer-Sale-Content** - A WordPress framework for quiz-based learning and conversational sales funnels.
 
-**Version:** 1.5.4
+**Version:** 1.6.1
 **Status:** ✅ TESTING
 **Author:** Dainis Michel
 **License:** GPL v2 or later
