@@ -1,0 +1,1131 @@
+/**
+ * FLOSC Admin Styles
+ * v1.6.0 - Pro-level admin design system
+ * 
+ * Design tokens → Components → Utilities
+ * All classes prefixed with flosc- to prevent WP admin collisions.
+ */
+
+/* ========================================
+   DESIGN TOKENS (CSS Custom Properties)
+   ======================================== */
+
+:root {
+    /* Colors */
+    --flosc-admin-primary: #2271b1;
+    --flosc-admin-primary-hover: #135e96;
+    --flosc-admin-success: #00a32a;
+    --flosc-admin-warning: #dba617;
+    --flosc-admin-danger: #d63638;
+    --flosc-admin-info: #72aee6;
+
+    /* Surfaces */
+    --flosc-admin-bg: #f0f0f1;
+    --flosc-admin-surface: #ffffff;
+    --flosc-admin-surface-alt: #f6f7f7;
+    --flosc-admin-border: #c3c4c7;
+    --flosc-admin-border-light: #e0e0e0;
+
+    /* Text */
+    --flosc-admin-text: #1d2327;
+    --flosc-admin-text-secondary: #50575e;
+    --flosc-admin-text-muted: #787c82;
+    --flosc-admin-text-link: #2271b1;
+
+    /* Spacing */
+    --flosc-admin-gap-xs: 4px;
+    --flosc-admin-gap-sm: 8px;
+    --flosc-admin-gap-md: 16px;
+    --flosc-admin-gap-lg: 24px;
+    --flosc-admin-gap-xl: 32px;
+
+    /* Radii */
+    --flosc-admin-radius-sm: 4px;
+    --flosc-admin-radius-md: 8px;
+    --flosc-admin-radius-lg: 12px;
+
+    /* Shadows */
+    --flosc-admin-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+    --flosc-admin-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --flosc-admin-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.1);
+
+    /* Transitions */
+    --flosc-admin-transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ========================================
+   TAB HEADER & FOOTER
+   ======================================== */
+
+.flosc-tab-header {
+    background: var(--flosc-admin-surface);
+    border: 1px solid var(--flosc-admin-border);
+    border-radius: var(--flosc-admin-radius-md);
+    padding: 16px 20px;
+    margin-bottom: var(--flosc-admin-gap-lg);
+    box-shadow: var(--flosc-admin-shadow-sm);
+}
+
+.flosc-tab-header h2 {
+    margin: 0;
+    color: var(--flosc-admin-text);
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.flosc-tab-header .flosc-version {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--flosc-admin-text-muted);
+}
+
+.flosc-tab-header p {
+    margin: 6px 0 0;
+    color: var(--flosc-admin-text-secondary);
+    font-size: 13px;
+}
+
+.flosc-tab-header code {
+    background: var(--flosc-admin-surface-alt);
+    padding: 2px 8px;
+    border-radius: var(--flosc-admin-radius-sm);
+    color: var(--flosc-admin-text);
+    font-size: 12px;
+    border: 1px solid var(--flosc-admin-border-light);
+}
+
+.flosc-tab-footer {
+    margin-top: var(--flosc-admin-gap-xl);
+    padding-top: var(--flosc-admin-gap-md);
+    border-top: 1px solid var(--flosc-admin-border);
+    text-align: right;
+}
+
+.flosc-tab-footer .flosc-version {
+    color: var(--flosc-admin-text-muted);
+    font-size: 11px;
+}
+
+/* ========================================
+   NOTIFICATION BANNERS
+   ======================================== */
+
+.flosc-banner {
+    padding: 14px 18px;
+    margin-bottom: var(--flosc-admin-gap-lg);
+    border-radius: var(--flosc-admin-radius-md);
+    border-left: 4px solid;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.flosc-banner--warning {
+    background: #fef9e7;
+    border-left-color: var(--flosc-admin-warning);
+    color: #654600;
+}
+
+.flosc-banner--success {
+    background: #edfaef;
+    border-left-color: var(--flosc-admin-success);
+    color: #00450b;
+}
+
+.flosc-banner--info {
+    background: #f0f6fc;
+    border-left-color: var(--flosc-admin-info);
+    color: #1d4267;
+}
+
+.flosc-banner--error {
+    background: #fcf0f1;
+    border-left-color: var(--flosc-admin-danger);
+    color: #8a1c1f;
+}
+
+/* ========================================
+   CONFIGURATION CARDS
+   ======================================== */
+
+.flosc-card {
+    background: var(--flosc-admin-surface);
+    border: 1px solid var(--flosc-admin-border-light);
+    border-radius: var(--flosc-admin-radius-md);
+    margin-bottom: var(--flosc-admin-gap-lg);
+    box-shadow: var(--flosc-admin-shadow-sm);
+    transition: box-shadow var(--flosc-admin-transition);
+}
+
+.flosc-card:hover {
+    box-shadow: var(--flosc-admin-shadow-md);
+}
+
+.flosc-card--expandable {
+    border: 1px solid var(--flosc-admin-border-light);
+    border-radius: var(--flosc-admin-radius-md);
+    overflow: hidden;
+}
+
+.flosc-card__header {
+    background: var(--flosc-admin-surface-alt);
+    padding: 14px 18px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background var(--flosc-admin-transition);
+    user-select: none;
+}
+
+.flosc-card__header:hover {
+    background: #eef0f2;
+}
+
+.flosc-card__body {
+    padding: 18px;
+    border-top: 1px solid var(--flosc-admin-border-light);
+}
+
+.flosc-card__body--hidden {
+    display: none;
+}
+
+/* ========================================
+   STATUS INDICATORS
+   ======================================== */
+
+.flosc-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+}
+
+.flosc-status--active {
+    background: #edfaef;
+    color: #00450b;
+}
+
+.flosc-status--inactive {
+    background: #fcf0f1;
+    color: #8a1c1f;
+    color: #721c24;
+}
+
+.flosc-status--pending {
+    background: #fef9e7;
+    color: #654600;
+}
+
+.flosc-status--configured {
+    background: #f0f6fc;
+    color: #1d4267;
+}
+
+/* Status dots (for list items) */
+.flosc-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+}
+
+.flosc-status-dot--green {
+    background: #28a745;
+}
+
+.flosc-status-dot--red {
+    background: #dc3545;
+}
+
+.flosc-status-dot--yellow {
+    background: #ffc107;
+}
+
+.flosc-status-dot--blue {
+    background: #007bff;
+}
+
+/* ========================================
+   TOGGLE SWITCHES
+   ======================================== */
+
+.flosc-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.flosc-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.flosc-toggle__slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #c3c4c7;
+    transition: var(--flosc-admin-transition);
+    border-radius: 24px;
+}
+
+.flosc-toggle__slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: var(--flosc-admin-transition);
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.flosc-toggle input:checked + .flosc-toggle__slider {
+    background-color: var(--flosc-admin-primary);
+}
+
+.flosc-toggle input:checked + .flosc-toggle__slider:before {
+    transform: translateX(20px);
+}
+
+.flosc-toggle input:focus + .flosc-toggle__slider {
+    box-shadow: 0 0 0 2px rgba(34, 113, 177, 0.3);
+}
+
+/* ========================================
+   COLLAPSIBLE SECTIONS
+   ======================================== */
+
+.flosc-collapsible {
+    border: 1px solid var(--flosc-admin-border-light);
+    border-radius: var(--flosc-admin-radius-md);
+    margin-bottom: var(--flosc-admin-gap-md);
+    box-shadow: var(--flosc-admin-shadow-sm);
+    overflow: hidden;
+}
+
+.flosc-collapsible__header {
+    background: var(--flosc-admin-surface-alt);
+    padding: 14px 18px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+
+.flosc-collapsible__header:hover {
+    background: #eef0f2;
+}
+
+.flosc-collapsible__toggle {
+    color: var(--flosc-admin-text-muted);
+    font-weight: bold;
+    transition: transform var(--flosc-admin-transition);
+}
+
+.flosc-collapsible--open .flosc-collapsible__toggle {
+    transform: rotate(90deg);
+}
+
+.flosc-collapsible__content {
+    padding: 18px;
+    border-top: 1px solid var(--flosc-admin-border-light);
+    display: none;
+}
+
+.flosc-collapsible--open .flosc-collapsible__content {
+    display: block;
+}
+
+/* ========================================
+   FORM STYLING
+   ======================================== */
+
+.flosc-field-group {
+    margin-bottom: var(--flosc-admin-gap-lg);
+}
+
+.flosc-field-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--flosc-admin-text);
+    font-size: 13px;
+}
+
+.flosc-field-group .description {
+    color: var(--flosc-admin-text-muted);
+    font-style: italic;
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.flosc-input-text {
+    width: 100%;
+    max-width: 400px;
+}
+
+.flosc-textarea {
+    width: 100%;
+    min-height: 100px;
+    font-family: Consolas, Monaco, monospace;
+}
+
+/* Inline label + input */
+.flosc-inline-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ========================================
+   TABS WITHIN ADMIN PAGES
+   ======================================== */
+
+.flosc-sub-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--flosc-admin-border);
+    margin-bottom: var(--flosc-admin-gap-lg);
+}
+
+.flosc-sub-tab {
+    padding: 10px 20px;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    margin-bottom: -2px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--flosc-admin-text-secondary);
+    transition: color var(--flosc-admin-transition), border-color var(--flosc-admin-transition);
+}
+
+.flosc-sub-tab:hover {
+    color: var(--flosc-admin-text);
+    border-bottom-color: var(--flosc-admin-border);
+}
+
+.flosc-sub-tab--active {
+    color: var(--flosc-admin-primary);
+    border-bottom-color: var(--flosc-admin-primary);
+    font-weight: 600;
+}
+
+/* ========================================
+   DATA TABLES
+   ======================================== */
+
+.flosc-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--flosc-admin-surface);
+    border-radius: var(--flosc-admin-radius-md);
+    overflow: hidden;
+    box-shadow: var(--flosc-admin-shadow-sm);
+}
+
+.flosc-table th,
+.flosc-table td {
+    padding: 12px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--flosc-admin-border-light);
+    font-size: 13px;
+}
+
+.flosc-table th {
+    background: var(--flosc-admin-surface-alt);
+    font-weight: 600;
+    color: var(--flosc-admin-text-secondary);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.flosc-table tbody tr {
+    transition: background var(--flosc-admin-transition);
+}
+
+.flosc-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.flosc-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* ========================================
+   METRICS & STATISTICS
+   ======================================== */
+
+.flosc-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: var(--flosc-admin-gap-md);
+    margin-bottom: var(--flosc-admin-gap-lg);
+}
+
+.flosc-metric {
+    background: var(--flosc-admin-surface);
+    border: 1px solid var(--flosc-admin-border-light);
+    border-radius: var(--flosc-admin-radius-md);
+    padding: 20px;
+    text-align: center;
+    box-shadow: var(--flosc-admin-shadow-sm);
+    transition: transform var(--flosc-admin-transition), box-shadow var(--flosc-admin-transition);
+}
+
+.flosc-metric:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--flosc-admin-shadow-md);
+}
+
+.flosc-metric__value {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--flosc-admin-primary);
+    line-height: 1;
+    letter-spacing: -0.02em;
+}
+
+.flosc-metric__label {
+    font-size: 12px;
+    color: var(--flosc-admin-text-muted);
+    margin-top: 6px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* ========================================
+   PROGRESS BAR
+   ======================================== */
+
+.flosc-progress {
+    background: var(--flosc-admin-border-light);
+    border-radius: 999px;
+    height: 8px;
+    overflow: hidden;
+}
+
+.flosc-progress__bar {
+    height: 100%;
+    background: var(--flosc-admin-primary);
+    border-radius: 999px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flosc-progress__label {
+    font-size: 12px;
+    color: var(--flosc-admin-text-muted);
+    margin-top: 6px;
+}
+
+/* ========================================
+   ACTION BUTTONS
+   ======================================== */
+
+.flosc-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: var(--flosc-admin-radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+    transition: all var(--flosc-admin-transition);
+    line-height: 1.4;
+}
+
+.flosc-btn--primary {
+    background: var(--flosc-admin-primary);
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.flosc-btn--primary:hover {
+    background: var(--flosc-admin-primary-hover);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.flosc-btn--secondary {
+    background: var(--flosc-admin-surface);
+    color: var(--flosc-admin-text);
+    border: 1px solid var(--flosc-admin-border);
+}
+
+.flosc-btn--secondary:hover {
+    background: var(--flosc-admin-surface-alt);
+    border-color: #a7aaad;
+}
+
+.flosc-btn--danger {
+    background: var(--flosc-admin-danger);
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.flosc-btn--danger:hover {
+    background: #b32d2f;
+}
+
+.flosc-btn--small {
+    padding: 4px 10px;
+    font-size: 12px;
+}
+
+.flosc-btn--icon {
+    padding: 6px;
+    line-height: 1;
+}
+
+/* ========================================
+   CODE BLOCKS
+   ======================================== */
+
+.flosc-code {
+    background: #f6f7f7;
+    border: 1px solid var(--flosc-admin-border-light);
+    border-radius: var(--flosc-admin-radius-md);
+    padding: 16px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 13px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+.flosc-code--inline {
+    display: inline;
+    padding: 2px 6px;
+    font-size: 12px;
+    border-radius: var(--flosc-admin-radius-sm);
+}
+
+/* ========================================
+   SECTION LAYOUT HELPERS
+   ======================================== */
+
+.flosc-admin-section {
+    margin-bottom: var(--flosc-admin-gap-xl);
+}
+
+.flosc-admin-section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--flosc-admin-text);
+    margin: 0 0 var(--flosc-admin-gap-md) 0;
+    padding-bottom: var(--flosc-admin-gap-sm);
+    border-bottom: 1px solid var(--flosc-admin-border-light);
+}
+
+.flosc-admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--flosc-admin-gap-lg);
+}
+
+.flosc-admin-notice {
+    padding: 12px 16px;
+    border-radius: var(--flosc-admin-radius-md);
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.flosc-admin-notice--info {
+    background: #f0f6fc;
+    border: 1px solid #c5d9ed;
+    color: #1d4267;
+}
+
+.flosc-admin-notice--wip {
+    background: #fef9e7;
+    border: 1px solid #f0d78d;
+    color: #654600;
+}
+
+.flosc-admin-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.flosc-admin-badge--wip {
+    background: #fef3cd;
+    color: #856404;
+}
+
+.flosc-admin-badge--new {
+    background: #edfaef;
+    color: #00450b;
+}
+
+.flosc-admin-badge--beta {
+    background: #f0f6fc;
+    color: #1d4267;
+}
+
+/* ========================================
+   ADMIN PREVIEW CONTAINER
+   ======================================== */
+
+.flosc-admin-preview {
+    background: #f6f7f7;
+    border: 2px dashed var(--flosc-admin-border);
+    border-radius: var(--flosc-admin-radius-lg);
+    padding: var(--flosc-admin-gap-lg);
+    text-align: center;
+    color: var(--flosc-admin-text-muted);
+}
+
+.flosc-admin-preview__label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: var(--flosc-admin-gap-sm);
+    color: var(--flosc-admin-text-muted);
+}
+
+/* ========================================
+   RADIO CARDS (for mode selection)
+   ======================================== */
+
+.flosc-radio-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--flosc-admin-gap-md);
+}
+
+.flosc-radio-card {
+    position: relative;
+    background: var(--flosc-admin-surface);
+    border: 2px solid var(--flosc-admin-border-light);
+    border-radius: var(--flosc-admin-radius-md);
+    padding: 16px;
+    cursor: pointer;
+    transition: all var(--flosc-admin-transition);
+}
+
+.flosc-radio-card:hover {
+    border-color: var(--flosc-admin-border);
+    box-shadow: var(--flosc-admin-shadow-sm);
+}
+
+.flosc-radio-card--selected {
+    border-color: var(--flosc-admin-primary);
+    background: #f0f6fc;
+    box-shadow: 0 0 0 1px var(--flosc-admin-primary);
+}
+
+.flosc-radio-card input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+}
+
+.flosc-radio-card__title {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--flosc-admin-text);
+    margin-bottom: 4px;
+}
+
+.flosc-radio-card__desc {
+    font-size: 12px;
+    color: var(--flosc-admin-text-muted);
+    line-height: 1.4;
+}
+
+/* ========================================
+   COLOR PICKER INPUT
+   ======================================== */
+
+.flosc-color-input {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--flosc-admin-gap-sm);
+    background: var(--flosc-admin-surface);
+    border: 1px solid var(--flosc-admin-border);
+    border-radius: var(--flosc-admin-radius-sm);
+    padding: 4px 8px 4px 4px;
+}
+
+.flosc-color-input input[type="color"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 32px;
+    height: 28px;
+    border: none;
+    border-radius: var(--flosc-admin-radius-sm);
+    cursor: pointer;
+    padding: 0;
+}
+
+.flosc-color-input input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 2px;
+}
+
+.flosc-color-input input[type="color"]::-webkit-color-swatch {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.flosc-color-input__hex {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+    color: var(--flosc-admin-text-secondary);
+}
+
+/* ========================================
+   BRIDGE DATA ANALYTICS (v1.0.4 TASK-010)
+   ======================================== */
+
+.flosc-bridge-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--flosc-admin-gap-lg);
+    margin-bottom: var(--flosc-admin-gap-xl);
+}
+
+.flosc-bridge-stat {
+    background: var(--flosc-admin-surface);
+    border: 1px solid var(--flosc-admin-border-light);
+    border-radius: var(--flosc-admin-radius-lg);
+    padding: var(--flosc-admin-gap-lg);
+    text-align: center;
+    box-shadow: var(--flosc-admin-shadow-sm);
+    transition: transform var(--flosc-admin-transition), box-shadow var(--flosc-admin-transition);
+}
+
+.flosc-bridge-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--flosc-admin-shadow-md);
+}
+
+.flosc-bridge-stat__icon {
+    font-size: 32px;
+    margin-bottom: var(--flosc-admin-gap-sm);
+}
+
+.flosc-bridge-stat__value {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--flosc-admin-primary);
+    letter-spacing: -0.02em;
+}
+
+.flosc-bridge-stat__label {
+    font-size: 13px;
+    color: var(--flosc-admin-text-muted);
+    margin-top: var(--flosc-admin-gap-xs);
+    font-weight: 500;
+}
+
+.flosc-weakness-chart {
+    background: var(--flosc-admin-surface);
+    border: 1px solid var(--flosc-admin-border-light);
+    border-radius: var(--flosc-admin-radius-lg);
+    padding: var(--flosc-admin-gap-lg);
+    box-shadow: var(--flosc-admin-shadow-sm);
+}
+
+.flosc-weakness-bar {
+    display: flex;
+    align-items: center;
+    margin-bottom: 14px;
+}
+
+.flosc-weakness-bar__label {
+    width: 120px;
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--flosc-admin-text);
+}
+
+.flosc-weakness-bar__track {
+    flex: 1;
+    background: var(--flosc-admin-border-light);
+    border-radius: 999px;
+    height: 24px;
+    overflow: hidden;
+}
+
+.flosc-weakness-bar__fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--flosc-admin-danger), #fd7e14);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 10px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 999px;
+}
+
+/* ========================================
+   DEBUG MODE INDICATOR
+   ======================================== */
+
+.flosc-debug-badge {
+    position: fixed;
+    bottom: 12px;
+    right: 12px;
+    background: var(--flosc-admin-danger);
+    color: #fff;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    z-index: 9999;
+    opacity: 0.85;
+    letter-spacing: 0.03em;
+    box-shadow: var(--flosc-admin-shadow-md);
+    transition: opacity var(--flosc-admin-transition);
+}
+
+.flosc-debug-badge:hover {
+    opacity: 1;
+}
+
+/* ========================================
+   PAGE HEADER (v1.6.0)
+   ======================================== */
+
+.flosc-page-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 0;
+}
+
+.flosc-page-header .flosc-version {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--flosc-admin-text-muted);
+    background: var(--flosc-admin-surface-alt);
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--flosc-admin-border-light);
+}
+
+/* ========================================
+   IVR/FLOW SELECTOR BAR (v1.6.0)
+   ======================================== */
+
+.flosc-ivr-selector {
+    background: var(--flosc-admin-text);
+    padding: 16px 20px;
+    border-radius: var(--flosc-admin-radius-md);
+    margin-bottom: var(--flosc-admin-gap-lg);
+    box-shadow: var(--flosc-admin-shadow-md);
+}
+
+.flosc-ivr-selector__row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.flosc-ivr-selector label {
+    color: #f0f0f1;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.flosc-ivr-selector select {
+    padding: 8px 12px;
+    border-radius: var(--flosc-admin-radius-sm);
+    border: 1px solid #50575e;
+    min-width: 250px;
+    font-size: 14px;
+    background: #2c3338;
+    color: #f0f0f1;
+}
+
+.flosc-ivr-selector__meta {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #50575e;
+}
+
+.flosc-ivr-selector .button-small {
+    font-size: 12px;
+    color: #f0f0f1;
+    background: transparent;
+    border-color: #50575e;
+}
+
+.flosc-ivr-selector .button-small:hover {
+    border-color: #a7aaad;
+    color: #fff;
+}
+
+/* ========================================
+   FLOW BLOCK CARDS (v1.6.0)
+   ======================================== */
+
+.flosc-flow-block {
+    background: var(--flosc-admin-surface);
+    border: 2px solid var(--flosc-admin-border);
+    border-radius: var(--flosc-admin-radius-lg);
+    padding: var(--flosc-admin-gap-lg);
+    margin-bottom: var(--flosc-admin-gap-lg);
+    box-shadow: var(--flosc-admin-shadow-sm);
+    transition: border-color var(--flosc-admin-transition), box-shadow var(--flosc-admin-transition);
+}
+
+.flosc-flow-block--current {
+    border-color: var(--flosc-admin-primary);
+    box-shadow: 0 0 0 1px var(--flosc-admin-primary), var(--flosc-admin-shadow-md);
+}
+
+.flosc-flow-block__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--flosc-admin-gap-lg);
+    padding-bottom: var(--flosc-admin-gap-md);
+    border-bottom: 1px solid var(--flosc-admin-border-light);
+}
+
+.flosc-flow-block__title {
+    margin: 0;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.flosc-flow-block__emoji {
+    font-size: 28px;
+}
+
+.flosc-flow-block__badge--current {
+    background: var(--flosc-admin-primary);
+    color: white;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.flosc-flow-block__url-info {
+    background: #f0f6fc;
+    border: 1px solid #c5d9ed;
+    padding: 14px 18px;
+    border-radius: var(--flosc-admin-radius-md);
+    color: var(--flosc-admin-text);
+    margin-bottom: var(--flosc-admin-gap-lg);
+}
+
+.flosc-flow-block__url-label {
+    font-size: 11px;
+    color: var(--flosc-admin-text-muted);
+    margin-bottom: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.flosc-flow-block__url {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.flosc-flow-block__url a {
+    color: var(--flosc-admin-text-link);
+    text-decoration: none;
+}
+
+.flosc-flow-block__url a:hover {
+    text-decoration: underline;
+}
+
+.flosc-flow-block__fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--flosc-admin-gap-lg);
+}
+
+@media (max-width: 782px) {
+    .flosc-flow-block__fields {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ========================================
+   FORM FIELD LAYOUT HELPERS (v1.6.0)
+   ======================================== */
+
+.flosc-field {
+    margin-bottom: var(--flosc-admin-gap-md);
+}
+
+.flosc-field__label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    font-size: 13px;
+    color: var(--flosc-admin-text);
+}
+
+.flosc-field__label--required::after {
+    content: ' *';
+    color: var(--flosc-admin-danger);
+}
+
+.flosc-field__hint {
+    font-size: 12px;
+    color: var(--flosc-admin-text-muted);
+    margin-top: 4px;
+    line-height: 1.4;
+}
+
+.flosc-field__row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.flosc-field__prefix {
+    background: var(--flosc-admin-surface-alt);
+    padding: 8px 10px;
+    border-radius: var(--flosc-admin-radius-sm);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+    border: 1px solid var(--flosc-admin-border-light);
+    color: var(--flosc-admin-text-secondary);
+    white-space: nowrap;
+}
