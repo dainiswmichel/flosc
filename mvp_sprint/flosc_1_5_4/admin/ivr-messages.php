@@ -305,7 +305,7 @@ if (isset($_POST['flosc_clear_ivr_db'])) {
     check_admin_referer('flosc_clear_ivr_db');
     
     // Backup first
-    flosc_export_ivr_backup();
+    flosc_export_ivr_backup($flow_key);
     
     // Clear (per-flow)
     if ($flow_key) {
@@ -330,9 +330,12 @@ if (isset($_POST['flosc_clear_ivr_db'])) {
 if (isset($_POST['flosc_force_resync'])) {
     check_admin_referer('flosc_force_resync');
     
-    $result = flosc_import_ivr_to_database(false);
+    $result = flosc_import_ivr_to_database(false, $flow_key);
     
     if ($result['success']) {
+        // v1.5.4: Refresh flow_settings after import
+        $flow_settings = get_option($flow_key, []);
+        $GLOBALS['flosc_current_settings'] = $flow_settings;
         add_settings_error('flosc_settings', 'load_done', 'Loaded Active IVR Messages MD file → FLOSC DB: ' . $result['message'], 'success');
     } else {
         add_settings_error('flosc_settings', 'load_failed', 'Load failed: ' . $result['message'], 'error');
@@ -346,9 +349,12 @@ $ivr_diagnostics = flosc_run_ivr_diagnostics();
 if (isset($_POST['flosc_confirm_import'])) {
     check_admin_referer('flosc_confirm_import');
     
-    $result = flosc_import_ivr_to_database(false); // Execute import (not preview)
+    $result = flosc_import_ivr_to_database(false, $flow_key); // Execute import (not preview)
     
     if ($result['success']) {
+        // v1.5.4: Refresh flow_settings after import
+        $flow_settings = get_option($flow_key, []);
+        $GLOBALS['flosc_current_settings'] = $flow_settings;
         add_settings_error('flosc_settings', 'ivr_imported', 'Loaded Active IVR Messages MD file → FLOSC DB: ' . esc_html($result['message']), 'success');
     } else {
         add_settings_error('flosc_settings', 'ivr_import_failed', 'Load failed: ' . esc_html($result['message']), 'error');
@@ -360,7 +366,7 @@ $import_preview = null;
 if (isset($_POST['flosc_preview_import'])) {
     check_admin_referer('flosc_preview_import');
     
-    $result = flosc_import_ivr_to_database(true); // Preview only
+    $result = flosc_import_ivr_to_database(true, $flow_key); // Preview only
     
     if ($result['success'] && isset($result['preview'])) {
         $import_preview = $result['stats'];
@@ -483,7 +489,7 @@ if (isset($_POST['save_ivr_message']) || isset($_POST['save_ivr_message_resync']
     
     // v9.2.10: Only resync to file if user clicked "Save and Resync"
     if ($do_resync) {
-        flosc_auto_export_ivr_to_file();
+        flosc_auto_export_ivr_to_file($flow_key);
         add_settings_error('flosc_settings', 'message_saved', 'Message saved to FLOSC DB and resynced to Active IVR Messages MD file', 'success');
     } else {
         add_settings_error('flosc_settings', 'message_saved', 'Message saved to FLOSC DB. Changes appear on frontend. Click "Resync" when ready to save to file.', 'success');
@@ -514,7 +520,7 @@ if (isset($_GET['delete_message']) && isset($_GET['phase'])) {
     }
     
     // v9.2.10: Delete always resyncs to file (destructive operation)
-    flosc_auto_export_ivr_to_file();
+    flosc_auto_export_ivr_to_file($flow_key);
     
     add_settings_error('flosc_settings', 'message_deleted', 'Message deleted from FLOSC DB and removed from Active IVR Messages MD file', 'success');
 }

@@ -5589,11 +5589,21 @@ function flosc_adjust_brightness($hex, $percent) {
  * @param bool $preview_only If true, returns preview without making changes
  * @return array Result with success, stats, message, and preview data
  */
-function flosc_import_ivr_to_database($preview_only = false) {
-    $ivr_file = FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_ivr.md';
+function flosc_import_ivr_to_database($preview_only = false, $flow_key = '') {
+    // v1.5.4: Use current IVR file from admin context, fallback to default
+    $ivr_filename = $GLOBALS['flosc_current_ivr'] ?? 'flosc_default_ivr.md';
+    $ivr_file = FLOSC_PLUGIN_DIR . 'ai_configuration_files/' . $ivr_filename;
     
     if (!file_exists($ivr_file)) {
-        return ['success' => false, 'message' => 'flosc_default_ivr.md file not found'];
+        return ['success' => false, 'message' => $ivr_filename . ' file not found'];
+    }
+    
+    // v1.5.4: Resolve per-flow key — admin context, explicit param, or derive from filename
+    if (empty($flow_key)) {
+        $flow_key = $GLOBALS['flosc_settings_key'] ?? '';
+    }
+    if (empty($flow_key)) {
+        $flow_key = 'flosc_flow_' . sanitize_key(pathinfo($ivr_filename, PATHINFO_FILENAME));
     }
     
     require_once FLOSC_PLUGIN_DIR . 'includes/class-ivr-parser.php';
@@ -5602,11 +5612,12 @@ function flosc_import_ivr_to_database($preview_only = false) {
     $config = $parser->flosc_parse($markdown);
     
     if (empty($config)) {
-        return ['success' => false, 'message' => 'Failed to parse flosc_default_ivr.md'];
+        return ['success' => false, 'message' => 'Failed to parse ' . $ivr_filename];
     }
     
-    // Get current database state
-    $current_messages = get_option('flosc_ivr_messages', []);
+    // v1.5.4: Get current database state from per-flow storage
+    $fs = get_option($flow_key, []);
+    $current_messages = $fs['ivr_messages'] ?? [];
     $incoming_messages = $config['messages'] ?? [];
     
     // Calculate changes (ivr.md is source of truth - database will match it)
@@ -5634,14 +5645,15 @@ function flosc_import_ivr_to_database($preview_only = false) {
     // EXECUTE IMPORT: Auto-backup first, then replace database
     $backup_file = '';
     if (!empty($current_messages)) {
-        $backup_file = flosc_export_ivr_backup();
+        $backup_file = flosc_export_ivr_backup($flow_key);
     }
     
-    // REPLACE database with ivr.md contents (source of truth)
-    update_option('flosc_ivr_messages', $incoming_messages);
-    update_option('flosc_ivr_phases', $config['phases'] ?? []);
-    update_option('flosc_ivr_styles', $config['styles'] ?? []);
-    update_option('flosc_ivr_last_import', current_time('mysql'));
+    // v1.5.4: REPLACE per-flow storage with ivr.md contents (source of truth)
+    $fs['ivr_messages'] = $incoming_messages;
+    $fs['ivr_phases'] = $config['phases'] ?? [];
+    $fs['ivr_styles'] = $config['styles'] ?? [];
+    $fs['ivr_last_import'] = current_time('mysql');
+    update_option($flow_key, $fs);
     
     // Generate success message
     $message = sprintf(
@@ -5663,10 +5675,18 @@ function flosc_import_ivr_to_database($preview_only = false) {
  * 
  * @return string|false Backup filename on success, false on failure
  */
-function flosc_export_ivr_backup() {
-    $messages = get_option('flosc_ivr_messages', []);
-    $phases = get_option('flosc_ivr_phases', []);
-    $styles = get_option('flosc_ivr_styles', []);
+function flosc_export_ivr_backup($flow_key = '') {
+    // v1.5.4: Read from per-flow storage instead of global options
+    if (empty($flow_key)) {
+        $flow_key = $GLOBALS['flosc_settings_key'] ?? '';
+    }
+    if (empty($flow_key)) {
+        $flow_key = 'flosc_flow_flosc_default_ivr';
+    }
+    $fs = get_option($flow_key, []);
+    $messages = $fs['ivr_messages'] ?? [];
+    $phases = $fs['ivr_phases'] ?? [];
+    $styles = $fs['ivr_styles'] ?? [];
     
     if (empty($messages)) {
         return false; // No data to backup
@@ -5739,10 +5759,18 @@ function flosc_export_ivr_backup() {
  * 
  * @return bool Success
  */
-function flosc_auto_export_ivr_to_file() {
-    $messages = get_option('flosc_ivr_messages', []);
-    $phases = get_option('flosc_ivr_phases', []);
-    $styles = get_option('flosc_ivr_styles', []);
+function flosc_auto_export_ivr_to_file($flow_key = '') {
+    // v1.5.4: Read from per-flow storage instead of global options
+    if (empty($flow_key)) {
+        $flow_key = $GLOBALS['flosc_settings_key'] ?? '';
+    }
+    if (empty($flow_key)) {
+        $flow_key = 'flosc_flow_flosc_default_ivr';
+    }
+    $fs = get_option($flow_key, []);
+    $messages = $fs['ivr_messages'] ?? [];
+    $phases = $fs['ivr_phases'] ?? [];
+    $styles = $fs['ivr_styles'] ?? [];
     
     if (empty($messages)) {
         return false;
@@ -5833,13 +5861,18 @@ function flosc_auto_export_ivr_to_file() {
         $markdown .= "---\n\n";
     }
     
-    // Write to flosc_default_ivr.md
-    $ivr_file = FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_ivr.md';
+    // v1.5.4: Write to current IVR file (not hardcoded)
+    $ivr_filename = $GLOBALS['flosc_current_ivr'] ?? 'flosc_default_ivr.md';
+    $ivr_file = FLOSC_PLUGIN_DIR . 'ai_configuration_files/' . $ivr_filename;
     $result = file_put_contents($ivr_file, $markdown);
     
     if ($result !== false) {
-        // Update last export timestamp
-        update_option('flosc_ivr_last_export', current_time('mysql'));
+        // v1.5.4: Update last export timestamp in per-flow storage
+        if (!empty($flow_key)) {
+            $fs_export = get_option($flow_key, []);
+            $fs_export['ivr_last_export'] = current_time('mysql');
+            update_option($flow_key, $fs_export);
+        }
         return true;
     }
     
