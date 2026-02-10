@@ -142,6 +142,14 @@ class FLOSC_Condition_Evaluator {
             return $this->compare($completed, $operator, $value);
         }
         
+        // v1.5.4: Free lessons count comparisons (singular/plural pill)
+        if (preg_match('/^free_lessons_count\s*(>=|<=|>|<|==)\s*(\d+)$/', $condition, $matches)) {
+            $operator = $matches[1];
+            $value = intval($matches[2]);
+            $count = intval($this->context['free_lessons_count'] ?? 0);
+            return $this->compare($count, $operator, $value);
+        }
+        
         // Time-based conditions
         if (preg_match('/^inactive_seconds\s*(>=|<=|>|<|==)\s*(\d+)$/', $condition, $matches)) {
             $operator = $matches[1];
@@ -344,6 +352,7 @@ class FLOSC_Condition_Evaluator {
             'quiz_taken' => false,
             'purchased' => false,
             'lesson_viewed' => false,
+            'free_lessons_count' => 0,
             'returning_user' => false,
             'onboarded' => false,
             'has_incomplete_lesson' => false,
@@ -371,6 +380,7 @@ class FLOSC_Condition_Evaluator {
             $context['quiz_taken'] = !empty($context['score']) || get_user_meta($user_id, '_flosc_quiz_completed_at', true);
             $context['purchased'] = (bool) get_user_meta($user_id, '_flosc_purchased', true);
             $context['lesson_viewed'] = (bool) get_user_meta($user_id, '_flosc_free_lesson_delivered', true);
+            $context['free_lessons_count'] = count(get_user_meta($user_id, '_flosc_free_lesson_numbers', true) ?: []);
             $context['onboarded'] = (bool) get_user_meta($user_id, '_flosc_funnel_completed', true);
             $context['lessons_completed'] = intval(get_user_meta($user_id, '_flosc_lessons_completed', true));
             $context['returning_user'] = (bool) get_user_meta($user_id, '_flosc_last_visit', true);
