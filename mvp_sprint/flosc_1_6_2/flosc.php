@@ -2367,6 +2367,14 @@ The {product_name} Team";
             filemtime(FLOSC_PLUGIN_DIR . 'assets/css/flosc-theme.css')
         );
         
+        // v1.6.2: Offer/checkout/autoprompt CSS (extracted from inline JS)
+        wp_enqueue_style(
+            'flosc-offers',
+            FLOSC_PLUGIN_URL . 'assets/css/flosc-offers.css',
+            ['flosc-theme'],
+            filemtime(FLOSC_PLUGIN_DIR . 'assets/css/flosc-offers.css')
+        );
+        
         // 3. Preset CSS (variable definitions only)
         $this->enqueue_chat_style();
 
@@ -2725,6 +2733,13 @@ The {product_name} Team";
             'permission_callback' => [$this, 'check_public_endpoint_permission'],
         ]);
         
+        // v1.6.2: Offer content source (HtmlFile, WooProduct, PostID)
+        register_rest_route('flosc/v1', '/offer-content', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_offer_content'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+        
         // Purchase
         register_rest_route('flosc/v1', '/purchase', [
             'methods' => 'POST',
@@ -2984,6 +2999,11 @@ The {product_name} Team";
             $eval_context['user_name'] = $user_data->display_name ?? 'there';
             $eval_context['user_email'] = $user_data->user_email;
             $eval_context['is_admin'] = user_can($user_id, 'manage_options');
+            // v1.6.2: access_level for is_guest/is_visitor/is_member conditions
+            $has_member_access = (bool) get_user_meta($user_id, '_flosc_member_access', true);
+            $eval_context['access_level'] = $has_member_access ? 'member' : 'guest';
+        } else {
+            $eval_context['access_level'] = 'visitor';
         }
         
         // Find matching IVR message for this phase
@@ -4150,7 +4170,9 @@ Example good response:
      */
     private function search_ivr_match($messages, $user_message, $context, $only_always = false) {
         foreach ($messages as $msg) {
-            if (!isset($msg['type']) || $msg['type'] !== 'suggested_user_autoprompt') {
+            // v1.6.2: Match suggested_user_autoprompt AND offer-type messages with user_input
+            $matchable_types = ['suggested_user_autoprompt', 'offer'];
+            if (!isset($msg['type']) || !in_array($msg['type'], $matchable_types, true)) {
                 continue;
             }
             
@@ -4498,6 +4520,66 @@ Example good response:
         }
         $offers = $this->sale_manager->get_available_offers($user_id, $flow_id ?: null);
         return new WP_REST_Response(['offers' => array_values($offers)]);
+    }
+    
+    /**
+     * v1.6.2: Serve offer content from external sources
+     * Supports: HtmlFile (static HTML in plugin), WooProduct (WooCommerce), PostID (WP post)
+     * Sanitizes output to prevent XSS.
+     */
+    public function get_offer_content($request) {
+        $source = sanitize_text_field($request->get_param('source'));
+        
+        switch ($source) {
+            case 'html':
+                $file = sanitize_file_name($request->get_param('file'));
+                if (empty($file)) {
+                    return new WP_REST_Response(['error' => 'Missing file parameter'], 400);
+                }
+                // Only allow files from the offer_content directory
+                $path = FLOSC_PLUGIN_DIR . 'ai_configuration_files/offer_content/' . $file;
+                if (!file_exists($path) || !is_readable($path)) {
+                    return new WP_REST_Response(['error' => 'File not found'], 404);
+                }
+                // Only allow .html and .htm extensions
+                $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+                if (!in_array($ext, ['html', 'htm'], true)) {
+                    return new WP_REST_Response(['error' => 'Invalid file type'], 400);
+                }
+                $html = wp_kses_post(file_get_contents($path));
+                return new WP_REST_Response(['html' => $html]);
+                
+            case 'woo':
+                $product_id = intval($request->get_param('product'));
+                if (!$product_id || !function_exists('wc_get_product')) {
+                    return new WP_REST_Response(['error' => 'WooCommerce not available or invalid product'], 400);
+                }
+                $product = wc_get_product($product_id);
+                if (!$product) {
+                    return new WP_REST_Response(['error' => 'Product not found'], 404);
+                }
+                return new WP_REST_Response([
+                    'html' => wp_kses_post($product->get_description()),
+                    'price' => $product->get_price(),
+                    'name' => $product->get_name(),
+                ]);
+                
+            case 'post':
+                $post_id = intval($request->get_param('id'));
+                if (!$post_id) {
+                    return new WP_REST_Response(['error' => 'Missing post ID'], 400);
+                }
+                $post = get_post($post_id);
+                if (!$post || $post->post_status !== 'publish') {
+                    return new WP_REST_Response(['error' => 'Post not found'], 404);
+                }
+                return new WP_REST_Response([
+                    'html' => wp_kses_post(apply_filters('the_content', $post->post_content)),
+                ]);
+                
+            default:
+                return new WP_REST_Response(['error' => 'Invalid source type'], 400);
+        }
     }
     
     /**
@@ -5935,6 +6017,32 @@ function flosc_auto_export_ivr_to_file() {
             }
             if (!empty($msg['action'])) {
                 $markdown .= "Action: " . $msg['action'] . "\n";
+            }
+            // v1.6.2: Offer-specific fields — offers are IVR entries
+            if (!empty($msg['offer_id'])) {
+                $markdown .= "OfferID: " . $msg['offer_id'] . "\n";
+            }
+            if (!empty($msg['price'])) {
+                $markdown .= "Price: " . $msg['price'] . "\n";
+            }
+            if (!empty($msg['discount_price'])) {
+                $markdown .= "DiscountPrice: " . $msg['discount_price'] . "\n";
+            }
+            if (!empty($msg['timer'])) {
+                $markdown .= "Timer: " . $msg['timer'] . "\n";
+            }
+            if (!empty($msg['display_format']) && $msg['display_format'] !== 'card') {
+                $markdown .= "DisplayFormat: " . $msg['display_format'] . "\n";
+            }
+            // v1.6.2: Offer content source fields
+            if (!empty($msg['html_file'])) {
+                $markdown .= "HtmlFile: " . $msg['html_file'] . "\n";
+            }
+            if (!empty($msg['woo_product'])) {
+                $markdown .= "WooProduct: " . $msg['woo_product'] . "\n";
+            }
+            if (!empty($msg['post_id'])) {
+                $markdown .= "PostID: " . $msg['post_id'] . "\n";
             }
             
             $markdown .= "MessageContent: " . ($msg['content'] ?? '') . "\n";

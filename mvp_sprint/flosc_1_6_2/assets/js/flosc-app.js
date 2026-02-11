@@ -73,7 +73,7 @@ class floscApp {
             messageCount: 0,
             sessionStart: Date.now(),
             lastInteraction: Date.now(),
-            shownThisSession: {},
+            shownThisSession: this._loadOfferStates(), // v1.6.2: Restore from localStorage
             inactivityTimer: null,
             context: {}
         };
@@ -108,6 +108,27 @@ class floscApp {
 
         // Initialize
         this.init();
+    }
+
+    /**
+     * v1.6.2: Persist offer_shown / offer_dismissed states to localStorage
+     * so IVR conditions like offer_shown_full_access survive page refresh.
+     */
+    _loadOfferStates() {
+        try {
+            const raw = localStorage.getItem('flosc_offer_states');
+            return raw ? JSON.parse(raw) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    _saveOfferStates() {
+        try {
+            localStorage.setItem('flosc_offer_states', JSON.stringify(this.ivr.shownThisSession));
+        } catch (e) {
+            console.warn('[FLOSC] Could not persist offer states', e);
+        }
     }
     
         // v9.2.7: Minimal fallback - only if DB completely fails
@@ -250,7 +271,7 @@ class floscApp {
             }
             
             console.log('[FLOSC] Starting IVR...');
-            this.initOfferMessages(); // v1.6.2: Bridge admin offers into IVR
+            // v1.6.2: initOfferMessages() REMOVED — offers ARE IVR entries, no bridge needed
             this.startIVR();
             console.log('[FLOSC] Initialization complete!');
             
@@ -364,631 +385,7 @@ class floscApp {
             document.head.appendChild(style);
         }
 
-        // Add base user autoprompts CSS
-        // v9.3.5: Superlight styling
-        const baseStyles = document.createElement('style');
-        baseStyles.id = 'flosc-ivr-base-styles';
-        baseStyles.textContent = `
-            .flosc-user-autoprompts {
-                padding: 12px 16px;
-                background: transparent;
-                border-top: 1px solid rgba(0, 0, 0, 0.04);
-            }
-            .flosc-replies-scroll {
-                display: flex;
-                gap: 8px;
-                overflow-x: auto;
-                padding-bottom: 4px;
-                -webkit-overflow-scrolling: touch;
-            }
-            .flosc-replies-scroll::-webkit-scrollbar {
-                height: 4px;
-            }
-            .flosc-replies-scroll::-webkit-scrollbar-thumb {
-                background: rgba(0, 0, 0, 0.1);
-                border-radius: 2px;
-            }
-            .flosc-autoprompt-icon {
-                font-size: 16px;
-            }
-            .flosc-autoprompt-label {
-                white-space: nowrap;
-            }
-            .flosc-offer-card {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border-radius: 12px;
-                padding: 20px;
-                margin: 8px 0;
-                position: relative;
-            }
-            .flosc-offer-close {
-                position: absolute;
-                top: 8px;
-                right: 8px;
-                background: transparent;
-                color: #fff;
-                border: none;
-                font-size: 20px;
-                line-height: 1;
-                cursor: pointer;
-                opacity: 0.8;
-            }
-            .flosc-offer-close:hover { opacity: 1; }
-            .flosc-offer-content {
-                margin-bottom: 16px;
-                line-height: 1.6;
-            }
-            .flosc-offer-timer {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                font-size: 18px;
-                font-weight: bold;
-                margin-bottom: 16px;
-            }
-            .flosc-offer-cta {
-                width: 100%;
-                padding: 14px 24px !important;
-                font-size: 16px !important;
-                background: #10b981 !important;
-            }
-            .flosc-offer-cta:hover {
-                background: #059669 !important;
-            }
-            .flosc-timer-expired {
-                color: #fca5a5;
-            }
-
-            /* MTS-2026-02-03: [OFFER-PILL] Compact inline offer pill */
-            .flosc-offer-pill {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                padding: 8px 16px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border-radius: 20px;
-                font-size: 14px;
-                font-weight: 500;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                border: none;
-                margin: 4px;
-            }
-            .flosc-offer-pill:hover {
-                transform: scale(1.02);
-                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-            }
-            .flosc-offer-pill-icon { font-size: 16px; }
-            .flosc-offer-pill-price {
-                background: rgba(255,255,255,0.2);
-                padding: 2px 8px;
-                border-radius: 12px;
-                font-size: 12px;
-            }
-            .flosc-offer-pill-badge {
-                position: absolute;
-                top: -6px;
-                right: -6px;
-                background: #ef4444;
-                color: white;
-                font-size: 10px;
-                padding: 2px 6px;
-                border-radius: 10px;
-                font-weight: 600;
-            }
-
-            /* MTS-2026-02-03: [OFFER-COMPACT] Smaller card for PromptPanel */
-            .flosc-offer-compact {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 12px 16px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border-radius: 12px;
-                margin: 8px 0;
-                cursor: pointer;
-                transition: all 0.2s ease;
-            }
-            .flosc-offer-compact:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-            }
-            .flosc-offer-compact-icon { font-size: 24px; }
-            .flosc-offer-compact-content { flex: 1; }
-            .flosc-offer-compact-title {
-                font-weight: 600;
-                font-size: 14px;
-                margin-bottom: 2px;
-            }
-            .flosc-offer-compact-subtitle {
-                font-size: 12px;
-                opacity: 0.9;
-            }
-            .flosc-offer-compact-price {
-                font-weight: 700;
-                font-size: 16px;
-                background: rgba(255,255,255,0.2);
-                padding: 4px 10px;
-                border-radius: 8px;
-            }
-            .flosc-offer-compact-original {
-                text-decoration: line-through;
-                opacity: 0.7;
-                font-size: 12px;
-                margin-right: 4px;
-            }
-
-            /* MTS-2026-02-03: [OFFER-BANNER] Full-width promotional banner */
-            .flosc-offer-banner {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                padding: 16px 20px;
-                border-radius: 12px;
-                margin: 12px 0;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-                gap: 16px;
-                position: relative;
-                overflow: hidden;
-            }
-            .flosc-offer-banner::before {
-                content: '';
-                position: absolute;
-                top: -50%;
-                right: -50%;
-                width: 100%;
-                height: 200%;
-                background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
-                pointer-events: none;
-            }
-            .flosc-offer-banner-content {
-                flex: 1;
-                z-index: 1;
-            }
-            .flosc-offer-banner-title {
-                font-size: 18px;
-                font-weight: 700;
-                margin-bottom: 4px;
-            }
-            .flosc-offer-banner-subtitle {
-                font-size: 14px;
-                opacity: 0.9;
-            }
-            .flosc-offer-banner-cta {
-                background: white;
-                color: #667eea;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 8px;
-                font-weight: 600;
-                font-size: 14px;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                z-index: 1;
-                white-space: nowrap;
-            }
-            .flosc-offer-banner-cta:hover {
-                transform: scale(1.05);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            }
-            .flosc-offer-banner-close {
-                position: absolute;
-                top: 8px;
-                right: 8px;
-                background: rgba(255,255,255,0.2);
-                border: none;
-                color: white;
-                width: 24px;
-                height: 24px;
-                border-radius: 50%;
-                cursor: pointer;
-                font-size: 14px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                z-index: 2;
-            }
-            .flosc-offer-banner-timer {
-                background: rgba(0,0,0,0.2);
-                padding: 4px 10px;
-                border-radius: 6px;
-                font-size: 12px;
-                font-weight: 600;
-                margin-top: 8px;
-                display: inline-flex;
-                align-items: center;
-                gap: 4px;
-            }
-
-            /* MTS-2026-02-03: [OFFER-TEXT] Simple text-based offer */
-            .flosc-offer-text {
-                padding: 12px 16px;
-                background: #f0f4ff;
-                border-left: 4px solid #667eea;
-                border-radius: 0 8px 8px 0;
-                margin: 8px 0;
-            }
-            .flosc-offer-text-content {
-                color: #4338ca;
-                font-size: 14px;
-                line-height: 1.5;
-            }
-            .flosc-offer-text-link {
-                color: #667eea;
-                font-weight: 600;
-                text-decoration: underline;
-                cursor: pointer;
-            }
-            .flosc-offer-text-link:hover {
-                color: #4338ca;
-            }
-
-            /* MTS-2026-02-03: [OFFER-FEATURED] Large featured card */
-            .flosc-offer-featured {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                color: white;
-                border-radius: 16px;
-                padding: 24px;
-                margin: 16px 0;
-                position: relative;
-                overflow: hidden;
-            }
-            .flosc-offer-featured::before {
-                content: '';
-                position: absolute;
-                top: 0;
-                right: 0;
-                width: 150px;
-                height: 150px;
-                background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
-                pointer-events: none;
-            }
-            .flosc-offer-featured-badge {
-                display: inline-block;
-                background: #ef4444;
-                color: white;
-                padding: 4px 12px;
-                border-radius: 20px;
-                font-size: 12px;
-                font-weight: 600;
-                margin-bottom: 12px;
-            }
-            .flosc-offer-featured-title {
-                font-size: 24px;
-                font-weight: 700;
-                margin-bottom: 8px;
-            }
-            .flosc-offer-featured-description {
-                font-size: 15px;
-                opacity: 0.9;
-                line-height: 1.6;
-                margin-bottom: 16px;
-            }
-            .flosc-offer-featured-features {
-                display: flex;
-                flex-wrap: wrap;
-                gap: 8px;
-                margin-bottom: 20px;
-            }
-            .flosc-offer-featured-feature {
-                display: flex;
-                align-items: center;
-                gap: 6px;
-                background: rgba(255,255,255,0.15);
-                padding: 6px 12px;
-                border-radius: 20px;
-                font-size: 13px;
-            }
-            .flosc-offer-featured-pricing {
-                display: flex;
-                align-items: baseline;
-                gap: 12px;
-                margin-bottom: 16px;
-            }
-            .flosc-offer-featured-price {
-                font-size: 32px;
-                font-weight: 700;
-            }
-            .flosc-offer-featured-original {
-                font-size: 18px;
-                text-decoration: line-through;
-                opacity: 0.7;
-            }
-            .flosc-offer-featured-savings {
-                background: #10b981;
-                padding: 4px 10px;
-                border-radius: 6px;
-                font-size: 12px;
-                font-weight: 600;
-            }
-            .flosc-offer-featured-cta {
-                width: 100%;
-                padding: 16px 24px;
-                background: white;
-                color: #667eea;
-                border: none;
-                border-radius: 12px;
-                font-size: 16px;
-                font-weight: 700;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                margin-bottom: 12px;
-            }
-            .flosc-offer-featured-cta:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-            }
-            .flosc-offer-featured-guarantee {
-                text-align: center;
-                font-size: 13px;
-                opacity: 0.9;
-            }
-
-            /* MTS-2026-02-03: [OFFER-PANEL-SECTION] PromptPanel offer section */
-            .flosc-panel-offers {
-                padding: 12px 16px;
-                background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
-                border-top: 1px solid rgba(102,126,234,0.2);
-            }
-            .flosc-panel-offers-title {
-                font-size: 12px;
-                font-weight: 600;
-                color: #667eea;
-                margin-bottom: 8px;
-                display: flex;
-                align-items: center;
-                gap: 6px;
-            }
-            .flosc-panel-offers-grid {
-                display: flex;
-                gap: 8px;
-                overflow-x: auto;
-                padding-bottom: 4px;
-            }
-
-            /* MTS-2026-02-03: [CHECKOUT-INLINE] In-chat checkout styles */
-            .flosc-checkout-inline {
-                background: white;
-                border: 1px solid #e5e7eb;
-                border-radius: 12px;
-                padding: 20px;
-                margin: 8px 0;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            }
-            .flosc-checkout-header {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                margin-bottom: 16px;
-                padding-bottom: 16px;
-                border-bottom: 1px solid #e5e7eb;
-            }
-            .flosc-checkout-product-icon {
-                font-size: 32px;
-            }
-            .flosc-checkout-product-info { flex: 1; }
-            .flosc-checkout-product-name {
-                font-weight: 600;
-                font-size: 16px;
-                color: #1f2937;
-            }
-            .flosc-checkout-product-desc {
-                font-size: 13px;
-                color: #6b7280;
-            }
-            .flosc-checkout-product-price {
-                font-size: 24px;
-                font-weight: 700;
-                color: #10b981;
-            }
-            .flosc-checkout-form { margin-bottom: 16px; }
-            .flosc-checkout-field {
-                margin-bottom: 12px;
-            }
-            .flosc-checkout-label {
-                display: block;
-                font-size: 13px;
-                font-weight: 500;
-                color: #374151;
-                margin-bottom: 6px;
-            }
-            .flosc-checkout-card-element {
-                padding: 12px;
-                border: 1px solid #d1d5db;
-                border-radius: 8px;
-                background: white;
-            }
-            .flosc-checkout-btn {
-                width: 100%;
-                padding: 14px 24px;
-                background: #10b981;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                font-size: 16px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 8px;
-            }
-            .flosc-checkout-btn:hover:not(:disabled) {
-                background: #059669;
-            }
-            .flosc-checkout-btn:disabled {
-                opacity: 0.6;
-                cursor: not-allowed;
-            }
-            .flosc-checkout-btn-spinner {
-                width: 18px;
-                height: 18px;
-                border: 2px solid rgba(255,255,255,0.3);
-                border-top-color: white;
-                border-radius: 50%;
-                animation: flosc-spin 0.8s linear infinite;
-            }
-            @keyframes flosc-spin {
-                to { transform: rotate(360deg); }
-            }
-            .flosc-checkout-footer {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 8px;
-                font-size: 12px;
-                color: #6b7280;
-            }
-            .flosc-checkout-error {
-                color: #ef4444;
-                font-size: 13px;
-                margin-top: 8px;
-                display: none;
-            }
-            .flosc-checkout-success {
-                text-align: center;
-                padding: 24px;
-            }
-            .flosc-checkout-success-icon {
-                font-size: 48px;
-                margin-bottom: 12px;
-            }
-            .flosc-checkout-success-title {
-                font-size: 20px;
-                font-weight: 600;
-                color: #10b981;
-                margin-bottom: 8px;
-            }
-            .flosc-checkout-success-message {
-                color: #6b7280;
-                font-size: 14px;
-            }
-            
-            /* v9.3.2: In-Chat Quiz Styles */
-            .flosc-quiz-question {
-                background: #f0f9ff;
-                border: 1px solid #bae6fd;
-                border-radius: 12px;
-                padding: 16px;
-                margin: 8px 0;
-            }
-            .flosc-quiz-question-header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                margin-bottom: 12px;
-                font-size: 12px;
-                color: #0369a1;
-                font-weight: 600;
-            }
-            .flosc-quiz-question-text {
-                font-size: 16px;
-                font-weight: 500;
-                color: #0c4a6e;
-                margin-bottom: 16px;
-                line-height: 1.5;
-            }
-            .flosc-quiz-options {
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-            }
-            .flosc-quiz-option {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                padding: 12px 16px;
-                background: white;
-                border: 2px solid #e0f2fe;
-                border-radius: 8px;
-                cursor: pointer;
-                transition: all 0.2s ease;
-                font-size: 14px;
-                color: #0c4a6e;
-                text-align: left;
-                width: 100%;
-            }
-            .flosc-quiz-option:hover {
-                border-color: #38bdf8;
-                background: #f0f9ff;
-            }
-            .flosc-quiz-option:active {
-                transform: scale(0.98);
-            }
-            .flosc-quiz-option-key {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                width: 28px;
-                height: 28px;
-                background: #0ea5e9;
-                color: white;
-                border-radius: 6px;
-                font-weight: 600;
-                font-size: 13px;
-                flex-shrink: 0;
-            }
-            .flosc-quiz-option-text {
-                flex: 1;
-            }
-            .flosc-quiz-progress {
-                height: 4px;
-                background: #e0f2fe;
-                border-radius: 2px;
-                overflow: hidden;
-                margin-top: 12px;
-            }
-            .flosc-quiz-progress-bar {
-                height: 100%;
-                background: #0ea5e9;
-                transition: width 0.3s ease;
-            }
-            .flosc-quiz-result {
-                background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-                color: white;
-                border-radius: 12px;
-                padding: 20px;
-                margin: 8px 0;
-                text-align: center;
-            }
-            .flosc-quiz-result.low-score {
-                background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-            }
-            .flosc-quiz-result.medium-score {
-                background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
-            }
-            .flosc-quiz-result-score {
-                font-size: 48px;
-                font-weight: 700;
-                margin-bottom: 8px;
-            }
-            .flosc-quiz-result-label {
-                font-size: 14px;
-                opacity: 0.9;
-                margin-bottom: 16px;
-            }
-            .flosc-quiz-result-cta {
-                display: inline-block;
-                padding: 12px 24px;
-                background: white;
-                color: #059669;
-                border-radius: 8px;
-                font-weight: 600;
-                cursor: pointer;
-                border: none;
-                font-size: 14px;
-                transition: transform 0.2s ease;
-            }
-            .flosc-quiz-result-cta:hover {
-                transform: scale(1.05);
-            }
-        `;
-        document.head.appendChild(baseStyles);
+        // v1.6.2: Offer/checkout/autoprompt CSS moved to flosc-offers.css (enqueued via PHP)
     }
 
     startIVR() {
@@ -1094,40 +491,11 @@ class floscApp {
         this.ivr.context.inactive_seconds = Math.floor((Date.now() - this.ivr.lastInteraction) / 1000);
     }
 
-    /**
-     * v1.6.2: Bridge admin offers into IVR message stream
-     * Synthesizes IVR-style messages from config.offers that have conditions,
-     * so the condition evaluator handles them like any other IVR message.
-     */
-    initOfferMessages() {
-        const offers = this.config.offers || [];
-        let injected = 0;
-        
-        offers.forEach(offer => {
-            if (offer.condition && offer.status === 'active') {
-                const msgName = `offer_auto_${offer.id}`;
-                // Don't duplicate if already in IVR
-                if (!this.ivr.messages[msgName]) {
-                    this.ivr.messages[msgName] = {
-                        name: msgName,
-                        type: 'offer',
-                        offer_id: offer.id,
-                        display_format: offer.display_format || 'card',
-                        conditions: offer.condition,
-                        content: offer.description || offer.headline || offer.name,
-                        phase: 'login', // Offers target guests in login phase
-                        cta: offer.cta || '',
-                        price: offer.display_price || '',
-                    };
-                    injected++;
-                }
-            }
-        });
-        
-        if (injected > 0) {
-            console.log(`[FLOSC v1.6.2] Injected ${injected} admin offer(s) into IVR message stream`);
-        }
-    }
+    // v1.6.2: initOfferMessages() DELETED
+    // Offers ARE IVR entries — no synthetic bridging needed.
+    // The IVR file defines offer entries (type: offer), the parser reads them,
+    // the condition evaluator returns them, and they arrive in this.ivr.messages.
+    // The admin Offers tab data (config.offers) provides supplementary display fields.
 
     evaluateCondition(conditionString) {
         console.log('FLOSC: Evaluating condition:', conditionString);
@@ -1258,7 +626,13 @@ class floscApp {
         return false;
     }
 
+    // v1.6.2: Debounced wrapper — multiple rapid callers get coalesced into one check
     checkAutoMessages() {
+        if (this._autoMsgTimer) clearTimeout(this._autoMsgTimer);
+        this._autoMsgTimer = setTimeout(() => this._checkAutoMessagesNow(), 50);
+    }
+
+    _checkAutoMessagesNow() {
         console.log('FLOSC: Checking auto messages for phase:', this.ivr.phase);
 
         const messages = Object.values(this.ivr.messages);
@@ -1711,16 +1085,15 @@ class floscApp {
         }
     }
 
-    // MTS-2026-02-08: Bridge from handleAction('show_offer_*') to showOfferMessage()
-    // Called when an IVR pill/button uses Action: show_offer_<offerId>
+    // v1.6.2: Bridge from handleAction('show_offer_*') to showOfferMessage()
     showOffer(offerId) {
         const offer = this.getOfferData(offerId);
         const msg = {
             offer_id: offerId,
-            content: offer?.description || offer?.name || 'Check out this special offer!',
+            content: offer?.description || offer?.content || offer?.name || 'Check out this special offer!',
             display_format: offer?.display_format || 'card',
             cta: offer?.cta || '🔓 Get Full Access Now',
-            price: offer?.display_price || '',
+            price: offer?.display_price || (offer?.price ? `$${offer.price}` : ''),
             type: 'offer'
         };
         this.showOfferMessage(msg);
@@ -1737,8 +1110,68 @@ class floscApp {
         // Track offer shown
         this.offers.shownOffers.add(msg.offer_id);
         this.ivr.shownThisSession['offer_' + msg.offer_id] = true;
+        this._saveOfferStates(); // v1.6.2: Persist across refresh
         
-        // Route to appropriate display method
+        // v1.6.2: If offer has a content source (HtmlFile/WooProduct/PostID),
+        // load it and inject into the offer content before rendering.
+        const source = msg.html_file || offer?.html_file 
+                     || msg.woo_product || offer?.woo_product
+                     || msg.post_id || offer?.post_id;
+        if (source) {
+            this.loadOfferContentSource(msg, offer, displayFormat);
+            return;
+        }
+        
+        this.renderOfferByFormat(msg, offer, displayFormat);
+    }
+    
+    /**
+     * v1.6.2: Load external content source for an offer
+     * Supports HtmlFile (static HTML), WooProduct (WooCommerce), PostID (WordPress post)
+     */
+    async loadOfferContentSource(msg, offer, displayFormat) {
+        const htmlFile = msg.html_file || offer?.html_file;
+        const wooProduct = msg.woo_product || offer?.woo_product;
+        const postId = msg.post_id || offer?.post_id;
+        
+        try {
+            let content = msg.content; // fallback
+            
+            if (htmlFile) {
+                // Load static HTML file from plugin directory
+                const resp = await fetch(`${this.config.apiUrl}/offer-content?source=html&file=${encodeURIComponent(htmlFile)}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.html) content = data.html;
+                }
+            } else if (wooProduct) {
+                // Load WooCommerce product data
+                const resp = await fetch(`${this.config.apiUrl}/offer-content?source=woo&product=${encodeURIComponent(wooProduct)}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.html) content = data.html;
+                    if (data.price) msg.price = data.price;
+                }
+            } else if (postId) {
+                // Load WordPress post content
+                const resp = await fetch(`${this.config.apiUrl}/offer-content?source=post&id=${encodeURIComponent(postId)}`);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.html) content = data.html;
+                }
+            }
+            
+            msg.content = content;
+        } catch (e) {
+            console.warn('[FLOSC-OFFER] Could not load content source, using fallback', e);
+        }
+        
+        this.renderOfferByFormat(msg, offer, displayFormat);
+    }
+    
+    renderOfferByFormat(msg, offer, displayFormat) {
+        // v1.6.2: Error boundary for offer rendering
+        try {
         switch (displayFormat) {
             case 'pill':
                 this.showOfferPill(msg, offer);
@@ -1766,22 +1199,37 @@ class floscApp {
         
         // Track via API
         this.trackOfferShown(msg.offer_id, displayFormat);
+        } catch (e) {
+            // v1.6.2: Don't let a render error kill the whole app
+            console.error('[FLOSC-OFFER] Render error for', msg.offer_id, 'format:', displayFormat, e);
+            // Fallback: show offer content as plain text
+            const content = this.replaceVariables(msg.content || 'Special offer available!');
+            this.addMessage('assistant', content);
+        }
     }
     
-    // Get offer data from config or API
+    // v1.6.2: Get offer data — IVR messages are the primary source
     getOfferData(offerId) {
-        // Check cached offers first
+        // Check cache first
         if (this.offers.loaded[offerId]) {
             return this.offers.loaded[offerId];
         }
         
-        // Check config offers
-        const configOffers = this.config.offers || [];
-        const offer = configOffers.find(o => o.id === offerId);
+        // Primary: find in IVR messages (offers ARE IVR entries)
+        const ivrMsg = Object.values(this.ivr.messages || {}).find(
+            m => m.offer_id === offerId || m.name === offerId
+        );
         
-        if (offer) {
-            this.offers.loaded[offerId] = offer;
-            return offer;
+        // Secondary: check admin offers for supplementary display fields
+        const configOffer = (this.config.offers || []).find(o => o.id === offerId);
+        
+        // Merge: IVR entry is base, admin offer adds rich display fields
+        if (ivrMsg || configOffer) {
+            const merged = Object.assign({}, configOffer || {}, ivrMsg || {});
+            // Normalize: ensure 'id' is set for downstream code
+            merged.id = merged.id || merged.offer_id || offerId;
+            this.offers.loaded[offerId] = merged;
+            return merged;
         }
         
         return null;
@@ -2142,6 +1590,7 @@ class floscApp {
     handlePaymentSuccess(offerId) {
         this.offers.purchasedOffers.add(offerId);
         this.ivr.shownThisSession['offer_purchased_' + offerId] = true;
+        this._saveOfferStates(); // v1.6.2: Persist across refresh
         
         // Find and replace checkout with success message
         const checkoutEl = document.querySelector(`.flosc-checkout-inline[data-offer-id="${offerId}"]`);
@@ -2207,6 +1656,7 @@ class floscApp {
         
         this.offers.dismissedOffers.add(msg.offer_id);
         this.ivr.shownThisSession['offer_dismissed_' + msg.offer_id] = true;
+        this._saveOfferStates(); // v1.6.2: Persist across refresh
         
         // Track dismissal
         this.trackOfferDismissed(msg.offer_id);
@@ -2253,55 +1703,10 @@ class floscApp {
         }
     }
     
-    // Render offers in PromptPanel (pills or compact cards)
-    renderPanelOffers(format = 'pill') {
-        const offers = this.config.offers || [];
-        const activeOffers = offers.filter(o => 
-            o.status === 'active' && 
-            !this.offers.dismissedOffers.has(o.id) &&
-            !this.offers.purchasedOffers.has(o.id)
-        );
-        
-        if (activeOffers.length === 0) return '';
-        
-        const offersHtml = activeOffers.map(offer => {
-            // v1.6.2: Use pill_label/pill_icon/pill_phrase from admin if available
-            const icon = offer.pill_icon || offer.meta?.icon || '⭐';
-            const label = offer.pill_label || offer.name;
-            const phrase = offer.pill_phrase || `Show me the ${offer.name} offer`;
-            
-            if (format === 'compact') {
-                return `
-                    <div class="flosc-offer-compact" data-offer-id="${offer.id}" data-offer-phrase="${this.escapeHtml(phrase)}">
-                        <span class="flosc-offer-compact-icon">${icon}</span>
-                        <div class="flosc-offer-compact-content">
-                            <div class="flosc-offer-compact-title">${label}</div>
-                        </div>
-                        <span class="flosc-offer-compact-price">${offer.display_price}</span>
-                    </div>
-                `;
-            } else {
-                return `
-                    <div class="flosc-offer-pill" data-offer-id="${offer.id}" data-offer-phrase="${this.escapeHtml(phrase)}">
-                        <span class="flosc-offer-pill-icon">${icon}</span>
-                        <span>${label}</span>
-                        <span class="flosc-offer-pill-price">${offer.display_price}</span>
-                    </div>
-                `;
-            }
-        }).join('');
-        
-        return `
-            <div class="flosc-panel-offers">
-                <div class="flosc-panel-offers-title">
-                    <span>🎁</span> Special Offers
-                </div>
-                <div class="flosc-panel-offers-grid">
-                    ${offersHtml}
-                </div>
-            </div>
-        `;
-    }
+    // v1.6.2: renderPanelOffers() REMOVED
+    // Offer pills are just regular autoprompts (icon + label).
+    // Admin creates them as suggested_user_autoprompt entries with Action: show_offer_*
+    // No special rendering needed — a pill is a pill.
 
     startOfferTimer(offerId, totalSeconds) {
         let remaining = totalSeconds;
@@ -3706,6 +3111,9 @@ class floscApp {
         this.clearInactivityTimer();
 
         this.ivr.inactivityTimer = setInterval(() => {
+            // v1.6.2: Clear command before inactivity check — 
+            // command conditions should only fire on the user message that set them
+            this.ivr.context.command = '';
             this.updateIVRContext();
             this.checkAutoMessages();
         }, 30000);
@@ -3744,7 +3152,11 @@ class floscApp {
         
         // v1.6.2: Check auto/offer messages after each user message
         // This enables command-triggered offers (e.g., command == "1863723763746")
-        setTimeout(() => this.checkAutoMessages(), 600);
+        setTimeout(() => {
+            this.checkAutoMessages();
+            // v1.6.2: Clear command after it's been consumed — prevents re-firing on inactivity ticks
+            this.ivr.context.command = '';
+        }, 600);
 
         return false;
     }
@@ -3846,21 +3258,6 @@ Purchased: ${ctx.purchased}
             const card = e.target.closest('.flosc-prompt-card');
             if (card) {
                 this.handlePromptCard(card);
-            }
-            
-            // v1.6.2: Handle offer pill/compact clicks from PromptPanel
-            const offerPill = e.target.closest('.flosc-panel-offers .flosc-offer-pill, .flosc-panel-offers .flosc-offer-compact');
-            if (offerPill) {
-                const offerId = offerPill.dataset.offerId;
-                const phrase = offerPill.dataset.offerPhrase;
-                if (phrase && offerId) {
-                    // Send phrase as user message
-                    this.addMessage('user', phrase);
-                    this.ivr.messageCount++;
-                    this.ivr.lastInteraction = Date.now();
-                    // Show the offer card as reply
-                    setTimeout(() => this.showOffer(offerId), 500);
-                }
             }
         });
 
@@ -4616,18 +4013,20 @@ Purchased: ${ctx.purchased}
         
         if (this.user?.justCompletedQuiz) {
             this.ivr.context.first_message_after_quiz = true;
-            this.checkAutoMessages();
         }
         
         // v1.4.6: Check if user just logged in (transient set by wp_login hook)
         if (this.user?.justLoggedIn) {
             this.ivr.context.first_message_after_login = true;
-            this.checkAutoMessages();
         }
         
         // v1.4.6: Check if user just completed a purchase (transient set by complete_purchase/webhook)
         if (this.user?.justPurchased) {
             this.ivr.context.first_message_after_purchase = true;
+        }
+        
+        // v1.6.2: Single check after all flags are set (debounced, so rapid calls coalesce)
+        if (this.user?.justCompletedQuiz || this.user?.justLoggedIn || this.user?.justPurchased) {
             this.checkAutoMessages();
         }
     }

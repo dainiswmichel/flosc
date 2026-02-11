@@ -1,23 +1,18 @@
 <?php
 /**
- * FLOSC Offers Configuration Tab
+ * FLOSC Offers Configuration Tab v1.6.2
  * 
- * Create and manage product offers:
- * - One-Time Offers (OTO) shown after quiz/lesson completion
- * - Upsells and cross-sells
- * - Pricing tiers and bundles
- * - Offer triggers and conditions
- * - Copy/messaging for each offer
+ * Single scrollable page with inline editing.
+ * Multi-format support per offer — one offer can render as
+ * pill, card, banner, etc., each with independent conditions.
  * 
- * Offers integrate with:
- * - Quiz completion flow (OTO after quiz results)
- * - Lesson completion (upgrade prompts)
- * - Email automation (upgrade offers)
- * - IVR messages (conditional pricing mentions)
- * 
- * BACKEND STATUS: ✅ FULLY WIRED (v1.0.2)
- * 
- * v1.2.9: Added tab header for flow context
+ * Data model:
+ *   offer['display_formats'] = [
+ *       'card'   => ['enabled'=>true, 'condition'=>'...', 'timer'=>900, ...],
+ *       'pill'   => ['enabled'=>true, 'label'=>'...', 'icon'=>'🎁', ...],
+ *       'banner' => ['enabled'=>false],
+ *       ...
+ *   ]
  */
 
 if (!defined('ABSPATH')) exit;
@@ -29,13 +24,14 @@ $flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
 $flow_key = $GLOBALS['flosc_settings_key'] ?? '';
 $current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
 
-// Handle offer save on init
+// ============================================
+// SAVE HANDLER (runs on init via add_action)
+// ============================================
 add_action('init', 'flosc_handle_offer_save');
 function flosc_handle_offer_save() {
     if (!isset($_POST['save_offer']) || !wp_verify_nonce($_POST['flosc_save_offer_nonce'], 'flosc_save_offer')) {
         return;
     }
-    
     if (!current_user_can('manage_options')) {
         return;
     }
@@ -45,48 +41,78 @@ function flosc_handle_offer_save() {
         $offer_id = 'offer_' . wp_generate_password(8, false);
     }
     
-    // MTS-2026-02-03: [OFFER-SAVE] Include display format and meta fields
+    // Build display_formats array from checkboxes
+    $all_formats = ['card','pill','compact','banner','featured','text','inline-checkout'];
+    $display_formats = [];
+    foreach ($all_formats as $fmt) {
+        $key = str_replace('-', '_', $fmt);
+        $enabled = !empty($_POST['fmt_' . $key . '_enabled']);
+        $display_formats[$fmt] = [
+            'enabled'   => $enabled,
+            'condition' => sanitize_text_field($_POST['fmt_' . $key . '_condition'] ?? ''),
+            'timer'     => intval($_POST['fmt_' . $key . '_timer'] ?? 0),
+        ];
+        if ($fmt === 'pill') {
+            $display_formats[$fmt]['label']  = sanitize_text_field($_POST['fmt_pill_label'] ?? '');
+            $display_formats[$fmt]['icon']   = sanitize_text_field($_POST['fmt_pill_icon'] ?? '');
+            $display_formats[$fmt]['phrase'] = sanitize_text_field($_POST['fmt_pill_phrase'] ?? '');
+        }
+        if (in_array($fmt, ['card','featured','banner'])) {
+            $display_formats[$fmt]['headline_override'] = sanitize_text_field($_POST['fmt_' . $key . '_headline'] ?? '');
+        }
+    }
+    
+    // Ensure at least one format is enabled — default to card
+    $any_enabled = false;
+    foreach ($display_formats as $f) { if ($f['enabled']) { $any_enabled = true; break; } }
+    if (!$any_enabled) { $display_formats['card']['enabled'] = true; }
+    
+    // Primary display_format for backward compat
+    $primary_format = 'card';
+    foreach ($display_formats as $fid => $fdata) {
+        if ($fdata['enabled']) { $primary_format = $fid; break; }
+    }
+    
     $offer_data = [
-        'id' => $offer_id,
-        'name' => sanitize_text_field($_POST['offer_name']),
-        'type' => sanitize_text_field($_POST['offer_type']),
-        'price' => floatval($_POST['offer_price']),
+        'id'             => $offer_id,
+        'name'           => sanitize_text_field($_POST['offer_name']),
+        'type'           => sanitize_text_field($_POST['offer_type']),
+        'price'          => floatval($_POST['offer_price']),
         'original_price' => floatval($_POST['offer_original_price']),
-        'display_price' => '$' . number_format(floatval($_POST['offer_price']), 2),
-        'headline' => sanitize_text_field($_POST['offer_headline']),
-        'description' => sanitize_textarea_field($_POST['offer_description']),
-        'features' => sanitize_textarea_field($_POST['offer_features']),
-        'cta' => sanitize_text_field($_POST['offer_cta']),
-        'trigger' => sanitize_text_field($_POST['offer_trigger']),
-        'condition' => sanitize_text_field($_POST['offer_condition']),
-        'grants_level' => sanitize_key($_POST['offer_grants_level'] ?? ''),
-        'grants' => [
+        'display_price'  => '$' . number_format(floatval($_POST['offer_price']), 2),
+        'headline'       => sanitize_text_field($_POST['offer_headline']),
+        'description'    => sanitize_textarea_field($_POST['offer_description']),
+        'features'       => sanitize_textarea_field($_POST['offer_features']),
+        'cta'            => sanitize_text_field($_POST['offer_cta']),
+        'trigger'        => sanitize_text_field($_POST['offer_trigger']),
+        'condition'      => sanitize_text_field($_POST['offer_condition']),
+        'grants_level'   => sanitize_key($_POST['offer_grants_level'] ?? ''),
+        'grants'         => [
             'features' => ['full_access'],
-            'level' => sanitize_key($_POST['offer_grants_level'] ?? ''),
+            'level'    => sanitize_key($_POST['offer_grants_level'] ?? ''),
         ],
-        'timer_minutes' => intval($_POST['offer_timer']),
-        'timer_seconds' => intval($_POST['offer_timer']) * 60, // Convert to seconds for JS
-        // MTS-2026-02-03: New display format fields
-        'display_format' => sanitize_text_field($_POST['offer_display_format'] ?? 'card'),
-        'guarantee' => sanitize_text_field($_POST['offer_guarantee'] ?? ''),
-        'meta' => [
-            'icon' => sanitize_text_field($_POST['offer_icon'] ?? '⭐'),
-            'badge' => sanitize_text_field($_POST['offer_badge'] ?? ''),
+        'timer_minutes'   => intval($_POST['offer_timer']),
+        'timer_seconds'   => intval($_POST['offer_timer']) * 60,
+        'display_formats' => $display_formats,
+        'display_format'  => $primary_format,
+        'guarantee'       => sanitize_text_field($_POST['offer_guarantee'] ?? ''),
+        'meta'            => [
+            'icon'    => sanitize_text_field($_POST['offer_icon'] ?? '⭐'),
+            'badge'   => sanitize_text_field($_POST['offer_badge'] ?? ''),
             'savings' => sanitize_text_field($_POST['offer_savings'] ?? ''),
         ],
-        'status' => isset($_POST['offer_active']) ? 'active' : 'draft',
-        'active' => isset($_POST['offer_active']),
-        // v1.6.2: Pill customization fields for PromptPanel offer pills
-        'pill_label' => sanitize_text_field($_POST['offer_pill_label'] ?? ''),
-        'pill_icon' => sanitize_text_field($_POST['offer_pill_icon'] ?? ''),
-        'pill_phrase' => sanitize_text_field($_POST['offer_pill_phrase'] ?? ''),
-        'conversions' => 0,
-        'views' => 0,
-        'created' => current_time('mysql'),
-        'updated' => current_time('mysql'),
+        'status'          => isset($_POST['offer_active']) ? 'active' : 'draft',
+        'active'          => isset($_POST['offer_active']),
+        'pill_label'      => sanitize_text_field($_POST['fmt_pill_label'] ?? ''),
+        'pill_icon'       => sanitize_text_field($_POST['fmt_pill_icon'] ?? ''),
+        'pill_phrase'     => sanitize_text_field($_POST['fmt_pill_phrase'] ?? ''),
+        'conversions'     => 0,
+        'views'           => 0,
+        'created'         => current_time('mysql'),
+        'updated'         => current_time('mysql'),
     ];
     
-    // Preserve existing stats if editing (per-flow)
+    // Preserve existing stats if editing
     $fk = sanitize_text_field($_POST['flosc_flow_key'] ?? '');
     if ($fk) {
         $fs = get_option($fk, []);
@@ -96,8 +122,8 @@ function flosc_handle_offer_save() {
     }
     if (isset($all_offers[$offer_id])) {
         $offer_data['conversions'] = $all_offers[$offer_id]['conversions'] ?? 0;
-        $offer_data['views'] = $all_offers[$offer_id]['views'] ?? 0;
-        $offer_data['created'] = $all_offers[$offer_id]['created'] ?? current_time('mysql');
+        $offer_data['views']       = $all_offers[$offer_id]['views'] ?? 0;
+        $offer_data['created']     = $all_offers[$offer_id]['created'] ?? current_time('mysql');
     }
     
     $all_offers[$offer_id] = $offer_data;
@@ -111,741 +137,475 @@ function flosc_handle_offer_save() {
     exit;
 }
 
-// v1.6.2: Flow-aware offer loading — derive flow_id from flow_key
-$flow_id_for_offers = null;
-if (!empty($flow_key)) {
-    // flow_key is like 'flosc_flow_flosc_default_ivr', strip prefix to get flow_id
-    $flow_id_for_offers = str_replace('flosc_flow_', '', $flow_key);
+// Handle delete
+if (isset($_GET['delete_offer']) && isset($_GET['_wpnonce'])) {
+    $del_id = sanitize_text_field($_GET['delete_offer']);
+    if (wp_verify_nonce($_GET['_wpnonce'], 'flosc_delete_offer_' . $del_id) && current_user_can('manage_options')) {
+        if ($flow_key) {
+            $fs = get_option($flow_key, []);
+            $all = $fs['offers'] ?? [];
+            unset($all[$del_id]);
+            $fs['offers'] = $all;
+            update_option($flow_key, $fs);
+            $flow_settings = $fs;
+        }
+        add_settings_error('flosc_settings', 'offer_deleted', 'Offer deleted.', 'success');
+    }
 }
-$offers = flosc()->sale()->offers()->get_all_offers($flow_id_for_offers);
-$editing_offer_id = isset($_GET['edit_offer']) ? sanitize_text_field($_GET['edit_offer']) : '';
-$editing_offer = null;
 
-if ($editing_offer_id) {
-    foreach ($offers as $offer) {
-        if ($offer['id'] === $editing_offer_id) {
-            $editing_offer = $offer;
-            break;
+// Handle toggle status
+if (isset($_GET['toggle_status'])) {
+    $toggle_id = sanitize_text_field($_GET['toggle_status']);
+    if ($flow_key) {
+        $fs = get_option($flow_key, []);
+        $all = $fs['offers'] ?? [];
+        if (isset($all[$toggle_id])) {
+            $all[$toggle_id]['active'] = !($all[$toggle_id]['active'] ?? true);
+            $all[$toggle_id]['status'] = $all[$toggle_id]['active'] ? 'active' : 'draft';
+            $fs['offers'] = $all;
+            update_option($flow_key, $fs);
+            $flow_settings = $fs;
         }
     }
 }
+
+// Load offers
+$flow_id_for_offers = null;
+if (!empty($flow_key)) {
+    $flow_id_for_offers = str_replace('flosc_flow_', '', $flow_key);
+}
+$offers = flosc()->sale()->offers()->get_all_offers($flow_id_for_offers);
+$expand_id = $_GET['edit_offer'] ?? $_GET['expand'] ?? null;
+
+// All 7 display formats with metadata
+$all_format_meta = [
+    'card'            => ['icon' => '🃏', 'label' => 'Card',            'desc' => 'Rich card with headline, features, pricing, CTA button'],
+    'pill'            => ['icon' => '💊', 'label' => 'Pill',            'desc' => 'Compact clickable pill in PromptPanel (AutoPrompt-style)'],
+    'compact'         => ['icon' => '📋', 'label' => 'Compact',         'desc' => 'Minimal one-line offer with price and CTA'],
+    'banner'          => ['icon' => '🏗️', 'label' => 'Banner',          'desc' => 'Wide banner with gradient background and countdown'],
+    'featured'        => ['icon' => '⭐', 'label' => 'Featured',        'desc' => 'Premium card with badge, savings callout, guarantee'],
+    'text'            => ['icon' => '📝', 'label' => 'Text',            'desc' => 'Plain text offer mention within conversation'],
+    'inline-checkout' => ['icon' => '🛒', 'label' => 'Inline Checkout', 'desc' => 'Full checkout form embedded in chat'],
+];
 ?>
 
 </form>
-<h2>Offers & Pricing Configuration</h2>
-<p>Create and manage your product offers with pricing, descriptions, and trigger conditions.</p>
+
+<h2>Offers & Pricing — All Offers</h2>
+<p>Create and manage product offers. Each offer can appear in <strong>multiple display formats</strong> — pill in the panel, card in chat, banner on timer, etc.</p>
+
+<?php if (isset($_GET['saved'])): ?>
+<div class="notice notice-success is-dismissible"><p>Offer saved successfully.</p></div>
+<?php endif; ?>
+
+<style>
+.flosc-offer-card { border: 1px solid #ddd; background: #fff; }
+.flosc-offer-card + .flosc-offer-card { border-top: none; }
+.flosc-offer-card:first-child { border-radius: 6px 6px 0 0; }
+.flosc-offer-card:last-child { border-radius: 0 0 6px 6px; }
+.flosc-offer-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; cursor: pointer; user-select: none;
+    transition: background 0.15s;
+}
+.flosc-offer-header:hover { background: #f0f6fc; }
+.flosc-offer-header .toggle { font-size: 11px; color: #999; transition: transform 0.2s; }
+.flosc-offer-card.is-open .toggle { transform: rotate(90deg); }
+.flosc-offer-header .offer-name { font-weight: 600; font-size: 14px; }
+.flosc-offer-header .offer-price { font-weight: 600; color: #10b981; font-size: 14px; }
+.flosc-offer-header .offer-price .original { text-decoration: line-through; color: #999; font-weight: 400; font-size: 12px; margin-right: 4px; }
+.flosc-offer-header .offer-status { font-size: 11px; }
+.flosc-offer-header .offer-status.active { color: #10b981; }
+.flosc-offer-header .offer-status.draft { color: #999; }
+.flosc-offer-header .offer-formats { display: flex; gap: 4px; margin-left: auto; }
+.flosc-offer-header .fmt-badge {
+    display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 10px;
+    background: #e8f0fe; color: #1a73e8;
+}
+.flosc-offer-header .offer-stats { font-size: 11px; color: #999; white-space: nowrap; }
+.flosc-offer-editor { display: none; padding: 20px; border-top: 1px solid #eee; background: #fafbfc; }
+.flosc-offer-card.is-open .flosc-offer-editor { display: block; }
+
+.flosc-fmt-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 12px; margin: 12px 0;
+}
+.flosc-fmt-card {
+    border: 1px solid #ddd; border-radius: 6px; background: #fff; padding: 12px 14px;
+    opacity: 0.5; transition: opacity 0.2s, border-color 0.2s;
+}
+.flosc-fmt-card.is-enabled { opacity: 1; border-color: #2271b1; box-shadow: 0 0 0 1px #2271b1; }
+.flosc-fmt-card .fmt-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.flosc-fmt-card .fmt-header label { font-weight: 600; font-size: 13px; cursor: pointer; }
+.flosc-fmt-card .fmt-desc { font-size: 11px; color: #667; margin-bottom: 8px; }
+.flosc-fmt-card .fmt-fields { display: none; }
+.flosc-fmt-card.is-enabled .fmt-fields { display: block; }
+.flosc-fmt-card .fmt-fields label { display: block; font-size: 12px; margin-bottom: 2px; color: #444; }
+.flosc-fmt-card .fmt-fields input,
+.flosc-fmt-card .fmt-fields select { font-size: 12px; }
+.flosc-fmt-card .fmt-fields .field-row { margin-bottom: 6px; }
+
+.flosc-offer-section-label {
+    font-size: 13px; font-weight: 600; color: #1d2327;
+    border-bottom: 1px solid #eee; padding-bottom: 6px; margin: 18px 0 10px;
+}
+.flosc-add-offer-btn {
+    display: block; width: 100%; padding: 12px; border: 2px dashed #c3c4c7;
+    background: #fafbfc; color: #2271b1; font-size: 14px; font-weight: 500;
+    cursor: pointer; text-align: center; border-radius: 6px; margin-top: 12px;
+    transition: background 0.15s;
+}
+.flosc-add-offer-btn:hover { background: #f0f6fc; color: #135e96; }
+</style>
+
+<?php if (empty($offers) && $expand_id !== 'new'): ?>
+<div style="background: #e7f3ff; border-left: 4px solid #2196f3; padding: 20px; border-radius: 4px; margin-bottom: 20px;">
+    <strong>💡 No offers yet.</strong>
+    <p style="margin: 8px 0 0;">Click "+ Create New Offer" below to set up your first product offer with multi-format display support.</p>
+</div>
+<?php else: ?>
+<p style="margin-bottom: 12px; color: #667;">
+    <strong><?php echo count($offers); ?></strong> offer(s) configured
+</p>
+<?php endif; ?>
 
 <!-- ============================================ -->
-<!-- CURRENT OFFERS LIST -->
+<!-- OFFERS LIST — SCROLLABLE ACCORDION -->
 <!-- ============================================ -->
-<div class="card" style="max-width: 100%; margin-bottom: 20px;">
-    <h3>Your Offers (<?php echo count($offers); ?>)</h3>
+<?php foreach ($offers as $offer):
+    $is_open = ($expand_id === $offer['id']);
+    $is_active = $offer['active'] ?? true;
+    $conversions = $offer['conversions'] ?? 0;
+    $views = $offer['views'] ?? 0;
+    $rate = $views > 0 ? round(($conversions / $views) * 100, 1) : 0;
+    $safe_id = esc_attr($offer['id']);
     
-    <?php if (empty($offers)): ?>
-        <p style="color: #667; font-style: italic;">No offers configured yet. Create your first offer below.</p>
+    // Determine enabled formats
+    $df = $offer['display_formats'] ?? [];
+    $enabled_fmts = [];
+    foreach ($all_format_meta as $fid => $fm) {
+        if (!empty($df[$fid]['enabled'])) $enabled_fmts[] = $fm['icon'] . ' ' . $fm['label'];
+    }
+    // Backward compat: old single display_format
+    if (empty($enabled_fmts) && !empty($offer['display_format'])) {
+        $bf = $offer['display_format'];
+        if (isset($all_format_meta[$bf])) $enabled_fmts[] = $all_format_meta[$bf]['icon'] . ' ' . $all_format_meta[$bf]['label'];
+    }
+    if (empty($enabled_fmts)) $enabled_fmts[] = '🃏 Card';
+?>
+<div class="flosc-offer-card <?php echo $is_open ? 'is-open' : ''; ?>" id="offer-<?php echo $safe_id; ?>">
+    <div class="flosc-offer-header" onclick="floscToggleOffer('<?php echo esc_js($offer['id']); ?>')">
+        <span class="toggle">▶</span>
+        <span class="offer-name"><?php echo esc_html($offer['name']); ?></span>
+        <span class="offer-price">
+            <?php if (!empty($offer['original_price']) && $offer['original_price'] != $offer['price']): ?>
+                <span class="original">$<?php echo esc_html(number_format($offer['original_price'], 2)); ?></span>
+            <?php endif; ?>
+            $<?php echo esc_html(number_format($offer['price'] ?? 0, 2)); ?>
+        </span>
+        <span class="offer-status <?php echo $is_active ? 'active' : 'draft'; ?>">
+            <?php echo $is_active ? '● Active' : '○ Draft'; ?>
+        </span>
+        <span class="offer-formats">
+            <?php foreach ($enabled_fmts as $ef): ?>
+                <span class="fmt-badge"><?php echo esc_html($ef); ?></span>
+            <?php endforeach; ?>
+        </span>
+        <span class="offer-stats"><?php echo $conversions; ?>/<?php echo $views; ?> (<?php echo $rate; ?>%)</span>
+    </div>
+    
+    <div class="flosc-offer-editor">
+        <?php flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_format_meta); ?>
+    </div>
+</div>
+<?php endforeach; ?>
+
+<!-- NEW OFFER (inline) -->
+<?php if ($expand_id === 'new'): ?>
+<div class="flosc-offer-card is-open" id="offer-new">
+    <div class="flosc-offer-header">
+        <span class="toggle" style="transform: rotate(90deg);">▶</span>
+        <span class="offer-name" style="color: #2271b1;">✨ New Offer</span>
+    </div>
+    <div class="flosc-offer-editor" style="display: block;">
+        <?php flosc_render_offer_editor_v2(null, $flow_key, $current_ivr, $all_format_meta); ?>
+    </div>
+</div>
+<?php endif; ?>
+
+<button type="button" class="flosc-add-offer-btn" onclick="window.location='<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers&edit_offer=new')); ?>'">
+    + Create New Offer
+</button>
+
+<!-- ============================================ -->
+<!-- TEMPLATES (collapsible) -->
+<!-- ============================================ -->
+<details style="margin-top: 30px;">
+    <summary style="cursor: pointer; font-size: 15px; font-weight: 600; padding: 10px 0;">
+        📋 High-Converting Offer Templates (click to expand)
+    </summary>
+    <div style="margin-top: 10px; padding: 15px; background: #f9f9f9; border-radius: 6px;">
+        <p class="description">Proven offer patterns you can use. Set up the offer details, then enable the right display formats.</p>
         
-        <div style="background: #e7f3ff; border-left: 4px solid #2196f3; padding: 15px; margin-top: 15px;">
-            <strong>💡 What are Offers?</strong>
-            <p style="margin: 10px 0 0 0;">Offers are products you sell to users at different points in their journey:</p>
-            <ul style="margin: 10px 0 0 20px;">
-                <li><strong>OTO (One-Time Offer):</strong> Shown immediately after quiz completion - "Limited time: Get full access for 50% off!"</li>
-                <li><strong>Upsell:</strong> Premium tier after free lesson - "Upgrade to unlock all 50 lessons"</li>
-                <li><strong>Bundle:</strong> Multiple products together - "Complete pronunciation mastery bundle"</li>
-            </ul>
+        <div style="background: white; border-left: 4px solid #f59e0b; padding: 15px; margin: 15px 0;">
+            <h4 style="margin-top: 0;">🎯 Post-Quiz OTO (One-Time Offer)</h4>
+            <p><strong>Trigger:</strong> Quiz Completed | <strong>Price:</strong> $49 (was $99) | <strong>Timer:</strong> 15 min</p>
+            <p>Lead with urgency + discount. Include feature list, guarantee, and countdown. Enable: <strong>card + pill</strong>.</p>
         </div>
         
-    <?php else: ?>
-        <table class="widefat" style="margin-top: 10px;">
-            <thead>
-                <tr>
-                    <th style="width: 25%;">Offer Name</th>
-                    <th style="width: 12%;">Price</th>
-                    <th style="width: 12%;">Type</th>
-                    <th style="width: 10%;">Status</th>
-                    <th style="width: 15%;">Trigger</th>
-                    <th style="width: 10%;">Conversions</th>
-                    <th style="width: 16%;">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($offers as $offer): ?>
-                    <?php
-                    $is_active = $offer['active'] ?? true;
-                    $conversions = $offer['conversions'] ?? 0;
-                    $views = $offer['views'] ?? 0;
-                    $conversion_rate = $views > 0 ? round(($conversions / $views) * 100, 1) : 0;
-                    ?>
-                    <tr style="<?php echo !$is_active ? 'opacity: 0.6;' : ''; ?>">
-                        <td>
-                            <strong><?php echo esc_html($offer['name']); ?></strong>
-                            <?php if (!empty($offer['description'])): ?>
-                                <br><small style="color: #667;"><?php echo esc_html(wp_trim_words($offer['description'], 10)); ?></small>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <strong><?php echo esc_html($offer['display_price']); ?></strong>
-                            <?php if (!empty($offer['original_price']) && $offer['original_price'] !== $offer['price']): ?>
-                                <br><small style="text-decoration: line-through; color: #999;"><?php echo esc_html($offer['original_price']); ?></small>
-                            <?php endif; ?>
-                        </td>
-                        <td><?php echo esc_html(ucfirst($offer['type'] ?? 'one-time')); ?></td>
-                        <td>
-                            <?php if ($is_active): ?>
-                                <span style="color: #10b981;">● Active</span>
-                            <?php else: ?>
-                                <span style="color: #999;">○ Inactive</span>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <small><?php echo esc_html($offer['trigger'] ?? 'Manual'); ?></small>
-                        </td>
-                        <td>
-                            <?php echo esc_html($conversions); ?> / <?php echo esc_html($views); ?>
-                            <br><small style="color: <?php echo $conversion_rate >= 5 ? '#10b981' : '#999'; ?>;"><?php echo $conversion_rate; ?>%</small>
-                        </td>
-                        <td>
-                            <a href="<?php echo admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers&edit_offer=' . urlencode($offer['id'])); ?>" class="button button-small">
-                                Edit
-                            </a>
-                            <a href="<?php echo admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers&toggle_status=' . urlencode($offer['id'])); ?>" class="button button-small">
-                                <?php echo $is_active ? 'Deactivate' : 'Activate'; ?>
-                            </a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    <?php endif; ?>
-    
-    <p style="margin-top: 15px;">
-        <a href="<?php echo admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers&edit_offer=new'); ?>" class="button button-primary">+ Create New Offer</a>
-    </p>
-</div>
-
-<!-- ============================================ -->
-<!-- OFFER EDITOR (if creating/editing) -->
-<!-- ============================================ -->
-<?php if ($editing_offer_id): ?>
-    <div class="card" style="max-width: 100%; margin-top: 20px;">
-        <h3><?php echo $editing_offer ? 'Edit Offer: ' . esc_html($editing_offer['name']) : 'Create New Offer'; ?></h3>
+        <div style="background: white; border-left: 4px solid #8b5cf6; padding: 15px; margin: 15px 0;">
+            <h4 style="margin-top: 0;">💎 Premium Upsell</h4>
+            <p><strong>Trigger:</strong> Free Lesson Completed | <strong>Price:</strong> $299/yr or $39/mo</p>
+            <p>Achievement-based pitch. Enable: <strong>featured + banner</strong>.</p>
+        </div>
         
-        <form method="post">
-            <?php wp_nonce_field('flosc_save_offer', 'flosc_save_offer_nonce'); ?>
-            <input type="hidden" name="offer_id" value="<?php echo esc_attr($editing_offer_id); ?>">
-            <input type="hidden" name="flosc_flow_key" value="<?php echo esc_attr($flow_key); ?>">
-            <input type="hidden" name="flosc_ivr" value="<?php echo esc_attr($current_ivr); ?>">
-            
-            <table class="form-table">
-                <!-- Offer Name -->
-                <tr>
-                    <th scope="row"><label for="offer_name">Offer Name</label></th>
-                    <td>
-                        <input type="text" id="offer_name" name="offer_name" 
-                               value="<?php echo esc_attr($editing_offer['name'] ?? ''); ?>" 
-                               class="large-text" required>
-                        <p class="description">Internal name for this offer (e.g., "Premium Annual - 50% Off OTO")</p>
-                    </td>
-                </tr>
+        <div style="background: white; border-left: 4px solid #10b981; padding: 15px; margin: 15px 0;">
+            <h4 style="margin-top: 0;">📦 High-Performer Bundle (Score 80%+)</h4>
+            <p><strong>Trigger:</strong> Score ≥ 80 | <strong>Price:</strong> $399 (was $597) | <strong>Timer:</strong> 24h</p>
+            <p>"You're top 10%." Enable: <strong>featured card</strong> with badge.</p>
+        </div>
+        
+        <div style="background: white; border-left: 4px solid #ec4899; padding: 15px; margin: 15px 0;">
+            <h4 style="margin-top: 0;">🔄 Re-engagement (Inactive Users)</h4>
+            <p><strong>Trigger:</strong> 7+ Days Inactivity | <strong>Price:</strong> $29/mo (was $49)</p>
+            <p>"We miss you!" Enable: <strong>banner</strong> with no timer pressure.</p>
+        </div>
+        
+        <div style="background: #e7f3ff; border-left: 4px solid #2196f3; padding: 15px; margin-top: 20px;">
+            <strong>💡 Tips:</strong> Lead with results, not features. Use specific numbers. Address objections. Always include a guarantee. Show the math. End with social proof.
+        </div>
+    </div>
+</details>
+
+<script>
+function floscToggleOffer(id) {
+    const card = document.getElementById('offer-' + id);
+    if (card) card.classList.toggle('is-open');
+}
+function floscToggleFmt(checkbox) {
+    const card = checkbox.closest('.flosc-fmt-card');
+    card.classList.toggle('is-enabled', checkbox.checked);
+}
+document.addEventListener('DOMContentLoaded', function() {
+    const open = document.querySelector('.flosc-offer-card.is-open');
+    if (open) open.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+</script>
+
+<?php
+// ============================================
+// OFFER EDITOR RENDER FUNCTION
+// ============================================
+function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_format_meta) {
+    $is_new = empty($offer);
+    $offer_id = $offer['id'] ?? 'new';
+    $safe_id = esc_attr($offer_id);
+    
+    // Merge display_formats with defaults
+    $df = $offer['display_formats'] ?? [];
+    // Backward compat
+    if (empty($df) && !empty($offer['display_format'])) {
+        $df[$offer['display_format']] = ['enabled' => true];
+    }
+    if (empty($df) && $is_new) {
+        $df['card'] = ['enabled' => true];
+    }
+?>
+    <form method="post">
+        <?php wp_nonce_field('flosc_save_offer', 'flosc_save_offer_nonce'); ?>
+        <input type="hidden" name="offer_id" value="<?php echo $safe_id; ?>">
+        <input type="hidden" name="flosc_flow_key" value="<?php echo esc_attr($flow_key); ?>">
+        <input type="hidden" name="flosc_ivr" value="<?php echo esc_attr($current_ivr); ?>">
+        
+        <!-- CORE OFFER DATA -->
+        <div class="flosc-offer-section-label">📦 Offer Details</div>
+        <table class="form-table" style="margin: 0;">
+            <tr>
+                <th style="width: 150px;"><label>Offer Name</label></th>
+                <td><input type="text" name="offer_name" value="<?php echo esc_attr($offer['name'] ?? ''); ?>" class="large-text" required placeholder="Premium Annual - 50% Off OTO"></td>
+            </tr>
+            <tr>
+                <th><label>Type</label></th>
+                <td>
+                    <select name="offer_type">
+                        <?php foreach (['one-time'=>'One-Time Purchase','subscription'=>'Recurring Subscription','bundle'=>'Bundle','upsell'=>'Upsell / Cross-sell'] as $v => $l): ?>
+                            <option value="<?php echo $v; ?>" <?php selected($offer['type'] ?? '', $v); ?>><?php echo $l; ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th>Pricing</th>
+                <td>
+                    <label>Price: $<input type="number" name="offer_price" value="<?php echo esc_attr($offer['price'] ?? ''); ?>" step="0.01" min="0" class="small-text" required></label>
+                    <label style="margin-left: 16px;">Was: $<input type="number" name="offer_original_price" value="<?php echo esc_attr($offer['original_price'] ?? ''); ?>" step="0.01" min="0" class="small-text"></label>
+                </td>
+            </tr>
+            <tr>
+                <th><label>Sales Headline</label></th>
+                <td><input type="text" name="offer_headline" value="<?php echo esc_attr($offer['headline'] ?? ''); ?>" class="large-text" placeholder="Get Full Access - Limited Time 50% Off!"></td>
+            </tr>
+            <tr>
+                <th><label>Description</label></th>
+                <td><textarea name="offer_description" rows="4" class="large-text"><?php echo esc_textarea($offer['description'] ?? ''); ?></textarea></td>
+            </tr>
+            <tr>
+                <th><label>Features (one/line)</label></th>
+                <td><textarea name="offer_features" rows="4" class="large-text" placeholder="Complete access to all 50+ lessons&#10;AI-powered feedback&#10;Certificate of completion"><?php echo esc_textarea($offer['features'] ?? ''); ?></textarea></td>
+            </tr>
+            <tr>
+                <th><label>CTA Button</label></th>
+                <td><input type="text" name="offer_cta" value="<?php echo esc_attr($offer['cta'] ?? 'Get Access Now'); ?>" class="regular-text"></td>
+            </tr>
+        </table>
+        
+        <!-- TRIGGER & CONDITIONS -->
+        <div class="flosc-offer-section-label">⚡ Trigger & Conditions</div>
+        <table class="form-table" style="margin: 0;">
+            <tr>
+                <th style="width: 150px;"><label>Show When</label></th>
+                <td>
+                    <select name="offer_trigger">
+                        <?php foreach (['manual'=>'Manual','quiz_complete'=>'Quiz Completed','lesson_complete'=>'First Lesson Completed','login_phase'=>'User Enters Login Phase','inactivity'=>'After 7 Days Inactivity'] as $v => $l): ?>
+                            <option value="<?php echo $v; ?>" <?php selected($offer['trigger'] ?? '', $v); ?>><?php echo $l; ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th><label>Condition</label></th>
+                <td>
+                    <input type="text" name="offer_condition" value="<?php echo esc_attr($offer['condition'] ?? ''); ?>" class="large-text" placeholder="score >= 70 && !purchased">
+                    <p class="description">Global condition for ALL formats. Per-format conditions below can override.</p>
+                </td>
+            </tr>
+            <tr>
+                <th><label>Timer (min)</label></th>
+                <td>
+                    <input type="number" name="offer_timer" value="<?php echo esc_attr($offer['timer_minutes'] ?? ''); ?>" min="0" class="small-text" placeholder="15">
+                    <span class="description" style="margin-left: 8px;">Global default. Per-format timers can override.</span>
+                </td>
+            </tr>
+            <tr>
+                <th><label>Grants Level</label></th>
+                <td><input type="text" name="offer_grants_level" value="<?php echo esc_attr($offer['grants_level'] ?? ''); ?>" class="regular-text" placeholder="course110"></td>
+            </tr>
+        </table>
+        
+        <!-- APPEARANCE -->
+        <div class="flosc-offer-section-label">🎨 Appearance</div>
+        <table class="form-table" style="margin: 0;">
+            <tr>
+                <th style="width: 150px;"><label>Icon</label></th>
+                <td><input type="text" name="offer_icon" value="<?php echo esc_attr($offer['meta']['icon'] ?? '⭐'); ?>" class="small-text"></td>
+            </tr>
+            <tr>
+                <th><label>Badge</label></th>
+                <td><input type="text" name="offer_badge" value="<?php echo esc_attr($offer['meta']['badge'] ?? ''); ?>" class="regular-text" placeholder="Most Popular"></td>
+            </tr>
+            <tr>
+                <th><label>Savings Text</label></th>
+                <td><input type="text" name="offer_savings" value="<?php echo esc_attr($offer['meta']['savings'] ?? ''); ?>" class="regular-text" placeholder="Save $50!"></td>
+            </tr>
+            <tr>
+                <th><label>Guarantee</label></th>
+                <td><input type="text" name="offer_guarantee" value="<?php echo esc_attr($offer['guarantee'] ?? 'Risk-free with our 30-day money-back guarantee'); ?>" class="large-text"></td>
+            </tr>
+            <tr>
+                <th><label>Status</label></th>
+                <td><label><input type="checkbox" name="offer_active" value="1" <?php checked($offer['active'] ?? true); ?>> Active (visible to users)</label></td>
+            </tr>
+        </table>
+        
+        <!-- MULTI-FORMAT CONFIGURATION -->
+        <div class="flosc-offer-section-label">📐 Display Formats — enable one or more</div>
+        <p class="description" style="margin: 0 0 8px;">
+            Each offer can appear in multiple formats simultaneously. Enable the formats you want and configure per-format conditions and overrides.
+        </p>
+        
+        <div class="flosc-fmt-grid">
+        <?php foreach ($all_format_meta as $fmt_id => $fmt_meta):
+            $fmt_key = str_replace('-', '_', $fmt_id);
+            $fmt_data = $df[$fmt_id] ?? [];
+            $fmt_enabled = !empty($fmt_data['enabled']);
+        ?>
+            <div class="flosc-fmt-card <?php echo $fmt_enabled ? 'is-enabled' : ''; ?>">
+                <div class="fmt-header">
+                    <span style="font-size: 16px;"><?php echo $fmt_meta['icon']; ?></span>
+                    <label>
+                        <input type="checkbox" name="fmt_<?php echo $fmt_key; ?>_enabled" value="1" 
+                               <?php checked($fmt_enabled); ?>
+                               onchange="floscToggleFmt(this)">
+                        <?php echo esc_html($fmt_meta['label']); ?>
+                    </label>
+                </div>
+                <div class="fmt-desc"><?php echo esc_html($fmt_meta['desc']); ?></div>
                 
-                <!-- Offer Type -->
-                <tr>
-                    <th scope="row"><label for="offer_type">Offer Type</label></th>
-                    <td>
-                        <select id="offer_type" name="offer_type" class="regular-text">
-                            <option value="one-time" <?php selected($editing_offer['type'] ?? '', 'one-time'); ?>>One-Time Purchase</option>
-                            <option value="subscription" <?php selected($editing_offer['type'] ?? '', 'subscription'); ?>>Recurring Subscription</option>
-                            <option value="bundle" <?php selected($editing_offer['type'] ?? '', 'bundle'); ?>>Bundle (Multiple Products)</option>
-                            <option value="upsell" <?php selected($editing_offer['type'] ?? '', 'upsell'); ?>>Upsell / Cross-sell</option>
-                        </select>
-                    </td>
-                </tr>
-                
-                <!-- Pricing -->
-                <tr>
-                    <th scope="row">Pricing</th>
-                    <td>
-                        <label>
-                            Price: $<input type="number" name="offer_price" 
-                                   value="<?php echo esc_attr($editing_offer['price'] ?? ''); ?>" 
-                                   step="0.01" min="0" class="small-text" required>
-                        </label>
-                        <label style="margin-left: 20px;">
-                            Original Price (optional): $<input type="number" name="offer_original_price" 
-                                   value="<?php echo esc_attr($editing_offer['original_price'] ?? ''); ?>" 
-                                   step="0.01" min="0" class="small-text">
-                        </label>
-                        <p class="description">Show a strikethrough price to create urgency (e.g., was $99, now $49)</p>
-                    </td>
-                </tr>
-                
-                <!-- Headline -->
-                <tr>
-                    <th scope="row"><label for="offer_headline">Sales Headline</label></th>
-                    <td>
-                        <input type="text" id="offer_headline" name="offer_headline" 
-                               value="<?php echo esc_attr($editing_offer['headline'] ?? ''); ?>" 
-                               class="large-text" placeholder="Get Full Access - Limited Time 50% Off!">
-                        <p class="description">Attention-grabbing headline shown to users</p>
-                    </td>
-                </tr>
-                
-                <!-- Description -->
-                <tr>
-                    <th scope="row"><label for="offer_description">Offer Description</label></th>
-                    <td>
-                        <textarea id="offer_description" name="offer_description" rows="5" class="large-text"><?php 
-                            echo esc_textarea($editing_offer['description'] ?? ''); 
-                        ?></textarea>
-                        <p class="description">What's included in this offer? Why should they buy?</p>
-                    </td>
-                </tr>
-                
-                <!-- Features List -->
-                <tr>
-                    <th scope="row"><label for="offer_features">Features (one per line)</label></th>
-                    <td>
-                        <textarea id="offer_features" name="offer_features" rows="6" class="large-text" placeholder="Complete access to all 50+ lessons&#10;AI-powered pronunciation feedback&#10;Certificate of completion&#10;Lifetime updates"><?php 
-                            echo esc_textarea($editing_offer['features'] ?? ''); 
-                        ?></textarea>
-                        <p class="description">Bullet points of what's included. One feature per line.</p>
-                    </td>
-                </tr>
-                
-                <!-- CTA Button Text -->
-                <tr>
-                    <th scope="row"><label for="offer_cta">Call-to-Action Button</label></th>
-                    <td>
-                        <input type="text" id="offer_cta" name="offer_cta" 
-                               value="<?php echo esc_attr($editing_offer['cta'] ?? 'Get Access Now'); ?>" 
-                               class="regular-text">
-                        <p class="description">Button text (e.g., "Claim Your Discount", "Start Learning Now")</p>
-                    </td>
-                </tr>
-                
-                <!-- Trigger Condition -->
-                <tr>
-                    <th scope="row"><label for="offer_trigger">Show Offer When</label></th>
-                    <td>
-                        <select id="offer_trigger" name="offer_trigger" class="large-text">
-                            <option value="manual" <?php selected($editing_offer['trigger'] ?? '', 'manual'); ?>>Manual (Admin shows it)</option>
-                            <option value="quiz_complete" <?php selected($editing_offer['trigger'] ?? '', 'quiz_complete'); ?>>Quiz Completed</option>
-                            <option value="lesson_complete" <?php selected($editing_offer['trigger'] ?? '', 'lesson_complete'); ?>>First Free Lesson Completed</option>
-                            <option value="login_phase" <?php selected($editing_offer['trigger'] ?? '', 'login_phase'); ?>>User Enters Login Phase</option>
-                            <option value="inactivity" <?php selected($editing_offer['trigger'] ?? '', 'inactivity'); ?>>After 7 Days Inactivity</option>
-                        </select>
-                        <p class="description">When should this offer be presented to users?</p>
-                    </td>
-                </tr>
-                
-                <!-- Condition -->
-                <tr>
-                    <th scope="row"><label for="offer_condition">Additional Condition (optional)</label></th>
-                    <td>
-                        <input type="text" id="offer_condition" name="offer_condition" 
-                               value="<?php echo esc_attr($editing_offer['condition'] ?? ''); ?>" 
-                               class="large-text" placeholder="score >= 70">
-                        <p class="description">IVR-style condition for fine-grained targeting (e.g., "score >= 70", "!purchased")</p>
-                    </td>
-                </tr>
-                
-                <!-- Grants Membership Level (v1.0.1) -->
-                <tr>
-                    <th scope="row"><label for="offer_grants_level">Grants Membership Level</label></th>
-                    <td>
-                        <input type="text" id="offer_grants_level" name="offer_grants_level" 
-                               value="<?php echo esc_attr($editing_offer['grants_level'] ?? ''); ?>" 
-                               class="regular-text" placeholder="course110">
-                        <p class="description">When purchased, grants <code>_flosc_memberlevel_{level}</code> to user. Use lowercase, no spaces (e.g., "course110", "pronunciation_basics")</p>
-                    </td>
-                </tr>
-                
-                <!-- Urgency Timer -->
-                <tr>
-                    <th scope="row"><label for="offer_timer">Urgency Timer (minutes)</label></th>
-                    <td>
-                        <input type="number" id="offer_timer" name="offer_timer" 
-                               value="<?php echo esc_attr($editing_offer['timer_minutes'] ?? ''); ?>" 
-                               min="0" class="small-text" placeholder="15">
-                        <p class="description">Optional countdown timer to create urgency (leave empty for no timer)</p>
-                    </td>
-                </tr>
-                
-                <!-- MTS-2026-02-03: [DISPLAY-FORMAT] Configurable offer display format -->
-                <tr>
-                    <th scope="row"><label for="offer_display_format">Display Format</label></th>
-                    <td>
-                        <?php $display_formats = flosc()->sale()->offers()->get_display_formats(); ?>
-                        <select id="offer_display_format" name="offer_display_format" class="regular-text">
-                            <?php foreach ($display_formats as $format_id => $format): ?>
-                                <option value="<?php echo esc_attr($format_id); ?>" 
-                                        <?php selected($editing_offer['display_format'] ?? 'card', $format_id); ?>>
-                                    <?php echo esc_html($format['icon'] . ' ' . $format['label']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                        <p class="description">
-                            <strong>Available formats:</strong><br>
-                            <?php foreach ($display_formats as $format_id => $format): ?>
-                                • <strong><?php echo esc_html($format['label']); ?>:</strong> <?php echo esc_html($format['description']); ?><br>
-                            <?php endforeach; ?>
-                        </p>
-                    </td>
-                </tr>
-                
-                <!-- Offer Icon/Emoji -->
-                <tr>
-                    <th scope="row"><label for="offer_icon">Icon/Emoji</label></th>
-                    <td>
-                        <input type="text" id="offer_icon" name="offer_icon" 
-                               value="<?php echo esc_attr($editing_offer['meta']['icon'] ?? '⭐'); ?>" 
-                               class="small-text" placeholder="⭐">
-                        <p class="description">Emoji shown in pill/compact formats (e.g., ⭐ 🎁 💎 🔓)</p>
-                    </td>
-                </tr>
-                
-                <!-- Badge Text -->
-                <tr>
-                    <th scope="row"><label for="offer_badge">Badge Text (optional)</label></th>
-                    <td>
-                        <input type="text" id="offer_badge" name="offer_badge" 
-                               value="<?php echo esc_attr($editing_offer['meta']['badge'] ?? ''); ?>" 
-                               class="regular-text" placeholder="Limited Time">
-                        <p class="description">Small badge shown on featured cards (e.g., "Most Popular", "Best Value", "50% OFF")</p>
-                    </td>
-                </tr>
-                
-                <!-- Savings Text -->
-                <tr>
-                    <th scope="row"><label for="offer_savings">Savings Text (optional)</label></th>
-                    <td>
-                        <input type="text" id="offer_savings" name="offer_savings" 
-                               value="<?php echo esc_attr($editing_offer['meta']['savings'] ?? ''); ?>" 
-                               class="regular-text" placeholder="Save $50!">
-                        <p class="description">Highlight the discount amount (e.g., "Save 50%", "Save $50!")</p>
-                    </td>
-                </tr>
-                
-                <!-- Guarantee -->
-                <tr>
-                    <th scope="row"><label for="offer_guarantee">Guarantee Text</label></th>
-                    <td>
-                        <input type="text" id="offer_guarantee" name="offer_guarantee" 
-                               value="<?php echo esc_attr($editing_offer['guarantee'] ?? 'Risk-free with our 30-day money-back guarantee'); ?>" 
-                               class="large-text">
-                        <p class="description">Shown below CTA button on featured cards to reduce purchase anxiety</p>
-                    </td>
-                </tr>
-                
-                <!-- v1.6.2: Pill Customization Fields -->
-                <tr>
-                    <th scope="row" colspan="2"><hr><h3 style="margin: 0;">🏷️ Prompt Panel Pill Settings</h3>
-                    <p class="description" style="font-weight: normal;">Customize how this offer appears as a clickable pill in the chat PromptPanel.</p></th>
-                </tr>
-                
-                <tr>
-                    <th scope="row"><label for="offer_pill_label">Pill Label</label></th>
-                    <td>
-                        <input type="text" id="offer_pill_label" name="offer_pill_label" 
-                               value="<?php echo esc_attr($editing_offer['pill_label'] ?? ''); ?>" 
-                               class="regular-text" placeholder="<?php echo esc_attr($editing_offer['name'] ?? 'Special Offer'); ?>">
-                        <p class="description">Text shown on the pill button. Defaults to offer name if empty.</p>
-                    </td>
-                </tr>
-                
-                <tr>
-                    <th scope="row"><label for="offer_pill_icon">Pill Icon</label></th>
-                    <td>
-                        <input type="text" id="offer_pill_icon" name="offer_pill_icon" 
-                               value="<?php echo esc_attr($editing_offer['pill_icon'] ?? ''); ?>" 
+                <div class="fmt-fields">
+                    <div class="field-row">
+                        <label>Condition override:</label>
+                        <input type="text" name="fmt_<?php echo $fmt_key; ?>_condition" 
+                               value="<?php echo esc_attr($fmt_data['condition'] ?? ''); ?>" 
+                               style="width: 100%;" placeholder="Uses global condition if empty">
+                    </div>
+                    <div class="field-row">
+                        <label>Timer override (seconds):</label>
+                        <input type="number" name="fmt_<?php echo $fmt_key; ?>_timer" 
+                               value="<?php echo esc_attr($fmt_data['timer'] ?? ''); ?>" 
+                               class="small-text" placeholder="0">
+                    </div>
+                    
+                    <?php if ($fmt_id === 'pill'): ?>
+                    <div class="field-row">
+                        <label>Pill label:</label>
+                        <input type="text" name="fmt_pill_label" 
+                               value="<?php echo esc_attr($fmt_data['label'] ?? $offer['pill_label'] ?? ''); ?>" 
+                               style="width: 100%;" placeholder="<?php echo esc_attr($offer['name'] ?? 'Special Offer'); ?>">
+                    </div>
+                    <div class="field-row">
+                        <label>Pill icon:</label>
+                        <input type="text" name="fmt_pill_icon" 
+                               value="<?php echo esc_attr($fmt_data['icon'] ?? $offer['pill_icon'] ?? ''); ?>" 
                                class="small-text" placeholder="🎁">
-                        <p class="description">Emoji icon on the pill. Falls back to offer icon if empty.</p>
-                    </td>
-                </tr>
-                
-                <tr>
-                    <th scope="row"><label for="offer_pill_phrase">Pill Unique Phrase</label></th>
-                    <td>
-                        <input type="text" id="offer_pill_phrase" name="offer_pill_phrase" 
-                               value="<?php echo esc_attr($editing_offer['pill_phrase'] ?? ''); ?>" 
-                               class="large-text" placeholder="Show me the special offer">
-                        <p class="description">When user clicks the pill, this phrase is sent to chat as a user message. The chatbot then replies with the full offer card. Leave empty for default.</p>
-                    </td>
-                </tr>
-                
-                <!-- Status -->
-                <tr>
-                    <th scope="row"><label for="offer_active">Status</label></th>
-                    <td>
-                        <label>
-                            <input type="checkbox" id="offer_active" name="offer_active" value="1" 
-                                   <?php checked($editing_offer['active'] ?? true); ?>>
-                            Active (users can see this offer)
-                        </label>
-                    </td>
-                </tr>
-            </table>
-            
-            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">
-                <?php submit_button('Save Offer', 'primary', 'save_offer', false); ?>
-                <a href="<?php echo admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers'); ?>" class="button" style="margin-left: 10px;">Cancel</a>
-                
-                <?php if ($editing_offer): ?>
-                    <a href="<?php echo admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers&delete_offer=' . urlencode($editing_offer['id'])); ?>" 
-                       class="button" 
-                       onclick="return confirm('Delete this offer permanently? This cannot be undone.');"
-                       style="color: #d63638; margin-left: 20px;">
-                        Delete Offer
-                    </a>
-                <?php endif; ?>
+                    </div>
+                    <div class="field-row">
+                        <label>Pill phrase (sent as user message):</label>
+                        <input type="text" name="fmt_pill_phrase" 
+                               value="<?php echo esc_attr($fmt_data['phrase'] ?? $offer['pill_phrase'] ?? ''); ?>" 
+                               style="width: 100%;" placeholder="Show me the special offer">
+                    </div>
+                    <?php endif; ?>
+                    
+                    <?php if (in_array($fmt_id, ['card','featured','banner'])): ?>
+                    <div class="field-row">
+                        <label>Headline override:</label>
+                        <input type="text" name="fmt_<?php echo $fmt_key; ?>_headline" 
+                               value="<?php echo esc_attr($fmt_data['headline_override'] ?? ''); ?>" 
+                               style="width: 100%;" placeholder="Uses main headline if empty">
+                    </div>
+                    <?php endif; ?>
+                </div>
             </div>
-        </form>
-    </div>
-<?php endif; ?>
-
-<!-- ============================================ -->
-<!-- OFFER TEMPLATES & BEST PRACTICES -->
-<!-- ============================================ -->
-<?php if (!$editing_offer_id): ?>
-<hr style="margin: 40px 0;">
-<h3>High-Converting Offer Templates (Copy & Paste)</h3>
-<p class="description">Proven offer copy you can customize and use. These templates follow battle-tested conversion principles.</p>
-
-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-    <h4 style="margin-top: 0;">🎯 Template 1: Post-Quiz OTO (One-Time Offer)</h4>
-    <p><strong>Trigger:</strong> Quiz Completed | <strong>Price:</strong> $49 (was $99) | <strong>Timer:</strong> 15 minutes</p>
-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-oto').textContent); alert('Template copied to clipboard!');" style="margin-bottom: 10px;">Copy Full Template</button>
-    <div id="template-oto" style="background: white; padding: 15px; border-radius: 4px; font-family: -apple-system, sans-serif;">
-<strong style="font-size: 24px; color: #f59e0b;">⏰ SPECIAL ONE-TIME OFFER - 50% OFF!</strong>
-
-<p style="font-size: 18px; margin: 15px 0;"><strong>Get Full Access to All Lessons - Normally $99, Today Just $49</strong></p>
-
-<p>Based on your quiz results, you're ready to start improving immediately. But you need the right guidance.</p>
-
-<p>Right now, you have a <strong>limited-time opportunity</strong> to get our complete pronunciation mastery program at 50% off the regular price.</p>
-
-<p style="background: #fff3cd; padding: 10px; border-radius: 4px;"><strong>⏰ This offer expires in 15 minutes.</strong> After that, the price goes back to $99.</p>
-
-<p><strong>Here's everything you get when you claim this offer:</strong></p>
-
-<p><strong style="font-size: 16px;">✓ Complete Lesson Library</strong><br>
-All 50+ pronunciation lessons covering every sound, pattern, and technique you need</p>
-
-<p><strong style="font-size: 16px;">✓ AI-Powered Pronunciation Feedback</strong><br>
-Record yourself speaking - get instant, specific feedback on what to improve</p>
-
-<p><strong style="font-size: 16px;">✓ Personalized Learning Path</strong><br>
-Custom curriculum built from your quiz results - focus on YOUR weak points first</p>
-
-<p><strong style="font-size: 16px;">✓ Progress Tracking & Analytics</strong><br>
-Watch your improvement over time with detailed charts and milestone badges</p>
-
-<p><strong style="font-size: 16px;">✓ Certificate of Completion</strong><br>
-Prove your pronunciation mastery - share on LinkedIn, resume, etc.</p>
-
-<p><strong style="font-size: 16px;">✓ Lifetime Access + Updates</strong><br>
-One payment, forever access. All future lessons and features included at no extra cost</p>
-
-<p style="background: #e7f3ff; padding: 15px; border-radius: 4px; margin: 20px 0;">
-<strong>Your Investment Today:</strong><br>
-<span style="text-decoration: line-through; color: #999;">$99.00</span> <strong style="font-size: 28px; color: #2196f3;">$49.00</strong> (Save 50%)<br>
-<em>One-time payment. No recurring charges.</em>
-</p>
-
-<p><strong>Why are we offering this discount?</strong></p>
-
-<p>Simple: We know that students who start immediately after taking the quiz are 3x more likely to succeed. This special price is our way of rewarding people who are serious about improvement.</p>
-
-<p><strong>100% Money-Back Guarantee</strong></p>
-
-<p>Try the program for 30 days. If you don't see real improvement in your pronunciation, email us and we'll refund every penny. No questions asked.</p>
-
-<p style="background: #fff3cd; padding: 15px; border-radius: 4px; margin: 20px 0; text-align: center;">
-<strong>⏰ Remember: This 50% discount expires in 15 minutes!</strong><br>
-After that, you'll pay full price ($99) for the same program.
-</p>
-
-<div style="text-align: center; margin: 30px 0;">
-<a href="#" style="display: inline-block; background: #f59e0b; color: white; padding: 15px 40px; font-size: 18px; font-weight: bold; text-decoration: none; border-radius: 8px;">CLAIM MY 50% DISCOUNT NOW →</a>
-</div>
-
-<p style="text-align: center; color: #667; font-size: 12px;">
-Secure checkout • Instant access • 30-day money-back guarantee
-</p>
-    </div>
-</div>
-
-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #8b5cf6;">
-    <h4 style="margin-top: 0;">💎 Template 2: Premium Upsell (After Free Lesson)</h4>
-    <p><strong>Trigger:</strong> First Free Lesson Completed | <strong>Price:</strong> $299/year or $39/month | <strong>Timer:</strong> None</p>
-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-premium').textContent); alert('Template copied to clipboard!');" style="margin-bottom: 10px;">Copy Full Template</button>
-    <div id="template-premium" style="background: white; padding: 15px; border-radius: 4px; font-family: -apple-system, sans-serif;">
-<strong style="font-size: 24px; color: #8b5cf6;">You've Proven You're Serious. Ready to Go All In?</strong>
-
-<p style="font-size: 18px; margin: 15px 0;"><strong>Upgrade to Premium and Master Pronunciation in Weeks, Not Years</strong></p>
-
-<p>You just completed your first lesson. That took commitment.</p>
-
-<p>Most people never get this far. They take the quiz, say they'll "come back later," and never do.</p>
-
-<p>But you're different. You showed up. You did the work. And that means you're ready for the next level.</p>
-
-<p><strong>Here's the truth:</strong> That free lesson gave you a taste. But to truly master pronunciation, you need the complete system.</p>
-
-<p>Premium gives you everything:</p>
-
-<p><strong style="font-size: 16px;">✓ All 50+ Lessons Unlocked</strong><br>
-From beginner sounds to advanced accent reduction. Nothing held back.</p>
-
-<p><strong style="font-size: 16px;">✓ Unlimited AI Pronunciation Analysis</strong><br>
-Record as much as you want. Get detailed feedback every single time.</p>
-
-<p><strong style="font-size: 16px;">✓ Weekly Live Coaching Sessions</strong><br>
-Join our pronunciation expert every week for Q&A, practice, and personalized tips.</p>
-
-<p><strong style="font-size: 16px;">✓ Priority Email Support</strong><br>
-Stuck? Get answers in under 24 hours (usually much faster).</p>
-
-<p><strong style="font-size: 16px;">✓ Advanced Progress Analytics</strong><br>
-See exactly how much you've improved. Track your weak points. Celebrate milestones.</p>
-
-<p><strong style="font-size: 16px;">✓ Certificate of Mastery</strong><br>
-Complete the program, get certified. Proof you've mastered pronunciation.</p>
-
-<p style="background: #f3e5ff; padding: 15px; border-radius: 4px; margin: 20px 0;">
-<strong>Choose Your Plan:</strong><br><br>
-<strong>Annual:</strong> $299/year <span style="background: #8b5cf6; color: white; padding: 2px 8px; border-radius: 3px; font-size: 11px;">SAVE $169</span><br>
-<em>Just $24.92/month - Best value</em><br><br>
-<strong>Monthly:</strong> $39/month<br>
-<em>Cancel anytime. No commitment.</em>
-</p>
-
-<p><strong>Here's what Premium members are saying:</strong></p>
-
-<p style="background: #f9f9f9; padding: 10px; border-left: 3px solid #8b5cf6; font-style: italic;">
-"I went from struggling with basic sounds to confidently presenting in English at work. Premium was worth every penny." - Maria S.
-</p>
-
-<p style="background: #f9f9f9; padding: 10px; border-left: 3px solid #8b5cf6; font-style: italic;">
-"The AI feedback is incredible. It's like having a personal coach available 24/7." - David L.
-</p>
-
-<p><strong>30-Day Money-Back Guarantee</strong></p>
-
-<p>Try Premium for a full month. If you don't see dramatic improvement, we'll refund you completely. No hassle. No questions.</p>
-
-<div style="text-align: center; margin: 30px 0;">
-<a href="#" style="display: inline-block; background: #8b5cf6; color: white; padding: 15px 40px; font-size: 18px; font-weight: bold; text-decoration: none; border-radius: 8px;">UPGRADE TO PREMIUM NOW →</a>
-</div>
-
-<p style="text-align: center; color: #667; font-size: 12px;">
-Join 10,000+ students mastering pronunciation
-</p>
-    </div>
-</div>
-
-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #10b981;">
-    <h4 style="margin-top: 0;">📦 Template 3: High Performer Bundle (Quiz Score 80%+)</h4>
-    <p><strong>Trigger:</strong> Quiz Score >= 80 | <strong>Price:</strong> $399 (was $597) | <strong>Timer:</strong> 24 hours</p>
-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-bundle').textContent); alert('Template copied to clipboard!');" style="margin-bottom: 10px;">Copy Full Template</button>
-    <div id="template-bundle" style="background: white; padding: 15px; border-radius: 4px; font-family: -apple-system, sans-serif;">
-<strong style="font-size: 24px; color: #10b981;">🏆 You Scored 80%+ - You're a High Performer!</strong>
-
-<p style="font-size: 18px; margin: 15px 0;"><strong>Skip the Basics. Get Our Complete Advanced Package.</strong></p>
-
-<p>Your quiz score puts you in the <strong>top 10%</strong> of all students.</p>
-
-<p>That means you don't need beginner lessons. You need advanced techniques, business English, and accent reduction.</p>
-
-<p>We have a special package designed specifically for high performers like you.</p>
-
-<p style="background: #d1fae5; padding: 15px; border-radius: 4px;">
-<strong>High Performer Bundle - Everything You Need to Reach True Mastery</strong><br>
-<span style="text-decoration: line-through; color: #999;">Regular Price: $597</span><br>
-<strong style="font-size: 24px; color: #10b981;">Your Price: $399</strong> (33% savings)
-</p>
-
-<p><strong>This bundle includes:</strong></p>
-
-<p><strong style="font-size: 16px;">✓ Complete Pronunciation Course</strong> ($299 value)<br>
-All 50+ lessons - beginner through advanced. Skip what you know, focus on what you need.</p>
-
-<p><strong style="font-size: 16px;">✓ Advanced Accent Reduction Module</strong> ($99 value)<br>
-Fine-tune your accent. Sound more native. Perfect for business and professional settings.</p>
-
-<p><strong style="font-size: 16px;">✓ Business English Pronunciation</strong> ($99 value)<br>
-Master the specific sounds, intonation, and delivery needed for presentations, meetings, and negotiations.</p>
-
-<p><strong style="font-size: 16px;">✓ Private 1-on-1 Coaching Session</strong> ($100 value)<br>
-60 minutes with our pronunciation expert. Get personalized feedback on your specific challenges.</p>
-
-<p><strong style="font-size: 16px;">✓ VIP Email Support</strong> (Priceless)<br>
-Jump to the front of the line. Get answers to your questions within hours, not days.</p>
-
-<p><strong style="font-size: 16px;">✓ Lifetime Access to Everything</strong><br>
-One payment. Forever access. All future courses and updates included automatically.</p>
-
-<p style="background: #fff3cd; padding: 15px; border-radius: 4px; margin: 20px 0;">
-<strong>⏰ Limited Availability - 24 Hours Only</strong><br>
-This bundle is only offered to our highest-scoring quiz takers, and only for 24 hours after completion.
-</p>
-
-<p><strong>Why is this package perfect for you?</strong></p>
-
-<p>Because you're <strong>already ahead of 90% of students</strong>. You don't need to waste time on basics. You need targeted, advanced training that takes you from good to exceptional.</p>
-
-<p>That's exactly what this bundle delivers.</p>
-
-<p><strong>Total Value:</strong> $597<br>
-<strong>Your Investment Today:</strong> $399<br>
-<strong>You Save:</strong> $198 (33% off)</p>
-
-<div style="text-align: center; margin: 30px 0;">
-<a href="#" style="display: inline-block; background: #10b981; color: white; padding: 15px 40px; font-size: 18px; font-weight: bold; text-decoration: none; border-radius: 8px;">GET THE HIGH PERFORMER BUNDLE →</a>
-</div>
-
-<p style="text-align: center; color: #667; font-size: 12px;">
-One-time payment • Lifetime access • 30-day money-back guarantee
-</p>
-    </div>
-</div>
-
-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #ec4899;">
-    <h4 style="margin-top: 0;">🔄 Template 4: Re-engagement Offer (Inactive Users)</h4>
-    <p><strong>Trigger:</strong> 7+ Days Inactivity | <strong>Price:</strong> $29/month (was $49) | <strong>Timer:</strong> None</p>
-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-comeback').textContent); alert('Template copied to clipboard!');" style="margin-bottom: 10px;">Copy Full Template</button>
-    <div id="template-comeback" style="background: white; padding: 15px; border-radius: 4px; font-family: -apple-system, sans-serif;">
-<strong style="font-size: 24px; color: #ec4899;">We Miss You! Come Back with 40% Off</strong>
-
-<p style="font-size: 18px; margin: 15px 0;"><strong>Your Progress Is Saved. Your Goals Are Waiting.</strong></p>
-
-<p>You started strong. You took the quiz. You saw what's possible.</p>
-
-<p>Then... life happened.</p>
-
-<p>We get it. Everyone gets busy. But here's the thing:</p>
-
-<p><strong>The students who succeed aren't the ones with the most time.</strong><br>
-They're the ones who come back. Who show up. Even if it's been a week.</p>
-
-<p>Your progress is saved. Your personalized lesson plan is ready. All you need to do is click one button.</p>
-
-<p style="background: #fce7f3; padding: 15px; border-radius: 4px;">
-<strong>Welcome Back Offer - 40% Off Monthly Membership</strong><br>
-<span style="text-decoration: line-through; color: #999;">Regular Price: $49/month</span><br>
-<strong style="font-size: 24px; color: #ec4899;">Your Price: $29/month</strong>
-</p>
-
-<p><strong>Here's what you get:</strong></p>
-
-<p>✓ Access to all lessons (start where you left off)<br>
-✓ AI pronunciation feedback<br>
-✓ Progress tracking and analytics<br>
-✓ Cancel anytime - no long-term commitment</p>
-
-<p><strong>No pressure. No judgment. Just results.</strong></p>
-
-<p>Month-to-month means you can try it again without committing to a year. See if it fits your schedule. If it does, great. If not, cancel with one click.</p>
-
-<p style="background: #fff3cd; padding: 10px; border-radius: 4px; margin: 20px 0;">
-💡 <strong>Pro Tip:</strong> Set aside just 10 minutes a day. That's all it takes. Most people spend more time scrolling social media.
-</p>
-
-<p><strong>What happens if you don't come back?</strong></p>
-
-<p>Nothing dramatic. But here's what you'll miss:</p>
-
-<p>• The confidence that comes from speaking clearly<br>
-• The career opportunities that require strong communication<br>
-• The satisfaction of achieving a goal you set for yourself</p>
-
-<p>All because you didn't give yourself 10 minutes a day.</p>
-
-<div style="text-align: center; margin: 30px 0;">
-<a href="#" style="display: inline-block; background: #ec4899; color: white; padding: 15px 40px; font-size: 18px; font-weight: bold; text-decoration: none; border-radius: 8px;">RESTART MY LEARNING JOURNEY →</a>
-</div>
-
-<p style="text-align: center; color: #667; font-size: 12px;">
-$29/month • Cancel anytime • Pick up where you left off
-</p>
-    </div>
-</div>
-
-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #0ea5e9;">
-    <h4 style="margin-top: 0;">⚡ Template 5: Flash Sale / Seasonal Offer</h4>
-    <p><strong>Trigger:</strong> Manual / Seasonal Campaign | <strong>Price:</strong> $199 (was $399) | <strong>Timer:</strong> 72 hours</p>
-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-flash').textContent); alert('Template copied to clipboard!');" style="margin-bottom: 10px;">Copy Full Template</button>
-    <div id="template-flash" style="background: white; padding: 15px; border-radius: 4px; font-family: -apple-system, sans-serif;">
-<strong style="font-size: 24px; color: #0ea5e9;">⚡ 72-Hour Flash Sale - Lifetime Access 50% Off!</strong>
-
-<p style="font-size: 18px; margin: 15px 0;"><strong>Our Biggest Sale of the Year - This Weekend Only</strong></p>
-
-<p>Once a year, we do something crazy.</p>
-
-<p>We take our complete pronunciation mastery program - normally $399 for lifetime access - and cut the price in half.</p>
-
-<p>Why? Because we want to help as many people as possible master pronunciation. And we know price is sometimes the only thing standing in the way.</p>
-
-<p style="background: #e0f2fe; padding: 15px; border-radius: 4px; margin: 20px 0; text-align: center;">
-<strong>Flash Sale Price</strong><br>
-<span style="text-decoration: line-through; color: #999; font-size: 18px;">$399</span><br>
-<strong style="font-size: 36px; color: #0ea5e9;">$199</strong><br>
-<strong style="color: #dc2626;">Save $200 - This Weekend Only!</strong>
-</p>
-
-<p><strong>Here's everything included:</strong></p>
-
-<p>✓ All 50+ pronunciation lessons (lifetime access)<br>
-✓ AI-powered feedback on every recording<br>
-✓ Personalized learning path<br>
-✓ Progress tracking and analytics<br>
-✓ Certificate of completion<br>
-✓ All future updates and new lessons (free forever)<br>
-✓ 30-day money-back guarantee</p>
-
-<p style="background: #fef3c7; padding: 15px; border-radius: 4px; margin: 20px 0;">
-<strong>⏰ Sale Ends in:</strong><br>
-<span style="font-size: 32px; font-weight: bold;">72 HOURS</span><br>
-After that, the price goes back to $399. No exceptions.
-</p>
-
-<p><strong>Who is this for?</strong></p>
-
-<p>This sale is perfect if you've been on the fence. If you wanted to join but couldn't justify the investment. If you were waiting for the "right time."</p>
-
-<p>This is the right time. This is the lowest price we'll ever offer.</p>
-
-<p><strong>Real Student Results:</strong></p>
-
-<p style="background: #f9f9f9; padding: 10px; border-left: 3px solid #0ea5e9; font-style: italic;">
-"I bought during last year's sale and it's the best $199 I've ever spent. My pronunciation is unrecognizable from where I started." - Alex T.
-</p>
-
-<p style="background: #f9f9f9; padding: 10px; border-left: 3px solid #0ea5e9; font-style: italic;">
-"I was skeptical about the 'lifetime access' claim, but they really mean it. I've been learning for 8 months now and haven't paid a penny more." - Priya M.
-</p>
-
-<div style="text-align: center; margin: 30px 0;">
-<a href="#" style="display: inline-block; background: #0ea5e9; color: white; padding: 15px 40px; font-size: 18px; font-weight: bold; text-decoration: none; border-radius: 8px;">CLAIM YOUR FLASH SALE DISCOUNT →</a>
-</div>
-
-<p style="text-align: center; color: #667; font-size: 12px;">
-One-time payment • Lifetime access • Offer ends in 72 hours
-</p>
-    </div>
-</div>
-
-<div style="background: #e7f3ff; border-left: 4px solid #2196f3; padding: 15px; margin-top: 30px;">
-    <strong>💡 Offer Copywriting Tips:</strong>
-    <ul style="margin: 10px 0 0 20px;">
-        <li><strong>Lead with the result, not the features:</strong> "Master pronunciation in weeks" beats "50+ lessons"</li>
-        <li><strong>Use specific numbers:</strong> "80% of students see improvement in 2 weeks" is more credible than "most students improve quickly"</li>
-        <li><strong>Address objections directly:</strong> Price, time commitment, skepticism - call them out and answer them</li>
-        <li><strong>Create urgency (but be honest):</strong> Timers work, but only if they're real. Don't fake scarcity.</li>
-        <li><strong>Always include a guarantee:</strong> 30-day money-back is standard. It removes risk and increases conversions.</li>
-        <li><strong>Show the math:</strong> "Was $99, now $49 = Save $50" makes the discount tangible</li>
-        <li><strong>End with social proof:</strong> Testimonials, student counts, success stats</li>
-    </ul>
-</div>
-<?php endif; ?>
-
-<!-- v1.0.4: Offer persistence is wired at top of file (per-flow via flosc_handle_offer_save) -->
+        <?php endforeach; ?>
+        </div>
+        
+        <!-- ACTIONS -->
+        <div style="display: flex; gap: 8px; align-items: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid #ddd;">
+            <?php submit_button('Save Offer', 'primary', 'save_offer', false); ?>
+            
+            <?php if (!$is_new): ?>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers&toggle_status=' . urlencode($offer_id))); ?>" 
+                   class="button">
+                    <?php echo ($offer['active'] ?? true) ? 'Deactivate' : 'Activate'; ?>
+                </a>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers&delete_offer=' . urlencode($offer_id) . '&_wpnonce=' . wp_create_nonce('flosc_delete_offer_' . $offer_id))); ?>" 
+                   class="button" style="color: #d63638; margin-left: auto;"
+                   onclick="return confirm('Permanently delete this offer?');">
+                    Delete Offer
+                </a>
+            <?php endif; ?>
+        </div>
+    </form>
+<?php } ?>
+
+<form method="post" action="options.php">
+<?php settings_fields('flosc_settings'); ?>

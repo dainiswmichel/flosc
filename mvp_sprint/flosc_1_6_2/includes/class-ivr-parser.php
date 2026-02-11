@@ -223,6 +223,19 @@ class FLOSC_IVR_Parser {
                     $current_message['display_format'] = trim($matches[1]);
                     continue;
                 }
+                // v1.6.2: Offer content source fields
+                if (preg_match('/^HtmlFile:\s*(.+)$/i', $trimmed, $matches)) {
+                    $current_message['html_file'] = trim($matches[1]);
+                    continue;
+                }
+                if (preg_match('/^WooProduct:\s*(.+)$/i', $trimmed, $matches)) {
+                    $current_message['woo_product'] = trim($matches[1]);
+                    continue;
+                }
+                if (preg_match('/^PostID:\s*(.+)$/i', $trimmed, $matches)) {
+                    $current_message['post_id'] = intval(trim($matches[1]));
+                    continue;
+                }
                 if (preg_match('/^MessageConditions:\s*(.+)$/i', $trimmed, $matches)) {
                     $current_message['conditions'] = trim($matches[1]);
                     continue;
@@ -240,7 +253,7 @@ class FLOSC_IVR_Parser {
             // Collecting message content (multi-line)
             if ($in_message_content) {
                 // Check if we hit the next property or section
-                if (preg_match('/^(MessageName|MessageType|MessageStyle|Icon|UserInput|Action|MessageConditions|##|---):/i', $trimmed) ||
+                if (preg_match('/^(MessageName|MessageType|MessageStyle|MessagePanel|Icon|UserInput|Action|OfferID|Price|DiscountPrice|Timer|DisplayFormat|HtmlFile|WooProduct|PostID|MessageConditions|##|---):/i', $trimmed) ||
                     strpos($trimmed, '##') === 0 || $trimmed === '---') {
                     // End of content
                     $current_message['content'] = trim(implode("\n", $message_content_lines));

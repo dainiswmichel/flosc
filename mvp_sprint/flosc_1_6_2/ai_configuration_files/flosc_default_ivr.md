@@ -417,6 +417,16 @@ Action: checkout_full_access
 MessageContent: Click here to unlock your complete learning path at this special price!
 MessageConditions: is_guest && offer_shown_full_access
 
+## What Offers Are Available (Autoprompt)
+MessageName: offer_query_001
+MessageType: suggested_user_autoprompt
+MessageStyle: pill
+Icon: 🎁
+UserInput: What offers are available?
+Action: show_offer_full_access
+MessageContent: Great question! Here's what's available for you right now:
+MessageConditions: is_guest && message_count >= 3
+
 ## v1.4.0: Sandbox Purchase Button (Testing)
 MessageName: sandbox_purchase_001
 MessageType: suggested_user_autoprompt
