@@ -5073,14 +5073,23 @@ Example good response:
         }
         
         $price_id = $offer['pricing']['stripe']['price_id'] ?? '';
-        if (!$price_id) {
-            return new WP_Error('no_price', 'No Stripe price configured for this offer', ['status' => 400]);
+        
+        // v1.6.3: Fall back to product price (in cents) if no Stripe price_id configured
+        $price_or_amount = $price_id;
+        $currency = 'usd';
+        if (!$price_or_amount) {
+            $product = $this->get_product_config();
+            $raw_price = floatval($product['price'] ?? 0);
+            if ($raw_price <= 0) {
+                return new WP_Error('no_price', 'No price configured for this offer. Set a Stripe Price ID on the offer or a product price in Settings.', ['status' => 400]);
+            }
+            $price_or_amount = intval($raw_price * 100); // Convert to cents for Stripe
         }
         
         $user = wp_get_current_user();
         
         // v1.4.1: Pass offer_id to include in metadata for webhook processing
-        $result = $stripe->create_payment_intent($user, $price_id, 'usd', $offer_id);
+        $result = $stripe->create_payment_intent($user, $price_or_amount, $currency, $offer_id);
         
         if (is_wp_error($result)) {
             return $result;

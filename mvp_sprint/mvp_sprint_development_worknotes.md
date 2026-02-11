@@ -4,6 +4,32 @@
 
 ---
 
+## MTS-2026-02-11d - v1.6.3: Remaining Audit Items
+
+### Past
+- Verified `showPaymentModal()` exists at flosc-app.js:4174 — creates Stripe Elements card form, mounts to `#card-element`, calls `processModalPayment()` which creates PaymentIntent server-side and confirms client-side. HTML modal exists in flosc-app.php. No fix needed.
+- **Fixed Stripe price_id requirement**: `openCheckout()` required `pricing.stripe?.price_id || this.config.defaultStripePrice` — default offers have empty price_id, so the Stripe path was unreachable. JS: removed price_id guard (server resolves amount). PHP: `create_payment_intent()` now falls back to product price (in cents) when no Stripe price_id is set.
+- Verified `handle_purchase` → `complete_purchase` → `grant_from_offer` → `flosc_purchase_completed` → `grant_member_access` chain. Meta keys match: `_flosc_access.offers` (grant_from_offer), `_flosc_member_access='true'` (grant_member_access), `_flosc_purchased=true`, `_flosc_member_level`. `is_member()` in class-access-manager checks active offers. `get_simple_state()` returns 'member'. Frontend `purchased = (user_state === 'member')`. `determinePhase()` returns 'content'. No fix needed.
+- Verified `FLOSC_CONFIG.offers` flow_id: `render_flosc_app()` computes flow_id from IVR filename via `pathinfo(basename($flow['ivr_file']), PATHINFO_FILENAME)`, passes to `get_available_offers()` → `get_all_offers($flow_id)` → reads `flosc_flow_{flow_id}['offers']`. No fix needed.
+- Verified free lesson REST endpoint: `/free-lesson` → `get_free_lesson()` → calls `deliver_free_lesson()` (not `get_free_lesson()` on the manager). Sets `_flosc_free_lesson_delivered` meta. `FLOSC_USER.freeLessonDelivered` reads same meta. `determinePhase()` checks it → returns 'offer'. No fix needed.
+- Verified post-purchase phase transition: `complete_purchase()` sets `flosc_just_purchased` transient + calls `grant_from_offer()`. On reload: `is_member()` returns true → `determine_flosc_phase()` returns 'content'. `FLOSC_USER.purchased = true`. JS `determinePhase()` returns 'content'. JS does `window.location.reload()` 2s after payment success. No fix needed.
+- Communication note: factual descriptions only, no emotional language.
+
+### Present
+- Only actual code fix this session: Stripe price_id fallback (JS + PHP)
+- All other audit items verified correct — no changes needed
+
+### Future
+- Deploy v1.6.3 and test Stripe payment with test keys
+- Configure at least one real Stripe Price ID for production (or use product price fallback)
+- End-to-end browser test: visitor → quiz → login → free lesson → offer → payment → content
+
+### Files Changed
+- `flosc.php` — `create_payment_intent()` falls back to product price when no Stripe price_id
+- `assets/js/flosc-app.js` — `openCheckout()` no longer requires price_id to show Stripe modal
+
+---
+
 ## MTS-2026-02-11c - v1.6.3: Stripe Credential Fix, Fuzzy IVR Match, Full Funnel Verification
 
 ### Past

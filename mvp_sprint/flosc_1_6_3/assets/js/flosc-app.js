@@ -3044,7 +3044,8 @@ class floscApp {
         const pricing = offer?.pricing || {};
         
         // Priority: Stripe in-chat > Stripe modal > Redirect checkout
-        if (this.config.stripeKey && (pricing.stripe?.price_id || this.config.defaultStripePrice)) {
+        // v1.6.3: Don't require price_id client-side — server resolves amount from offer or product config
+        if (this.config.stripeKey) {
             // Check if we should use inline checkout (already in chat)
             const inlineCheckout = document.querySelector(`.flosc-checkout-inline[data-offer-id="${offerId}"]`);
             if (inlineCheckout) {
