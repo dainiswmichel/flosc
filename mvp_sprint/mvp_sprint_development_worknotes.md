@@ -1,6 +1,30 @@
 # MVP Sprint Development Worknotes
 **Started:** 2026-02-02
-**Current Version:** 1.6.3 (Stripe fix + fuzzy IVR + funnel verification)
+**Current Version:** 1.6.4 (IVR per-flow import fix)
+
+---
+
+## MTS-2026-02-12a - v1.6.4: IVR Import Per-Flow Storage Fix
+
+### Past
+- **CRITICAL BUG FIXED — IVR Load button wrote to wrong storage**: `flosc_import_ivr_to_database()` wrote to global `wp_options` keys (`flosc_ivr_messages`, `flosc_ivr_phases`, etc.), but the admin UI reads from per-flow storage (`$flow_key['ivr_messages']`). Import succeeded silently — data went to wrong location. Admin showed "FLOSC DB is empty" because it checks per-flow storage.
+- Added `$custom_ivr_file` and `$flow_key` parameters to `flosc_import_ivr_to_database()`. When `$flow_key` is provided, reads/writes per-flow. When omitted (activation hook), uses global options for backward compat.
+- Added `$flow_key` parameter to `flosc_export_ivr_backup()` for same reason.
+- Updated all callers in `ivr-messages.php`: force_resync, confirm_import, preview_import, clear_db backup — all now pass `$ivr_file_path` and `$flow_key`.
+- After successful import, handler refreshes `$GLOBALS['flosc_current_settings']` so diagnostics see the update immediately.
+
+### Present
+- Load button will now correctly populate the per-flow FLOSC DB
+- All syntax checks pass (php -l on flosc.php, ivr-messages.php)
+
+### Future
+- Test Load button on dainis.net — should populate all 52 messages from MD file into FLOSC DB
+- Continue Stripe test configuration
+- End-to-end browser test
+
+### Files Changed
+- `flosc.php` — `flosc_import_ivr_to_database()` and `flosc_export_ivr_backup()` now accept per-flow params
+- `admin/ivr-messages.php` — all callers pass `$ivr_file_path` and `$flow_key`
 
 ---
 

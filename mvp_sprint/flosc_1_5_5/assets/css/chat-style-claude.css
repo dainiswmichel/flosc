@@ -1,0 +1,54 @@
+/* Claude Style Preset (v1.4.6) — Ultra Pro Edition
+ * ================================================
+ * Warm parchment palette with violet accents. Literary feel.
+ */
+:root {
+    --flosc-bg: #f8f7f4;
+    --flosc-text: #1a1a2e;
+    --flosc-text-muted: #6b6b80;
+    --flosc-border: #e2e0d8;
+    --flosc-accent: #6c47ff;
+    --flosc-accent-hover: #5635d4;
+    --flosc-accent-subtle: rgba(108, 71, 255, 0.06);
+
+    --flosc-user-message-bg: linear-gradient(135deg, #6c47ff 0%, #5635d4 100%);
+    --flosc-user-message-text: #ffffff;
+    --flosc-user-message-radius: 20px 20px 4px 20px;
+    --flosc-user-avatar-bg: #6c47ff;
+    --flosc-user-avatar-text: #ffffff;
+
+    --flosc-assistant-message-bg: #fffdf5;
+    --flosc-assistant-message-text: #1a1a2e;
+    --flosc-assistant-message-border: 1px solid #f0eacc;
+    --flosc-assistant-message-radius: 4px 20px 20px 20px;
+    --flosc-assistant-avatar-bg: #f0eacc;
+    --flosc-assistant-avatar-text: #6b6b80;
+
+    --flosc-input-bg: #ffffff;
+    --flosc-input-field-bg: #f8f7f4;
+    --flosc-input-field-border: #e2e0d8;
+    --flosc-input-field-text: #1a1a2e;
+    --flosc-input-placeholder: #b0b0b8;
+    --flosc-send-btn-bg: #6c47ff;
+    --flosc-send-btn-text: #ffffff;
+
+    --flosc-sidebar-bg: #f0eacc;
+    --flosc-sidebar-text: #1a1a2e;
+    --flosc-sidebar-text-muted: #6b6b80;
+    --flosc-sidebar-hover: #f8f7f4;
+    --flosc-sidebar-active: #e2e0d8;
+    --flosc-sidebar-border: #e2e0d8;
+
+    --flosc-pill-bg: #ffffff;
+    --flosc-pill-text: #6c47ff;
+    --flosc-pill-border: #e2e0d8;
+    --flosc-pill-hover-bg: #f0eacc;
+    --flosc-pill-hover-text: #5635d4;
+    --flosc-pill-hover-border: #6c47ff;
+
+    --flosc-code-bg: #f0eacc;
+    --flosc-code-text: #1a1a2e;
+
+    --flosc-scrollbar-thumb: #e2e0d8;
+    --flosc-scrollbar-thumb-hover: #b0b0b8;
+}
