@@ -1,6 +1,42 @@
 # MVP Sprint Development Worknotes
 **Started:** 2026-02-02
-**Current Version:** 1.6.2 (Offer pipeline refactor + admin UI redesign)
+**Current Version:** 1.6.3 (Stripe fix + fuzzy IVR + funnel verification)
+
+---
+
+## MTS-2026-02-11c - v1.6.3: Stripe Credential Fix, Fuzzy IVR Match, Full Funnel Verification
+
+### Past
+- Copied v1.6.2 → v1.6.3, bumped versions in 5 files (flosc.php L6+L17, flosc-app.php L6+L7, readme.md L1+L5, flosc-app.js L9)
+- **CRITICAL BUG FIXED — Stripe credentials never reached provider**: Admin saves `stripe_test_pk`/`stripe_test_sk` in per-flow array, but `class-stripe-provider.php` read `get_option('flosc_stripe_test_publishable_key')` — key never existed. Added `get_flow_setting()` method that reads correct per-flow keys via `flosc()->get_setting()` with fallback to legacy global options. Applied to `get_mode()`, `get_publishable_key()`, `get_secret_key()`, and `webhook_secret`. This was the ONLY break in the payment chain — all other Stripe code (frontend JS, REST handlers, webhook, access granting) was already wired correctly.
+- Added fuzzy IVR match fallback to `search_ivr_match()`: Pass 1 = exact match (original behavior preserved), Pass 2 = keyword fuzzy fallback with word-overlap scoring, stop word filtering, stem matching (min 4 chars), min 2-point threshold to prevent false positives
+- Added `Keywords:` field support to `class-ivr-parser.php` (default value, parser regex, content-boundary regex)
+- Added `Keywords:` lines to 14 key IVR messages in `flosc_default_ivr.md` (get_started, start_quiz, how_it_works, show_offer, get_full_access, browse_lessons, need_help, upgrade, review_score, retake_quiz, etc.)
+- Full funnel walkthrough: verified all 10 IVR action handlers in `performIVRAction()`, all 7 display format methods, `showOffer()`, `checkAutoMessages`, quiz/registration/free-lesson/payment flows — no breaks found
+- Visual QA: confirmed all 7 offer display formats have both JS rendering methods and CSS class sets in flosc-offers.css
+- Companion widget: already fully implemented (JS + CSS + admin tab + PHP hook). Fixed `enqueue_companion()` settings read — was using FlowManager override system but admin saves flat per-flow keys. Changed to `$this->get_setting()`.
+- All syntax checks pass: php -l on flosc.php, class-ivr-parser.php, class-stripe-provider.php; node --check on flosc-app.js, flosc-companion.js
+
+### Present
+- v1.6.3 code complete and syntax-verified
+- Stripe payment chain fully connected for first time (credentials now reach provider)
+- IVR matching more resilient with keyword fuzzy fallback
+- All funnel paths verified end-to-end in code
+
+### Future
+- Deploy v1.6.3 to dainis.net/flosc.ai and test Stripe with real test keys
+- Test fuzzy IVR matching with real user inputs
+- End-to-end browser testing of full purchase flow
+- **Goal: FLOSC is launch-ready — ship LESAEP**
+
+### Files Changed (from v1.6.2)
+- `flosc.php` — version bump, `search_ivr_match()` rewritten with fuzzy fallback, `enqueue_companion()` settings read fix
+- `includes/class-ivr-parser.php` — `Keywords:` field support (default, parser, boundary regex)
+- `includes/sale/providers/class-stripe-provider.php` — `get_flow_setting()` method, credential reads fixed
+- `assets/js/flosc-app.js` — version bump
+- `admin/flosc-app.php` — version bump
+- `readme.md` — version bump
+- `ai_configuration_files/flosc_default_ivr.md` — `Keywords:` lines added to 14 messages
 
 ---
 
