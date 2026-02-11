@@ -1,6 +1,6 @@
 # MVP Sprint Development Worknotes
 **Started:** 2026-02-02
-**Current Version:** 1.5.1 (SSO redirect fix)
+**Current Version:** 1.6.2 (Offer pipeline refactor + admin UI redesign)
 
 ---
 
@@ -1028,7 +1028,7 @@ Returns "You are the **FLOSC Admin**"
 // Line 1057 - floscHandleUserAutoPrompt
 const msg = this.ivr.messages[messageName] || this.config.ivrMessages?.[messageName];
 
-// Line 2622 - findIVRResponse  
+// Lines 2622-2625
 const configMessages = Object.values(this.config.ivrMessages || {});
 const apiMessages = Object.values(this.ivr.messages || {});
 const allMessages = [...configMessages, ...apiMessages];
@@ -1316,3 +1316,180 @@ The "What will I learn?" suggested_user_autoprompt card appears in the prompt pa
 
 **Status:** Known bug, deferred to next session
 **Context:** v1.3.8 completes the flow context chain for REST API calls. IVR messages now load correctly per-flow. PromptPanel click handler needs investigation.
+
+## MTS-2026-02-11a - v1.6.1: Styling + Companion Finalization
+
+### Past
+- Pulled and merged all research assistant changes for v1.6.1 (preset expansion, per-flow styling, accent cascade, companion mode)
+- Fixed version numbers in flosc.php, readme.md, and flosc-app.js to 1.6.1
+- Fixed companion loading bug: enqueue_companion() now uses $this->get_app_url()
+- Verified admin CSS is unchanged from 1.5.4 (no regression)
+- Confirmed all 96+ files present and correct in mvp_sprint/flosc_1_6_1/
+
+### Present
+- Preparing v1.6.1 for testing: zipping directory for QA/release
+- Creating v1.6.2 directory for next development cycle (based on 1.6.1 state)
+- Worknotes and changelog updated with timestamped entry
+
+### Future
+- v1.6.2 will address any issues found in v1.6.1 testing
+- Further selector renames, .style. cleanup, and new features to be planned post-QA
+- Continue strict versioned directory workflow for clarity and reproducibility
+
+---
+
+## MTS-2026-02-11b - v1.6.2: Offer Pipeline Refactor + Admin UI Redesign
+
+### Past
+- Completed all 13 items from v1.6.2 follow-up task list
+- Offer pipeline refactor: offers ARE IVR entries, deleted initOfferMessages() bridge
+- Added HtmlFile/WooProduct/PostID content sources with REST endpoint `/wp-json/flosc/v1/offer-content`
+- Fixed pill click handler (uses onUserMessage instead of direct send)
+- Added debounce, context.command clear, CSS extraction to flosc-offers.css
+- IVR admin offer fields (OfferID, DisplayFormat, ContentSource) added to ivr-messages.php
+- offer_query_001 autoprompt, error boundary, localStorage offer state persistence
+- Audit found/fixed 2 bugs: renderPanelOffers never called + missing directory
+- renderPanelOffers removed entirely (pills are just autoprompts)
+- IVR Messages admin redesigned: removed phase tabs, single scrollable page with sticky dark phase headers, accordion message editors, per-message Save to DB / Save & Resync buttons, inline Add Message form per phase, quick-jump links, auto-scroll to ?expand= param
+- Offers admin completely rewritten: accordion layout, 7 format checkboxes (card/pill/compact/banner/featured/text/inline-checkout), per-format condition/timer overrides, format-specific fields (pill label/icon/phrase, card/banner headline override), display_formats array data model, backward compat for old display_format singular field, templates in collapsible details element, format badges in header
+- PHP syntax verified (php -l) on both admin files
+- JS syntax verified (node --check) on flosc-app.js
+- Committed and pushed to GitHub: +1919/-1719 lines across 7 files
+- Removed 4 junk .md files from project directory (claude_research_prompt_v1_6_0/1/2.md, styling_upgrade_v1_6_0.md)
+
+### Present
+- v1.6.2 code committed and pushed to origin/main
+- All admin UI redesigns implemented and syntax-verified
+- Project directory cleaned of non-essential files
+- Audit prompt preserved below for next session
+
+### Future
+- Next session: full audit of v1.6.2 using the prompt below
+- End-to-end user journey trace from visitor → quiz → login → offer → payment → member
+- Dead/orphaned function sweep
+- Offer pipeline wiring verification (getOfferData → showOfferMessage → renderOfferByFormat)
+- Admin UI save/load round-trip testing
+- Security review (sanitization, nonces, capability checks, path traversal)
+- Launch readiness checklist evaluation
+- **Goal: get FLOSC to launch-ready so LESAEP can ship**
+
+### Audit & Launch Acceleration Prompt (for next Claude session)
+
+**Repo:** https://github.com/dainiswmichel/flosc.git
+**Branch:** main
+**Plugin path:** `mvp_sprint/flosc_1_6_2/`
+**Purpose:** FLOSC is a WordPress plugin that powers LESAEP — an AI-driven language learning platform with quiz → lesson → offer sales funnel, powered by an IVR message pipeline and real-time chat.
+
+#### Mission
+Audit FLOSC v1.6.2 then drive it to launch-ready status. Find blocking bugs, dead code, incomplete wiring, and get the plugin deployable to production. Every session must produce shippable progress. FLOSC releases the LESAEP product. We need to launch.
+
+#### Phase 1: Audit (find real problems only)
+
+**1. Does the full user journey work end-to-end?**
+Trace: Visitor lands → FLOSC chat loads → freeline IVR messages (welcome, quiz prompt) → User takes quiz → score calculated → redirect to login/register → quiz results stored → Logged-in user → login-phase IVR messages → free lesson → offer triggered → showOfferMessage() → renderOfferByFormat() → card/pill/banner shown → User clicks CTA → payment flow (Stripe/ClickBank) → process_payment() → access granted → Post-purchase → sale-phase messages → content delivery → ongoing member support. Verify code actually connects at each step.
+
+**2. Are there dead/orphaned functions?**
+Check: Functions defined but never called, event listeners for nonexistent elements, PHP endpoints never hit from JS, CSS classes never used in HTML/JS.
+
+**3. Does the offer pipeline work?**
+Refactored in v1.6.2. Verify: getOfferData(offerId) merges IVR msg + config.offers, showOfferMessage() handles content sources (HtmlFile/WooProduct/PostID) before inline fallback, renderOfferByFormat() switch covers all 7 formats with valid HTML, timer countdown respects per-format overrides, _loadOfferStates()/_saveOfferStates() persist to localStorage, error boundary catches failures with plain-text fallback, REST endpoint /wp-json/flosc/v1/offer-content works.
+
+**4. Does the admin UI save and load correctly?**
+IVR Messages tab: accordion editing, Save to DB, Save & Resync, Add new message per phase. Offers tab: multi-format checkboxes (display_formats array), per-format condition/timer/overrides, save preserves all fields. Verify display_formats round-trip (save → reload → same state). Verify backward compat for old display_format (singular).
+
+**5. Security check**
+All $_POST/$_GET sanitized? Nonce verification on forms? Capability checks on admin actions? File path traversal protection on HtmlFile? XSS in rendered offer HTML?
+
+#### Phase 2: Fix (ship the fixes)
+For every problem: state clearly (file, line, what's wrong), fix immediately, run php -l and node --check after each fix. Priority: security > broken user journey > dead code > cosmetic.
+
+#### Phase 3: Launch Readiness Checklist
+
+**Must-Have:**
+- Chat loads without JS errors on clean WordPress page
+- Quiz flow completes (start → questions → score → results stored)
+- User registration/login works after quiz
+- At least ONE offer displays correctly after quiz completion
+- Payment processing works for at least ONE provider
+- Access level upgrades after successful payment
+- Post-purchase content (lessons) accessible
+- Admin can create/edit/delete IVR messages
+- Admin can create/edit offers with display formats
+- Plugin activates without errors on WordPress 6.x
+- No PHP warnings/notices in production
+- REST API endpoints return valid JSON
+- FLOSC_CONFIG passes correctly from PHP → JavaScript
+
+**Nice-to-Have (don't block launch):**
+- All 7 offer display formats render correctly
+- SSO providers work
+- Email automation triggers
+- Analytics/bridge tracking
+- Companion widget
+
+#### Key Files
+
+| File | Lines | Purpose |
+|------|-------|---------|
+| flosc.php | 6232 | Main plugin: REST API, IVR engine, chat handler, offer content endpoint |
+| assets/js/flosc-app.js | 4340 | Frontend: chat UI, offer rendering, IVR display, quiz integration |
+| admin/flosc-app.php | 687 | Frontend HTML template, passes FLOSC_CONFIG to JS |
+| includes/class-ivr-parser.php | 474 | Parses IVR markdown into structured config |
+| includes/sale/class-offer-manager.php | 602 | Offer CRUD, display format registry, pricing |
+| admin/ivr-messages.php | 1146 | IVR Messages admin — single scrollable accordion page |
+| admin/offers.php | 611 | Offers admin — multi-format config per offer |
+| admin/settings.php | 819 | Main settings page, tab routing |
+| assets/css/flosc-offers.css | ~620 | Offer display styles (all 7 formats) |
+| ai_configuration_files/flosc_default_ivr.md | ~600 | Default IVR message definitions |
+
+#### Architecture
+
+```
+User Browser                 WordPress Server
+─────────────                ─────────────────
+flosc-app.js ←──REST API──→ flosc.php
+  ├─ Chat UI                   ├─ handle_chat() → OpenAI
+  ├─ IVR Engine                ├─ search_ivr_match()
+  │  ├─ checkAutoMessages()    ├─ flosc_import_ivr_to_database()
+  │  └─ showOfferMessage()     ├─ flosc_auto_export_ivr_to_file()
+  ├─ renderOfferByFormat()     ├─ get_offer_content() REST endpoint
+  └─ Quiz Integration          └─ process_payment()
+                                   └─ grant_access_level()
+```
+
+#### Data Flow: Offer Pipeline
+
+```
+Admin creates offer (offers.php)
+  → saved to $flow_settings['offers'] in wp_options
+  → display_formats: {card: {enabled:true, condition:'...'}, pill: {enabled:true, label:'...'}, ...}
+
+IVR entries reference OfferID (ivr-messages.php or .md file)
+  → MessageType: offer, OfferID: full_access_001, DisplayFormat: card
+
+Frontend loads:
+  → FLOSC_CONFIG.offers (from flosc-app.php line 662)
+  → this.ivr.messages (from REST API /ivr-messages)
+
+showOfferMessage(msgId) called:
+  → getOfferData(offerId) merges IVR msg + config.offers
+  → checks content sources (HtmlFile/WooProduct/PostID)
+  → calls renderOfferByFormat(offerData, format)
+  → renders card/pill/banner/etc in chat
+```
+
+#### Rules
+- Don't refactor for style. Ship what works.
+- Don't add features. We're launching, not expanding.
+- Don't rewrite working code. Only fix broken code.
+- Don't create documentation files. Write code.
+- Don't suggest changes — implement them.
+
+#### Output Format
+1. AUDIT FINDINGS — numbered list of real problems
+2. FIXES APPLIED — what changed, which file
+3. LAUNCH CHECKLIST STATUS — each item ✅ or ❌ with explanation
+4. REMAINING BLOCKERS — what must happen before go-live
+5. RECOMMENDED NEXT SESSION — prioritized list
+
+---
