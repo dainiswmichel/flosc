@@ -1361,7 +1361,8 @@
     outline: none;
 }
 
-.quiz-submit-btn {
+.quiz-submit-btn,
+.flosc-quiz-submit-btn {
     width: 100%;
     margin-top: 4px;
     padding: 14px 24px;

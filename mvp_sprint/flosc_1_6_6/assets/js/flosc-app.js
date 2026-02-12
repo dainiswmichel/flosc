@@ -48,7 +48,7 @@ class floscApp {
             'is_visitor', 'is_guest', 'is_member', 'logged_in', 'has_profile',
             // Session state
             'first_show_session', 'first_message_after_quiz', 'first_message_after_login',
-            'first_message_after_purchase', 'returning_user', 'command',
+            'first_message_after_purchase', 'first_message_after_free_lesson', 'returning_user', 'command',
             // User info
             'user_id', 'name', 'email',
             // Quiz info
@@ -652,9 +652,13 @@ class floscApp {
             // Skip if marked as shown this session
             if (this.ivr.shownThisSession[msg.name]) continue;
 
-            // Check phase match (allow cross-phase for logged_in conditions)
+            // Check phase match — allow cross-phase for merged guest/member phases
             if (msg.phase && msg.phase !== this.ivr.phase) {
-                if (!(msg.phase === 'login' && this.ivr.context.logged_in && !this.ivr.context.purchased)) {
+                const guestPhases = ['login', 'offer'];
+                const memberPhases = ['sale', 'content'];
+                const isGuestCross = guestPhases.includes(msg.phase) && guestPhases.includes(this.ivr.phase);
+                const isMemberCross = memberPhases.includes(msg.phase) && memberPhases.includes(this.ivr.phase);
+                if (!isGuestCross && !isMemberCross) {
                     continue;
                 }
             }
