@@ -1531,11 +1531,14 @@ The {product_name} Team";
         $base_name = pathinfo($filename, PATHINFO_FILENAME);
         $settings_key = 'flosc_flow_' . sanitize_key($base_name);
         $settings = get_option($settings_key, []);
-        
+
         // Generate defaults if no settings saved
         $default_slug = strtolower(preg_replace('/[^a-z0-9_-]/i', '', $base_name));
-        
-        return [
+
+        // v1.7.2: Merge ALL saved settings into flow array so get_setting() can
+        // find payment credentials, SSO keys, etc. — not just the core flow props.
+        // Overlay computed defaults on top of raw settings.
+        return array_merge($settings, [
             'id' => $base_name,
             'ivr_file' => $filename,
             'slug' => $settings['slug'] ?? $default_slug,
@@ -1545,7 +1548,7 @@ The {product_name} Team";
             'primary_color' => $settings['primary_color'] ?? '#4f46e5',
             'custom_domain' => $settings['domain'] ?? '',
             'status' => $settings['status'] ?? 'active',
-        ];
+        ]);
     }
     
     /**

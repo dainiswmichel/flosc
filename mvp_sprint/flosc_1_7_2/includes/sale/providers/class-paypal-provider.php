@@ -31,6 +31,21 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
         return !empty($this->get_client_id()) && !empty($this->get_secret());
     }
 
+    /**
+     * v1.7.2: Override base is_enabled() to read from per-flow settings.
+     * Base class checks get_option('flosc_provider_paypal_enabled') which the
+     * admin UI never writes to — admin saves 'paypal_enabled' to the flow option.
+     */
+    public function is_enabled() {
+        if (function_exists('flosc')) {
+            $value = flosc()->get_setting('paypal_enabled', '');
+            if ($value !== '') {
+                return !empty($value);
+            }
+        }
+        return parent::is_enabled();
+    }
+
     public function get_settings_fields() {
         return [
             'mode' => [
