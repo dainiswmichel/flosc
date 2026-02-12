@@ -1685,6 +1685,7 @@ The {product_name} Team";
                 'freeLessonDelivered' => (bool) get_user_meta($user->ID, '_flosc_free_lesson_delivered', true),
                 'freeLessonsCount' => count(get_user_meta($user->ID, '_flosc_free_lesson_numbers', true) ?: []),
                 'lastQuizScore' => get_user_meta($user->ID, '_flosc_last_quiz_score', true),
+                'quizCompletedAt' => get_user_meta($user->ID, '_flosc_quiz_completed_at', true),
                 'lastQuizId' => get_user_meta($user->ID, '_flosc_last_quiz_id', true),
                 'initialScore' => get_user_meta($user->ID, '_flosc_initial_score', true),
                 'initialQuizId' => get_user_meta($user->ID, '_flosc_initial_quiz_id', true),

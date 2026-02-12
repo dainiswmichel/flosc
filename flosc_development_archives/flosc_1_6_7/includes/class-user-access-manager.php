@@ -174,10 +174,11 @@ class FLOSC_User_Access_Manager {
         }
         
         // Add quiz results if available
+        // v1.6.7: Fixed meta keys — quiz writes to _flosc_last_quiz_* not flosc_quiz_*
         if ($user_id) {
-            $quiz_results = get_user_meta($user_id, 'flosc_quiz_results', true);
-            $quiz_score = get_user_meta($user_id, 'flosc_quiz_score', true);
-            $quiz_date = get_user_meta($user_id, 'flosc_quiz_completed_date', true);
+            $quiz_results = get_user_meta($user_id, '_flosc_last_quiz_data', true);
+            $quiz_score = get_user_meta($user_id, '_flosc_last_quiz_score', true);
+            $quiz_date = get_user_meta($user_id, '_flosc_quiz_completed_at', true);
             
             if ($quiz_results) {
                 $context['quiz_results'] = $quiz_results;
@@ -194,7 +195,7 @@ class FLOSC_User_Access_Manager {
             }
 
             // v1.6.7: Condition evaluator fields — matches JS buildIVRContext
-            $context['quiz_taken'] = !empty($quiz_score) || !empty(get_user_meta($user_id, '_flosc_quiz_completed_at', true));
+            $context['quiz_taken'] = !empty($quiz_score) || !empty($quiz_date);
             $context['score'] = intval($quiz_score ?: 0);
             $context['purchased'] = $this->is_member($user_id);
             $context['lesson_viewed'] = (bool) get_user_meta($user_id, '_flosc_free_lesson_delivered', true);
