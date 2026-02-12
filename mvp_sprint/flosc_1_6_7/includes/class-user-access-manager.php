@@ -183,7 +183,7 @@ class FLOSC_User_Access_Manager {
                 $context['quiz_results'] = $quiz_results;
                 $context['quiz_score'] = $quiz_score;
                 $context['quiz_date'] = $quiz_date;
-                
+
                 // Calculate time since quiz for pricing
                 if ($quiz_date) {
                     $quiz_timestamp = strtotime($quiz_date);
@@ -192,8 +192,16 @@ class FLOSC_User_Access_Manager {
                     $context['within_discount_window'] = $minutes_since_quiz < 30;
                 }
             }
+
+            // v1.6.7: Condition evaluator fields — matches JS buildIVRContext
+            $context['quiz_taken'] = !empty($quiz_score) || !empty(get_user_meta($user_id, '_flosc_quiz_completed_at', true));
+            $context['score'] = intval($quiz_score ?: 0);
+            $context['purchased'] = $this->is_member($user_id);
+            $context['lesson_viewed'] = (bool) get_user_meta($user_id, '_flosc_free_lesson_delivered', true);
+            $context['lessons_completed'] = intval(get_user_meta($user_id, '_flosc_lessons_completed', true));
+            $context['onboarded'] = (bool) get_user_meta($user_id, '_flosc_funnel_completed', true);
         }
-        
+
         return $context;
     }
     
