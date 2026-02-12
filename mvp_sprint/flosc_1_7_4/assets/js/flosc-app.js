@@ -2990,8 +2990,8 @@ class floscApp {
             
             let result = await response.json();
             
-            // v1.7.1: If cookie check failed, refresh nonce and retry once
-            if (!result.success && (result.message || '').toLowerCase().includes('cookie')) {
+            // v1.7.4: If nonce/cookie/permission error, refresh nonce and retry once
+            if (!result.success && ((result.message || '').match(/cookie|not allowed/i) || result.code === 'rest_cookie_invalid_nonce')) {
                 console.log('[FLOSC] Cookie check failed, refreshing nonce and retrying...');
                 const refreshed = await this.refreshNonce();
                 if (refreshed) {
@@ -4413,7 +4413,7 @@ Purchased: ${ctx.purchased}
                     height: 45,
                 },
                 createOrder: async () => {
-                    try {
+                    const doCreate = async () => {
                         const res = await fetch(this.config.apiUrl + '/paypal/create-order', {
                             method: 'POST',
                             credentials: 'same-origin',
@@ -4423,7 +4423,16 @@ Purchased: ${ctx.purchased}
                             },
                             body: JSON.stringify({ offer_id: offerId }),
                         });
-                        const data = await res.json();
+                        return await res.json();
+                    };
+                    try {
+                        let data = await doCreate();
+                        // v1.7.4: If nonce/cookie error, refresh and retry once
+                        if (!data.order_id && (data.code === 'rest_cookie_invalid_nonce' || (data.message || '').match(/cookie|not allowed/i))) {
+                            console.log('[FLOSC] PayPal create-order nonce failed, refreshing...');
+                            await this.refreshNonce();
+                            data = await doCreate();
+                        }
                         if (data.order_id) {
                             return data.order_id;
                         }
@@ -4440,19 +4449,27 @@ Purchased: ${ctx.purchased}
                         // Show processing state
                         paypalContainer.innerHTML = '<div style="text-align:center;padding:16px;color:#666;">Processing payment...</div>';
                         
-                        const res = await fetch(this.config.apiUrl + '/paypal/capture-order', {
-                            method: 'POST',
-                            credentials: 'same-origin',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-WP-Nonce': this.config.nonce,
-                            },
-                            body: JSON.stringify({
-                                order_id: data.orderID,
-                                offer_id: offerId,
-                            }),
-                        });
-                        const result = await res.json();
+                        const doCapture = async () => {
+                            const r = await fetch(this.config.apiUrl + '/paypal/capture-order', {
+                                method: 'POST',
+                                credentials: 'same-origin',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-WP-Nonce': this.config.nonce,
+                                },
+                                body: JSON.stringify({
+                                    order_id: data.orderID,
+                                    offer_id: offerId,
+                                }),
+                            });
+                            return await r.json();
+                        };
+                        let result = await doCapture();
+                        // v1.7.4: Nonce retry for capture too
+                        if (!result.success && ((result.message || '').match(/cookie|not allowed/i) || result.code === 'rest_cookie_invalid_nonce')) {
+                            await this.refreshNonce();
+                            result = await doCapture();
+                        }
                         
                         if (result.success) {
                             modal.style.display = 'none';
