@@ -83,6 +83,20 @@ $available_actions = [
 <h3>Visitor State</h3>
 <p class="description">Shown to users who are not logged in.</p>
 <table class="form-table">
+    <!-- v1.8.3: Avatar Shape (applies to all states) -->
+    <?php $current_avatar_radius = $flow_settings['avatar_radius'] ?? '8px'; ?>
+    <tr>
+        <th scope="row">Avatar Shape</th>
+        <td>
+            <select name="flow_avatar_radius" id="flow_avatar_radius">
+                <option value="8px" <?php selected($current_avatar_radius, '8px'); ?>>Rounded Rectangle</option>
+                <option value="50%" <?php selected($current_avatar_radius, '50%'); ?>>Circle</option>
+                <option value="4px" <?php selected($current_avatar_radius, '4px'); ?>>Slightly Rounded</option>
+                <option value="0" <?php selected($current_avatar_radius, '0'); ?>>Square</option>
+            </select>
+            <p class="description">Shape of the user avatar in the profile bar and chat messages.</p>
+        </td>
+    </tr>
     <tr>
         <th scope="row">Avatar Icon</th>
         <td>

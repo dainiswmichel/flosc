@@ -488,12 +488,11 @@ html, body {
 .profile-avatar {
     width: 36px;
     height: 36px;
-    /* v1.8.3: min-width/min-height + aspect-ratio prevent WordPress theme
-       rules (e.g. "img { max-width:100%; height:auto }") from squishing the avatar */
+    /* v1.8.3: min-width/min-height prevent WordPress theme rules from squishing */
     min-width: 36px;
     min-height: 36px;
-    aspect-ratio: 1 / 1;
-    border-radius: 50%;
+    /* v1.8.3: floscAdmin-configurable shape — 8px=rounded rect, 50%=circle */
+    border-radius: var(--flosc-avatar-radius, 8px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -509,7 +508,7 @@ html, body {
     height: 36px;
     min-width: 36px;
     min-height: 36px;
-    aspect-ratio: 1 / 1;
+    border-radius: var(--flosc-avatar-radius, 8px);
     display: block;
     object-fit: cover;
 }

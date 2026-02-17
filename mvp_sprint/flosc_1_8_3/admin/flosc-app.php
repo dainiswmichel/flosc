@@ -62,6 +62,20 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
             --flosc-primary: <?php echo esc_attr($product['primary_color']); ?>;
             --flosc-primary-hover: <?php echo esc_attr(flosc_adjust_brightness($product['primary_color'], -20)); ?>;
             --flosc-primary-light: <?php echo esc_attr($product['primary_color']); ?>15;
+            /* v1.8.3: Avatar shape — 8px = rounded rectangle, 50% = circle. Configurable by floscAdmin. */
+            <?php
+            // Read avatar_radius from flow settings (available to all users, not just admins)
+            $avatar_radius = '8px';
+            if (function_exists('flosc')) {
+                $_flow = flosc()->get_current_flow();
+                if ($_flow && !empty($_flow['ivr_file'])) {
+                    $_fkey = 'flosc_flow_' . sanitize_key(pathinfo(basename($_flow['ivr_file']), PATHINFO_FILENAME));
+                    $_fs = get_option($_fkey, []);
+                    if (!empty($_fs['avatar_radius'])) $avatar_radius = $_fs['avatar_radius'];
+                }
+            }
+            ?>
+            --flosc-avatar-radius: <?php echo esc_attr($avatar_radius); ?>;
         }
     </style>
     
