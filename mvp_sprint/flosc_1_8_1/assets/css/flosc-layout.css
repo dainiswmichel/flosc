@@ -147,9 +147,91 @@ html, body {
     overflow: hidden;
 }
 
-/* v1.7.0: Desktop sidebar collapse */
+/* v1.8.1: Desktop sidebar collapse — icons-only strip (like ChatGPT/Claude/Grok)
+   Collapsed width = 56px (36px icon + 10px padding each side)
+   All text labels hidden, only icons/avatars remain visible.
+   Click the toggle button (always visible in collapsed strip) to re-expand. */
 .flosc-sidebar.collapsed {
-    width: 0;
+    width: 56px;
+}
+
+/* Header: hide logo text, keep only toggle button centered */
+.flosc-sidebar.collapsed .sidebar-header {
+    padding: 12px 8px;
+    justify-content: center;
+}
+
+.flosc-sidebar.collapsed .logo {
+    display: none;
+}
+
+.flosc-sidebar.collapsed .sidebar-header-actions {
+    width: 100%;
+    justify-content: center;
+}
+
+/* Hide restart button when collapsed — only toggle visible */
+.flosc-sidebar.collapsed .sidebar-action-btn {
+    display: none;
+}
+
+/* New Chat: icon-only, centered */
+.flosc-sidebar.collapsed .new-chat-btn {
+    margin: 4px 8px;
+    padding: 10px;
+    justify-content: center;
+}
+
+.flosc-sidebar.collapsed .new-chat-btn span {
+    display: none;
+}
+
+/* Session list: hide text, show only icons */
+.flosc-sidebar.collapsed .flosc_app_session_list {
+    padding: 4px;
+}
+
+.flosc-sidebar.collapsed .session-group-title {
+    display: none;
+}
+
+.flosc-sidebar.collapsed .session-item {
+    padding: 10px 0;
+    justify-content: center;
+}
+
+.flosc-sidebar.collapsed .session-item-title {
+    display: none;
+}
+
+.flosc-sidebar.collapsed .session-item-actions {
+    display: none !important;
+}
+
+/* Profile bar: avatar-only, centered */
+.flosc-sidebar.collapsed .user-profile-bar {
+    padding: 4px;
+}
+
+.flosc-sidebar.collapsed .profile-button {
+    padding: 8px 0;
+    justify-content: center;
+}
+
+.flosc-sidebar.collapsed .profile-info {
+    display: none;
+}
+
+.flosc-sidebar.collapsed .dropdown-icon {
+    display: none;
+}
+
+/* Profile dropdown still works — anchor from left edge of collapsed strip */
+.flosc-sidebar.collapsed .profile-dropdown {
+    left: 56px;
+    bottom: 0;
+    right: auto;
+    width: 240px;
 }
 
 /* Sidebar Header */
@@ -569,10 +651,8 @@ html, body {
     }
 }
 
-/* v1.8.1: On desktop, show sidebar-open button when sidebar is collapsed (ChatGPT/Claude pattern) */
-.flosc-app.sidebar-collapsed .mobile-menu-btn {
-    display: flex;
-}
+/* v1.8.1: Sidebar toggle is always visible inside the collapsed icon strip,
+   so no separate header reopen button is needed on desktop. */
 
 /* v1.8.0: Hide mobile logo on desktop (sidebar already shows branding) */
 .logo-mobile {

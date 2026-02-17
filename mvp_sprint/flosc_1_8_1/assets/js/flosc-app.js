@@ -4005,9 +4005,6 @@ Purchased: ${ctx.purchased}
             const wasCollapsed = localStorage.getItem('flosc_sidebar_collapsed') === 'true';
             if (wasCollapsed) {
                 this.sidebar.classList.add('collapsed');
-                // v1.8.1: Also set app-level class so header can show sidebar-open button
-                const appContainer = this.sidebar.closest('.flosc-app');
-                if (appContainer) appContainer.classList.add('sidebar-collapsed');
             }
         }
 
@@ -4085,7 +4082,6 @@ Purchased: ${ctx.purchased}
     toggleSidebar() {
         if (this.sidebar) {
             const isMobile = window.innerWidth <= 768;
-            const appContainer = this.sidebar.closest('.flosc-app');
             if (isMobile) {
                 this.sidebar.classList.toggle('open');
                 // Toggle overlay
@@ -4096,11 +4092,6 @@ Purchased: ${ctx.purchased}
             } else {
                 this.sidebar.classList.toggle('collapsed');
                 localStorage.setItem('flosc_sidebar_collapsed', this.sidebar.classList.contains('collapsed'));
-                // v1.8.1: Toggle class on app container so CSS can show the sidebar-open
-                // button in the header when the sidebar is collapsed (ChatGPT/Claude pattern)
-                if (appContainer) {
-                    appContainer.classList.toggle('sidebar-collapsed', this.sidebar.classList.contains('collapsed'));
-                }
             }
         }
     }
