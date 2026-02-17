@@ -484,15 +484,18 @@ html, body {
     transition: background 0.15s ease;
 }
 
+/* v1.8.3: Avatar shape controlled by CSS custom properties set in admin UI
+   --flosc-avatar-width   (default 36px) — rectangle support
+   --flosc-avatar-height  (default 36px) — rectangle support
+   --flosc-avatar-radius  (default 50%) — 50%=circle, 8px=rounded, 0=sharp */
+.flosc-profile-avatar,
 .flosc-user-avatar,
 .profile-avatar {
-    width: 36px;
-    height: 36px;
-    /* v1.8.3: min-width/min-height prevent WordPress theme rules from squishing */
-    min-width: 36px;
-    min-height: 36px;
-    /* v1.8.3: floscAdmin-configurable shape — 8px=rounded rect, 50%=circle */
-    border-radius: var(--flosc-avatar-radius, 8px);
+    width: var(--flosc-avatar-width, 36px);
+    height: var(--flosc-avatar-height, 36px);
+    min-width: var(--flosc-avatar-width, 36px);
+    min-height: var(--flosc-avatar-height, 36px);
+    border-radius: var(--flosc-avatar-radius, 50%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -501,18 +504,24 @@ html, body {
     flex-shrink: 0;
 }
 
-/* v1.8.3: img.profile-avatar needs higher specificity to beat WordPress theme
-   resets like "body img { max-width:100%; height:auto }" */
-.user-profile-bar img.profile-avatar {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    min-height: 36px;
-    border-radius: var(--flosc-avatar-radius, 8px);
-    display: block;
+/* v1.8.3: High-specificity rule beats WordPress theme resets
+   like ".entry-content img { max-width:100%; height:auto }" */
+.flosc-app .flosc-profile-avatar {
+    width: var(--flosc-avatar-width, 36px);
+    height: var(--flosc-avatar-height, 36px);
+    min-width: var(--flosc-avatar-width, 36px);
+    min-height: var(--flosc-avatar-height, 36px);
+    border-radius: var(--flosc-avatar-radius, 50%);
     object-fit: cover;
+    flex-shrink: 0;
 }
 
+/* img avatars need display:block (not flex — img is replaced content) */
+img.flosc-profile-avatar {
+    display: block;
+}
+
+.flosc-profile-avatar.visitor-avatar,
 .profile-avatar.visitor-avatar {
     background: transparent;
     font-size: 20px;
