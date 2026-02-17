@@ -1,0 +1,917 @@
+/**
+ * FLOSC Admin Styles
+ * v1.0.4 - TASK-006: Extracted from inline styles
+ * 
+ * Common admin UI patterns for FLOSC settings tabs:
+ * - Notification banners (warning, success, info)
+ * - Configuration cards
+ * - Toggle switches and status indicators
+ * - Form layouts and field styling
+ * - Status badges and progress indicators
+ */
+
+/* ========================================
+   NOTIFICATION BANNERS
+   ======================================== */
+
+.flosc-banner {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+}
+
+.flosc-banner--warning {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+}
+
+.flosc-banner--success {
+    background: #d4edda;
+    border-left: 4px solid #28a745;
+}
+
+.flosc-banner--info {
+    background: #e7f3ff;
+    border-left: 4px solid #0073aa;
+}
+
+.flosc-banner--error {
+    background: #f8d7da;
+    border-left: 4px solid #dc3545;
+}
+
+/* ========================================
+   CONFIGURATION CARDS
+   ======================================== */
+
+.flosc-card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.flosc-card--expandable {
+    border: 1px solid #ccc;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.flosc-card__header {
+    background: #f9f9f9;
+    padding: 12px 15px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.flosc-card__header:hover {
+    background: #f1f1f1;
+}
+
+.flosc-card__body {
+    padding: 15px;
+    border-top: 1px solid #eee;
+}
+
+.flosc-card__body--hidden {
+    display: none;
+}
+
+/* ========================================
+   STATUS INDICATORS
+   ======================================== */
+
+.flosc-status {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.flosc-status--active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.flosc-status--inactive {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.flosc-status--pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.flosc-status--configured {
+    background: #cce5ff;
+    color: #004085;
+}
+
+/* Status dots (for list items) */
+.flosc-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+}
+
+.flosc-status-dot--green {
+    background: #28a745;
+}
+
+.flosc-status-dot--red {
+    background: #dc3545;
+}
+
+.flosc-status-dot--yellow {
+    background: #ffc107;
+}
+
+.flosc-status-dot--blue {
+    background: #007bff;
+}
+
+/* ========================================
+   TOGGLE SWITCHES
+   ======================================== */
+
+.flosc-toggle {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+}
+
+.flosc-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.flosc-toggle__slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: 0.3s;
+    border-radius: 26px;
+}
+
+.flosc-toggle__slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.flosc-toggle input:checked + .flosc-toggle__slider {
+    background-color: #0073aa;
+}
+
+.flosc-toggle input:checked + .flosc-toggle__slider:before {
+    transform: translateX(24px);
+}
+
+/* ========================================
+   COLLAPSIBLE SECTIONS
+   ======================================== */
+
+.flosc-collapsible {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.flosc-collapsible__header {
+    background: linear-gradient(to bottom, #fafafa, #f4f4f4);
+    padding: 12px 15px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+}
+
+.flosc-collapsible__header:hover {
+    background: #f0f0f0;
+}
+
+.flosc-collapsible__toggle {
+    color: #666;
+    font-weight: bold;
+    transition: transform 0.2s;
+}
+
+.flosc-collapsible--open .flosc-collapsible__toggle {
+    transform: rotate(90deg);
+}
+
+.flosc-collapsible__content {
+    padding: 15px;
+    border-top: 1px solid #ddd;
+    display: none;
+}
+
+.flosc-collapsible--open .flosc-collapsible__content {
+    display: block;
+}
+
+/* ========================================
+   FORM STYLING
+   ======================================== */
+
+.flosc-field-group {
+    margin-bottom: 20px;
+}
+
+.flosc-field-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.flosc-field-group .description {
+    color: #666;
+    font-style: italic;
+    margin-top: 4px;
+    font-size: 13px;
+}
+
+.flosc-input-text {
+    width: 100%;
+    max-width: 400px;
+}
+
+.flosc-textarea {
+    width: 100%;
+    min-height: 100px;
+    font-family: Consolas, Monaco, monospace;
+}
+
+/* Inline label + input */
+.flosc-inline-field {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ========================================
+   TABS WITHIN ADMIN PAGES
+   ======================================== */
+
+.flosc-sub-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 20px;
+}
+
+.flosc-sub-tab {
+    padding: 10px 20px;
+    background: #f1f1f1;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    cursor: pointer;
+    margin-right: -1px;
+}
+
+.flosc-sub-tab:hover {
+    background: #e9e9e9;
+}
+
+.flosc-sub-tab--active {
+    background: #fff;
+    border-bottom: 1px solid #fff;
+    margin-bottom: -1px;
+}
+
+/* ========================================
+   DATA TABLES
+   ======================================== */
+
+.flosc-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+}
+
+.flosc-table th,
+.flosc-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.flosc-table th {
+    background: #f9f9f9;
+    font-weight: 600;
+}
+
+.flosc-table tbody tr:hover {
+    background: #f9f9f9;
+}
+
+/* ========================================
+   METRICS & STATISTICS
+   ======================================== */
+
+.flosc-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.flosc-metric {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    text-align: center;
+}
+
+.flosc-metric__value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #0073aa;
+}
+
+.flosc-metric__label {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+}
+
+/* ========================================
+   PROGRESS BAR
+   ======================================== */
+
+.flosc-progress {
+    background: #e9ecef;
+    border-radius: 4px;
+    height: 20px;
+    overflow: hidden;
+}
+
+.flosc-progress__bar {
+    height: 100%;
+    background: linear-gradient(90deg, #0073aa, #00a0d2);
+    transition: width 0.3s ease;
+}
+
+.flosc-progress__label {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* ========================================
+   ACTION BUTTONS
+   ======================================== */
+
+.flosc-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: none;
+    border: none;
+    transition: background-color 0.2s;
+}
+
+.flosc-btn--primary {
+    background: #0073aa;
+    color: #fff;
+}
+
+.flosc-btn--primary:hover {
+    background: #005a87;
+    color: #fff;
+}
+
+.flosc-btn--secondary {
+    background: #f1f1f1;
+    color: #333;
+    border: 1px solid #ccc;
+}
+
+.flosc-btn--secondary:hover {
+    background: #e1e1e1;
+}
+
+.flosc-btn--danger {
+    background: #dc3545;
+    color: #fff;
+}
+
+.flosc-btn--danger:hover {
+    background: #c82333;
+}
+
+.flosc-btn--small {
+    padding: 4px 10px;
+    font-size: 12px;
+}
+
+/* ========================================
+   CODE BLOCKS
+   ======================================== */
+
+.flosc-code {
+    background: #f4f4f4;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    font-family: Consolas, Monaco, 'Courier New', monospace;
+    font-size: 13px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+
+.flosc-code--inline {
+    display: inline;
+    padding: 2px 6px;
+    font-size: 12px;
+}
+
+/* ========================================
+   LEGACY INLINE STYLES - TRANSITION HELPERS
+   For gradual migration from inline styles
+   ======================================== */
+
+/* Commonly used inline background colors */
+.bg-warning { background: #fff3cd !important; }
+.bg-success { background: #d4edda !important; }
+.bg-info { background: #e7f3ff !important; }
+.bg-danger { background: #f8d7da !important; }
+.bg-white { background: #fff !important; }
+.bg-light { background: #f9f9f9 !important; }
+
+/* Border utilities */
+.border-left-warning { border-left: 4px solid #ffc107 !important; }
+.border-left-success { border-left: 4px solid #28a745 !important; }
+.border-left-info { border-left: 4px solid #0073aa !important; }
+.border-left-danger { border-left: 4px solid #dc3545 !important; }
+
+/* Spacing utilities */
+.p-15 { padding: 15px !important; }
+.mb-20 { margin-bottom: 20px !important; }
+.mt-10 { margin-top: 10px !important; }
+
+/* ========================================
+   BRIDGE DATA ANALYTICS (v1.0.4 TASK-010)
+   ======================================== */
+
+.flosc-bridge-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.flosc-bridge-stat {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 20px;
+    text-align: center;
+}
+
+.flosc-bridge-stat__icon {
+    font-size: 32px;
+    margin-bottom: 10px;
+}
+
+.flosc-bridge-stat__value {
+    font-size: 36px;
+    font-weight: bold;
+    color: #0073aa;
+}
+
+.flosc-bridge-stat__label {
+    font-size: 14px;
+    color: #666;
+    margin-top: 5px;
+}
+
+.flosc-weakness-chart {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 20px;
+}
+
+.flosc-weakness-bar {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.flosc-weakness-bar__label {
+    width: 120px;
+    font-weight: 500;
+}
+
+.flosc-weakness-bar__track {
+    flex: 1;
+    background: #e9ecef;
+    border-radius: 4px;
+    height: 24px;
+    overflow: hidden;
+}
+
+.flosc-weakness-bar__fill {
+    height: 100%;
+    background: linear-gradient(90deg, #dc3545, #fd7e14);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 8px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* ========================================
+   DEBUG MODE INDICATOR
+   ======================================== */
+
+.flosc-debug-badge {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background: #dc3545;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    z-index: 9999;
+    opacity: 0.8;
+}
+
+.flosc-debug-badge:hover {
+    opacity: 1;
+}
+
+/* ========================================
+   AI GUIDE TAB
+   v1.7.8: Styles for admin/ai-configuration-guide.php
+   ======================================== */
+
+.flosc-guide-section {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.flosc-guide-section h3 {
+    margin-top: 0;
+    color: #2271b1;
+    font-size: 18px;
+    border-bottom: 2px solid #f0f0f1;
+    padding-bottom: 10px;
+}
+
+.flosc-guide-section h4 {
+    color: #1d2327;
+    font-size: 15px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.flosc-code-example {
+    background: #f6f7f7;
+    border-left: 4px solid #2271b1;
+    padding: 15px;
+    margin: 15px 0;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 13px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+
+.flosc-variable-list {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin: 10px 0;
+}
+
+.flosc-variable-list dt {
+    font-family: Consolas, Monaco, monospace;
+    color: #d63638;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.flosc-variable-list dd {
+    margin-left: 20px;
+    margin-bottom: 10px;
+    color: #50575e;
+}
+
+.flosc-tip {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 12px 15px;
+    margin: 15px 0;
+}
+
+.flosc-tip strong {
+    color: #856404;
+}
+
+.flosc-success {
+    background: #d1e7dd;
+    border-left: 4px solid #0f5132;
+    padding: 12px 15px;
+    margin: 15px 0;
+}
+
+.flosc-template-card {
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin: 10px 0;
+    background: white;
+    border-radius: 4px;
+}
+
+.flosc-template-card h5 {
+    margin-top: 0;
+    color: #2271b1;
+    font-size: 14px;
+}
+
+.flosc-template-card .template-meta {
+    font-size: 12px;
+    color: #646970;
+    margin: 5px 0;
+}
+
+.flosc-template-card .template-prompt {
+    background: #f6f7f7;
+    padding: 10px;
+    margin: 10px 0;
+    font-family: Consolas, Monaco, monospace;
+    font-size: 12px;
+    border-radius: 3px;
+    white-space: pre-wrap;
+}
+
+/* ========================================
+   IVR SETTINGS (RAW EDITOR)
+   Moved from admin/ivr-settings.php v1.7.8
+   ======================================== */
+
+.message-row:hover {
+    background: #f0f0f1;
+}
+
+.message-edit-row {
+    display: table-row;
+}
+
+/* ========================================
+   OFFERS ADMIN
+   Moved from admin/offers.php v1.7.8
+   ======================================== */
+
+.flosc-offer-card { border: 1px solid #ddd; background: #fff; }
+.flosc-offer-card + .flosc-offer-card { border-top: none; }
+.flosc-offer-card:first-child { border-radius: 6px 6px 0 0; }
+.flosc-offer-card:last-child { border-radius: 0 0 6px 6px; }
+.flosc-offer-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px; cursor: pointer; user-select: none;
+    transition: background 0.15s;
+}
+.flosc-offer-header:hover { background: #f0f6fc; }
+.flosc-offer-header .toggle { font-size: 11px; color: #999; transition: transform 0.2s; }
+.flosc-offer-card.is-open .toggle { transform: rotate(90deg); }
+.flosc-offer-header .offer-name { font-weight: 600; font-size: 14px; }
+.flosc-offer-header .offer-price { font-weight: 600; color: #10b981; font-size: 14px; }
+.flosc-offer-header .offer-price .original { text-decoration: line-through; color: #999; font-weight: 400; font-size: 12px; margin-right: 4px; }
+.flosc-offer-header .offer-status { font-size: 11px; }
+.flosc-offer-header .offer-status.active { color: #10b981; }
+.flosc-offer-header .offer-status.draft { color: #999; }
+.flosc-offer-header .offer-formats { display: flex; gap: 4px; margin-left: auto; }
+.flosc-offer-header .fmt-badge {
+    display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 10px;
+    background: #e8f0fe; color: #1a73e8;
+}
+.flosc-offer-header .offer-stats { font-size: 11px; color: #999; white-space: nowrap; }
+.flosc-offer-editor { display: none; padding: 20px; border-top: 1px solid #eee; background: #fafbfc; }
+.flosc-offer-card.is-open .flosc-offer-editor { display: block; }
+
+.flosc-fmt-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 12px; margin: 12px 0;
+}
+.flosc-fmt-card {
+    border: 1px solid #ddd; border-radius: 6px; background: #fff; padding: 12px 14px;
+    opacity: 0.5; transition: opacity 0.2s, border-color 0.2s;
+}
+.flosc-fmt-card.is-enabled { opacity: 1; border-color: #2271b1; box-shadow: 0 0 0 1px #2271b1; }
+.flosc-fmt-card .fmt-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.flosc-fmt-card .fmt-header label { font-weight: 600; font-size: 13px; cursor: pointer; }
+.flosc-fmt-card .fmt-desc { font-size: 11px; color: #667; margin-bottom: 8px; }
+.flosc-fmt-card .fmt-fields { display: none; }
+.flosc-fmt-card.is-enabled .fmt-fields { display: block; }
+.flosc-fmt-card .fmt-fields label { display: block; font-size: 12px; margin-bottom: 2px; color: #444; }
+.flosc-fmt-card .fmt-fields input,
+.flosc-fmt-card .fmt-fields select { font-size: 12px; }
+.flosc-fmt-card .fmt-fields .field-row { margin-bottom: 6px; }
+
+.flosc-offer-section-label {
+    font-size: 13px; font-weight: 600; color: #1d2327;
+    border-bottom: 1px solid #eee; padding-bottom: 6px; margin: 18px 0 10px;
+}
+.flosc-add-offer-btn {
+    display: block; width: 100%; padding: 12px; border: 2px dashed #c3c4c7;
+    background: #fafbfc; color: #2271b1; font-size: 14px; font-weight: 500;
+    cursor: pointer; text-align: center; border-radius: 6px; margin-top: 12px;
+    transition: background 0.15s;
+}
+.flosc-add-offer-btn:hover { background: #f0f6fc; color: #135e96; }
+
+/* ========================================
+   QUIZ ADMIN
+   Moved from admin/quiz.php v1.7.8
+   ======================================== */
+
+.flosc-quiz-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin: 20px 0; }
+.flosc-quiz-card { background: #fff; border: 1px solid #c3c4c7; border-radius: 2px; padding: 16px; }
+.flosc-quiz-card.active { border-color: #2271b1; background: #f0f6fc; }
+.flosc-quiz-card:hover { border-color: #2271b1; }
+.flosc-quiz-card h4 { margin: 0 0 8px 0; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.flosc-quiz-card .icon { font-size: 20px; }
+.flosc-quiz-card .desc { color: #50575e; font-size: 13px; margin-bottom: 12px; line-height: 1.4; }
+.flosc-quiz-card .badge { font-size: 10px; padding: 2px 8px; border-radius: 2px; font-weight: 600; }
+.flosc-quiz-card .badge.native { background: #e7f3ff; color: #004085; }
+.flosc-quiz-card .badge.plugin { background: #fff3cd; color: #856404; }
+.flosc-quiz-card .badge.mvp { background: #d4edda; color: #155724; }
+.flosc-quiz-toggle { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #c3c4c7; }
+.flosc-quiz-toggle input[type="checkbox"], .flosc-quiz-toggle input[type="radio"] { width: 16px; height: 16px; }
+.flosc-section-header { background: #1d2327; color: #f0f0f1; padding: 20px; border-radius: 2px; margin-bottom: 20px; }
+.flosc-section-header h2 { margin: 0 0 8px 0; }
+.flosc-section-header p { margin: 0; color: #a7aaad; }
+.flosc-plugin-status { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; padding: 2px 6px; border-radius: 2px; }
+.flosc-plugin-status.active { background: #d4edda; color: #155724; }
+.flosc-plugin-status.not_installed { background: #f0f0f1; color: #50575e; }
+.flosc-flow-preview { background: #f0f6fc; border: 1px solid #c3c4c7; border-radius: 2px; padding: 20px; display: flex; align-items: center; justify-content: space-around; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
+.flosc-flow-step { text-align: center; min-width: 70px; }
+.flosc-flow-step .icon { font-size: 28px; }
+.flosc-flow-step .label { font-weight: 600; font-size: 12px; margin-top: 4px; }
+.flosc-flow-arrow { font-size: 20px; color: #787c82; }
+
+/* ========================================
+   SSO SETTINGS
+   Moved from admin/sso.php v1.7.8
+   ======================================== */
+
+.flosc-sso-settings .card {
+    max-width: 900px;
+}
+.flosc-sso-settings details[open] summary {
+    margin-bottom: 10px;
+}
+.flosc-sso-settings .form-table th {
+    width: 150px;
+    padding: 10px 10px 10px 0;
+}
+.flosc-sso-settings .form-table td {
+    padding: 10px 0;
+}
+
+/* v1.5.0: Connection test result styles */
+.flosc-test-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 6px 0;
+    font-size: 13px;
+    line-height: 1.5;
+    border-bottom: 1px solid #f0f0f0;
+}
+.flosc-test-check:last-child {
+    border-bottom: none;
+}
+.flosc-test-check-icon {
+    flex-shrink: 0;
+    width: 20px;
+    text-align: center;
+    font-size: 14px;
+}
+.flosc-test-check-label {
+    flex-shrink: 0;
+    font-weight: 600;
+    min-width: 160px;
+    color: #1d2327;
+}
+.flosc-test-check-detail {
+    color: #50575e;
+}
+.flosc-test-check.pass .flosc-test-check-detail { color: #00a32a; }
+.flosc-test-check.fail .flosc-test-check-detail { color: #d63638; }
+.flosc-test-summary {
+    margin-top: 10px;
+    padding: 8px 14px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 13px;
+}
+.flosc-test-summary.all-pass {
+    background: #edfaef;
+    border: 1px solid #00a32a;
+    color: #00731e;
+}
+.flosc-test-summary.has-fail {
+    background: #fef1f1;
+    border: 1px solid #d63638;
+    color: #8b1a1d;
+}
+
+/* ========================================
+   SETTINGS PAGE LAYOUT
+   Moved from admin/settings.php v1.7.8
+   ======================================== */
+
+.flosc-admin { max-width: 1200px; }
+.flosc-admin .nav-tab-wrapper { margin-bottom: 0; }
+.flosc-admin .card { margin-top: 20px; }
+
+/* ========================================
+   IVR MESSAGES ADMIN
+   Moved from admin/ivr-messages.php v1.7.8
+   ======================================== */
+
+.flosc-phase-section { margin-bottom: 30px; }
+.flosc-phase-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; background: #1d2327; color: #fff;
+    border-radius: 6px 6px 0 0; font-size: 15px; font-weight: 600;
+    position: sticky; top: 32px; z-index: 10;
+}
+.flosc-phase-header .flosc-phase-count {
+    background: rgba(255,255,255,0.2); padding: 2px 10px; border-radius: 10px; font-size: 12px; font-weight: 400;
+}
+.flosc-phase-header .flosc-phase-desc {
+    margin-left: auto; font-size: 12px; font-weight: 400; opacity: 0.7;
+}
+.flosc-msg-card {
+    border: 1px solid #ddd; border-top: none; background: #fff;
+}
+.flosc-msg-card:last-of-type { border-radius: 0 0 6px 6px; }
+.flosc-msg-card-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 16px; cursor: pointer; user-select: none;
+    transition: background 0.15s;
+}
+.flosc-msg-card-header:hover { background: #f0f6fc; }
+.flosc-msg-card-header .flosc-msg-toggle { font-size: 11px; color: #999; transition: transform 0.2s; }
+.flosc-msg-card.is-open .flosc-msg-toggle { transform: rotate(90deg); }
+.flosc-msg-card-header .flosc-msg-name { font-weight: 600; font-size: 14px; }
+.flosc-msg-card-header .flosc-msg-id { font-size: 11px; color: #999; font-family: monospace; }
+.flosc-msg-card-header .flosc-msg-type-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: 500;
+    background: #e8f0fe; color: #1a73e8;
+}
+.flosc-msg-card-header .flosc-msg-type-badge.type-offer { background: #fef3c7; color: #b45309; }
+.flosc-msg-card-header .flosc-msg-type-badge.type-suggested_user_autoprompt { background: #dcfce7; color: #166534; }
+.flosc-msg-card-header .flosc-msg-preview { flex: 1; font-size: 12px; color: #667; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; }
+.flosc-msg-card-header .flosc-msg-delete {
+    font-size: 12px; color: #d63638; text-decoration: none; opacity: 0; transition: opacity 0.15s;
+}
+.flosc-msg-card-header:hover .flosc-msg-delete { opacity: 1; }
+.flosc-msg-editor {
+    display: none; padding: 16px 20px; border-top: 1px solid #eee; background: #fafbfc;
+}
+.flosc-msg-card.is-open .flosc-msg-editor { display: block; }
+.flosc-msg-editor table.form-table th { width: 140px; padding: 8px 10px 8px 0; font-size: 13px; }
+.flosc-msg-editor table.form-table td { padding: 8px 0; }
+.flosc-msg-editor .flosc-offer-fields-inner {
+    background: #f0f4ff; border: 1px solid #c3d6f5; padding: 12px 16px; margin: 8px 0; border-radius: 6px;
+}
+.flosc-add-msg-btn {
+    display: block; width: 100%; padding: 10px; border: 2px dashed #c3c4c7; border-top: none;
+    background: #fafbfc; color: #2271b1; font-size: 13px; font-weight: 500;
+    cursor: pointer; text-align: center; border-radius: 0 0 6px 6px;
+    transition: background 0.15s, color 0.15s;
+}
+.flosc-add-msg-btn:hover { background: #f0f6fc; color: #135e96; }
