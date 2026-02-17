@@ -3,7 +3,7 @@
  * Plugin Name: FLOSC
  * Plugin URI: https://flosc.ai
  * Description: Freeline-Login-Offer-Sale-Content - Quiz-based learning and conversational sales funnel framework
- * Version: 1.8.1
+ * Version: 1.8.2
  * Author: Dainis Michel
  * Author URI: https://dainis.net
  * License: GPL v2 or later
@@ -14,7 +14,7 @@
 if (!defined('ABSPATH')) exit;
 
 // Plugin constants
-define('FLOSC_VERSION', '1.8.3');
+define('FLOSC_VERSION', '1.8.2');
 define('FLOSC_DEBUG', defined('WP_DEBUG') && WP_DEBUG); // TASK-012: Debug mode toggle
 define('FLOSC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('FLOSC_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -642,6 +642,9 @@ The Team',
         if ($score_data && isset($score_data['score'])) {
             // v8.0.3: Store score with quiz_id tracking
             $this->store_quiz_score($user->ID, $score_data);
+
+            // v1.8.4: Fire flosc_quiz_completed so Free Lesson Manager assigns lessons
+            do_action('flosc_quiz_completed', $score_data, $user->ID);
 
             // v07.09: Set justCompletedQuiz flag for IVR
             set_transient('flosc_just_completed_quiz_' . $user->ID, true, MINUTE_IN_SECONDS * 5);
@@ -5193,6 +5196,9 @@ Example good response:
             $score = intval($score_data['score']);
             update_user_meta($user_id, '_flosc_last_quiz_score', $score);
             update_user_meta($user_id, '_flosc_prelogin_score', $score);
+
+            // v1.8.4: Fire flosc_quiz_completed so Free Lesson Manager assigns lessons
+            do_action('flosc_quiz_completed', $score_data, $user_id);
 
             // Store in bridge data if available
             $bridge_manager = FLOSC_Bridge_Data_Manager::instance();

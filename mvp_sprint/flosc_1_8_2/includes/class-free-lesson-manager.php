@@ -102,27 +102,25 @@ class FLOSC_Free_Lesson_Manager {
      * @return array Array of missed lesson numbers
      */
     private function get_missed_lessons($quiz_result) {
-        
-        $missed = [];
-        
-        // Expected format: user answered "4,7,9" when correct answer is "1,2,3,4,5,6,7,8,9,10"
+        // v1.8.4: Check structured incorrect/missed keys first (quiz types can provide these directly)
+        $incorrect = $quiz_result['incorrect'] ?? $quiz_result['missed'] ?? [];
+        if (!empty($incorrect)) {
+            return array_map('intval', array_filter((array)$incorrect, 'is_numeric'));
+        }
+
+        // Fallback: comma-separated number parsing
         $user_answer = $quiz_result['user_answer'] ?? '';
         $correct_answer = $quiz_result['correct_answer'] ?? '1,2,3,4,5,6,7,8,9,10';
-        
-        // Parse answers
-        $user_numbers = array_map('trim', explode(',', $user_answer));
-        $user_numbers = array_filter($user_numbers, 'is_numeric');
-        
-        $correct_numbers = array_map('trim', explode(',', $correct_answer));
-        $correct_numbers = array_filter($correct_numbers, 'is_numeric');
-        
-        // Find missed numbers
+
+        $user_numbers = array_filter(array_map('trim', explode(',', $user_answer)), 'is_numeric');
+        $correct_numbers = array_filter(array_map('trim', explode(',', $correct_answer)), 'is_numeric');
+
+        $missed = [];
         foreach ($correct_numbers as $num) {
             if (!in_array($num, $user_numbers)) {
                 $missed[] = intval($num);
             }
         }
-        
         return $missed;
     }
     

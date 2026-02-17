@@ -448,6 +448,8 @@ html, body {
     position: relative;
     flex-shrink: 0;
     border-top: 1px solid rgba(0, 0, 0, 0.06);
+    /* v1.8.4: Prevent avatar (36px) from being clipped by sidebar overflow:hidden */
+    min-height: 70px;
 }
 
 /* data-show visibility: visitor content vs logged-in content */
