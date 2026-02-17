@@ -81,7 +81,7 @@ class FLOSC_Content_Protection {
             return;
         }
         
-        // v1.8.3: Find posts with any non-"protected" mode (they should be visible in archives)
+        // v1.8.2: Find posts with any non-"protected" mode (they should be visible in archives)
         // This covers: _flosc_protection_mode = full/title_excerpt/title_readmore
         // AND legacy: _flosc_public_post = yes
         $override_post_ids = get_posts([
@@ -239,13 +239,13 @@ class FLOSC_Content_Protection {
     
     /**
      * Get visibility tier for a post
-     * v1.8.3: Check _flosc_protection_mode first (4-tier: protected, title_excerpt, title_readmore, full)
+     * v1.8.2: Check _flosc_protection_mode first (4-tier: protected, title_excerpt, title_readmore, full)
      * 
      * @param int $post_id
      * @return string 'hidden' | 'teaser' | 'preview' | 'public'
      */
     public function get_post_visibility($post_id) {
-        // v1.8.3: Check new 4-tier protection mode
+        // v1.8.2: Check new 4-tier protection mode
         $protection_mode = get_post_meta($post_id, '_flosc_protection_mode', true);
         if ($protection_mode) {
             switch ($protection_mode) {
@@ -284,13 +284,13 @@ class FLOSC_Content_Protection {
     
     /**
      * Check if current user can access a post
-     * v1.8.3: Check _flosc_protection_mode for granular access
+     * v1.8.2: Check _flosc_protection_mode for granular access
      * 
      * @param int $post_id
      * @return bool
      */
     public function user_can_access($post_id) {
-        // v1.8.3: Check 4-tier protection mode — 'full' always accessible
+        // v1.8.2: Check 4-tier protection mode — 'full' always accessible
         $protection_mode = get_post_meta($post_id, '_flosc_protection_mode', true);
         if ($protection_mode === 'full') {
             return true;

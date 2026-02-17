@@ -643,7 +643,7 @@ The Team',
             // v8.0.3: Store score with quiz_id tracking
             $this->store_quiz_score($user->ID, $score_data);
 
-            // v1.8.4: Fire flosc_quiz_completed so Free Lesson Manager assigns lessons
+            // v1.8.2: Fire flosc_quiz_completed so Free Lesson Manager assigns lessons
             do_action('flosc_quiz_completed', $score_data, $user->ID);
 
             // v07.09: Set justCompletedQuiz flag for IVR
@@ -1306,12 +1306,12 @@ The {product_name} Team";
 
     /**
      * v1.4.3: Render the post visibility meta box
-     * v1.8.3: Added 4-tier protection override (protected, title+excerpt, title+readmore, full)
+     * v1.8.2: Added 4-tier protection override (protected, title+excerpt, title+readmore, full)
      */
     public function flosc_render_post_visibility_meta_box($post) {
         wp_nonce_field('flosc_post_visibility_nonce', 'flosc_post_visibility_nonce');
         
-        // v1.8.3: Read protection mode (replaces binary _flosc_public_post)
+        // v1.8.2: Read protection mode (replaces binary _flosc_public_post)
         $protection_mode = get_post_meta($post->ID, '_flosc_protection_mode', true);
         // Backward compat: old _flosc_public_post = 'yes' → 'full'
         if (empty($protection_mode)) {
@@ -1370,7 +1370,7 @@ The {product_name} Team";
 
     /**
      * v1.4.3: Save post visibility meta box data
-     * v1.8.3: Save 4-tier protection mode instead of binary checkbox
+     * v1.8.2: Save 4-tier protection mode instead of binary checkbox
      */
     public function flosc_save_post_visibility_meta($post_id, $post) {
         // Security checks
@@ -1387,7 +1387,7 @@ The {product_name} Team";
             return;
         }
         
-        // v1.8.3: Save protection mode (protected, title_excerpt, title_readmore, full)
+        // v1.8.2: Save protection mode (protected, title_excerpt, title_readmore, full)
         $valid_modes = ['protected', 'title_excerpt', 'title_readmore', 'full'];
         $mode = isset($_POST['flosc_protection_mode']) ? sanitize_text_field($_POST['flosc_protection_mode']) : 'protected';
         if (!in_array($mode, $valid_modes, true)) {
@@ -5197,7 +5197,7 @@ Example good response:
             update_user_meta($user_id, '_flosc_last_quiz_score', $score);
             update_user_meta($user_id, '_flosc_prelogin_score', $score);
 
-            // v1.8.4: Fire flosc_quiz_completed so Free Lesson Manager assigns lessons
+            // v1.8.2: Fire flosc_quiz_completed so Free Lesson Manager assigns lessons
             do_action('flosc_quiz_completed', $score_data, $user_id);
 
             // Store in bridge data if available

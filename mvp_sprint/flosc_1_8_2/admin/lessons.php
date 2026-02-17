@@ -19,10 +19,10 @@
  * - The lessons category IS the protected category (auto-protected on save)
  * - Individual posts can override protection: Title+Excerpt, Title+ReadMore, Full
  * 
- * v1.8.3: Removed redundant "Protected Category" selector — lessons category = protected category
- * v1.8.3: Fixed OTO dropdown not loading offers (missing flow_id)
- * v1.8.3: Moved Speech-to-Text config to AI Configuration tab
- * v1.8.3: Added per-post protection override options
+ * v1.8.2: Removed redundant "Protected Category" selector — lessons category = protected category
+ * v1.8.2: Fixed OTO dropdown not loading offers (missing flow_id)
+ * v1.8.2: Moved Speech-to-Text config to AI Configuration tab
+ * v1.8.2: Added per-post protection override options
  * v1.2.9: Added tab header for flow context
  */
 
@@ -38,17 +38,17 @@ $settings_key = $GLOBALS['flosc_settings_key'] ?? '';
 $categories = get_categories(['hide_empty' => false]);
 $current_category = $flow_settings['lessons_category'] ?? '';
 
-// v1.8.3: Get offers using flow_id so they actually load
+// v1.8.2: Get offers using flow_id so they actually load
 $flow_id_for_offers = $settings_key ? str_replace('flosc_flow_', '', $settings_key) : null;
 $offers = flosc()->sale()->offers()->get_all_offers($flow_id_for_offers);
 $current_oto = $flow_settings['oto_offer_id'] ?? '';
 
-// v1.8.3: Check current protection status (the lessons category)
+// v1.8.2: Check current protection status (the lessons category)
 $lessons_cat_obj = $current_category ? get_term_by('slug', sanitize_title($current_category), 'category') : null;
 $is_currently_protected = $lessons_cat_obj ? (get_term_meta($lessons_cat_obj->term_id, '_flosc_protected', true) === 'yes') : false;
 $current_required_level = $lessons_cat_obj ? get_term_meta($lessons_cat_obj->term_id, '_flosc_required_level', true) : '';
 
-// v1.8.3: Gather offer levels for required-level dropdown
+// v1.8.2: Gather offer levels for required-level dropdown
 $available_levels = [];
 foreach ($offers as $offer) {
     $level = $offer['grants_level'] ?? ($offer['grants']['level'] ?? '');
@@ -96,7 +96,7 @@ foreach ($offers as $offer) {
     </tr>
 </table>
 
-<!-- Content Protection (v1.8.3: simplified — lessons category = protected category) -->
+<!-- Content Protection (v1.8.2: simplified — lessons category = protected category) -->
 <hr style="margin: 40px 0;">
 <h2>Content Protection</h2>
 
@@ -146,7 +146,7 @@ foreach ($offers as $offer) {
         </tr>
     </table>
 
-    <!-- Per-Post Protection Override (v1.8.3) -->
+    <!-- Per-Post Protection Override (v1.8.2) -->
     <h3>Per-Post Protection Overrides</h3>
     <p>Individual posts in this category can selectively disable content protection. Edit a post in the <strong>"<?php echo esc_html($lessons_cat_obj->name); ?>"</strong> category to see the FLOSC Content Access meta box with these options:</p>
     <ul style="list-style: disc; padding-left: 20px; color: #50575e;">

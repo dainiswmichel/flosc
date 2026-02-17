@@ -448,7 +448,7 @@ jQuery(document).ready(function($) {
 });
 </script>
 
-<!-- Speech-to-Text Configuration (v1.8.3: moved from Lessons tab) -->
+<!-- Speech-to-Text Configuration (v1.8.2: moved from Lessons tab) -->
 <hr style="margin: 40px 0;">
 <h2>Speech-to-Text Configuration</h2>
 <p>Configure your speech-to-text provider for audio-based quizzes (Pronunciation, Simple Scoring with audio).</p>

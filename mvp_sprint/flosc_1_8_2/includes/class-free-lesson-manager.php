@@ -102,7 +102,7 @@ class FLOSC_Free_Lesson_Manager {
      * @return array Array of missed lesson numbers
      */
     private function get_missed_lessons($quiz_result) {
-        // v1.8.4: Check structured incorrect/missed keys first (quiz types can provide these directly)
+        // v1.8.2: Check structured incorrect/missed keys first (quiz types can provide these directly)
         $incorrect = $quiz_result['incorrect'] ?? $quiz_result['missed'] ?? [];
         if (!empty($incorrect)) {
             return array_map('intval', array_filter((array)$incorrect, 'is_numeric'));
