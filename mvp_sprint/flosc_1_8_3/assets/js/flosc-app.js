@@ -3815,8 +3815,18 @@ Purchased: ${ctx.purchased}
         localStorage.setItem('flosc_quiz_result', JSON.stringify(quizData));
         
         // Also store via API (sets cookie for server-side access)
-        // v1.8.3: Send correctItems and missedItems arrays so the prelogin cookie
-        // has the actual correct/incorrect data for free lesson selection
+        // v1.8.3: Convert text items to 1-indexed lesson POSITIONS so PHP
+        // get_missed_lessons() receives numeric lesson numbers, not text strings
+        const expected = (this.quiz.expected || []).map(e => e.toLowerCase());
+        const correctPositions = (this.quiz.correctItems || []).map(item => {
+            const idx = expected.indexOf(item);
+            return idx >= 0 ? idx + 1 : null;
+        }).filter(n => n !== null);
+        const missedPositions = (this.quiz.missedItems || []).map(item => {
+            const idx = expected.indexOf(item);
+            return idx >= 0 ? idx + 1 : null;
+        }).filter(n => n !== null);
+
         try {
             await fetch(this.config.apiUrl + '/store-score', {
                 method: 'POST',
@@ -3828,8 +3838,8 @@ Purchased: ${ctx.purchased}
                 body: JSON.stringify({
                     score: result.score,
                     quiz_type: 'sequence',
-                    correct: this.quiz.correctItems || [],
-                    incorrect: this.quiz.missedItems || [],
+                    correct: correctPositions,
+                    incorrect: missedPositions,
                     details: quizData
                 })
             });

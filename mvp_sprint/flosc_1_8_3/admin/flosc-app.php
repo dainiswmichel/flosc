@@ -235,11 +235,11 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
              data-upgrade-label="<?php echo esc_attr($pb_guest['upgrade_label']); ?>">
             <button class="profile-button" id="flosc_profile_button">
                 <!-- Visitor state: emoji avatar -->
-                <div class="profile-avatar visitor-avatar" data-show="visitor">
+                <div class="flosc-profile-avatar profile-avatar visitor-avatar" data-show="visitor">
                     <?php echo esc_html($pb_visitor['icon']); ?>
                 </div>
                 <!-- Guest/Member state: user avatar -->
-                <img src="" alt="" class="profile-avatar" id="flosc_profile_avatar" data-show="logged-in">
+                <img src="" alt="" class="flosc-profile-avatar profile-avatar" id="flosc_profile_avatar" data-show="logged-in">
                 <div class="profile-info">
                     <div class="profile-name" data-show="visitor"><?php echo esc_html($pb_visitor['name']); ?></div>
                     <div class="profile-name" id="flosc_profile_name" data-show="logged-in"></div>
