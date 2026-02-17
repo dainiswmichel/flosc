@@ -1064,7 +1064,29 @@ class floscApp {
             return;
         }
         
-        // Insert text into input field if available, otherwise add directly
+        // v1.8.1: If the IVR message defines an action (e.g. open_free_lesson, open_quiz),
+        // execute it directly instead of sending user_input as a chat message.
+        // Previously, actions only fired in the else branch (when chatInput was missing),
+        // so pills like "View my free lesson!" sent text to the API and got a phase
+        // default response ("Thanks for your interest!") instead of calling openFreeLesson().
+        if (msg.action) {
+            // Show the user's pill text as a chat bubble for visual feedback
+            this.addMessage('user', msg.user_input);
+            this.ivr.messageCount++;
+            this.ivr.lastInteraction = Date.now();
+            
+            // Show the IVR message content, then perform the action
+            const content = this.replaceVariables(msg.content);
+            setTimeout(() => {
+                const el = this.addMessage('assistant', content);
+                if (el && msg.name) el.setAttribute('data-message-name', msg.name);
+                this.performIVRAction(msg.action);
+                this.floscShowUserAutoPrompts();
+            }, 300);
+            return;
+        }
+        
+        // No action defined — send as normal chat message
         if (this.chatInput) {
             this.chatInput.value = msg.user_input;
             this.sendMessage();
@@ -1076,7 +1098,6 @@ class floscApp {
             setTimeout(() => {
                 const el = this.addMessage('assistant', content);
                 if (el && msg.name) el.setAttribute('data-message-name', msg.name);
-                if (msg.action) this.performIVRAction(msg.action);
                 this.floscShowUserAutoPrompts();
             }, 300);
         }
@@ -1959,6 +1980,16 @@ class floscApp {
 
     // v9.3.4: In-Chat Quiz System - Now supports TEXT SEQUENCE and AUDIO types!
     async startInChatQuiz(quizId = 'default') {
+        // v1.8.1: Guard — prevent duplicate quiz starts
+        if (this.quiz?.active) {
+            this.addMessage('assistant', 'You already have a quiz in progress. Please complete it above.');
+            return;
+        }
+        if (this.ivr?.context?.quiz_completed && this.state === 'visitor') {
+            this.addMessage('assistant', 'You\'ve already completed the quiz! Sign up above to see your results.');
+            return;
+        }
+
         this.log('[FLOSC Quiz] Starting in-chat quiz:', quizId);
         
         // Show loading message
@@ -2148,17 +2179,17 @@ class floscApp {
                     <div class="flosc-gate-icon">📊</div>
                     <div class="flosc-gate-title">Your results are ready!</div>
                     <div class="flosc-gate-text">Sign up to see your score and get a personalized free lesson.</div>
-                    <button class="flosc-gate-btn" id="flosc-gate-signup">Sign Up to See Results</button>
+                    <button class="flosc-gate-btn flosc-gate-signup-btn">Sign Up to See Results</button>
                 </div>
             `;
             this.addMessage('assistant', gateHtml, true);
             
-            // Bind signup button
+            // v1.8.1: Bind ALL gate signup buttons (class-based, not id-based)
             setTimeout(() => {
-                const btn = document.getElementById('flosc-gate-signup');
-                if (btn) {
+                document.querySelectorAll('.flosc-gate-signup-btn:not([data-bound])').forEach(btn => {
+                    btn.dataset.bound = 'true';
                     btn.addEventListener('click', () => this.openRegistration());
-                }
+                });
             }, 100);
             
             // Update context for IVR
@@ -2938,8 +2969,10 @@ class floscApp {
     }
 
     async openLessonLibrary() {
-        // Check if user has access
-        if (!this.user?.hasAccess && !this.user?.purchased && this.state !== 'member') {
+        // v1.8.1: Simplified access check — member state is the single source of truth.
+        // Previously used triple-AND (!hasAccess && !purchased && !== 'member') which could
+        // fail when any one flag was stale after purchase.
+        if (this.state !== 'member') {
             this.addMessage('assistant', '🔒 Full lesson access requires membership. Would you like to see our offers?');
             return;
         }
@@ -3053,9 +3086,20 @@ class floscApp {
         window.location.href = this.config.pathUrl || '/my-path/';
     }
 
-    // MTS-2026-02-08: Added to match IVR action open_quiz_library
+    // v1.8.1: Show quiz options in-chat instead of navigating away to /quizzes/
     openQuizLibrary() {
-        window.location.href = this.config.quizzesUrl || '/quizzes/';
+        const quizHtml = `
+            <div class="flosc-quiz-library">
+                <p><strong>Available Quizzes</strong></p>
+                <p>Choose a quiz to test your skills:</p>
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                    <button class="flosc-quiz-result-cta" onclick="window.floscAppInstance.startInChatQuiz('default')">
+                        🎯 Take the Quiz
+                    </button>
+                </div>
+            </div>
+        `;
+        this.addMessage('assistant', quizHtml, true);
     }
 
     resumeLastLesson() {
@@ -3961,6 +4005,9 @@ Purchased: ${ctx.purchased}
             const wasCollapsed = localStorage.getItem('flosc_sidebar_collapsed') === 'true';
             if (wasCollapsed) {
                 this.sidebar.classList.add('collapsed');
+                // v1.8.1: Also set app-level class so header can show sidebar-open button
+                const appContainer = this.sidebar.closest('.flosc-app');
+                if (appContainer) appContainer.classList.add('sidebar-collapsed');
             }
         }
 
@@ -4038,6 +4085,7 @@ Purchased: ${ctx.purchased}
     toggleSidebar() {
         if (this.sidebar) {
             const isMobile = window.innerWidth <= 768;
+            const appContainer = this.sidebar.closest('.flosc-app');
             if (isMobile) {
                 this.sidebar.classList.toggle('open');
                 // Toggle overlay
@@ -4048,6 +4096,11 @@ Purchased: ${ctx.purchased}
             } else {
                 this.sidebar.classList.toggle('collapsed');
                 localStorage.setItem('flosc_sidebar_collapsed', this.sidebar.classList.contains('collapsed'));
+                // v1.8.1: Toggle class on app container so CSS can show the sidebar-open
+                // button in the header when the sidebar is collapsed (ChatGPT/Claude pattern)
+                if (appContainer) {
+                    appContainer.classList.toggle('sidebar-collapsed', this.sidebar.classList.contains('collapsed'));
+                }
             }
         }
     }

@@ -149,10 +149,11 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
                         <path d="M3 21v-5h5"></path>
                     </svg>
                 </button>
-                <button class="flosc_app_sidebar_toggle" id="flosc_app_sidebar_toggle" aria-label="Close sidebar">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                <button class="flosc_app_sidebar_toggle" id="flosc_app_sidebar_toggle" aria-label="Toggle sidebar">
+                    <!-- v1.8.1: Sidebar panel collapse icon (like ChatGPT/Claude) instead of X -->
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="9" y1="3" x2="9" y2="21"></line>
                     </svg>
                 </button>
             </div>
@@ -177,7 +178,7 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
         $profile_bar = get_option('flosc_profile_bar', []);
         $pb_visitor = wp_parse_args($profile_bar['visitor'] ?? [], [
             'name'  => 'Visitor',
-            'badge' => 'Sign in to get started',
+            'badge' => 'Hope you enjoy our chat :-)',
             'icon'  => '👋',
         ]);
         $pb_guest = wp_parse_args($profile_bar['guest'] ?? [], [
@@ -263,11 +264,11 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
         <!-- Header -->
         <header class="flosc-header">
             <div class="header-left">
-                <button class="mobile-menu-btn" id="flosc_app_mobile_menu_button" aria-label="Open menu">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="3" y1="12" x2="21" y2="12"></line>
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                <button class="mobile-menu-btn" id="flosc_app_mobile_menu_button" aria-label="Open sidebar">
+                    <!-- v1.8.1: Sidebar panel icon matches the collapse button in sidebar header -->
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="9" y1="3" x2="9" y2="21"></line>
                     </svg>
                 </button>
                 <div class="logo-mobile">

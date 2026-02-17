@@ -379,7 +379,7 @@ Get **{product_name}** for just **{discount_price}**
 This is your lowest price. After the timer expires, price goes to {price}.
 
 Ready to unlock your full potential?
-MessageConditions: is_guest && (lesson_viewed || quiz_taken)
+MessageConditions: is_guest && quiz_results_shown && lesson_viewed
 
 ## Post-Quiz Offer
 MessageName: post_quiz_offer_001
@@ -388,7 +388,7 @@ OfferID: full_access
 DisplayFormat: card
 Icon: 🎯
 MessageContent: Great job completing the quiz! Based on your results, here's a personalized offer to continue your learning journey.
-MessageConditions: is_guest && quiz_taken && quiz_results_shown
+MessageConditions: is_guest && quiz_results_shown && !lesson_viewed
 
 ## Timed Offer — 177 Seconds
 MessageName: timed_offer_177s

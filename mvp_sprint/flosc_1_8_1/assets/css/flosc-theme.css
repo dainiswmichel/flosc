@@ -298,7 +298,13 @@
 .user-profile-bar .profile-avatar {
     background: var(--flosc-accent);
     color: #ffffff;
-    box-shadow: 0 0 0 2px var(--flosc-sidebar-bg), 0 0 0 3px var(--flosc-accent);
+}
+
+/* v1.8.1: Visitor avatar — no circle, no ring, just the emoji */
+.user-profile-bar .profile-avatar.visitor-avatar {
+    background: transparent;
+    color: inherit;
+    box-shadow: none;
 }
 
 .user-profile-bar .profile-name {

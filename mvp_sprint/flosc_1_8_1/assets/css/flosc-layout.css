@@ -348,6 +348,7 @@ html, body {
 }
 
 .user-profile-bar {
+    margin-top: auto; /* v1.8.1: Always push to bottom of sidebar */
     padding: 8px;
     display: flex;
     flex-direction: column;
@@ -402,9 +403,8 @@ html, body {
 }
 
 .profile-avatar.visitor-avatar {
-    background: linear-gradient(135deg, var(--flosc-primary, #4f46e5) 0%, var(--flosc-primary-dark, #7c3aed) 100%);
-    color: var(--flosc-on-primary, #ffffff);
-    font-size: 18px;
+    background: transparent;
+    font-size: 20px;
 }
 
 .flosc-user-info,
@@ -567,6 +567,11 @@ html, body {
     .mobile-menu-btn {
         display: flex;
     }
+}
+
+/* v1.8.1: On desktop, show sidebar-open button when sidebar is collapsed (ChatGPT/Claude pattern) */
+.flosc-app.sidebar-collapsed .mobile-menu-btn {
+    display: flex;
 }
 
 /* v1.8.0: Hide mobile logo on desktop (sidebar already shows branding) */
@@ -1288,6 +1293,12 @@ html, body {
         transform: translateX(-100%);
         width: 280px;
         height: 100vh;
+    }
+
+    /* v1.8.1: Account for WP admin bar on mobile */
+    .admin-bar .flosc-sidebar {
+        top: 46px;
+        height: calc(100vh - 46px);
     }
 
     .flosc-sidebar.open {
