@@ -447,3 +447,44 @@ jQuery(document).ready(function($) {
     });
 });
 </script>
+
+<!-- Speech-to-Text Configuration (v1.8.3: moved from Lessons tab) -->
+<hr style="margin: 40px 0;">
+<h2>Speech-to-Text Configuration</h2>
+<p>Configure your speech-to-text provider for audio-based quizzes (Pronunciation, Simple Scoring with audio).</p>
+
+<table class="form-table">
+    <tr>
+        <th scope="row"><label for="flow_stt_provider">STT Provider</label></th>
+        <td>
+            <select name="flow_stt_provider" id="flow_stt_provider">
+                <option value="assemblyai" <?php selected($flow_settings['stt_provider'] ?? '', 'assemblyai'); ?>>AssemblyAI</option>
+                <option value="openai" <?php selected($flow_settings['stt_provider'] ?? '', 'openai'); ?>>OpenAI Whisper</option>
+                <option value="deepgram" <?php selected($flow_settings['stt_provider'] ?? '', 'deepgram'); ?>>Deepgram</option>
+                <option value="custom" <?php selected($flow_settings['stt_provider'] ?? '', 'custom'); ?>>Custom</option>
+            </select>
+            <p class="description">Choose your speech-to-text provider for transcribing audio recordings.</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_assemblyai_api_key">AssemblyAI API Key</label></th>
+        <td>
+            <input type="password" id="flow_assemblyai_api_key" name="flow_assemblyai_api_key" value="<?php echo esc_attr($flow_settings['assemblyai_api_key'] ?? ''); ?>" class="regular-text">
+            <p class="description">Get your key at <a href="https://www.assemblyai.com/" target="_blank">assemblyai.com</a></p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_deepgram_api_key">Deepgram API Key</label></th>
+        <td>
+            <input type="password" id="flow_deepgram_api_key" name="flow_deepgram_api_key" value="<?php echo esc_attr($flow_settings['deepgram_api_key'] ?? ''); ?>" class="regular-text">
+            <p class="description">Get your key at <a href="https://www.deepgram.com/" target="_blank">deepgram.com</a></p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_custom_stt_endpoint">Custom STT Endpoint</label></th>
+        <td>
+            <input type="url" id="flow_custom_stt_endpoint" name="flow_custom_stt_endpoint" value="<?php echo esc_attr($flow_settings['custom_stt_endpoint'] ?? ''); ?>" class="regular-text">
+            <p class="description">URL for your self-hosted STT endpoint (for "Custom" provider)</p>
+        </td>
+    </tr>
+</table>

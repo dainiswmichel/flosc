@@ -14,7 +14,7 @@
 if (!defined('ABSPATH')) exit;
 
 // Plugin constants
-define('FLOSC_VERSION', '1.8.2');
+define('FLOSC_VERSION', '1.8.3');
 define('FLOSC_DEBUG', defined('WP_DEBUG') && WP_DEBUG); // TASK-012: Debug mode toggle
 define('FLOSC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('FLOSC_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -1303,11 +1303,18 @@ The {product_name} Team";
 
     /**
      * v1.4.3: Render the post visibility meta box
+     * v1.8.3: Added 4-tier protection override (protected, title+excerpt, title+readmore, full)
      */
     public function flosc_render_post_visibility_meta_box($post) {
         wp_nonce_field('flosc_post_visibility_nonce', 'flosc_post_visibility_nonce');
         
-        $is_public_override = get_post_meta($post->ID, '_flosc_public_post', true) === 'yes';
+        // v1.8.3: Read protection mode (replaces binary _flosc_public_post)
+        $protection_mode = get_post_meta($post->ID, '_flosc_protection_mode', true);
+        // Backward compat: old _flosc_public_post = 'yes' → 'full'
+        if (empty($protection_mode)) {
+            $is_public_override = get_post_meta($post->ID, '_flosc_public_post', true) === 'yes';
+            $protection_mode = $is_public_override ? 'full' : 'protected';
+        }
         
         // Find the protected category name for display
         $categories = wp_get_post_categories($post->ID);
@@ -1323,17 +1330,35 @@ The {product_name} Team";
         <style>
             .flosc-post-visibility-meta-box .flosc-description { color: #666; font-size: 12px; margin-top: 4px; }
             .flosc-post-visibility-meta-box .flosc-protected-notice { background: #fff3cd; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-size: 12px; }
+            .flosc-post-visibility-meta-box .flosc-protection-options label { display: block; margin: 6px 0; padding: 6px 8px; border-radius: 4px; cursor: pointer; }
+            .flosc-post-visibility-meta-box .flosc-protection-options label:hover { background: #f0f0f1; }
+            .flosc-post-visibility-meta-box .flosc-protection-options .option-desc { color: #666; font-size: 11px; display: block; margin-left: 22px; }
         </style>
         <div class="flosc-post-visibility-meta-box">
             <div class="flosc-protected-notice">
                 🔒 Protected by FLOSC category: <strong><?php echo esc_html($protected_cat_name); ?></strong>
             </div>
-            <p class="flosc-description">This post is hidden from public view because it belongs to a FLOSC-protected category.</p>
             
-            <div style="margin-top: 12px;">
+            <div class="flosc-protection-options" style="margin-top: 10px;">
                 <label>
-                    <input type="checkbox" name="flosc_public_post" value="yes" <?php checked($is_public_override); ?>>
-                    Override FLOSC category content protection and show the post in accordance with its WordPress settings.
+                    <input type="radio" name="flosc_protection_mode" value="protected" <?php checked($protection_mode, 'protected'); ?>>
+                    <strong>Protected</strong>
+                    <span class="option-desc">Full FLOSC protection. Non-members see nothing.</span>
+                </label>
+                <label>
+                    <input type="radio" name="flosc_protection_mode" value="title_excerpt" <?php checked($protection_mode, 'title_excerpt'); ?>>
+                    <strong>Show Title &amp; Excerpt</strong>
+                    <span class="option-desc">Non-members see the title and excerpt only.</span>
+                </label>
+                <label>
+                    <input type="radio" name="flosc_protection_mode" value="title_readmore" <?php checked($protection_mode, 'title_readmore'); ?>>
+                    <strong>Show Title &amp; Content through Read More</strong>
+                    <span class="option-desc">Non-members see content before the &lt;!--more--&gt; tag.</span>
+                </label>
+                <label>
+                    <input type="radio" name="flosc_protection_mode" value="full" <?php checked($protection_mode, 'full'); ?>>
+                    <strong>Full Post (Public)</strong>
+                    <span class="option-desc">Disable FLOSC protection. Show per WordPress settings.</span>
                 </label>
             </div>
         </div>
@@ -1342,6 +1367,7 @@ The {product_name} Team";
 
     /**
      * v1.4.3: Save post visibility meta box data
+     * v1.8.3: Save 4-tier protection mode instead of binary checkbox
      */
     public function flosc_save_post_visibility_meta($post_id, $post) {
         // Security checks
@@ -1358,9 +1384,17 @@ The {product_name} Team";
             return;
         }
         
-        // v1.4.7: Simplified — just a public override checkbox
-        $is_public = isset($_POST['flosc_public_post']) && $_POST['flosc_public_post'] === 'yes';
-        if ($is_public) {
+        // v1.8.3: Save protection mode (protected, title_excerpt, title_readmore, full)
+        $valid_modes = ['protected', 'title_excerpt', 'title_readmore', 'full'];
+        $mode = isset($_POST['flosc_protection_mode']) ? sanitize_text_field($_POST['flosc_protection_mode']) : 'protected';
+        if (!in_array($mode, $valid_modes, true)) {
+            $mode = 'protected';
+        }
+        
+        update_post_meta($post_id, '_flosc_protection_mode', $mode);
+        
+        // Backward compat: also update _flosc_public_post for existing code that checks it
+        if ($mode === 'full') {
             update_post_meta($post_id, '_flosc_public_post', 'yes');
         } else {
             delete_post_meta($post_id, '_flosc_public_post');

@@ -81,15 +81,28 @@ class FLOSC_Content_Protection {
             return;
         }
         
-        // Find posts in protected categories that have the public override
+        // v1.8.3: Find posts with any non-"protected" mode (they should be visible in archives)
+        // This covers: _flosc_protection_mode = full/title_excerpt/title_readmore
+        // AND legacy: _flosc_public_post = yes
         $override_post_ids = get_posts([
             'post_type'      => 'post',
             'post_status'    => 'publish',
             'posts_per_page' => -1,
             'fields'         => 'ids',
-            'meta_key'       => '_flosc_public_post',
-            'meta_value'     => 'yes',
             'category__in'   => $protected_cat_ids,
+            'meta_query'     => [
+                'relation' => 'OR',
+                [
+                    'key'     => '_flosc_public_post',
+                    'value'   => 'yes',
+                    'compare' => '=',
+                ],
+                [
+                    'key'     => '_flosc_protection_mode',
+                    'value'   => 'protected',
+                    'compare' => '!=',
+                ],
+            ],
         ]);
         
         // Exclude protected categories from the query
@@ -226,14 +239,35 @@ class FLOSC_Content_Protection {
     
     /**
      * Get visibility tier for a post
+     * v1.8.3: Check _flosc_protection_mode first (4-tier: protected, title_excerpt, title_readmore, full)
      * 
      * @param int $post_id
      * @return string 'hidden' | 'teaser' | 'preview' | 'public'
      */
     public function get_post_visibility($post_id) {
-        // First check post meta override
-        $visibility = get_post_meta($post_id, '_flosc_post_visibility', true);
+        // v1.8.3: Check new 4-tier protection mode
+        $protection_mode = get_post_meta($post_id, '_flosc_protection_mode', true);
+        if ($protection_mode) {
+            switch ($protection_mode) {
+                case 'full':
+                    return 'public';
+                case 'title_excerpt':
+                    return 'teaser';
+                case 'title_readmore':
+                    return 'preview';
+                case 'protected':
+                    // Fall through to category check below
+                    break;
+            }
+        }
         
+        // Legacy: check old _flosc_public_post override
+        if (get_post_meta($post_id, '_flosc_public_post', true) === 'yes') {
+            return 'public';
+        }
+        
+        // Legacy: check old _flosc_post_visibility override
+        $visibility = get_post_meta($post_id, '_flosc_post_visibility', true);
         if ($visibility && in_array($visibility, ['hidden', 'teaser', 'preview', 'public'])) {
             return $visibility;
         }
@@ -242,22 +276,27 @@ class FLOSC_Content_Protection {
         $protection = $this->check_post_protection($post_id);
         
         if ($protection['protected']) {
-            // Protected category, default to hidden
             return 'hidden';
         }
         
-        // Not protected, public by default
         return 'public';
     }
     
     /**
      * Check if current user can access a post
+     * v1.8.3: Check _flosc_protection_mode for granular access
      * 
      * @param int $post_id
      * @return bool
      */
     public function user_can_access($post_id) {
-        // v1.4.3: Public posts are always accessible
+        // v1.8.3: Check 4-tier protection mode — 'full' always accessible
+        $protection_mode = get_post_meta($post_id, '_flosc_protection_mode', true);
+        if ($protection_mode === 'full') {
+            return true;
+        }
+        
+        // v1.4.3: Legacy public posts are always accessible
         if (get_post_meta($post_id, '_flosc_public_post', true) === 'yes') {
             return true;
         }
