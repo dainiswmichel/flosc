@@ -11,7 +11,9 @@ class FLOSC_AI_Provider_Factory {
     private $provider;
 
     public function __construct() {
-        $this->provider = get_option('flosc_ai_provider', 'ivr');
+        // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves),
+        // then falls back to global options
+        $this->provider = flosc_get_setting('ai_provider', 'ivr');
     }
 
     /**
@@ -52,11 +54,12 @@ class FLOSC_AI_Provider_Factory {
      * v1.4.1: Build AI identity from Knowledge tab settings
      */
     private function build_identity_prompt($context = []) {
-        $name = get_option('flosc_ai_personality_name', get_option('flosc_product_name', 'FLOSC'));
-        $role = get_option('flosc_ai_personality_role', 'AI assistant');
-        $traits = get_option('flosc_ai_personality_traits', 'Helpful, friendly, and professional.');
-        $mission = get_option('flosc_ai_mission', 'Help users achieve their goals.');
-        $boundaries = get_option('flosc_ai_boundaries', '');
+        // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
+        $name = flosc_get_setting('ai_personality_name', flosc_get_setting('product_name', 'FLOSC'));
+        $role = flosc_get_setting('ai_personality_role', 'AI assistant');
+        $traits = flosc_get_setting('ai_personality_traits', 'Helpful, friendly, and professional.');
+        $mission = flosc_get_setting('ai_mission', 'Help users achieve their goals.');
+        $boundaries = flosc_get_setting('ai_boundaries', '');
 
         $prompt = "# Your Identity\n\n";
         $prompt .= "You are **{$name}**, a {$role}.\n\n";
@@ -86,7 +89,7 @@ class FLOSC_AI_Provider_Factory {
 
         // Access-level specific instructions
         if (!$logged_in) {
-            $freeline_rules = get_option('flosc_ai_freeline_restrictions', '');
+            $freeline_rules = flosc_get_setting('ai_freeline_restrictions', '');
             $prompt .= "## Current Phase: FREELINE (Visitor)\n";
             $prompt .= "The user is NOT logged in. Your primary goals:\n";
             $prompt .= "- Build rapport and answer their questions\n";
@@ -96,7 +99,7 @@ class FLOSC_AI_Provider_Factory {
                 $prompt .= "\n### Access Rules\n" . $freeline_rules;
             }
         } else {
-            $member_rules = get_option('flosc_ai_member_access', '');
+            $member_rules = flosc_get_setting('ai_member_access', '');
             $prompt .= "## Current Phase: MEMBER (Logged In)\n";
             $prompt .= "The user is logged in. Your primary goals:\n";
             $prompt .= "- Provide personalized guidance based on their progress\n";
@@ -297,7 +300,8 @@ class FLOSC_AI_Provider_Factory {
      * OpenAI GPT-4o-mini
      */
     private function openai_request($message, $system_prompt, $context = [], $test_mode = false) {
-        $api_key = get_option('flosc_openai_api_key', '');
+        // v1.9.0: Use flosc_get_setting() — reads flow settings first
+        $api_key = flosc_get_setting('openai_api_key', '');
 
         if (empty($api_key)) {
             if ($test_mode) {
@@ -392,7 +396,8 @@ class FLOSC_AI_Provider_Factory {
      * Anthropic Claude
      */
     private function anthropic_request($message, $system_prompt, $context = [], $test_mode = false) {
-        $api_key = get_option('flosc_anthropic_api_key', '');
+        // v1.9.0: Use flosc_get_setting() — reads flow settings first
+        $api_key = flosc_get_setting('anthropic_api_key', '');
 
         if (empty($api_key)) {
             if ($test_mode) {
@@ -488,7 +493,8 @@ class FLOSC_AI_Provider_Factory {
      * xAI Grok
      */
     private function xai_request($message, $system_prompt, $context = [], $test_mode = false) {
-        $api_key = get_option('flosc_xai_api_key', '');
+        // v1.9.0: Use flosc_get_setting() — reads flow settings first
+        $api_key = flosc_get_setting('xai_api_key', '');
 
         if (empty($api_key)) {
             if ($test_mode) {

@@ -11,7 +11,8 @@ class FLOSC_STT_Provider_Factory {
     private $provider;
     
     public function __construct() {
-        $this->provider = get_option('flosc_stt_provider', 'assemblyai');
+        // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
+        $this->provider = flosc_get_setting('stt_provider', 'assemblyai');
     }
     
     /**
@@ -146,7 +147,8 @@ class FLOSC_STT_Provider_Factory {
      * Cost: ~$0.006/minute = $0.001 per 10s recording
      */
     private function openai_whisper_transcribe($audio_path, $options = []) {
-        $api_key = get_option('flosc_openai_api_key', '');
+        // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
+        $api_key = flosc_get_setting('openai_api_key', '');
         
         if (empty($api_key)) {
             return new WP_Error('no_api_key', 'OpenAI API key not configured');

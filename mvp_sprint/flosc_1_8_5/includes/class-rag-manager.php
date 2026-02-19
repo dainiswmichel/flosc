@@ -2,23 +2,24 @@
 /**
  * FLOSC RAG Manager
  * Retrieval Augmented Generation - AI search tools
- * 
+ *
  * STATUS: ✅ WORDPRESS SEARCH FUNCTIONAL | ⚙️ AI INTEGRATION OPTIONAL
- * 
+ *
  * FULLY FUNCTIONAL:
- * - search_posts() searches flosc_sample_data category ✅
+ * - search_posts() searches flow's configured WP category ✅
  * - Searches by lesson number (1-10) or keywords ✅
  * - Filters by access level (visitor/guest/member) ✅
  * - Returns post title, excerpt, URL ✅
- * 
+ *
  * OPTIONAL (Requires AI API):
  * - search_knowledge_base() for markdown files ⚙️
  * - get_lesson_content() for full post delivery ⚙️
  * - AI tool calling via Anthropic Claude API ⚙️
- * 
+ *
  * NOTE: WordPress search works WITHOUT AI configured!
- * 
+ *
  * @since 9.1.6
+ * @since 1.9.0 Dynamic category ID (no longer hardcoded flosc_sample_data)
  */
 
 if (!defined('ABSPATH')) exit;
@@ -107,19 +108,20 @@ class FLOSC_RAG_Manager {
     
     /**
      * Execute a tool call from the AI
-     * 
+     *
      * @param string $tool_name
      * @param array $input Tool parameters
      * @param string $access_level User's access level
+     * @param int $category_id WordPress category ID for the flow (0 for none)
      * @return string Tool result
      */
-    public function execute_tool($tool_name, $input, $access_level) {
-        
+    public function execute_tool($tool_name, $input, $access_level, $category_id = 0) {
+
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-            error_log("FLOSC RAG: Executing tool '{$tool_name}' for access level '{$access_level}'");
+            error_log("FLOSC RAG: Executing tool '{$tool_name}' for access level '{$access_level}' in category '{$category_id}'");
             error_log("FLOSC RAG: Input - " . json_encode($input));
         }
-        
+
         try {
             switch ($tool_name) {
                 case 'search_knowledge_base':
@@ -128,19 +130,20 @@ class FLOSC_RAG_Manager {
                         $access_level,
                         $input['category'] ?? 'all'
                     );
-                    
+
                 case 'search_posts':
                     return $this->search_posts(
                         $input['keywords'],
                         $input['limit'] ?? 5,
-                        $access_level
+                        $access_level,
+                        $category_id
                     );
-                    
+
                 case 'get_lesson_content':
                     $lesson_num = $input['lesson_number'] ?? null;
                     $post_id = $input['post_id'] ?? null;
                     return $this->get_lesson_content($lesson_num, $post_id, $access_level);
-                    
+
                 default:
                     return "Unknown tool: {$tool_name}";
             }
@@ -214,22 +217,27 @@ class FLOSC_RAG_Manager {
     }
     
     /**
-     * Search WordPress posts in flosc_sample_data category
-     * 
+     * Search WordPress posts in flow's configured category
+     *
      * @param string $keywords
      * @param int $limit
      * @param string $access_level
+     * @param int $category_id WordPress category ID (0 for all categories)
      * @return string
      */
-    private function search_posts($keywords, $limit, $access_level) {
-        
-        // Search posts in 'flosc_sample_data' category
+    private function search_posts($keywords, $limit, $access_level, $category_id = 0) {
+
+        // Build search args
         $args = [
             's' => $keywords,
             'posts_per_page' => $limit,
-            'post_status' => 'publish',
-            'category_name' => 'flosc_sample_data'
+            'post_status' => 'publish'
         ];
+
+        // Add category filter if specified
+        if ($category_id > 0) {
+            $args['cat'] = $category_id;
+        }
         
         // Also support searching by lesson number (e.g., "1", "2", "10")
         if (is_numeric($keywords) && $keywords >= 1 && $keywords <= 10) {

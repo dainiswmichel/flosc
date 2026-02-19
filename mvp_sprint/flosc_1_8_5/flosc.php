@@ -114,6 +114,12 @@ class FLOSC_Framework {
         require_once FLOSC_PLUGIN_DIR . 'includes/class-quiz-manager.php'; // v1.0.2 - external quiz integration
         require_once FLOSC_PLUGIN_DIR . 'includes/class-flow-manager.php'; // v1.2.2 - multi-flow system
 
+        // v1.9.0 - Unified AI architecture with enforceable structure
+        require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-user-session.php';
+        require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-rag-chat-handler.php';
+        require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-rag-access-controller.php';
+        require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-response-validator.php';
+
         // SALE system
         require_once FLOSC_PLUGIN_DIR . 'includes/sale/class-sale-manager.php';
 
@@ -204,6 +210,9 @@ class FLOSC_Framework {
 
         // v1.5.0: SSO connection test AJAX (inline diagnostics — no popups)
         add_action('wp_ajax_flosc_test_sso_connection', [$this, 'ajax_test_sso_connection']);
+
+        // v1.9.0: AI connection test AJAX
+        add_action('wp_ajax_flosc_test_ai_connection', [$this, 'ajax_test_ai_connection']);
 
         // v1.4.3: Post visibility meta box
         add_action('add_meta_boxes', [$this, 'flosc_add_post_visibility_meta_box']);
@@ -3208,48 +3217,57 @@ The {product_name} Team";
         $response_message = $this->find_ivr_response($phase, $message, $eval_context, $ivr_config);
         
         if (!$response_message) {
-            // v1.4.1: No IVR match - fall back to AI if configured
-            $ai_provider = get_option('flosc_ai_provider', 'ivr');
-            
+            // v1.9.0: No IVR match - fall back to FULL RAG HANDLER (not crippled AI)
+            // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves),
+            // then falls back to global options
+            $ai_provider = flosc_get_setting('ai_provider', 'ivr');
+
             if ($ai_provider !== 'ivr' && $this->ai_factory) {
-                // Build AI context
-                $ai_context = [
-                    'phase' => $phase,
-                    'logged_in' => $eval_context['logged_in'],
-                    'user_name' => $eval_context['user_name'] ?? 'there',
-                    'message_count' => $eval_context['message_count'],
-                ];
-                
-                // Build system prompt with IVR context
-                $system_prompt = $this->ai_factory->build_system_prompt($phase, $ai_context);
-                
-                // Add IVR personality/context to prompt if available
-                if (!empty($ivr_config['personality'])) {
-                    $system_prompt .= "\n\n## Personality\n" . $ivr_config['personality'];
-                }
-                
-                // Get AI response
-                $ai_response = $this->ai_factory->get_response($message, $system_prompt);
-                
-                if ($ai_response && !is_wp_error($ai_response)) {
-                    $response_message = [
-                        'content' => $ai_response,
-                        'user_autoprompts' => [],
-                        'phase_change' => null,
-                    ];
+                // v1.9.0: Build FLOSC User Session (single source of truth)
+                $flosc_user_id = $eval_context['user_id'] ?? 0;
+                $flosc_user_session = new FLOSC_User_Session($flosc_user_id, $flow_id);
+
+                // v1.9.0: Use RAG handler with tools + memory (not crippled 500-token AI)
+                if (class_exists('FLOSC_RAG_Chat_Handler')) {
+                    $flosc_rag_handler = new FLOSC_RAG_Chat_Handler();
+                    $flosc_rag_response = $flosc_rag_handler->flosc_handle_with_state($message, $flosc_user_session, $session_id);
+
+                    if ($flosc_rag_response && !is_wp_error($flosc_rag_response)) {
+                        $response_message = [
+                            'content' => $flosc_rag_response['content'] ?? $flosc_rag_response,
+                            'user_autoprompts' => $flosc_rag_response['user_autoprompts'] ?? [],
+                            'phase_change' => null,
+                        ];
+                    } else {
+                        // RAG failed - use generic fallback
+                        $response_message = [
+                            'content' => 'I apologize, but I\'m having trouble responding right now. Please try again or ask a different question.',
+                            'user_autoprompts' => [],
+                            'phase_change' => null,
+                        ];
+                    }
                 } else {
-                    // AI failed - use generic fallback
+                    // Fallback to old AI if RAG not available
+                    $ai_context = [
+                        'phase' => $phase,
+                        'logged_in' => $eval_context['logged_in'],
+                        'user_name' => $eval_context['user_name'] ?? 'there',
+                        'message_count' => $eval_context['message_count'],
+                    ];
+                    $system_prompt = $this->ai_factory->build_system_prompt($phase, $ai_context);
+                    $ai_response = $this->ai_factory->get_response($message, $system_prompt);
+
                     $response_message = [
-                        'content' => 'I apologize, but I\'m having trouble responding right now. Please try again or ask a different question.',
+                        'content' => $ai_response ?: 'I apologize, but I\'m having trouble responding right now.',
                         'user_autoprompts' => [],
                         'phase_change' => null,
                     ];
                 }
             } else {
-                // IVR mode or no AI - generic fallback
+                // IVR mode or no AI - use phase default + autoprompts
                 $response_message = [
-                    'content' => 'Thanks for your message! How can I help further?',
-                    'user_autoprompts' => [],
+                    'content' => $this->get_phase_default_response($phase, $eval_context),
+                    'user_autoprompts' => $this->get_user_autoprompts_for_phase($phase, $eval_context, $ivr_config),
                     'phase_change' => null,
                 ];
             }
@@ -3548,11 +3566,11 @@ You are a GUIDE, not a teacher. Your job is to:
         }
         
         // AI Provider
-        $ai_provider = get_option('flosc_ai_provider', 'openai');
+        $ai_provider = flosc_get_setting('ai_provider', 'ivr');
         $output .= "**AI Provider:** {$ai_provider}\n";
         
         // STT Provider
-        $stt_provider = get_option('flosc_stt_provider', 'whisper');
+        $stt_provider = flosc_get_setting('stt_provider', 'assemblyai');
         $output .= "**STT Provider:** {$stt_provider}\n\n";
         
         // User counts
@@ -3812,13 +3830,14 @@ Example good response:
     private function call_ai_with_rag($message, $system_prompt, $tools, $user_context) {
         
         // Get AI configuration
-        $api_key = get_option('flosc_anthropic_api_key', '');
+        // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
+        $api_key = flosc_get_setting('anthropic_api_key', '');
         
         if (empty($api_key)) {
             return "AI not configured. Please add your Anthropic API key in settings.";
         }
         
-        $model = get_option('flosc_ai_model', 'claude-sonnet-4-5-20250929');
+        $model = flosc_get_setting('ai_model', 'claude-sonnet-4-5-20250929');
         
         // PSEUDOCODE: Conversation loop for tool calling
         // This allows AI to make multiple tool calls
@@ -4273,12 +4292,9 @@ Example good response:
             }
         }
         
-        // If no match, return a default response for the phase
-        return [
-            'content' => $this->get_phase_default_response($phase, $context),
-            'user_autoprompts' => $this->get_user_autoprompts_for_phase($phase, $context, $ivr_config),
-            'phase_change' => null,
-        ];
+        // v1.9.0: No IVR match — return null so AI fallback path activates in handle_chat()
+        // When ai_provider is 'ivr', handle_chat() will use get_phase_default_response() as last resort
+        return null;
     }
     
     /**
@@ -5957,7 +5973,8 @@ Example good response:
         $start_time = microtime(true);
         $test_message = "Hello, this is a connection test. Please respond with 'Connection successful'.";
 
-        $provider = get_option('flosc_ai_provider', 'ivr');
+        // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
+        $provider = flosc_get_setting('ai_provider', 'ivr');
 
         try {
             // Build AI context for freeline phase (simplest phase)
@@ -5992,6 +6009,36 @@ Example good response:
                 'success' => false,
                 'message' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * v1.9.0: AJAX handler for AI connection test button in admin
+     * Wraps handle_test_ai() for wp_ajax context
+     */
+    public function ajax_test_ai_connection() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Unauthorized'], 403);
+        }
+
+        check_ajax_referer('flosc_test_ai', 'nonce');
+
+        // Use handle_test_ai with a fake request object
+        $request = new WP_REST_Request();
+        $response = $this->handle_test_ai($request);
+        $data = $response->get_data();
+
+        if (!empty($data['success'])) {
+            wp_send_json_success([
+                'provider' => $data['provider'] ?? 'unknown',
+                'response' => $data['ai_response'] ?? '',
+                'response_time' => $data['response_time'] ?? 0,
+            ]);
+        } else {
+            wp_send_json_error([
+                'message' => $data['message'] ?? 'Connection failed',
+                'provider' => $data['provider'] ?? 'unknown',
+            ]);
         }
     }
 

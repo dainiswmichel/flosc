@@ -58,72 +58,151 @@ $enable_content_access = $flow_settings['ai_enable_content_access'] ?? true;
 $ai_response_mode = $flow_settings['ai_response_mode'] ?? 'enhanced'; // 'strict' or 'enhanced'
 ?>
 
-<h2>AI Configuration</h2>
-<p class="description">Configure your AI assistant's connection to providers, content, and FLOSC framework.</p>
+<h2>🤖 AI Configuration</h2>
+<p class="description" style="font-size: 14px; margin-bottom: 20px;">
+    Connect your FLOSC flow to AI providers (OpenAI, Anthropic, xAI) or use IVR-only mode (scripted responses, no API costs).
+</p>
 
-<div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 20px;">
-    <strong>⚠️ Development Status:</strong> Basic AI provider connections are functional. Advanced features (IVR context injection, content access, provider chaining) are marked <strong>[BACKEND NEEDED]</strong> and require additional development.
+<!-- Quick Start Guide -->
+<div style="background: #e7f3ff; border-left: 4px solid #0073aa; padding: 20px; margin-bottom: 30px;">
+    <h3 style="margin-top: 0; color: #0073aa;">📋 Quick Start Guide</h3>
+    <ol style="margin: 15px 0; padding-left: 20px; line-height: 1.8;">
+        <li><strong>Choose your AI provider</strong> below (or keep "IVR" for scripted mode)</li>
+        <li><strong>Get your API key</strong> by clicking the provider's link in the corresponding section</li>
+        <li><strong>Paste your API key</strong> into the password field</li>
+        <li><strong>Click "Test Connection"</strong> to verify it works</li>
+        <li><strong>Customize your AI's personality</strong> in the Base System Prompt (optional)</li>
+        <li><strong>Save Settings</strong> at the bottom of this page</li>
+    </ol>
+    <p style="margin-bottom: 0; color: #555;">
+        💡 <strong>Tip:</strong> Start with <strong>Anthropic (Claude)</strong> for best FLOSC integration, or use <strong>IVR</strong> if you want zero API costs.
+    </p>
+</div>
+
+<div style="background: #e7f3ff; border-left: 4px solid #0073aa; padding: 15px; margin-bottom: 30px;">
+    <strong>💡 How It Works:</strong> When you select an AI provider and add your API key, FLOSC automatically injects IVR context, enforces content boundaries, and enables conversational AI — all guided by your IVR configuration. The settings below let you fine-tune this behavior.
 </div>
 
 <!-- ============================================ -->
 <!-- SECTION 1: PROVIDER CONNECTION [READY] -->
 <!-- ============================================ -->
-<h3>AI Provider Connection</h3>
-
-<!-- Connection Test -->
-<div class="card" style="max-width: 800px; margin-bottom: 20px;">
-    <h3>Test AI Connection</h3>
-    <p class="description">Verify that your AI provider is configured correctly and responding.</p>
-    <button type="button" id="test-ai-connection" class="button button-large">Test Connection</button>
-    <div id="test-results" style="margin-top: 15px; display: none;">
-        <div id="test-status"></div>
-        <div id="test-details" style="margin-top: 10px; padding: 10px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px; white-space: pre-wrap;"></div>
-    </div>
-    <div id="test-loading" style="margin-top: 15px; display: none;">
-        <span class="spinner is-active" style="float: none; margin-right: 10px;"></span>
-        Testing connection...
-    </div>
-</div>
+<h3 style="border-bottom: 2px solid #0073aa; padding-bottom: 10px; margin-bottom: 20px;">
+    🔌 Step 1: Choose Your AI Provider
+</h3>
 
 <table class="form-table">
     <tr>
         <th scope="row"><label for="flow_ai_provider">Primary AI Provider</label></th>
         <td>
-            <select name="flow_ai_provider" id="flow_ai_provider">
-                <option value="ivr" <?php selected($ai_provider, 'ivr'); ?>>IVR (Scripted - Free)</option>
-                <option value="openai" <?php selected($ai_provider, 'openai'); ?>>OpenAI (GPT-4o-mini)</option>
-                <option value="anthropic" <?php selected($ai_provider, 'anthropic'); ?>>Anthropic (Claude)</option>
-                <option value="xai" <?php selected($ai_provider, 'xai'); ?>>xAI (Grok)</option>
+            <select name="flow_ai_provider" id="flow_ai_provider" style="font-size: 14px; padding: 8px;">
+                <option value="ivr" <?php selected($ai_provider, 'ivr'); ?>>IVR Only (Scripted Responses - Zero API Cost)</option>
+                <option value="anthropic" <?php selected($ai_provider, 'anthropic'); ?>>Anthropic Claude (Recommended for FLOSC)</option>
+                <option value="openai" <?php selected($ai_provider, 'openai'); ?>>OpenAI GPT-4o-mini (Fast & Affordable)</option>
+                <option value="xai" <?php selected($ai_provider, 'xai'); ?>>xAI Grok (Experimental)</option>
             </select>
-            <p class="description">IVR uses scripted messages only. AI providers require API keys.</p>
+            <p class="description" style="margin-top: 10px;">
+                <strong>IVR:</strong> Uses your configured messages only (no AI, no costs).<br>
+                <strong>AI Providers:</strong> Enable conversational intelligence with retrieval-augmented generation (RAG).
+            </p>
+        </td>
+    </tr>
+</table>
+
+<h3 style="border-bottom: 2px solid #0073aa; padding-bottom: 10px; margin: 40px 0 20px 0;">
+    🔑 Step 2: Add Your API Keys
+</h3>
+<p class="description" style="margin-bottom: 20px;">
+    Add API keys for the providers you want to use. You only need keys for the provider you selected above.
+</p>
+
+<table class="form-table">
+    <tr>
+        <th scope="row">
+            <label for="flow_anthropic_api_key">
+                <strong>Anthropic API Key</strong><br>
+                <span style="font-weight: normal; color: #666; font-size: 13px;">(Claude Sonnet 4.5)</span>
+            </label>
+        </th>
+        <td>
+            <input type="password" id="flow_anthropic_api_key" name="flow_anthropic_api_key" value="<?php echo esc_attr($flow_settings['anthropic_api_key'] ?? ''); ?>" class="regular-text" style="font-family: monospace; font-size: 13px;" placeholder="sk-ant-api03-...">
+            <p class="description">
+                <a href="https://console.anthropic.com/settings/keys" target="_blank" class="button button-secondary" style="margin-top: 8px;">
+                    📥 Get Your Anthropic API Key Here
+                </a><br>
+                <span style="margin-top: 8px; display: inline-block;">Best for RAG with tools, context handling, and following complex instructions.</span>
+            </p>
         </td>
     </tr>
     <tr>
-        <th scope="row"><label for="flow_openai_api_key">OpenAI API Key</label></th>
+        <th scope="row">
+            <label for="flow_openai_api_key">
+                <strong>OpenAI API Key</strong><br>
+                <span style="font-weight: normal; color: #666; font-size: 13px;">(GPT-4o-mini)</span>
+            </label>
+        </th>
         <td>
-            <input type="password" id="flow_openai_api_key" name="flow_openai_api_key" value="<?php echo esc_attr($flow_settings['openai_api_key'] ?? ''); ?>" class="regular-text">
-            <p class="description">Get your key at <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com</a></p>
+            <input type="password" id="flow_openai_api_key" name="flow_openai_api_key" value="<?php echo esc_attr($flow_settings['openai_api_key'] ?? ''); ?>" class="regular-text" style="font-family: monospace; font-size: 13px;" placeholder="sk-proj-...">
+            <p class="description">
+                <a href="https://platform.openai.com/api-keys" target="_blank" class="button button-secondary" style="margin-top: 8px;">
+                    📥 Get Your OpenAI API Key Here
+                </a><br>
+                <span style="margin-top: 8px; display: inline-block;">Fast and cost-effective for general conversations.</span>
+            </p>
         </td>
     </tr>
     <tr>
-        <th scope="row"><label for="flow_anthropic_api_key">Anthropic API Key</label></th>
+        <th scope="row">
+            <label for="flow_xai_api_key">
+                <strong>xAI API Key</strong><br>
+                <span style="font-weight: normal; color: #666; font-size: 13px;">(Grok)</span>
+            </label>
+        </th>
         <td>
-            <input type="password" id="flow_anthropic_api_key" name="flow_anthropic_api_key" value="<?php echo esc_attr($flow_settings['anthropic_api_key'] ?? ''); ?>" class="regular-text">
-            <p class="description">Get your key at <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a></p>
+            <input type="password" id="flow_xai_api_key" name="flow_xai_api_key" value="<?php echo esc_attr($flow_settings['xai_api_key'] ?? ''); ?>" class="regular-text" style="font-family: monospace; font-size: 13px;" placeholder="xai-...">
+            <p class="description">
+                <a href="https://console.x.ai" target="_blank" class="button button-secondary" style="margin-top: 8px;">
+                    📥 Get Your xAI API Key Here
+                </a><br>
+                <span style="margin-top: 8px; display: inline-block;">Experimental provider from xAI.</span>
+            </p>
         </td>
     </tr>
-    <tr>
-        <th scope="row"><label for="flow_xai_api_key">xAI API Key</label></th>
-        <td>
-            <input type="password" id="flow_xai_api_key" name="flow_xai_api_key" value="<?php echo esc_attr($flow_settings['xai_api_key'] ?? ''); ?>" class="regular-text">
-            <p class="description">Get your key at <a href="https://console.x.ai" target="_blank">console.x.ai</a></p>
-        </td>
-    </tr>
+</table>
+
+<!-- Connection Test -->
+<h3 style="border-bottom: 2px solid #0073aa; padding-bottom: 10px; margin: 40px 0 20px 0;">
+    🧪 Step 3: Test Your Connection
+</h3>
+
+<div class="card" style="max-width: 800px; margin-bottom: 20px; padding: 20px;">
+    <p class="description" style="font-size: 14px; margin-bottom: 15px;">
+        Verify that your selected AI provider is configured correctly and responding. This sends a test message to the AI.
+    </p>
+    <button type="button" id="test-ai-connection" class="button button-primary button-large" style="font-size: 15px; padding: 10px 20px;">
+        🚀 Test AI Connection Now
+    </button>
+    <div id="test-results" style="margin-top: 15px; display: none;">
+        <div id="test-status"></div>
+        <div id="test-details" style="margin-top: 10px; padding: 15px; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px; white-space: pre-wrap;"></div>
+    </div>
+    <div id="test-loading" style="margin-top: 15px; display: none;">
+        <span class="spinner is-active" style="float: none; margin-right: 10px;"></span>
+        <span style="font-size: 14px;">Testing connection to AI provider...</span>
+    </div>
+</div>
+
+<h3 style="border-bottom: 2px solid #0073aa; padding-bottom: 10px; margin: 40px 0 20px 0;">
+    🎨 Step 4: Customize AI Personality (Optional)
+</h3>
+
+<table class="form-table">
     <tr>
         <th scope="row"><label for="flow_ai_base_prompt">Base System Prompt</label></th>
         <td>
-            <textarea id="flow_ai_base_prompt" name="flow_ai_base_prompt" rows="6" class="large-text"><?php echo esc_textarea($base_prompt); ?></textarea>
-            <p class="description">The AI's base personality and instructions. Phase-specific prompts are added automatically.</p>
+            <textarea id="flow_ai_base_prompt" name="flow_ai_base_prompt" rows="6" class="large-text" style="font-family: monospace; font-size: 13px;"><?php echo esc_textarea($base_prompt); ?></textarea>
+            <p class="description">
+                Define your AI's core personality and behavior. FLOSC automatically adds phase-specific instructions (freeline, login, offer, etc.) on top of this base prompt.
+            </p>
         </td>
     </tr>
 </table>
@@ -131,8 +210,12 @@ $ai_response_mode = $flow_settings['ai_response_mode'] ?? 'enhanced'; // 'strict
 <!-- ============================================ -->
 <!-- SECTION 2: AI RESPONSE MODE [READY] -->
 <!-- ============================================ -->
-<h3 style="margin-top: 40px;">AI Response Mode</h3>
-<p class="description">Control how the AI uses IVR messages when generating responses.</p>
+<h3 style="border-bottom: 2px solid #0073aa; padding-bottom: 10px; margin: 50px 0 20px 0;">
+    ⚙️ Advanced: AI Response Mode
+</h3>
+<p class="description" style="margin-bottom: 15px;">
+    Control how the AI uses your IVR (scripted) messages when generating conversational responses.
+</p>
 
 <table class="form-table">
     <tr>
@@ -153,7 +236,7 @@ $ai_response_mode = $flow_settings['ai_response_mode'] ?? 'enhanced'; // 'strict
 <!-- ============================================ -->
 <!-- SECTION 3: IVR CONTEXT INJECTION [BACKEND NEEDED] -->
 <!-- ============================================ -->
-<h3 style="margin-top: 40px;">IVR Context Injection <span style="background: #ffc107; color: #000; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">BACKEND NEEDED</span></h3>
+<h3 style="margin-top: 40px;">IVR Context Injection</h3>
 <p class="description">Configure how the AI accesses and uses your IVR message structure.</p>
 
 <table class="form-table">
@@ -169,41 +252,14 @@ $ai_response_mode = $flow_settings['ai_response_mode'] ?? 'enhanced'; // 'strict
                 When enabled, AI receives the full IVR structure including conditions, phases, and message types.
                 The AI learns WHEN to use specific messages based on your configured conditions.
             </p>
-            <div style="background: #f0f0f1; padding: 10px; margin-top: 10px; font-family: monospace; font-size: 12px;">
-                <strong>Backend Implementation Needed:</strong><br>
-                /* PSEUDOCODE - Developer Reference */<br>
-                <br>
-                // On each AI request, inject IVR context into system prompt:<br>
-                $ivr_config = FLOSC_IVR_Parser::flosc_instance()->get_flosc_config();<br>
-                $current_phase = flosc_get_user_phase(); // freeline, login, offer, sale, content<br>
-                $session_vars = flosc_get_session_variables(); // quiz_score, has_purchased, etc.<br>
-                <br>
-                // Filter messages by current phase and evaluate conditions<br>
-                $available_messages = array_filter($ivr_config['messages'], function($msg) use ($current_phase, $session_vars) {<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;if ($msg['phase'] !== $current_phase) return false;<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;return flosc_evaluate_condition($msg['condition'], $session_vars);<br>
-                });<br>
-                <br>
-                // Build context injection<br>
-                $ivr_context = "AVAILABLE MESSAGES FOR CURRENT CONTEXT:\n";<br>
-                foreach ($available_messages as $msg) {<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;$ivr_context .= "- [{$msg['type']}] {$msg['name']}: {$msg['content']}\n";<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;if (!empty($msg['action'])) $ivr_context .= "&nbsp;&nbsp;Action: {$msg['action']}\n";<br>
-                }<br>
-                <br>
-                // Prepend to AI system prompt<br>
-                $full_prompt = $ivr_context . "\n\n" . $base_prompt;<br>
-                <br>
-                // Send to AI provider with full context
-            </div>
         </td>
     </tr>
 </table>
 
 <!-- ============================================ -->
-<!-- SECTION 4: CONTENT ACCESS [BACKEND NEEDED] -->
+<!-- SECTION 4: CONTENT ACCESS -->
 <!-- ============================================ -->
-<h3 style="margin-top: 40px;">Content Access <span style="background: #ffc107; color: #000; padding: 2px 8px; border-radius: 3px; font-weight: bold; font-size: 11px;">BACKEND NEEDED</span></h3>
+<h3 style="margin-top: 40px;">Content Access</h3>
 <p class="description">Give the AI access to your content library for personalized recommendations.</p>
 
 <table class="form-table">
@@ -219,59 +275,20 @@ $ai_response_mode = $flow_settings['ai_response_mode'] ?? 'enhanced'; // 'strict
                 When enabled, AI can reference lessons, quizzes, offers, and knowledge base entries.
                 This allows personalized recommendations based on user progress and interests.
             </p>
-            <div style="background: #f0f0f1; padding: 10px; margin-top: 10px; font-family: monospace; font-size: 12px;">
-                <strong>Backend Implementation Needed:</strong><br>
-                /* PSEUDOCODE - Developer Reference */<br>
-                <br>
-                // Build content inventory for AI context<br>
-                $content_context = [];<br>
-                <br>
-                // 1. Available Lessons<br>
-                $lessons = $flow_settings['lessons'] ?? [];<br>
-                $content_context['lessons'] = array_map(function($lesson) {<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;return [<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'title' => $lesson['title'],<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'description' => $lesson['description'],<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'difficulty' => $lesson['difficulty'],<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'duration' => $lesson['duration']<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;];<br>
-                }, $lessons);<br>
-                <br>
-                // 2. Quiz Structure<br>
-                $quiz_type = $flow_settings['quiz_type'] ?? 'flosc_sample_text_based_quiz';<br>
-                $content_context['quiz'] = [<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;'type' => $quiz_type,<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;'questions_count' => count($flow_settings['quiz_questions'] ?? []),<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;'scoring_logic' => 'User scores determine personalization'<br>
-                ];<br>
-                <br>
-                // 3. Active Offers<br>
-                $offers = $flow_settings['offers'] ?? [];<br>
-                $content_context['offers'] = array_map(function($offer) {<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;return [<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'name' => $offer['name'],<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'price' => $offer['price'],<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'description' => $offer['description']<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;];<br>
-                }, $offers);<br>
-                <br>
-                // 4. Knowledge Base (AI Knowledge tab)<br>
-                $kb_entries = $flow_settings['ai_knowledge'] ?? '';<br>
-                $content_context['knowledge_base'] = $kb_entries;<br>
-                <br>
-                // Format for AI injection<br>
-                $content_prompt = "AVAILABLE CONTENT:\n" . json_encode($content_context, JSON_PRETTY_PRINT);<br>
-                <br>
-                // Inject into system prompt
+            <div style="background: #e7f5fe; border-left: 4px solid #0073aa; padding: 12px 15px; margin-top: 10px;">
+                <strong>How Content Access Works:</strong><br>
+                The AI automatically receives context about your lessons, quizzes, offers, and any content you upload to the AI Knowledge Base.
+                When a user asks questions like "What are my upgrade options?" or "What lesson should I do next?", the AI draws from your actual content to give accurate, personalized answers.
+                Upload expert knowledge via the <strong>AI Knowledge</strong> tab to give AI access to information beyond its training data.
             </div>
         </td>
     </tr>
 </table>
 
 <!-- ============================================ -->
-<!-- SECTION 5: PROVIDER CHAINING [BACKEND NEEDED] -->
+<!-- SECTION 5: PROVIDER CHAINING -->
 <!-- ============================================ -->
-<h3 style="margin-top: 40px;">Provider Chaining <span style="background: #ffc107; color: #000; padding: 2px 8px; border-radius: 3px; font-weight: bold; font-size: 11px;">BACKEND NEEDED</span></h3>
+<h3 style="margin-top: 40px;">Provider Chaining</h3>
 <p class="description">Chain multiple AI providers for quality enhancement or fallback.</p>
 
 <table class="form-table">
@@ -315,44 +332,10 @@ $ai_response_mode = $flow_settings['ai_response_mode'] ?? 'enhanced'; // 'strict
                 <p class="description">Leave empty slots for simple chains. Example: OpenAI → Claude → (none)</p>
             </div>
             
-            <div style="background: #f0f0f1; padding: 10px; margin-top: 15px; font-family: monospace; font-size: 12px;">
-                <strong>Backend Implementation Needed:</strong><br>
-                /* PSEUDOCODE - Developer Reference */<br>
-                <br>
-                function flosc_ai_chained_request($user_message, $context) {<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;$chain = $flow_settings['ai_chain_providers'] ?? [];<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;$response = $user_message;<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;// First provider: Generate initial response<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;if (!empty($chain[0])) {<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$provider1 = new FLOSC_AI_Provider($chain[0]);<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$response = $provider1->generate($user_message, $context);<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;}<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;// Second provider: Review and enhance<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;if (!empty($chain[1]) && $response) {<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$provider2 = new FLOSC_AI_Provider($chain[1]);<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$review_prompt = "Review this response and enhance it:\n\n" . $response;<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$response = $provider2->generate($review_prompt, $context);<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;}<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;// Third provider: Final polish (optional)<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;if (!empty($chain[2]) && $response) {<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$provider3 = new FLOSC_AI_Provider($chain[2]);<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$polish_prompt = "Polish this response for clarity:\n\n" . $response;<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$response = $provider3->generate($polish_prompt, $context);<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;}<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;return $response;<br>
-                }<br>
-                <br>
-                // Fallback logic<br>
-                try {<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;$response = $primary_provider->generate($message, $context);<br>
-                } catch (Exception $e) {<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;// Primary failed, try chain<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;$response = flosc_ai_chained_request($message, $context);<br>
-                }
+            <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px 15px; margin-top: 15px;">
+                <strong>Coming Soon:</strong> Provider chaining is a planned feature.
+                For now, select your primary AI provider in Step 1 above. Your primary provider handles all responses,
+                with IVR as the automatic fallback if the AI provider is unavailable.
             </div>
         </td>
     </tr>
@@ -361,8 +344,12 @@ $ai_response_mode = $flow_settings['ai_response_mode'] ?? 'enhanced'; // 'strict
 <!-- ============================================ -->
 <!-- SECTION 6: PHASE-SPECIFIC PROMPTS [READY] -->
 <!-- ============================================ -->
-<h3 style="margin-top: 40px;">Phase-Specific Instructions</h3>
-<p class="description">Customize AI behavior for each FLOSC phase. These are appended to your base prompt.</p>
+<h3 style="border-bottom: 2px solid #0073aa; padding-bottom: 10px; margin: 50px 0 20px 0;">
+    📍 Advanced: Phase-Specific AI Instructions
+</h3>
+<p class="description" style="margin-bottom: 15px;">
+    Customize how your AI behaves during each FLOSC phase. These instructions are automatically added to your base prompt based on where the user is in their journey.
+</p>
 
 <table class="form-table">
     <tr>
@@ -449,42 +436,71 @@ jQuery(document).ready(function($) {
 </script>
 
 <!-- Speech-to-Text Configuration (v1.8.2: moved from Lessons tab) -->
-<hr style="margin: 40px 0;">
-<h2>Speech-to-Text Configuration</h2>
-<p>Configure your speech-to-text provider for audio-based quizzes (Pronunciation, Simple Scoring with audio).</p>
+<hr style="margin: 60px 0 40px 0; border: none; border-top: 3px solid #ddd;">
+
+<h2 style="margin-top: 40px;">🎤 Speech-to-Text Configuration</h2>
+<p class="description" style="font-size: 14px; margin-bottom: 20px;">
+    Configure speech-to-text for audio-based quiz questions (Pronunciation quizzes, audio-response scoring). <strong>Only needed if you're using audio quizzes.</strong>
+</p>
 
 <table class="form-table">
     <tr>
-        <th scope="row"><label for="flow_stt_provider">STT Provider</label></th>
+        <th scope="row"><label for="flow_stt_provider">Speech-to-Text Provider</label></th>
         <td>
-            <select name="flow_stt_provider" id="flow_stt_provider">
-                <option value="assemblyai" <?php selected($flow_settings['stt_provider'] ?? '', 'assemblyai'); ?>>AssemblyAI</option>
-                <option value="openai" <?php selected($flow_settings['stt_provider'] ?? '', 'openai'); ?>>OpenAI Whisper</option>
-                <option value="deepgram" <?php selected($flow_settings['stt_provider'] ?? '', 'deepgram'); ?>>Deepgram</option>
-                <option value="custom" <?php selected($flow_settings['stt_provider'] ?? '', 'custom'); ?>>Custom</option>
+            <select name="flow_stt_provider" id="flow_stt_provider" style="font-size: 14px; padding: 8px;">
+                <option value="assemblyai" <?php selected($flow_settings['stt_provider'] ?? '', 'assemblyai'); ?>>AssemblyAI (High Accuracy)</option>
+                <option value="openai" <?php selected($flow_settings['stt_provider'] ?? '', 'openai'); ?>>OpenAI Whisper (Multilingual)</option>
+                <option value="deepgram" <?php selected($flow_settings['stt_provider'] ?? '', 'deepgram'); ?>>Deepgram (Fast & Real-time)</option>
+                <option value="custom" <?php selected($flow_settings['stt_provider'] ?? '', 'custom'); ?>>Custom Endpoint (Self-hosted)</option>
             </select>
-            <p class="description">Choose your speech-to-text provider for transcribing audio recordings.</p>
+            <p class="description">Choose the service that will transcribe audio recordings from quiz takers.</p>
         </td>
     </tr>
     <tr>
-        <th scope="row"><label for="flow_assemblyai_api_key">AssemblyAI API Key</label></th>
+        <th scope="row">
+            <label for="flow_assemblyai_api_key">
+                <strong>AssemblyAI API Key</strong>
+            </label>
+        </th>
         <td>
-            <input type="password" id="flow_assemblyai_api_key" name="flow_assemblyai_api_key" value="<?php echo esc_attr($flow_settings['assemblyai_api_key'] ?? ''); ?>" class="regular-text">
-            <p class="description">Get your key at <a href="https://www.assemblyai.com/" target="_blank">assemblyai.com</a></p>
+            <input type="password" id="flow_assemblyai_api_key" name="flow_assemblyai_api_key" value="<?php echo esc_attr($flow_settings['assemblyai_api_key'] ?? ''); ?>" class="regular-text" style="font-family: monospace; font-size: 13px;" placeholder="Your AssemblyAI key">
+            <p class="description">
+                <a href="https://www.assemblyai.com/dashboard/signup" target="_blank" class="button button-secondary" style="margin-top: 8px;">
+                    📥 Get Your AssemblyAI API Key Here
+                </a><br>
+                <span style="margin-top: 8px; display: inline-block;">Industry-leading accuracy for speech recognition.</span>
+            </p>
         </td>
     </tr>
     <tr>
-        <th scope="row"><label for="flow_deepgram_api_key">Deepgram API Key</label></th>
+        <th scope="row">
+            <label for="flow_deepgram_api_key">
+                <strong>Deepgram API Key</strong>
+            </label>
+        </th>
         <td>
-            <input type="password" id="flow_deepgram_api_key" name="flow_deepgram_api_key" value="<?php echo esc_attr($flow_settings['deepgram_api_key'] ?? ''); ?>" class="regular-text">
-            <p class="description">Get your key at <a href="https://www.deepgram.com/" target="_blank">deepgram.com</a></p>
+            <input type="password" id="flow_deepgram_api_key" name="flow_deepgram_api_key" value="<?php echo esc_attr($flow_settings['deepgram_api_key'] ?? ''); ?>" class="regular-text" style="font-family: monospace; font-size: 13px;" placeholder="Your Deepgram key">
+            <p class="description">
+                <a href="https://console.deepgram.com/signup" target="_blank" class="button button-secondary" style="margin-top: 8px;">
+                    📥 Get Your Deepgram API Key Here
+                </a><br>
+                <span style="margin-top: 8px; display: inline-block;">Ultra-fast real-time transcription with excellent accuracy.</span>
+            </p>
         </td>
     </tr>
     <tr>
-        <th scope="row"><label for="flow_custom_stt_endpoint">Custom STT Endpoint</label></th>
+        <th scope="row">
+            <label for="flow_custom_stt_endpoint">
+                <strong>Custom STT Endpoint URL</strong>
+            </label>
+        </th>
         <td>
-            <input type="url" id="flow_custom_stt_endpoint" name="flow_custom_stt_endpoint" value="<?php echo esc_attr($flow_settings['custom_stt_endpoint'] ?? ''); ?>" class="regular-text">
-            <p class="description">URL for your self-hosted STT endpoint (for "Custom" provider)</p>
+            <input type="url" id="flow_custom_stt_endpoint" name="flow_custom_stt_endpoint" value="<?php echo esc_attr($flow_settings['custom_stt_endpoint'] ?? ''); ?>" class="regular-text" style="font-family: monospace; font-size: 13px;" placeholder="https://your-stt-endpoint.com/transcribe">
+            <p class="description">Only required if using "Custom Endpoint" option above. URL to your self-hosted speech-to-text service.</p>
         </td>
     </tr>
 </table>
+
+<div style="background: #e7f3ff; border-left: 4px solid #0073aa; padding: 15px; margin: 30px 0;">
+    <strong>💡 Remember:</strong> After adding your API keys, click <strong>"Save Settings"</strong> at the bottom of this page, then use the <strong>"Test AI Connection"</strong> button above to verify everything works!
+</div>

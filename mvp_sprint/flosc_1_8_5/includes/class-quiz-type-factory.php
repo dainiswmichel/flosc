@@ -190,7 +190,7 @@ class FLOSC_Quiz_Type_Factory {
         }
 
         if ($quiz_type->needs_stt()) {
-            $stt_provider = get_option('flosc_stt_provider', '');
+            $stt_provider = flosc_get_setting('stt_provider', '');
             if (empty($stt_provider)) {
                 return new WP_Error(
                     'missing_stt_provider',
@@ -200,7 +200,7 @@ class FLOSC_Quiz_Type_Factory {
         }
 
         if ($quiz_type->needs_ai_analysis()) {
-            $ai_provider = get_option('flosc_ai_provider', '');
+            $ai_provider = flosc_get_setting('ai_provider', '');
             if (empty($ai_provider)) {
                 return new WP_Error(
                     'missing_ai_provider',
