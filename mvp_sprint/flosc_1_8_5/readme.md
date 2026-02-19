@@ -207,8 +207,8 @@ After purchase, `FLOSC_Access_Manager`:
   - `flosc.php` - main plugin
   - `admin/flosc-app.php` - template debug logs
   - `admin/payments.php` - Stripe errors
-  - `includes/class-ai-provider-factory.php` - AI API errors
-  - `includes/class-stt-provider-factory.php` - STT errors  
+  - `includes/class-ai-chat-dispatch.php` - AI API errors
+  - `includes/class-stt-dispatch.php` - STT errors  
   - `includes/class-rag-chat-handler.php` - RAG chat logs
   - `includes/class-rag-manager.php` - tool execution logs
   - `includes/class-quiz-manager.php` - quiz validation
@@ -533,8 +533,8 @@ flosc_v8_0_1/
 ├── flosc.php                           # Main plugin file (v8.0.1)
 ├── includes/
 │   ├── class-quiz-type-factory.php     # Quiz type loader
-│   ├── class-ai-provider-factory.php   # AI (IVR, OpenAI, Anthropic, xAI)
-│   ├── class-stt-provider-factory.php  # STT (AssemblyAI, Whisper, Deepgram)
+│   ├── class-ai-chat-dispatch.php   # AI (IVR, OpenAI, Anthropic, xAI)
+│   ├── class-stt-dispatch.php  # STT (AssemblyAI, Whisper, Deepgram)
 │   ├── class-session-manager.php       # Chat persistence
 │   ├── class-ivr-parser.php            # IVR markdown parser
 │   ├── class-condition-evaluator.php   # Boolean condition evaluation

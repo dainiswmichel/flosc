@@ -1,12 +1,12 @@
 <?php
 /**
- * FLOSC STT Provider Factory
+ * FLOSC STT Dispatch
  * Supports: AssemblyAI, OpenAI Whisper, Deepgram, Custom Endpoint
  */
 
 if (!defined('ABSPATH')) exit;
 
-class FLOSC_STT_Provider_Factory {
+class FLOSC_STT_Dispatch {
     
     private $provider;
     

@@ -1,12 +1,12 @@
 <?php
 /**
- * FLOSC AI Provider Factory
+ * FLOSC AI Chat Dispatch
  * Supports: IVR (Scripted), OpenAI, Anthropic, xAI
  */
 
 if (!defined('ABSPATH')) exit;
 
-class FLOSC_AI_Provider_Factory {
+class FLOSC_AI_Chat_Dispatch {
 
     private $provider;
 
@@ -74,10 +74,10 @@ class FLOSC_AI_Provider_Factory {
     }
 
     /**
-     * v1.4.1: Get FLOSC process instructions based on user phase
+     * Get FLOSC process instructions based on user phase and role
      */
     private function get_flosc_process_prompt($phase, $context = []) {
-        $logged_in = $context['logged_in'] ?? false;
+        $is_admin = $context['is_admin'] ?? false;
 
         $prompt = "# The FLOSC Process\n\n";
         $prompt .= "You are guiding users through a **try-before-you-buy** experience. The process has phases:\n\n";
@@ -87,27 +87,70 @@ class FLOSC_AI_Provider_Factory {
         $prompt .= "4. **SALE** - Help them purchase when ready (don't be pushy)\n";
         $prompt .= "5. **CONTENT** - Members get full access to lessons and personalized coaching\n\n";
 
-        // Access-level specific instructions
-        if (!$logged_in) {
-            $freeline_rules = flosc_get_setting('ai_freeline_restrictions', '');
-            $prompt .= "## Current Phase: FREELINE (Visitor)\n";
-            $prompt .= "The user is NOT logged in. Your primary goals:\n";
-            $prompt .= "- Build rapport and answer their questions\n";
-            $prompt .= "- Encourage them to take the free quiz to see what they'll learn\n";
-            $prompt .= "- Give them a taste of value without revealing premium content\n";
-            if ($freeline_rules) {
-                $prompt .= "\n### Access Rules\n" . $freeline_rules;
-            }
-        } else {
-            $member_rules = flosc_get_setting('ai_member_access', '');
-            $prompt .= "## Current Phase: MEMBER (Logged In)\n";
-            $prompt .= "The user is logged in. Your primary goals:\n";
-            $prompt .= "- Provide personalized guidance based on their progress\n";
-            $prompt .= "- Help them get maximum value from lessons\n";
-            $prompt .= "- Answer specific questions about content they have access to\n";
-            if ($member_rules) {
-                $prompt .= "\n### Access Rules\n" . $member_rules;
-            }
+        // Admin gets a distinct context — they're testing/configuring, not a customer
+        if ($is_admin) {
+            $prompt .= "## Current User: ADMIN\n";
+            $prompt .= "This user is a site administrator. Your behavior:\n";
+            $prompt .= "- Be direct and technical — skip sales guidance\n";
+            $prompt .= "- They may be testing you, configuring flows, or debugging\n";
+            $prompt .= "- Report your current configuration when asked (provider, phase logic, etc.)\n";
+            $prompt .= "- If they ask about the FLOSC process, explain how it works rather than performing it\n";
+            return $prompt;
+        }
+
+        // Phase-specific instructions for regular users
+        switch ($phase) {
+            case 'freeline':
+                $rules = flosc_get_setting('ai_freeline_restrictions', '');
+                $prompt .= "## Current Phase: FREELINE (Visitor)\n";
+                $prompt .= "The user is NOT logged in. Your primary goals:\n";
+                $prompt .= "- Build rapport and answer their questions\n";
+                $prompt .= "- Encourage them to take the free quiz to see what they'll learn\n";
+                $prompt .= "- Give them a taste of value without revealing premium content\n";
+                if ($rules) {
+                    $prompt .= "\n### Access Rules\n" . $rules;
+                }
+                break;
+
+            case 'login':
+                $prompt .= "## Current Phase: LOGIN (New Account)\n";
+                $prompt .= "The user just logged in or created an account. Your primary goals:\n";
+                $prompt .= "- Welcome them and acknowledge their quiz results if available\n";
+                $prompt .= "- Deliver or guide them to the free lesson\n";
+                $prompt .= "- Build trust before presenting any offer\n";
+                break;
+
+            case 'offer':
+                $prompt .= "## Current Phase: OFFER (Post Free Lesson)\n";
+                $prompt .= "The user received their free lesson. Your primary goals:\n";
+                $prompt .= "- Present personalized value based on their quiz results\n";
+                $prompt .= "- Address objections naturally — don't be pushy\n";
+                $prompt .= "- Show what full access unlocks for their specific weak areas\n";
+                break;
+
+            case 'sale':
+                $prompt .= "## Current Phase: SALE (Ready to Purchase)\n";
+                $prompt .= "The user has seen the offer and is considering purchase. Your primary goals:\n";
+                $prompt .= "- Help them purchase when ready — answer any final questions\n";
+                $prompt .= "- Reinforce the value specific to their needs\n";
+                $prompt .= "- Don't pressure — let them decide at their own pace\n";
+                break;
+
+            case 'content':
+                $rules = flosc_get_setting('ai_member_access', '');
+                $prompt .= "## Current Phase: CONTENT (Member)\n";
+                $prompt .= "The user is a paying member with full access. Your primary goals:\n";
+                $prompt .= "- Provide personalized guidance based on their progress\n";
+                $prompt .= "- Help them get maximum value from lessons\n";
+                $prompt .= "- Answer specific questions about content they have access to\n";
+                if ($rules) {
+                    $prompt .= "\n### Access Rules\n" . $rules;
+                }
+                break;
+
+            default:
+                $prompt .= "## Current Phase: " . strtoupper($phase) . "\n";
+                break;
         }
 
         return $prompt;

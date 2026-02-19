@@ -57,8 +57,8 @@ class FLOSC_Framework {
     private static $instance = null;
     
     // Core components
-    private $ai_factory;
-    private $stt_factory;
+    private $ai_chat_dispatch;
+    private $stt_dispatch;
     private $quiz_factory;
     private $session_manager;
     private $pronunciation_analyzer;
@@ -91,8 +91,8 @@ class FLOSC_Framework {
     
     private function load_dependencies() {
         // Core components
-        require_once FLOSC_PLUGIN_DIR . 'includes/class-ai-provider-factory.php';
-        require_once FLOSC_PLUGIN_DIR . 'includes/class-stt-provider-factory.php';
+        require_once FLOSC_PLUGIN_DIR . 'includes/class-ai-chat-dispatch.php';
+        require_once FLOSC_PLUGIN_DIR . 'includes/class-stt-dispatch.php';
         require_once FLOSC_PLUGIN_DIR . 'includes/class-quiz-type-factory.php';
         require_once FLOSC_PLUGIN_DIR . 'includes/class-session-manager.php';
         require_once FLOSC_PLUGIN_DIR . 'includes/class-pronunciation-analyzer.php';
@@ -129,8 +129,8 @@ class FLOSC_Framework {
         require_once FLOSC_PLUGIN_DIR . 'includes/sso/class-user-linker.php';
         require_once FLOSC_PLUGIN_DIR . 'includes/sso/class-sso-manager.php';
 
-        $this->ai_factory = new FLOSC_AI_Provider_Factory();
-        $this->stt_factory = new FLOSC_STT_Provider_Factory();
+        $this->ai_chat_dispatch = new FLOSC_AI_Chat_Dispatch();
+        $this->stt_dispatch = new FLOSC_STT_Dispatch();
         $this->session_manager = new FLOSC_Session_Manager();
         $this->pronunciation_analyzer = new FLOSC_Pronunciation_Analyzer();
         $this->lesson_manager = FLOSC_Lesson_Manager::instance();
@@ -313,8 +313,8 @@ class FLOSC_Framework {
     /**
      * Component accessors
      */
-    public function ai() { return $this->ai_factory; }
-    public function stt() { return $this->stt_factory; }
+    public function ai() { return $this->ai_chat_dispatch; }
+    public function stt() { return $this->stt_dispatch; }
     public function quiz() { return 'FLOSC_Quiz_Type_Factory'; } // Returns class name (static factory)
     public function sessions() { return $this->session_manager; }
     public function analyzer() { return $this->pronunciation_analyzer; }
@@ -1912,11 +1912,14 @@ The {product_name} Team";
         $context['phase'] = $this->determine_flosc_phase();
 
         // 2. User info
+        $context['logged_in'] = is_user_logged_in();
+
         if (is_user_logged_in()) {
             $user = wp_get_current_user();
             $context['user_name'] = $user->display_name;
             $context['user_email'] = $user->user_email;
             $context['user_status'] = $this->get_user_status();
+            $context['is_admin'] = user_can($user->ID, 'manage_options');
 
             // v1.0.3: Bridge data from manager
             $bridge_mgr = FLOSC_Bridge_Data_Manager::instance();
@@ -1971,11 +1974,10 @@ The {product_name} Team";
      */
     private function determine_flosc_phase() {
         if (!is_user_logged_in()) {
-            // Check if quiz was taken (via cookie for visitors)
-            $quiz_taken = isset($_COOKIE['flosc_quiz_taken']) && $_COOKIE['flosc_quiz_taken'] === '1';
-            // Also check for prelogin score cookie
-            $prelogin_score = $this->get_signed_cookie('flosc_prelogin_score');
-            return ($quiz_taken || $prelogin_score) ? 'login-prompt' : 'freeline';
+            // Visitors are always freeline — frontend determinePhase() agrees.
+            // Quiz data lives in signed cookies but doesn't change the phase;
+            // the IVR condition evaluator already checks quiz_taken separately.
+            return 'freeline';
         }
 
         $user_id = get_current_user_id();
@@ -3222,7 +3224,7 @@ The {product_name} Team";
             // then falls back to global options
             $ai_provider = flosc_get_setting('ai_provider', 'ivr');
 
-            if ($ai_provider !== 'ivr' && $this->ai_factory) {
+            if ($ai_provider !== 'ivr' && $this->ai_chat_dispatch) {
                 // v1.9.0: Build FLOSC User Session (single source of truth)
                 $flosc_user_id = $eval_context['user_id'] ?? 0;
                 $flosc_user_session = new FLOSC_User_Session($flosc_user_id, $flow_id);
@@ -3251,11 +3253,12 @@ The {product_name} Team";
                     $ai_context = [
                         'phase' => $phase,
                         'logged_in' => $eval_context['logged_in'],
+                        'is_admin' => $eval_context['is_admin'] ?? false,
                         'user_name' => $eval_context['user_name'] ?? 'there',
                         'message_count' => $eval_context['message_count'],
                     ];
-                    $system_prompt = $this->ai_factory->build_system_prompt($phase, $ai_context);
-                    $ai_response = $this->ai_factory->get_response($message, $system_prompt);
+                    $system_prompt = $this->ai_chat_dispatch->build_system_prompt($phase, $ai_context);
+                    $ai_response = $this->ai_chat_dispatch->get_response($message, $system_prompt);
 
                     $response_message = [
                         'content' => $ai_response ?: 'I apologize, but I\'m having trouble responding right now.',
@@ -4619,9 +4622,9 @@ Example good response:
 
         // v04_04: Build system prompt (base + phase-specific + context)
         $phase = $ai_context['phase'] ?? '';
-        $system_prompt = $this->ai_factory->build_system_prompt($phase, $ai_context);
+        $system_prompt = $this->ai_chat_dispatch->build_system_prompt($phase, $ai_context);
 
-        $response = $this->ai_factory->get_response($message, $system_prompt, $context);
+        $response = $this->ai_chat_dispatch->get_response($message, $system_prompt, $context);
         
         return new WP_REST_Response([
             'success' => true,
@@ -4641,7 +4644,7 @@ Example good response:
             $this->sale_manager->usage()->track(get_current_user_id(), 'stt_minutes', 1);
         }
 
-        $transcript = $this->stt_factory->transcribe($files['audio']['tmp_name']);
+        $transcript = $this->stt_dispatch->transcribe($files['audio']['tmp_name']);
 
         if (is_wp_error($transcript)) {
             return $transcript;
@@ -5979,10 +5982,10 @@ Example good response:
         try {
             // Build AI context for freeline phase (simplest phase)
             $ai_context = ['phase' => 'freeline'];
-            $system_prompt = $this->ai_factory->build_system_prompt('freeline', $ai_context);
+            $system_prompt = $this->ai_chat_dispatch->build_system_prompt('freeline', $ai_context);
 
             // Get AI response with test_mode = true (no IVR fallback)
-            $response = $this->ai_factory->get_response($test_message, $system_prompt, [], true);
+            $response = $this->ai_chat_dispatch->get_response($test_message, $system_prompt, [], true);
 
             // Check if response is WP_Error (connection failed)
             if (is_wp_error($response)) {
