@@ -57,7 +57,8 @@ class FLOSC_STT_Provider_Factory {
      * Cost: ~$0.00025/second = $0.0025 per 10s recording
      */
     private function assemblyai_transcribe($audio_path, $options = []) {
-        $api_key = get_option('flosc_assemblyai_api_key', '');
+        // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
+        $api_key = flosc_get_setting('assemblyai_api_key', '');
         
         if (empty($api_key)) {
             return new WP_Error('no_api_key', 'AssemblyAI API key not configured');
@@ -204,7 +205,8 @@ class FLOSC_STT_Provider_Factory {
      * Cost: ~$0.0043/minute = $0.00072 per 10s recording
      */
     private function deepgram_transcribe($audio_path, $options = []) {
-        $api_key = get_option('flosc_deepgram_api_key', '');
+        // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
+        $api_key = flosc_get_setting('deepgram_api_key', '');
         
         if (empty($api_key)) {
             return new WP_Error('no_api_key', 'Deepgram API key not configured');
@@ -241,7 +243,8 @@ class FLOSC_STT_Provider_Factory {
      * Custom Endpoint (Self-hosted faster-whisper, etc.)
      */
     private function custom_transcribe($audio_path, $options = []) {
-        $endpoint = get_option('flosc_custom_stt_endpoint', '');
+        // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
+        $endpoint = flosc_get_setting('custom_stt_endpoint', '');
         
         if (empty($endpoint)) {
             return new WP_Error('no_endpoint', 'Custom STT endpoint not configured');

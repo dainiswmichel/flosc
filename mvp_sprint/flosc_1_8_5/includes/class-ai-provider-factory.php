@@ -117,11 +117,8 @@ class FLOSC_AI_Provider_Factory {
      * Load phase-specific prompt from admin settings
      */
     private function load_phase_prompt($phase) {
-        // Load from WordPress admin options (AI Configuration tab)
-        $option_key = "flosc_ai_prompt_{$phase}";
-        $prompt = get_option($option_key, '');
-        
-        return $prompt;
+        // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
+        return flosc_get_setting("ai_prompt_{$phase}", '');
     }
 
     /**
