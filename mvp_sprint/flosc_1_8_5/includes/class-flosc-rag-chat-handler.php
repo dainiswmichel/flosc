@@ -18,7 +18,7 @@ class FLOSC_RAG_Chat_Handler {
     private $flosc_user_session;
 
     public function __construct() {
-        $this->flosc_rag_manager = new FLOSC_RAG_Manager();
+        $this->flosc_rag_manager = FLOSC_RAG_Manager::instance();
         // Access controller will be set when handle_with_state is called
     }
 

@@ -73,21 +73,35 @@ class FLOSC_Framework {
     private $user_access_manager;
     private $content_filter;
     private $rag_manager;
-    
+
+    // v9.1.8 systems
+    private $free_lesson_manager;
+    private $member_access;
+
+    // SSO system (v1.4.0)
+    private $sso_manager;
+
+    // Lesson manager
+    private $lesson_manager;
+
     public static function instance() {
         if (null === self::$instance) {
+            // Assign instance BEFORE constructor work so flosc_get_setting()
+            // can call instance() without infinite recursion
             self::$instance = new self();
+            self::$instance->boot();
         }
         return self::$instance;
     }
-    
+
     private function __construct() {
+        // Intentionally empty — boot() runs after self::$instance is assigned
+    }
+
+    private function boot() {
         $this->load_dependencies();
         $this->init_hooks();
     }
-    
-    // Lesson manager
-    private $lesson_manager;
     
     private function load_dependencies() {
         // Core components

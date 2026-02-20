@@ -18,7 +18,7 @@ class FLOSC_RAG_Access_Controller {
 
     public function __construct($flosc_user_session) {
         $this->flosc_user_session = $flosc_user_session;
-        $this->flosc_rag_manager = new FLOSC_RAG_Manager();
+        $this->flosc_rag_manager = FLOSC_RAG_Manager::instance();
     }
 
     /**
