@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Font Comparison Round 2 — I vs l vs 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Sans:ital,wght@0,400;0,700;1,400&family=Fira+Sans:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:ital,wght@0,400;0,700;1,400&family=Red+Hat+Text:ital,wght@0,400;0,700;1,400&family=Commissioner:wght@400;700&family=Sora:wght@400;700&family=Manrope:wght@400;700&family=Urbanist:ital,wght@0,400;0,700;1,400&family=Barlow:ital,wght@0,400;0,700;1,400&family=Overpass:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #f5f5f0;
+    color: #1a1a1a;
+    padding: 40px 20px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  h1 { font-family: system-ui; font-size: 28px; margin-bottom: 8px; color: #111; }
+  .subtitle { font-family: system-ui; font-size: 16px; color: #666; margin-bottom: 40px; line-height: 1.5; }
+
+  .font-section {
+    background: white;
+    border-radius: 12px;
+    padding: 32px;
+    margin-bottom: 32px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+  .font-label { font-family: system-ui; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: #888; margin-bottom: 6px; }
+  .font-name { font-family: system-ui; font-size: 14px; color: #555; margin-bottom: 20px; }
+
+  .litmus { font-size: 64px; letter-spacing: 12px; margin-bottom: 8px; color: #111; }
+  .litmus-label { font-family: monospace; font-size: 13px; color: #999; letter-spacing: 12px; margin-bottom: 24px; padding-left: 4px; }
+
+  .confusion-test {
+    font-size: 22px; line-height: 1.5; color: #333; margin-bottom: 24px;
+    padding: 16px; background: #fafaf5; border-left: 3px solid #ddd; border-radius: 0 8px 8px 0;
+  }
+
+  .post-title { font-size: 26px; font-weight: 700; line-height: 1.3; margin-bottom: 8px; color: #111; }
+  .post-meta { font-family: system-ui; font-size: 13px; color: #999; margin-bottom: 12px; }
+  .post-content { font-size: 17px; line-height: 1.7; color: #444; margin-bottom: 24px; }
+  hr.post-divider { border: none; border-top: 1px solid #eee; margin: 20px 0; }
+
+  .verdict { font-family: system-ui; font-size: 14px; padding: 10px 16px; border-radius: 6px; margin-top: 16px; }
+  .verdict.excellent { background: #e8f5e9; color: #2e7d32; }
+  .verdict.good { background: #fff8e1; color: #f57f17; }
+  .verdict.finalist { background: #e3f2fd; color: #1565c0; }
+
+  .font-atkinson    { font-family: 'Atkinson Hyperlegible', sans-serif; }
+  .font-ibm         { font-family: 'IBM Plex Sans', sans-serif; }
+  .font-fira        { font-family: 'Fira Sans', sans-serif; }
+  .font-source      { font-family: 'Source Sans 3', sans-serif; }
+  .font-jakarta     { font-family: 'Plus Jakarta Sans', sans-serif; }
+  .font-redhat      { font-family: 'Red Hat Text', sans-serif; }
+  .font-commissioner { font-family: 'Commissioner', sans-serif; }
+  .font-sora        { font-family: 'Sora', sans-serif; }
+  .font-manrope     { font-family: 'Manrope', sans-serif; }
+  .font-urbanist    { font-family: 'Urbanist', sans-serif; }
+  .font-barlow      { font-family: 'Barlow', sans-serif; }
+  .font-overpass    { font-family: 'Overpass', sans-serif; }
+</style>
+</head>
+<body>
+
+<h1>Font Comparison Round 2: I vs l vs 1</h1>
+<p class="subtitle">
+  Your 2 finalists + 10 new options. All with clear I/l/1 distinction and full Latvian diacritical support (ā, č, ē, ģ, ī, ķ, ļ, ņ, š, ū, ž).
+</p>
+
+<!-- ============================================================ -->
+<!-- FINALIST 1: Atkinson Hyperlegible -->
+<!-- ============================================================ -->
+<div class="font-section">
+  <div class="font-label">Finalist 1</div>
+  <div class="font-name">Atkinson Hyperlegible — Braille Institute</div>
+
+  <div class="litmus font-atkinson">I l 1 | ! i</div>
+  <div class="litmus-label">I &nbsp;l &nbsp;1 &nbsp;| &nbsp;! &nbsp;i</div>
+
+  <div class="confusion-test font-atkinson">
+    Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.
+  </div>
+
+  <h3 class="post-title font-atkinson">Dainis V. Michelis 14. Saeimas vēlēšanas rezultātos</h3>
+  <div class="post-meta">dainiswmichel · February 11, 2026 · 1 Comment</div>
+  <p class="post-content font-atkinson">Vēlies uzzināt, kā Dainim Michelim gāja 14. Saeimas vēlēšanās? Šādi: Latvijas politiskā aina ir ilgi bijusi sarežģīta — ar 11 partijām, 100 deputātiem un neizlēmīgiem vēlētājiem, kas svārstās starp lielām un mazām koalīcijām.</p>
+
+  <hr class="post-divider">
+
+  <h3 class="post-title font-atkinson">Building a Digital Life: 11 Lessons from Publishing 1,111 Posts Online</h3>
+  <div class="post-meta">dainiswmichel · January 15, 2026 · 0 Comments</div>
+  <p class="post-content font-atkinson">I'll admit it — I initially illustrated my ideas illegibly. Literally illegible. All 11 illustrations looked like ill-conceived doodles. But after 1,111 posts, I finally learned: clarity is kindness. Legibility is love. And telling "I" from "l" from "1" shouldn't require a magnifying glass.</p>
+
+  <div class="verdict finalist">★ FINALIST — Serifs on I, curved tail on l, flagged 1. Titles may feel slightly tight/condensed.</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- FINALIST 2: IBM Plex Sans -->
+<!-- ============================================================ -->
+<div class="font-section">
+  <div class="font-label">Finalist 2</div>
+  <div class="font-name">IBM Plex Sans — IBM</div>
+
+  <div class="litmus font-ibm">I l 1 | ! i</div>
+  <div class="litmus-label">I &nbsp;l &nbsp;1 &nbsp;| &nbsp;! &nbsp;i</div>
+
+  <div class="confusion-test font-ibm">
+    Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.
+  </div>
+
+  <h3 class="post-title font-ibm">Dainis V. Michelis 14. Saeimas vēlēšanas rezultātos</h3>
+  <div class="post-meta">dainiswmichel · February 11, 2026 · 1 Comment</div>
+  <p class="post-content font-ibm">Vēlies uzzināt, kā Dainim Michelim gāja 14. Saeimas vēlēšanās? Šādi: Latvijas politiskā aina ir ilgi bijusi sarežģīta — ar 11 partijām, 100 deputātiem un neizlēmīgiem vēlētājiem, kas svārstās starp lielām un mazām koalīcijām.</p>
+
+  <hr class="post-divider">
+
+  <h3 class="post-title font-ibm">Building a Digital Life: 11 Lessons from Publishing 1,111 Posts Online</h3>
+  <div class="post-meta">dainiswmichel · January 15, 2026 · 0 Comments</div>
+  <p class="post-content font-ibm">I'll admit it — I initially illustrated my ideas illegibly. Literally illegible. All 11 illustrations looked like ill-conceived doodles. But after 1,111 posts, I finally learned: clarity is kindness. Legibility is love. And telling "I" from "l" from "1" shouldn't require a magnifying glass.</p>
+
+  <div class="verdict finalist">★ FINALIST — Serifs on I, subtle curve on l, serif on 1. Corporate but warm.</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- OPTION 3: Fira Sans -->
+<!-- ============================================================ -->
+<div class="font-section">
+  <div class="font-label">Option 3</div>
+  <div class="font-name">Fira Sans — Mozilla (designed for Firefox OS)</div>
+
+  <div class="litmus font-fira">I l 1 | ! i</div>
+  <div class="litmus-label">I &nbsp;l &nbsp;1 &nbsp;| &nbsp;! &nbsp;i</div>
+
+  <div class="confusion-test font-fira">
+    Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.
+  </div>
+
+  <h3 class="post-title font-fira">Dainis V. Michelis 14. Saeimas vēlēšanas rezultātos</h3>
+  <div class="post-meta">dainiswmichel · February 11, 2026 · 1 Comment</div>
+  <p class="post-content font-fira">Vēlies uzzināt, kā Dainim Michelim gāja 14. Saeimas vēlēšanās? Šādi: Latvijas politiskā aina ir ilgi bijusi sarežģīta — ar 11 partijām, 100 deputātiem un neizlēmīgiem vēlētājiem, kas svārstās starp lielām un mazām koalīcijām.</p>
+
+  <hr class="post-divider">
+
+  <h3 class="post-title font-fira">Building a Digital Life: 11 Lessons from Publishing 1,111 Posts Online</h3>
+  <div class="post-meta">dainiswmichel · January 15, 2026 · 0 Comments</div>
+  <p class="post-content font-fira">I'll admit it — I initially illustrated my ideas illegibly. Literally illegible. All 11 illustrations looked like ill-conceived doodles. But after 1,111 posts, I finally learned: clarity is kindness. Legibility is love. And telling "I" from "l" from "1" shouldn't require a magnifying glass.</p>
+
+  <div class="verdict excellent">✦ Curved tail on l. Serifs on I. Extremely strong Latvian/Baltic support — developed with Latin Extended in mind.</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- OPTION 4: Source Sans 3 -->
+<!-- ============================================================ -->
+<div class="font-section">
+  <div class="font-label">Option 4</div>
+  <div class="font-name">Source Sans 3 — Adobe (their first open-source font family)</div>
+
+  <div class="litmus font-source">I l 1 | ! i</div>
+  <div class="litmus-label">I &nbsp;l &nbsp;1 &nbsp;| &nbsp;! &nbsp;i</div>
+
+  <div class="confusion-test font-source">
+    Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.
+  </div>
+
+  <h3 class="post-title font-source">Dainis V. Michelis 14. Saeimas vēlēšanas rezultātos</h3>
+  <div class="post-meta">dainiswmichel · February 11, 2026 · 1 Comment</div>
+  <p class="post-content font-source">Vēlies uzzināt, kā Dainim Michelim gāja 14. Saeimas vēlēšanās? Šādi: Latvijas politiskā aina ir ilgi bijusi sarežģīta — ar 11 partijām, 100 deputātiem un neizlēmīgiem vēlētājiem, kas svārstās starp lielām un mazām koalīcijām.</p>
+
+  <hr class="post-divider">
+
+  <h3 class="post-title font-source">Building a Digital Life: 11 Lessons from Publishing 1,111 Posts Online</h3>
+  <div class="post-meta">dainiswmichel · January 15, 2026 · 0 Comments</div>
+  <p class="post-content font-source">I'll admit it — I initially illustrated my ideas illegibly. Literally illegible. All 11 illustrations looked like ill-conceived doodles. But after 1,111 posts, I finally learned: clarity is kindness. Legibility is love. And telling "I" from "l" from "1" shouldn't require a magnifying glass.</p>
+
+  <div class="verdict excellent">✦ Tail/hook on l. Serifs on I. Distinct 1. Professional and well-spaced. Adobe's flagship open-source sans-serif.</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- OPTION 5: Plus Jakarta Sans -->
+<!-- ============================================================ -->
+<div class="font-section">
+  <div class="font-label">Option 5</div>
+  <div class="font-name">Plus Jakarta Sans — Tokotype (modern geometric, inspired by Futura but legible)</div>
+
+  <div class="litmus font-jakarta">I l 1 | ! i</div>
+  <div class="litmus-label">I &nbsp;l &nbsp;1 &nbsp;| &nbsp;! &nbsp;i</div>
+
+  <div class="confusion-test font-jakarta">
+    Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.
+  </div>
+
+  <h3 class="post-title font-jakarta">Dainis V. Michelis 14. Saeimas vēlēšanas rezultātos</h3>
+  <div class="post-meta">dainiswmichel · February 11, 2026 · 1 Comment</div>
+  <p class="post-content font-jakarta">Vēlies uzzināt, kā Dainim Michelim gāja 14. Saeimas vēlēšanās? Šādi: Latvijas politiskā aina ir ilgi bijusi sarežģīta — ar 11 partijām, 100 deputātiem un neizlēmīgiem vēlētājiem, kas svārstās starp lielām un mazām koalīcijām.</p>
+
+  <hr class="post-divider">
+
+  <h3 class="post-title font-jakarta">Building a Digital Life: 11 Lessons from Publishing 1,111 Posts Online</h3>
+  <div class="post-meta">dainiswmichel · January 15, 2026 · 0 Comments</div>
+  <p class="post-content font-jakarta">I'll admit it — I initially illustrated my ideas illegibly. Literally illegible. All 11 illustrations looked like ill-conceived doodles. But after 1,111 posts, I finally learned: clarity is kindness. Legibility is love. And telling "I" from "l" from "1" shouldn't require a magnifying glass.</p>
+
+  <div class="verdict good">✦ Friendly geometric feel. Serifs on I. Wider letter spacing gives titles room to breathe. Popular in modern web design.</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- OPTION 6: Red Hat Text -->
+<!-- ============================================================ -->
+<div class="font-section">
+  <div class="font-label">Option 6</div>
+  <div class="font-name">Red Hat Text — MCKL (designed for Red Hat; "Text" variant optimized for body copy)</div>
+
+  <div class="litmus font-redhat">I l 1 | ! i</div>
+  <div class="litmus-label">I &nbsp;l &nbsp;1 &nbsp;| &nbsp;! &nbsp;i</div>
+
+  <div class="confusion-test font-redhat">
+    Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.
+  </div>
+
+  <h3 class="post-title font-redhat">Dainis V. Michelis 14. Saeimas vēlēšanas rezultātos</h3>
+  <div class="post-meta">dainiswmichel · February 11, 2026 · 1 Comment</div>
+  <p class="post-content font-redhat">Vēlies uzzināt, kā Dainim Michelim gāja 14. Saeimas vēlēšanās? Šādi: Latvijas politiskā aina ir ilgi bijusi sarežģīta — ar 11 partijām, 100 deputātiem un neizlēmīgiem vēlētājiem, kas svārstās starp lielām un mazām koalīcijām.</p>
+
+  <hr class="post-divider">
+
+  <h3 class="post-title font-redhat">Building a Digital Life: 11 Lessons from Publishing 1,111 Posts Online</h3>
+  <div class="post-meta">dainiswmichel · January 15, 2026 · 0 Comments</div>
+  <p class="post-content font-redhat">I'll admit it — I initially illustrated my ideas illegibly. Literally illegible. All 11 illustrations looked like ill-conceived doodles. But after 1,111 posts, I finally learned: clarity is kindness. Legibility is love. And telling "I" from "l" from "1" shouldn't require a magnifying glass.</p>
+
+  <div class="verdict good">✦ Serifs on I. Distinct l with tail. Slightly condensed — efficient use of space. Good for both titles and body.</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- OPTION 7: Commissioner -->
+<!-- ============================================================ -->
+<div class="font-section">
+  <div class="font-label">Option 7</div>
+  <div class="font-name">Commissioner — Kostas Bartsokas (variable font, low-contrast humanist)</div>
+
+  <div class="litmus font-commissioner">I l 1 | ! i</div>
+  <div class="litmus-label">I &nbsp;l &nbsp;1 &nbsp;| &nbsp;! &nbsp;i</div>
+
+  <div class="confusion-test font-commissioner">
+    Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.
+  </div>
+
+  <h3 class="post-title font-commissioner">Dainis V. Michelis 14. Saeimas vēlēšanas rezultātos</h3>
+  <div class="post-meta">dainiswmichel · February 11, 2026 · 1 Comment</div>
+  <p class="post-content font-commissioner">Vēlies uzzināt, kā Dainim Michelim gāja 14. Saeimas vēlēšanās? Šādi: Latvijas politiskā aina ir ilgi bijusi sarežģīta — ar 11 partijām, 100 deputātiem un neizlēmīgiem vēlētājiem, kas svārstās starp lielām un mazām koalīcijām.</p>
+
+  <hr class="post-divider">
+
+  <h3 class="post-title font-commissioner">Building a Digital Life: 11 Lessons from Publishing 1,111 Posts Online</h3>
+  <div class="post-meta">dainiswmichel · January 15, 2026 · 0 Comments</div>
+  <p class="post-content font-commissioner">I'll admit it — I initially illustrated my ideas illegibly. Literally illegible. All 11 illustrations looked like ill-conceived doodles. But after 1,111 posts, I finally learned: clarity is kindness. Legibility is love. And telling "I" from "l" from "1" shouldn't require a magnifying glass.</p>
+
+  <div class="verdict excellent">✦ Designed with Cyrillic and Latin Extended from the start. Excellent ā/ē/ī/ū rendering. Warm humanist tone. Strong I/l distinction.</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- OPTION 8: Sora -->
+<!-- ============================================================ -->
+<div class="font-section">
+  <div class="font-label">Option 8</div>
+  <div class="font-name">Sora — Jonathan Barnbrook &amp; Julián Moncada (geometric with personality)</div>
+
+  <div class="litmus font-sora">I l 1 | ! i</div>
+  <div class="litmus-label">I &nbsp;l &nbsp;1 &nbsp;| &nbsp;! &nbsp;i</div>
+
+  <div class="confusion-test font-sora">
+    Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.
+  </div>
+
+  <h3 class="post-title font-sora">Dainis V. Michelis 14. Saeimas vēlēšanas rezultātos</h3>
+  <div class="post-meta">dainiswmichel · February 11, 2026 · 1 Comment</div>
+  <p class="post-content font-sora">Vēlies uzzināt, kā Dainim Michelim gāja 14. Saeimas vēlēšanās? Šādi: Latvijas politiskā aina ir ilgi bijusi sarežģīta — ar 11 partijām, 100 deputātiem un neizlēmīgiem vēlētājiem, kas svārstās starp lielām un mazām koalīcijām.</p>
+
+  <hr class="post-divider">
+
+  <h3 class="post-title font-sora">Building a Digital Life: 11 Lessons from Publishing 1,111 Posts Online</h3>
+  <div class="post-meta">dainiswmichel · January 15, 2026 · 0 Comments</div>
+  <p class="post-content font-sora">I'll admit it — I initially illustrated my ideas illegibly. Literally illegible. All 11 illustrations looked like ill-conceived doodles. But after 1,111 posts, I finally learned: clarity is kindness. Legibility is love. And telling "I" from "l" from "1" shouldn't require a magnifying glass.</p>
+
+  <div class="verdict good">✦ Modern geometric with character. Spacious letter forms. Good for headlines. Clean distinction across confusable characters.</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- OPTION 9: Manrope -->
+<!-- ============================================================ -->
+<div class="font-section">
+  <div class="font-label">Option 9</div>
+  <div class="font-name">Manrope — Mikhail Sharanda (semi-rounded, modern, variable)</div>
+
+  <div class="litmus font-manrope">I l 1 | ! i</div>
+  <div class="litmus-label">I &nbsp;l &nbsp;1 &nbsp;| &nbsp;! &nbsp;i</div>
+
+  <div class="confusion-test font-manrope">
+    Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.
+  </div>
+
+  <h3 class="post-title font-manrope">Dainis V. Michelis 14. Saeimas vēlēšanas rezultātos</h3>
+  <div class="post-meta">dainiswmichel · February 11, 2026 · 1 Comment</div>
+  <p class="post-content font-manrope">Vēlies uzzināt, kā Dainim Michelim gāja 14. Saeimas vēlēšanās? Šādi: Latvijas politiskā aina ir ilgi bijusi sarežģīta — ar 11 partijām, 100 deputātiem un neizlēmīgiem vēlētājiem, kas svārstās starp lielām un mazām koalīcijām.</p>
+
+  <hr class="post-divider">
+
+  <h3 class="post-title font-manrope">Building a Digital Life: 11 Lessons from Publishing 1,111 Posts Online</h3>
+  <div class="post-meta">dainiswmichel · January 15, 2026 · 0 Comments</div>
+  <p class="post-content font-manrope">I'll admit it — I initially illustrated my ideas illegibly. Literally illegible. All 11 illustrations looked like ill-conceived doodles. But after 1,111 posts, I finally learned: clarity is kindness. Legibility is love. And telling "I" from "l" from "1" shouldn't require a magnifying glass.</p>
+
+  <div class="verdict good">✦ Gently rounded terminals. Variable weight. Modern startup aesthetic. Good I/l distinction via serifs on I.</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- OPTION 10: Urbanist -->
+<!-- ============================================================ -->
+<div class="font-section">
+  <div class="font-label">Option 10</div>
+  <div class="font-name">Urbanist — Corey Hu (low-contrast geometric, inspired by Modernist architecture)</div>
+
+  <div class="litmus font-urbanist">I l 1 | ! i</div>
+  <div class="litmus-label">I &nbsp;l &nbsp;1 &nbsp;| &nbsp;! &nbsp;i</div>
+
+  <div class="confusion-test font-urbanist">
+    Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.
+  </div>
+
+  <h3 class="post-title font-urbanist">Dainis V. Michelis 14. Saeimas vēlēšanas rezultātos</h3>
+  <div class="post-meta">dainiswmichel · February 11, 2026 · 1 Comment</div>
+  <p class="post-content font-urbanist">Vēlies uzzināt, kā Dainim Michelim gāja 14. Saeimas vēlēšanās? Šādi: Latvijas politiskā aina ir ilgi bijusi sarežģīta — ar 11 partijām, 100 deputātiem un neizlēmīgiem vēlētājiem, kas svārstās starp lielām un mazām koalīcijām.</p>
+
+  <hr class="post-divider">
+
+  <h3 class="post-title font-urbanist">Building a Digital Life: 11 Lessons from Publishing 1,111 Posts Online</h3>
+  <div class="post-meta">dainiswmichel · January 15, 2026 · 0 Comments</div>
+  <p class="post-content font-urbanist">I'll admit it — I initially illustrated my ideas illegibly. Literally illegible. All 11 illustrations looked like ill-conceived doodles. But after 1,111 posts, I finally learned: clarity is kindness. Legibility is love. And telling "I" from "l" from "1" shouldn't require a magnifying glass.</p>
+
+  <div class="verdict good">✦ Geometric Modernist. Serifs on I, curved l, distinct 1. Architecturally clean. Full Latin Extended.</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- OPTION 11: Barlow -->
+<!-- ============================================================ -->
+<div class="font-section">
+  <div class="font-label">Option 11</div>
+  <div class="font-name">Barlow — Jeremy Tribby (grotesk, inspired by California highway signs)</div>
+
+  <div class="litmus font-barlow">I l 1 | ! i</div>
+  <div class="litmus-label">I &nbsp;l &nbsp;1 &nbsp;| &nbsp;! &nbsp;i</div>
+
+  <div class="confusion-test font-barlow">
+    Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.
+  </div>
+
+  <h3 class="post-title font-barlow">Dainis V. Michelis 14. Saeimas vēlēšanas rezultātos</h3>
+  <div class="post-meta">dainiswmichel · February 11, 2026 · 1 Comment</div>
+  <p class="post-content font-barlow">Vēlies uzzināt, kā Dainim Michelim gāja 14. Saeimas vēlēšanās? Šādi: Latvijas politiskā aina ir ilgi bijusi sarežģīta — ar 11 partijām, 100 deputātiem un neizlēmīgiem vēlētājiem, kas svārstās starp lielām un mazām koalīcijām.</p>
+
+  <hr class="post-divider">
+
+  <h3 class="post-title font-barlow">Building a Digital Life: 11 Lessons from Publishing 1,111 Posts Online</h3>
+  <div class="post-meta">dainiswmichel · January 15, 2026 · 0 Comments</div>
+  <p class="post-content font-barlow">I'll admit it — I initially illustrated my ideas illegibly. Literally illegible. All 11 illustrations looked like ill-conceived doodles. But after 1,111 posts, I finally learned: clarity is kindness. Legibility is love. And telling "I" from "l" from "1" shouldn't require a magnifying glass.</p>
+
+  <div class="verdict good">✦ Highway-sign DNA means maximum legibility at speed. Slightly condensed. Strong in large sizes.</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- OPTION 12: Overpass -->
+<!-- ============================================================ -->
+<div class="font-section">
+  <div class="font-label">Option 12</div>
+  <div class="font-name">Overpass — Delve Fonts for Red Hat (inspired by Highway Gothic, the US road sign font)</div>
+
+  <div class="litmus font-overpass">I l 1 | ! i</div>
+  <div class="litmus-label">I &nbsp;l &nbsp;1 &nbsp;| &nbsp;! &nbsp;i</div>
+
+  <div class="confusion-test font-overpass">
+    Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.
+  </div>
+
+  <h3 class="post-title font-overpass">Dainis V. Michelis 14. Saeimas vēlēšanas rezultātos</h3>
+  <div class="post-meta">dainiswmichel · February 11, 2026 · 1 Comment</div>
+  <p class="post-content font-overpass">Vēlies uzzināt, kā Dainim Michelim gāja 14. Saeimas vēlēšanās? Šādi: Latvijas politiskā aina ir ilgi bijusi sarežģīta — ar 11 partijām, 100 deputātiem un neizlēmīgiem vēlētājiem, kas svārstās starp lielām un mazām koalīcijām.</p>
+
+  <hr class="post-divider">
+
+  <h3 class="post-title font-overpass">Building a Digital Life: 11 Lessons from Publishing 1,111 Posts Online</h3>
+  <div class="post-meta">dainiswmichel · January 15, 2026 · 0 Comments</div>
+  <p class="post-content font-overpass">I'll admit it — I initially illustrated my ideas illegibly. Literally illegible. All 11 illustrations looked like ill-conceived doodles. But after 1,111 posts, I finally learned: clarity is kindness. Legibility is love. And telling "I" from "l" from "1" shouldn't require a magnifying glass.</p>
+
+  <div class="verdict excellent">✦ Road-sign heritage = designed for instant recognition at 60mph. Serifs on I, distinct l, clear 1. Slightly wider than Barlow. Full Latin Extended.</div>
+</div>
+
+</body>
+</html>

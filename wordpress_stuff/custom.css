@@ -1,0 +1,292 @@
+/*--------------------------------------------------------------
+  BuddyBoss Child Theme — Custom Styles
+  2026-02m-18d — Featured image thumbnails, font override, 111% text
+  
+  Targets:
+  - Global: Atkinson Hyperlegible Next font override + 111% size
+  - Blog list: .ratio-wrap > a.entry-media.entry-img > img
+  - Single post: figure.entry-media.entry-img.bb-vw-container1 > img
+--------------------------------------------------------------*/
+
+/* === GLOBAL: 111% text size === */
+html {
+    font-size: 111% !important;
+}
+
+/* === GLOBAL: Atkinson Hyperlegible Next font override === */
+body,
+body .site,
+.entry-title,
+.entry-content,
+.widget,
+.bb-header,
+.buddypanel-menu,
+.entry-header,
+.entry-meta,
+h1, h2, h3, h4, h5, h6,
+p, li, a, span, div,
+input, textarea, select, button,
+.bb-pagination,
+.post-title,
+.nav-menu,
+.site-title,
+.site-description,
+.comment-body,
+.breadcrumb,
+.buddypress *,
+.bbpress * {
+    font-family: 'Atkinson Hyperlegible Next', sans-serif !important;
+}
+
+/* === BLOG LIST: Thumbnail 150x150, floated top-right with text wrap === */
+
+/* Kill the ratio-wrap aspect ratio trick — we want a fixed square */
+.post-inner-wrap .ratio-wrap {
+    padding-bottom: 0 !important;
+    position: relative;
+    width: 150px;
+    height: 150px;
+    float: right;
+    margin: 0 0 12px 16px;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+/* Make the link container fill the square */
+.post-inner-wrap .ratio-wrap a.entry-media.entry-img {
+    position: relative !important;
+    display: block;
+    width: 150px;
+    height: 150px;
+}
+
+/* Crop the image to center-fill the 150x150 square */
+.post-inner-wrap .ratio-wrap a.entry-media.entry-img img {
+    width: 150px !important;
+    height: 150px !important;
+    object-fit: cover;
+    border-radius: 8px;
+    position: relative !important;
+}
+
+/* Clear floats after each post card */
+.post-inner-wrap::after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+/* === SINGLE POST: CSS Grid — thumbnail top-right, content full-width below === */
+
+/* Grid: 2 columns (fluid left + fixed 150px right), auto rows */
+.single-post .entry-content-wrap.primary-entry-content {
+    display: grid;
+    grid-template-columns: 1fr 150px;
+    column-gap: 20px;
+    row-gap: 0;
+}
+
+/* Title: left column */
+.single-post .entry-content-wrap.primary-entry-content > .entry-header {
+    grid-column: 1;
+    grid-row: 1;
+}
+
+/* Meta (author/date/comments): left column */
+.single-post .entry-content-wrap.primary-entry-content > .entry-meta {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+/* Thumbnail: right column, spans both title and meta rows */
+.single-post .entry-content-wrap.primary-entry-content > figure.entry-media.entry-img.bb-vw-container1 {
+    grid-column: 2;
+    grid-row: 1 / 3;
+    width: 150px !important;
+    height: 150px !important;
+    max-width: 150px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+    border-radius: 8px;
+    /* Kill BuddyBoss viewport-width tricks */
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    transform: none !important;
+    align-self: start;
+}
+
+figure.entry-media.entry-img.bb-vw-container1 img {
+    width: 150px !important;
+    height: 150px !important;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+/* Content: full width below both columns */
+.single-post .entry-content-wrap.primary-entry-content > .entry-content {
+    grid-column: 1 / -1;
+    grid-row: 3;
+}
+
+/* === MOBILE: Let thumbnails breathe on small screens === */
+@media (max-width: 480px) {
+    .post-inner-wrap .ratio-wrap {
+        float: none;
+        width: 100%;
+        height: 180px;
+        margin: 0 0 12px 0;
+        border-radius: 8px;
+    }
+
+    .post-inner-wrap .ratio-wrap a.entry-media.entry-img,
+    .post-inner-wrap .ratio-wrap a.entry-media.entry-img img {
+        width: 100% !important;
+        height: 180px !important;
+        border-radius: 8px;
+    }
+
+    .single-post .entry-content-wrap.primary-entry-content {
+        display: block;
+    }
+
+    /* Move thumbnail above title on mobile */
+    .single-post .entry-content-wrap.primary-entry-content > figure.entry-media.entry-img.bb-vw-container1 {
+        order: -1;
+    }
+
+    .single-post .entry-content-wrap.primary-entry-content {
+        display: flex;
+        flex-direction: column;
+    }
+
+    figure.entry-media.entry-img.bb-vw-container1 {
+        width: 100% !important;
+        height: 180px !important;
+        max-width: 100% !important;
+        margin: 0 0 16px 0 !important;
+        border-radius: 8px;
+    }
+
+    figure.entry-media.entry-img.bb-vw-container1 img {
+        width: 100% !important;
+        height: 180px !important;
+    }
+}
+
+/* ===== HEADER GAP FIX — 2026-02m-18d ===== */
+/* BuddyBoss sticky header uses position:fixed but never sets top/left,
+   so they default to 'auto' — any body padding offsets the header.
+   Force explicit viewport anchoring + zero body padding. */
+body {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.sticky-header .site-header {
+    top: 0 !important;
+    left: 0 !important;
+}
+
+/* ===== ADMIN BAR: offset sticky header when admin bar is visible — 2026-02m-19d ===== */
+/* WordPress adds .admin-bar to both <html> and <body> when admin bar is shown.
+   The fixed header needs top offset so it sits below the admin bar.
+   WordPress already adds html { margin-top: 32px } for page content push-down,
+   so we only need to offset the position:fixed header. */
+html.admin-bar .sticky-header .site-header,
+body.admin-bar .site-header {
+    top: 50px !important;
+}
+
+/* Mobile admin bar is 46px */
+@media screen and (max-width: 782px) {
+    html.admin-bar .sticky-header .site-header,
+    body.admin-bar .site-header {
+        top: 50px !important;
+    }
+}
+
+/* ===== SITE NAV (Main-Menu): Silver sheen styling — 2026-02m-19d ===== */
+/* BuddyBoss header nav (Activity, Shop, My Account) gets a subtle
+   lustrous silver-frost treatment with Atkinson Hyperlegible Next.
+   Max ~20% opacity accents — delicate, not heavy. */
+
+/* Nav menu items: base styling */
+#site-navigation .primary-menu > .menu-item > a {
+    font-family: 'Atkinson Hyperlegible Next', sans-serif !important;
+    color: rgba(40, 44, 52, 0.80) !important;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+    position: relative;
+    transition: color 0.25s ease, text-shadow 0.25s ease !important;
+}
+
+/* Lustrous sheen underline on hover — subtle gradient bar */
+#site-navigation .primary-menu > .menu-item > a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: 80%;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        rgba(180, 190, 210, 0) 0%,
+        rgba(180, 190, 210, 0.20) 30%,
+        rgba(210, 215, 225, 0.20) 50%,
+        rgba(180, 190, 210, 0.20) 70%,
+        rgba(180, 190, 210, 0) 100%
+    );
+    border-radius: 1px;
+    transition: transform 0.3s ease !important;
+}
+
+#site-navigation .primary-menu > .menu-item > a:hover::after,
+#site-navigation .primary-menu > .menu-item.current-menu-item > a::after {
+    transform: translateX(-50%) scaleX(1);
+}
+
+/* Hover & active: slight lift in contrast */
+#site-navigation .primary-menu > .menu-item > a:hover,
+#site-navigation .primary-menu > .menu-item.current-menu-item > a {
+    color: rgba(30, 34, 40, 0.95) !important;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.40) !important;
+}
+
+/* Frosted pill background on hover — very subtle */
+#site-navigation .primary-menu > .menu-item > a:hover {
+    background: rgba(220, 225, 235, 0.15) !important;
+    border-radius: 6px !important;
+}
+
+/* Dropdown sub-menus: frosted glass */
+#site-navigation .primary-menu .sub-menu {
+    background: rgba(240, 242, 248, 0.96) !important;
+    border: 1px solid rgba(180, 185, 195, 0.20) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+    border-radius: 8px !important;
+}
+
+#site-navigation .primary-menu .sub-menu .menu-item a {
+    font-family: 'Atkinson Hyperlegible Next', sans-serif !important;
+    color: rgba(40, 44, 52, 0.78) !important;
+    transition: background 0.2s ease, color 0.2s ease !important;
+}
+
+#site-navigation .primary-menu .sub-menu .menu-item a:hover {
+    background: rgba(255, 255, 255, 0.20) !important;
+    color: rgba(30, 34, 40, 0.95) !important;
+}
+
+/* ===== BuddyBoss Search Fix — 2026-02m-18d, updated 2026-02m-19d ===== */
+/* Safety CSS: hide any stray "Read more" from dummy post on search pages.
+   Root cause fixed in PHP (Advanced Excerpt disabled on BP search pages)
+   but keeping CSS as a fallback. */
+body.search article#post-0 .entry-content > .read-more,
+body.search article#post-0 .entry-content > a[href=""].read-more,
+body.search .search-hentry .read-more {
+    display: none !important;
+}

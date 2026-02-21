@@ -76,6 +76,7 @@ if (isset($_POST['flosc_save_flow']) && wp_verify_nonce($_POST['_wpnonce'], 'flo
             'tagline' => sanitize_text_field($_POST['product_tagline'] ?? ''),
             'emoji' => sanitize_text_field($_POST['product_emoji'] ?? '🎯'),
             'logo_url' => esc_url_raw($_POST['product_logo'] ?? ''),
+            'app_icon_url' => esc_url_raw($_POST['product_app_icon'] ?? ''),
             'primary_color' => sanitize_hex_color($_POST['product_color'] ?? '#4f46e5'),
             'share_text' => sanitize_text_field($_POST['product_share_text'] ?? ''),
         ],
@@ -276,6 +277,38 @@ $categories = get_categories(['hide_empty' => false]);
                                    class="large-text" 
                                    placeholder="https://...">
                             <p class="description">Optional. Used instead of emoji if provided.</p>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row"><label for="product_app_icon">App Icon</label></th>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <input type="url" id="product_app_icon" name="product_app_icon" 
+                                       value="<?php echo esc_attr($flow['product']['app_icon_url'] ?? ''); ?>" 
+                                       class="regular-text" 
+                                       placeholder="https://...">
+                                <button type="button" class="button" id="flosc_upload_app_icon">Upload</button>
+                                <img src="<?php echo esc_url($flow['product']['app_icon_url'] ?? ''); ?>" 
+                                     alt="" id="flosc_app_icon_preview"
+                                     style="width: 32px; height: 32px; border-radius: 6px;<?php echo empty($flow['product']['app_icon_url']) ? ' display: none;' : ''; ?>">
+                            </div>
+                            <p class="description">Used as favicon, empty-state icon, and AI avatar. Square PNG recommended (512&times;512+). Falls back to Logo URL, then emoji.</p>
+                            <?php wp_enqueue_media(); ?>
+                            <script>
+                            document.getElementById('flosc_upload_app_icon')?.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                var frame = wp.media({ title: 'Choose App Icon', multiple: false, library: { type: 'image' } });
+                                frame.on('select', function() {
+                                    var url = frame.state().get('selection').first().toJSON().url;
+                                    document.getElementById('product_app_icon').value = url;
+                                    var preview = document.getElementById('flosc_app_icon_preview');
+                                    preview.src = url;
+                                    preview.style.display = '';
+                                });
+                                frame.open();
+                            });
+                            </script>
                         </td>
                     </tr>
                     

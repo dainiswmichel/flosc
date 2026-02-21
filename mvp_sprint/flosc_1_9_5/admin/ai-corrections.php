@@ -1,16 +1,80 @@
 <?php
 /**
  * v1.9.0: AI Corrections & Praise Editor
+ * v1.9.5: Added "Rated Responses" section showing DB-rated chat log entries.
  * 
  * Admin can view, add, and delete corrections (flag bad responses) and
  * praises (reinforce good responses) that guide AI behavior.
- * Both are stored per-flow in flow settings and loaded into the system prompt.
+ * Manual entries stored per-flow in flow settings.
+ * Rated entries stored directly in flosc_chat_logs table (admin_rating column).
+ * Both are loaded into the system prompt via build_feedback_prompt().
  * 
  * Included from settings.php within the Chat Logs tab.
  */
 
 if (!defined('ABSPATH')) exit;
 
+// ── v1.9.5: Rated Responses from DB ──
+global $wpdb;
+$logs_table = $wpdb->prefix . 'flosc_chat_logs';
+$rated_logs = [];
+$col_check = $wpdb->get_results("SHOW COLUMNS FROM {$logs_table} LIKE 'admin_rating'");
+if (!empty($col_check)) {
+    $rated_logs = $wpdb->get_results(
+        "SELECT id, timestamp, user_message, ai_response, admin_rating, admin_note, rated_at 
+         FROM {$logs_table} WHERE admin_rating != 0 
+         ORDER BY admin_rating ASC, rated_at DESC LIMIT 50",
+        ARRAY_A
+    );
+}
+$rated_count = count($rated_logs);
+?>
+
+<?php if ($rated_count > 0): ?>
+<div class="flosc-corrections-section">
+    <h3 class="flosc-corrections-header">
+        Rated Responses
+        <span class="flosc-corrections-count" style="background: #6366f1;"><?php echo $rated_count; ?></span>
+    </h3>
+    <p class="flosc-corrections-description">
+        These are chat log entries you scored in the Chat Logs tab above. 
+        Negative scores tell the AI what to avoid. Positive scores reinforce good behavior. 
+        All rated entries are protected from auto-expunge.
+    </p>
+
+    <table class="flosc-corrections-table widefat striped">
+        <thead>
+            <tr>
+                <th style="width: 60px;">Score</th>
+                <th style="width: 100px;">Rated</th>
+                <th>User Said</th>
+                <th>AI Response</th>
+                <th>Admin Note</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($rated_logs as $rlog): ?>
+            <?php
+                $score = intval($rlog['admin_rating']);
+                $score_class = $score > 0 ? 'flosc-rating-positive' : ($score < 0 ? 'flosc-rating-negative' : '');
+                $score_display = $score > 0 ? '+' . $score : $score;
+            ?>
+            <tr>
+                <td>
+                    <span class="flosc-rated-score <?php echo $score_class; ?>"><?php echo $score_display; ?></span>
+                </td>
+                <td><?php echo esc_html(substr($rlog['rated_at'] ?? '', 0, 16)); ?></td>
+                <td><?php echo esc_html(mb_strimwidth($rlog['user_message'] ?? '', 0, 100, '...')); ?></td>
+                <td><?php echo esc_html(mb_strimwidth($rlog['ai_response'] ?? '', 0, 150, '...')); ?></td>
+                <td><?php echo esc_html($rlog['admin_note'] ?? ''); ?></td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
+</div>
+<?php endif; ?>
+
+<?php
 // ── Corrections ──
 $corrections = $flow_settings['ai_corrections'] ?? [];
 $corrections_count = count($corrections);

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Font Scan — I vs l vs 1 (Quick Elimination)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,200..800;1,200..800&family=IBM+Plex+Sans:ital,wght@0,400;0,700;1,400&family=Lexend:wght@400;700&family=Recursive:wght@400;700&family=Noto+Sans:ital,wght@0,400;0,700;1,400&family=Karla:ital,wght@0,400;0,700;1,400&family=Cabin:ital,wght@0,400;0,700;1,400&family=DM+Sans:ital,wght@0,400;0,700;1,400&family=Work+Sans:ital,wght@0,400;0,700;1,400&family=Albert+Sans:ital,wght@0,400;0,700;1,400&family=Outfit:wght@400;700&family=Figtree:ital,wght@0,400;0,700;1,400&family=Wix+Madefor+Text:ital,wght@0,400;0,700;1,400&family=Rubik:ital,wght@0,400;0,700;1,400&family=Poppins:ital,wght@0,400;0,700;1,400&family=Montserrat:ital,wght@0,400;0,700;1,400&family=Lato:ital,wght@0,400;0,700;1,400&family=Open+Sans:ital,wght@0,400;0,700;1,400&family=Raleway:ital,wght@0,400;0,700;1,400&family=Roboto:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #f5f5f0;
+    color: #1a1a1a;
+    padding: 40px 20px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  h1 { font-family: system-ui; font-size: 28px; margin-bottom: 8px; }
+  .subtitle { font-family: system-ui; font-size: 15px; color: #666; margin-bottom: 12px; line-height: 1.5; }
+  .instructions { font-family: system-ui; font-size: 14px; color: #c00; margin-bottom: 32px; font-weight: 600; }
+
+  .scan-row {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    align-items: center;
+    background: white;
+    border-radius: 8px;
+    padding: 16px 24px;
+    margin-bottom: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .scan-row:hover { background: #fffff0; }
+
+  .font-info {
+    font-family: system-ui;
+  }
+  .font-number { font-size: 11px; font-weight: 700; color: #999; text-transform: uppercase; letter-spacing: 1px; }
+  .font-title { font-size: 15px; font-weight: 600; color: #333; margin-top: 2px; }
+
+  .litmus {
+    font-size: 72px;
+    letter-spacing: 24px;
+    color: #111;
+    line-height: 1.2;
+  }
+
+  /* Also show a body-text sentence to catch fonts that only work at large sizes */
+  .body-test {
+    grid-column: 1 / -1;
+    font-size: 17px;
+    line-height: 1.6;
+    color: #555;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #f0f0f0;
+  }
+
+  .section-divider {
+    font-family: system-ui;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: #999;
+    margin: 32px 0 12px;
+    padding: 8px 0;
+    border-bottom: 2px solid #ddd;
+  }
+</style>
+</head>
+<body>
+
+<h1>Font Scan: I vs l vs 1</h1>
+<p class="subtitle">
+  20 fonts. Each shows capital-I, lowercase-l, number-1, pipe, exclamation, lowercase-i at 72px.<br>
+  Below each litmus: a body-text sentence so you can see if distinction holds at reading size.
+</p>
+<p class="instructions">Tell me which numbers pass. Everything else dies.</p>
+
+<div class="section-divider">Your 2 Finalists (for reference)</div>
+
+<!-- 1. Atkinson Hyperlegible Next -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#1</div>
+    <div class="font-title">Atkinson Hyperlegible Next</div>
+  </div>
+  <div class="litmus" style="font-family: 'Atkinson Hyperlegible Next', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Atkinson Hyperlegible Next', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<!-- 2. IBM Plex Sans -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#2</div>
+    <div class="font-title">IBM Plex Sans</div>
+  </div>
+  <div class="litmus" style="font-family: 'IBM Plex Sans', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'IBM Plex Sans', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<div class="section-divider">Accessibility-First Fonts</div>
+
+<!-- 3. Lexend -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#3</div>
+    <div class="font-title">Lexend</div>
+  </div>
+  <div class="litmus" style="font-family: 'Lexend', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Lexend', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<!-- 4. Recursive -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#4</div>
+    <div class="font-title">Recursive</div>
+  </div>
+  <div class="litmus" style="font-family: 'Recursive', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Recursive', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<div class="section-divider">Humanist / Grotesque Sans-Serifs</div>
+
+<!-- 5. Noto Sans -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#5</div>
+    <div class="font-title">Noto Sans</div>
+  </div>
+  <div class="litmus" style="font-family: 'Noto Sans', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Noto Sans', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<!-- 6. Karla -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#6</div>
+    <div class="font-title">Karla</div>
+  </div>
+  <div class="litmus" style="font-family: 'Karla', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Karla', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<!-- 7. Cabin -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#7</div>
+    <div class="font-title">Cabin</div>
+  </div>
+  <div class="litmus" style="font-family: 'Cabin', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Cabin', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<!-- 8. DM Sans -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#8</div>
+    <div class="font-title">DM Sans</div>
+  </div>
+  <div class="litmus" style="font-family: 'DM Sans', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'DM Sans', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<!-- 9. Work Sans -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#9</div>
+    <div class="font-title">Work Sans</div>
+  </div>
+  <div class="litmus" style="font-family: 'Work Sans', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Work Sans', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<!-- 10. Albert Sans -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#10</div>
+    <div class="font-title">Albert Sans</div>
+  </div>
+  <div class="litmus" style="font-family: 'Albert Sans', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Albert Sans', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<div class="section-divider">Geometric / Modern Sans-Serifs</div>
+
+<!-- 11. Outfit -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#11</div>
+    <div class="font-title">Outfit</div>
+  </div>
+  <div class="litmus" style="font-family: 'Outfit', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Outfit', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<!-- 12. Figtree -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#12</div>
+    <div class="font-title">Figtree</div>
+  </div>
+  <div class="litmus" style="font-family: 'Figtree', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Figtree', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<!-- 13. Wix Madefor Text -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#13</div>
+    <div class="font-title">Wix Madefor Text</div>
+  </div>
+  <div class="litmus" style="font-family: 'Wix Madefor Text', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Wix Madefor Text', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<!-- 14. Rubik -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#14</div>
+    <div class="font-title">Rubik</div>
+  </div>
+  <div class="litmus" style="font-family: 'Rubik', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Rubik', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<div class="section-divider">Popular Defaults (likely to fail — proving a point)</div>
+
+<!-- 15. Poppins -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#15</div>
+    <div class="font-title">Poppins</div>
+  </div>
+  <div class="litmus" style="font-family: 'Poppins', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Poppins', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<!-- 16. Montserrat -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#16</div>
+    <div class="font-title">Montserrat</div>
+  </div>
+  <div class="litmus" style="font-family: 'Montserrat', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Montserrat', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<!-- 17. Lato -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#17</div>
+    <div class="font-title">Lato</div>
+  </div>
+  <div class="litmus" style="font-family: 'Lato', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Lato', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<!-- 18. Open Sans -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#18</div>
+    <div class="font-title">Open Sans</div>
+  </div>
+  <div class="litmus" style="font-family: 'Open Sans', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Open Sans', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<!-- 19. Raleway -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#19</div>
+    <div class="font-title">Raleway</div>
+  </div>
+  <div class="litmus" style="font-family: 'Raleway', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Raleway', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+<!-- 20. Roboto -->
+<div class="scan-row">
+  <div class="font-info">
+    <div class="font-number">#20</div>
+    <div class="font-title">Roboto</div>
+  </div>
+  <div class="litmus" style="font-family: 'Roboto', sans-serif;">I l 1 | ! i</div>
+  <div class="body-test" style="font-family: 'Roboto', sans-serif;">Illegal immigrants filled 11 Illinois jails. Lily called 111 allies. I'll illustrate 1,111 illustrations.</div>
+</div>
+
+</body>
+</html>

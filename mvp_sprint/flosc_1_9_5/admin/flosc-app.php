@@ -56,6 +56,15 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
     <meta name="robots" content="noindex, nofollow">
     <title><?php echo esc_html($product['name'] ?: 'FLOSC App'); ?> - <?php echo esc_html($product['tagline']); ?></title>
     
+    <!-- v1.9.5: FLOSC App Icon — overrides host site's favicon -->
+    <?php
+    remove_action('wp_head', 'wp_site_icon', 99);
+    $flosc_icon_32  = function_exists('flosc_get_app_icon_url') ? flosc_get_app_icon_url('32')  : FLOSC_PLUGIN_URL . 'assets/img/flosc-icon-32.png';
+    $flosc_icon_180 = function_exists('flosc_get_app_icon_url') ? flosc_get_app_icon_url('180') : FLOSC_PLUGIN_URL . 'assets/img/flosc-icon-180.png';
+    ?>
+    <link rel="icon" type="image/png" sizes="32x32" href="<?php echo esc_url($flosc_icon_32); ?>">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?php echo esc_url($flosc_icon_180); ?>">
+    
     <!-- Dynamic Primary Color -->
     <style>
         :root {
@@ -332,7 +341,14 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
         <div class="chat-container" id="flosc_chat_container">
             <!-- Landing state -->
             <div class="landing-state" id="landingState">
-                <h1 class="landing-title">Welcome to <?php echo esc_html($product['name'] ?: 'FLOSC'); ?></h1>
+                <?php
+                $landing_icon = function_exists('flosc_get_app_icon_url') ? flosc_get_app_icon_url() : '';
+                if ($landing_icon): ?>
+                    <img src="<?php echo esc_url($landing_icon); ?>" alt="" class="landing-icon">
+                <?php elseif (!empty($product['emoji'])): ?>
+                    <div class="landing-emoji"><?php echo esc_html($product['emoji']); ?></div>
+                <?php endif; ?>
+                <h1 class="landing-title"><?php echo esc_html($product['name'] ?: 'FLOSC'); ?></h1>
                 <p class="landing-subtitle"><?php echo esc_html($product['tagline'] ?: 'Your AI-powered assistant'); ?></p>
             </div>
 

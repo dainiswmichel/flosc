@@ -51,11 +51,12 @@ $flosc_chat_logs_nonce = wp_create_nonce('flosc_chat_logs');
                 <th class="flosc-log-col-response">AI Response</th>
                 <th class="flosc-log-col-meta">Source / Provider</th>
                 <th class="flosc-log-col-ms">ms</th>
+                <th class="flosc-log-col-rating">Rating</th>
             </tr>
         </thead>
         <tbody id="flosc-chat-logs-body">
             <?php if (empty($recent_logs)): ?>
-                <tr id="flosc-log-empty-row"><td colspan="7">No chat logs yet. Logs will appear here as users chat.</td></tr>
+                <tr id="flosc-log-empty-row"><td colspan="8">No chat logs yet. Logs will appear here as users chat.</td></tr>
             <?php else: ?>
                 <?php foreach ($recent_logs as $log): ?>
                     <?php echo flosc_render_chat_log_row($log); ?>
@@ -127,6 +128,14 @@ jQuery(function($) {
             '<td class="flosc-log-col-response">' + respPreview + '</td>' +
             '<td class="flosc-log-col-meta">' + meta + '</td>' +
             '<td class="flosc-log-col-ms">' + (log.response_time_ms || 0) + '</td>' +
+            '<td class="flosc-log-col-rating">' +
+                '<div class="flosc-log-rating" data-log-id="' + log.id + '">' +
+                '<input type="number" min="-10" max="10" step="1" value="0" ' +
+                    'class="flosc-rating-input flosc-rating-neutral" title="-10 (worst) to +10 (best)">' +
+                '<input type="text" value="" class="flosc-rating-note" placeholder="Note">' +
+                '<button type="button" class="button button-small flosc-save-rating">Save</button>' +
+                '</div>' +
+            '</td>' +
             '</tr>';
     }
 
@@ -161,6 +170,49 @@ jQuery(function($) {
         });
     });
 
+    // v1.9.5: Save rating — delegated click handler for dynamic rows
+    $(document).on('click', '.flosc-save-rating', function() {
+        var $widget = $(this).closest('.flosc-log-rating');
+        var logId = $widget.data('log-id');
+        var rating = parseInt($widget.find('.flosc-rating-input').val()) || 0;
+        var note = $widget.find('.flosc-rating-note').val() || '';
+        var $btn = $(this);
+
+        $btn.text('Saving...').prop('disabled', true);
+
+        $.post(ajaxurl, {
+            action: 'flosc_rate_log',
+            nonce: nonce,
+            log_id: logId,
+            rating: rating,
+            note: note
+        }, function(res) {
+            if (res.success) {
+                $btn.text('Saved!');
+                // Update color class
+                var $input = $widget.find('.flosc-rating-input');
+                $input.removeClass('flosc-rating-positive flosc-rating-negative flosc-rating-neutral');
+                if (rating > 0) $input.addClass('flosc-rating-positive');
+                else if (rating < 0) $input.addClass('flosc-rating-negative');
+                else $input.addClass('flosc-rating-neutral');
+                setTimeout(function() { $btn.text('Save').prop('disabled', false); }, 1500);
+            } else {
+                $btn.text('Error').prop('disabled', false);
+            }
+        }).fail(function() {
+            $btn.text('Error').prop('disabled', false);
+        });
+    });
+
+    // v1.9.5: Live color update as admin types a score
+    $(document).on('change input', '.flosc-rating-input', function() {
+        var val = parseInt($(this).val()) || 0;
+        $(this).removeClass('flosc-rating-positive flosc-rating-negative flosc-rating-neutral');
+        if (val > 0) $(this).addClass('flosc-rating-positive');
+        else if (val < 0) $(this).addClass('flosc-rating-negative');
+        else $(this).addClass('flosc-rating-neutral');
+    });
+
     // Start polling on load
     if ($('#flosc-log-auto-refresh').is(':checked')) {
         startPolling();
@@ -189,7 +241,22 @@ function flosc_render_chat_log_row($log) {
     if ($chain) $meta .= ' (' . $chain . ')';
     $ms = intval($log['response_time_ms'] ?? 0);
 
-    return '<tr data-id="' . intval($log['id']) . '">'
+    // v1.9.5: Rating widget
+    $rating = intval($log['admin_rating'] ?? 0);
+    $note = esc_attr($log['admin_note'] ?? '');
+    $log_id = intval($log['id']);
+    $rating_class = $rating > 0 ? 'flosc-rating-positive' : ($rating < 0 ? 'flosc-rating-negative' : 'flosc-rating-neutral');
+
+    $rating_cell = '<td class="flosc-log-col-rating">'
+        . '<div class="flosc-log-rating" data-log-id="' . $log_id . '">'
+        . '<input type="number" min="-10" max="10" step="1" value="' . $rating . '" '
+        . 'class="flosc-rating-input ' . $rating_class . '" title="-10 (worst) to +10 (best)">'
+        . '<input type="text" value="' . $note . '" class="flosc-rating-note" placeholder="Note">'
+        . '<button type="button" class="button button-small flosc-save-rating">Save</button>'
+        . '</div>'
+        . '</td>';
+
+    return '<tr data-id="' . $log_id . '">'
         . '<td class="flosc-log-col-time"><abbr title="' . esc_attr($date) . '">' . esc_html($time) . '</abbr></td>'
         . '<td class="flosc-log-col-user">' . $user . '</td>'
         . '<td class="flosc-log-col-phase"><span class="flosc-log-phase-badge">' . $phase . '</span></td>'
@@ -197,6 +264,7 @@ function flosc_render_chat_log_row($log) {
         . '<td class="flosc-log-col-response">' . $resp . '</td>'
         . '<td class="flosc-log-col-meta">' . $meta . '</td>'
         . '<td class="flosc-log-col-ms">' . $ms . '</td>'
+        . $rating_cell
         . '</tr>';
 }
 ?>

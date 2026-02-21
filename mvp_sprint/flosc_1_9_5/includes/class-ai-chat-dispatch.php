@@ -42,9 +42,8 @@ class FLOSC_AI_Chat_Dispatch {
         // v1.9.0: IVR Interpreter — when IVR matched, AI uses it as response guidance
         $ivr_guidance = $context['ivr_guidance'] ?? '';
 
-        // v1.9.0: Admin corrections + praise — load flagged/praised response guidance
-        $corrections_prompt = $this->build_corrections_prompt();
-        $praise_prompt = $this->build_praise_prompt();
+        // v1.9.5: Unified admin feedback — reads rated chat logs from DB
+        $feedback_prompt = $this->build_feedback_prompt();
 
         // 6. Merge all sections
         $sections = array_filter([
@@ -52,8 +51,7 @@ class FLOSC_AI_Chat_Dispatch {
             $flosc_process,
             $phase_prompt,
             $orientation_content ? "## Knowledge Base\n" . $orientation_content : '',
-            $corrections_prompt,
-            $praise_prompt,
+            $feedback_prompt,
             $context_string ? "## Current Session Context\n" . $context_string : '',
             $ivr_guidance ? "## Response Guidance\nThe scripted system matched the following response for the user's input. "
                 . "Use this as the BASIS for your reply — convey the same meaning and intent, "
@@ -118,59 +116,107 @@ class FLOSC_AI_Chat_Dispatch {
     }
 
     /**
-     * v1.9.0: Build corrections prompt from admin-flagged bad responses.
-     * Returns formatted guidance for the AI to avoid repeating past mistakes.
+     * v1.9.5: Build unified feedback prompt from rated chat log entries.
+     * Reads directly from the flosc_chat_logs table (admin_rating != 0).
+     * Negative ratings = corrections. Positive ratings = praise. Magnitude = weight.
+     *
+     * Also includes legacy ai_corrections/ai_praises from flow settings
+     * for backward compatibility with manually-added entries.
      */
-    private function build_corrections_prompt() {
-        $corrections = flosc_get_setting('ai_corrections', []);
+    private function build_feedback_prompt() {
+        global $wpdb;
 
-        if (empty($corrections) || !is_array($corrections)) {
-            return '';
-        }
+        $sections = [];
 
-        $prompt = "## Admin Corrections\n";
-        $prompt .= "The following are specific corrections from the administrator. Follow these exactly.\n\n";
+        // ── DB-rated entries (new system) ──
+        $table = $wpdb->prefix . 'flosc_chat_logs';
 
-        foreach ($corrections as $i => $correction) {
-            $num = $i + 1;
-            $prompt .= "### Correction {$num}\n";
-            $prompt .= "**When the user says:** \"{$correction['user_message']}\"\n";
-            $prompt .= "**Do NOT respond like:** \"{$correction['bad_response']}\"\n";
-            $prompt .= "**Issue:** {$correction['admin_note']}\n";
+        // Check if admin_rating column exists before querying
+        $col = $wpdb->get_results("SHOW COLUMNS FROM {$table} LIKE 'admin_rating'");
+        if (!empty($col)) {
+            // Get negative-rated logs (corrections), strongest first, limit 20
+            $negatives = $wpdb->get_results(
+                "SELECT user_message, ai_response, admin_rating, admin_note FROM {$table} 
+                 WHERE admin_rating < 0 ORDER BY admin_rating ASC, rated_at DESC LIMIT 20",
+                ARRAY_A
+            );
 
-            if (!empty($correction['preferred_response'])) {
-                $prompt .= "**Instead, respond like:** \"{$correction['preferred_response']}\"\n";
+            if (!empty($negatives)) {
+                $prompt = "## Admin Corrections (Rated Responses)\n";
+                $prompt .= "The administrator scored these responses negatively. Avoid this behavior.\n\n";
+                foreach ($negatives as $i => $row) {
+                    $num = $i + 1;
+                    $score = $row['admin_rating'];
+                    $prompt .= "### Correction {$num} (score: {$score}/10)\n";
+                    $prompt .= "**User said:** \"" . mb_substr($row['user_message'], 0, 200) . "\"\n";
+                    $prompt .= "**Your bad response:** \"" . mb_substr($row['ai_response'], 0, 300) . "\"\n";
+                    if (!empty($row['admin_note'])) {
+                        $prompt .= "**Admin note:** {$row['admin_note']}\n";
+                    }
+                    $prompt .= "\n";
+                }
+                $sections[] = $prompt;
             }
 
-            $prompt .= "\n";
+            // Get positive-rated logs (praise), strongest first, limit 20
+            $positives = $wpdb->get_results(
+                "SELECT user_message, ai_response, admin_rating, admin_note FROM {$table} 
+                 WHERE admin_rating > 0 ORDER BY admin_rating DESC, rated_at DESC LIMIT 20",
+                ARRAY_A
+            );
+
+            if (!empty($positives)) {
+                $prompt = "## Admin Praise (Rated Responses)\n";
+                $prompt .= "The administrator scored these responses positively. Replicate this quality.\n\n";
+                foreach ($positives as $i => $row) {
+                    $num = $i + 1;
+                    $score = $row['admin_rating'];
+                    $prompt .= "### Example {$num} (score: +{$score}/10)\n";
+                    $prompt .= "**User said:** \"" . mb_substr($row['user_message'], 0, 200) . "\"\n";
+                    $prompt .= "**Your excellent response:** \"" . mb_substr($row['ai_response'], 0, 300) . "\"\n";
+                    if (!empty($row['admin_note'])) {
+                        $prompt .= "**Why this was good:** {$row['admin_note']}\n";
+                    }
+                    $prompt .= "\n";
+                }
+                $sections[] = $prompt;
+            }
         }
 
-        return $prompt;
-    }
+        // ── Legacy manual corrections/praises (backward compat) ──
+        $corrections = flosc_get_setting('ai_corrections', []);
+        if (!empty($corrections) && is_array($corrections)) {
+            $prompt = "## Manual Corrections\n";
+            $prompt .= "The following are specific corrections from the administrator.\n\n";
+            foreach ($corrections as $i => $correction) {
+                $num = $i + 1;
+                $prompt .= "### Correction {$num}\n";
+                $prompt .= "**When the user says:** \"{$correction['user_message']}\"\n";
+                $prompt .= "**Do NOT respond like:** \"{$correction['bad_response']}\"\n";
+                $prompt .= "**Issue:** {$correction['admin_note']}\n";
+                if (!empty($correction['preferred_response'])) {
+                    $prompt .= "**Instead, respond like:** \"{$correction['preferred_response']}\"\n";
+                }
+                $prompt .= "\n";
+            }
+            $sections[] = $prompt;
+        }
 
-    /**
-     * v1.9.0: Build praise prompt from admin-praised good responses.
-     * Reinforces behaviors the admin wants the AI to keep doing.
-     */
-    private function build_praise_prompt() {
         $praises = flosc_get_setting('ai_praises', []);
-
-        if (empty($praises) || !is_array($praises)) {
-            return '';
+        if (!empty($praises) && is_array($praises)) {
+            $prompt = "## Manual Praise\n";
+            $prompt .= "The administrator praised the following responses.\n\n";
+            foreach ($praises as $i => $praise) {
+                $num = $i + 1;
+                $prompt .= "### Example {$num}\n";
+                $prompt .= "**When the user said:** \"{$praise['user_message']}\"\n";
+                $prompt .= "**Your excellent response was:** \"{$praise['good_response']}\"\n";
+                $prompt .= "**Why this was good:** {$praise['admin_note']}\n\n";
+            }
+            $sections[] = $prompt;
         }
 
-        $prompt = "## Admin Praise — Keep Doing This\n";
-        $prompt .= "The administrator praised the following responses. Use them as examples of your best work.\n\n";
-
-        foreach ($praises as $i => $praise) {
-            $num = $i + 1;
-            $prompt .= "### Example {$num}\n";
-            $prompt .= "**When the user said:** \"{$praise['user_message']}\"\n";
-            $prompt .= "**Your excellent response was:** \"{$praise['good_response']}\"\n";
-            $prompt .= "**Why this was good:** {$praise['admin_note']}\n\n";
-        }
-
-        return $prompt;
+        return implode("\n", $sections);
     }
 
     /**

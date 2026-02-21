@@ -1,6 +1,55 @@
 # MVP Sprint Development Worknotes
 **Started:** 2026-02-02
-**Current Version:** 1.6.4 (IVR per-flow import fix)
+**Current Version:** 1.9.4 (testing feedback from v1.9.3)
+
+---
+
+## FLOSC Version Iteration Process
+
+When iterating FLOSC versions, follow this exact sequence:
+
+1. **Freeze the test version.** When a version is ready for testing, stop editing it. Zip it:
+   ```
+   cd mvp_sprint && zip -r flosc_X_Y_Z.zip flosc_X_Y_Z/ -x "*.DS_Store"
+   ```
+
+2. **Create the next version folder.** Copy the frozen version to a new folder:
+   ```
+   cp -r flosc_X_Y_Z flosc_X_Y_next
+   ```
+
+3. **Bump version numbers in the new folder.** Three locations:
+   - `flosc.php` line 6: Plugin header `Version: X.Y.next`
+   - `flosc.php` line 17: `define('FLOSC_VERSION', 'X.Y.next');`
+   - `readme.md` line 1: Title and status line
+
+4. **Set readme status.**
+   - Frozen/test version: `✅ TESTING`
+   - Working version: `🔧 IN DEVELOPMENT (testing feedback from vX.Y.Z)`
+
+5. **Do NOT zip the working folder.** Only zip frozen test versions.
+
+6. **Commit and push both folders** to GitHub together.
+
+7. **All testing feedback goes into the working folder**, not the frozen version.
+
+---
+
+## MTS-2026-02m-21d — v1.9.3 → v1.9.4 Iteration
+
+### v1.9.3 (Frozen — Testing)
+- IVR leak prevention: 3-layer fix (frontend pipeline, backend ivr_guidance, dispatch null returns)
+- Reverted 4 fabricated chatpack changes from v1.9.2
+- Architecture rule added to readme: "IVR = brain (WHAT). AI = voice (HOW)."
+- Zipped as `flosc_1_9_3.zip` (505K)
+
+### v1.9.4 (Working — Testing Feedback)
+- Identical to v1.9.3, version bumped to 1.9.4
+- Awaiting testing feedback from v1.9.3 deployment
+- Status: 🔧 IN DEVELOPMENT
+
+### Git
+- Both folders committed and pushed to branch `claude/grep-mcp-recommendations-I7XsO`
 
 ---
 

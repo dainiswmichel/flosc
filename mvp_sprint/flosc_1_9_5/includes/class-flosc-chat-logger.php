@@ -34,6 +34,8 @@ class FLOSC_Chat_Logger {
         global $wpdb;
 
         if ($wpdb->get_var("SHOW TABLES LIKE '{$this->table_name}'") === $this->table_name) {
+            // v1.9.5: Ensure rating columns exist on existing tables
+            $this->flosc_upgrade_table();
             return true;
         }
 
@@ -64,6 +66,63 @@ class FLOSC_Chat_Logger {
         dbDelta($sql);
 
         return true;
+    }
+
+    /**
+     * v1.9.5: Upgrade table — add rating columns if they don't exist.
+     * Called alongside flosc_ensure_table() on activation.
+     */
+    public function flosc_upgrade_table() {
+        global $wpdb;
+
+        // Check if the admin_rating column already exists
+        $col = $wpdb->get_results("SHOW COLUMNS FROM {$this->table_name} LIKE 'admin_rating'");
+        if (!empty($col)) {
+            return; // Already upgraded
+        }
+
+        $wpdb->query("ALTER TABLE {$this->table_name}
+            ADD COLUMN admin_rating TINYINT NOT NULL DEFAULT 0,
+            ADD COLUMN admin_note TEXT DEFAULT NULL,
+            ADD COLUMN rated_at DATETIME DEFAULT NULL,
+            ADD COLUMN rated_by BIGINT UNSIGNED DEFAULT NULL,
+            ADD COLUMN is_protected TINYINT(1) NOT NULL DEFAULT 0
+        ");
+    }
+
+    /**
+     * v1.9.5: Rate a chat log entry. Score from -10 to +10 with optional note.
+     * Any non-zero rating auto-protects the log from expunge.
+     *
+     * @param int    $log_id  The chat log row ID
+     * @param int    $rating  Score from -10 to +10
+     * @param string $note    Admin's note (why this score)
+     * @return bool True on success
+     */
+    public function flosc_rate_log($log_id, $rating, $note = '') {
+        global $wpdb;
+
+        // Clamp to -10..+10
+        $rating = max(-10, min(10, intval($rating)));
+
+        // Any non-zero rating auto-protects the row from auto-expunge
+        $is_protected = ($rating !== 0) ? 1 : 0;
+
+        $result = $wpdb->update(
+            $this->table_name,
+            [
+                'admin_rating' => $rating,
+                'admin_note'   => sanitize_textarea_field($note),
+                'rated_at'     => current_time('mysql'),
+                'rated_by'     => get_current_user_id(),
+                'is_protected' => $is_protected,
+            ],
+            ['id' => intval($log_id)],
+            ['%d', '%s', '%s', '%d', '%d'],
+            ['%d']
+        );
+
+        return $result !== false;
     }
 
     /**
@@ -196,8 +255,9 @@ class FLOSC_Chat_Logger {
         $this->flosc_ensure_table();
 
         $cutoff = gmdate('Y-m-d H:i:s', time() - ($days * DAY_IN_SECONDS));
+        // v1.9.5: Never delete rated/protected logs
         return $wpdb->query($wpdb->prepare(
-            "DELETE FROM {$this->table_name} WHERE timestamp < %s",
+            "DELETE FROM {$this->table_name} WHERE is_protected = 0 AND timestamp < %s",
             $cutoff
         ));
     }

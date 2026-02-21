@@ -1,0 +1,45 @@
+/*
+Theme Name:     DA1NI5 BuddyBoss Child Theme Enhanced (Commercial)
+Theme URI:      https://dainis.net/
+Description:    Child theme of BuddyBoss Theme for dainis.net. Custom search fixes, featured images deployed as thumbnails, readable font options (Atkinson Hyperlegible Next at 111%). Admin bar hidden for subscribers. Site nav silver sheen styling. Commercial theme — currently not yet for sale.
+Author:         Dainis W. Michel
+Author URI:     https://dainis.net/
+License:        GNU General Public License v3 or later
+License URI:    http://www.gnu.org/licenses/gpl-3.0.html
+Template:       buddyboss-theme
+Version:        1.0.1
+*/
+
+/*
+ * ============================================================================
+ * CHANGELOG — Michel Date Stamp Innovation (YYYY-MMm-DDd)
+ * Newest entries at the top. Additive only — never delete previous entries.
+ * ============================================================================
+ *
+ * 2026-02m-19d — v1.0.1 — Theme screenshot + description fix
+ *   - Theme name: DA1NI5 BuddyBoss Child Theme Enhanced (Commercial)
+ *   - Added custom screenshot.png (1536x1024)
+ *   - Fixed Description truncation (must be single-line for WP header parser)
+ *   - Admin bar hidden for subscribers (PHP filter)
+ *   - Site nav silver sheen styling (Atkinson Hyperlegible Next)
+ *
+ * 2026-02m-18d — v1.0.1 — "Search Works" release
+ *   - Renamed theme from "BuddyBoss Child" to "DA1NI5 BuddyBoss Child Theme"
+ *   - Slug changed from buddyboss-theme-child-1.0.0-1 to da1ni5-buddyboss-theme-child-1.0.1
+ *   - Fixed BuddyBoss Platform search (broken for years):
+ *       • Search results now display correctly on all queries
+ *       • Activity result counts match displayed items
+ *       • Eliminated stray "… Read more…" link from dummy post
+ *   - Font: Atkinson Hyperlegible Next at 111% base size
+ *   - Pagination: click-to-load replaces infinite scroll
+ *
+ * 2025-xx-xxd — v1.0.0 — Original BuddyBoss child theme scaffold
+ * ============================================================================
+ *
+ * -- Stylesheet locations --
+ *
+ * Custom CSS goes in /assets/css/custom.css in this child theme.
+ *
+ * Parent styles are loaded from /buddyboss-theme/inc/theme/functions.php
+ * and are located in /buddyboss-theme/assets/css/ in the parent theme.
+ */

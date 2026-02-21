@@ -4329,12 +4329,19 @@ Purchased: ${ctx.purchased}
         });
         this.log('[FLOSC] Message added successfully');
 
-        // v9.0.6: Hide greeting title after 3 messages for returning guests
-        if (this.ivr.messageCount >= 3) {
-            const greetingTitle = document.getElementById('greetingTitle');
-            if (greetingTitle) {
-                greetingTitle.style.display = 'none';
-            }
+        // v1.9.5: Hide empty-state elements on first message (Grok pattern).
+        // Landing state, greeting, and autoprompt pills all vanish — chat area is 100% messages.
+        const landing = document.getElementById('landingState');
+        if (landing && !landing.classList.contains('flosc-hidden')) {
+            landing.classList.add('flosc-hidden');
+        }
+        const greeting = document.getElementById('greeting');
+        if (greeting && !greeting.classList.contains('flosc-hidden')) {
+            greeting.classList.add('flosc-hidden');
+        }
+        const pills = document.getElementById('flosc_input_user_autoprompts_panel');
+        if (pills && !pills.classList.contains('flosc-hidden')) {
+            pills.classList.add('flosc-hidden');
         }
 
         // v8.0.9: Return element so caller can add attributes

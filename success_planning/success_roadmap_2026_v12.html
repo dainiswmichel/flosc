@@ -1,0 +1,1912 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Success Roadmap 2026 - Dainis W. Michel</title>
+<style>
+/* =========================================================
+   Success Roadmap 2026 — v11
+   - Clean, printable default theme
+   - 3 soothing themes (forest / slate / sand)
+   - Robust TOC (H1..H4) + depth filters
+   - DOCUMENT H1 collapse/expand (navbar +/-)
+   - Clear triangle indicators for H1 sections
+   - Pre blocks wrap text properly
+   ========================================================= */
+
+/* ---------- Theme tokens ---------- */
+:root{
+  --bg: #ffffff;
+  --card: #ffffff;
+  --ink: #16181d;
+  --muted: #5e6572;
+  --link: #1f5fbf;
+  --border: #d8dde6;
+
+  --radius: 14px;
+  --shadow: 0 10px 30px rgba(0,0,0,.06);
+  --shadow-lite: 0 6px 18px rgba(0,0,0,.05);
+
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, Helvetica, Arial, sans-serif;
+
+  /* heading band */
+  --h1-bg: #f2f4f8;
+  --h1-border: var(--border);
+  --h1-ink: var(--ink);
+  --h1-shadow: var(--shadow-lite);
+
+  /* subtle page tint (used by non-print themes) */
+  --page-tint: #ffffff;
+}
+
+/* Forest — natural green */
+body[data-theme="forest"]{
+  --bg:#f6fbf7;
+  --card:#ffffff;
+  --ink:#101612;
+  --muted:#4f5a52;
+  --link:#1c6b3f;
+  --border:#cfe3d5;
+  --h1-bg:#e8f3ea;
+  --h1-border:#cfe3d5;
+  --h1-shadow: 0 8px 22px rgba(28,107,63,.10);
+  --page-tint:#eef6f0;
+}
+
+/* Slate — calm blue-grey */
+body[data-theme="slate"]{
+  --bg:#f6fafc;
+  --card:#ffffff;
+  --ink:#0f1418;
+  --muted:#56616b;
+  --link:#0f6f7a;
+  --border:#cfe7ea;
+  --h1-bg:#e9f5f7;
+  --h1-border:#cfe7ea;
+  --h1-shadow: 0 8px 22px rgba(15,111,122,.10);
+  --page-tint:#eef6f7;
+}
+
+/* Sand — warm neutral */
+body[data-theme="sand"]{
+  --bg:#fbf7f0;
+  --card:#ffffff;
+  --ink:#17130d;
+  --muted:#6b5f52;
+  --link:#7a4b16;
+  --border:#eadbc4;
+  --h1-bg:#f6efe3;
+  --h1-border:#eadbc4;
+  --h1-shadow: 0 8px 22px rgba(122,75,22,.10);
+  --page-tint:#f7f0e6;
+}
+
+/* Print (default) — crisp */
+body[data-theme="print"]{
+  --bg:#ffffff;
+  --card:#ffffff;
+  --ink:#111;
+  --muted:#333;
+  --link:#0b57d0;
+  --border:#c9c9c9;
+  --h1-bg:#f3f3f3;
+  --h1-border:#c9c9c9;
+  --h1-shadow:none;
+  --page-tint:#ffffff;
+}
+
+/* ---------- Base ---------- */
+html, body{
+  margin:0;
+  padding:0;
+  font-family: var(--sans);
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.55;
+}
+
+a{ color: var(--link); text-decoration: none; }
+a:hover{ text-decoration: underline; }
+
+.container{
+  max-width: 980px;
+  margin: 22px auto 64px auto;
+  padding: 0 18px;
+}
+
+/* ---------- Header ---------- */
+header{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px 18px 14px 18px;
+  margin-bottom: 12px;
+}
+header h1{
+  margin:0 0 6px 0;
+  font-size: 30px;
+  line-height: 1.15;
+}
+.subtitle{
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ---------- Main Nav ---------- */
+.main-nav{
+  margin: 10px 0 10px 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lite);
+  padding: 10px 12px;
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-links{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.nav-links a{
+  display:inline-block;
+  padding: 6px 8px;
+  border-radius: 10px;
+}
+.nav-links a:hover{ background: rgba(0,0,0,.04); text-decoration:none; }
+
+.nav-controls{
+  display:flex;
+  align-items:center;
+  gap: 8px;
+}
+
+.nav-controls button{
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 6px 10px;
+  cursor:pointer;
+}
+.nav-controls button:hover{ background: rgba(0,0,0,.04); }
+
+.nav-theme{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.nav-theme label{
+  color: var(--muted);
+  font-size: 13px;
+}
+.nav-theme select{
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 6px 10px;
+}
+
+/* ---------- Primary goal ---------- */
+.primary-goal{
+  margin: 10px 0 12px 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lite);
+  padding: 10px 12px;
+  display:flex;
+  gap: 10px;
+  align-items:center;
+}
+.primary-goal .goal-pill{
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+.primary-goal .goal-text{
+  font-weight: 700;
+}
+
+/* ---------- TOC ---------- */
+.doc-toc{
+  margin: 10px 0 18px 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 14px 12px 14px;
+}
+
+.doc-toc h2{
+  margin: 0 0 10px 0;
+  font-size: 18px;
+}
+
+.toc-controls{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 10px 0;
+}
+
+.toc-controls button{
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.toc-controls button:hover{ background: rgba(0,0,0,.06); }
+.toc-controls button.active{
+  background: var(--link);
+  color: white;
+  border-color: var(--link);
+  font-weight: 600;
+}
+
+.toc-tree, .toc-nested{
+  list-style:none;
+  margin:0;
+  padding:0;
+}
+
+.toc-item{ margin: 2px 0; }
+.toc-row{
+  display:flex;
+  align-items:flex-start;
+  gap: 8px;
+}
+
+.toc-toggle{
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+  margin-top: 2px;
+  font-size: 11px;
+  transition: background 0.15s;
+}
+.toc-toggle:hover{ background: rgba(0,0,0,.08); }
+.toc-toggle.no-children{ 
+  visibility: hidden;
+}
+
+.toc-link{
+  display:inline-block;
+  padding: 2px 4px;
+  border-radius: 8px;
+}
+.toc-link:hover{ background: rgba(0,0,0,.04); text-decoration:none; }
+
+.toc-nested{
+  margin: 2px 0 0 0;
+  padding-left: 18px;
+  border-left: 1px solid var(--border);
+}
+
+.toc-item.collapsed > .toc-nested{ display:none; }
+
+/* Depth filters (TOC only) - use !important to override collapsed state */
+.doc-toc.toc-depth-1 .toc-item[data-level="2"],
+.doc-toc.toc-depth-1 .toc-item[data-level="3"],
+.doc-toc.toc-depth-1 .toc-item[data-level="4"]{ display: none !important; }
+
+.doc-toc.toc-depth-2 .toc-item[data-level="3"],
+.doc-toc.toc-depth-2 .toc-item[data-level="4"]{ display: none !important; }
+
+.doc-toc.toc-depth-3 .toc-item[data-level="4"]{ display: none !important; }
+
+/* toc-depth-4 shows everything - no hiding */
+
+/* ---------- Document sections ---------- */
+.doc-section-block{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 14px 10px 14px;
+  margin: 12px 0;
+}
+
+.h1-header{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding: 12px 14px;
+  background: var(--h1-bg);
+  border: 1px solid var(--h1-border);
+  border-radius: var(--radius);
+  box-shadow: var(--h1-shadow);
+}
+
+.h1-header h1.doc-section{
+  margin:0;
+  font-size: 24px;
+  line-height: 1.2;
+  letter-spacing: .15px;
+  color: var(--h1-ink);
+  cursor:pointer;
+}
+
+.h1-toggle{
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.15s;
+}
+.h1-toggle:hover{ background: rgba(0,0,0,.08); }
+
+/* Clear visual state for collapsed */
+.doc-section-block.h1-collapsed .h1-toggle {
+  background: var(--h1-bg);
+}
+
+.h1-body{
+  padding: 10px 6px 0 6px;
+}
+
+.doc-section-block.h1-collapsed .h1-body{ display:none; }
+
+.doc-section-block h2{
+  margin: 18px 0 8px 0;
+  font-size: 18px;
+}
+.doc-section-block h3{
+  margin: 16px 0 8px 0;
+  font-size: 16px;
+}
+.doc-section-block h4{
+  margin: 14px 0 6px 0;
+  font-size: 14px;
+  color: var(--muted);
+  text-transform: none;
+}
+
+.doc-section-block p{ margin: 10px 0; }
+.doc-section-block ul, .doc-section-block ol{ margin: 8px 0 12px 22px; }
+
+/* Pre blocks should wrap text */
+.doc-section-block pre,
+pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  overflow-x: auto;
+  background: var(--h1-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ---------- Back to top ---------- */
+#back-to-top{
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: var(--shadow-lite);
+  color: var(--ink);
+  text-decoration:none;
+  font-size: 12px;
+}
+#back-to-top:hover{ background: rgba(0,0,0,.04); }
+
+/* ---------- Print ---------- */
+@media print{
+  body{ background:#fff !important; }
+  .main-nav, #back-to-top{ display:none !important; }
+  .doc-section-block{ box-shadow:none !important; }
+  .h1-toggle{ display:none !important; }
+  .h1-header{ box-shadow:none !important; }
+  /* print should show all content */
+  .doc-section-block .h1-body{ display:block !important; }
+}
+
+/* ===== v11 polish: TOC + headings ===== */
+
+/* Make TOC buttons bigger and more touchable */
+.toc-controls button {
+  padding: 8px 14px !important;
+  font-size: 14px !important;
+  min-height: 36px;
+}
+
+/* TOC: clean disclosure triangles, no bullets, correct indentation */
+.doc-toc .toc-tree,
+.doc-toc .toc-nested {
+  list-style: none !important;
+  margin: 0;
+  padding: 0;
+}
+
+.doc-toc .toc-nested {
+  padding-left: 26px !important;
+  border-left: 2px solid var(--border);
+  margin-left: 8px;
+}
+
+.doc-toc .toc-item {
+  margin: 3px 0;
+}
+
+.doc-toc .toc-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Better scroll margin for heading links */
+.doc-section-block h1,
+.doc-section-block h2,
+.doc-section-block h3,
+.doc-section-block h4 {
+  scroll-margin-top: 100px;
+}
+
+/* Make H1 sections visually distinct */
+.h1-header h1.doc-section {
+  font-size: clamp(1.4rem, 2vw, 1.75rem);
+  font-weight: 750;
+}
+
+/* H2-H4 visual hierarchy */
+.doc-section-block h2 {
+  font-size: clamp(1.1rem, 1.5vw, 1.35rem);
+  font-weight: 700;
+}
+.doc-section-block h3 {
+  font-size: 1.05rem;
+  font-weight: 650;
+}
+.doc-section-block h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+</style></head>
+<body>
+<div class="container"><a id="top"></a>
+<header>
+<h1>Success Roadmap 2026</h1>
+<div class="subtitle">Dainis W. Michel</div>
+<div class="subtitle">December 26-27, 2025</div>
+</header>
+<nav class="main-nav">
+<a href="#divine-decree">Divine Decree</a>
+<a href="#revenue">Revenue Streams</a>
+<a href="#immediate-actions">Immediate Actions</a>
+<a href="#dziesmu-svetki">Dziesmu Svētki</a>
+<a href="#legal-actions">Legal Actions</a>
+<a href="#movies">Movie Concepts</a>
+<a href="#timeline">Timeline</a>
+<span aria-hidden="false" class="nav-toc-controls">
+<button id="toc-collapse-all" title="Collapse all H1 sections">-</button>
+<button id="toc-expand-all" title="Expand all H1 sections">+</button>
+</span><span class="nav-theme"><label for="theme-select">Theme</label><select id="theme-select"><option value="print">Print</option><option value="forest">Forest</option><option value="slate">Slate</option><option value="sand">Sand</option></select></span>
+</nav>
+<div class="metric-banner">
+            🎯 PRIMARY GOAL: €1,000 PER DAY PROFIT BY END OF 2026
+        </div>
+<!-- Document Table of Contents -->
+<nav aria-label="Document Table of Contents" class="doc-toc" id="doc-toc"><h2>Table of Contents</h2>
+<div class="toc-controls">
+<button data-depth="1">H1 Only</button>
+<button data-depth="2">H1–H2</button>
+<button data-depth="3">H1–H3</button>
+<button data-depth="4">H1–H4</button>
+<button id="toc-expand">Expand All</button>
+<button id="toc-collapse">Collapse All</button>
+</div>
+<div class="toc-list"></div>
+</nav>
+<section class="section-expanded doc-section-block" id="michel-updates-section">
+<h1 aria-expanded="true" class="doc-section" id="michel-updates">Michel Innovation Timestamped Updates</h1>
+
+<h2 id="update-2026-02m-19d">2026-02m-19d</h2>
+<ol>
+<li><strong>DA1NI5 BuddyBoss Child Theme — WordPress.org release plan.</strong> Package and publish the <code>da1ni5-buddyboss-theme-child-1.0.1</code> child theme on WordPress.org as a free-to-download, donation-required theme. The theme is already zipped and production-ready (featured image grid layout, Atkinson Hyperlegible Next at 111%, admin bar management for subscribers, sticky header offset, silver sheen nav styling).
+
+<h3 id="wp-org-release-steps">WordPress.org Release Steps</h3>
+<ol>
+<li><strong>WordPress.org theme review submission.</strong> Submit via <a href="https://wordpress.org/themes/getting-started/">themes/getting-started</a>. Requirements: GPL-compatible license (BuddyBoss parent is GPL, child inherits), no obfuscated code, no phone-home, must pass Theme Check plugin. Run <code>Theme Check</code> plugin locally first. Typical review queue: 2–8 weeks.</li>
+<li><strong>Theme Check compliance audit.</strong> Install the <a href="https://wordpress.org/plugins/theme-check/">Theme Check plugin</a> on dainis.net, activate the child theme, run the check. Fix any flagged issues (missing <code>wp_body_open()</code>, missing text domain, etc.). Also run Theme Sniffer for deeper coding standards review.</li>
+<li><strong>Add required WordPress.org metadata.</strong> Ensure <code>style.css</code> has: <code>License: GNU General Public License v2 or later</code>, <code>License URI</code>, <code>Text Domain: da1ni5-buddyboss-theme-child</code>, <code>Tags:</code> (buddyboss, accessibility, readable-font, custom-header). Add a <code>readme.txt</code> following the <a href="https://developer.wordpress.org/themes/release/writing-documentation/">WordPress theme readme standard</a>.</li>
+<li><strong>Create a proper theme demo.</strong> dainis.net already runs the theme — link it as the live demo in the WordPress.org listing.</li>
+<li><strong>SVN upload.</strong> WordPress.org themes use SVN, not Git. After approval, you'll get SVN access to upload to <code>themes.svn.wordpress.org</code>.</li>
+</ol>
+
+<h3 id="pricing-tiers">Pricing / Donation Tiers</h3>
+<p>WordPress.org themes must be free (GPL). Monetization happens through a separate donation/support model hosted on dainis.net or via Stripe/PayPal. Theme includes a tasteful "Support this theme" link in the Customizer description pointing to the pricing page.</p>
+<table>
+<tr><th>Tier</th><th>Price</th><th>What You Get</th></tr>
+<tr><td><strong>Community</strong></td><td>$3/month (minimum donation)</td><td>Theme access (free on WP.org), updates, community support forum access. Must donate <em>something</em> to use — honor system enforced via a gentle admin notice + link.</td></tr>
+<tr><td><strong>Styling Support</strong></td><td>$30+/month</td><td>Everything in Community, plus your styling requests added to the development queue. Submit CSS/layout requests via a simple form. Fulfilled in batches (monthly theme updates).</td></tr>
+<tr><td><strong>Full Custom Styling</strong></td><td>$5,000/year</td><td>Complete custom styling of your BuddyBoss site. Dedicated styling sprints — colors, typography, layout, responsive tweaks, nav styling, header/footer, custom page templates. Delivered as a personalized child theme variant or CSS override file. Includes up to 4 revision rounds per quarter.</td></tr>
+<tr><td><strong>White Glove</strong></td><td>$10,000/year</td><td>Everything in Full Custom, plus ongoing maintenance, BuddyBoss update compatibility checks, priority support, and quarterly styling refreshes. Basically: your BuddyBoss site always looks exactly how you want it.</td></tr>
+</table>
+
+<h3 id="wordpress-org-constraints">WordPress.org Constraints &amp; Workarounds</h3>
+<ul>
+<li><strong>GPL requirement:</strong> Theme code must be GPL. This is fine — the value is in the service, not the code. Anyone can fork the CSS; nobody can fork your expertise and responsiveness.</li>
+<li><strong>No upsell nags in theme code:</strong> WordPress.org forbids aggressive upsell notices. One subtle, dismissible admin notice linking to the support page is acceptable. Place it in the theme's Customizer panel description instead.</li>
+<li><strong>Parent theme dependency:</strong> The listing must clearly state "Requires: BuddyBoss Theme" — users need to already own BuddyBoss. This pre-qualifies buyers as serious BuddyBoss users with budget.</li>
+<li><strong>Revenue model reality:</strong> Most revenue will come from $5K–$10K/year tiers, not $3/month donations. The free WP.org listing is a lead generation channel — serious BuddyBoss site owners who find the theme will self-select into paid tiers when they see the quality.</li>
+</ul>
+
+<h3 id="alternative-gpl-marketplace">Alternative: Skip WordPress.org, Use GPL Marketplaces</h3>
+<ul>
+<li><strong>Gumroad / LemonSqueezy:</strong> Sell the theme directly for $29–$49 (one-time) with optional $3/month support subscription. No review queue. Instant listing.</li>
+<li><strong>ThemeForest (Envato):</strong> Higher traffic but 37.5%–50% commission. Strict review process. Better for themes with broad appeal.</li>
+<li><strong>Direct on dainis.net:</strong> WooCommerce or simple Stripe checkout. Full margin. Combine with FLOSC for the meta-demo — the theme sales page itself runs on FLOSC, proving both products simultaneously.</li>
+</ul>
+
+<h3 id="recommended-launch-sequence">Recommended Launch Sequence</h3>
+<ol>
+<li><strong>Immediate:</strong> List on Gumroad/LemonSqueezy at $29 one-time + $3/month support tier. Zero friction, live today.</li>
+<li><strong>Week 1–2:</strong> Run Theme Check, fix any issues, submit to WordPress.org. Start the review queue clock.</li>
+<li><strong>Week 2–4:</strong> Build a dedicated landing page on dainis.net with live demo screenshots, tier pricing, and Stripe checkout for the $5K/$10K tiers.</li>
+<li><strong>Ongoing:</strong> Every BuddyBoss-related forum post, Reddit thread, or Facebook group question about "BuddyBoss child theme" or "BuddyBoss styling" is a lead. Answer helpfully, link to theme.</li>
+</ol>
+</li>
+</ol>
+
+<h2 id="update-2026-02m-18d">2026-02m-18d</h2>
+<ol>
+<li><strong>Potential project: Atkinson Hyperlegible DA1NI5 variation.</strong> Round off the edges of Atkinson Hyperlegible Next a bit and enhance it to make it kinder and even more legible. Release it as "Atkinson Hyperlegible DA1NI5" — a custom variation that reflects your typography standards (clear I/l/1 distinction, humane letter shapes).</li>
+<li><strong>BuddyBoss child theme product.</strong> Package your BuddyBoss child theme customizations (featured image grid layout, font override system, click-to-load pagination, 111% text sizing) as a standalone child theme and sell it. Also offer premium BuddyBoss theme customization services at a high price tag.</li>
+<li><strong>FLOSC acquisition targets.</strong> Core pitch: <em>"You're losing customers to all-in-one platforms. FLOSC closes the gap without rebuilding your stack."</em> Strategic buyers and why they'd buy:
+<ul>
+<li><strong>ClickFunnels</strong> — Their quiz/funnel builder is clunky and bolted-on. FLOSC is native. Gives them a real quiz→offer→payment flow they can integrate or white-label.</li>
+<li><strong>Kajabi</strong> — No real quiz engine. Losing creators who want interactive funnels. FLOSC delivers quiz-driven course delivery — their biggest feature gap.</li>
+<li><strong>Skool</strong> — Community-first but no funnel/monetization sophistication. FLOSC adds a revenue engine to their community platform.</li>
+<li><strong>WishList Member</strong> — Already does membership/payment but zero funnel capability. FLOSC turns WLM from a lock plugin into a full funnel system.</li>
+<li><strong>BuddyBoss</strong> — They sell the community layer but have no conversion/funnel tool. FLOSC becomes their premium upsell — "BuddyBoss + FLOSC = complete platform." Particularly strong fit: FLOSC is already built for WordPress and you know their codebase intimately.</li>
+</ul>
+Strategy: get 20–30 paying installs first to prove revenue, then approach with traction. A plugin with customers is worth 10x a plugin with potential.</li>
+<li><strong>FLOSC managed service pricing model.</strong> €10,000/year per client (managed FLOSC install + support + updates). 37 clients = €370K/year = €1,014/day. Positioning vs. competitors: ClickFunnels $3,564/year (rented, no ownership), Kajabi $4,788/year (rented, no ownership), FLOSC €10K/year (owned, managed, custom-built). Recurring revenue at 3–5× multiplier makes the company highly acquirable.</li>
+<li><strong>FLOSC platform licensing model.</strong> €100K/year flat fee per licensee. They sell as many FLOSC installs as they want to their own customers, keep 100% of that revenue. You maintain the codebase and guarantee uptime (99.5% SLA, force majeure clause for infrastructure failures, 48h critical bug fixes, 7-day non-critical). 5 licensees = €500K/year = €1,370/day. You run a small software company, not a services firm.</li>
+<li><strong>FLOSC affiliate/done-for-you hybrid.</strong> €10K per client install, 50% affiliate commission (you net €5K). Partners sell, you (and AI) configure. As AI auto-config matures, your per-client effort drops toward near-zero.</li>
+<li><strong>Expanded potential licensees — WordPress membership/LMS plugins:</strong>
+<ul>
+<li><strong>MemberPress</strong> — Very active, well-funded, 50K+ users. Premium membership plugin with no quiz/funnel engine.</li>
+<li><strong>LearnDash</strong> — Active (StellarWP/Liquid Web), 40K+ users. Dominant WordPress LMS, zero funnel capability.</li>
+<li><strong>LifterLMS</strong> — Active, 20K+ users. LMS + membership, weak on conversion/funnels.</li>
+<li><strong>Paid Memberships Pro</strong> — Active, open source, 100K+ users. Free core with paid add-ons. No quiz or funnel system.</li>
+<li><strong>Restrict Content Pro</strong> — Active (StellarWP), 30K+ users. Simple content restriction. No discovery/try-before-buy.</li>
+<li><strong>AccessAlly</strong> — Active, 10K+ users. High-ticket course platform, could use FLOSC for intake.</li>
+<li><strong>MemberMouse</strong> — Active, 10K+ users. Membership + payments, no content discovery layer.</li>
+</ul></li>
+<li><strong>Expanded potential licensees — WordPress community platforms:</strong>
+<ul>
+<li><strong>PeepSo</strong> — Active. Social network plugin with no monetization layer.</li>
+<li><strong>Ultimate Member</strong> — Active, 200K+ installs. User profiles/community, zero commerce.</li>
+<li><strong>bbPress</strong> — Active (Automattic). Forums only, no funnel or monetization.</li>
+</ul></li>
+<li><strong>Integration difficulty reality check:</strong>
+<ul>
+<li><strong>Low effort (WordPress-native, near plug-and-play):</strong> BuddyBoss, WishList Member, MemberPress, LearnDash, LifterLMS, Paid Memberships Pro, Restrict Content Pro, AccessAlly, MemberMouse, PeepSo, Ultimate Member, bbPress.</li>
+<li><strong>High effort (proprietary platforms, would need FLOSC-as-a-service / API / embeddable SDK):</strong> ClickFunnels (Ruby on Rails), Kajabi (proprietary), Skool (closed platform). Phase 2 — after WordPress licensing generates cash.</li>
+</ul></li>
+<li><strong>AI auto-configuration vision.</strong> AI scans the content directory (lessons, posts, courses, media). Counts content, categorizes it, understands structure. Generates a complete IVR file: quiz questions mapped to specific lessons, free tier (1 lesson — specifically one the visitor missed in the quiz, never give away the whole house), paid tier, offer copy. FloscAdmin reviews, tweaks, approves. FLOSC is live. Turns days of manual setup into minutes of review. Core FLOSC principle: the free lesson is personalized proof of value — the visitor demonstrated they don't know this material, FLOSC delivers exactly what they need, and respects the creator's work by never giving away more than a taste.</li>
+</ol>
+</section>
+
+<section class="section-expanded doc-section-block" id="top-priorities-section">
+<div class="priority-box">
+<h1 aria-expanded="true" class="doc-section" id="top-priorities">Top Priorities to Reach €1,000/day</h1>
+<ol>
+<li><strong>LeSAEp.com validation</strong> — build and monetize quickly (micro‑launch, paid lessons).</li>
+<li><strong>Books &amp; eLearning Revision</strong> — revise, republish, bundle, and create funnels to generate steady daily revenue.</li>
+<li><strong>Music catalog monetization</strong> — proper meta, licensing, and sync placements.</li>
+<li><strong>Social media automation</strong> — scale content ecosystems to drive direct sales and traffic.</li>
+</ol>
+<p><strong>Note:</strong> All book-related work is focused on rapid republishing, packaging as low‑price funnels ($7–$39), and building an email capture/retargeting funnel to hit daily revenue targets.</p>
+<p><strong>Operational Rule:</strong> <em>Any action that does not plausibly generate money within 30 days is secondary.</em></p>
+<h2 id="cashfloor-targets">Cashfloor Targets</h2>
+<p>€50/day (Week 1) → €200/day (Week 2) → €500/day (Month 1)</p>
+<h2 id="revenue-math-examples">Revenue Math (examples)</h2>
+<table>
+<tr><th>Offer</th><th>Price</th><th>Sales/day needed</th></tr>
+<tr><td>Verdict Only</td><td>€19</td><td>53</td></tr>
+<tr><td>Tripwire</td><td>€7</td><td>143</td></tr>
+<tr><td>Core Course</td><td>€197</td><td>6</td></tr>
+<tr><td>Full Program</td><td>€297</td><td>4</td></tr>
+<tr><td>Subscription (monthly)</td><td>€10/mo</td><td>3,000 subscribers</td></tr>
+</table>
+</div>
+</section>
+<section class="doc-section-block" id="ai-recommendations-section">
+<div class="action-box">
+<h1 class="doc-section" id="ai-recommendations">AI Recommendations — Rapid Path to €1,000/day</h1>
+<p>Concise, high‑ROI actions using AI and automation to hit daily profit targets fast.</p>
+<h2 id="immediate-07-days">Immediate (0–7 days)</h2>
+<ul>
+<li>Launch a minimal LeSAEp MVP funnel: 1 landing page + 3 micro‑lessons ($7 trial + $27 core). Use AI to generate lesson scripts, video captions, and email sequences.</li>
+<li>Package and price `da1_Brenda` micro eBook bundle ($7–$27) and add a fast checkout + email capture on a high‑converting landing page.</li>
+<li>Activate automated social content: use AI to create 30 short reels/shorts from existing lessons and songs; schedule via automation tools to drive traffic to funnels.</li>
+</ul>
+<h2 id="short-term-13-weeks">Short Term (1–3 weeks)</h2>
+<ul>
+<li>Republish updated book versions (KDP/Ingram) with AI‑generated improved descriptions, keywords, and A+ content; run small AMS and BookBub tests and track Cost per Sale.</li>
+<li>Build a DA1_Brenda prototype ChatGPT assistant (domain‑specific prompts + core docs) and offer limited paid access to first 100 users as beta.</li>
+<li>Create an audiobook pipeline: convert top eBook into an audiobook (ACX) using professional voice or high‑quality TTS to unlock new revenue channel.</li>
+</ul>
+<h2 id="operational-scale-38-weeks">Operational / Scale (3–8 weeks)</h2>
+<ul>
+<li>Automate ad optimization with AI: run 3 simultaneous small ad tests ($5–$20/day each), let AI surface best creatives/keywords, scale winning ads to reach daily revenue targets.</li>
+<li>Monetize da1.fm: sell meta‑tagging templates, add paid freemium tier, and upsell DA1_Brenda assistant and eBook bundles inside the product flow.</li>
+<li>Implement subscription offers (monthly membership) combining micro‑lessons + ChatGPT assistant access — target 100 paying members at €10/month = €1,000/month baseline while funnels scale.</li>
+</ul>
+<h2 id="measurement-and-economics">Measurement &amp; Economics</h2>
+<ul>
+<li>Track unit economics: CAC, AOV, LTV; set dashboard showing daily revenue run‑rate and required conversion rates to €1,000/day.</li>
+<li>Prioritize highest IRR activities: LeSAEp MVP + da1_Brenda bundle → ads → subscriptions → book/audiobook upsells → licensing syncs.</li>
+</ul>
+<h2 id="automation-and-resourcing">Automation &amp; Resourcing</h2>
+<ul>
+<li>Use AI to create landing pages, ad copy, email sequences, and social creatives to cut time-to-launch (templates + prompts stored in a repo).</li>
+<li>Outsource repetitive ops cheaply (VAs) and use AI for quality control (automated content review, metadata generation).</li>
+</ul>
+<h2 id="quick-30day-plan-checklist">Quick 30‑Day Plan (Checklist)</h2>
+<ol>
+<li>Day 1–3: Build LeSAEp landing + 3 micro‑lessons; publish da1_Brenda bundle page.</li>
+<li>Day 4–7: Run 3 small ad tests; schedule social automation; open beta for DA1_Brenda assistant.</li>
+<li>Week 2–3: Republish books with AI‑optimized metadata; launch audiobook pipeline.</li>
+<li>Week 3–4: Scale winning ads, convert top funnel into subscription offering, measure daily revenue.</li>
+</ol>
+<p><strong>Note:</strong> Focus on launches that convert traffic to low‑price, high‑margin products first — quick funnels compound faster than slow content bets. I can implement these updates into the roadmap sections if you tell me to proceed.</p>
+</div>
+</section>
+<section class="doc-section-block" id="grok-recommendations-section">
+<div class="action-box">
+<h1 class="doc-section" id="grok-recommendations">Grok Recommendations — Optimized AI-Driven Path to €1,000/Day Profit (Updated January 2026)</h1>
+<h2 id="core-strategy-overview">Core Strategy Overview</h2>
+<p>Leverage your existing high‑value assets (44–47 ready LeSAEp videos, unreleased songs like “Creep On” and “Time Flies”, published KDP books, music catalog) to build and scale low‑cost, high‑margin digital funnels. Prioritize rapid validation with no‑code tools, AI automation for 70–80% of tasks, and multi‑channel traffic (organic social + small ads). Goal: €100–200/day in Week 1, €500+/day by Week 4, full €1,000/day run‑rate by Week 8–12. Based on 2026 benchmarks, focus on platforms with competitive CAC (e.g., TikTok CPC €0.30–1.50, Meta CPM €1–8).</p>
+<h2 id="key-economic-targets-2026-benchmarks">Key Economic Targets (2026 Benchmarks)</h2>
+<ul>
+<li><strong>Average Order Value (AOV):</strong> €20–50</li>
+<li><strong>Conversion Rate:</strong> 5–10% on warm traffic</li>
+<li><strong>Customer Acquisition Cost (CAC):</strong> €5–12 (TikTok: €0.30–1.50 CPC; Meta: €0.26–0.50 CPC; Google: €0.50–2.00 CPC)</li>
+<li><strong>Lifetime Value (LTV) Goal:</strong> 3–5× CAC via upsells and subscriptions</li>
+</ul>
+<h2 id="immediate-actions-days-17-launch-mvps-and-generate-first-sales">Immediate Actions (Days 1–7: Launch MVPs &amp; Generate First Sales)</h2>
+<ul>
+<li><strong>LeSAEp.com Flagship Funnel</strong>
+<br/>Build with top 2026 no‑code platforms: Thinkific or Teachable (user‑friendly for courses); Gumroad or Payhip for quick bundles (1–2 hours setup).
+                        <br/>Structure: Free lead magnet (pronunciation quiz via Typeform) → €7 micro‑lesson trial (3 videos) → €37 core course upsell + teacher affiliate program (20–30% commission).
+                        <br/>AI Tasks: Generate landing copy, quiz questions, email sequences (use Grok/Claude prompts).
+                        <br/>Traffic: Cut 10–15 shorts from videos with CapCut AI → post daily on TikTok, YouTube Shorts, Instagram Reels (channel: lesaep_com).</li>
+<li><strong>DA1_Brenda Bundle + Custom GPT</strong>
+<br/>Package 3–5 micro‑eBooks/guides (e.g., sync licensing, metadata mastery) → €7 tripwire + €27 bundle on Gumroad.
+                        <br/>Build custom GPT (ChatGPT Plus) trained on your core docs → offer beta access at €9.99/month.
+                        <br/>Cross‑promote to LeSAEp leads and music channels.</li>
+<li><strong>Book Sprint</strong>
+<br/>Update top 2–3 KDP titles: AI‑optimized titles, descriptions, keywords, A+ content.
+                        <br/>Add paperback formats, enroll in KDP Select for Kindle Unlimited reads.
+                        <br/>Launch €5–10/day Amazon AMS ads per book; track cost‑per‑sale.</li>
+<li><strong>Setup Core Tracking</strong>
+<br/>Stripe/PayPal for payments → Zapier for email automation → Google Analytics + simple Google Sheets dashboard (daily revenue, CAC, AOV).</li>
+</ul>
+<h2 id="shortterm-scaling-weeks-24-test-ads-and-automate-content">Short‑Term Scaling (Weeks 2–4: Test Ads &amp; Automate Content)</h2>
+<ul>
+<li>Run parallel ad tests (€150–300 total daily budget):
+                        <br/>– TikTok/Instagram ads on LeSAEp shorts (low CPC for reach)
+                        <br/>– Facebook ads targeting English learners/teachers
+                        <br/>– Google/YouTube ads for book keywords
+                        <br/>Use top 2026 AI tools: AdCreative.ai or Pencil for 10–20 variants; kill losers after 72 hours.</li>
+<li>Create 50–100 short‑form pieces from songs and lessons using Descript/CapCut AI → schedule via Buffer, Publer, or Metricool across dedicated channels.</li>
+<li>Begin music licensing outreach: Upload tracks to Pond5/AudioJungle/Musicbed with AI‑generated metadata → pitch 10–20 indie filmmakers weekly via IMDb Pro.</li>
+<li>Launch audiobook pipeline: Convert top eBook to audiobook via ElevenLabs (high‑quality TTS) + ACX distribution.</li>
+</ul>
+<h2 id="operational-growth-and-compounding-weeks-512-reach-1000day">Operational Growth &amp; Compounding (Weeks 5–12: Reach €1,000/Day)</h2>
+<ul>
+<li>Scale winning ads aggressively (3–5× ROI threshold) while maintaining unit economics.</li>
+<li>Monetize da1.fm: Add paid meta‑tagging templates, premium tools, and upsells to DA1_Brenda assistant + eBook bundles.</li>
+<li>Roll out €9.99–€19/month subscription tier combining LeSAEp access, DA1_Brenda GPT, exclusive lessons, and community → target 150–200 members (€1,500–4,000/month recurring baseline).</li>
+<li>Recruit 5–10 affiliate teachers for LeSAEp (30% commission) and outsource repetitive tasks to VAs (€5–8/hour via Upwork).</li>
+<li>Diversify: Launch Simplified‑Solfeggio.com as second FLOSC platform; explore permission‑based ad ecosystem once cashflow positive.</li>
+</ul>
+<h2 id="phased-revenue-milestones-realistic-projections">Phased Revenue Milestones (Realistic Projections)</h2>
+<table>
+<tr><th>Timeline</th><th>Target Daily Profit</th><th>Primary Drivers</th></tr>
+<tr><td>Week 1</td><td>€100–200</td><td>Organic social + first sales from LeSAEp &amp; da1_Brenda</td></tr>
+<tr><td>Week 2–3</td><td>€300–500</td><td>Winning small ads + book republishing + early subscriptions</td></tr>
+<tr><td>Week 4–8</td><td>€700–1,000+</td><td>Ad scaling + subscription growth + music sync placements</td></tr>
+<tr><td>Week 9–12</td><td>€1,000 stable</td><td>Multiple funnels compounding + recurring revenue</td></tr>
+</table>
+<h2 id="risks-and-mitigations-updated-for-2026-trends">Risks &amp; Mitigations (Updated for 2026 Trends)</h2>
+<ul>
+<li><strong>Low initial traffic</strong> → Start 100% organic; only add ads after validating offers. Use trending platforms like TikTok for virality.</li>
+<li><strong>No sales in first tests</strong> → Pivot pricing/offers within 3–5 days (e.g., drop to €4.99 trial). Test with low‑competition niches.</li>
+<li><strong>Tech overwhelm</strong> → Stick to top no‑code stack (Thinkific/Teachable/Zapier/Buffer).</li>
+<li><strong>Burnout</strong> → AI handles content/copy; outsource monitoring/posting early.</li>
+<li><strong>Platform suppression</strong> → Use single‑focus channels as planned; keep controversial topics isolated. Monitor for algorithm changes via industry benchmarks.</li>
+</ul>
+<p><strong>Final Note:</strong> This optimized plan incorporates 2026 market data (e.g., lower TikTok CAC, rising music sync opportunities via platforms like That Pitch) and aligns directly with your January 7–8, 2026 LeSAEp launch deadline. Execute the Day 1–7 actions immediately to generate momentum and data for rapid iteration.</p>
+</div>
+</section>
+<section class="doc-section-block" id="social-channels">
+<div class="priority-box">
+<h1 class="doc-section" id="planning-summary">2026 Planning Summary — Projects &amp; Channels</h1>
+<h2 id="purpose">Purpose</h2>
+<p>This document summarizes a planning conversation focused on:</p>
+<ul>
+<li>separating content into single-focus social media channels (due to algorithm limitations),</li>
+<li>building profit systems rather than personal labor income,</li>
+<li>launching infrastructure-first platforms,</li>
+<li>and documenting constraints, priorities, and timelines.</li>
+</ul>
+<p>The guiding principle is to design <strong>earning surfaces and profit commons</strong>, where participants earn immediately and the system creator takes a fair, non-extractive cut.</p>
+<h2 id="core-assumptions">Core Assumptions</h2>
+<ul>
+<li>Social media algorithms are unintelligent and require:
+                        <ul>
+<li>one language per channel,</li>
+<li>one topic per channel.</li>
+</ul>
+</li>
+<li>Income scalability requires <strong>many parallel earners</strong>, not personal exertion.</li>
+<li>Systems must be launched quickly, iterated publicly, and monetized structurally.</li>
+<li>AI tools currently in use are insufficient and must be replaced or reconfigured.</li>
+</ul>
+<h2 id="unique-platforms-systems-projects">Unique Platforms / Systems / Projects</h2>
+<ul>
+<li><strong>dainis.net</strong> — personal business hub (WordPress publishing, categories, tags).</li>
+<li><strong>lesaep.com</strong> — English-teacher profit platform (FLOSC-based).</li>
+<li><strong>FLOSC</strong> — Freeline / Login / Offer / Sale / Content system (invented framework).</li>
+<li><strong>Simplified Solfeggio</strong> — methodology to be integrated into FLOSC platforms.</li>
+<li><strong>DA1.fm</strong> — media / metadata platform.</li>
+<li><strong>DA1_Brenda</strong> — AI persona / release target.</li>
+<li><strong>Permission-based advertising ecosystem</strong> (formerly ADZ.world; domain lost; rename required).</li>
+<li><strong>Tripwire content model</strong> — partial content → email to continue.</li>
+<li><strong>Kokle innovation project</strong> — design and build first instruments (2026 hobby / R&amp;D).</li>
+<li><strong>Brand naming issue</strong> — “Dainis” is common; variant under consideration: <strong>dainism</strong>.</li>
+<li><strong>AI tool reassessment</strong> — priority by Jan 8, 2026 (ChatGPT, Claude, Copilot insufficient).</li>
+</ul>
+<h2 id="unique-social-media-channels-lowercase-underscores">Unique Social Media Channels (lowercase, underscores)</h2>
+<ul>
+<li>big_news</li>
+<li>labas_zinas</li>
+<li>creep_on_song</li>
+<li>time_flies_song</li>
+<li>surrounding_flutes</li>
+<li>lesaep_com</li>
+<li>flosc</li>
+<li>dainis_net_hub</li>
+<li>latvian_culture_commentary</li>
+<li>dziedot_dzimu_dziesma</li>
+<li>dziedasim_ar_daini</li>
+<li>dainis_lv</li>
+<li>da1ni5</li>
+<li>tas_dainis__no_interneta</li>
+<li>gatavojamies_dziesmu_svetkiem</li>
+<li>vegan_channel_tbd</li>
+<li>chicago_five_movie</li>
+<li>convid_affair_movie</li>
+<li>mascumentary</li>
+<li>comedy_special_that_never_was</li>
+<li>covid_nuremberg_trials</li>
+</ul>
+<h2 id="timeline-constraints">Timeline Constraints</h2>
+<ul>
+<li><strong>January 7–8, 2026</strong>
+<ul>
+<li>Launch <strong>lesaep.com</strong> (non-negotiable).</li>
+<li>Begin full FLOSC publishing workflow.</li>
+<li>Start automated / semi-automated social posting.</li>
+<li>Complete AI tool assessment and replacement.</li>
+</ul>
+</li>
+</ul>
+<h2 id="income-model-summary">Income Model Summary</h2>
+<ul>
+<li>Systems generate income <strong>because others earn</strong>, not because the creator performs.</li>
+<li>Platforms provide: infrastructure, credibility, payments, discovery.</li>
+<li>Creator income is a <strong>by-product of value already flowing</strong>.</li>
+</ul>
+<h2 id="status">Status</h2>
+<p>This document reflects the authoritative state of planning as captured in the chat. It is intended for future reference, prioritization, and execution.</p>
+</div>
+</section>
+<!-- main navigation moved to header for normal site layout -->
+<div class="content"><section class="doc-section-block" id="divine-decree-section">
+<h1 class="doc-section" id="divine-decree">Divine Decree &amp; Spiritual Warfare Stance</h1>
+<div class="decree-box">
+<h2 id="compensation-demanded">Compensation Demanded</h2>
+<ul>
+<li><strong>€10,000,000</strong> compensation for lifetime damages (Due: December 26, 2025)</li>
+<li><strong>€1,000 per day</strong> near-passive income stream secured as easily as possible</li>
+<li>Backpayment discoveries acceptable (e.g., unreported royalties from 2002 Japanese film usage)</li>
+</ul>
+</div>
+<h2 id="spiritual-positioning">Spiritual Positioning</h2>
+<ul>
+<li>Suffering phase declared <strong>OVER</strong></li>
+<li>No more obstacles - even for "pedagogical" purposes</li>
+<li>Any detractors/demons/saboteurs forfeit their right to life</li>
+<li>Soul contracts imprisoning finances/relationships = <strong>NULL AND VOID</strong></li>
+<li>Demons must <strong>transform or flee</strong></li>
+<li>Wall of atonement surrounds</li>
+<li><strong>Forfeiture ENFORCED</strong></li>
+</ul>
+<h2 id="theological-stance">Theological Stance</h2>
+<ul>
+<li>Refuses to "shove sin onto Jesus"</li>
+<li>Bears own punishment as honorable</li>
+<li>Accepts Jesus as brother and friend, calls for help</li>
+<li>Rejects reincarnation without awareness as cruel/stupid system</li>
+<li>Refuses "you create your own reality" philosophy</li>
+</ul>
+</section><section class="doc-section-block" id="life-plan-section">
+<h1 class="doc-section" id="life-plan">Original Life Plan (1997)</h1>
+<div class="priority-box">
+<h2 id="not-a-transition-a-completion">Not a Transition - A COMPLETION</h2>
+<p><strong>Goal:</strong> Music composition professor who completes pediatric training over 10 years</p>
+<ul>
+<li>Both careers simultaneously</li>
+<li>Write ~1 symphonic essay per year</li>
+<li>Serve as pediatrician</li>
+<li><strong>Status:</strong> Interrupted by perpetrators Elizabeth and Ligija</li>
+</ul>
+</div>
+<h2 id="current-academic-progress">Current Academic Progress</h2>
+<ul>
+<li>Doctoral candidate at University of Music and Performing Arts Vienna</li>
+<li>Under Prof. Dr. Dieter Torkewitz on composition pedagogy dissertation</li>
+<li>Straight A's in first year or two of doctoral seminars</li>
+<li>Recent interviews validated dissertation work: Samuel Adler, James Mulholland, Dr. Schelle</li>
+<li>Damage from Elizabeth started after initial academic success</li>
+</ul>
+</section><section class="doc-section-block" id="perpetrators-section"><h1 class="doc-section" id="perpetrators">Named Perpetrators &amp; Traumas</h1>
+<div class="perpetrator-box">
+<h2 id="elizabeth-ex-wife-pathological-liar">Elizabeth (Ex-Wife) - Pathological Liar</h2>
+<ul>
+<li>Faked master's degree for 3 years (1998-2001), lied about it 10+ years</li>
+<li>Northwestern University evasive in 2011 (privacy claims)</li>
+<li>Fake concert pretending to be final degree requirement</li>
+<li>Brother-in-law went pale learning truth 24 years later</li>
+<li><strong>Abducted Emmy:</strong> April 2, 2021 - January 28, 2023 (22 months)</li>
+<li>Caused 40 months of bankruptcy through fictitious debts</li>
+<li>Prevented legal income earning for 40 months</li>
+<li><strong>Owes:</strong> €30/month documented child support since 2013 (12 years unpaid)</li>
+<li>Foundational betrayal - God didn't protect from her</li>
+</ul>
+</div>
+<div class="perpetrator-box">
+<h2 id="ligija-zarina-rapist-and-sexual-predator">Ligija Zarina - Rapist &amp; Sexual Predator</h2>
+<ul>
+<li>Covert malignant narcissist</li>
+<li>Attack (not relationship) - possibly Cheka (old KGB) or Satanists</li>
+<li>Enabled Emmy's abduction</li>
+<li>Malicious lies cost 4 jobs working with kids and music</li>
+<li>Still has belongings at her house</li>
+<li>Convinced to call her place "home"</li>
+</ul>
+</div>
+<div class="perpetrator-box">
+<h2 id="other-saboteurs">Other Saboteurs</h2>
+<ul>
+<li><strong>Mr. Paishel</strong> - Architecture teacher, didn't check both checkmarks (Newhouse Architecture Competition)</li>
+<li><strong>Mr. Nesbit</strong> - Didn't keep instruction book (National History Fair - would have won full ride to Princeton/Yale)</li>
+<li><strong>High School</strong> - Didn't send transcripts</li>
+<li><strong>Ritvars Jansons</strong> - Falsified visual graphics (thrown out of Latvian Museum of Occupation Association)</li>
+<li><strong>"Maybe Police" (RPP)</strong> - Nearly killed, attacked while eating, froze when identified as US citizen</li>
+<li><strong>Facebook/Zuckerberg</strong> - Suppressed posts during parliamentary candidacy (~5 years ago)</li>
+<li><strong>Mara Tupese</strong> - Second mother who turned back (summer 2025), spreading rumors</li>
+</ul>
+</div>
+</section>
+<section class="doc-section-block" id="books">
+<h1 class="doc-section" id="update-books">Update Existing Books</h1>
+<div class="revenue-box">
+<p><strong>Scope:</strong> Revise, reformat, add metadata, and republish current books</p>
+<p><strong>Status:</strong> All existing titles require revision and republishing — treat each as a revenue funnel. Goal: contribute to the €1,000/day target (aim ≈ €300/day from books &amp; eLearning).</p>
+<h2 id="action">Action:</h2>
+<ul>
+<li>Audit current book files and rights</li>
+<li>Update text and cover design where needed</li>
+<li>Ensure ISBN/metadata and royalty setup</li>
+<li>Republish across platforms (KDP, IngramSpark, direct sales)</li>
+<li>Promote via social channels and LeSAEp audience</li>
+<li><strong>Existing titles (priority):</strong>
+<ul>
+<li><strong>My Secret Life As A Virtual Assassin (VA42 T79)</strong> — by Walter Rochdale
+                                    <ul>
+<li>Kindle eBook: Live (Submitted Sep 12, 2013) — ASIN: B00F4NONEM — Price: $2.99 — <em>KDP Select: enrolled</em></li>
+<li>Paperback: Draft (last modified Mar 18, 2021) — action: finish setup, link formats</li>
+<li>Actions: enable paperback, add categories/keywords, create A+ content, run AMS ads, test price promotions and KU countdown deals</li>
+</ul>
+</li>
+<li><strong>My Healing Journey Meditation for Personal Transformation</strong> — by Dainis Michel
+                                    <ul>
+<li>Kindle eBook: Live (Submitted Jun 22, 2023) — ASIN: B0C8ZH4R6G — Price: $7.99</li>
+<li>Paperback/Hardcover: not created — action: create paperback and link</li>
+<li>Actions: optimize description, add target keywords, create an audiobook (ACX), consider KDP Select enrollment, promote to meditation/wellness lists</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>Quick marketing checklist:</strong> AMS ads, BookBub/Goodreads promos, price testing, KU enrollment where strategic, newsletter capture on site, serialize excerpts</li>
+</ul>
+<p><strong>Timeline:</strong> 1-4 weeks per title (priority sequence)</p>
+</div>
+<div class="revenue-box">
+<h2 id="new-book-concept-atonement-roadmap">New Book Concept — "Atonement Roadmap"</h2>
+<p><strong>Concept:</strong> Memoir + practical guide combining personal testimony, spiritual stance, and actionable recovery/financial rebuilding steps</p>
+<h3 id="outline">Outline:</h3>
+<ul>
+<li>Part I — Story: key events and lessons</li>
+<li>Part II — Theology &amp; stance (practical reframing)</li>
+<li>Part III — Toolkit: financial, legal, creative recovery steps</li>
+<li>Marketing: serialize excerpts, workshops, and course tie-in</li>
+</ul>
+<p><strong>Next step:</strong> Draft 3 sample chapters and a one-page pitch</p>
+</div>
+<div class="revenue-box">
+<h2 id="my-secret-life-as-a-virtual-assassin-va42-t79">My Secret Life As A Virtual Assassin (VA42 T79)</h2>
+<ul>
+<li><strong>Author:</strong> Walter Rochdale</li>
+<li><strong>Kindle eBook:</strong> Live (Submitted Sep 12, 2013) — ASIN: B00F4NONEM — Price: $2.99 — <em>KDP Select: enrolled</em></li>
+<li><strong>Paperback:</strong> Draft (last modified Mar 18, 2021) — action: finish setup and link formats</li>
+<li><strong>Actions:</strong> enable paperback, add categories &amp; keywords, create A+ content, run targeted ads, test price promotions</li>
+<li>
+<img alt="My Secret Life As A Virtual Assassin - cover / KDP screenshot" src="images/Screenshot 2026-01-02 at 8.10.37 PM.png" style="max-width:320px;margin-top:10px;border:1px solid #ddd;"/>
+</li>
+</ul>
+</div>
+<div class="revenue-box">
+<h2 id="my-healing-journey-meditation-for-personal-transformation">My Healing Journey Meditation for Personal Transformation</h2>
+<ul>
+<li><strong>Author:</strong> Dainis Michel</li>
+<li><strong>Kindle eBook:</strong> Live (Submitted Jun 22, 2023) — ASIN: B0C8ZH4R6G — Price: $7.99</li>
+<li><strong>Formats:</strong> Paperback/Hardcover not created — action: create and link print formats</li>
+<li><strong>Actions:</strong> optimize description &amp; keywords, create audiobook (ACX), promote to meditation &amp; wellness lists</li>
+<li>
+<img alt="My Healing Journey Meditation - KDP screenshot" src="images/Screenshot 2026-01-02 at 8.10.46 PM.png" style="max-width:320px;margin-top:10px;border:1px solid #ddd;"/>
+</li>
+</ul>
+</div>
+<div class="revenue-box">
+<h2 id="the-flaw-of-attraction-book-working-title">The Flaw of Attraction — Book (working title)</h2>
+<p><strong>Author / Adaptation:</strong> Dainis W. Michel (book + movie concept)</p>
+<p><strong>Status:</strong> Concept only — book not yet written. This entry is a treatment / adaptation seed for a book + film.</p>
+<h3 id="logline">Logline:</h3>
+<p>A desperate woman weaponizes the self‑help movement’s most dangerous lie—“you create your reality”—and becomes the world’s deadliest life coach by covertly killing attendees at her paid manifestation events while convincing survivors they were chosen.</p>
+<h3 id="pitch-summary">Pitch Summary:</h3>
+<p>Sharon Barton sells a million‑dollar weekend: Friday ecstasy, Saturday workshops, Sunday catastrophe. Half the room dies; the survivors swear they were transformed and become the world’s next billionaires, champions, and celebrities. Media crowns Sharon a messiah; families call her a murderer. An undercover FBI agent survives a later event, falls in love with a fellow survivor, and builds a case using forensic chemistry, covert recordings, and survivor testimony. The trial forces the world to decide if Sharon is monster or miracle.</p>
+<h3 id="next-steps">Next steps:</h3>
+<ul>
+<li>Save full pitch in `books` and `movies` sections (done).</li>
+<li>Milestones: outline → first draft → 3 sample chapters → full book treatment → one‑page pitch → adaptation treatment.</li>
+<li>Monetization path: serialize excerpts, sell eBook/course bundle, pursue film option — priority sequencing aligned with daily revenue target.</li>
+</ul>
+</div>
+</section>
+<!-- REVENUE STREAMS -->
+<section class="doc-section-block">
+<h1 aria-expanded="true" class="doc-section" id="revenue">Revenue Streams &amp; Prioritization</h1>
+<div class="revenue-box">
+<h2 id="1-lesaepcom-priority-1">1. LeSAEp.com (PRIORITY #1)</h2>
+<p><strong>Learn Excellent Standard American English Pronunciation</strong></p>
+<p><strong>Timeline:</strong> 1-3 days to build</p>
+<h3 id="flosc-framework-structure">FLOSC Framework Structure:</h3>
+<ul>
+<li><strong>F - Freeline:</strong> Free quiz entry point</li>
+<li><strong>L - Login:</strong> Email/phone capture for score evaluation</li>
+<li><strong>O - Offer:</strong> 10% free content (1-3 free lessons)</li>
+<li><strong>S - Sale:</strong> Payment required to continue</li>
+<li><strong>C - Content:</strong> Access after purchase</li>
+</ul>
+<h3 id="key-innovation-profit-sharing">Key Innovation: Profit Sharing</h3>
+<ul>
+<li>Teachers earn through referrals</li>
+<li>Teachers earn through recommendations</li>
+<li>Teachers use materials in lessons</li>
+<li>Users can book live lessons with teachers through platform</li>
+<li><strong>Human distribution network bypasses BigTech suppression</strong></li>
+</ul>
+<h3 id="assets-completed">Assets Completed:</h3>
+<ul>
+<li>44-47 instructional videos</li>
+<li>Encyclopedic pronunciation content (more thorough than Encyclopedia Britannica/Wikipedia)</li>
+<li>VocalImage relationship ended (free to release improved version)</li>
+</ul>
+<h3 id="market-size">Market Size:</h3>
+<ul>
+<li>Global English learning: $11.35B (2021) → $35.78B (2030), CAGR 13.6%</li>
+<li>Language Learning Apps: $28.5B by 2029, 18.8% growth</li>
+</ul>
+</div>
+<div class="revenue-box">
+<h2 id="2-simplified-solfeggiocom">2. Simplified-solfeggio.com</h2>
+<p><strong>Timeline:</strong> 3-7 days after LeSAEp.com proves concept</p>
+<p><strong>Model:</strong> Exact same FLOSC framework with different content</p>
+<p><strong>Status:</strong> Ready to deploy after LeSAEp validation</p>
+</div>
+</section>
+<section class="doc-section-block">
+<h1 class="doc-section" id="teaching-income">Teaching Income</h1>
+<div class="revenue-box">
+<h3 id="options">Options:</h3>
+<ul>
+<li>JVLMA in Latvia (preferred)</li>
+<li>USA university semester on/off (alternative)</li>
+</ul>
+<h3 id="action-2">Action:</h3>
+<ul>
+<li>Send dissertation + transcripts to 10-25 institutions</li>
+<li>Transcripts pending: Adler, Mulholland, Schelle (needs gifts after Jan 1)</li>
+</ul>
+</div>
+</section>
+<section class="doc-section-block">
+<h1 class="doc-section" id="music-sync-licensing">Music Sync/Licensing</h1>
+<div class="revenue-box">
+<h3 id="commercial-grade-assets">Commercial-Grade Assets:</h3>
+<table>
+<tr>
+<th>Song</th>
+<th>Description</th>
+<th>Validation</th>
+<th>Status</th>
+</tr>
+<tr>
+<td>"Creep On"</td>
+<td>Suicide intervention, Nirvana-level grunge</td>
+<td>$250k record deal offered (rejected)</td>
+<td class="status-urgent">UNRELEASED</td>
+</tr>
+<tr>
+<td>"Time Flies"</td>
+<td>Emotional/sultry, Prince/Sade quality</td>
+<td>Commercial-grade confirmed</td>
+<td class="status-urgent">UNRELEASED</td>
+</tr>
+</table>
+<h3 id="action-3">Action:</h3>
+<ul>
+<li>IMDB Pro contact gathering</li>
+<li>Target: Suicide prevention organizations, mental health advocates, indie filmmakers</li>
+<li>Pricing: $5k-15k limited use</li>
+</ul>
+</div>
+</section>
+<section class="doc-section-block">
+<h1 class="doc-section" id="music-catalog-da1fm">Music Catalog Upload &amp; da1.fm Platform</h1>
+<div class="revenue-box">
+<ul>
+<li>Proper meta tags/credits for payment collection</li>
+<li>da1.fm: Meta-tagging tool for musicians (close to release)</li>
+<li>Next profit wellspring after LeSAEp/simplified-solfeggio</li>
+<li><strong>da1_Brenda eBooks &amp; DA1 ecosystem:</strong>
+<ul>
+<li>Create `da1_Brenda` branded eBooks (how-to guides, micro-courses) derived from music/teaching assets.</li>
+<li>Bundle eBooks with meta-tagging tools and templates for musicians to self-publish (low-price funnel: $7–$39).</li>
+<li>Develop a DA1_Brenda custom ChatGPT assistant (domain‑specialist model) trained on music teaching materials, product guides, and FAQ — package as a web/API product and companion to the eBooks.</li>
+<li>Monetization: one‑time purchases, subscription access to the assistant, white‑label licensing for teachers/platforms, and premium bundles (eBook + assistant access + templates).</li>
+<li>Go‑to‑market: landing page + email funnel via LeSAEp audience, beta launch to 100 users, convert with case studies and testimonials.</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section class="doc-section-block">
+<h1 class="doc-section" id="social-media-automation">Social Media Automation</h1>
+<div class="revenue-box">
+<h3 id="strategy-multiple-channels-10-100">Strategy: Multiple Channels (10-100+)</h3>
+<ul>
+<li>One channel = one thing only (algorithms are profile-based, not content-based)</li>
+<li>Each song becomes content ecosystem:
+                            <ul>
+<li>Full song</li>
+<li>Lyrics version / No lyrics version</li>
+<li>Just chorus / Just verse</li>
+<li>AI versions</li>
+<li>Shorts/Reels</li>
+</ul>
+</li>
+<li>Link to downloads from dainis.net</li>
+<li>Automation from dainis.net makes scale possible</li>
+</ul>
+<h3 id="songs-ready">Songs Ready:</h3>
+<ul>
+<li>"Creep On"</li>
+<li>"Time Flies"</li>
+<li>"Room for 6 Flutes"</li>
+<li>Others</li>
+</ul>
+</div>
+</section>
+<!-- Existing book entries moved into the consolidated books section above -->
+<!-- IMMEDIATE ACTIONS -->
+<section class="doc-section-block">
+<h1 class="doc-section" id="immediate-actions">Immediate Letters to Write</h1>
+<div class="action-box">
+<h2 id="1-adam-brother-in-law-highest-priority">1. Adam (Brother-in-law) - HIGHEST PRIORITY</h2>
+<p><strong>Subject:</strong> Vario Wipes brand purchase</p>
+<p><strong>Potential:</strong> <span class="budget-highlight">$1M-$10M payout</span></p>
+<h3 id="pitch-points">Pitch Points:</h3>
+<ul>
+<li>$1M now possible</li>
+<li>$10M by Q3 2026 realistic</li>
+<li>Could celebrate at Thanksgiving 2026</li>
+<li>Sell to Bounty/Brawny/similar for $10M</li>
+<li>Split 50/50 ($5M each) + 1% gross</li>
+</ul>
+<p><strong>Deadline:</strong> Before Year-End</p>
+</div>
+<div class="action-box">
+<h2 id="2-selga-sister-s-e-l-g-a">2. Selga (Sister, S-E-L-G-A)</h2>
+<p><strong>Approach:</strong> "I know you don't like me, don't know why. We're spending Thanksgiving 2026 together. Adam and I could cooperate - could be celebrating $10M sale."</p>
+<p><strong>Deadline:</strong> Before Year-End</p>
+</div>
+<div class="action-box">
+<h2 id="3-latvian-post-office-director">3. Latvian Post Office Director</h2>
+<p><strong>Subject:</strong> IT infrastructure consulting offer</p>
+<p><strong>Context:</strong> Met director at event, they were looking for IT manager/assistant/project manager</p>
+<p><strong>Deadline:</strong> Before Year-End</p>
+</div>
+<div class="action-box">
+<h2 id="4-mara-tupese-boundary-setting">4. Mara Tupese - Boundary Setting</h2>
+<p><strong>NOT a financial opportunity</strong></p>
+<p><strong>Context:</strong> Second mother who held him days old, turned back summer 2025 at 3x3</p>
+<p><strong>Issue:</strong> Spreading rumors calling him mentally ill (garīgi slims) and anti-vaxxer behind his back</p>
+<p><strong>Action:</strong> Criminal/illegal boundary setting letter</p>
+<p><strong>Deadline:</strong> Early January</p>
+</div>
+</section>
+<!-- DZIESMU SVETKI -->
+<section class="doc-section-block">
+<h1 class="doc-section" id="dziesmu-svetki">Dziesmu Svētki 2028 Competition</h1>
+<div class="priority-box">
+<h2 id="competition-details">Competition Details</h2>
+<ul>
+<li><strong>Submission Deadline:</strong> March 16, 2026, 17:00</li>
+<li><strong>Theme:</strong> "SIRDSAPZIŅA" (Conscience)</li>
+<li><strong>Keywords:</strong> mantojums, vērtības, gudrība, sirsnība, cieņa</li>
+</ul>
+<h3 id="nosleguma-koncerts-budget">Noslēguma Koncerts Budget:</h3>
+<ul>
+<li>Concept development/implementation: <span class="budget-highlight">€82,667</span> (without VAT)</li>
+<li>Full realization/scenography/production: <span class="budget-highlight">€890,053</span> (without VAT)</li>
+<li><strong>Total: €972,720</strong> (without VAT)</li>
+</ul>
+</div>
+<h2 id="es-bititei-namu-daru-drone-bee-concept">"Es bitītei namu daru" Drone Bee Concept</h2>
+<p><strong>Status:</strong> <span class="status-complete">Composition COMPLETED</span> (minor score edits only)</p>
+<h3 id="bee-symbolism-for-sirdsapzina">Bee Symbolism for SIRDSAPZIŅA:</h3>
+<ul>
+<li>Collective intelligence without central command = inherited wisdom</li>
+<li>Each bee's labor contributes to whole = gudrība, čaklums</li>
+<li>Communication through energy and pattern = sirsnība</li>
+<li>Protection of the hive = cieņa for community</li>
+<li>Queen Bee = Milda = BRĪVĪBA</li>
+</ul>
+<h3 id="visual-sequence">Visual Sequence:</h3>
+<ol>
+<li>Heart appears RED</li>
+<li>Latvia map appears WHITE</li>
+<li>Transforms into Latvian flag (red-white-red)</li>
+<li>12 bees become EU stars</li>
+<li>Bees pull Latvian flag across sky</li>
+<li>Each bee = individual conscience contributing to collective conscience</li>
+</ol>
+<h3 id="strategy">Strategy:</h3>
+<ul>
+<li><strong>Submit competition</strong> (win = €82,667 + visibility)</li>
+<li><strong>Public marketing campaign</strong> (enthusiasm contagious)</li>
+<li><strong>If corruption blocks:</strong> proceed independently</li>
+<li><strong>Either way:</strong> korboc.lv platform gains visibility</li>
+</ul>
+<h3 id="groundwork-completed">Groundwork Completed:</h3>
+<ul>
+<li>Superior notebook cover design (proven improvement over official 2023)</li>
+<li>High-quality live concert footage (unedited asset)</li>
+<li>"Gardums šķēršļu gājiens" concept developed</li>
+<li>Ice cream brand introduced and documented (excellent 2023 concert)</li>
+<li>Platform reaching 1000+ conductors</li>
+</ul>
+<h3 id="korboc-survey-status">Korboc Survey Status:</h3>
+<ul>
+<li>Current: ~12 responses</li>
+<li>Need: 100 by January 31, 2026</li>
+<li>Survey completion rate: 29% (GOOD)</li>
+<li>Barrier: Email engagement (only 7 clicks from 161 opens)</li>
+<li>Strategy: Have conductors ask their choir members directly</li>
+</ul>
+</section>
+<!-- LEGAL ACTIONS -->
+<section class="doc-section-block">
+<h1 class="doc-section" id="legal-actions">Legal Actions &amp; Lawsuits</h1>
+<table>
+<tr>
+<th>Target</th>
+<th>Claim</th>
+<th>Potential</th>
+<th>Status</th>
+</tr>
+<tr>
+<td>Facebook/Zuckerberg</td>
+<td>Foreign election interference (parliamentary candidate ~5 years ago)</td>
+<td class="budget-highlight">€1M</td>
+<td class="status-pending">To File</td>
+</tr>
+<tr>
+<td>"Maybe Police" (RPP)</td>
+<td>Attack, nearly killed, targeted assault</td>
+<td class="budget-highlight">€10M</td>
+<td class="status-pending">To File</td>
+</tr>
+<tr>
+<td>Ritvars Jansons</td>
+<td>Falsified visual graphics</td>
+<td>TBD</td>
+<td class="status-pending">To File</td>
+</tr>
+<tr>
+<td>Elizabeth</td>
+<td>Unpaid child support (€30/month since 2013)</td>
+<td>€4,320 + damages</td>
+<td class="status-pending">To File</td>
+</tr>
+<tr>
+<td>Ligija Zarina</td>
+<td>Narcissistic abuse, malicious lies (cost 4 jobs)</td>
+<td>TBD</td>
+<td class="status-pending">To File</td>
+</tr>
+</table>
+<h2 id="latvia-legal-reform-campaigns">Latvia Legal Reform Campaigns</h2>
+<ul>
+<li>Gender symmetry in domestic violence law (acknowledge equal perpetration rates)</li>
+<li>Doctor disclosure law (must tell patients if psychopath/predator)</li>
+<li>Riga Revision of Istanbul Convention (deeper revision work in progress)</li>
+</ul>
+</section>
+<!-- MOVIE CONCEPTS -->
+<section class="doc-section-block">
+<h1 class="doc-section" id="movies">Movie Concepts</h1>
+<div class="movie-card">
+<h2 id="1-the-comedy-special-that-never-was">1. "The Comedy Special That Never Was"</h2>
+<p><strong>Format:</strong> Over 1 hour, under 90 minutes</p>
+<p><strong>Content:</strong> Retrospective on imagined career as comedian</p>
+<p><strong>Description:</strong> All jokes as if he'd been comedian all this time</p>
+<p><strong>Status:</strong> Audio work needed</p>
+</div>
+<div class="movie-card">
+<h2 id="2-the-chicago-5-cikagas-piecisi">2. "The Chicago 5" (Čikāgas piecīši)</h2>
+<p><strong>Genre:</strong> Spy action comedy, twist on history</p>
+<p><strong>Premise:</strong> Chicago 5 folk band was actually special forces operation responsible for Soviet Union crumbling</p>
+<h3 id="structure">Structure:</h3>
+<p>Take real historical events, attribute them to band's covert ops:</p>
+<ul>
+<li>Gorbachev legitimizing Baltic independence (Laurie whispered key sentence)</li>
+<li>Plane flying into Red Square</li>
+<li>Fall of Berlin Wall</li>
+<li>Albert Legzdiņš 1989 Mežaparks concert</li>
+</ul>
+<p><strong>Tone:</strong> James Bond meets action comedy</p>
+<p><strong>Cast Concept:</strong> Laurie as bombshell super sexy spy (makes leaders think intimate relations happened but never did)</p>
+</div>
+<div class="movie-card">
+<h2 id="3-the-convid-affair-flagship">3. "The Convid Affair" ⭐ FLAGSHIP</h2>
+<p><strong>Premise:</strong> Chinese businessman loses everything (wife Arifa pregnant with 2nd child, entire family) in American bombing raid (discarding extra weapons). Becomes multibillionaire, hires NYC advertising boutique with $100M to destroy America/West.</p>
+<h3 id="nyc-boutique-5-partners">NYC Boutique (5 partners):</h3>
+<ul>
+<li>2 refuse initially</li>
+<li>1 in debt (narcissistic ex-wife) needs money</li>
+<li>1 woman needs money</li>
+<li>1 middle</li>
+</ul>
+<h3 id="their-strategy-to-absolve-guilt">Their Strategy to Absolve Guilt:</h3>
+<p>Pitch ABSURDLY stupid plan thinking it's too stupid to work</p>
+<h3 id="comprehensive-destruction-plan">Comprehensive Destruction Plan:</h3>
+<ul>
+<li><strong>Physical/Emotional:</strong> COVID (no isolated virus, masks despite 100 years showing ineffectiveness, fake cold chain, intubation that killed, children convinced they'll kill grandparents)</li>
+<li><strong>Mental/Cognitive:</strong> Common Core Math (designed to make people stupid)</li>
+<li><strong>Financial:</strong> Reckless debt + Law of Attraction victim-blaming</li>
+<li><strong>Spiritual:</strong> Transgender ideology, men beating women in Olympics boxing</li>
+<li><strong>Social:</strong> Open borders, fake daycares embezzling, political correctness blocking justice</li>
+</ul>
+<h3 id="the-twist">The Twist:</h3>
+<p>Chinese buy plan, maybe pay MORE to implement. It WORKS because society accepts the absurd.</p>
+<h3 id="budget-concept">Budget Concept:</h3>
+<ul>
+<li>With AI: multimillion dollar actual 4K action film possible</li>
+<li>With <span class="budget-highlight">$50k</span>: artistic rendering (parchment-style flowing visual effects, brush-painted figures)</li>
+<li>Create "movie sketch" for film aficionados, use to pitch Hollywood</li>
+</ul>
+</div>
+<div class="movie-card">
+<h2 id="4-masqueumentry-needs-different-name-domain-lost">4. "Masqueumentry" (needs different name - domain lost)</h2>
+<p><strong>Theme:</strong> Mask wearing stupidity</p>
+<p><strong>Angle:</strong> Historical "geniuses" just noticed collective stupidity</p>
+<ul>
+<li>Semmelweis: "wash hands after autopsies"</li>
+<li>Rebreathing festering snot/saliva, reduced O2, increased CO2, aerosol creation</li>
+</ul>
+</div>
+<div class="movie-card">
+<h2 id="5-the-flaw-of-attraction-feature">5. "The Flaw of Attraction" (Feature)</h2>
+<p><strong>Genre:</strong> Dark psychological thriller</p>
+<h3 id="logline-2">Logline</h3>
+<p>A desperate life coach stages ultra‑expensive manifestation weekends that secretly kill the weak and crown the survivors as proof of her method; an undercover agent who survives must prove she’s a serial murderer while the world argues whether she’s monster or miracle.</p>
+<h3 id="pitch">Pitch</h3>
+<p>Sharon Barton turns desperation into a plan: sell 1,000 tickets at $1,000 and become instantly wealthy. Her three‑day event culminates in a staged catastrophe that kills half the room while the survivors are transformed into billionaires, champions, and cultural icons. Media worships her; families grieve. An FBI agent infiltrates a later event, survives, and falls in love with a fellow survivor. He assembles forensic evidence and clandestine recordings to bring her down, but the courtroom becomes a battleground of meaning when transformed survivors defend her. The climax forces society to confront whether outcomes justify intention.</p>
+<h3 id="the-hook">The Hook</h3>
+<ul>
+<li>Visionary, awards‑bait lead role.</li>
+<li>High‑concept, culturally relevant takedown of wellness/miracle culture.</li>
+<li>Blockbuster set‑pieces: staged mass‑events, courtroom drama, intimate survivor arcs.</li>
+</ul>
+<p><strong>Tagline:</strong> "Your life will never be the same. Guaranteed."</p>
+</div>
+<div class="movie-card">
+<h2 id="6-joseph-and-two-marys">6. "Joseph and Two Marys" — A Tale of the Frontier</h2>
+<p><strong>Genre:</strong> Western drama</p>
+<p><strong>Logline:</strong> In a tight-knit Christian frontier town, a carpenter named Joey rescues a pregnant prostitute by claiming her as his wife to save her from a preacher's murderous plot; they flee west in a perilous journey for survival.</p>
+<h3 id="premise-2">Premise</h3>
+<p>A preacher, tempted by flesh, sleeps with a destitute woman who then works at the nearby brothel. The brothel mistress takes her in as a housemaid after the woman refuses further clients; two months later she shows signs of pregnancy. The preacher, blaming her as the devil incarnate, recruits two thieves to stone and bury her. Joey, a carpenter married to the kind Mary, stumbles upon the scene, intervenes, and claims the woman (Constanze Mary Fielding) as his own. Joey brings her home and they plan a dangerous ride west to escape and survive—this film depicts their perilous journey and the moral reckonings along the way.</p>
+<p><strong>Characters:</strong> Joey — a compassionate carpenter; Mary — Joey's kind wife; Constanze Mary Fielding — the destitute woman turned brothel housemaid; Preacher — antagonist consumed by hypocrisy.</p>
+<p><strong>Themes:</strong> Redemption, hypocrisy, compassion, survival.</p>
+</div>
+</section>
+<!-- TIMELINE -->
+<section class="doc-section-block">
+<h1 class="doc-section" id="timeline">Action Timeline</h1>
+<div class="timeline">
+<div class="timeline-item">
+<h3 id="before-year-end-dec-27-31-2025">Before Year-End (Dec 27-31, 2025)</h3>
+<ul>
+<li>Email Adam about Vario Wipes ($1M-$10M opportunity) - <span class="status-urgent">URGENT</span></li>
+<li>Email Latvian Post Office director (IT consulting)</li>
+<li>Email Selga (enable Adam cooperation)</li>
+</ul>
+</div>
+<div class="timeline-item">
+<h3 id="early-january-2026">Early January 2026</h3>
+<ul>
+<li>Gifts + transcripts to Adler/Mulholland/Schelle (after funds available)</li>
+<li>Letter to Mara Tupese (boundary setting)</li>
+<li>10-25 university letters (teaching positions)</li>
+<li><strong>Decision point:</strong> Build LeSAEp.com (1-3 days)?</li>
+</ul>
+</div>
+<div class="timeline-item">
+<h3 id="q1-2026-jan-mar">Q1 2026 (Jan-Mar)</h3>
+<ul>
+<li>Dziesmu svētki competition submission (March 16 deadline)</li>
+<li>Public marketing campaign launch</li>
+<li>LeSAEp.com → simplified-solfeggio.com deployment</li>
+<li>Social media automation setup</li>
+<li>Korboc survey to 100 responses (by Jan 31)</li>
+</ul>
+</div>
+<div class="timeline-item">
+<h3 id="ongoing-throughout-2026">Ongoing Throughout 2026</h3>
+<ul>
+<li>Music sync/licensing outreach (IMDB Pro contacts)</li>
+<li>Legal action preparation (Facebook, police, Jansons, Elizabeth, Ligija)</li>
+<li>Catalog upload/meta-tagging</li>
+<li>Latvia legal reform work (if flows naturally)</li>
+<li>Concert footage editing/production</li>
+</ul>
+</div>
+</div>
+</section>
+<!-- PRIORITIES & VISIBILITY -->
+<section class="doc-section-block" id="priorities-visibility">
+<h1 class="doc-section" id="priorities-and-visibility-profit-first">Priorities &amp; Visibility — Profit First</h1>
+<div class="priority-box">
+<h2 id="top-ranked-revenue-priorities-by-time-to-first-euro">Top Ranked Revenue Priorities (by time-to-first-euro)</h2>
+<ol>
+<li>LeSAEp MVP funnel (tripwire + core) — fastest testable funnel.</li>
+<li>Gumroad eBook bundles (DA1_Brenda + bestsellers) — instant product delivery.</li>
+<li>Music releases &amp; sync pitches ("Creep On", "Time Flies") — licensing revenue.</li>
+<li>DA1_Brenda paid beta (€9.99/mo) — recurring baseline.</li>
+<li>Affiliate/teacher program — scale distribution with 30% commission (monthly payout).</li>
+</ol>
+<h3 id="72hour-cash-sprint-use-only-existing-assets">72‑Hour Cash Sprint (use only existing assets)</h3>
+<ol>
+<li>Day 1: Send Adam (Vario Wipes) pitch email (draft below).</li>
+<li>Day 2: Release "Creep On" on Bandcamp + post licensing note.</li>
+<li>Day 3: Email 1,000+ conductors with concert footage offer.</li>
+<li>Day 4: Publish €7 Gumroad bundle (DA1_Brenda) and add CTA to bio.</li>
+<li>Day 5: Launch LeSAEp landing + €7 tripwire + email capture.</li>
+<li>Day 6: Run 3 low-budget ad tests (€5–€20/day each).</li>
+<li>Day 7: Review KPIs; scale winners and set next 7-day plan.</li>
+</ol>
+</div>
+<div class="revenue-box">
+<h2 id="assets-ready-to-monetize-today">Assets Ready to Monetize TODAY</h2>
+<ul>
+<li><strong>"Creep On"</strong> — unreleased, commercial-grade; Days-to-first-euro: 1–3 (Bandcamp/Bandcamp + sync pitches).</li>
+<li><strong>"Time Flies"</strong> — release + sync pitch; Days-to-first-euro: 3–7.</li>
+<li><strong>Concert footage</strong> — edit &amp; offer to conductors; Days-to-first-euro: 1–5.</li>
+<li><strong>44–47 LeSAEp videos</strong> — package micro-lessons; Days-to-first-euro: 3–7.</li>
+<li><strong>Flaw of Attraction pitch</strong> — film/serialization; Days-to-first-euro: 7–21.</li>
+</ul>
+</div>
+<div class="action-box">
+<h2 id="adam-vario-wipes-email-draft">Adam (Vario Wipes) Email Draft</h2>
+<pre>Subject: Quick note — Vario Wipes opportunity
+
+Hi Adam,
+
+I hope you're well. I have a clear plan to position Vario Wipes for a potential $1M–$10M sale with a simple go‑to‑market and buyer outreach strategy; I think you should consider it.
+
+I can share a one‑page pitch and a short valuation model; can we talk this week for 20 minutes?
+
+Best,
+Dainis
+</pre>
+<p><em>Send from your primary account and follow up after 48 hours if no reply.</em></p>
+</div>
+<div class="action-box">
+<h2 id="payments-and-fulfillment-day1-setup">Payments &amp; Fulfillment (Day‑1 setup)</h2>
+<ul>
+<li>Connect Stripe and/or Gumroad — test a €7 purchase and delivery email.</li>
+<li>Set up instant product delivery (Gumroad) and a simple receipt workflow (automated email triggers).</li>
+<li>Create a "Verdict Only" €19 product with immediate download and automated nurture sequence.</li>
+</ul>
+</div>
+<div class="action-box">
+<h2 id="microad-test-plan">Micro‑Ad Test Plan</h2>
+<ul>
+<li>3 creatives × 3 audiences; €5–€20/day per test; 72‑hour kill rule; target CAC €5–12.</li>
+<li>Use short clips from LeSAEp and song reels; track CTR → conversion → profit in a simple Google Sheet dashboard.</li>
+</ul>
+</div>
+<div class="priority-box">
+<h2 id="progress-tracker-status-as-of-jan-5-2026">Progress Tracker (Status as of Jan 5, 2026)</h2>
+<table>
+<tr><th>Item</th><th>Status</th><th>Next step</th></tr>
+<tr><td>Vario Wipes email</td><td class="status-urgent">Pending</td><td>Send Day 1</td></tr>
+<tr><td>LeSAEp MVP</td><td class="status-pending">Decision</td><td>Build landing; create 3 micro-lessons</td></tr>
+<tr><td>Korboc survey</td><td class="status-pending">12 responses</td><td>Reach 100 by Jan 31</td></tr>
+<tr><td>Music uploads</td><td class="status-pending">Not uploaded</td><td>Upload "Creep On" today</td></tr>
+</table>
+</div>
+<div class="decree-box">
+<h2 id="public-safety-and-legal-note">Public Safety &amp; Legal Note</h2>
+<p>Move violent or accusatory language (e.g., Divine Decree) into a private legal file and replace public text with neutral summaries to protect partnerships, ads, and payment providers.</p>
+</div>
+</section>
+<!-- HISTORICAL CONTEXT -->
+<section class="doc-section-block">
+<h1 class="doc-section" id="historical">Historical Context &amp; Patterns</h1>
+<h2 id="pre-20122013-revenue-success">Pre-2012/2013 Revenue Success</h2>
+<p><strong>Revenue:</strong> $2k per month from:</p>
+<ul>
+<li>CureTinnitus.org memberships</li>
+<li>Music eBooks</li>
+<li>Web services</li>
+</ul>
+<p><strong>Result:</strong> Parasitic personalities took over BigTech, destroyed revenue stream</p>
+<h2 id="technologies-and-innovations-suppressed">Technologies &amp; Innovations Suppressed</h2>
+<ul>
+<li><strong>Water Wheel Renewable Energy:</strong> 800x force of air, 4000x power of wind turbine, non-destructive</li>
+<li><strong>Single Family Home (1988-89):</strong> Created more power than needed as high school student</li>
+<li><strong>IT Manager Experience:</strong> REEP (Renewable Energy and Energy Efficiency Partnership)</li>
+</ul>
+<h2 id="historical-suppression-pattern">Historical Suppression Pattern</h2>
+<ul>
+<li>Nikola Tesla: died in poverty, technology seized</li>
+<li>Semmelweis: terrorized, insane asylum</li>
+<li>Galileo: forced to poison himself</li>
+</ul>
+<p><strong>Insight:</strong> "Geniuses" just notice how stupid collective is being. Get terrorized for pointing it out.</p>
+<h2 id="david-klavins-piano-opportunity-failed-2024-2025">David Klavins Piano Opportunity (Failed 2024-2025)</h2>
+<p><strong>Potential:</strong> Three 450i pianos at €3.5M each = €1.35M commission (10%)</p>
+<p><strong>Work Performed:</strong> Marketing materials, cold calling, custom emails, physical letters, videos</p>
+<p><strong>Result:</strong> David got investor, never spoke again, practically out of business</p>
+</section>
+<!-- FUNDAMENTAL TRUTH -->
+<section class="doc-section-block">
+<h1 class="doc-section" id="truth">Fundamental Truth Declared</h1>
+<div class="decree-box">
+<h2 id="i-learned-nothing-from-sabotage-nothing">"I learned NOTHING from sabotage. NOTHING."</h2>
+<p>The perpetrators are not teachers. They are abusers. The suffering was not instructive. It was destructive. Life has been LESS, not more. Gaining nothing from betrayals except damage requiring repair.</p>
+<h3 id="what-was-lost-unrealized-life">What Was Lost (Unrealized Life):</h3>
+<ul>
+<li><strong>With Vita (First Love):</strong> 30 years building together, 12 children, grandchildren now, legacy garden</li>
+<li><strong>With Academic Success:</strong> Princeton or Yale scholarship, composition professor, pediatrician, authority for movie work</li>
+<li><strong>With Elizabeth's Cooperation:</strong> Property in multiple countries, financial security</li>
+</ul>
+<h3 id="what-happened-instead">What Happened Instead:</h3>
+<ul>
+<li>Soul pieced back together</li>
+<li>Emotions reassembled</li>
+<li>54 and alone</li>
+<li>No wife, no 30 years of building</li>
+<li>Physical recovery needed</li>
+</ul>
+</div>
+</section>
+<!-- CURRENT STATE -->
+<section class="doc-section-block">
+<h1 class="doc-section" id="current-state">Current Personal Situation</h1>
+<h2 id="family-and-living">Family &amp; Living</h2>
+<ul>
+<li>54 years old, single father</li>
+<li>Emi — spends a little more than half her time with me; planning to move fully to Latvia in fall 2026. Emi's time with her mother has been extremely toxic to her character and well‑being.</li>
+<li>Living in Riga with Omi (my mother)</li>
+<li>Has not slept well since Emi's abduction (2021)</li>
+<li>Deep, healing rest occurs when Emi, Omi, and I are together</li>
+</ul>
+<h2 id="priority-sequence">Priority Sequence</h2>
+<ol>
+<li><strong>MONEY</strong> - €1k/day by end 2026</li>
+<li><strong>WIFE / PARTNER</strong> - Seeking a loving, powerful, joyful partner (age up to ~37 years); plant‑based lifestyle required.</li>
+</ol>
+<h2 id="at-54-still-possible">At 54: Still Possible</h2>
+<ul>
+<li>With the right health and partner, long and vital life is possible (aim: healthy longevity).</li>
+<li>Capable of being a strong, reliable partner and building a family life.</li>
+<li>The family dream remains achievable.</li>
+<li>Shaolin medic training, musical gifts, and business experience are assets for a stable, extraordinary partnership.</li>
+</ul>
+</section></div>
+<footer>
+<p><strong>Success Roadmap 2026 - Dainis W. Michel</strong></p>
+<p>Created: December 26-27, 2025</p>
+<p>Target: €1,000 per day profit by December 31, 2026</p>
+<p style="margin-top: 20px; font-style: italic;">"The future is unwritten, and I still belong to it."</p>
+</footer>
+</div>
+<a href="#top" id="back-to-top">↑ Top</a><script id="toc-v5-script">
+/* ===== Success Roadmap 2026 — v8 script =====
+   Goals:
+   - Robust nested TOC (H1..H4) with depth filters (no blank gaps)
+   - Collapsible H1 sections in the DOCUMENT (not the TOC)
+   - Navbar +/- controls DOCUMENT H1 collapse/expand only
+   - TOC controls affect TOC only (depth + expand/collapse)
+   - Theme selector (persisted)
+   - Safari-safe DOM selection (no :scope dependency)
+*/
+(function(){
+  "use strict";
+
+  /* ---------- Theme ---------- */
+  function applyTheme(theme){
+    const t = theme || "print";
+    document.body.setAttribute("data-theme", t);
+    try{ localStorage.setItem("sr_theme_v11", t); }catch(e){}
+  }
+  function initTheme(){
+    const sel = document.getElementById("theme-select");
+    let saved = "print";
+    try{ saved = localStorage.getItem("sr_theme_v11") || "print"; }catch(e){}
+    applyTheme(saved);
+    if (sel){
+      sel.value = saved;
+      sel.addEventListener("change", () => applyTheme(sel.value));
+    }
+  }
+
+  /* ---------- Helpers ---------- */
+  function slugify(text){
+    return (text || "")
+      .toLowerCase()
+      .replace(/&/g," and ")
+      .replace(/[^a-z0-9]+/g,"-")
+      .replace(/(^-|-$)/g,"")
+      .substring(0,80);
+  }
+
+  function getDirectChild(el, className){
+    // returns first direct child element with className
+    for (let i=0;i<el.children.length;i++){
+      const c = el.children[i];
+      if (c.classList && c.classList.contains(className)) return c;
+    }
+    return null;
+  }
+
+  /* ---------- Document H1 collapsers ---------- */
+  function buildDocumentH1Collapsers(){
+    const blocks = Array.from(document.querySelectorAll(".doc-section-block"));
+    blocks.forEach(block => {
+      // already processed?
+      if (block.getAttribute("data-h1-wired") === "1") return;
+
+      const h1 = block.querySelector("h1.doc-section");
+      if (!h1) return;
+
+      // Create header container
+      const header = document.createElement("div");
+      header.className = "h1-header";
+
+      const toggle = document.createElement("button");
+      toggle.className = "h1-toggle";
+      toggle.type = "button";
+      toggle.setAttribute("aria-label", "Collapse section");
+      toggle.setAttribute("aria-expanded", "true");
+      toggle.textContent = "▼";
+
+      // Move H1 into header
+      header.appendChild(toggle);
+      header.appendChild(h1);
+
+      // Insert header at very top of block
+      block.insertBefore(header, block.firstChild);
+
+      // Create body container and move everything after header into it
+      const body = document.createElement("div");
+      body.className = "h1-body";
+      while (header.nextSibling){
+        body.appendChild(header.nextSibling);
+      }
+      block.appendChild(body);
+
+      function setCollapsed(collapsed){
+        block.classList.toggle("h1-collapsed", collapsed);
+        toggle.setAttribute("aria-expanded", String(!collapsed));
+        toggle.setAttribute("aria-label", collapsed ? "Expand section" : "Collapse section");
+        toggle.textContent = collapsed ? "▶" : "▼";
+      }
+
+      toggle.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setCollapsed(!block.classList.contains("h1-collapsed"));
+      });
+
+      // Click on H1 text toggles as well (nice UX)
+      h1.addEventListener("click", (e) => {
+        // If the user is selecting text, don't toggle.
+        const sel = window.getSelection && window.getSelection();
+        if (sel && String(sel).length > 0) return;
+        setCollapsed(!block.classList.contains("h1-collapsed"));
+      });
+
+      // expose for global +/- actions
+      block._srSetCollapsed = setCollapsed;
+
+      block.setAttribute("data-h1-wired", "1");
+    });
+
+    // Navbar +/- should ONLY affect DOCUMENT H1 sections
+    const navMinus = document.getElementById("toc-collapse-all");
+    const navPlus  = document.getElementById("toc-expand-all");
+
+    if (navMinus){
+      navMinus.addEventListener("click", () => {
+        blocks.forEach(b => b._srSetCollapsed && b._srSetCollapsed(true));
+      });
+    }
+    if (navPlus){
+      navPlus.addEventListener("click", () => {
+        blocks.forEach(b => b._srSetCollapsed && b._srSetCollapsed(false));
+      });
+    }
+  }
+
+  /* ---------- TOC ---------- */
+  function buildTOC(){
+    const toc = document.getElementById("doc-toc");
+    const tocListHost = toc ? toc.querySelector(".toc-list") : null;
+    if (!toc || !tocListHost) return;
+
+    // build from headings inside .doc-section-block only (keeps header title out)
+    const headings = Array.from(document.querySelectorAll(
+      ".doc-section-block h1.doc-section, .doc-section-block h2, .doc-section-block h3, .doc-section-block h4"
+    ));
+
+    // Ensure all headings have ids
+    const used = new Set();
+    headings.forEach(h => {
+      if (!h.id){
+        let base = slugify(h.textContent);
+        if (!base) base = "section";
+        let id = base, n = 2;
+        while (document.getElementById(id) || used.has(id)){
+          id = base + "-" + n++;
+        }
+        h.id = id;
+      }
+      used.add(h.id);
+    });
+
+    // Clear host
+    tocListHost.innerHTML = "";
+
+    const rootUl = document.createElement("ul");
+    rootUl.className = "toc-tree";
+
+    const stack = [{ level: 1, ul: rootUl }];
+
+    headings.forEach(h => {
+      const level = parseInt(h.tagName.substring(1), 10);
+      if (isNaN(level) || level < 1 || level > 4) return;
+
+      // Adjust stack to current level
+      while (stack.length && stack[stack.length - 1].level >= level){
+        stack.pop();
+      }
+      // If stack got too shallow, re-root at 1
+      if (!stack.length) stack.push({ level: 1, ul: rootUl });
+
+      const li = document.createElement("li");
+      li.className = "toc-item";
+      li.setAttribute("data-level", String(level));
+
+      const row = document.createElement("div");
+      row.className = "toc-row";
+
+      const toggle = document.createElement("button");
+      toggle.className = "toc-toggle no-children";
+      toggle.type = "button";
+      toggle.setAttribute("aria-label", "Toggle");
+      toggle.setAttribute("aria-expanded", "true");
+      toggle.textContent = ""; // set later if it gets children
+
+      const a = document.createElement("a");
+      a.className = "toc-link";
+      a.href = "#" + h.id;
+      a.textContent = h.textContent.trim();
+
+      // Expand section if user clicks TOC into a collapsed H1 block
+      a.addEventListener("click", (e) => {
+        // let browser handle hash, but also expand
+        const target = document.getElementById(h.id);
+        if (!target) return;
+        const block = target.closest && target.closest(".doc-section-block");
+        if (block && block.classList.contains("h1-collapsed") && block._srSetCollapsed){
+          block._srSetCollapsed(false);
+        }
+      });
+
+      row.appendChild(toggle);
+      row.appendChild(a);
+      li.appendChild(row);
+
+      // attach to parent ul
+      const parent = stack[stack.length - 1].ul;
+      parent.appendChild(li);
+
+      // create nested ul for potential children
+      const nested = document.createElement("ul");
+      nested.className = "toc-nested";
+      li.appendChild(nested);
+
+      // push for deeper levels
+      stack.push({ level: level, ul: nested });
+    });
+
+    // Remove empty nested uls, and wire toggles only where needed
+    const items = Array.from(rootUl.querySelectorAll("li.toc-item"));
+    items.forEach(li => {
+      const nested = getDirectChild(li, "toc-nested");
+      const row = getDirectChild(li, "toc-row");
+      const toggle = row ? getDirectChild(row, "toc-toggle") : null;
+
+      if (nested && nested.children.length){
+        if (toggle){
+          toggle.classList.remove("no-children");
+          toggle.textContent = "▼";
+          toggle.setAttribute("aria-expanded", "true");
+          toggle.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const collapsed = li.classList.toggle("collapsed");
+            toggle.setAttribute("aria-expanded", String(!collapsed));
+            toggle.textContent = collapsed ? "▶" : "▼";
+          });
+        }
+      } else {
+        // no children
+        if (nested) nested.remove();
+        if (toggle){
+          toggle.classList.add("no-children");
+          toggle.setAttribute("aria-expanded", "true");
+          toggle.textContent = "";
+        }
+      }
+    });
+
+    tocListHost.appendChild(rootUl);
+
+    // TOC controls (depth + collapse/expand) affect TOC only
+    function setDepth(depth){
+      const d = Math.max(1, Math.min(4, depth));
+      toc.classList.remove("toc-depth-1","toc-depth-2","toc-depth-3","toc-depth-4");
+      toc.classList.add("toc-depth-" + d);
+
+      const buttons = Array.from(toc.querySelectorAll(".toc-controls button[data-depth]"));
+      buttons.forEach(b => b.classList.toggle("active", b.getAttribute("data-depth") === String(d)));
+
+      // Expand all items first, then CSS will hide items beyond the depth
+      expandAll();
+    }
+
+    function collapseAll(){
+      items.forEach(li => {
+        if (li.classList.contains("collapsed")) return;
+        const row = getDirectChild(li, "toc-row");
+        const toggle = row ? getDirectChild(row, "toc-toggle") : null;
+        const nested = getDirectChild(li, "toc-nested");
+        if (!toggle || !nested) return;
+        li.classList.add("collapsed");
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.textContent = "▶";
+      });
+    }
+
+    function expandAll(){
+      items.forEach(li => {
+        const row = getDirectChild(li, "toc-row");
+        const toggle = row ? getDirectChild(row, "toc-toggle") : null;
+        const nested = getDirectChild(li, "toc-nested");
+        if (!toggle || !nested) return;
+        li.classList.remove("collapsed");
+        toggle.setAttribute("aria-expanded", "true");
+        toggle.textContent = "▼";
+      });
+    }
+
+    // Wire buttons
+    const depthButtons = Array.from(toc.querySelectorAll(".toc-controls button[data-depth]"));
+    depthButtons.forEach(btn => {
+      btn.addEventListener("click", () => setDepth(parseInt(btn.getAttribute("data-depth"),10)));
+    });
+
+    const tocExpand = document.getElementById("toc-expand");
+    const tocCollapse = document.getElementById("toc-collapse");
+    if (tocExpand) tocExpand.addEventListener("click", expandAll);
+    if (tocCollapse) tocCollapse.addEventListener("click", collapseAll);
+
+    // Default: H1 only, collapsed
+    setDepth(1);
+  }
+
+  document.addEventListener("DOMContentLoaded", function(){
+    initTheme();
+    buildDocumentH1Collapsers();
+    buildTOC();
+  });
+})();
+</script></body>
+</html>

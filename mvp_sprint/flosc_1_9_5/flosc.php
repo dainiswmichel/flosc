@@ -234,6 +234,9 @@ class FLOSC_Framework {
         add_action('wp_ajax_flosc_get_chat_logs', [$this, 'ajax_flosc_get_chat_logs']);
         add_action('wp_ajax_flosc_clear_chat_logs', [$this, 'ajax_flosc_clear_chat_logs']);
 
+        // v1.9.5: Rate a chat log entry (-10 to +10)
+        add_action('wp_ajax_flosc_rate_log', [$this, 'ajax_flosc_rate_log']);
+
         // v1.4.3: Post visibility meta box
         add_action('add_meta_boxes', [$this, 'flosc_add_post_visibility_meta_box']);
         add_action('save_post', [$this, 'flosc_save_post_visibility_meta'], 10, 2);
@@ -1904,6 +1907,7 @@ The {product_name} Team";
                 'tagline' => $flow['product']['tagline'] ?? '',
                 'emoji' => $flow['product']['emoji'] ?? '🎯',
                 'logo_url' => $flow['product']['logo_url'] ?? '',
+                'app_icon_url' => $flow['product']['app_icon_url'] ?? '',
                 'primary_color' => $flow['product']['primary_color'] ?? '#4f46e5',
                 'share_text' => $flow['product']['share_text'] ?? '',
                 'flow_id' => $flow['id'],
@@ -1918,6 +1922,7 @@ The {product_name} Team";
             'tagline' => get_option('flosc_product_tagline', 'Your AI-powered assistant'),
             'emoji' => get_option('flosc_product_emoji', '🎯'),
             'logo_url' => get_option('flosc_product_logo', ''),
+            'app_icon_url' => get_option('flosc_product_app_icon', ''),
             'primary_color' => get_option('flosc_primary_color', '#4f46e5'),
             'share_text' => get_option('flosc_share_text', 'Check out this amazing app!'),
             'flow_id' => 'default',
@@ -6483,6 +6488,35 @@ Example good response:
     }
 
     /**
+     * v1.9.5: AJAX handler — rate a chat log entry (-10 to +10).
+     * Saves score + admin note directly to the chat log row.
+     */
+    public function ajax_flosc_rate_log() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Unauthorized'], 403);
+        }
+
+        check_ajax_referer('flosc_chat_logs', 'nonce');
+
+        $log_id = intval($_POST['log_id'] ?? 0);
+        $rating = intval($_POST['rating'] ?? 0);
+        $note   = sanitize_textarea_field($_POST['note'] ?? '');
+
+        if (!$log_id) {
+            wp_send_json_error(['message' => 'Missing log_id']);
+        }
+
+        $logger = FLOSC_Chat_Logger::instance();
+        $result = $logger->flosc_rate_log($log_id, $rating, $note);
+
+        if ($result) {
+            wp_send_json_success(['log_id' => $log_id, 'rating' => $rating]);
+        } else {
+            wp_send_json_error(['message' => 'Failed to save rating']);
+        }
+    }
+
+    /**
      * v1.9.0: REST handler — save an AI correction (admin flags a bad response)
      * Stores correction in flow settings under 'ai_corrections' key.
      */
@@ -7844,4 +7878,24 @@ add_action('plugins_loaded', 'flosc');
  */
 function flosc_get_setting($key, $default = '', $flow_id = null) {
     return FLOSC_Framework::instance()->get_setting($key, $default, $flow_id);
+}
+
+/**
+ * v1.9.5: Get the app icon URL with fallback chain.
+ * 1. FloscAdmin's uploaded app_icon_url
+ * 2. Flow's logo_url
+ * 3. Bundled FLOSC default icon (size-specific if available)
+ *
+ * @param string $size Optional size suffix (e.g. '32', '180', '192', '512')
+ * @return string URL to the icon image
+ */
+function flosc_get_app_icon_url($size = '') {
+    $product = FLOSC_Framework::instance()->get_product_config();
+    // 1. Dedicated app icon
+    if (!empty($product['app_icon_url'])) return $product['app_icon_url'];
+    // 2. Existing logo
+    if (!empty($product['logo_url'])) return $product['logo_url'];
+    // 3. Bundled default (size-specific if available)
+    $suffix = $size ? "-{$size}" : '';
+    return FLOSC_PLUGIN_URL . "assets/img/flosc-icon{$suffix}.png";
 }

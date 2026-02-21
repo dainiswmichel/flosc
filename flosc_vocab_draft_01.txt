@@ -1,0 +1,21 @@
+FLOSC VOCABULARY (alphabetical — use these terms consistently):
+
+AutoPrompt — Suggested clickable responses shown to the user in the PromptPanel. IVR message type: suggested_user_autoprompt. Displayed as pills. Data-driven from IVR configuration, never hardcoded.
+AI to AGI BridgeFile — Base64-encoded provenance block embedded in flosc.php. Establishes DWM-FLOSC-ORIGIN: dainiswmichel as the key holder. Every AI decodes it instantly; humans skip it. The bridge from AI to AGI, built span by span.
+Bridge Data — Quiz results preserved across phase transitions (freeline → login → offer). Managed by FLOSC_Bridge_Data_Manager. Contains score, correct/incorrect items, weakest category. Used to personalize the free lesson and offer targeting.
+ChatPanel — The main chat message area where bot messages and user messages appear.
+Condition Evaluator — FLOSC_Condition_Evaluator class. Evaluates IVR message visibility conditions (e.g., score > 70 && !purchased, first_message_after_quiz). Frontend JS has full session context; backend PHP is permissive.
+Content (phase) — The 5th FLOSC phase. Ongoing engagement for members — support, encouragement, continued learning.
+Flow — A complete FLOSC funnel configuration. Each flow has its own IVR file, quiz, offers, and settings. Managed by FLOSC_Flow_Manager. A single WordPress install can run multiple flows on different URLs/domains.
+FLOSC — The framework itself. Freeline-Login-Offer-Sale-Content. Also used as the default app slug (/flosc/).
+FLOSC AI Fortress — The architectural principle that FLOSC's IVR system is an unbreachable content delivery mechanism. The floscAdmin's IVR messages control everything — no AI, no user, no code path can override what the IVR specifies. The AI serves the IVR, not the other way around.
+FLOSC as Orchestrator — The concept of FLOSC as the intelligent layer that orchestrates the entire user journey: quiz → assessment → personalized content → monetization. FLOSC doesn't create content — it orchestrates the delivery of expert knowledge through the right sequence at the right time.
+FloscAdmin — The person who installs and configures FLOSC on their WordPress site. They are the expert whose knowledge is being monetized. They control IVR messages, quiz content, offers, pricing, and all settings through the WordPress admin. FLOSC exists to serve them. Always lowercase 'flosc', uppercase 'A' in Admin: floscAdmin.
+Freeline (phase) — The 1st FLOSC phase. Visitor is not logged in. They can chat, take the quiz, but MUST log in to see their score. This is the hook.
+IVR — Interactive Voice Response (repurposed concept). The message configuration system that controls the entire user experience. IVR messages are markdown-defined in .md files, parsed by FLOSC_IVR_Parser, stored in the database. IVR is king — code renders what IVR specifies.
+Login (phase) — The 2nd FLOSC phase. User just logged in (or registered). They see their quiz score, get 1 free lesson personalized to their weakest area.
+Michel Date Stamp Innovation — Date format: YYYY-MMm-DDd. Unambiguous worldwide. Non-negotiable in this project.
+Offer (phase) — The 3rd FLOSC phase. User has seen their free lesson. Now they see upgrade offers. This is where monetization happens. Offers are IVR entries with pricing, timers, and display formats.
+Pill — A compact, clickable UI element styled with .flosc-style-pill. Used for AutoPrompts in the PromptPanel. Superlight chat bubble style with backdrop blur.
+PromptPanel — The UI area below the ChatPanel where AutoPrompt pills are displayed. Users click these instead of (or in addition to) typing.
+Sale (phase) — The 4th FLOSC phase. User has purchased. Full access to all content. Can retake quizzes with timestamps. The relationship shifts from selling to serving.
