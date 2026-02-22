@@ -339,17 +339,22 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
 
         <!-- Chat container -->
         <div class="chat-container" id="flosc_chat_container">
-            <!-- Landing state -->
+            <!-- Landing state: compact Grok-style centered identity -->
             <div class="landing-state" id="landingState">
-                <?php
-                $landing_icon = function_exists('flosc_get_app_icon_url') ? flosc_get_app_icon_url() : '';
-                if ($landing_icon): ?>
-                    <img src="<?php echo esc_url($landing_icon); ?>" alt="" class="landing-icon">
-                <?php elseif (!empty($product['emoji'])): ?>
-                    <div class="landing-emoji"><?php echo esc_html($product['emoji']); ?></div>
-                <?php endif; ?>
-                <h1 class="landing-title"><?php echo esc_html($product['name'] ?: 'FLOSC'); ?></h1>
-                <p class="landing-subtitle"><?php echo esc_html($product['tagline'] ?: 'Your AI-powered assistant'); ?></p>
+                <div class="landing-header">
+                    <?php
+                    $landing_icon = function_exists('flosc_get_app_icon_url') ? flosc_get_app_icon_url() : '';
+                    if ($landing_icon): ?>
+                        <img src="<?php echo esc_url($landing_icon); ?>" alt="" class="landing-icon">
+                    <?php elseif (!empty($product['emoji'])): ?>
+                        <span class="landing-emoji"><?php echo esc_html($product['emoji']); ?></span>
+                    <?php endif; ?>
+                    <span class="landing-title"><?php echo esc_html($product['name'] ?: 'FLOSC'); ?></span>
+                    <span class="landing-subtitle"><?php echo esc_html($product['tagline'] ?: 'Your AI-powered assistant'); ?></span>
+                </div>
+                <div class="landing-funnel">
+                    Freeline → Login → Offer → Sale → Content
+                </div>
             </div>
 
             <!-- v1.8.0: Old visitor engagement bar removed. Profile bar (sidebar bottom) now handles

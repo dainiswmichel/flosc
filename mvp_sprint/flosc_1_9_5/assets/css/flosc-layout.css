@@ -856,12 +856,8 @@ img.flosc-profile-avatar {
     margin: 0 auto;
 }
 
-/* v1.9.5: Messages area shrinks when no conversation — lets landing state fill space (Grok pattern) */
-.flosc-messages:not(:has(.flosc-message)):not(:has(.message)),
-.messages:not(:has(.message)) {
-    flex: 0;
-    padding: 0;
-}
+/* v1.9.5: Messages area — always flex:1 for stable layout.
+   Landing state collapses via flosc-hidden when user sends first message. */
 
 /* ============================================
    GREETING / WELCOME
@@ -893,41 +889,66 @@ img.flosc-profile-avatar {
     line-height: 1.6;
 }
 
-/* v1.9.5: Landing state — Grok-style vertically centered empty state.
-   Fills available space when no messages exist, hidden on first message via JS. */
+/* v1.9.5: Landing state — compact centered identity block.
+   Vertically centered when no messages. Hidden when user sends first message.
+   Layout: [icon] FLOSC  tagline  (one line)
+           Freeline → Login → Offer → Sale → Content  (below) */
 .landing-state {
-    text-align: center;
-    padding: 24px;
     flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     min-height: 0;
+    gap: 12px;
+    padding: 24px;
+    transition: opacity 0.2s ease;
+}
+
+/* When messages exist alongside, landing state shrinks to content height
+   and sits at top instead of competing for 50% of the viewport. */
+.chat-container:has(.messages .message) .landing-state {
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    padding: 16px 24px 8px;
+}
+
+.landing-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .landing-icon {
-    width: 80px;
-    height: 80px;
-    border-radius: 16px;
-    margin-bottom: 16px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    flex-shrink: 0;
 }
 
 .landing-emoji {
-    font-size: 48px;
-    margin-bottom: 12px;
+    font-size: 28px;
+    line-height: 1;
+    flex-shrink: 0;
 }
 
 .landing-title {
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 700;
-    margin-bottom: 8px;
     letter-spacing: -0.03em;
+    white-space: nowrap;
 }
 
 .landing-subtitle {
-    font-size: 15px;
-    line-height: 1.6;
+    font-size: 14px;
+    opacity: 0.6;
+    white-space: nowrap;
+}
+
+.landing-funnel {
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    opacity: 0.35;
 }
 
 /* ============================================

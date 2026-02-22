@@ -209,10 +209,19 @@ class FLOSC_Lesson_Manager {
      * Format a post as a lesson array
      */
     private function format_lesson($post, $include_content = false) {
+        // v1.9.5: Decode HTML entities in title and excerpt.
+        // WordPress may store curly quotes as &#8217; or &rsquo; in the DB.
+        // The JS client calls escapeHtml() which would double-encode these
+        // (e.g. &#8217; → &amp;#8217; rendering as literal "&#8217;" on screen).
+        // html_entity_decode() converts entities back to UTF-8 characters
+        // so the JSON→JS→escapeHtml() pipeline produces clean output.
+        $title = html_entity_decode($post->post_title, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $excerpt = html_entity_decode(get_the_excerpt($post), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        
         $lesson = [
             'id' => $post->ID,
-            'title' => $post->post_title,
-            'excerpt' => get_the_excerpt($post),
+            'title' => $title,
+            'excerpt' => $excerpt,
             'url' => get_permalink($post),
             'tags' => wp_get_post_tags($post->ID, ['fields' => 'slugs']),
             'thumbnail' => get_the_post_thumbnail_url($post, 'medium'),

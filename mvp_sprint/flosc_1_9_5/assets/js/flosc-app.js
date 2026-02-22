@@ -469,6 +469,11 @@ class floscApp {
 
             // Try to find a welcome message from IVR config
             let welcomeShown = false;
+            
+            // v1.9.5: When AI is active, route the welcome through AI.
+            // AI uses the IVR welcome as guidance and crafts a natural greeting.
+            const aiActive = this.config.aiProvider && this.config.aiProvider !== 'ivr';
+            
             const messages = Object.values(this.ivr.messages);
             const welcomeMessages = messages.filter(m => 
                 m.type === 'auto' && 
@@ -476,17 +481,29 @@ class floscApp {
                 m.name.includes('welcome')
             );
             
-            // Show first welcome message that matches current phase (or any welcome)
+            // Find applicable welcome message
+            let welcomeMsg = null;
             for (const msg of welcomeMessages) {
                 if (!msg.phase || msg.phase === this.ivr.phase) {
-                    this.log('FLOSC: Using IVR welcome:', msg.name);
-                    this.showIVRMessage(msg);
-                    welcomeShown = true;
+                    welcomeMsg = msg;
                     break;
                 }
             }
+            
+            if (aiActive) {
+                // AI generates the greeting using IVR welcome as inspiration
+                this.log('FLOSC: AI active — routing welcome through AI');
+                this.showTyping();
+                this._generateAIWelcome(welcomeMsg);
+                welcomeShown = true;
+            } else if (welcomeMsg) {
+                // No AI — display IVR welcome directly
+                this.log('FLOSC: Using IVR welcome:', welcomeMsg.name);
+                this.showIVRMessage(welcomeMsg);
+                welcomeShown = true;
+            }
 
-            // If no IVR welcome found, show hardcoded fallback (ALWAYS works)
+            // If no IVR welcome found and no AI, show hardcoded fallback
             if (!welcomeShown) {
                 this.log('FLOSC: Using fallback welcome');
                 const productName = this.config.product?.name || 'FLOSC';
@@ -671,10 +688,23 @@ class floscApp {
     _checkAutoMessagesNow() {
         this.log('FLOSC: Checking auto messages for phase:', this.ivr.phase);
 
+        // v1.9.5: When AI is active, suppress auto IVR messages.
+        // IVR auto-messages are scripted nudges ("Ready to take the quiz?") that
+        // bypass the AI pipeline. With AI enabled, the AI handles all engagement.
+        // Offers (type === 'offer') are still shown — they're structural, not conversational.
+        const aiActive = this.config.aiProvider && this.config.aiProvider !== 'ivr';
+
         const messages = Object.values(this.ivr.messages);
         this.log('FLOSC: Total messages loaded:', messages.length);
 
-        const autoMessages = messages.filter(m => m.type === 'auto' || m.type === 'offer');
+        const autoMessages = messages.filter(m => {
+            if (m.type === 'offer') return true; // Offers always eligible
+            if (m.type === 'auto' && aiActive) {
+                this.log('FLOSC: Suppressing auto IVR (AI active):', m.name);
+                return false;
+            }
+            return m.type === 'auto';
+        });
         this.log('FLOSC: Auto/offer messages found:', autoMessages.length);
 
         for (const msg of autoMessages) {
@@ -1108,6 +1138,51 @@ class floscApp {
                 if (el && msg.name) el.setAttribute('data-message-name', msg.name);
                 this.floscShowUserAutoPrompts();
             }, 300);
+        }
+    }
+
+    /**
+     * v1.9.5: Generate an AI-powered welcome greeting.
+     * Uses the IVR welcome message as guidance so AI crafts a natural,
+     * short greeting consistent with the configured product personality.
+     * Falls back to IVR content (or hardcoded) if the API call fails.
+     */
+    async _generateAIWelcome(ivrWelcomeMsg) {
+        const productName = this.config.product?.name || 'FLOSC';
+        // Synthetic "message" that tells the backend this is a greeting request
+        const syntheticMessage = `[SYSTEM: Generate a brief welcome greeting for a new visitor to ${productName}. Keep it short — one or two sentences max.]`;
+        
+        try {
+            const response = await this.callAPI(syntheticMessage, ivrWelcomeMsg || null);
+            this.hideTyping();
+            
+            if (response) {
+                const msgEl = this.addMessage('assistant', response);
+                if (msgEl && ivrWelcomeMsg?.name) {
+                    msgEl.setAttribute('data-message-name', ivrWelcomeMsg.name);
+                }
+                if (this.state === 'visitor') {
+                    this.saveVisitorMessage('assistant', response);
+                }
+            } else {
+                // AI returned nothing — fall back to IVR or hardcoded
+                this._showFallbackWelcome(ivrWelcomeMsg, productName);
+            }
+        } catch (e) {
+            this.logError('FLOSC: AI welcome failed:', e);
+            this.hideTyping();
+            this._showFallbackWelcome(ivrWelcomeMsg, productName);
+        }
+    }
+    
+    _showFallbackWelcome(ivrMsg, productName) {
+        if (ivrMsg) {
+            this.showIVRMessage(ivrMsg);
+        } else {
+            const fallback = this.state === 'visitor'
+                ? `Hi! Welcome to ${productName}. How can I help you today?`
+                : `Welcome back! How can I help you today?`;
+            this.addMessage('assistant', fallback);
         }
     }
 
@@ -4329,19 +4404,22 @@ Purchased: ${ctx.purchased}
         });
         this.log('[FLOSC] Message added successfully');
 
-        // v1.9.5: Hide empty-state elements on first message (Grok pattern).
-        // Landing state, greeting, and autoprompt pills all vanish — chat area is 100% messages.
-        const landing = document.getElementById('landingState');
-        if (landing && !landing.classList.contains('flosc-hidden')) {
-            landing.classList.add('flosc-hidden');
-        }
-        const greeting = document.getElementById('greeting');
-        if (greeting && !greeting.classList.contains('flosc-hidden')) {
-            greeting.classList.add('flosc-hidden');
-        }
-        const pills = document.getElementById('flosc_input_user_autoprompts_panel');
-        if (pills && !pills.classList.contains('flosc-hidden')) {
-            pills.classList.add('flosc-hidden');
+        // v1.9.5: Hide empty-state elements when USER sends a message (Grok pattern).
+        // Landing state stays visible during welcome/auto messages — only the user's
+        // first typed message transitions to full chat mode.
+        if (role === 'user') {
+            const landing = document.getElementById('landingState');
+            if (landing && !landing.classList.contains('flosc-hidden')) {
+                landing.classList.add('flosc-hidden');
+            }
+            const greeting = document.getElementById('greeting');
+            if (greeting && !greeting.classList.contains('flosc-hidden')) {
+                greeting.classList.add('flosc-hidden');
+            }
+            const pills = document.getElementById('flosc_input_user_autoprompts_panel');
+            if (pills && !pills.classList.contains('flosc-hidden')) {
+                pills.classList.add('flosc-hidden');
+            }
         }
 
         // v8.0.9: Return element so caller can add attributes

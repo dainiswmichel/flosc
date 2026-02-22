@@ -200,7 +200,10 @@ class FLOSC_Framework {
         add_action('rest_api_init', [$this, 'register_rest_routes']);
 
         // Assets
-        add_action('wp_enqueue_scripts', [$this, 'enqueue_assets']);
+        // v1.9.5: Priority 9999 ensures FLOSC dequeues AFTER all theme/plugin enqueues.
+        // At default priority 10, BuddyBoss/Divi/WooCommerce styles survived the dequeue
+        // because they enqueued at the same priority, running after FLOSC's dequeue loop.
+        add_action('wp_enqueue_scripts', [$this, 'enqueue_assets'], 9999);
         add_action('wp_enqueue_scripts', [$this, 'enqueue_companion']);
 
         // Register shortcodes (v9.2.0)
@@ -1782,6 +1785,67 @@ The {product_name} Team";
             return;
         }
         
+        // v1.9.5: Disable WordPress admin bar on FLOSC app pages.
+        // The admin bar injects CSS (html { margin-top: 32px !important; }),
+        // JS, and HTML that conflicts with FLOSC's full-viewport flex layout.
+        // FloscAdmins can still access wp-admin via the profile dropdown.
+        show_admin_bar(false);
+        
+        // v1.9.5: Clean up wp_head() output — strip ALL theme/plugin hooks.
+        // BuddyBoss hooks HTML templates (link-preview, profile-card, group-card),
+        // inline scripts (ajaxurl), and late-enqueues (child theme CSS/JS) into wp_head
+        // at various priorities. Removing individual actions is whack-a-mole.
+        // Instead: clear everything, re-add only the three core WP functions:
+        //   1. wp_enqueue_scripts (priority 1) — fires our nuclear dequeue
+        //   2. wp_print_styles (priority 8) — outputs surviving CSS
+        //   3. wp_print_head_scripts (priority 9) — outputs surviving head JS
+        remove_all_actions('wp_head');
+        add_action('wp_head', 'wp_enqueue_scripts', 1);
+        add_action('wp_head', 'wp_print_styles', 8);
+        add_action('wp_head', 'wp_print_head_scripts', 9);
+        
+        // v1.9.5: Second dequeue pass — catch styles/scripts enqueued AFTER
+        // our nuclear dequeue (BuddyBoss child theme enqueues via wp_head
+        // callbacks at priority > 1, which fires after do_action('wp_enqueue_scripts')).
+        // These hooks fire inside wp_print_styles()/wp_print_head_scripts()
+        // just before the actual output, catching anything that slipped through.
+        $flosc_style_whitelist = ['flosc-layout', 'flosc-theme', 'flosc-offers', 'flosc-preset'];
+        add_action('wp_print_styles', function() use ($flosc_style_whitelist) {
+            global $wp_styles;
+            foreach ($wp_styles->queue as $handle) {
+                if (!in_array($handle, $flosc_style_whitelist, true)) {
+                    wp_dequeue_style($handle);
+                }
+            }
+        }, 0);
+        
+        $flosc_script_whitelist = ['flosc-app', 'paypal-js', 'stripe-js'];
+        add_action('wp_print_scripts', function() use ($flosc_script_whitelist) {
+            global $wp_scripts;
+            foreach ($wp_scripts->queue as $handle) {
+                if (!in_array($handle, $flosc_script_whitelist, true)) {
+                    wp_dequeue_script($handle);
+                }
+            }
+        }, 0);
+        
+        // v1.9.5: Clean up wp_footer() output — BuddyBoss hooks modals
+        // (Report, Block Member, etc.) into wp_footer as hidden HTML.
+        // With theme CSS removed, these become visible. Solution: strip
+        // wp_footer down to ONLY wp_print_footer_scripts (which outputs our
+        // enqueued JS). This also fires did_action('wp_footer') correctly.
+        remove_all_actions('wp_footer');
+        add_action('wp_footer', 'wp_print_footer_scripts', 20);
+        
+        // v1.9.5: Also clear wp_print_footer_scripts action hooks.
+        // wp_print_footer_scripts() fires do_action('wp_print_footer_scripts').
+        // _wp_footer_scripts() is hooked there — it's the core function that calls
+        // $wp_scripts->do_footer_items() to output enqueued JS (flosc-app, paypal-js).
+        // BuddyBoss/Jetpack ALSO hook inline JS + HTML templates on this action,
+        // bypassing our wp_footer cleanup. Fix: clear all, re-add only _wp_footer_scripts.
+        remove_all_actions('wp_print_footer_scripts');
+        add_action('wp_print_footer_scripts', '_wp_footer_scripts');
+        
         $this->render_flosc_app();
         exit;
     }
@@ -2531,14 +2595,38 @@ The {product_name} Team";
     /**
      * Enqueue Assets
      * v1.2.1: Uses is_flosc_request() to check both slug and custom domain
+     * v1.9.5: Nuclear dequeue — removes ALL theme/plugin CSS and JS.
+     *   The FLOSC app page is a standalone SPA; it needs zero theme assets.
+     *   Previously ran at priority 10 which let 22 theme CSS files and 93 scripts
+     *   survive because BuddyBoss/Divi/WooCommerce enqueued at the same priority.
+     *   Now runs at priority 9999 so everything is already in the queue when we clean it.
      */
     public function enqueue_assets() {
         if (!$this->is_flosc_request()) return;
         
-        // Dequeue theme styles
-        global $wp_styles;
+        // ── NUCLEAR DEQUEUE: Remove ALL non-FLOSC styles ──
+        // At priority 9999, every theme/plugin has already enqueued.
+        // We iterate the full queue and remove everything not ours.
+        global $wp_styles, $wp_scripts;
+        
+        $flosc_style_whitelist = ['flosc-layout', 'flosc-theme', 'flosc-offers', 'flosc-preset'];
         foreach ($wp_styles->queue as $handle) {
+            if (in_array($handle, $flosc_style_whitelist, true)) {
+                continue;
+            }
             wp_dequeue_style($handle);
+            wp_deregister_style($handle);
+        }
+        
+        // ── NUCLEAR DEQUEUE: Remove ALL non-FLOSC scripts ──
+        // Keep only flosc-app.js and payment SDKs (PayPal, Stripe).
+        $flosc_script_whitelist = ['flosc-app', 'paypal-js', 'stripe-js'];
+        foreach ($wp_scripts->queue as $handle) {
+            if (in_array($handle, $flosc_script_whitelist, true)) {
+                continue;
+            }
+            wp_dequeue_script($handle);
+            wp_deregister_script($handle);
         }
         
         // Our assets - v9.3.7 Clean CSS Architecture
