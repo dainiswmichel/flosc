@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WXR Reader — WordPress XML Viewer</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --text: #1a1a2e;
+            --text-muted: #6c757d;
+            --border: #dee2e6;
+            --accent: #0073aa;
+            --accent-light: #e7f3ff;
+            --tag-bg: #e9ecef;
+            --sidebar-width: 300px;
+            --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-serif: Georgia, 'Times New Roman', serif;
+            --font-mono: 'SF Mono', 'Fira Code', Consolas, monospace;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* --- Drop Zone (initial state) --- */
+        .drop-zone {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .drop-zone h1 {
+            font-size: 2em;
+            margin-bottom: 8px;
+        }
+
+        .drop-zone .subtitle {
+            color: var(--text-muted);
+            margin-bottom: 32px;
+            font-size: 1.1em;
+        }
+
+        .drop-area {
+            width: 100%;
+            max-width: 500px;
+            padding: 60px 40px;
+            border: 3px dashed var(--border);
+            border-radius: 16px;
+            background: var(--card-bg);
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .drop-area:hover, .drop-area.dragover {
+            border-color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        .drop-area .icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        .drop-area p {
+            font-size: 1.1em;
+            color: var(--text-muted);
+        }
+
+        .drop-area .browse {
+            color: var(--accent);
+            text-decoration: underline;
+            cursor: pointer;
+        }
+
+        #file-input { display: none; }
+
+        /* --- Reader Layout --- */
+        .reader-layout {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .reader-layout.active {
+            display: flex;
+        }
+
+        /* --- Sidebar --- */
+        .reader-sidebar {
+            width: var(--sidebar-width);
+            min-width: var(--sidebar-width);
+            background: #1e1e2e;
+            color: #cdd6f4;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-header h2 {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .sidebar-meta {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .sidebar-search {
+            padding: 8px 16px;
+        }
+
+        .sidebar-search input {
+            width: 100%;
+            padding: 7px 10px;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.08);
+            color: #cdd6f4;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .sidebar-search input:focus {
+            border-color: var(--accent);
+        }
+
+        .sidebar-search input::placeholder {
+            color: rgba(255,255,255,0.35);
+        }
+
+        .sidebar-toc {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+        }
+
+        .toc-item {
+            display: block;
+            padding: 6px 16px;
+            font-size: 13px;
+            color: #bbb;
+            cursor: pointer;
+            text-decoration: none;
+            border-left: 3px solid transparent;
+            transition: background 0.15s;
+            line-height: 1.4;
+        }
+
+        .toc-item:hover {
+            background: rgba(255,255,255,0.06);
+            color: #fff;
+        }
+
+        .toc-item.active {
+            color: #89b4fa;
+            border-left-color: #89b4fa;
+            background: rgba(137,180,250,0.08);
+        }
+
+        .toc-item.child { padding-left: 32px; font-size: 12.5px; }
+        .toc-item.grandchild { padding-left: 48px; font-size: 12px; color: #888; }
+
+        .toc-item.hidden { display: none; }
+
+        .toc-status {
+            font-size: 11px;
+            display: inline-block;
+            margin-left: 6px;
+            padding: 1px 5px;
+            border-radius: 3px;
+            vertical-align: middle;
+        }
+
+        .toc-status.draft { background: #ffc107; color: #000; }
+        .toc-status.publish { background: #28a745; color: #fff; }
+        .toc-status.pending { background: #fd7e14; color: #fff; }
+
+        /* --- Main Content --- */
+        .reader-main {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 0;
+        }
+
+        .reader-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            background: rgba(248,249,250,0.95);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--border);
+            padding: 10px 32px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .toolbar-btn {
+            padding: 5px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--card-bg);
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .toolbar-btn:hover {
+            background: var(--accent-light);
+            border-color: var(--accent);
+        }
+
+        .toolbar-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        .toolbar-spacer { flex: 1; }
+
+        /* --- Post Display --- */
+        .posts-container {
+            padding: 32px;
+            max-width: 860px;
+        }
+
+        .post-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 28px 32px;
+            margin-bottom: 24px;
+            scroll-margin-top: 60px;
+        }
+
+        .post-card.highlight {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-light);
+        }
+
+        .post-meta-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .meta-chip {
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: var(--tag-bg);
+        }
+
+        .meta-chip.type-post { background: #dbeafe; color: #1e40af; }
+        .meta-chip.type-page { background: #fef3c7; color: #92400e; }
+        .meta-chip.type-attachment { background: #ede9fe; color: #5b21b6; }
+        .meta-chip.status-draft { background: #fef3c7; color: #92400e; }
+        .meta-chip.status-publish { background: #d1fae5; color: #065f46; }
+
+        .post-title {
+            font-size: 1.6em;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 4px;
+            line-height: 1.3;
+        }
+
+        .post-slug {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .post-content {
+            font-family: var(--font-serif);
+            font-size: 16px;
+            line-height: 1.8;
+            color: #333;
+        }
+
+        .post-content h1, .post-content h2, .post-content h3, .post-content h4 {
+            font-family: var(--font);
+            margin: 24px 0 8px;
+            line-height: 1.3;
+        }
+
+        .post-content h1 { font-size: 1.8em; }
+        .post-content h2 { font-size: 1.4em; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+        .post-content h3 { font-size: 1.15em; }
+        .post-content h4 { font-size: 1em; color: #555; }
+
+        .post-content p { margin: 0 0 12px; }
+        .post-content ul, .post-content ol { margin: 0 0 12px; padding-left: 24px; }
+        .post-content li { margin-bottom: 4px; }
+        .post-content blockquote {
+            border-left: 4px solid var(--accent);
+            margin: 16px 0;
+            padding: 12px 20px;
+            background: var(--accent-light);
+            border-radius: 0 6px 6px 0;
+        }
+
+        .post-content pre {
+            background: #1e1e2e;
+            color: #cdd6f4;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 13.5px;
+            margin: 12px 0;
+        }
+
+        .post-content code {
+            font-family: var(--font-mono);
+            font-size: 0.9em;
+            background: var(--tag-bg);
+            padding: 2px 5px;
+            border-radius: 3px;
+        }
+
+        .post-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .post-content img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+            margin: 12px 0;
+        }
+
+        .post-content a {
+            color: var(--accent);
+        }
+
+        .post-taxonomies {
+            margin-top: 16px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            font-size: 12px;
+        }
+
+        .tax-label {
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-right: 2px;
+        }
+
+        .tax-tag {
+            padding: 2px 8px;
+            background: var(--tag-bg);
+            border-radius: 4px;
+        }
+
+        .tax-tag.category { background: #dbeafe; color: #1e40af; }
+        .tax-tag.tag { background: #fce7f3; color: #9d174d; }
+
+        /* --- Single post view --- */
+        .single-post-view .post-card {
+            max-width: none;
+            border: none;
+            box-shadow: none;
+            padding: 0;
+        }
+
+        /* --- Stats bar --- */
+        .stats-bar {
+            padding: 12px 32px;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            font-size: 13px;
+        }
+
+        .stat {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-num {
+            font-weight: 700;
+            font-size: 1.2em;
+            color: var(--accent);
+        }
+
+        /* --- Empty Content --- */
+        .empty-content {
+            padding: 40px;
+            text-align: center;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* --- Print --- */
+        @media print {
+            .reader-sidebar, .reader-toolbar, .stats-bar { display: none !important; }
+            .reader-main { margin-left: 0 !important; }
+            .post-card { break-inside: avoid; border: none; box-shadow: none; padding: 20px 0; }
+            .posts-container { max-width: none; padding: 0; }
+        }
+
+        /* --- Responsive --- */
+        @media (max-width: 800px) {
+            .reader-sidebar { display: none; }
+            .reader-main { margin-left: 0; }
+        }
+
+        /* --- Scrollbar --- */
+        .sidebar-toc::-webkit-scrollbar { width: 5px; }
+        .sidebar-toc::-webkit-scrollbar-track { background: transparent; }
+        .sidebar-toc::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+    <!-- Drop Zone -->
+    <div class="drop-zone" id="drop-zone">
+        <h1>WXR Reader</h1>
+        <p class="subtitle">WordPress XML Export Viewer</p>
+        <div class="drop-area" id="drop-area">
+            <div class="icon">📄</div>
+            <p>Drop a <strong>.xml</strong> file here<br>or <span class="browse" id="browse-btn">browse</span></p>
+        </div>
+        <input type="file" id="file-input" accept=".xml">
+    </div>
+
+    <!-- Reader -->
+    <div class="reader-layout" id="reader">
+        <nav class="reader-sidebar">
+            <div class="sidebar-header">
+                <h2 id="site-title">WXR Reader</h2>
+                <div class="sidebar-meta" id="site-meta"></div>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="search-input" placeholder="Search posts…" autocomplete="off">
+            </div>
+            <div class="sidebar-toc" id="toc"></div>
+        </nav>
+
+        <main class="reader-main">
+            <div class="reader-toolbar">
+                <button class="toolbar-btn" id="btn-all">All</button>
+                <button class="toolbar-btn" id="btn-posts">Posts</button>
+                <button class="toolbar-btn" id="btn-pages">Pages</button>
+                <span class="toolbar-spacer"></span>
+                <button class="toolbar-btn" id="btn-expand">Expand All</button>
+                <button class="toolbar-btn" id="btn-collapse">Collapse All</button>
+                <button class="toolbar-btn" id="btn-print">🖨 Print</button>
+                <button class="toolbar-btn" id="btn-reload">↻ New File</button>
+            </div>
+            <div class="stats-bar" id="stats-bar"></div>
+            <div class="posts-container" id="posts-container"></div>
+        </main>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // --- State ---
+        let allItems = [];
+        let currentFilter = 'all';
+
+        // --- DOM ---
+        const dropZone = document.getElementById('drop-zone');
+        const dropArea = document.getElementById('drop-area');
+        const fileInput = document.getElementById('file-input');
+        const reader = document.getElementById('reader');
+        const toc = document.getElementById('toc');
+        const postsContainer = document.getElementById('posts-container');
+        const statsBar = document.getElementById('stats-bar');
+        const siteTitle = document.getElementById('site-title');
+        const siteMeta = document.getElementById('site-meta');
+        const searchInput = document.getElementById('search-input');
+
+        // --- File Handling ---
+        document.getElementById('browse-btn').addEventListener('click', () => fileInput.click());
+        dropArea.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files[0]) loadFile(e.target.files[0]);
+        });
+
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('dragover');
+        });
+
+        dropArea.addEventListener('dragleave', () => dropArea.classList.remove('dragover'));
+
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) loadFile(e.dataTransfer.files[0]);
+        });
+
+        function loadFile(file) {
+            const fr = new FileReader();
+            fr.onload = (e) => parseWXR(e.target.result);
+            fr.readAsText(file);
+        }
+
+        // --- Parse WXR ---
+        function parseWXR(xmlStr) {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(xmlStr, 'text/xml');
+
+            // Check for parse errors
+            const parseError = doc.querySelector('parsererror');
+            if (parseError) {
+                alert('XML parse error. Is this a valid WordPress export file?');
+                return;
+            }
+
+            const channel = doc.querySelector('channel');
+            if (!channel) {
+                alert('No <channel> found. Is this a valid WXR file?');
+                return;
+            }
+
+            // Site info
+            const title = getTextContent(channel, 'title') || 'Unknown Site';
+            const link = getTextContent(channel, 'link') || '';
+            const description = getTextContent(channel, 'description') || '';
+
+            siteTitle.textContent = title;
+            siteMeta.textContent = link + (description ? ' — ' + description : '');
+
+            // Parse items
+            allItems = [];
+            const items = channel.querySelectorAll('item');
+            items.forEach((item, index) => {
+                const postType = getWPContent(item, 'post_type') || 'post';
+                const status = getWPContent(item, 'status') || 'draft';
+                const postTitle = getTextContent(item, 'title') || '(Untitled)';
+                const postName = getWPContent(item, 'post_name') || '';
+                const postDate = getWPContent(item, 'post_date') || '';
+                const postParent = getWPContent(item, 'post_parent') || '0';
+                const postId = getWPContent(item, 'post_id') || String(index);
+                const menuOrder = getWPContent(item, 'menu_order') || '0';
+
+                // Content — try content:encoded first, fall back to description
+                let content = '';
+                const contentEncoded = item.getElementsByTagNameNS('*', 'encoded');
+                for (let i = 0; i < contentEncoded.length; i++) {
+                    const node = contentEncoded[i];
+                    if (node.localName === 'encoded' && (
+                        node.namespaceURI?.includes('content') ||
+                        node.previousSibling?.textContent?.includes('content') ||
+                        !content
+                    )) {
+                        const text = node.textContent || '';
+                        if (text.length > content.length) content = text;
+                    }
+                }
+                if (!content) {
+                    content = getTextContent(item, 'description') || '';
+                }
+
+                // Excerpt
+                let excerpt = '';
+                for (let i = 0; i < contentEncoded.length; i++) {
+                    const node = contentEncoded[i];
+                    if (node.namespaceURI?.includes('excerpt')) {
+                        excerpt = node.textContent || '';
+                    }
+                }
+
+                // Categories & tags
+                const categories = [];
+                const tags = [];
+                item.querySelectorAll('category').forEach(cat => {
+                    const domain = cat.getAttribute('domain');
+                    const name = cat.textContent || cat.getAttribute('nicename') || '';
+                    if (domain === 'post_tag') tags.push(name);
+                    else if (domain === 'category') categories.push(name);
+                    else if (name) categories.push(name);
+                });
+
+                // Post meta
+                const postmeta = [];
+                item.querySelectorAll('postmeta, *|postmeta').forEach(pm => {
+                    const key = getWPContent(pm, 'meta_key');
+                    const val = getWPContent(pm, 'meta_value');
+                    if (key) postmeta.push({ key, value: val || '' });
+                });
+
+                allItems.push({
+                    id: postId,
+                    index,
+                    type: postType,
+                    status,
+                    title: postTitle,
+                    slug: postName,
+                    date: postDate,
+                    parentId: postParent,
+                    menuOrder: parseInt(menuOrder) || 0,
+                    content,
+                    excerpt,
+                    categories,
+                    tags,
+                    postmeta
+                });
+            });
+
+            // Sort by menu_order, then by index
+            allItems.sort((a, b) => (a.menuOrder - b.menuOrder) || (a.index - b.index));
+
+            // Show reader
+            dropZone.style.display = 'none';
+            reader.classList.add('active');
+
+            renderStats();
+            renderTOC();
+            renderPosts();
+        }
+
+        // --- Render Stats ---
+        function renderStats() {
+            const posts = allItems.filter(i => i.type === 'post').length;
+            const pages = allItems.filter(i => i.type === 'page').length;
+            const attachments = allItems.filter(i => i.type === 'attachment').length;
+            const other = allItems.length - posts - pages - attachments;
+            const published = allItems.filter(i => i.status === 'publish').length;
+            const drafts = allItems.filter(i => i.status === 'draft').length;
+
+            let html = `<div class="stat"><span class="stat-num">${allItems.length}</span> total items</div>`;
+            if (posts) html += `<div class="stat"><span class="stat-num">${posts}</span> posts</div>`;
+            if (pages) html += `<div class="stat"><span class="stat-num">${pages}</span> pages</div>`;
+            if (attachments) html += `<div class="stat"><span class="stat-num">${attachments}</span> attachments</div>`;
+            if (other) html += `<div class="stat"><span class="stat-num">${other}</span> other</div>`;
+            html += `<div class="stat"><span class="stat-num">${published}</span> published</div>`;
+            if (drafts) html += `<div class="stat"><span class="stat-num">${drafts}</span> drafts</div>`;
+
+            statsBar.innerHTML = html;
+        }
+
+        // --- Render TOC ---
+        function renderTOC() {
+            const filtered = getFilteredItems();
+
+            // Build parent-child map
+            const parentMap = {};
+            filtered.forEach(item => {
+                const pid = item.parentId || '0';
+                if (!parentMap[pid]) parentMap[pid] = [];
+                parentMap[pid].push(item);
+            });
+
+            let html = '';
+
+            function renderLevel(parentId, depth) {
+                const children = parentMap[parentId] || [];
+                children.forEach(item => {
+                    const depthClass = depth === 0 ? '' : depth === 1 ? 'child' : 'grandchild';
+                    const statusClass = item.status !== 'publish' ? `<span class="toc-status ${item.status}">${item.status}</span>` : '';
+                    html += `<div class="toc-item ${depthClass}" data-id="${item.id}" data-title="${escapeAttr(item.title)}">${truncate(item.title, 40)}${statusClass}</div>`;
+                    renderLevel(item.id, depth + 1);
+                });
+            }
+
+            renderLevel('0', 0);
+
+            // Items with unknown parents (flat)
+            const usedIds = new Set();
+            function collectIds(pid) {
+                (parentMap[pid] || []).forEach(item => {
+                    usedIds.add(item.id);
+                    collectIds(item.id);
+                });
+            }
+            collectIds('0');
+
+            filtered.forEach(item => {
+                if (!usedIds.has(item.id)) {
+                    const statusClass = item.status !== 'publish' ? `<span class="toc-status ${item.status}">${item.status}</span>` : '';
+                    html += `<div class="toc-item" data-id="${item.id}" data-title="${escapeAttr(item.title)}">${truncate(item.title, 40)}${statusClass}</div>`;
+                }
+            });
+
+            toc.innerHTML = html;
+
+            // Click handlers
+            toc.querySelectorAll('.toc-item').forEach(el => {
+                el.addEventListener('click', () => {
+                    const postCard = document.getElementById(`post-${el.dataset.id}`);
+                    if (postCard) {
+                        postCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // Highlight briefly
+                        postCard.classList.add('highlight');
+                        setTimeout(() => postCard.classList.remove('highlight'), 2000);
+                        // Active state
+                        toc.querySelectorAll('.toc-item').forEach(t => t.classList.remove('active'));
+                        el.classList.add('active');
+                    }
+                });
+            });
+        }
+
+        // --- Render Posts ---
+        function renderPosts() {
+            const filtered = getFilteredItems();
+
+            if (filtered.length === 0) {
+                postsContainer.innerHTML = '<div class="empty-content">No items to display.</div>';
+                return;
+            }
+
+            let html = '';
+            filtered.forEach(item => {
+                html += renderPostCard(item);
+            });
+
+            postsContainer.innerHTML = html;
+        }
+
+        function renderPostCard(item) {
+            let h = `<div class="post-card" id="post-${item.id}">`;
+
+            // Meta bar
+            h += `<div class="post-meta-bar">`;
+            h += `<span class="meta-chip type-${item.type}">${item.type}</span>`;
+            h += `<span class="meta-chip status-${item.status}">${item.status}</span>`;
+            if (item.date) h += `<span class="meta-chip">${item.date}</span>`;
+            if (item.menuOrder) h += `<span class="meta-chip">order: ${item.menuOrder}</span>`;
+            if (item.parentId && item.parentId !== '0') {
+                const parent = allItems.find(i => i.id === item.parentId);
+                h += `<span class="meta-chip">parent: ${parent ? parent.title : item.parentId}</span>`;
+            }
+            h += `</div>`;
+
+            // Title
+            h += `<div class="post-title">${escapeHtml(item.title)}</div>`;
+            if (item.slug) h += `<div class="post-slug">/${item.slug}</div>`;
+
+            // Content
+            if (item.content.trim()) {
+                // WordPress stores content with wpautop-style newlines.
+                // Render HTML content directly (it's already HTML in most WXR exports)
+                let rendered = item.content;
+                // If it doesn't contain HTML block tags, apply basic wpautop
+                if (!/<(p|div|h[1-6]|ul|ol|table|blockquote|pre)/i.test(rendered)) {
+                    rendered = wpautop(rendered);
+                }
+                h += `<div class="post-content">${rendered}</div>`;
+            } else {
+                h += `<div class="post-content" style="color: #999; font-style: italic;">No content.</div>`;
+            }
+
+            // Taxonomies
+            if (item.categories.length || item.tags.length) {
+                h += `<div class="post-taxonomies">`;
+                if (item.categories.length) {
+                    h += `<span class="tax-label">Categories:</span>`;
+                    item.categories.forEach(c => { h += `<span class="tax-tag category">${escapeHtml(c)}</span>`; });
+                }
+                if (item.tags.length) {
+                    h += `<span class="tax-label">Tags:</span>`;
+                    item.tags.forEach(t => { h += `<span class="tax-tag tag">${escapeHtml(t)}</span>`; });
+                }
+                h += `</div>`;
+            }
+
+            // Post meta (collapsed)
+            if (item.postmeta.length) {
+                h += `<details style="margin-top:12px;font-size:12px;"><summary style="cursor:pointer;color:var(--text-muted);">Post Meta (${item.postmeta.length} fields)</summary>`;
+                h += `<table style="width:100%;margin-top:8px;font-family:var(--font-mono);font-size:11px;border-collapse:collapse;">`;
+                item.postmeta.forEach(m => {
+                    h += `<tr><td style="padding:3px 8px;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap;vertical-align:top;">${escapeHtml(m.key)}</td>`;
+                    h += `<td style="padding:3px 8px;border-bottom:1px solid var(--border);word-break:break-all;">${escapeHtml(truncate(m.value, 200))}</td></tr>`;
+                });
+                h += `</table></details>`;
+            }
+
+            h += `</div>`;
+            return h;
+        }
+
+        // --- Filtering ---
+        function getFilteredItems() {
+            if (currentFilter === 'posts') return allItems.filter(i => i.type === 'post');
+            if (currentFilter === 'pages') return allItems.filter(i => i.type === 'page');
+            // 'all' — exclude attachments by default for cleaner view
+            return allItems.filter(i => i.type !== 'attachment');
+        }
+
+        // --- Toolbar ---
+        document.getElementById('btn-all').addEventListener('click', () => setFilter('all'));
+        document.getElementById('btn-posts').addEventListener('click', () => setFilter('posts'));
+        document.getElementById('btn-pages').addEventListener('click', () => setFilter('pages'));
+
+        function setFilter(f) {
+            currentFilter = f;
+            document.querySelectorAll('.reader-toolbar .toolbar-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-${f}`).classList.add('active');
+            renderTOC();
+            renderPosts();
+        }
+
+        document.getElementById('btn-expand').addEventListener('click', () => {
+            postsContainer.querySelectorAll('details').forEach(d => d.open = true);
+        });
+
+        document.getElementById('btn-collapse').addEventListener('click', () => {
+            postsContainer.querySelectorAll('details').forEach(d => d.open = false);
+        });
+
+        document.getElementById('btn-print').addEventListener('click', () => window.print());
+
+        document.getElementById('btn-reload').addEventListener('click', () => {
+            reader.classList.remove('active');
+            dropZone.style.display = '';
+            allItems = [];
+            fileInput.value = '';
+        });
+
+        // --- Search ---
+        searchInput.addEventListener('input', () => {
+            const q = searchInput.value.toLowerCase().trim();
+            toc.querySelectorAll('.toc-item').forEach(el => {
+                const title = (el.dataset.title || '').toLowerCase();
+                el.classList.toggle('hidden', q && !title.includes(q));
+            });
+        });
+
+        // --- Helpers ---
+        function getTextContent(parent, tagName) {
+            const el = parent.querySelector(tagName);
+            return el ? el.textContent : null;
+        }
+
+        function getWPContent(parent, tagName) {
+            // WP namespaced tags like wp:post_type
+            const selectors = [tagName, `wp\\:${tagName}`, `*|${tagName}`];
+            for (const sel of selectors) {
+                try {
+                    const el = parent.querySelector(sel);
+                    if (el) return el.textContent;
+                } catch(e) {}
+            }
+            // Brute force: find by local name
+            const children = parent.children;
+            for (let i = 0; i < children.length; i++) {
+                if (children[i].localName === tagName) return children[i].textContent;
+            }
+            return null;
+        }
+
+        function escapeHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
+        }
+
+        function escapeAttr(str) {
+            return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;');
+        }
+
+        function truncate(str, len) {
+            return str.length > len ? str.slice(0, len) + '…' : str;
+        }
+
+        function wpautop(text) {
+            // Minimal wpautop: split on double newlines → paragraphs
+            const blocks = text.split(/\n\s*\n/);
+            return blocks.map(b => `<p>${b.replace(/\n/g, '<br>')}</p>`).join('\n');
+        }
+
+    })();
+    </script>
+
+</body>
+</html>

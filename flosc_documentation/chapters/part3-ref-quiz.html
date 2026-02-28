@@ -1,0 +1,146 @@
+<h1 id="ref-quiz">Part 3: Reference — Quiz System</h1>
+<p class="skeleton-marker">Quiz types, factory pattern, scoring. Content pending.</p>
+
+<h2 id="quiz-manager">class-quiz-manager.php — Quiz Orchestration</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-manager-purpose">What It Does — Manages Quiz Lifecycle</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-manager-create">Creating a Quiz Instance</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-manager-scoring">Scoring & Results Storage</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-manager-retakes">Retake Logic</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-manager-registration">Quiz Registration — register_quiz(), unregister_quiz(), get_all_quizzes()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-manager-lesson-mapping">apply_lesson_mapping() — Connecting Scores to Lessons</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-manager-history">User Quiz History — get_user_quiz_history(), user_passed_quiz(), get_best_score()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-manager-shortcode">Shortcode — [flosc_quiz_results] via shortcode_quiz_results()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-manager-rest">REST Routes — register_rest_routes(), handle_external_quiz_rest()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-manager-third-party">Third-Party Quiz Integration</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="quiz-third-party-wp-pro">WP Pro Quiz Hook</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="quiz-third-party-learndash">LearnDash Hook</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="quiz-third-party-qsm">QSM (Quiz and Survey Master) Hook</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="quiz-type-factory">class-quiz-type-factory.php — The Factory</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-factory-purpose">What It Does — Creates Quiz Type Instances</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-factory-registry">Type Registry — How New Quiz Types Are Added</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-factory-loading">load_quiz_types() — Auto-Discovery of Quiz Classes</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-factory-active">get_active_quiz_type() — Currently Selected Quiz</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-factory-validation">validate_quiz_type_config() — Configuration Verification</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-factory-zero-config">get_zero_config_quiz_types() — Quiz Types That Need No Setup</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-factory-dropdown">get_quiz_types_for_dropdown() — Admin UI Options</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-factory-capabilities">get_quiz_types_by_capability() — Filtering by Feature Support</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="quiz-abstract">abstract-quiz-type.php — The Base Class</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-abstract-contract">The Abstract Contract — What Every Quiz Type Must Implement</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-abstract-shared">Shared Methods — Scoring, Validation, Rendering</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-abstract-abstract-methods">Abstract Methods Every Quiz Type Must Implement</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="quiz-abstract-get-id">get_id(), get_name(), get_description(), get_icon()</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="quiz-abstract-capabilities">needs_audio(), needs_stt(), needs_ai_analysis()</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="quiz-abstract-content">get_instructions(), get_default_content(), validate_input(), analyze()</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-abstract-concrete">Concrete Methods Shared by All Quiz Types</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="quiz-abstract-templates">get_default_response_templates() — Score-Based Messaging</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="quiz-abstract-map-lessons">map_to_lessons() — Score → Lesson Mapping</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="quiz-abstract-format">format_results() — Result Presentation</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="quiz-abstract-percentage">calculate_percentage() & get_response_key_from_score()</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="quiz-types">Quiz Type Implementations</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-multiplechoice">class-multiplechoice-quiz.php</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="quiz-mc-format">Question Format</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="quiz-mc-scoring">Scoring Logic</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-truefalse">class-truefalse-quiz.php</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-wordmatching">class-wordmatching-quiz.php</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-sample-audio">class-flosc-sample-audio-quiz.php</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="quiz-audio-purpose">Audio-Based Assessment — How It Works</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-sample-text">class-flosc-sample-text-based-quiz.php</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="quiz-frontend">Quiz Frontend — How Quizzes Render in Chat</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-frontend-rendering">Rendering a Quiz Inside the Chat Window</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-frontend-interaction">User Interaction — Answer Selection & Submission</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="quiz-frontend-results">Results Display — Score Cards & Feedback</h3>
+<p class="skeleton-marker">Content pending.</p>
