@@ -1155,20 +1155,20 @@ class floscApp {
      */
     async _generateAIWelcome(ivrWelcomeMsg) {
         const productName = this.config.identity?.name || 'FLOSC';
+        const badge = `<div style="text-align:center;margin:16px 0"><img src="https://dainis.net/wp-content/uploads/2026/02/lesaep-badge.png" alt="${productName}" style="max-width:200px;border-radius:12px"></div>`;
         // Synthetic "message" that tells the backend this is a greeting request
-        const syntheticMessage = `[SYSTEM: Generate a brief welcome greeting for a new visitor to ${productName}. Keep it short — one or two sentences max.]`;
+        const syntheticMessage = `[SYSTEM: Generate a brief welcome greeting for a new visitor to ${productName}. Vary it each time. First line: a warm welcome to ${productName} and what it stands for. Second line (after badge): what the learner will master. Keep each part to one sentence.]`;
         
         try {
             const response = await this.callAPI(syntheticMessage, ivrWelcomeMsg || null);
             this.hideTyping();
             
             if (response) {
-                // v2.0.2: AI text + badge from identity config
-                let finalContent = response;
-                const badgeUrl = this.config.identity?.badgeUrl;
-                if (badgeUrl) {
-                    finalContent += `\n<div style="text-align:center;margin:16px 0"><img src="${badgeUrl}" alt="${productName}" style="max-width:200px;border-radius:12px"></div>`;
-                }
+                // v2.0.2: Split AI response at first period/newline, insert badge in the middle
+                const lines = response.split(/(?<=\.)\s+/);
+                const firstPart = lines[0] || response;
+                const secondPart = lines.slice(1).join(' ') || '';
+                const finalContent = firstPart + '\n' + badge + (secondPart ? '\n' + secondPart : '');
                 const msgEl = this.addMessage('assistant', finalContent, true);
                 if (msgEl && ivrWelcomeMsg?.name) {
                     msgEl.setAttribute('data-message-name', ivrWelcomeMsg.name);
@@ -1188,13 +1188,21 @@ class floscApp {
     }
     
     _showFallbackWelcome(ivrMsg, productName) {
+        const badge = `<div style="text-align:center;margin:16px 0"><img src="https://dainis.net/wp-content/uploads/2026/02/lesaep-badge.png" alt="${productName}" style="max-width:200px;border-radius:12px"></div>`;
         if (ivrMsg) {
-            this.showIVRMessage(ivrMsg);
+            // Insert badge in middle of IVR content
+            const content = this.replaceVariables(ivrMsg.content);
+            const parts = content.split(/(?<=\.)\s+/);
+            const first = parts[0] || content;
+            const rest = parts.slice(1).join(' ') || '';
+            const finalContent = first + '\n' + badge + (rest ? '\n' + rest : '');
+            const msgEl = this.addMessage('assistant', finalContent, true);
+            if (msgEl && ivrMsg.name) msgEl.setAttribute('data-message-name', ivrMsg.name);
         } else {
             const fallback = this.state === 'visitor'
-                ? `Hi! Welcome to ${productName}. How can I help you today?`
-                : `Welcome back! How can I help you today?`;
-            this.addMessage('assistant', fallback);
+                ? `Welcome to ${productName}. Learn Excellent Standard American English Pronunciation.\n${badge}\nMaster the sounds that make up clear, confident American English speech.`
+                : `Welcome back!\n${badge}\nHow can I help you today?`;
+            this.addMessage('assistant', fallback, true);
         }
     }
 
