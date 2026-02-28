@@ -15,6 +15,35 @@
 
 ---
 
+## 2026-02m-28d — Vocabulary Note
+
+### Remove "funnel" from the FLOSC ecosystem
+
+The word **"funnel"** is being retired from all FLOSC code, UI, comments, docs, and marketing copy. Replace with **"flow"** everywhere.
+
+- CSS classes: `.landing-funnel` → already renamed to `.landing-tagline` in v2.0.0
+- PHP variables: `$funnel_complete`, `funnelCompleted`, `_flosc_funnel_completed` → TBD rename to flow equivalents
+- REST endpoints: `/funnel-complete`, `/debug/funnel-state` → TBD rename
+- Comments, descriptions, readme text → replace "funnel" with "flow"
+- Plugin description: "sales funnel framework" → "sales flow framework"
+
+This is a **future task** — not yet applied globally. When the rename happens, it must cover all ~40+ references across flosc.php, flosc-app.js, quiz.php, readme.md, lesson files, and create-sample-data.php.
+
+---
+
+## 2026-02m-28d — Identity Rename
+
+### Name / Title / Tagline
+
+v2.0.0 renames the identity fields:
+- `name` stays `name` (e.g., "LeSAEp")
+- Old `tagline` → now `title` (e.g., "Learn Excellent Standard American English Pronunciation")
+- New `tagline` = the arrow-separated stage label (e.g., "Freeline → Login → Offer → Sale → Content"), admin-configurable, empty = hidden
+
+DB migration runs automatically on upgrade to v2.0.0.
+
+---
+
 ## 2026-02m-13d — Accountability Entry
 
 ### Apology

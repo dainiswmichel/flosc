@@ -1,1 +1,0 @@
-<!-- Archived v1.8.1 version — replaced by dynamic repeater in v1.8.2 -->

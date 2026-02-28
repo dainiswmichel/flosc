@@ -54,3 +54,9 @@ build/
 *.zip
 .DS_Store
 **/.DS_Store
+
+# Separate repos
+lesaep/
+
+# Python
+.venv/
