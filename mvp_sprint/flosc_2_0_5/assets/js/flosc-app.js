@@ -4857,7 +4857,10 @@ Purchased: ${ctx.purchased}
         try {
             const messages = JSON.parse(localStorage.getItem('flosc_visitor_messages') || '[]');
             messages.forEach(msg => {
-                this.addMessage(msg.role, msg.content);
+                // v2.0.5: Assistant messages may contain HTML (badge, markdown).
+                // Always render them as HTML so saved content displays correctly.
+                const isHtml = (msg.role === 'assistant');
+                this.addMessage(msg.role, msg.content, isHtml);
             });
         } catch (e) {
             this.logWarn('FLOSC: Could not restore visitor messages', e);
