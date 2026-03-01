@@ -15,6 +15,18 @@
 
 ---
 
+## 2026-03m-01d — Future Task
+
+### Enrich Dainis W. Michel biographical information in IVR
+
+The current "Who Is Dainis W. Michel" IVR message (`lesaep_ivr.md`, line ~99) only mentions English teaching and LeSAEp. It needs to be updated with more complete biographical information — singer-songwriter, "Time Flies", Tirradnis songwriting competition 2024 in Latvia, dainis.net, and other public facts Dainis wants included.
+
+**Status:** Deferred. Dainis will provide the full biographical details to include when ready.
+
+**Location:** `ai_configuration_files/lesaep_ivr.md` → `lesaep_about_dainis` message → `MessageContent` field.
+
+---
+
 ## 2026-02m-28d — Vocabulary Note
 
 ### Remove "funnel" from the FLOSC ecosystem
