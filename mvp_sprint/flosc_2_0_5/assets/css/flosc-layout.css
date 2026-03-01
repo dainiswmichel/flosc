@@ -1049,6 +1049,9 @@ img.flosc-profile-avatar {
     word-wrap: break-word;
     overflow-wrap: break-word;
     letter-spacing: -0.006em;
+    /* v2.0.5: Ensure full width so centered badge images align to
+       the full message area, not just the text content width. */
+    width: 100%;
 }
 
 .flosc-message-user .flosc-message-text,
@@ -2414,6 +2417,8 @@ img.flosc-profile-avatar {
    SIDEBAR OVERLAY (Mobile)
    ============================================ */
 
+/* v2.0.5: z-index must be LOWER than mobile sidebar (50) so overlay
+   darkens the main content but doesn't block sidebar interaction. */
 .flosc-sidebar-overlay {
     display: none;
     position: fixed;
@@ -2421,8 +2426,8 @@ img.flosc-profile-avatar {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 99;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 49;
 }
 
 .flosc-sidebar-overlay.show {

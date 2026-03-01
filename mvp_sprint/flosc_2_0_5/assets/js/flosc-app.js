@@ -3653,6 +3653,15 @@ Purchased: ${ctx.purchased}
             });
         }
         
+        // v2.0.5: Clean up mobile sidebar state on viewport resize (e.g. iPad rotation)
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                const overlay = document.getElementById('flosc_app_sidebar_overlay');
+                if (overlay) overlay.classList.remove('show');
+                if (this.sidebar) this.sidebar.classList.remove('open');
+            }
+        });
+        
         if (this.newSessionBtn) {
             this.newSessionBtn.addEventListener('click', () => this.newSession());
         }
@@ -4205,14 +4214,16 @@ Purchased: ${ctx.purchased}
     toggleSidebar() {
         if (this.sidebar) {
             const isMobile = window.innerWidth <= 768;
+            const overlay = document.getElementById('flosc_app_sidebar_overlay');
             if (isMobile) {
                 this.sidebar.classList.toggle('open');
-                // Toggle overlay
-                const overlay = document.getElementById('flosc_app_sidebar_overlay');
                 if (overlay) {
                     overlay.classList.toggle('show', this.sidebar.classList.contains('open'));
                 }
             } else {
+                // v2.0.5: Clean up mobile overlay state when toggling in desktop mode
+                if (overlay) overlay.classList.remove('show');
+                this.sidebar.classList.remove('open');
                 this.sidebar.classList.toggle('collapsed');
                 localStorage.setItem('flosc_sidebar_collapsed', this.sidebar.classList.contains('collapsed'));
             }
