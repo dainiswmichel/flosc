@@ -87,47 +87,16 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
     }
 
     /**
-     * v5.0.7: Read PayPal settings with explicit fallback chain and sandbox defaults.
-     *
-     * Resolution order:
-     * 1. Per-flow setting (flosc()->get_setting('paypal_X'))
-     * 2. Global wp_option (flosc_paypal_X)
-     * 3. Hardcoded sandbox defaults (for client_id, secret, mode only)
-     *
-     * This ensures sandbox always works even if activation defaults were
-     * overwritten by an empty admin save or a failed migration.
+     * Read PayPal settings from per-flow config, fallback to global option.
      */
     private function get_flow_setting($key, $default = '') {
-        // 1. Per-flow setting
         if (function_exists('flosc')) {
             $value = flosc()->get_setting('paypal_' . $key, '');
             if (!empty($value)) {
                 return $value;
             }
         }
-        // 2. Global option
-        $global = get_option('flosc_paypal_' . $key, '');
-        if (!empty($global)) {
-            return $global;
-        }
-        // 3. Sandbox defaults — guarantees sandbox always works
-        $sandbox_defaults = self::get_sandbox_defaults();
-        if (isset($sandbox_defaults[$key])) {
-            return $sandbox_defaults[$key];
-        }
-        return $default;
-    }
-
-    /**
-     * v5.0.7: Centralized sandbox defaults — single source of truth.
-     * Used by both the provider (fallback) and the activation seeder.
-     */
-    public static function get_sandbox_defaults() {
-        return [
-            'mode'      => 'sandbox',
-            'client_id' => 'Ac9vXbpAO30vY9QmbPDMy3tUkTapXTWMZ0qPP4N0MdSK7DPT0wDII-9urwbDTkTsEZg9RajgYRxNRzWg',
-            'secret'    => 'EJx4R3gHxKzJKGN7MQ5OYzrFdBnJPNh7-bUQfT2A1xblHR8nKmSSuL1jbJnlOC3DQwN0f2cEcNdGQTBv',
-        ];
+        return get_option('flosc_paypal_' . $key, $default);
     }
 
     private function get_mode() {

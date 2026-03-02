@@ -8849,25 +8849,10 @@ function flosc_activate() {
         update_option($key, $value);
     }
 
-    // v5.0.7: PayPal sandbox defaults — use the provider's centralized defaults
-    // (single source of truth). Also clear any stale cached OAuth tokens so fresh
-    // credentials take effect immediately after activation.
-    // Load PayPal provider (not yet available — plugins_loaded hasn't fired)
-    require_once FLOSC_PLUGIN_DIR . 'includes/sale/class-payment-provider.php';
-    require_once FLOSC_PLUGIN_DIR . 'includes/sale/providers/class-paypal-provider.php';
-    $pp_defaults = FLOSC_PayPal_Provider::get_sandbox_defaults();
-    $paypal_option_map = [
-        'flosc_paypal_mode'      => $pp_defaults['mode'],
-        'flosc_paypal_client_id' => $pp_defaults['client_id'],
-        'flosc_paypal_secret'    => $pp_defaults['secret'],
-    ];
-    foreach ($paypal_option_map as $key => $value) {
-        if (get_option($key) === false || get_option($key) === '') {
-            update_option($key, $value);
-        }
+    // Default PayPal mode to sandbox on fresh install (no credentials seeded)
+    if (get_option('flosc_paypal_mode') === false || get_option('flosc_paypal_mode') === '') {
+        update_option('flosc_paypal_mode', 'sandbox');
     }
-    // Clear any stale PayPal OAuth token cache
-    delete_transient('flosc_paypal_token_' . md5($pp_defaults['client_id'] . $pp_defaults['secret']));
 
     // v1.2.3: Ensure default flosc_default_ivr.md exists
     $ivr_file = FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_ivr.md';
