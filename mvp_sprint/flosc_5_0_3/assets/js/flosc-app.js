@@ -3463,18 +3463,52 @@ class floscApp {
 
     // v3.0.8: Show stored quiz results for current member
     openQuizResults() {
-        const score   = this.user?.lastQuizScore ?? null;
-        const quizId  = this.user?.lastQuizId    || '';
+        // v5.0.3: Read from in-session this.quiz first (has actual item names),
+        // fall back to this.user (server-populated from user_meta).
+        const score = this.quiz?.score ?? this.user?.lastQuizScore ?? null;
         if (score === null) {
             this.addMessage('assistant', "I don't see a quiz result on file yet. Take the assessment and I'll show you your results right here.");
             return;
         }
-        // Re-use the existing quiz result renderer
-        // Reconstruct correct/incorrect counts from user data
-        const correct   = this.user?.quizCorrect   ?? [];
-        const incorrect = this.user?.quizIncorrect  ?? [];
-        this.addMessage('assistant', `📊 Here are your quiz results:`);
-        setTimeout(() => this.showQuizResults(score, correct.length, incorrect.length), 250);
+
+        const missed  = this.quiz?.missedItems  || [];
+        const correct = this.quiz?.correctItems || [];
+        const total   = missed.length + correct.length;
+
+        // Build deterministic response with actual sound names
+        let html = `<div class="flosc-quiz-result-detail">`;
+        html += `<div class="flosc-quiz-score-summary">📊 You scored <strong>${score}%</strong>`;
+        if (total > 0) html += ` (${correct.length}/${total} correct)`;
+        html += `</div>`;
+
+        if (missed.length > 0) {
+            html += `<div class="flosc-quiz-missed">`;
+            html += `<strong>Sounds you missed:</strong><br>`;
+            html += missed.map(s => `<span class="flosc-missed-sound">❌ ${this.escapeHtml(s)}</span>`).join(' ');
+            html += `</div>`;
+        }
+
+        if (correct.length > 0) {
+            html += `<div class="flosc-quiz-correct">`;
+            html += `<strong>Sounds you got right:</strong><br>`;
+            html += correct.map(s => `<span class="flosc-correct-sound">✅ ${this.escapeHtml(s)}</span>`).join(' ');
+            html += `</div>`;
+        }
+
+        if (missed.length > 0) {
+            html += `<div class="flosc-quiz-cta">`;
+            html += `Your free lesson covers one of these sounds. `;
+            if (this.state === 'guest') {
+                html += `<strong>Unlock all 10 lessons</strong> to master every sound on the list.`;
+            }
+            html += `</div>`;
+        }
+
+        html += `</div>`;
+        this.addMessage('assistant', html, true);
+
+        // Show follow-up pills after displaying results
+        setTimeout(() => this.floscShowUserAutoPrompts(), 500);
     }
 
     // v3.0.8: Open a filtered lesson list by topic keyword.

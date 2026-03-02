@@ -136,7 +136,7 @@ $ivr_defaults = [
     ],
     'guest' => [
         // Post-quiz pills — show quiz results to motivate purchase
-        ['icon'=>'📊','label'=>'Which sounds did I miss?',  'user_input'=>'Which pronunciation sounds did I miss on the quiz?',        'trigger_type'=>'ai',     'trigger_value'=>'',                  'conditions'=>'is_guest && quiz_taken',                              'style'=>'pill'],
+        ['icon'=>'📊','label'=>'Which sounds did I miss?',  'user_input'=>'Which pronunciation sounds did I miss on the quiz?',        'trigger_type'=>'action', 'trigger_value'=>'show_quiz_results',  'conditions'=>'is_guest && quiz_taken',                              'style'=>'pill'],
         ['icon'=>'🎯','label'=>'My learning path',          'user_input'=>'Based on my quiz results, what\'s my personalized learning path?', 'trigger_type'=>'ai', 'trigger_value'=>'',              'conditions'=>'is_guest && quiz_taken',                              'style'=>'pill'],
         // Free lesson delivery
         ['icon'=>'🎁','label'=>'See my free lesson',        'user_input'=>'Show me my free lesson',        'trigger_type'=>'action', 'trigger_value'=>'open_free_lesson',  'conditions'=>'is_guest && quiz_taken && !lesson_viewed',             'style'=>'pill'],
@@ -152,7 +152,7 @@ $ivr_defaults = [
         ['icon'=>'📚','label'=>'My lesson library',         'user_input'=>'Open my lesson library',        'trigger_type'=>'action', 'trigger_value'=>'open_lesson_library','conditions'=>'is_member',                                          'style'=>'button'],
         ['icon'=>'🎓','label'=>'Start my first lesson',     'user_input'=>'I\'m ready to start my first lesson — which one?', 'trigger_type'=>'action', 'trigger_value'=>'open_lesson_library', 'conditions'=>'is_member && first_message_after_purchase', 'style'=>'button'],
         // Quiz results and progress
-        ['icon'=>'📊','label'=>'My quiz results',           'user_input'=>'Show me my full pronunciation quiz results and which sounds I need to work on', 'trigger_type'=>'ai', 'trigger_value'=>'', 'conditions'=>'is_member && quiz_taken',  'style'=>'pill'],
+        ['icon'=>'📊','label'=>'My quiz results',           'user_input'=>'Show me my full pronunciation quiz results and which sounds I need to work on', 'trigger_type'=>'action', 'trigger_value'=>'show_quiz_results', 'conditions'=>'is_member && quiz_taken',  'style'=>'pill'],
         ['icon'=>'🎯','label'=>'What should I study next?', 'user_input'=>'Based on my quiz results, which sound should I focus on first?', 'trigger_type'=>'ai', 'trigger_value'=>'', 'conditions'=>'is_member && quiz_taken',             'style'=>'pill'],
         // Sound-specific search
         ['icon'=>'🔍','label'=>'Find R sound lessons',      'user_input'=>'Find lessons on the American R sound', 'trigger_type'=>'ai', 'trigger_value'=>'',                 'conditions'=>'is_member',                                           'style'=>'pill'],
