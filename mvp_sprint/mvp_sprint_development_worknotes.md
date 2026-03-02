@@ -4,6 +4,18 @@
 
 ---
 
+## MTS-2026-03m-01d — Future Rename: FLOSC_Abstract_Quiz_Type
+
+`FLOSC_Abstract_Quiz_Type` is a bad class name. It's the base class for quiz types, but "Abstract" is a PHP implementation detail that doesn't belong in the name. Consider renaming to `FLOSC_Quiz_Type` (base class) with concrete implementations like `FLOSC_Text_Quiz`, `FLOSC_Audio_Quiz`, etc. This rename would touch:
+- `includes/quiz-types/abstract-quiz-type.php` (file + class name)
+- All quiz type classes that `extend FLOSC_Abstract_Quiz_Type`
+- `class-quiz-type-factory.php` (`instanceof` check)
+- `admin/lessons.php` (`instanceof` check)
+
+**Status:** Deferred. Low priority but worth doing in a cleanup pass.
+
+---
+
 ## FLOSC Version Iteration Process
 
 When iterating FLOSC versions, follow this exact sequence:

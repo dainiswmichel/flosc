@@ -15,6 +15,14 @@
 
 ---
 
+## 2026-03m-01d — Workflow Rule
+
+### Fix first, then wait before zipping
+
+When fixing bugs or making changes, apply the code fix and explain it — but do **not** zip or version-bump until Dainis confirms the fix looks correct or explicitly asks for a zip. The workflow is: fix → wait for review/testing input → then zip when asked.
+
+---
+
 ## 2026-03m-01d — Future Task
 
 ### Enrich Dainis W. Michel biographical information in IVR

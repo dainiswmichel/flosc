@@ -1,116 +1,201 @@
 <h1 id="the-journey">Part 1: The Journey</h1>
-<p class="skeleton-marker">~15 pages — Decision archaeology narrative. Content pending.</p>
+<p>Where FLOSC came from, why it exists, the decisions that shaped it, and the roads not taken. This is decision archaeology — not just what the code does, but <em>why</em> it is the way it is.</p>
 
 <h2 id="the-problem">The Problem That Started Everything</h2>
-<p class="skeleton-marker">Content pending.</p>
+
+<p>Most online learning platforms have a conversion problem that nobody talks about honestly. They offer a "free trial" that gates everything worth having behind a signup wall. The visitor lands on a marketing page, sees buzzwords about transformation, and is asked to trust — with money or at minimum their email — before experiencing anything real.</p>
+
+<p>FLOSC exists because of a different hypothesis: what if the <em>product itself</em> is the sales funnel? What if the first thing a visitor does is learn something, and the quality of that learning is what converts them?</p>
 
 <h3 id="language-learning-broken">Why Language Learning Apps Are Broken</h3>
-<p class="skeleton-marker">Content pending.</p>
+
+<p>The dominant language learning apps (you know which ones) are built on engagement mechanics: streaks, XP points, leaderboards, notifications. They are designed to make you feel like you are learning while optimizing for daily active users. The business model is retention, not transformation.</p>
+
+<p>The actual problem with learning a second language — especially pronunciation — is that most people have never had honest, specific feedback about exactly which sounds they are getting wrong. They practice the wrong things for years because no one told them what the right things were.</p>
 
 <h3 id="pronunciation-gap">The Pronunciation Gap Nobody Talks About</h3>
-<p class="skeleton-marker">Content pending.</p>
+
+<p>Pronunciation is the most neglected skill in second language learning. Reading, writing, listening comprehension — these all have well-established curricula and testing formats. Pronunciation gets a chapter in year one and then everyone agrees to pretend it doesn't matter.</p>
+
+<p>For learners of American English specifically, the gap is stark. The American rhotic R, the short-a vowel, the voiced and voiceless TH sounds, the flap-T, schwa reduction, connected speech — these are the sounds that mark a speaker as non-native, that create miscommunication, that limit professional advancement. They are also highly learnable with targeted feedback.</p>
+
+<p>FLOSC's native quiz format — LeSAEp (Latvian-born Standard American English Pronunciation assessment) — was designed around this: identify exactly which of the ten most common pronunciation trouble spots a learner struggles with, so the lesson recommendations can be specific rather than generic.</p>
 
 <h3 id="latvian-as-testbed">Why Latvian — The Perfect Test Case</h3>
-<p class="skeleton-marker">Content pending.</p>
+
+<p>The original use case was a Latvian teacher of American English pronunciation. This was an excellent test case precisely because Latvian and English have very different phonological systems. The specific interference patterns — where Latvian phonology conflicts with American English phonology — are well-mapped. The ten sounds in the LeSAEp quiz map to real, common error patterns in Latvian-accented English.</p>
+
+<p>But the architecture was always generic. "LeSAEp" is a quiz type, not the system. The same FLOSC framework works for any subject where:</p>
+<ol>
+    <li>A quick assessment can identify a learner's specific gaps</li>
+    <li>Those gaps map to specific lessons</li>
+    <li>AI can guide the conversation based on the results</li>
+</ol>
 
 <h3 id="flosc-acronym">The FLOSC Acronym — What Each Letter Means</h3>
-<p class="skeleton-marker">Content pending.</p>
+
+<p>FLOSC is an acronym that describes the journey every learner takes — and the five phases the system manages:</p>
 
 <h4 id="flosc-five-phases">Freeline → Login → Offer → Sale → Content</h4>
-<p class="skeleton-marker">Content pending.</p>
+
+<dl>
+    <dt><strong>F — Freeline</strong></dt>
+    <dd>The visitor phase. They've found the product but haven't logged in. They get the free quiz, limited AI conversation, the hook. This is the "freeline" — the sample line you can fish without a license.</dd>
+
+    <dt><strong>L — Login</strong></dt>
+    <dd>Account creation. A visitor who completes the quiz and wants their results must create an account. At this moment they become a Guest. The quiz score carries over — it was stored client-side (bridge data) and attached to the new account on creation.</dd>
+
+    <dt><strong>O — Offer</strong></dt>
+    <dd>The Guest phase. The user is logged in but hasn't purchased. They can see their quiz results, chat with the AI, get a free lesson — but premium content is behind the upgrade. IVR messages in this phase are designed to show the offer at the right moment.</dd>
+
+    <dt><strong>S — Sale</strong></dt>
+    <dd>The payment phase. Stripe or PayPal processes the transaction. On success, the user's access level upgrades and they are redirected to the Content phase immediately.</dd>
+
+    <dt><strong>C — Content</strong></dt>
+    <dd>The Member phase. Full access. All lessons unlocked. AI knows their full quiz history and purchase history. The conversation shifts from selling to teaching.</dd>
+</dl>
+
+<p>Every IVR message, every offer trigger, every AI instruction is tagged to a FLOSC phase. The system always knows where in the F→L→O→S→C funnel the current user is.</p>
 
 <h2 id="the-hypothesis">The Hypothesis</h2>
-<p class="skeleton-marker">Content pending.</p>
+
+<p>The core hypothesis behind FLOSC is that a conversational interface — one that responds to where you are in the learning journey — is more effective at both teaching and converting than a static landing page or a traditional LMS.</p>
 
 <h3 id="conversational-learning">What If Learning Felt Like a Conversation?</h3>
-<p class="skeleton-marker">Content pending.</p>
+
+<p>A good human tutor doesn't deliver a pre-recorded lecture. They ask questions, notice when you're confused, give examples, adjust the difficulty. They remember what you got wrong last time. They celebrate when you improve.</p>
+
+<p>The FLOSC hypothesis is that AI can approximate this well enough to be more effective than passive video content — and that the combination of (a) personalized assessment, (b) targeted lesson delivery, and (c) conversational guidance is a qualitatively different experience from anything a traditional LMS provides.</p>
 
 <h3 id="ai-as-tutor">AI as Tutor, Not as Gimmick</h3>
-<p class="skeleton-marker">Content pending.</p>
+
+<p>The AI in FLOSC is not a chatbot bolted onto a course platform. It is the primary interface. Everything else — lessons, offers, quiz results, user state — flows through the AI conversation. The AI knows:</p>
+<ul>
+    <li>Which quiz the user took and which questions they missed</li>
+    <li>Which lessons are available and which they've seen</li>
+    <li>What phase of the funnel they're in</li>
+    <li>The full text of every IVR message that could be relevant</li>
+    <li>The product's identity: name, personality, teaching philosophy</li>
+</ul>
+
+<p>This context makes AI responses feel genuinely relevant rather than generic, which is the difference between "AI as gimmick" and "AI as tutor."</p>
 
 <h3 id="ivr-inspiration">The IVR Inspiration — Phone Trees Meet Education</h3>
-<p class="skeleton-marker">Content pending.</p>
+
+<p>The IVR (Interactive Voice Response) system in FLOSC is named after the phone tree technology you encounter when you call a bank. Press 1 for account balance. Press 2 for recent transactions. IVR systems are scripted, deterministic, and reliable.</p>
+
+<p>FLOSC borrowed this concept and applied it to chat. The IVR system is a library of scripted responses that fire based on conditions — user state, quiz score, what the user said. Most of the time, when a user sends a message, the IVR finds a match and responds instantly without ever calling the AI API. Only when no IVR message matches does the AI take over.</p>
 
 <h4 id="what-ivr-means-here">What "IVR" Means in FLOSC (It's Not What You Think)</h4>
-<p class="skeleton-marker">Content pending.</p>
+
+<p>The name is intentionally provocative. In telecom, IVR is the opposite of intelligence — it's the scripted maze you hate navigating. In FLOSC, IVR is where the admin's intentional design lives. The admin writes the key moments: the welcome message, the quiz result response, the offer pitch, the post-purchase congratulations. AI handles everything else.</p>
+
+<p>The IVR-first, AI-fallback architecture means the admin always controls the high-stakes moments, while AI provides the ambient intelligence that makes the experience feel alive.</p>
 
 <h2 id="roads-not-taken">Roads Not Taken</h2>
-<p class="skeleton-marker">Content pending.</p>
 
 <h3 id="why-not-react">Why Not React or Vue?</h3>
-<p class="skeleton-marker">Content pending.</p>
+
+<p>React and Vue bring build pipelines, dependency management, node_modules, bundlers, and a JavaScript ecosystem that moves fast. For a WordPress plugin that needs to install on arbitrary hosting environments — including shared hosting with no Node.js — this is a hard constraint. The WordPress audience isn't running Vercel deployments.</p>
+
+<p>The FLOSC JavaScript is a single vanilla ES6+ file (<code>flosc-app.js</code>) with no build step. It loads with a standard <code>wp_enqueue_scripts</code> call. It works on any hosting. This was a deliberate constraint that shaped everything about the frontend architecture.</p>
 
 <h3 id="why-not-lms">Why Not an Existing LMS?</h3>
-<p class="skeleton-marker">Content pending.</p>
+
+<p>LearnDash, LifterLMS, Tutor LMS — these are powerful platforms. They also carry assumptions: courses → lessons → quizzes, with a dashboard, progress bars, and a catalog page. They are optimized for asynchronous self-paced learning, not for the conversational, funnel-driven experience FLOSC is built around.</p>
+
+<p>FLOSC integrates with these platforms via optional hooks (LearnDash, WP Pro Quiz, Quiz and Survey Master) — so it can sit alongside them — but it was built fresh because none of them had the right primitives for the AI-guided conversational model.</p>
 
 <h3 id="why-not-mobile-first">Why Not Mobile-First Native App?</h3>
-<p class="skeleton-marker">Content pending.</p>
+
+<p>A native app would have better microphone access for the audio quiz. It would have push notifications. It would feel more "product-like." It would also require App Store approval, a separate iOS and Android codebase, device-specific bugs, and a deployment pipeline completely separate from the admin's existing WordPress site.</p>
+
+<p>The web-first decision means the product deploys the same way the admin's blog post deploys. The companion widget works in any iframe. The quiz and chat work on mobile via responsive CSS.</p>
 
 <h3 id="why-not-saas">Why Not Build as SaaS From Day One?</h3>
-<p class="skeleton-marker">Content pending.</p>
+
+<p>Multi-tenant SaaS with its own database, its own billing, its own user management — this was considered and rejected for the MVP. The decision: build the product first, prove it works for one use case, then generalize.</p>
+
+<p>The multi-flow architecture (added in v1.2.2) is the path toward SaaS-like multi-tenancy, but delivered as a WordPress plugin where the admin already has hosting, a domain, and a user database. No new infrastructure required.</p>
 
 <h3 id="why-wordpress">Why WordPress — The Honest Answer</h3>
-<p class="skeleton-marker">Content pending.</p>
+
+<p>The honest answer is not "WordPress is the best platform for this." The honest answer is: the target users — independent language tutors, online educators, solo course creators — almost all have WordPress sites already. They know the admin interface. They understand posts and categories. Their existing content is already there.</p>
+
+<p>Meeting users where they are is a product decision, not a technical one. WordPress was the right choice for the audience, even if it wouldn't have been the right choice for a developer-audience product.</p>
 
 <h4 id="wp-tradeoffs">The Tradeoffs We Accepted</h4>
-<p class="skeleton-marker">Content pending.</p>
+<ul>
+    <li><strong>No build step = no tree shaking, no TypeScript.</strong> Accepted. The plugin stays readable to anyone who knows PHP and vanilla JS.</li>
+    <li><strong>WordPress nonces expire,</strong> requiring client-side retry logic when they do. Accepted. Documented and handled.</li>
+    <li><strong>Options table for settings</strong> instead of a custom schema. Accepted. WordPress update APIs are battle-tested.</li>
+    <li><strong>PHP version diversity.</strong> Accepted. Code targets PHP 7.4+ with no modern PHP features that would break on common hosting.</li>
+</ul>
 
 <h4 id="wp-advantages">The Advantages That Surprised Us</h4>
-<p class="skeleton-marker">Content pending.</p>
+<ul>
+    <li><strong>wp_insert_post, wp_create_category, get_posts</strong> — the WordPress content API makes lessons-as-posts a natural fit, with taxonomy and search built in.</li>
+    <li><strong>User management for free</strong> — registration, login, password reset, roles — all handled by WordPress core.</li>
+    <li><strong>WXR import</strong> — sample data distributes as a WordPress import file. Admins install the plugin, import the XML, have a working demo in under five minutes.</li>
+    <li><strong>The category protection model</strong> maps cleanly to the lesson access model. Mark a category as FLOSC-protected; only paid members see those posts.</li>
+</ul>
 
 <h2 id="evolution-timeline">The Evolution Timeline</h2>
-<p class="skeleton-marker">Content pending.</p>
 
 <h3 id="era-static-quiz">Era 1: Static Quiz Page (v0.1–v0.3)</h3>
-<p class="skeleton-marker">Content pending.</p>
+<p>The original product was a static HTML quiz page. Questions in JavaScript arrays, scoring in client-side logic, results displayed inline. No server, no AI, no WordPress. Proved the assessment concept worked.</p>
 
 <h3 id="era-chat-interface">Era 2: The Chat Interface Arrives (v0.4–v1.0)</h3>
-<p class="skeleton-marker">Content pending.</p>
+<p>The chat interface replaced the results page. Instead of showing a score, the product told you what it meant — in conversation. This was the key insight: the conversation after the quiz is where learning happens, not the score itself. WordPress integration at this stage was minimal — the chat was embedded as a shortcode.</p>
 
 <h3 id="era-ivr-system">Era 3: The IVR System (v1.1–v1.4)</h3>
-<p class="skeleton-marker">Content pending.</p>
+<p>The IVR parser was written to give admins control over what the chatbot says. Instead of hardcoding responses, the admin writes a Markdown file with message conditions, and the parser evaluates them at runtime. This decoupled "what the bot says" from "how the bot works" — a key architectural decision that persists through every subsequent version.</p>
 
 <h3 id="era-ai-integration">Era 4: AI Integration — Claude Enters (v1.5–v1.7)</h3>
-<p class="skeleton-marker">Content pending.</p>
+<p>Anthropic's Claude API was integrated as the AI fallback. The IVR-first architecture meant AI didn't need to handle every message — only the ones the admin hadn't scripted. This kept API costs predictable and gave admins confidence that key messages would always render correctly. OpenAI and xAI were added as alternative providers.</p>
 
-<h3 id="era-payment-access">Era 5: Payment & Access Control (v1.8–v1.9)</h3>
-<p class="skeleton-marker">Content pending.</p>
+<h3 id="era-payment-access">Era 5: Payment and Access Control (v1.8–v1.9)</h3>
+<p>The Sale system was built: Stripe and PayPal payment providers, offer management, token-based virtual currency, ClickBank and affiliate support. Access control tied purchase records to content visibility. The three-phase user model (Visitor / Guest / Member) was formalized. Chat logging and admin feedback (corrections and praise) landed in v1.9.</p>
 
 <h3 id="era-multi-flow">Era 6: Multi-Flow Architecture (v1.9.5+)</h3>
-<p class="skeleton-marker">Content pending.</p>
+<p>The Flow system generalized single-product FLOSC into a multi-product platform. One WordPress installation can run multiple independent FLOSC flows — each with its own branding, IVR file, AI configuration, quiz settings, offers, and domain mapping. A language school with five different courses can run five flows from one plugin install.</p>
 
 <h4 id="version-archaeology">Version Archaeology — What Each Jump Meant</h4>
-<p class="skeleton-marker">Content pending.</p>
+<p>Major version increments in FLOSC correspond to architectural additions, not rewrites. v1.x was the core chat + IVR + AI stack. v2.x introduced identity migration (tagline → title). v3.x introduced the multi-lesson-group model and FLOSC auth tokens for cross-domain scenarios. v4.x introduced the Admin Test Mode panel and the structured quiz management system.</p>
 
 <h4 id="version-count">90+ Versions — A Version History Like No Other</h4>
-<p class="skeleton-marker">Content pending.</p>
+<p>FLOSC reached 90+ versions before v2.0 in the versioning scheme. This reflects the development pace: rapid iteration, shipping often, versioning every meaningful change. The Michel Date Stamp Innovation (YYYY-MMm-DDd) appears throughout the codebase's comments, making it easy to trace when each piece was added without a separate changelog file.</p>
 
 <h2 id="design-principles">Design Principles That Emerged</h2>
-<p class="skeleton-marker">Content pending.</p>
 
 <h3 id="principle-ivr-is-king">IVR Is King — Code Serves Data</h3>
-<p class="skeleton-marker">Content pending.</p>
+<p>The most important principle in FLOSC is that the admin's IVR content drives the experience, not the code. The developer's job is to make the IVR evaluation fast, reliable, and expressive. Features that require touching PHP to change a response are bugs, not features.</p>
 
 <h3 id="principle-admin-controls">FloscAdmin Controls Everything</h3>
-<p class="skeleton-marker">Content pending.</p>
+<p>Every aspect of the user experience is configurable from the WordPress admin without editing code: AI personality, IVR messages, offer timing, chat style, lesson assignments, quiz content, email templates, navigation structure. This is not accidental — it required discipline in every feature implementation to ask "should this be hardcoded or configured?"</p>
 
 <h3 id="principle-no-hardcode">Never Hardcode What Can Be Configured</h3>
-<p class="skeleton-marker">Content pending.</p>
+<p>Product name, tagline, emoji, colors, AI name and personality, quiz questions, lesson category, offer price — none of these are in the source code. They are in the database, editable from the admin. This means the same plugin powers a pronunciation school, a math tutor, or a fitness program without code changes.</p>
 
 <h3 id="principle-sample-data">Sample Data Is a Deliverable</h3>
-<p class="skeleton-marker">Content pending.</p>
+<p>The plugin ships with working sample data: a pronunciation quiz, 10 sample lessons, a default offer, sample IVR messages, sample autoprompt pills. The sample data is not documentation — it is a working product that admins can use as a starting point. Getting from "plugin installed" to "something works" in under 5 minutes is a design requirement.</p>
 
 <h3 id="principle-guest-first">Guest-First Experience</h3>
-<p class="skeleton-marker">Content pending.</p>
+<p>The visitor who completes the quiz before creating an account is the most valuable user. Requiring login before experiencing value loses most visitors. FLOSC stores quiz results client-side (bridge data) and transfers them to the new account on registration. The experience is seamless: take the quiz, see your score, create an account, continue the conversation without starting over.</p>
 
 <h4 id="visitor-guest-member">Visitor → Guest → Member — The Three-Phase Model</h4>
-<p class="skeleton-marker">Content pending.</p>
+<p>Three distinct user states, each with different content access, different IVR messages, different AI context, and different autoprompt pills:</p>
+<ul>
+    <li><strong>Visitor:</strong> Not logged in. Gets free quiz, limited AI, no quiz result detail. Must create an account to see which questions they missed.</li>
+    <li><strong>Guest:</strong> Logged in, no purchase. Gets full quiz results, free lesson, upgrade offers.</li>
+    <li><strong>Member:</strong> Logged in, purchased. Gets all lessons, full AI tutor, member-specific conversation.</li>
+</ul>
 
 <h3 id="principle-no-build-step">No Build Step, No Dependencies</h3>
-<p class="skeleton-marker">Content pending.</p>
+<p>The FLOSC plugin directory contains no <code>node_modules</code>, no <code>package.json</code>, no <code>webpack.config.js</code>. Install it as a ZIP and it works. This was a hard constraint for the WordPress plugin marketplace audience — hosting providers that are not developer environments.</p>
 
 <h3 id="principle-css-layers">CSS Layers — Layout vs Theme vs Component</h3>
-<p class="skeleton-marker">Content pending.</p>
+<p>The CSS is split into layers with explicit responsibilities: <code>flosc-layout.css</code> (structure, spacing, chat frame), <code>flosc-theme.css</code> (colors, typography, brand), <code>chat-style-*.css</code> (selectable chat presets), <code>flosc-offers.css</code> (offer cards and modals). These layers don't cross-contaminate. A theme change doesn't break layout. An offer style update doesn't change the chat frame.</p>
 
 <h3 id="principle-debug-logging">Debug Logging Only — No console.log in Production</h3>
-<p class="skeleton-marker">Content pending.</p>
+<p>All debug output is gated behind <code>FLOSC_DEBUG</code> (PHP) or <code>this.debug</code> (JS). Production deployments produce no console noise. This is enforced by discipline, not by a build step — every <code>error_log</code> and <code>console.log</code> in the codebase is inside a debug conditional.</p>
