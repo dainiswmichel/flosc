@@ -3,7 +3,7 @@
  * Plugin Name: FLOSC
  * Plugin URI: https://flosc.ai
  * Description: Freeline-Login-Offer-Sale-Content - Quiz-based learning and conversational sales flow framework
- * Version: 5.0.2
+ * Version: 5.0.3
  * Author: Dainis Michel
  * Author URI: https://dainis.net
  * License: GPL v2 or later
@@ -14,7 +14,7 @@
 if (!defined('ABSPATH')) exit;
 
 // Plugin constants
-define('FLOSC_VERSION', '5.0.2');
+define('FLOSC_VERSION', '5.0.3');
 define('FLOSC_DEBUG', defined('WP_DEBUG') && WP_DEBUG); // TASK-012: Debug mode toggle
 define('FLOSC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('FLOSC_PLUGIN_URL', plugin_dir_url(__FILE__));
@@ -8746,9 +8746,12 @@ function flosc_activate() {
     }
 
     // v1.7.3: PayPal sandbox defaults (only if not already set)
+    // v5.0.3 FIX: Also seed sandbox secret — without it, is_configured() fails
+    // and paypal_create_order() returns 500. Sandbox credentials are not sensitive.
     $paypal_defaults = [
         'flosc_paypal_mode' => 'sandbox',
         'flosc_paypal_client_id' => 'Ac9vXbpAO30vY9QmbPDMy3tUkTapXTWMZ0qPP4N0MdSK7DPT0wDII-9urwbDTkTsEZg9RajgYRxNRzWg',
+        'flosc_paypal_secret' => 'EJx4R3gHxKzJKGN7MQ5OYzrFdBnJPNh7-bUQfT2A1xblHR8nKmSSuL1jbJnlOC3DQwN0f2cEcNdGQTBv',
     ];
     foreach ($paypal_defaults as $key => $value) {
         if (get_option($key) === false || get_option($key) === '') {
