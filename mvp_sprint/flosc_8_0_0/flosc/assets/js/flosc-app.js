@@ -5762,10 +5762,14 @@ Purchased: ${ctx.purchased}
                 this.floscShowUserAutoPrompts();
             } else {
                 // AI returned nothing — fall back to raw IVR if available
-                if (ivrGuidance) {
-                    const content = this.replaceVariables(ivrGuidance.content);
+                // v8.0.0: Try ivrGuidance first, then ivrMatch (even if conditions didn't pass)
+                // as a last resort. The action (show_quiz_results, open_lesson_library) is still
+                // useful even when conditions like is_member aren't met.
+                const fallback = ivrGuidance || ivrMatch;
+                if (fallback) {
+                    const content = this.replaceVariables(fallback.content);
                     this.addMessage('assistant', content);
-                    if (ivrGuidance.action && executeActions) this.performIVRAction(ivrGuidance.action);
+                    if (fallback.action && executeActions) this.performIVRAction(fallback.action);
                 } else {
                     this.addMessage('assistant', "I'm having trouble responding right now. Please try again.");
                 }
@@ -5774,10 +5778,11 @@ Purchased: ${ctx.purchased}
             this.logError('FLOSC: API error:', error);
             this.hideTyping();
             // On error, fall back to raw IVR if we had a match
-            if (ivrGuidance) {
-                const content = this.replaceVariables(ivrGuidance.content);
+            const fallback = ivrGuidance || ivrMatch;
+            if (fallback) {
+                const content = this.replaceVariables(fallback.content);
                 this.addMessage('assistant', content);
-                if (ivrGuidance.action && executeActions) this.performIVRAction(ivrGuidance.action);
+                if (fallback.action && executeActions) this.performIVRAction(fallback.action);
             } else {
                 this.addMessage('assistant', "I'm having trouble responding right now. Please try again.");
             }
@@ -6490,6 +6495,15 @@ Purchased: ${ctx.purchased}
                                 quizType: 'ipa_audio'
                             });
                             this.ivr.context.score = serverData.score;
+                            this.ivr.context.quiz_results_shown = true;
+                            this.ivr.context.first_message_after_quiz = true;
+                            this.ivr.context.first_message_after_login = true;
+                        } else if (this.user?.lastQuizScore) {
+                            // v8.0.1: Fallback — server data not available (transient expired or
+                            // scoring still pending). Show the score we have from user meta.
+                            const score = parseInt(this.user.lastQuizScore) || 0;
+                            this.addMessage('assistant', `Welcome back! Your pronunciation assessment score: **${score}%**. Use "Review my quiz score" to see detailed results when they're ready.`);
+                            this.ivr.context.score = score;
                             this.ivr.context.quiz_results_shown = true;
                             this.ivr.context.first_message_after_quiz = true;
                             this.ivr.context.first_message_after_login = true;

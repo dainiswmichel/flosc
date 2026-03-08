@@ -164,6 +164,33 @@ UserInput: Review my quiz score
 Action: show_quiz_results
 MessageContent: Let's look at your accent assessment results and see which sounds you're already strong on and which ones need the most attention.
 MessageConditions: is_guest && quiz_taken
+Keywords: show my quiz results, quiz results, my results, how did i do, my score, quiz score, review my quiz
+
+---
+
+## Show Me All Lessons (Guest)
+MessageName: guest_all_lessons
+MessageType: suggested_user_autoprompt
+MessageStyle: pill
+Icon: 📚
+UserInput: Show me all lessons
+Action: open_lesson_library
+MessageContent: Here's a preview of all the pronunciation lessons available. Upgrade to full access to work through every lesson at your own pace.
+MessageConditions: is_guest
+Keywords: show me all lessons, all lessons, lesson library, browse lessons, see all lessons
+
+---
+
+## Show Quiz Lessons (Guest)
+MessageName: guest_quiz_lessons
+MessageType: suggested_user_autoprompt
+MessageStyle: pill
+Icon: 📋
+UserInput: Show me the lessons covered in the quiz
+Action: open_quiz_lessons
+MessageContent: Here are the lesson posts that go with the 10 quiz topics — one lesson for each sound the assessment tested. Upgrade to access them all.
+MessageConditions: is_guest && quiz_taken
+Keywords: show me the lessons from the quiz, lessons covered in the quiz, quiz lesson list, lessons we covered, open quiz lessons, the quiz lessons, show lessons from the quiz
 
 ---
 

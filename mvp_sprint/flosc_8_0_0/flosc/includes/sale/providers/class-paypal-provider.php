@@ -536,6 +536,18 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
             return $plans;
         }
 
+        // v8.0.0: Seed known sandbox plans (created via PayPal API 2026-03).
+        // These plans already exist on PayPal's side but the WP option was never populated.
+        if ($this->get_mode() === 'sandbox' && (empty($plans['monthly_plan_id']) || empty($plans['yearly_plan_id']))) {
+            $plans = [
+                'product_id'      => 'PROD-9B5722127Y095851P',
+                'monthly_plan_id' => 'P-5K352631T93015240NGW5YWQ',
+                'yearly_plan_id'  => 'P-4P651307R15744312NGW5YWQ',
+            ];
+            update_option('flosc_paypal_plans', $plans);
+            return $plans;
+        }
+
         // Create product if needed
         $product_id = $plans['product_id'] ?? '';
         if (empty($product_id)) {

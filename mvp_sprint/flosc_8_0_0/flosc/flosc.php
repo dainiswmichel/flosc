@@ -2514,8 +2514,9 @@ The {product_name} Team";
                 'lastQuizScore' => get_user_meta($user->ID, '_flosc_last_quiz_score', true),
                 'lastQuizId' => get_user_meta($user->ID, '_flosc_last_quiz_id', true),
                 // v8.0.0: Full quiz data (phrase_results, ranked_phonemes) for post-login display.
-                // Only included when justCompletedQuiz is true to avoid bloating every page load.
-                'lastQuizData' => $just_completed_quiz
+                // v8.0.1: Also include when justLoggedIn (not just justCompletedQuiz) so quiz
+                // results display reliably after registration even if the quiz transient expired.
+                'lastQuizData' => ($just_completed_quiz || $just_logged_in)
                     ? (get_user_meta($user->ID, '_flosc_last_quiz_data', true) ?: null)
                     : null,
                 'initialScore' => get_user_meta($user->ID, '_flosc_initial_score', true),
