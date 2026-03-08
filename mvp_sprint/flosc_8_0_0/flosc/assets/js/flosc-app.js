@@ -349,9 +349,10 @@ class floscApp {
             
             // Session state
             first_show_session: !hasSession,
-            first_message_after_quiz: false,
-            first_message_after_login: false,
-            first_message_after_purchase: false,
+            // v8.0.0: Set from PHP transients (one-shot flags, survive buildIVRContext rebuild)
+            first_message_after_quiz: !!this.user?.justCompletedQuiz,
+            first_message_after_login: !!this.user?.justLoggedIn,
+            first_message_after_purchase: !!this.user?.justPurchased,
             returning_user: hasSession,
             command: '',
             
@@ -371,6 +372,9 @@ class floscApp {
             // v5.0.3 FIX: Include actual quiz items so AI knows what was missed/correct
             correct_items: this.quiz?.correctItems || [],
             incorrect_items: this.quiz?.missedItems || [],
+            // v8.0.0: Track quiz completion and results display state
+            quiz_completed: !!(this.user?.lastQuizScore || this.quiz?.completedAt),
+            quiz_results_shown: false,  // Set true by checkPendingQuizResults after display
             
             // Purchase/access — v8.0.0 FIX: "purchased" must reflect actual purchase,
             // not admin-granted member access. Admins are is_member=true for content
@@ -765,6 +769,8 @@ class floscApp {
                 this.log('FLOSC: Condition is "always" - showing message');
                 this.showIVRMessage(msg);
                 this.ivr.shownThisSession[msg.name] = true;
+                // v8.0.0: Cascade — check for next auto-message after delay
+                setTimeout(() => this.checkAutoMessages(), 1500);
                 break;
             }
             
@@ -777,6 +783,9 @@ class floscApp {
                 this.log('FLOSC: Condition matched! Showing:', msg.name);
                 this.showIVRMessage(msg);
                 this.ivr.shownThisSession[msg.name] = true;
+                // v8.0.0: Cascade — show next matching message after delay
+                // (e.g., login_success → offer card sequence)
+                setTimeout(() => this.checkAutoMessages(), 1500);
                 break; // Only show one auto message at a time
             }
         }
@@ -1773,19 +1782,29 @@ class floscApp {
     showOfferFeatured(msg, offer) {
         const badge = offer?.meta?.badge || msg.badge || 'Limited Time';
         const title = offer?.name || msg.name || 'Full Access';
-        const description = offer?.description || msg.description || '';
+        // Use IVR MessageContent (msg.content) if provided — it's the floscAdmin's custom copy
+        let description = '';
+        if (msg.content) {
+            description = this.replaceVariables(msg.content);
+            description = description.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            description = description.replace(/\n/g, '<br>');
+        } else {
+            description = offer?.description || msg.description || '';
+        }
         const features = offer?.grants?.features || msg.features || [];
         const price = offer?.display_price || msg.price || '';
         const originalPrice = offer?.original_price || msg.original_price || '';
         const savings = offer?.meta?.savings || msg.savings || '';
         const ctaText = msg.cta || offer?.cta || '🔓 Get Full Access Now';
-        const guarantee = msg.guarantee || 'Risk-free with our 30-day money-back guarantee';
+        const guarantee = msg.guarantee || offer?.guarantee || '';
         
+        // Humanize feature identifiers (snake_case → Title Case)
+        const humanize = (s) => typeof s === 'string' ? s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : (s.name || s);
         const featuresHtml = features.length > 0 ? `
             <div class="flosc-offer-featured-features">
                 ${features.slice(0, 5).map(f => `
                     <div class="flosc-offer-featured-feature">
-                        <span>✓</span> ${typeof f === 'string' ? f : f.name || f}
+                        <span>✓</span> ${humanize(f)}
                     </div>
                 `).join('')}
             </div>
@@ -1806,7 +1825,7 @@ class floscApp {
                 <button class="flosc-offer-featured-cta" data-action="checkout_${msg.offer_id}">
                     ${ctaText}
                 </button>
-                <div class="flosc-offer-featured-guarantee">${guarantee}</div>
+                ${guarantee ? `<div class="flosc-offer-featured-guarantee">${guarantee}</div>` : ''}
             </div>
         `;
         
@@ -2391,7 +2410,7 @@ class floscApp {
 
         // LeSAEp IPA Audio Quiz — direct to LeSAEp API, no WP involvement
         if (quizId === 'lesaep_ipa_audio_quiz') {
-            this.startIpaQuiz();
+            this.showQuizConsentGate();
             return;
         }
         
@@ -2784,9 +2803,87 @@ class floscApp {
 
     // ============================================================
     // LeSAEp IPA Pronunciation Quiz — v8.0.0
-    // Direct browser → LeSAEp API (159.65.170.10:8000)
+    // Direct browser → LeSAEp API (api.lesaep.com:8000)
     // No WordPress involvement for audio analysis
     // ============================================================
+
+    showQuizConsentGate() {
+        // Skip if already consented this session
+        if (this._quizConsented) {
+            this.checkMicAndStartQuiz();
+            return;
+        }
+
+        const consentHtml = `
+            <div class="flosc-consent-card">
+                <div class="flosc-consent-header">Before we begin</div>
+                <div class="flosc-consent-text">
+                    We need these permissions to properly assess your pronunciation skills. 
+                    For you to be able to record your voice, we need access to your microphone. 
+                    For us to be able to create an account for you, we will need your email 
+                    address and appropriate profile fields.
+                </div>
+                <div class="flosc-consent-legal">
+                    By clicking below, you consent to microphone access, audio recording 
+                    and storage, pronunciation assessment, cookies, and collection of personal 
+                    information in accordance with applicable privacy laws including GDPR.
+                </div>
+                <button class="flosc-consent-btn" id="flosc-consent-agree">${this.config.consentButtonText || "I Agree — Let's Go!"}</button>
+            </div>
+        `;
+
+        this.addMessage('assistant', consentHtml, true);
+
+        setTimeout(() => {
+            const btn = document.getElementById('flosc-consent-agree');
+            if (btn) {
+                btn.addEventListener('click', () => {
+                    this._quizConsented = true;
+                    try { localStorage.setItem('flosc_consent', '1'); } catch(e) {}
+                    btn.textContent = '✓ Agreed';
+                    btn.disabled = true;
+                    btn.classList.add('agreed');
+                    setTimeout(() => this.checkMicAndStartQuiz(), 400);
+                });
+            }
+        }, 100);
+    }
+
+    async checkMicAndStartQuiz() {
+        // Test mic access before starting quiz
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream.getTracks().forEach(t => t.stop());
+            this.startIpaQuiz();
+        } catch (e) {
+            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+            let guidance = 'Please allow microphone access to take the pronunciation quiz.';
+            if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
+                if (isSafari) {
+                    guidance = '**Microphone blocked.** On Safari, go to <strong>Settings → Safari → Microphone</strong> and allow access for this site, then tap the button below.';
+                } else {
+                    guidance = '**Microphone blocked.** Click the 🔒 icon in your address bar, allow Microphone, then tap the button below.';
+                }
+            } else if (e.name === 'NotFoundError') {
+                guidance = 'No microphone detected. Please connect a microphone and try again.';
+            }
+
+            const retryHtml = `
+                <div class="flosc-consent-card">
+                    <div class="flosc-consent-text">${guidance}</div>
+                    <button class="flosc-consent-btn" id="flosc-mic-retry">🎤 Try Again</button>
+                </div>
+            `;
+            this.addMessage('assistant', retryHtml, true);
+
+            setTimeout(() => {
+                const retryBtn = document.getElementById('flosc-mic-retry');
+                if (retryBtn) {
+                    retryBtn.addEventListener('click', () => this.checkMicAndStartQuiz());
+                }
+            }, 100);
+        }
+    }
 
     startIpaQuiz() {
         this.log('[FLOSC IPA Quiz] Starting IPA pronunciation quiz');
@@ -2895,8 +2992,19 @@ class floscApp {
                     <button class="flosc-ipa-record-btn" id="flosc-ipa-record-${num}">
                         🎤 Record
                     </button>
+                    <div class="flosc-ipa-waveform" id="flosc-ipa-waveform-${num}">
+                        <div class="flosc-ipa-waveform-idle">
+                            <span class="flosc-wave-bar"></span>
+                            <span class="flosc-wave-bar"></span>
+                            <span class="flosc-wave-bar"></span>
+                            <span class="flosc-wave-bar"></span>
+                            <span class="flosc-wave-bar"></span>
+                        </div>
+                        <canvas class="flosc-ipa-waveform-canvas" id="flosc-ipa-canvas-${num}" width="200" height="40"></canvas>
+                    </div>
                     <div class="flosc-ipa-status" id="flosc-ipa-status-${num}">Tap to record yourself saying this phrase</div>
                 </div>
+                <div class="flosc-ipa-flyoff" id="flosc-ipa-flyoff-${num}"></div>
                 <div class="flosc-ipa-progress">
                     <div class="flosc-ipa-progress-bar" style="width: ${(num / total) * 100}%"></div>
                 </div>
@@ -2920,11 +3028,13 @@ class floscApp {
         if (this.isRecording) {
             if (this.mediaRecorder) this.mediaRecorder.stop();
             this.isRecording = false;
+            this.stopWaveformVisualizer();
             if (this.recordingStream) {
                 this.recordingStream.getTracks().forEach(t => t.stop());
             }
             if (btn) { btn.textContent = '🎤 Record'; btn.classList.remove('recording'); }
             if (status) status.textContent = 'Analyzing...';
+            this.showIpaFlyoff(phraseNum);
             return;
         }
 
@@ -2961,10 +3071,127 @@ class floscApp {
             if (btn) { btn.textContent = '⏹ Stop'; btn.classList.add('recording'); }
             if (status) status.textContent = 'Recording... tap Stop when done';
 
+            // Start waveform visualizer
+            this.startWaveformVisualizer(stream, phraseNum);
+
         } catch (e) {
             this.logError('[FLOSC IPA] Mic access failed', e);
             if (status) status.textContent = 'Could not access microphone. Please allow mic access and try again.';
         }
+    }
+
+    // Waveform visualizer — draws real-time audio levels on canvas
+    startWaveformVisualizer(stream, phraseNum) {
+        try {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const source = audioCtx.createMediaStreamSource(stream);
+            const analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 64;
+            source.connect(analyser);
+
+            const canvas = document.getElementById(`flosc-ipa-canvas-${phraseNum}`);
+            const waveformEl = document.getElementById(`flosc-ipa-waveform-${phraseNum}`);
+            if (!canvas || !waveformEl) return;
+
+            waveformEl.classList.add('active');
+            const ctx = canvas.getContext('2d');
+            const bufLen = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufLen);
+
+            this._waveformAnim = { audioCtx, analyser, running: true };
+
+            const draw = () => {
+                if (!this._waveformAnim || !this._waveformAnim.running) return;
+                requestAnimationFrame(draw);
+
+                analyser.getByteFrequencyData(dataArray);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                const barCount = 24;
+                const barWidth = canvas.width / barCount - 2;
+                const maxHeight = canvas.height - 4;
+
+                for (let i = 0; i < barCount; i++) {
+                    const dataIndex = Math.floor(i * bufLen / barCount);
+                    const value = dataArray[dataIndex] / 255;
+                    const barHeight = Math.max(2, value * maxHeight);
+                    const x = i * (barWidth + 2) + 1;
+                    const y = (canvas.height - barHeight) / 2;
+
+                    ctx.fillStyle = `rgba(107, 114, 128, ${0.3 + value * 0.7})`;
+                    ctx.beginPath();
+                    ctx.roundRect(x, y, barWidth, barHeight, 1);
+                    ctx.fill();
+                }
+            };
+            draw();
+        } catch (e) {
+            this.log('[FLOSC] Waveform visualizer not available:', e.message);
+        }
+    }
+
+    stopWaveformVisualizer() {
+        if (this._waveformAnim) {
+            this._waveformAnim.running = false;
+            if (this._waveformAnim.audioCtx) {
+                this._waveformAnim.audioCtx.close().catch(() => {});
+            }
+            this._waveformAnim = null;
+        }
+    }
+
+    // IPA fly-off animation — shows IPA symbols floating up after recording stops
+    showIpaFlyoff(phraseNum) {
+        const index = this.ipaQuiz.currentIndex;
+        const phrase = this.ipaQuiz.phrases[index];
+        const words = phrase.trim().split(/\s+/);
+
+        // Gather IPA symbols from the phrase
+        const symbols = [];
+        words.forEach(w => {
+            const key = w.toLowerCase();
+            const ipa = this.ipaQuiz.wordIpa[key];
+            if (ipa && ipa.da1ni5 && ipa.da1ni5[0]) {
+                const chars = ipa.da1ni5[0].split('');
+                chars.forEach(c => {
+                    if (c.match(/[^\s]/) && symbols.indexOf(c) === -1 && symbols.length < 8) {
+                        symbols.push(c);
+                    }
+                });
+            }
+        });
+
+        // Pick 4-5 random IPA symbols
+        const picked = [];
+        const pool = [...symbols];
+        const count = Math.min(3 + Math.floor(Math.random() * 3), pool.length);
+        for (let i = 0; i < count; i++) {
+            const idx = Math.floor(Math.random() * pool.length);
+            picked.push(pool.splice(idx, 1)[0]);
+        }
+
+        if (picked.length === 0) return;
+
+        // Get the record button position as the origin point
+        const btn = document.getElementById(`flosc-ipa-record-${phraseNum}`);
+        const rect = btn ? btn.getBoundingClientRect() : { left: window.innerWidth / 2, top: window.innerHeight / 2 };
+
+        picked.forEach((s, i) => {
+            const el = document.createElement('span');
+            el.className = 'flosc-ipa-fly-symbol';
+            el.textContent = '/' + s + '/';
+            // Start near the record button with slight random spread
+            el.style.left = (rect.left + Math.random() * 40 - 20) + 'px';
+            el.style.top = (rect.top + Math.random() * 20 - 10) + 'px';
+            el.style.animationDelay = (i * 0.08) + 's';
+            el.style.opacity = (0.30 + Math.random() * 0.43).toFixed(2);
+            document.body.appendChild(el);
+
+            // Clean up after animation completes
+            setTimeout(() => {
+                if (el.parentNode) el.parentNode.removeChild(el);
+            }, 900 + i * 80);
+        });
     }
 
     async processIpaRecording(blob, audioUrl, audioFormat, phraseNum) {
@@ -2981,34 +3208,82 @@ class floscApp {
             }
         });
 
-        const buf = await blob.arrayBuffer();
-        const bytes = new Uint8Array(buf);
-        let binary = '';
-        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-        const b64 = btoa(binary);
-
-        const endpoint = words.length === 1 ? '/analyze' : '/analyze-phrase';
-        const body = { audio: b64, target_text: phrase, format: audioFormat };
-        if (endpoint === '/analyze-phrase' && Object.keys(targetIpa).length > 0) {
-            body.target_ipa = targetIpa;
-        }
-
         try {
-            const resp = await fetch(`https://159.65.170.10:8000${endpoint}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-            const data = await resp.json();
+            if (this.state === 'visitor') {
+                // v8.0.0: Visitors upload audio to WordPress for deferred server-side scoring.
+                // The pronunciation API is never exposed to the browser.
+                const formData = new FormData();
+                formData.append('audio', blob, `phrase-${phraseNum}.${audioFormat}`);
+                formData.append('phrase_num', phraseNum);
+                formData.append('phrase_text', phrase);
+                formData.append('format', audioFormat);
+                formData.append('target_ipa', JSON.stringify(targetIpa));
+                // v8.0.0 FIX: Send temp_id from prior upload so all phrases land in the
+                // same server directory. Eliminates dependency on signed-cookie round-trip
+                // which can fail cross-domain. First upload has no tempId; server creates one.
+                if (this.ipaQuiz.tempId) {
+                    formData.append('temp_id', this.ipaQuiz.tempId);
+                }
 
-            if (!resp.ok) {
-                this.addMessage('assistant', 'Analysis error: ' + (data.detail || 'Unknown error') + '. Try recording again.');
-                this.showIpaPhrase(index);
-                return;
+                const resp = await fetch(this.config.apiUrl + '/store-visitor-audio', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'X-WP-Nonce': this.config.nonce },
+                    body: formData
+                });
+
+                if (!resp.ok) {
+                    const err = await resp.json().catch(() => ({}));
+                    this.addMessage('assistant', 'Upload error: ' + (err.message || 'Could not save recording') + '. Try again.');
+                    this.showIpaPhrase(index);
+                    return;
+                }
+
+                // v8.0.0 FIX: Capture temp_id from server response for subsequent uploads
+                const respData = await resp.json().catch(() => ({}));
+                if (respData.temp_id) {
+                    this.ipaQuiz.tempId = respData.temp_id;
+                }
+
+                // Placeholder result — scores computed server-side after registration
+                this.ipaQuiz.results.push({ phrase, data: { words: [] }, audioUrl });
+
+                const done = this.ipaQuiz.currentIndex + 1;
+                const total = this.ipaQuiz.phrases.length;
+                const msg = (this.config.audioQuizPhraseCompleteMessage || 'Recorded! {current} of {total} complete.')
+                    .replace('{current}', done).replace('{total}', total);
+                this.addMessage('assistant', msg);
+
+            } else {
+                // Guests and members: call pronunciation API directly for real-time scoring
+                const buf = await blob.arrayBuffer();
+                const bytes = new Uint8Array(buf);
+                let binary = '';
+                for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+                const b64 = btoa(binary);
+
+                const endpoint = words.length === 1 ? '/analyze' : '/analyze-phrase';
+                const body = { audio: b64, target_text: phrase, format: audioFormat };
+                if (endpoint === '/analyze-phrase' && Object.keys(targetIpa).length > 0) {
+                    body.target_ipa = targetIpa;
+                }
+
+                const resp = await fetch(`https://api.lesaep.com:8000${endpoint}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    this.addMessage('assistant', 'Analysis error: ' + (data.detail || 'Unknown error') + '. Try recording again.');
+                    this.showIpaPhrase(index);
+                    return;
+                }
+
+                this.ipaQuiz.results.push({ phrase, data, audioUrl });
+                this.showIpaPhraseResult(data, audioUrl, phrase, phraseNum);
             }
-
-            this.ipaQuiz.results.push({ phrase, data, audioUrl });
-            this.showIpaPhraseResult(data, audioUrl, phrase, phraseNum);
 
             this.ipaQuiz.currentIndex++;
             if (this.ipaQuiz.currentIndex < this.ipaQuiz.phrases.length) {
@@ -3022,8 +3297,8 @@ class floscApp {
             }
 
         } catch (e) {
-            this.logError('[FLOSC IPA] Analysis failed', e);
-            this.addMessage('assistant', 'Could not connect to pronunciation engine. Please check your connection and try again.');
+            this.logError('[FLOSC IPA] Recording failed', e);
+            this.addMessage('assistant', 'Could not process recording. Please check your connection and try again.');
             this.showIpaPhrase(index);
         }
     }
@@ -3073,14 +3348,21 @@ class floscApp {
         this.addMessage('assistant', h, true);
     }
 
-    showIpaQuizSummary() {
-        const results = this.ipaQuiz.results;
-        const allWords = results.flatMap(r => r.data.words || [{ word: r.data.target_text, expected_ipa: r.data.expected_ipa, phonemes: r.data.phonemes }]);
+    showIpaPhraseResultsAfterLogin(result) {
+        // Renders full pronunciation assessment results after login.
+        // Called by checkPendingQuizResults() when quizType === 'ipa_audio'.
+        // result.phraseResults: array of {phrase, data} from the pre-login quiz.
+        // result.wordIpa: the static reference IPA dictionary (espeak, mw, da1ni5).
+        const phraseResults = result.phraseResults;
+        const wordIpa = result.wordIpa || {};
+        const score = result.score;
+
+        // Derive per-phrase stats for summary display
+        const allWords = phraseResults.flatMap(r => r.data.words || [{ word: r.data.target_text, expected_ipa: r.data.expected_ipa, phonemes: r.data.phonemes }]);
         const allPh = allWords.flatMap(w => w.phonemes);
         const total = allPh.length;
-        const avg = total ? allPh.reduce((s, p) => s + p.confidence, 0) / total : 0;
-        const score = Math.round(avg * 100);
 
+        // Weakest phonemes across all phrases
         const phonemeScores = {};
         allPh.forEach(p => {
             if (!phonemeScores[p.ipa]) phonemeScores[p.ipa] = [];
@@ -3092,34 +3374,189 @@ class floscApp {
             .slice(0, 5);
 
         const scoreClass = score >= 70 ? '' : score >= 40 ? 'medium-score' : 'low-score';
+        const cl = c => c >= 0.5 ? 'high' : c >= 0.1 ? 'med' : 'low';
+        const cc = c => c >= 0.5 ? 'var(--flosc-ipa-high)' : c >= 0.1 ? 'var(--flosc-ipa-med)' : 'var(--flosc-ipa-low)';
 
-        let h = `<div class="flosc-ipa-final ${scoreClass}">`;
-        h += `<div class="flosc-ipa-final-title">Pronunciation Assessment Complete</div>`;
-        h += `<div class="flosc-quiz-score-circle" style="--score-percent: ${score}%"><span class="flosc-quiz-score-value">${score}%</span></div>`;
-        h += `<div class="flosc-ipa-final-stats">${allWords.length} words &middot; ${total} phonemes across ${results.length} phrases</div>`;
+        // Overall summary
+        let summary = `<div class="flosc-ipa-final ${scoreClass}">`;
+        summary += `<div class="flosc-ipa-final-title">Pronunciation Assessment Results</div>`;
+        summary += `<div class="flosc-quiz-score-circle" style="--score-percent: ${score}%"><span class="flosc-quiz-score-value">${score}%</span></div>`;
+        summary += `<div class="flosc-ipa-final-stats">${allWords.length} words &middot; ${total} phonemes across ${phraseResults.length} phrases</div>`;
 
         if (weakest.length > 0) {
-            h += `<div class="flosc-ipa-weak-title">Sounds to focus on:</div>`;
-            h += `<div class="flosc-ipa-weak-list">`;
+            summary += `<div class="flosc-ipa-weak-title">Sounds to focus on:</div>`;
+            summary += `<div class="flosc-ipa-weak-list">`;
             weakest.forEach(w => {
                 const color = w.avg >= 0.5 ? 'var(--flosc-ipa-high)' : w.avg >= 0.1 ? 'var(--flosc-ipa-med)' : 'var(--flosc-ipa-low)';
-                h += `<span class="flosc-ipa-weak-item"><span class="flosc-ipa-weak-sym">${this.escapeHtml(w.ipa)}</span> <span style="color:${color}">${(w.avg * 100).toFixed(0)}%</span></span>`;
+                summary += `<span class="flosc-ipa-weak-item"><span class="flosc-ipa-weak-sym">${this.escapeHtml(w.ipa)}</span> <span style="color:${color}">${(w.avg * 100).toFixed(0)}%</span></span>`;
             });
-            h += `</div>`;
+            summary += `</div>`;
         }
+        summary += `</div>`;
 
-        h += `</div>`;
-        this.addMessage('assistant', h, true);
+        const introMsg = this.config.audioQuizResultsMessage || 'Welcome! Here are your pronunciation assessment results.';
+        this.addMessage('assistant', introMsg, false);
+        setTimeout(() => { this.addMessage('assistant', summary, true); }, 200);
+
+        // Per-phrase accordions — each phrase is a collapsible <details> block
+        setTimeout(() => {
+            let accordion = `<div class="flosc-ipa-accordion">`;
+            phraseResults.forEach((pr, idx) => {
+                const data = pr.data;
+                const words = data.words || [{ word: data.target_text, expected_ipa: data.expected_ipa, phonemes: data.phonemes }];
+                const phAll = words.flatMap(w => w.phonemes);
+                const phTotal = phAll.length;
+                const phAvg = phTotal ? phAll.reduce((s, p) => s + p.confidence, 0) / phTotal : 0;
+                const phScore = Math.round(phAvg * 100);
+
+                accordion += `<details class="flosc-ipa-accordion-item"${idx === 0 ? ' open' : ''}>`;
+                accordion += `<summary class="flosc-ipa-accordion-header">`;
+                accordion += `<span class="flosc-ipa-accordion-phrase">Phrase ${idx + 1}: ${this.escapeHtml(pr.phrase)}</span>`;
+                accordion += `<span class="flosc-ipa-accordion-score" style="color:${cc(phAvg)}">${phScore}%</span>`;
+                accordion += `</summary>`;
+                accordion += `<div class="flosc-ipa-accordion-body">`;
+
+                words.forEach(w => {
+                    const wAvg = w.phonemes.length ? w.phonemes.reduce((s, p) => s + p.confidence, 0) / w.phonemes.length : 0;
+                    const key = w.word.toLowerCase();
+                    const ipaData = wordIpa[key] || {};
+
+                    accordion += `<div class="flosc-ipa-word-card">`;
+                    accordion += `<div class="flosc-ipa-word-head"><span class="flosc-ipa-word">${this.escapeHtml(w.word)}</span><span class="flosc-ipa-word-score" style="color:${cc(wAvg)}">${(wAvg * 100).toFixed(0)}%</span></div>`;
+
+                    accordion += `<div class="flosc-ipa-rows">`;
+                    accordion += `<div class="flosc-ipa-row"><span class="flosc-ipa-label">espeak-ng</span><span class="flosc-ipa-val flosc-ipa-espeak">[${this.escapeHtml(ipaData.espeak || '')}]</span></div>`;
+                    accordion += `<div class="flosc-ipa-row"><span class="flosc-ipa-label">merriam-webster</span><span class="flosc-ipa-val flosc-ipa-mw">[${this.escapeHtml(ipaData.mw || '')}]</span></div>`;
+                    accordion += `<div class="flosc-ipa-row"><span class="flosc-ipa-label">da1ni5</span><span class="flosc-ipa-val flosc-ipa-da1ni5">[${this.escapeHtml((ipaData.da1ni5 || []).join(' | '))}]</span></div>`;
+                    accordion += `<div class="flosc-ipa-row"><span class="flosc-ipa-label">scored as</span><span class="flosc-ipa-val flosc-ipa-scored">[${this.escapeHtml(w.expected_ipa)}]</span></div>`;
+                    accordion += `</div>`;
+
+                    w.phonemes.forEach(p => {
+                        const pct = (p.confidence * 100).toFixed(1);
+                        const barW = Math.max(1, p.confidence * 100);
+                        accordion += `<div class="flosc-ipa-ph"><span class="flosc-ipa-ph-sym">${this.escapeHtml(p.ipa)}</span><div class="flosc-ipa-ph-track"><div class="flosc-ipa-ph-fill flosc-ipa-ph-${cl(p.confidence)}" style="width:${barW}%"></div></div><span class="flosc-ipa-ph-pct" style="color:${cc(p.confidence)}">${pct}%</span></div>`;
+                    });
+
+                    accordion += `</div>`;
+                });
+
+                accordion += `</div></details>`;
+            });
+            accordion += `</div>`;
+            this.addMessage('assistant', accordion, true);
+
+            // Upsell message — configurable, with ranked phoneme placeholders
+            const ranked = result.rankedPhonemes || [];
+            const upsellTpl = this.config.audioQuizUpsellMessage || '';
+            if (upsellTpl && ranked.length >= 4) {
+                const upsellMsg = upsellTpl
+                    .replace('{1st}', ranked[0] || '')
+                    .replace('{2nd}', ranked[1] || '')
+                    .replace('{3rd}', ranked[2] || '')
+                    .replace('{4th}', ranked[3] || '');
+                setTimeout(() => {
+                    this.addMessage('assistant', upsellMsg, false);
+                }, 300);
+            }
+        }, 500);
+    }
+
+    showIpaQuizSummary() {
+        const results = this.ipaQuiz.results;
+        const allWords = results.flatMap(r => r.data.words || [{ word: r.data.target_text, expected_ipa: r.data.expected_ipa, phonemes: r.data.phonemes }]);
+        const allPh = allWords.flatMap(w => w.phonemes);
+        const total = allPh.length;
+        const avg = total ? allPh.reduce((s, p) => s + p.confidence, 0) / total : 0;
+        const score = Math.round(avg * 100);
+
+        // Build per-phoneme scores — needed for ranking (all states) and display (guest/member)
+        const phonemeScores = {};
+        allPh.forEach(p => {
+            if (!phonemeScores[p.ipa]) phonemeScores[p.ipa] = [];
+            phonemeScores[p.ipa].push(p.confidence);
+        });
+
+        if (this.state === 'visitor') {
+            // Visitors: configurable post-quiz message. No scores, no phoneme data.
+            const completeMsg = (this.config.audioQuizCompleteMessage || 'Pronunciation assessment complete! All {total} phrases recorded and analyzed. Sign up to see your results.')
+                .replace('{total}', results.length);
+            this.addMessage('assistant', completeMsg);
+        } else {
+            // Guests and members: show full summary with score and weakest sounds
+            const weakest = Object.entries(phonemeScores)
+                .map(([ipa, scores]) => ({ ipa, avg: scores.reduce((s, c) => s + c, 0) / scores.length }))
+                .sort((a, b) => a.avg - b.avg)
+                .slice(0, 5);
+
+            const scoreClass = score >= 70 ? '' : score >= 40 ? 'medium-score' : 'low-score';
+
+            let h = `<div class="flosc-ipa-final ${scoreClass}">`;
+            h += `<div class="flosc-ipa-final-title">Pronunciation Assessment Complete</div>`;
+            h += `<div class="flosc-quiz-score-circle" style="--score-percent: ${score}%"><span class="flosc-quiz-score-value">${score}%</span></div>`;
+            h += `<div class="flosc-ipa-final-stats">${allWords.length} words &middot; ${total} phonemes across ${results.length} phrases</div>`;
+
+            if (weakest.length > 0) {
+                h += `<div class="flosc-ipa-weak-title">Sounds to focus on:</div>`;
+                h += `<div class="flosc-ipa-weak-list">`;
+                weakest.forEach(w => {
+                    const color = w.avg >= 0.5 ? 'var(--flosc-ipa-high)' : w.avg >= 0.1 ? 'var(--flosc-ipa-med)' : 'var(--flosc-ipa-low)';
+                    h += `<span class="flosc-ipa-weak-item"><span class="flosc-ipa-weak-sym">${this.escapeHtml(w.ipa)}</span> <span style="color:${color}">${(w.avg * 100).toFixed(0)}%</span></span>`;
+                });
+                h += `</div>`;
+            }
+
+            h += `</div>`;
+            this.addMessage('assistant', h, true);
+        }
 
         this.quiz.completedAt = Date.now();
         this.quiz.score = score;
 
+        // Store detailed per-phrase results so they survive until after login.
+        // checkPendingQuizResults() reads this to display full results to guests.
+        const phraseResults = results.map(r => ({
+            phrase: r.phrase,
+            data: r.data
+        }));
+
+        // Rank all phonemes worst→best across all phrases
+        const phonemeMap = this.config.audioQuizPhonemeLessonMap || {};
+        const rankedPhonemes = Object.entries(phonemeScores)
+            .map(([ipa, scores]) => ({ ipa, avg: scores.reduce((s, c) => s + c, 0) / scores.length }))
+            .sort((a, b) => a.avg - b.avg);
+
+        // Filter to phonemes that have a lesson mapping, take 10 worst
+        const mappedWorst = rankedPhonemes.filter(p => phonemeMap[p.ipa] !== undefined).slice(0, 10);
+
+        // Each phoneme maps to an array of lesson numbers (one phoneme can appear in multiple lessons).
+        // Flatten all lesson numbers into a single de-duplicated array for the Free Lesson Manager.
+        const incorrectLessonNums = [...new Set(mappedWorst.flatMap(p => {
+            const val = phonemeMap[p.ipa];
+            return Array.isArray(val) ? val : [val];
+        }))];
+
+        // v8.0.0: Build ranked worst lessons array (ordered worst→best) for Free Lesson Manager.
+        // Each entry: {ipa, lessons: [lesson_nums]}
+        const rankedWorstLessons = mappedWorst.map(p => ({
+            ipa: p.ipa,
+            lessons: Array.isArray(phonemeMap[p.ipa]) ? phonemeMap[p.ipa] : [phonemeMap[p.ipa]]
+        }));
+
+        // Store ranked phoneme names for upsell display after login
+        const rankedForUpsell = mappedWorst.map(p => p.ipa);
+
         this.storeQuizScore({
             score: score,
-            correct: [],
+            incorrect: incorrectLessonNums,
+            ranked_worst_lessons: rankedWorstLessons,
             total: total,
             passed: score >= 50,
-            userAnswer: `IPA audio quiz: ${results.length} phrases`
+            userAnswer: `IPA audio quiz: ${results.length} phrases`,
+            quizType: 'ipa_audio',
+            phraseResults: phraseResults,
+            wordIpa: this.ipaQuiz.wordIpa,
+            rankedPhonemes: rankedForUpsell,
+            skipServerStore: this.state === 'visitor'  // Server scores visitor audio on register/login
         });
 
         this.onQuizComplete();
@@ -4873,7 +5310,18 @@ Purchased: ${ctx.purchased}
             userAnswer: result.userAnswer,
             quizId: this.quiz.id || 'flosc_sample_data_numbers_quiz'
         };
+        if (result.quizType) quizData.quizType = result.quizType;
+        if (result.phraseResults) quizData.phraseResults = result.phraseResults;
+        if (result.wordIpa) quizData.wordIpa = result.wordIpa;
+        if (result.rankedPhonemes) quizData.rankedPhonemes = result.rankedPhonemes;
+        // v8.0.0: For visitors taking the IPA audio quiz, mark that real scores
+        // are pending server-side scoring (not available in localStorage yet).
+        if (result.skipServerStore) quizData.pendingServerScore = true;
         localStorage.setItem('flosc_quiz_result', JSON.stringify(quizData));
+        
+        // v8.0.0: Visitors with audio quiz — server scores on register/login.
+        // No need to set the prelogin score cookie (it would contain score: 0).
+        if (result.skipServerStore) return;
         
         // Also store via API (sets cookie for server-side access)
         // v1.8.3: Convert text items to 1-indexed lesson POSITIONS so PHP
@@ -4899,9 +5347,10 @@ Purchased: ${ctx.purchased}
                 body: JSON.stringify({
                     score: result.score,
                     quiz_id: this.quiz.id || 'flosc_sample_data_numbers_quiz',
-                    quiz_type: 'sequence',
-                    correct: correctPositions,
-                    incorrect: missedPositions,
+                    quiz_type: result.quizType || 'sequence',
+                    correct: result.incorrect ? [] : correctPositions,
+                    incorrect: result.incorrect || missedPositions,
+                    ranked_worst_lessons: result.ranked_worst_lessons || [],
                     details: quizData
                 })
             });
@@ -4925,6 +5374,12 @@ Purchased: ${ctx.purchased}
         // Trigger login gate IVR message
         setTimeout(() => {
             this.checkAutoMessages();
+            // v8.0.0: Visitors must sign up to see scored results.
+            // Show auth modal directly — the IVR completion message already
+            // told them to sign up; this provides the actual form.
+            if (this.state === 'visitor') {
+                setTimeout(() => this.showAuthModal(), 800);
+            }
         }, 500);
     }
     
@@ -5259,7 +5714,16 @@ Purchased: ${ctx.purchased}
         }
         
         try {
-            const response = await this.callAPI(message, ivrGuidance);
+            let response;
+            try {
+                response = await this.callAPI(message, ivrGuidance);
+            } catch (firstErr) {
+                // v8.0.0 FIX: Retry once with fresh nonce — handles stale-nonce after
+                // registration page reload or long idle sessions.
+                this.log('[FLOSC] Chat failed, refreshing nonce and retrying:', firstErr.message);
+                await this.refreshNonce().catch(() => {});
+                response = await this.callAPI(message, ivrGuidance);
+            }
             this.hideTyping();
             
             if (response) {
@@ -6006,22 +6470,52 @@ Purchased: ${ctx.purchased}
                 if (age < 3600000) { // 1 hour
                     this.log('[FLOSC] Revealing quiz score after login:', result.score);
                     
-                    // Show the score they earned before signup
-                    const correct = result.correct || 0;
-                    const total = result.total || 10;
-                    const incorrect = total - correct;
+                    // v8.0.0: Scores were computed server-side during register/login.
+                    // The real results are in this.user.lastQuizData (from FLOSC_CONFIG).
+                    // localStorage has wordIpa (IPA reference dict) but placeholder phraseResults.
+                    if (result.pendingServerScore) {
+                        const wordIpa = result.wordIpa || {};
+                        localStorage.removeItem('flosc_quiz_result');
+                        this.ivr.context.quiz_completed = true;
+                        this.ivr.context.quiz_taken = true;
+
+                        // Display server-scored results if available
+                        const serverData = this.user?.lastQuizData;
+                        if (serverData && serverData.quiz_type === 'ipa_audio' && serverData.phrase_results) {
+                            this.showIpaPhraseResultsAfterLogin({
+                                score: serverData.score,
+                                phraseResults: serverData.phrase_results,
+                                wordIpa: wordIpa,
+                                rankedPhonemes: serverData.ranked_phonemes || [],
+                                quizType: 'ipa_audio'
+                            });
+                            this.ivr.context.score = serverData.score;
+                            this.ivr.context.quiz_results_shown = true;
+                            this.ivr.context.first_message_after_quiz = true;
+                            this.ivr.context.first_message_after_login = true;
+                        }
+                        return;
+                    }
                     
-                    this.addMessage('assistant', `🎉 Welcome! Here are your quiz results:`);
-                    setTimeout(() => {
-                        this.showQuizResults(result.score, correct, incorrect);
-                    }, 300);
+                    // Pronunciation assessment: show detailed per-phrase results
+                    if (result.quizType === 'ipa_audio' && result.phraseResults && result.phraseResults.length > 0) {
+                        this.showIpaPhraseResultsAfterLogin(result);
+                    } else {
+                        // Generic quiz: show simple score
+                        const correct = result.correct || 0;
+                        const total = result.total || 10;
+                        const incorrect = total - correct;
+                        
+                        this.addMessage('assistant', `Welcome! Here are your quiz results:`);
+                        setTimeout(() => {
+                            this.showQuizResults(result.score, correct, incorrect);
+                        }, 300);
+                    }
                     
                     // Clear the stored result
                     localStorage.removeItem('flosc_quiz_result');
                     
-                    // Update context
-                    this.ivr.context.first_message_after_quiz = true;
-                    this.ivr.context.first_message_after_login = true;
+                    // Update context (buildIVRContext already set first_message_after_* from transients)
                     this.ivr.context.score = result.score;
                     this.ivr.context.quiz_taken = true;
                     this.ivr.context.quiz_results_shown = true;
@@ -6032,19 +6526,9 @@ Purchased: ${ctx.purchased}
             this.logError('[FLOSC] Could not check pending quiz results', e);
         }
         
-        if (this.user?.justCompletedQuiz) {
-            this.ivr.context.first_message_after_quiz = true;
-        }
-        
-        // v1.4.6: Check if user just logged in (transient set by wp_login hook)
-        if (this.user?.justLoggedIn) {
-            this.ivr.context.first_message_after_login = true;
-        }
-        
         // v1.4.6: Check if user just completed a purchase (transient set by complete_purchase/webhook)
-        if (this.user?.justPurchased) {
-            this.ivr.context.first_message_after_purchase = true;
-        }
+        // v8.0.0: first_message_after_quiz and first_message_after_login are now set in buildIVRContext()
+        // from this.user.justCompletedQuiz / this.user.justLoggedIn PHP transients.
         
         // v1.6.2: Single check after all flags are set (debounced, so rapid calls coalesce)
         if (this.user?.justCompletedQuiz || this.user?.justLoggedIn || this.user?.justPurchased) {
@@ -6235,8 +6719,10 @@ Purchased: ${ctx.purchased}
         modal.style.display = 'flex';
         modal.dataset.offerId = offerId;
 
-        // v3.0.5: Update modal price/name/description from offer data (not hardcoded identity)
         const offer = this.getOfferData(offerId);
+        const isSubscription = (offer?.type === 'subscription') || (offer?.subscription?.plans);
+        
+        // Update modal header from offer data
         const priceEl = document.getElementById('paymentPrice');
         if (priceEl && offer) {
             const price = offer.display_price || (offer.price ? `$${offer.price}` : '') || (offer.pricing?.price ? `$${offer.pricing.price}` : '');
@@ -6250,40 +6736,248 @@ Purchased: ${ctx.purchased}
         if (descEl && offer?.description) {
             descEl.textContent = offer.description;
         }
-        // v3.0.5: Update Stripe "Pay" button text with offer price
-        const payBtnText = modal.querySelector('.flosc-pay-btn-text');
-        if (payBtnText && offer) {
-            const btnPrice = offer.display_price || (offer.price ? `$${offer.price}` : '') || (offer.pricing?.price ? `$${offer.pricing.price}` : '');
-            payBtnText.textContent = btnPrice ? `Pay ${btnPrice}` : 'Pay';
-        }
         
         const paypalContainer = document.getElementById('paypal-button-container');
         const separator = document.getElementById('payment-separator');
         const stripeForm = document.getElementById('stripe-payment-form');
         const payBtn = document.getElementById('payBtn');
         
-        // v3.0.7: Respect offer-level processor setting
-        const offerProcessor = offer?.pricing?.processor || '';
-        const hasPayPal = !!this.config.paypalClientId && typeof paypal !== 'undefined'
-                          && (offerProcessor === 'paypal' || !offerProcessor);
-        const hasStripe  = !!this.config.stripeKey && !!this.stripe
-                          && (offerProcessor === 'stripe' || !offerProcessor);
+        const hasPayPal = !!this.config.paypalClientId && typeof paypal !== 'undefined';
 
-        // v1.7.1: If neither payment processor is actually available, fall back to sandbox
-        if (!hasPayPal && !hasStripe) {
+        if (!hasPayPal) {
             modal.style.display = 'none';
             this.openSandboxPurchase();
             return;
         }
 
-        // v1.6.9: Render PayPal buttons if configured
+        // Hide Stripe for now (PayPal subscriptions only)
+        if (stripeForm) stripeForm.style.display = 'none';
+        if (payBtn) payBtn.style.display = 'none';
+        if (separator) separator.style.display = 'none';
+
         if (hasPayPal && paypalContainer) {
             paypalContainer.style.display = 'block';
-            paypalContainer.innerHTML = ''; // Clear previous buttons
+            paypalContainer.innerHTML = '';
 
-            // v3.0.9: Defer render by one frame so the modal's display:flex CSS has
-            // fully applied and the container has non-zero dimensions. PayPal's SDK
-            // measures the container at render time — zero dimensions cause "Load failed".
+            if (isSubscription) {
+                // ====================================================
+                // SUBSCRIPTION FLOW — plan picker + PayPal sub buttons
+                // ====================================================
+                this._renderSubscriptionCheckout(offerId, offer, paypalContainer);
+            } else {
+                // ====================================================
+                // ONE-TIME FLOW — existing createOrder / capture flow
+                // ====================================================
+                this._renderOneTimePayPal(offerId, paypalContainer);
+            }
+        }
+
+        // Close button
+        const closeBtn = document.getElementById('paymentModalClose');
+        if (closeBtn) {
+            closeBtn.onclick = () => { modal.style.display = 'none'; };
+        }
+    }
+
+    /**
+     * Subscription checkout: plan picker (monthly/yearly) + PayPal subscription buttons.
+     * Plan IDs come from config (pre-loaded) or fetched on-the-fly via /paypal/get-plans.
+     */
+    async _renderSubscriptionCheckout(offerId, offer, container) {
+        // Plan picker UI
+        container.innerHTML = `
+            <div class="flosc-plan-picker" style="margin-bottom:16px;">
+                <div style="font-weight:600;font-size:15px;margin-bottom:10px;text-align:center;">Choose your plan:</div>
+                <div style="display:flex;gap:10px;justify-content:center;">
+                    <label class="flosc-plan-option" data-plan="yearly" style="flex:1;max-width:180px;padding:14px 10px;border:2px solid #10b981;border-radius:10px;text-align:center;cursor:pointer;background:#ecfdf5;position:relative;">
+                        <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;font-size:11px;padding:2px 8px;border-radius:8px;white-space:nowrap;">Best Value</div>
+                        <input type="radio" name="flosc_plan" value="yearly" checked style="display:none;">
+                        <div style="font-size:20px;font-weight:700;">$100</div>
+                        <div style="font-size:13px;color:#065f46;">/year</div>
+                        <div style="font-size:11px;color:#10b981;margin-top:4px;">Save $20!</div>
+                    </label>
+                    <label class="flosc-plan-option" data-plan="monthly" style="flex:1;max-width:180px;padding:14px 10px;border:2px solid #d1d5db;border-radius:10px;text-align:center;cursor:pointer;background:#fff;">
+                        <input type="radio" name="flosc_plan" value="monthly" style="display:none;">
+                        <div style="font-size:20px;font-weight:700;">$10</div>
+                        <div style="font-size:13px;color:#374151;">/month</div>
+                    </label>
+                </div>
+            </div>
+            <div id="flosc-sub-paypal-btn" style="min-height:55px;"></div>
+            <div id="flosc-sub-status" style="text-align:center;font-size:13px;color:#666;margin-top:8px;"></div>
+        `;
+
+        // Plan selection toggle styling
+        const planOptions = container.querySelectorAll('.flosc-plan-option');
+        planOptions.forEach(opt => {
+            opt.addEventListener('click', () => {
+                planOptions.forEach(o => {
+                    o.style.borderColor = '#d1d5db';
+                    o.style.background = '#fff';
+                });
+                opt.style.borderColor = '#10b981';
+                opt.style.background = '#ecfdf5';
+                opt.querySelector('input').checked = true;
+                // Re-render PayPal buttons for new plan
+                this._mountSubscriptionButtons(offerId, container);
+            });
+        });
+
+        // Get plan IDs (from config or fetch)
+        let monthlyPlanId = this.config.paypalMonthlyPlanId || '';
+        let yearlyPlanId = this.config.paypalYearlyPlanId || '';
+
+        if (!monthlyPlanId || !yearlyPlanId) {
+            const statusEl = container.querySelector('#flosc-sub-status');
+            if (statusEl) statusEl.textContent = 'Setting up payment plans...';
+            try {
+                await this.refreshNonce();
+                const res = await this.authFetch(this.config.apiUrl + '/paypal/get-plans', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.config.nonce },
+                    body: JSON.stringify({ flow_id: this.config.flowId || '' }),
+                });
+                const data = await res.json();
+                if (data.monthly_plan_id && data.yearly_plan_id) {
+                    monthlyPlanId = data.monthly_plan_id;
+                    yearlyPlanId = data.yearly_plan_id;
+                    this.config.paypalMonthlyPlanId = monthlyPlanId;
+                    this.config.paypalYearlyPlanId = yearlyPlanId;
+                } else {
+                    throw new Error(data.message || 'Could not get plan IDs');
+                }
+            } catch (err) {
+                this.logError('[FLOSC-CHECKOUT] Failed to get PayPal plans:', err);
+                const statusEl2 = container.querySelector('#flosc-sub-status');
+                if (statusEl2) statusEl2.innerHTML = '<span style="color:#dc2626;">Could not set up payment plans. Please try again.</span>';
+                return;
+            }
+            if (statusEl) statusEl.textContent = '';
+        }
+
+        this._mountSubscriptionButtons(offerId, container);
+    }
+
+    /**
+     * Mount (or re-mount) PayPal subscription buttons for the currently selected plan.
+     */
+    _mountSubscriptionButtons(offerId, container) {
+        const btnContainer = container.querySelector('#flosc-sub-paypal-btn');
+        if (!btnContainer) return;
+        btnContainer.innerHTML = '';
+
+        const selectedPlan = container.querySelector('input[name="flosc_plan"]:checked')?.value || 'yearly';
+        const planId = selectedPlan === 'yearly' ? this.config.paypalYearlyPlanId : this.config.paypalMonthlyPlanId;
+
+        if (!planId) {
+            btnContainer.innerHTML = '<div style="text-align:center;color:#dc2626;padding:12px;">Plan not configured.</div>';
+            return;
+        }
+
+        const renderBtns = () => {
+            const btns = paypal.Buttons({
+                style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'subscribe', height: 45 },
+                createSubscription: (data, actions) => {
+                    this.log('[FLOSC-CHECKOUT] Creating subscription: plan=' + planId + ', type=' + selectedPlan);
+                    return actions.subscription.create({ plan_id: planId });
+                },
+                onApprove: async (data) => {
+                    this.log('[FLOSC-CHECKOUT] Subscription approved: subscriptionID=' + data.subscriptionID);
+                    btnContainer.innerHTML = '<div style="text-align:center;padding:16px;color:#666;">Activating your subscription...</div>';
+
+                    try {
+                        await this.refreshNonce();
+                        const res = await this.authFetch(this.config.apiUrl + '/paypal/activate-subscription', {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.config.nonce },
+                            body: JSON.stringify({
+                                subscription_id: data.subscriptionID,
+                                plan_type: selectedPlan,
+                                flow_id: this.config.flowId || '',
+                            }),
+                        });
+                        const result = await res.json();
+
+                        if (result.success) {
+                            // Close modal
+                            const modal = document.getElementById('flosc_modal_payment');
+                            if (modal) modal.style.display = 'none';
+
+                            // Update local user state so IVR conditions reflect purchase
+                            if (this.user) {
+                                this.user.justPurchased = true;
+                                this.user.purchased = true;
+                                this.user.memberLevel = result.member_level || 'lesaep_learners';
+                                this.user.isMember = true;
+                            }
+                            // Update app-level state so buildIVRContext() sees 'member'
+                            this.state = 'member';
+                            this.ivr.context.is_member = true;
+                            this.ivr.context.is_guest = false;
+                            this.ivr.context.purchased = true;
+                            this.ivr.context.first_message_after_purchase = true;
+
+                            // Welcome message
+                            const planLabel = selectedPlan === 'yearly' ? '$100/year' : '$10/month';
+                            this.addMessage('assistant',
+                                `🎉 **Welcome to LeSAEp!** Your ${planLabel} subscription is active.\n\n` +
+                                `You now have full access to all pronunciation lessons, IPA training, audio recordings, and AI coaching.\n\n` +
+                                `**What would you like to do first?**`
+                            );
+
+                            // Trigger post-purchase auto messages after short delay
+                            setTimeout(() => this.checkAutoMessages(), 2000);
+                        } else {
+                            throw new Error(result.message || 'Activation failed');
+                        }
+                    } catch (err) {
+                        this.logError('[FLOSC-CHECKOUT] Subscription activation error:', err);
+                        btnContainer.innerHTML = '<div style="text-align:center;padding:16px;color:#dc2626;">' +
+                            (err.message || 'Failed to activate subscription. Please contact support.') + '</div>';
+                    }
+                },
+                onError: (err) => {
+                    this.logError('[FLOSC-CHECKOUT] PayPal subscription error:', err);
+                    btnContainer.innerHTML = '<div style="text-align:center;padding:16px;color:#dc2626;">PayPal encountered an error. Please try again.</div>';
+                },
+                onCancel: () => {
+                    this.log('[FLOSC-CHECKOUT] Subscription cancelled — re-rendering buttons');
+                    btnContainer.innerHTML = '';
+                    requestAnimationFrame(() => renderBtns());
+                },
+            });
+
+            if (!btns.isEligible()) {
+                btnContainer.innerHTML = '<div style="text-align:center;padding:14px;color:#666;font-size:13px;">PayPal is not available right now.</div>';
+                return;
+            }
+
+            btns.render(btnContainer).catch(err => {
+                this.logError('[FLOSC-CHECKOUT] PayPal subscription render failed:', err);
+                btnContainer.innerHTML = '<div style="text-align:center;padding:14px;color:#dc2626;">PayPal could not load. Please try again.</div>';
+            });
+        };
+
+        // Poll for container dimensions
+        const poll = (attempt = 0) => {
+            const rect = btnContainer.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                renderBtns();
+            } else if (attempt < 40) {
+                setTimeout(() => poll(attempt + 1), 50);
+            } else {
+                renderBtns();
+            }
+        };
+        requestAnimationFrame(() => poll());
+    }
+
+    /**
+     * One-time PayPal payment (existing Orders API flow, kept for non-subscription offers)
+     */
+    _renderOneTimePayPal(offerId, paypalContainer) {
             const renderPayPalButtons = () => {
             const paypalButtonsInstance = paypal.Buttons({
                 style: {
@@ -6455,10 +7149,6 @@ Purchased: ${ctx.purchased}
             });
             }; // end renderPayPalButtons
 
-            // v5.0.2: Poll for container dimensions before rendering PayPal buttons.
-            // PayPal SDK requires non-zero container dimensions. The modal transitions
-            // from display:none to display:flex, but layout isn't instant. 50ms was
-            // insufficient — poll every 50ms up to 2s until container has dimensions.
             const pollAndRender = (attempt = 0) => {
                 const rect = paypalContainer.getBoundingClientRect();
                 if (rect.width > 0 && rect.height > 0) {
@@ -6466,84 +7156,10 @@ Purchased: ${ctx.purchased}
                 } else if (attempt < 40) {
                     setTimeout(() => pollAndRender(attempt + 1), 50);
                 } else {
-                    // Last resort — try anyway after 2s
                     renderPayPalButtons();
                 }
             };
             requestAnimationFrame(() => pollAndRender());
-
-        } else if (paypalContainer) {
-            paypalContainer.style.display = 'none';
-        }
-        
-        // Show separator and Stripe form if both are available
-        if (hasPayPal && hasStripe && separator) {
-            separator.style.display = 'block';
-        } else if (separator) {
-            separator.style.display = 'none';
-        }
-        
-        // Stripe card form
-        if (hasStripe && stripeForm) {
-            stripeForm.style.display = 'block';
-            if (payBtn) payBtn.style.display = 'block';
-
-            const mountPoint = document.getElementById('card-element');
-            if (mountPoint) {
-                // Unmount previous card element if any
-                if (this.cardElement) {
-                    this.cardElement.unmount();
-                    this.cardElement.destroy();
-                }
-
-                const elements = this.stripe.elements();
-                this.cardElement = elements.create('card', {
-                    style: {
-                        base: {
-                            fontSize: '16px',
-                            color: '#374151',
-                            '::placeholder': { color: '#9ca3af' },
-                        },
-                    },
-                });
-                this.cardElement.mount(mountPoint);
-
-                const errorEl = document.getElementById('card-errors');
-
-                // Enable pay button when card is complete
-                this.cardElement.on('change', (event) => {
-                    if (event.complete) {
-                        payBtn.disabled = false;
-                    } else {
-                        payBtn.disabled = true;
-                    }
-                    if (event.error) {
-                        errorEl.textContent = event.error.message;
-                    } else {
-                        errorEl.textContent = '';
-                    }
-                });
-
-                // Remove old listener, add new
-                const newPayBtn = payBtn.cloneNode(true);
-                payBtn.parentNode.replaceChild(newPayBtn, payBtn);
-                newPayBtn.disabled = true;
-
-                newPayBtn.addEventListener('click', async () => {
-                    await this.processModalPayment(offerId, newPayBtn, errorEl);
-                });
-            }
-        } else if (stripeForm) {
-            // No Stripe — hide card form (PayPal only mode)
-            stripeForm.style.display = 'none';
-            if (payBtn) payBtn.style.display = 'none';
-        }
-
-        // Close button
-        const closeBtn = document.getElementById('paymentModalClose');
-        if (closeBtn) {
-            closeBtn.onclick = () => { modal.style.display = 'none'; };
-        }
     }
 
     // v1.5.4: Process payment from the modal

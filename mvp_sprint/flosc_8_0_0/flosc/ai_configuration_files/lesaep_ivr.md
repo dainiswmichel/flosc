@@ -149,7 +149,7 @@ MessageType: suggested_user_autoprompt
 MessageStyle: pill
 Icon: 🌟
 UserInput: Upgrade to access all lessons
-Action: show_offer_full_access
+Action: checkout_lesaep_full
 MessageContent: Ready to go all-in on your pronunciation? Upgrading gives you access to every lesson covering all the sounds of Standard American English — plus personalized learning paths and progress tracking.
 MessageConditions: is_guest
 
@@ -371,9 +371,21 @@ MessageConditions: logged_in && first_message_after_login
 ## LeSAEp Prelaunch Offer
 MessageName: lesaep_offer
 MessageType: offer
-OfferID: full_access
-DisplayFormat: card
-MessageContent: 🌟 **Become a LeSAEp Learner.** We're in prelaunch — pay whatever you want (minimum $100/year) to get full access to the complete American English pronunciation course. Early supporters shape what we build next.
+OfferID: lesaep_full
+DisplayFormat: featured
+MessageContent: 🎤 **Pre-Launch Special from Dainis W. Michel — the World's 2nd Best English Teacher.**
+
+You just heard how your accent sounds to a native speaker. Now imagine fixing it — for real.
+
+LeSAEp teaches you every single sound in Standard American English. Lessons, recordings, IPA training, and an AI pronunciation coach — all yours.
+
+**This is a pre-launch price. Early supporters get grandfathered in — this rate stays yours forever, even when the price goes up.**
+
+👉 **$10/month** or **$100/year** (save $20)
+
+I personally check every new sign-up. If you join, I'll reach out to make sure you're getting exactly what you need.
+
+— Dainis W. Michel
 MessageConditions: !is_member && quiz_taken
 
 ---

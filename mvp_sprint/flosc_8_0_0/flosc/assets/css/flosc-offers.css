@@ -915,6 +915,7 @@
     align-items: center;
     gap: 12px;
     margin-bottom: 8px;
+    flex-direction: row-reverse;
 }
 
 .flosc-ipa-record-btn {
@@ -1158,4 +1159,205 @@
     font-family: 'Gentium Plus', 'Charis SIL', serif;
     font-size: 16px;
     font-weight: 600;
+}
+
+/* ── IPA Accordion (post-login phrase results) ── */
+.flosc-ipa-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 100%;
+}
+
+.flosc-ipa-accordion-item {
+    border: 1px solid var(--flosc-border, #e0e0e0);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.flosc-ipa-accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    background: var(--flosc-bg-secondary, #f8f8f8);
+    list-style: none;
+}
+
+.flosc-ipa-accordion-header::-webkit-details-marker {
+    display: none;
+}
+
+.flosc-ipa-accordion-item[open] > .flosc-ipa-accordion-header {
+    border-bottom: 1px solid var(--flosc-border, #e0e0e0);
+}
+
+.flosc-ipa-accordion-phrase {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.flosc-ipa-accordion-score {
+    flex-shrink: 0;
+    font-weight: 700;
+    margin-left: 12px;
+}
+
+.flosc-ipa-accordion-body {
+    padding: 12px 14px;
+}
+
+/* ============================================
+   IPA RECORDING — WAVEFORM VISUALIZER
+   ============================================ */
+
+.flosc-ipa-waveform {
+    flex: 1;
+    height: 40px;
+    position: relative;
+    overflow: hidden;
+}
+
+.flosc-ipa-waveform-idle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 100%;
+}
+
+.flosc-ipa-waveform.active .flosc-ipa-waveform-idle {
+    display: none;
+}
+
+.flosc-ipa-waveform-canvas {
+    display: none;
+    width: 100%;
+    height: 100%;
+}
+
+.flosc-ipa-waveform.active .flosc-ipa-waveform-canvas {
+    display: block;
+}
+
+.flosc-wave-bar {
+    display: inline-block;
+    width: 3px;
+    height: 12px;
+    background: rgba(107, 114, 128, 0.25);
+    border-radius: 2px;
+    animation: flosc-wave-idle 1.4s ease-in-out infinite;
+}
+
+.flosc-wave-bar:nth-child(1) { animation-delay: 0s; }
+.flosc-wave-bar:nth-child(2) { animation-delay: 0.15s; }
+.flosc-wave-bar:nth-child(3) { animation-delay: 0.3s; }
+.flosc-wave-bar:nth-child(4) { animation-delay: 0.45s; }
+.flosc-wave-bar:nth-child(5) { animation-delay: 0.6s; }
+
+@keyframes flosc-wave-idle {
+    0%, 100% { height: 8px; opacity: 0.3; }
+    50% { height: 18px; opacity: 0.5; }
+}
+
+/* ============================================
+   IPA FLY-OFF — POST-RECORD ANIMATION
+   ============================================ */
+
+.flosc-ipa-flyoff {
+    position: relative;
+    height: 0;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.flosc-ipa-fly-symbol {
+    position: fixed;
+    font-size: 16px;
+    font-weight: 600;
+    color: rgb(107, 114, 128);
+    pointer-events: none;
+    z-index: 9999;
+    animation: flosc-ipa-flyup 0.8s ease-out forwards;
+}
+
+@keyframes flosc-ipa-flyup {
+    0% {
+        opacity: 0.73;
+        transform: translate(0, 0) scale(1);
+    }
+    30% {
+        opacity: 0.50;
+        transform: translate(-10px, -30px) scale(0.95);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(-60vw, -60vh) scale(0.5);
+    }
+}
+
+/* ============================================
+   CONSENT GATE
+   ============================================ */
+
+.flosc-consent-card {
+    background: var(--flosc-quiz-inline-bg, #f8fafc);
+    border: 1px solid var(--flosc-quiz-inline-border, #e5e7eb);
+    border-radius: 12px;
+    padding: 20px;
+    margin: 8px 0;
+}
+
+.flosc-consent-header {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--flosc-quiz-inline-text, #111827);
+    margin-bottom: 10px;
+}
+
+.flosc-consent-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--flosc-quiz-inline-text, #111827);
+    margin-bottom: 12px;
+}
+
+.flosc-consent-legal {
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--flosc-checkout-product-desc, #71717a);
+    margin-bottom: 16px;
+}
+
+.flosc-consent-btn {
+    display: block;
+    width: 100%;
+    padding: 12px 24px;
+    background: var(--flosc-quiz-record-bg, #4f46e5);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.flosc-consent-btn:hover {
+    opacity: 0.9;
+}
+
+.flosc-consent-btn.agreed {
+    background: #22c55e;
+    cursor: default;
+}
+
+.flosc-consent-btn:disabled {
+    opacity: 0.7;
 }

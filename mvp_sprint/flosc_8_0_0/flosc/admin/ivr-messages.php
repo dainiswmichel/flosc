@@ -450,11 +450,11 @@ if (isset($_POST['flosc_export_ivr'])) {
 }
 
 // Handle message save/delete
-// v9.2.10: Two save options - DB only or DB + Resync to file
-if (isset($_POST['save_ivr_message']) || isset($_POST['save_ivr_message_resync'])) {
+// Save message: always writes to both DB (live runtime) and IVR file (portable config)
+if (isset($_POST['save_ivr_message'])) {
     check_admin_referer('flosc_save_ivr_message');
     
-    $do_resync = isset($_POST['save_ivr_message_resync']);
+    // DB = live runtime, IVR file = portable config. Always save to both.
     
     $messages = $flow_settings['ivr_messages'] ?? [];
     $phases = $flow_settings['ivr_phases'] ?? [];
@@ -515,13 +515,9 @@ if (isset($_POST['save_ivr_message']) || isset($_POST['save_ivr_message_resync']
         $flow_settings = $fs;
     }
     
-    // v9.2.10: Only resync to file if user clicked "Save and Resync"
-    if ($do_resync) {
-        flosc_auto_export_ivr_to_file();
-        add_settings_error('flosc_settings', 'message_saved', 'Message saved to FLOSC DB and resynced to Active IVR Messages MD file', 'success');
-    } else {
-        add_settings_error('flosc_settings', 'message_saved', 'Message saved to FLOSC DB. Changes appear on frontend. Click "Resync" when ready to save to file.', 'success');
-    }
+    // Always save to both: DB is the live runtime, IVR file is the portable config
+    flosc_auto_export_ivr_to_file();
+    add_settings_error('flosc_settings', 'message_saved', 'Saved to FLOSC DB (live) and IVR file (portable config).', 'success');
 }
 
 if (isset($_GET['delete_message']) && isset($_GET['phase'])) {
@@ -787,7 +783,7 @@ function floscTestAPI() {
 <div class="flosc-info-box" style="margin-bottom: 20px;">
     <strong>💾 FLOSC IVR Messages</strong>
     <p>All messages across every phase, in one scrollable page. Click any message header to expand its editor. Save individually.</p>
-    <p style="margin-top: 8px;"><strong>Workflow:</strong> Expand → Edit → Save to DB → Changes appear on frontend → "Resync" to write to file</p>
+    <p style="margin-top: 8px;"><strong>Workflow:</strong> Expand → Edit → Save → Changes go live and sync to IVR file</p>
 </div>
 
 <?php if ($import_preview !== null):
@@ -992,10 +988,6 @@ $total_count = count($messages);
                 
                 <table class="form-table">
                     <tr>
-                        <th>Display Name</th>
-                        <td><input type="text" name="message_name" value="<?php echo esc_attr($msg['name'] ?? ''); ?>" class="regular-text"></td>
-                    </tr>
-                    <tr>
                         <th>Phase</th>
                         <td>
                             <select name="message_phase">
@@ -1006,25 +998,33 @@ $total_count = count($messages);
                         </td>
                     </tr>
                     <tr>
+                        <th>Message ID</th>
+                        <td><input type="text" name="message_name" value="<?php echo esc_attr($msg['name'] ?? ''); ?>" class="regular-text"></td>
+                    </tr>
+                    <tr>
                         <th>Type</th>
                         <td>
                             <select name="message_type" onchange="floscToggleOfferFields(this, '<?php echo esc_js($msg_id); ?>')">
-                                <option value="auto" <?php selected($msg['type'] ?? '', 'auto'); ?>>Auto (bot-initiated)</option>
-                                <option value="suggested_user_autoprompt" <?php selected($msg['type'] ?? '', 'suggested_user_autoprompt'); ?>>Suggested User AutoPrompt</option>
+                                <option value="auto" <?php selected($msg['type'] ?? '', 'auto'); ?>>Auto (bot sends automatically)</option>
+                                <option value="suggested_user_autoprompt" <?php selected($msg['type'] ?? '', 'suggested_user_autoprompt'); ?>>Pill Button (user clicks to send)</option>
                                 <option value="offer" <?php selected($msg['type'] ?? '', 'offer'); ?>>Offer</option>
                             </select>
                         </td>
                     </tr>
                     <tr>
-                        <th>Content</th>
-                        <td>
-                            <textarea name="message_content" rows="4" class="large-text"><?php echo esc_textarea($msg['content'] ?? ''); ?></textarea>
-                            <p class="description">Variables: {name}, {score}, {product_name}, {price}</p>
-                        </td>
-                    </tr>
-                    <tr>
                         <th>Conditions</th>
-                        <td><input type="text" name="message_conditions" value="<?php echo esc_attr($msg['conditions'] ?? ''); ?>" class="large-text" placeholder="e.g. is_visitor && first_show_session"></td>
+                        <td>
+                            <input type="text" name="message_conditions" value="<?php echo esc_attr($msg['conditions'] ?? ''); ?>" class="large-text" placeholder="e.g. is_visitor && first_show_session">
+                            <details style="margin-top: 6px; font-size: 12px; color: #666;">
+                                <summary style="cursor: pointer; color: #2271b1;">Available conditions reference</summary>
+                                <div style="margin-top: 6px; line-height: 1.8;">
+                                    <strong>Boolean flags:</strong> <code>is_visitor</code>, <code>logged_in</code>, <code>quiz_taken</code>, <code>purchased</code>, <code>first_show_session</code>, <code>first_show_ever</code>, <code>offer_shown</code>, <code>offer_clicked</code>, <code>offer_dismissed</code>, <code>timer_expired</code>, <code>email_collected</code>, <code>has_active_sub</code><br>
+                                    <strong>Numeric:</strong> <code>score &gt;= 80</code>, <code>message_count &gt; 3</code>, <code>session_seconds &gt; 60</code><br>
+                                    <strong>String:</strong> <code>command == "take_quiz"</code>, <code>quiz_id == "ipa_quiz_01"</code><br>
+                                    <strong>Operators:</strong> <code>&amp;&amp;</code> (AND), <code>||</code> (OR), <code>!</code> (NOT)
+                                </div>
+                            </details>
+                        </td>
                     </tr>
                     <tr>
                         <th>Style</th>
@@ -1041,12 +1041,31 @@ $total_count = count($messages);
                         <td><input type="text" name="message_icon" value="<?php echo esc_attr($msg['icon'] ?? ''); ?>" class="small-text" placeholder="💬"></td>
                     </tr>
                     <tr>
-                        <th>User Input</th>
-                        <td><input type="text" name="message_user_input" value="<?php echo esc_attr($msg['user_input'] ?? ''); ?>" class="regular-text" placeholder="Button text for AutoPrompts"></td>
+                        <th>User Input Prompt Label Text</th>
+                        <td><input type="text" name="message_user_input" value="<?php echo esc_attr($msg['user_input'] ?? ''); ?>" class="regular-text" placeholder="Button text for pill buttons"></td>
                     </tr>
                     <tr>
-                        <th>Action</th>
-                        <td><input type="text" name="message_action" value="<?php echo esc_attr($msg['action'] ?? ''); ?>" class="regular-text" placeholder="show_offer:offer_001, start_quiz, navigate:/lessons"></td>
+                        <th>Chatbot Response Content</th>
+                        <td>
+                            <textarea name="message_content" rows="4" class="large-text"><?php echo esc_textarea($msg['content'] ?? ''); ?></textarea>
+                            <p class="description">Variables: {name}, {score}, {product_name}, {price}</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Action After Chatbot Response</th>
+                        <td>
+                            <input type="text" name="message_action" value="<?php echo esc_attr($msg['action'] ?? ''); ?>" class="regular-text" placeholder="show_offer:offer_001, start_quiz, navigate:/lessons">
+                            <details style="margin-top: 6px; font-size: 12px; color: #666;">
+                                <summary style="cursor: pointer; color: #2271b1;">Available actions reference</summary>
+                                <div style="margin-top: 6px; line-height: 1.8;">
+                                    <strong>Quiz:</strong> <code>open_quiz:{id}</code>, <code>start_quiz</code><br>
+                                    <strong>Offers:</strong> <code>show_offer:{id}</code>, <code>checkout:{id}</code><br>
+                                    <strong>Navigation:</strong> <code>navigate:{url}</code>, <code>open_registration</code>, <code>open_free_lesson</code><br>
+                                    <strong>Chat flow:</strong> <code>collect_email</code>, <code>collect_name</code>, <code>sandbox_purchase</code><br>
+                                    <strong>Other:</strong> <code>open_login</code>, <code>dismiss</code>, <code>close_chat</code>
+                                </div>
+                            </details>
+                        </td>
                     </tr>
                 </table>
                 
@@ -1080,8 +1099,7 @@ $total_count = count($messages);
                 </div>
                 
                 <div style="display: flex; gap: 8px; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee;">
-                    <button type="submit" name="save_ivr_message" class="button button-primary">💾 Save to DB</button>
-                    <button type="submit" name="save_ivr_message_resync" class="button button-secondary">💾 Save & Resync to File</button>
+                    <button type="submit" name="save_ivr_message" class="button button-primary">💾 Save</button>
                     <span style="font-size: 11px; color: #999; margin-left: auto;">ID: <?php echo esc_html($msg_id); ?></span>
                 </div>
             </form>
@@ -1098,7 +1116,6 @@ $total_count = count($messages);
                 <input type="hidden" name="message_id" value="<?php echo esc_attr($new_id); ?>">
                 <h4 style="margin: 0 0 12px;">✨ New <?php echo esc_html($pm['label']); ?> Message</h4>
                 <table class="form-table">
-                    <tr><th>Display Name</th><td><input type="text" name="message_name" value="" class="regular-text" required placeholder="Welcome Message"></td></tr>
                     <tr>
                         <th>Phase</th>
                         <td>
@@ -1109,18 +1126,32 @@ $total_count = count($messages);
                             </select>
                         </td>
                     </tr>
+                    <tr><th>Message ID</th><td><input type="text" name="message_name" value="" class="regular-text" required placeholder="Welcome Message"></td></tr>
                     <tr>
                         <th>Type</th>
                         <td>
                             <select name="message_type" onchange="floscToggleOfferFields(this, '<?php echo esc_js($new_id); ?>')">
-                                <option value="auto">Auto (bot-initiated)</option>
-                                <option value="suggested_user_autoprompt">Suggested User AutoPrompt</option>
+                                <option value="auto">Auto (bot sends automatically)</option>
+                                <option value="suggested_user_autoprompt">Pill Button (user clicks to send)</option>
                                 <option value="offer">Offer</option>
                             </select>
                         </td>
                     </tr>
-                    <tr><th>Content</th><td><textarea name="message_content" rows="4" class="large-text" placeholder="Type your message content here..."></textarea></td></tr>
-                    <tr><th>Conditions</th><td><input type="text" name="message_conditions" class="large-text" placeholder="e.g. is_visitor && first_show_session"></td></tr>
+                    <tr>
+                        <th>Conditions</th>
+                        <td>
+                            <input type="text" name="message_conditions" class="large-text" placeholder="e.g. is_visitor && first_show_session">
+                            <details style="margin-top: 6px; font-size: 12px; color: #666;">
+                                <summary style="cursor: pointer; color: #2271b1;">Available conditions reference</summary>
+                                <div style="margin-top: 6px; line-height: 1.8;">
+                                    <strong>Boolean flags:</strong> <code>is_visitor</code>, <code>logged_in</code>, <code>quiz_taken</code>, <code>purchased</code>, <code>first_show_session</code>, <code>first_show_ever</code>, <code>offer_shown</code>, <code>offer_clicked</code>, <code>offer_dismissed</code>, <code>timer_expired</code>, <code>email_collected</code>, <code>has_active_sub</code><br>
+                                    <strong>Numeric:</strong> <code>score &gt;= 80</code>, <code>message_count &gt; 3</code>, <code>session_seconds &gt; 60</code><br>
+                                    <strong>String:</strong> <code>command == "take_quiz"</code>, <code>quiz_id == "ipa_quiz_01"</code><br>
+                                    <strong>Operators:</strong> <code>&amp;&amp;</code> (AND), <code>||</code> (OR), <code>!</code> (NOT)
+                                </div>
+                            </details>
+                        </td>
+                    </tr>
                     <tr>
                         <th>Style</th>
                         <td>
@@ -1132,8 +1163,24 @@ $total_count = count($messages);
                         </td>
                     </tr>
                     <tr><th>Icon</th><td><input type="text" name="message_icon" class="small-text" placeholder="💬"></td></tr>
-                    <tr><th>User Input</th><td><input type="text" name="message_user_input" class="regular-text" placeholder="Button text for AutoPrompts"></td></tr>
-                    <tr><th>Action</th><td><input type="text" name="message_action" class="regular-text" placeholder="show_offer:offer_001"></td></tr>
+                    <tr><th>User Input Prompt Label Text</th><td><input type="text" name="message_user_input" class="regular-text" placeholder="Button text for pill buttons"></td></tr>
+                    <tr><th>Chatbot Response Content</th><td><textarea name="message_content" rows="4" class="large-text" placeholder="Type your message content here..."></textarea></td></tr>
+                    <tr>
+                        <th>Action After Chatbot Response</th>
+                        <td>
+                            <input type="text" name="message_action" class="regular-text" placeholder="show_offer:offer_001">
+                            <details style="margin-top: 6px; font-size: 12px; color: #666;">
+                                <summary style="cursor: pointer; color: #2271b1;">Available actions reference</summary>
+                                <div style="margin-top: 6px; line-height: 1.8;">
+                                    <strong>Quiz:</strong> <code>open_quiz:{id}</code>, <code>start_quiz</code><br>
+                                    <strong>Offers:</strong> <code>show_offer:{id}</code>, <code>checkout:{id}</code><br>
+                                    <strong>Navigation:</strong> <code>navigate:{url}</code>, <code>open_registration</code>, <code>open_free_lesson</code><br>
+                                    <strong>Chat flow:</strong> <code>collect_email</code>, <code>collect_name</code>, <code>sandbox_purchase</code><br>
+                                    <strong>Other:</strong> <code>open_login</code>, <code>dismiss</code>, <code>close_chat</code>
+                                </div>
+                            </details>
+                        </td>
+                    </tr>
                 </table>
                 
                 <div class="flosc-offer-fields-inner" id="offer-fields-<?php echo esc_attr($new_id); ?>" style="display:none;">
@@ -1159,8 +1206,7 @@ $total_count = count($messages);
                 </div>
                 
                 <div style="display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee;">
-                    <button type="submit" name="save_ivr_message" class="button button-primary">💾 Save to DB</button>
-                    <button type="submit" name="save_ivr_message_resync" class="button button-secondary">💾 Save & Resync to File</button>
+                    <button type="submit" name="save_ivr_message" class="button button-primary">💾 Save</button>
                     <button type="button" class="button" onclick="document.getElementById('editor-new-<?php echo $phase_id; ?>').style.display='none';">Cancel</button>
                 </div>
             </form>

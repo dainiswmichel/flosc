@@ -529,6 +529,7 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
             'payments'      => 'Payments',
             'sso'           => 'SSO',
             'chat-logs'     => 'Chat Logs',
+            'documentation' => '📖 Docs',
         ];
         foreach ($tabs as $tab_id => $tab_label):
         ?>
@@ -1107,14 +1108,19 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
         <?php elseif ($active_tab === 'chat-logs'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/chat-logs.php'; ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/ai-corrections.php'; ?>
+
+        <?php elseif ($active_tab === 'documentation'): ?>
+            <?php include FLOSC_PLUGIN_DIR . 'admin/documentation.php'; ?>
             
         <?php endif; ?>
         
+        <?php if ($active_tab !== 'documentation'): ?>
         <p class="submit" style="margin-top: 20px;">
             <button type="submit" name="flosc_save" class="button button-primary button-large">
                 Save Settings for <?php echo esc_html($flow_settings['identity']['name'] ?? $selected_ivr); ?>
             </button>
         </p>
+        <?php endif; ?>
         
         <?php flosc_tab_footer(); ?>
     </form>

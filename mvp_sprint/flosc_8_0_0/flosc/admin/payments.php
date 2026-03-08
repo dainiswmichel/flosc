@@ -138,8 +138,8 @@ $manual_payments_enabled = $flow_settings['manual_payments_enabled'] ?? false;
 <!-- PAYPAL CONFIGURATION -->
 <!-- ============================================ -->
 <hr style="margin: 40px 0;">
-<h3>🅿️ PayPal Configuration <span style="background: #ffc107; color: #000; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">BACKEND NEEDED</span></h3>
-<p class="description">Alternative payment method for users who prefer PayPal over credit cards.</p>
+<h3>🅿️ PayPal Configuration</h3>
+<p class="description">Accept payments via PayPal.</p>
 
 <table class="form-table">
     <tr>
@@ -182,13 +182,45 @@ $manual_payments_enabled = $flow_settings['manual_payments_enabled'] ?? false;
             </select>
         </td>
     </tr>
+    <tr>
+        <th scope="row">Connection Test</th>
+        <td>
+            <button type="button" id="flosc-paypal-test" class="button button-secondary">Test PayPal Connection</button>
+            <span id="flosc-paypal-test-result" style="margin-left: 12px;"></span>
+            <script>
+            document.getElementById('flosc-paypal-test').addEventListener('click', function() {
+                var btn = this;
+                var result = document.getElementById('flosc-paypal-test-result');
+                btn.disabled = true;
+                btn.textContent = 'Testing...';
+                result.textContent = '';
+                fetch(ajaxurl + '?action=flosc_test_paypal&_wpnonce=<?php echo wp_create_nonce("flosc_test_paypal"); ?>')
+                    .then(r => r.json())
+                    .then(data => {
+                        btn.disabled = false;
+                        btn.textContent = 'Test PayPal Connection';
+                        if (data.success) {
+                            result.innerHTML = '<span style="color: #16a34a; font-weight: bold;">\u2705 Connected — ' + data.data.mode + ' mode, ' + data.data.app_name + '</span>';
+                        } else {
+                            result.innerHTML = '<span style="color: #dc2626; font-weight: bold;">\u274c ' + (data.data || 'Connection failed') + '</span>';
+                        }
+                    })
+                    .catch(() => {
+                        btn.disabled = false;
+                        btn.textContent = 'Test PayPal Connection';
+                        result.innerHTML = '<span style="color: #dc2626;">\u274c Network error</span>';
+                    });
+            });
+            </script>
+        </td>
+    </tr>
 </table>
 
 <!-- ============================================ -->
 <!-- MANUAL PAYMENTS -->
 <!-- ============================================ -->
 <hr style="margin: 40px 0;">
-<h3>💵 Manual Payments <span style="background: #ffc107; color: #000; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">BACKEND NEEDED</span></h3>
+<h3>💵 Manual Payments</h3>
 <p class="description">Accept payments via bank transfer, check, or other offline methods. Admin manually confirms payment and grants access.</p>
 
 <table class="form-table">
@@ -227,7 +259,7 @@ Access will be granted within 24 hours of payment confirmation.');
 <!-- ORDER MANAGEMENT -->
 <!-- ============================================ -->
 <hr style="margin: 40px 0;">
-<h3>📦 Order Management <span style="background: #ffc107; color: #000; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">BACKEND NEEDED</span></h3>
+<h3>📦 Order Management</h3>
 <p class="description">View and manage customer orders, refunds, and access grants.</p>
 
 <div class="card" style="max-width: 100%;">

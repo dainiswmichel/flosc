@@ -361,10 +361,25 @@ jQuery(document).ready(function($) {
 $free_lesson_mode = $flow_settings['free_lesson_mode'] ?? 'fixed';
 $free_lesson_count = $flow_settings['free_lesson_count'] ?? 1;
 $free_lesson_proportion = $flow_settings['free_lesson_proportion'] ?? '1/3';
+$free_lesson_selection = $flow_settings['free_lesson_selection'] ?? '3rd_worst';
 $guest_access_days = $flow_settings['guest_access_days'] ?? 0;
 ?>
 
 <table class="form-table">
+    <tr>
+        <th scope="row"><label for="flow_free_lesson_selection">Free Lesson Selection</label></th>
+        <td>
+            <select name="flow_free_lesson_selection" id="flow_free_lesson_selection">
+                <option value="1st_worst" <?php selected($free_lesson_selection, '1st_worst'); ?>>1st Worst Phoneme</option>
+                <option value="2nd_worst" <?php selected($free_lesson_selection, '2nd_worst'); ?>>2nd Worst Phoneme</option>
+                <option value="3rd_worst" <?php selected($free_lesson_selection, '3rd_worst'); ?>>3rd Worst Phoneme</option>
+                <option value="4th_worst" <?php selected($free_lesson_selection, '4th_worst'); ?>>4th Worst Phoneme</option>
+                <option value="random_1" <?php selected($free_lesson_selection, 'random_1'); ?>>1 Random from Worst 10</option>
+                <option value="random_2" <?php selected($free_lesson_selection, 'random_2'); ?>>2 Random from Worst 10</option>
+            </select>
+            <p class="description">For IPA audio quizzes: which phoneme's lesson to give as the free lesson. "Nth Worst" is deterministic; "Random" picks from the 10 weakest phonemes.</p>
+        </td>
+    </tr>
     <tr>
         <th scope="row"><label for="flow_free_lesson_mode">Free Lesson Mode</label></th>
         <td>

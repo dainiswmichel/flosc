@@ -6253,34 +6253,12 @@ Example good response:
     public function handle_sandbox_purchase($request) {
         $user_id = get_current_user_id();
         
-        // v5.0.9: If visitor (not logged in), auto-create a sandbox user so
-        // update_user_meta calls below have a valid user_id to write to.
-        if (!$user_id) {
-            $sandbox_email = 'sandbox_' . wp_rand(100000, 999999) . '_' . time() . '@sandbox.flosc.local';
-            $sandbox_user  = 'flosc_sandbox_' . wp_rand(100000, 999999);
-            $new_user_id   = wp_create_user($sandbox_user, wp_generate_password(24), $sandbox_email);
-            if (is_wp_error($new_user_id)) {
-                return new WP_REST_Response([
-                    'success' => false,
-                    'message' => 'Could not create sandbox account: ' . $new_user_id->get_error_message()
-                ], 500);
-            }
-            // Log them in so the rest of the session recognizes them
-            wp_set_current_user($new_user_id);
-            wp_set_auth_cookie($new_user_id, true);
-            $user_id = $new_user_id;
-            if (FLOSC_DEBUG) {
-                error_log('[FLOSC-SANDBOX] Auto-created sandbox user: ' . $user_id . ' (' . $sandbox_email . ')');
-            }
-        }
-        
-        // v3.0.5: Set flow context so offer lookup finds per-flow data
+        // v5.0.10: Read request params
         $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
         if (!empty($flow_id)) {
             $this->set_flow_context($flow_id);
         }
         
-        // v1.4.0: Get product_id for product-specific purchase
         $product_id = sanitize_text_field($request->get_param('product_id') ?? '');
         $offer_id = sanitize_text_field($request->get_param('offer_id') ?? 'sandbox');
         $amount = sanitize_text_field($request->get_param('amount') ?? '1,000,000,000');
@@ -6289,8 +6267,27 @@ Example good response:
         $numeric_amount = intval(str_replace(',', '', $amount));
         $formatted_amount = '$' . number_format($numeric_amount);
         
-        // Generate fun transaction ID
-        $transaction_id = 'sandbox_' . $user_id . '_' . time() . '_' . wp_rand(1000, 9999);
+        // Generate transaction ID
+        $transaction_id = 'sandbox_' . ($user_id ?: 'visitor') . '_' . time() . '_' . wp_rand(1000, 9999);
+        
+        // v5.0.10: If visitor (not logged in), skip user_meta — just return success.
+        // This is SANDBOX. No real money. No real access needed.
+        // The page reload will handle the rest.
+        if (!$user_id) {
+            if (FLOSC_DEBUG) {
+                error_log('[FLOSC-SANDBOX] Visitor sandbox purchase: ' . $transaction_id . ' amount=' . $formatted_amount);
+            }
+            return new WP_REST_Response([
+                'success' => true,
+                'message' => 'Sandbox purchase completed!',
+                'transaction_id' => $transaction_id,
+                'amount' => $formatted_amount,
+                'member_level' => 'member',
+                'product_id' => $product_id,
+                'product_name' => 'Full Access',
+                'product_icon' => '🎁',
+            ]);
+        }
         
         // v3.0.5: Determine member level — check offer first (flow-aware), then product fallback
         $offer_manager = $this->sale_manager->offers();

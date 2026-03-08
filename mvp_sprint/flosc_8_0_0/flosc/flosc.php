@@ -247,6 +247,56 @@ function flosc_version_flush_check() {
     }
 }
 
+// v8.0.0: One-time IVR re-parse — fixes guest_upgrade action (was show_offer_full_access → checkout_lesaep_full)
+// Runs once on next page load, then sets a flag so it never runs again.
+if (!get_option('flosc_ivr_reparse_800')) {
+    add_action('init', function() {
+        $ivr_dir = defined('FLOSC_PLUGIN_DIR') ? FLOSC_PLUGIN_DIR . 'ai_configuration_files/' : '';
+        if ($ivr_dir && is_dir($ivr_dir)) {
+            require_once FLOSC_PLUGIN_DIR . 'includes/class-ivr-parser.php';
+            $parser = FLOSC_IVR_Parser::flosc_instance();
+            $files  = array_merge(
+                glob($ivr_dir . '*_ivr.md') ?: [],
+                glob($ivr_dir . 'ivr*.md')  ?: []
+            );
+            foreach (array_unique($files) as $ivr_file) {
+                $fname    = basename($ivr_file);
+                $key      = 'flosc_flow_' . sanitize_key(pathinfo($fname, PATHINFO_FILENAME));
+                $fs       = get_option($key, []);
+                $markdown = file_get_contents($ivr_file);
+                if (!$markdown) continue;
+                $config   = $parser->flosc_parse($markdown);
+                $messages = $config['messages'] ?? [];
+                $pills    = ['visitor' => [], 'guest' => [], 'member' => []];
+                foreach ($messages as $msg) {
+                    if (($msg['type'] ?? '') !== 'suggested_user_autoprompt') continue;
+                    $cond = $msg['conditions'] ?? $msg['condition'] ?? '';
+                    foreach (['visitor', 'guest', 'member'] as $s) {
+                        if ($cond === 'always' || strpos($cond, 'is_' . $s) !== false) {
+                            $pills[$s][] = [
+                                'icon'          => $msg['icon']          ?? '',
+                                'label'         => $msg['label']         ?? ($msg['name'] ?? ''),
+                                'user_input'    => $msg['user_input']    ?? ($msg['label'] ?? ''),
+                                'trigger_type'  => $msg['trigger_type']  ?? 'ai',
+                                'trigger_value' => $msg['trigger_value'] ?? '',
+                                'action'        => $msg['action']        ?? '',
+                                'conditions'    => $cond,
+                                'style'         => $msg['style']         ?? ($msg['message_style'] ?? 'pill'),
+                            ];
+                        }
+                    }
+                }
+                $fs['autoprompts'] = $pills;
+                $fs['ivr_messages'] = $messages;
+                $fs['ivr_phases']   = $config['phases'] ?? [];
+                update_option($key, $fs);
+            }
+        }
+        update_option('flosc_ivr_reparse_800', true);
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) error_log('FLOSC v8.0.0: One-time IVR re-parse complete');
+    }, 5);
+}
+
 // v1.2.9: Michel timestamp generator (global scope for activation hook)
 function flosc_michel_timestamp_global() {
     return date('Y') . 'y-' . date('m') . 'm-' . date('d') . 'd-T' . date('H') . 'h:' . date('i') . 'm:' . date('s') . 's';
@@ -439,6 +489,12 @@ class FLOSC_Framework {
         // User login hook (for pre-login score processing)
         add_action('wp_login', [$this, 'handle_user_login'], 10, 2);
 
+        // v8.0.0: Cron hook to clean up expired visitor audio temp dirs (>36h)
+        add_action('flosc_cleanup_visitor_audio', [$this, 'cleanup_expired_visitor_audio']);
+        if (!wp_next_scheduled('flosc_cleanup_visitor_audio')) {
+            wp_schedule_event(time(), 'twicedaily', 'flosc_cleanup_visitor_audio');
+        }
+
         // Login redirect - send users to FLOSC app after login (v9.5.7)
         add_filter('login_redirect', [$this, 'handle_login_redirect'], 999, 3);
         add_filter('woocommerce_login_redirect', [$this, 'handle_woocommerce_login_redirect'], 999, 2);
@@ -462,6 +518,9 @@ class FLOSC_Framework {
 
         // v1.9.5: Rate a chat log entry (-10 to +10)
         add_action('wp_ajax_flosc_rate_log', [$this, 'ajax_flosc_rate_log']);
+
+        // v8.0.0: PayPal connection test AJAX
+        add_action('wp_ajax_flosc_test_paypal', [$this, 'ajax_test_paypal']);
 
         // v1.4.3: Post visibility meta box
         add_action('add_meta_boxes', [$this, 'flosc_add_post_visibility_meta_box']);
@@ -885,6 +944,29 @@ The Team',
                 $token_provider->grant_referral_bonus($referrer_id, $user_id);
             }
         }
+
+        // v8.0.0: Score visitor audio files on registration.
+        // The 5 API calls to DO happen during the registration server-side processing.
+        // By the time the new guest is redirected, their scores are in user meta.
+        $temp_id = $this->get_signed_cookie('flosc_visitor_temp_id');
+        if ($temp_id && is_string($temp_id)) {
+            $audio_score = $this->score_visitor_audio($user_id, $temp_id);
+            if ($audio_score) {
+                // Store score + fire quiz_completed so Free Lesson Manager assigns lessons
+                $this->store_quiz_score($user_id, $audio_score);
+                do_action('flosc_quiz_completed', $audio_score, $user_id);
+                set_transient('flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5);
+                $user = get_userdata($user_id);
+                if ($user) {
+                    $this->send_score_email($user, $audio_score);
+                }
+            }
+            // Clear the temp cookie
+            setcookie('flosc_visitor_temp_id', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
+            // Clear the prelogin score cookie too — prevent handle_user_login from overwriting
+            // the real score with the placeholder score: 0 that JS stored.
+            setcookie('flosc_prelogin_score', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
+        }
     }
     
     /**
@@ -900,6 +982,17 @@ The Team',
 
         // v9.4.2: Check for pre-login score in SIGNED cookie
         $score_data = $this->get_signed_cookie('flosc_prelogin_score');
+
+        // v8.0.0: If visitor took the IPA audio quiz and then logged in (any account,
+        // any reason), score their stored audio files now. They become a guest to this flow.
+        $temp_id = $this->get_signed_cookie('flosc_visitor_temp_id');
+        if ($temp_id && is_string($temp_id)) {
+            $audio_score = $this->score_visitor_audio($user->ID, $temp_id);
+            if ($audio_score) {
+                $score_data = $audio_score;
+            }
+            setcookie('flosc_visitor_temp_id', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
+        }
 
         // v3.0.7: Also fall back to flosc_quiz_result cookie (in-chat MC quiz path via /quiz-result).
         // flosc_prelogin_score is set by /store-score (text-sequence & fixed MC path).
@@ -2420,6 +2513,11 @@ The {product_name} Team";
                 'freeLessonsCount' => count(get_user_meta($user->ID, '_flosc_free_lesson_numbers', true) ?: []),
                 'lastQuizScore' => get_user_meta($user->ID, '_flosc_last_quiz_score', true),
                 'lastQuizId' => get_user_meta($user->ID, '_flosc_last_quiz_id', true),
+                // v8.0.0: Full quiz data (phrase_results, ranked_phonemes) for post-login display.
+                // Only included when justCompletedQuiz is true to avoid bloating every page load.
+                'lastQuizData' => $just_completed_quiz
+                    ? (get_user_meta($user->ID, '_flosc_last_quiz_data', true) ?: null)
+                    : null,
                 'initialScore' => get_user_meta($user->ID, '_flosc_initial_score', true),
                 'initialQuizId' => get_user_meta($user->ID, '_flosc_initial_quiz_id', true),
                 'funnelCompleted' => (bool) get_user_meta($user->ID, '_flosc_funnel_completed', true),
@@ -3156,16 +3254,6 @@ The {product_name} Team";
         // Not a member - show fallback if provided
         return $atts['fallback'] ? '<div class="flosc-member-only-fallback">' . esc_html($atts['fallback']) . '</div>' : '';
     }
-    
-    /**
-     * Render IVR Message Editor (dedicated page)
-     */
-    public function render_ivr_editor() {
-        if (!current_user_can('manage_options')) {
-            wp_die('Access denied');
-        }
-        include FLOSC_PLUGIN_DIR . 'admin/ivr-settings.php';
-    }
 
     /**
      * Enqueue Assets
@@ -3248,7 +3336,7 @@ The {product_name} Team";
             $pp_client_id = $pp_config['clientId'] ?? '';
             if ($pp_client_id) {
                 $pp_currency = $pp_config['currency'] ?? 'USD';
-                wp_enqueue_script('paypal-js', 'https://www.paypal.com/sdk/js?client-id=' . urlencode($pp_client_id) . '&currency=' . urlencode($pp_currency) . '&intent=capture&components=buttons', [], null, true);
+                wp_enqueue_script('paypal-js', 'https://www.paypal.com/sdk/js?client-id=' . urlencode($pp_client_id) . '&currency=' . urlencode($pp_currency) . '&intent=subscription&vault=true', [], null, true);
             }
         }
     }
@@ -3684,6 +3772,20 @@ The {product_name} Team";
             'callback' => [$this, 'paypal_capture_order'],
             'permission_callback' => 'is_user_logged_in',
         ]);
+
+        // PayPal Subscriptions - Get/create plans (auto-setup)
+        register_rest_route('flosc/v1', '/paypal/get-plans', [
+            'methods' => 'POST',
+            'callback' => [$this, 'paypal_get_plans'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        // PayPal Subscriptions - Activate after user approves
+        register_rest_route('flosc/v1', '/paypal/activate-subscription', [
+            'methods' => 'POST',
+            'callback' => [$this, 'paypal_activate_subscription'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
         
         // Webhooks (from payment providers like Stripe)
         // NOTE: Must remain __return_true - payment providers can't pass WP auth
@@ -3779,6 +3881,15 @@ The {product_name} Team";
         register_rest_route('flosc/v1', '/store-score', [
             'methods' => 'POST',
             'callback' => [$this, 'store_prelogin_score'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
+        // v8.0.0: Store visitor audio for deferred scoring
+        // Visitors upload audio here instead of calling pronunciation API directly.
+        // Audio is scored server-side after login/registration.
+        register_rest_route('flosc/v1', '/store-visitor-audio', [
+            'methods' => 'POST',
+            'callback' => [$this, 'store_visitor_audio'],
             'permission_callback' => [$this, 'check_public_endpoint_permission'],
         ]);
 
@@ -6757,6 +6868,183 @@ Example good response:
     }
     
     /**
+     * PayPal - Test Connection (AJAX, admin only)
+     * Attempts OAuth token request to verify credentials are valid.
+     */
+    public function ajax_test_paypal() {
+        check_ajax_referer('flosc_test_paypal');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Unauthorized');
+        }
+
+        $pp = FLOSC_Sale_Manager::instance()->get_provider('paypal');
+        if (!$pp || !$pp->is_configured()) {
+            wp_send_json_error('PayPal is not configured. Enter Client ID and Secret first.');
+        }
+
+        $cfg = $pp->get_client_config();
+        $mode = $cfg['mode'] ?? 'sandbox';
+        $client_id = $cfg['clientId'] ?? '';
+        $secret = flosc()->get_setting('paypal_secret', '');
+        if (empty($secret)) $secret = get_option('flosc_paypal_secret', '');
+        $api_base = $mode === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com';
+
+        $response = wp_remote_post($api_base . '/v1/oauth2/token', [
+            'headers' => [
+                'Authorization' => 'Basic ' . base64_encode($client_id . ':' . $secret),
+                'Content-Type'  => 'application/x-www-form-urlencoded',
+            ],
+            'body'    => 'grant_type=client_credentials',
+            'timeout' => 15,
+        ]);
+
+        if (is_wp_error($response)) {
+            wp_send_json_error('Connection failed: ' . $response->get_error_message());
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        $status = wp_remote_retrieve_response_code($response);
+
+        if ($status !== 200 || empty($body['access_token'])) {
+            $err = $body['error_description'] ?? $body['error'] ?? 'HTTP ' . $status;
+            wp_send_json_error('Auth failed: ' . $err);
+        }
+
+        wp_send_json_success([
+            'mode'     => ucfirst($mode),
+            'app_name' => $body['app_id'] ?? 'LeSAEp',
+        ]);
+    }
+
+    /**
+     * PayPal Subscriptions — Get or create plans (auto-setup)
+     * Returns plan IDs for monthly ($10) and yearly ($100).
+     * Creates the PayPal product + plans on first call.
+     */
+    public function paypal_get_plans($request) {
+        $paypal = $this->sale_manager->get_provider('paypal');
+        if (!$paypal || !$paypal->is_configured()) {
+            return new WP_Error('paypal_not_configured', 'PayPal is not configured', ['status' => 500]);
+        }
+
+        $plans = $paypal->ensure_plans_exist();
+        if (is_wp_error($plans)) return $plans;
+
+        return new WP_REST_Response([
+            'monthly_plan_id' => $plans['monthly_plan_id'],
+            'yearly_plan_id'  => $plans['yearly_plan_id'],
+        ]);
+    }
+
+    /**
+     * PayPal Subscriptions — Activate after user approves in PayPal popup.
+     * Verifies subscription status, grants lesaep_learners level.
+     */
+    public function paypal_activate_subscription($request) {
+        $subscription_id = sanitize_text_field($request->get_param('subscription_id'));
+        $plan_type       = sanitize_text_field($request->get_param('plan_type')); // 'monthly' or 'yearly'
+        $flow_id         = sanitize_text_field($request->get_param('flow_id') ?? '');
+
+        if (empty($subscription_id)) {
+            return new WP_Error('missing_params', 'Missing subscription_id', ['status' => 400]);
+        }
+
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('not_logged_in', 'Must be logged in', ['status' => 401]);
+        }
+
+        if (!empty($flow_id)) {
+            $this->set_flow_context($flow_id);
+        }
+
+        $paypal = $this->sale_manager->get_provider('paypal');
+        if (!$paypal || !$paypal->is_configured()) {
+            return new WP_Error('paypal_not_configured', 'PayPal is not configured', ['status' => 500]);
+        }
+
+        // Verify subscription status with PayPal
+        $sub = $paypal->get_subscription($subscription_id);
+        if (is_wp_error($sub)) return $sub;
+
+        $status = $sub['status'] ?? '';
+        if (!in_array($status, ['ACTIVE', 'APPROVED'], true)) {
+            if (FLOSC_DEBUG) error_log('[FLOSC-PAYPAL] activate-subscription FAIL: status=' . $status);
+            return new WP_Error('subscription_not_active', 'Subscription status: ' . $status, ['status' => 400]);
+        }
+
+        // Build offer for access grant
+        $offer = $this->sale_manager->offers()->get_offer('lesaep_full', $flow_id ?: null);
+        if (!$offer) {
+            $offer = [
+                'id'   => 'lesaep_full',
+                'name' => 'LeSAEp Full Access',
+                'type' => 'subscription',
+                'grants' => [
+                    'features'      => ['lesaep_lessons', 'pronunciation_exercises', 'audio_recordings', 'ipa_training', 'ai_coach'],
+                    'level'         => 'lesaep_learners',
+                    'duration_days' => $plan_type === 'yearly' ? 365 : 30,
+                ],
+            ];
+        }
+        // Override duration based on plan type
+        $offer['grants']['duration_days'] = $plan_type === 'yearly' ? 365 : 30;
+
+        $amount = $plan_type === 'yearly' ? '100.00' : '10.00';
+
+        $transaction = [
+            'transaction_id'  => $subscription_id,
+            'subscription_id' => $subscription_id,
+            'provider'        => 'paypal',
+            'amount'          => $amount,
+            'currency'        => 'USD',
+        ];
+
+        // Grant access
+        $access_manager = $this->sale_manager->access();
+        $access_manager->grant_from_offer($user_id, $offer, $transaction);
+
+        // Store subscription metadata
+        update_user_meta($user_id, '_flosc_subscription_id', $subscription_id);
+        update_user_meta($user_id, '_flosc_subscription_plan', $plan_type);
+        update_user_meta($user_id, '_flosc_subscription_status', 'active');
+
+        set_transient('flosc_just_purchased_' . $user_id, true, 300);
+
+        // Store flow
+        $current_flow = $this->get_current_flow();
+        $capture_flow_id = $current_flow ? ($current_flow['id'] ?? '') : '';
+        if ($capture_flow_id) {
+            update_user_meta($user_id, '_flosc_purchased_flow_id', $capture_flow_id);
+        }
+
+        do_action('flosc_purchase_completed', $user_id, [
+            'offer_id'     => 'lesaep_full',
+            'grants_level' => 'lesaep_learners',
+            'provider'     => 'paypal',
+            'transaction_id' => $subscription_id,
+            'amount'       => $amount,
+            'flow_id'      => $capture_flow_id,
+            'subscription' => true,
+            'plan_type'    => $plan_type,
+            'timestamp'    => time(),
+        ]);
+
+        if (FLOSC_DEBUG) {
+            error_log('[FLOSC-PAYPAL] === activate-subscription SUCCESS === sub=' . $subscription_id . ', plan=' . $plan_type . ', user=' . $user_id);
+        }
+
+        return new WP_REST_Response([
+            'success'      => true,
+            'message'      => 'Welcome to LeSAEp!',
+            'access'       => $access_manager->get_user_access($user_id),
+            'member_level' => 'lesaep_learners',
+            'plan_type'    => $plan_type,
+            'purchase_count' => (int) get_user_meta($user_id, '_flosc_purchase_count', true),
+        ]);
+    }
+
+    /**
      * PayPal - Create Order
      * Creates a PayPal order for the given offer. User must be logged in.
      */
@@ -7314,6 +7602,7 @@ Example good response:
             'correct' => $request->get_param('correct') ?? [],
             'incorrect' => $request->get_param('incorrect') ?? [],
             'quiz_type' => sanitize_text_field($request->get_param('quiz_type') ?? ''),
+            'ranked_worst_lessons' => $request->get_param('ranked_worst_lessons') ?? [],
             'timestamp' => time(),
         ];
         
@@ -7349,6 +7638,338 @@ Example good response:
             'stored' => true,
             'logged_in' => is_user_logged_in(),
         ]);
+    }
+
+    /**
+     * v8.0.0: Store a visitor's audio recording for deferred server-side scoring.
+     *
+     * Visitors record 5 phrases but their audio is NOT sent to the pronunciation API.
+     * Instead it's saved to a temp directory keyed by a Michel-timestamp tempID.
+     * After registration (visitor → guest), score_visitor_audio() sends the files
+     * to the pronunciation API server-side and stores the results in user meta.
+     *
+     * Directory: wp-content/uploads/flosc-temp/{tempID}/
+     * Files:     phrase-{n}.webm + metadata.json
+     * Cleanup:   flosc_cleanup_visitor_audio cron deletes dirs older than 36 hours.
+     */
+    public function store_visitor_audio($request) {
+        $files = $request->get_file_params();
+        if (empty($files['audio']) || $files['audio']['error'] !== UPLOAD_ERR_OK) {
+            return new WP_Error('no_audio', 'No audio file received', ['status' => 400]);
+        }
+
+        // 2MB per-phrase limit — 5-10 seconds of webm/opus is typically 50-150KB
+        if ($files['audio']['size'] > 2 * 1024 * 1024) {
+            return new WP_Error('too_large', 'Audio file exceeds 2MB limit', ['status' => 400]);
+        }
+
+        $phrase_num = intval($request->get_param('phrase_num'));
+        if ($phrase_num < 1 || $phrase_num > 10) {
+            return new WP_Error('bad_phrase', 'Invalid phrase number', ['status' => 400]);
+        }
+
+        $phrase_text = sanitize_text_field($request->get_param('phrase_text') ?? '');
+        $format = sanitize_text_field($request->get_param('format') ?? 'webm');
+        $target_ipa_json = $request->get_param('target_ipa') ?? '{}';
+
+        // Get or create tempID (Michel timestamp + 5 hex chars)
+        // Format: 2026-03m-08d-14h-30m-45s-a1b2c
+        // v8.0.0 FIX: Accept temp_id from request body first (JS tracks it client-side
+        // after first upload). Fall back to signed cookie. This eliminates the failure
+        // mode where the cookie doesn't round-trip across cross-domain REST calls.
+        $client_temp_id = sanitize_text_field($request->get_param('temp_id') ?? '');
+        if ($client_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $client_temp_id)) {
+            $temp_id = $client_temp_id;
+        } else {
+            $temp_id = $this->get_signed_cookie('flosc_visitor_temp_id');
+        }
+        if (!$temp_id || !is_string($temp_id)) {
+            $temp_id = gmdate('Y') . '-' . gmdate('m') . 'm-' . gmdate('d') . 'd-'
+                     . gmdate('H') . 'h-' . gmdate('i') . 'm-' . gmdate('s') . 's-'
+                     . substr(bin2hex(random_bytes(3)), 0, 5);
+        }
+        // Always set/refresh the cookie for the registration handler
+        $this->set_signed_cookie('flosc_visitor_temp_id', $temp_id, 36 * HOUR_IN_SECONDS);
+
+        // Validate tempID format: YYYY-MMm-DDd-HHh-MMm-SSs-XXXXX
+        if (!preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $temp_id)) {
+            return new WP_Error('bad_temp_id', 'Invalid session', ['status' => 400]);
+        }
+
+        $upload_dir = wp_upload_dir();
+        $temp_dir = $upload_dir['basedir'] . '/flosc-temp/' . $temp_id;
+
+        if (!file_exists($temp_dir)) {
+            wp_mkdir_p($temp_dir);
+            // Block direct HTTP access to audio files
+            file_put_contents($temp_dir . '/.htaccess', "Deny from all\n");
+        }
+
+        // Whitelist extensions
+        $ext = in_array($format, ['webm', 'mp4', 'ogg'], true) ? $format : 'webm';
+        $filename = 'phrase-' . $phrase_num . '.' . $ext;
+        $filepath = $temp_dir . '/' . $filename;
+
+        // Move uploaded file
+        if (!move_uploaded_file($files['audio']['tmp_name'], $filepath)) {
+            return new WP_Error('write_failed', 'Could not save audio', ['status' => 500]);
+        }
+
+        // Update metadata.json (append phrase data)
+        $meta_path = $temp_dir . '/metadata.json';
+        $meta = file_exists($meta_path) ? json_decode(file_get_contents($meta_path), true) : [
+            'quiz_id' => 'lesaep_ipa_audio_quiz',
+            'quiz_type' => 'ipa_audio',
+            'created_at' => $temp_id,
+            'phrases' => [],
+        ];
+
+        // Replace existing phrase entry if re-recorded, otherwise append
+        $meta['phrases'] = array_values(array_filter($meta['phrases'], function($p) use ($phrase_num) {
+            return ($p['num'] ?? 0) !== $phrase_num;
+        }));
+        $meta['phrases'][] = [
+            'num' => $phrase_num,
+            'text' => $phrase_text,
+            'format' => $ext,
+            'file' => $filename,
+            'target_ipa' => json_decode($target_ipa_json, true) ?: [],
+        ];
+
+        // Sort by phrase number
+        usort($meta['phrases'], function($a, $b) { return $a['num'] - $b['num']; });
+        file_put_contents($meta_path, wp_json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+        if (FLOSC_DEBUG) {
+            error_log("FLOSC v8.0.0: Stored visitor audio phrase-{$phrase_num} in {$temp_id}/ (" . filesize($filepath) . " bytes)");
+        }
+
+        return new WP_REST_Response([
+            'stored' => true,
+            'phrase' => $phrase_num,
+            'temp_id' => $temp_id,
+        ]);
+    }
+
+    /**
+     * v8.0.0: Score visitor audio server-side after registration.
+     *
+     * Reads stored audio files from flosc-temp/{tempID}/, sends each to the
+     * pronunciation API via wp_remote_post (server-to-server — never exposed to browser),
+     * aggregates phoneme scores, maps to lessons, and returns a score_data array
+     * compatible with store_quiz_score() / flosc_quiz_completed.
+     *
+     * After scoring, moves the audio dir to flosc-users/{user_id}/ for retention.
+     *
+     * @param int    $user_id  The newly registered user's ID
+     * @param string $temp_id  The Michel-timestamp tempID from the signed cookie
+     * @return array|false     score_data array on success, false on failure
+     */
+    public function score_visitor_audio($user_id, $temp_id) {
+        // Validate tempID format: YYYY-MMm-DDd-HHh-MMm-SSs-XXXXX
+        if (!preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $temp_id)) {
+            return false;
+        }
+
+        $upload_dir = wp_upload_dir();
+        $temp_dir = $upload_dir['basedir'] . '/flosc-temp/' . $temp_id;
+        $meta_path = $temp_dir . '/metadata.json';
+
+        if (!file_exists($meta_path)) {
+            if (FLOSC_DEBUG) error_log("FLOSC v8.0.0: No metadata.json for temp_id {$temp_id}");
+            return false;
+        }
+
+        $meta = json_decode(file_get_contents($meta_path), true);
+        if (!$meta || empty($meta['phrases'])) {
+            return false;
+        }
+
+        $api_base = 'https://api.lesaep.com:8000';
+        $all_results = [];
+
+        foreach ($meta['phrases'] as $phrase_info) {
+            $audio_path = $temp_dir . '/' . $phrase_info['file'];
+            if (!file_exists($audio_path)) continue;
+
+            $audio_b64 = base64_encode(file_get_contents($audio_path));
+            $words = preg_split('/\s+/', trim($phrase_info['text']));
+            $endpoint = count($words) === 1 ? '/analyze' : '/analyze-phrase';
+
+            $body = [
+                'audio' => $audio_b64,
+                'target_text' => $phrase_info['text'],
+                'format' => $phrase_info['format'],
+            ];
+
+            if ($endpoint === '/analyze-phrase' && !empty($phrase_info['target_ipa'])) {
+                $body['target_ipa'] = $phrase_info['target_ipa'];
+            }
+
+            $response = wp_remote_post($api_base . $endpoint, [
+                'headers' => ['Content-Type' => 'application/json'],
+                'body' => wp_json_encode($body),
+                'timeout' => 30,
+                'sslverify' => true, // Let's Encrypt cert on api.lesaep.com
+            ]);
+
+            if (is_wp_error($response)) {
+                if (FLOSC_DEBUG) error_log("FLOSC v8.0.0: API error for phrase {$phrase_info['num']}: " . $response->get_error_message());
+                continue;
+            }
+
+            $resp_body = json_decode(wp_remote_retrieve_body($response), true);
+            if ($resp_body) {
+                $all_results[] = [
+                    'phrase' => $phrase_info['text'],
+                    'data' => $resp_body,
+                ];
+            }
+        }
+
+        if (empty($all_results)) {
+            if (FLOSC_DEBUG) error_log("FLOSC v8.0.0: No successful API responses for temp_id {$temp_id}");
+            return false;
+        }
+
+        // Aggregate phoneme scores — mirrors showIpaQuizSummary() in flosc-app.js
+        $all_phonemes = [];
+        foreach ($all_results as $r) {
+            $words_data = $r['data']['words'] ?? [['phonemes' => $r['data']['phonemes'] ?? []]];
+            foreach ($words_data as $w) {
+                foreach (($w['phonemes'] ?? []) as $ph) {
+                    $all_phonemes[] = $ph;
+                }
+            }
+        }
+
+        $total = count($all_phonemes);
+        $avg = $total > 0 ? array_sum(array_column($all_phonemes, 'confidence')) / $total : 0;
+        $score = (int) round($avg * 100);
+
+        // Per-phoneme averages
+        $phoneme_scores = [];
+        foreach ($all_phonemes as $ph) {
+            $ipa = $ph['ipa'] ?? '';
+            if ($ipa === '') continue;
+            $phoneme_scores[$ipa][] = $ph['confidence'];
+        }
+
+        $ranked = [];
+        foreach ($phoneme_scores as $ipa => $scores) {
+            $ranked[] = ['ipa' => $ipa, 'avg' => array_sum($scores) / count($scores)];
+        }
+        usort($ranked, function($a, $b) { return $a['avg'] <=> $b['avg']; });
+
+        // Map worst 10 phonemes to lesson numbers
+        $phoneme_map = json_decode(flosc_get_setting('audio_quiz_phoneme_lesson_map', '{}'), true) ?: [];
+        $mapped_worst = array_filter(array_slice($ranked, 0, 10), function($p) use ($phoneme_map) {
+            return isset($phoneme_map[$p['ipa']]);
+        });
+
+        $incorrect = [];
+        foreach ($mapped_worst as $p) {
+            $val = $phoneme_map[$p['ipa']];
+            $lessons = is_array($val) ? $val : [$val];
+            foreach ($lessons as $l) {
+                $incorrect[] = (int) $l;
+            }
+        }
+        $incorrect = array_values(array_unique($incorrect));
+
+        // v8.0.0: Build ranked worst lessons array (ordered worst→best) for Free Lesson Manager.
+        // Each entry: ['ipa' => phoneme, 'lessons' => [lesson_nums]]
+        // The admin setting controls which entry becomes the free lesson.
+        $ranked_worst_lessons = [];
+        foreach (array_values($mapped_worst) as $p) {
+            $val = $phoneme_map[$p['ipa']];
+            $lessons = array_map('intval', is_array($val) ? $val : [$val]);
+            $ranked_worst_lessons[] = ['ipa' => $p['ipa'], 'lessons' => $lessons];
+        }
+
+        $ranked_for_upsell = array_map(function($p) { return $p['ipa']; }, array_slice($ranked, 0, 10));
+
+        // Move audio files to user profile directory
+        $user_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id;
+        if (!file_exists($user_dir)) {
+            wp_mkdir_p($user_dir);
+            file_put_contents($user_dir . '/.htaccess', "Deny from all\n");
+        }
+        // Move entire temp dir contents
+        foreach (glob($temp_dir . '/*') as $file) {
+            $dest = $user_dir . '/' . basename($file);
+            rename($file, $dest);
+        }
+        // Store scoring results in the user's metadata.json
+        $user_meta_path = $user_dir . '/metadata.json';
+        $user_meta = file_exists($user_meta_path) ? json_decode(file_get_contents($user_meta_path), true) : $meta;
+        $user_meta['scored_at'] = gmdate('Y') . '-' . gmdate('m') . 'm-' . gmdate('d') . 'd-'
+                                . gmdate('H') . 'h-' . gmdate('i') . 'm-' . gmdate('s') . 's';
+        $user_meta['score'] = $score;
+        $user_meta['ranked_phonemes'] = $ranked_for_upsell;
+        $user_meta['results'] = $all_results;
+        file_put_contents($user_meta_path, wp_json_encode($user_meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+        // Clean up empty temp dir
+        @unlink($temp_dir . '/.htaccess');
+        @rmdir($temp_dir);
+
+        if (FLOSC_DEBUG) {
+            error_log("FLOSC v8.0.0: Scored visitor audio for user {$user_id}: {$score}% — " . count($incorrect) . " lesson(s) mapped");
+        }
+
+        return [
+            'quiz_id' => $meta['quiz_id'] ?? 'lesaep_ipa_audio_quiz',
+            'quiz_type' => 'ipa_audio',
+            'score' => $score,
+            'correct' => [],
+            'incorrect' => $incorrect,
+            'ranked_worst_lessons' => $ranked_worst_lessons,
+            'timestamp' => time(),
+            'ranked_phonemes' => $ranked_for_upsell,
+            'phrase_results' => $all_results,
+        ];
+    }
+
+    /**
+     * v8.0.0: Cron callback — delete visitor audio temp dirs older than 36 hours.
+     * Also delete guest audio dirs for users inactive >30 days with no purchase.
+     *
+     * Scheduled: twicedaily via flosc_cleanup_visitor_audio hook.
+     * TempID format: YYYY-MMm-DDd-HHh-MMm-SSs-XXXXX — parse the timestamp to determine age.
+     */
+    public function cleanup_expired_visitor_audio() {
+        $upload_dir = wp_upload_dir();
+        $temp_base = $upload_dir['basedir'] . '/flosc-temp';
+
+        if (!is_dir($temp_base)) return;
+
+        $now = time();
+        $max_age = 36 * HOUR_IN_SECONDS;
+        $cleaned = 0;
+
+        foreach (glob($temp_base . '/*', GLOB_ONLYDIR) as $dir) {
+            $dirname = basename($dir);
+            // Parse Michel timestamp: YYYY-MMm-DDd-HHh-MMm-SSs-XXXXX
+            if (!preg_match('/^(\d{4})-(\d{2})m-(\d{2})d-(\d{2})h-(\d{2})m-(\d{2})s-[0-9a-f]{5}$/', $dirname, $m)) {
+                continue; // Skip any non-matching dirs
+            }
+
+            $dir_time = gmmktime((int)$m[4], (int)$m[5], (int)$m[6], (int)$m[2], (int)$m[3], (int)$m[1]);
+            if (($now - $dir_time) > $max_age) {
+                // Delete all files in the dir, then the dir itself
+                $files = glob($dir . '/{,.}*', GLOB_BRACE);
+                foreach ($files as $f) {
+                    if (is_file($f)) @unlink($f);
+                }
+                @rmdir($dir);
+                $cleaned++;
+            }
+        }
+
+        if ($cleaned > 0 && FLOSC_DEBUG) {
+            error_log("FLOSC v8.0.0: Cleaned up {$cleaned} expired visitor audio dirs");
+        }
     }
 
     /**

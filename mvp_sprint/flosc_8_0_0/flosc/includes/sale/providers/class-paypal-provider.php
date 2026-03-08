@@ -419,15 +419,171 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
         return new WP_Error('use_order_flow', 'PayPal uses the order creation flow. Use create_order() and capture_order() instead.');
     }
 
+    // ================================================================
+    // PayPal Subscriptions API — Products, Plans, Subscriptions
+    // ================================================================
+
+    /**
+     * Create a catalog product in PayPal (one-time setup)
+     */
+    public function create_product($name, $description) {
+        $token = $this->get_access_token();
+        if (is_wp_error($token)) return $token;
+
+        $response = wp_remote_post($this->get_api_base() . '/v1/catalogs/products', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $token,
+                'Content-Type'  => 'application/json',
+            ],
+            'body' => wp_json_encode([
+                'name'        => $name,
+                'description' => $description,
+                'type'        => 'DIGITAL',
+                'category'    => 'EDUCATIONAL_AND_TEXTBOOKS',
+            ]),
+            'timeout' => 30,
+        ]);
+
+        if (is_wp_error($response)) return $response;
+        $body   = json_decode(wp_remote_retrieve_body($response), true);
+        $status = wp_remote_retrieve_response_code($response);
+
+        if ($status < 200 || $status >= 300) {
+            return new WP_Error('paypal_product_failed', $body['message'] ?? 'Failed to create product (HTTP ' . $status . ')');
+        }
+        return $body;
+    }
+
+    /**
+     * Create a billing plan for a product
+     */
+    public function create_plan($product_id, $name, $amount, $interval_unit, $interval_count = 1) {
+        $token = $this->get_access_token();
+        if (is_wp_error($token)) return $token;
+
+        $currency = $this->get_currency();
+
+        $response = wp_remote_post($this->get_api_base() . '/v1/billing/plans', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $token,
+                'Content-Type'  => 'application/json',
+            ],
+            'body' => wp_json_encode([
+                'product_id'     => $product_id,
+                'name'           => $name,
+                'status'         => 'ACTIVE',
+                'billing_cycles' => [
+                    [
+                        'frequency' => [
+                            'interval_unit'  => strtoupper($interval_unit),
+                            'interval_count' => $interval_count,
+                        ],
+                        'tenure_type'    => 'REGULAR',
+                        'sequence'       => 1,
+                        'total_cycles'   => 0,
+                        'pricing_scheme' => [
+                            'fixed_price' => [
+                                'value'         => number_format((float) $amount, 2, '.', ''),
+                                'currency_code' => $currency,
+                            ],
+                        ],
+                    ],
+                ],
+                'payment_preferences' => [
+                    'auto_bill_outstanding'      => true,
+                    'payment_failure_threshold'   => 3,
+                ],
+            ]),
+            'timeout' => 30,
+        ]);
+
+        if (is_wp_error($response)) return $response;
+        $body   = json_decode(wp_remote_retrieve_body($response), true);
+        $status = wp_remote_retrieve_response_code($response);
+
+        if ($status < 200 || $status >= 300) {
+            return new WP_Error('paypal_plan_failed', $body['message'] ?? 'Failed to create plan (HTTP ' . $status . ')');
+        }
+        return $body;
+    }
+
+    /**
+     * Get subscription details from PayPal
+     */
+    public function get_subscription($subscription_id) {
+        $token = $this->get_access_token();
+        if (is_wp_error($token)) return $token;
+
+        $response = wp_remote_get($this->get_api_base() . '/v1/billing/subscriptions/' . urlencode($subscription_id), [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $token,
+            ],
+            'timeout' => 30,
+        ]);
+
+        if (is_wp_error($response)) return $response;
+        return json_decode(wp_remote_retrieve_body($response), true);
+    }
+
+    /**
+     * Ensure PayPal product + plans exist. Creates them on first call.
+     * Returns [ 'product_id' => ..., 'monthly_plan_id' => ..., 'yearly_plan_id' => ... ]
+     */
+    public function ensure_plans_exist() {
+        $plans = get_option('flosc_paypal_plans', []);
+
+        if (!empty($plans['monthly_plan_id']) && !empty($plans['yearly_plan_id'])) {
+            return $plans;
+        }
+
+        // Create product if needed
+        $product_id = $plans['product_id'] ?? '';
+        if (empty($product_id)) {
+            $product = $this->create_product(
+                'LeSAEp Pronunciation Course',
+                'Learn Excellent Standard American English Pronunciation'
+            );
+            if (is_wp_error($product)) return $product;
+            $product_id = $product['id'];
+        }
+
+        // Create monthly plan ($10/month)
+        if (empty($plans['monthly_plan_id'])) {
+            $monthly = $this->create_plan($product_id, 'LeSAEp Monthly — $10/month', 10.00, 'MONTH');
+            if (is_wp_error($monthly)) return $monthly;
+            $plans['monthly_plan_id'] = $monthly['id'];
+        }
+
+        // Create yearly plan ($100/year)
+        if (empty($plans['yearly_plan_id'])) {
+            $yearly = $this->create_plan($product_id, 'LeSAEp Yearly — $100/year', 100.00, 'YEAR');
+            if (is_wp_error($yearly)) return $yearly;
+            $plans['yearly_plan_id'] = $yearly['id'];
+        }
+
+        $plans['product_id'] = $product_id;
+        update_option('flosc_paypal_plans', $plans);
+        return $plans;
+    }
+
     /**
      * Client-side config passed to JS
      */
     public function get_client_config() {
-        return [
+        $config = [
             'clientId' => $this->get_client_id(),
-            'mode' => $this->get_mode(),
+            'mode'     => $this->get_mode(),
             'currency' => $this->get_currency(),
         ];
+        // Include plan IDs if they exist (for subscription buttons)
+        $plans = get_option('flosc_paypal_plans', []);
+        if (!empty($plans['monthly_plan_id'])) {
+            $config['monthlyPlanId'] = $plans['monthly_plan_id'];
+        }
+        if (!empty($plans['yearly_plan_id'])) {
+            $config['yearlyPlanId'] = $plans['yearly_plan_id'];
+        }
+        return $config;
     }
 
     /**

@@ -76,9 +76,45 @@ class FLOSC_Free_Lesson_Manager {
         $member_access = FLOSC_Member_Access::instance();
         $count = $member_access->calculate_free_lesson_count(count($missed));
 
-        // Shuffle missed lessons and pick N
-        shuffle($missed);
-        $selected_lessons = array_slice($missed, 0, $count);
+        // v8.0.0: Check for pre-selected free lesson numbers from IPA audio quiz scoring.
+        // Admin setting controls selection mode: Nth worst phoneme or random from worst 10.
+        $selection_mode = function_exists('flosc_get_setting')
+            ? flosc_get_setting('free_lesson_selection', '3rd_worst')
+            : '3rd_worst';
+        $ranked_worst = $quiz_result['ranked_worst_lessons'] ?? [];
+
+        if (!empty($ranked_worst) && is_array($ranked_worst)) {
+            // IPA audio quiz: select by phoneme rank, not by lesson number
+            $nth_map = ['1st_worst' => 0, '2nd_worst' => 1, '3rd_worst' => 2, '4th_worst' => 3];
+
+            if (isset($nth_map[$selection_mode]) && isset($ranked_worst[$nth_map[$selection_mode]])) {
+                // Deterministic: Nth worst phoneme's lesson(s)
+                $entry = $ranked_worst[$nth_map[$selection_mode]];
+                $selected_lessons = array_map('intval', (array) ($entry['lessons'] ?? []));
+            } elseif ($selection_mode === 'random_2') {
+                // 2 random phonemes from worst 10
+                $shuffled = $ranked_worst;
+                shuffle($shuffled);
+                $picks = array_slice($shuffled, 0, 2);
+                $selected_lessons = [];
+                foreach ($picks as $entry) {
+                    foreach ((array) ($entry['lessons'] ?? []) as $l) {
+                        $selected_lessons[] = (int) $l;
+                    }
+                }
+                $selected_lessons = array_values(array_unique($selected_lessons));
+            } else {
+                // random_1 (or fallback): 1 random phoneme from worst 10
+                $shuffled = $ranked_worst;
+                shuffle($shuffled);
+                $entry = $shuffled[0] ?? [];
+                $selected_lessons = array_map('intval', (array) ($entry['lessons'] ?? []));
+            }
+        } else {
+            // Non-IPA quiz: original behavior — shuffle missed lessons, pick N
+            shuffle($missed);
+            $selected_lessons = array_slice($missed, 0, $count);
+        }
 
         // v3.0.0: Store the quiz_id alongside lesson numbers so delivery
         // knows which category to search for lesson posts
@@ -370,6 +406,17 @@ class FLOSC_Free_Lesson_Manager {
      * @return array Response data
      */
     public function deliver_free_lesson($user_id, $delivery_mode = 'chat') {
+
+        if ($this->has_received_free_lesson($user_id)) {
+            $lessons = $this->get_free_lessons($user_id);
+            return [
+                'success' => true,
+                'mode' => 'chat',
+                'lessons' => $lessons,
+                'already_delivered' => true,
+                'message' => 'Here\'s your free lesson again!',
+            ];
+        }
 
         $lessons = $this->get_free_lessons($user_id);
 

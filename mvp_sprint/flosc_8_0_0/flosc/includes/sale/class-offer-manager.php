@@ -421,32 +421,46 @@ class FLOSC_Offer_Manager {
             
             'lesaep_full' => [
                 'id' => 'lesaep_full',
-                'name' => 'LeSAEp - Complete Pronunciation Course',
-                'description' => 'Master all 44 sounds of Standard American English! Video lessons, native speaker recordings, and IPA training.',
-                'type' => self::TYPE_ONE_TIME,
+                'name' => 'LeSAEp — Full Access',
+                'description' => 'Full access to all American English pronunciation lessons, IPA training, audio recordings, and AI coaching.',
+                'type' => self::TYPE_SUBSCRIPTION,
                 'status' => 'active',
-                'display_price' => '$97',
-                'original_price' => '$197',
+                'price' => 10.00,
+                'display_price' => '$10/month or $100/year',
+                'original_price' => '',
                 'pricing' => [
-                    'stripe' => ['price_id' => '', 'product_id' => ''],
-                    'tokens' => ['cost' => 0],
+                    'price'     => 10.00,
+                    'currency'  => 'USD',
+                    'processor' => 'paypal',
+                    'stripe'    => ['price_id' => '', 'product_id' => ''],
+                    'tokens'    => ['cost' => 0],
                     'affiliate' => ['credit_amount' => 30],
                     'redirect_url' => '',
                 ],
+                'subscription' => [
+                    'interval' => self::INTERVAL_MONTHLY,
+                    'interval_count' => 1,
+                    'trial_days' => 0,
+                    'plans' => [
+                        'monthly' => ['price' => 10.00, 'label' => '$10/month'],
+                        'yearly'  => ['price' => 100.00, 'label' => '$100/year — save $20!'],
+                    ],
+                ],
                 'display_format' => 'featured',
-                'cta' => 'Master Pronunciation',
+                'cta' => 'Start Learning Now',
                 'timer_seconds' => 0,
-                'guarantee' => '30-day money-back guarantee',
+                'guarantee' => '',
                 'grants' => [
                     'features' => ['lesaep_lessons', 'pronunciation_exercises', 'audio_recordings', 'ipa_training', 'ai_coach'],
-                    'level' => 'lesaep_member',
-                    'duration_days' => 0, // Lifetime
+                    'level' => 'lesaep_learners',
+                    'duration_days' => 30,
                     'usage_limits' => [],
                 ],
+                'grants_level' => 'lesaep_learners',
                 'meta' => [
                     'icon' => '🎤',
-                    'badge' => 'Pronunciation Course',
-                    'savings' => 'Save $100',
+                    'badge' => 'Pre-Launch Price',
+                    'savings' => 'Save $20 with yearly!',
                 ],
                 'product_id' => 'lesaep',
                 'sort_order' => 102,
@@ -574,7 +588,7 @@ class FLOSC_Offer_Manager {
         $product_level_map = [
             'flosc_plugin' => 'flosc_plugin_member',
             'simplified_solfeggio' => 'simplified_solfeggio_member',
-            'lesaep' => 'lesaep_member',
+            'lesaep' => 'lesaep_learners',
         ];
         
         return $product_level_map[$product_id] ?? 'flosc_sandbox';
@@ -616,7 +630,7 @@ class FLOSC_Offer_Manager {
                 'tagline' => 'Learn Excellent Standard American English Pronunciation',
                 'icon' => '🎤',
                 'ivr_file' => 'lesaep_ivr.md',
-                'member_level' => 'lesaep_member',
+                'member_level' => 'lesaep_learners',
                 'offer_id' => 'lesaep_full',
             ],
         ];

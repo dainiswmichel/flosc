@@ -5791,7 +5791,7 @@ Purchased: ${ctx.purchased}
             payBtnText.textContent = btnPrice ? `Pay ${btnPrice}` : 'Pay';
         }
         
-        const paypalContainer = document.getElementById('paypal-button-container');
+        let paypalContainer = document.getElementById('paypal-button-container');
         const separator = document.getElementById('payment-separator');
         const stripeForm = document.getElementById('stripe-payment-form');
         const payBtn = document.getElementById('payBtn');
@@ -5814,16 +5814,21 @@ Purchased: ${ctx.purchased}
         if (hasPayPal && paypalContainer) {
             paypalContainer.style.display = 'block';
 
-            // v5.0.10: renderPayPalButtons is async so it can AWAIT close() before
-            // touching the DOM. Both the initial open AND onCancel re-renders go
-            // through the same teardown — no more stale SDK state = no more "Load failed".
-            const renderPayPalButtons = async () => {
+            // Close any previous instance
             if (this._paypalButtonsInstance) {
-                const prev = this._paypalButtonsInstance;
+                try { this._paypalButtonsInstance.close(); } catch(e) {}
                 this._paypalButtonsInstance = null;
-                try { await prev.close(); } catch(e) {}
             }
-            paypalContainer.innerHTML = '';
+
+            // Replace the container element — severs PayPal SDK's internal DOM reference
+            // so re-renders never produce "Load failed" on a previously-used element.
+            const ppParent = paypalContainer.parentNode;
+            const ppFresh = document.createElement('div');
+            ppFresh.id = 'paypal-button-container';
+            ppParent.replaceChild(ppFresh, paypalContainer);
+            paypalContainer = ppFresh; // reassign so all callbacks below reference the fresh element
+
+            requestAnimationFrame(() => {
             const paypalButtonsInstance = paypal.Buttons({
                 style: {
                     layout: 'vertical',
@@ -5969,13 +5974,11 @@ Purchased: ${ctx.purchased}
                     }
                 },
                 onCancel: () => {
-                    this.log('[FLOSC-CHECKOUT] PayPal cancelled by user — re-rendering buttons');
-                    // v5.0.10: renderPayPalButtons handles close + clear internally
-                    renderPayPalButtons();
+                    this.log('[FLOSC-CHECKOUT] PayPal cancelled — re-opening modal');
+                    this.showPaymentModal(offerId);
                 },
             });
 
-            // v3.0.9: isEligible() guards against environments where PayPal can't render
             if (!paypalButtonsInstance.isEligible()) {
                 this.logWarn('[FLOSC-CHECKOUT] PayPal buttons not eligible in this environment');
                 paypalContainer.innerHTML = '<div style="text-align:center;padding:14px;color:#666;font-size:13px;">PayPal is not available right now. Please try again or contact support.</div>';
@@ -5983,35 +5986,17 @@ Purchased: ${ctx.purchased}
             }
 
             paypalButtonsInstance.render(paypalContainer).then(() => {
-                // v5.0.9: Store instance so we can .close() it before next render
                 this._paypalButtonsInstance = paypalButtonsInstance;
             }).catch(err => {
                 this.logError('[FLOSC-CHECKOUT] PayPal render failed:', err);
                 paypalContainer.innerHTML =
                     '<div style="text-align:center;padding:14px;font-size:13px;">' +
                     '<div style="color:#dc2626;margin-bottom:10px;">PayPal could not load. Please try again.</div>' +
-                    '<button onclick="this.closest(\'#flosc_modal_payment\') && window.floscApp && window.floscApp.showPaymentModal(\'' + offerId + '\')" ' +
+                    '<button onclick="window.floscAppInstance.showPaymentModal(\'' + offerId + '\')" ' +
                     'style="padding:8px 18px;background:#0070ba;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">↺ Retry</button>' +
                     '</div>';
             });
-            }; // end renderPayPalButtons
-
-            // v5.0.2: Poll for container dimensions before rendering PayPal buttons.
-            // PayPal SDK requires non-zero container dimensions. The modal transitions
-            // from display:none to display:flex, but layout isn't instant. 50ms was
-            // insufficient — poll every 50ms up to 2s until container has dimensions.
-            const pollAndRender = (attempt = 0) => {
-                const rect = paypalContainer.getBoundingClientRect();
-                if (rect.width > 0 && rect.height > 0) {
-                    renderPayPalButtons();
-                } else if (attempt < 40) {
-                    setTimeout(() => pollAndRender(attempt + 1), 50);
-                } else {
-                    // Last resort — try anyway after 2s
-                    renderPayPalButtons();
-                }
-            };
-            requestAnimationFrame(() => pollAndRender());
+            }); // end requestAnimationFrame
 
         } else if (paypalContainer) {
             paypalContainer.style.display = 'none';

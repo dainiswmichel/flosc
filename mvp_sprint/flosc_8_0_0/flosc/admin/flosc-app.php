@@ -834,6 +834,13 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
                 foreach ($states as $s) {
                     foreach (($raw[$s] ?? []) as $i => $p) {
                         $name = 'for_' . $s . 's_' . $i;
+                        // v8.0.0: If pill has an Action but no explicit trigger_type,
+                        // route it as 'action' type so the JS click handler calls
+                        // performIVRAction() instead of sending text to AI.
+                        $action = $p['action'] ?? '';
+                        $explicit_trigger = $p['trigger_type'] ?? '';
+                        $trigger_type  = $explicit_trigger ?: ($action ? 'action' : 'ai');
+                        $trigger_value = $p['trigger_value'] ?? ($action ?: '');
                         $out[$name] = [
                             'name'          => $name,
                             'type'          => 'suggested_user_autoprompt',
@@ -844,9 +851,9 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
                             'message_style' => $p['style']         ?? 'pill',
                             'panel'         => $panel_map[$s],
                             'phase'         => $phase_map[$s],
-                            'action'        => $p['action']        ?? '',
-                            '_trigger_type' => $p['trigger_type']  ?? 'ai',
-                            '_trigger_value'=> $p['trigger_value'] ?? '',
+                            'action'        => $action,
+                            '_trigger_type' => $trigger_type,
+                            '_trigger_value'=> $trigger_value,
                         ];
                     }
                 }
@@ -864,6 +871,15 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
             ],
             // v4.0.0: Admin test mode — all offers (incl. drafts) for in-chat testing
             'adminTestOffers' => $admin_test_offers ?? [],
+            // Audio quiz configurable messages
+            'audioQuizPhraseCompleteMessage' => flosc_get_setting('audio_quiz_phrase_complete_message', 'Thank you. {current} of {total} recorded.'),
+            'audioQuizCompleteMessage' => flosc_get_setting('audio_quiz_complete_message', 'Pronunciation assessment complete! All {total} phrases recorded and analyzed. Sign up to see your results.'),
+            'audioQuizResultsMessage' => flosc_get_setting('audio_quiz_results_message', 'Welcome! Here are your pronunciation assessment results.'),
+            'audioQuizUpsellMessage' => flosc_get_setting('audio_quiz_upsell_message', 'Our accent analysis shows you would benefit from lessons on {1st}, {2nd}, and {4th}. Upgrade today for full access to all lessons.'),
+            'audioQuizPhonemeLessonMap' => json_decode(flosc_get_setting('audio_quiz_phoneme_lesson_map', '{}'), true) ?: (object)[],
+            'consentButtonText' => flosc_get_setting('consent_button_text', 'I Agree — Let\'s Go!'),
+            'paypalMonthlyPlanId' => get_option('flosc_paypal_plans', [])['monthly_plan_id'] ?? '',
+            'paypalYearlyPlanId'  => get_option('flosc_paypal_plans', [])['yearly_plan_id'] ?? '',
         ]); ?>;
         window.FLOSC_USER = <?php echo wp_json_encode($user_data); ?>;
     </script>

@@ -396,6 +396,57 @@ DEMO,
     $active_quiz_types = array_filter( $enabled_quizzes, fn( $qid ) => isset( $ready_quizzes[ $qid ] ) );
     ?>
 
+    <!-- ── Audio Quiz Messages — configurable chatbot responses ─────────── -->
+    <h3>💬 Audio Quiz Messages
+        <?php
+        $helplink_url = add_query_arg([
+            'page' => 'flosc-settings',
+            'ivr'  => isset($selected_ivr) ? $selected_ivr : '',
+            'tab'  => 'documentation',
+            'doc'  => 'ref-audio-quiz-flow',
+        ], admin_url('admin.php'));
+        ?>
+        <a href="<?php echo esc_url($helplink_url); ?>" style="font-size: 12px; font-weight: normal; margin-left: 8px; text-decoration: none;" title="Full documentation for the Audio Quiz Flow">📖 Help</a>
+    </h3>
+    <p class="description">These messages appear in the chatbot during and after the audio pronunciation quiz. Placeholders: <code>{current}</code> = phrase number, <code>{total}</code> = total phrases.</p>
+    <table class="form-table" style="margin:0 0 24px;">
+        <tr>
+            <th scope="row" style="width:200px;"><label for="flow_audio_quiz_phrase_complete_message">Phrase Complete</label></th>
+            <td>
+                <input type="text" id="flow_audio_quiz_phrase_complete_message" name="flow_audio_quiz_phrase_complete_message" class="large-text" value="<?php echo esc_attr( $flow_settings['audio_quiz_phrase_complete_message'] ?? 'Thank you. {current} of {total} recorded.' ); ?>">
+                <p class="description">Shown after each phrase is recorded.</p>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="flow_audio_quiz_complete_message">Quiz Complete (Visitors)</label></th>
+            <td>
+                <input type="text" id="flow_audio_quiz_complete_message" name="flow_audio_quiz_complete_message" class="large-text" value="<?php echo esc_attr( $flow_settings['audio_quiz_complete_message'] ?? 'Pronunciation assessment complete! All {total} phrases recorded and analyzed. Sign up to see your results.' ); ?>">
+                <p class="description">Shown to visitors after all phrases are done.</p>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="flow_audio_quiz_results_message">Results Intro</label></th>
+            <td>
+                <input type="text" id="flow_audio_quiz_results_message" name="flow_audio_quiz_results_message" class="large-text" value="<?php echo esc_attr( $flow_settings['audio_quiz_results_message'] ?? 'Welcome! Here are your pronunciation assessment results.' ); ?>">
+                <p class="description">Shown after login, before the detailed results.</p>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="flow_audio_quiz_upsell_message">Upsell Message</label></th>
+            <td>
+                <input type="text" id="flow_audio_quiz_upsell_message" name="flow_audio_quiz_upsell_message" class="large-text" value="<?php echo esc_attr( $flow_settings['audio_quiz_upsell_message'] ?? 'Our accent analysis shows you would benefit from lessons on {1st}, {2nd}, and {4th}. Upgrade today for full access to all lessons.' ); ?>">
+                <p class="description">Shown after login results. Placeholders: <code>{1st}</code>, <code>{2nd}</code>, <code>{3rd}</code>, <code>{4th}</code> = worst phoneme names (by rank).</p>
+            </td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="flow_audio_quiz_phoneme_lesson_map">Phoneme → Lesson Map</label></th>
+            <td>
+                <textarea id="flow_audio_quiz_phoneme_lesson_map" name="flow_audio_quiz_phoneme_lesson_map" class="large-text" rows="6"><?php echo esc_textarea( $flow_settings['audio_quiz_phoneme_lesson_map'] ?? '{}' ); ?></textarea>
+                <p class="description">JSON object mapping IPA phoneme symbols (as returned by the pronunciation API) to lesson numbers. Example: <code>{"æ": 1, "θ": 35, "ð": 36}</code></p>
+            </td>
+        </tr>
+    </table>
+
     <!-- ── Active Quizzes — summary of what is live in the funnel ────────── -->
     <h3>✅ Active Quizzes</h3>
     <?php if ( empty( $active_quiz_types ) ): ?>
