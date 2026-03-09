@@ -3883,8 +3883,8 @@ class floscApp {
                         </svg>
                     </button>
                     <div class="flosc-auth-header">
-                        <h2>Sign Up or Log In</h2>
-                        <p>To see your quiz results</p>
+                        <h2 style="color: #1fad0d; font-weight: bold; font-family: 'Atkinson Hyperlegible Next', sans-serif; font-size: 28px;">Register Or Log In To See Your Quiz Results</h2>
+                        <p style="color: #888; font-family: 'Atkinson Hyperlegible Next', sans-serif; font-size: 16px;">Account creation is necessary for LeSAEp to be able to process your quiz!</p>
                     </div>
                     <form class="flosc-auth-form" id="flosc-auth-form">
                         <div class="flosc-auth-field">
@@ -3938,10 +3938,10 @@ class floscApp {
     hideAuthModal() {
         const modal = document.getElementById('flosc-auth-modal');
         if (modal) modal.remove();
-        // v8.0.2: If visitor dismissed the auth modal after a quiz, remind them
-        // their results are temporarily saved.
+        // v8.0.3: If visitor dismissed the auth modal after a quiz, show the full
+        // guest data retention policy message.
         if (this.ivr?.context?.quiz_completed && this.state === 'visitor') {
-            this.addMessage('assistant', 'Your quiz results are saved temporarily. Sign up or log in soon to view them before they expire!');
+            this.addMessage('assistant', 'You can remain a guest for a little while here, to gain your bearings. You can take a free lesson that is based on your quiz performance, you can re-check your score and investigate which phonemes we recommend you work on, and you can upgrade. Guest quiz data is expensive to maintain and is available to you for 36 hours. If you do not upgrade within 36 hours, your quiz audios will be deleted from our system, and your guest account will remain active for 30 days. After 30 days, your account will be archived or retired.\n\nWe hope very much to be able to greet you as a member soon, and you become a member by upgrading and paying your course fee, which will give you the status of "LeSAEp Learner." We are dedicated to helping you pronounce well, and you can send our support team a ticket here https://dainis.net/groups/lesaep-support/');
         }
     }
 

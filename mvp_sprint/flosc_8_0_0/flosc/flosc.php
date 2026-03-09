@@ -334,6 +334,12 @@ class FLOSC_Framework {
     // SSO system (v1.4.0)
     private $sso_manager;
 
+    // v8.0.3: Request-provided temp_id for cross-domain fallback.
+    // Set by handle_email_registration() BEFORE firing wp_login / user_register hooks
+    // so handle_user_login() and handle_user_registration() can use it when the
+    // signed cookie didn't survive the cross-domain round-trip.
+    private $_pending_audio_temp_id = '';
+
     // Lesson manager
     private $lesson_manager;
 
@@ -948,7 +954,15 @@ The Team',
         // v8.0.0: Score visitor audio files on registration.
         // The 5 API calls to DO happen during the registration server-side processing.
         // By the time the new guest is redirected, their scores are in user meta.
+        // v8.0.3: Fall back to $_pending_audio_temp_id when signed cookie didn't survive
+        // the cross-domain round-trip (lesaep.com → dainis.net REST API, SameSite: Lax).
         $temp_id = $this->get_signed_cookie('flosc_visitor_temp_id');
+        if ((!$temp_id || !is_string($temp_id)) && $this->_pending_audio_temp_id) {
+            $temp_id = $this->_pending_audio_temp_id;
+            if (FLOSC_DEBUG) {
+                error_log("FLOSC v8.0.3: handle_user_registration() using _pending_audio_temp_id fallback: {$temp_id}");
+            }
+        }
         if ($temp_id && is_string($temp_id)) {
             $audio_score = $this->score_visitor_audio($user_id, $temp_id);
             if ($audio_score) {
@@ -985,7 +999,15 @@ The Team',
 
         // v8.0.0: If visitor took the IPA audio quiz and then logged in (any account,
         // any reason), score their stored audio files now. They become a guest to this flow.
+        // v8.0.3: Fall back to $_pending_audio_temp_id when signed cookie didn't survive
+        // the cross-domain round-trip (lesaep.com → dainis.net REST API, SameSite: Lax).
         $temp_id = $this->get_signed_cookie('flosc_visitor_temp_id');
+        if ((!$temp_id || !is_string($temp_id)) && $this->_pending_audio_temp_id) {
+            $temp_id = $this->_pending_audio_temp_id;
+            if (FLOSC_DEBUG) {
+                error_log("FLOSC v8.0.3: handle_user_login() using _pending_audio_temp_id fallback: {$temp_id}");
+            }
+        }
         if ($temp_id && is_string($temp_id)) {
             $audio_score = $this->score_visitor_audio($user->ID, $temp_id);
             if ($audio_score) {
@@ -3295,10 +3317,18 @@ The {product_name} Team";
         
         // Our assets - v9.3.7 Clean CSS Architecture
         // 1. Layout CSS (structure only, no colors)
+        // v8.0.3: Atkinson Hyperlegible Next — used in auth modal + branded UI elements
         wp_enqueue_style(
-            'flosc-layout', 
-            FLOSC_PLUGIN_URL . 'assets/css/flosc-layout.css', 
-            [], 
+            'flosc-atkinson-font',
+            'https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;700&display=swap',
+            [],
+            null
+        );
+
+        wp_enqueue_style(
+            'flosc-layout',
+            FLOSC_PLUGIN_URL . 'assets/css/flosc-layout.css',
+            ['flosc-atkinson-font'],
             filemtime(FLOSC_PLUGIN_DIR . 'assets/css/flosc-layout.css')
         );
         
@@ -6490,10 +6520,13 @@ Example good response:
             ], 400);
         }
 
-        // v8.0.2: Accept temp_id from request body as fallback for cross-domain cookie issues.
-        // handle_user_login() tries the signed cookie first; if that fails (SameSite, cross-domain),
-        // we score the audio directly here using the request-provided temp_id.
+        // v8.0.3: Accept temp_id from request body as fallback for cross-domain cookie issues.
+        // Store on $_pending_audio_temp_id BEFORE firing hooks so handle_user_login() and
+        // handle_user_registration() can fall back to it when the signed cookie is missing.
         $request_temp_id = sanitize_text_field($request->get_param('temp_id') ?? '');
+        if ($request_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $request_temp_id)) {
+            $this->_pending_audio_temp_id = $request_temp_id;
+        }
 
         // Check if user already exists
         $existing_user = get_user_by('email', $email);
@@ -7871,12 +7904,26 @@ Example good response:
         foreach ($phoneme_scores as $ipa => $scores) {
             $ranked[] = ['ipa' => $ipa, 'avg' => array_sum($scores) / count($scores)];
         }
-        // v8.0.2: Deterministic tie-breaking — when two phonemes have identical avg
-        // confidence, sort alphabetically by IPA symbol so "3rd worst" is stable.
+        // v8.0.3: Sort by avg ascending. Within tied scores, shuffle randomly so the
+        // Free Lesson Manager's "3rd worst" pick varies naturally among equals.
         usort($ranked, function($a, $b) {
-            $cmp = $a['avg'] <=> $b['avg'];
-            return $cmp !== 0 ? $cmp : strcmp($a['ipa'], $b['ipa']);
+            return $a['avg'] <=> $b['avg'];
         });
+        // Shuffle tied groups: walk the sorted array and randomize runs of equal avg.
+        $i = 0;
+        $n = count($ranked);
+        while ($i < $n) {
+            $j = $i;
+            while ($j < $n && $ranked[$j]['avg'] === $ranked[$i]['avg']) {
+                $j++;
+            }
+            if ($j - $i > 1) {
+                $group = array_slice($ranked, $i, $j - $i);
+                shuffle($group);
+                array_splice($ranked, $i, $j - $i, $group);
+            }
+            $i = $j;
+        }
 
         // Map worst 10 phonemes to lesson numbers
         $phoneme_map = json_decode(flosc_get_setting('audio_quiz_phoneme_lesson_map', '{}'), true) ?: [];
