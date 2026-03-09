@@ -2823,7 +2823,7 @@ class floscApp {
 
     // ============================================================
     // LeSAEp IPA Pronunciation Quiz — v8.0.0
-    // Direct browser → LeSAEp API (api.lesaep.com:8000)
+    // Direct browser → LeSAEp API (api.lesaep.com via nginx on 443)
     // No WordPress involvement for audio analysis
     // ============================================================
 
@@ -3290,7 +3290,7 @@ class floscApp {
                     body.target_ipa = targetIpa;
                 }
 
-                const resp = await fetch(`https://api.lesaep.com:8000${endpoint}`, {
+                const resp = await fetch(`https://api.lesaep.com${endpoint}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(body)
@@ -3904,8 +3904,8 @@ class floscApp {
                         </svg>
                     </button>
                     <div class="flosc-auth-header">
-                        <h2 style="color: #1fad0d; font-weight: bold; font-family: 'Atkinson Hyperlegible Next', sans-serif; font-size: 28px;">${this.config.authModalTitle || 'Register Or Log In To See Your Quiz Results'}</h2>
-                        <p style="color: #888; font-family: 'Atkinson Hyperlegible Next', sans-serif; font-size: 16px;">${this.config.authModalSubtitle || 'Account creation is necessary to process your quiz!'}</p>
+                        <h2>${this.config.authModalTitle || 'Register Or Log In To See Your Quiz Results'}</h2>
+                        <p>${this.config.authModalSubtitle || 'Account creation is necessary to process your quiz!'}</p>
                     </div>
                     <form class="flosc-auth-form" id="flosc-auth-form">
                         <div class="flosc-auth-field">
@@ -4038,12 +4038,16 @@ class floscApp {
                 }
                 .flosc-auth-header h2 {
                     margin: 0 0 8px 0;
-                    font-size: 24px;
+                    color: var(--flosc-primary, #1fad0d);
+                    font-weight: bold;
+                    font-family: 'Atkinson Hyperlegible Next', sans-serif;
+                    font-size: 28px;
                 }
                 .flosc-auth-header p {
                     margin: 0;
-                    color: var(--flosc-text-secondary, #666);
-                    font-size: 14px;
+                    color: var(--flosc-text-secondary, #888);
+                    font-family: 'Atkinson Hyperlegible Next', sans-serif;
+                    font-size: 16px;
                 }
                 .flosc-auth-form {
                     margin-bottom: 20px;
