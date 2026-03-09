@@ -2512,9 +2512,10 @@ The {product_name} Team";
                 // v8.0.0: Full quiz data (phrase_results, ranked_phonemes) for post-login display.
                 // v8.0.4: Also load on justLoggedIn — visitor registers, audio scores during
                 // the wp_login hook, then page reloads. Both flags can be true simultaneously.
-                'lastQuizData' => ($just_completed_quiz || $just_logged_in)
-                    ? (get_user_meta($user->ID, '_flosc_last_quiz_data', true) ?: null)
-                    : null,
+                // v8.0.5: Always load quiz data from user meta. The scored audio files
+                // persist in flosc-users/{user_id}/ — no reason to gate this behind
+                // one-shot transients that expire in 5 minutes and vanish on page refresh.
+                'lastQuizData' => get_user_meta($user->ID, '_flosc_last_quiz_data', true) ?: null,
                 'initialScore' => get_user_meta($user->ID, '_flosc_initial_score', true),
                 'initialQuizId' => get_user_meta($user->ID, '_flosc_initial_quiz_id', true),
                 'funnelCompleted' => (bool) get_user_meta($user->ID, '_flosc_funnel_completed', true),
@@ -6495,6 +6496,13 @@ Example good response:
         $existing_user = get_user_by('email', $email);
         
         if ($existing_user) {
+            // v8.0.5: If we have audio to score, clear the cookie from $_COOKIE BEFORE
+            // firing wp_login. This prevents handle_user_login() from also attempting
+            // to score — scoring happens ONCE, directly below, not via hook.
+            if ($has_audio_quiz) {
+                unset($_COOKIE['flosc_visitor_temp_id']);
+            }
+
             // Log in existing user
             wp_set_current_user($existing_user->ID);
             wp_set_auth_cookie($existing_user->ID, true);
@@ -6507,7 +6515,7 @@ Example good response:
             // Transfer any stored pre-login data
             $this->process_prelogin_data_for_user($existing_user->ID);
 
-            // v8.0.5: Score audio directly — same principle as new-user path
+            // v8.0.5: Score audio directly — we have the temp_id, call score_visitor_audio once.
             if ($has_audio_quiz) {
                 $audio_score = $this->score_visitor_audio($existing_user->ID, $body_temp_id);
                 if ($audio_score) {
@@ -6515,8 +6523,6 @@ Example good response:
                     do_action('flosc_quiz_completed', $audio_score, $existing_user->ID);
                     set_transient('flosc_just_completed_quiz_' . $existing_user->ID, true, MINUTE_IN_SECONDS * 5);
                     $this->send_score_email($existing_user, $audio_score);
-                    setcookie('flosc_visitor_temp_id', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
-                    setcookie('flosc_prelogin_score', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
                 }
             }
             
@@ -6551,6 +6557,13 @@ Example good response:
         update_user_meta($user_id, '_flosc_registration_method', 'email');
         update_user_meta($user_id, '_flosc_registered_at', current_time('mysql'));
         
+        // v8.0.5: If we have audio to score, clear the cookie from $_COOKIE BEFORE
+        // firing wp_login. This prevents handle_user_login() from also attempting
+        // to score — scoring happens ONCE, directly below, not via hook.
+        if ($has_audio_quiz) {
+            unset($_COOKIE['flosc_visitor_temp_id']);
+        }
+
         // Log the user in
         wp_set_current_user($user_id);
         wp_set_auth_cookie($user_id, true);
@@ -6563,8 +6576,7 @@ Example good response:
         // Transfer any stored pre-login data
         $this->process_prelogin_data_for_user($user_id);
         
-        // v8.0.5: Score visitor audio DIRECTLY — we have the temp_id right here.
-        // No cookie fallbacks, no class property indirection. Direct call.
+        // v8.0.5: Score visitor audio DIRECTLY — we have the temp_id, call score_visitor_audio once.
         if ($has_audio_quiz) {
             error_log("[FLOSC v8.0.5] handle_email_registration: scoring audio for user {$user_id}, temp_id={$body_temp_id}");
             $audio_score = $this->score_visitor_audio($user_id, $body_temp_id);
@@ -6573,9 +6585,6 @@ Example good response:
                 do_action('flosc_quiz_completed', $audio_score, $user_id);
                 set_transient('flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5);
                 $this->send_score_email($user, $audio_score);
-                // Clear cookies so handle_user_login() below doesn't double-score
-                setcookie('flosc_visitor_temp_id', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
-                setcookie('flosc_prelogin_score', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
                 error_log("[FLOSC v8.0.5] Audio scored: {$audio_score['score']}%");
             } else {
                 error_log("[FLOSC v8.0.5] score_visitor_audio returned false for temp_id={$body_temp_id}");
@@ -7806,6 +7815,12 @@ Example good response:
      * @return array|false     score_data array on success, false on failure
      */
     public function score_visitor_audio($user_id, $temp_id) {
+        // v8.0.5: 5 phrases × up to 30s each = 150s worst case.
+        // ChemiCloud default max_execution_time is 30-60s. Give PHP 5 minutes.
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(300);
+        }
+
         // Validate tempID format: YYYY-MMm-DDd-HHh-MMm-SSs-XXXXX
         if (!preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $temp_id)) {
             return false;
@@ -9059,7 +9074,9 @@ Example good response:
      * Audio served via AJAX endpoint (files are .htaccess-protected).
      */
     public function render_admin_user_audio_section($user) {
-        if (!current_user_can('manage_options')) {
+        // Admins can view any user's audio. Users can view their own.
+        $viewing_own = (get_current_user_id() === $user->ID);
+        if (!current_user_can('manage_options') && !$viewing_own) {
             return;
         }
 
@@ -9157,12 +9174,13 @@ Example good response:
      * Required because flosc-users/ dirs have .htaccess Deny from all.
      */
     public function ajax_serve_user_audio() {
-        if (!current_user_can('manage_options')) {
-            wp_die('Unauthorized', 403);
-        }
-
         $user_id = isset($_GET['user_id']) ? absint($_GET['user_id']) : 0;
         $file = isset($_GET['file']) ? sanitize_file_name($_GET['file']) : '';
+
+        // Admins can play any user's audio. Users can play their own.
+        if (!current_user_can('manage_options') && get_current_user_id() !== $user_id) {
+            wp_die('Unauthorized', 403);
+        }
 
         if (!$user_id || !$file) {
             wp_die('Missing parameters', 400);
