@@ -6609,8 +6609,10 @@ Example good response:
         // Transfer any stored pre-login data
         $this->process_prelogin_data_for_user($user_id);
         
-        // Fire registration action
-        do_action('user_register', $user_id);
+        // Fire FLOSC-specific registration action only.
+        // v8.0.4c: Removed do_action('user_register') — wp_create_user() already fires it
+        // internally. Double-firing caused duplicate signup bonus tokens, duplicate score
+        // emails, and duplicate audio scoring for every new registration.
         do_action('flosc_user_registered', $user_id, 'email');
 
         // v8.0.2: If handle_user_login/handle_user_registration didn't score audio (cookie missing), score now
@@ -7113,8 +7115,8 @@ Example good response:
      * Creates a PayPal order for the given offer. User must be logged in.
      */
     public function paypal_create_order($request) {
-        // Diagnostic: unconditional log
-        error_log('[FLOSC-PAYPAL] create_order ENDPOINT REACHED at ' . date('Y-m-d H:i:s') . ' user=' . get_current_user_id());
+        // v8.0.4c: Wrapped in FLOSC_DEBUG — was unconditional, spamming production logs
+        if (FLOSC_DEBUG) error_log('[FLOSC-PAYPAL] create_order ENDPOINT REACHED at ' . date('Y-m-d H:i:s') . ' user=' . get_current_user_id());
 
         $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
         if (!empty($flow_id)) {
@@ -7186,8 +7188,8 @@ Example good response:
      * Requires logged-in user (permission_callback = is_user_logged_in).
      */
     public function paypal_capture_order($request) {
-        // Diagnostic: unconditional file log to verify endpoint is reached
-        error_log('[FLOSC-PAYPAL] capture_order ENDPOINT REACHED at ' . date('Y-m-d H:i:s') . ' user=' . get_current_user_id());
+        // v8.0.4c: Wrapped in FLOSC_DEBUG — was unconditional, spamming production logs
+        if (FLOSC_DEBUG) error_log('[FLOSC-PAYPAL] capture_order ENDPOINT REACHED at ' . date('Y-m-d H:i:s') . ' user=' . get_current_user_id());
 
         $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
         if (!empty($flow_id)) {
