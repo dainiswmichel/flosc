@@ -4387,8 +4387,32 @@ class floscApp {
     openQuizResults() {
         // v5.0.3: Read from in-session this.quiz first (has actual item names),
         // fall back to this.user (server-populated from user_meta).
-        const score = this.quiz?.score ?? this.user?.lastQuizScore ?? null;
-        if (score === null) {
+        // v8.0.9: Coerce to number — empty string "" from WordPress for unset meta
+        // passes ?? but renders as blank in template literals.
+        const rawScore = this.quiz?.score ?? this.user?.lastQuizScore ?? null;
+        const score = (rawScore !== null && rawScore !== '') ? parseInt(rawScore, 10) : null;
+        if (score === null || isNaN(score)) {
+            // v8.0.9: If IPA quiz data exists on server, try showing full results
+            const serverData = this.user?.lastQuizData;
+            if (serverData && serverData.quiz_type === 'ipa_audio' && serverData.phrase_results) {
+                this.showIpaPhraseResultsAfterLogin({
+                    score: serverData.score,
+                    phraseResults: serverData.phrase_results,
+                    wordIpa: serverData.word_ipa || {},
+                    rankedPhonemes: serverData.ranked_phonemes || [],
+                    quizType: 'ipa_audio'
+                });
+                return;
+            }
+            // v8.0.9: Check if scoring is still pending (audio uploaded but API unreachable)
+            const stored = localStorage.getItem('flosc_quiz_result');
+            if (stored) {
+                const pending = JSON.parse(stored);
+                if (pending.pendingServerScore) {
+                    this.addMessage('assistant', "Your pronunciation results are still being processed. This usually means the scoring service was temporarily unavailable. Try refreshing the page — if your results are ready, they'll appear automatically.");
+                    return;
+                }
+            }
             this.addMessage('assistant', "I don't see a quiz result on file yet. Take the assessment and I'll show you your results right here.");
             return;
         }
@@ -6515,9 +6539,10 @@ Purchased: ${ctx.purchased}
             const stored = localStorage.getItem('flosc_quiz_result');
             if (stored) {
                 const result = JSON.parse(stored);
-                // Only show if recent (within last hour) and user just logged in
+                // v8.0.9: Extended from 1 hour to 24 hours — with retry-audio-scoring,
+                // the user may need multiple page loads before the pronunciation API responds.
                 const age = Date.now() - (result.timestamp || 0);
-                if (age < 3600000) { // 1 hour
+                if (age < 86400000) { // 24 hours
                     this.log('[FLOSC] Revealing quiz score after login:', result.score);
                     
                     // v8.0.0: Scores were computed server-side during register/login.
@@ -6555,10 +6580,44 @@ Purchased: ${ctx.purchased}
                             this.ivr.context.first_message_after_login = true;
                         } else {
                             // v8.0.9: Server data not yet available AND no lastQuizScore.
-                            // Don't clear localStorage — keep it so next page load can retry.
-                            // Show a basic welcome so the user isn't left with no feedback.
-                            this.log('[FLOSC] pendingServerScore: no server data yet, keeping localStorage for retry');
-                            this.addMessage('assistant', `Welcome! Your quiz results are being processed. They'll appear shortly — try refreshing in a moment.`);
+                            // The pronunciation API was likely unreachable at registration time.
+                            // Try re-scoring now via the retry endpoint.
+                            this.log('[FLOSC] pendingServerScore: no server data, attempting retry...');
+                            try {
+                                const retryResp = await this.authFetch(this.config.apiUrl + '/retry-audio-scoring', {
+                                    method: 'POST',
+                                    credentials: 'same-origin',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-WP-Nonce': this.config.nonce
+                                    }
+                                });
+                                const retryData = await retryResp.json();
+                                if (retryData.success && retryData.quiz_data) {
+                                    localStorage.removeItem('flosc_quiz_result');
+                                    const qd = retryData.quiz_data;
+                                    if (qd.quiz_type === 'ipa_audio' && qd.phrase_results) {
+                                        this.showIpaPhraseResultsAfterLogin({
+                                            score: qd.score,
+                                            phraseResults: qd.phrase_results,
+                                            wordIpa: wordIpa,
+                                            rankedPhonemes: qd.ranked_phonemes || [],
+                                            quizType: 'ipa_audio'
+                                        });
+                                    } else {
+                                        this.addMessage('assistant', `Welcome! Your pronunciation score: **${qd.score}%**.`);
+                                    }
+                                    this.ivr.context.score = qd.score;
+                                    this.ivr.context.quiz_results_shown = true;
+                                    this.ivr.context.first_message_after_quiz = true;
+                                    this.ivr.context.first_message_after_login = true;
+                                    return;
+                                }
+                            } catch (retryErr) {
+                                this.logError('[FLOSC] Retry audio scoring failed', retryErr);
+                            }
+                            // Retry failed or no data — keep localStorage for next attempt
+                            this.addMessage('assistant', `Welcome! Your pronunciation results are still being processed. The scoring service may be temporarily unavailable — please try refreshing in a moment.`);
                             this.ivr.context.quiz_results_shown = true;
                             this.ivr.context.first_message_after_quiz = true;
                             this.ivr.context.first_message_after_login = true;

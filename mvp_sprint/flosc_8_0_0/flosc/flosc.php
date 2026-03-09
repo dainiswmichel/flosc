@@ -964,6 +964,10 @@ The Team',
             }
         }
         if ($temp_id && is_string($temp_id)) {
+            // v8.0.9: Store temp_id in user meta BEFORE scoring attempt so we can retry
+            // if the pronunciation API is temporarily unreachable.
+            update_user_meta($user_id, '_flosc_audio_temp_id', $temp_id);
+
             $audio_score = $this->score_visitor_audio($user_id, $temp_id);
             if ($audio_score) {
                 // Store score + fire quiz_completed so Free Lesson Manager assigns lessons
@@ -973,6 +977,12 @@ The Team',
                 $user = get_userdata($user_id);
                 if ($user) {
                     $this->send_score_email($user, $audio_score);
+                }
+                // Scoring succeeded — clear temp_id reference
+                delete_user_meta($user_id, '_flosc_audio_temp_id');
+            } else {
+                if (FLOSC_DEBUG) {
+                    error_log("FLOSC v8.0.9: Audio scoring failed for user {$user_id}, temp_id {$temp_id} — stored for retry");
                 }
             }
             // Clear the temp cookie
@@ -2555,11 +2565,10 @@ The {product_name} Team";
                 'lastQuizScore' => get_user_meta($user->ID, '_flosc_last_quiz_score', true),
                 'lastQuizId' => get_user_meta($user->ID, '_flosc_last_quiz_id', true),
                 // v8.0.0: Full quiz data (phrase_results, ranked_phonemes) for post-login display.
-                // v8.0.1: Also include when justLoggedIn (not just justCompletedQuiz) so quiz
-                // results display reliably after registration even if the quiz transient expired.
-                'lastQuizData' => ($just_completed_quiz || $just_logged_in)
-                    ? (get_user_meta($user->ID, '_flosc_last_quiz_data', true) ?: null)
-                    : null,
+                // v8.0.1: Also include when justLoggedIn (not just justCompletedQuiz).
+                // v8.0.9: Always include when data exists — the transient-gated approach meant
+                // results vanished after 5 minutes, breaking "Show my quiz results" action.
+                'lastQuizData' => get_user_meta($user->ID, '_flosc_last_quiz_data', true) ?: null,
                 'initialScore' => get_user_meta($user->ID, '_flosc_initial_score', true),
                 'initialQuizId' => get_user_meta($user->ID, '_flosc_initial_quiz_id', true),
                 'funnelCompleted' => (bool) get_user_meta($user->ID, '_flosc_funnel_completed', true),
@@ -3941,6 +3950,13 @@ The {product_name} Team";
             'methods' => 'POST',
             'callback' => [$this, 'store_visitor_audio'],
             'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
+        // v8.0.9: Retry audio scoring when initial attempt failed (API unreachable at registration)
+        register_rest_route('flosc/v1', '/retry-audio-scoring', [
+            'methods' => 'POST',
+            'callback' => [$this, 'retry_audio_scoring'],
+            'permission_callback' => 'is_user_logged_in',
         ]);
 
         // Mark funnel completed (v3.0.4)
@@ -8058,6 +8074,77 @@ Example good response:
                 $this->send_score_email($user, $audio_score);
             }
         }
+    }
+
+    /**
+     * v8.0.9: REST endpoint to retry audio scoring when the initial attempt failed.
+     *
+     * Called by JS checkPendingQuizResults() when it detects pendingServerScore
+     * but no server data (pronunciation API was unreachable at registration time).
+     * Reads temp_id from user meta (stored by handle_user_registration) and retries.
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response|WP_Error
+     */
+    public function retry_audio_scoring($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_Error('not_logged_in', 'Not logged in', ['status' => 401]);
+        }
+
+        // Check if scoring already succeeded
+        $existing = get_user_meta($user_id, '_flosc_last_quiz_data', true);
+        if (is_array($existing) && !empty($existing['phrase_results'])) {
+            return new WP_REST_Response([
+                'success' => true,
+                'already_scored' => true,
+                'score' => $existing['score'] ?? 0,
+                'quiz_data' => $existing,
+            ]);
+        }
+
+        // Get stored temp_id from registration
+        $temp_id = get_user_meta($user_id, '_flosc_audio_temp_id', true);
+        if (!$temp_id) {
+            return new WP_REST_Response([
+                'success' => false,
+                'reason' => 'no_temp_id',
+                'message' => 'No pending audio to score. The audio files may have expired.',
+            ]);
+        }
+
+        // Attempt scoring
+        $audio_score = $this->score_visitor_audio($user_id, $temp_id);
+        if (!$audio_score) {
+            return new WP_REST_Response([
+                'success' => false,
+                'reason' => 'scoring_failed',
+                'message' => 'Pronunciation API is still unreachable. Please try again later.',
+            ]);
+        }
+
+        // Store results
+        $this->store_quiz_score($user_id, $audio_score);
+        do_action('flosc_quiz_completed', $audio_score, $user_id);
+        set_transient('flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5);
+
+        // Clean up temp_id reference
+        delete_user_meta($user_id, '_flosc_audio_temp_id');
+
+        $user = get_userdata($user_id);
+        if ($user) {
+            $this->send_score_email($user, $audio_score);
+        }
+
+        if (FLOSC_DEBUG) {
+            error_log("FLOSC v8.0.9: Retry audio scoring succeeded for user {$user_id}: {$audio_score['score']}%");
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'score' => $audio_score['score'],
+            'quiz_data' => $audio_score,
+        ]);
     }
 
     /**
