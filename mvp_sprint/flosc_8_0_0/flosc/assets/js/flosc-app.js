@@ -270,9 +270,6 @@ class floscApp {
                 if (this.currentSession === null) {
                     await this.restoreLastSession();
                 }
-                
-                this.log('[FLOSC] Checking pending quiz results...');
-                await this.checkPendingQuizResults();
             }
 
             this.freeLessonDelivered = this.user?.freeLessonDelivered || false;
@@ -284,6 +281,14 @@ class floscApp {
             // v07.08: Build context and start IVR
             this.log('[FLOSC] Building IVR context...');
             this.buildIVRContext();
+
+            // v8.0.5: checkPendingQuizResults MUST run AFTER buildIVRContext so the
+            // context flags it sets (quiz_results_shown, first_message_after_quiz)
+            // aren't wiped by buildIVRContext's fresh context object.
+            if (this.state !== 'visitor') {
+                this.log('[FLOSC] Checking pending quiz results...');
+                await this.checkPendingQuizResults();
+            }
             this.log('[FLOSC] IVR context built:', this.ivr.context);
 
             if (this.state === 'visitor') {
@@ -327,6 +332,19 @@ class floscApp {
         return 'freeline';
     }
 
+    // v8.0.5: Helper — checks if localStorage has a pending quiz result (< 1 hour old).
+    // Used by buildIVRContext() to set first_message_after_quiz when the PHP transient
+    // didn't survive (cross-domain REST call, cookie issues).
+    _hasPendingQuizResult() {
+        try {
+            const stored = localStorage.getItem('flosc_quiz_result');
+            if (!stored) return false;
+            const result = JSON.parse(stored);
+            const age = Date.now() - (result.timestamp || 0);
+            return age < 3600000;
+        } catch (e) { return false; }
+    }
+
     buildIVRContext() {
         // v8.0.9: Use positive state checking instead of negative logic
         const isVisitor = (this.state === 'visitor');
@@ -350,7 +368,9 @@ class floscApp {
             // Session state
             first_show_session: !hasSession,
             // v8.0.0: Set from PHP transients (one-shot flags, survive buildIVRContext rebuild)
-            first_message_after_quiz: !!this.user?.justCompletedQuiz,
+            // v8.0.5: Also check localStorage for pending quiz results as fallback when
+            // the server transient didn't survive (cross-domain, cookie issues).
+            first_message_after_quiz: !!this.user?.justCompletedQuiz || this._hasPendingQuizResult(),
             first_message_after_login: !!this.user?.justLoggedIn,
             first_message_after_purchase: !!this.user?.justPurchased,
             returning_user: hasSession,
@@ -6492,13 +6512,14 @@ Purchased: ${ctx.purchased}
                     // localStorage has wordIpa (IPA reference dict) but placeholder phraseResults.
                     if (result.pendingServerScore) {
                         const wordIpa = result.wordIpa || {};
-                        localStorage.removeItem('flosc_quiz_result');
                         this.ivr.context.quiz_completed = true;
                         this.ivr.context.quiz_taken = true;
 
                         // Display server-scored results if available
                         const serverData = this.user?.lastQuizData;
                         if (serverData && serverData.quiz_type === 'ipa_audio' && serverData.phrase_results) {
+                            // v8.0.5: Only clear localStorage AFTER confirming server data exists
+                            localStorage.removeItem('flosc_quiz_result');
                             this.showIpaPhraseResultsAfterLogin({
                                 score: serverData.score,
                                 phraseResults: serverData.phrase_results,
@@ -6513,6 +6534,7 @@ Purchased: ${ctx.purchased}
                         } else if (this.user?.lastQuizScore) {
                             // v8.0.1: Fallback — server data not available (transient expired or
                             // scoring still pending). Show the score we have from user meta.
+                            localStorage.removeItem('flosc_quiz_result');
                             const score = parseInt(this.user.lastQuizScore) || 0;
                             this.addMessage('assistant', `Welcome back! Your pronunciation assessment score: **${score}%**. Use "Review my quiz score" to see detailed results when they're ready.`);
                             this.ivr.context.score = score;
@@ -6520,6 +6542,8 @@ Purchased: ${ctx.purchased}
                             this.ivr.context.first_message_after_quiz = true;
                             this.ivr.context.first_message_after_login = true;
                         }
+                        // v8.0.5: If neither server path produced data, keep localStorage intact
+                        // so the next page load can retry.
                         return;
                     }
                     

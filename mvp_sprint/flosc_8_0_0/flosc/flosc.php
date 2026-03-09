@@ -6676,6 +6676,10 @@ Example good response:
             // v3.0.2: $score_data now includes quiz_id for category resolution
             do_action('flosc_quiz_completed', $score_data, $user_id);
 
+            // v8.0.5: Set transient so buildIVRContext() can set first_message_after_quiz
+            // even when the handle_user_login() cookie path didn't fire.
+            set_transient('flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5);
+
             // Store in bridge data if available
             $bridge_manager = FLOSC_Bridge_Data_Manager::instance();
             if ($bridge_manager) {
@@ -7807,7 +7811,8 @@ Example good response:
             return false;
         }
 
-        $api_base = 'https://api.lesaep.com:8000';
+        // v8.0.5: Use port 443 (nginx proxy) — ChemiCloud shared hosting blocks outbound port 8000.
+        $api_base = 'https://api.lesaep.com';
         $all_results = [];
 
         foreach ($meta['phrases'] as $phrase_info) {
