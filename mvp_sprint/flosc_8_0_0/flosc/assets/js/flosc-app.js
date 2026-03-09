@@ -3019,8 +3019,15 @@ class floscApp {
                             <span class="flosc-wave-bar"></span>
                             <span class="flosc-wave-bar"></span>
                             <span class="flosc-wave-bar"></span>
+                            <span class="flosc-wave-bar"></span>
+                            <span class="flosc-wave-bar"></span>
+                            <span class="flosc-wave-bar"></span>
+                            <span class="flosc-wave-bar"></span>
+                            <span class="flosc-wave-bar"></span>
+                            <span class="flosc-wave-bar"></span>
+                            <span class="flosc-wave-bar"></span>
                         </div>
-                        <canvas class="flosc-ipa-waveform-canvas" id="flosc-ipa-canvas-${num}" width="200" height="40"></canvas>
+                        <canvas class="flosc-ipa-waveform-canvas" id="flosc-ipa-canvas-${num}"></canvas>
                     </div>
                     <div class="flosc-ipa-status" id="flosc-ipa-status-${num}">Tap to record yourself saying this phrase</div>
                 </div>
@@ -3052,7 +3059,13 @@ class floscApp {
             if (this.recordingStream) {
                 this.recordingStream.getTracks().forEach(t => t.stop());
             }
-            if (btn) { btn.textContent = '🎤 Record'; btn.classList.remove('recording'); }
+            if (btn) {
+                const thankEmojis = ['❤️', '✨', '🙏', '😍', '💖', '💕', '🌟', '😊', '🥰', '💛', '💜', '🫶'];
+                btn.textContent = thankEmojis[Math.floor(Math.random() * thankEmojis.length)];
+                btn.classList.remove('recording');
+                btn.classList.add('completed');
+                btn.disabled = true;
+            }
             if (status) status.textContent = 'Analyzing...';
             this.showIpaFlyoff(phraseNum);
             return;
@@ -3100,21 +3113,31 @@ class floscApp {
         }
     }
 
-    // Waveform visualizer — draws real-time audio levels on canvas
+    // Waveform visualizer — draws real-time audio levels on canvas (time-domain for even spread)
     startWaveformVisualizer(stream, phraseNum) {
         try {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const source = audioCtx.createMediaStreamSource(stream);
             const analyser = audioCtx.createAnalyser();
-            analyser.fftSize = 64;
+            analyser.fftSize = 256;
             source.connect(analyser);
 
             const canvas = document.getElementById(`flosc-ipa-canvas-${phraseNum}`);
             const waveformEl = document.getElementById(`flosc-ipa-waveform-${phraseNum}`);
             if (!canvas || !waveformEl) return;
 
+            // Size canvas to match container for crisp rendering
+            const containerRect = waveformEl.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = containerRect.width * dpr;
+            canvas.height = containerRect.height * dpr;
+
             waveformEl.classList.add('active');
             const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+            const w = containerRect.width;
+            const h = containerRect.height;
+
             const bufLen = analyser.frequencyBinCount;
             const dataArray = new Uint8Array(bufLen);
 
@@ -3124,21 +3147,29 @@ class floscApp {
                 if (!this._waveformAnim || !this._waveformAnim.running) return;
                 requestAnimationFrame(draw);
 
-                analyser.getByteFrequencyData(dataArray);
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                // Time-domain data: 128 = silence, deviations = sound amplitude
+                analyser.getByteTimeDomainData(dataArray);
+                ctx.clearRect(0, 0, w, h);
 
-                const barCount = 24;
-                const barWidth = canvas.width / barCount - 2;
-                const maxHeight = canvas.height - 4;
+                const barCount = 32;
+                const barWidth = w / barCount - 2;
+                const maxHeight = h - 4;
+                const segmentLen = Math.floor(bufLen / barCount);
 
                 for (let i = 0; i < barCount; i++) {
-                    const dataIndex = Math.floor(i * bufLen / barCount);
-                    const value = dataArray[dataIndex] / 255;
-                    const barHeight = Math.max(2, value * maxHeight);
+                    // RMS (root mean square) of this time segment for smooth amplitude
+                    let sum = 0;
+                    const start = i * segmentLen;
+                    for (let j = start; j < start + segmentLen && j < bufLen; j++) {
+                        const v = (dataArray[j] - 128) / 128;
+                        sum += v * v;
+                    }
+                    const rms = Math.sqrt(sum / segmentLen);
+                    const barHeight = Math.max(2, rms * maxHeight * 3);
                     const x = i * (barWidth + 2) + 1;
-                    const y = (canvas.height - barHeight) / 2;
+                    const y = (h - barHeight) / 2;
 
-                    ctx.fillStyle = `rgba(107, 114, 128, ${0.3 + value * 0.7})`;
+                    ctx.fillStyle = `rgba(107, 114, 128, ${0.3 + Math.min(rms * 4, 0.7)})`;
                     ctx.beginPath();
                     ctx.roundRect(x, y, barWidth, barHeight, 1);
                     ctx.fill();
@@ -3207,10 +3238,10 @@ class floscApp {
             el.style.opacity = (0.30 + Math.random() * 0.43).toFixed(2);
             document.body.appendChild(el);
 
-            // Clean up after animation completes
+            // Clean up after animation completes (1s animation + stagger)
             setTimeout(() => {
                 if (el.parentNode) el.parentNode.removeChild(el);
-            }, 900 + i * 80);
+            }, 1100 + i * 80);
         });
     }
 
