@@ -2797,7 +2797,7 @@ class floscApp {
         `;
         
         this.addMessage('assistant', resultHtml, true);
-        this.storeQuizScore(score, data.correct || [], data.incorrect || []);
+        this.storeQuizScore({ score, correct: data.correct || [], incorrect: data.incorrect || [], total: (data.correct || []).length + (data.incorrect || []).length, passed: score >= 70, timestamp: Date.now() });
         this.onQuizComplete(score);
     }
 
@@ -7129,7 +7129,8 @@ Purchased: ${ctx.purchased}
                         }
 
                         if (result.success) {
-                            modal.style.display = 'none';
+                            const paymentModal = document.getElementById('flosc_modal_payment');
+                            if (paymentModal) paymentModal.style.display = 'none';
                             this.addMessage('assistant', '\ud83c\udf89 **Payment successful!** Welcome to full membership! Refreshing your access...');
                             setTimeout(() => window.location.reload(), 2000);
                         } else {
@@ -7169,7 +7170,7 @@ Purchased: ${ctx.purchased}
                 paypalContainer.innerHTML =
                     '<div style="text-align:center;padding:14px;font-size:13px;">' +
                     '<div style="color:#dc2626;margin-bottom:10px;">PayPal could not load. Please try again.</div>' +
-                    '<button onclick="this.closest(\'#flosc_modal_payment\') && window.floscApp && window.floscApp.showPaymentModal(\'' + offerId + '\')" ' +
+                    '<button onclick="this.closest(\'#flosc_modal_payment\') && window.floscAppInstance && window.floscAppInstance.showPaymentModal(\'' + offerId + '\')" ' +
                     'style="padding:8px 18px;background:#0070ba;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">↺ Retry</button>' +
                     '</div>';
             });

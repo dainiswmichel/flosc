@@ -6569,7 +6569,9 @@ Example good response:
         $this->process_prelogin_data_for_user($user_id);
         
         // Fire registration action
-        do_action('user_register', $user_id);
+        // NOTE: wp_create_user() already fires 'user_register' internally.
+        // Do NOT fire it again here — it causes double token grants, double emails,
+        // and double audio scoring.
         do_action('flosc_user_registered', $user_id, 'email');
         
         if (FLOSC_DEBUG) {
