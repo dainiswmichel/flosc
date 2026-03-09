@@ -3929,6 +3929,15 @@ The {product_name} Team";
             'permission_callback' => [$this, 'check_public_endpoint_permission'],
         ]);
 
+        // v8.0.7: Score pending audio — called by JS after ANY login method (email, FB, Google).
+        // JS sends the temp_id from localStorage. Server scores audio and returns results.
+        // This replaces the unreliable cookie-based approach for SSO paths.
+        register_rest_route('flosc/v1', '/score-pending-audio', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_score_pending_audio'],
+            'permission_callback' => function() { return is_user_logged_in(); },
+        ]);
+
         // v1.9.0: AI Corrections — admin flags bad AI responses to improve quality
         register_rest_route('flosc/v1', '/corrections', [
             'methods' => 'POST',
@@ -6474,16 +6483,81 @@ Example good response:
     }
     
     /**
+     * v8.0.7: Score pending audio — called by JS after ANY login method.
+     * 
+     * The visitor took the IPA quiz, audio was uploaded to flosc-temp/{temp_id}/.
+     * After login (email, Facebook, Google, any SSO), JS sends the temp_id from
+     * localStorage. This function scores the audio and returns full results.
+     * 
+     * This replaces the cookie-based SSO scoring path which fails cross-domain
+     * (third-party cookies are blocked by modern browsers).
+     */
+    public function handle_score_pending_audio($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_REST_Response(['success' => false, 'message' => 'Not logged in'], 401);
+        }
+
+        error_log("[FLOSC v8.0.7] score-pending-audio called for user {$user_id}");
+
+        // Check if user already has scored quiz data
+        $existing = get_user_meta($user_id, '_flosc_last_quiz_data', true);
+        if ($existing && !empty($existing['phrase_results'])) {
+            error_log("[FLOSC v8.0.7] User {$user_id} already has scored data, returning it");
+            return new WP_REST_Response([
+                'success' => true,
+                'already_scored' => true,
+                'score_data' => $existing,
+            ]);
+        }
+
+        $temp_id = sanitize_text_field($request->get_param('temp_id') ?? '');
+        if (!$temp_id || !preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $temp_id)) {
+            error_log("[FLOSC v8.0.7] Invalid temp_id: {$temp_id}");
+            return new WP_REST_Response(['success' => false, 'message' => 'Invalid session ID'], 400);
+        }
+
+        error_log("[FLOSC v8.0.7] Scoring audio for user {$user_id}, temp_id={$temp_id}");
+        $audio_score = $this->score_visitor_audio($user_id, $temp_id);
+
+        if ($audio_score) {
+            $this->store_quiz_score($user_id, $audio_score);
+            do_action('flosc_quiz_completed', $audio_score, $user_id);
+            set_transient('flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5);
+
+            $user = get_user_by('id', $user_id);
+            if ($user) {
+                $this->send_score_email($user, $audio_score);
+            }
+
+            error_log("[FLOSC v8.0.7] Scoring complete: {$audio_score['score']}%");
+            return new WP_REST_Response([
+                'success' => true,
+                'score_data' => $audio_score,
+            ]);
+        }
+
+        error_log("[FLOSC v8.0.7] score_visitor_audio returned false");
+        return new WP_REST_Response([
+            'success' => false,
+            'message' => 'Could not score audio. Files may have expired.',
+        ], 500);
+    }
+
+    /**
      * Handle email-only registration (v1.4.0)
      * Creates a new user with just email, or logs in existing user
      */
     public function handle_email_registration($request) {
+        error_log("[FLOSC v8.0.6] handle_email_registration CALLED");
+        error_log("[FLOSC v8.0.6] Request body: " . wp_json_encode($request->get_json_params()));
         $email = sanitize_email($request->get_param('email'));
 
         // v8.0.5: Capture temp_id directly from request body (JS sends it for IPA audio quiz visitors).
         // Scoring happens directly in this function after user creation — no hooks, no class properties.
         $body_temp_id = sanitize_text_field($request->get_param('temp_id') ?? '');
         $has_audio_quiz = ($body_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $body_temp_id));
+        error_log("[FLOSC v8.0.6] email={$email}, temp_id={$body_temp_id}, has_audio={$has_audio_quiz}");
 
         if (empty($email) || !is_email($email)) {
             return new WP_REST_Response([

@@ -3165,11 +3165,11 @@ class floscApp {
                         sum += v * v;
                     }
                     const rms = Math.sqrt(sum / segmentLen);
-                    const barHeight = Math.max(2, rms * maxHeight * 3);
+                    const barHeight = Math.max(2, rms * maxHeight * 1.5);
                     const x = i * (barWidth + 2) + 1;
                     const y = (h - barHeight) / 2;
 
-                    ctx.fillStyle = `rgba(107, 114, 128, ${0.3 + Math.min(rms * 4, 0.7)})`;
+                    ctx.fillStyle = `rgba(107, 114, 128, ${0.3 + Math.min(rms * 2, 0.5)})`;
                     ctx.beginPath();
                     ctx.roundRect(x, y, barWidth, barHeight, 1);
                     ctx.fill();
@@ -5384,6 +5384,9 @@ Purchased: ${ctx.purchased}
         // v8.0.0: For visitors taking the IPA audio quiz, mark that real scores
         // are pending server-side scoring (not available in localStorage yet).
         if (result.skipServerStore) quizData.pendingServerScore = true;
+        // v8.0.7: Store temp_id so post-login scoring works for ALL auth methods
+        // (email, Facebook, Google, any SSO). The cookie-based approach fails cross-domain.
+        if (this.ipaQuiz?.tempId) quizData.tempId = this.ipaQuiz.tempId;
         localStorage.setItem('flosc_quiz_result', JSON.stringify(quizData));
         
         // v8.0.0: Visitors with audio quiz — server scores on register/login.
@@ -6537,23 +6540,23 @@ Purchased: ${ctx.purchased}
             const stored = localStorage.getItem('flosc_quiz_result');
             if (stored) {
                 const result = JSON.parse(stored);
-                // Only show if recent (within last hour) and user just logged in
+                // Only show if recent (within last 24 hours)
                 const age = Date.now() - (result.timestamp || 0);
-                if (age < 3600000) { // 1 hour
+                if (age < 86400000) { // 24 hours
                     this.log('[FLOSC] Revealing quiz score after login:', result.score);
                     
-                    // v8.0.0: Scores were computed server-side during register/login.
-                    // The real results are in this.user.lastQuizData (from FLOSC_CONFIG).
-                    // localStorage has wordIpa (IPA reference dict) but placeholder phraseResults.
+                    // v8.0.7: Universal scoring — works for ALL auth methods (email, FB, Google).
+                    // If pendingServerScore, we need server-side scoring of the audio files.
+                    // First check if server already has results (email reg path may have scored).
+                    // If not, call /score-pending-audio with temp_id from localStorage.
                     if (result.pendingServerScore) {
                         const wordIpa = result.wordIpa || {};
                         this.ivr.context.quiz_completed = true;
                         this.ivr.context.quiz_taken = true;
 
-                        // Display server-scored results if available
+                        // Check if server already scored (email reg path)
                         const serverData = this.user?.lastQuizData;
                         if (serverData && serverData.quiz_type === 'ipa_audio' && serverData.phrase_results) {
-                            // v8.0.5: Only clear localStorage AFTER confirming server data exists
                             localStorage.removeItem('flosc_quiz_result');
                             this.showIpaPhraseResultsAfterLogin({
                                 score: serverData.score,
@@ -6566,9 +6569,64 @@ Purchased: ${ctx.purchased}
                             this.ivr.context.quiz_results_shown = true;
                             this.ivr.context.first_message_after_quiz = true;
                             this.ivr.context.first_message_after_login = true;
+                            return;
+                        }
+
+                        // v8.0.7: Server hasn't scored yet. Call /score-pending-audio.
+                        // This covers SSO (Facebook, Google) where the cookie-based path fails.
+                        const tempId = result.tempId;
+                        if (tempId) {
+                            this.log('[FLOSC] Requesting server-side scoring for temp_id:', tempId);
+                            // Show preparing message with score circle animation
+                            const prepHtml = `<div class="flosc-ipa-final"><div class="flosc-ipa-final-title">Analyzing Your Pronunciation...</div><div class="flosc-quiz-score-circle flosc-score-preparing" style="--score-percent: 0%"><span class="flosc-quiz-score-value" id="flosc-scoring-pct">0%</span></div><div class="flosc-ipa-final-stats" id="flosc-scoring-status">Scoring your recordings — this takes a moment</div></div>`;
+                            this.addMessage('assistant', prepHtml, true);
+                            const pctEl = document.getElementById('flosc-scoring-pct');
+                            const statusEl = document.getElementById('flosc-scoring-status');
+                            const circleEl = pctEl?.closest('.flosc-quiz-score-circle');
+
+                            try {
+                                const resp = await this.authFetch(`${this.config.restUrl}score-pending-audio`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ temp_id: tempId })
+                                });
+                                const scoreResult = await resp.json();
+
+                                if (scoreResult.success && scoreResult.score_data) {
+                                    localStorage.removeItem('flosc_quiz_result');
+                                    const sd = scoreResult.score_data;
+                                    // Animate the score circle to final value
+                                    if (pctEl) pctEl.textContent = sd.score + '%';
+                                    if (circleEl) {
+                                        circleEl.classList.remove('flosc-score-preparing');
+                                        circleEl.style.setProperty('--score-percent', sd.score + '%');
+                                    }
+                                    if (statusEl) statusEl.textContent = 'Assessment complete!';
+                                    // Show full results after a brief pause
+                                    setTimeout(() => {
+                                        this.showIpaPhraseResultsAfterLogin({
+                                            score: sd.score,
+                                            phraseResults: sd.phrase_results || [],
+                                            wordIpa: wordIpa,
+                                            rankedPhonemes: sd.ranked_phonemes || [],
+                                            quizType: 'ipa_audio'
+                                        });
+                                    }, 800);
+                                    this.ivr.context.score = sd.score;
+                                    this.ivr.context.quiz_results_shown = true;
+                                    this.ivr.context.first_message_after_quiz = true;
+                                    this.ivr.context.first_message_after_login = true;
+                                    return;
+                                } else {
+                                    this.logError('[FLOSC] Server scoring failed:', scoreResult.message);
+                                    if (statusEl) statusEl.textContent = 'Scoring could not complete. Please try refreshing the page.';
+                                }
+                            } catch (err) {
+                                this.logError('[FLOSC] Score pending audio request failed:', err);
+                                if (statusEl) statusEl.textContent = 'Connection error. Please refresh to try again.';
+                            }
                         } else if (this.user?.lastQuizScore) {
-                            // v8.0.1: Fallback — server data not available (transient expired or
-                            // scoring still pending). Show the score we have from user meta.
+                            // No temp_id and no server data — show basic score from user meta
                             localStorage.removeItem('flosc_quiz_result');
                             const score = parseInt(this.user.lastQuizScore) || 0;
                             this.addMessage('assistant', `Welcome back! Your pronunciation assessment score: **${score}%**. Use "Review my quiz score" to see detailed results when they're ready.`);
@@ -6577,8 +6635,6 @@ Purchased: ${ctx.purchased}
                             this.ivr.context.first_message_after_quiz = true;
                             this.ivr.context.first_message_after_login = true;
                         }
-                        // v8.0.5: If neither server path produced data, keep localStorage intact
-                        // so the next page load can retry.
                         return;
                     }
                     
