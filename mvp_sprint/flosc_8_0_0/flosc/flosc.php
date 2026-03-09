@@ -994,6 +994,13 @@ The Team',
         $current_count = (int) get_user_meta($user->ID, '_flosc_login_count', true);
         update_user_meta($user->ID, '_flosc_login_count', $current_count + 1);
 
+        // v8.0.4: SSO redirect passes temp_id in the redirect_to URL parameter.
+        // Extract it so audio scoring works even when cookie/body paths are unavailable.
+        $redirect_temp_id = sanitize_text_field($_GET['flosc_temp_id'] ?? $_REQUEST['flosc_temp_id'] ?? '');
+        if ($redirect_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $redirect_temp_id)) {
+            $this->_pending_audio_temp_id = $redirect_temp_id;
+        }
+
         // v9.4.2: Check for pre-login score in SIGNED cookie
         $score_data = $this->get_signed_cookie('flosc_prelogin_score');
 

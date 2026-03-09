@@ -2797,7 +2797,14 @@ class floscApp {
         `;
         
         this.addMessage('assistant', resultHtml, true);
-        this.storeQuizScore(score, data.correct || [], data.incorrect || []);
+        // v8.0.4: storeQuizScore expects a single result object, not positional args
+        this.storeQuizScore({
+            score: score,
+            correct: data.correct || [],
+            total: (data.correct || []).length + (data.incorrect || []).length,
+            passed: score >= 70,
+            userAnswer: data.transcript || ''
+        });
         this.onQuizComplete(score);
     }
 
@@ -4193,13 +4200,18 @@ class floscApp {
     
     initiateSSO(provider, authUrl) {
         this.log('[FLOSC SSO] Initiating SSO with:', provider);
-        
+
         // Add redirect_to parameter so user comes back here
         // v1.4.6: Use & if URL already has query params (e.g. non-pretty permalinks)
-        const redirectTo = window.location.href;
+        // v8.0.4: Include temp_id in redirect URL so server can score visitor audio post-SSO
+        let redirectTo = window.location.href;
+        if (this.ipaQuiz?.tempId) {
+            const sep = redirectTo.includes('?') ? '&' : '?';
+            redirectTo += `${sep}flosc_temp_id=${encodeURIComponent(this.ipaQuiz.tempId)}`;
+        }
         const separator = authUrl.includes('?') ? '&' : '?';
         const fullAuthUrl = `${authUrl}${separator}redirect_to=${encodeURIComponent(redirectTo)}`;
-        
+
         // Redirect to SSO provider
         window.location.href = fullAuthUrl;
     }
@@ -7127,7 +7139,9 @@ Purchased: ${ctx.purchased}
                         }
 
                         if (result.success) {
-                            modal.style.display = 'none';
+                            // v8.0.4: modal not in scope here — look up payment modal element
+                            const paymentModal = document.getElementById('flosc_modal_payment');
+                            if (paymentModal) paymentModal.style.display = 'none';
                             this.addMessage('assistant', '\ud83c\udf89 **Payment successful!** Welcome to full membership! Refreshing your access...');
                             setTimeout(() => window.location.reload(), 2000);
                         } else {
@@ -7167,7 +7181,7 @@ Purchased: ${ctx.purchased}
                 paypalContainer.innerHTML =
                     '<div style="text-align:center;padding:14px;font-size:13px;">' +
                     '<div style="color:#dc2626;margin-bottom:10px;">PayPal could not load. Please try again.</div>' +
-                    '<button onclick="this.closest(\'#flosc_modal_payment\') && window.floscApp && window.floscApp.showPaymentModal(\'' + offerId + '\')" ' +
+                    '<button onclick="this.closest(\'#flosc_modal_payment\') && window.floscAppInstance && window.floscAppInstance.showPaymentModal(\'' + offerId + '\')" ' +
                     'style="padding:8px 18px;background:#0070ba;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">↺ Retry</button>' +
                     '</div>';
             });
