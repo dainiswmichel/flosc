@@ -3225,10 +3225,9 @@ class floscApp {
                     formData.append('temp_id', this.ipaQuiz.tempId);
                 }
 
-                const resp = await fetch(this.config.apiUrl + '/store-visitor-audio', {
+                // v8.0.4: Use authFetch (includes nonce + FLOSC token + credentials)
+                const resp = await this.authFetch(this.config.apiUrl + '/store-visitor-audio', {
                     method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'X-WP-Nonce': this.config.nonce },
                     body: formData
                 });
 

@@ -2166,6 +2166,18 @@ The {product_name} Team";
             return true;
         }
 
+        // v8.0.4: Bypass nonce check for FLOSC public REST endpoints when visitor
+        // is not logged in. WordPress fires rest_cookie_check_errors even when no
+        // cookie is present — if JS sends X-WP-Nonce but no auth cookie exists,
+        // the nonce validation fails with "Cookie check failed". Public endpoints
+        // already enforce their own rate-limiting via check_public_endpoint_permission.
+        if (!is_user_logged_in()) {
+            $uri = $_SERVER['REQUEST_URI'] ?? '';
+            if (strpos($uri, '/flosc/v1/') !== false) {
+                return true;
+            }
+        }
+
         return $result;
     }
 
