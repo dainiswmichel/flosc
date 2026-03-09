@@ -341,6 +341,12 @@ class FLOSC_Framework {
     // Used by allow_flosc_token_auth() to bypass WordPress nonce check
     private $flosc_token_auth_used = false;
 
+    // v8.0.4: Fallback temp_id from registration request body.
+    // Set by handle_email_registration() before wp_login fires, so
+    // handle_user_login() can score visitor audio even when the
+    // flosc_visitor_temp_id signed cookie didn't round-trip (cross-domain).
+    private $_pending_audio_temp_id = '';
+
     public static function instance() {
         if (null === self::$instance) {
             // Assign instance BEFORE constructor work so flosc_get_setting()
@@ -985,7 +991,12 @@ The Team',
 
         // v8.0.0: If visitor took the IPA audio quiz and then logged in (any account,
         // any reason), score their stored audio files now. They become a guest to this flow.
+        // v8.0.4: Fall back to class property set by handle_email_registration() when
+        // the signed cookie didn't survive the cross-domain REST call.
         $temp_id = $this->get_signed_cookie('flosc_visitor_temp_id');
+        if (!$temp_id && $this->_pending_audio_temp_id) {
+            $temp_id = $this->_pending_audio_temp_id;
+        }
         if ($temp_id && is_string($temp_id)) {
             $audio_score = $this->score_visitor_audio($user->ID, $temp_id);
             if ($audio_score) {
@@ -2514,8 +2525,9 @@ The {product_name} Team";
                 'lastQuizScore' => get_user_meta($user->ID, '_flosc_last_quiz_score', true),
                 'lastQuizId' => get_user_meta($user->ID, '_flosc_last_quiz_id', true),
                 // v8.0.0: Full quiz data (phrase_results, ranked_phonemes) for post-login display.
-                // Only included when justCompletedQuiz is true to avoid bloating every page load.
-                'lastQuizData' => $just_completed_quiz
+                // v8.0.4: Also load on justLoggedIn — visitor registers, audio scores during
+                // the wp_login hook, then page reloads. Both flags can be true simultaneously.
+                'lastQuizData' => ($just_completed_quiz || $just_logged_in)
                     ? (get_user_meta($user->ID, '_flosc_last_quiz_data', true) ?: null)
                     : null,
                 'initialScore' => get_user_meta($user->ID, '_flosc_initial_score', true),
@@ -6481,7 +6493,15 @@ Example good response:
      */
     public function handle_email_registration($request) {
         $email = sanitize_email($request->get_param('email'));
-        
+
+        // v8.0.4: Capture temp_id from request body (JS sends it for IPA audio quiz visitors).
+        // Store on class property so handle_user_login() can use it as fallback if the
+        // flosc_visitor_temp_id cookie didn't survive the cross-domain REST call.
+        $body_temp_id = sanitize_text_field($request->get_param('temp_id') ?? '');
+        if ($body_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $body_temp_id)) {
+            $this->_pending_audio_temp_id = $body_temp_id;
+        }
+
         if (empty($email) || !is_email($email)) {
             return new WP_REST_Response([
                 'success' => false,

@@ -518,6 +518,7 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
             'autoprompts'   => 'AutoPromptPanel',
             'member-levels' => 'Member Levels',
             'offers'        => 'Offers',
+            'login'         => 'Login & Reg',
             'style'         => 'Style',
             'ui'            => 'UI & Nav',
             'ai'            => 'AI',
@@ -1095,6 +1096,9 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
 
         <?php elseif ($active_tab === 'offers'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/offers.php'; ?>
+
+        <?php elseif ($active_tab === 'login'): ?>
+            <?php include FLOSC_PLUGIN_DIR . 'admin/login-registration.php'; ?>
             
         <?php elseif ($active_tab === 'payments'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/payments.php'; ?>

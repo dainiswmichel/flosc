@@ -3370,7 +3370,7 @@ class floscApp {
         });
         const weakest = Object.entries(phonemeScores)
             .map(([ipa, scores]) => ({ ipa, avg: scores.reduce((s, c) => s + c, 0) / scores.length }))
-            .sort((a, b) => a.avg - b.avg)
+            .sort((a, b) => a.avg - b.avg || Math.random() - 0.5)
             .slice(0, 5);
 
         const scoreClass = score >= 70 ? '' : score >= 40 ? 'medium-score' : 'low-score';
@@ -3485,7 +3485,7 @@ class floscApp {
             // Guests and members: show full summary with score and weakest sounds
             const weakest = Object.entries(phonemeScores)
                 .map(([ipa, scores]) => ({ ipa, avg: scores.reduce((s, c) => s + c, 0) / scores.length }))
-                .sort((a, b) => a.avg - b.avg)
+                .sort((a, b) => a.avg - b.avg || Math.random() - 0.5)
                 .slice(0, 5);
 
             const scoreClass = score >= 70 ? '' : score >= 40 ? 'medium-score' : 'low-score';
@@ -3523,7 +3523,7 @@ class floscApp {
         const phonemeMap = this.config.audioQuizPhonemeLessonMap || {};
         const rankedPhonemes = Object.entries(phonemeScores)
             .map(([ipa, scores]) => ({ ipa, avg: scores.reduce((s, c) => s + c, 0) / scores.length }))
-            .sort((a, b) => a.avg - b.avg);
+            .sort((a, b) => a.avg - b.avg || Math.random() - 0.5);
 
         // Filter to phonemes that have a lesson mapping, take 10 worst
         const mappedWorst = rankedPhonemes.filter(p => phonemeMap[p.ipa] !== undefined).slice(0, 10);
@@ -3882,8 +3882,8 @@ class floscApp {
                         </svg>
                     </button>
                     <div class="flosc-auth-header">
-                        <h2>🔓 Sign Up or Log In</h2>
-                        <p>Create an account to save your progress</p>
+                        <h2 style="color: #1fad0d; font-weight: bold; font-family: 'Atkinson Hyperlegible Next', sans-serif; font-size: 28px;">${this.config.authModalTitle || 'Register Or Log In To See Your Quiz Results'}</h2>
+                        <p style="color: #888; font-family: 'Atkinson Hyperlegible Next', sans-serif; font-size: 16px;">${this.config.authModalSubtitle || 'Account creation is necessary to process your quiz!'}</p>
                     </div>
                     <form class="flosc-auth-form" id="flosc-auth-form">
                         <div class="flosc-auth-field">
@@ -3891,7 +3891,7 @@ class floscApp {
                             <input type="email" id="flosc-auth-email" placeholder="you@example.com" required>
                         </div>
                         <button type="submit" class="flosc-auth-submit">
-                            Continue with Email
+                            ${this.config.authModalButtonText || 'Continue with Email'}
                         </button>
                     </form>
                     ${ssoButtonsHtml}
@@ -3937,6 +3937,11 @@ class floscApp {
     hideAuthModal() {
         const modal = document.getElementById('flosc-auth-modal');
         if (modal) modal.remove();
+
+        // v8.0.1: If visitor dismissed auth modal after quiz, show fallback message
+        if (this.state === 'visitor' && this.ivr?.context?.quiz_completed) {
+            this.addMessage('assistant', this.config.authModalDismissMessage || 'Your quiz results are temporarily saved. Sign up or log in to see your results before they expire.', false);
+        }
     }
 
     // Handle visitor menu actions
@@ -4142,12 +4147,17 @@ class floscApp {
         try {
             // Call the email registration API
             // v3.0.0: Use authFetch() for cross-domain support
+            // v8.0.4: Include temp_id so server can link visitor's quiz audio to new account
+            const regBody = { email };
+            if (this.ipaQuiz?.tempId) {
+                regBody.temp_id = this.ipaQuiz.tempId;
+            }
             const response = await this.authFetch(`${this.config.restUrl}register-email`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email })
+                body: JSON.stringify(regBody)
             });
             
             const result = await response.json();
@@ -5762,10 +5772,14 @@ Purchased: ${ctx.purchased}
                 this.floscShowUserAutoPrompts();
             } else {
                 // AI returned nothing — fall back to raw IVR if available
-                if (ivrGuidance) {
-                    const content = this.replaceVariables(ivrGuidance.content);
+                // v8.0.0: Try ivrGuidance first, then ivrMatch (even if conditions didn't pass)
+                // as a last resort. The action (show_quiz_results, open_lesson_library) is still
+                // useful even when conditions like is_member aren't met.
+                const fallback = ivrGuidance || ivrMatch;
+                if (fallback) {
+                    const content = this.replaceVariables(fallback.content);
                     this.addMessage('assistant', content);
-                    if (ivrGuidance.action && executeActions) this.performIVRAction(ivrGuidance.action);
+                    if (fallback.action && executeActions) this.performIVRAction(fallback.action);
                 } else {
                     this.addMessage('assistant', "I'm having trouble responding right now. Please try again.");
                 }
@@ -5774,10 +5788,11 @@ Purchased: ${ctx.purchased}
             this.logError('FLOSC: API error:', error);
             this.hideTyping();
             // On error, fall back to raw IVR if we had a match
-            if (ivrGuidance) {
-                const content = this.replaceVariables(ivrGuidance.content);
+            const fallback = ivrGuidance || ivrMatch;
+            if (fallback) {
+                const content = this.replaceVariables(fallback.content);
                 this.addMessage('assistant', content);
-                if (ivrGuidance.action && executeActions) this.performIVRAction(ivrGuidance.action);
+                if (fallback.action && executeActions) this.performIVRAction(fallback.action);
             } else {
                 this.addMessage('assistant', "I'm having trouble responding right now. Please try again.");
             }
@@ -6490,6 +6505,15 @@ Purchased: ${ctx.purchased}
                                 quizType: 'ipa_audio'
                             });
                             this.ivr.context.score = serverData.score;
+                            this.ivr.context.quiz_results_shown = true;
+                            this.ivr.context.first_message_after_quiz = true;
+                            this.ivr.context.first_message_after_login = true;
+                        } else if (this.user?.lastQuizScore) {
+                            // v8.0.1: Fallback — server data not available (transient expired or
+                            // scoring still pending). Show the score we have from user meta.
+                            const score = parseInt(this.user.lastQuizScore) || 0;
+                            this.addMessage('assistant', `Welcome back! Your pronunciation assessment score: **${score}%**. Use "Review my quiz score" to see detailed results when they're ready.`);
+                            this.ivr.context.score = score;
                             this.ivr.context.quiz_results_shown = true;
                             this.ivr.context.first_message_after_quiz = true;
                             this.ivr.context.first_message_after_login = true;
