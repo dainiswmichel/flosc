@@ -6482,30 +6482,38 @@ Example good response:
      */
     public function handle_email_registration($request) {
         $email = sanitize_email($request->get_param('email'));
-        
+
         if (empty($email) || !is_email($email)) {
             return new WP_REST_Response([
                 'success' => false,
                 'message' => 'Please enter a valid email address.'
             ], 400);
         }
-        
+
+        // v8.0.2: Accept temp_id from request body as fallback for cross-domain cookie issues.
+        // handle_user_login() tries the signed cookie first; if that fails (SameSite, cross-domain),
+        // we score the audio directly here using the request-provided temp_id.
+        $request_temp_id = sanitize_text_field($request->get_param('temp_id') ?? '');
+
         // Check if user already exists
         $existing_user = get_user_by('email', $email);
-        
+
         if ($existing_user) {
             // Log in existing user
             wp_set_current_user($existing_user->ID);
             wp_set_auth_cookie($existing_user->ID, true);
             do_action('wp_login', $existing_user->user_login, $existing_user);
-            
+
             // v3.0.0: Generate FLOSC auth token for cross-domain compatibility
             $flosc_token = $this->generate_flosc_auth_token($existing_user->ID);
             $this->set_flosc_auth_cookie($flosc_token);
-            
+
             // Transfer any stored pre-login data
             $this->process_prelogin_data_for_user($existing_user->ID);
-            
+
+            // v8.0.2: If handle_user_login didn't score audio (cookie missing), score now
+            $this->ensure_audio_scored($existing_user->ID, $request_temp_id);
+
             return new WP_REST_Response([
                 'success' => true,
                 'message' => 'Welcome back!',
@@ -6552,11 +6560,14 @@ Example good response:
         // Fire registration action
         do_action('user_register', $user_id);
         do_action('flosc_user_registered', $user_id, 'email');
-        
+
+        // v8.0.2: If handle_user_login/handle_user_registration didn't score audio (cookie missing), score now
+        $this->ensure_audio_scored($user_id, $request_temp_id);
+
         if (FLOSC_DEBUG) {
             error_log("FLOSC Auth: New user registered via email: {$email} (User ID: {$user_id})");
         }
-        
+
         return new WP_REST_Response([
             'success' => true,
             'message' => 'Account created successfully!',
@@ -7860,7 +7871,12 @@ Example good response:
         foreach ($phoneme_scores as $ipa => $scores) {
             $ranked[] = ['ipa' => $ipa, 'avg' => array_sum($scores) / count($scores)];
         }
-        usort($ranked, function($a, $b) { return $a['avg'] <=> $b['avg']; });
+        // v8.0.2: Deterministic tie-breaking — when two phonemes have identical avg
+        // confidence, sort alphabetically by IPA symbol so "3rd worst" is stable.
+        usort($ranked, function($a, $b) {
+            $cmp = $a['avg'] <=> $b['avg'];
+            return $cmp !== 0 ? $cmp : strcmp($a['ipa'], $b['ipa']);
+        });
 
         // Map worst 10 phonemes to lesson numbers
         $phoneme_map = json_decode(flosc_get_setting('audio_quiz_phoneme_lesson_map', '{}'), true) ?: [];
@@ -7930,6 +7946,43 @@ Example good response:
             'ranked_phonemes' => $ranked_for_upsell,
             'phrase_results' => $all_results,
         ];
+    }
+
+    /**
+     * v8.0.2: Ensure visitor audio was scored after registration/login.
+     *
+     * handle_user_login() and handle_user_registration() try the signed cookie.
+     * If the cookie didn't survive (cross-domain, SameSite, cleared by browser),
+     * this method uses the request-provided temp_id as a fallback.
+     *
+     * Only runs if _flosc_last_quiz_data doesn't already contain phrase_results
+     * (i.e., the cookie-based path already succeeded).
+     */
+    private function ensure_audio_scored($user_id, $request_temp_id) {
+        if (empty($request_temp_id)) return;
+
+        // Validate format
+        if (!preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $request_temp_id)) return;
+
+        // Check if audio was already scored by the cookie-based path
+        $existing = get_user_meta($user_id, '_flosc_last_quiz_data', true);
+        if (is_array($existing) && !empty($existing['phrase_results'])) return;
+
+        if (FLOSC_DEBUG) {
+            error_log("FLOSC v8.0.2: Cookie-based audio scoring missed for user {$user_id} — using request temp_id {$request_temp_id}");
+        }
+
+        $audio_score = $this->score_visitor_audio($user_id, $request_temp_id);
+        if ($audio_score) {
+            $this->store_quiz_score($user_id, $audio_score);
+            do_action('flosc_quiz_completed', $audio_score, $user_id);
+            set_transient('flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5);
+
+            $user = get_userdata($user_id);
+            if ($user) {
+                $this->send_score_email($user, $audio_score);
+            }
+        }
     }
 
     /**

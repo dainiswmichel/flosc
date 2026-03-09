@@ -1339,7 +1339,7 @@
     display: block;
     width: 100%;
     padding: 12px 24px;
-    background: var(--flosc-quiz-record-bg, #4f46e5);
+    background: var(--flosc-ipa-high, #34d399);
     color: #fff;
     border: none;
     border-radius: 8px;

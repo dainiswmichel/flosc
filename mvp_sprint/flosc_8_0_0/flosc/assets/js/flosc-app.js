@@ -3521,9 +3521,10 @@ class floscApp {
 
         // Rank all phonemes worst→best across all phrases
         const phonemeMap = this.config.audioQuizPhonemeLessonMap || {};
+        // v8.0.2: Deterministic tie-breaking — alphabetical by IPA symbol when avg is equal
         const rankedPhonemes = Object.entries(phonemeScores)
             .map(([ipa, scores]) => ({ ipa, avg: scores.reduce((s, c) => s + c, 0) / scores.length }))
-            .sort((a, b) => a.avg - b.avg);
+            .sort((a, b) => a.avg - b.avg || a.ipa.localeCompare(b.ipa));
 
         // Filter to phonemes that have a lesson mapping, take 10 worst
         const mappedWorst = rankedPhonemes.filter(p => phonemeMap[p.ipa] !== undefined).slice(0, 10);
@@ -3882,8 +3883,8 @@ class floscApp {
                         </svg>
                     </button>
                     <div class="flosc-auth-header">
-                        <h2>🔓 Sign Up or Log In</h2>
-                        <p>Create an account to save your progress</p>
+                        <h2>Sign Up or Log In</h2>
+                        <p>To see your quiz results</p>
                     </div>
                     <form class="flosc-auth-form" id="flosc-auth-form">
                         <div class="flosc-auth-field">
@@ -3937,6 +3938,11 @@ class floscApp {
     hideAuthModal() {
         const modal = document.getElementById('flosc-auth-modal');
         if (modal) modal.remove();
+        // v8.0.2: If visitor dismissed the auth modal after a quiz, remind them
+        // their results are temporarily saved.
+        if (this.ivr?.context?.quiz_completed && this.state === 'visitor') {
+            this.addMessage('assistant', 'Your quiz results are saved temporarily. Sign up or log in soon to view them before they expire!');
+        }
     }
 
     // Handle visitor menu actions
@@ -4147,11 +4153,16 @@ class floscApp {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ email })
+                body: JSON.stringify({
+                    email,
+                    // v8.0.2: Send IPA quiz temp_id so server can score audio even if
+                    // the signed cookie didn't survive (cross-domain, SameSite, etc.)
+                    temp_id: this.ipaQuiz?.tempId || ''
+                })
             });
-            
+
             const result = await response.json();
-            
+
             if (result.success) {
                 // v3.0.0: Store FLOSC auth token for cross-domain persistence
                 if (result.auth_token) {
