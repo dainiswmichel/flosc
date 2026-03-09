@@ -3225,10 +3225,12 @@ class floscApp {
                     formData.append('temp_id', this.ipaQuiz.tempId);
                 }
 
+                // v8.0.4 FIX: Do NOT send X-WP-Nonce for visitor uploads.
+                // WordPress validates the nonce against the auth cookie when the header
+                // is present. Visitors have no auth cookie → "Cookie check failed" (403).
+                // The endpoint uses check_public_endpoint_permission — no nonce needed.
                 const resp = await fetch(this.config.apiUrl + '/store-visitor-audio', {
                     method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'X-WP-Nonce': this.config.nonce },
                     body: formData
                 });
 
