@@ -1339,7 +1339,7 @@
     display: block;
     width: 100%;
     padding: 12px 24px;
-    background: #1fad0d;
+    background: var(--flosc-quiz-record-bg, #4f46e5);
     color: #fff;
     border: none;
     border-radius: 8px;

@@ -341,12 +341,6 @@ class FLOSC_Framework {
     // Used by allow_flosc_token_auth() to bypass WordPress nonce check
     private $flosc_token_auth_used = false;
 
-    // v8.0.4: Fallback temp_id from registration request body.
-    // Set by handle_email_registration() before wp_login fires, so
-    // handle_user_login() can score visitor audio even when the
-    // flosc_visitor_temp_id signed cookie didn't round-trip (cross-domain).
-    private $_pending_audio_temp_id = '';
-
     public static function instance() {
         if (null === self::$instance) {
             // Assign instance BEFORE constructor work so flosc_get_setting()
@@ -468,11 +462,6 @@ class FLOSC_Framework {
         add_action('admin_menu', [$this, 'add_admin_menu'], 5);
         add_action('admin_init', [$this, 'register_settings']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']); // v1.0.4: TASK-006
-
-        // v8.0.5: Show user audio files on WP admin user profile page
-        add_action('edit_user_profile', [$this, 'render_admin_user_audio_section']);
-        add_action('show_user_profile', [$this, 'render_admin_user_audio_section']);
-        add_action('wp_ajax_flosc_serve_user_audio', [$this, 'ajax_serve_user_audio']);
         
         // Auto-flush permalinks when slug changes
         add_action('update_option_flosc_app_slug', [$this, 'handle_slug_change'], 10, 2);
@@ -956,12 +945,28 @@ The Team',
             }
         }
 
-        // v8.0.5: Audio scoring is NOT done here. This hook fires for ALL registration
-        // methods (email, SSO, WP form) and has no reliable access to the temp_id.
-        // Instead, scoring is called DIRECTLY by the function that has the temp_id:
-        //   - Email registration: handle_email_registration() calls score_visitor_audio() directly
-        //   - SSO registration: handle_user_login() reads the browser cookie (reliable for SSO)
-        // This hook handles signup bonus + referral only.
+        // v8.0.0: Score visitor audio files on registration.
+        // The 5 API calls to DO happen during the registration server-side processing.
+        // By the time the new guest is redirected, their scores are in user meta.
+        $temp_id = $this->get_signed_cookie('flosc_visitor_temp_id');
+        if ($temp_id && is_string($temp_id)) {
+            $audio_score = $this->score_visitor_audio($user_id, $temp_id);
+            if ($audio_score) {
+                // Store score + fire quiz_completed so Free Lesson Manager assigns lessons
+                $this->store_quiz_score($user_id, $audio_score);
+                do_action('flosc_quiz_completed', $audio_score, $user_id);
+                set_transient('flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5);
+                $user = get_userdata($user_id);
+                if ($user) {
+                    $this->send_score_email($user, $audio_score);
+                }
+            }
+            // Clear the temp cookie
+            setcookie('flosc_visitor_temp_id', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
+            // Clear the prelogin score cookie too — prevent handle_user_login from overwriting
+            // the real score with the placeholder score: 0 that JS stored.
+            setcookie('flosc_prelogin_score', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
+        }
     }
     
     /**
@@ -978,9 +983,8 @@ The Team',
         // v9.4.2: Check for pre-login score in SIGNED cookie
         $score_data = $this->get_signed_cookie('flosc_prelogin_score');
 
-        // v8.0.5: Score visitor audio on login — covers SSO path (Google/Facebook) where
-        // the browser sends the visitor_temp_id cookie set during audio recording.
-        // Email registration scoring is handled directly in handle_email_registration().
+        // v8.0.0: If visitor took the IPA audio quiz and then logged in (any account,
+        // any reason), score their stored audio files now. They become a guest to this flow.
         $temp_id = $this->get_signed_cookie('flosc_visitor_temp_id');
         if ($temp_id && is_string($temp_id)) {
             $audio_score = $this->score_visitor_audio($user->ID, $temp_id);
@@ -2510,9 +2514,8 @@ The {product_name} Team";
                 'lastQuizScore' => get_user_meta($user->ID, '_flosc_last_quiz_score', true),
                 'lastQuizId' => get_user_meta($user->ID, '_flosc_last_quiz_id', true),
                 // v8.0.0: Full quiz data (phrase_results, ranked_phonemes) for post-login display.
-                // v8.0.4: Also load on justLoggedIn — visitor registers, audio scores during
-                // the wp_login hook, then page reloads. Both flags can be true simultaneously.
-                'lastQuizData' => ($just_completed_quiz || $just_logged_in)
+                // Only included when justCompletedQuiz is true to avoid bloating every page load.
+                'lastQuizData' => $just_completed_quiz
                     ? (get_user_meta($user->ID, '_flosc_last_quiz_data', true) ?: null)
                     : null,
                 'initialScore' => get_user_meta($user->ID, '_flosc_initial_score', true),
@@ -6478,12 +6481,7 @@ Example good response:
      */
     public function handle_email_registration($request) {
         $email = sanitize_email($request->get_param('email'));
-
-        // v8.0.5: Capture temp_id directly from request body (JS sends it for IPA audio quiz visitors).
-        // Scoring happens directly in this function after user creation — no hooks, no class properties.
-        $body_temp_id = sanitize_text_field($request->get_param('temp_id') ?? '');
-        $has_audio_quiz = ($body_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $body_temp_id));
-
+        
         if (empty($email) || !is_email($email)) {
             return new WP_REST_Response([
                 'success' => false,
@@ -6506,19 +6504,6 @@ Example good response:
             
             // Transfer any stored pre-login data
             $this->process_prelogin_data_for_user($existing_user->ID);
-
-            // v8.0.5: Score audio directly — same principle as new-user path
-            if ($has_audio_quiz) {
-                $audio_score = $this->score_visitor_audio($existing_user->ID, $body_temp_id);
-                if ($audio_score) {
-                    $this->store_quiz_score($existing_user->ID, $audio_score);
-                    do_action('flosc_quiz_completed', $audio_score, $existing_user->ID);
-                    set_transient('flosc_just_completed_quiz_' . $existing_user->ID, true, MINUTE_IN_SECONDS * 5);
-                    $this->send_score_email($existing_user, $audio_score);
-                    setcookie('flosc_visitor_temp_id', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
-                    setcookie('flosc_prelogin_score', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
-                }
-            }
             
             return new WP_REST_Response([
                 'success' => true,
@@ -6563,29 +6548,8 @@ Example good response:
         // Transfer any stored pre-login data
         $this->process_prelogin_data_for_user($user_id);
         
-        // v8.0.5: Score visitor audio DIRECTLY — we have the temp_id right here.
-        // No cookie fallbacks, no class property indirection. Direct call.
-        if ($has_audio_quiz) {
-            error_log("[FLOSC v8.0.5] handle_email_registration: scoring audio for user {$user_id}, temp_id={$body_temp_id}");
-            $audio_score = $this->score_visitor_audio($user_id, $body_temp_id);
-            if ($audio_score) {
-                $this->store_quiz_score($user_id, $audio_score);
-                do_action('flosc_quiz_completed', $audio_score, $user_id);
-                set_transient('flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5);
-                $this->send_score_email($user, $audio_score);
-                // Clear cookies so handle_user_login() below doesn't double-score
-                setcookie('flosc_visitor_temp_id', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
-                setcookie('flosc_prelogin_score', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
-                error_log("[FLOSC v8.0.5] Audio scored: {$audio_score['score']}%");
-            } else {
-                error_log("[FLOSC v8.0.5] score_visitor_audio returned false for temp_id={$body_temp_id}");
-            }
-        }
-
         // Fire registration action
-        // NOTE: wp_create_user() already fires 'user_register' internally.
-        // Do NOT fire it again here — it causes double token grants, double emails,
-        // and double audio scoring.
+        do_action('user_register', $user_id);
         do_action('flosc_user_registered', $user_id, 'email');
         
         if (FLOSC_DEBUG) {
@@ -6689,10 +6653,6 @@ Example good response:
             // v1.8.2: Fire flosc_quiz_completed so Free Lesson Manager assigns lessons
             // v3.0.2: $score_data now includes quiz_id for category resolution
             do_action('flosc_quiz_completed', $score_data, $user_id);
-
-            // v8.0.5: Set transient so buildIVRContext() can set first_message_after_quiz
-            // even when the handle_user_login() cookie path didn't fire.
-            set_transient('flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5);
 
             // Store in bridge data if available
             $bridge_manager = FLOSC_Bridge_Data_Manager::instance();
@@ -7825,8 +7785,7 @@ Example good response:
             return false;
         }
 
-        // v8.0.5: Use port 443 (nginx proxy) — ChemiCloud shared hosting blocks outbound port 8000.
-        $api_base = 'https://api.lesaep.com';
+        $api_base = 'https://api.lesaep.com:8000';
         $all_results = [];
 
         foreach ($meta['phrases'] as $phrase_info) {
@@ -9052,147 +9011,6 @@ Example good response:
     | END FUTURE ENHANCEMENTS
     |--------------------------------------------------------------------------
     */
-
-    /**
-     * v8.0.5: Render audio files section on WP admin user profile page.
-     * Reads flosc-users/{user_id}/metadata.json and lists playable audio for each phrase.
-     * Audio served via AJAX endpoint (files are .htaccess-protected).
-     */
-    public function render_admin_user_audio_section($user) {
-        if (!current_user_can('manage_options')) {
-            return;
-        }
-
-        $user_id = $user->ID;
-        $upload_dir = wp_upload_dir();
-        $user_audio_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id;
-        $meta_path = $user_audio_dir . '/metadata.json';
-
-        // Also check flosc-temp for unscored audio (linked via user meta)
-        $temp_dir = null;
-        $temp_meta_path = null;
-        $has_user_dir = is_dir($user_audio_dir) && file_exists($meta_path);
-
-        if (!$has_user_dir) {
-            // Check if there's a pending temp_id in user meta or transient
-            $last_quiz = get_user_meta($user_id, '_flosc_last_quiz_data', true);
-            if (empty($last_quiz)) {
-                // No scored audio and no quiz data — nothing to show
-                echo '<h2>FLOSC Audio Quiz</h2>';
-                echo '<p>No audio quiz data for this user.</p>';
-                return;
-            }
-        }
-
-        echo '<h2>FLOSC Audio Quiz</h2>';
-        echo '<table class="form-table" role="presentation">';
-
-        // Show score summary from user meta
-        $quiz_data = get_user_meta($user_id, '_flosc_last_quiz_data', true);
-        if ($quiz_data) {
-            $score = $quiz_data['score'] ?? '—';
-            $quiz_type = $quiz_data['quiz_type'] ?? $quiz_data['quiz_id'] ?? '—';
-            $timestamp = $quiz_data['timestamp'] ?? '';
-            $scored_date = $timestamp ? wp_date('Y-m-d H:i:s', $timestamp) : '—';
-            $ranked = $quiz_data['ranked_phonemes'] ?? [];
-
-            echo '<tr><th>Score</th><td><strong>' . esc_html($score) . '%</strong></td></tr>';
-            echo '<tr><th>Quiz Type</th><td>' . esc_html($quiz_type) . '</td></tr>';
-            echo '<tr><th>Scored</th><td>' . esc_html($scored_date) . '</td></tr>';
-            if ($ranked) {
-                echo '<tr><th>Weakest Phonemes</th><td>' . esc_html(implode(', ', $ranked)) . '</td></tr>';
-            }
-        }
-
-        // Show audio files if user dir exists
-        if ($has_user_dir) {
-            $meta = json_decode(file_get_contents($meta_path), true);
-            $phrases = $meta['phrases'] ?? [];
-            $nonce = wp_create_nonce('flosc_serve_audio_' . $user_id);
-
-            if ($phrases) {
-                echo '<tr><th>Audio Recordings</th><td>';
-                echo '<div style="display:flex;flex-direction:column;gap:12px;">';
-                foreach ($phrases as $phrase) {
-                    $num = $phrase['num'] ?? '?';
-                    $text = $phrase['text'] ?? '';
-                    $file = $phrase['file'] ?? '';
-                    $format = $phrase['format'] ?? 'webm';
-                    if (!$file) continue;
-
-                    $audio_url = admin_url('admin-ajax.php') . '?' . http_build_query([
-                        'action' => 'flosc_serve_user_audio',
-                        'user_id' => $user_id,
-                        'file' => $file,
-                        '_wpnonce' => $nonce,
-                    ]);
-
-                    $mime = 'audio/webm';
-                    if ($format === 'mp4') $mime = 'audio/mp4';
-                    if ($format === 'ogg') $mime = 'audio/ogg';
-
-                    echo '<div style="border:1px solid #ddd;border-radius:6px;padding:10px;background:#fafafa;">';
-                    echo '<div style="margin-bottom:6px;"><strong>Phrase ' . esc_html($num) . ':</strong> ' . esc_html($text) . '</div>';
-                    echo '<audio controls preload="none" style="width:100%;max-width:400px;">';
-                    echo '<source src="' . esc_url($audio_url) . '" type="' . esc_attr($mime) . '">';
-                    echo 'Your browser does not support audio playback.';
-                    echo '</audio>';
-                    echo '</div>';
-                }
-                echo '</div>';
-                echo '</td></tr>';
-            }
-
-            // Show scored_at from file metadata
-            if (!empty($meta['scored_at'])) {
-                echo '<tr><th>Audio Scored At</th><td>' . esc_html($meta['scored_at']) . '</td></tr>';
-            }
-        }
-
-        echo '</table>';
-    }
-
-    /**
-     * v8.0.5: AJAX endpoint to serve user audio files to admin.
-     * Required because flosc-users/ dirs have .htaccess Deny from all.
-     */
-    public function ajax_serve_user_audio() {
-        if (!current_user_can('manage_options')) {
-            wp_die('Unauthorized', 403);
-        }
-
-        $user_id = isset($_GET['user_id']) ? absint($_GET['user_id']) : 0;
-        $file = isset($_GET['file']) ? sanitize_file_name($_GET['file']) : '';
-
-        if (!$user_id || !$file) {
-            wp_die('Missing parameters', 400);
-        }
-
-        check_ajax_referer('flosc_serve_audio_' . $user_id);
-
-        // Validate filename: only allow phrase-N.ext pattern
-        if (!preg_match('/^phrase-\d+\.(webm|mp4|ogg|wav)$/', $file)) {
-            wp_die('Invalid file', 400);
-        }
-
-        $upload_dir = wp_upload_dir();
-        $filepath = $upload_dir['basedir'] . '/flosc-users/' . $user_id . '/' . $file;
-
-        if (!file_exists($filepath)) {
-            wp_die('File not found', 404);
-        }
-
-        $ext = pathinfo($file, PATHINFO_EXTENSION);
-        $mimes = ['webm' => 'audio/webm', 'mp4' => 'audio/mp4', 'ogg' => 'audio/ogg', 'wav' => 'audio/wav'];
-        $mime = $mimes[$ext] ?? 'application/octet-stream';
-
-        header('Content-Type: ' . $mime);
-        header('Content-Length: ' . filesize($filepath));
-        header('Content-Disposition: inline; filename="' . $file . '"');
-        header('Cache-Control: private, max-age=3600');
-        readfile($filepath);
-        exit;
-    }
 }
 
 // Initialize
