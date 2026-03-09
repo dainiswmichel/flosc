@@ -6720,6 +6720,13 @@ Example good response:
             // v3.0.2: $score_data now includes quiz_id for category resolution
             do_action('flosc_quiz_completed', $score_data, $user_id);
 
+            // v8.0.9: Set justCompletedQuiz transient so IVR quiz result messages fire.
+            // Previously only handle_user_login() and handle_user_registration() set this,
+            // but when cookies don't survive (cross-domain, SameSite, private browsing),
+            // those handlers can't read the quiz data. This fallback ensures the transient
+            // is set whenever process_prelogin_data_for_user() successfully transfers scores.
+            set_transient('flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5);
+
             // Store in bridge data if available
             $bridge_manager = FLOSC_Bridge_Data_Manager::instance();
             if ($bridge_manager) {

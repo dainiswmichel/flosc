@@ -265,14 +265,11 @@ class floscApp {
                 // v1.7.0: Load sessions for ALL logged-in users (not just funnel-completed)
                 this.log('[FLOSC] Loading sessions...');
                 await this.loadSessions();
-                
+
                 // v1.7.0: Auto-restore last session if user has one and chat is empty
                 if (this.currentSession === null) {
                     await this.restoreLastSession();
                 }
-                
-                this.log('[FLOSC] Checking pending quiz results...');
-                await this.checkPendingQuizResults();
             }
 
             this.freeLessonDelivered = this.user?.freeLessonDelivered || false;
@@ -286,6 +283,14 @@ class floscApp {
             this.buildIVRContext();
             this.log('[FLOSC] IVR context built:', this.ivr.context);
 
+            // v8.0.9: Check pending quiz results AFTER buildIVRContext() so that
+            // context flags (quiz_results_shown, first_message_after_quiz, score)
+            // set by checkPendingQuizResults() are not overwritten by buildIVRContext().
+            if (this.state !== 'visitor') {
+                this.log('[FLOSC] Checking pending quiz results...');
+                await this.checkPendingQuizResults();
+            }
+
             if (this.state === 'visitor') {
                 if (this.ivr.context.first_show_session) {
                     this.log('[FLOSC] First session - clearing old visitor messages');
@@ -295,7 +300,7 @@ class floscApp {
                     this.restoreVisitorMessages();
                 }
             }
-            
+
             this.log('[FLOSC] Starting IVR...');
             // v1.6.2: initOfferMessages() REMOVED — offers ARE IVR entries, no bridge needed
             this.startIVR();
@@ -327,6 +332,21 @@ class floscApp {
         return 'freeline';
     }
 
+    // v8.0.9: Check if localStorage has a recent pending quiz result.
+    // Used by buildIVRContext() to set first_message_after_quiz even when
+    // the server-side transient wasn't set (cookie issues, cross-domain, etc.).
+    _hasPendingQuizResult() {
+        try {
+            const stored = localStorage.getItem('flosc_quiz_result');
+            if (!stored) return false;
+            const result = JSON.parse(stored);
+            const age = Date.now() - (result.timestamp || 0);
+            return age < 3600000; // Within 1 hour
+        } catch (e) {
+            return false;
+        }
+    }
+
     buildIVRContext() {
         // v8.0.9: Use positive state checking instead of negative logic
         const isVisitor = (this.state === 'visitor');
@@ -350,7 +370,10 @@ class floscApp {
             // Session state
             first_show_session: !hasSession,
             // v8.0.0: Set from PHP transients (one-shot flags, survive buildIVRContext rebuild)
-            first_message_after_quiz: !!this.user?.justCompletedQuiz,
+            // v8.0.9: Also check localStorage for pending quiz results — the server
+            // transient may not have been set if cookies didn't survive (cross-domain,
+            // SameSite, private browsing). This ensures IVR quiz result messages fire.
+            first_message_after_quiz: !!(this.user?.justCompletedQuiz || this._hasPendingQuizResult()),
             first_message_after_login: !!this.user?.justLoggedIn,
             first_message_after_purchase: !!this.user?.justPurchased,
             returning_user: hasSession,
@@ -6502,13 +6525,13 @@ Purchased: ${ctx.purchased}
                     // localStorage has wordIpa (IPA reference dict) but placeholder phraseResults.
                     if (result.pendingServerScore) {
                         const wordIpa = result.wordIpa || {};
-                        localStorage.removeItem('flosc_quiz_result');
                         this.ivr.context.quiz_completed = true;
                         this.ivr.context.quiz_taken = true;
 
                         // Display server-scored results if available
                         const serverData = this.user?.lastQuizData;
                         if (serverData && serverData.quiz_type === 'ipa_audio' && serverData.phrase_results) {
+                            localStorage.removeItem('flosc_quiz_result');
                             this.showIpaPhraseResultsAfterLogin({
                                 score: serverData.score,
                                 phraseResults: serverData.phrase_results,
@@ -6521,11 +6544,21 @@ Purchased: ${ctx.purchased}
                             this.ivr.context.first_message_after_quiz = true;
                             this.ivr.context.first_message_after_login = true;
                         } else if (this.user?.lastQuizScore) {
+                            localStorage.removeItem('flosc_quiz_result');
                             // v8.0.1: Fallback — server data not available (transient expired or
                             // scoring still pending). Show the score we have from user meta.
                             const score = parseInt(this.user.lastQuizScore) || 0;
                             this.addMessage('assistant', `Welcome back! Your pronunciation assessment score: **${score}%**. Use "Review my quiz score" to see detailed results when they're ready.`);
                             this.ivr.context.score = score;
+                            this.ivr.context.quiz_results_shown = true;
+                            this.ivr.context.first_message_after_quiz = true;
+                            this.ivr.context.first_message_after_login = true;
+                        } else {
+                            // v8.0.9: Server data not yet available AND no lastQuizScore.
+                            // Don't clear localStorage — keep it so next page load can retry.
+                            // Show a basic welcome so the user isn't left with no feedback.
+                            this.log('[FLOSC] pendingServerScore: no server data yet, keeping localStorage for retry');
+                            this.addMessage('assistant', `Welcome! Your quiz results are being processed. They'll appear shortly — try refreshing in a moment.`);
                             this.ivr.context.quiz_results_shown = true;
                             this.ivr.context.first_message_after_quiz = true;
                             this.ivr.context.first_message_after_login = true;
