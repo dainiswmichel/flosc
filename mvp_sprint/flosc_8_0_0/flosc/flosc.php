@@ -951,44 +951,21 @@ The Team',
             }
         }
 
-        // v8.0.0: Score visitor audio files on registration.
-        // The 5 API calls to DO happen during the registration server-side processing.
-        // By the time the new guest is redirected, their scores are in user meta.
-        // v8.0.3: Fall back to $_pending_audio_temp_id when signed cookie didn't survive
-        // the cross-domain round-trip (lesaep.com → dainis.net REST API, SameSite: Lax).
+        // v8.1.0: Store visitor audio temp_id for the unified scoring path.
+        // Previously this method scored audio directly, but that caused triple-scoring:
+        // handle_user_registration() + handle_user_login() + ensure_audio_scored() all
+        // called score_visitor_audio() independently during a single registration request.
+        // Now: this hook only stores the temp_id. Actual scoring is handled ONCE by
+        // attempt_audio_scoring(), called from handle_user_login() or handle_email_registration().
         $temp_id = $this->get_signed_cookie('flosc_visitor_temp_id');
         if ((!$temp_id || !is_string($temp_id)) && $this->_pending_audio_temp_id) {
             $temp_id = $this->_pending_audio_temp_id;
-            if (FLOSC_DEBUG) {
-                error_log("FLOSC v8.0.3: handle_user_registration() using _pending_audio_temp_id fallback: {$temp_id}");
-            }
         }
         if ($temp_id && is_string($temp_id)) {
-            // v8.0.9: Store temp_id in user meta BEFORE scoring attempt so we can retry
-            // if the pronunciation API is temporarily unreachable.
             update_user_meta($user_id, '_flosc_audio_temp_id', $temp_id);
-
-            $audio_score = $this->score_visitor_audio($user_id, $temp_id);
-            if ($audio_score) {
-                // Store score + fire quiz_completed so Free Lesson Manager assigns lessons
-                $this->store_quiz_score($user_id, $audio_score);
-                do_action('flosc_quiz_completed', $audio_score, $user_id);
-                set_transient('flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5);
-                $user = get_userdata($user_id);
-                if ($user) {
-                    $this->send_score_email($user, $audio_score);
-                }
-                // Scoring succeeded — clear temp_id reference
-                delete_user_meta($user_id, '_flosc_audio_temp_id');
-            } else {
-                if (FLOSC_DEBUG) {
-                    error_log("FLOSC v8.0.9: Audio scoring failed for user {$user_id}, temp_id {$temp_id} — stored for retry");
-                }
-            }
-            // Clear the temp cookie
+            error_log("FLOSC v8.1.0: handle_user_registration() — stored temp_id {$temp_id} for user {$user_id}, scoring deferred");
+            // Clear cookies — scoring path will read temp_id from user meta
             setcookie('flosc_visitor_temp_id', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
-            // Clear the prelogin score cookie too — prevent handle_user_login from overwriting
-            // the real score with the placeholder score: 0 that JS stored.
             setcookie('flosc_prelogin_score', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
         }
     }
@@ -1014,20 +991,18 @@ The Team',
         // v9.4.2: Check for pre-login score in SIGNED cookie
         $score_data = $this->get_signed_cookie('flosc_prelogin_score');
 
-        // v8.0.0: If visitor took the IPA audio quiz and then logged in (any account,
-        // any reason), score their stored audio files now. They become a guest to this flow.
-        // v8.0.3: Fall back to $_pending_audio_temp_id when signed cookie didn't survive
-        // the cross-domain round-trip (lesaep.com → dainis.net REST API, SameSite: Lax).
+        // v8.1.0: Unified audio scoring via attempt_audio_scoring().
+        // Resolves temp_id from signed cookie or _pending_audio_temp_id fallback,
+        // then scores ONCE via the single authoritative scoring method.
+        // Also stores temp_id in user meta (previously only handle_user_registration did this,
+        // so existing users logging in via SSO had no retry path if scoring failed).
         $temp_id = $this->get_signed_cookie('flosc_visitor_temp_id');
         if ((!$temp_id || !is_string($temp_id)) && $this->_pending_audio_temp_id) {
             $temp_id = $this->_pending_audio_temp_id;
-            if (FLOSC_DEBUG) {
-                error_log("FLOSC v8.0.3: handle_user_login() using _pending_audio_temp_id fallback: {$temp_id}");
-            }
         }
         if ($temp_id && is_string($temp_id)) {
-            $audio_score = $this->score_visitor_audio($user->ID, $temp_id);
-            if ($audio_score) {
+            $audio_score = $this->attempt_audio_scoring($user->ID, $temp_id);
+            if ($audio_score && is_array($audio_score) && isset($audio_score['score'])) {
                 $score_data = $audio_score;
             }
             setcookie('flosc_visitor_temp_id', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
@@ -6579,8 +6554,9 @@ Example good response:
             // Transfer any stored pre-login data
             $this->process_prelogin_data_for_user($existing_user->ID);
 
-            // v8.0.2: If handle_user_login didn't score audio (cookie missing), score now
-            $this->ensure_audio_scored($existing_user->ID, $request_temp_id);
+            // v8.1.0: Unified scoring — attempt_audio_scoring() is idempotent,
+            // so it's safe to call even if handle_user_login() already scored.
+            $this->attempt_audio_scoring($existing_user->ID, $request_temp_id);
 
             return new WP_REST_Response([
                 'success' => true,
@@ -6589,6 +6565,9 @@ Example good response:
                 'user_email' => $existing_user->user_email,
                 'is_new_user' => false,
                 'auth_token' => $flosc_token,
+                // v8.1.0: Include quiz data so JS can display scores immediately
+                'quiz_score' => get_user_meta($existing_user->ID, '_flosc_last_quiz_score', true) ?: null,
+                'quiz_data' => get_user_meta($existing_user->ID, '_flosc_last_quiz_data', true) ?: null,
             ]);
         }
         
@@ -6631,12 +6610,11 @@ Example good response:
         // emails, and duplicate audio scoring for every new registration.
         do_action('flosc_user_registered', $user_id, 'email');
 
-        // v8.0.2: If handle_user_login/handle_user_registration didn't score audio (cookie missing), score now
-        $this->ensure_audio_scored($user_id, $request_temp_id);
+        // v8.1.0: Unified scoring — attempt_audio_scoring() is idempotent,
+        // so it's safe to call even if handle_user_login() already scored.
+        $this->attempt_audio_scoring($user_id, $request_temp_id);
 
-        if (FLOSC_DEBUG) {
-            error_log("FLOSC Auth: New user registered via email: {$email} (User ID: {$user_id})");
-        }
+        error_log("FLOSC v8.1.0: New user registered via email: {$email} (User ID: {$user_id})");
 
         return new WP_REST_Response([
             'success' => true,
@@ -6645,6 +6623,9 @@ Example good response:
             'user_email' => $email,
             'is_new_user' => true,
             'auth_token' => $flosc_token,
+            // v8.1.0: Include quiz data so JS can display scores immediately
+            'quiz_score' => get_user_meta($user_id, '_flosc_last_quiz_score', true) ?: null,
+            'quiz_data' => get_user_meta($user_id, '_flosc_last_quiz_data', true) ?: null,
         ]);
     }
     
@@ -8040,40 +8021,67 @@ Example good response:
     }
 
     /**
-     * v8.0.2: Ensure visitor audio was scored after registration/login.
+     * v8.1.0: Single authoritative method for scoring visitor audio after registration/login.
      *
-     * handle_user_login() and handle_user_registration() try the signed cookie.
-     * If the cookie didn't survive (cross-domain, SameSite, cleared by browser),
-     * this method uses the request-provided temp_id as a fallback.
+     * ALL scoring paths (email registration, SSO login, retry endpoint) converge here.
+     * This method:
+     * 1. Checks if scoring already completed (idempotent — safe to call multiple times)
+     * 2. Stores temp_id in user meta so retry endpoint can find it if this attempt fails
+     * 3. Calls score_visitor_audio() to send audio to the pronunciation API
+     * 4. On success: stores score in user meta, fires quiz_completed action, sends email
+     * 5. On failure: leaves temp_id in user meta for retry via /retry-audio-scoring
      *
-     * Only runs if _flosc_last_quiz_data doesn't already contain phrase_results
-     * (i.e., the cookie-based path already succeeded).
+     * @param int    $user_id  WordPress user ID
+     * @param string $temp_id  The visitor temp directory ID (Michel Date Stamp format)
+     * @return array|false     Score data array on success, false on failure or if already scored
      */
-    private function ensure_audio_scored($user_id, $request_temp_id) {
-        if (empty($request_temp_id)) return;
+    private function attempt_audio_scoring($user_id, $temp_id) {
+        if (empty($temp_id) || !is_string($temp_id)) {
+            error_log("FLOSC v8.1.0: attempt_audio_scoring() — empty or invalid temp_id for user {$user_id}");
+            return false;
+        }
 
-        // Validate format
-        if (!preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $request_temp_id)) return;
+        // Validate Michel Date Stamp format
+        if (!preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $temp_id)) {
+            error_log("FLOSC v8.1.0: attempt_audio_scoring() — invalid temp_id format: {$temp_id}");
+            return false;
+        }
 
-        // Check if audio was already scored by the cookie-based path
+        // Idempotent: if this user already has scored phrase_results, skip
         $existing = get_user_meta($user_id, '_flosc_last_quiz_data', true);
-        if (is_array($existing) && !empty($existing['phrase_results'])) return;
-
-        if (FLOSC_DEBUG) {
-            error_log("FLOSC v8.0.2: Cookie-based audio scoring missed for user {$user_id} — using request temp_id {$request_temp_id}");
+        if (is_array($existing) && !empty($existing['phrase_results'])) {
+            error_log("FLOSC v8.1.0: attempt_audio_scoring() — already scored for user {$user_id}, skipping");
+            return $existing;
         }
 
-        $audio_score = $this->score_visitor_audio($user_id, $request_temp_id);
-        if ($audio_score) {
-            $this->store_quiz_score($user_id, $audio_score);
-            do_action('flosc_quiz_completed', $audio_score, $user_id);
-            set_transient('flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5);
+        // Store temp_id in user meta BEFORE scoring so /retry-audio-scoring can find it
+        update_user_meta($user_id, '_flosc_audio_temp_id', $temp_id);
+        error_log("FLOSC v8.1.0: attempt_audio_scoring() — stored temp_id {$temp_id}, scoring user {$user_id}...");
 
-            $user = get_userdata($user_id);
-            if ($user) {
-                $this->send_score_email($user, $audio_score);
-            }
+        // Score the audio via the pronunciation API (Digital Ocean)
+        $audio_score = $this->score_visitor_audio($user_id, $temp_id);
+
+        if (!$audio_score) {
+            error_log("FLOSC v8.1.0: attempt_audio_scoring() — scoring FAILED for user {$user_id}, temp_id {$temp_id} — stored for retry");
+            return false;
         }
+
+        // Success: store score in user meta
+        $this->store_quiz_score($user_id, $audio_score);
+        do_action('flosc_quiz_completed', $audio_score, $user_id);
+        set_transient('flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5);
+
+        // Send score email
+        $user = get_userdata($user_id);
+        if ($user) {
+            $this->send_score_email($user, $audio_score);
+        }
+
+        // Scoring succeeded — clear temp_id reference (no retry needed)
+        delete_user_meta($user_id, '_flosc_audio_temp_id');
+
+        error_log("FLOSC v8.1.0: attempt_audio_scoring() — SUCCESS for user {$user_id}, score: {$audio_score['score']}%");
+        return $audio_score;
     }
 
     /**
