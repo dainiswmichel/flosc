@@ -6567,6 +6567,7 @@ Example good response:
         $body_temp_id = sanitize_text_field($request->get_param('temp_id') ?? '');
         $has_temp_id = ($body_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $body_temp_id));
         $browser_quiz_data = $request->get_param('quiz_data');
+        $session_id = sanitize_text_field($request->get_param('session_id') ?? '');
 
         if (empty($email) || !is_email($email)) {
             return new WP_REST_Response([
@@ -6593,8 +6594,10 @@ Example good response:
             $this->set_flosc_auth_cookie($flosc_token);
             $this->process_prelogin_data_for_user($existing_user->ID);
 
-            // v8.0.8: Store browser-computed quiz data directly — no server-side re-scoring
-            if ($browser_quiz_data && is_array($browser_quiz_data)) {
+            // v8.0.0: Store browser-computed quiz data directly — no server-side re-scoring
+            if ($session_id) {
+                $this->pull_session_from_do($existing_user->ID, $session_id);
+            } elseif ($browser_quiz_data && is_array($browser_quiz_data)) {
                 $this->store_browser_quiz_data($existing_user->ID, $browser_quiz_data, $body_temp_id);
             }
             
@@ -6642,10 +6645,11 @@ Example good response:
         $this->set_flosc_auth_cookie($flosc_token);
         $this->process_prelogin_data_for_user($user_id);
         
-        // v8.0.8: Store browser-computed quiz data directly — no server-side re-scoring.
-        // The browser already scored each phrase against api.lesaep.com during the quiz.
-        // This is instant (just writes to user meta + moves audio files).
-        if ($browser_quiz_data && is_array($browser_quiz_data)) {
+        // v8.0.0: Store quiz data — prefer pulling from DO session (has audio + scores).
+        // Fallback to browser-computed data, then to temp_id for legacy flow.
+        if ($session_id) {
+            $this->pull_session_from_do($user_id, $session_id);
+        } elseif ($browser_quiz_data && is_array($browser_quiz_data)) {
             $this->store_browser_quiz_data($user_id, $browser_quiz_data, $body_temp_id);
         } elseif ($has_temp_id) {
             // Fallback: browser didn't send quiz_data, but we have temp_id.
@@ -7972,6 +7976,134 @@ Example good response:
     }
 
     /**
+     * v8.0.0: Pull quiz session data (scores + audio) from Digital Ocean API.
+     *
+     * Called during registration or login when a session_id is available.
+     * The DO API scored each phrase during the quiz and saved audio + results
+     * in /opt/lesaep/sessions/{session_id}/. This method:
+     *   1. Fetches the finalized summary from GET /session/{session_id}
+     *   2. Downloads each phrase audio file to flosc-users/{user_id}/
+     *   3. Stores scores in user meta via store_quiz_score()
+     *   4. Fires flosc_quiz_completed hook (triggers Free Lesson Manager)
+     *   5. Sends score email
+     *
+     * @param int    $user_id     WordPress user ID
+     * @param string $session_id  Michel-timestamped session ID from DO
+     * @return bool  True on success, false on failure
+     */
+    private function pull_session_from_do($user_id, $session_id) {
+        // Validate session_id format
+        if (!preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $session_id)) {
+            if (FLOSC_DEBUG) error_log("FLOSC: pull_session_from_do — invalid session_id: {$session_id}");
+            return false;
+        }
+
+        $api_base = 'https://api.lesaep.com';
+
+        // 1. Fetch session summary (scores, ranked phonemes, phrase results)
+        $response = wp_remote_get($api_base . '/session/' . $session_id, [
+            'timeout' => 15,
+            'sslverify' => true,
+        ]);
+
+        if (is_wp_error($response)) {
+            if (FLOSC_DEBUG) error_log("FLOSC: pull_session_from_do — GET /session failed: " . $response->get_error_message());
+            return false;
+        }
+
+        $status = wp_remote_retrieve_response_code($response);
+        if ($status !== 200) {
+            if (FLOSC_DEBUG) error_log("FLOSC: pull_session_from_do — GET /session returned HTTP {$status}");
+            return false;
+        }
+
+        $session_data = json_decode(wp_remote_retrieve_body($response), true);
+        if (!$session_data || empty($session_data['phrase_results'])) {
+            if (FLOSC_DEBUG) error_log("FLOSC: pull_session_from_do — empty or invalid session data");
+            return false;
+        }
+
+        $score = intval($session_data['score'] ?? 0);
+        $ranked_phonemes = $session_data['ranked_phonemes'] ?? [];
+
+        // 2. Build phrase_results array in the format store_quiz_score() expects
+        $phrase_results = [];
+        foreach ($session_data['phrase_results'] as $pr) {
+            $phrase_results[] = [
+                'phrase' => $pr['phrase'] ?? '',
+                'data'   => $pr['result'] ?? $pr['data'] ?? [],
+            ];
+        }
+
+        // 3. Map worst phonemes to lesson numbers via admin phoneme-lesson map
+        $phoneme_map = json_decode(flosc_get_setting('audio_quiz_phoneme_lesson_map', '{}'), true) ?: [];
+        $incorrect = [];
+        $ranked_worst_lessons = [];
+        foreach (array_slice($ranked_phonemes, 0, 10) as $ipa) {
+            if (isset($phoneme_map[$ipa])) {
+                $val = $phoneme_map[$ipa];
+                $lessons = array_map('intval', is_array($val) ? $val : [$val]);
+                $ranked_worst_lessons[] = ['ipa' => $ipa, 'lessons' => $lessons];
+                foreach ($lessons as $l) $incorrect[] = $l;
+            }
+        }
+        $incorrect = array_values(array_unique($incorrect));
+
+        // 4. Build score_data array
+        $score_data = [
+            'quiz_id'              => 'lesaep_ipa_audio_quiz',
+            'quiz_type'            => 'ipa_audio',
+            'score'                => $score,
+            'correct'              => [],
+            'incorrect'            => $incorrect,
+            'ranked_worst_lessons' => $ranked_worst_lessons,
+            'timestamp'            => time(),
+            'ranked_phonemes'      => array_slice($ranked_phonemes, 0, 30),
+            'phrase_results'       => $phrase_results,
+            'session_id'           => $session_id,
+        ];
+
+        // 5. Store in user meta
+        $this->store_quiz_score($user_id, $score_data);
+        do_action('flosc_quiz_completed', $score_data, $user_id);
+        set_transient('flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5);
+
+        // 6. Download audio files from DO to flosc-users/{user_id}/
+        $upload_dir = wp_upload_dir();
+        $user_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id;
+        if (!file_exists($user_dir)) {
+            wp_mkdir_p($user_dir);
+            file_put_contents($user_dir . '/.htaccess', "Deny from all\n");
+        }
+
+        $phrase_count = count($phrase_results);
+        for ($n = 1; $n <= $phrase_count; $n++) {
+            $audio_resp = wp_remote_get($api_base . '/session/' . $session_id . '/audio/' . $n, [
+                'timeout' => 15,
+                'sslverify' => true,
+            ]);
+
+            if (!is_wp_error($audio_resp) && wp_remote_retrieve_response_code($audio_resp) === 200) {
+                $content_type = wp_remote_retrieve_header($audio_resp, 'content-type');
+                $ext = 'webm';
+                if (strpos($content_type, 'mp4') !== false) $ext = 'mp4';
+                elseif (strpos($content_type, 'ogg') !== false) $ext = 'ogg';
+
+                file_put_contents($user_dir . "/phrase-{$n}.{$ext}", wp_remote_retrieve_body($audio_resp));
+            }
+        }
+
+        // 7. Send score email
+        $user = get_userdata($user_id);
+        if ($user) {
+            $this->send_score_email($user, $score_data);
+        }
+
+        error_log("FLOSC v8.0.0: pull_session_from_do() — user {$user_id}, session {$session_id}, score: {$score}%");
+        return true;
+    }
+
+    /**
      * v8.0.8: REST endpoint to store browser-computed quiz data after SSO login.
      * SSO triggers a full page redirect, so JS can't send quiz_data during registration.
      * After reload, JS reads localStorage and posts quiz data to this endpoint.
@@ -7992,6 +8124,17 @@ Example good response:
             ]);
         }
 
+        // v8.0.0: Prefer pulling from DO session when session_id is available.
+        // The DO server has the authoritative audio files + scores.
+        $session_id = sanitize_text_field($request->get_param('session_id') ?? '');
+        if ($session_id && $this->pull_session_from_do($user_id, $session_id)) {
+            return new WP_REST_Response([
+                'success' => true,
+                'quiz_data' => get_user_meta($user_id, '_flosc_last_quiz_data', true),
+            ]);
+        }
+
+        // Fallback: store browser-computed quiz data directly
         $quiz_data = $request->get_param('quiz_data');
         if (!$quiz_data || !is_array($quiz_data)) {
             return new WP_REST_Response(['success' => false, 'message' => 'Missing quiz_data'], 400);

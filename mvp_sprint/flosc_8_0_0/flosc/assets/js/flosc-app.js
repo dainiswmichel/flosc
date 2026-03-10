@@ -543,7 +543,12 @@ class floscApp {
                 }
             }
             
-            if (aiActive) {
+            // v8.0.0: Guest with quiz data — show results instead of badge welcome
+            if (this.state !== 'visitor' && this.user?.lastQuizData?.quiz_type === 'ipa_audio' && this.user.lastQuizData.phrase_results) {
+                this.log('FLOSC: Guest with quiz data — showing results as welcome');
+                this.openQuizResults();
+                welcomeShown = true;
+            } else if (aiActive) {
                 // AI generates the greeting using IVR welcome as inspiration
                 this.log('FLOSC: AI active — routing welcome through AI');
                 this.showTyping();
@@ -3266,9 +3271,13 @@ class floscApp {
         const b64 = btoa(binary);
 
         const endpoint = words.length === 1 ? '/analyze' : '/analyze-phrase';
-        const body = { audio: b64, target_text: phrase, format: audioFormat };
+        const body = { audio: b64, target_text: phrase, format: audioFormat, phrase_num: phraseNum };
         if (endpoint === '/analyze-phrase' && Object.keys(targetIpa).length > 0) {
             body.target_ipa = targetIpa;
+        }
+        // Session storage: pass session_id so DO saves audio + scores
+        if (this.ipaQuiz.sessionId) {
+            body.session_id = this.ipaQuiz.sessionId;
         }
 
         try {
@@ -3283,6 +3292,11 @@ class floscApp {
                 this.addMessage('assistant', 'Analysis error: ' + (data.detail || 'Unknown error') + '. Try recording again.');
                 this.showIpaPhrase(index);
                 return;
+            }
+
+            // Capture session_id from DO (created on first phrase)
+            if (data.session_id) {
+                this.ipaQuiz.sessionId = data.session_id;
             }
 
             this.ipaQuiz.results.push({ phrase, data, audioUrl });
@@ -3524,6 +3538,18 @@ class floscApp {
         this.quiz.completedAt = Date.now();
         this.quiz.score = score;
 
+        // Finalize session on DO — compiles summary.json with aggregated scores.
+        // Non-blocking: visitor sees "Sign up" message immediately.
+        if (this.ipaQuiz.sessionId) {
+            fetch('https://api.lesaep.com/finalize-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: this.ipaQuiz.sessionId })
+            }).then(r => r.json()).then(res => {
+                this.log('[FLOSC] Session finalized on DO:', this.ipaQuiz.sessionId, 'score:', res.score);
+            }).catch(e => this.logError('[FLOSC] finalize-session failed', e));
+        }
+
         // Store detailed per-phrase results so they survive until after login.
         // checkPendingQuizResults() reads this to display full results to guests.
         const phraseResults = results.map(r => ({
@@ -3568,7 +3594,8 @@ class floscApp {
             phraseResults: phraseResults,
             wordIpa: this.ipaQuiz.wordIpa,
             rankedPhonemes: rankedForUpsell,
-            skipServerStore: this.state === 'visitor'  // Don't call /store-score API — visitor sends quiz_data at registration instead
+            skipServerStore: this.state === 'visitor',  // Don't call /store-score API — visitor sends quiz_data at registration instead
+            sessionId: this.ipaQuiz.sessionId || null
         });
 
         this.onQuizComplete();
@@ -4183,7 +4210,11 @@ class floscApp {
                             quizType: parsed.quizType || 'ipa_audio',
                             tempId: parsed.tempId || this.ipaQuiz?.tempId || null
                         };
-                        this.log('[FLOSC Auth] Including quiz_data in registration body');
+                        // v8.0.0: Send DO session_id so WP can pull audio + scores from DO
+                        if (parsed.sessionId) {
+                            regBody.session_id = parsed.sessionId;
+                        }
+                        this.log('[FLOSC Auth] Including quiz_data + session_id in registration body');
                     }
                 }
             } catch (e) {
@@ -5397,6 +5428,8 @@ Purchased: ${ctx.purchased}
         // v8.0.7: Store temp_id so post-login scoring works for ALL auth methods
         // (email, Facebook, Google, any SSO). The cookie-based approach fails cross-domain.
         if (this.ipaQuiz?.tempId) quizData.tempId = this.ipaQuiz.tempId;
+        // v8.0.0: Store DO session_id so registration/login can pull scores from DO
+        if (result.sessionId) quizData.sessionId = result.sessionId;
         localStorage.setItem('flosc_quiz_result', JSON.stringify(quizData));
         
         // v8.0.0: Visitors with audio quiz — server scores on register/login.
@@ -6605,12 +6638,21 @@ Purchased: ${ctx.purchased}
                                     wordIpa: result.wordIpa || null,
                                     rankedPhonemes: result.rankedPhonemes || null,
                                     quizType: 'ipa_audio'
-                                }
+                                },
+                                session_id: result.sessionId || null
                             })
-                        }).then(r => r.json()).then(res => {
-                            if (res.success) this.log('[FLOSC] Quiz data persisted to server');
-                        }).catch(() => {});
-                        localStorage.removeItem('flosc_quiz_result');
+                        }).then(r => {
+                            if (!r.ok) {
+                                this.logError('[FLOSC] store-quiz-data HTTP ' + r.status);
+                                return r.text().then(t => { throw new Error(t); });
+                            }
+                            return r.json();
+                        }).then(res => {
+                            if (res && res.success) {
+                                this.log('[FLOSC] Quiz data persisted to server');
+                                localStorage.removeItem('flosc_quiz_result');
+                            }
+                        }).catch(err => this.logError('[FLOSC] store-quiz-data failed', err));
                     } else if (this.user?.lastQuizScore) {
                         // Server has a score but no full phrase data
                         const score = parseInt(this.user.lastQuizScore) || 0;
