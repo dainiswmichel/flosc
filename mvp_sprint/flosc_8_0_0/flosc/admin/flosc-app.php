@@ -819,8 +819,13 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
             // v1.4.0: SSO Providers
             'ssoProviders' => $sso_providers,
             // v3.0.0: FLOSC auth token for cross-domain authentication
-            // Enables API calls to authenticate when WordPress cookies fail
-            'authToken' => $flosc_auth_token ?? '',
+            // Cookie-based auth (flosc_auth_token cookie set at login by
+            // set_flosc_auth_cookie) handles this. The cookie is on the current
+            // domain (lesaep.com) and travels with same-origin REST requests.
+            // DO NOT generate a token here for the header — authenticate_flosc_token()
+            // checks the header BEFORE the cookie, and if the header token is
+            // present but fails validation, it blocks the valid cookie fallback.
+            'authToken' => '',
             // Per-flow autoprompt pills — written to WP DB on IVR import, served here
             'autoprompts' => (function() use ($flow_settings) {
                 $raw = $flow_settings['autoprompts'] ?? [];

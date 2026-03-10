@@ -1936,6 +1936,12 @@ The {product_name} Team";
             $user = get_userdata($user_id);
             $this->handle_user_login($user->user_login, $user);
 
+            // v8.0.0: Pull quiz session from DO if pending.
+            // JS set a flosc_pending_session cookie before SSO redirect.
+            // The cookie is on THIS domain (lesaep.com), so it survived the OAuth round-trip.
+            // Pull now so FLOSC_USER.lastQuizData is ready when the page renders.
+            $this->pull_pending_session_from_do($user_id);
+
             // Redirect to clean URL (strip token + sso_success params)
             $clean_url = remove_query_arg(['flosc_login_token', 'flosc_sso_success']);
             wp_redirect($clean_url);
@@ -1947,10 +1953,50 @@ The {product_name} Team";
             $user = wp_get_current_user();
             $this->handle_user_login($user->user_login, $user);
 
+            // v8.0.0: Pull quiz session from DO if pending (same as Case 1)
+            $this->pull_pending_session_from_do($user->ID);
+
             $clean_url = remove_query_arg('flosc_sso_success');
             wp_redirect($clean_url);
             exit;
         }
+    }
+
+    /**
+     * v8.0.0: Pull quiz session from DO at login time.
+     *
+     * Called during handle_login_token() — before the page renders.
+     * JS sets a flosc_pending_session cookie before SSO redirect with the
+     * DO session_id. We read it here, pull scores + audio from DO, store
+     * in user meta, and clear the cookie. By the time the page loads,
+     * FLOSC_USER.lastQuizData is already populated from user meta.
+     *
+     * Why server-side? The client-side authFetch POST to store-quiz-data
+     * fails on custom domains because WP cookies are on the WP domain
+     * (dainis.net) while the browser is on the flow domain (lesaep.com).
+     * Even with FLOSC token auth, the timing is fragile. The server knows
+     * the user is logged in (we just set the cookie) and knows the session_id
+     * (from the cookie). Pull now, no client help needed.
+     */
+    private function pull_pending_session_from_do($user_id) {
+        if (empty($_COOKIE['flosc_pending_session'])) {
+            return;
+        }
+
+        $session_id = sanitize_text_field(urldecode($_COOKIE['flosc_pending_session']));
+
+        // Clear the cookie immediately (one-time use)
+        setcookie('flosc_pending_session', '', time() - 3600, '/');
+
+        if (empty($session_id)) {
+            return;
+        }
+
+        if (FLOSC_DEBUG) {
+            error_log("FLOSC: pull_pending_session_from_do — user={$user_id}, session={$session_id}");
+        }
+
+        $this->pull_session_from_do($user_id, $session_id);
     }
 
     // =========================================================================
@@ -3948,7 +3994,12 @@ The {product_name} Team";
         register_rest_route('flosc/v1', '/store-quiz-data', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_store_quiz_data'],
-            'permission_callback' => function() { return is_user_logged_in(); },
+            'permission_callback' => function() {
+                $logged_in = is_user_logged_in();
+                $uid = get_current_user_id();
+                error_log("FLOSC store-quiz-data PERMISSION: logged_in={$logged_in}, user_id={$uid}");
+                return $logged_in;
+            },
         ]);
 
         // v1.9.0: AI Corrections — admin flags bad AI responses to improve quality

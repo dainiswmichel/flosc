@@ -2408,10 +2408,10 @@ class floscApp {
         const productOfferMap = {
             'flosc_plugin': 'flosc_plugin_full',
             'simplified_solfeggio': 'simplified_solfeggio_full',
-            'lesaep': 'full_access',
+            'lesaep': 'lesaep_full',
         };
         
-        return productOfferMap[productId] || 'full_access';
+        return productOfferMap[productId] || 'lesaep_full';
     }
 
     openQuiz() {
@@ -4262,6 +4262,24 @@ class floscApp {
     initiateSSO(provider, authUrl) {
         this.log('[FLOSC SSO] Initiating SSO with:', provider);
         
+        // v8.0.0: Store pending DO session_id in a cookie before leaving for OAuth.
+        // When the user returns via handle_login_token(), PHP reads this cookie and
+        // calls pull_session_from_do() immediately — no fragile client-side POST needed.
+        // The cookie is on the current domain (lesaep.com), survives the OAuth round-trip,
+        // and is available when we land back on lesaep.com with the login token.
+        try {
+            const stored = localStorage.getItem('flosc_quiz_result');
+            if (stored) {
+                const result = JSON.parse(stored);
+                if (result.sessionId) {
+                    document.cookie = `flosc_pending_session=${encodeURIComponent(result.sessionId)};path=/;max-age=3600;SameSite=Lax`;
+                    this.log('[FLOSC SSO] Set flosc_pending_session cookie:', result.sessionId);
+                }
+            }
+        } catch (e) {
+            // Non-critical — server-side pull won't fire, client POST is fallback
+        }
+
         // Add redirect_to parameter so user comes back here
         // v1.4.6: Use & if URL already has query params (e.g. non-pretty permalinks)
         const redirectTo = window.location.href;
@@ -5219,9 +5237,12 @@ Purchased: ${ctx.purchased}
         });
 
         // v3.0.4: Upgrade button → show offer (floscAdmin-configured)
+        // v8.0.0: Use dynamic lookup — the offer ID comes from admin config,
+        // not hardcoded. LeSAEp uses 'lesaep_full', other flows use their own IDs.
         const upgradeBtn = document.getElementById('flosc_upgrade_button');
         if (upgradeBtn) {
-            upgradeBtn.addEventListener('click', () => this.showOffer('full_access'));
+            const upgradeOfferId = this.getOfferIdForProduct();
+            upgradeBtn.addEventListener('click', () => this.showOffer(upgradeOfferId));
         }
         
         // v9.3.3: Quiz modal event bindings
