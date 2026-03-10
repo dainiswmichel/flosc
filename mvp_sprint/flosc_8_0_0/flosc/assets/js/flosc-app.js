@@ -3259,84 +3259,34 @@ class floscApp {
             }
         });
 
+        const buf = await blob.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+        let binary = '';
+        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+        const b64 = btoa(binary);
+
+        const endpoint = words.length === 1 ? '/analyze' : '/analyze-phrase';
+        const body = { audio: b64, target_text: phrase, format: audioFormat };
+        if (endpoint === '/analyze-phrase' && Object.keys(targetIpa).length > 0) {
+            body.target_ipa = targetIpa;
+        }
+
         try {
-            if (this.state === 'visitor') {
-                // v8.0.0: Visitors upload audio to WordPress for deferred server-side scoring.
-                // The pronunciation API is never exposed to the browser.
-                const formData = new FormData();
-                formData.append('audio', blob, `phrase-${phraseNum}.${audioFormat}`);
-                formData.append('phrase_num', phraseNum);
-                formData.append('phrase_text', phrase);
-                formData.append('format', audioFormat);
-                formData.append('target_ipa', JSON.stringify(targetIpa));
-                // v8.0.0 FIX: Send temp_id from prior upload so all phrases land in the
-                // same server directory. Eliminates dependency on signed-cookie round-trip
-                // which can fail cross-domain. First upload has no tempId; server creates one.
-                if (this.ipaQuiz.tempId) {
-                    formData.append('temp_id', this.ipaQuiz.tempId);
-                }
+            const resp = await fetch(`https://api.lesaep.com${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await resp.json();
 
-                // v8.0.4 FIX: Do NOT send X-WP-Nonce for visitor uploads.
-                // WordPress validates the nonce against the auth cookie when the header
-                // is present. Visitors have no auth cookie → "Cookie check failed" (403).
-                // The endpoint uses check_public_endpoint_permission — no nonce needed.
-                const resp = await fetch(this.config.apiUrl + '/store-visitor-audio', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!resp.ok) {
-                    const err = await resp.json().catch(() => ({}));
-                    this.addMessage('assistant', 'Upload error: ' + (err.message || 'Could not save recording') + '. Try again.');
-                    this.showIpaPhrase(index);
-                    return;
-                }
-
-                // v8.0.0 FIX: Capture temp_id from server response for subsequent uploads
-                const respData = await resp.json().catch(() => ({}));
-                if (respData.temp_id) {
-                    this.ipaQuiz.tempId = respData.temp_id;
-                }
-
-                // Placeholder result — scores computed server-side after registration
-                this.ipaQuiz.results.push({ phrase, data: { words: [] }, audioUrl });
-
-                const done = this.ipaQuiz.currentIndex + 1;
-                const total = this.ipaQuiz.phrases.length;
-                const msg = (this.config.audioQuizPhraseCompleteMessage || 'Recorded! {current} of {total} complete.')
-                    .replace('{current}', done).replace('{total}', total);
-                this.addMessage('assistant', msg);
-
-            } else {
-                // Guests and members: call pronunciation API directly for real-time scoring
-                const buf = await blob.arrayBuffer();
-                const bytes = new Uint8Array(buf);
-                let binary = '';
-                for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-                const b64 = btoa(binary);
-
-                const endpoint = words.length === 1 ? '/analyze' : '/analyze-phrase';
-                const body = { audio: b64, target_text: phrase, format: audioFormat };
-                if (endpoint === '/analyze-phrase' && Object.keys(targetIpa).length > 0) {
-                    body.target_ipa = targetIpa;
-                }
-
-                const resp = await fetch(`https://api.lesaep.com${endpoint}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-                const data = await resp.json();
-
-                if (!resp.ok) {
-                    this.addMessage('assistant', 'Analysis error: ' + (data.detail || 'Unknown error') + '. Try recording again.');
-                    this.showIpaPhrase(index);
-                    return;
-                }
-
-                this.ipaQuiz.results.push({ phrase, data, audioUrl });
-                this.showIpaPhraseResult(data, audioUrl, phrase, phraseNum);
+            if (!resp.ok) {
+                this.addMessage('assistant', 'Analysis error: ' + (data.detail || 'Unknown error') + '. Try recording again.');
+                this.showIpaPhrase(index);
+                return;
             }
+
+            this.ipaQuiz.results.push({ phrase, data, audioUrl });
+            this.showIpaPhraseResult(data, audioUrl, phrase, phraseNum);
 
             this.ipaQuiz.currentIndex++;
             if (this.ipaQuiz.currentIndex < this.ipaQuiz.phrases.length) {
@@ -3350,8 +3300,8 @@ class floscApp {
             }
 
         } catch (e) {
-            this.logError('[FLOSC IPA] Recording failed', e);
-            this.addMessage('assistant', 'Could not process recording. Please check your connection and try again.');
+            this.logError('[FLOSC IPA] Analysis failed', e);
+            this.addMessage('assistant', 'Could not connect to pronunciation engine. Please check your connection and try again.');
             this.showIpaPhrase(index);
         }
     }
@@ -3530,7 +3480,8 @@ class floscApp {
         });
 
         if (this.state === 'visitor') {
-            // Visitors: configurable post-quiz message. No scores, no phoneme data.
+            // Visitors: scores are computed and stored in this.ipaQuiz.results but NOT displayed.
+            // Visitor registers → scores sent to PHP → stored in user meta → shown to guest.
             const completeMsg = (this.config.audioQuizCompleteMessage || 'Pronunciation assessment complete! All {total} phrases recorded and analyzed. Sign up to see your results.')
                 .replace('{total}', results.length);
             this.addMessage('assistant', completeMsg);
@@ -3609,7 +3560,7 @@ class floscApp {
             phraseResults: phraseResults,
             wordIpa: this.ipaQuiz.wordIpa,
             rankedPhonemes: rankedForUpsell,
-            skipServerStore: this.state === 'visitor'  // Server scores visitor audio on register/login
+            skipServerStore: this.state === 'visitor'  // Don't call /store-score API — visitor sends quiz_data at registration instead
         });
 
         this.onQuizComplete();
@@ -4205,9 +4156,30 @@ class floscApp {
             // Call the email registration API
             // v3.0.0: Use authFetch() for cross-domain support
             // v8.0.4: Include temp_id so server can link visitor's quiz audio to new account
+            // v8.0.8: Send browser-computed quiz data so PHP stores instantly (no re-scoring)
             const regBody = { email };
             if (this.ipaQuiz?.tempId) {
                 regBody.temp_id = this.ipaQuiz.tempId;
+            }
+            // Attach quiz results from localStorage so server stores them in user meta
+            try {
+                const stored = localStorage.getItem('flosc_quiz_result');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (parsed && parsed.phraseResults) {
+                        regBody.quiz_data = {
+                            score: parsed.score,
+                            phraseResults: parsed.phraseResults,
+                            wordIpa: parsed.wordIpa || null,
+                            rankedPhonemes: parsed.rankedPhonemes || null,
+                            quizType: parsed.quizType || 'ipa_audio',
+                            tempId: parsed.tempId || this.ipaQuiz?.tempId || null
+                        };
+                        this.log('[FLOSC Auth] Including quiz_data in registration body');
+                    }
+                }
+            } catch (e) {
+                this.log('[FLOSC Auth] Could not read quiz data from localStorage:', e);
             }
             const response = await this.authFetch(`${this.config.restUrl}register-email`, {
                 method: 'POST',
@@ -4405,12 +4377,43 @@ class floscApp {
         this.openLessonLibrary();
     }
 
-    // v3.0.8: Show stored quiz results for current member
+    // v3.0.8: Show stored quiz results for current member or guest.
+    // v8.0.8: Now handles IPA audio quiz data from this.user.lastQuizData.
     openQuizResults() {
+        // v8.0.8: Check for IPA audio quiz data (from server scoring via user meta)
+        const serverData = this.user?.lastQuizData;
+        if (serverData && serverData.quiz_type === 'ipa_audio' && serverData.phrase_results) {
+            // Render full IPA phrase results using the existing renderer
+            this.showIpaPhraseResultsAfterLogin({
+                score: serverData.score,
+                phraseResults: serverData.phrase_results,
+                wordIpa: serverData.word_ipa || {},
+                rankedPhonemes: serverData.ranked_phonemes || [],
+                quizType: 'ipa_audio'
+            });
+            this.ivr.context.quiz_results_shown = true;
+            setTimeout(() => this.floscShowUserAutoPrompts(), 500);
+            return;
+        }
+
         // v5.0.3: Read from in-session this.quiz first (has actual item names),
         // fall back to this.user (server-populated from user_meta).
-        const score = this.quiz?.score ?? this.user?.lastQuizScore ?? null;
-        if (score === null) {
+        // v8.0.8: Coerce empty string to null — WordPress returns '' for unset meta
+        const rawScore = this.quiz?.score ?? this.user?.lastQuizScore ?? null;
+        const score = (rawScore !== null && rawScore !== '') ? parseInt(rawScore, 10) : null;
+        if (score === null || isNaN(score)) {
+            // Check if scoring is still pending
+            const stored = localStorage.getItem('flosc_quiz_result');
+            if (stored) {
+                try {
+                    const pending = JSON.parse(stored);
+                    if (pending.pendingServerScore) {
+                        this.addMessage('assistant', 'Your pronunciation results are still being processed. Please try refreshing the page — if your results are ready, they will appear here.');
+                        setTimeout(() => this.floscShowUserAutoPrompts(), 500);
+                        return;
+                    }
+                } catch (e) {}
+            }
             this.addMessage('assistant', "I don't see a quiz result on file yet. Take the assessment and I'll show you your results right here.");
             return;
         }
@@ -4419,7 +4422,6 @@ class floscApp {
         const correct = this.quiz?.correctItems || [];
         const total   = missed.length + correct.length;
 
-        // Build deterministic response with actual sound names
         let html = `<div class="flosc-quiz-result-detail">`;
         html += `<div class="flosc-quiz-score-summary">📊 You scored <strong>${score}%</strong>`;
         if (total > 0) html += ` (${correct.length}/${total} correct)`;
@@ -6535,143 +6537,89 @@ Purchased: ${ctx.purchased}
     }
     
     async checkPendingQuizResults() {
-        // v9.3.4: Check for quiz result stored before login
+        // v8.0.8: This method sets IVR context flags ONLY. It does NOT render results.
+        // Results are presented through the IVR message flow:
+        //   - lesaep_login_success fires (conditioned on first_message_after_login)
+        //   - guest_quiz_review autoprompt pill appears (conditioned on is_guest && quiz_taken)
+        //   - Guest clicks pill → show_quiz_results action → openQuizResults() renders results
+        // Previously this method called showIpaPhraseResultsAfterLogin() directly,
+        // dumping results into chat before the IVR flow had a chance to run.
         try {
             const stored = localStorage.getItem('flosc_quiz_result');
             if (stored) {
                 const result = JSON.parse(stored);
-                // Only show if recent (within last 24 hours)
                 const age = Date.now() - (result.timestamp || 0);
                 if (age < 86400000) { // 24 hours
-                    this.log('[FLOSC] Revealing quiz score after login:', result.score);
-                    
-                    // v8.0.7: Universal scoring — works for ALL auth methods (email, FB, Google).
-                    // If pendingServerScore, we need server-side scoring of the audio files.
-                    // First check if server already has results (email reg path may have scored).
-                    // If not, call /score-pending-audio with temp_id from localStorage.
-                    if (result.pendingServerScore) {
-                        const wordIpa = result.wordIpa || {};
-                        this.ivr.context.quiz_completed = true;
-                        this.ivr.context.quiz_taken = true;
+                    this.log('[FLOSC] checkPendingQuizResults: found stored result, setting context flags');
 
-                        // Check if server already scored (email reg path)
-                        const serverData = this.user?.lastQuizData;
-                        if (serverData && serverData.quiz_type === 'ipa_audio' && serverData.phrase_results) {
-                            localStorage.removeItem('flosc_quiz_result');
-                            this.showIpaPhraseResultsAfterLogin({
-                                score: serverData.score,
-                                phraseResults: serverData.phrase_results,
-                                wordIpa: wordIpa,
-                                rankedPhonemes: serverData.ranked_phonemes || [],
-                                quizType: 'ipa_audio'
-                            });
-                            this.ivr.context.score = serverData.score;
-                            this.ivr.context.quiz_results_shown = true;
-                            this.ivr.context.first_message_after_quiz = true;
-                            this.ivr.context.first_message_after_login = true;
-                            return;
-                        }
-
-                        // v8.0.7: Server hasn't scored yet. Call /score-pending-audio.
-                        // This covers SSO (Facebook, Google) where the cookie-based path fails.
-                        const tempId = result.tempId;
-                        if (tempId) {
-                            this.log('[FLOSC] Requesting server-side scoring for temp_id:', tempId);
-                            // Show preparing message with score circle animation
-                            const prepHtml = `<div class="flosc-ipa-final"><div class="flosc-ipa-final-title">Analyzing Your Pronunciation...</div><div class="flosc-quiz-score-circle flosc-score-preparing" style="--score-percent: 0%"><span class="flosc-quiz-score-value" id="flosc-scoring-pct">0%</span></div><div class="flosc-ipa-final-stats" id="flosc-scoring-status">Scoring your recordings — this takes a moment</div></div>`;
-                            this.addMessage('assistant', prepHtml, true);
-                            const pctEl = document.getElementById('flosc-scoring-pct');
-                            const statusEl = document.getElementById('flosc-scoring-status');
-                            const circleEl = pctEl?.closest('.flosc-quiz-score-circle');
-
-                            try {
-                                const resp = await this.authFetch(`${this.config.restUrl}score-pending-audio`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ temp_id: tempId })
-                                });
-                                const scoreResult = await resp.json();
-
-                                if (scoreResult.success && scoreResult.score_data) {
-                                    localStorage.removeItem('flosc_quiz_result');
-                                    const sd = scoreResult.score_data;
-                                    // Animate the score circle to final value
-                                    if (pctEl) pctEl.textContent = sd.score + '%';
-                                    if (circleEl) {
-                                        circleEl.classList.remove('flosc-score-preparing');
-                                        circleEl.style.setProperty('--score-percent', sd.score + '%');
-                                    }
-                                    if (statusEl) statusEl.textContent = 'Assessment complete!';
-                                    // Show full results after a brief pause
-                                    setTimeout(() => {
-                                        this.showIpaPhraseResultsAfterLogin({
-                                            score: sd.score,
-                                            phraseResults: sd.phrase_results || [],
-                                            wordIpa: wordIpa,
-                                            rankedPhonemes: sd.ranked_phonemes || [],
-                                            quizType: 'ipa_audio'
-                                        });
-                                    }, 800);
-                                    this.ivr.context.score = sd.score;
-                                    this.ivr.context.quiz_results_shown = true;
-                                    this.ivr.context.first_message_after_quiz = true;
-                                    this.ivr.context.first_message_after_login = true;
-                                    return;
-                                } else {
-                                    this.logError('[FLOSC] Server scoring failed:', scoreResult.message);
-                                    if (statusEl) statusEl.textContent = 'Scoring could not complete. Please try refreshing the page.';
-                                }
-                            } catch (err) {
-                                this.logError('[FLOSC] Score pending audio request failed:', err);
-                                if (statusEl) statusEl.textContent = 'Connection error. Please refresh to try again.';
-                            }
-                        } else if (this.user?.lastQuizScore) {
-                            // No temp_id and no server data — show basic score from user meta
-                            localStorage.removeItem('flosc_quiz_result');
-                            const score = parseInt(this.user.lastQuizScore) || 0;
-                            this.addMessage('assistant', `Welcome back! Your pronunciation assessment score: **${score}%**. Use "Review my quiz score" to see detailed results when they're ready.`);
-                            this.ivr.context.score = score;
-                            this.ivr.context.quiz_results_shown = true;
-                            this.ivr.context.first_message_after_quiz = true;
-                            this.ivr.context.first_message_after_login = true;
-                        }
-                        return;
-                    }
-                    
-                    // Pronunciation assessment: show detailed per-phrase results
-                    if (result.quizType === 'ipa_audio' && result.phraseResults && result.phraseResults.length > 0) {
-                        this.showIpaPhraseResultsAfterLogin(result);
-                    } else {
-                        // Generic quiz: show simple score
-                        const correct = result.correct || 0;
-                        const total = result.total || 10;
-                        const incorrect = total - correct;
-                        
-                        this.addMessage('assistant', `Welcome! Here are your quiz results:`);
-                        setTimeout(() => {
-                            this.showQuizResults(result.score, correct, incorrect);
-                        }, 300);
-                    }
-                    
-                    // Clear the stored result
-                    localStorage.removeItem('flosc_quiz_result');
-                    
-                    // Update context (buildIVRContext already set first_message_after_* from transients)
-                    this.ivr.context.score = result.score;
+                    // Set context flags so IVR messages and autoprompt pills can fire
+                    this.ivr.context.quiz_completed = true;
                     this.ivr.context.quiz_taken = true;
-                    this.ivr.context.quiz_results_shown = true;
+                    this.ivr.context.first_message_after_quiz = true;
+                    if (result.score) this.ivr.context.score = result.score;
                     if (result.quizId) this.ivr.context.quiz_id = result.quizId;
+
+                    // Check if server already scored (email reg path scores during registration)
+                    const serverData = this.user?.lastQuizData;
+                    if (serverData && serverData.quiz_type === 'ipa_audio' && serverData.phrase_results) {
+                        this.log('[FLOSC] Server already has scored IPA data — storing wordIpa for openQuizResults()');
+                        // Merge wordIpa from localStorage into server data so openQuizResults() has it
+                        if (result.wordIpa && !serverData.word_ipa) {
+                            serverData.word_ipa = result.wordIpa;
+                        }
+                        this.ivr.context.score = serverData.score;
+                        localStorage.removeItem('flosc_quiz_result');
+                    } else if (result.pendingServerScore && result.phraseResults) {
+                        // SSO path: server hasn't scored yet. Send browser-computed data
+                        // via /store-quiz-data. All scoring was done in-browser during the quiz.
+                        this.log('[FLOSC] SSO path: sending browser quiz data to server');
+                        try {
+                            const storeResp = await this.authFetch(`${this.config.restUrl}store-quiz-data`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    quiz_data: {
+                                        score: result.score,
+                                        phraseResults: result.phraseResults,
+                                        wordIpa: result.wordIpa || null,
+                                        rankedPhonemes: result.rankedPhonemes || null,
+                                        quizType: result.quizType || 'ipa_audio'
+                                    }
+                                })
+                            });
+                            const scoreResult = await storeResp.json();
+                            if (scoreResult.success) {
+                                this.log('[FLOSC] Quiz data stored:', scoreResult.quiz_data?.score + '%');
+                                if (!this.user) this.user = {};
+                                this.user.lastQuizData = scoreResult.quiz_data;
+                                this.user.lastQuizScore = scoreResult.quiz_data?.score;
+                                this.ivr.context.score = scoreResult.quiz_data?.score;
+                                if (result.wordIpa && this.user.lastQuizData) {
+                                    this.user.lastQuizData.word_ipa = result.wordIpa;
+                                }
+                                localStorage.removeItem('flosc_quiz_result');
+                            } else {
+                                this.log('[FLOSC] Store quiz data failed:', scoreResult.message);
+                            }
+                        } catch (err) {
+                            this.logError('[FLOSC] Store quiz data request failed:', err);
+                        }
+                    } else if (this.user?.lastQuizScore) {
+                        // Server has a score but no full phrase data
+                        const score = parseInt(this.user.lastQuizScore) || 0;
+                        this.ivr.context.score = score;
+                        localStorage.removeItem('flosc_quiz_result');
+                    } else if (!result.pendingServerScore) {
+                        // Non-IPA quiz with results already in localStorage
+                        localStorage.removeItem('flosc_quiz_result');
+                    }
                 }
             }
         } catch (e) {
             this.logError('[FLOSC] Could not check pending quiz results', e);
         }
-        
-        // v1.4.6: Check if user just completed a purchase (transient set by complete_purchase/webhook)
-        // v8.0.0: first_message_after_quiz and first_message_after_login are now set in buildIVRContext()
-        // from this.user.justCompletedQuiz / this.user.justLoggedIn PHP transients.
-        
-        // v1.6.2: Single check after all flags are set (debounced, so rapid calls coalesce)
+
+        // Trigger IVR auto-messages (login_success, offer cards, etc.)
         if (this.user?.justCompletedQuiz || this.user?.justLoggedIn || this.user?.justPurchased) {
             this.checkAutoMessages();
         }

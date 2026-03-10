@@ -981,12 +981,12 @@ The Team',
         // v8.0.5: Score visitor audio on login — covers SSO path (Google/Facebook) where
         // the browser sends the visitor_temp_id cookie set during audio recording.
         // Email registration scoring is handled directly in handle_email_registration().
+        // v8.0.8: Don't re-score server-side (times out on shared hosting).
+        // Instead, store temp_id in user meta and let JS send browser-computed
+        // results via /store-quiz-data after the page reloads.
         $temp_id = $this->get_signed_cookie('flosc_visitor_temp_id');
         if ($temp_id && is_string($temp_id)) {
-            $audio_score = $this->score_visitor_audio($user->ID, $temp_id);
-            if ($audio_score) {
-                $score_data = $audio_score;
-            }
+            update_user_meta($user->ID, '_flosc_audio_temp_id', sanitize_text_field($temp_id));
             setcookie('flosc_visitor_temp_id', '', ['expires' => time() - 3600, 'path' => '/', 'samesite' => 'Lax']);
         }
 
@@ -3938,6 +3938,16 @@ The {product_name} Team";
             'permission_callback' => function() { return is_user_logged_in(); },
         ]);
 
+        // v8.0.8: Store browser-computed quiz data — no server-side re-scoring needed.
+        // The browser already scored each phrase against api.lesaep.com during the quiz.
+        // This endpoint accepts those results and stores them in user meta + moves audio files.
+        // Used by SSO path (post-reload) when email registration didn't carry quiz_data.
+        register_rest_route('flosc/v1', '/store-quiz-data', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_store_quiz_data'],
+            'permission_callback' => function() { return is_user_logged_in(); },
+        ]);
+
         // v1.9.0: AI Corrections — admin flags bad AI responses to improve quality
         register_rest_route('flosc/v1', '/corrections', [
             'methods' => 'POST',
@@ -6549,15 +6559,14 @@ Example good response:
      * Creates a new user with just email, or logs in existing user
      */
     public function handle_email_registration($request) {
-        error_log("[FLOSC v8.0.6] handle_email_registration CALLED");
-        error_log("[FLOSC v8.0.6] Request body: " . wp_json_encode($request->get_json_params()));
         $email = sanitize_email($request->get_param('email'));
 
-        // v8.0.5: Capture temp_id directly from request body (JS sends it for IPA audio quiz visitors).
-        // Scoring happens directly in this function after user creation — no hooks, no class properties.
+        // v8.0.8: Capture temp_id and browser-computed quiz data from request body.
+        // The browser already scored each phrase against api.lesaep.com during the quiz.
+        // No server-side re-scoring needed — just store the results + move audio files.
         $body_temp_id = sanitize_text_field($request->get_param('temp_id') ?? '');
-        $has_audio_quiz = ($body_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $body_temp_id));
-        error_log("[FLOSC v8.0.6] email={$email}, temp_id={$body_temp_id}, has_audio={$has_audio_quiz}");
+        $has_temp_id = ($body_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $body_temp_id));
+        $browser_quiz_data = $request->get_param('quiz_data');
 
         if (empty($email) || !is_email($email)) {
             return new WP_REST_Response([
@@ -6570,10 +6579,8 @@ Example good response:
         $existing_user = get_user_by('email', $email);
         
         if ($existing_user) {
-            // v8.0.5: If we have audio to score, clear the cookie from $_COOKIE BEFORE
-            // firing wp_login. This prevents handle_user_login() from also attempting
-            // to score — scoring happens ONCE, directly below, not via hook.
-            if ($has_audio_quiz) {
+            // Prevent hook-based scoring — we handle it directly below
+            if ($has_temp_id) {
                 unset($_COOKIE['flosc_visitor_temp_id']);
             }
 
@@ -6582,22 +6589,13 @@ Example good response:
             wp_set_auth_cookie($existing_user->ID, true);
             do_action('wp_login', $existing_user->user_login, $existing_user);
             
-            // v3.0.0: Generate FLOSC auth token for cross-domain compatibility
             $flosc_token = $this->generate_flosc_auth_token($existing_user->ID);
             $this->set_flosc_auth_cookie($flosc_token);
-            
-            // Transfer any stored pre-login data
             $this->process_prelogin_data_for_user($existing_user->ID);
 
-            // v8.0.5: Score audio directly — we have the temp_id, call score_visitor_audio once.
-            if ($has_audio_quiz) {
-                $audio_score = $this->score_visitor_audio($existing_user->ID, $body_temp_id);
-                if ($audio_score) {
-                    $this->store_quiz_score($existing_user->ID, $audio_score);
-                    do_action('flosc_quiz_completed', $audio_score, $existing_user->ID);
-                    set_transient('flosc_just_completed_quiz_' . $existing_user->ID, true, MINUTE_IN_SECONDS * 5);
-                    $this->send_score_email($existing_user, $audio_score);
-                }
+            // v8.0.8: Store browser-computed quiz data directly — no server-side re-scoring
+            if ($browser_quiz_data && is_array($browser_quiz_data)) {
+                $this->store_browser_quiz_data($existing_user->ID, $browser_quiz_data, $body_temp_id);
             }
             
             return new WP_REST_Response([
@@ -6607,6 +6605,8 @@ Example good response:
                 'user_email' => $existing_user->user_email,
                 'is_new_user' => false,
                 'auth_token' => $flosc_token,
+                'quiz_score' => get_user_meta($existing_user->ID, '_flosc_last_quiz_score', true) ?: null,
+                'quiz_data'  => get_user_meta($existing_user->ID, '_flosc_last_quiz_data', true) ?: null,
             ]);
         }
         
@@ -6623,57 +6623,39 @@ Example good response:
             ], 500);
         }
         
-        // Set user role
         $user = get_user_by('id', $user_id);
         $user->set_role(apply_filters('flosc_default_user_role', 'subscriber'));
         
-        // Mark as email-only registration
         update_user_meta($user_id, '_flosc_registration_method', 'email');
         update_user_meta($user_id, '_flosc_registered_at', current_time('mysql'));
         
-        // v8.0.5: If we have audio to score, clear the cookie from $_COOKIE BEFORE
-        // firing wp_login. This prevents handle_user_login() from also attempting
-        // to score — scoring happens ONCE, directly below, not via hook.
-        if ($has_audio_quiz) {
+        // Prevent hook-based scoring — we handle it directly below
+        if ($has_temp_id) {
             unset($_COOKIE['flosc_visitor_temp_id']);
         }
 
-        // Log the user in
         wp_set_current_user($user_id);
         wp_set_auth_cookie($user_id, true);
         do_action('wp_login', $user->user_login, $user);
         
-        // v3.0.0: Generate FLOSC auth token for cross-domain compatibility
         $flosc_token = $this->generate_flosc_auth_token($user_id);
         $this->set_flosc_auth_cookie($flosc_token);
-        
-        // Transfer any stored pre-login data
         $this->process_prelogin_data_for_user($user_id);
         
-        // v8.0.5: Score visitor audio DIRECTLY — we have the temp_id, call score_visitor_audio once.
-        if ($has_audio_quiz) {
-            error_log("[FLOSC v8.0.5] handle_email_registration: scoring audio for user {$user_id}, temp_id={$body_temp_id}");
-            $audio_score = $this->score_visitor_audio($user_id, $body_temp_id);
-            if ($audio_score) {
-                $this->store_quiz_score($user_id, $audio_score);
-                do_action('flosc_quiz_completed', $audio_score, $user_id);
-                set_transient('flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5);
-                $this->send_score_email($user, $audio_score);
-                error_log("[FLOSC v8.0.5] Audio scored: {$audio_score['score']}%");
-            } else {
-                error_log("[FLOSC v8.0.5] score_visitor_audio returned false for temp_id={$body_temp_id}");
-            }
+        // v8.0.8: Store browser-computed quiz data directly — no server-side re-scoring.
+        // The browser already scored each phrase against api.lesaep.com during the quiz.
+        // This is instant (just writes to user meta + moves audio files).
+        if ($browser_quiz_data && is_array($browser_quiz_data)) {
+            $this->store_browser_quiz_data($user_id, $browser_quiz_data, $body_temp_id);
+        } elseif ($has_temp_id) {
+            // Fallback: browser didn't send quiz_data, but we have temp_id.
+            // Store temp_id in user meta so /store-quiz-data can find it after reload.
+            update_user_meta($user_id, '_flosc_audio_temp_id', $body_temp_id);
         }
 
-        // Fire registration action
-        // NOTE: wp_create_user() already fires 'user_register' internally.
-        // Do NOT fire it again here — it causes double token grants, double emails,
-        // and double audio scoring.
         do_action('flosc_user_registered', $user_id, 'email');
         
-        if (FLOSC_DEBUG) {
-            error_log("FLOSC Auth: New user registered via email: {$email} (User ID: {$user_id})");
-        }
+        error_log("FLOSC v8.0.8: New user registered via email: {$email} (User ID: {$user_id})");
         
         return new WP_REST_Response([
             'success' => true,
@@ -6682,6 +6664,8 @@ Example good response:
             'user_email' => $email,
             'is_new_user' => true,
             'auth_token' => $flosc_token,
+            'quiz_score' => get_user_meta($user_id, '_flosc_last_quiz_score', true) ?: null,
+            'quiz_data'  => get_user_meta($user_id, '_flosc_last_quiz_data', true) ?: null,
         ]);
     }
     
@@ -7875,6 +7859,165 @@ Example good response:
     }
 
     /**
+     * v8.0.8: Store browser-computed quiz data in WordPress user meta.
+     *
+     * The browser already scored each phrase against api.lesaep.com during the quiz.
+     * This method accepts those results, normalizes the data shape, stores in user meta
+     * via store_quiz_score(), and moves audio files from flosc-temp/ to flosc-users/.
+     *
+     * This replaces the server-side re-scoring approach (score_visitor_audio) which
+     * timed out on ChemiCloud shared hosting (5 phrases × 30s = 150s > 60s web server timeout).
+     */
+    private function store_browser_quiz_data($user_id, $quiz_data, $temp_id = '') {
+        // Validate and normalize quiz data from browser
+        $score = intval($quiz_data['score'] ?? 0);
+        if ($score < 0 || $score > 100) return false;
+
+        $score_data = [
+            'quiz_id'              => sanitize_key($quiz_data['quizId'] ?? $quiz_data['quiz_id'] ?? 'lesaep_ipa_audio_quiz'),
+            'quiz_type'            => 'ipa_audio',
+            'score'                => $score,
+            'correct'              => [],
+            'incorrect'            => [],
+            'ranked_worst_lessons' => [],
+            'timestamp'            => time(),
+            'ranked_phonemes'      => [],
+            'phrase_results'       => [],
+        ];
+
+        // phraseResults: array of {phrase, data} — the raw API responses stored in localStorage
+        if (!empty($quiz_data['phraseResults']) && is_array($quiz_data['phraseResults'])) {
+            $score_data['phrase_results'] = array_map(function($pr) {
+                return [
+                    'phrase' => sanitize_text_field($pr['phrase'] ?? ''),
+                    'data'   => $pr['data'] ?? [],
+                ];
+            }, $quiz_data['phraseResults']);
+        }
+
+        // rankedPhonemes: array of IPA strings (worst → best)
+        if (!empty($quiz_data['rankedPhonemes']) && is_array($quiz_data['rankedPhonemes'])) {
+            $score_data['ranked_phonemes'] = array_map('sanitize_text_field', array_slice($quiz_data['rankedPhonemes'], 0, 30));
+        }
+
+        // Rebuild incorrect lesson numbers and ranked_worst_lessons from ranked phonemes + phoneme map
+        $phoneme_map = json_decode(flosc_get_setting('audio_quiz_phoneme_lesson_map', '{}'), true) ?: [];
+        if ($phoneme_map && $score_data['ranked_phonemes']) {
+            $incorrect = [];
+            $ranked_worst = [];
+            foreach (array_slice($score_data['ranked_phonemes'], 0, 10) as $ipa) {
+                if (isset($phoneme_map[$ipa])) {
+                    $val = $phoneme_map[$ipa];
+                    $lessons = is_array($val) ? array_map('intval', $val) : [intval($val)];
+                    $ranked_worst[] = ['ipa' => $ipa, 'lessons' => $lessons];
+                    foreach ($lessons as $l) $incorrect[] = $l;
+                }
+            }
+            $score_data['incorrect'] = array_values(array_unique($incorrect));
+            $score_data['ranked_worst_lessons'] = $ranked_worst;
+        }
+
+        // wordIpa: the reference IPA dictionary (espeak, mw, da1ni5 for each word)
+        if (!empty($quiz_data['wordIpa']) && is_array($quiz_data['wordIpa'])) {
+            $score_data['word_ipa'] = $quiz_data['wordIpa'];
+        }
+
+        // Store in user meta via existing store_quiz_score()
+        $this->store_quiz_score($user_id, $score_data);
+        do_action('flosc_quiz_completed', $score_data, $user_id);
+        set_transient('flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5);
+
+        // Send score email
+        $user = get_userdata($user_id);
+        if ($user) {
+            $this->send_score_email($user, $score_data);
+        }
+
+        // Move audio files from flosc-temp/{temp_id}/ to flosc-users/{user_id}/
+        if ($temp_id) {
+            $this->move_visitor_audio_to_user($user_id, $temp_id);
+        }
+
+        error_log("FLOSC v8.0.8: store_browser_quiz_data() — user {$user_id}, score: {$score}%");
+        return true;
+    }
+
+    /**
+     * v8.0.8: Move visitor audio files from flosc-temp/{temp_id}/ to flosc-users/{user_id}/.
+     * No scoring — just file relocation for permanent storage in the user's profile.
+     */
+    private function move_visitor_audio_to_user($user_id, $temp_id) {
+        if (!preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $temp_id)) {
+            return false;
+        }
+
+        $upload_dir = wp_upload_dir();
+        $temp_dir = $upload_dir['basedir'] . '/flosc-temp/' . $temp_id;
+        if (!is_dir($temp_dir)) return false;
+
+        $user_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id;
+        if (!file_exists($user_dir)) {
+            wp_mkdir_p($user_dir);
+            file_put_contents($user_dir . '/.htaccess', "Deny from all\n");
+        }
+
+        foreach (glob($temp_dir . '/*') as $file) {
+            $dest = $user_dir . '/' . basename($file);
+            rename($file, $dest);
+        }
+
+        @unlink($temp_dir . '/.htaccess');
+        @rmdir($temp_dir);
+        return true;
+    }
+
+    /**
+     * v8.0.8: REST endpoint to store browser-computed quiz data after SSO login.
+     * SSO triggers a full page redirect, so JS can't send quiz_data during registration.
+     * After reload, JS reads localStorage and posts quiz data to this endpoint.
+     */
+    public function handle_store_quiz_data($request) {
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_REST_Response(['success' => false, 'message' => 'Not logged in'], 401);
+        }
+
+        // Check if this user already has scored quiz data
+        $existing = get_user_meta($user_id, '_flosc_last_quiz_data', true);
+        if (is_array($existing) && !empty($existing['phrase_results'])) {
+            return new WP_REST_Response([
+                'success' => true,
+                'already_scored' => true,
+                'quiz_data' => $existing,
+            ]);
+        }
+
+        $quiz_data = $request->get_param('quiz_data');
+        if (!$quiz_data || !is_array($quiz_data)) {
+            return new WP_REST_Response(['success' => false, 'message' => 'Missing quiz_data'], 400);
+        }
+
+        // Get temp_id from request or from user meta (stored during registration)
+        $temp_id = sanitize_text_field($request->get_param('temp_id') ?? '');
+        if (!$temp_id) {
+            $temp_id = get_user_meta($user_id, '_flosc_audio_temp_id', true) ?: '';
+        }
+
+        $stored = $this->store_browser_quiz_data($user_id, $quiz_data, $temp_id);
+        if (!$stored) {
+            return new WP_REST_Response(['success' => false, 'message' => 'Failed to store quiz data'], 500);
+        }
+
+        // Clean up temp_id reference
+        delete_user_meta($user_id, '_flosc_audio_temp_id');
+
+        return new WP_REST_Response([
+            'success' => true,
+            'quiz_data' => get_user_meta($user_id, '_flosc_last_quiz_data', true),
+        ]);
+    }
+
+    /**
      * v8.0.0: Score visitor audio server-side after registration.
      *
      * Reads stored audio files from flosc-temp/{tempID}/, sends each to the
@@ -7883,6 +8026,9 @@ Example good response:
      * compatible with store_quiz_score() / flosc_quiz_completed.
      *
      * After scoring, moves the audio dir to flosc-users/{user_id}/ for retention.
+     *
+     * NOTE: v8.0.8 replaces this with store_browser_quiz_data() for the main flow.
+     * This method is retained as a fallback for the /score-pending-audio endpoint.
      *
      * @param int    $user_id  The newly registered user's ID
      * @param string $temp_id  The Michel-timestamp tempID from the signed cookie
