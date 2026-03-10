@@ -543,9 +543,9 @@ class floscApp {
                 }
             }
             
-            // v8.0.0: Guest with quiz data — show results instead of badge welcome
-            if (this.state !== 'visitor' && this.user?.lastQuizData?.quiz_type === 'ipa_audio' && this.user.lastQuizData.phrase_results) {
-                this.log('FLOSC: Guest with quiz data — showing results as welcome');
+            // v8.0.0: User has quiz data — show results as welcome (any state)
+            if (this.user?.lastQuizData?.quiz_type === 'ipa_audio' && this.user.lastQuizData.phrase_results) {
+                this.log('FLOSC: Quiz data present — showing results as welcome');
                 this.openQuizResults();
                 welcomeShown = true;
             } else if (aiActive) {
@@ -6667,11 +6667,9 @@ Purchased: ${ctx.purchased}
         } catch (e) {
             this.logError('[FLOSC] Could not check pending quiz results', e);
         }
-
-        // Trigger IVR auto-messages (login_success, offer cards, etc.)
-        if (this.user?.justCompletedQuiz || this.user?.justLoggedIn || this.user?.justPurchased) {
-            this.checkAutoMessages();
-        }
+        // Do NOT call checkAutoMessages() here. startIVR() handles all message
+        // rendering. Calling it here pre-empts the quiz-data-as-welcome check
+        // in startIVR() by inserting a login welcome message before startIVR runs.
     }
     
     showRecordingModal() {
