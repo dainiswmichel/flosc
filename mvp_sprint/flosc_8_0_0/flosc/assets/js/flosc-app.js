@@ -3286,7 +3286,15 @@ class floscApp {
             }
 
             this.ipaQuiz.results.push({ phrase, data, audioUrl });
-            this.showIpaPhraseResult(data, audioUrl, phrase, phraseNum);
+
+            if (this.state === 'visitor') {
+                // Visitors: confirm recording, do NOT show IPA breakdown.
+                // Full results display after login/registration via showIpaPhraseResultsAfterLogin().
+                this.addMessage('assistant', `Phrase ${phraseNum} recorded and analyzed. ✓`);
+            } else {
+                // Guests/members: show full word-by-word IPA results immediately.
+                this.showIpaPhraseResult(data, audioUrl, phrase, phraseNum);
+            }
 
             this.ipaQuiz.currentIndex++;
             if (this.ipaQuiz.currentIndex < this.ipaQuiz.phrases.length) {
@@ -6570,40 +6578,39 @@ Purchased: ${ctx.purchased}
                         this.ivr.context.score = serverData.score;
                         localStorage.removeItem('flosc_quiz_result');
                     } else if (result.pendingServerScore && result.phraseResults) {
-                        // SSO path: server hasn't scored yet. Send browser-computed data
-                        // via /store-quiz-data. All scoring was done in-browser during the quiz.
-                        this.log('[FLOSC] SSO path: sending browser quiz data to server');
-                        try {
-                            const storeResp = await this.authFetch(`${this.config.restUrl}store-quiz-data`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({
-                                    quiz_data: {
-                                        score: result.score,
-                                        phraseResults: result.phraseResults,
-                                        wordIpa: result.wordIpa || null,
-                                        rankedPhonemes: result.rankedPhonemes || null,
-                                        quizType: result.quizType || 'ipa_audio'
-                                    }
-                                })
-                            });
-                            const scoreResult = await storeResp.json();
-                            if (scoreResult.success) {
-                                this.log('[FLOSC] Quiz data stored:', scoreResult.quiz_data?.score + '%');
-                                if (!this.user) this.user = {};
-                                this.user.lastQuizData = scoreResult.quiz_data;
-                                this.user.lastQuizScore = scoreResult.quiz_data?.score;
-                                this.ivr.context.score = scoreResult.quiz_data?.score;
-                                if (result.wordIpa && this.user.lastQuizData) {
-                                    this.user.lastQuizData.word_ipa = result.wordIpa;
+                        // SSO path: data is in localStorage. Populate this.user.lastQuizData
+                        // immediately so openQuizResults() can render without waiting for server.
+                        this.log('[FLOSC] SSO path: loading quiz data from localStorage');
+                        if (!this.user) this.user = {};
+                        this.user.lastQuizData = {
+                            quiz_type: 'ipa_audio',
+                            score: result.score,
+                            phrase_results: result.phraseResults,
+                            word_ipa: result.wordIpa || {},
+                            ranked_phonemes: result.rankedPhonemes || [],
+                            timestamp: Math.floor((result.timestamp || Date.now()) / 1000)
+                        };
+                        this.user.lastQuizScore = result.score;
+                        this.ivr.context.score = result.score;
+
+                        // Persist to server in background (non-blocking). If it fails,
+                        // results still display from this.user.lastQuizData above.
+                        this.authFetch(`${this.config.restUrl}store-quiz-data`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                quiz_data: {
+                                    score: result.score,
+                                    phraseResults: result.phraseResults,
+                                    wordIpa: result.wordIpa || null,
+                                    rankedPhonemes: result.rankedPhonemes || null,
+                                    quizType: 'ipa_audio'
                                 }
-                                localStorage.removeItem('flosc_quiz_result');
-                            } else {
-                                this.log('[FLOSC] Store quiz data failed:', scoreResult.message);
-                            }
-                        } catch (err) {
-                            this.logError('[FLOSC] Store quiz data request failed:', err);
-                        }
+                            })
+                        }).then(r => r.json()).then(res => {
+                            if (res.success) this.log('[FLOSC] Quiz data persisted to server');
+                        }).catch(() => {});
+                        localStorage.removeItem('flosc_quiz_result');
                     } else if (this.user?.lastQuizScore) {
                         // Server has a score but no full phrase data
                         const score = parseInt(this.user.lastQuizScore) || 0;
