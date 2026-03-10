@@ -9770,18 +9770,22 @@ Example good response:
             echo '</div>';
         }
 
-        // Phrase-level results
+        // Phrase-level results — clickable accordions with word-level IPA + audio
         if ($phrase_results) {
+            $word_ipa = $quiz_data['word_ipa'] ?? [];
+            $session_id = $quiz_data['session_id'] ?? '';
+            $upload_dir = wp_upload_dir();
+
             echo '<div>';
             echo '<h3 style="font-size:16px;margin-bottom:8px;">Phrase Breakdown</h3>';
+            echo '<p style="font-size:13px;color:#71717a;font-style:italic;margin-bottom:12px;">Click each phrase to expand the detailed analysis</p>';
             foreach ($phrase_results as $i => $pr) {
                 $phrase_text = $pr['phrase'] ?? '';
                 $data = $pr['data'] ?? [];
                 $phrase_score = 0;
                 $phoneme_count = 0;
 
-                // Calculate phrase-level score from word phonemes
-                $words_data = $data['words'] ?? [['phonemes' => $data['phonemes'] ?? []]];
+                $words_data = $data['words'] ?? [['word' => $data['target_text'] ?? '', 'expected_ipa' => $data['expected_ipa'] ?? '', 'phonemes' => $data['phonemes'] ?? []]];
                 foreach ($words_data as $w) {
                     foreach (($w['phonemes'] ?? []) as $ph) {
                         $phrase_score += floatval($ph['confidence'] ?? 0);
@@ -9791,15 +9795,88 @@ Example good response:
                 $pct = $phoneme_count > 0 ? intval(round(($phrase_score / $phoneme_count) * 100)) : 0;
                 $pct_color = $pct >= 80 ? '#22c55e' : ($pct >= 60 ? '#eab308' : '#ef4444');
 
-                echo '<div style="padding:12px;margin-bottom:8px;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa;">';
-                echo '<div style="display:flex;justify-content:space-between;align-items:center;">';
+                echo '<details style="margin-bottom:8px;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa;">';
+                echo '<summary style="padding:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;list-style:none;">';
+                echo '<span style="display:flex;align-items:center;gap:6px;">';
+                echo '<span style="font-size:12px;color:#71717a;display:inline-block;transition:transform 0.2s;" class="flosc-bb-chevron">&#9654;</span>';
                 echo '<span style="font-size:15px;"><strong>Phrase ' . esc_html($i + 1) . ':</strong> ' . esc_html($phrase_text) . '</span>';
+                echo '</span>';
                 echo '<span style="font-weight:700;color:' . esc_attr($pct_color) . ';">' . esc_html($pct) . '%</span>';
+                echo '</summary>';
+                echo '<div style="padding:0 12px 12px 12px;">';
+
+                // Audio playback from session directory
+                if ($session_id) {
+                    $phrase_num = $i + 1;
+                    $user_audio_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id . '/sessions/' . $session_id;
+                    $audio_url = '';
+                    foreach (['webm', 'mp4', 'ogg'] as $ext) {
+                        if (file_exists($user_audio_dir . '/phrase-' . $phrase_num . '.' . $ext)) {
+                            $audio_url = $upload_dir['baseurl'] . '/flosc-users/' . $user_id . '/sessions/' . $session_id . '/phrase-' . $phrase_num . '.' . $ext;
+                            break;
+                        }
+                    }
+                    if ($audio_url) {
+                        echo '<div style="margin-bottom:12px;"><audio controls style="width:100%;height:36px;border-radius:8px;" src="' . esc_url($audio_url) . '"></audio></div>';
+                    }
+                }
+
+                // Word-level breakdown
+                foreach ($words_data as $w) {
+                    $word_text = $w['word'] ?? '';
+                    $w_phonemes = $w['phonemes'] ?? [];
+                    $w_avg = count($w_phonemes) > 0 ? array_sum(array_column($w_phonemes, 'confidence')) / count($w_phonemes) : 0;
+                    $w_pct = round($w_avg * 100);
+                    $w_color = $w_avg >= 0.5 ? '#22c55e' : ($w_avg >= 0.1 ? '#eab308' : '#ef4444');
+                    $key = strtolower($word_text);
+                    $ipa_data = $word_ipa[$key] ?? [];
+
+                    echo '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin-bottom:8px;">';
+                    echo '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
+                    echo '<span style="font-weight:600;">' . esc_html($word_text) . '</span>';
+                    echo '<span style="font-weight:700;color:' . esc_attr($w_color) . ';">' . esc_html($w_pct) . '%</span>';
+                    echo '</div>';
+
+                    // IPA reference rows (when word_ipa data is available)
+                    if (!empty($ipa_data)) {
+                        $ipa_rows = [];
+                        if (!empty($ipa_data['mw'])) $ipa_rows['merriam-webster'] = $ipa_data['mw'];
+                        $da1ni5_val = $ipa_data['da1ni5'] ?? '';
+                        if (is_array($da1ni5_val)) $da1ni5_val = implode(' | ', $da1ni5_val);
+                        if ($da1ni5_val) $ipa_rows['da1ni5'] = $da1ni5_val;
+                        if (!empty($w['expected_ipa'])) $ipa_rows['scored as'] = $w['expected_ipa'];
+                        foreach ($ipa_rows as $label => $val) {
+                            echo '<div style="display:flex;gap:8px;font-size:13px;margin-bottom:2px;">';
+                            echo '<span style="color:#71717a;min-width:110px;">' . esc_html($label) . '</span>';
+                            echo '<span style="font-family:monospace;">[' . esc_html($val) . ']</span>';
+                            echo '</div>';
+                        }
+                    }
+
+                    // Phoneme confidence bars
+                    foreach ($w_phonemes as $ph) {
+                        $conf = floatval($ph['confidence'] ?? 0);
+                        $ph_pct = round($conf * 100, 1);
+                        $bar_w = max(1, $conf * 100);
+                        $ph_color = $conf >= 0.5 ? '#22c55e' : ($conf >= 0.1 ? '#eab308' : '#ef4444');
+                        echo '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:13px;">';
+                        echo '<span style="font-family:monospace;width:30px;text-align:center;">' . esc_html($ph['ipa'] ?? '') . '</span>';
+                        echo '<div style="flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;"><div style="height:100%;width:' . esc_attr($bar_w) . '%;background:' . esc_attr($ph_color) . ';border-radius:4px;"></div></div>';
+                        echo '<span style="width:42px;text-align:right;color:' . esc_attr($ph_color) . ';">' . esc_html($ph_pct) . '%</span>';
+                        echo '</div>';
+                    }
+
+                    echo '</div>';
+                }
+
                 echo '</div>';
-                echo '</div>';
+                echo '</details>';
             }
             echo '</div>';
         }
+
+        // Chevron rotation
+        echo '<style>.flosc-bb-chevron { display:inline-block; } details[open] .flosc-bb-chevron { transform: rotate(90deg); } details summary::-webkit-details-marker { display:none; }</style>';
 
         echo '</div>';
     }

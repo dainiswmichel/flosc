@@ -1394,3 +1394,96 @@
 .flosc-consent-btn:disabled {
     opacity: 0.7;
 }
+
+/* ===== IPA Quiz: 5-Step Progress Bar ===== */
+.flosc-ipa-step-bar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+.flosc-ipa-step {
+    flex: 1;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    position: relative;
+}
+.flosc-ipa-step-completed {
+    background: #e5e7eb;
+    color: #9ca3af;
+}
+.flosc-ipa-step-check {
+    color: #22c55e;
+    font-size: 11px;
+    position: absolute;
+    top: -2px;
+    right: 3px;
+}
+.flosc-ipa-step-active {
+    background: var(--flosc-quiz-inline-accent, #3b82f6);
+    color: #fff;
+}
+.flosc-ipa-step-upcoming {
+    background: var(--flosc-quiz-inline-progress-bg, #e5e7eb);
+    color: #9ca3af;
+}
+
+/* Sweep animation: light sweeps across blocks 3 times then stops */
+.flosc-ipa-step-sweep .flosc-ipa-step {
+    animation: flosc-step-sweep 0.6s ease-in-out 3;
+}
+.flosc-ipa-step-sweep .flosc-ipa-step:nth-child(1) { animation-delay: 0s; }
+.flosc-ipa-step-sweep .flosc-ipa-step:nth-child(2) { animation-delay: 0.08s; }
+.flosc-ipa-step-sweep .flosc-ipa-step:nth-child(3) { animation-delay: 0.16s; }
+.flosc-ipa-step-sweep .flosc-ipa-step:nth-child(4) { animation-delay: 0.24s; }
+.flosc-ipa-step-sweep .flosc-ipa-step:nth-child(5) { animation-delay: 0.32s; }
+
+@keyframes flosc-step-sweep {
+    0%, 100% { filter: brightness(1); }
+    50% { filter: brightness(1.4); }
+}
+
+/* Record button mild pulse (call to action) */
+.flosc-ipa-record-pulse {
+    animation: flosc-record-pulse 2.5s ease-in-out infinite;
+}
+@keyframes flosc-record-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.25); }
+    50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+}
+.flosc-ipa-record-btn.recording {
+    animation: flosc-ipa-pulse 1.2s ease-in-out infinite;
+}
+
+/* Phrase text entrance animation */
+.flosc-ipa-phrase-entrance {
+    animation: flosc-phrase-enter 0.5s ease-out;
+}
+@keyframes flosc-phrase-enter {
+    0% { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== IPA Accordion: hint, chevron arrows ===== */
+.flosc-ipa-accordion-hint {
+    font-size: 13px;
+    color: var(--flosc-checkout-product-desc, #71717a);
+    text-align: center;
+    margin-bottom: 10px;
+    font-style: italic;
+}
+.flosc-ipa-accordion-chevron {
+    display: inline-block;
+    font-size: 12px;
+    margin-right: 6px;
+    transition: transform 0.2s ease;
+    color: var(--flosc-checkout-product-desc, #71717a);
+}
+.flosc-ipa-accordion-item[open] > .flosc-ipa-accordion-header .flosc-ipa-accordion-chevron {
+    transform: rotate(90deg);
+}

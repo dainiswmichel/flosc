@@ -3007,14 +3007,22 @@ class floscApp {
         const num = index + 1;
         const total = this.ipaQuiz.phrases.length;
 
+        // Build 5-step progress blocks: completed=gray+✓, current=highlighted, upcoming=gray
+        let steps = '';
+        for (let i = 1; i <= total; i++) {
+            const cls = i < num ? 'completed' : i === num ? 'active' : 'upcoming';
+            const check = i < num ? '<span class="flosc-ipa-step-check">✓</span>' : '';
+            steps += `<div class="flosc-ipa-step flosc-ipa-step-${cls}">${check}<span class="flosc-ipa-step-num">${i}</span></div>`;
+        }
+
         const html = `
             <div class="flosc-ipa-phrase-card">
-                <div class="flosc-ipa-phrase-header">
-                    <span>Phrase ${num} of ${total}</span>
+                <div class="flosc-ipa-step-bar" id="flosc-ipa-step-bar-${num}">
+                    ${steps}
                 </div>
-                <div class="flosc-ipa-phrase-text">${this.escapeHtml(phrase)}</div>
+                <div class="flosc-ipa-phrase-text flosc-ipa-phrase-entrance">${this.escapeHtml(phrase)}</div>
                 <div class="flosc-ipa-phrase-controls">
-                    <button class="flosc-ipa-record-btn" id="flosc-ipa-record-${num}">
+                    <button class="flosc-ipa-record-btn flosc-ipa-record-pulse" id="flosc-ipa-record-${num}">
                         🎤 Record
                     </button>
                     <div class="flosc-ipa-waveform" id="flosc-ipa-waveform-${num}">
@@ -3037,9 +3045,6 @@ class floscApp {
                     <div class="flosc-ipa-status" id="flosc-ipa-status-${num}">Tap to record yourself saying this phrase</div>
                 </div>
                 <div class="flosc-ipa-flyoff" id="flosc-ipa-flyoff-${num}"></div>
-                <div class="flosc-ipa-progress">
-                    <div class="flosc-ipa-progress-bar" style="width: ${(num / total) * 100}%"></div>
-                </div>
             </div>
         `;
 
@@ -3050,6 +3055,9 @@ class floscApp {
             if (btn) {
                 btn.addEventListener('click', () => this.toggleIpaRecording(num));
             }
+            // Sweep animation: light sweeps left-to-right across all blocks 3 times
+            const stepBar = document.getElementById(`flosc-ipa-step-bar-${num}`);
+            if (stepBar) stepBar.classList.add('flosc-ipa-step-sweep');
         }, 100);
     }
 
@@ -3067,9 +3075,19 @@ class floscApp {
             if (btn) {
                 const thankEmojis = ['❤️', '✨', '🙏', '😍', '💖', '💕', '🌟', '😊', '🥰', '💛', '💜', '🫶'];
                 btn.textContent = thankEmojis[Math.floor(Math.random() * thankEmojis.length)];
-                btn.classList.remove('recording');
+                btn.classList.remove('recording', 'flosc-ipa-record-pulse');
                 btn.classList.add('completed');
                 btn.disabled = true;
+            }
+            // Mark current step as completed (gray + green checkmark)
+            const stepBar = btn?.closest('.flosc-ipa-phrase-card')?.querySelector('.flosc-ipa-step-bar');
+            if (stepBar) {
+                const activeStep = stepBar.querySelector('.flosc-ipa-step-active');
+                if (activeStep) {
+                    activeStep.classList.remove('flosc-ipa-step-active');
+                    activeStep.classList.add('flosc-ipa-step-completed');
+                    activeStep.innerHTML = '<span class="flosc-ipa-step-check">✓</span><span class="flosc-ipa-step-num">' + activeStep.querySelector('.flosc-ipa-step-num')?.textContent + '</span>';
+                }
             }
             if (status) status.textContent = 'Analyzing...';
             this.showIpaFlyoff(phraseNum);
@@ -3106,7 +3124,7 @@ class floscApp {
             this.mediaRecorder.start();
             this.isRecording = true;
 
-            if (btn) { btn.textContent = '⏹ Stop'; btn.classList.add('recording'); }
+            if (btn) { btn.textContent = '⏹ Stop'; btn.classList.remove('flosc-ipa-record-pulse'); btn.classList.add('recording'); }
             if (status) status.textContent = 'Recording... tap Stop when done';
 
             // Start waveform visualizer
@@ -3118,20 +3136,20 @@ class floscApp {
         }
     }
 
-    // Waveform visualizer — draws real-time audio levels on canvas (time-domain for even spread)
+    // Waveform visualizer — gentle voice-activated bars (WhatsApp/Telegram style)
     startWaveformVisualizer(stream, phraseNum) {
         try {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             const source = audioCtx.createMediaStreamSource(stream);
             const analyser = audioCtx.createAnalyser();
-            analyser.fftSize = 256;
+            analyser.fftSize = 512;
+            analyser.smoothingTimeConstant = 0.85;
             source.connect(analyser);
 
             const canvas = document.getElementById(`flosc-ipa-canvas-${phraseNum}`);
             const waveformEl = document.getElementById(`flosc-ipa-waveform-${phraseNum}`);
             if (!canvas || !waveformEl) return;
 
-            // Size canvas to match container for crisp rendering
             const containerRect = waveformEl.getBoundingClientRect();
             const dpr = window.devicePixelRatio || 1;
             canvas.width = containerRect.width * dpr;
@@ -3145,6 +3163,8 @@ class floscApp {
 
             const bufLen = analyser.frequencyBinCount;
             const dataArray = new Uint8Array(bufLen);
+            const barCount = 24;
+            const prevHeights = new Float32Array(barCount).fill(3);
 
             this._waveformAnim = { audioCtx, analyser, running: true };
 
@@ -3152,17 +3172,14 @@ class floscApp {
                 if (!this._waveformAnim || !this._waveformAnim.running) return;
                 requestAnimationFrame(draw);
 
-                // Time-domain data: 128 = silence, deviations = sound amplitude
                 analyser.getByteTimeDomainData(dataArray);
                 ctx.clearRect(0, 0, w, h);
 
-                const barCount = 32;
-                const barWidth = w / barCount - 2;
-                const maxHeight = h - 4;
+                const barWidth = w / barCount - 3;
+                const maxHeight = h - 6;
                 const segmentLen = Math.floor(bufLen / barCount);
 
                 for (let i = 0; i < barCount; i++) {
-                    // RMS (root mean square) of this time segment for smooth amplitude
                     let sum = 0;
                     const start = i * segmentLen;
                     for (let j = start; j < start + segmentLen && j < bufLen; j++) {
@@ -3170,13 +3187,16 @@ class floscApp {
                         sum += v * v;
                     }
                     const rms = Math.sqrt(sum / segmentLen);
-                    const barHeight = Math.max(2, rms * maxHeight * 1.5);
-                    const x = i * (barWidth + 2) + 1;
+                    const target = Math.max(3, rms * maxHeight * 0.85);
+                    // Smooth: 70% previous frame + 30% new — gentle, not frantic
+                    const barHeight = prevHeights[i] * 0.7 + target * 0.3;
+                    prevHeights[i] = barHeight;
+                    const x = i * (barWidth + 3) + 1.5;
                     const y = (h - barHeight) / 2;
 
-                    ctx.fillStyle = `rgba(107, 114, 128, ${0.3 + Math.min(rms * 2, 0.5)})`;
+                    ctx.fillStyle = `rgba(107, 114, 128, ${0.22 + Math.min(rms * 1.2, 0.38)})`;
                     ctx.beginPath();
-                    ctx.roundRect(x, y, barWidth, barHeight, 1);
+                    ctx.roundRect(x, y, barWidth, barHeight, 3);
                     ctx.fill();
                 }
             };
@@ -3312,7 +3332,10 @@ class floscApp {
 
             this.ipaQuiz.currentIndex++;
             if (this.ipaQuiz.currentIndex < this.ipaQuiz.phrases.length) {
+                // Show typing dots while next phrase loads
+                this.showTyping();
                 setTimeout(() => {
+                    this.hideTyping();
                     this.showIpaPhrase(this.ipaQuiz.currentIndex);
                 }, 800);
             } else {
@@ -3426,6 +3449,7 @@ class floscApp {
         // Per-phrase accordions — each phrase is a collapsible <details> block
         setTimeout(() => {
             let accordion = `<div class="flosc-ipa-accordion">`;
+            accordion += `<div class="flosc-ipa-accordion-hint">Expand each phrase to see your detailed word-by-word analysis</div>`;
             phraseResults.forEach((pr, idx) => {
                 const data = pr.data;
                 const words = data.words || [{ word: data.target_text, expected_ipa: data.expected_ipa, phonemes: data.phonemes }];
@@ -3434,8 +3458,9 @@ class floscApp {
                 const phAvg = phTotal ? phAll.reduce((s, p) => s + p.confidence, 0) / phTotal : 0;
                 const phScore = Math.round(phAvg * 100);
 
-                accordion += `<details class="flosc-ipa-accordion-item"${idx === 0 ? ' open' : ''}>`;
+                accordion += `<details class="flosc-ipa-accordion-item">`;
                 accordion += `<summary class="flosc-ipa-accordion-header">`;
+                accordion += `<span class="flosc-ipa-accordion-chevron">▶</span>`;
                 accordion += `<span class="flosc-ipa-accordion-phrase">Phrase ${idx + 1}: ${this.escapeHtml(pr.phrase)}</span>`;
                 accordion += `<span class="flosc-ipa-accordion-score" style="color:${cc(phAvg)}">${phScore}%</span>`;
                 accordion += `</summary>`;
@@ -4055,7 +4080,7 @@ class floscApp {
                 }
                 .flosc-auth-header h2 {
                     margin: 0 0 8px 0;
-                    color: var(--flosc-primary, #1fad0d);
+                    color: #1fad0d;
                     font-weight: bold;
                     font-family: 'Atkinson Hyperlegible Next', sans-serif;
                     font-size: 28px;
@@ -7022,6 +7047,12 @@ Purchased: ${ctx.purchased}
     _mountSubscriptionButtons(offerId, container) {
         const btnContainer = container.querySelector('#flosc-sub-paypal-btn');
         if (!btnContainer) return;
+
+        // Close previous PayPal button instance before re-mounting (prevents duplicate iframes)
+        if (this._paypalSubButtons) {
+            try { this._paypalSubButtons.close(); } catch (e) { /* already closed */ }
+            this._paypalSubButtons = null;
+        }
         btnContainer.innerHTML = '';
 
         const selectedPlan = container.querySelector('input[name="flosc_plan"]:checked')?.value || 'yearly';
@@ -7111,6 +7142,7 @@ Purchased: ${ctx.purchased}
                 return;
             }
 
+            this._paypalSubButtons = btns;
             btns.render(btnContainer).catch(err => {
                 this.logError('[FLOSC-CHECKOUT] PayPal subscription render failed:', err);
                 btnContainer.innerHTML = '<div style="text-align:center;padding:14px;color:#dc2626;">PayPal could not load. Please try again.</div>';

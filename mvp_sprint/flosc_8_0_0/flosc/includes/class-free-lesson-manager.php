@@ -76,47 +76,51 @@ class FLOSC_Free_Lesson_Manager {
         $member_access = FLOSC_Member_Access::instance();
         $count = $member_access->calculate_free_lesson_count(count($missed));
 
-        // v8.0.0: Check for pre-selected free lesson numbers from IPA audio quiz scoring.
-        // Admin setting controls selection mode: Nth worst phoneme or random from worst 10.
-        $selection_mode = function_exists('flosc_get_setting')
-            ? flosc_get_setting('free_lesson_selection', '3rd_worst')
-            : '3rd_worst';
+        // v8.0.0: IPA audio quiz free lesson selection.
+        // ranked_worst is sorted worst→best (lowest score = index 0).
+        // Each entry has 'score' and 'lessons' (array of lesson numbers; [0] = primary).
+        //
+        // Logic — walk down score tiers, never give away a unique worst phoneme:
+        //   Tier 1 (worst score): if >1 phoneme ties here → pick one at random → done
+        //   Tier 1 is single → Tier 2 (2nd worst): if >1 ties here → pick one at random → done
+        //   Tier 2 is single → Tier 3 (3rd worst): pick one at random → done
+        // The single worst phoneme is the upsell hook — we don't give it away free.
+
         $ranked_worst = $quiz_result['ranked_worst_lessons'] ?? [];
 
         if (!empty($ranked_worst) && is_array($ranked_worst)) {
-            // IPA audio quiz: select by phoneme rank, not by lesson number
-            $nth_map = ['1st_worst' => 0, '2nd_worst' => 1, '3rd_worst' => 2, '4th_worst' => 3];
-
-            if (isset($nth_map[$selection_mode]) && isset($ranked_worst[$nth_map[$selection_mode]])) {
-                // Deterministic: Nth worst phoneme's lesson(s)
-                $entry = $ranked_worst[$nth_map[$selection_mode]];
-                $selected_lessons = array_map('intval', (array) ($entry['lessons'] ?? []));
-            } elseif ($selection_mode === 'random_2') {
-                // 2 random phonemes from worst 10
-                $shuffled = $ranked_worst;
-                shuffle($shuffled);
-                $picks = array_slice($shuffled, 0, 2);
-                $selected_lessons = [];
-                foreach ($picks as $entry) {
-                    foreach ((array) ($entry['lessons'] ?? []) as $l) {
-                        $selected_lessons[] = (int) $l;
-                    }
-                }
-                $selected_lessons = array_values(array_unique($selected_lessons));
-            } else {
-                // random_1 (or fallback): 1 random phoneme from worst 10
-                $shuffled = $ranked_worst;
-                shuffle($shuffled);
-                $entry = $shuffled[0] ?? [];
-                $selected_lessons = array_map('intval', (array) ($entry['lessons'] ?? []));
+            // Group phonemes into tiers by score
+            $tiers = [];
+            foreach ($ranked_worst as $entry) {
+                $score = $entry['score'] ?? 0;
+                $tiers[$score][] = $entry;
             }
+            // Sort tiers by score ascending (worst scores first)
+            ksort($tiers);
+            $tiers = array_values($tiers);
+
+            // Walk tiers: pick from first tier that has >1 phoneme, or 3rd tier at latest
+            $pick_from = null;
+            for ($i = 0; $i < min(3, count($tiers)); $i++) {
+                if (count($tiers[$i]) > 1 || $i === 2) {
+                    $pick_from = $tiers[$i];
+                    break;
+                }
+            }
+            // Fallback: if fewer than 3 tiers exist, pick from the last available tier
+            if ($pick_from === null) {
+                $pick_from = end($tiers);
+            }
+
+            // Pick one phoneme at random from the chosen tier, take its primary lesson
+            $chosen = $pick_from[array_rand($pick_from)];
+            $all_lessons = array_map('intval', (array) ($chosen['lessons'] ?? []));
+            $selected_lessons = !empty($all_lessons) ? [$all_lessons[0]] : [];
         } else {
-            // Non-IPA quiz: original behavior — shuffle missed lessons, pick N
+            // Non-IPA quiz: original behavior — shuffle missed lessons, pick admin-configured count
             shuffle($missed);
             $selected_lessons = array_slice($missed, 0, $count);
         }
-
-        // v3.0.0: Store the quiz_id alongside lesson numbers so delivery
         // knows which category to search for lesson posts
         update_user_meta($user_id, '_flosc_free_lesson_number', $selected_lessons[0]);
         update_user_meta($user_id, '_flosc_free_lesson_numbers', $selected_lessons);
