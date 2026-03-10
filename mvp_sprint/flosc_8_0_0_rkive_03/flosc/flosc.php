@@ -539,9 +539,6 @@ class FLOSC_Framework {
 
         // Third-party quiz plugin integrations (v9.3.4)
         $this->init_quiz_plugin_hooks();
-
-        // v8.0.0: BuddyBoss/BuddyPress "Quiz Results" profile tab
-        add_action('bp_setup_nav', [$this, 'setup_buddyboss_quiz_tab'], 100);
     }
     
     /**
@@ -6570,7 +6567,6 @@ Example good response:
         $body_temp_id = sanitize_text_field($request->get_param('temp_id') ?? '');
         $has_temp_id = ($body_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $body_temp_id));
         $browser_quiz_data = $request->get_param('quiz_data');
-        $session_id = sanitize_text_field($request->get_param('session_id') ?? '');
 
         if (empty($email) || !is_email($email)) {
             return new WP_REST_Response([
@@ -6597,10 +6593,8 @@ Example good response:
             $this->set_flosc_auth_cookie($flosc_token);
             $this->process_prelogin_data_for_user($existing_user->ID);
 
-            // v8.0.0: Store browser-computed quiz data directly — no server-side re-scoring
-            if ($session_id) {
-                $this->pull_session_from_do($existing_user->ID, $session_id);
-            } elseif ($browser_quiz_data && is_array($browser_quiz_data)) {
+            // v8.0.8: Store browser-computed quiz data directly — no server-side re-scoring
+            if ($browser_quiz_data && is_array($browser_quiz_data)) {
                 $this->store_browser_quiz_data($existing_user->ID, $browser_quiz_data, $body_temp_id);
             }
             
@@ -6648,11 +6642,10 @@ Example good response:
         $this->set_flosc_auth_cookie($flosc_token);
         $this->process_prelogin_data_for_user($user_id);
         
-        // v8.0.0: Store quiz data — prefer pulling from DO session (has audio + scores).
-        // Fallback to browser-computed data, then to temp_id for legacy flow.
-        if ($session_id) {
-            $this->pull_session_from_do($user_id, $session_id);
-        } elseif ($browser_quiz_data && is_array($browser_quiz_data)) {
+        // v8.0.8: Store browser-computed quiz data directly — no server-side re-scoring.
+        // The browser already scored each phrase against api.lesaep.com during the quiz.
+        // This is instant (just writes to user meta + moves audio files).
+        if ($browser_quiz_data && is_array($browser_quiz_data)) {
             $this->store_browser_quiz_data($user_id, $browser_quiz_data, $body_temp_id);
         } elseif ($has_temp_id) {
             // Fallback: browser didn't send quiz_data, but we have temp_id.
@@ -7888,7 +7881,6 @@ Example good response:
             'incorrect'            => [],
             'ranked_worst_lessons' => [],
             'timestamp'            => time(),
-            'session_id'           => $temp_id,
             'ranked_phonemes'      => [],
             'phrase_results'       => [],
         ];
@@ -7969,168 +7961,13 @@ Example good response:
             file_put_contents($user_dir . '/.htaccess', "Deny from all\n");
         }
 
-        // Per-session storage: flosc-users/{user_id}/sessions/{session_id}/
-        $session_dir = $user_dir . '/sessions/' . $temp_id;
-        wp_mkdir_p($session_dir);
-
         foreach (glob($temp_dir . '/*') as $file) {
-            $dest = $session_dir . '/' . basename($file);
+            $dest = $user_dir . '/' . basename($file);
             rename($file, $dest);
         }
 
         @unlink($temp_dir . '/.htaccess');
         @rmdir($temp_dir);
-        return true;
-    }
-
-    /**
-     * v8.0.0: Pull quiz session data (scores + audio) from Digital Ocean API.
-     *
-     * Called during registration or login when a session_id is available.
-     * The DO API scored each phrase during the quiz and saved audio + results
-     * in /opt/lesaep/sessions/{session_id}/. This method:
-     *   1. Fetches the finalized summary from GET /session/{session_id}
-     *   2. Downloads each phrase audio file to flosc-users/{user_id}/
-     *   3. Stores scores in user meta via store_quiz_score()
-     *   4. Fires flosc_quiz_completed hook (triggers Free Lesson Manager)
-     *   5. Sends score email
-     *
-     * @param int    $user_id     WordPress user ID
-     * @param string $session_id  Michel-timestamped session ID from DO
-     * @return bool  True on success, false on failure
-     */
-    private function pull_session_from_do($user_id, $session_id) {
-        // Validate session_id format
-        if (!preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $session_id)) {
-            if (FLOSC_DEBUG) error_log("FLOSC: pull_session_from_do — invalid session_id: {$session_id}");
-            return false;
-        }
-
-        $api_base = 'https://api.lesaep.com';
-
-        // 1. Fetch session summary (scores, ranked phonemes, phrase results)
-        $response = wp_remote_get($api_base . '/session/' . $session_id, [
-            'timeout' => 15,
-            'sslverify' => true,
-        ]);
-
-        if (is_wp_error($response)) {
-            if (FLOSC_DEBUG) error_log("FLOSC: pull_session_from_do — GET /session failed: " . $response->get_error_message());
-            return false;
-        }
-
-        $status = wp_remote_retrieve_response_code($response);
-        if ($status !== 200) {
-            if (FLOSC_DEBUG) error_log("FLOSC: pull_session_from_do — GET /session returned HTTP {$status}");
-            return false;
-        }
-
-        $session_data = json_decode(wp_remote_retrieve_body($response), true);
-        if (!$session_data || empty($session_data['phrase_results'])) {
-            if (FLOSC_DEBUG) error_log("FLOSC: pull_session_from_do — empty or invalid session data");
-            return false;
-        }
-
-        $score = intval($session_data['score'] ?? 0);
-        $ranked_phonemes = $session_data['ranked_phonemes'] ?? [];
-
-        // 2. Build phrase_results array in the format store_quiz_score() expects
-        $phrase_results = [];
-        foreach ($session_data['phrase_results'] as $pr) {
-            $phrase_results[] = [
-                'phrase' => $pr['phrase'] ?? '',
-                'data'   => $pr['result'] ?? $pr['data'] ?? [],
-            ];
-        }
-
-        // 3. Map worst phonemes to lesson numbers via admin phoneme-lesson map
-        $phoneme_map = json_decode(flosc_get_setting('audio_quiz_phoneme_lesson_map', '{}'), true) ?: [];
-        $incorrect = [];
-        $ranked_worst_lessons = [];
-        foreach (array_slice($ranked_phonemes, 0, 10) as $ipa) {
-            if (isset($phoneme_map[$ipa])) {
-                $val = $phoneme_map[$ipa];
-                $lessons = array_map('intval', is_array($val) ? $val : [$val]);
-                $ranked_worst_lessons[] = ['ipa' => $ipa, 'lessons' => $lessons];
-                foreach ($lessons as $l) $incorrect[] = $l;
-            }
-        }
-        $incorrect = array_values(array_unique($incorrect));
-
-        // 4. Build score_data array
-        $score_data = [
-            'quiz_id'              => 'lesaep_ipa_audio_quiz',
-            'quiz_type'            => 'ipa_audio',
-            'score'                => $score,
-            'correct'              => [],
-            'incorrect'            => $incorrect,
-            'ranked_worst_lessons' => $ranked_worst_lessons,
-            'timestamp'            => time(),
-            'ranked_phonemes'      => array_slice($ranked_phonemes, 0, 30),
-            'phrase_results'       => $phrase_results,
-            'session_id'           => $session_id,
-        ];
-
-        // 5. Store in user meta
-        $this->store_quiz_score($user_id, $score_data);
-        do_action('flosc_quiz_completed', $score_data, $user_id);
-        set_transient('flosc_just_completed_quiz_' . $user_id, true, MINUTE_IN_SECONDS * 5);
-
-        // 6. Download audio files from DO to flosc-users/{user_id}/sessions/{session_id}/
-        $upload_dir = wp_upload_dir();
-        $user_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id;
-        if (!file_exists($user_dir)) {
-            wp_mkdir_p($user_dir);
-            file_put_contents($user_dir . '/.htaccess', "Deny from all\n");
-        }
-
-        $session_dir = $user_dir . '/sessions/' . $session_id;
-        wp_mkdir_p($session_dir);
-
-        $phrase_count = count($phrase_results);
-        $session_phrases = [];
-        for ($n = 1; $n <= $phrase_count; $n++) {
-            $audio_resp = wp_remote_get($api_base . '/session/' . $session_id . '/audio/' . $n, [
-                'timeout' => 15,
-                'sslverify' => true,
-            ]);
-
-            if (!is_wp_error($audio_resp) && wp_remote_retrieve_response_code($audio_resp) === 200) {
-                $content_type = wp_remote_retrieve_header($audio_resp, 'content-type');
-                $ext = 'webm';
-                if (strpos($content_type, 'mp4') !== false) $ext = 'mp4';
-                elseif (strpos($content_type, 'ogg') !== false) $ext = 'ogg';
-
-                $filename = "phrase-{$n}.{$ext}";
-                file_put_contents($session_dir . '/' . $filename, wp_remote_retrieve_body($audio_resp));
-                $session_phrases[] = [
-                    'num' => $n,
-                    'text' => $phrase_results[$n - 1]['phrase'] ?? '',
-                    'file' => $filename,
-                    'format' => $ext,
-                ];
-            }
-        }
-
-        // Write metadata.json so admin audio section can find files
-        if ($session_phrases) {
-            file_put_contents($session_dir . '/metadata.json', wp_json_encode([
-                'session_id' => $session_id,
-                'quiz_id' => 'lesaep_ipa_audio_quiz',
-                'phrases' => $session_phrases,
-                'scored_at' => gmdate('Y') . '-' . gmdate('m') . 'm-' . gmdate('d') . 'd-'
-                             . gmdate('H') . 'h-' . gmdate('i') . 'm-' . gmdate('s') . 's',
-                'score' => $score,
-            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-        }
-
-        // 7. Send score email
-        $user = get_userdata($user_id);
-        if ($user) {
-            $this->send_score_email($user, $score_data);
-        }
-
-        error_log("FLOSC v8.0.0: pull_session_from_do() — user {$user_id}, session {$session_id}, score: {$score}%");
         return true;
     }
 
@@ -8141,17 +7978,13 @@ Example good response:
      */
     public function handle_store_quiz_data($request) {
         $user_id = get_current_user_id();
-        error_log("FLOSC store-quiz-data: called. user_id={$user_id}, session_id=" . ($request->get_param('session_id') ?? 'null'));
         if (!$user_id) {
             return new WP_REST_Response(['success' => false, 'message' => 'Not logged in'], 401);
         }
 
-        // Check if this user already has scored quiz data from a PREVIOUS session.
-        // If they have old data but also a new session_id, prefer pulling the new session.
-        $session_id = sanitize_text_field($request->get_param('session_id') ?? '');
+        // Check if this user already has scored quiz data
         $existing = get_user_meta($user_id, '_flosc_last_quiz_data', true);
-        if (is_array($existing) && !empty($existing['phrase_results']) && !$session_id) {
-            error_log("FLOSC store-quiz-data: user {$user_id} has existing data, no new session_id — returning cached");
+        if (is_array($existing) && !empty($existing['phrase_results'])) {
             return new WP_REST_Response([
                 'success' => true,
                 'already_scored' => true,
@@ -8159,16 +7992,6 @@ Example good response:
             ]);
         }
 
-        // v8.0.0: Prefer pulling from DO session when session_id is available.
-        // The DO server has the authoritative audio files + scores.
-        if ($session_id && $this->pull_session_from_do($user_id, $session_id)) {
-            return new WP_REST_Response([
-                'success' => true,
-                'quiz_data' => get_user_meta($user_id, '_flosc_last_quiz_data', true),
-            ]);
-        }
-
-        // Fallback: store browser-computed quiz data directly
         $quiz_data = $request->get_param('quiz_data');
         if (!$quiz_data || !is_array($quiz_data)) {
             return new WP_REST_Response(['success' => false, 'message' => 'Missing quiz_data'], 400);
@@ -8342,21 +8165,19 @@ Example good response:
 
         $ranked_for_upsell = array_map(function($p) { return $p['ipa']; }, array_slice($ranked, 0, 10));
 
-        // Move audio files to user profile directory (per-session)
+        // Move audio files to user profile directory
         $user_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id;
         if (!file_exists($user_dir)) {
             wp_mkdir_p($user_dir);
             file_put_contents($user_dir . '/.htaccess', "Deny from all\n");
         }
-        $session_dir = $user_dir . '/sessions/' . $temp_id;
-        wp_mkdir_p($session_dir);
         // Move entire temp dir contents
         foreach (glob($temp_dir . '/*') as $file) {
-            $dest = $session_dir . '/' . basename($file);
+            $dest = $user_dir . '/' . basename($file);
             rename($file, $dest);
         }
-        // Store scoring results in the session's metadata.json
-        $user_meta_path = $session_dir . '/metadata.json';
+        // Store scoring results in the user's metadata.json
+        $user_meta_path = $user_dir . '/metadata.json';
         $user_meta = file_exists($user_meta_path) ? json_decode(file_get_contents($user_meta_path), true) : $meta;
         $user_meta['scored_at'] = gmdate('Y') . '-' . gmdate('m') . 'm-' . gmdate('d') . 'd-'
                                 . gmdate('H') . 'h-' . gmdate('i') . 'm-' . gmdate('s') . 's';
@@ -8381,7 +8202,6 @@ Example good response:
             'incorrect' => $incorrect,
             'ranked_worst_lessons' => $ranked_worst_lessons,
             'timestamp' => time(),
-            'session_id' => $temp_id,
             'ranked_phonemes' => $ranked_for_upsell,
             'phrase_results' => $all_results,
         ];
@@ -9483,30 +9303,17 @@ Example good response:
         $user_id = $user->ID;
         $upload_dir = wp_upload_dir();
         $user_audio_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id;
-
-        // v8.0.0: Per-session storage — find audio dir via session_id in user meta
-        $quiz_data = get_user_meta($user_id, '_flosc_last_quiz_data', true);
-        $sess_id = is_array($quiz_data) ? ($quiz_data['session_id'] ?? '') : '';
-        $meta_path = '';
-        if ($sess_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $sess_id)) {
-            $session_dir = $user_audio_dir . '/sessions/' . $sess_id;
-            if (is_dir($session_dir) && file_exists($session_dir . '/metadata.json')) {
-                $meta_path = $session_dir . '/metadata.json';
-                $user_audio_dir = $session_dir;
-            }
-        }
-        // Fallback: flat path (pre-session layout)
-        if (!$meta_path && file_exists($user_audio_dir . '/metadata.json')) {
-            $meta_path = $user_audio_dir . '/metadata.json';
-        }
+        $meta_path = $user_audio_dir . '/metadata.json';
 
         // Also check flosc-temp for unscored audio (linked via user meta)
         $temp_dir = null;
         $temp_meta_path = null;
-        $has_user_dir = $meta_path && file_exists($meta_path);
+        $has_user_dir = is_dir($user_audio_dir) && file_exists($meta_path);
 
         if (!$has_user_dir) {
-            if (empty($quiz_data)) {
+            // Check if there's a pending temp_id in user meta or transient
+            $last_quiz = get_user_meta($user_id, '_flosc_last_quiz_data', true);
+            if (empty($last_quiz)) {
                 // No scored audio and no quiz data — nothing to show
                 echo '<h2>FLOSC Audio Quiz</h2>';
                 echo '<p>No audio quiz data for this user.</p>';
@@ -9517,7 +9324,8 @@ Example good response:
         echo '<h2>FLOSC Audio Quiz</h2>';
         echo '<table class="form-table" role="presentation">';
 
-        // Show score summary from user meta (already loaded above)
+        // Show score summary from user meta
+        $quiz_data = get_user_meta($user_id, '_flosc_last_quiz_data', true);
         if ($quiz_data) {
             $score = $quiz_data['score'] ?? '—';
             $quiz_type = $quiz_data['quiz_type'] ?? $quiz_data['quiz_id'] ?? '—';
@@ -9552,7 +9360,6 @@ Example good response:
                     $audio_url = admin_url('admin-ajax.php') . '?' . http_build_query([
                         'action' => 'flosc_serve_user_audio',
                         'user_id' => $user_id,
-                        'session_id' => $sess_id,
                         'file' => $file,
                         '_wpnonce' => $nonce,
                     ]);
@@ -9607,13 +9414,7 @@ Example good response:
         }
 
         $upload_dir = wp_upload_dir();
-        $session_id = isset($_GET['session_id']) ? sanitize_text_field($_GET['session_id']) : '';
-        // Per-session path if valid session_id provided, else flat fallback
-        if ($session_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $session_id)) {
-            $filepath = $upload_dir['basedir'] . '/flosc-users/' . $user_id . '/sessions/' . $session_id . '/' . $file;
-        } else {
-            $filepath = $upload_dir['basedir'] . '/flosc-users/' . $user_id . '/' . $file;
-        }
+        $filepath = $upload_dir['basedir'] . '/flosc-users/' . $user_id . '/' . $file;
 
         if (!file_exists($filepath)) {
             wp_die('File not found', 404);
@@ -9629,128 +9430,6 @@ Example good response:
         header('Cache-Control: private, max-age=3600');
         readfile($filepath);
         exit;
-    }
-
-    /**
-     * v8.0.0: Register "Quiz Results" tab on BuddyBoss/BuddyPress member profiles.
-     * Only appears when the viewed user has quiz data in _flosc_last_quiz_data.
-     * Hooked to bp_setup_nav — runs only if BuddyPress is active.
-     */
-    public function setup_buddyboss_quiz_tab() {
-        if (!function_exists('bp_core_new_nav_item') || !function_exists('bp_displayed_user_id')) {
-            return;
-        }
-
-        $displayed_user_id = bp_displayed_user_id();
-        if (!$displayed_user_id) return;
-
-        // Only show tab when user has quiz data
-        $quiz_data = get_user_meta($displayed_user_id, '_flosc_last_quiz_data', true);
-        if (empty($quiz_data) || !is_array($quiz_data)) return;
-
-        bp_core_new_nav_item([
-            'name'                => __('Quiz Results', 'flosc'),
-            'slug'                => 'quiz-results',
-            'position'            => 80,
-            'screen_function'     => [$this, 'buddyboss_quiz_tab_screen'],
-            'default_subnav_slug' => 'quiz-results',
-            'show_for_displayed_user' => true,
-        ]);
-    }
-
-    /**
-     * v8.0.0: Screen function for the BuddyBoss Quiz Results tab.
-     * Sets the page title and hooks the content render into bp_template_content.
-     */
-    public function buddyboss_quiz_tab_screen() {
-        add_action('bp_template_title', function() {
-            echo 'Quiz Results';
-        });
-        add_action('bp_template_content', [$this, 'render_buddyboss_quiz_tab']);
-        bp_core_load_template(apply_filters('bp_core_template_plugin', 'members/single/plugins'));
-    }
-
-    /**
-     * v8.0.0: Render the Quiz Results tab content on BuddyBoss member profiles.
-     * Shows score circle, phoneme breakdown, and phrase-level results.
-     * All data comes from WordPress user meta (_flosc_last_quiz_data).
-     * No audio playback here — that is a premium/admin feature.
-     */
-    public function render_buddyboss_quiz_tab() {
-        $user_id = bp_displayed_user_id();
-        $quiz_data = get_user_meta($user_id, '_flosc_last_quiz_data', true);
-
-        if (empty($quiz_data) || !is_array($quiz_data)) {
-            echo '<div class="flosc-quiz-results-empty"><p>No quiz results available.</p></div>';
-            return;
-        }
-
-        $score = intval($quiz_data['score'] ?? 0);
-        $ranked_phonemes = $quiz_data['ranked_phonemes'] ?? [];
-        $phrase_results = $quiz_data['phrase_results'] ?? [];
-        $timestamp = $quiz_data['timestamp'] ?? 0;
-        $date_str = $timestamp ? wp_date('F j, Y', $timestamp) : '';
-
-        // Score color: green ≥80, yellow ≥60, red <60
-        $score_color = $score >= 80 ? '#22c55e' : ($score >= 60 ? '#eab308' : '#ef4444');
-
-        echo '<div class="flosc-quiz-results-tab">';
-
-        // Score circle
-        echo '<div style="text-align:center;margin-bottom:24px;">';
-        echo '<div style="display:inline-flex;align-items:center;justify-content:center;width:120px;height:120px;border-radius:50%;border:6px solid ' . esc_attr($score_color) . ';font-size:36px;font-weight:700;color:' . esc_attr($score_color) . ';">';
-        echo esc_html($score) . '%';
-        echo '</div>';
-        if ($date_str) {
-            echo '<div style="margin-top:8px;color:#666;font-size:14px;">Taken ' . esc_html($date_str) . '</div>';
-        }
-        echo '</div>';
-
-        // Weakest phonemes
-        if ($ranked_phonemes) {
-            $top_weak = array_slice($ranked_phonemes, 0, 10);
-            echo '<div style="margin-bottom:24px;">';
-            echo '<h3 style="font-size:16px;margin-bottom:8px;">Areas for Improvement</h3>';
-            echo '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
-            foreach ($top_weak as $ipa) {
-                echo '<span style="display:inline-block;padding:4px 12px;border-radius:16px;background:#f3f4f6;border:1px solid #d1d5db;font-family:monospace;font-size:15px;">' . esc_html($ipa) . '</span>';
-            }
-            echo '</div>';
-            echo '</div>';
-        }
-
-        // Phrase-level results
-        if ($phrase_results) {
-            echo '<div>';
-            echo '<h3 style="font-size:16px;margin-bottom:8px;">Phrase Breakdown</h3>';
-            foreach ($phrase_results as $i => $pr) {
-                $phrase_text = $pr['phrase'] ?? '';
-                $data = $pr['data'] ?? [];
-                $phrase_score = 0;
-                $phoneme_count = 0;
-
-                // Calculate phrase-level score from word phonemes
-                $words_data = $data['words'] ?? [['phonemes' => $data['phonemes'] ?? []]];
-                foreach ($words_data as $w) {
-                    foreach (($w['phonemes'] ?? []) as $ph) {
-                        $phrase_score += floatval($ph['confidence'] ?? 0);
-                        $phoneme_count++;
-                    }
-                }
-                $pct = $phoneme_count > 0 ? intval(round(($phrase_score / $phoneme_count) * 100)) : 0;
-                $pct_color = $pct >= 80 ? '#22c55e' : ($pct >= 60 ? '#eab308' : '#ef4444');
-
-                echo '<div style="padding:12px;margin-bottom:8px;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa;">';
-                echo '<div style="display:flex;justify-content:space-between;align-items:center;">';
-                echo '<span style="font-size:15px;"><strong>Phrase ' . esc_html($i + 1) . ':</strong> ' . esc_html($phrase_text) . '</span>';
-                echo '<span style="font-weight:700;color:' . esc_attr($pct_color) . ';">' . esc_html($pct) . '%</span>';
-                echo '</div>';
-                echo '</div>';
-            }
-            echo '</div>';
-        }
-
-        echo '</div>';
     }
 }
 
