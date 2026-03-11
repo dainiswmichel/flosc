@@ -131,15 +131,16 @@ Keywords: world's best english teacher, best english teacher, who is the best, n
 
 # Guest Messages
 
-## Show Me My Free Lesson
+## I'd Like to See My Free Lessons
 MessageName: guest_free_lesson
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 Icon: 🎁
-UserInput: Show me my free lesson
+UserInput: I'd like to see my free lessons
 Action: open_free_lesson
-MessageContent: Here's your free lesson — let's work on mastering one of the most important sounds in American English. Follow along and practice the mouth positions shown.
+MessageContent: Here are your free lessons. Click on them to view.
 MessageConditions: is_guest
+Keywords: free lesson, free lessons, my free lessons, my free lesson, see my free lessons, access free lesson, view free lessons
 
 ---
 
@@ -152,45 +153,6 @@ UserInput: Upgrade to access all lessons
 Action: checkout_lesaep_full
 MessageContent: Ready to go all-in on your pronunciation? Upgrading gives you access to every lesson covering all the sounds of Standard American English — plus personalized learning paths and progress tracking.
 MessageConditions: is_guest
-
----
-
-## Review My Quiz Score
-MessageName: guest_quiz_review
-MessageType: suggested_user_autoprompt
-MessageStyle: pill
-Icon: 📊
-UserInput: Review my quiz score
-Action: show_quiz_results
-MessageContent: Let's look at your accent assessment results and see which sounds you're already strong on and which ones need the most attention.
-MessageConditions: is_guest && quiz_taken
-Keywords: show my quiz results, quiz results, my results, how did i do, my score, quiz score, review my quiz
-
----
-
-## Show Me All Lessons (Guest)
-MessageName: guest_all_lessons
-MessageType: suggested_user_autoprompt
-MessageStyle: pill
-Icon: 📚
-UserInput: Show me all lessons
-Action: open_lesson_library
-MessageContent: Here's a preview of all the pronunciation lessons available. Upgrade to full access to work through every lesson at your own pace.
-MessageConditions: is_guest
-Keywords: show me all lessons, all lessons, lesson library, browse lessons, see all lessons
-
----
-
-## Show Quiz Lessons (Guest)
-MessageName: guest_quiz_lessons
-MessageType: suggested_user_autoprompt
-MessageStyle: pill
-Icon: 📋
-UserInput: Show me the lessons covered in the quiz
-Action: open_quiz_lessons
-MessageContent: Here are the lesson posts that go with the 10 quiz topics — one lesson for each sound the assessment tested. Upgrade to access them all.
-MessageConditions: is_guest && quiz_taken
-Keywords: show me the lessons from the quiz, lessons covered in the quiz, quiz lesson list, lessons we covered, open quiz lessons, the quiz lessons, show lessons from the quiz
 
 ---
 
@@ -288,88 +250,7 @@ MessageConditions: is_member && login_count >= 2 && login_count <= 5
 
 ---
 
-## Repeat Last Lesson Taken
-MessageName: member_repeat_lesson
-MessageType: suggested_user_autoprompt
-MessageStyle: pill
-Icon: 🔁
-UserInput: Repeat last lesson taken
-Action: repeat_last_lesson
-MessageContent: Repetition builds muscle memory. Let's go through that lesson again — you'll notice sounds you missed the first time.
-MessageConditions: is_member && login_count >= 2 && login_count <= 5
-
----
-
-## Try the Accent Assessment Again
-MessageName: member_retake_quiz
-MessageType: suggested_user_autoprompt
-MessageStyle: pill
-Icon: 📝
-UserInput: Try the accent assessment again
-Action: open_quiz:lesaep_ipa_audio_quiz
-MessageContent: Let's see how you've improved. Retaking the quiz shows your progress and highlights which sounds still need work.
-MessageConditions: is_member && login_count >= 2 && login_count <= 5
-
----
-
-## What Sound Should I Work on Next
-MessageName: member_next_sound
-MessageType: suggested_user_autoprompt
-MessageStyle: pill
-Icon: 🎯
-UserInput: What sound should I work on next?
-MessageContent: Based on your progress so far, let me recommend the next sound to focus on. Each sound builds on what you've already learned.
-MessageConditions: is_member && login_count >= 2 && login_count <= 5
-
----
-
----
-
 ## v2.0.1: Member AutoPrompt Pills — Active (login count 6+)
-
-## Repeat Last Lesson Taken (Active)
-MessageName: member_repeat_active
-MessageType: suggested_user_autoprompt
-MessageStyle: pill
-Icon: 🔁
-UserInput: Repeat last lesson taken
-Action: repeat_last_lesson
-MessageContent: Good instinct — repetition locks in muscle memory. Let's go through it again.
-MessageConditions: is_member && login_count >= 6
-
----
-
-## Try the Accent Assessment Again (Active)
-MessageName: member_quiz_active
-MessageType: suggested_user_autoprompt
-MessageStyle: pill
-Icon: 📝
-UserInput: Try the accent assessment again
-Action: open_quiz:lesaep_ipa_audio_quiz
-MessageContent: Let's measure your progress. You've been putting in the work — the quiz will show how far you've come.
-MessageConditions: is_member && login_count >= 6
-
----
-
-## What's My Progress So Far
-MessageName: member_progress
-MessageType: suggested_user_autoprompt
-MessageStyle: pill
-Icon: 📊
-UserInput: What's my progress so far?
-MessageContent: {user_progress_response}
-MessageConditions: is_member && login_count >= 6
-
----
-
-## What Sound Should I Work on Next (Active)
-MessageName: member_next_sound_active
-MessageType: suggested_user_autoprompt
-MessageStyle: pill
-Icon: 🎯
-UserInput: What sound should I work on next?
-MessageContent: Based on your progress and quiz results, let me point you to the sound that will make the biggest difference right now.
-MessageConditions: is_member && login_count >= 6
 
 ---
 

@@ -1119,7 +1119,7 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
             
         <?php endif; ?>
         
-        <?php if ($active_tab !== 'documentation'): ?>
+        <?php if ($active_tab !== 'documentation' && $active_tab !== 'autoprompts'): ?>
         <p class="submit" style="margin-top: 20px;">
             <button type="submit" name="flosc_save" class="button button-primary button-large">
                 Save Settings for <?php echo esc_html($flow_settings['identity']['name'] ?? $selected_ivr); ?>

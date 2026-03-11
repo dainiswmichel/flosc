@@ -217,8 +217,7 @@ $available_conditions = [
 
 <p>Configure the quick-reply pills shown in FLOSC chat per user state. Pills send a chat message to the AI, trigger an offer to display, or fire an in-chat action (quiz, lesson, checkout, etc.).</p>
 
-<form method="post">
-    <?php wp_nonce_field('flosc_save_autoprompts', 'flosc_autoprompts_nonce'); ?>
+<?php wp_nonce_field('flosc_save_autoprompts', 'flosc_autoprompts_nonce'); ?>
     <input type="hidden" name="flosc_flow_key" value="<?php echo esc_attr($flow_key); ?>">
     <input type="hidden" name="flosc_ivr" value="<?php echo esc_attr($current_ivr); ?>">
 
@@ -482,8 +481,6 @@ $pill_demos = [
         </div>
     </div>
 </details>
-
-</form>
 
 <script>
 (function() {

@@ -3209,3 +3209,45 @@ img.flosc-profile-avatar {
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+/* ==========================================
+   Free Lesson Cards — v8.0.1
+   ========================================== */
+
+.flosc-free-lesson-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.flosc-free-lesson-intro {
+    margin: 0 0 4px;
+    font-size: 14px;
+    color: var(--flosc-text-secondary, #555);
+}
+
+.flosc-free-lesson-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--flosc-surface, #f5f5f5);
+    border: 1px solid var(--flosc-border, #e0e0e0);
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--flosc-text, #222);
+    transition: background 0.15s, border-color 0.15s;
+    width: 100%;
+}
+
+.flosc-free-lesson-card:hover {
+    background: var(--flosc-primary-light, #ede9fe);
+    border-color: var(--flosc-primary, #4f46e5);
+}
+
+.flosc-free-lesson-card-icon { font-size: 20px; flex-shrink: 0; }
+.flosc-free-lesson-card-title { flex: 1; }

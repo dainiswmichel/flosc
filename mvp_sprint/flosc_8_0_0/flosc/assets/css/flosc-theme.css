@@ -1629,3 +1629,41 @@
 .flosc-quiz-topic-list li {
     color: var(--flosc-text);
 }
+
+/* ── Free Lesson Title Cards ── */
+.flosc-free-lesson-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.flosc-free-lesson-intro {
+    margin: 0 0 4px 0;
+    font-size: 15px;
+    color: var(--flosc-text);
+}
+.flosc-free-lesson-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--flosc-surface, rgba(59, 130, 246, 0.08));
+    border: 1px solid var(--flosc-border, rgba(59, 130, 246, 0.2));
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--flosc-text);
+    transition: background 0.15s, border-color 0.15s;
+}
+.flosc-free-lesson-card:hover {
+    background: var(--flosc-surface-hover, rgba(59, 130, 246, 0.15));
+    border-color: var(--flosc-primary, #3b82f6);
+}
+.flosc-free-lesson-card-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+.flosc-free-lesson-card-title {
+    font-weight: 600;
+}

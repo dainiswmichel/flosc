@@ -469,6 +469,11 @@ class FLOSC_Framework {
         add_action('admin_init', [$this, 'register_settings']);
         add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_assets']); // v1.0.4: TASK-006
 
+        // v8.0.0: Relabel WP admin footer on FLOSC pages — "WordPress X.X.X | FLOSC vX.X.X"
+        // instead of bare "Version X.X.X" which confused floscAdmins into thinking it was FLOSC's version.
+        add_filter('update_footer', [$this, 'relabel_admin_footer'], 20);
+        add_filter('admin_footer_text', [$this, 'relabel_admin_footer_left']);
+
         // v8.0.5: Show user audio files on WP admin user profile page
         add_action('edit_user_profile', [$this, 'render_admin_user_audio_section']);
         add_action('show_user_profile', [$this, 'render_admin_user_audio_section']);
@@ -2556,6 +2561,26 @@ The {product_name} Team";
                 'tokens' => $this->sale_manager->get_provider('tokens')->get_balance($user->ID),
                 'freeLessonDelivered' => (bool) get_user_meta($user->ID, '_flosc_free_lesson_delivered', true),
                 'freeLessonsCount' => count(get_user_meta($user->ID, '_flosc_free_lesson_numbers', true) ?: []),
+                // v8.0.1: Embed free lesson data in config so JS never needs a cross-domain REST call.
+                // Reads stored post IDs from user meta (populated at quiz-scoring time),
+                // fetches title + content via get_post(), passes to frontend in same-origin page load.
+                'freeLessons' => (function() use ($user) {
+                    $post_ids = get_user_meta($user->ID, '_flosc_free_lesson_post_ids', true);
+                    $lesson_numbers = get_user_meta($user->ID, '_flosc_free_lesson_numbers', true) ?: [];
+                    if (empty($post_ids) || !is_array($post_ids)) return [];
+                    $lessons = [];
+                    foreach ($post_ids as $i => $post_id) {
+                        $post = get_post((int) $post_id);
+                        if (!$post || $post->post_status !== 'publish') continue;
+                        $lessons[] = [
+                            'title' => $post->post_title,
+                            'content' => apply_filters('the_content', $post->post_content),
+                            'url' => get_permalink($post_id),
+                            'lesson_number' => isset($lesson_numbers[$i]) ? $lesson_numbers[$i] : null,
+                        ];
+                    }
+                    return $lessons;
+                })(),
                 'lastQuizScore' => get_user_meta($user->ID, '_flosc_last_quiz_score', true),
                 'lastQuizId' => get_user_meta($user->ID, '_flosc_last_quiz_id', true),
                 // v8.0.0: Full quiz data (phrase_results, ranked_phonemes) for post-login display.
@@ -3181,6 +3206,41 @@ The {product_name} Team";
                 }
             ');
         }
+        
+        // Tame WordPress admin footer (#wpfooter) on FLOSC pages.
+        // WP core uses position:fixed/absolute which causes the "Version X.X.X" text
+        // to float over FLOSC admin content at various zoom levels.
+        // Fix: make it flow normally in the document, properly positioned at the bottom.
+        wp_add_inline_style('flosc-admin', '
+            #wpfooter { position: static; padding: 15px 20px; text-align: right; }
+        ');
+    }
+    
+    /**
+     * v8.0.0: Relabel right side of WP admin footer on FLOSC pages.
+     * WordPress shows "Version 6.9.3" — we relabel to "WordPress 6.9.3 | FLOSC v8.0.0"
+     * so it's clear what each version number refers to.
+     * Only applies on FLOSC admin pages (checked via current screen).
+     */
+    public function relabel_admin_footer($text) {
+        $screen = get_current_screen();
+        if ($screen && strpos($screen->id, 'flosc') !== false) {
+            global $wp_version;
+            return 'WordPress ' . esc_html($wp_version) . ' | FLOSC v' . esc_html(FLOSC_VERSION);
+        }
+        return $text;
+    }
+    
+    /**
+     * v8.0.0: Replace left-side "Thank you for creating with WordPress" with FLOSC branding
+     * on FLOSC admin pages only.
+     */
+    public function relabel_admin_footer_left($text) {
+        $screen = get_current_screen();
+        if ($screen && strpos($screen->id, 'flosc') !== false) {
+            return '<span id="footer-thankyou">FLOSC &mdash; Flow-Oriented Sales Companion</span>';
+        }
+        return $text;
     }
     
     // Offers now integrated into main settings page

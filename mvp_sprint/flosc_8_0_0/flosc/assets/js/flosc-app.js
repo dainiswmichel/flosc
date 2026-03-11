@@ -845,13 +845,19 @@ class floscApp {
         }
 
         // Filter by panel: visitor → 'intro', guest/member → 'prompt'
+        // v8.0.1: ALSO evaluate each pill's conditions so member-only pills
+        // (e.g. "Show me all lessons", conditioned on is_member) don't leak to guests.
+        // Previously only panel was checked — both guest and member share panel 'prompt'.
         const targetPanel = this.state === 'visitor' ? 'intro' : 'prompt';
         const applicable = [];
 
         for (const pill of autoPrompts) {
-            if (pill.panel === targetPanel) {
-                applicable.push(pill);
+            if (pill.panel !== targetPanel) continue;
+            // Evaluate the pill's IVR conditions (is_guest, is_member, quiz_taken, etc.)
+            if (pill.conditions && pill.conditions !== 'always') {
+                if (!this.evaluateCondition(pill.conditions)) continue;
             }
+            applicable.push(pill);
         }
 
         if (applicable.length === 0) {
@@ -1100,6 +1106,9 @@ class floscApp {
                         return;
                     }
                     if (triggerType === 'action') {
+                        this.addMessage('user', label);
+                        this.ivr.messageCount++;
+                        this.ivr.lastInteraction = Date.now();
                         this.log('[FLOSC-ADMIN-PILL] Action trigger:', triggerValue);
                         this.performIVRAction(triggerValue);
                         return;
@@ -6834,15 +6843,49 @@ Purchased: ${ctx.purchased}
     }
     
     async requestFreeLesson() {
+        // v8.0.1: Guard against double-calls (IVR action + pill can both fire)
+        if (this._freeLessonInFlight) {
+            this.log('FLOSC: requestFreeLesson already in flight — skipping duplicate call');
+            return;
+        }
+
+        // v8.0.1: If already loaded this session, re-render cached cards (no re-fetch)
+        if (this._cachedFreeLessons && this._cachedFreeLessons.length > 0) {
+            this.log('FLOSC: Re-rendering cached free lessons');
+            this._renderFreeLessonCards(this._cachedFreeLessons);
+            return;
+        }
+
+        this._freeLessonInFlight = true;
         this.showTyping();
 
         if (this.state === 'visitor') {
             this.hideTyping();
+            this._freeLessonInFlight = false;
             this.log('FLOSC: Visitor requested free lesson — not logged in');
             this.addMessage('assistant', 'To access your free lessons, please log in or create a free account first.', false);
             return;
         }
 
+        // v8.0.1: Read free lessons from PHP config (embedded at page load).
+        // This eliminates the cross-domain REST call that fails with 403
+        // when frontend (e.g. lesaep.com) and WP backend (e.g. dainis.net) are on different domains.
+        // PHP reads stored post IDs from user meta and passes title + content in the config.
+        const configLessons = this.user?.freeLessons;
+        if (configLessons && configLessons.length > 0) {
+            this.log('FLOSC: Loading free lessons from config (' + configLessons.length + ' lessons)');
+            this.hideTyping();
+            this.ivr.context.lesson_viewed = true;
+            this.ivr.context.first_message_after_free_lesson = true;
+            this._cachedFreeLessons = configLessons;
+            this._renderFreeLessonCards(configLessons);
+            this.ivr.phase = 'offer';
+            this._freeLessonInFlight = false;
+            setTimeout(() => this.checkAutoMessages(), 2000);
+            return;
+        }
+
+        // Fallback: REST call (works on same-domain installs like flosc.ai)
         try {
             const response = await this.authFetch(this.config.apiUrl + '/free-lesson', {
                 method: 'POST',
@@ -6851,7 +6894,6 @@ Purchased: ${ctx.purchased}
                     'Content-Type': 'application/json',
                     'X-WP-Nonce': this.config.nonce,
                 },
-
             });
 
             const data = await response.json();
@@ -6863,34 +6905,14 @@ Purchased: ${ctx.purchased}
                 return;
             }
 
-            // v1.5.4: Handle multiple lessons
             const lessons = data.lessons || (data.lesson ? [data.lesson] : []);
 
             if (data.success && lessons.length > 0) {
                 this.ivr.context.lesson_viewed = true;
                 this.ivr.context.first_message_after_free_lesson = true;
-
-                // v1.8.3: Render lesson content as HTML (server already ran it
-                // through apply_filters('the_content') with WordPress styling)
-                if (lessons.length === 1) {
-                    const lessonHtml = `<div class="flosc-free-lesson">`
-                        + `<h3 class="flosc-free-lesson-title">Here's your complimentary lesson: ${this.escapeHtml(lessons[0].title)}</h3>`
-                        + `<div class="flosc-free-lesson-content">${lessons[0].content}</div>`
-                        + `</div>`;
-                    this.addMessage('assistant', lessonHtml, true);
-                } else {
-                    let lessonHtml = `<div class="flosc-free-lesson">`
-                        + `<h3 class="flosc-free-lesson-title">Here are your ${lessons.length} complimentary lessons:</h3>`;
-                    lessons.forEach((lesson, i) => {
-                        lessonHtml += `<hr><h4>Lesson ${i + 1}: ${this.escapeHtml(lesson.title)}</h4>`
-                            + `<div class="flosc-free-lesson-content">${lesson.content}</div>`;
-                    });
-                    lessonHtml += `</div>`;
-                    this.addMessage('assistant', lessonHtml, true);
-                }
-
+                this._cachedFreeLessons = lessons;
+                this._renderFreeLessonCards(lessons);
                 this.ivr.phase = 'offer';
-
                 setTimeout(() => this.checkAutoMessages(), 2000);
             } else {
                 this.log('FLOSC: Free lesson request unsuccessful — no lessons returned');
@@ -6900,7 +6922,38 @@ Purchased: ${ctx.purchased}
             this.hideTyping();
             this.logError('FLOSC: Free lesson request failed', e);
             this.addMessage('assistant', 'Something went wrong loading your free lessons. Please try again.', false);
+        } finally {
+            this._freeLessonInFlight = false;
         }
+    }
+
+    // v8.0.1: Extracted card rendering — used by both fresh fetch and cache re-render
+    _renderFreeLessonCards(lessons) {
+        let cardHtml = `<div class="flosc-free-lesson-list">`;
+        cardHtml += `<p class="flosc-free-lesson-intro">Here are your free lessons. Click on them to view.</p>`;
+        lessons.forEach((lesson, i) => {
+            cardHtml += `<button class="flosc-free-lesson-card" onclick="window.floscAppInstance.showFreeLessonContent(${i})">`
+                + `<span class="flosc-free-lesson-card-icon">\ud83c\udf93</span>`
+                + `<span class="flosc-free-lesson-card-title">${this.escapeHtml(lesson.title)}</span>`
+                + `</button>`;
+        });
+        cardHtml += `</div>`;
+        this.addMessage('assistant', cardHtml, true);
+    }
+
+    // v8.0.0: Render full lesson content when user clicks a title card
+    showFreeLessonContent(index) {
+        const lessons = this._cachedFreeLessons;
+        if (!lessons || !lessons[index]) {
+            this.addMessage('assistant', 'Sorry, that lesson isn\'t available right now.', false);
+            return;
+        }
+        const lesson = lessons[index];
+        const lessonHtml = `<div class="flosc-free-lesson">`
+            + `<h3 class="flosc-free-lesson-title">${this.escapeHtml(lesson.title)}</h3>`
+            + `<div class="flosc-free-lesson-content">${lesson.content}</div>`
+            + `</div>`;
+        this.addMessage('assistant', lessonHtml, true);
     }
     
     initStripe() {
