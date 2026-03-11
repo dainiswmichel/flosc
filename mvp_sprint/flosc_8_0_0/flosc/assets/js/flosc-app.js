@@ -6836,14 +6836,10 @@ Purchased: ${ctx.purchased}
     async requestFreeLesson() {
         this.showTyping();
 
-        // v2.0.1: If visitor or not logged in, the /free-lesson endpoint will 403.
-        // Route through sendMessage() so AI handles it with full context awareness.
-        // v2.0.8 FIX: executeActions: false prevents infinite loop.
-        // Without it: sendMessage → IVR matches open_free_lesson → requestFreeLesson → sendMessage → ∞
         if (this.state === 'visitor') {
             this.hideTyping();
-            this.log('FLOSC: Visitor requested free lesson — routing through AI');
-            this.sendMessage('I want to access a free lesson', { executeActions: false });
+            this.log('FLOSC: Visitor requested free lesson — not logged in');
+            this.addMessage('assistant', 'To access your free lessons, please log in or create a free account first.', false);
             return;
         }
 
@@ -6861,11 +6857,9 @@ Purchased: ${ctx.purchased}
             const data = await response.json();
             this.hideTyping();
 
-            // v2.0.1: Catch 403/permission errors — route through AI instead of raw error
-            // v2.0.8 FIX: executeActions: false prevents infinite loop (see visitor path above)
             if (response.status === 403 || data.code === 'rest_forbidden') {
-                this.log('FLOSC: Free lesson 403 — routing through AI');
-                this.sendMessage('I want to access a free lesson', { executeActions: false });
+                this.log('FLOSC: Free lesson 403 — permission denied');
+                this.addMessage('assistant', 'It looks like your account doesn\'t have access to free lessons yet. If you just completed the quiz, please try refreshing the page and asking again.', false);
                 return;
             }
 
@@ -6899,17 +6893,13 @@ Purchased: ${ctx.purchased}
 
                 setTimeout(() => this.checkAutoMessages(), 2000);
             } else {
-                // v2.0.1: Non-success but not 403 — route through AI for context-aware response
-                // v2.0.8 FIX: executeActions: false prevents infinite loop (see visitor path above)
-                this.log('FLOSC: Free lesson request unsuccessful — routing through AI');
-                this.sendMessage('I want to access a free lesson', { executeActions: false });
+                this.log('FLOSC: Free lesson request unsuccessful — no lessons returned');
+                this.addMessage('assistant', 'I wasn\'t able to load your free lessons right now. Please try again in a moment.', false);
             }
         } catch (e) {
             this.hideTyping();
             this.logError('FLOSC: Free lesson request failed', e);
-            // v2.0.1: Route through AI on error — AI knows user state and can guide them
-            // v2.0.8 FIX: executeActions: false prevents infinite loop (see visitor path above)
-            this.sendMessage('I want to access a free lesson', { executeActions: false });
+            this.addMessage('assistant', 'Something went wrong loading your free lessons. Please try again.', false);
         }
     }
     
