@@ -365,11 +365,12 @@ if (isset($_POST['flosc_save']) && wp_verify_nonce($_POST['_wpnonce'], 'flosc_sa
                 'category' => $cat,
             ];
         }
-        $new_settings['lesson_groups'] = $lesson_groups;
-
-        // v3.0.0: Backward compat — keep lessons_category synced to the first
-        // group's category so older code paths (fallbacks, global queries) still work.
-        $new_settings['lessons_category'] = !empty($lesson_groups) ? $lesson_groups[0]['category'] : '';
+        // Only overwrite lesson_groups when the form actually submitted rows.
+        // An accidental save on an empty/wrong-flow form must not wipe existing config.
+        if (!empty($lesson_groups)) {
+            $new_settings['lesson_groups']    = $lesson_groups;
+            $new_settings['lessons_category'] = $lesson_groups[0]['category'];
+        }
     }
 
     // v1.8.2: UI & Nav tab uses WordPress options (global, not per-flow)
