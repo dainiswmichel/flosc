@@ -7964,11 +7964,20 @@ Example good response:
         if ($phoneme_map && $score_data['ranked_phonemes']) {
             $incorrect = [];
             $ranked_worst = [];
+            // Try to get scores from ranked_worst_lessons (JS sends them)
+            $js_scores = [];
+            foreach (($score_data['ranked_worst_lessons'] ?? []) as $rwl) {
+                if (isset($rwl['ipa'], $rwl['score'])) {
+                    $js_scores[$rwl['ipa']] = floatval($rwl['score']);
+                }
+            }
             foreach (array_slice($score_data['ranked_phonemes'], 0, 10) as $ipa) {
                 if (isset($phoneme_map[$ipa])) {
                     $val = $phoneme_map[$ipa];
                     $lessons = is_array($val) ? array_map('intval', $val) : [intval($val)];
-                    $ranked_worst[] = ['ipa' => $ipa, 'lessons' => $lessons];
+                    $entry = ['ipa' => $ipa, 'lessons' => $lessons];
+                    if (isset($js_scores[$ipa])) $entry['score'] = $js_scores[$ipa];
+                    $ranked_worst[] = $entry;
                     foreach ($lessons as $l) $incorrect[] = $l;
                 }
             }
@@ -8097,12 +8106,22 @@ Example good response:
         // 3. Map worst phonemes to lesson numbers via admin phoneme-lesson map
         $phoneme_map = json_decode(flosc_get_setting('audio_quiz_phoneme_lesson_map', '{}'), true) ?: [];
         $incorrect = [];
+        // ranked_phonemes from DO is IPA strings only (no scores).
+        // phoneme_scores may be available from session_data.
+        $do_phoneme_scores = [];
+        foreach (($session_data['phoneme_scores'] ?? []) as $ipa => $scores) {
+            if (is_array($scores) && count($scores) > 0) {
+                $do_phoneme_scores[$ipa] = array_sum($scores) / count($scores);
+            }
+        }
         $ranked_worst_lessons = [];
         foreach (array_slice($ranked_phonemes, 0, 10) as $ipa) {
             if (isset($phoneme_map[$ipa])) {
                 $val = $phoneme_map[$ipa];
                 $lessons = array_map('intval', is_array($val) ? $val : [$val]);
-                $ranked_worst_lessons[] = ['ipa' => $ipa, 'lessons' => $lessons];
+                $entry = ['ipa' => $ipa, 'lessons' => $lessons];
+                if (isset($do_phoneme_scores[$ipa])) $entry['score'] = $do_phoneme_scores[$ipa];
+                $ranked_worst_lessons[] = $entry;
                 foreach ($lessons as $l) $incorrect[] = $l;
             }
         }
@@ -8388,7 +8407,7 @@ Example good response:
         foreach (array_values($mapped_worst) as $p) {
             $val = $phoneme_map[$p['ipa']];
             $lessons = array_map('intval', is_array($val) ? $val : [$val]);
-            $ranked_worst_lessons[] = ['ipa' => $p['ipa'], 'lessons' => $lessons];
+            $ranked_worst_lessons[] = ['ipa' => $p['ipa'], 'score' => round($p['avg'], 3), 'lessons' => $lessons];
         }
 
         $ranked_for_upsell = array_map(function($p) { return $p['ipa']; }, array_slice($ranked, 0, 10));

@@ -121,7 +121,23 @@ class FLOSC_Free_Lesson_Manager {
             shuffle($missed);
             $selected_lessons = array_slice($missed, 0, $count);
         }
-        // knows which category to search for lesson posts
+
+        // v8.0.0: Guaranteed free lesson — always granted to every guest who completes quiz.
+        // Admin-configurable via free_lesson_guaranteed setting (defaults to 35).
+        // This is the safety net: if the tier-walk produced nothing, the guest still gets a lesson.
+        // If the tier-walk worked, the guest gets 2 lessons (guaranteed + personalized).
+        $guaranteed = intval(function_exists('flosc_get_setting')
+            ? flosc_get_setting('free_lesson_guaranteed', 35)
+            : 35);
+        if ($guaranteed > 0 && !in_array($guaranteed, $selected_lessons)) {
+            array_unshift($selected_lessons, $guaranteed);
+        }
+
+        if (empty($selected_lessons)) {
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) error_log("FLOSC: No lessons selected for user {$user_id} — tier-walk and guaranteed both empty");
+            return;
+        }
+
         update_user_meta($user_id, '_flosc_free_lesson_number', $selected_lessons[0]);
         update_user_meta($user_id, '_flosc_free_lesson_numbers', $selected_lessons);
         update_user_meta($user_id, '_flosc_free_lesson_quiz_id', $quiz_id);

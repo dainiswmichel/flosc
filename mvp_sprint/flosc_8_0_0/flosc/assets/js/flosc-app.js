@@ -3508,6 +3508,18 @@ class floscApp {
                     this.addMessage('assistant', upsellMsg, false);
                 }, 300);
             }
+
+            // Congratulations message — tell guests how many free lessons they have
+            const freeCount = parseInt(this.user?.freeLessonsCount) || 0;
+            if (freeCount > 0 && this.state === 'guest') {
+                const lessonWord = freeCount === 1 ? 'lesson' : 'lessons';
+                setTimeout(() => {
+                    this.addMessage('assistant', `🎉 Congratulations! You have been granted access to <strong>${freeCount}</strong> free ${lessonWord} — you can try them out right here in this chat!`, true);
+                    setTimeout(() => this.floscShowUserAutoPrompts(), 500);
+                }, 600);
+            } else {
+                setTimeout(() => this.floscShowUserAutoPrompts(), 500);
+            }
         }, 500);
     }
 
@@ -3599,9 +3611,11 @@ class floscApp {
         }))];
 
         // v8.0.0: Build ranked worst lessons array (ordered worst→best) for Free Lesson Manager.
-        // Each entry: {ipa, lessons: [lesson_nums]}
+        // Each entry: {ipa, score, lessons: [lesson_nums]}
+        // score = avg confidence (0–1) so PHP can group tied phonemes into tiers.
         const rankedWorstLessons = mappedWorst.map(p => ({
             ipa: p.ipa,
+            score: Math.round(p.avg * 1000) / 1000,
             lessons: Array.isArray(phonemeMap[p.ipa]) ? phonemeMap[p.ipa] : [phonemeMap[p.ipa]]
         }));
 
@@ -4535,8 +4549,17 @@ class floscApp {
         html += `</div>`;
         this.addMessage('assistant', html, true);
 
-        // Show follow-up pills after displaying results
-        setTimeout(() => this.floscShowUserAutoPrompts(), 500);
+        // Congratulations message for guests with free lessons
+        const freeCount = parseInt(this.user?.freeLessonsCount) || 0;
+        if (freeCount > 0 && this.state === 'guest') {
+            const lessonWord = freeCount === 1 ? 'lesson' : 'lessons';
+            setTimeout(() => {
+                this.addMessage('assistant', `🎉 Congratulations! You have been granted access to <strong>${freeCount}</strong> free ${lessonWord} — you can try them out right here in this chat!`, true);
+                setTimeout(() => this.floscShowUserAutoPrompts(), 500);
+            }, 300);
+        } else {
+            setTimeout(() => this.floscShowUserAutoPrompts(), 500);
+        }
     }
 
     // v3.0.8: Open a filtered lesson list by topic keyword.
