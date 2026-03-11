@@ -6874,6 +6874,12 @@ Example good response:
             }
         } else {
             // Backward compat: single lesson
+            if (empty($result['title'])) {
+                return new WP_REST_Response([
+                    'success' => false,
+                    'message' => 'No free lesson available. Please take the quiz first.',
+                ], 404);
+            }
             $lessons_data[] = [
                 'title' => $result['title'],
                 'content' => $result['content'],

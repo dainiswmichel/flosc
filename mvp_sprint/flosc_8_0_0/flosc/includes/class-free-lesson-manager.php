@@ -429,6 +429,12 @@ class FLOSC_Free_Lesson_Manager {
 
         if ($this->has_received_free_lesson($user_id)) {
             $lessons = $this->get_free_lessons($user_id);
+            if (empty($lessons)) {
+                return [
+                    'success' => false,
+                    'message' => 'No free lesson available. Please take the quiz first.',
+                ];
+            }
             return [
                 'success' => true,
                 'mode' => 'chat',
