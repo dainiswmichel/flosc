@@ -1398,8 +1398,9 @@ class floscApp {
             this.hideTyping();
             
             if (response) {
-                const lines = response.split(/(?<=\.)\s+/);
-                const firstPart = lines[0] || response;
+                const md = response.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\*([^*]+)\*/g, '<em>$1</em>').replace(/~~([^~]+)~~/g, '<del>$1</del>');
+                const lines = md.split(/(?<=[.!?])\s+/);
+                const firstPart = lines[0] || md;
                 const secondPart = lines.slice(1).join(' ') || '';
                 const finalContent = firstPart + '\n' + badge + (secondPart ? '\n' + secondPart : '');
                 const msgEl = this.addMessage('assistant', finalContent, true);
@@ -1423,8 +1424,9 @@ class floscApp {
         const badgeUrl = this.config.identity?.badgeUrl || '';
         const badge = badgeUrl ? `<div style="display:flex;justify-content:center;width:100%;margin:16px 0"><img src="${badgeUrl}" alt="${productName}" style="display:block;max-width:55%;border:3px solid rgba(184,148,68,0.2)"></div>` : '';
         if (ivrMsg) {
-            const content = this.replaceVariables(ivrMsg.content);
-            const parts = content.split(/(?<=\.)\s+/);
+            let content = this.replaceVariables(ivrMsg.content);
+            content = content.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/~~([^~]+)~~/g, '<del>$1</del>');
+            const parts = content.split(/(?<=[.!?])\s+/);
             const first = parts[0] || content;
             const rest = parts.slice(1).join(' ') || '';
             const finalContent = first + '\n' + badge + (rest ? '\n' + rest : '');
@@ -3509,7 +3511,7 @@ class floscApp {
                 }, 300);
             }
 
-            // Congratulations message — tell guests how many free lessons they have
+            // Congratulations message — after accordions and upsell
             const freeCount = parseInt(this.user?.freeLessonsCount) || 0;
             if (freeCount > 0 && this.state === 'guest') {
                 const lessonWord = freeCount === 1 ? 'lesson' : 'lessons';
