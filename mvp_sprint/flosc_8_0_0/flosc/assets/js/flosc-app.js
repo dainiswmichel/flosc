@@ -6834,16 +6834,26 @@ Purchased: ${ctx.purchased}
     }
     
     async requestFreeLesson() {
+        // Guard against double-calls (e.g. IVR action firing twice)
+        if (this._freeLessonInFlight) {
+            this.log('FLOSC: requestFreeLesson already in flight — skipping duplicate call');
+            return;
+        }
+        // If already loaded this session, re-render the cached cards instead of re-fetching
+        if (this._cachedFreeLessons && this._cachedFreeLessons.length > 0) {
+            this.log('FLOSC: Re-rendering cached free lessons');
+            this._renderFreeLessonCards(this._cachedFreeLessons);
+            return;
+        }
+
+        this._freeLessonInFlight = true;
         this.showTyping();
 
-        // v2.0.1: If visitor or not logged in, the /free-lesson endpoint will 403.
-        // Route through sendMessage() so AI handles it with full context awareness.
-        // v2.0.8 FIX: executeActions: false prevents infinite loop.
-        // Without it: sendMessage → IVR matches open_free_lesson → requestFreeLesson → sendMessage → ∞
         if (this.state === 'visitor') {
             this.hideTyping();
-            this.log('FLOSC: Visitor requested free lesson — routing through AI');
-            this.sendMessage('I want to access a free lesson', { executeActions: false });
+            this._freeLessonInFlight = false;
+            this.log('FLOSC: Visitor requested free lesson — not logged in');
+            this.addMessage('assistant', 'To access your free lessons, please log in or create a free account first.', false);
             return;
         }
 
@@ -6855,62 +6865,71 @@ Purchased: ${ctx.purchased}
                     'Content-Type': 'application/json',
                     'X-WP-Nonce': this.config.nonce,
                 },
-
             });
-
             const data = await response.json();
             this.hideTyping();
 
-            // v2.0.1: Catch 403/permission errors — route through AI instead of raw error
-            // v2.0.8 FIX: executeActions: false prevents infinite loop (see visitor path above)
             if (response.status === 403 || data.code === 'rest_forbidden') {
-                this.log('FLOSC: Free lesson 403 — routing through AI');
-                this.sendMessage('I want to access a free lesson', { executeActions: false });
+                this.log('FLOSC: Free lesson 403 — permission denied');
+                this.addMessage('assistant', 'It looks like your account doesn\'t have access to free lessons yet. If you just completed the quiz, please try refreshing the page and asking again.', false);
+                this._freeLessonInFlight = false;
                 return;
             }
 
-            // v1.5.4: Handle multiple lessons
             const lessons = data.lessons || (data.lesson ? [data.lesson] : []);
 
             if (data.success && lessons.length > 0) {
                 this.ivr.context.lesson_viewed = true;
                 this.ivr.context.first_message_after_free_lesson = true;
-
-                // v1.8.3: Render lesson content as HTML (server already ran it
-                // through apply_filters('the_content') with WordPress styling)
-                if (lessons.length === 1) {
-                    const lessonHtml = `<div class="flosc-free-lesson">`
-                        + `<h3 class="flosc-free-lesson-title">Here's your complimentary lesson: ${this.escapeHtml(lessons[0].title)}</h3>`
-                        + `<div class="flosc-free-lesson-content">${lessons[0].content}</div>`
-                        + `</div>`;
-                    this.addMessage('assistant', lessonHtml, true);
-                } else {
-                    let lessonHtml = `<div class="flosc-free-lesson">`
-                        + `<h3 class="flosc-free-lesson-title">Here are your ${lessons.length} complimentary lessons:</h3>`;
-                    lessons.forEach((lesson, i) => {
-                        lessonHtml += `<hr><h4>Lesson ${i + 1}: ${this.escapeHtml(lesson.title)}</h4>`
-                            + `<div class="flosc-free-lesson-content">${lesson.content}</div>`;
-                    });
-                    lessonHtml += `</div>`;
-                    this.addMessage('assistant', lessonHtml, true);
-                }
-
+                // Cache so re-renders don't re-fetch
+                this._cachedFreeLessons = lessons;
+                this._renderFreeLessonCards(lessons);
                 this.ivr.phase = 'offer';
-
                 setTimeout(() => this.checkAutoMessages(), 2000);
             } else {
-                // v2.0.1: Non-success but not 403 — route through AI for context-aware response
-                // v2.0.8 FIX: executeActions: false prevents infinite loop (see visitor path above)
-                this.log('FLOSC: Free lesson request unsuccessful — routing through AI');
-                this.sendMessage('I want to access a free lesson', { executeActions: false });
+                this.log('FLOSC: Free lesson request unsuccessful — no lessons returned');
+                this.addMessage('assistant', 'I wasn\'t able to load your free lessons right now. Please try again in a moment.', false);
             }
         } catch (e) {
             this.hideTyping();
             this.logError('FLOSC: Free lesson request failed', e);
-            // v2.0.1: Route through AI on error — AI knows user state and can guide them
-            // v2.0.8 FIX: executeActions: false prevents infinite loop (see visitor path above)
-            this.sendMessage('I want to access a free lesson', { executeActions: false });
+            this.addMessage('assistant', 'Something went wrong loading your free lessons. Please try again.', false);
+        } finally {
+            this._freeLessonInFlight = false;
         }
+    }
+
+    _renderFreeLessonCards(lessons) {
+        let cardHtml = `<div class="flosc-free-lesson-list">`;
+        cardHtml += `<p class="flosc-free-lesson-intro">Here are your free lessons. Click on them to view.</p>`;
+        lessons.forEach((lesson, i) => {
+            cardHtml += `<button class="flosc-free-lesson-card" onclick="window.floscAppInstance.showFreeLessonContent(${i})">`
+                + `<span class="flosc-free-lesson-card-icon">🎓</span>`
+                + `<span class="flosc-free-lesson-card-title">${this.escapeHtml(lesson.title)}</span>`
+                + `</button>`;
+        });
+        cardHtml += `</div>`;
+        this.addMessage('assistant', cardHtml, true);
+    }
+
+    showFreeLessonContent(index) {
+        const lessons = this._cachedFreeLessons;
+        if (!lessons || !lessons[index]) {
+            this.log('FLOSC: showFreeLessonContent — no cached lesson at index', index);
+            return;
+        }
+        const lesson = lessons[index];
+        const lessonHtml = `<div class="flosc-free-lesson">`
+            + `<h3 class="flosc-free-lesson-title">${this.escapeHtml(lesson.title)}</h3>`
+            + `<div class="flosc-free-lesson-content">${lesson.content}</div>`
+            + `</div>`;
+        this.addMessage('assistant', lessonHtml, true);
+        // Scroll to the new message
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            });
+        });
     }
     
     initStripe() {
