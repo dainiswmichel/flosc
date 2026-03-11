@@ -251,15 +251,18 @@ class FLOSC_Free_Lesson_Manager {
     private function find_lesson_post($lesson_num, $quiz_id = '') {
         // v3.0.0: Resolve category through lesson_groups → legacy → global → scan
         $configured_cat = $this->resolve_category_for_quiz($quiz_id);
+        error_log("FLOSC FIND_LESSON #{$lesson_num}: resolve_category_for_quiz('{$quiz_id}') = '{$configured_cat}'");
 
         // Last resort: scan flow settings (only if nothing found above)
         if (empty($configured_cat)) {
+            error_log("FLOSC FIND_LESSON #{$lesson_num}: category empty, scanning IVR files...");
             $ivr_dir = defined('FLOSC_PLUGIN_DIR') ? FLOSC_PLUGIN_DIR . 'ai_configuration_files/' : '';
             if ($ivr_dir && is_dir($ivr_dir)) {
                 $files = array_merge(glob($ivr_dir . '*_ivr.md') ?: [], glob($ivr_dir . 'ivr*.md') ?: []);
                 foreach (array_unique(array_map('basename', $files)) as $fn) {
                     $key = 'flosc_flow_' . sanitize_key(pathinfo($fn, PATHINFO_FILENAME));
                     $s = get_option($key, []);
+                    error_log("FLOSC FIND_LESSON #{$lesson_num}: checking option '{$key}', has lesson_groups=" . (!empty($s['lesson_groups']) ? 'yes' : 'no') . ", has lessons_category=" . (!empty($s['lessons_category']) ? $s['lessons_category'] : 'no'));
                     // v3.0.0: check lesson_groups first, then legacy
                     if (!empty($s['lesson_groups']) && is_array($s['lesson_groups'])) {
                         foreach ($s['lesson_groups'] as $g) {
@@ -275,6 +278,7 @@ class FLOSC_Free_Lesson_Manager {
                     }
                 }
             }
+            error_log("FLOSC FIND_LESSON #{$lesson_num}: after IVR scan, configured_cat = '{$configured_cat}'");
         }
         
         // Query by configured category + lesson number meta
@@ -291,14 +295,63 @@ class FLOSC_Free_Lesson_Manager {
                 $args['category_name'] = sanitize_title($configured_cat);
             }
             $posts = get_posts($args);
+            error_log("FLOSC FIND_LESSON #{$lesson_num}: meta query (cat={$configured_cat}) found " . count($posts) . " posts");
             if (!empty($posts)) {
                 return $posts[0];
             }
+        } else {
+            error_log("FLOSC FIND_LESSON #{$lesson_num}: configured_cat is EMPTY — skipping all lookups");
         }
         
+        // v8.0.0: Slug-based lookup within scoped category.
+        // LeSAEp posts use convention: lesson-{N}-description (e.g. lesson-35-three-athens-froth).
+        // Query by slug prefix, scoped to the flow's category.
+        if ( ! empty( $configured_cat ) ) {
+            $slug_args = [
+                'name__like'     => 'lesson-' . intval( $lesson_num ) . '-',
+                'posts_per_page' => 1,
+                'post_status'    => 'publish',
+            ];
+            if ( is_numeric( $configured_cat ) ) {
+                $slug_args['cat'] = intval( $configured_cat );
+            } else {
+                $slug_args['category_name'] = sanitize_title( $configured_cat );
+            }
+            // name__like is not a native WP_Query param — use post_name directly via SQL
+            global $wpdb;
+            $cat_obj = is_numeric( $configured_cat )
+                ? get_term( intval( $configured_cat ), 'category' )
+                : get_term_by( 'slug', sanitize_title( $configured_cat ), 'category' );
+            error_log("FLOSC FIND_LESSON #{$lesson_num}: slug lookup, cat_obj=" . ($cat_obj ? "term_id={$cat_obj->term_id},slug={$cat_obj->slug}" : 'NULL'));
+            if ( $cat_obj && ! is_wp_error( $cat_obj ) ) {
+                $slug_prefix = 'lesson-' . intval( $lesson_num ) . '-';
+                error_log("FLOSC FIND_LESSON #{$lesson_num}: slug query prefix='{$slug_prefix}%' in term_id={$cat_obj->term_id}");
+                $post_id = $wpdb->get_var( $wpdb->prepare(
+                    "SELECT p.ID FROM {$wpdb->posts} p
+                     INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
+                     INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
+                     WHERE tt.taxonomy = 'category'
+                       AND tt.term_id = %d
+                       AND p.post_status = 'publish'
+                       AND p.post_name LIKE %s
+                     LIMIT 1",
+                    $cat_obj->term_id,
+                    $wpdb->esc_like( $slug_prefix ) . '%'
+                ) );
+                error_log("FLOSC FIND_LESSON #{$lesson_num}: slug query result post_id=" . ($post_id ?: 'NULL'));
+                if ( $post_id ) {
+                    $post = get_post( $post_id );
+                    if ( $post ) {
+                        error_log("FLOSC FIND_LESSON #{$lesson_num}: FOUND via slug! post_id={$post_id}, title={$post->post_title}");
+                        // Auto-stamp _flosc_lesson_number so the faster meta query hits next time
+                        update_post_meta( $post_id, '_flosc_lesson_number', intval( $lesson_num ) );
+                        return $post;
+                    }
+                }
+            }
+        }
+
         // v3.0.7: Fallback — match "Lesson N" in title within resolved category.
-        // Handles real content posts (e.g. LeSAEp lessons) that have "Lesson 1: ...",
-        // "Lesson 2: ...", etc. in their titles but no _flosc_lesson_number meta.
         if ( ! empty( $configured_cat ) ) {
             $cat_key  = is_numeric( $configured_cat ) ? 'cat' : 'category_name';
             $cat_val  = is_numeric( $configured_cat ) ? intval( $configured_cat ) : sanitize_title( $configured_cat );
@@ -310,45 +363,23 @@ class FLOSC_Free_Lesson_Manager {
                 'update_post_meta_cache'    => false,
                 'update_post_term_cache'    => false,
             ] );
-            // Regex: "Lesson N" at start of title with word boundary (matches "Lesson 1:" but not "Lesson 10:" when N=1)
+            error_log("FLOSC FIND_LESSON #{$lesson_num}: title fallback, found " . count($cat_posts) . " posts in category");
             $pattern = '/^Lesson\s+' . preg_quote( (string) intval( $lesson_num ), '/' ) . '\b/i';
             foreach ( $cat_posts as $p ) {
                 if ( preg_match( $pattern, $p->post_title ) ) {
+                    error_log("FLOSC FIND_LESSON #{$lesson_num}: FOUND via title! post_id={$p->ID}, title={$p->post_title}");
+                    // Auto-stamp so the faster meta query hits next time
+                    update_post_meta( $p->ID, '_flosc_lesson_number', intval( $lesson_num ) );
                     return $p;
                 }
             }
+            // Log first few post titles for diagnosis
+            $sample_titles = array_map(function($p) { return $p->post_title . ' [' . $p->post_name . ']'; }, array_slice($cat_posts, 0, 5));
+            error_log("FLOSC FIND_LESSON #{$lesson_num}: NO title match. Sample posts: " . implode(' | ', $sample_titles));
         }
 
-        // Fallback: try common slug patterns
-        $slugs_to_try = [
-            'flosc-sample-data',
-            'flosc_sample_data',
-            'flosc-lessons',
-        ];
-        
-        foreach ($slugs_to_try as $slug) {
-            $posts = get_posts([
-                'category_name'  => $slug,
-                'meta_key'       => '_flosc_lesson_number',
-                'meta_value'     => $lesson_num,
-                'posts_per_page' => 1,
-                'post_status'    => 'publish',
-            ]);
-            
-            if (!empty($posts)) {
-                return $posts[0];
-            }
-        }
-        
-        // v1.4.4: Last resort — search all posts with lesson number meta
-        $posts = get_posts([
-            'meta_key'       => '_flosc_lesson_number',
-            'meta_value'     => $lesson_num,
-            'posts_per_page' => 1,
-            'post_status'    => 'publish',
-        ]);
-        
-        return !empty($posts) ? $posts[0] : null;
+        error_log("FLOSC FIND_LESSON #{$lesson_num}: ALL LOOKUPS FAILED — returning null");
+        return null;
     }
     
     /**
