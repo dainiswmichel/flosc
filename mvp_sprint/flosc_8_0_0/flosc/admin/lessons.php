@@ -159,16 +159,23 @@ foreach ($lesson_groups as $group) {
 
 <?php if (!empty($protected_categories)): ?>
 
-    <?php foreach ($protected_categories as $cat_slug => $cat_info): 
-        $cat_obj = $cat_info['obj'];
+    <?php foreach ($protected_categories as $cat_slug => $cat_info):
+        $cat_obj    = $cat_info['obj'];
         $is_protected = $cat_info['protected'];
-        $req_level = $cat_info['level'];
+        $req_level  = $cat_info['level'];
+        // Resolve a friendly label for the stored level (may not match any current offer)
+        $req_level_label = isset($available_levels[$req_level])
+            ? '"' . esc_html($available_levels[$req_level]['offer_name']) . '"'
+            : esc_html($req_level);
     ?>
     <div class="flosc-protection-block" style="background: #f9f9f9; border: 1px solid #ddd; padding: 16px; border-radius: 6px; margin-bottom: 16px;">
         <p style="margin-top: 0;">
             <strong>"<?php echo esc_html($cat_obj->name); ?>"</strong> (<?php echo esc_html($cat_obj->count); ?> posts)
             <?php if ($is_protected): ?>
-                <span style="color: #46b450;">— Protected<?php echo $req_level ? ' (level: <code>' . esc_html($req_level) . '</code>)' : ''; ?></span>
+                <span style="color: #46b450;">— Protected</span>
+                <?php if ($req_level): ?>
+                    <span style="color: #666;"> &mdash; required level: <code><?php echo esc_html($req_level); ?></code> (<?php echo $req_level_label; ?>)</span>
+                <?php endif; ?>
             <?php else: ?>
                 <span style="color: #dba617;">— Not yet protected</span>
             <?php endif; ?>
@@ -177,6 +184,11 @@ foreach ($lesson_groups as $group) {
             <?php if (!empty($available_levels)): ?>
                 <select class="flosc-protection-level regular-text" data-cat-id="<?php echo esc_attr($cat_obj->term_id); ?>">
                     <option value="">— Select Required Level —</option>
+                    <?php if (!empty($req_level) && !isset($available_levels[$req_level])): ?>
+                        <option value="<?php echo esc_attr($req_level); ?>" selected>
+                            <?php echo esc_html($req_level); ?> (current — not in offer list)
+                        </option>
+                    <?php endif; ?>
                     <?php foreach ($available_levels as $level_key => $level_info): ?>
                         <option value="<?php echo esc_attr($level_key); ?>" <?php selected($req_level, $level_key); ?>>
                             <?php echo esc_html($level_key); ?> — "<?php echo esc_html($level_info['offer_name']); ?>"
@@ -184,19 +196,19 @@ foreach ($lesson_groups as $group) {
                     <?php endforeach; ?>
                 </select>
             <?php else: ?>
-                <input type="text" class="flosc-protection-level regular-text" 
+                <input type="text" class="flosc-protection-level regular-text"
                        data-cat-id="<?php echo esc_attr($cat_obj->term_id); ?>"
                        value="<?php echo esc_attr($req_level); ?>" placeholder="flosc_plugin_member">
             <?php endif; ?>
 
             <?php if (!$is_protected): ?>
-                <button type="button" class="button button-primary flosc-protect-cat" 
+                <button type="button" class="button button-primary flosc-protect-cat"
                         data-cat-id="<?php echo esc_attr($cat_obj->term_id); ?>">Protect</button>
             <?php else: ?>
-                <button type="button" class="button flosc-update-protection" 
-                        data-cat-id="<?php echo esc_attr($cat_obj->term_id); ?>">Update Level</button>
+                <button type="button" class="button button-primary flosc-update-protection"
+                        data-cat-id="<?php echo esc_attr($cat_obj->term_id); ?>">Save</button>
                 <button type="button" class="button flosc-remove-protection" style="color: #b32d2e;"
-                        data-cat-id="<?php echo esc_attr($cat_obj->term_id); ?>">Remove</button>
+                        data-cat-id="<?php echo esc_attr($cat_obj->term_id); ?>">Remove Protection</button>
             <?php endif; ?>
         </div>
     </div>
@@ -297,8 +309,8 @@ jQuery(document).ready(function($) {
         var catId = $(this).data('cat-id');
         var $block = $(this).closest('.flosc-protection-block');
         var levelEl = $block.find('.flosc-protection-level');
-        var level = levelEl.is('select') ? levelEl.val() : levelEl.val();
-        if (typeof level === 'string') {
+        var level = levelEl.val() || '';
+        if (levelEl.is('input')) {
             level = level.toLowerCase().replace(/\s+/g, '_');
         }
         
@@ -358,47 +370,46 @@ jQuery(document).ready(function($) {
 <p>Configure how many free lessons guests receive after completing the quiz, and how long they have access.</p>
 
 <?php
-$free_lesson_mode = $flow_settings['free_lesson_mode'] ?? 'fixed';
-$free_lesson_count = $flow_settings['free_lesson_count'] ?? 1;
-$free_lesson_proportion = $flow_settings['free_lesson_proportion'] ?? '1/3';
-$free_lesson_selection = $flow_settings['free_lesson_selection'] ?? '3rd_worst';
-$guest_access_days = $flow_settings['guest_access_days'] ?? 0;
+$free_lesson_mode        = $flow_settings['free_lesson_mode']        ?? 'fixed';
+$free_lesson_count       = $flow_settings['free_lesson_count']       ?? 1;
+$free_lesson_proportion  = $flow_settings['free_lesson_proportion']  ?? '1/3';
+$free_lesson_selection   = $flow_settings['free_lesson_selection']   ?? '3rd_worst';
+$guest_access_days       = $flow_settings['guest_access_days']       ?? 0;
+$free_lesson_guaranteed  = $flow_settings['free_lesson_guaranteed']  ?? 35;
 ?>
 
 <table class="form-table">
     <tr>
-        <th scope="row"><label for="flow_free_lesson_selection">Free Lesson Selection</label></th>
+        <th scope="row">Free Lesson Selection</th>
         <td>
-            <select name="flow_free_lesson_selection" id="flow_free_lesson_selection">
-                <option value="1st_worst" <?php selected($free_lesson_selection, '1st_worst'); ?>>1st Worst Phoneme</option>
-                <option value="2nd_worst" <?php selected($free_lesson_selection, '2nd_worst'); ?>>2nd Worst Phoneme</option>
-                <option value="3rd_worst" <?php selected($free_lesson_selection, '3rd_worst'); ?>>3rd Worst Phoneme</option>
-                <option value="4th_worst" <?php selected($free_lesson_selection, '4th_worst'); ?>>4th Worst Phoneme</option>
-                <option value="random_1" <?php selected($free_lesson_selection, 'random_1'); ?>>1 Random from Worst 10</option>
-                <option value="random_2" <?php selected($free_lesson_selection, 'random_2'); ?>>2 Random from Worst 10</option>
-            </select>
-            <p class="description">For IPA audio quizzes: which phoneme's lesson to give as the free lesson. "Nth Worst" is deterministic; "Random" picks from the 10 weakest phonemes.</p>
+            <p style="margin: 0 0 6px;"><strong>Tier-walk</strong> — IPA audio quiz</p>
+            <p class="description" style="margin: 0; line-height: 1.6;">
+                Walk worst-to-best phoneme tiers. Skip a tier if only one phoneme sits there (protect it as upsell hook).<br>
+                Give a random lesson from the first tier that has multiple phonemes.<br>
+                If no such tier exists in the first two, give a random from Tier 3 regardless.<br>
+                Non-IPA quizzes fall back to Fixed Number mode below.
+            </p>
         </td>
     </tr>
     <tr>
-        <th scope="row"><label for="flow_free_lesson_mode">Free Lesson Mode</label></th>
+        <th scope="row"><label for="flow_free_lesson_mode">Free Lesson Mode <span style="font-weight:normal;color:#999;">(non-IPA)</span></label></th>
         <td>
             <select name="flow_free_lesson_mode" id="flow_free_lesson_mode">
                 <option value="fixed" <?php selected($free_lesson_mode, 'fixed'); ?>>Fixed Number</option>
                 <option value="proportion" <?php selected($free_lesson_mode, 'proportion'); ?>>Proportion of Missed</option>
             </select>
-            <p class="description">How to calculate how many free lessons guests receive.</p>
+            <p class="description">Non-IPA quizzes only. IPA audio quizzes always use the tier-walk above.</p>
         </td>
     </tr>
     <tr id="flow_free_lesson_count_row">
-        <th scope="row"><label for="flow_free_lesson_count">Free Lesson Count</label></th>
+        <th scope="row"><label for="flow_free_lesson_count">Free Lesson Count <span style="font-weight:normal;color:#999;">(non-IPA)</span></label></th>
         <td>
             <input type="number" id="flow_free_lesson_count" name="flow_free_lesson_count" value="<?php echo esc_attr($free_lesson_count); ?>" min="1" max="50" class="small-text">
-            <p class="description">Number of free lessons to give guests. (For "Fixed Number" mode)</p>
+            <p class="description">Non-IPA quizzes only, Fixed Number mode. IPA audio quizzes use the tier-walk above.</p>
         </td>
     </tr>
     <tr id="flow_free_lesson_proportion_row">
-        <th scope="row"><label for="flow_free_lesson_proportion">Free Lesson Proportion</label></th>
+        <th scope="row"><label for="flow_free_lesson_proportion">Free Lesson Proportion <span style="font-weight:normal;color:#999;">(non-IPA)</span></label></th>
         <td>
             <select name="flow_free_lesson_proportion" id="flow_free_lesson_proportion">
                 <option value="1/5" <?php selected($free_lesson_proportion, '1/5'); ?>>1/5 of missed lessons</option>
@@ -406,7 +417,14 @@ $guest_access_days = $flow_settings['guest_access_days'] ?? 0;
                 <option value="1/3" <?php selected($free_lesson_proportion, '1/3'); ?>>1/3 of missed lessons</option>
                 <option value="1/2" <?php selected($free_lesson_proportion, '1/2'); ?>>1/2 of missed lessons</option>
             </select>
-            <p class="description">Proportion of missed quiz items to give as free lessons. (For "Proportion" mode)</p>
+            <p class="description">Non-IPA quizzes only, Proportion mode. IPA audio quizzes use the tier-walk above.</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_free_lesson_guaranteed">Bonus Free Lesson</label></th>
+        <td>
+            <input type="number" id="flow_free_lesson_guaranteed" name="flow_free_lesson_guaranteed" value="<?php echo esc_attr($free_lesson_guaranteed); ?>" min="0" max="9999" class="small-text">
+            <p class="description">Lesson number given to every guest in addition to their quiz-selected lesson. Set to 0 to disable. (Default: 35)</p>
         </td>
     </tr>
     <tr>

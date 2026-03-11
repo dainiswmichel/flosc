@@ -6848,22 +6848,6 @@ Example good response:
      */
     public function get_free_lesson($request) {
         $user_id = get_current_user_id();
-
-        // TEMP DEBUG: Collect diagnostic data for free lesson delivery
-        $debug = [];
-        $debug['user_id'] = $user_id;
-        $debug['lesson_numbers'] = get_user_meta($user_id, '_flosc_free_lesson_numbers', true);
-        $debug['single_lesson_number'] = get_user_meta($user_id, '_flosc_free_lesson_number', true);
-        $debug['quiz_id'] = get_user_meta($user_id, '_flosc_free_lesson_quiz_id', true);
-        $debug['offered'] = get_user_meta($user_id, '_flosc_free_lesson_offered', true);
-        $debug['delivered'] = get_user_meta($user_id, '_flosc_free_lesson_delivered', true);
-        $debug['flow'] = $this->get_current_flow() ? $this->get_current_flow()['id'] : 'NULL';
-        $flow = $this->get_current_flow();
-        $debug['flow_lesson_groups'] = $flow ? ($flow['lesson_groups'] ?? 'NOT SET') : 'NO FLOW';
-        $debug['flow_lessons_category'] = $flow ? ($flow['lessons_category'] ?? 'NOT SET') : 'NO FLOW';
-        $debug['global_lessons_category'] = get_option('flosc_lessons_category', 'NOT SET');
-        error_log('FLOSC FREE LESSON DEBUG: ' . wp_json_encode($debug));
-
         $free_lesson_mgr = FLOSC_Free_Lesson_Manager::instance();
 
         // v1.4.9 FIX: Call deliver_free_lesson() instead of get_free_lesson()
@@ -6874,7 +6858,6 @@ Example good response:
             return new WP_REST_Response([
                 'success' => false,
                 'message' => $result['message'] ?? 'No free lesson available. Please take the quiz first.',
-                '_debug' => $debug,
             ], 404);
         }
 
