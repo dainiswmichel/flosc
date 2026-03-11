@@ -9824,18 +9824,26 @@ Example good response:
                 echo '</summary>';
                 echo '<div style="padding:0 12px 12px 12px;">';
 
-                // Audio playback from session directory
+                // Audio playback from session directory — served via authenticated proxy
                 if ($session_id) {
                     $phrase_num = $i + 1;
                     $user_audio_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id . '/sessions/' . $session_id;
-                    $audio_url = '';
+                    $audio_file = '';
                     foreach (['webm', 'mp4', 'ogg'] as $ext) {
                         if (file_exists($user_audio_dir . '/phrase-' . $phrase_num . '.' . $ext)) {
-                            $audio_url = $upload_dir['baseurl'] . '/flosc-users/' . $user_id . '/sessions/' . $session_id . '/phrase-' . $phrase_num . '.' . $ext;
+                            $audio_file = 'phrase-' . $phrase_num . '.' . $ext;
                             break;
                         }
                     }
-                    if ($audio_url) {
+                    if ($audio_file) {
+                        $audio_nonce = wp_create_nonce('flosc_serve_audio_' . $user_id);
+                        $audio_url = admin_url('admin-ajax.php') . '?' . http_build_query([
+                            'action' => 'flosc_serve_user_audio',
+                            'user_id' => $user_id,
+                            'session_id' => $session_id,
+                            'file' => $audio_file,
+                            '_wpnonce' => $audio_nonce,
+                        ]);
                         echo '<div style="margin-bottom:12px;"><audio controls style="width:100%;height:36px;border-radius:8px;" src="' . esc_url($audio_url) . '"></audio></div>';
                     }
                 }
