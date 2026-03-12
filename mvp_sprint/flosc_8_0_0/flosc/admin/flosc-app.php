@@ -266,10 +266,23 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
             <div class="profile-dropdown" id="flosc_profile_dropdown">
                 <!-- Visitor dropdown items — v1.8.2 dynamic menu -->
                 <div class="profile-dropdown-group" data-show="visitor">
-                    <?php foreach ($visitor_menu as $item): ?>
+                    <?php foreach ($visitor_menu as $item):
+                        $is_offer = (strpos($item['action'], 'show_offer') === 0 || $item['action'] === 'open_sandbox_purchase');
+                    ?>
+                    <?php if ($is_offer): ?>
+                    <div class="upgrade-container">
+                        <button class="upgrade-btn" data-action="<?php echo esc_attr($item['action']); ?>">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                            </svg>
+                            <?php echo esc_html($item['label']); ?>
+                        </button>
+                    </div>
+                    <?php else: ?>
                     <a href="#" class="profile-dropdown-item" data-action="<?php echo esc_attr($item['action']); ?>">
                         <?php echo esc_html($item['label']); ?>
                     </a>
+                    <?php endif; ?>
                     <?php endforeach; ?>
                 </div>
 
@@ -323,8 +336,12 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
             <div class="header-right" id="flosc_app_header_right">
                 <!-- Visitor: auth buttons -->
                 <div class="auth-buttons" id="flosc_app_auth_buttons">
-                    <a href="<?php echo esc_url(wp_login_url(flosc()->get_app_url())); ?>" class="btn-secondary">Log in</a>
-                    <a href="<?php echo esc_url(wp_registration_url()); ?>" class="btn-primary">Sign up</a>
+                    <?php
+                    $login_action = flosc_get_setting('header_login_action', 'open_login_modal');
+                    $signup_action = flosc_get_setting('header_signup_action', 'open_login_modal');
+                    ?>
+                    <a href="#" onclick="window.floscAppInstance.performIVRAction('<?php echo esc_js($login_action); ?>'); return false;" class="btn-secondary"><?php echo esc_html(flosc_get_setting('header_login_text', 'Log in')); ?></a>
+                    <a href="#" onclick="window.floscAppInstance.performIVRAction('<?php echo esc_js($signup_action); ?>'); return false;" class="btn-primary"><?php echo esc_html(flosc_get_setting('header_signup_text', 'Sign up')); ?></a>
                 </div>
 
                 <!-- Logged in: share button -->
@@ -886,6 +903,22 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
             'authModalSubtitle' => flosc_get_setting('auth_modal_subtitle', 'Account creation is necessary for LeSAEp to be able to process your quiz!'),
             'authModalButtonText' => flosc_get_setting('auth_modal_button_text', 'Continue with Email'),
             'authModalDismissMessage' => flosc_get_setting('auth_modal_dismiss_message', 'Your quiz results are temporarily saved. Sign up or log in to see your results before they expire.'),
+            'authModalSsoDivider' => flosc_get_setting('auth_modal_sso_divider', 'or continue with'),
+            'authModalEmailLabel' => flosc_get_setting('auth_modal_email_label', 'Email Address'),
+            'authModalEmailPlaceholder' => flosc_get_setting('auth_modal_email_placeholder', 'you@example.com'),
+            'authModalLoadingText' => flosc_get_setting('auth_modal_loading_text', 'Creating account...'),
+            'authModalTermsText' => flosc_get_setting('auth_modal_terms_text', 'By continuing, you agree to our Terms of Service and Privacy Policy.'),
+            'authModalSuccessMessage' => flosc_get_setting('auth_modal_success_message', 'Welcome! You\'re now logged in as {email}. Let\'s continue!'),
+            'authLoginModalTitle' => flosc_get_setting('auth_login_modal_title', 'Log In or Create an Account'),
+            'authLoginModalSubtitle' => flosc_get_setting('auth_login_modal_subtitle', 'Sign in to access your lessons and progress.'),
+            'authLoginModalButtonText' => flosc_get_setting('auth_login_modal_button_text', 'Continue with Email'),
+            'authLoginModalDismissMessage' => flosc_get_setting('auth_login_modal_dismiss_message', ''),
+            'authLoginModalSsoDivider' => flosc_get_setting('auth_login_modal_sso_divider', 'or continue with'),
+            'authLoginModalEmailLabel' => flosc_get_setting('auth_login_modal_email_label', 'Email Address'),
+            'authLoginModalEmailPlaceholder' => flosc_get_setting('auth_login_modal_email_placeholder', 'you@example.com'),
+            'authLoginModalLoadingText' => flosc_get_setting('auth_login_modal_loading_text', 'Creating account...'),
+            'authLoginModalTermsText' => flosc_get_setting('auth_login_modal_terms_text', 'By continuing, you agree to our Terms of Service and Privacy Policy.'),
+            'authLoginModalSuccessMessage' => flosc_get_setting('auth_login_modal_success_message', 'Welcome! You\'re now logged in as {email}. Let\'s continue!'),
             'consentButtonText' => flosc_get_setting('consent_button_text', 'I Agree — Let\'s Go!'),
             'paypalMonthlyPlanId' => get_option('flosc_paypal_plans', [])['monthly_plan_id'] ?? '',
             'paypalYearlyPlanId'  => get_option('flosc_paypal_plans', [])['yearly_plan_id'] ?? '',

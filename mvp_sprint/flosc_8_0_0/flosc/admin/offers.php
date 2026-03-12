@@ -80,7 +80,9 @@ function flosc_handle_offer_save() {
         'type'           => sanitize_text_field($_POST['offer_type']),
         'price'          => floatval($_POST['offer_price']),
         'original_price' => floatval($_POST['offer_original_price']),
-        'display_price'  => floatval($_POST['offer_price']) > 0 ? '$' . number_format(floatval($_POST['offer_price']), 2) : 'Free',
+        'display_price'  => !empty($_POST['offer_display_price'])
+                                ? sanitize_text_field($_POST['offer_display_price'])
+                                : (floatval($_POST['offer_price']) > 0 ? '$' . number_format(floatval($_POST['offer_price']), 2) : 'Free'),
         'headline'       => sanitize_text_field($_POST['offer_headline']),
         'description'    => sanitize_textarea_field($_POST['offer_description']),
         'features'       => sanitize_textarea_field($_POST['offer_features']),
@@ -673,6 +675,10 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
                     <label>Price: $<input type="number" name="offer_price" value="<?php echo esc_attr($offer['price'] ?? ''); ?>" step="0.01" min="0" class="small-text" id="offer-price-<?php echo $safe_id; ?>"></label>
                     <label style="margin-left: 16px;">Was: $<input type="number" name="offer_original_price" value="<?php echo esc_attr($offer['original_price'] ?? ''); ?>" step="0.01" min="0" class="small-text"></label>
                     <p class="description">Enter 0 for a free offer.</p>
+                    <div style="margin-top: 8px;">
+                        <label>Button price label: <input type="text" name="offer_display_price" value="<?php echo esc_attr($offer['display_price'] ?? ''); ?>" class="regular-text" placeholder="e.g. $100/yr or $10/mo"></label>
+                        <p class="description">Shown on the CTA button. Leave empty to auto-generate from price.</p>
+                    </div>
                 </td>
             </tr>
             <tr>

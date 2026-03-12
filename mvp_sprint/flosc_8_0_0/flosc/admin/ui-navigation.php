@@ -83,7 +83,7 @@ $app_url = flosc()->get_app_url();
 // Available in-chat actions for the dropdown
 $available_actions = [
     'open_registration'    => 'Sign Up — open registration modal',
-    'login'                => 'Log In — redirect to login destination',
+    'open_login_modal'     => 'Log In — open login modal',
     'logout'               => 'Log Out — end session and return to visitor state',
     'open_quiz'            => 'Take Quiz — open quiz modal',
     'open_free_lesson'     => 'Free Lesson — open the free lesson',
@@ -91,6 +91,7 @@ $available_actions = [
     'open_quiz_library'    => 'Quiz Library — show all quizzes',
     'open_support'         => 'Support — open help/support',
     'open_sandbox_purchase'=> 'Purchase — open purchase flow',
+    'send_prompt'          => 'Send Prompt — type a message into the chatbot',
 ];
 
 // v1.9.8: Guest and Member menus

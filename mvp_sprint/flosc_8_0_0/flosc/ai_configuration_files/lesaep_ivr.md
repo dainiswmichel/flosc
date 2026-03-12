@@ -91,8 +91,20 @@ MessageType: suggested_user_autoprompt
 MessageStyle: pill
 Icon: ✨
 UserInput: What is unique about LeSAEp?
-MessageContent: **LeSAEp lessons are the most condensed pronunciation lessons in the world.** Created by Dainis W. Michel (the World's 2nd Best English Teacher), each lesson pinpoints exactly how to produce each of the approximately 45-50 sounds in Standard American English. No conversational filler — precise mouth position, tongue placement, and airflow for every sound. LeSAEp is simultaneously the most condensed, informative, and precise pronunciation course available. Plus, we're building a teacher marketplace where you'll be able to book online and in-person lessons with certified pronunciation coaches.
+MessageContent: **LeSAEp lessons are the most condensed pronunciation lessons in the world.** Created by composer and inventor Dainis W. Michel — internationally known as the World's 2nd Best English Teacher — each lesson pinpoints exactly how to produce each of the approximately 45-50 sounds in Standard American English. No conversational filler — precise mouth position, tongue placement, and airflow for every sound. LeSAEp is simultaneously the most condensed, informative, and precise pronunciation course available. Plus, we're building a teacher marketplace where you'll be able to book online and in-person lessons with certified pronunciation coaches.
 MessageConditions: is_visitor || is_guest
+
+---
+
+## Tell Me More About LeSAEp
+MessageName: lesaep_about
+MessageType: suggested_user_autoprompt
+MessageStyle: pill
+Icon: 💡
+UserInput: Please tell me more about LeSAEp.
+MessageContent: **LeSAEp** stands for **Learn Excellent Standard American English Pronunciation.** It is a structured series of pronunciation lessons covering all approximately 45-50 distinct sounds of Standard American English — consonants, vowels, diphthongs, and r-colored vowels. Each lesson pinpoints the exact mouth position, tongue placement, and airflow needed to produce each sound. No filler, no guesswork. LeSAEp lessons are member-access content. Visitors who take our accent assessment quiz are granted one or more complimentary lessons based on their results — so you can experience the teaching method firsthand before deciding to upgrade. Members get access to the full lesson library, personalized learning paths based on quiz results, and progress tracking.
+MessageConditions: is_visitor || is_guest
+Keywords: tell me more, more about lesaep, what is lesaep, about lesaep, learn more, more information, info about
 
 ---
 
@@ -102,7 +114,7 @@ MessageType: suggested_user_autoprompt
 MessageStyle: pill
 Icon: 🎓
 UserInput: Who is Dainis W. Michel?
-MessageContent: **Dainis W. Michel** is the creator of LeSAEp and proudly calls himself the **World's 2nd Best English Teacher.** He has dedicated his career to making pronunciation instruction precise, condensed, and accessible. His approach: instead of long conversational lessons, pinpoint exactly how each sound is produced — mouth position, tongue placement, airflow — so learners can master Standard American English efficiently.
+MessageContent: **Dainis W. Michel** — composer, inventor, teacher, father, friend — is the creator of LeSAEp, internationally known as the **World's 2nd Best English Teacher.** His tagline: Composer. Inventor. Teacher. Father. Friend. He has dedicated himself to bringing ideas from concept to reality and helping others do the same — be that with business, personal goals, manufacturing, or music and writing. With 20+ years of English teaching experience, his approach to pronunciation is precise, condensed, and accessible: pinpoint exactly how each sound is produced — mouth position, tongue placement, airflow — so learners can master Standard American English efficiently.
 MessageConditions: is_visitor || is_guest
 
 ---
@@ -281,7 +293,7 @@ MessageName: lesaep_offer
 MessageType: offer
 OfferID: lesaep_full
 DisplayFormat: featured
-MessageContent: 🎤 **Pre-Launch Special from Dainis W. Michel — the World's 2nd Best English Teacher.**
+MessageContent: 🎤 **Pre-Launch Special from composer and inventor Dainis W. Michel — internationally known as the World's 2nd Best English Teacher.**
 
 You just heard how your accent sounds to a native speaker. Now imagine fixing it — for real.
 

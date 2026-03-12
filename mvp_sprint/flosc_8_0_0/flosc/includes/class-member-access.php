@@ -185,6 +185,15 @@ class FLOSC_Member_Access {
         update_user_meta($user_id, $meta_key, 'yes');
         update_user_meta($user_id, $meta_key . '_since', time());
         
+        // v8.0.0: Also add as WP role so the level appears in admin Users list filter
+        $sanitized_level = sanitize_key($level);
+        if (get_role($sanitized_level)) {
+            $user = get_user_by('id', $user_id);
+            if ($user && !in_array($sanitized_level, $user->roles, true)) {
+                $user->add_role($sanitized_level);
+            }
+        }
+        
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) error_log("FLOSC: Granted {$level} membership to user {$user_id}");
         
         do_action('flosc_level_granted', $user_id, $level);
@@ -207,6 +216,13 @@ class FLOSC_Member_Access {
         delete_user_meta($user_id, $meta_key);
         update_user_meta($user_id, $meta_key . '_revoked', time());
         update_user_meta($user_id, $meta_key . '_revoke_reason', $reason);
+        
+        // v8.0.0: Remove WP role so user no longer appears under this level in admin
+        $sanitized_level = sanitize_key($level);
+        $user = get_user_by('id', $user_id);
+        if ($user && in_array($sanitized_level, $user->roles, true)) {
+            $user->remove_role($sanitized_level);
+        }
         
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) error_log("FLOSC: Revoked {$level} membership from user {$user_id}. Reason: {$reason}");
         

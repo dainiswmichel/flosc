@@ -932,13 +932,32 @@ class floscApp {
         panel.id = 'flosc_input_user_autoprompts_panel';
         panel.className = 'prompt-panel prompt-panel-inline';
         panel.innerHTML = `
-            <div class="prompt-panel-header" style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">
-                <div class="prompt-panel-eyebrow" style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">🧪 Admin Test Mode — all states visible</div>
-                <div style="font-size:10px;color:#9ca3af;margin-top:2px;">🛒 Purchases: ${this.user?.purchaseCount ?? 0} | 🏷️ Level: ${this.user?.memberLevel || 'none'} | 📊 State: ${this.state || '?'}</div>
+            <div class="prompt-panel-header" style="padding:6px 10px;border-bottom:1px solid #e5e7eb;cursor:pointer;display:flex;align-items:center;justify-content:space-between;" id="flosc-admin-panel-toggle">
+                <div>
+                    <div class="prompt-panel-eyebrow" style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">🧪 Admin Test Mode — all states visible</div>
+                    <div style="font-size:10px;color:#9ca3af;margin-top:2px;">🛒 Purchases: ${this.user?.purchaseCount ?? 0} | 🏷️ Level: ${this.user?.memberLevel || 'none'} | 📊 State: ${this.state || '?'}</div>
+                </div>
+                <span id="flosc-admin-panel-chevron" style="font-size:16px;color:#6b7280;transition:transform 0.2s;">▼</span>
             </div>
-            <div class="prompt-panel-body" style="display:flex;flex-direction:column;gap:0;max-height:40vh;overflow-y:auto;padding:5px;">
+            <div class="prompt-panel-body" id="flosc-admin-panel-body" style="display:flex;flex-direction:column;gap:0;max-height:40vh;overflow-y:auto;padding:5px;">
                 ${sectionsHtml}${offersHtml}
             </div>`;
+
+        // Wire chevron toggle to collapse/expand the panel body
+        const toggleHeader = panel.querySelector('#flosc-admin-panel-toggle');
+        if (toggleHeader) {
+            const toggleHandler = () => {
+                const body = document.getElementById('flosc-admin-panel-body');
+                const chevron = document.getElementById('flosc-admin-panel-chevron');
+                if (body && chevron) {
+                    const collapsed = body.style.display === 'none';
+                    body.style.display = collapsed ? 'flex' : 'none';
+                    chevron.textContent = collapsed ? '▼' : '▶';
+                }
+            };
+            toggleHeader.addEventListener('click', toggleHandler);
+            this.activeEventListeners.set(toggleHeader, toggleHandler);
+        }
 
         // Wire click handlers for ALL pills (admin pills + offer pills)
         panel.querySelectorAll('button.flosc-style-pill').forEach(btn => {
@@ -2301,6 +2320,9 @@ class floscApp {
             case 'open_registration':
                 this.openRegistration();
                 break;
+            case 'open_login_modal':
+                this.showLoginModal();
+                break;
             case 'open_free_lesson':
                 this.openFreeLesson();
                 break;
@@ -2334,6 +2356,12 @@ class floscApp {
                 this.openSupport();
                 break;
             // v1.4.0: Sandbox purchase actions
+            case 'send_prompt':
+                if (actionParam) {
+                    this.chatInput.value = actionParam;
+                    this.sendMessage();
+                }
+                break;
             case 'open_sandbox_purchase':
             case 'sandbox_purchase':
                 this.openSandboxPurchase();
@@ -2994,7 +3022,8 @@ class floscApp {
             phrases: phrases,
             wordIpa: wordIpa,
             currentIndex: 0,
-            results: []
+            results: [],
+            retryCount: 0
         };
 
         this.quiz = {
@@ -3017,6 +3046,7 @@ class floscApp {
         const phrase = this.ipaQuiz.phrases[index];
         const num = index + 1;
         const total = this.ipaQuiz.phrases.length;
+        this.ipaQuiz.retryCount = 0;
 
         // Build 5-step progress blocks: completed=gray+✓, current=highlighted, upcoming=gray
         let steps = '';
@@ -3320,8 +3350,14 @@ class floscApp {
             const data = await resp.json();
 
             if (!resp.ok) {
-                this.addMessage('assistant', 'Analysis error: ' + (data.detail || 'Unknown error') + '. Try recording again.');
-                this.showIpaPhrase(index);
+                if (this.ipaQuiz.retryCount < 1) {
+                    this.ipaQuiz.retryCount++;
+                    this.addMessage('assistant', 'Hmm, that recording didn\'t come through clearly. Let\'s try once more.');
+                    this._reEnableIpaRecordButton(phraseNum);
+                } else {
+                    this.addMessage('assistant', 'No worries — let\'s move on to the next one.');
+                    this._advanceIpaWithZeroScore(phrase, phraseNum);
+                }
                 return;
             }
 
@@ -3357,8 +3393,56 @@ class floscApp {
 
         } catch (e) {
             this.logError('[FLOSC IPA] Analysis failed', e);
-            this.addMessage('assistant', 'Could not connect to pronunciation engine. Please check your connection and try again.');
-            this.showIpaPhrase(index);
+            if (this.ipaQuiz.retryCount < 1) {
+                this.ipaQuiz.retryCount++;
+                this.addMessage('assistant', 'Connection hiccup — let\'s try that one more time.');
+                this._reEnableIpaRecordButton(phraseNum);
+            } else {
+                this.addMessage('assistant', 'Having trouble connecting. Let\'s move on.');
+                this._advanceIpaWithZeroScore(phrase, phraseNum);
+            }
+        }
+    }
+
+    _reEnableIpaRecordButton(phraseNum) {
+        const btn = document.getElementById(`flosc-ipa-record-${phraseNum}`);
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🎤 Record';
+            btn.classList.remove('completed');
+            btn.classList.add('flosc-ipa-record-pulse');
+        }
+        const stepBar = btn?.closest('.flosc-ipa-phrase-card')?.querySelector('.flosc-ipa-step-bar');
+        if (stepBar) {
+            const completedStep = stepBar.querySelector('.flosc-ipa-step-completed:last-of-type');
+            if (completedStep && completedStep.querySelector('.flosc-ipa-step-num')?.textContent == phraseNum) {
+                completedStep.classList.remove('flosc-ipa-step-completed');
+                completedStep.classList.add('flosc-ipa-step-active');
+                const num = completedStep.querySelector('.flosc-ipa-step-num');
+                if (num) completedStep.innerHTML = '<span class="flosc-ipa-step-num">' + num.textContent + '</span>';
+            }
+        }
+        const status = document.getElementById(`flosc-ipa-status-${phraseNum}`);
+        if (status) status.textContent = 'Tap to try again';
+    }
+
+    _advanceIpaWithZeroScore(phrase, phraseNum) {
+        this.ipaQuiz.results.push({
+            phrase,
+            data: { words: [], score: 0, skipped: true },
+            audioUrl: null
+        });
+        this.ipaQuiz.currentIndex++;
+        if (this.ipaQuiz.currentIndex < this.ipaQuiz.phrases.length) {
+            this.showTyping();
+            setTimeout(() => {
+                this.hideTyping();
+                this.showIpaPhrase(this.ipaQuiz.currentIndex);
+            }, 800);
+        } else {
+            setTimeout(() => {
+                this.showIpaQuizSummary();
+            }, 800);
         }
     }
 
@@ -3937,15 +4021,24 @@ class floscApp {
         this.showAuthModal();
     }
     
-    showAuthModal() {
+    showAuthModal(configKey = 'authModal') {
         const ssoProviders = this.config.ssoProviders || [];
+        
+        // Read all 10 configurable fields using the configKey prefix
+        const title = this.config[configKey + 'Title'] || 'Register Or Log In';
+        const subtitle = this.config[configKey + 'Subtitle'] || '';
+        const buttonText = this.config[configKey + 'ButtonText'] || 'Continue with Email';
+        const ssoDivider = this.config[configKey + 'SsoDivider'] || 'or continue with';
+        const emailLabel = this.config[configKey + 'EmailLabel'] || 'Email Address';
+        const emailPlaceholder = this.config[configKey + 'EmailPlaceholder'] || 'you@example.com';
+        const termsText = this.config[configKey + 'TermsText'] || 'By continuing, you agree to our Terms of Service and Privacy Policy.';
         
         // Build SSO buttons HTML
         let ssoButtonsHtml = '';
         if (ssoProviders.length > 0) {
             ssoButtonsHtml = `
                 <div class="flosc-auth-divider">
-                    <span>or continue with</span>
+                    <span>${ssoDivider}</span>
                 </div>
                 <div class="flosc-sso-buttons">
                     ${ssoProviders.map(p => `
@@ -3962,7 +4055,7 @@ class floscApp {
         }
         
         const modalHtml = `
-            <div class="flosc-auth-modal-overlay" id="flosc-auth-modal">
+            <div class="flosc-auth-modal-overlay" id="flosc-auth-modal" data-config-key="${configKey}">
                 <div class="flosc-auth-modal">
                     <button class="flosc-auth-close" onclick="window.floscAppInstance.hideAuthModal()">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -3971,21 +4064,21 @@ class floscApp {
                         </svg>
                     </button>
                     <div class="flosc-auth-header">
-                        <h2>${this.config.authModalTitle || 'Register Or Log In To See Your Quiz Results'}</h2>
-                        <p>${this.config.authModalSubtitle || 'Account creation is necessary to process your quiz!'}</p>
+                        <h2>${title}</h2>
+                        <p>${subtitle}</p>
                     </div>
                     <form class="flosc-auth-form" id="flosc-auth-form">
                         <div class="flosc-auth-field">
-                            <label for="flosc-auth-email">Email Address</label>
-                            <input type="email" id="flosc-auth-email" placeholder="you@example.com" required>
+                            <label for="flosc-auth-email">${emailLabel}</label>
+                            <input type="email" id="flosc-auth-email" placeholder="${emailPlaceholder}" required>
                         </div>
                         <button type="submit" class="flosc-auth-submit">
-                            ${this.config.authModalButtonText || 'Continue with Email'}
+                            ${buttonText}
                         </button>
                     </form>
                     ${ssoButtonsHtml}
                     <p class="flosc-auth-terms">
-                        By continuing, you agree to our Terms of Service and Privacy Policy.
+                        ${termsText}
                     </p>
                 </div>
             </div>
@@ -4023,13 +4116,19 @@ class floscApp {
         }, 100);
     }
     
+    showLoginModal() {
+        this.showAuthModal('authLoginModal');
+    }
+    
     hideAuthModal() {
         const modal = document.getElementById('flosc-auth-modal');
+        const configKey = modal?.dataset?.configKey || 'authModal';
         if (modal) modal.remove();
 
-        // v8.0.1: If visitor dismissed auth modal after quiz, show fallback message
-        if (this.state === 'visitor' && this.ivr?.context?.quiz_completed) {
-            this.addMessage('assistant', this.config.authModalDismissMessage || 'Your quiz results are temporarily saved. Sign up or log in to see your results before they expire.', false);
+        // Only show dismiss message for quiz-context modal when visitor dismissed after quiz
+        const dismissMessage = this.config[configKey + 'DismissMessage'] || '';
+        if (dismissMessage && this.state === 'visitor' && this.ivr?.context?.quiz_completed) {
+            this.addMessage('assistant', dismissMessage, false);
         }
     }
 
@@ -4037,11 +4136,8 @@ class floscApp {
     handleVisitorMenuAction(action) {
         this.log('[FLOSC] Visitor menu action:', action);
 
-        // v1.8.2: "login" is the only action that navigates away — everything else
-        // routes through the unified performIVRAction() dispatcher so floscAdmins
-        // can assign any in-chat action to visitor menu items.
-        if (action === 'login') {
-            window.location.href = this.config.loginUrl || '/wp-login.php';
+        if (action === 'login' || action === 'open_login_modal') {
+            this.showLoginModal();
             return;
         }
 
@@ -4230,11 +4326,18 @@ class floscApp {
     async processEmailAuth(email) {
         this.log('[FLOSC Auth] Processing email auth:', email);
         
+        // Read config from the active modal
+        const modal = document.getElementById('flosc-auth-modal');
+        const configKey = modal?.dataset?.configKey || 'authModal';
+        const loadingText = this.config[configKey + 'LoadingText'] || 'Creating account...';
+        const buttonText = this.config[configKey + 'ButtonText'] || 'Continue with Email';
+        const successTemplate = this.config[configKey + 'SuccessMessage'] || 'Welcome! You\'re now logged in as {email}. Let\'s continue!';
+        
         // Update button to show loading
         const submitBtn = document.querySelector('.flosc-auth-submit');
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.textContent = 'Creating account...';
+            submitBtn.textContent = loadingText;
         }
         
         try {
@@ -4290,7 +4393,7 @@ class floscApp {
                 await this.refreshNonce().catch(() => {});
 
                 this.hideAuthModal();
-                this.addMessage('assistant', `✅ Welcome! You're now logged in as ${email}. Let's continue!`);
+                this.addMessage('assistant', successTemplate.replace('{email}', email));
                 
                 // Refresh page to update user state
                 setTimeout(() => {
@@ -4303,7 +4406,7 @@ class floscApp {
             this.logError('[FLOSC Auth] Email auth error:', error);
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'Continue with Email';
+                submitBtn.textContent = buttonText;
             }
             alert('Registration failed: ' + error.message);
         }
@@ -4372,7 +4475,10 @@ class floscApp {
     }
 
     async fetchAllLessons() {
-        const response = await this.authFetch(`${this.config.apiUrl}/lessons`, {
+        const params = new URLSearchParams();
+        if (this.config.flowId) params.append('flow_id', this.config.flowId);
+        const qs = params.toString() ? `?${params.toString()}` : '';
+        const response = await this.authFetch(`${this.config.apiUrl}/lessons${qs}`, {
             credentials: 'same-origin',
             headers: { 'X-WP-Nonce': this.config.nonce }
         });
@@ -4386,7 +4492,10 @@ class floscApp {
     }
 
     async fetchLesson(lessonId) {
-        const response = await this.authFetch(`${this.config.apiUrl}/lessons/${lessonId}`, {
+        const params = new URLSearchParams();
+        if (this.config.flowId) params.append('flow_id', this.config.flowId);
+        const qs = params.toString() ? `?${params.toString()}` : '';
+        const response = await this.authFetch(`${this.config.apiUrl}/lessons/${lessonId}${qs}`, {
             credentials: 'same-origin',
             headers: { 'X-WP-Nonce': this.config.nonce }
         });
@@ -4402,14 +4511,19 @@ class floscApp {
     // v3.0.8: Titles-only list — compact for long lesson libraries (65+10 = 75 items).
     // No excerpts; each row is title + arrow, clickable to open the lesson.
     renderLessonList(lessons) {
+        const PAGE_SIZE = 10;
+        const initial = lessons.slice(0, PAGE_SIZE);
+        const hasMore = lessons.length > PAGE_SIZE;
+        const listId = 'flosc-lesson-list-' + Date.now();
+
         const listHtml = `
-            <div class="flosc-lesson-list">
+            <div class="flosc-lesson-list" id="${listId}">
                 <div class="flosc-lesson-list-header">
                     <h3>📚 All Lessons</h3>
                     <p>${lessons.length} ${lessons.length === 1 ? 'lesson' : 'lessons'} available</p>
                 </div>
                 <div class="flosc-lesson-items flosc-lesson-items--compact">
-                    ${lessons.map(lesson => `
+                    ${initial.map(lesson => `
                         <div class="flosc-lesson-item flosc-lesson-item--title-only"
                              onclick="window.FLOSC.viewLesson(${parseInt(lesson.id)})">
                             <span class="flosc-lesson-item-title">${this.escapeHtml(lesson.title)}</span>
@@ -4417,9 +4531,49 @@ class floscApp {
                         </div>
                     `).join('')}
                 </div>
+                ${hasMore ? `<button class="flosc-load-more-btn" data-list-id="${listId}" style="display:block;width:100%;padding:10px;margin-top:4px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;font-size:13px;color:#4b5563;">Show more (${lessons.length - PAGE_SIZE} remaining)</button>` : ''}
             </div>
         `;
         this.addMessage('assistant', listHtml, true);
+
+        if (hasMore) {
+            this._lessonListData = this._lessonListData || {};
+            this._lessonListData[listId] = { lessons, shown: PAGE_SIZE };
+            setTimeout(() => {
+                const btn = document.querySelector(`[data-list-id="${listId}"]`);
+                if (btn) btn.addEventListener('click', () => this._loadMoreLessons(listId));
+            }, 100);
+        }
+    }
+
+    _loadMoreLessons(listId) {
+        const data = this._lessonListData?.[listId];
+        if (!data) return;
+        const PAGE_SIZE = 10;
+        const next = data.lessons.slice(data.shown, data.shown + PAGE_SIZE);
+        if (!next.length) return;
+
+        const container = document.querySelector(`#${listId} .flosc-lesson-items`);
+        if (container) {
+            next.forEach(lesson => {
+                const div = document.createElement('div');
+                div.className = 'flosc-lesson-item flosc-lesson-item--title-only';
+                div.onclick = () => window.FLOSC.viewLesson(parseInt(lesson.id));
+                div.innerHTML = `<span class="flosc-lesson-item-title">${this.escapeHtml(lesson.title)}</span><span class="flosc-lesson-item-arrow">›</span>`;
+                container.appendChild(div);
+            });
+        }
+
+        data.shown += next.length;
+        const remaining = data.lessons.length - data.shown;
+        const btn = document.querySelector(`[data-list-id="${listId}"]`);
+        if (btn) {
+            if (remaining > 0) {
+                btn.textContent = `Show more (${remaining} remaining)`;
+            } else {
+                btn.remove();
+            }
+        }
     }
 
     async viewLesson(lessonId) {
@@ -4584,6 +4738,7 @@ class floscApp {
         this.addMessage('assistant', `🔍 Finding lessons for: <em>${this.escapeHtml(displayTopic)}</em>…`);
         try {
             const params = new URLSearchParams({ search: displayTopic });
+            if (this.config.flowId) params.append('flow_id', this.config.flowId);
             const response = await this.authFetch(
                 `${this.config.apiUrl}/lessons?${params.toString()}`,
                 { credentials: 'same-origin', headers: { 'X-WP-Nonce': this.config.nonce } }
@@ -4631,8 +4786,10 @@ class floscApp {
         }
         this.addMessage('assistant', '📋 Loading the lessons covered in the quiz...');
         try {
+            const params = new URLSearchParams({ quiz_only: '1' });
+            if (this.config.flowId) params.append('flow_id', this.config.flowId);
             const response = await this.authFetch(
-                `${this.config.apiUrl}/lessons?quiz_only=1`,
+                `${this.config.apiUrl}/lessons?${params.toString()}`,
                 { credentials: 'same-origin', headers: { 'X-WP-Nonce': this.config.nonce } }
             );
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -5264,7 +5421,7 @@ Purchased: ${ctx.purchased}
             profileDropdown.querySelectorAll('[data-action]').forEach(item => {
                 item.addEventListener('click', (e) => {
                     e.preventDefault();
-                    const action = e.target.dataset.action;
+                    const action = e.currentTarget.dataset.action;
                     this.handleVisitorMenuAction(action);
                     profileDropdown.classList.remove('open');
                 });
@@ -5923,7 +6080,9 @@ Purchased: ${ctx.purchased}
                 // v3.0.5: Extract [ACTION:...] tags from AI response (for AI-interpretation offer triggers)
                 const { cleanText, actions } = this._extractActionTags(response);
                 
-                const msgEl = this.addMessage('assistant', cleanText, true);
+                // v8.1.0: Convert markdown to HTML before rendering — AI returns raw markdown
+                const htmlText = this.formatMarkdown(cleanText);
+                const msgEl = this.addMessage('assistant', htmlText, true);
                 if (msgEl && ivrGuidance?.name) msgEl.setAttribute('data-message-name', ivrGuidance.name);
                 
                 // v1.9.0: Admin feedback buttons — flag bad or praise good AI responses
@@ -6510,10 +6669,12 @@ Purchased: ${ctx.purchased}
         try {
             const messages = JSON.parse(localStorage.getItem('flosc_visitor_messages') || '[]');
             messages.forEach(msg => {
-                // v2.0.5: Assistant messages may contain HTML (badge, markdown).
-                // Always render them as HTML so saved content displays correctly.
-                const isHtml = (msg.role === 'assistant');
-                this.addMessage(msg.role, msg.content, isHtml);
+                if (msg.role === 'assistant') {
+                    // Format markdown for assistant messages (saved as raw text)
+                    this.addMessage(msg.role, this.formatMarkdown(msg.content), true);
+                } else {
+                    this.addMessage(msg.role, msg.content, false);
+                }
             });
         } catch (e) {
             this.logWarn('FLOSC: Could not restore visitor messages', e);
@@ -7116,7 +7277,11 @@ Purchased: ${ctx.purchased}
         const btnContainer = container.querySelector('#flosc-sub-paypal-btn');
         if (!btnContainer) return;
 
-        // Close previous PayPal button instance before re-mounting (prevents duplicate iframes)
+        // Render-generation counter: stale polls/renders from prior calls self-abort
+        this._paypalSubRenderGen = (this._paypalSubRenderGen || 0) + 1;
+        const myGen = this._paypalSubRenderGen;
+
+        // Close previous PayPal button instance before re-mounting
         if (this._paypalSubButtons) {
             try { this._paypalSubButtons.close(); } catch (e) { /* already closed */ }
             this._paypalSubButtons = null;
@@ -7132,6 +7297,10 @@ Purchased: ${ctx.purchased}
         }
 
         const renderBtns = () => {
+            if (myGen !== this._paypalSubRenderGen) return; // stale — a newer plan switch superseded us
+
+            btnContainer.innerHTML = '';
+
             const btns = paypal.Buttons({
                 style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'subscribe', height: 45 },
                 createSubscription: (data, actions) => {
@@ -7154,44 +7323,87 @@ Purchased: ${ctx.purchased}
                                 flow_id: this.config.flowId || '',
                             }),
                         });
-                        const result = await res.json();
 
-                        if (result.success) {
-                            // Close modal
-                            const modal = document.getElementById('flosc_modal_payment');
-                            if (modal) modal.style.display = 'none';
-
-                            // Update local user state so IVR conditions reflect purchase
-                            if (this.user) {
-                                this.user.justPurchased = true;
-                                this.user.purchased = true;
-                                this.user.memberLevel = result.member_level || 'lesaep_learners';
-                                this.user.isMember = true;
-                            }
-                            // Update app-level state so buildIVRContext() sees 'member'
-                            this.state = 'member';
-                            this.ivr.context.is_member = true;
-                            this.ivr.context.is_guest = false;
-                            this.ivr.context.purchased = true;
-                            this.ivr.context.first_message_after_purchase = true;
-
-                            // Welcome message
-                            const planLabel = selectedPlan === 'yearly' ? '$100/year' : '$10/month';
-                            this.addMessage('assistant',
-                                `🎉 **Welcome to LeSAEp!** Your ${planLabel} subscription is active.\n\n` +
-                                `You now have full access to all pronunciation lessons, IPA training, audio recordings, and AI coaching.\n\n` +
-                                `**What would you like to do first?**`
-                            );
-
-                            // Trigger post-purchase auto messages after short delay
-                            setTimeout(() => this.checkAutoMessages(), 2000);
-                        } else {
-                            throw new Error(result.message || 'Activation failed');
+                        const rawText = await res.text();
+                        this.log('[FLOSC-CHECKOUT] activate-subscription response: HTTP ' + res.status + ' body=' + rawText.substring(0, 500));
+                        let result = {};
+                        try {
+                            result = rawText ? JSON.parse(rawText) : {};
+                        } catch (e) {
+                            throw new Error('Activation failed: server returned non-JSON (HTTP ' + res.status + ')');
                         }
+
+                        if (!res.ok || !result.success) {
+                            throw new Error(result.message || ('Activation failed (HTTP ' + res.status + ')'));
+                        }
+
+                        // Close modal
+                        const modal = document.getElementById('flosc_modal_payment');
+                        if (modal) modal.style.display = 'none';
+
+                        // If server created a new account from PayPal (visitor purchase),
+                        // store the auth token so subsequent API calls are authenticated.
+                        if (result.auth_token) {
+                            this.config.authToken = result.auth_token;
+                            localStorage.setItem('flosc_auth_token', result.auth_token);
+                            // Clear visitor message cache — they're a member now
+                            localStorage.removeItem('flosc_visitor_messages');
+                        }
+
+                        // Update local user state so IVR conditions reflect purchase
+                        const displayName = result.user_display_name || result.user_email || 'Member';
+                        if (this.user) {
+                            this.user.justPurchased = true;
+                            this.user.purchased = true;
+                            this.user.memberLevel = result.member_level || 'lesaep_learners';
+                            this.user.isMember = true;
+                            if (result.user_email) this.user.email = result.user_email;
+                            if (!this.user.name) this.user.name = displayName;
+                        } else {
+                            // Visitor had no user object — create one
+                            this.user = {
+                                id: result.user_id,
+                                name: displayName,
+                                email: result.user_email || '',
+                                justPurchased: true,
+                                purchased: true,
+                                memberLevel: result.member_level || 'lesaep_learners',
+                                isMember: true,
+                            };
+                        }
+                        // Update app-level state so buildIVRContext() sees 'member'
+                        this.state = 'member';
+                        this.ivr.context.is_member = true;
+                        this.ivr.context.is_guest = false;
+                        this.ivr.context.purchased = true;
+                        this.ivr.context.first_message_after_purchase = true;
+
+                        // Transition profile bar from visitor → member without page reload
+                        document.body.dataset.userState = 'member';
+                        const profileName = document.getElementById('flosc_profile_name');
+                        const profileBadge = document.getElementById('flosc_profile_badge');
+                        const dropdownName = document.getElementById('flosc_dropdown_name');
+                        const dropdownEmail = document.getElementById('flosc_dropdown_email');
+                        const bar = document.getElementById('flosc_user_profile_bar');
+                        if (profileName) profileName.textContent = this.user.name;
+                        if (profileBadge) profileBadge.textContent = bar?.dataset.memberBadge || 'Member';
+                        if (dropdownName) dropdownName.textContent = this.user.name;
+                        if (dropdownEmail) dropdownEmail.textContent = this.user.email || '';
+
+                        // Welcome message
+                        const planLabel = selectedPlan === 'yearly' ? '$100/year' : '$10/month';
+                        this.addMessage('assistant',
+                            `🎉 **Welcome to LeSAEp!** Your ${planLabel} subscription is active.\n\n` +
+                            `You now have full access to all pronunciation lessons, IPA training, audio recordings, and AI coaching.\n\n` +
+                            `**What would you like to do first?**`
+                        );
+
+                        // Trigger post-purchase auto messages after short delay
+                        setTimeout(() => this.checkAutoMessages(), 2000);
                     } catch (err) {
                         this.logError('[FLOSC-CHECKOUT] Subscription activation error:', err);
                         btnContainer.innerHTML = '<div style="text-align:center;padding:16px;color:#dc2626;">' +
-                            (err.message || 'Failed to activate subscription. Please contact support.') + '</div>';
+                            this.escapeHtml(err.message || 'Failed to activate subscription. Please contact support.') + '</div>';
                     }
                 },
                 onError: (err) => {
@@ -7200,6 +7412,7 @@ Purchased: ${ctx.purchased}
                 },
                 onCancel: () => {
                     this.log('[FLOSC-CHECKOUT] Subscription cancelled — re-rendering buttons');
+                    if (myGen !== this._paypalSubRenderGen) return;
                     btnContainer.innerHTML = '';
                     requestAnimationFrame(() => renderBtns());
                 },
@@ -7212,13 +7425,15 @@ Purchased: ${ctx.purchased}
 
             this._paypalSubButtons = btns;
             btns.render(btnContainer).catch(err => {
+                if (myGen !== this._paypalSubRenderGen) return;
                 this.logError('[FLOSC-CHECKOUT] PayPal subscription render failed:', err);
                 btnContainer.innerHTML = '<div style="text-align:center;padding:14px;color:#dc2626;">PayPal could not load. Please try again.</div>';
             });
         };
 
-        // Poll for container dimensions
+        // Poll for container dimensions — abort if a newer generation took over
         const poll = (attempt = 0) => {
+            if (myGen !== this._paypalSubRenderGen) return;
             const rect = btnContainer.getBoundingClientRect();
             if (rect.width > 0 && rect.height > 0) {
                 renderBtns();

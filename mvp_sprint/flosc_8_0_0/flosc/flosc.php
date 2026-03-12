@@ -421,7 +421,7 @@ class FLOSC_Framework {
         
         // Initialize RAG system (v9.1.6)
         $this->user_access_manager = FLOSC_User_Access_Manager::instance();
-        $this->content_filter = flosc_content_filter::instance();
+        $this->content_filter = FLOSC_Content_Protection::instance();
         $this->rag_manager = FLOSC_RAG_Manager::instance();
         
         // Initialize v9.1.8 systems
@@ -449,6 +449,13 @@ class FLOSC_Framework {
 
         // v3.0.0: Clear FLOSC auth token on logout
         add_action('wp_logout', [$this, 'clear_flosc_auth_token']);
+
+        // v8.0.0: Ensure LeSAEp Learners role exists (idempotent)
+        add_action('init', function() {
+            if (!get_role('lesaep_learners')) {
+                add_role('lesaep_learners', 'LeSAEp Learner', ['read' => true]);
+            }
+        }, 0);
 
         // v1.5.2: Cross-domain SSO login token — must run before anything else
         add_action('init', [$this, 'handle_login_token'], 0);
@@ -3866,32 +3873,32 @@ The {product_name} Team";
             'permission_callback' => '__return_true',
         ]);
         
-        // PayPal - Create Order (user must be logged in)
+        // PayPal - Create Order
         register_rest_route('flosc/v1', '/paypal/create-order', [
             'methods' => 'POST',
             'callback' => [$this, 'paypal_create_order'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => '__return_true',
         ]);
 
-        // PayPal - Capture Order (user must be logged in)
+        // PayPal - Capture Order
         register_rest_route('flosc/v1', '/paypal/capture-order', [
             'methods' => 'POST',
             'callback' => [$this, 'paypal_capture_order'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => '__return_true',
         ]);
 
         // PayPal Subscriptions - Get/create plans (auto-setup)
         register_rest_route('flosc/v1', '/paypal/get-plans', [
             'methods' => 'POST',
             'callback' => [$this, 'paypal_get_plans'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => '__return_true',
         ]);
 
         // PayPal Subscriptions - Activate after user approves
         register_rest_route('flosc/v1', '/paypal/activate-subscription', [
             'methods' => 'POST',
             'callback' => [$this, 'paypal_activate_subscription'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => '__return_true',
         ]);
         
         // Webhooks (from payment providers like Stripe)
@@ -7171,6 +7178,16 @@ Example good response:
      * Verifies subscription status, grants lesaep_learners level.
      */
     public function paypal_activate_subscription($request) {
+        // Entry logging — diagnose whether cross-domain requests reach this endpoint
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            error_log('[FLOSC-PAYPAL] activate-subscription HIT at ' . date('Y-m-d H:i:s'));
+            error_log('[FLOSC-PAYPAL] user_logged_in=' . (is_user_logged_in() ? 'yes' : 'no'));
+            error_log('[FLOSC-PAYPAL] current_user_id=' . get_current_user_id());
+            error_log('[FLOSC-PAYPAL] raw params=' . wp_json_encode($request->get_json_params()));
+            error_log('[FLOSC-PAYPAL] X-FLOSC-Token header=' . ($request->get_header('X-FLOSC-Token') ? 'present' : 'missing'));
+            error_log('[FLOSC-PAYPAL] X-WP-Nonce header=' . ($request->get_header('X-WP-Nonce') ? 'present' : 'missing'));
+        }
+
         $subscription_id = sanitize_text_field($request->get_param('subscription_id'));
         $plan_type       = sanitize_text_field($request->get_param('plan_type')); // 'monthly' or 'yearly'
         $flow_id         = sanitize_text_field($request->get_param('flow_id') ?? '');
@@ -7180,9 +7197,11 @@ Example good response:
         }
 
         $user_id = get_current_user_id();
-        if (!$user_id) {
-            return new WP_Error('not_logged_in', 'Must be logged in', ['status' => 401]);
-        }
+
+        // Visitor purchasing: no WP account yet — we'll create one from PayPal subscriber data
+        // after verifying the subscription with PayPal.
+        $is_new_user = false;
+        $auth_token = '';
 
         if (!empty($flow_id)) {
             $this->set_flow_context($flow_id);
@@ -7193,14 +7212,90 @@ Example good response:
             return new WP_Error('paypal_not_configured', 'PayPal is not configured', ['status' => 500]);
         }
 
-        // Verify subscription status with PayPal
-        $sub = $paypal->get_subscription($subscription_id);
-        if (is_wp_error($sub)) return $sub;
+        // Verify subscription status with PayPal — retry loop for APPROVAL_PENDING
+        // PayPal sandbox (and occasionally production) may return APPROVAL_PENDING
+        // for a few seconds after onApprove fires before transitioning to ACTIVE.
+        $sub = null;
+        $status = '';
+        $max_attempts = 6;
 
-        $status = $sub['status'] ?? '';
+        for ($i = 0; $i < $max_attempts; $i++) {
+            $sub = $paypal->get_subscription($subscription_id);
+            if (is_wp_error($sub)) return $sub;
+
+            $status = strtoupper($sub['status'] ?? '');
+
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                error_log('[FLOSC-PAYPAL] activate-subscription check #' . ($i + 1) . ' status=' . $status);
+            }
+
+            if (in_array($status, ['ACTIVE', 'APPROVED'], true)) {
+                break;
+            }
+
+            if ($i < $max_attempts - 1) {
+                sleep(1);
+            }
+        }
+
         if (!in_array($status, ['ACTIVE', 'APPROVED'], true)) {
-            if (FLOSC_DEBUG) error_log('[FLOSC-PAYPAL] activate-subscription FAIL: status=' . $status);
-            return new WP_Error('subscription_not_active', 'Subscription status: ' . $status, ['status' => 400]);
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                error_log('[FLOSC-PAYPAL] activate-subscription FAIL after retries: status=' . $status . ' sub=' . $subscription_id);
+            }
+            return new WP_Error('subscription_not_active', 'Subscription status after retry: ' . $status, ['status' => 400]);
+        }
+
+        // If visitor (no WP account), create one from PayPal subscriber data
+        if (!$user_id) {
+            $subscriber_email = $sub['subscriber']['email_address'] ?? '';
+            $subscriber_name  = trim(($sub['subscriber']['name']['given_name'] ?? '') . ' ' . ($sub['subscriber']['name']['surname'] ?? ''));
+
+            if (empty($subscriber_email)) {
+                return new WP_Error('no_email', 'Could not retrieve email from PayPal subscription.', ['status' => 400]);
+            }
+
+            // Check if user already exists with this email
+            $existing_user = get_user_by('email', $subscriber_email);
+            if ($existing_user) {
+                $user_id = $existing_user->ID;
+            } else {
+                // Create new WordPress account
+                $username = $this->generate_username_from_email($subscriber_email);
+                $password = wp_generate_password(16, true, true);
+                $user_id  = wp_create_user($username, $password, $subscriber_email);
+
+                if (is_wp_error($user_id)) {
+                    return new WP_Error('user_creation_failed', 'Could not create account: ' . $user_id->get_error_message(), ['status' => 500]);
+                }
+
+                $user = get_user_by('id', $user_id);
+                $user->set_role(apply_filters('flosc_default_user_role', 'subscriber'));
+
+                if ($subscriber_name) {
+                    $name_parts = explode(' ', $subscriber_name, 2);
+                    wp_update_user([
+                        'ID'           => $user_id,
+                        'first_name'   => $name_parts[0],
+                        'last_name'    => $name_parts[1] ?? '',
+                        'display_name' => $subscriber_name,
+                    ]);
+                }
+
+                update_user_meta($user_id, '_flosc_registration_method', 'paypal_purchase');
+                update_user_meta($user_id, '_flosc_registered_at', current_time('mysql'));
+                do_action('flosc_user_registered', $user_id, 'paypal_purchase');
+                $is_new_user = true;
+
+                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                    error_log('[FLOSC-PAYPAL] Created new user from PayPal: ' . $subscriber_email . ' (ID: ' . $user_id . ')');
+                }
+            }
+
+            // Log them in and generate auth token
+            wp_set_current_user($user_id);
+            wp_set_auth_cookie($user_id, true);
+            $auth_token = $this->generate_flosc_auth_token($user_id);
+            $this->set_flosc_auth_cookie($auth_token);
         }
 
         // Build offer for access grant
@@ -7264,13 +7359,20 @@ Example good response:
             error_log('[FLOSC-PAYPAL] === activate-subscription SUCCESS === sub=' . $subscription_id . ', plan=' . $plan_type . ', user=' . $user_id);
         }
 
+        $user_data = get_userdata($user_id);
+
         return new WP_REST_Response([
-            'success'      => true,
-            'message'      => 'Welcome to LeSAEp!',
-            'access'       => $access_manager->get_user_access($user_id),
-            'member_level' => 'lesaep_learners',
-            'plan_type'    => $plan_type,
-            'purchase_count' => (int) get_user_meta($user_id, '_flosc_purchase_count', true),
+            'success'            => true,
+            'message'            => 'Welcome to LeSAEp!',
+            'access'             => $access_manager->get_user_access($user_id),
+            'member_level'       => 'lesaep_learners',
+            'plan_type'          => $plan_type,
+            'purchase_count'     => (int) get_user_meta($user_id, '_flosc_purchase_count', true),
+            'user_id'            => $user_id,
+            'user_email'         => $user_data->user_email ?? '',
+            'user_display_name'  => $user_data->display_name ?? '',
+            'is_new_user'        => $is_new_user,
+            'auth_token'         => $auth_token ?: null,
         ]);
     }
 
@@ -7772,6 +7874,11 @@ Example good response:
      *         (default)       → all configured categories
      */
     public function get_lessons($request) {
+        $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
+        if ($flow_id) {
+            $this->set_flow_context($flow_id);
+        }
+
         $quiz_only = filter_var( $request->get_param('quiz_only'), FILTER_VALIDATE_BOOLEAN );
         $search    = sanitize_text_field( $request->get_param('search') ?? '' );
 
@@ -7793,6 +7900,11 @@ Example good response:
      * Get single lesson with content
      */
     public function get_lesson($request) {
+        $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
+        if ($flow_id) {
+            $this->set_flow_context($flow_id);
+        }
+
         $lesson_id = intval($request->get_param('id'));
         $user_id = get_current_user_id();
         
@@ -10363,6 +10475,11 @@ function flosc_auto_export_ivr_to_file() {
  * Plugin activation (v3.0.9 - Resolved: moved outside class so hook fires correctly)
  */
 function flosc_activate() {
+    // v8.0.0: Register LeSAEp Learners role (same capabilities as subscriber)
+    if (!get_role('lesaep_learners')) {
+        add_role('lesaep_learners', 'LeSAEp Learner', ['read' => true]);
+    }
+
     // v1.2.2: Migrate legacy settings to flows system
     require_once FLOSC_PLUGIN_DIR . 'includes/class-flow-manager.php';
     flosc_flows()->maybe_migrate_from_legacy();
