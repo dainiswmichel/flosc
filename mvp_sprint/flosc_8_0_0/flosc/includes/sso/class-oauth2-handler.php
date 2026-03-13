@@ -198,29 +198,53 @@ class OAuth2_Handler {
         $state = $request->get_param('state');
         $error = $request->get_param('error');
         
+        // v8.0.1: Try to extract redirect_to from state BEFORE handling errors.
+        // OAuth providers return the state param even on error, so we can read the
+        // stored redirect_to and send the user back to the app page (not the homepage).
+        $error_redirect_to = '';
+        if (!empty($state)) {
+            $transient_key = self::STATE_PREFIX . $state;
+            $peek_data = get_transient($transient_key);
+            if (!$peek_data) {
+                $peek_data = get_option($transient_key);
+            }
+            if ($peek_data && !empty($peek_data['redirect_to'])) {
+                $error_redirect_to = $peek_data['redirect_to'];
+            }
+        }
+        
         // Handle provider errors
         if ($error) {
             $error_description = $request->get_param('error_description') ?? $error;
-            $this->redirect_with_error($error_description);
+            // v8.0.1: Clean up the state transient since we peeked at it
+            if (!empty($state)) {
+                $transient_key = self::STATE_PREFIX . $state;
+                delete_transient($transient_key);
+                delete_option($transient_key);
+            }
+            $this->redirect_with_error($error_description, $error_redirect_to);
             return;
         }
         
         // Verify state
         $state_data = $this->verify_state($state);
         if (!$state_data) {
-            $this->redirect_with_error('Invalid or expired authentication state. Please try again.');
+            $this->redirect_with_error('Invalid or expired authentication state. Please try again.', $error_redirect_to);
             return;
         }
         
+        // v8.0.1: Now that state is verified, use its redirect_to for all remaining error paths
+        $error_redirect_to = !empty($state_data['redirect_to']) ? $state_data['redirect_to'] : $error_redirect_to;
+        
         // Verify provider matches
         if ($state_data['provider'] !== $provider_id) {
-            $this->redirect_with_error('Provider mismatch. Please try again.');
+            $this->redirect_with_error('Provider mismatch. Please try again.', $error_redirect_to);
             return;
         }
         
         $provider = $this->manager->get_provider($provider_id);
         if (!$provider) {
-            $this->redirect_with_error('Invalid provider.');
+            $this->redirect_with_error('Invalid provider.', $error_redirect_to);
             return;
         }
         
@@ -254,7 +278,7 @@ class OAuth2_Handler {
         $token_data = $provider->exchange_code_for_token($code, $provider->get_callback_url());
         
         if (is_wp_error($token_data)) {
-            $this->redirect_with_error('Authentication failed: ' . $token_data->get_error_message());
+            $this->redirect_with_error('Authentication failed: ' . $token_data->get_error_message(), $error_redirect_to);
             return;
         }
         
@@ -264,7 +288,7 @@ class OAuth2_Handler {
         $user_data = $provider->get_user_info($access_token, $token_data);
         
         if (is_wp_error($user_data)) {
-            $this->redirect_with_error('Failed to get user info: ' . $user_data->get_error_message());
+            $this->redirect_with_error('Failed to get user info: ' . $user_data->get_error_message(), $error_redirect_to);
             return;
         }
         
@@ -272,7 +296,7 @@ class OAuth2_Handler {
         $result = $this->process_sso_login($provider, $user_data, $token_data);
         
         if (is_wp_error($result)) {
-            $this->redirect_with_error($result->get_error_message());
+            $this->redirect_with_error($result->get_error_message(), $error_redirect_to);
             return;
         }
         
@@ -546,16 +570,24 @@ class OAuth2_Handler {
     /**
      * Redirect with error message
      * 
+     * v8.0.1: Accept optional redirect_to so user returns to the app page
+     * (where FLOSC JS is running), not the homepage where it isn't.
+     * 
      * @param string $message Error message
+     * @param string $redirect_to URL to redirect to (falls back to home_url())
      */
-    private function redirect_with_error($message) {
+    private function redirect_with_error($message, $redirect_to = '') {
         // Store error in transient for display
         $error_key = 'flosc_sso_error_' . wp_generate_password(8, false);
         set_transient($error_key, $message, 60);
         
+        // v8.0.1: Redirect back to the page the user was on (where the quiz lives),
+        // not the homepage. Falls back to home_url() if no redirect_to available.
+        $base_url = !empty($redirect_to) ? $redirect_to : home_url();
+        
         $redirect_url = add_query_arg(
             array('flosc_sso_error' => $error_key),
-            home_url()
+            $base_url
         );
         
         wp_redirect($redirect_url);

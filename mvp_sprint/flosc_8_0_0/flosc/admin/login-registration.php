@@ -18,7 +18,7 @@ $flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
 
 <?php
 $header_actions = [
-    'open_login_modal'     => 'Open General Login Modal',
+    'open_login_modal'     => 'Open General Auth Modal',
     'open_registration'    => 'Open Post-Quiz Auth Modal',
     'open_quiz'            => 'Open Quiz',
     'open_free_lesson'     => 'Open Free Lesson',
@@ -163,7 +163,7 @@ $signup_action = $flow_settings['header_signup_action'] ?? 'open_login_modal';
 
 <hr>
 
-<h2>General Login Modal</h2>
+<h2>General Auth Modal</h2>
 <p class="description">Shown when a visitor clicks "Log In" or "Sign Up" from the header or menu.</p>
 
 <table class="form-table">

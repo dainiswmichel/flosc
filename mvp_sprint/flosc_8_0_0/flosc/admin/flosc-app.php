@@ -642,6 +642,9 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
                     </svg>
                     <span>Secure payment</span>
                 </div>
+                <div id="flosc-access-code-trigger" style="text-align:center;margin-top:14px;">
+                    <a href="#" style="color:#aaa;font-size:12px;text-decoration:none;" onclick="event.preventDefault();window.floscAppInstance && window.floscAppInstance._showAccessCodeInput('payment')">Access Code</a>
+                </div>
             </div>
         </div>
     </div>

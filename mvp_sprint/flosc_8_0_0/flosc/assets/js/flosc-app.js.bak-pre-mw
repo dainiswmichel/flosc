@@ -403,13 +403,6 @@ class floscApp {
             // v8.0.0: Track quiz completion and results display state
             quiz_completed: !!(this.user?.lastQuizScore || this.quiz?.completedAt),
             quiz_results_shown: false,  // Set true by checkPendingQuizResults after display
-            // v8.0.10: Signal that user is currently in the middle of taking the IPA quiz
-            quiz_in_progress: !!(this.ipaQuiz && this.ipaQuiz.phrases && this.ipaQuiz.currentIndex < this.ipaQuiz.phrases.length),
-            // v8.0.11: IPA quiz detailed results for AI context
-            ipa_quiz_score: this.ipaQuiz?.score || this.quiz?.score || 0,
-            ipa_quiz_tier: this.ipaQuiz?.tier || '',
-            ipa_ranked_phonemes: this.ipaQuiz?.rankedPhonemes || [],
-            ipa_weakest_sounds: this.ipaQuiz?.weakestSounds || [],
             
             // Purchase/access — v8.0.0 FIX: "purchased" must reflect actual purchase,
             // not admin-granted member access. Admins are is_member=true for content
@@ -2979,7 +2972,7 @@ class floscApp {
                 <div class="flosc-tier-buttons">
                     <button class="flosc-tier-btn flosc-tier-beginner" data-tier="beginner">
                         <span class="flosc-tier-emoji">🐣</span>
-                        <span class="flosc-tier-label"><span class="flosc-tier-name">Daring Beginner</span><span class="flosc-tier-desc">Short fun phrases</span></span>
+                        <span class="flosc-tier-label"><span class="flosc-tier-name">Daring Beginner</span><span class="flosc-tier-desc">Short everyday phrases</span></span>
                     </button>
                     <button class="flosc-tier-btn flosc-tier-intermediate" data-tier="intermediate">
                         <span class="flosc-tier-emoji">🎯</span>
@@ -3068,7 +3061,7 @@ class floscApp {
             "bat,":      { espeak: 'b\u00E6t',   mw: 'b\u00E6t',   da1ni5: ['b\u00E6t'] },
             bat:         { espeak: 'b\u00E6t',   mw: 'b\u00E6t',   da1ni5: ['b\u00E6t'] },
             mat:         { espeak: 'm\u00E6t',   mw: 'm\u00E6t',   da1ni5: ['m\u00E6t'] },
-            "where's":   { espeak: 'w\u025B\u0279z',  mw: 'w\u025B\u0279z',  da1ni5: ['w\u025B\u0279z', '\u028D\u025B\u0279z', 'w\u02B0\u025B\u0279z', 'we\u0279z', '\u028De\u0279z', 'w\u02B0e\u0279z', 'w\u025B\u025Az', '\u028D\u025B\u025Az', 'w\u02B0\u025B\u025Az'] },
+            "where's":   { espeak: 'w\u025B\u0279z',  mw: '',  da1ni5: ['w\u025B\u0279z', '\u028D\u025B\u0279z', 'w\u02B0\u025B\u0279z', 'we\u0279z', '\u028De\u0279z', 'w\u02B0e\u0279z', 'w\u025B\u025Az', '\u028D\u025B\u025Az', 'w\u02B0\u025B\u025Az'] },
             my:          { espeak: 'ma\u026A',   mw: 'ma\u026A',   da1ni5: ['ma\u026A'] },
             yellow:      { espeak: 'j\u025Blo\u028A', mw: 'j\u025Blo\u028A', da1ni5: ['j\u025Blo\u028A'] },
             "hat?":      { espeak: 'h\u00E6t',   mw: 'h\u00E6t',   da1ni5: ['h\u00E6t'] },
@@ -3080,12 +3073,12 @@ class floscApp {
             "adorable!": { espeak: '\u0259d\u0254\u02D0\u0279\u0259b\u0259l',  mw: '\u0259d\u0254\u02D0\u0279\u0259b\u0259l',  da1ni5: ['\u0259d\u0254\u02D0\u0279\u0259b\u0259l'] },
             adorable:    { espeak: '\u0259d\u0254\u02D0\u0279\u0259b\u0259l',  mw: '\u0259d\u0254\u02D0\u0279\u0259b\u0259l',  da1ni5: ['\u0259d\u0254\u02D0\u0279\u0259b\u0259l'] },
             // \u2500\u2500 Beginner P3: It's a lovely evening, isn't it? \u2500\u2500 \u26A0\uFE0F PLACEHOLDER
-            "it's":      { espeak: '\u026Ats',    mw: '\u026Ats',       da1ni5: ['\u026Ats'] },
+            "it's":      { espeak: '\u026Ats',    mw: '',       da1ni5: ['\u026Ats'] },
             a:           { espeak: '\u0259',      mw: '\u0259',      da1ni5: ['\u0259'] },
             lovely:      { espeak: 'l\u028Cvli',  mw: 'l\u028Cvli',  da1ni5: ['l\u028Cvli'] },
             "evening,":  { espeak: 'i\u02D0vn\u026A\u014B', mw: 'i\u02D0vn\u026A\u014B', da1ni5: ['i\u02D0vn\u026A\u014B'] },
             evening:     { espeak: 'i\u02D0vn\u026A\u014B', mw: 'i\u02D0vn\u026A\u014B', da1ni5: ['i\u02D0vn\u026A\u014B'] },
-            "isn't":     { espeak: '\u026Az\u0259nt',  mw: '\u026Az\u0259nt',       da1ni5: ['\u026Az\u0259nt'] },
+            "isn't":     { espeak: '\u026Az\u0259nt',  mw: '',       da1ni5: ['\u026Az\u0259nt'] },
             "it?":       { espeak: '\u026At',     mw: '\u026At',     da1ni5: ['\u026At'] },
             it:          { espeak: '\u026At',     mw: '\u026At',     da1ni5: ['\u026At'] },
             // \u2500\u2500 Beginner P4: The university theater. \u2500\u2500 \u26A0\uFE0F PLACEHOLDER
@@ -3113,7 +3106,7 @@ class floscApp {
             peanut:      { espeak: 'pi\u02D0n\u028Ct',  mw: 'pi\u02D0n\u028Ct',  da1ni5: ['pi\u02D0n\u028Ct'] },
             butter:      { espeak: 'b\u028C\u027E\u025A',   mw: 'b\u028C\u027E\u025A',    da1ni5: ['b\u028C\u027E\u025A'] },
             // \u2500\u2500 Int/Adv: There's a lovely light comedy production at the university theater. \u2500\u2500 \u26A0\uFE0F PLACEHOLDER
-            "there's":   { espeak: '\u00F0\u025B\u0279z',       mw: '\u00F0\u025B\u0279z',           da1ni5: ['\u00F0\u025B\u0279z'] },
+            "there's":   { espeak: '\u00F0\u025B\u0279z',       mw: '',           da1ni5: ['\u00F0\u025B\u0279z'] },
             light:       { espeak: 'la\u026At',       mw: 'la\u026At',       da1ni5: ['la\u026At'] },
             comedy:      { espeak: 'k\u0251\u02D0m\u0259di',    mw: 'k\u0251\u02D0m\u0259di',    da1ni5: ['k\u0251\u02D0m\u0259di'] },
             production:  { espeak: 'p\u0279\u0259d\u028Ck\u0283\u0259n',  mw: 'p\u0279\u0259d\u028Ck\u0283\u0259n',  da1ni5: ['p\u0279\u0259d\u028Ck\u0283\u0259n'] },
@@ -3137,7 +3130,7 @@ class floscApp {
             to:          { espeak: 'tu\u02D0',     mw: 'tu\u02D0',     da1ni5: ['tu\u02D0'] },
             host:        { espeak: 'ho\u028Ast',   mw: 'ho\u028Ast',   da1ni5: ['ho\u028Ast'] },
             chili:       { espeak: 't\u0283\u026Ali',   mw: 't\u0283\u026Ali',   da1ni5: ['t\u0283\u026Ali'] },
-            "cook-off":  { espeak: 'k\u028Ak\u0254\u02D0f',  mw: 'k\u028Ak\u0254\u02D0f',        da1ni5: ['k\u028Ak\u0254\u02D0f'] },
+            "cook-off":  { espeak: 'k\u028Ak\u0254\u02D0f',  mw: '',        da1ni5: ['k\u028Ak\u0254\u02D0f'] },
             during:      { espeak: 'd\u028A\u0279\u026A\u014B',   mw: 'd\u028A\u0279\u026A\u014B',   da1ni5: ['d\u028A\u0279\u026A\u014B'] },
             our:         { espeak: 'a\u028A\u025A',     mw: 'a\u028A\u025A',     da1ni5: ['a\u028A\u025A'] },
             super:       { espeak: 'su\u02D0p\u025A',   mw: 'su\u02D0p\u025A',   da1ni5: ['su\u02D0p\u025A'] },
@@ -3147,15 +3140,15 @@ class floscApp {
             "sunday.":   { espeak: 's\u028Cnde\u026A',  mw: 's\u028Cnde\u026A',  da1ni5: ['s\u028Cnde\u026A'] },
             sunday:      { espeak: 's\u028Cnde\u026A',  mw: 's\u028Cnde\u026A',  da1ni5: ['s\u028Cnde\u026A'] },
             // \u2500\u2500 Advanced: Robert Frost took the road less traveled ... deferred. \u2500\u2500 \u26A0\uFE0F PLACEHOLDER
-            robert:      { espeak: '\u0279\u0251\u02D0b\u025At',   mw: '\u0279\u0251\u02D0b\u025At',         da1ni5: ['\u0279\u0251\u02D0b\u025At'] },
+            robert:      { espeak: '\u0279\u0251\u02D0b\u025At',   mw: '',         da1ni5: ['\u0279\u0251\u02D0b\u025At'] },
             frost:       { espeak: 'f\u0279\u0254\u02D0st',   mw: 'f\u0279\u0254\u02D0st',   da1ni5: ['f\u0279\u0254\u02D0st'] },
             took:        { espeak: 't\u028Ak',      mw: 't\u028Ak',      da1ni5: ['t\u028Ak'] },
             less:        { espeak: 'l\u025Bs',      mw: 'l\u025Bs',      da1ni5: ['l\u025Bs'] },
             "traveled,": { espeak: 't\u0279\u00E6v\u0259ld',  mw: 't\u0279\u00E6v\u0259ld',  da1ni5: ['t\u0279\u00E6v\u0259ld'] },
             traveled:    { espeak: 't\u0279\u00E6v\u0259ld',  mw: 't\u0279\u00E6v\u0259ld',  da1ni5: ['t\u0279\u00E6v\u0259ld'] },
             and:         { espeak: '\u00E6nd',      mw: '\u00E6nd',      da1ni5: ['\u00E6nd'] },
-            langston:    { espeak: 'l\u00E6\u014Bst\u0259n',  mw: 'l\u00E6\u014Bst\u0259n',         da1ni5: ['l\u00E6\u014Bst\u0259n'] },
-            hughes:      { espeak: 'hju\u02D0z',    mw: 'hju\u02D0z',         da1ni5: ['hju\u02D0z'] },
+            langston:    { espeak: 'l\u00E6\u014Bst\u0259n',  mw: '',         da1ni5: ['l\u00E6\u014Bst\u0259n'] },
+            hughes:      { espeak: 'hju\u02D0z',    mw: '',         da1ni5: ['hju\u02D0z'] },
             asked:       { espeak: '\u00E6skt',     mw: '\u00E6skt',     da1ni5: ['\u00E6skt'] },
             what:        { espeak: 'w\u028Ct',      mw: 'w\u028Ct',      da1ni5: ['w\u028Ct'] },
             happens:     { espeak: 'h\u00E6p\u0259nz',   mw: 'h\u00E6p\u0259nz',   da1ni5: ['h\u00E6p\u0259nz'] },
@@ -3476,7 +3469,6 @@ class floscApp {
         const phrase = this.ipaQuiz.phrases[index];
         const words = phrase.trim().split(/\s+/);
 
-        // Single da1ni5 IPA per word — one alignment pass on server
         const targetIpa = {};
         words.forEach(w => {
             const key = w.toLowerCase();
@@ -3497,70 +3489,73 @@ class floscApp {
         if (endpoint === '/analyze-phrase' && Object.keys(targetIpa).length > 0) {
             body.target_ipa = targetIpa;
         }
-
-        // Reserve result slot so phrase order is preserved
-        const resultIndex = index;
-        this.ipaQuiz.results[resultIndex] = null;
-
-        // Non-blocking UI: confirm and advance immediately
-        this.addMessage('assistant', `Phrase ${phraseNum} recorded. ✓`);
-
-        this.ipaQuiz.currentIndex++;
-        if (this.ipaQuiz.currentIndex < this.ipaQuiz.phrases.length) {
-            this._showQuizEscapeHatch(phraseNum);
-            this.showTyping();
-            setTimeout(() => {
-                this.hideTyping();
-                this.showIpaPhrase(this.ipaQuiz.currentIndex);
-            }, 800);
-        } else {
-            this.showTyping();
+        // Session storage: pass session_id so DO saves audio + scores
+        if (this.ipaQuiz.sessionId) {
+            body.session_id = this.ipaQuiz.sessionId;
         }
 
-        // Sequential API queue: each phrase waits for the previous to finish.
-        // Keeps DO server processing one at a time (~3-6s each).
-        // Phrase 1 returns session_id before phrase 2 sends.
-        if (!this.ipaQuiz.apiQueue) {
-            this.ipaQuiz.apiQueue = Promise.resolve();
-        }
-
-        const analysisPromise = this.ipaQuiz.apiQueue = this.ipaQuiz.apiQueue.then(() => {
-            if (this.ipaQuiz.sessionId) {
-                body.session_id = this.ipaQuiz.sessionId;
-            }
-            return fetch(`https://api.lesaep.com${endpoint}`, {
+        try {
+            const resp = await fetch(`https://api.lesaep.com${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
-            })
-            .then(resp => resp.ok ? resp.json() : Promise.reject(new Error(`API ${resp.status}`)))
-            .then(data => {
-                if (data.session_id) {
-                    this.ipaQuiz.sessionId = data.session_id;
+            });
+            const data = await resp.json();
+
+            if (!resp.ok) {
+                if (this.ipaQuiz.retryCount < 1) {
+                    this.ipaQuiz.retryCount++;
+                    this.addMessage('assistant', 'Hmm, that recording didn\'t come through clearly. Let\'s try once more.');
+                    this._reEnableIpaRecordButton(phraseNum);
+                } else {
+                    this.addMessage('assistant', 'No worries — let\'s move on to the next one.');
+                    this._advanceIpaWithZeroScore(phrase, phraseNum);
                 }
-                this.ipaQuiz.results[resultIndex] = { phrase, data, audioUrl };
-                this.log(`[FLOSC IPA] Phrase ${phraseNum} analysis complete`);
-            })
-            .catch(e => {
-                this.logError(`[FLOSC IPA] Phrase ${phraseNum} analysis failed`, e);
-                this.ipaQuiz.results[resultIndex] = {
-                    phrase,
-                    data: { words: [], score: 0, skipped: true },
-                    audioUrl
-                };
-            });
-        });
+                return;
+            }
 
-        if (!this.ipaQuiz.pendingAnalyses) {
-            this.ipaQuiz.pendingAnalyses = [];
-        }
-        this.ipaQuiz.pendingAnalyses.push(analysisPromise);
+            // Capture session_id from DO (created on first phrase)
+            if (data.session_id) {
+                this.ipaQuiz.sessionId = data.session_id;
+            }
 
-        if (this.ipaQuiz.currentIndex >= this.ipaQuiz.phrases.length) {
-            Promise.allSettled(this.ipaQuiz.pendingAnalyses).then(() => {
-                this.hideTyping();
-                this.showIpaQuizSummary();
-            });
+            this.ipaQuiz.results.push({ phrase, data, audioUrl });
+
+            if (this.state === 'visitor') {
+                // Visitors: confirm recording, do NOT show IPA breakdown.
+                // Full results display after login/registration via showIpaPhraseResultsAfterLogin().
+                this.addMessage('assistant', `Phrase ${phraseNum} recorded and analyzed. ✓`);
+            } else {
+                // Guests/members: show full word-by-word IPA results immediately.
+                this.showIpaPhraseResult(data, audioUrl, phrase, phraseNum);
+            }
+
+            this.ipaQuiz.currentIndex++;
+            if (this.ipaQuiz.currentIndex < this.ipaQuiz.phrases.length) {
+                // v8.0.1: Show funny buy-now escape between phrases
+                this._showQuizEscapeHatch(phraseNum);
+                // Show typing dots while next phrase loads
+                this.showTyping();
+                setTimeout(() => {
+                    this.hideTyping();
+                    this.showIpaPhrase(this.ipaQuiz.currentIndex);
+                }, 1200);
+            } else {
+                setTimeout(() => {
+                    this.showIpaQuizSummary();
+                }, 800);
+            }
+
+        } catch (e) {
+            this.logError('[FLOSC IPA] Analysis failed', e);
+            if (this.ipaQuiz.retryCount < 1) {
+                this.ipaQuiz.retryCount++;
+                this.addMessage('assistant', 'Connection hiccup — let\'s try that one more time.');
+                this._reEnableIpaRecordButton(phraseNum);
+            } else {
+                this.addMessage('assistant', 'Having trouble connecting. Let\'s move on.');
+                this._advanceIpaWithZeroScore(phrase, phraseNum);
+            }
         }
     }
 
@@ -3831,7 +3826,7 @@ class floscApp {
     }
 
     showIpaQuizSummary() {
-        const results = this.ipaQuiz.results.filter(r => r !== null);
+        const results = this.ipaQuiz.results;
         const allWords = results.flatMap(r => r.data.words || [{ word: r.data.target_text, expected_ipa: r.data.expected_ipa, phonemes: r.data.phonemes }]);
         const allPh = allWords.flatMap(w => w.phonemes);
         const total = allPh.length;
@@ -3877,45 +3872,10 @@ class floscApp {
 
             h += `</div>`;
             this.addMessage('assistant', h, true);
-
-            // Admin detail: per-phrase accordion with word-level phoneme scores
-            if (this.state === 'admin' || (this.user && this.user.isAdmin)) {
-                let d = `<div class="flosc-ipa-accordion">`;
-                results.forEach((r, i) => {
-                    const phraseWords = r.data.words || [{ word: r.data.target_text, phonemes: r.data.phonemes }];
-                    const phrasePh = phraseWords.flatMap(w => w.phonemes);
-                    const phraseAvg = phrasePh.length ? phrasePh.reduce((s, p) => s + p.confidence, 0) / phrasePh.length : 0;
-                    const phraseScore = Math.round(phraseAvg * 100);
-                    const phColor = phraseScore >= 70 ? 'var(--flosc-ipa-high)' : phraseScore >= 40 ? 'var(--flosc-ipa-med)' : 'var(--flosc-ipa-low)';
-                    d += `<details class="flosc-ipa-accordion-item">`;
-                    d += `<summary class="flosc-ipa-accordion-header"><span class="flosc-ipa-accordion-phrase">${this.escapeHtml(r.phrase)}</span><span class="flosc-ipa-accordion-score" style="color:${phColor}">${phraseScore}%</span></summary>`;
-                    d += `<div class="flosc-ipa-accordion-body">`;
-                    phraseWords.forEach(w => {
-                        d += `<div class="flosc-ipa-word-row"><strong>${this.escapeHtml(w.word)}</strong>`;
-                        d += `<div class="flosc-ipa-phoneme-list">`;
-                        (w.phonemes || []).forEach(p => {
-                            const c = p.confidence >= 0.5 ? 'var(--flosc-ipa-high)' : p.confidence >= 0.1 ? 'var(--flosc-ipa-med)' : 'var(--flosc-ipa-low)';
-                            d += `<span class="flosc-ipa-phoneme-chip" style="border-color:${c}"><span class="flosc-ipa-weak-sym">${this.escapeHtml(p.ipa)}</span> <span style="color:${c}">${(p.confidence * 100).toFixed(0)}%</span></span>`;
-                        });
-                        d += `</div></div>`;
-                    });
-                    d += `</div></details>`;
-                });
-                d += `</div>`;
-                this.addMessage('assistant', d, true);
-            }
         }
 
         this.quiz.completedAt = Date.now();
         this.quiz.score = score;
-
-        // Store quiz results on the ipaQuiz object so buildIVRContext can relay to AI
-        this.ipaQuiz.score = score;
-        this.ipaQuiz.rankedPhonemes = Object.entries(phonemeScores)
-            .map(([ipa, scores]) => ({ ipa, avg: scores.reduce((s, c) => s + c, 0) / scores.length }))
-            .sort((a, b) => a.avg - b.avg);
-        this.ipaQuiz.weakestSounds = this.ipaQuiz.rankedPhonemes.slice(0, 5).map(p => `${p.ipa} ${(p.avg * 100).toFixed(0)}%`);
-        this.buildIVRContext();
 
         // Finalize session on DO — compiles summary.json with aggregated scores.
         // Non-blocking: visitor sees "Sign up" message immediately.
@@ -4791,36 +4751,19 @@ class floscApp {
         return data.lesson || null;
     }
 
-    // v8.0.0: Sort lessons — numbered lessons (Lesson 1, 2, 3…) by number first,
-    // then non-numbered titles alphabetically.
-    _sortLessons(lessons) {
-        return lessons.slice().sort((a, b) => {
-            const numA = a.title.match(/^Lesson\s+(\d+(?:\.\d+)?)/i);
-            const numB = b.title.match(/^Lesson\s+(\d+(?:\.\d+)?)/i);
-            if (numA && numB) return parseFloat(numA[1]) - parseFloat(numB[1]);
-            if (numA) return -1;
-            if (numB) return 1;
-            return a.title.localeCompare(b.title);
-        });
-    }
-
     // v3.0.8: Titles-only list — compact for long lesson libraries (65+10 = 75 items).
     // No excerpts; each row is title + arrow, clickable to open the lesson.
-    // v8.0.0: options.header and options.countLabel for filtered views.
-    renderLessonList(lessons, options = {}) {
-        const sorted = this._sortLessons(lessons);
+    renderLessonList(lessons) {
         const PAGE_SIZE = 10;
-        const initial = sorted.slice(0, PAGE_SIZE);
-        const hasMore = sorted.length > PAGE_SIZE;
+        const initial = lessons.slice(0, PAGE_SIZE);
+        const hasMore = lessons.length > PAGE_SIZE;
         const listId = 'flosc-lesson-list-' + Date.now();
-        const header = options.header || '📚 All Lessons';
-        const countLabel = options.countLabel || 'available';
 
         const listHtml = `
             <div class="flosc-lesson-list" id="${listId}">
                 <div class="flosc-lesson-list-header">
-                    <h3>${this.escapeHtml(header)}</h3>
-                    <p>${sorted.length} ${sorted.length === 1 ? 'lesson' : 'lessons'} ${this.escapeHtml(countLabel)}</p>
+                    <h3>📚 All Lessons</h3>
+                    <p>${lessons.length} ${lessons.length === 1 ? 'lesson' : 'lessons'} available</p>
                 </div>
                 <div class="flosc-lesson-items flosc-lesson-items--compact">
                     ${initial.map(lesson => `
@@ -4831,14 +4774,14 @@ class floscApp {
                         </div>
                     `).join('')}
                 </div>
-                ${hasMore ? `<button class="flosc-load-more-btn" data-list-id="${listId}" style="display:block;width:100%;padding:10px;margin-top:4px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;font-size:13px;color:#4b5563;">Show more (${sorted.length - PAGE_SIZE} remaining)</button>` : ''}
+                ${hasMore ? `<button class="flosc-load-more-btn" data-list-id="${listId}" style="display:block;width:100%;padding:10px;margin-top:4px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;font-size:13px;color:#4b5563;">Show more (${lessons.length - PAGE_SIZE} remaining)</button>` : ''}
             </div>
         `;
         this.addMessage('assistant', listHtml, true);
 
         if (hasMore) {
             this._lessonListData = this._lessonListData || {};
-            this._lessonListData[listId] = { lessons: sorted, shown: PAGE_SIZE };
+            this._lessonListData[listId] = { lessons, shown: PAGE_SIZE };
             setTimeout(() => {
                 const btn = document.querySelector(`[data-list-id="${listId}"]`);
                 if (btn) btn.addEventListener('click', () => this._loadMoreLessons(listId));
@@ -5035,7 +4978,7 @@ class floscApp {
             return;
         }
         const displayTopic = topic.replace(/\bplease\b/gi, '').trim();
-        this.addMessage('assistant', `🔍 Finding lessons for: <em>${this.escapeHtml(displayTopic)}</em>…`, true);
+        this.addMessage('assistant', `🔍 Finding lessons for: <em>${this.escapeHtml(displayTopic)}</em>…`);
         try {
             const params = new URLSearchParams({ search: displayTopic });
             if (this.config.flowId) params.append('flow_id', this.config.flowId);
@@ -5047,39 +4990,32 @@ class floscApp {
             const data    = await response.json();
             const lessons = data.lessons || [];
             if (!lessons.length) {
-                this.addMessage('assistant', `No lessons found for "<strong>${this.escapeHtml(displayTopic)}</strong>". Try a different keyword, or say <em>show me all lessons</em>.`, true);
+                this.addMessage('assistant', `No lessons found for "<strong>${this.escapeHtml(displayTopic)}</strong>". Try a different keyword, or say <em>show me all lessons</em>.`);
                 return;
             }
-            this.renderLessonList(lessons, {
-                header: `📚 Lessons: ${displayTopic}`,
-                countLabel: 'found'
-            });
+            // Temporarily rename the header to reflect the filter
+            const savedRender = this.renderLessonList.bind(this);
+            const header      = `📚 Lessons: ${displayTopic}`;
+            const listHtml = `
+                <div class="flosc-lesson-list">
+                    <div class="flosc-lesson-list-header">
+                        <h3>${this.escapeHtml(header)}</h3>
+                        <p>${lessons.length} ${lessons.length === 1 ? 'lesson' : 'lessons'} found</p>
+                    </div>
+                    <div class="flosc-lesson-items flosc-lesson-items--compact">
+                        ${lessons.map(l => `
+                            <div class="flosc-lesson-item flosc-lesson-item--title-only"
+                                 onclick="window.FLOSC.viewLesson(${parseInt(l.id)})">
+                                <span class="flosc-lesson-item-title">${this.escapeHtml(l.title)}</span>
+                                <span class="flosc-lesson-item-arrow">›</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+            this.addMessage('assistant', listHtml, true);
         } catch (e) {
             this.logError('[FLOSC] openFilteredLessons failed:', e);
             this.addMessage('assistant', '❌ Could not search lessons. Please try again.');
-        }
-    }
-
-    // v8.0.0: Open a single lesson by its number ("show me lesson 2").
-    // Fetches all lessons, finds the one whose title starts with "Lesson N:", and opens it directly.
-    async openLessonByNumber(num) {
-        if (this.state !== 'member') {
-            this.addMessage('assistant', '🔒 Lesson access requires membership.');
-            return;
-        }
-        this.addMessage('assistant', `📚 Opening Lesson ${this.escapeHtml(num)}...`);
-        try {
-            const lessons = await this.fetchAllLessons();
-            const pattern = new RegExp('^Lesson\\s+' + num.replace('.', '\\.') + '[.:\\s]', 'i');
-            const match = lessons.find(l => pattern.test(l.title));
-            if (match) {
-                this.viewLesson(match.id);
-            } else {
-                this.addMessage('assistant', `Lesson ${this.escapeHtml(num)} not found. Say <em>show me all lessons</em> to browse.`, true);
-            }
-        } catch (e) {
-            this.logError('[FLOSC] openLessonByNumber failed:', e);
-            this.addMessage('assistant', '❌ Could not load lesson. Please try again.');
         }
     }
 
@@ -5459,25 +5395,6 @@ class floscApp {
             this._awaitingAccessCode = false;
             this._redeemAccessCode(message.trim());
             return true;
-        }
-
-        // v8.0.0: "show me lesson 2", "open lesson 5", "lesson 3", "go to lesson 12"
-        if (this.state === 'member') {
-            const lessonNumberMatch = message.match(
-                /(?:show\s+(?:me\s+)?(?:the\s+)?|open\s+(?:the\s+)?|go\s+to\s+(?:the\s+)?)?lesson\s+(\d+(?:\.\d+)?)\b/i
-            );
-            if (lessonNumberMatch) {
-                this.openLessonByNumber(lessonNumberMatch[1]);
-                return true;
-            }
-        }
-
-        // v8.0.0: "show me all lessons", "list all lessons", "all lessons"
-        if (this.state === 'member') {
-            if (/(?:show\s+(?:me\s+)?(?:the\s+)?|open\s+(?:the\s+)?|list\s+(?:the\s+)?|find\s+)?all\s+(?:the\s+)?lessons?/i.test(message)) {
-                this.openLessonLibrary();
-                return true;
-            }
         }
 
         // v3.0.8: Lesson search — intercept "show me lessons for X", "lessons about X", etc.
@@ -7050,12 +6967,6 @@ Purchased: ${ctx.purchased}
     renderSessions(sessions) {
         if (!this.sessionList) return;
         
-        // v8.0.11: Session management by access level
-        // Visitors: never see sidebar sessions (loadSessions not called)
-        // Guests: see their chat list, read-only (no rename/delete)
-        // Members/Admins: full ChatGPT-style management — rename, delete
-        const canManage = (this.state === 'member' || this.state === 'admin');
-        
         // v1.7.0: sessions is a grouped object {today:[], yesterday:[], last_7_days:[], older:[]}
         const groupLabels = {
             today: 'Today',
@@ -7073,14 +6984,8 @@ Purchased: ${ctx.purchased}
                 html += `<div class="flosc-session-item ${s.id === this.currentSession?.id ? 'active' : ''}" 
                      data-session-id="${s.id}">
                     <span class="flosc-session-item-icon">💬</span>
-                    <span class="flosc-session-item-title">${this.escapeHtml(s.title || 'New Chat')}</span>`;
-                if (canManage) {
-                    html += `<span class="flosc-session-actions">
-                        <button class="flosc-session-action flosc-session-rename" data-session-id="${s.id}" title="Rename">✏️</button>
-                        <button class="flosc-session-action flosc-session-delete" data-session-id="${s.id}" title="Delete">🗑️</button>
-                    </span>`;
-                }
-                html += `</div>`;
+                    <span class="flosc-session-item-title">${this.escapeHtml(s.title || 'New Chat')}</span>
+                </div>`;
             });
             html += '</div>';
         }
@@ -7088,24 +6993,7 @@ Purchased: ${ctx.purchased}
         this.sessionList.innerHTML = html || '<div style="padding: 16px; text-align: center; font-size: 13px; color: #999;">No chats yet</div>';
         
         this.sessionList.querySelectorAll('.flosc-session-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                if (e.target.closest('.flosc-session-action')) return;
-                this.loadSession(item.dataset.sessionId);
-            });
-        });
-
-        this.sessionList.querySelectorAll('.flosc-session-rename').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.renameSession(btn.dataset.sessionId);
-            });
-        });
-
-        this.sessionList.querySelectorAll('.flosc-session-delete').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.deleteSession(btn.dataset.sessionId);
-            });
+            item.addEventListener('click', () => this.loadSession(item.dataset.sessionId));
         });
     }
     
@@ -7161,56 +7049,6 @@ Purchased: ${ctx.purchased}
         this.sessionList?.querySelectorAll('.flosc-session-item').forEach(item => {
             item.classList.remove('active');
         });
-    }
-
-    async renameSession(sessionId) {
-        const item = this.sessionList?.querySelector(`.flosc-session-item[data-session-id="${sessionId}"]`);
-        const titleEl = item?.querySelector('.flosc-session-item-title');
-        const currentTitle = titleEl?.textContent || 'New Chat';
-        const newTitle = prompt('Rename chat:', currentTitle);
-        if (!newTitle || newTitle === currentTitle) return;
-
-        try {
-            const response = await this.authFetch(this.config.apiUrl + '/sessions/' + sessionId, {
-                method: 'PUT',
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-WP-Nonce': this.config.nonce
-                },
-                body: JSON.stringify({ title: newTitle })
-            });
-            const data = await response.json();
-            if (data.success) {
-                if (titleEl) titleEl.textContent = newTitle;
-                if (this.currentSession?.id == sessionId) {
-                    this.currentSession.title = newTitle;
-                }
-            }
-        } catch (e) {
-            this.logWarn('FLOSC: Could not rename session', e);
-        }
-    }
-
-    async deleteSession(sessionId) {
-        if (!confirm('Delete this chat? This cannot be undone.')) return;
-
-        try {
-            const response = await this.authFetch(this.config.apiUrl + '/sessions/' + sessionId, {
-                method: 'DELETE',
-                credentials: 'same-origin',
-                headers: { 'X-WP-Nonce': this.config.nonce }
-            });
-            const data = await response.json();
-            if (data.success) {
-                if (this.currentSession?.id == sessionId) {
-                    this.newSession();
-                }
-                this.loadSessions();
-            }
-        } catch (e) {
-            this.logWarn('FLOSC: Could not delete session', e);
-        }
     }
     
     /**

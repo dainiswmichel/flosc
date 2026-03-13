@@ -360,6 +360,10 @@ class SSO_Manager {
     
     /**
      * Handle SSO error display on frontend
+     * 
+     * v8.0.1: Instead of a browser alert(), output a JS variable that flosc-app.js
+     * picks up on init. This lets the app show the error in-chat and re-show the
+     * auth modal so the user can try a different login method.
      */
     public function handle_sso_error_display() {
         if (isset($_GET['flosc_sso_error'])) {
@@ -369,9 +373,10 @@ class SSO_Manager {
             if ($error_message) {
                 delete_transient($error_key);
                 
-                // Store for display
+                // v8.0.1: Set a JS variable instead of alert() so flosc-app.js can
+                // show the error in-chat and re-present the auth modal
                 add_action('wp_footer', function() use ($error_message) {
-                    echo '<script>alert("Login Error: ' . esc_js($error_message) . '");</script>';
+                    echo '<script>window.flosc_sso_error = ' . wp_json_encode($error_message) . ';</script>';
                 });
             }
         }

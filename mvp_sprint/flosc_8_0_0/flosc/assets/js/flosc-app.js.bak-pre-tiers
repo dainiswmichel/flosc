@@ -403,13 +403,6 @@ class floscApp {
             // v8.0.0: Track quiz completion and results display state
             quiz_completed: !!(this.user?.lastQuizScore || this.quiz?.completedAt),
             quiz_results_shown: false,  // Set true by checkPendingQuizResults after display
-            // v8.0.10: Signal that user is currently in the middle of taking the IPA quiz
-            quiz_in_progress: !!(this.ipaQuiz && this.ipaQuiz.phrases && this.ipaQuiz.currentIndex < this.ipaQuiz.phrases.length),
-            // v8.0.11: IPA quiz detailed results for AI context
-            ipa_quiz_score: this.ipaQuiz?.score || this.quiz?.score || 0,
-            ipa_quiz_tier: this.ipaQuiz?.tier || '',
-            ipa_ranked_phonemes: this.ipaQuiz?.rankedPhonemes || [],
-            ipa_weakest_sounds: this.ipaQuiz?.weakestSounds || [],
             
             // Purchase/access — v8.0.0 FIX: "purchased" must reflect actual purchase,
             // not admin-granted member access. Admins are is_member=true for content
@@ -956,12 +949,6 @@ class floscApp {
             </div>
             <div class="prompt-panel-body" id="flosc-admin-panel-body" style="display:flex;flex-direction:column;gap:0;max-height:40vh;overflow-y:auto;padding:5px;">
                 ${sectionsHtml}${offersHtml}
-                <div class="flosc-admin-pill-group" style="background:#ede9fe;border:1px solid #a78bfa;border-radius:8px;padding:7px 10px;margin-bottom:5px;">
-                    <div style="font-size:10px;font-weight:700;color:#5b21b6;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">🎤 Quiz Cycle</div>
-                    <div style="display:flex;flex-wrap:wrap;gap:4px;">
-                        <button class="flosc-style-pill" data-action="open_quiz:lesaep_ipa_audio_quiz" style="background:#ede9fe;border-color:#a78bfa;color:#5b21b6;">🎤 Start Pronunciation Quiz</button>
-                    </div>
-                </div>
             </div>`;
 
         // Wire chevron toggle to collapse/expand the panel body
@@ -2939,7 +2926,7 @@ class floscApp {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             stream.getTracks().forEach(t => t.stop());
-            this.showQuizTierSelection();
+            this.startIpaQuiz();
         } catch (e) {
             const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
             let guidance = 'Please allow microphone access to take the pronunciation quiz.';
@@ -2970,205 +2957,91 @@ class floscApp {
         }
     }
 
-    showQuizTierSelection() {
-        this.log('[FLOSC IPA Quiz] Showing tier selection');
+    startIpaQuiz() {
+        this.log('[FLOSC IPA Quiz] Starting IPA pronunciation quiz');
 
-        const html = `
-            <div class="flosc-tier-card">
-                <div class="flosc-tier-header">Which pronunciation quiz would you like to take?</div>
-                <div class="flosc-tier-buttons">
-                    <button class="flosc-tier-btn flosc-tier-beginner" data-tier="beginner">
-                        <span class="flosc-tier-emoji">🐣</span>
-                        <span class="flosc-tier-label"><span class="flosc-tier-name">Daring Beginner</span><span class="flosc-tier-desc">Short fun phrases</span></span>
-                    </button>
-                    <button class="flosc-tier-btn flosc-tier-intermediate" data-tier="intermediate">
-                        <span class="flosc-tier-emoji">🎯</span>
-                        <span class="flosc-tier-label"><span class="flosc-tier-name">Engaging Intermediate</span><span class="flosc-tier-desc">Longer real-world sentences</span></span>
-                    </button>
-                    <button class="flosc-tier-btn flosc-tier-advanced" data-tier="advanced">
-                        <span class="flosc-tier-emoji">🚀</span>
-                        <span class="flosc-tier-label"><span class="flosc-tier-name">Adventurous Advanced</span><span class="flosc-tier-desc">Complex literary passages</span></span>
-                    </button>
-                </div>
-                <div class="flosc-tier-mic-note">(Requires microphone access)</div>
-            </div>
-        `;
+        const phrases = [
+            'Cousin sister brother mother father peanut butter',
+            "There's different rules in rural America.",
+            'I think it would be fun to host a chili cook-off during our Super Bowl party on Sunday.',
+            "There's a lovely light comedy production at the university theater.",
+            'Robert Frost took the road less traveled, and Langston Hughes asked what happens to a dream deferred.'
+        ];
 
-        this.addMessage('assistant', html, true);
-
-        setTimeout(() => {
-            document.querySelectorAll('.flosc-tier-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const tier = btn.dataset.tier;
-                    document.querySelectorAll('.flosc-tier-btn').forEach(b => {
-                        b.disabled = true;
-                        b.classList.add(b === btn ? 'selected' : 'dimmed');
-                    });
-                    this.showTyping();
-                    setTimeout(() => {
-                        this.hideTyping();
-                        this.startIpaQuiz(tier);
-                    }, 600);
-                });
-            });
-        }, 100);
-    }
-
-    startIpaQuiz(tier = 'intermediate') {
-        this.log('[FLOSC IPA Quiz] Starting IPA pronunciation quiz \u2014 tier:', tier);
-
-        // ── Draft Quiz 1 (original pre-tier quiz — archived) ──
-        // 'Cousin sister brother mother father peanut butter',
-        // "There's different rules in rural America.",
-        // 'I think it would be fun to host a chili cook-off during our Super Bowl party on Sunday.',
-        // "There's a lovely light comedy production at the university theater.",
-        // 'Robert Frost took the road less traveled, and Langston Hughes asked what happens to a dream deferred.'
-
-        const tierPhrases = {
-            beginner: [
-                "Cat, bat, mat -- where's my yellow hat?",
-                'Your dog is adorable!',
-                "It's a lovely evening, isn't it?",
-                'The university theater.',
-                'Would you ever settle down in a rural American town?'
-            ],
-            intermediate: [
-                'Cousin sister brother mother father peanut butter',
-                "There's a lovely light comedy production at the university theater.",
-                'Take a left at the fork in the road.',
-                "There's different rules in rural America.",
-                'I think it would be fun to host a chili cook-off during our Super Bowl party on Sunday.'
-            ],
-            advanced: [
-                'Cousin sister brother mother father peanut butter',
-                "There's a lovely light comedy production at the university theater.",
-                "There's different rules in rural America.",
-                'I think it would be fun to host a chili cook-off during our Super Bowl party on Sunday.',
-                'Robert Frost took the road less traveled, and Langston Hughes asked what happens to a dream deferred.'
-            ]
-        };
-
-        const phrases = tierPhrases[tier] || tierPhrases.intermediate;
-
-        const tierNames = {
-            beginner: 'Daring Beginner',
-            intermediate: 'Engaging Intermediate',
-            advanced: 'Adventurous Advanced'
-        };
-
-        // Unified wordIpa — all words across all 3 tiers
+        // Static IPA data — 3 rows per word
         // espeak: ~90% precision reference (auto-generated)
-        // mw: Merriam-Webster IPA reference ('' = no MW entry for contractions/proper nouns)
+        // mw: Merriam-Webster IPA reference
         // da1ni5: scoring target — the source of 100% correctness
-        // \u2705 = da1ni5 APPROVED by Dainis | \u26A0\uFE0F = placeholder (espeak copy, awaiting approval)
         const wordIpa = {
-            // \u2500\u2500 Beginner P1: Cat, bat, mat -- where's my yellow hat? \u2500\u2500 \u2705 APPROVED
-            "cat,":      { espeak: 'k\u00E6t',   mw: 'k\u00E6t',   da1ni5: ['k\u00E6t'] },
-            cat:         { espeak: 'k\u00E6t',   mw: 'k\u00E6t',   da1ni5: ['k\u00E6t'] },
-            "bat,":      { espeak: 'b\u00E6t',   mw: 'b\u00E6t',   da1ni5: ['b\u00E6t'] },
-            bat:         { espeak: 'b\u00E6t',   mw: 'b\u00E6t',   da1ni5: ['b\u00E6t'] },
-            mat:         { espeak: 'm\u00E6t',   mw: 'm\u00E6t',   da1ni5: ['m\u00E6t'] },
-            "where's":   { espeak: 'w\u025B\u0279z',  mw: 'w\u025B\u0279z',  da1ni5: ['w\u025B\u0279z', '\u028D\u025B\u0279z', 'w\u02B0\u025B\u0279z', 'we\u0279z', '\u028De\u0279z', 'w\u02B0e\u0279z', 'w\u025B\u025Az', '\u028D\u025B\u025Az', 'w\u02B0\u025B\u025Az'] },
-            my:          { espeak: 'ma\u026A',   mw: 'ma\u026A',   da1ni5: ['ma\u026A'] },
-            yellow:      { espeak: 'j\u025Blo\u028A', mw: 'j\u025Blo\u028A', da1ni5: ['j\u025Blo\u028A'] },
-            "hat?":      { espeak: 'h\u00E6t',   mw: 'h\u00E6t',   da1ni5: ['h\u00E6t'] },
-            hat:         { espeak: 'h\u00E6t',   mw: 'h\u00E6t',   da1ni5: ['h\u00E6t'] },
-            // \u2500\u2500 Beginner P2: Your dog is adorable! \u2500\u2500 \u26A0\uFE0F PLACEHOLDER
-            your:        { espeak: 'j\u0254\u02D0\u0279',       mw: 'j\u0254\u02D0\u0279',       da1ni5: ['j\u0254\u02D0\u0279'] },
-            dog:         { espeak: 'd\u0254\u02D0\u0261',       mw: 'd\u0254\u02D0\u0261',       da1ni5: ['d\u0254\u02D0\u0261'] },
-            is:          { espeak: '\u026Az',         mw: '\u026Az',         da1ni5: ['\u026Az'] },
-            "adorable!": { espeak: '\u0259d\u0254\u02D0\u0279\u0259b\u0259l',  mw: '\u0259d\u0254\u02D0\u0279\u0259b\u0259l',  da1ni5: ['\u0259d\u0254\u02D0\u0279\u0259b\u0259l'] },
-            adorable:    { espeak: '\u0259d\u0254\u02D0\u0279\u0259b\u0259l',  mw: '\u0259d\u0254\u02D0\u0279\u0259b\u0259l',  da1ni5: ['\u0259d\u0254\u02D0\u0279\u0259b\u0259l'] },
-            // \u2500\u2500 Beginner P3: It's a lovely evening, isn't it? \u2500\u2500 \u26A0\uFE0F PLACEHOLDER
-            "it's":      { espeak: '\u026Ats',    mw: '\u026Ats',       da1ni5: ['\u026Ats'] },
-            a:           { espeak: '\u0259',      mw: '\u0259',      da1ni5: ['\u0259'] },
-            lovely:      { espeak: 'l\u028Cvli',  mw: 'l\u028Cvli',  da1ni5: ['l\u028Cvli'] },
-            "evening,":  { espeak: 'i\u02D0vn\u026A\u014B', mw: 'i\u02D0vn\u026A\u014B', da1ni5: ['i\u02D0vn\u026A\u014B'] },
-            evening:     { espeak: 'i\u02D0vn\u026A\u014B', mw: 'i\u02D0vn\u026A\u014B', da1ni5: ['i\u02D0vn\u026A\u014B'] },
-            "isn't":     { espeak: '\u026Az\u0259nt',  mw: '\u026Az\u0259nt',       da1ni5: ['\u026Az\u0259nt'] },
-            "it?":       { espeak: '\u026At',     mw: '\u026At',     da1ni5: ['\u026At'] },
-            it:          { espeak: '\u026At',     mw: '\u026At',     da1ni5: ['\u026At'] },
-            // \u2500\u2500 Beginner P4: The university theater. \u2500\u2500 \u26A0\uFE0F PLACEHOLDER
-            the:         { espeak: '\u00F0\u0259',              mw: '\u00F0\u0259',              da1ni5: ['\u00F0\u0259'] },
-            university:  { espeak: 'ju\u02D0n\u026Av\u025C\u02D0\u0279s\u026A\u027Ei',  mw: 'ju\u02D0n\u026Av\u025C\u02D0\u0279s\u026A\u027Ei',  da1ni5: ['ju\u02D0n\u026Av\u025C\u02D0\u0279s\u026A\u027Ei'] },
-            "theater.":  { espeak: '\u03B8i\u02D0\u0259\u027E\u025A',          mw: '\u03B8i\u02D0\u0259\u027E\u025A',          da1ni5: ['\u03B8i\u02D0\u0259\u027E\u025A'] },
-            theater:     { espeak: '\u03B8i\u02D0\u0259\u027E\u025A',          mw: '\u03B8i\u02D0\u0259\u027E\u025A',          da1ni5: ['\u03B8i\u02D0\u0259\u027E\u025A'] },
-            // \u2500\u2500 Beginner P5: Would you ever settle down in a rural American town? \u2500\u2500 \u26A0\uFE0F PLACEHOLDER
-            would:       { espeak: 'w\u028Ad',       mw: 'w\u028Ad',       da1ni5: ['w\u028Ad'] },
-            you:         { espeak: 'ju\u02D0',       mw: 'ju\u02D0',       da1ni5: ['ju\u02D0'] },
-            ever:        { espeak: '\u025Bv\u025A',       mw: '\u025Bv\u025A',       da1ni5: ['\u025Bv\u025A'] },
-            settle:      { espeak: 's\u025B\u027E\u0259l',     mw: 's\u025Bt\u0259l',     da1ni5: ['s\u025B\u027E\u0259l'] },
-            down:        { espeak: 'da\u028An',      mw: 'da\u028An',      da1ni5: ['da\u028An'] },
-            in:          { espeak: '\u026An',        mw: '\u026An',        da1ni5: ['\u026An'] },
-            rural:       { espeak: '\u0279\u028A\u0279\u0259l',     mw: '\u0279\u028A\u0279\u0259l',     da1ni5: ['\u0279\u028A\u0279\u0259l'] },
-            american:    { espeak: '\u0259m\u025B\u0279\u026Ak\u0259n',  mw: '\u0259m\u025B\u0279\u026Ak\u0259n',  da1ni5: ['\u0259m\u025B\u0279\u026Ak\u0259n'] },
-            "town?":     { espeak: 'ta\u028An',      mw: 'ta\u028An',      da1ni5: ['ta\u028An'] },
-            town:        { espeak: 'ta\u028An',      mw: 'ta\u028An',      da1ni5: ['ta\u028An'] },
-            // \u2500\u2500 Int/Adv: Cousin sister brother mother father peanut butter \u2500\u2500 \u26A0\uFE0F PLACEHOLDER
-            cousin:      { espeak: 'k\u028Cz\u0259n',   mw: 'k\u028Cz\u0259n',   da1ni5: ['k\u028Cz\u0259n'] },
-            sister:      { espeak: 's\u026Ast\u025A',   mw: 's\u026Ast\u025A',   da1ni5: ['s\u026Ast\u025A'] },
-            brother:     { espeak: 'b\u0279\u028C\u00F0\u025A',  mw: 'b\u0279\u028C\u00F0\u025A',   da1ni5: ['b\u0279\u028C\u00F0\u025A'] },
-            mother:      { espeak: 'm\u028C\u00F0\u025A',   mw: 'm\u028C\u00F0\u025A',    da1ni5: ['m\u028C\u00F0\u025A'] },
-            father:      { espeak: 'f\u0251\u02D0\u00F0\u025A',  mw: 'f\u0251\u02D0\u00F0\u025A',   da1ni5: ['f\u0251\u02D0\u00F0\u025A'] },
-            peanut:      { espeak: 'pi\u02D0n\u028Ct',  mw: 'pi\u02D0n\u028Ct',  da1ni5: ['pi\u02D0n\u028Ct'] },
-            butter:      { espeak: 'b\u028C\u027E\u025A',   mw: 'b\u028C\u027E\u025A',    da1ni5: ['b\u028C\u027E\u025A'] },
-            // \u2500\u2500 Int/Adv: There's a lovely light comedy production at the university theater. \u2500\u2500 \u26A0\uFE0F PLACEHOLDER
-            "there's":   { espeak: '\u00F0\u025B\u0279z',       mw: '\u00F0\u025B\u0279z',           da1ni5: ['\u00F0\u025B\u0279z'] },
-            light:       { espeak: 'la\u026At',       mw: 'la\u026At',       da1ni5: ['la\u026At'] },
-            comedy:      { espeak: 'k\u0251\u02D0m\u0259di',    mw: 'k\u0251\u02D0m\u0259di',    da1ni5: ['k\u0251\u02D0m\u0259di'] },
-            production:  { espeak: 'p\u0279\u0259d\u028Ck\u0283\u0259n',  mw: 'p\u0279\u0259d\u028Ck\u0283\u0259n',  da1ni5: ['p\u0279\u0259d\u028Ck\u0283\u0259n'] },
-            at:          { espeak: '\u00E6t',         mw: '\u00E6t',         da1ni5: ['\u00E6t'] },
-            // \u2500\u2500 Intermediate: Take a left at the fork in the road. \u2500\u2500 \u26A0\uFE0F PLACEHOLDER
-            take:        { espeak: 'te\u026Ak',   mw: 'te\u026Ak',   da1ni5: ['te\u026Ak'] },
-            left:        { espeak: 'l\u025Bft',   mw: 'l\u025Bft',   da1ni5: ['l\u025Bft'] },
-            fork:        { espeak: 'f\u0254\u02D0\u0279k',  mw: 'f\u0254\u02D0\u0279k',  da1ni5: ['f\u0254\u02D0\u0279k'] },
-            "road.":     { espeak: '\u0279o\u028Ad',   mw: '\u0279o\u028Ad',   da1ni5: ['\u0279o\u028Ad'] },
-            road:        { espeak: '\u0279o\u028Ad',   mw: '\u0279o\u028Ad',   da1ni5: ['\u0279o\u028Ad'] },
-            // \u2500\u2500 Int/Adv: There's different rules in rural America. \u2500\u2500 \u26A0\uFE0F PLACEHOLDER
-            different:   { espeak: 'd\u026Af\u025A\u0279\u0259nt',  mw: 'd\u026Af\u025A\u0279\u0259nt',  da1ni5: ['d\u026Af\u025A\u0279\u0259nt'] },
-            rules:       { espeak: '\u0279u\u02D0lz',     mw: '\u0279u\u02D0lz',     da1ni5: ['\u0279u\u02D0lz'] },
-            "america.":  { espeak: '\u0259m\u025B\u0279\u026Ak\u0259',   mw: '\u0259m\u025B\u0279\u026Ak\u0259',   da1ni5: ['\u0259m\u025B\u0279\u026Ak\u0259'] },
-            america:     { espeak: '\u0259m\u025B\u0279\u026Ak\u0259',   mw: '\u0259m\u025B\u0279\u026Ak\u0259',   da1ni5: ['\u0259m\u025B\u0279\u026Ak\u0259'] },
-            // \u2500\u2500 Int/Adv: I think it would be fun to host a chili cook-off ... Sunday. \u2500\u2500 \u26A0\uFE0F PLACEHOLDER
-            i:           { espeak: 'a\u026A',      mw: 'a\u026A',      da1ni5: ['a\u026A'] },
-            think:       { espeak: '\u03B8\u026A\u014Bk',    mw: '\u03B8\u026A\u014Bk',    da1ni5: ['\u03B8\u026A\u014Bk'] },
-            be:          { espeak: 'bi\u02D0',     mw: 'bi\u02D0',     da1ni5: ['bi\u02D0'] },
-            fun:         { espeak: 'f\u028Cn',     mw: 'f\u028Cn',     da1ni5: ['f\u028Cn'] },
-            to:          { espeak: 'tu\u02D0',     mw: 'tu\u02D0',     da1ni5: ['tu\u02D0'] },
-            host:        { espeak: 'ho\u028Ast',   mw: 'ho\u028Ast',   da1ni5: ['ho\u028Ast'] },
-            chili:       { espeak: 't\u0283\u026Ali',   mw: 't\u0283\u026Ali',   da1ni5: ['t\u0283\u026Ali'] },
-            "cook-off":  { espeak: 'k\u028Ak\u0254\u02D0f',  mw: 'k\u028Ak\u0254\u02D0f',        da1ni5: ['k\u028Ak\u0254\u02D0f'] },
-            during:      { espeak: 'd\u028A\u0279\u026A\u014B',   mw: 'd\u028A\u0279\u026A\u014B',   da1ni5: ['d\u028A\u0279\u026A\u014B'] },
-            our:         { espeak: 'a\u028A\u025A',     mw: 'a\u028A\u025A',     da1ni5: ['a\u028A\u025A'] },
-            super:       { espeak: 'su\u02D0p\u025A',   mw: 'su\u02D0p\u025A',   da1ni5: ['su\u02D0p\u025A'] },
-            bowl:        { espeak: 'bo\u028Al',    mw: 'bo\u028Al',    da1ni5: ['bo\u028Al'] },
-            party:       { espeak: 'p\u0251\u02D0\u0279\u027Ei',  mw: 'p\u0251\u02D0\u0279\u027Ei',  da1ni5: ['p\u0251\u02D0\u0279\u027Ei'] },
-            on:          { espeak: '\u0251\u02D0n',     mw: '\u0251\u02D0n',     da1ni5: ['\u0251\u02D0n'] },
-            "sunday.":   { espeak: 's\u028Cnde\u026A',  mw: 's\u028Cnde\u026A',  da1ni5: ['s\u028Cnde\u026A'] },
-            sunday:      { espeak: 's\u028Cnde\u026A',  mw: 's\u028Cnde\u026A',  da1ni5: ['s\u028Cnde\u026A'] },
-            // \u2500\u2500 Advanced: Robert Frost took the road less traveled ... deferred. \u2500\u2500 \u26A0\uFE0F PLACEHOLDER
-            robert:      { espeak: '\u0279\u0251\u02D0b\u025At',   mw: '\u0279\u0251\u02D0b\u025At',         da1ni5: ['\u0279\u0251\u02D0b\u025At'] },
-            frost:       { espeak: 'f\u0279\u0254\u02D0st',   mw: 'f\u0279\u0254\u02D0st',   da1ni5: ['f\u0279\u0254\u02D0st'] },
-            took:        { espeak: 't\u028Ak',      mw: 't\u028Ak',      da1ni5: ['t\u028Ak'] },
-            less:        { espeak: 'l\u025Bs',      mw: 'l\u025Bs',      da1ni5: ['l\u025Bs'] },
-            "traveled,": { espeak: 't\u0279\u00E6v\u0259ld',  mw: 't\u0279\u00E6v\u0259ld',  da1ni5: ['t\u0279\u00E6v\u0259ld'] },
-            traveled:    { espeak: 't\u0279\u00E6v\u0259ld',  mw: 't\u0279\u00E6v\u0259ld',  da1ni5: ['t\u0279\u00E6v\u0259ld'] },
-            and:         { espeak: '\u00E6nd',      mw: '\u00E6nd',      da1ni5: ['\u00E6nd'] },
-            langston:    { espeak: 'l\u00E6\u014Bst\u0259n',  mw: 'l\u00E6\u014Bst\u0259n',         da1ni5: ['l\u00E6\u014Bst\u0259n'] },
-            hughes:      { espeak: 'hju\u02D0z',    mw: 'hju\u02D0z',         da1ni5: ['hju\u02D0z'] },
-            asked:       { espeak: '\u00E6skt',     mw: '\u00E6skt',     da1ni5: ['\u00E6skt'] },
-            what:        { espeak: 'w\u028Ct',      mw: 'w\u028Ct',      da1ni5: ['w\u028Ct'] },
-            happens:     { espeak: 'h\u00E6p\u0259nz',   mw: 'h\u00E6p\u0259nz',   da1ni5: ['h\u00E6p\u0259nz'] },
-            dream:       { espeak: 'd\u0279i\u02D0m',    mw: 'd\u0279i\u02D0m',    da1ni5: ['d\u0279i\u02D0m'] },
-            "deferred.": { espeak: 'd\u026Af\u025C\u02D0\u0279d',  mw: 'd\u026Af\u025C\u02D0\u0279d',  da1ni5: ['d\u026Af\u025C\u02D0\u0279d'] },
-            deferred:    { espeak: 'd\u026Af\u025C\u02D0\u0279d',  mw: 'd\u026Af\u025C\u02D0\u0279d',  da1ni5: ['d\u026Af\u025C\u02D0\u0279d'] },
-            for:         { espeak: 'f\u0254\u02D0\u0279',     mw: 'f\u0254\u02D0\u0279',     da1ni5: ['f\u0254\u02D0\u0279'] }
+            // ── Phrase 1: Cousin sister brother mother father peanut butter ──
+            cousin:      { espeak: 'kʌzən',           mw: 'kʌzən',         da1ni5: ['kʌzən'] },
+            sister:      { espeak: 'sɪstɚ',           mw: 'sɪstɚ',         da1ni5: ['sɪstɚ'] },
+            brother:     { espeak: 'bɹʌðɚ',          mw: 'bɹʌðɚ',         da1ni5: ['bɹʌðɚ'] },
+            mother:      { espeak: 'mʌðɚ',           mw: 'mʌðɚ',          da1ni5: ['mʌðɚ'] },
+            father:      { espeak: 'fɑːðɚ',          mw: 'fɑːðɚ',         da1ni5: ['fɑːðɚ'] },
+            peanut:      { espeak: 'piːnʌt',          mw: 'piːnʌt',        da1ni5: ['piːnʌt'] },
+            butter:      { espeak: 'bʌɾɚ',           mw: 'bʌɾɚ',          da1ni5: ['bʌɾɚ'] },
+            // ── Phrase 2: There's different rules in rural America. ──
+            "there's":   { espeak: 'ðɛɹz',            mw: 'ðɛɹz',          da1ni5: ['ðɛɹz'] },
+            different:   { espeak: 'dɪfɚɹənt',        mw: 'dɪfɚɹənt',      da1ni5: ['dɪfɚɹənt'] },
+            rules:       { espeak: 'ɹuːlz',           mw: 'ɹuːlz',         da1ni5: ['ɹuːlz'] },
+            in:          { espeak: 'ɪn',              mw: 'ɪn',            da1ni5: ['ɪn'] },
+            rural:       { espeak: 'ɹʊɹəl',           mw: 'ɹʊɹəl',         da1ni5: ['ɹʊɹəl'] },
+            "america.":  { espeak: 'əmɛɹɪkə',        mw: 'əmɛɹɪkə',       da1ni5: ['əmɛɹɪkə'] },
+            america:     { espeak: 'əmɛɹɪkə',        mw: 'əmɛɹɪkə',       da1ni5: ['əmɛɹɪkə'] },
+            // ── Phrase 3: I think it would be fun to host a chili cook-off ... ──
+            i:           { espeak: 'aɪ',              mw: 'aɪ',            da1ni5: ['aɪ'] },
+            think:       { espeak: 'θɪŋk',            mw: 'θɪŋk',          da1ni5: ['θɪŋk'] },
+            it:          { espeak: 'ɪt',              mw: 'ɪt',            da1ni5: ['ɪt'] },
+            would:       { espeak: 'wʊd',             mw: 'wʊd',           da1ni5: ['wʊd'] },
+            be:          { espeak: 'biː',             mw: 'biː',           da1ni5: ['biː'] },
+            fun:         { espeak: 'fʌn',             mw: 'fʌn',           da1ni5: ['fʌn'] },
+            to:          { espeak: 'tuː',             mw: 'tuː',           da1ni5: ['tuː'] },
+            host:        { espeak: 'hoʊst',           mw: 'hoʊst',         da1ni5: ['hoʊst'] },
+            a:           { espeak: 'ə',               mw: 'ə',             da1ni5: ['ə'] },
+            chili:       { espeak: 'tʃɪli',           mw: 'tʃɪli',         da1ni5: ['tʃɪli'] },
+            "cook-off":  { espeak: 'kʊkɔːf',          mw: 'kʊkɔːf',        da1ni5: ['kʊkɔːf'] },
+            during:      { espeak: 'dʊɹɪŋ',           mw: 'dʊɹɪŋ',         da1ni5: ['dʊɹɪŋ'] },
+            our:         { espeak: 'aʊɚ',             mw: 'aʊɚ',           da1ni5: ['aʊɚ'] },
+            super:       { espeak: 'suːpɚ',           mw: 'suːpɚ',         da1ni5: ['suːpɚ'] },
+            bowl:        { espeak: 'boʊl',            mw: 'boʊl',          da1ni5: ['boʊl'] },
+            party:       { espeak: 'pɑːɹɾi',          mw: 'pɑːɹɾi',        da1ni5: ['pɑːɹɾi'] },
+            on:          { espeak: 'ɑːn',             mw: 'ɑːn',           da1ni5: ['ɑːn'] },
+            "sunday.":   { espeak: 'sʌndeɪ',          mw: 'sʌndeɪ',        da1ni5: ['sʌndeɪ'] },
+            sunday:      { espeak: 'sʌndeɪ',          mw: 'sʌndeɪ',        da1ni5: ['sʌndeɪ'] },
+            // ── Phrase 4: There's a lovely light comedy production at the university theater. ──
+            lovely:      { espeak: 'lʌvli',           mw: 'lʌvli',         da1ni5: ['lʌvli'] },
+            light:       { espeak: 'laɪt',            mw: 'laɪt',          da1ni5: ['laɪt'] },
+            comedy:      { espeak: 'kɑːmədi',         mw: 'kɑːmədi',       da1ni5: ['kɑːmədi'] },
+            production:  { espeak: 'pɹədʌkʃən',       mw: 'pɹədʌkʃən',     da1ni5: ['pɹədʌkʃən'] },
+            at:          { espeak: 'æt',              mw: 'æt',            da1ni5: ['æt'] },
+            the:         { espeak: 'ðə',              mw: 'ðə',            da1ni5: ['ðə'] },
+            university:  { espeak: 'juːnɪvɜːɹsɪɾi',  mw: 'juːnɪvɜːɹsɪɾi', da1ni5: ['juːnɪvɜːɹsɪɾi'] },
+            "theater.":  { espeak: 'θiːəɾɚ',          mw: 'θiːəɾɚ',        da1ni5: ['θiːəɾɚ'] },
+            theater:     { espeak: 'θiːəɾɚ',          mw: 'θiːəɾɚ',        da1ni5: ['θiːəɾɚ'] },
+            // ── Phrase 5: Robert Frost took the road less traveled ... deferred. ──
+            robert:      { espeak: 'ɹɑːbɚt',          mw: 'ɹɑːbɚt',        da1ni5: ['ɹɑːbɚt'] },
+            frost:       { espeak: 'fɹɔːst',          mw: 'fɹɔːst',        da1ni5: ['fɹɔːst'] },
+            took:        { espeak: 'tʊk',             mw: 'tʊk',           da1ni5: ['tʊk'] },
+            road:        { espeak: 'ɹoʊd',            mw: 'ɹoʊd',          da1ni5: ['ɹoʊd'] },
+            less:        { espeak: 'lɛs',             mw: 'lɛs',           da1ni5: ['lɛs'] },
+            "traveled,": { espeak: 'tɹævəld',         mw: 'tɹævəld',       da1ni5: ['tɹævəld'] },
+            traveled:    { espeak: 'tɹævəld',         mw: 'tɹævəld',       da1ni5: ['tɹævəld'] },
+            and:         { espeak: 'ænd',             mw: 'ænd',           da1ni5: ['ænd'] },
+            langston:    { espeak: 'læŋstən',         mw: 'læŋstən',       da1ni5: ['læŋstən'] },
+            hughes:      { espeak: 'hjuːz',           mw: 'hjuːz',         da1ni5: ['hjuːz'] },
+            asked:       { espeak: 'æskt',            mw: 'æskt',          da1ni5: ['æskt'] },
+            what:        { espeak: 'wʌt',             mw: 'wʌt',           da1ni5: ['wʌt'] },
+            happens:     { espeak: 'hæpənz',          mw: 'hæpənz',        da1ni5: ['hæpənz'] },
+            dream:       { espeak: 'dɹiːm',           mw: 'dɹiːm',         da1ni5: ['dɹiːm'] },
+            "deferred.": { espeak: 'dɪfɜːɹd',         mw: 'dɪfɜːɹd',       da1ni5: ['dɪfɜːɹd'] },
+            deferred:    { espeak: 'dɪfɜːɹd',         mw: 'dɪfɜːɹd',       da1ni5: ['dɪfɜːɹd'] },
+            for:         { espeak: 'fɔːɹ',            mw: 'fɔːɹ',          da1ni5: ['fɔːɹ'] }
         };
 
         this.ipaQuiz = {
             phrases: phrases,
             wordIpa: wordIpa,
-            tier: tier,
             currentIndex: 0,
             results: [],
             retryCount: 0
@@ -3179,13 +3052,11 @@ class floscApp {
             id: 'lesaep_ipa_audio_quiz',
             title: 'LeSAEp Pronunciation Assessment',
             type: 'ipa_audio',
-            tier: tier,
             startedAt: Date.now(),
             completedAt: null
         };
 
-        const tierLabel = tierNames[tier] || 'Intermediate';
-        this.addMessage('assistant', `**${tierLabel} Pronunciation Quiz** \u2014 You\'ll read **5 phrases** aloud, one at a time. I\'ll analyze each sound you make.`);
+        this.addMessage('assistant', 'Let\'s assess your Standard American English pronunciation. You\'ll read **5 phrases** aloud — one at a time. I\'ll analyze each sound you make.');
 
         setTimeout(() => {
             this.showIpaPhrase(0);
@@ -3476,7 +3347,6 @@ class floscApp {
         const phrase = this.ipaQuiz.phrases[index];
         const words = phrase.trim().split(/\s+/);
 
-        // Single da1ni5 IPA per word — one alignment pass on server
         const targetIpa = {};
         words.forEach(w => {
             const key = w.toLowerCase();
@@ -3497,70 +3367,73 @@ class floscApp {
         if (endpoint === '/analyze-phrase' && Object.keys(targetIpa).length > 0) {
             body.target_ipa = targetIpa;
         }
-
-        // Reserve result slot so phrase order is preserved
-        const resultIndex = index;
-        this.ipaQuiz.results[resultIndex] = null;
-
-        // Non-blocking UI: confirm and advance immediately
-        this.addMessage('assistant', `Phrase ${phraseNum} recorded. ✓`);
-
-        this.ipaQuiz.currentIndex++;
-        if (this.ipaQuiz.currentIndex < this.ipaQuiz.phrases.length) {
-            this._showQuizEscapeHatch(phraseNum);
-            this.showTyping();
-            setTimeout(() => {
-                this.hideTyping();
-                this.showIpaPhrase(this.ipaQuiz.currentIndex);
-            }, 800);
-        } else {
-            this.showTyping();
+        // Session storage: pass session_id so DO saves audio + scores
+        if (this.ipaQuiz.sessionId) {
+            body.session_id = this.ipaQuiz.sessionId;
         }
 
-        // Sequential API queue: each phrase waits for the previous to finish.
-        // Keeps DO server processing one at a time (~3-6s each).
-        // Phrase 1 returns session_id before phrase 2 sends.
-        if (!this.ipaQuiz.apiQueue) {
-            this.ipaQuiz.apiQueue = Promise.resolve();
-        }
-
-        const analysisPromise = this.ipaQuiz.apiQueue = this.ipaQuiz.apiQueue.then(() => {
-            if (this.ipaQuiz.sessionId) {
-                body.session_id = this.ipaQuiz.sessionId;
-            }
-            return fetch(`https://api.lesaep.com${endpoint}`, {
+        try {
+            const resp = await fetch(`https://api.lesaep.com${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body)
-            })
-            .then(resp => resp.ok ? resp.json() : Promise.reject(new Error(`API ${resp.status}`)))
-            .then(data => {
-                if (data.session_id) {
-                    this.ipaQuiz.sessionId = data.session_id;
+            });
+            const data = await resp.json();
+
+            if (!resp.ok) {
+                if (this.ipaQuiz.retryCount < 1) {
+                    this.ipaQuiz.retryCount++;
+                    this.addMessage('assistant', 'Hmm, that recording didn\'t come through clearly. Let\'s try once more.');
+                    this._reEnableIpaRecordButton(phraseNum);
+                } else {
+                    this.addMessage('assistant', 'No worries — let\'s move on to the next one.');
+                    this._advanceIpaWithZeroScore(phrase, phraseNum);
                 }
-                this.ipaQuiz.results[resultIndex] = { phrase, data, audioUrl };
-                this.log(`[FLOSC IPA] Phrase ${phraseNum} analysis complete`);
-            })
-            .catch(e => {
-                this.logError(`[FLOSC IPA] Phrase ${phraseNum} analysis failed`, e);
-                this.ipaQuiz.results[resultIndex] = {
-                    phrase,
-                    data: { words: [], score: 0, skipped: true },
-                    audioUrl
-                };
-            });
-        });
+                return;
+            }
 
-        if (!this.ipaQuiz.pendingAnalyses) {
-            this.ipaQuiz.pendingAnalyses = [];
-        }
-        this.ipaQuiz.pendingAnalyses.push(analysisPromise);
+            // Capture session_id from DO (created on first phrase)
+            if (data.session_id) {
+                this.ipaQuiz.sessionId = data.session_id;
+            }
 
-        if (this.ipaQuiz.currentIndex >= this.ipaQuiz.phrases.length) {
-            Promise.allSettled(this.ipaQuiz.pendingAnalyses).then(() => {
-                this.hideTyping();
-                this.showIpaQuizSummary();
-            });
+            this.ipaQuiz.results.push({ phrase, data, audioUrl });
+
+            if (this.state === 'visitor') {
+                // Visitors: confirm recording, do NOT show IPA breakdown.
+                // Full results display after login/registration via showIpaPhraseResultsAfterLogin().
+                this.addMessage('assistant', `Phrase ${phraseNum} recorded and analyzed. ✓`);
+            } else {
+                // Guests/members: show full word-by-word IPA results immediately.
+                this.showIpaPhraseResult(data, audioUrl, phrase, phraseNum);
+            }
+
+            this.ipaQuiz.currentIndex++;
+            if (this.ipaQuiz.currentIndex < this.ipaQuiz.phrases.length) {
+                // v8.0.1: Show funny buy-now escape between phrases
+                this._showQuizEscapeHatch(phraseNum);
+                // Show typing dots while next phrase loads
+                this.showTyping();
+                setTimeout(() => {
+                    this.hideTyping();
+                    this.showIpaPhrase(this.ipaQuiz.currentIndex);
+                }, 1200);
+            } else {
+                setTimeout(() => {
+                    this.showIpaQuizSummary();
+                }, 800);
+            }
+
+        } catch (e) {
+            this.logError('[FLOSC IPA] Analysis failed', e);
+            if (this.ipaQuiz.retryCount < 1) {
+                this.ipaQuiz.retryCount++;
+                this.addMessage('assistant', 'Connection hiccup — let\'s try that one more time.');
+                this._reEnableIpaRecordButton(phraseNum);
+            } else {
+                this.addMessage('assistant', 'Having trouble connecting. Let\'s move on.');
+                this._advanceIpaWithZeroScore(phrase, phraseNum);
+            }
         }
     }
 
@@ -3610,51 +3483,20 @@ class floscApp {
      * v8.0.1: Funny buy-now escape hatch shown between quiz phrases.
      * Clicking it opens the offer/purchase flow immediately.
      */
-    /**
-     * Tier-aware escape hatch shown between quiz phrases.
-     * Beginner: upgrade link. Intermediate: drop to beginner. Advanced: drop to beginner or intermediate.
-     */
     _showQuizEscapeHatch(phraseNum) {
-        const tier = this.ipaQuiz.tier || 'intermediate';
-        let escapeInner;
-
-        if (tier === 'beginner') {
-            escapeInner = `<a href="#" class="flosc-quiz-escape-link" data-action="buy">This is excellent\u2026I\u2019d like to upgrade now!</a>`;
-        } else if (tier === 'advanced') {
-            escapeInner = `<span class="flosc-quiz-escape-text">That\u2019s too hard! Take me to the </span><a href="#" class="flosc-quiz-escape-link" data-action="beginner">beginner</a><span class="flosc-quiz-escape-text"> / </span><a href="#" class="flosc-quiz-escape-link" data-action="intermediate">intermediate</a><span class="flosc-quiz-escape-text"> quiz! \uD83D\uDE2D</span>`;
-        } else {
-            escapeInner = `<a href="#" class="flosc-quiz-escape-link" data-action="beginner">That\u2019s too hard! I want the beginner\u2019s quiz! \uD83D\uDE2D</a>`;
-        }
-
-        const escapeHtml = `<div class="flosc-quiz-escape-hatch" id="flosc-quiz-escape-${phraseNum}">${escapeInner}</div>`;
-        this.addMessage('assistant', escapeHtml, true);
-
+        const escapeHtml = `<div class="flosc-quiz-escape-hatch" id="flosc-quiz-escape-${phraseNum}"><a href="#" class="flosc-quiz-escape-link">That\u2019s too hard! I want to take the beginner\u2019s quiz! \u{1F62D}</a></div>`;
+        const el = this.addMessage('assistant', escapeHtml, true);
         setTimeout(() => {
-            const container = document.getElementById(`flosc-quiz-escape-${phraseNum}`);
-            if (!container) return;
-            container.querySelectorAll('a[data-action]').forEach(link => {
+            const link = document.getElementById(`flosc-quiz-escape-${phraseNum}`)?.querySelector('a');
+            if (link) {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
-                    const action = link.dataset.action;
+                    // End quiz early, show offer
                     this.quiz.active = false;
-                    this.ipaQuiz.results = [];
-
-                    if (action === 'buy') {
-                        this.addMessage('assistant', "Let\u2019s get you set up with full access. \uD83C\uDF89");
-                        this.config.authEscapeTitle = 'Create Your LeSAEp Account';
-                        this.config.authEscapeSubtitle = 'Sign up to unlock full pronunciation lessons and practice.';
-                        setTimeout(() => this.showAuthModal('authEscape'), 400);
-                    } else {
-                        const label = action === 'beginner' ? 'beginner' : 'intermediate';
-                        this.addMessage('assistant', `No problem \u2014 let\u2019s try the ${label} level.`);
-                        this.showTyping();
-                        setTimeout(() => {
-                            this.hideTyping();
-                            this.startIpaQuiz(action);
-                        }, 800);
-                    }
+                    this.addMessage('assistant', 'No problem! Let\u2019s get you set up with full access. \u{1F389}');
+                    setTimeout(() => this.showAuthModal(), 400);
                 });
-            });
+            }
         }, 50);
     }
 
@@ -3831,7 +3673,7 @@ class floscApp {
     }
 
     showIpaQuizSummary() {
-        const results = this.ipaQuiz.results.filter(r => r !== null);
+        const results = this.ipaQuiz.results;
         const allWords = results.flatMap(r => r.data.words || [{ word: r.data.target_text, expected_ipa: r.data.expected_ipa, phonemes: r.data.phonemes }]);
         const allPh = allWords.flatMap(w => w.phonemes);
         const total = allPh.length;
@@ -3877,45 +3719,10 @@ class floscApp {
 
             h += `</div>`;
             this.addMessage('assistant', h, true);
-
-            // Admin detail: per-phrase accordion with word-level phoneme scores
-            if (this.state === 'admin' || (this.user && this.user.isAdmin)) {
-                let d = `<div class="flosc-ipa-accordion">`;
-                results.forEach((r, i) => {
-                    const phraseWords = r.data.words || [{ word: r.data.target_text, phonemes: r.data.phonemes }];
-                    const phrasePh = phraseWords.flatMap(w => w.phonemes);
-                    const phraseAvg = phrasePh.length ? phrasePh.reduce((s, p) => s + p.confidence, 0) / phrasePh.length : 0;
-                    const phraseScore = Math.round(phraseAvg * 100);
-                    const phColor = phraseScore >= 70 ? 'var(--flosc-ipa-high)' : phraseScore >= 40 ? 'var(--flosc-ipa-med)' : 'var(--flosc-ipa-low)';
-                    d += `<details class="flosc-ipa-accordion-item">`;
-                    d += `<summary class="flosc-ipa-accordion-header"><span class="flosc-ipa-accordion-phrase">${this.escapeHtml(r.phrase)}</span><span class="flosc-ipa-accordion-score" style="color:${phColor}">${phraseScore}%</span></summary>`;
-                    d += `<div class="flosc-ipa-accordion-body">`;
-                    phraseWords.forEach(w => {
-                        d += `<div class="flosc-ipa-word-row"><strong>${this.escapeHtml(w.word)}</strong>`;
-                        d += `<div class="flosc-ipa-phoneme-list">`;
-                        (w.phonemes || []).forEach(p => {
-                            const c = p.confidence >= 0.5 ? 'var(--flosc-ipa-high)' : p.confidence >= 0.1 ? 'var(--flosc-ipa-med)' : 'var(--flosc-ipa-low)';
-                            d += `<span class="flosc-ipa-phoneme-chip" style="border-color:${c}"><span class="flosc-ipa-weak-sym">${this.escapeHtml(p.ipa)}</span> <span style="color:${c}">${(p.confidence * 100).toFixed(0)}%</span></span>`;
-                        });
-                        d += `</div></div>`;
-                    });
-                    d += `</div></details>`;
-                });
-                d += `</div>`;
-                this.addMessage('assistant', d, true);
-            }
         }
 
         this.quiz.completedAt = Date.now();
         this.quiz.score = score;
-
-        // Store quiz results on the ipaQuiz object so buildIVRContext can relay to AI
-        this.ipaQuiz.score = score;
-        this.ipaQuiz.rankedPhonemes = Object.entries(phonemeScores)
-            .map(([ipa, scores]) => ({ ipa, avg: scores.reduce((s, c) => s + c, 0) / scores.length }))
-            .sort((a, b) => a.avg - b.avg);
-        this.ipaQuiz.weakestSounds = this.ipaQuiz.rankedPhonemes.slice(0, 5).map(p => `${p.ipa} ${(p.avg * 100).toFixed(0)}%`);
-        this.buildIVRContext();
 
         // Finalize session on DO — compiles summary.json with aggregated scores.
         // Non-blocking: visitor sees "Sign up" message immediately.
@@ -4791,36 +4598,19 @@ class floscApp {
         return data.lesson || null;
     }
 
-    // v8.0.0: Sort lessons — numbered lessons (Lesson 1, 2, 3…) by number first,
-    // then non-numbered titles alphabetically.
-    _sortLessons(lessons) {
-        return lessons.slice().sort((a, b) => {
-            const numA = a.title.match(/^Lesson\s+(\d+(?:\.\d+)?)/i);
-            const numB = b.title.match(/^Lesson\s+(\d+(?:\.\d+)?)/i);
-            if (numA && numB) return parseFloat(numA[1]) - parseFloat(numB[1]);
-            if (numA) return -1;
-            if (numB) return 1;
-            return a.title.localeCompare(b.title);
-        });
-    }
-
     // v3.0.8: Titles-only list — compact for long lesson libraries (65+10 = 75 items).
     // No excerpts; each row is title + arrow, clickable to open the lesson.
-    // v8.0.0: options.header and options.countLabel for filtered views.
-    renderLessonList(lessons, options = {}) {
-        const sorted = this._sortLessons(lessons);
+    renderLessonList(lessons) {
         const PAGE_SIZE = 10;
-        const initial = sorted.slice(0, PAGE_SIZE);
-        const hasMore = sorted.length > PAGE_SIZE;
+        const initial = lessons.slice(0, PAGE_SIZE);
+        const hasMore = lessons.length > PAGE_SIZE;
         const listId = 'flosc-lesson-list-' + Date.now();
-        const header = options.header || '📚 All Lessons';
-        const countLabel = options.countLabel || 'available';
 
         const listHtml = `
             <div class="flosc-lesson-list" id="${listId}">
                 <div class="flosc-lesson-list-header">
-                    <h3>${this.escapeHtml(header)}</h3>
-                    <p>${sorted.length} ${sorted.length === 1 ? 'lesson' : 'lessons'} ${this.escapeHtml(countLabel)}</p>
+                    <h3>📚 All Lessons</h3>
+                    <p>${lessons.length} ${lessons.length === 1 ? 'lesson' : 'lessons'} available</p>
                 </div>
                 <div class="flosc-lesson-items flosc-lesson-items--compact">
                     ${initial.map(lesson => `
@@ -4831,14 +4621,14 @@ class floscApp {
                         </div>
                     `).join('')}
                 </div>
-                ${hasMore ? `<button class="flosc-load-more-btn" data-list-id="${listId}" style="display:block;width:100%;padding:10px;margin-top:4px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;font-size:13px;color:#4b5563;">Show more (${sorted.length - PAGE_SIZE} remaining)</button>` : ''}
+                ${hasMore ? `<button class="flosc-load-more-btn" data-list-id="${listId}" style="display:block;width:100%;padding:10px;margin-top:4px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;font-size:13px;color:#4b5563;">Show more (${lessons.length - PAGE_SIZE} remaining)</button>` : ''}
             </div>
         `;
         this.addMessage('assistant', listHtml, true);
 
         if (hasMore) {
             this._lessonListData = this._lessonListData || {};
-            this._lessonListData[listId] = { lessons: sorted, shown: PAGE_SIZE };
+            this._lessonListData[listId] = { lessons, shown: PAGE_SIZE };
             setTimeout(() => {
                 const btn = document.querySelector(`[data-list-id="${listId}"]`);
                 if (btn) btn.addEventListener('click', () => this._loadMoreLessons(listId));
@@ -5035,7 +4825,7 @@ class floscApp {
             return;
         }
         const displayTopic = topic.replace(/\bplease\b/gi, '').trim();
-        this.addMessage('assistant', `🔍 Finding lessons for: <em>${this.escapeHtml(displayTopic)}</em>…`, true);
+        this.addMessage('assistant', `🔍 Finding lessons for: <em>${this.escapeHtml(displayTopic)}</em>…`);
         try {
             const params = new URLSearchParams({ search: displayTopic });
             if (this.config.flowId) params.append('flow_id', this.config.flowId);
@@ -5047,39 +4837,32 @@ class floscApp {
             const data    = await response.json();
             const lessons = data.lessons || [];
             if (!lessons.length) {
-                this.addMessage('assistant', `No lessons found for "<strong>${this.escapeHtml(displayTopic)}</strong>". Try a different keyword, or say <em>show me all lessons</em>.`, true);
+                this.addMessage('assistant', `No lessons found for "<strong>${this.escapeHtml(displayTopic)}</strong>". Try a different keyword, or say <em>show me all lessons</em>.`);
                 return;
             }
-            this.renderLessonList(lessons, {
-                header: `📚 Lessons: ${displayTopic}`,
-                countLabel: 'found'
-            });
+            // Temporarily rename the header to reflect the filter
+            const savedRender = this.renderLessonList.bind(this);
+            const header      = `📚 Lessons: ${displayTopic}`;
+            const listHtml = `
+                <div class="flosc-lesson-list">
+                    <div class="flosc-lesson-list-header">
+                        <h3>${this.escapeHtml(header)}</h3>
+                        <p>${lessons.length} ${lessons.length === 1 ? 'lesson' : 'lessons'} found</p>
+                    </div>
+                    <div class="flosc-lesson-items flosc-lesson-items--compact">
+                        ${lessons.map(l => `
+                            <div class="flosc-lesson-item flosc-lesson-item--title-only"
+                                 onclick="window.FLOSC.viewLesson(${parseInt(l.id)})">
+                                <span class="flosc-lesson-item-title">${this.escapeHtml(l.title)}</span>
+                                <span class="flosc-lesson-item-arrow">›</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+            this.addMessage('assistant', listHtml, true);
         } catch (e) {
             this.logError('[FLOSC] openFilteredLessons failed:', e);
             this.addMessage('assistant', '❌ Could not search lessons. Please try again.');
-        }
-    }
-
-    // v8.0.0: Open a single lesson by its number ("show me lesson 2").
-    // Fetches all lessons, finds the one whose title starts with "Lesson N:", and opens it directly.
-    async openLessonByNumber(num) {
-        if (this.state !== 'member') {
-            this.addMessage('assistant', '🔒 Lesson access requires membership.');
-            return;
-        }
-        this.addMessage('assistant', `📚 Opening Lesson ${this.escapeHtml(num)}...`);
-        try {
-            const lessons = await this.fetchAllLessons();
-            const pattern = new RegExp('^Lesson\\s+' + num.replace('.', '\\.') + '[.:\\s]', 'i');
-            const match = lessons.find(l => pattern.test(l.title));
-            if (match) {
-                this.viewLesson(match.id);
-            } else {
-                this.addMessage('assistant', `Lesson ${this.escapeHtml(num)} not found. Say <em>show me all lessons</em> to browse.`, true);
-            }
-        } catch (e) {
-            this.logError('[FLOSC] openLessonByNumber failed:', e);
-            this.addMessage('assistant', '❌ Could not load lesson. Please try again.');
         }
     }
 
@@ -5459,25 +5242,6 @@ class floscApp {
             this._awaitingAccessCode = false;
             this._redeemAccessCode(message.trim());
             return true;
-        }
-
-        // v8.0.0: "show me lesson 2", "open lesson 5", "lesson 3", "go to lesson 12"
-        if (this.state === 'member') {
-            const lessonNumberMatch = message.match(
-                /(?:show\s+(?:me\s+)?(?:the\s+)?|open\s+(?:the\s+)?|go\s+to\s+(?:the\s+)?)?lesson\s+(\d+(?:\.\d+)?)\b/i
-            );
-            if (lessonNumberMatch) {
-                this.openLessonByNumber(lessonNumberMatch[1]);
-                return true;
-            }
-        }
-
-        // v8.0.0: "show me all lessons", "list all lessons", "all lessons"
-        if (this.state === 'member') {
-            if (/(?:show\s+(?:me\s+)?(?:the\s+)?|open\s+(?:the\s+)?|list\s+(?:the\s+)?|find\s+)?all\s+(?:the\s+)?lessons?/i.test(message)) {
-                this.openLessonLibrary();
-                return true;
-            }
         }
 
         // v3.0.8: Lesson search — intercept "show me lessons for X", "lessons about X", etc.
@@ -7050,12 +6814,6 @@ Purchased: ${ctx.purchased}
     renderSessions(sessions) {
         if (!this.sessionList) return;
         
-        // v8.0.11: Session management by access level
-        // Visitors: never see sidebar sessions (loadSessions not called)
-        // Guests: see their chat list, read-only (no rename/delete)
-        // Members/Admins: full ChatGPT-style management — rename, delete
-        const canManage = (this.state === 'member' || this.state === 'admin');
-        
         // v1.7.0: sessions is a grouped object {today:[], yesterday:[], last_7_days:[], older:[]}
         const groupLabels = {
             today: 'Today',
@@ -7073,14 +6831,8 @@ Purchased: ${ctx.purchased}
                 html += `<div class="flosc-session-item ${s.id === this.currentSession?.id ? 'active' : ''}" 
                      data-session-id="${s.id}">
                     <span class="flosc-session-item-icon">💬</span>
-                    <span class="flosc-session-item-title">${this.escapeHtml(s.title || 'New Chat')}</span>`;
-                if (canManage) {
-                    html += `<span class="flosc-session-actions">
-                        <button class="flosc-session-action flosc-session-rename" data-session-id="${s.id}" title="Rename">✏️</button>
-                        <button class="flosc-session-action flosc-session-delete" data-session-id="${s.id}" title="Delete">🗑️</button>
-                    </span>`;
-                }
-                html += `</div>`;
+                    <span class="flosc-session-item-title">${this.escapeHtml(s.title || 'New Chat')}</span>
+                </div>`;
             });
             html += '</div>';
         }
@@ -7088,24 +6840,7 @@ Purchased: ${ctx.purchased}
         this.sessionList.innerHTML = html || '<div style="padding: 16px; text-align: center; font-size: 13px; color: #999;">No chats yet</div>';
         
         this.sessionList.querySelectorAll('.flosc-session-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                if (e.target.closest('.flosc-session-action')) return;
-                this.loadSession(item.dataset.sessionId);
-            });
-        });
-
-        this.sessionList.querySelectorAll('.flosc-session-rename').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.renameSession(btn.dataset.sessionId);
-            });
-        });
-
-        this.sessionList.querySelectorAll('.flosc-session-delete').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.deleteSession(btn.dataset.sessionId);
-            });
+            item.addEventListener('click', () => this.loadSession(item.dataset.sessionId));
         });
     }
     
@@ -7161,56 +6896,6 @@ Purchased: ${ctx.purchased}
         this.sessionList?.querySelectorAll('.flosc-session-item').forEach(item => {
             item.classList.remove('active');
         });
-    }
-
-    async renameSession(sessionId) {
-        const item = this.sessionList?.querySelector(`.flosc-session-item[data-session-id="${sessionId}"]`);
-        const titleEl = item?.querySelector('.flosc-session-item-title');
-        const currentTitle = titleEl?.textContent || 'New Chat';
-        const newTitle = prompt('Rename chat:', currentTitle);
-        if (!newTitle || newTitle === currentTitle) return;
-
-        try {
-            const response = await this.authFetch(this.config.apiUrl + '/sessions/' + sessionId, {
-                method: 'PUT',
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-WP-Nonce': this.config.nonce
-                },
-                body: JSON.stringify({ title: newTitle })
-            });
-            const data = await response.json();
-            if (data.success) {
-                if (titleEl) titleEl.textContent = newTitle;
-                if (this.currentSession?.id == sessionId) {
-                    this.currentSession.title = newTitle;
-                }
-            }
-        } catch (e) {
-            this.logWarn('FLOSC: Could not rename session', e);
-        }
-    }
-
-    async deleteSession(sessionId) {
-        if (!confirm('Delete this chat? This cannot be undone.')) return;
-
-        try {
-            const response = await this.authFetch(this.config.apiUrl + '/sessions/' + sessionId, {
-                method: 'DELETE',
-                credentials: 'same-origin',
-                headers: { 'X-WP-Nonce': this.config.nonce }
-            });
-            const data = await response.json();
-            if (data.success) {
-                if (this.currentSession?.id == sessionId) {
-                    this.newSession();
-                }
-                this.loadSessions();
-            }
-        } catch (e) {
-            this.logWarn('FLOSC: Could not delete session', e);
-        }
     }
     
     /**

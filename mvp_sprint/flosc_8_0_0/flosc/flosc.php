@@ -3808,6 +3808,20 @@ The {product_name} Team";
             'permission_callback' => 'is_user_logged_in',
         ]);
 
+        // v8.0.11: Delete a session
+        register_rest_route('flosc/v1', '/sessions/(?P<id>\d+)', [
+            'methods' => 'DELETE',
+            'callback' => [$this, 'delete_session'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        // v8.0.11: Rename a session
+        register_rest_route('flosc/v1', '/sessions/(?P<id>\d+)', [
+            'methods' => 'PUT',
+            'callback' => [$this, 'rename_session'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
         // v1.7.1: Nonce refresh endpoint
         // v4.0.8: Open to visitors — they need a nonce to call payment endpoints before account creation
         register_rest_route('flosc/v1', '/nonce', [
@@ -4109,6 +4123,13 @@ The {product_name} Team";
             'permission_callback' => function() {
                 return current_user_can('manage_options');
             }
+        ]);
+
+        // v8.0.0: Redeem access code — grants role directly, no payment
+        register_rest_route('flosc/v1', '/redeem-access-code', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_redeem_access_code'],
+            'permission_callback' => 'is_user_logged_in',
         ]);
     }
     
@@ -5919,10 +5940,11 @@ Example good response:
         $user_id = $eval_context['user_id'] ?? 0;
 
         // FLOSC Identity — tell the AI what system it's part of
+        $identity = $this->get_floscflow_identity();
         $ai_context = [
             'flosc_version' => FLOSC_VERSION,
             'flow_id' => $flow_id,
-            'product_name' => flosc_get_setting('product_name', ''),
+            'product_name' => $identity['name'] ?? '',
         ];
 
         // User Identity
@@ -6329,6 +6351,48 @@ Example good response:
         $session = $this->session_manager->flosc_create_session($user_id, $title);
         return new WP_REST_Response(['success' => true, 'session' => $session]);
     }
+
+    /**
+     * v8.0.11: Delete a session
+     */
+    public function delete_session($request) {
+        $session_id = (int) $request->get_param('id');
+        $user_id = get_current_user_id();
+        $deleted = $this->session_manager->flosc_delete_session($session_id, $user_id);
+        if (!$deleted) {
+            return new WP_REST_Response(['success' => false, 'error' => 'Session not found'], 404);
+        }
+        return new WP_REST_Response(['success' => true]);
+    }
+
+    /**
+     * v8.0.11: Rename a session
+     */
+    public function rename_session($request) {
+        $session_id = (int) $request->get_param('id');
+        $title = sanitize_text_field($request->get_param('title') ?? '');
+        if (empty($title)) {
+            return new WP_REST_Response(['success' => false, 'error' => 'Title is required'], 400);
+        }
+        $user_id = get_current_user_id();
+        $sessions = get_user_meta($user_id, '_flosc_sessions', true);
+        if (!is_array($sessions)) {
+            return new WP_REST_Response(['success' => false, 'error' => 'No sessions'], 404);
+        }
+        $found = false;
+        foreach ($sessions as &$s) {
+            if ($s['id'] == $session_id) {
+                $s['title'] = $title;
+                $found = true;
+                break;
+            }
+        }
+        if (!$found) {
+            return new WP_REST_Response(['success' => false, 'error' => 'Session not found'], 404);
+        }
+        update_user_meta($user_id, '_flosc_sessions', $sessions);
+        return new WP_REST_Response(['success' => true]);
+    }
     
     public function get_offers($request) {
         $user_id = is_user_logged_in() ? get_current_user_id() : null;
@@ -6475,6 +6539,65 @@ Example good response:
         return new WP_REST_Response($result);
     }
     
+    /**
+     * v8.0.0: Redeem Access Code — grants lesaep_learners role directly.
+     * No fake transaction, no offer, no payment. Just adds the WP role.
+     * Code is stored in the flow option (e.g. flosc_flow_lesaep_ivr → access_code).
+     */
+    public function handle_redeem_access_code($request) {
+        $code = $request->get_param('code');
+        $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
+
+        if (empty($code)) {
+            return new WP_Error('missing_code', 'No access code provided', ['status' => 400]);
+        }
+
+        // Look up the stored access code from the flow option
+        $option_key = 'flosc_flow_' . sanitize_key($flow_id);
+        $flow_option = get_option($option_key, []);
+        $stored_code = $flow_option['access_code'] ?? '';
+
+        if (empty($stored_code) || $code !== $stored_code) {
+            return new WP_Error('invalid_code', 'Invalid access code', ['status' => 403]);
+        }
+
+        $user_id = get_current_user_id();
+        $user = get_userdata($user_id);
+        if (!$user) {
+            return new WP_Error('no_user', 'User not found', ['status' => 401]);
+        }
+
+        // Grant the role
+        $grants_level = $flow_option['access_code_role'] ?? 'lesaep_learners';
+        $user->add_role($grants_level);
+
+        // Set member meta so content protection and state detection work
+        update_user_meta($user_id, '_flosc_member_level', $grants_level);
+        update_user_meta($user_id, '_flosc_purchased', true);
+        update_user_meta($user_id, '_flosc_purchased_at', current_time('mysql'));
+
+        // FLOSC_Member_Access grant so _flosc_memberlevel_{level} is set
+        $member_access = FLOSC_Member_Access::instance();
+        $member_access->grant_member_access($user_id, [
+            'offer_id' => 'access_code',
+            'grants_level' => $grants_level,
+            'provider' => 'access_code',
+            'transaction_id' => 'access_code_' . $user_id . '_' . time(),
+            'amount' => 0,
+        ]);
+
+        set_transient('flosc_just_purchased_' . $user_id, true, 300);
+
+        if (FLOSC_DEBUG) {
+            error_log("FLOSC Access Code: User {$user_id} granted {$grants_level} via access code");
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'message' => 'Access granted',
+        ]);
+    }
+
     /**
      * v1.4.4: Product-Aware Sandbox Purchase
      * Grants product-specific membership level based on product_id

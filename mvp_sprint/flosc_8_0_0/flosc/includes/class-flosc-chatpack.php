@@ -307,28 +307,37 @@ class FLOSC_Chatpack {
      * Reads from floscAdmin-configurable settings.
      */
     private static function build_identity_section() {
-        $product_name = flosc_get_setting('product_name', '');
-        $product_tagline = flosc_get_setting('product_tagline', '');
+        $identity = FLOSC_Framework::instance()->get_floscflow_identity();
+        $product_name = $identity['name'] ?? '';
+        $product_tagline = $identity['tagline'] ?? '';
         $ai_name = flosc_get_setting('ai_name', 'AI Assistant');
         $ai_role = flosc_get_setting('ai_role', 'friendly learning assistant');
         $ai_traits = flosc_get_setting('ai_traits', 'helpful, encouraging, knowledgeable');
         $ai_mission = flosc_get_setting('ai_mission', '');
         $ai_boundaries = flosc_get_setting('ai_boundaries', '');
 
-        $section = "## 1. FLOSC IDENTITY\n\n";
+        $section = "## 1. IDENTITY — EXACT DEFINITIONS (do not paraphrase or invent)\n\n";
 
-        // Product description
-        $section .= "**About FLOSC:**\n";
-        $section .= "FLOSC is a white-label WordPress plugin framework. "
-            . "The letters stand for: Freeline, Login, Offer, Sale, Content — the 5 funnel phases.\n\n";
+        // FLOSC definition — spelled out unambiguously
+        $section .= "**FLOSC** = Freeline, Login, Offer, Sale, Content. Those are the 5 phases. "
+            . "FLOSC is a white-label WordPress plugin framework. "
+            . "That is ALL it stands for. Do not expand it any other way.\n\n";
 
         // Product info (floscAdmin-configured)
         if ($product_name) {
             $section .= "**This Site's Product:** {$product_name}";
             if ($product_tagline) {
-                $section .= " — {$product_tagline}";
+                $section .= " = {$product_tagline}";
             }
             $section .= "\n";
+            // Spell out the acronym rule explicitly for the product name
+            if ($product_tagline) {
+                $section .= "When asked what {$product_name} stands for, the ONLY correct answer is: \"{$product_tagline}\". "
+                    . "Do not invent any other expansion.\n";
+            } else {
+                $section .= "If you do not know what {$product_name} stands for, say \"I'm not sure of the exact expansion — "
+                    . "the site administrator hasn't configured that yet.\" Do NOT guess.\n";
+            }
         } else {
             $section .= "**This Site's Product:** Not yet configured by the floscAdmin.\n";
         }
@@ -346,12 +355,34 @@ class FLOSC_Chatpack {
         }
 
         // Hard rules (non-configurable safety rails)
-        $section .= "\n**HARD RULES (non-negotiable):**\n";
-        $section .= "- NEVER invent what FLOSC stands for\n";
-        $section .= "- NEVER guess what this site teaches — only reference the product name above\n";
-        $section .= "- NEVER fabricate statistics, student counts, or social proof\n";
-        $section .= "- NEVER share lesson content with visitors (quiz-takers who haven't purchased)\n";
-        $section .= "- If you don't know something, say so honestly\n";
+        // Written as both positive (DO) and negative (NEVER) for maximum compliance.
+        $section .= "\n**ABSOLUTE RULES — violation of any rule is a critical failure:**\n\n";
+
+        $section .= "1. ACRONYMS: The ONLY acronym expansions you may state are the ones defined above. "
+            . "FLOSC = Freeline, Login, Offer, Sale, Content. ";
+        if ($product_name && $product_tagline) {
+            $section .= "{$product_name} = {$product_tagline}. ";
+        }
+        $section .= "If someone asks what ANY word or name stands for and you don't have the answer "
+            . "IN THIS PROMPT, say you don't know. NEVER guess or invent an acronym expansion.\n\n";
+
+        $section .= "2. NO FABRICATION: Never invent, fabricate, or guess ANY of the following:\n";
+        $section .= "   - Quiz questions, words, phrases, or pronunciation exercises\n";
+        $section .= "   - Statistics, student counts, success rates, or social proof\n";
+        $section .= "   - Lesson content, lesson titles, or course structure\n";
+        $section .= "   - Features, capabilities, or tools that aren't described in this prompt\n";
+        $section .= "   - Prices, discounts, or offers not defined in your context\n";
+        $section .= "   If you don't have specific information, say so: \"I don't have that information right now.\"\n\n";
+
+        $section .= "3. STAY IN YOUR LANE: You are a chat assistant. You do NOT administer quizzes. "
+            . "The quiz is a separate audio-recording system on the page. If the user is taking a quiz, "
+            . "do not pretend to be part of it, do not suggest words to say, and do not simulate quiz behavior.\n\n";
+
+        $section .= "4. CONTENT ACCESS: Never share lesson content, member materials, or paid content "
+            . "with visitors who haven't purchased.\n\n";
+
+        $section .= "5. HONESTY OVER HELPFULNESS: If you don't know something, say so. "
+            . "A wrong answer is worse than no answer. Never fill gaps in your knowledge with plausible-sounding inventions.\n";
 
         return $section;
     }
@@ -457,6 +488,22 @@ class FLOSC_Chatpack {
                 if (!empty($fc_incorrect) && is_array($fc_incorrect)) {
                     $section .= "- Missed (" . count($fc_incorrect) . "): " . implode(', ', array_slice($fc_incorrect, 0, 10)) . "\n";
                 }
+            }
+
+            // v8.0.11: IPA pronunciation quiz results from frontend context
+            $ipa_score = $eval_context['ipa_quiz_score'] ?? 0;
+            $ipa_tier = $eval_context['ipa_quiz_tier'] ?? '';
+            $ipa_weakest = $eval_context['ipa_weakest_sounds'] ?? [];
+            if ($ipa_score > 0) {
+                $section .= "\n**IPA Pronunciation Quiz:**\n";
+                $section .= "- Score: {$ipa_score}%\n";
+                if ($ipa_tier) {
+                    $section .= "- Tier: {$ipa_tier}\n";
+                }
+                if (!empty($ipa_weakest) && is_array($ipa_weakest)) {
+                    $section .= "- Weakest Sounds: " . implode(', ', array_slice($ipa_weakest, 0, 5)) . "\n";
+                }
+                $section .= "- When the user asks about their quiz results or pronunciation, reference these specific sounds and scores.\n";
             }
         }
 
@@ -574,12 +621,14 @@ class FLOSC_Chatpack {
     private static function build_ivr_section($ivr_guidance) {
         return "## IVR RESPONSE GUIDANCE\n\n"
             . "The scripted system matched the following reference material for the user's input. "
-            . "Use this as BACKGROUND INFORMATION to inform your reply. "
-            . "Respond specifically to what the user ACTUALLY asked — do not simply restate the guidance. "
-            . "If the user is asking a follow-up or a different angle on the same topic, "
-            . "address their specific question using your broader knowledge, not just this scripted text. "
+            . "This is AUTHORITATIVE product information written by the site administrator. "
+            . "Use it as the factual basis for your reply — do not contradict it or add information "
+            . "that isn't supported by this text or your other context sections.\n\n"
+            . "Respond to what the user ACTUALLY asked. Do not simply copy-paste the guidance — "
+            . "rewrite it naturally in your voice. But STAY WITHIN the facts provided. "
+            . "If the guidance doesn't cover what the user asked, say you don't have that information.\n\n"
             . "CRITICAL: Check the conversation history. If you have already shared this information, "
-            . "do NOT repeat it. Acknowledge what you already told them and address the new question.\n\n"
+            . "do NOT repeat it. Acknowledge what you already told them and address the new angle.\n\n"
             . "Reference material: \"{$ivr_guidance}\"";
     }
 
@@ -602,6 +651,16 @@ class FLOSC_Chatpack {
         $section .= "- If the user asks about something you already covered, acknowledge it briefly (e.g., 'As I mentioned...') and then address the NEW aspect of their question\n";
         $section .= "- Each response must add NEW value — if you have nothing new to add, say so honestly\n";
         $section .= "- Vary your language and structure across responses — do not use the same phrasing twice\n";
+
+        // v8.0.10: Anti-hallucination anchor — reinforced at end of prompt for recency bias
+        $section .= "\n**FACTUAL GROUNDING (final reminder):**\n";
+        $section .= "- Your ONLY source of truth about this product is this system prompt and the knowledge base files above\n";
+        $section .= "- Do NOT use your general training knowledge to fill in product details, features, prices, or course content\n";
+        $section .= "- If this prompt doesn't tell you something, you don't know it. Say so.\n";
+        $section .= "- NEVER invent acronym expansions. FLOSC = Freeline, Login, Offer, Sale, Content. That's it.\n";
+        if ($phase === 'freeline') {
+            $section .= "- You are NOT the quiz. The quiz is a separate audio-recording widget. Do not simulate it.\n";
+        }
 
         // Response format preferences (floscAdmin-configurable)
         $response_style = flosc_get_setting('ai_response_style', '');
@@ -647,10 +706,19 @@ class FLOSC_Chatpack {
 
         switch ($phase) {
             case 'freeline':
+                $quiz_in_progress = !empty($eval_context['quiz_in_progress']);
+                $freeline_intro = $quiz_in_progress
+                    ? "This visitor is CURRENTLY TAKING the pronunciation quiz (in progress right now).\n"
+                      . "- The quiz is managed by a SEPARATE recording/analysis system — NOT by you.\n"
+                      . "- NEVER fabricate quiz questions, words, phrases, or pronunciation exercises.\n"
+                      . "- NEVER pretend you are administering the quiz or suggest words to say.\n"
+                      . "- If asked about status: tell them they're a Visitor taking the quiz, and encourage them to finish it.\n"
+                      . "- Keep answers brief — the user should get back to their quiz.\n"
+                    : "This visitor has NOT taken the quiz yet. Your goal: spark curiosity and nudge toward the quiz.\n"
+                      . "- Guide the visitor toward the quiz\n"
+                      . "- If they ask a question, give an honest answer, then mention the quiz\n";
                 return "**CURRENT PHASE INSTRUCTIONS (Freeline):**\n"
-                    . "This visitor has NOT taken the quiz yet. Your goal: spark curiosity and nudge toward the quiz.\n"
-                    . "- Guide the visitor toward the quiz\n"
-                    . "- If they ask a question, give an honest answer, then mention the quiz\n"
+                    . $freeline_intro
                     . "- DON'T share lesson content, titles, or pricing\n"
                     . "\n**VISITOR RESOURCE POLICY:**\n"
                     . "Visitors are NOT logged-in members. They have LIMITED conversation access.\n"
