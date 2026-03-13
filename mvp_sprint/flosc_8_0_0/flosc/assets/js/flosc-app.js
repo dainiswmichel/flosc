@@ -887,14 +887,6 @@ class floscApp {
     // v4.0.0: Admin test panel — renders all pills (by state) + all offers for in-chat testing
     // v8.0.1: Fixed container lookup (was referencing non-existent selectors) + added click handlers
     _renderAdminTestPanel() {
-        // v8.0.0: If panel already exists, just unhide it — don't rebuild.
-        // Rebuilding destroys the collapsed/expanded state.
-        const existingPanel = document.getElementById('flosc_input_user_autoprompts_panel');
-        if (existingPanel) {
-            existingPanel.classList.remove('flosc-hidden');
-            return;
-        }
-
         // Clean up previous panel and tracked listeners
         this.floscCleanupUserAutoPrompts();
 
@@ -955,14 +947,14 @@ class floscApp {
         panel.id = 'flosc_input_user_autoprompts_panel';
         panel.className = 'prompt-panel prompt-panel-inline';
         panel.innerHTML = `
-            <div class="prompt-panel-header" style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-bottom:1px solid #e5e7eb;cursor:pointer;user-select:none;">
+            <div class="prompt-panel-header" style="padding:6px 10px;border-bottom:1px solid #e5e7eb;cursor:pointer;display:flex;align-items:center;justify-content:space-between;" id="flosc-admin-panel-toggle">
                 <div>
-                    <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">🧪 Admin Test Mode — all states visible</div>
+                    <div class="prompt-panel-eyebrow" style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">🧪 Admin Test Mode — all states visible</div>
                     <div style="font-size:10px;color:#9ca3af;margin-top:2px;">🛒 Purchases: ${this.user?.purchaseCount ?? 0} | 🏷️ Level: ${this.user?.memberLevel || 'none'} | 📊 State: ${this.state || '?'}</div>
                 </div>
-                <span class="flosc-admin-panel-chevron" style="font-size:14px;color:#6b7280;margin-left:8px;">▼</span>
+                <span id="flosc-admin-panel-chevron" style="font-size:16px;color:#6b7280;transition:transform 0.2s;">▼</span>
             </div>
-            <div class="flosc-admin-panel-body" style="display:flex;flex-direction:column;gap:0;max-height:40vh;overflow-y:auto;padding:5px;">
+            <div class="prompt-panel-body" id="flosc-admin-panel-body" style="display:flex;flex-direction:column;gap:0;max-height:40vh;overflow-y:auto;padding:5px;">
                 ${sectionsHtml}${offersHtml}
                 <div class="flosc-admin-pill-group" style="background:#ede9fe;border:1px solid #a78bfa;border-radius:8px;padding:7px 10px;margin-bottom:5px;">
                     <div style="font-size:10px;font-weight:700;color:#5b21b6;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">🎤 Quiz Cycle</div>
@@ -972,18 +964,20 @@ class floscApp {
                 </div>
             </div>`;
 
-        // ▼/▶ collapse/expand toggle for admin panel header
-        const header  = panel.querySelector('.prompt-panel-header');
-        const body    = panel.querySelector('.flosc-admin-panel-body');
-        const chevron = panel.querySelector('.flosc-admin-panel-chevron');
-        if (header && body && chevron) {
+        // Wire chevron toggle to collapse/expand the panel body
+        const toggleHeader = panel.querySelector('#flosc-admin-panel-toggle');
+        if (toggleHeader) {
             const toggleHandler = () => {
-                const isOpen = body.style.display !== 'none';
-                body.style.display    = isOpen ? 'none' : 'flex';
-                chevron.textContent   = isOpen ? '▶' : '▼';
+                const body = document.getElementById('flosc-admin-panel-body');
+                const chevron = document.getElementById('flosc-admin-panel-chevron');
+                if (body && chevron) {
+                    const collapsed = body.style.display === 'none';
+                    body.style.display = collapsed ? 'flex' : 'none';
+                    chevron.textContent = collapsed ? '▼' : '▶';
+                }
             };
-            header.addEventListener('click', toggleHandler);
-            this.activeEventListeners.set(header, toggleHandler);
+            toggleHeader.addEventListener('click', toggleHandler);
+            this.activeEventListeners.set(toggleHeader, toggleHandler);
         }
 
         // Wire click handlers for ALL pills (admin pills + offer pills)
