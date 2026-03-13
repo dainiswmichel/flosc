@@ -9908,7 +9908,7 @@ Example good response:
         if ($has_user_dir) {
             $meta = json_decode(file_get_contents($meta_path), true);
             $phrases = $meta['phrases'] ?? [];
-            $nonce = wp_hash('flosc_audio_' . $user_id);
+            $phrases = $meta['phrases'] ?? [];
 
             if ($phrases) {
                 echo '<tr><th>Audio Recordings</th><td>';
@@ -9925,7 +9925,6 @@ Example good response:
                         'user_id' => $user_id,
                         'session_id' => $sess_id,
                         'file' => $file,
-                        '_tok' => $nonce,
                     ]);
 
                     $mime = 'audio/webm';
@@ -9965,10 +9964,8 @@ Example good response:
             wp_die('Missing parameters', 400);
         }
 
-        // Token check — wp_hash is not session-bound so it works when
-        // the <audio src> GET request arrives without cookies.
-        $token = isset($_GET['_tok']) ? sanitize_text_field($_GET['_tok']) : '';
-        if (!$token || !hash_equals(wp_hash('flosc_audio_' . $user_id), $token)) {
+        // Logged-in user must be admin or the owner of this audio
+        if (!current_user_can('manage_options') && get_current_user_id() !== $user_id) {
             wp_die('Unauthorized', 403);
         }
 
@@ -10136,13 +10133,11 @@ Example good response:
                         }
                     }
                     if ($audio_file) {
-                        $audio_tok = wp_hash('flosc_audio_' . $user_id);
                         $audio_url = admin_url('admin-ajax.php') . '?' . http_build_query([
                             'action' => 'flosc_serve_user_audio',
                             'user_id' => $user_id,
                             'session_id' => $session_id,
                             'file' => $audio_file,
-                            '_tok' => $audio_tok,
                         ]);
                         echo '<div style="margin-bottom:12px;"><audio controls style="width:100%;height:36px;border-radius:8px;" src="' . esc_url($audio_url) . '"></audio></div>';
                     }
