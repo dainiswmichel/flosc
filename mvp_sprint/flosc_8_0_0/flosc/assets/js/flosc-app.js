@@ -887,6 +887,14 @@ class floscApp {
     // v4.0.0: Admin test panel — renders all pills (by state) + all offers for in-chat testing
     // v8.0.1: Fixed container lookup (was referencing non-existent selectors) + added click handlers
     _renderAdminTestPanel() {
+        // v8.0.0: If panel already exists, just unhide it — don't rebuild.
+        // Rebuilding destroys the DA1NI5 chevron ducked/shown state.
+        const existingPanel = document.getElementById('flosc_input_user_autoprompts_panel');
+        if (existingPanel) {
+            existingPanel.classList.remove('flosc-hidden');
+            return;
+        }
+
         // Clean up previous panel and tracked listeners
         this.floscCleanupUserAutoPrompts();
 
@@ -946,38 +954,59 @@ class floscApp {
         const panel = document.createElement('div');
         panel.id = 'flosc_input_user_autoprompts_panel';
         panel.className = 'prompt-panel prompt-panel-inline';
+        // v8.0.0: DA1NI5 Michel Duck and Show Chevron for admin panel
+        panel.setAttribute('data-da1-panel', '');
+        panel.setAttribute('data-da1-state', 'shown');
         panel.innerHTML = `
-            <div class="prompt-panel-header" style="padding:6px 10px;border-bottom:1px solid #e5e7eb;cursor:pointer;display:flex;align-items:center;justify-content:space-between;" id="flosc-admin-panel-toggle">
-                <div>
-                    <div class="prompt-panel-eyebrow" style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">🧪 Admin Test Mode — all states visible</div>
-                    <div style="font-size:10px;color:#9ca3af;margin-top:2px;">🛒 Purchases: ${this.user?.purchaseCount ?? 0} | 🏷️ Level: ${this.user?.memberLevel || 'none'} | 📊 State: ${this.state || '?'}</div>
-                </div>
-                <span id="flosc-admin-panel-chevron" style="font-size:16px;color:#6b7280;transition:transform 0.2s;">▼</span>
-            </div>
-            <div class="prompt-panel-body" id="flosc-admin-panel-body" style="display:flex;flex-direction:column;gap:0;max-height:40vh;overflow-y:auto;padding:5px;">
-                ${sectionsHtml}${offersHtml}
-                <div class="flosc-admin-pill-group" style="background:#ede9fe;border:1px solid #a78bfa;border-radius:8px;padding:7px 10px;margin-bottom:5px;">
-                    <div style="font-size:10px;font-weight:700;color:#5b21b6;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">🎤 Quiz Cycle</div>
-                    <div style="display:flex;flex-wrap:wrap;gap:4px;">
-                        <button class="flosc-style-pill" data-action="open_quiz:lesaep_ipa_audio_quiz" style="background:#ede9fe;border-color:#a78bfa;color:#5b21b6;">🎤 Start Pronunciation Quiz</button>
+            <button class="da1-close" aria-label="Close Admin Panel">&times;</button>
+            <button class="da1-chevron" aria-expanded="true" aria-label="Hide Admin Panel"></button>
+            <div class="da1-content">
+                <div class="da1-content-inner">
+                    <div style="padding:6px 10px;border-bottom:1px solid #e5e7eb;">
+                        <div style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">🧪 Admin Test Mode — all states visible</div>
+                        <div style="font-size:10px;color:#9ca3af;margin-top:2px;">🛒 Purchases: ${this.user?.purchaseCount ?? 0} | 🏷️ Level: ${this.user?.memberLevel || 'none'} | 📊 State: ${this.state || '?'}</div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:0;max-height:40vh;overflow-y:auto;padding:5px;">
+                        ${sectionsHtml}${offersHtml}
+                        <div class="flosc-admin-pill-group" style="background:#ede9fe;border:1px solid #a78bfa;border-radius:8px;padding:7px 10px;margin-bottom:5px;">
+                            <div style="font-size:10px;font-weight:700;color:#5b21b6;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">🎤 Quiz Cycle</div>
+                            <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                                <button class="flosc-style-pill" data-action="open_quiz:lesaep_ipa_audio_quiz" style="background:#ede9fe;border-color:#a78bfa;color:#5b21b6;">🎤 Start Pronunciation Quiz</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>`;
 
-        // Wire chevron toggle to collapse/expand the panel body
-        const toggleHeader = panel.querySelector('#flosc-admin-panel-toggle');
-        if (toggleHeader) {
-            const toggleHandler = () => {
-                const body = document.getElementById('flosc-admin-panel-body');
-                const chevron = document.getElementById('flosc-admin-panel-chevron');
-                if (body && chevron) {
-                    const collapsed = body.style.display === 'none';
-                    body.style.display = collapsed ? 'flex' : 'none';
-                    chevron.textContent = collapsed ? '▼' : '▶';
+        // v8.0.0: DA1NI5 Michel Duck and Show Chevron toggle
+        const chevronBtn = panel.querySelector('.da1-chevron');
+        if (chevronBtn) {
+            const chevronHandler = () => {
+                const currentState = panel.getAttribute('data-da1-state');
+                if (currentState === 'shown') {
+                    panel.setAttribute('data-da1-state', 'ducked');
+                    chevronBtn.setAttribute('aria-expanded', 'false');
+                    chevronBtn.setAttribute('aria-label', 'Show Admin Panel');
+                } else {
+                    panel.setAttribute('data-da1-state', 'shown');
+                    chevronBtn.setAttribute('aria-expanded', 'true');
+                    chevronBtn.setAttribute('aria-label', 'Hide Admin Panel');
                 }
             };
-            toggleHeader.addEventListener('click', toggleHandler);
-            this.activeEventListeners.set(toggleHeader, toggleHandler);
+            chevronBtn.addEventListener('click', chevronHandler);
+            this.activeEventListeners.set(chevronBtn, chevronHandler);
+        }
+
+        // v8.0.0: X close button — removes panel entirely
+        const closeBtn = panel.querySelector('.da1-close');
+        if (closeBtn) {
+            const closeHandler = () => {
+                this._panelDismissed = true;
+                panel.setAttribute('data-da1-state', 'closed');
+                panel.remove();
+            };
+            closeBtn.addEventListener('click', closeHandler);
+            this.activeEventListeners.set(closeBtn, closeHandler);
         }
 
         // Wire click handlers for ALL pills (admin pills + offer pills)
