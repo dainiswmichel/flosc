@@ -887,6 +887,14 @@ class floscApp {
     // v4.0.0: Admin test panel — renders all pills (by state) + all offers for in-chat testing
     // v8.0.1: Fixed container lookup (was referencing non-existent selectors) + added click handlers
     _renderAdminTestPanel() {
+        // If panel already exists, just unhide it — don't rebuild.
+        // Rebuilding destroys the collapsed/expanded state of the ▼/▶ toggle.
+        const existingPanel = document.getElementById('flosc_input_user_autoprompts_panel');
+        if (existingPanel) {
+            existingPanel.classList.remove('flosc-hidden');
+            return;
+        }
+
         // Clean up previous panel and tracked listeners
         this.floscCleanupUserAutoPrompts();
 
