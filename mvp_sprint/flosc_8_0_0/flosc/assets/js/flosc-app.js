@@ -987,23 +987,31 @@ class floscApp {
                     panel.setAttribute('data-da1-state', 'ducked');
                     chevronBtn.setAttribute('aria-expanded', 'false');
                     chevronBtn.setAttribute('aria-label', 'Show Admin Panel');
+                    this.addMessage('user', 'Hide Admin Panel');
+                    this.addMessage('assistant', 'Admin Panel hidden. Click the upward chevron to bring it back.');
+                    panel.classList.remove('flosc-hidden');
                 } else {
                     panel.setAttribute('data-da1-state', 'shown');
                     chevronBtn.setAttribute('aria-expanded', 'true');
                     chevronBtn.setAttribute('aria-label', 'Hide Admin Panel');
+                    this.addMessage('user', 'Show Admin Panel');
+                    this.addMessage('assistant', 'Admin Panel restored.');
+                    panel.classList.remove('flosc-hidden');
                 }
             };
             chevronBtn.addEventListener('click', chevronHandler);
             this.activeEventListeners.set(chevronBtn, chevronHandler);
         }
 
-        // v8.0.0: X close button — removes panel entirely
+        // v8.0.0: X close button — removes panel entirely until hard refresh or new chat
         const closeBtn = panel.querySelector('.da1-close');
         if (closeBtn) {
             const closeHandler = () => {
-                this._panelDismissed = true;
+                panel.classList.add('flosc-hidden');
                 panel.setAttribute('data-da1-state', 'closed');
-                panel.remove();
+                this._panelDismissed = true;
+                this.addMessage('assistant', 'Admin Panel closed. Hard refresh or start a new chat to bring it back.');
+                this.log('[FLOSC-ADMIN] Panel closed by user via X button');
             };
             closeBtn.addEventListener('click', closeHandler);
             this.activeEventListeners.set(closeBtn, closeHandler);
@@ -6686,7 +6694,11 @@ Purchased: ${ctx.purchased}
             }
             const pills = document.getElementById('flosc_input_user_autoprompts_panel');
             if (pills && !pills.classList.contains('flosc-hidden')) {
-                pills.classList.add('flosc-hidden');
+                // v8.0.0: DA1NI5 panels use data-da1-state for visibility.
+                // Don't override with flosc-hidden — the chevron controls duck/show.
+                if (!pills.hasAttribute('data-da1-panel')) {
+                    pills.classList.add('flosc-hidden');
+                }
             }
         }
 
