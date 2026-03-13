@@ -2384,6 +2384,11 @@ class floscApp {
             case 'open_support':
                 this.openSupport();
                 break;
+            case 'logout':
+                if (this.config.logoutUrl) {
+                    window.location.href = this.config.logoutUrl;
+                }
+                break;
             // v1.4.0: Sandbox purchase actions
             case 'send_prompt':
                 if (actionParam) {

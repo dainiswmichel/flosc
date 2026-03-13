@@ -406,8 +406,14 @@ class FLOSC_Access_Manager {
             return 'member';
         }
 
-        // Check if they are a member (purchased)
+        // Check if they are a member (purchased via offer/subscription)
         if ($this->is_member($user_id)) {
+            return 'member';
+        }
+
+        // Fallback: check _flosc_member_access (set by access code redemption)
+        $member_access = get_user_meta($user_id, '_flosc_member_access', true);
+        if ($member_access === 'true' || $member_access === true || $member_access === '1') {
             return 'member';
         }
 
