@@ -485,6 +485,7 @@ class FLOSC_Framework {
         add_action('edit_user_profile', [$this, 'render_admin_user_audio_section']);
         add_action('show_user_profile', [$this, 'render_admin_user_audio_section']);
         add_action('wp_ajax_flosc_serve_user_audio', [$this, 'ajax_serve_user_audio']);
+        add_action('wp_ajax_nopriv_flosc_serve_user_audio', [$this, 'ajax_serve_user_audio']);
         
         // Auto-flush permalinks when slug changes
         add_action('update_option_flosc_app_slug', [$this, 'handle_slug_change'], 10, 2);
@@ -9907,7 +9908,7 @@ Example good response:
         if ($has_user_dir) {
             $meta = json_decode(file_get_contents($meta_path), true);
             $phrases = $meta['phrases'] ?? [];
-            $nonce = wp_create_nonce('flosc_serve_audio_' . $user_id);
+            $nonce = wp_hash('flosc_audio_' . $user_id);
 
             if ($phrases) {
                 echo '<tr><th>Audio Recordings</th><td>';
@@ -9924,7 +9925,7 @@ Example good response:
                         'user_id' => $user_id,
                         'session_id' => $sess_id,
                         'file' => $file,
-                        '_wpnonce' => $nonce,
+                        '_tok' => $nonce,
                     ]);
 
                     $mime = 'audio/webm';
@@ -9960,16 +9961,16 @@ Example good response:
         $user_id = isset($_GET['user_id']) ? absint($_GET['user_id']) : 0;
         $file = isset($_GET['file']) ? sanitize_file_name($_GET['file']) : '';
 
-        // Admins can play any user's audio. Users can play their own.
-        if (!current_user_can('manage_options') && get_current_user_id() !== $user_id) {
-            wp_die('Unauthorized', 403);
-        }
-
         if (!$user_id || !$file) {
             wp_die('Missing parameters', 400);
         }
 
-        check_ajax_referer('flosc_serve_audio_' . $user_id);
+        // Token check — wp_hash is not session-bound so it works when
+        // the <audio src> GET request arrives without cookies.
+        $token = isset($_GET['_tok']) ? sanitize_text_field($_GET['_tok']) : '';
+        if (!$token || !hash_equals(wp_hash('flosc_audio_' . $user_id), $token)) {
+            wp_die('Unauthorized', 403);
+        }
 
         // Validate filename: only allow phrase-N.ext pattern
         if (!preg_match('/^phrase-\d+\.(webm|mp4|ogg|wav)$/', $file)) {
@@ -9978,7 +9979,6 @@ Example good response:
 
         $upload_dir = wp_upload_dir();
         $session_id = isset($_GET['session_id']) ? sanitize_text_field($_GET['session_id']) : '';
-        // Per-session path if valid session_id provided, else flat fallback
         if ($session_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $session_id)) {
             $filepath = $upload_dir['basedir'] . '/flosc-users/' . $user_id . '/sessions/' . $session_id . '/' . $file;
         } else {
@@ -10136,13 +10136,13 @@ Example good response:
                         }
                     }
                     if ($audio_file) {
-                        $audio_nonce = wp_create_nonce('flosc_serve_audio_' . $user_id);
+                        $audio_tok = wp_hash('flosc_audio_' . $user_id);
                         $audio_url = admin_url('admin-ajax.php') . '?' . http_build_query([
                             'action' => 'flosc_serve_user_audio',
                             'user_id' => $user_id,
                             'session_id' => $session_id,
                             'file' => $audio_file,
-                            '_wpnonce' => $audio_nonce,
+                            '_tok' => $audio_tok,
                         ]);
                         echo '<div style="margin-bottom:12px;"><audio controls style="width:100%;height:36px;border-radius:8px;" src="' . esc_url($audio_url) . '"></audio></div>';
                     }
