@@ -2495,9 +2495,16 @@ class floscApp {
     // v9.3.4: In-Chat Quiz System - Now supports TEXT SEQUENCE and AUDIO types!
     async startInChatQuiz(quizId = 'default') {
         // v1.8.1: Guard — prevent duplicate quiz starts
+        // v8.0.0: Allow replacing an active quiz with a DIFFERENT quiz type
+        //         (e.g., user started text quiz but wants IPA audio quiz instead)
         if (this.quiz?.active) {
-            this.addMessage('assistant', 'You already have a quiz in progress. Please complete it above.');
-            return;
+            if (this.quiz.id === quizId || quizId === 'default') {
+                this.addMessage('assistant', 'You already have a quiz in progress. Please complete it above.');
+                return;
+            }
+            // Different quiz requested — cancel the old one and proceed
+            this.log('[FLOSC Quiz] Replacing active quiz', this.quiz.id, 'with', quizId);
+            this.quiz.active = false;
         }
         if (this.ivr?.context?.quiz_completed && this.state === 'visitor') {
             this.addMessage('assistant', 'You\'ve already completed the quiz! Sign up above to see your results.');
@@ -5523,7 +5530,11 @@ class floscApp {
             || /(?:ready\s+for|let'?s\s+(?:do|take|try)|i\s+want\s+(?:to\s+)?(?:take|do|try))\s+(?:the\s+|a\s+)?(?:pronunciation\s+)?quiz/i.test(lowerMessage)
             || /(?:can\s+i|could\s+i|may\s+i)\s+(?:take|do|try)\s+(?:the\s+|a\s+)?quiz/i.test(lowerMessage)
         ) {
-            this.startInChatQuiz('default');
+            // Route through performIVRAction with the same action string the autoprompt pills
+            // and IVR messages use — ensures the correct quiz loads (e.g., lesaep_ipa_audio_quiz).
+            // Falls back to 'default' only if no IVR quiz action is configured.
+            const quizAction = this.config.ivrQuizAction || 'open_quiz:lesaep_ipa_audio_quiz';
+            this.performIVRAction(quizAction);
             return true;
         }
 
@@ -7385,76 +7396,83 @@ Purchased: ${ctx.purchased}
     }
     
     async toggleRecording() {
-        if (this.isRecording) {
-            this.stopRecording();
-        } else {
-            await this.startRecording();
+        // v8.0.0: Chat mic uses browser speech-to-text (SpeechRecognition API).
+        // Quiz audio recording is a completely separate code path (startAudioQuizRecording,
+        // processIpaRecording, etc.) — not affected by this method.
+        if (this._speechRecognition && this._speechRecognitionActive) {
+            this._stopSpeechRecognition();
+            return;
         }
+        this._startSpeechRecognition();
     }
-    
-    async startRecording() {
+
+    _startSpeechRecognition() {
+        // Feature detection: SpeechRecognition (Chrome, Edge) or webkitSpeechRecognition (Safari)
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            this.addMessage('assistant', 'Your system does not allow browser-based mic input at this time. Your audio quizzes should work properly. If you have any issues, kindly get in touch with LeSAEp support.');
+            return;
+        }
+
         try {
-            this.recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            this.mediaRecorder = new MediaRecorder(this.recordingStream);
-            this.audioChunks = [];
-            
-            this.mediaRecorder.ondataavailable = (e) => {
-                this.audioChunks.push(e.data);
+            this._speechRecognition = new SpeechRecognition();
+            this._speechRecognition.lang = 'en-US';
+            this._speechRecognition.interimResults = true;
+            this._speechRecognition.continuous = false;
+            this._speechRecognition.maxAlternatives = 1;
+
+            this._speechRecognition.onstart = () => {
+                this._speechRecognitionActive = true;
+                if (this.voiceBtn) this.voiceBtn.classList.add('recording');
             };
-            
-            this.mediaRecorder.onstop = () => {
-                this.processRecording();
+
+            this._speechRecognition.onresult = (event) => {
+                let transcript = '';
+                for (let i = 0; i < event.results.length; i++) {
+                    transcript += event.results[i][0].transcript;
+                }
+                if (this.chatInput) this.chatInput.value = transcript;
+
+                if (event.results[event.results.length - 1].isFinal) {
+                    this._stopSpeechRecognition();
+                    if (transcript.trim()) {
+                        this.sendMessage();
+                    }
+                }
             };
-            
-            this.mediaRecorder.start();
-            this.isRecording = true;
-            
-            if (this.voiceBtn) {
-                this.voiceBtn.classList.add('recording');
-            }
+
+            this._speechRecognition.onerror = (event) => {
+                this._stopSpeechRecognition();
+                if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+                    this.addMessage('assistant', 'Microphone access was denied. Please allow microphone access in your browser settings and try again.');
+                } else if (event.error === 'no-speech') {
+                    // User clicked mic but said nothing — silent fail
+                } else if (event.error === 'network') {
+                    this.addMessage('assistant', 'Speech recognition requires an internet connection. Please check your connection and try again.');
+                } else if (event.error === 'aborted') {
+                    // User cancelled — no message needed
+                } else {
+                    this.addMessage('assistant', 'Your system does not allow browser-based mic input at this time. Your audio quizzes should work properly. If you have any issues, kindly get in touch with LeSAEp support.');
+                }
+            };
+
+            this._speechRecognition.onend = () => {
+                this._stopSpeechRecognition();
+            };
+
+            this._speechRecognition.start();
         } catch (e) {
-            this.logError('FLOSC: Could not start recording', e);
-            this.addMessage('assistant', 'Could not access microphone. Please check permissions.');
+            this.logError('FLOSC: SpeechRecognition failed', e);
+            this.addMessage('assistant', 'Your system does not allow browser-based mic input at this time. Your audio quizzes should work properly. If you have any issues, kindly get in touch with LeSAEp support.');
         }
     }
-    
-    stopRecording() {
-        if (this.mediaRecorder && this.isRecording) {
-            this.mediaRecorder.stop();
-            this.isRecording = false;
-            
-            if (this.recordingStream) {
-                this.recordingStream.getTracks().forEach(track => track.stop());
-            }
-            
-            if (this.voiceBtn) {
-                this.voiceBtn.classList.remove('recording');
-            }
-        }
-    }
-    
-    async processRecording() {
-        const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-        
-        const formData = new FormData();
-        formData.append('audio', audioBlob);
-        
-        try {
-            const response = await this.authFetch(this.config.apiUrl + '/transcribe', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: { 'X-WP-Nonce': this.config.nonce },
-                body: formData
-            });
-            
-            const data = await response.json();
-            
-            if (data.success && data.transcript) {
-                this.chatInput.value = data.transcript;
-                this.sendMessage();
-            }
-        } catch (e) {
-            this.logError('FLOSC: Transcription failed', e);
+
+    _stopSpeechRecognition() {
+        this._speechRecognitionActive = false;
+        if (this.voiceBtn) this.voiceBtn.classList.remove('recording');
+        if (this._speechRecognition) {
+            try { this._speechRecognition.stop(); } catch (e) { /* already stopped */ }
+            this._speechRecognition = null;
         }
     }
     
