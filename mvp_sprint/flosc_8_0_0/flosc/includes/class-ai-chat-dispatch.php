@@ -83,6 +83,36 @@ class FLOSC_AI_Chat_Dispatch {
             }
         }
 
+        // v8.0.0: Quiz action tag — teach the AI how to launch quizzes via action tags
+        // instead of fabricating quiz content. The AI is an IVR humanizer, NOT a content creator.
+        $quiz_action_section = '';
+        if ( function_exists( 'flosc_get_setting' ) && class_exists( 'FLOSC_Quiz_Registry' ) ) {
+            $enabled_quizzes = flosc_get_setting( 'enabled_quizzes', ['flosc_sample_data_numbers_quiz'] );
+            if ( ! is_array( $enabled_quizzes ) ) $enabled_quizzes = ['flosc_sample_data_numbers_quiz'];
+            if ( ! empty( $enabled_quizzes ) ) {
+                $quiz_action_section  = "## Quiz Action Tags\n";
+                $quiz_action_section .= "When a user asks to take a quiz or test their pronunciation:\n";
+                $quiz_action_section .= "- Just allow the quiz code to do its thing and present the quiz to the user.\n";
+                $quiz_action_section .= "- DO NOT fabricate a quiz. You are NOT the content creator here. ";
+                $quiz_action_section .= "You are an IVR message humanizer and the special LeSAEp ";
+                $quiz_action_section .= "(Learn Excellent Standard American English Pronunciation) content facilitator. ";
+                $quiz_action_section .= "The content is the LeSAEp category of WordPress posts. ";
+                $quiz_action_section .= "You do not need to fabricate quizzes — please DO NOT FABRICATE QUIZZES.\n";
+                $quiz_action_section .= "- Should you be unable to restrain yourself, and simply MUST interject yourself ";
+                $quiz_action_section .= "between the user's quiz request and the system's presentation of the quiz to the user, ";
+                $quiz_action_section .= "you may respond with a brief encouraging message like 'Coming right up...' ";
+                $quiz_action_section .= "or 'Your quiz is coming right up...' and include the action tag at the END of your response. ";
+                $quiz_action_section .= "NEVER fabricate quiz questions yourself.\n\n";
+                $quiz_action_section .= "Format: [ACTION:open_quiz:QUIZ_ID]\n";
+                $quiz_action_section .= "Available quizzes:\n";
+                foreach ( $enabled_quizzes as $qid ) {
+                    $qt   = FLOSC_Quiz_Registry::get_quiz( $qid );
+                    $name = $qt ? $qt->get_name() : ucwords( str_replace( '_', ' ', $qid ) );
+                    $quiz_action_section .= "- {$name} → [ACTION:open_quiz:{$qid}]\n";
+                }
+            }
+        }
+
         // v4.0.0: LeSAEp quiz results — available to Guests and LeSAEp Learners (members).
         // Visitors NEVER see quiz results or learn which questions they missed.
         // They must create an account first. This is a STRICT business rule.
@@ -207,6 +237,7 @@ class FLOSC_AI_Chat_Dispatch {
             $feedback_prompt,
             $offer_phrase_section,
             $lesson_search_section,
+            $quiz_action_section,
             $quiz_results_section,
             $admin_context_section,
             $context_string ? "## Current Session Context\n" . $context_string : '',

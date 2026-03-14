@@ -10016,11 +10016,11 @@ Example good response:
         if (empty($quiz_data) || !is_array($quiz_data)) return;
 
         bp_core_new_nav_item([
-            'name'                => __('Quiz Results', 'flosc'),
-            'slug'                => 'quiz-results',
+            'name'                => __('LeSAEp', 'flosc'),
+            'slug'                => 'lesaep_tab',
             'position'            => 80,
             'screen_function'     => [$this, 'buddyboss_quiz_tab_screen'],
-            'default_subnav_slug' => 'quiz-results',
+            'default_subnav_slug' => 'lesaep_tab',
             'show_for_displayed_user' => true,
         ]);
     }
@@ -10031,7 +10031,7 @@ Example good response:
      */
     public function buddyboss_quiz_tab_screen() {
         add_action('bp_template_title', function() {
-            echo 'Quiz Results';
+            echo 'LeSAEp';
         });
         add_action('bp_template_content', [$this, 'render_buddyboss_quiz_tab']);
         bp_core_load_template(apply_filters('bp_core_template_plugin', 'members/single/plugins'));

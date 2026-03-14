@@ -5514,6 +5514,19 @@ class floscApp {
             }
         }
 
+        // v8.0.0: Quiz request interceptor — catch quiz-related phrases BEFORE they reach the AI.
+        // This prevents the AI from ever having the opportunity to hallucinate quiz content.
+        // The quiz is a separate system; the AI is an IVR humanizer, not a content creator.
+        if (/(?:take|start|begin|do|try|launch|open)\s+(?:the\s+|a\s+)?(?:pronunciation\s+)?quiz/i.test(lowerMessage)
+            || /(?:pronunciation\s+)?quiz\s*(?:please|now|time)?\s*[!?.]*$/i.test(lowerMessage)
+            || /^quiz[!?.]*$/i.test(lowerMessage)
+            || /(?:ready\s+for|let'?s\s+(?:do|take|try)|i\s+want\s+(?:to\s+)?(?:take|do|try))\s+(?:the\s+|a\s+)?(?:pronunciation\s+)?quiz/i.test(lowerMessage)
+            || /(?:can\s+i|could\s+i|may\s+i)\s+(?:take|do|try)\s+(?:the\s+|a\s+)?quiz/i.test(lowerMessage)
+        ) {
+            this.startInChatQuiz('default');
+            return true;
+        }
+
         setTimeout(() => this.floscShowUserAutoPrompts(), 500);
         
         // v1.6.2: Check auto/offer messages after each user message
