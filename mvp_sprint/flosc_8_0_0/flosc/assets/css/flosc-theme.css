@@ -646,28 +646,6 @@
     box-shadow: none;
 }
 
-/* Voice Button */
-.flosc_input_chat_voice_button {
-    background: transparent;
-    color: var(--flosc-text-muted);
-    border: none;
-    transition: color 0.2s ease;
-}
-
-.flosc_input_chat_voice_button:hover {
-    color: var(--flosc-text);
-}
-
-.flosc_input_chat_voice_button.recording {
-    color: #ef4444;
-    animation: pulse-recording 1.5s infinite;
-}
-
-@keyframes pulse-recording {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-}
-
 /* ============================================
    PILLS / USER AUTOPROMPTS
    ============================================ */

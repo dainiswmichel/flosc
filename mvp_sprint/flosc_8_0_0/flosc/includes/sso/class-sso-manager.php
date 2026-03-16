@@ -372,13 +372,17 @@ class SSO_Manager {
             
             if ($error_message) {
                 delete_transient($error_key);
-                
-                // v8.0.1: Set a JS variable instead of alert() so flosc-app.js can
-                // show the error in-chat and re-present the auth modal
-                add_action('wp_footer', function() use ($error_message) {
-                    echo '<script>window.flosc_sso_error = ' . wp_json_encode($error_message) . ';</script>';
-                });
+            } else {
+                // v8.0.2: Transient expired (TTL elapsed) or was never found.
+                // Show a generic message so the user isn't left with zero feedback.
+                $error_message = 'Login didn\'t complete. Please try again — if the issue persists, try a different login method or contact support.';
             }
+            
+            // v8.0.1: Set a JS variable instead of alert() so flosc-app.js can
+            // show the error in-chat and re-present the auth modal
+            add_action('wp_footer', function() use ($error_message) {
+                echo '<script>window.flosc_sso_error = ' . wp_json_encode($error_message) . ';</script>';
+            });
         }
     }
     

@@ -237,8 +237,7 @@ class floscApp {
             this.log('[FLOSC] Elements bound:', {
                 chatInput: !!this.chatInput,
                 sendBtn: !!this.sendBtn,
-                chatMessages: !!this.chatMessages,
-                voiceBtn: !!this.voiceBtn
+                chatMessages: !!this.chatMessages
             });
             
             this.log('[FLOSC] Binding events...');
@@ -5678,7 +5677,6 @@ Purchased: ${ctx.purchased}
         this.chatMessages = document.getElementById('flosc_output_chat_responses');
         this.chatInput = document.getElementById('flosc_input_chat_field');
         this.sendBtn = document.getElementById('flosc_input_chat_send_button');
-        this.voiceBtn = document.getElementById('flosc_input_chat_voice_button');
         this.quizSection = document.getElementById('flosc_quiz_section');
         this.shareBtn = document.getElementById('flosc_app_share_button');
         this.shareModal = document.getElementById('flosc_modal_share');
@@ -5739,10 +5737,6 @@ Purchased: ${ctx.purchased}
                 this.chatInput.style.height = 'auto';
                 this.chatInput.style.height = Math.min(this.chatInput.scrollHeight, 120) + 'px';
             });
-        }
-        
-        if (this.voiceBtn) {
-            this.voiceBtn.addEventListener('click', () => this.toggleRecording());
         }
         
         if (this.shareBtn) {
@@ -7392,87 +7386,6 @@ Purchased: ${ctx.purchased}
         const modal = document.getElementById('flosc_modal_recording');
         if (modal) {
             modal.style.display = 'none';
-        }
-    }
-    
-    async toggleRecording() {
-        // v8.0.0: Chat mic uses browser speech-to-text (SpeechRecognition API).
-        // Quiz audio recording is a completely separate code path (startAudioQuizRecording,
-        // processIpaRecording, etc.) — not affected by this method.
-        if (this._speechRecognition && this._speechRecognitionActive) {
-            this._stopSpeechRecognition();
-            return;
-        }
-        this._startSpeechRecognition();
-    }
-
-    _startSpeechRecognition() {
-        // Feature detection: SpeechRecognition (Chrome, Edge) or webkitSpeechRecognition (Safari)
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            this.addMessage('assistant', 'Your system does not allow browser-based mic input at this time. Your audio quizzes should work properly. If you have any issues, kindly get in touch with LeSAEp support.');
-            return;
-        }
-
-        try {
-            this._speechRecognition = new SpeechRecognition();
-            this._speechRecognition.lang = 'en-US';
-            this._speechRecognition.interimResults = true;
-            this._speechRecognition.continuous = false;
-            this._speechRecognition.maxAlternatives = 1;
-
-            this._speechRecognition.onstart = () => {
-                this._speechRecognitionActive = true;
-                if (this.voiceBtn) this.voiceBtn.classList.add('recording');
-            };
-
-            this._speechRecognition.onresult = (event) => {
-                let transcript = '';
-                for (let i = 0; i < event.results.length; i++) {
-                    transcript += event.results[i][0].transcript;
-                }
-                if (this.chatInput) this.chatInput.value = transcript;
-
-                if (event.results[event.results.length - 1].isFinal) {
-                    this._stopSpeechRecognition();
-                    if (transcript.trim()) {
-                        this.sendMessage();
-                    }
-                }
-            };
-
-            this._speechRecognition.onerror = (event) => {
-                this._stopSpeechRecognition();
-                if (event.error === 'not-allowed' || event.error === 'permission-denied') {
-                    this.addMessage('assistant', 'Microphone access was denied. Please allow microphone access in your browser settings and try again.');
-                } else if (event.error === 'no-speech') {
-                    // User clicked mic but said nothing — silent fail
-                } else if (event.error === 'network') {
-                    this.addMessage('assistant', 'Speech recognition requires an internet connection. Please check your connection and try again.');
-                } else if (event.error === 'aborted') {
-                    // User cancelled — no message needed
-                } else {
-                    this.addMessage('assistant', 'Your system does not allow browser-based mic input at this time. Your audio quizzes should work properly. If you have any issues, kindly get in touch with LeSAEp support.');
-                }
-            };
-
-            this._speechRecognition.onend = () => {
-                this._stopSpeechRecognition();
-            };
-
-            this._speechRecognition.start();
-        } catch (e) {
-            this.logError('FLOSC: SpeechRecognition failed', e);
-            this.addMessage('assistant', 'Your system does not allow browser-based mic input at this time. Your audio quizzes should work properly. If you have any issues, kindly get in touch with LeSAEp support.');
-        }
-    }
-
-    _stopSpeechRecognition() {
-        this._speechRecognitionActive = false;
-        if (this.voiceBtn) this.voiceBtn.classList.remove('recording');
-        if (this._speechRecognition) {
-            try { this._speechRecognition.stop(); } catch (e) { /* already stopped */ }
-            this._speechRecognition = null;
         }
     }
     

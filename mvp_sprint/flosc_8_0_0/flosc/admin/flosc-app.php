@@ -405,41 +405,9 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
             </div>
         </div>
 
-        <!--
-        ============================================================================
-        INPUT COMPOSER - VOICE & SEND BUTTONS (2026-01m-30d)
-        ============================================================================
-        These buttons contain SVG icons that MUST remain visible.
-        
-        VOICE BUTTON (.flosc_input_chat_voice_button):
-        - Default state: muted gray icon
-        - Hover state: darker gray
-        - Recording state: red icon (.recording class added by JS)
-        - The mic SVG uses explicit stroke colors (#6b7280) as a fallback
-          because this button needs to work even if CSS fails to load
-        
-        SEND BUTTON (.flosc_input_chat_send_button):
-        - Uses stroke="currentColor" to inherit from button color
-        - Button has white icon on accent-colored background
-        - Hover darkens background, icon stays white
-        - Disabled state reduces opacity
-        
-        TEACHABLE PATTERN:
-        For critical UI elements, consider explicit color fallbacks in SVG
-        so the interface remains usable even if CSS partially fails.
-        ============================================================================
-        -->
         <!-- Composer -->
         <div class="flosc_input_composer" id="flosc_input_composer">
             <div class="flosc_input_composer_inner">
-                <button class="flosc_input_chat_voice_button" id="flosc_input_chat_voice_button" aria-label="Record audio" title="Record audio">
-                    <svg width="20" height="20" viewBox="0 0 24 24">
-                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" fill="none" stroke="#6b7280" stroke-width="2"></path>
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2" fill="none" stroke="#6b7280" stroke-width="2"></path>
-                        <line x1="12" y1="19" x2="12" y2="23" stroke="#6b7280" stroke-width="2"></line>
-                        <line x1="8" y1="23" x2="16" y2="23" stroke="#6b7280" stroke-width="2"></line>
-                    </svg>
-                </button>
                 <textarea
                     id="flosc_input_chat_field"
                     placeholder="Message <?php echo esc_attr($identity['name'] ?: 'FLOSC'); ?>..."

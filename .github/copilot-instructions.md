@@ -15,6 +15,60 @@
 
 ---
 
+## 2026-03m-14d — SSO Custom Domain Redirect Fix (PERMANENT REFERENCE)
+
+### The Problem (recurring — broken/fixed 5+ times)
+
+Google SSO callback redirects to `dainis.net` instead of `lesaep.com` after authentication.
+
+### Root Cause
+
+The OAuth2 callback endpoint runs on `dainis.net` (the WordPress install domain, registered with Google as the redirect URI). Inside the callback handler, `get_current_flow()` matches flows by `$_SERVER['HTTP_HOST']`. Since `HTTP_HOST = dainis.net` during the callback, it never finds the LeSAEp flow (which has `custom_domain = lesaep.com`). So `get_app_url()` falls through to `home_url()` = `dainis.net`.
+
+### The Correct Solution
+
+**Never use `get_current_flow()` or `get_app_url()` during REST API callbacks for redirect resolution.** The callback runs on dainis.net — host-based flow detection will always fail.
+
+Instead, the `flow_id` is stored in the OAuth2 state (stored server-side, keyed by the state token). Use `resolve_app_url_from_flow_id($flow_id)` to look up the flow's custom domain directly from the `flosc_flow_{flow_id}` option in the database. The domain is stored under the key `domain` (not `custom_domain`).
+
+**Flow of data:**
+1. `flosc-app.php` passes `flow_id` (= IVR filename without extension, e.g., `lesaep_ivr`) into the `authUrl`
+2. `handle_authorize()` stores it in state via `generate_state()`
+3. `handle_callback()` reads `state_data['flow_id']`, calls `resolve_app_url_from_flow_id('lesaep_ivr')`
+4. That reads `get_option('flosc_flow_lesaep_ivr')['domain']` = `lesaep.com`
+5. Returns `https://lesaep.com/`
+
+**The `redirect_to` in state** (set by JS as `window.location.href` = the page the user was on) is the PRIMARY redirect target. The flow-resolved URL is the FALLBACK when `redirect_to` is empty or missing.
+
+### OPcache Warning
+
+Shared hosting (ChemiCloud) OPcache caches PHP bytecode. After `scp` deploys, the web server may keep running old code until OPcache expires or is manually invalidated. CLI `opcache_reset()` does NOT affect the web server's OPcache (separate process pools). To flush web OPcache: either call `opcache_invalidate()` from within a web request, or touch/rename the PHP file to change its mtime.
+
+The callback handler now calls `opcache_invalidate(__FILE__, true)` at the top of every request as a safeguard.
+
+### Key Files
+
+- `includes/sso/class-oauth2-handler.php` — `handle_callback()`, `resolve_app_url_from_flow_id()`
+- `includes/sso/class-sso-manager.php` — `handle_sso_error_display()` (shows errors on frontend)
+- `admin/flosc-app.php` — builds `authUrl` with `flow_id` param
+- `assets/js/flosc-app.js` — `initiateSSO()` appends `redirect_to=<current URL>`
+- `flosc.php` — `handle_login_token()` redeems cross-domain login tokens on lesaep.com
+
+### Database Keys
+
+- `flosc_flow_lesaep_ivr` option: contains `domain`, `sso_google_client_id`, `sso_google_client_secret`, `sso_google_enabled`, etc.
+- `flosc_flows` option: contains flow registry with `custom_domain` (different from per-flow settings — don't confuse them)
+- State transients: `flosc_sso_state_{token}` — also backed up to options table as fallback
+
+### DO NOT
+
+- Use `get_current_flow()` in REST callback handlers for redirect logic
+- Use `get_app_url()` without passing a flow in REST callback handlers
+- Use `home_url()` as the error/success redirect fallback
+- Assume OPcache is flushed after scp deploy — always invalidate
+
+---
+
 ## 2026-03m-01d — Workflow Rule
 
 ### Fix first, then wait before zipping
