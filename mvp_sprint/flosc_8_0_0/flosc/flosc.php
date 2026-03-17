@@ -2030,7 +2030,7 @@ The {product_name} Team";
                 set_transient('flosc_first_guest_login_' . $user_id, true, 10 * MINUTE_IN_SECONDS);
             }
 
-            $clean_url = remove_query_arg('flosc_magic', $this->get_app_url());
+            $clean_url = remove_query_arg('flosc_magic');
             wp_safe_redirect($clean_url);
             exit;
         }
