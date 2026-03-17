@@ -378,3 +378,37 @@ $signup_action = $flow_settings['header_signup_action'] ?? 'open_login_modal';
     });
 })();
 </script>
+
+<hr style="margin:32px 0;">
+<h2>Guest Link Activity Log</h2>
+<p>Emails that have requested guest access links, sorted by request count. Counts reset after 90 days of inactivity.</p>
+<?php
+$guest_log = get_option('flosc_guest_link_log', []);
+if (empty($guest_log)) {
+    echo '<p style="color:#646970;">No guest link requests recorded yet.</p>';
+} else {
+    // Sort by count descending
+    uasort($guest_log, fn($a, $b) => $b['count'] <=> $a['count']);
+    echo '<table class="widefat striped" style="max-width:800px;">';
+    echo '<thead><tr><th>Email</th><th>Links Sent</th><th>First Request</th><th>Last Request</th></tr></thead>';
+    echo '<tbody>';
+    foreach ($guest_log as $entry) {
+        $count      = (int) ($entry['count'] ?? 0);
+        $first_sent = isset($entry['first_sent']) ? wp_date('Y-m-d H:i', $entry['first_sent']) : '—';
+        $last_sent  = isset($entry['last_sent'])  ? wp_date('Y-m-d H:i', $entry['last_sent'])  : '—';
+        $color      = $count >= 6 ? 'color:#d63638;font-weight:700;' : '';
+        // Link to WP user profile if user exists
+        $wp_user = get_user_by('email', $entry['email']);
+        $email_display = $wp_user
+            ? '<a href="' . esc_url(get_edit_user_link($wp_user->ID)) . '">' . esc_html($entry['email']) . '</a>'
+            : esc_html($entry['email']);
+        echo '<tr>';
+        echo '<td>' . $email_display . '</td>';
+        echo '<td style="' . esc_attr($color) . '">' . esc_html($count) . ($count >= 6 ? ' ⚠️' : '') . '</td>';
+        echo '<td>' . esc_html($first_sent) . '</td>';
+        echo '<td>' . esc_html($last_sent) . '</td>';
+        echo '</tr>';
+    }
+    echo '</tbody></table>';
+}
+?>

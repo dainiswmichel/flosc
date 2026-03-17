@@ -907,10 +907,11 @@ class floscApp {
     // v4.0.0: Admin test panel — renders all pills (by state) + all offers for in-chat testing
     // v8.0.1: Fixed container lookup (was referencing non-existent selectors) + added click handlers
     _renderAdminTestPanel() {
-        // If panel already exists, just unhide it — don't rebuild.
-        // Rebuilding destroys the collapsed/expanded state of the ▼/▶ toggle.
+        // If panel already exists AND has been built (has the admin toggle), just unhide it.
+        // The PHP template pre-renders an empty placeholder div with this ID, so we must
+        // check for built content — otherwise we'd return early on an empty div.
         const existingPanel = document.getElementById('flosc_input_user_autoprompts_panel');
-        if (existingPanel) {
+        if (existingPanel && existingPanel.querySelector('#flosc-admin-panel-toggle')) {
             existingPanel.classList.remove('flosc-hidden');
             return;
         }
@@ -5523,7 +5524,7 @@ class floscApp {
 
         const lowerMessage = message.toLowerCase().trim();
 
-        if (lowerMessage === 'show intropanel' || lowerMessage === 'show promptpanel' || lowerMessage === 'show memberpromptpanel' || lowerMessage === 'show suggested') {
+        if (lowerMessage === 'show intropanel' || lowerMessage === 'show promptpanel' || lowerMessage === 'show memberpromptpanel' || lowerMessage === 'show suggested' || lowerMessage === 'show infopanel') {
             // v1.9.1: Clear dismissal flag so panel can render again
             this._panelDismissed = false;
             this.floscShowUserAutoPrompts();

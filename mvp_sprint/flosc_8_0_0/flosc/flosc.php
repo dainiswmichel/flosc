@@ -2006,6 +2006,15 @@ The {product_name} Team";
             }
             $this->process_prelogin_data_for_user($user_id);
 
+            // First click only: snapshot send count to user meta for admin profile visibility
+            if ($is_first_click) {
+                $log  = get_option('flosc_guest_link_log', []);
+                $hash = md5(strtolower($email));
+                if (isset($log[$hash]['count'])) {
+                    update_user_meta($user_id, '_flosc_links_sent', (int) $log[$hash]['count']);
+                }
+            }
+
             // First click only: copy DO session/quiz data to WP, then delete DO temp dir
             if ($is_first_click) {
                 $session_id      = sanitize_text_field($payload['session_id'] ?? '');
@@ -6962,6 +6971,28 @@ Example good response:
             ], 500);
         }
 
+        // Track send count in persistent log (admin-visible, 90-day window)
+        $log  = get_option('flosc_guest_link_log', []);
+        $hash = md5(strtolower($email));
+        $now  = time();
+        if (isset($log[$hash])) {
+            $log[$hash]['count']++;
+            $log[$hash]['last_sent'] = $now;
+        } else {
+            $log[$hash] = ['email' => $email, 'count' => 1, 'first_sent' => $now, 'last_sent' => $now];
+        }
+        // Prune entries older than 90 days
+        $cutoff = $now - (90 * DAY_IN_SECONDS);
+        foreach ($log as $k => $entry) {
+            if ($entry['last_sent'] < $cutoff) unset($log[$k]);
+        }
+        update_option('flosc_guest_link_log', $log, false);
+
+        // Send warning email on 6th request (once only)
+        if ($log[$hash]['count'] === 6) {
+            $this->send_guest_link_warning_email($email, 6);
+        }
+
         return new WP_REST_Response([
             'success'          => true,
             'magic_link_sent'  => true,
@@ -6997,6 +7028,35 @@ Example good response:
         $headers = ['Content-Type: text/html; charset=UTF-8'];
 
         return wp_mail($email, $subject, $body, $headers);
+    }
+
+    /**
+     * Send a warning email when an email has requested 6+ guest links.
+     * Friendly but firm — covers both genuine learners and potential abusers.
+     */
+    private function send_guest_link_warning_email($email, $count) {
+        $link_name   = flosc_get_setting('guest_link_name', 'Complimentary LeSAEp Learners Guest Access Link');
+        $upgrade_url = flosc_get_setting('guest_link_upgrade_url', '');
+        $safe_email  = esc_html($email);
+        $safe_name   = esc_html($link_name);
+        $safe_upg    = $upgrade_url ? esc_url($upgrade_url) : '';
+
+        $subject = "A note about your {$link_name} requests";
+
+        $body = '<!doctype html><html><body style="margin:0;padding:0;background:#f6f7fb;font-family:Arial,sans-serif;color:#1f2937;">'
+            . '<div style="max-width:640px;margin:0 auto;padding:32px 20px;">'
+            . '<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:32px;box-shadow:0 10px 30px rgba(0,0,0,0.05);">'
+            . '<h1 style="margin:0 0 16px 0;font-size:24px;line-height:1.3;">A quick note</h1>'
+            . '<p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;">We\'ve noticed that ' . $safe_email . ' has requested <strong>' . (int) $count . ' ' . $safe_name . 's</strong>.</p>'
+            . '<p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;">If you are a sincere learner — that\'s absolutely fine! We look forward to welcoming you as a full member soon.'
+            . ($safe_upg ? ' <a href="' . $safe_upg . '" style="color:#2563eb;">Click here to upgrade</a> and get complete access.' : '')
+            . '</p>'
+            . '<p style="margin:0 0 16px 0;font-size:15px;line-height:1.7;color:#4b5563;">If you are acting maliciously: we are now tracking IP address, geolocation, device fingerprint, and other identifying data associated with these requests. This data is retained and can be reported to the appropriate authorities.</p>'
+            . '<p style="margin:0;font-size:13px;line-height:1.6;color:#9ca3af;">LeSAEp Learners</p>'
+            . '</div></div></body></html>';
+
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
+        wp_mail($email, $subject, $body, $headers);
     }
 
     /**
@@ -10053,6 +10113,18 @@ Example good response:
 
         echo '<h2>FLOSC Audio Quiz</h2>';
         echo '<table class="form-table" role="presentation">';
+
+        // Show guest link send count if present
+        $links_sent = (int) get_user_meta($user_id, '_flosc_links_sent', true);
+        if ($links_sent > 0) {
+            $log = get_option('flosc_guest_link_log', []);
+            $log_entry = $log[md5(strtolower($user->user_email))] ?? null;
+            $first_sent = $log_entry ? wp_date('Y-m-d', $log_entry['first_sent']) : '—';
+            $last_sent  = $log_entry ? wp_date('Y-m-d', $log_entry['last_sent'])  : '—';
+            $color = ($links_sent >= 6) ? '#d63638' : '#1a7f37';
+            echo '<tr><th>Guest Links Sent</th><td><strong style="color:' . $color . '">' . esc_html($links_sent) . '</strong>';
+            echo ' <span style="color:#646970;font-size:12px;">(first: ' . esc_html($first_sent) . ' / last: ' . esc_html($last_sent) . ')</span></td></tr>';
+        }
 
         // Show score summary from user meta (already loaded above)
         if ($quiz_data) {
