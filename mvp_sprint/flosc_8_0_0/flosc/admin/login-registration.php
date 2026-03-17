@@ -317,3 +317,64 @@ $signup_action = $flow_settings['header_signup_action'] ?? 'open_login_modal';
         </td>
     </tr>
 </table>
+
+<hr style="margin:32px 0;">
+<h2>Send <?php echo esc_html($flow_settings['guest_link_name'] ?? 'Complimentary LeSAEp Learners Guest Access Link'); ?></h2>
+<p>Send a working guest access link directly to any email address — same flow as if the user entered their own email in the chat.</p>
+<div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-top:12px;">
+    <div>
+        <label for="flosc-send-guest-link-email" style="display:block;font-weight:600;margin-bottom:4px;">Email address</label>
+        <input type="email" id="flosc-send-guest-link-email" placeholder="recipient@example.com"
+               style="width:320px;padding:8px 10px;border:1px solid #8c8f94;border-radius:4px;font-size:14px;">
+    </div>
+    <button type="button" id="flosc-send-guest-link-btn" class="button button-primary">
+        Send <?php echo esc_html($flow_settings['guest_link_name'] ?? 'Complimentary LeSAEp Learners Guest Access Link'); ?>
+    </button>
+</div>
+<p id="flosc-send-guest-link-result" style="margin-top:10px;font-size:14px;display:none;"></p>
+
+<script>
+(function() {
+    document.getElementById('flosc-send-guest-link-btn')?.addEventListener('click', function() {
+        const emailEl  = document.getElementById('flosc-send-guest-link-email');
+        const resultEl = document.getElementById('flosc-send-guest-link-result');
+        const btn      = this;
+        const email    = emailEl.value.trim();
+
+        if (!email) { emailEl.focus(); return; }
+
+        btn.disabled    = true;
+        btn.textContent = 'Sending...';
+        resultEl.style.display = 'none';
+
+        const data = new FormData();
+        data.append('action', 'flosc_send_guest_link');
+        data.append('nonce',  '<?php echo esc_js(wp_create_nonce('flosc_send_guest_link')); ?>');
+        data.append('email',  email);
+        data.append('ivr',    '<?php echo esc_js($GLOBALS['flosc_current_ivr'] ?? ''); ?>');
+
+        fetch(ajaxurl, { method: 'POST', body: data })
+            .then(r => r.json())
+            .then(res => {
+                resultEl.style.display = 'block';
+                if (res.success) {
+                    resultEl.style.color = '#1a7f37';
+                    resultEl.textContent = '✓ ' + res.data.message;
+                    emailEl.value = '';
+                } else {
+                    resultEl.style.color = '#d63638';
+                    resultEl.textContent = '✗ ' + (res.data?.message || 'Send failed.');
+                }
+            })
+            .catch(() => {
+                resultEl.style.display  = 'block';
+                resultEl.style.color    = '#d63638';
+                resultEl.textContent    = '✗ Request failed — check your connection.';
+            })
+            .finally(() => {
+                btn.disabled    = false;
+                btn.textContent = btn.textContent.replace('Sending...', 'Send <?php echo esc_js($flow_settings['guest_link_name'] ?? 'Complimentary LeSAEp Learners Guest Access Link'); ?>');
+            });
+    });
+})();
+</script>

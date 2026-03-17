@@ -536,6 +536,9 @@ class FLOSC_Framework {
         // v1.9.0: AI connection test AJAX
         add_action('wp_ajax_flosc_test_ai_connection', [$this, 'ajax_test_ai_connection']);
 
+        // Admin: send Complimentary LeSAEp Learners Guest Access Link to any email
+        add_action('wp_ajax_flosc_send_guest_link', [$this, 'ajax_send_guest_link']);
+
         // v1.9.0: Chat logs AJAX (real-time polling)
         add_action('wp_ajax_flosc_get_chat_logs', [$this, 'ajax_flosc_get_chat_logs']);
         add_action('wp_ajax_flosc_clear_chat_logs', [$this, 'ajax_flosc_clear_chat_logs']);
@@ -9033,6 +9036,52 @@ Example good response:
                 'provider' => $provider,
             ]);
         }
+    }
+
+    /**
+     * Admin AJAX: send a Complimentary LeSAEp Learners Guest Access Link to any email.
+     * Used from the Register & Login settings tab by admins.
+     */
+    public function ajax_send_guest_link() {
+        check_ajax_referer('flosc_send_guest_link', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Unauthorized'], 403);
+        }
+
+        $email = sanitize_email($_POST['email'] ?? '');
+        if (empty($email) || !is_email($email)) {
+            wp_send_json_error(['message' => 'Please enter a valid email address.']);
+        }
+
+        // Set flow context so flosc_get_setting reads the correct per-flow settings
+        $ivr = sanitize_file_name($_POST['ivr'] ?? '');
+        if (!empty($ivr)) {
+            $this->set_flow_context(pathinfo($ivr, PATHINFO_FILENAME));
+        }
+
+        $token         = wp_generate_password(32, false, false);
+        $transient_key = 'flosc_magic_' . $token;
+        $payload       = [
+            'status'     => 'pending',
+            'email'      => $email,
+            'temp_id'    => '',
+            'quiz_data'  => null,
+            'session_id' => '',
+            'created_at' => time(),
+        ];
+        set_transient($transient_key, $payload, 7 * DAY_IN_SECONDS);
+
+        $sent = $this->send_guest_link_email($email, $token);
+        if (!$sent) {
+            delete_transient($transient_key);
+            wp_send_json_error(['message' => 'Email could not be sent. Check your mail configuration.']);
+        }
+
+        $link_name = flosc_get_setting('guest_link_name', 'Complimentary LeSAEp Learners Guest Access Link');
+        wp_send_json_success([
+            'message' => sprintf('%s sent to %s', esc_html($link_name), esc_html($email)),
+        ]);
     }
 
     /**
