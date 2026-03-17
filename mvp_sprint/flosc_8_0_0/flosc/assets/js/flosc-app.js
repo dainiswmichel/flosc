@@ -4725,7 +4725,7 @@ class floscApp {
 
         skipBtn?.addEventListener('click', (e) => {
             e.preventDefault();
-            card.closest('.flosc-message')?.remove();
+            card.closest('.message')?.remove();
         });
 
         saveBtn?.addEventListener('click', async () => {
@@ -4746,7 +4746,7 @@ class floscApp {
                 });
                 const result = await response.json();
                 if (result.success) {
-                    card.closest('.flosc-message')?.remove();
+                    card.closest('.message')?.remove();
                     const confirmMsg = (this.config.guestLinkProfileConfirmMessage || 'Perfect, {name}! You can always log in directly at {login_url}, update your profile, and upgrade to full access.')
                         .replace('{name}', name)
                         .replace('{login_url}', this.config.loginUrl || window.location.origin + '/wp-login.php');
