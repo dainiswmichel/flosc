@@ -251,3 +251,69 @@ $signup_action = $flow_settings['header_signup_action'] ?? 'open_login_modal';
         </td>
     </tr>
 </table>
+
+<h2>Complimentary LeSAEp Learners Guest Access Link Settings</h2>
+<table class="form-table">
+    <tr>
+        <th scope="row"><label for="flow_guest_link_name">Link Name</label></th>
+        <td>
+            <input type="text" id="flow_guest_link_name" name="flow_guest_link_name"
+                   value="<?php echo esc_attr($flow_settings['guest_link_name'] ?? 'Complimentary LeSAEp Learners Guest Access Link'); ?>"
+                   class="large-text">
+            <p class="description">The human-readable name for the guest access link. Used as <code>{link_name}</code> in all templates below.</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_guest_link_email_subject">Email Subject</label></th>
+        <td>
+            <input type="text" id="flow_guest_link_email_subject" name="flow_guest_link_email_subject"
+                   value="<?php echo esc_attr($flow_settings['guest_link_email_subject'] ?? 'Your {link_name}'); ?>"
+                   class="large-text">
+            <p class="description">Subject line for the guest link email. Use <code>{link_name}</code> for the link name.</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_guest_link_check_email_message">"Check Email" Chat Message</label></th>
+        <td>
+            <input type="text" id="flow_guest_link_check_email_message" name="flow_guest_link_check_email_message"
+                   value="<?php echo esc_attr($flow_settings['guest_link_check_email_message'] ?? "We've sent you a {link_name} to your email — click it to access this chat as a guest and view your quiz score, free lessons, and a special upgrade offer."); ?>"
+                   class="large-text">
+            <p class="description">Shown in chat after user submits email. Use <code>{link_name}</code>.</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_guest_link_welcome_message">Welcome Chat Message</label></th>
+        <td>
+            <textarea id="flow_guest_link_welcome_message" name="flow_guest_link_welcome_message"
+                      class="large-text" rows="4"><?php echo esc_textarea($flow_settings['guest_link_welcome_message'] ?? 'Hi, welcome back! Just to confirm: your email address is {email} and you can use your {link_name} {n} more times to access this chat. <a href="{upgrade_url}">Upgrade</a> for complete access to all lessons, quiz audios, and our LeSAEp Learners network...'); ?></textarea>
+            <p class="description">Shown in chat on every guest link login. Placeholders: <code>{email}</code>, <code>{n}</code> (remaining uses), <code>{link_name}</code>, <code>{upgrade_url}</code>.</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_guest_link_upgrade_url">Upgrade URL</label></th>
+        <td>
+            <input type="url" id="flow_guest_link_upgrade_url" name="flow_guest_link_upgrade_url"
+                   value="<?php echo esc_attr($flow_settings['guest_link_upgrade_url'] ?? ''); ?>"
+                   class="large-text">
+            <p class="description">URL for the Upgrade link inside the welcome message (<code>{upgrade_url}</code>).</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_guest_link_expired_offer_url">Expired Link Offer URL</label></th>
+        <td>
+            <input type="url" id="flow_guest_link_expired_offer_url" name="flow_guest_link_expired_offer_url"
+                   value="<?php echo esc_attr($flow_settings['guest_link_expired_offer_url'] ?? ''); ?>"
+                   class="large-text">
+            <p class="description">Where to redirect users whose link has been used 10 times or expired after 30 days. Leave empty to show an in-chat expired message instead.</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_guest_link_profile_confirm_message">Profile Card Confirmation Message</label></th>
+        <td>
+            <input type="text" id="flow_guest_link_profile_confirm_message" name="flow_guest_link_profile_confirm_message"
+                   value="<?php echo esc_attr($flow_settings['guest_link_profile_confirm_message'] ?? 'Perfect, {name}! You can always log in directly at {login_url}, update your profile, and upgrade to full access.'); ?>"
+                   class="large-text">
+            <p class="description">Shown in chat after guest saves their profile card. Placeholders: <code>{name}</code>, <code>{login_url}</code>.</p>
+        </td>
+    </tr>
+</table>

@@ -1923,6 +1923,115 @@ The {product_name} Team";
      * wp_redirect() + exit, which would hijack the SSO flow.
      */
     public function handle_login_token() {
+        // Case 0: Email Complimentary LeSAEp Learners Guest Access Link
+        if (!empty($_GET['flosc_magic'])) {
+            $token        = sanitize_text_field(wp_unslash($_GET['flosc_magic']));
+            $transient_key = 'flosc_magic_' . $token;
+            $payload      = get_transient($transient_key);
+            $offer_url    = flosc_get_setting('guest_link_expired_offer_url', '');
+
+            // Invalid or expired token — redirect to offer page or show expired status
+            if (!$payload || !isset($payload['status'])) {
+                delete_transient($transient_key);
+                if (!empty($offer_url)) {
+                    wp_safe_redirect($offer_url); exit;
+                }
+                wp_safe_redirect(add_query_arg('flosc_guest_status', 'expired', remove_query_arg('flosc_magic'))); exit;
+            }
+
+            $email        = sanitize_email($payload['email']);
+            $is_first_click = ($payload['status'] === 'pending');
+
+            if ($is_first_click) {
+                // Phase 1 → Phase 2: Activate link on first click
+                $payload['status']         = 'active';
+                $payload['first_clicked_at'] = time();
+                $payload['use_count']      = 1;
+                set_transient($transient_key, $payload, 30 * DAY_IN_SECONDS);
+            } else {
+                // Phase 2: Enforce 30-day window and 10-use limit
+                $expired = (
+                    $payload['status'] !== 'active' ||
+                    (time() - $payload['first_clicked_at']) > (30 * DAY_IN_SECONDS) ||
+                    $payload['use_count'] >= 10
+                );
+                if ($expired) {
+                    delete_transient($transient_key);
+                    if (!empty($offer_url)) {
+                        wp_safe_redirect($offer_url); exit;
+                    }
+                    wp_safe_redirect(add_query_arg('flosc_guest_status', 'expired', remove_query_arg('flosc_magic'))); exit;
+                }
+                // Increment use_count and re-save with remaining TTL
+                $payload['use_count']++;
+                $elapsed     = time() - $payload['first_clicked_at'];
+                $remaining_ttl = max((30 * DAY_IN_SECONDS) - $elapsed, DAY_IN_SECONDS);
+                set_transient($transient_key, $payload, $remaining_ttl);
+            }
+
+            $remaining_after_use = 10 - $payload['use_count'];
+
+            // Find or create WP user
+            $existing_user = get_user_by('email', $email);
+            if ($existing_user) {
+                $user_id = (int) $existing_user->ID;
+            } else {
+                $username = $this->generate_username_from_email($email);
+                $password = wp_generate_password(16, true, true);
+                $user_id  = wp_create_user($username, $password, $email);
+                if (is_wp_error($user_id)) {
+                    wp_safe_redirect(add_query_arg('flosc_guest_status', 'error', remove_query_arg('flosc_magic'))); exit;
+                }
+                $new_user = get_user_by('id', $user_id);
+                if ($new_user) {
+                    $new_user->set_role(apply_filters('flosc_default_user_role', 'subscriber'));
+                }
+                update_user_meta($user_id, '_flosc_registration_method', 'email');
+                update_user_meta($user_id, '_flosc_registered_at', current_time('mysql'));
+                do_action('flosc_user_registered', $user_id, 'email');
+                error_log("FLOSC: New user created via guest link: {$email} (User ID: {$user_id})");
+            }
+
+            // Log in the user
+            wp_set_current_user($user_id);
+            wp_set_auth_cookie($user_id, true);
+            $flosc_token = $this->generate_flosc_auth_token($user_id);
+            $this->set_flosc_auth_cookie($flosc_token);
+            $wp_user = get_userdata($user_id);
+            if ($wp_user) {
+                $this->handle_user_login($wp_user->user_login, $wp_user);
+            }
+            $this->process_prelogin_data_for_user($user_id);
+
+            // First click only: copy DO session/quiz data to WP, then delete DO temp dir
+            if ($is_first_click) {
+                $session_id      = sanitize_text_field($payload['session_id'] ?? '');
+                $body_temp_id    = sanitize_text_field($payload['temp_id'] ?? '');
+                $has_temp_id     = ($body_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $body_temp_id));
+                $browser_quiz_data = isset($payload['quiz_data']) && is_array($payload['quiz_data']) ? $payload['quiz_data'] : null;
+                if ($session_id) {
+                    $pulled = $this->pull_session_from_do($user_id, $session_id);
+                    if ($pulled) {
+                        $this->delete_session_from_do($session_id);
+                    }
+                } elseif ($browser_quiz_data) {
+                    $this->store_browser_quiz_data($user_id, $browser_quiz_data, $body_temp_id);
+                } elseif ($has_temp_id) {
+                    update_user_meta($user_id, '_flosc_audio_temp_id', $body_temp_id);
+                }
+            }
+
+            // Short-lived transients consumed by FLOSC_CONFIG on next page render
+            set_transient('flosc_just_guest_login_' . $user_id, (int) $remaining_after_use, 10 * MINUTE_IN_SECONDS);
+            if ($is_first_click) {
+                set_transient('flosc_first_guest_login_' . $user_id, true, 10 * MINUTE_IN_SECONDS);
+            }
+
+            $clean_url = remove_query_arg('flosc_magic', $this->get_app_url());
+            wp_safe_redirect($clean_url);
+            exit;
+        }
+
         // Case 1: Cross-domain login token
         if (!empty($_GET['flosc_login_token'])) {
             $token = sanitize_text_field($_GET['flosc_login_token']);
@@ -4053,11 +4162,18 @@ The {product_name} Team";
             'permission_callback' => [$this, 'check_public_endpoint_permission'],
         ]);
         
-        // v1.4.0: Email registration (creates/logs in user with email only)
+        // v1.4.0: Email registration (sends guest link — deferred user creation)
         register_rest_route('flosc/v1', '/register-email', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_email_registration'],
             'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
+        // Guest profile setup — save nickname + optional password from in-chat card
+        register_rest_route('flosc/v1', '/update-guest-profile', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_update_guest_profile'],
+            'permission_callback' => 'is_user_logged_in',
         ]);
 
         // v8.0.7: Score pending audio — called by JS after ANY login method (email, FB, Google).
@@ -6801,18 +6917,14 @@ Example good response:
 
     /**
      * Handle email-only registration (v1.4.0)
-     * Creates a new user with just email, or logs in existing user
+     *
+     * Deferred flow: no user is created here. Instead we store the visitor's
+     * quiz payload in a 7-day transient and email them a Complimentary LeSAEp
+     * Learners Guest Access Link. The user is created (or found) when the link
+     * is clicked (handle_login_token Case 0 above).
      */
     public function handle_email_registration($request) {
         $email = sanitize_email($request->get_param('email'));
-
-        // v8.0.8: Capture temp_id and browser-computed quiz data from request body.
-        // The browser already scored each phrase against api.lesaep.com during the quiz.
-        // No server-side re-scoring needed — just store the results + move audio files.
-        $body_temp_id = sanitize_text_field($request->get_param('temp_id') ?? '');
-        $has_temp_id = ($body_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $body_temp_id));
-        $browser_quiz_data = $request->get_param('quiz_data');
-        $session_id = sanitize_text_field($request->get_param('session_id') ?? '');
 
         if (empty($email) || !is_email($email)) {
             return new WP_REST_Response([
@@ -6820,123 +6932,128 @@ Example good response:
                 'message' => 'Please enter a valid email address.'
             ], 400);
         }
-        
-        // Check if user already exists
-        $existing_user = get_user_by('email', $email);
-        
-        if ($existing_user) {
-            // Prevent hook-based scoring — we handle it directly below
-            if ($has_temp_id) {
-                unset($_COOKIE['flosc_visitor_temp_id']);
-            }
 
-            // Log in existing user
-            wp_set_current_user($existing_user->ID);
-            wp_set_auth_cookie($existing_user->ID, true);
-            do_action('wp_login', $existing_user->user_login, $existing_user);
-            
-            $flosc_token = $this->generate_flosc_auth_token($existing_user->ID);
-            $this->set_flosc_auth_cookie($flosc_token);
-            $this->process_prelogin_data_for_user($existing_user->ID);
+        $body_temp_id      = sanitize_text_field($request->get_param('temp_id') ?? '');
+        $has_temp_id       = ($body_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $body_temp_id));
+        $browser_quiz_data = $request->get_param('quiz_data');
+        $session_id        = sanitize_text_field($request->get_param('session_id') ?? '');
 
-            // v8.0.0: Store browser-computed quiz data directly — no server-side re-scoring
-            if ($session_id) {
-                $this->pull_session_from_do($existing_user->ID, $session_id);
-            } elseif ($browser_quiz_data && is_array($browser_quiz_data)) {
-                $this->store_browser_quiz_data($existing_user->ID, $browser_quiz_data, $body_temp_id);
-            }
-            
-            return new WP_REST_Response([
-                'success' => true,
-                'message' => 'Welcome back!',
-                'user_id' => $existing_user->ID,
-                'user_email' => $existing_user->user_email,
-                'is_new_user' => false,
-                'auth_token' => $flosc_token,
-                'quiz_score' => get_user_meta($existing_user->ID, '_flosc_last_quiz_score', true) ?: null,
-                'quiz_data'  => get_user_meta($existing_user->ID, '_flosc_last_quiz_data', true) ?: null,
-            ]);
-        }
-        
-        // Create new user
-        $username = $this->generate_username_from_email($email);
-        $password = wp_generate_password(16, true, true);
-        
-        $user_id = wp_create_user($username, $password, $email);
-        
-        if (is_wp_error($user_id)) {
+        $token         = wp_generate_password(32, false, false);
+        $transient_key = 'flosc_magic_' . $token;
+        $payload       = [
+            'status'     => 'pending',
+            'email'      => $email,
+            'temp_id'    => $has_temp_id ? $body_temp_id : '',
+            'quiz_data'  => is_array($browser_quiz_data) ? $browser_quiz_data : null,
+            'session_id' => $session_id,
+            'created_at' => time(),
+        ];
+        set_transient($transient_key, $payload, 7 * DAY_IN_SECONDS);
+
+        $sent = $this->send_guest_link_email($email, $token);
+        if (!$sent) {
+            delete_transient($transient_key);
             return new WP_REST_Response([
                 'success' => false,
-                'message' => 'Failed to create account: ' . $user_id->get_error_message()
+                'message' => 'We could not send your login link right now. Please try again.'
             ], 500);
         }
-        
-        $user = get_user_by('id', $user_id);
-        $user->set_role(apply_filters('flosc_default_user_role', 'subscriber'));
-        
-        update_user_meta($user_id, '_flosc_registration_method', 'email');
-        update_user_meta($user_id, '_flosc_registered_at', current_time('mysql'));
-        
-        // Prevent hook-based scoring — we handle it directly below
-        if ($has_temp_id) {
-            unset($_COOKIE['flosc_visitor_temp_id']);
-        }
 
-        wp_set_current_user($user_id);
-        wp_set_auth_cookie($user_id, true);
-        do_action('wp_login', $user->user_login, $user);
-        
-        $flosc_token = $this->generate_flosc_auth_token($user_id);
-        $this->set_flosc_auth_cookie($flosc_token);
-        $this->process_prelogin_data_for_user($user_id);
-        
-        // v8.0.0: Store quiz data — prefer pulling from DO session (has audio + scores).
-        // Fallback to browser-computed data, then to temp_id for legacy flow.
-        if ($session_id) {
-            $this->pull_session_from_do($user_id, $session_id);
-        } elseif ($browser_quiz_data && is_array($browser_quiz_data)) {
-            $this->store_browser_quiz_data($user_id, $browser_quiz_data, $body_temp_id);
-        } elseif ($has_temp_id) {
-            // Fallback: browser didn't send quiz_data, but we have temp_id.
-            // Store temp_id in user meta so /store-quiz-data can find it after reload.
-            update_user_meta($user_id, '_flosc_audio_temp_id', $body_temp_id);
-        }
-
-        do_action('flosc_user_registered', $user_id, 'email');
-        
-        error_log("FLOSC v8.0.8: New user registered via email: {$email} (User ID: {$user_id})");
-        
         return new WP_REST_Response([
-            'success' => true,
-            'message' => 'Account created successfully!',
-            'user_id' => $user_id,
-            'user_email' => $email,
-            'is_new_user' => true,
-            'auth_token' => $flosc_token,
-            'quiz_score' => get_user_meta($user_id, '_flosc_last_quiz_score', true) ?: null,
-            'quiz_data'  => get_user_meta($user_id, '_flosc_last_quiz_data', true) ?: null,
+            'success'          => true,
+            'magic_link_sent'  => true,
+            'message'          => 'Check your email for your Complimentary LeSAEp Learners Guest Access Link.',
         ]);
     }
-    
+
     /**
-     * Generate unique username from email (v1.4.0)
+     * Send the Complimentary LeSAEp Learners Guest Access Link email.
+     */
+    private function send_guest_link_email($email, $token) {
+        $magic_url  = add_query_arg('flosc_magic', rawurlencode($token), $this->get_app_url());
+        $link_name  = flosc_get_setting('guest_link_name', 'Complimentary LeSAEp Learners Guest Access Link');
+        $raw_subject = flosc_get_setting('guest_link_email_subject', 'Your {link_name}');
+        $subject    = str_replace('{link_name}', $link_name, $raw_subject);
+
+        $safe_link_name = esc_html($link_name);
+        $safe_email     = esc_html($email);
+        $safe_url       = esc_url($magic_url);
+
+        $body = '<!doctype html><html><body style="margin:0;padding:0;background:#f6f7fb;font-family:Arial,sans-serif;color:#1f2937;">'
+            . '<div style="max-width:640px;margin:0 auto;padding:32px 20px;">'
+            . '<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:32px;box-shadow:0 10px 30px rgba(0,0,0,0.05);">'
+            . '<h1 style="margin:0 0 16px 0;font-size:28px;line-height:1.2;">Your ' . $safe_link_name . ' is ready</h1>'
+            . '<p style="margin:0 0 24px 0;font-size:16px;line-height:1.6;">Click the button below to access the chat, view your quiz score, free lessons, and a special upgrade offer.</p>'
+            . '<p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:#4b5563;">Your link is valid for 7 days and can be used up to 10 times over 30 days.</p>'
+            . '<p style="margin:0 0 24px 0;"><a href="' . $safe_url . '" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 22px;border-radius:10px;font-weight:700;">' . $safe_link_name . '</a></p>'
+            . '<p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:#4b5563;">If the button does not work, copy and paste this link into your browser:</p>'
+            . '<p style="margin:0 0 24px 0;font-size:14px;line-height:1.6;word-break:break-all;"><a href="' . $safe_url . '">' . $safe_url . '</a></p>'
+            . '<p style="margin:0;font-size:13px;line-height:1.6;color:#6b7280;">This message was sent to ' . $safe_email . '.</p>'
+            . '</div></div></body></html>';
+
+        $headers = ['Content-Type: text/html; charset=UTF-8'];
+
+        return wp_mail($email, $subject, $body, $headers);
+    }
+
+    /**
+     * Delete a DO session directory after its data has been pulled to WP.
+     * Fire-and-forget: failures are logged but do not block the login flow.
+     */
+    private function delete_session_from_do($session_id) {
+        if (!preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $session_id)) {
+            return;
+        }
+        $api_base = 'https://api.lesaep.com';
+        $response = wp_remote_request($api_base . '/session/' . $session_id, [
+            'method'    => 'DELETE',
+            'timeout'   => 10,
+            'sslverify' => true,
+        ]);
+        if (is_wp_error($response)) {
+            if (FLOSC_DEBUG) error_log("FLOSC: delete_session_from_do — {$session_id}: " . $response->get_error_message());
+        }
+    }
+
+    /**
+     * Save guest profile nickname and optional password from the in-chat profile card.
+     * Called on first (and every subsequent) guest link login.
+     */
+    public function handle_update_guest_profile($request) {
+        $user_id      = get_current_user_id();
+        $display_name = sanitize_text_field($request->get_param('display_name') ?? '');
+        $password     = $request->get_param('password');
+
+        if (!empty($display_name)) {
+            wp_update_user([
+                'ID'           => $user_id,
+                'display_name' => $display_name,
+                'nickname'     => $display_name,
+            ]);
+        }
+
+        if (!empty($password) && strlen($password) >= 6) {
+            wp_set_password($password, $user_id);
+            // wp_set_password() clears all sessions — re-issue auth cookies immediately
+            wp_set_auth_cookie($user_id, true);
+            $flosc_token = $this->generate_flosc_auth_token($user_id);
+            $this->set_flosc_auth_cookie($flosc_token);
+        }
+
+        return new WP_REST_Response([
+            'success'      => true,
+            'display_name' => $display_name ?: get_userdata($user_id)->display_name,
+        ]);
+    }
+
+    /**
+     * Generate unique username — opaque usr_<uuid> format so no email is exposed.
+     * The $email parameter is kept for signature compatibility but not used.
      */
     private function generate_username_from_email($email) {
-        $base = strstr($email, '@', true);
-        $base = sanitize_user($base, true);
-        
-        if (strlen($base) < 3) {
-            $base = 'user_' . $base;
-        }
-        
-        $username = $base;
-        $counter = 1;
-        
-        while (username_exists($username)) {
-            $username = $base . $counter;
-            $counter++;
-        }
-        
+        do {
+            $username = 'usr_' . substr(str_replace('-', '', wp_generate_uuid4()), 0, 6);
+        } while (username_exists($username));
         return $username;
     }
     

@@ -312,7 +312,28 @@ class floscApp {
                 this.handleSSOError(window.flosc_sso_error);
                 delete window.flosc_sso_error;
             }
-            
+
+            // Guest link: show welcome message after redirect-back login
+            if (this.config.guestLinkRemaining !== null && this.config.guestLinkRemaining !== undefined) {
+                const welcomeMsg = (this.config.guestLinkWelcomeMessage || '')
+                    .replace('{email}', this.user?.email || '')
+                    .replace('{n}', this.config.guestLinkRemaining)
+                    .replace('{link_name}', this.config.guestLinkName || 'Complimentary LeSAEp Learners Guest Access Link')
+                    .replace('{upgrade_url}', this.config.guestLinkUpgradeUrl || '#');
+                this.addMessage('assistant', welcomeMsg, true);
+
+                // First-click only: follow with profile setup card
+                if (this.config.isFirstGuestLogin) {
+                    this.showGuestProfileCard();
+                }
+            }
+
+            // Guest link: handle expired status param (no offer URL configured)
+            const _guestParams = new URLSearchParams(window.location.search);
+            if (_guestParams.get('flosc_guest_status') === 'expired') {
+                window.history.replaceState({}, '', window.location.pathname);
+            }
+
             // Verify window.FLOSC is set for debugging
             window.FLOSC = this;
             this.log('[FLOSC] App instance available at window.FLOSC');
@@ -4607,9 +4628,10 @@ class floscApp {
         // Read config from the active modal
         const modal = document.getElementById('flosc-auth-modal');
         const configKey = modal?.dataset?.configKey || 'authModal';
-        const loadingText = this.config[configKey + 'LoadingText'] || 'Creating account...';
+        const loadingText = this.config[configKey + 'LoadingText'] || 'Sending link...';
         const buttonText = this.config[configKey + 'ButtonText'] || 'Continue with Email';
-        const successTemplate = this.config[configKey + 'SuccessMessage'] || 'Welcome! You\'re now logged in as {email}. Let\'s continue!';
+        const checkEmailMsg = (this.config.guestLinkCheckEmailMessage || "We've sent you a {link_name} to your email — click it to access this chat as a guest and view your quiz score, free lessons, and a special upgrade offer.")
+            .replace('{link_name}', this.config.guestLinkName || 'Complimentary LeSAEp Learners Guest Access Link');
         
         // Update button to show loading
         const submitBtn = document.querySelector('.flosc-auth-submit');
@@ -4662,23 +4684,10 @@ class floscApp {
             const result = await response.json();
             
             if (result.success) {
-                // v3.0.0: Store FLOSC auth token for cross-domain persistence
-                if (result.auth_token) {
-                    this.authToken = result.auth_token;
-                    try { localStorage.setItem('flosc_auth_token', result.auth_token); } catch (e) {}
-                }
-                // v3.0.7: Refresh WP nonce now that we have a logged-in session
-                await this.refreshNonce().catch(() => {});
-
                 this.hideAuthModal();
-                this.addMessage('assistant', successTemplate.replace('{email}', email));
-                
-                // Refresh page to update user state
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
+                this.addMessage('assistant', result.magic_link_sent ? checkEmailMsg : (result.message || checkEmailMsg));
             } else {
-                throw new Error(result.message || 'Registration failed');
+                throw new Error(result.message || 'Could not send login link');
             }
         } catch (error) {
             this.logError('[FLOSC Auth] Email auth error:', error);
@@ -4689,7 +4698,72 @@ class floscApp {
             alert('Registration failed: ' + error.message);
         }
     }
-    
+
+    showGuestProfileCard() {
+        const cardHtml = `
+            <div class="flosc-profile-card" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;max-width:360px;font-family:inherit;">
+                <p style="margin:0 0 12px;font-size:15px;font-weight:600;color:#111827;">What should I call you?</p>
+                <input type="text" class="flosc-profile-name" placeholder="First name or nickname..."
+                    style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;margin-bottom:16px;outline:none;">
+                <p style="margin:0 0 8px;font-size:14px;color:#374151;">Set a password so you can log in directly:</p>
+                <input type="password" class="flosc-profile-password" placeholder="Password (optional — min 6 characters)"
+                    style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;margin-bottom:16px;outline:none;">
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <button class="flosc-profile-save" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;">Save →</button>
+                    <a href="#" class="flosc-profile-skip" style="font-size:13px;color:#6b7280;text-decoration:none;">Skip for now</a>
+                </div>
+                <p class="flosc-profile-error" style="display:none;margin:10px 0 0;font-size:13px;color:#dc2626;"></p>
+            </div>`;
+        this.addMessage('assistant', cardHtml, true);
+
+        const card    = document.querySelector('.flosc-profile-card');
+        const nameEl  = card?.querySelector('.flosc-profile-name');
+        const passEl  = card?.querySelector('.flosc-profile-password');
+        const saveBtn = card?.querySelector('.flosc-profile-save');
+        const skipBtn = card?.querySelector('.flosc-profile-skip');
+        const errEl   = card?.querySelector('.flosc-profile-error');
+
+        skipBtn?.addEventListener('click', (e) => {
+            e.preventDefault();
+            card.closest('.flosc-message')?.remove();
+        });
+
+        saveBtn?.addEventListener('click', async () => {
+            const name     = nameEl?.value?.trim();
+            const password = passEl?.value?.trim();
+            if (!name) { nameEl?.focus(); return; }
+
+            saveBtn.disabled    = true;
+            saveBtn.textContent = 'Saving...';
+
+            try {
+                const body = { display_name: name };
+                if (password) body.password = password;
+                const response = await this.authFetch(`${this.config.restUrl}update-guest-profile`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+                const result = await response.json();
+                if (result.success) {
+                    card.closest('.flosc-message')?.remove();
+                    const confirmMsg = (this.config.guestLinkProfileConfirmMessage || 'Perfect, {name}! You can always log in directly at {login_url}, update your profile, and upgrade to full access.')
+                        .replace('{name}', name)
+                        .replace('{login_url}', this.config.loginUrl || window.location.origin + '/wp-login.php');
+                    this.addMessage('assistant', confirmMsg);
+                } else {
+                    if (errEl) { errEl.textContent = result.message || 'Could not save — please try again.'; errEl.style.display = 'block'; }
+                    saveBtn.disabled    = false;
+                    saveBtn.textContent = 'Save →';
+                }
+            } catch (e) {
+                if (errEl) { errEl.textContent = 'Could not save — please try again.'; errEl.style.display = 'block'; }
+                saveBtn.disabled    = false;
+                saveBtn.textContent = 'Save →';
+            }
+        });
+    }
+
     initiateSSO(provider, authUrl) {
         this.log('[FLOSC SSO] Initiating SSO with:', provider);
         

@@ -893,6 +893,30 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
             'consentButtonText' => flosc_get_setting('consent_button_text', 'I Agree — Let\'s Go!'),
             'paypalMonthlyPlanId' => get_option('flosc_paypal_plans', [])['monthly_plan_id'] ?? '',
             'paypalYearlyPlanId'  => get_option('flosc_paypal_plans', [])['yearly_plan_id'] ?? '',
+            // Guest link config
+            'guestLinkName'              => flosc_get_setting('guest_link_name', 'Complimentary LeSAEp Learners Guest Access Link'),
+            'guestLinkCheckEmailMessage' => flosc_get_setting('guest_link_check_email_message', "We've sent you a {link_name} to your email — click it to access this chat as a guest and view your quiz score, free lessons, and a special upgrade offer."),
+            'guestLinkWelcomeMessage'    => flosc_get_setting('guest_link_welcome_message', 'Hi, welcome back! Just to confirm: your email address is {email} and you can use your {link_name} {n} more times to access this chat. <a href="{upgrade_url}">Upgrade</a> for complete access to all lessons, quiz audios, and our LeSAEp Learners network...'),
+            'guestLinkUpgradeUrl'        => flosc_get_setting('guest_link_upgrade_url', ''),
+            // One-time injection after redirect-back login (via short-lived transient)
+            'guestLinkRemaining' => (function() {
+                if (!is_user_logged_in()) return null;
+                $key       = 'flosc_just_guest_login_' . get_current_user_id();
+                $remaining = get_transient($key);
+                if ($remaining === false) return null;
+                delete_transient($key);
+                return (int) $remaining;
+            })(),
+            // True only on very first guest link click — triggers in-chat profile card
+            'isFirstGuestLogin' => (function() {
+                if (!is_user_logged_in()) return false;
+                $key = 'flosc_first_guest_login_' . get_current_user_id();
+                $val = get_transient($key);
+                if ($val === false) return false;
+                delete_transient($key);
+                return true;
+            })(),
+            'guestLinkProfileConfirmMessage' => flosc_get_setting('guest_link_profile_confirm_message', 'Perfect, {name}! You can always log in directly at {login_url}, update your profile, and upgrade to full access.'),
         ]); ?>;
         window.FLOSC_USER = <?php echo wp_json_encode($user_data); ?>;
     </script>
