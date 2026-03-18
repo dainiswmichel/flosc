@@ -303,7 +303,7 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
                     </div>
                     <?php if ($current_user): ?>
                     <a href="<?php echo esc_url($profile_url); ?>" class="profile-dropdown-item">My Profile</a>
-                    <?php if (current_user_can('read')): ?>
+                    <?php if (current_user_can('read') && !in_array('lesaep_learners', (array) $current_user->roles)): ?>
                     <a href="<?php echo admin_url(); ?>" class="profile-dropdown-item">Dashboard</a>
                     <?php endif; ?>
                     <?php endif; ?>
