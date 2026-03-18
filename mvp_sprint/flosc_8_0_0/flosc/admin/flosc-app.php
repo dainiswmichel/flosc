@@ -301,12 +301,6 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
                             <?php echo esc_html($pb_guest['upgrade_label']); ?>
                         </button>
                     </div>
-                    <?php if ($current_user): ?>
-                    <a href="<?php echo esc_url($profile_url); ?>" class="profile-dropdown-item">My Profile</a>
-                    <?php if (current_user_can('read') && !in_array('lesaep_learners', (array) $current_user->roles)): ?>
-                    <a href="<?php echo admin_url(); ?>" class="profile-dropdown-item">Dashboard</a>
-                    <?php endif; ?>
-                    <?php endif; ?>
                     <a href="#" class="profile-dropdown-item" id="flosc_settings_link">Settings</a>
                     <a href="#" class="profile-dropdown-item" id="flosc_help_link">Help</a>
                     <a href="#" class="profile-dropdown-item" data-action="logout">Log out</a>
@@ -785,6 +779,8 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
             'offers' => array_values($offers),
             'appUrl' => $app_url,
             'ajaxUrl' => admin_url('admin-ajax.php'),
+            'profileUrl' => ($current_user && function_exists('bp_core_get_user_domain')) ? bp_core_get_user_domain($current_user->ID) : admin_url('profile.php'),
+            'dashboardUrl' => admin_url(),
             'loginUrl' => wp_login_url($app_url),
             'logoutUrl' => add_query_arg('flosc_logout', '1', home_url()),
             'registerUrl' => wp_registration_url(),

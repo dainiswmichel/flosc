@@ -2412,6 +2412,12 @@ class floscApp {
             case 'open_support':
                 this.openSupport();
                 break;
+            case 'view_profile':
+                window.location.href = this.config.profileUrl || '/';
+                break;
+            case 'view_dashboard':
+                window.location.href = this.config.dashboardUrl || '/wp-admin/';
+                break;
             case 'logout':
                 this.addMessage('assistant', 'See you later LeSAEp Fam! 👋');
                 fetch((this.config.ajaxUrl || '/wp-admin/admin-ajax.php') + '?action=flosc_logout', { method: 'POST' })

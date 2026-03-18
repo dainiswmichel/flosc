@@ -92,6 +92,8 @@ $available_actions = [
     'open_support'         => 'Support — open help/support',
     'open_sandbox_purchase'=> 'Purchase — open purchase flow',
     'send_prompt'          => 'Send Prompt — type a message into the chatbot',
+    'view_profile'         => 'My Profile — go to user profile page',
+    'view_dashboard'       => 'Dashboard — go to WordPress dashboard',
 ];
 
 // v1.9.8: Guest and Member menus
