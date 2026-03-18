@@ -7125,6 +7125,23 @@ Example good response:
             wp_set_auth_cookie($user_id, true);
             $flosc_token = $this->generate_flosc_auth_token($user_id);
             $this->set_flosc_auth_cookie($flosc_token);
+
+            // Send confirmation email with login credentials
+            $user      = get_userdata($user_id);
+            $user_email = $user->user_email ?? '';
+            $login_url  = wp_login_url();
+            $name_for_email = $display_name ?: $user->display_name;
+            if ($user_email) {
+                $subject = 'Your LeSAEp Guest Learner account is ready';
+                $body    = "Hi {$name_for_email},\n\n"
+                         . "Your LeSAEp Guest Learner account has been set up. Here are your login details:\n\n"
+                         . "Login URL:  {$login_url}\n"
+                         . "Username:   {$user_email}\n"
+                         . "Password:   {$password}\n\n"
+                         . "You can change your password anytime after logging in.\n\n"
+                         . "— The LeSAEp Team";
+                wp_mail($user_email, $subject, $body);
+            }
         }
 
         return new WP_REST_Response([

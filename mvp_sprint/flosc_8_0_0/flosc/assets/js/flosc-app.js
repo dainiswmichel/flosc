@@ -4710,28 +4710,47 @@ class floscApp {
     }
 
     showGuestProfileCard() {
+        // Generate a readable suggested password
+        const _words = ['maple','river','stone','cloud','eagle','frost','grove','cedar','bloom','light'];
+        const _w1 = _words[Math.floor(Math.random() * _words.length)];
+        const _w2 = _words[Math.floor(Math.random() * _words.length)];
+        const _num = Math.floor(Math.random() * 90) + 10;
+        const suggestedPassword = `${_w1}-${_w2}-${_num}`;
+
         const cardHtml = `
             <div class="flosc-profile-card" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;max-width:360px;font-family:inherit;">
                 <p style="margin:0 0 12px;font-size:15px;font-weight:600;color:#111827;">What should I call you?</p>
                 <input type="text" class="flosc-profile-name" placeholder="First name or nickname..."
                     style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;margin-bottom:16px;outline:none;">
                 <p style="margin:0 0 8px;font-size:14px;color:#374151;">Set a password so you can log in directly:</p>
-                <input type="password" class="flosc-profile-password" placeholder="Choose a password (min 6 characters)"
-                    style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;margin-bottom:16px;outline:none;">
+                <div style="display:flex;gap:8px;margin-bottom:4px;">
+                    <input type="text" class="flosc-profile-password" value="${suggestedPassword}"
+                        style="flex:1;box-sizing:border-box;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;font-family:monospace;">
+                    <button class="flosc-profile-copy" title="Copy password" style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;background:#f9fafb;font-size:13px;cursor:pointer;white-space:nowrap;">Copy</button>
+                </div>
+                <p style="margin:0 0 16px;font-size:12px;color:#6b7280;">You'll receive this by email too — you can change it anytime.</p>
                 <div style="display:flex;align-items:center;gap:12px;">
-                    <button class="flosc-profile-save" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;">Save →</button>
+                    <button class="flosc-profile-save" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;">Save & Continue</button>
                     <a href="#" class="flosc-profile-skip" style="font-size:13px;color:#6b7280;text-decoration:none;">Skip for now</a>
                 </div>
                 <p class="flosc-profile-error" style="display:none;margin:10px 0 0;font-size:13px;color:#dc2626;"></p>
             </div>`;
         this.addMessage('assistant', cardHtml, true);
 
-        const card    = document.querySelector('.flosc-profile-card');
-        const nameEl  = card?.querySelector('.flosc-profile-name');
-        const passEl  = card?.querySelector('.flosc-profile-password');
-        const saveBtn = card?.querySelector('.flosc-profile-save');
-        const skipBtn = card?.querySelector('.flosc-profile-skip');
-        const errEl   = card?.querySelector('.flosc-profile-error');
+        const card     = document.querySelector('.flosc-profile-card');
+        const nameEl   = card?.querySelector('.flosc-profile-name');
+        const passEl   = card?.querySelector('.flosc-profile-password');
+        const saveBtn  = card?.querySelector('.flosc-profile-save');
+        const skipBtn  = card?.querySelector('.flosc-profile-skip');
+        const copyBtn  = card?.querySelector('.flosc-profile-copy');
+        const errEl    = card?.querySelector('.flosc-profile-error');
+
+        copyBtn?.addEventListener('click', () => {
+            navigator.clipboard.writeText(passEl.value).then(() => {
+                copyBtn.textContent = 'Copied!';
+                setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+            });
+        });
 
         skipBtn?.addEventListener('click', (e) => {
             e.preventDefault();
