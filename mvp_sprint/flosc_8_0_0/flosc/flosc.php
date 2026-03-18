@@ -526,6 +526,25 @@ class FLOSC_Framework {
             wp_schedule_event(time(), 'twicedaily', 'flosc_cleanup_visitor_audio');
         }
 
+        // v8.0.0: One-time migration — ensure My Profile + Log Out in guest/member dropdown menus
+        if (!get_option('flosc_menus_v800')) {
+            foreach (['flosc_guest_menu_items', 'flosc_member_menu_items'] as $_menu_key) {
+                $_menu = get_option($_menu_key, []);
+                $_actions = array_column($_menu, 'action');
+                if (!in_array('view_profile', $_actions)) array_unshift($_menu, ['label' => 'My Profile', 'action' => 'view_profile']);
+                if (!in_array('logout', $_actions))       $_menu[] = ['label' => 'Log Out', 'action' => 'logout'];
+                update_option($_menu_key, $_menu);
+            }
+            update_option('flosc_menus_v800', true);
+        }
+
+        // v8.0.0: SSO guest email sequence — welcome on registration, day 10/20/28 follow-ups
+        add_action('flosc_sso_user_created',   [$this, 'send_sso_welcome_email'], 10, 3);
+        add_action('flosc_guest_followup_cron', [$this, 'run_guest_followup_emails']);
+        if (!wp_next_scheduled('flosc_guest_followup_cron')) {
+            wp_schedule_event(time(), 'daily', 'flosc_guest_followup_cron');
+        }
+
         // Login redirect - send users to FLOSC app after login (v9.5.7)
         add_filter('login_redirect', [$this, 'handle_login_redirect'], 999, 3);
         add_filter('woocommerce_login_redirect', [$this, 'handle_woocommerce_login_redirect'], 999, 2);
@@ -1232,6 +1251,126 @@ The Team',
         do_action('flosc_score_email_sent', $user->ID, $score_data);
     }
     
+    // ─────────────────────────────────────────────────────────────────
+    // SSO Guest Email Sequence
+    // ─────────────────────────────────────────────────────────────────
+
+    /**
+     * Helper: load flow settings for a user (by stored meta, or first IVR file).
+     */
+    private function get_flow_settings_for_user($user_id) {
+        $flow_id = get_user_meta($user_id, '_flosc_registration_flow', true);
+        if (empty($flow_id)) {
+            $ivr_files = flosc_flows()->get_available_ivr_files();
+            $flow_id   = !empty($ivr_files) ? $ivr_files[0] : '';
+        }
+        if (empty($flow_id)) return [];
+        $key = 'flosc_flow_' . sanitize_key(pathinfo($flow_id, PATHINFO_FILENAME));
+        return get_option($key, []);
+    }
+
+    /**
+     * Helper: replace guest email placeholders.
+     */
+    private function replace_guest_email_placeholders($text, $user, $days_remaining) {
+        $chat_url    = home_url('/?flosc_open_login=1');
+        $profile_url = function_exists('bp_core_get_user_domain')
+            ? bp_core_get_user_domain($user->ID)
+            : home_url('/members/' . $user->user_login . '/');
+        $upgrade_url = flosc_get_setting('guest_link_upgrade_url', home_url() . '/?flosc_open_upgrade=lesaep_full');
+        return str_replace(
+            ['{name}', '{days_remaining}', '{chat_url}', '{profile_url}', '{upgrade_url}'],
+            [$user->display_name, $days_remaining, $chat_url, $profile_url, $upgrade_url],
+            $text
+        );
+    }
+
+    /**
+     * Action: flosc_sso_user_created — send welcome email to new SSO guest.
+     */
+    public function send_sso_welcome_email($user_id, $provider_id, $user_data) {
+        $user = get_userdata($user_id);
+        if (!$user || empty($user->user_email)) return;
+
+        $settings = $this->get_flow_settings_for_user($user_id);
+        $subject  = $settings['guest_welcome_subject']
+            ?? 'Welcome to LeSAEp — your 30-day guest access is ready';
+        $body     = $settings['guest_welcome_body']
+            ?? "Hi {name}!\n\nWelcome to LeSAEp (Learn Excellent Standard American English Pronunciation)!\n\nYou've been given complimentary guest access for 30 days. Take the pronunciation quiz, hear your recordings, and explore lessons anytime.\n\nContinue your LeSAEp experience: {chat_url}\n\nWe hope you enjoy every moment!\n\n— The LeSAEp Team";
+
+        $subject = $this->replace_guest_email_placeholders($subject, $user, 30);
+        $body    = $this->replace_guest_email_placeholders($body,    $user, 30);
+        wp_mail($user->user_email, $subject, $body);
+    }
+
+    /**
+     * Cron: flosc_guest_followup_cron — send day 10 / 20 / 28 emails to SSO guests.
+     */
+    public function run_guest_followup_emails() {
+        // Target: SSO guests only (has linked providers, has not purchased)
+        $users = get_users([
+            'meta_key'     => '_flosc_sso_linked_providers',
+            'meta_compare' => 'EXISTS',
+            'number'       => -1,
+            'fields'       => 'all',
+        ]);
+
+        $schedule = [
+            'day10' => ['min' => 10, 'max' => 12],
+            'day20' => ['min' => 20, 'max' => 22],
+            'day28' => ['min' => 28, 'max' => 30],
+        ];
+
+        $templates = [
+            'day10' => [
+                'subject_key' => 'guest_day10_subject',
+                'body_key'    => 'guest_day10_body',
+                'default_sub' => 'How is your LeSAEp experience going? 🎉',
+                'default_body'=> "Hi {name}!\n\nYou're 10 days into your complimentary LeSAEp guest access — we hope you're enjoying it!\n\nYou have {days_remaining} days remaining. Continue here: {chat_url}\n\nReady to unlock everything? Upgrade: {upgrade_url}\n\n— The LeSAEp Team",
+            ],
+            'day20' => [
+                'subject_key' => 'guest_day20_subject',
+                'body_key'    => 'guest_day20_body',
+                'default_sub' => 'Your LeSAEp recordings & scores are waiting 🎧',
+                'default_body'=> "Hi {name}!\n\nDid you know you can listen to your pronunciation recordings and review your quiz scores any time?\n\nVisit your profile: {profile_url}\n\nYou have {days_remaining} days of guest access remaining. Upgrade here: {upgrade_url}\n\n— The LeSAEp Team",
+            ],
+            'day28' => [
+                'subject_key' => 'guest_day28_subject',
+                'body_key'    => 'guest_day28_body',
+                'default_sub' => '{days_remaining} days left — your LeSAEp guest access & recordings',
+                'default_body'=> "Hi {name}!\n\nWe would love to welcome you as a full LeSAEp member!\n\nYour guest access expires in {days_remaining} days. If you do not upgrade, all guest access information — including your account, pronunciation recordings, and quiz scores — will be removed from our servers.\n\nWe wish you the very very best in your learning journey, whatever you decide.\n\nUpgrade to keep your data: {upgrade_url}\n\n— The LeSAEp Team",
+            ],
+        ];
+
+        foreach ($users as $user) {
+            // Skip purchased users
+            if (get_user_meta($user->ID, '_flosc_purchased', true)) continue;
+
+            $days_elapsed = (int) floor((time() - strtotime($user->user_registered)) / DAY_IN_SECONDS);
+            $days_remaining = max(0, 30 - $days_elapsed);
+            $sent = get_user_meta($user->ID, '_flosc_guest_emails_sent', true) ?: [];
+            $settings = $this->get_flow_settings_for_user($user->ID);
+            $updated = false;
+
+            foreach ($schedule as $key => $window) {
+                if ($days_elapsed >= $window['min'] && $days_elapsed <= $window['max'] && !in_array($key, $sent, true)) {
+                    $tpl     = $templates[$key];
+                    $subject = $settings[$tpl['subject_key']] ?? $tpl['default_sub'];
+                    $body    = $settings[$tpl['body_key']]    ?? $tpl['default_body'];
+                    $subject = $this->replace_guest_email_placeholders($subject, $user, $days_remaining);
+                    $body    = $this->replace_guest_email_placeholders($body,    $user, $days_remaining);
+                    wp_mail($user->user_email, $subject, $body);
+                    $sent[]  = $key;
+                    $updated = true;
+                }
+            }
+
+            if ($updated) {
+                update_user_meta($user->ID, '_flosc_guest_emails_sent', $sent);
+            }
+        }
+    }
+
     /**
      * Default email template
      */
@@ -6717,16 +6856,15 @@ Example good response:
             return new WP_Error('no_user', 'User not found', ['status' => 401]);
         }
 
-        // Grant the role
+        // Grant the role via FLOSC_Member_Access (handles WP role + guest role removal atomically)
         $grants_level = $flow_option['access_code_role'] ?? 'lesaep_learners';
-        $user->add_role($grants_level);
 
         // Set member meta so content protection and state detection work
         update_user_meta($user_id, '_flosc_member_level', $grants_level);
         update_user_meta($user_id, '_flosc_purchased', true);
         update_user_meta($user_id, '_flosc_purchased_at', current_time('mysql'));
 
-        // FLOSC_Member_Access grant so _flosc_memberlevel_{level} is set
+        // grant_member_access → grant_level adds the WP role AND removes guest_lesaep_learner
         $member_access = FLOSC_Member_Access::instance();
         $member_access->grant_member_access($user_id, [
             'offer_id' => 'access_code',
@@ -7113,7 +7251,12 @@ Example good response:
                 'ID'           => $user_id,
                 'display_name' => $display_name,
                 'nickname'     => $display_name,
+                'first_name'   => $display_name,   // fixes WP Admin Name column + AI context
             ]);
+            // Set BuddyBoss xprofile Name field if available (field 1 = Name by default)
+            if (function_exists('xprofile_set_field_data')) {
+                xprofile_set_field_data(1, $user_id, $display_name);
+            }
         }
 
         // Mark profile as completed — clears needsProfileCompletion flag permanently
@@ -7129,16 +7272,20 @@ Example good response:
             // Send confirmation email with login credentials
             $user      = get_userdata($user_id);
             $user_email = $user->user_email ?? '';
-            $login_url  = wp_login_url();
+            $chat_url   = get_home_url() . '/?flosc_open_login=1';
+            $profile_url = function_exists('bp_core_get_user_domain') ? bp_core_get_user_domain($user_id) : '';
             $name_for_email = $display_name ?: $user->display_name;
             if ($user_email) {
                 $subject = 'Your LeSAEp Guest Learner account is ready';
                 $body    = "Hi {$name_for_email},\n\n"
                          . "Your LeSAEp Guest Learner account has been set up. Here are your login details:\n\n"
-                         . "Login URL:  {$login_url}\n"
                          . "Username:   {$user_email}\n"
                          . "Password:   {$password}\n\n"
-                         . "You can change your password anytime after logging in.\n\n"
+                         . "Continue your LeSAEp experience:  {$chat_url}\n";
+                if ($profile_url) {
+                    $body .= "Review your pronunciation recordings:  {$profile_url}\n";
+                }
+                $body   .= "\nYou can change your password anytime after logging in.\n\n"
                          . "— The LeSAEp Team";
                 wp_mail($user_email, $subject, $body);
             }
@@ -7151,14 +7298,19 @@ Example good response:
     }
 
     /**
-     * Generate unique username — opaque usr_<uuid> format so no email is exposed.
-     * The $email parameter is kept for signature compatibility but not used.
+     * Generate unique username from email — consistent with WooCommerce convention on this site.
      */
     private function generate_username_from_email($email) {
+        // Use email as username (consistent with WooCommerce convention on this site)
+        if (!username_exists($email)) {
+            return $email;
+        }
+        // Edge case: email already taken as user_login by a different account
+        $i = 2;
         do {
-            $username = 'usr_' . substr(str_replace('-', '', wp_generate_uuid4()), 0, 6);
-        } while (username_exists($username));
-        return $username;
+            $candidate = $email . '_' . $i++;
+        } while (username_exists($candidate));
+        return $candidate;
     }
     
     /**
@@ -10365,14 +10517,37 @@ Example good response:
             echo '</div>';
         }
 
-        // Guest days remaining banner — shown for lesaep_learners
-        $bb_user = get_userdata($user_id);
-        if ($bb_user && in_array('lesaep_learners', (array) $bb_user->roles)) {
-            $days_elapsed    = floor((time() - strtotime($bb_user->user_registered)) / DAY_IN_SECONDS);
-            $days_remaining  = max(0, 30 - $days_elapsed);
-            $upgrade_url     = flosc_get_setting('guest_link_upgrade_url', '');
-            $upgrade_link    = $upgrade_url ? ' <a href="' . esc_url($upgrade_url) . '" style="color:#2563eb;font-weight:600;">Upgrade for full access here.</a>' : '';
-            echo '<p style="font-size:13px;color:#374151;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px;margin-bottom:16px;">You have ' . esc_html($days_remaining) . ' day' . ($days_remaining !== 1 ? 's' : '') . ' of guest access remaining — we hope you are enjoying your experience as a Complimentary Guest LeSAEp Learner!' . $upgrade_link . '</p>';
+        // Determine profile completion + guest status for the profile owner
+        $bb_user          = get_userdata($user_id);
+        $profile_completed = (bool) get_user_meta($user_id, '_flosc_profile_completed', true);
+        $is_guest_user    = $bb_user && (
+            in_array('guest_lesaep_learner', (array) $bb_user->roles) ||
+            !empty(get_user_meta($user_id, '_flosc_sso_linked_providers', true))
+        );
+
+        $days_remaining = null;
+        if ($is_guest_user && $bb_user) {
+            $days_elapsed   = floor((time() - strtotime($bb_user->user_registered)) / DAY_IN_SECONDS);
+            $days_remaining = max(0, 30 - $days_elapsed);
+        }
+
+        $upgrade_url = flosc_get_setting('guest_link_upgrade_url', '');
+
+        if (!$profile_completed && $is_guest_user) {
+            // Anonymous public page notice — shown until guest completes profile
+            $upgrade_link = $upgrade_url ? ' <a href="' . esc_url($upgrade_url) . '" style="color:#b45309;font-weight:600;">Upgrade for full access.</a>' : '';
+            $days_note    = ($days_remaining !== null)
+                ? 'This page and all associated data will be removed from our servers in <strong>' . esc_html($days_remaining) . '</strong> day' . ($days_remaining !== 1 ? 's' : '') . ' if you don\'t upgrade.' . $upgrade_link
+                : '';
+            echo '<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:14px 16px;margin-bottom:20px;">';
+            echo '<p style="margin:0 0 6px;font-size:14px;font-weight:600;color:#92400e;">This is your anonymous, public quiz score page.</p>';
+            echo '<p style="margin:0 0 6px;font-size:13px;color:#78350f;">It becomes <strong>private</strong> — and you can listen to your recordings — once you complete your guest learner profile.</p>';
+            if ($days_note) echo '<p style="margin:0;font-size:13px;color:#78350f;">' . $days_note . '</p>';
+            echo '</div>';
+        } elseif ($profile_completed && $is_guest_user && $days_remaining !== null) {
+            // Profile completed — show simple days remaining banner
+            $upgrade_link = $upgrade_url ? ' <a href="' . esc_url($upgrade_url) . '" style="color:#2563eb;font-weight:600;">Upgrade for full access here.</a>' : '';
+            echo '<p style="font-size:13px;color:#374151;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px;margin-bottom:16px;">You have <strong>' . esc_html($days_remaining) . '</strong> day' . ($days_remaining !== 1 ? 's' : '') . ' of guest access remaining — we hope you are enjoying your experience as a Complimentary Guest LeSAEp Learner!' . $upgrade_link . '</p>';
         }
 
         // Phrase-level results — clickable accordions with word-level IPA + audio
@@ -10383,9 +10558,6 @@ Example good response:
 
             echo '<div>';
             echo '<h3 style="font-size:16px;margin-bottom:8px;">Phrase Breakdown</h3>';
-            if (!get_user_meta($user_id, '_flosc_profile_completed', true)) {
-                echo '<p style="font-size:13px;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:12px;">Quiz audio review will be enabled in your profile when you save your nickname and password.</p>';
-            }
             echo '<p style="font-size:13px;color:#71717a;font-style:italic;margin-bottom:12px;">Click each phrase to expand the detailed analysis</p>';
             foreach ($phrase_results as $i => $pr) {
                 $phrase_text = $pr['phrase'] ?? '';
@@ -10413,8 +10585,8 @@ Example good response:
                 echo '</summary>';
                 echo '<div style="padding:0 12px 12px 12px;">';
 
-                // Audio playback from session directory — served via authenticated proxy
-                if ($session_id) {
+                // Audio playback — only shown once profile is completed (not on anonymous public page)
+                if ($profile_completed && $session_id) {
                     $phrase_num = $i + 1;
                     $user_audio_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id . '/sessions/' . $session_id;
                     $audio_file = '';

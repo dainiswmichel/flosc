@@ -313,12 +313,29 @@ class floscApp {
                 delete window.flosc_sso_error;
             }
 
+            // v8.0.0: Auto-open login modal when arriving via email link (?flosc_open_login=1)
+            if (new URLSearchParams(window.location.search).get('flosc_open_login')) {
+                const cleanUrl = new URL(window.location.href);
+                cleanUrl.searchParams.delete('flosc_open_login');
+                window.history.replaceState({}, '', cleanUrl.toString());
+                setTimeout(() => this.showLoginModal(), 400);
+            }
+
+            // v8.0.0: Auto-open upgrade offer when arriving via upgrade link (?flosc_open_upgrade=OFFER_ID)
+            const _upgradeOfferId = new URLSearchParams(window.location.search).get('flosc_open_upgrade');
+            if (_upgradeOfferId) {
+                const cleanUrl = new URL(window.location.href);
+                cleanUrl.searchParams.delete('flosc_open_upgrade');
+                window.history.replaceState({}, '', cleanUrl.toString());
+                setTimeout(() => this.showOffer(_upgradeOfferId), 600);
+            }
+
             // Guest link: show welcome message after redirect-back login, with days remaining appended
             if (this.config.guestLinkRemaining !== null && this.config.guestLinkRemaining !== undefined) {
                 const days = this.config.guestDaysRemaining;
                 const upgradeUrl = this.config.guestLinkUpgradeUrl || '#';
                 const daysStr = (days !== null && days !== undefined)
-                    ? ` You have ${days} day${days !== 1 ? 's' : ''} of guest access remaining — we hope you are enjoying your experience as a Complimentary Guest LeSAEp Learner! <a href="${upgradeUrl}">Upgrade for full access here.</a>`
+                    ? ` You have <strong>${days}</strong> day${days !== 1 ? 's' : ''} of guest access remaining — we hope you are enjoying your experience as a Complimentary Guest LeSAEp Learner! <a href="${upgradeUrl}">Upgrade for full access here.</a>`
                     : '';
                 const welcomeMsg = (this.config.guestLinkWelcomeMessage || '')
                     .replace('{email}', this.user?.email || '')
@@ -327,6 +344,19 @@ class floscApp {
                     .replace('{upgrade_url}', this.config.guestLinkUpgradeUrl || '#')
                     + daysStr;
                 this.addMessage('assistant', welcomeMsg, true);
+            }
+
+            // SSO guest: show days remaining once per browser session
+            // (magic link guests get days via guestLinkRemaining block above)
+            if (this.config.hasSsoProvider
+                && this.config.guestDaysRemaining !== null
+                && this.config.guestDaysRemaining !== undefined
+                && !sessionStorage.getItem('flosc_sso_guest_days_shown')) {
+                const days = this.config.guestDaysRemaining;
+                const upgradeUrl = this.config.guestLinkUpgradeUrl || '#';
+                const msg = `Welcome back! You have <strong>${days}</strong> day${days !== 1 ? 's' : ''} of guest access remaining — we hope you are enjoying your experience as a Complimentary Guest LeSAEp Learner! <a href="${upgradeUrl}">Upgrade for full access here.</a>`;
+                this.addMessage('assistant', msg, true);
+                sessionStorage.setItem('flosc_sso_guest_days_shown', 'true');
             }
 
             // Profile completion prompt — independent of welcome message, persistent across redirects
@@ -2420,6 +2450,8 @@ class floscApp {
                 break;
             case 'logout':
                 this.addMessage('assistant', 'See you later LeSAEp Fam! 👋');
+                // Clear flosc token cookie client-side — handles cross-domain AJAX gap
+                document.cookie = 'flosc_auth_token=; Max-Age=0; path=/; SameSite=Lax';
                 fetch((this.config.ajaxUrl || '/wp-admin/admin-ajax.php') + '?action=flosc_logout', { method: 'POST' })
                     .then(r => r.json())
                     .then(data => {
@@ -4793,8 +4825,14 @@ class floscApp {
                 });
                 const result = await response.json();
                 if (result.success) {
+                    this.user.name = name;
+                    const profileName  = document.getElementById('flosc_profile_name');
+                    const dropdownName = document.getElementById('flosc_dropdown_name');
+                    if (profileName)  profileName.textContent  = name;
+                    if (dropdownName) dropdownName.textContent = name;
+
                     card.closest('.message')?.remove();
-                    const loginUrl = this.config.loginUrl || window.location.origin + '/wp-login.php';
+                    const loginUrl = (this.config.appUrl || window.location.origin) + '/?flosc_open_login=1';
                     const confirmMsg = (this.config.guestLinkProfileConfirmMessage || 'Perfect, {name}! You can always {login_url}, update your profile, and upgrade to full access.')
                         .replace('{name}', name)
                         .replace('{login_url}', `<a href="${loginUrl}" target="_blank">log in directly</a>`)
