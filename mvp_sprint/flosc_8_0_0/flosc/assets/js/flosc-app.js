@@ -321,11 +321,12 @@ class floscApp {
                     .replace('{link_name}', this.config.guestLinkName || 'Complimentary LeSAEp Learners Guest Access Link')
                     .replace('{upgrade_url}', this.config.guestLinkUpgradeUrl || '#');
                 this.addMessage('assistant', welcomeMsg, true);
+            }
 
-                // First-click only: follow with profile setup card
-                if (this.config.isFirstGuestLogin) {
-                    this.showGuestProfileCard();
-                }
+            // Profile completion prompt — independent of welcome message, persistent across redirects
+            if (this.config.needsProfileCompletion
+                && !sessionStorage.getItem('flosc_nickname_prompt_dismissed')) {
+                this.showGuestProfileCard();
             }
 
             // Guest link: handle expired status param (no offer URL configured)
@@ -4715,7 +4716,7 @@ class floscApp {
                 <input type="text" class="flosc-profile-name" placeholder="First name or nickname..."
                     style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;margin-bottom:16px;outline:none;">
                 <p style="margin:0 0 8px;font-size:14px;color:#374151;">Set a password so you can log in directly:</p>
-                <input type="password" class="flosc-profile-password" placeholder="Password (optional — min 6 characters)"
+                <input type="password" class="flosc-profile-password" placeholder="Choose a password (min 6 characters)"
                     style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;margin-bottom:16px;outline:none;">
                 <div style="display:flex;align-items:center;gap:12px;">
                     <button class="flosc-profile-save" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;">Save →</button>
@@ -4734,6 +4735,7 @@ class floscApp {
 
         skipBtn?.addEventListener('click', (e) => {
             e.preventDefault();
+            sessionStorage.setItem('flosc_nickname_prompt_dismissed', 'true');
             card.closest('.message')?.remove();
         });
 
@@ -4741,6 +4743,11 @@ class floscApp {
             const name     = nameEl?.value?.trim();
             const password = passEl?.value?.trim();
             if (!name) { nameEl?.focus(); return; }
+            if (!password || password.length < 6) {
+                if (errEl) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; }
+                passEl?.focus();
+                return;
+            }
 
             saveBtn.disabled    = true;
             saveBtn.textContent = 'Saving...';

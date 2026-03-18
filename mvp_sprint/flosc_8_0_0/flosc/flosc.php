@@ -7116,6 +7116,9 @@ Example good response:
             ]);
         }
 
+        // Mark profile as completed — clears needsProfileCompletion flag permanently
+        update_user_meta($user_id, '_flosc_profile_completed', true);
+
         if (!empty($password) && strlen($password) >= 6) {
             wp_set_password($password, $user_id);
             // wp_set_password() clears all sessions — re-issue auth cookies immediately
