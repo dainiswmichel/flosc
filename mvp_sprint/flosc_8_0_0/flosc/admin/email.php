@@ -221,6 +221,68 @@ function flosc_send_reengagement_emails() {
 -->
 
 <!-- ============================================ -->
+<!-- GUEST ACCESS EMAIL SEQUENCE [LIVE] -->
+<!-- ============================================ -->
+<hr style="margin: 40px 0;">
+<h3>Guest Access Email Sequence <span style="background: #10b981; color: #fff; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">LIVE</span></h3>
+<p class="description">
+    Emails sent automatically to <strong>SSO guests</strong> (Facebook / Google logins who have not purchased).
+    Placeholders: <code>{name}</code>, <code>{days_remaining}</code>, <code>{chat_url}</code>, <code>{profile_url}</code>, <code>{upgrade_url}</code>.
+</p>
+
+<?php
+$guest_emails = [
+    'guest_welcome' => [
+        'label'           => 'Welcome Email',
+        'timing'          => 'Sent immediately on first SSO login',
+        'default_subject' => 'Welcome to LeSAEp — your 30-day guest access is ready',
+        'default_body'    => "Hi {name}!\n\nWelcome to LeSAEp (Learn Excellent Standard American English Pronunciation)!\n\nYou've been given complimentary guest access for 30 days. During this time you can take the pronunciation quiz, hear your recordings, and explore lessons.\n\nContinue your LeSAEp experience: {chat_url}\n\nWe hope you enjoy every moment of it!\n\n— The LeSAEp Team",
+    ],
+    'guest_day10' => [
+        'label'           => 'Day 10 Check-In',
+        'timing'          => 'Sent on day 10 if not yet upgraded',
+        'default_subject' => 'How is your LeSAEp experience going? 🎉',
+        'default_body'    => "Hi {name}!\n\nYou're 10 days into your complimentary LeSAEp guest access — we hope you're enjoying it!\n\nYou still have {days_remaining} days remaining. Did you know you can take the quiz, get personalized feedback, and explore lessons right from the chat?\n\nContinue here: {chat_url}\n\nReady to unlock everything? Upgrade for full access: {upgrade_url}\n\n— The LeSAEp Team",
+    ],
+    'guest_day20' => [
+        'label'           => 'Day 20 — Recordings & Scores',
+        'timing'          => 'Sent on day 20 if not yet upgraded',
+        'default_subject' => 'Your LeSAEp recordings & scores are waiting for you 🎧',
+        'default_body'    => "Hi {name}!\n\nWe hope you're enjoying your LeSAEp experience! Did you know you can listen to your pronunciation recordings and review your quiz scores any time?\n\nVisit your profile here: {profile_url}\n\nYou have {days_remaining} days of guest access remaining. We'd love to welcome you as a full member — upgrade here: {upgrade_url}\n\n— The LeSAEp Team",
+    ],
+    'guest_day28' => [
+        'label'           => 'Day 28 — Final Notice',
+        'timing'          => 'Sent on day 28 if not yet upgraded',
+        'default_subject' => '{days_remaining} days left — your LeSAEp guest access & recordings',
+        'default_body'    => "Hi {name}!\n\nWe would love to welcome you as a full LeSAEp member!\n\nYour guest access expires in {days_remaining} days. We want to be transparent: if you do not upgrade, all guest access information — including your account, pronunciation recordings, and quiz scores — will be removed from our servers.\n\nWe wish you the very very best in your learning journey, whatever you decide.\n\nTo continue your progress and keep your data, upgrade here: {upgrade_url}\n\n— The LeSAEp Team",
+    ],
+];
+foreach ($guest_emails as $key => $cfg):
+?>
+<hr style="margin: 24px 0 16px; border: none; border-top: 1px solid #e0e0e0;">
+<h4 style="margin: 0 0 4px;"><?php echo esc_html($cfg['label']); ?></h4>
+<p class="description" style="margin-bottom: 12px;"><?php echo esc_html($cfg['timing']); ?></p>
+<table class="form-table" style="margin-bottom: 0;">
+    <tr>
+        <th scope="row"><label>Subject</label></th>
+        <td>
+            <input type="text" name="flow_<?php echo $key; ?>_subject"
+                   value="<?php echo esc_attr($flow_settings[$key . '_subject'] ?? $cfg['default_subject']); ?>"
+                   class="large-text">
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label>Body</label></th>
+        <td>
+            <textarea name="flow_<?php echo $key; ?>_body" rows="8" class="large-text code"><?php
+                echo esc_textarea($flow_settings[$key . '_body'] ?? $cfg['default_body']);
+            ?></textarea>
+        </td>
+    </tr>
+</table>
+<?php endforeach; ?>
+
+<!-- ============================================ -->
 <!-- EMAIL PROVIDER SETTINGS [BACKEND NEEDED] -->
 <!-- ============================================ -->
 <hr style="margin: 40px 0;">

@@ -210,6 +210,7 @@ if (isset($_POST['flosc_save']) && wp_verify_nonce($_POST['_wpnonce'], 'flosc_sa
         'ai_topic_scope', 'ai_off_topic_message', 'ai_off_topic_links',
         // Email
         'email_body',
+        'guest_welcome_body', 'guest_day10_body', 'guest_day20_body', 'guest_day28_body',
         // Payments
         'manual_payment_instructions',
     ];

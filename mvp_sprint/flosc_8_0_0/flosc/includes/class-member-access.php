@@ -189,9 +189,11 @@ class FLOSC_Member_Access {
         $sanitized_level = sanitize_key($level);
         if (get_role($sanitized_level)) {
             $user = get_user_by('id', $user_id);
-            if ($user && !in_array($sanitized_level, $user->roles, true)) {
-                $user->add_role($sanitized_level);
-                // Remove guest role when user upgrades to a full membership level
+            if ($user) {
+                if (!in_array($sanitized_level, $user->roles, true)) {
+                    $user->add_role($sanitized_level);
+                }
+                // Always remove guest role on upgrade — regardless of whether role was already present
                 if ($sanitized_level === 'lesaep_learners' && in_array('guest_lesaep_learner', $user->roles, true)) {
                     $user->remove_role('guest_lesaep_learner');
                 }

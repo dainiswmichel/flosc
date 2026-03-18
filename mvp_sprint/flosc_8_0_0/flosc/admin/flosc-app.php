@@ -301,9 +301,22 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
                             <?php echo esc_html($pb_guest['upgrade_label']); ?>
                         </button>
                     </div>
-                    <a href="#" class="profile-dropdown-item" id="flosc_settings_link">Settings</a>
-                    <a href="#" class="profile-dropdown-item" id="flosc_help_link">Help</a>
-                    <a href="#" class="profile-dropdown-item" data-action="logout">Log out</a>
+                    <?php
+                    // Read admin-configured menu for the current user state
+                    $_li_menu = ($user_state === 'member')
+                        ? get_option('flosc_member_menu_items', [])
+                        : get_option('flosc_guest_menu_items', []);
+                    if (empty($_li_menu)) {
+                        $_li_menu = ($user_state === 'member')
+                            ? [['label' => 'Log Out', 'action' => 'logout']]
+                            : [['label' => 'Log Out', 'action' => 'logout']];
+                    }
+                    foreach ($_li_menu as $_li_item):
+                    ?>
+                    <a href="#" class="profile-dropdown-item" data-action="<?php echo esc_attr($_li_item['action']); ?>">
+                        <?php echo esc_html($_li_item['label']); ?>
+                    </a>
+                    <?php endforeach; ?>
                 </div>
             </div>
         </div>
@@ -905,24 +918,25 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
                 delete_transient($key);
                 return (int) $remaining;
             })(),
+            // True if the current user has any SSO provider linked (FB, Google, etc.)
+            'hasSsoProvider' => (is_user_logged_in()
+                && !empty(get_user_meta(get_current_user_id(), '_flosc_sso_linked_providers', true))),
             // Persistent check — shows profile card until user saves nickname, survives cache/redirects
-            'needsProfileCompletion' => (function() {
-                if (!is_user_logged_in()) return false;
-                $uid = get_current_user_id();
-                if (get_user_meta($uid, '_flosc_profile_completed', true)) return false;
-                $user = get_userdata($uid);
-                if (!$user || !in_array('lesaep_learners', (array) $user->roles)) return false;
-                return true;
-            })(),
+            // Only for magic link guests (guest state, no SSO — SSO users already have name + login method)
+            'needsProfileCompletion' => ($user_state === 'guest'
+                && is_user_logged_in()
+                && !get_user_meta(get_current_user_id(), '_flosc_profile_completed', true)
+                && empty(get_user_meta(get_current_user_id(), '_flosc_sso_linked_providers', true))),
             'guestLinkProfileConfirmMessage' => (function() { $v = flosc_get_setting('guest_link_profile_confirm_message', 'Perfect, {name}! You can always log in directly at {login_url}, update your profile, and upgrade to full access.'); $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v; })(),
             // Days of guest access remaining (30-day window from registration)
-            'guestDaysRemaining' => (function() {
-                if (!is_user_logged_in()) return null;
-                $user = get_userdata(get_current_user_id());
-                if (!$user || !in_array('lesaep_learners', (array) $user->roles)) return null;
-                $days_elapsed    = floor((time() - strtotime($user->user_registered)) / DAY_IN_SECONDS);
-                return max(0, 30 - $days_elapsed);
-            })(),
+            'guestDaysRemaining' => ($user_state === 'guest' && is_user_logged_in())
+                ? (function() {
+                    $user = get_userdata(get_current_user_id());
+                    if (!$user) return null;
+                    $days_elapsed = floor((time() - strtotime($user->user_registered)) / DAY_IN_SECONDS);
+                    return max(0, 30 - $days_elapsed);
+                })()
+                : null,
         ]); ?>;
         window.FLOSC_USER = <?php echo wp_json_encode($user_data); ?>;
     </script>

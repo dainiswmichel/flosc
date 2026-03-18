@@ -55,9 +55,10 @@ if (empty($visitor_menu)) {
 $guest_menu = get_option('flosc_guest_menu_items', []);
 if (empty($guest_menu)) {
     $guest_menu = [
+        ['label' => 'My Profile', 'action' => 'view_profile'],
         ['label' => 'Take Quiz',  'action' => 'open_quiz'],
-        ['label' => 'Free Lesson', 'action' => 'open_free_lesson'],
         ['label' => 'Upgrade',    'action' => 'open_sandbox_purchase'],
+        ['label' => 'Log Out',    'action' => 'logout'],
     ];
 }
 
@@ -65,8 +66,10 @@ if (empty($guest_menu)) {
 $member_menu = get_option('flosc_member_menu_items', []);
 if (empty($member_menu)) {
     $member_menu = [
-        ['label' => 'My Lessons',  'action' => 'open_lesson_library'],
-        ['label' => 'Take Quiz',   'action' => 'open_quiz'],
+        ['label' => 'My Profile',     'action' => 'view_profile'],
+        ['label' => 'My Lessons',     'action' => 'open_lesson_library'],
+        ['label' => 'Take Quiz',      'action' => 'open_quiz'],
+        ['label' => 'Log Out',        'action' => 'logout'],
     ];
 }
 
