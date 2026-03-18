@@ -10373,6 +10373,9 @@ Example good response:
 
             echo '<div>';
             echo '<h3 style="font-size:16px;margin-bottom:8px;">Phrase Breakdown</h3>';
+            if (!get_user_meta($user_id, '_flosc_profile_completed', true)) {
+                echo '<p style="font-size:13px;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:12px;">Quiz audio review will be enabled in your profile when you save your nickname and password.</p>';
+            }
             echo '<p style="font-size:13px;color:#71717a;font-style:italic;margin-bottom:12px;">Click each phrase to expand the detailed analysis</p>';
             foreach ($phrase_results as $i => $pr) {
                 $phrase_text = $pr['phrase'] ?? '';
