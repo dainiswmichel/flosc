@@ -10354,20 +10354,8 @@ Example good response:
             $session_id = $quiz_data['session_id'] ?? '';
             $upload_dir = wp_upload_dir();
 
-            // Check if audio files are available — requires completed profile + pulled session
-            $audio_available = false;
-            if ($session_id) {
-                $check_dir = wp_upload_dir()['basedir'] . '/flosc-users/' . $user_id . '/sessions/' . $session_id;
-                foreach (['webm', 'mp4', 'ogg'] as $_ext) {
-                    if (file_exists($check_dir . '/phrase-1.' . $_ext)) { $audio_available = true; break; }
-                }
-            }
-
             echo '<div>';
             echo '<h3 style="font-size:16px;margin-bottom:8px;">Phrase Breakdown</h3>';
-            if (!$audio_available) {
-                echo '<p style="font-size:13px;color:#2563eb;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;margin-bottom:12px;">Filling in your nickname and password makes you a Guest Learner at LeSAEp. You\'ll be able to review your audios, access one or possibly more free lessons, check your quiz score, and receive special upgrade offers.</p>';
-            }
             echo '<p style="font-size:13px;color:#71717a;font-style:italic;margin-bottom:12px;">Click each phrase to expand the detailed analysis</p>';
             foreach ($phrase_results as $i => $pr) {
                 $phrase_text = $pr['phrase'] ?? '';
