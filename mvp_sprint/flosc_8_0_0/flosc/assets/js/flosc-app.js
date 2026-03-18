@@ -4794,9 +4794,11 @@ class floscApp {
                 const result = await response.json();
                 if (result.success) {
                     card.closest('.message')?.remove();
-                    const confirmMsg = (this.config.guestLinkProfileConfirmMessage || 'Perfect, {name}! You can always log in directly at {login_url}, update your profile, and upgrade to full access.')
+                    const loginUrl = this.config.loginUrl || window.location.origin + '/wp-login.php';
+                    const confirmMsg = (this.config.guestLinkProfileConfirmMessage || 'Perfect, {name}! You can always {login_url}, update your profile, and upgrade to full access.')
                         .replace('{name}', name)
-                        .replace('{login_url}', this.config.loginUrl || window.location.origin + '/wp-login.php');
+                        .replace('{login_url}', `<a href="${loginUrl}" target="_blank">log in directly</a>`)
+                        + ' ✨ We\'ve sent your guest access login details to your email.';
                     this.addMessage('assistant', confirmMsg);
                 } else {
                     if (errEl) { errEl.textContent = result.message || 'Could not save — please try again.'; errEl.style.display = 'block'; }
