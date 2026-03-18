@@ -919,6 +919,14 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
                 return true;
             })(),
             'guestLinkProfileConfirmMessage' => (function() { $v = flosc_get_setting('guest_link_profile_confirm_message', 'Perfect, {name}! You can always log in directly at {login_url}, update your profile, and upgrade to full access.'); $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v; })(),
+            // Days of guest access remaining (30-day window from registration)
+            'guestDaysRemaining' => (function() {
+                if (!is_user_logged_in()) return null;
+                $user = get_userdata(get_current_user_id());
+                if (!$user || !in_array('lesaep_learners', (array) $user->roles)) return null;
+                $days_elapsed    = floor((time() - strtotime($user->user_registered)) / DAY_IN_SECONDS);
+                return max(0, 30 - $days_elapsed);
+            })(),
         ]); ?>;
         window.FLOSC_USER = <?php echo wp_json_encode($user_data); ?>;
     </script>

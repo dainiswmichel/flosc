@@ -10365,6 +10365,16 @@ Example good response:
             echo '</div>';
         }
 
+        // Guest days remaining banner — shown for lesaep_learners
+        $bb_user = get_userdata($user_id);
+        if ($bb_user && in_array('lesaep_learners', (array) $bb_user->roles)) {
+            $days_elapsed    = floor((time() - strtotime($bb_user->user_registered)) / DAY_IN_SECONDS);
+            $days_remaining  = max(0, 30 - $days_elapsed);
+            $upgrade_url     = flosc_get_setting('guest_link_upgrade_url', '');
+            $upgrade_link    = $upgrade_url ? ' <a href="' . esc_url($upgrade_url) . '" style="color:#2563eb;font-weight:600;">Upgrade for full access here.</a>' : '';
+            echo '<p style="font-size:13px;color:#374151;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px;margin-bottom:16px;">You have ' . esc_html($days_remaining) . ' day' . ($days_remaining !== 1 ? 's' : '') . ' of guest access remaining — we hope you are enjoying your experience as a Complimentary Guest LeSAEp Learner!' . $upgrade_link . '</p>';
+        }
+
         // Phrase-level results — clickable accordions with word-level IPA + audio
         if ($phrase_results) {
             $word_ipa = $quiz_data['word_ipa'] ?? [];

@@ -313,13 +313,19 @@ class floscApp {
                 delete window.flosc_sso_error;
             }
 
-            // Guest link: show welcome message after redirect-back login
+            // Guest link: show welcome message after redirect-back login, with days remaining appended
             if (this.config.guestLinkRemaining !== null && this.config.guestLinkRemaining !== undefined) {
+                const days = this.config.guestDaysRemaining;
+                const upgradeUrl = this.config.guestLinkUpgradeUrl || '#';
+                const daysStr = (days !== null && days !== undefined)
+                    ? ` You have ${days} day${days !== 1 ? 's' : ''} of guest access remaining — we hope you are enjoying your experience as a Complimentary Guest LeSAEp Learner! <a href="${upgradeUrl}">Upgrade for full access here.</a>`
+                    : '';
                 const welcomeMsg = (this.config.guestLinkWelcomeMessage || '')
                     .replace('{email}', this.user?.email || '')
                     .replace('{n}', this.config.guestLinkRemaining)
                     .replace('{link_name}', this.config.guestLinkName || 'Complimentary LeSAEp Learners Guest Access Link')
-                    .replace('{upgrade_url}', this.config.guestLinkUpgradeUrl || '#');
+                    .replace('{upgrade_url}', this.config.guestLinkUpgradeUrl || '#')
+                    + daysStr;
                 this.addMessage('assistant', welcomeMsg, true);
             }
 
