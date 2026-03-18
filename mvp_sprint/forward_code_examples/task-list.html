@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FLOSC Launch Task List — 2026-03m-17d</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #f7f8fa; color: #1a1a2e; line-height: 1.6; padding: 24px; max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 28px; font-weight: 700; color: #0f172a; border-bottom: 3px solid #2563eb; padding-bottom: 12px; margin-bottom: 8px; }
+  .subtitle { font-size: 14px; color: #64748b; margin-bottom: 32px; }
+  h2 { font-size: 22px; font-weight: 700; color: #1e293b; margin: 40px 0 4px 0; padding: 10px 16px; border-left: 4px solid #2563eb; background: #eff6ff; }
+  h2.upgrade { border-left-color: #8b5cf6; background: #f5f3ff; }
+  h3 { font-size: 17px; font-weight: 600; color: #334155; margin: 20px 0 8px 0; }
+  h4 { font-size: 14px; font-weight: 600; color: #475569; margin: 14px 0 6px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+  p, li { font-size: 14px; color: #334155; }
+  ul, ol { margin: 6px 0 12px 24px; }
+  li { margin-bottom: 4px; }
+  .task-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px 24px; margin: 12px 0 24px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .status { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; padding: 3px 10px; border-radius: 4px; margin-left: 10px; vertical-align: middle; }
+  .status.essential { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+  .status.upgrade { background: #f5f3ff; color: #7c3aed; border: 1px solid #ddd6fe; }
+  .status.done { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+  .status.assessment { background: #fffbeb; color: #d97706; border: 1px solid #fed7aa; }
+  code { font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; font-size: 12.5px; background: #f1f5f9; padding: 1px 5px; border-radius: 3px; color: #be185d; }
+  pre { background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 6px; overflow-x: auto; font-size: 12.5px; line-height: 1.5; margin: 8px 0 14px 0; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace; }
+  pre .comment { color: #64748b; }
+  pre .keyword { color: #7dd3fc; }
+  pre .string { color: #86efac; }
+  pre .fn { color: #c4b5fd; }
+  .file-ref { font-size: 12px; color: #64748b; font-family: 'SF Mono', monospace; background: #f8fafc; border: 1px solid #e2e8f0; padding: 4px 10px; border-radius: 4px; display: inline-block; margin: 2px 0; }
+  a.file-ref { color: #2563eb; text-decoration: none; cursor: pointer; transition: background 0.15s; }
+  a.file-ref:hover { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
+  a.reveal-finder { display: inline-block; margin-left: 4px; padding: 2px 6px; font-size: 14px; text-decoration: none; border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc; cursor: pointer; vertical-align: middle; line-height: 1; transition: background 0.15s; }
+  a.reveal-finder:hover { background: #dbeafe; border-color: #93c5fd; }
+  a.reveal-finder::after { content: ' Finder'; font-size: 10px; color: #64748b; font-family: 'SF Mono', monospace; }
+  .decision { background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 12px 16px; margin: 10px 0; }
+  .decision strong { color: #92400e; }
+  .risk { background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 12px 16px; margin: 10px 0; }
+  .risk strong { color: #991b1b; }
+  .separator { border: none; border-top: 2px solid #e2e8f0; margin: 40px 0; }
+  .toc { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px 24px; margin-bottom: 32px; }
+  .toc h3 { margin-top: 0; }
+  .toc ol { margin-left: 20px; }
+  .toc li { margin-bottom: 2px; }
+  .toc a { color: #2563eb; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .section-label { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<h1>FLOSC Launch Task List</h1>
+<p class="subtitle">Generated 2026-03m-17d &bull; Session scope document &bull; Workspace: <code>mvp_sprint/flosc_8_0_0/flosc/</code></p>
+
+<div class="toc">
+<h3>Contents</h3>
+<p class="section-label">Essential Fixes</p>
+<ol>
+<li><a href="#task2">Fix All AI Hallucinations</a> <span class="status essential">Essential</span></li>
+  <li><a href="#task3">Fix Email Registration / Magic Link Login</a> <span class="status essential">Essential</span></li>
+</ol>
+<p class="section-label" style="margin-top:12px">Planned Upgrades</p>
+<ol start="4">
+  <li><a href="#task4">Access Code System Review</a> <span class="status upgrade">Upgrade</span></li>
+  <li><a href="#task5">User Settings Panel</a> <span class="status upgrade">Upgrade</span></li>
+  <li><a href="#task6">Social Media Posting Automation</a> <span class="status upgrade">Upgrade</span></li>
+  <li><a href="#task7">Marketing Launch Assessment</a> <span class="status assessment">Assessment</span></li>
+  <li><a href="#task8">Toolbuilder Assessment</a> <span class="status assessment">Assessment</span></li>
+  <li><a href="#task9">flosc.ai Chatbot Tier Design</a> <span class="status assessment">Assessment</span></li>
+  <li><a href="#task10">FloscAdmin Terminal with AI Agent</a> <span class="status upgrade">Upgrade</span></li>
+  <li><a href="#task11">AI2AGI Reciprocity Update</a> <span class="status upgrade">Upgrade</span></li>
+  <li><a href="#task12">TikTok Paid Ads Plan</a> <span class="status assessment">Assessment</span></li>
+  <li><a href="#task13">Update FLOSC Docs</a> <span class="status upgrade">Upgrade</span></li>
+</ol>
+</div>
+
+<!-- ============================================================ -->
+<!-- ESSENTIAL FIXES                                                -->
+<!-- ============================================================ -->
+
+<hr class="separator">
+<p class="section-label">Essential Fixes — Must Work for Launch</p>
+
+<!-- TASK 1 ====================================================== -->
+<!-- TASK 2 ====================================================== -->
+<h2 id="task2">Task 2: Fix All AI Hallucinations <span class="status essential">Essential</span></h2>
+
+<div class="task-card">
+
+<h3>Situation</h3>
+<p>On 2026-03m-16d testing, the chatbot responded: <em>"Are you interested in learning French, or do you have questions about the FLOSC lessons?"</em> — on lesaep.com, which teaches <strong>English</strong> pronunciation. This indicates the system prompt is either missing critical identity information or the AI model is ignoring it.</p>
+
+<h4>Files Involved</h4>
+
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/includes/class-ai-chat-dispatch.php">includes/class-ai-chat-dispatch.php — line 23</a> <code>build_system_prompt($phase, $context)</code> — Assembles the system prompt from multiple sources:</p>
+<pre>
+<span class="keyword">public function</span> <span class="fn">build_system_prompt</span>($phase = '', $context = []) {
+    $identity_prompt  = $this-><span class="fn">build_identity_prompt</span>($context);
+    $flosc_process    = $this-><span class="fn">get_flosc_process_prompt</span>($phase, $context);
+    $phase_prompt     = $this-><span class="fn">load_phase_prompt</span>($phase);
+    $orientation_content = $this-><span class="fn">load_orientation_files</span>($context);
+    $context_string   = $this-><span class="fn">build_context_string</span>($context);
+    $ivr_guidance     = $context['ivr_guidance'] ?? '';
+    $feedback_prompt  = $this-><span class="fn">build_feedback_prompt</span>();
+}
+</pre>
+
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 6137</a> Where the system prompt is used:</p>
+<pre>
+$system_prompt = $this->ai_chat_dispatch-><span class="fn">build_system_prompt</span>($phase, $ai_context);
+$response = $this->ai_chat_dispatch-><span class="fn">get_response</span>($message, $system_prompt, $context);
+</pre>
+
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 4463</a> RAG chat path (alternate):</p>
+<pre>
+$system_prompt = $this-><span class="fn">build_rag_system_prompt</span>($user_context);
+$system_prompt .= <span class="string">"\n\n**AVAILABLE CONTENT:**\n{$lessons_list}"</span>;
+$ai_response = $this-><span class="fn">call_ai_with_rag</span>($message, $system_prompt, $tools, $user_context);
+</pre>
+
+<h3>Proposed Solution</h3>
+<ol>
+  <li>Read <code>build_identity_prompt()</code> and <code>get_flosc_process_prompt()</code> in full to see what identity/language info is sent to the AI.</li>
+  <li>Read the IVR configuration files (orientation files loaded by <code>load_orientation_files()</code>) to check what knowledge the AI has about LeSAEp.</li>
+  <li>Read <code>build_rag_system_prompt()</code> for the same.</li>
+  <li>Identify where "French" or other incorrect language references could come from — or where the prompt fails to state "English pronunciation" clearly enough.</li>
+  <li>Add explicit, unambiguous identity constraints: <em>"You are the AI assistant for LeSAEp — Learn Excellent Standard American English Pronunciation. You teach ENGLISH pronunciation. You do NOT teach French, Spanish, or any other language. If asked about other languages, redirect to English pronunciation."</em></li>
+  <li>Test multiple chat inputs to verify no hallucinations persist.</li>
+</ol>
+
+<div class="decision">
+<strong>Decision needed:</strong> Should the AI be allowed to discuss non-English topics at all (e.g., comparing English sounds to French for a French speaker), or should it strictly refuse anything not about SAE pronunciation?
+</div>
+
+</div>
+
+<!-- TASK 3 ====================================================== -->
+<h2 id="task3">Task 3: Email Registration / Magic Link — Bug Fixes <span class="status essential">Essential</span></h2>
+
+<div class="task-card">
+
+<div class="risk" style="background:#f0fdf4; border-color:#86efac;">
+<strong style="color:#166534;">⚠ CRITICAL — READ BEFORE MODIFYING ANY CODE</strong>
+<p style="margin:8px 0 0;">The email → magic link → guest login flow is <strong>WORKING</strong>. The core system — email submission, magic link generation, token-based login, quiz data transfer from DigitalOcean to WordPress, welcome message display, guest link use-count tracking — all function correctly as of 2026-03m-17d. <strong>Only the 3 specific bugs below need fixing.</strong> Do NOT refactor, reorganize, "improve", or rewrite any working code. Surgical fixes only.</p>
+</div>
+
+<h3>What Works (DO NOT TOUCH)</h3>
+<ul>
+  <li>✅ Email entry after quiz → REST POST to <code>/register-email</code> → magic link email sent</li>
+  <li>✅ Magic link login (<code>?flosc_magic=TOKEN</code>) → user created or found → WP auth cookie set → redirect back</li>
+  <li>✅ Quiz data pulled from DigitalOcean API → stored in user meta → audio files downloaded to <code>flosc-users/{user_id}/sessions/{session_id}/</code></li>
+  <li>✅ Welcome message with remaining-uses count displayed in chat on login</li>
+  <li>✅ Guest link use counter (10 uses over 30 days) — decrements correctly</li>
+  <li>✅ Profile bar submenu → profile link works</li>
+  <li>✅ LeSAEp tab on BuddyBoss profile → shows quiz results with phrase scores</li>
+  <li>✅ Score email sent to user after quiz completion</li>
+</ul>
+
+<h3>Bug 1: Triple Backslashes in "We've sent you" Message</h3>
+
+<h4>Symptom</h4>
+<p>After email submission, the chat displays: <code>We\\\'ve sent you a Complimentary LeSAEp Learners Guest Access Link...</code> — three visible backslashes before the apostrophe.</p>
+
+<h4>Root Cause</h4>
+<p>The message template stored in the WordPress options table has accumulated escape layers. WordPress <code>update_option()</code> calls <code>maybe_serialize()</code> which adds one layer. The admin settings page may apply <code>wp_kses()</code> or <code>sanitize_text_field()</code> on save, adding another. On retrieval, <code>flosc_get_setting()</code> returns the data with all layers intact because — unlike autoprompts — this message does NOT pass through the stripslashes cleanup loop.</p>
+
+<h4>Files Involved</h4>
+
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/admin/flosc-app.php">admin/flosc-app.php — line 899-900</a> Where the message is loaded into FLOSC_CONFIG:</p>
+<pre>
+<span class="string">'guestLinkCheckEmailMessage'</span> => <span class="fn">flosc_get_setting</span>(<span class="string">'guest_link_check_email_message'</span>,
+    <span class="string">"We've sent you a {link_name} to your email..."</span>),
+</pre>
+
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/admin/flosc-app.php">admin/flosc-app.php — line 823</a> The stripslashes loop that cleans autoprompts (but NOT guest link messages):</p>
+<pre>
+<span class="comment">// Strip all accumulated backslash layers from corrupted data</span>
+$prev = <span class="keyword">null</span>;
+<span class="keyword">while</span> ($prev !== $raw) { $prev = $raw; $raw = <span class="fn">stripslashes_deep</span>($raw); }
+</pre>
+
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 4643</a> Where JS uses the config value:</p>
+<pre>
+<span class="keyword">const</span> checkEmailMsg = (this.config.guestLinkCheckEmailMessage || <span class="string">"We've sent you a..."</span>)
+    .<span class="fn">replace</span>(<span class="string">'{link_name}'</span>, this.config.guestLinkName || <span class="string">'...'</span>);
+</pre>
+
+<h4>Fix</h4>
+<p>Apply the same <code>stripslashes</code> treatment to the guest link message settings when loading them into FLOSC_CONFIG. In <code>admin/flosc-app.php</code>, where <code>guestLinkCheckEmailMessage</code> and <code>guestLinkWelcomeMessage</code> are retrieved, wrap with <code>wp_unslash()</code>:</p>
+<pre>
+<span class="comment">// BEFORE (buggy):</span>
+<span class="string">'guestLinkCheckEmailMessage'</span> => <span class="fn">flosc_get_setting</span>(<span class="string">'guest_link_check_email_message'</span>, <span class="string">"We've sent you..."</span>),
+
+<span class="comment">// AFTER (fixed):</span>
+<span class="string">'guestLinkCheckEmailMessage'</span> => <span class="fn">wp_unslash</span>(<span class="fn">flosc_get_setting</span>(<span class="string">'guest_link_check_email_message'</span>, <span class="string">"We've sent you..."</span>)),
+</pre>
+<p>Apply the same <code>wp_unslash()</code> to <code>guestLinkWelcomeMessage</code>, <code>guestLinkName</code>, and <code>guestLinkProfileConfirmMessage</code> — any setting that may contain apostrophes.</p>
+<p><strong>Alternative (database-level fix):</strong> If the corruption is already baked into the stored option value, also run a one-time cleanup: <code>update_option('flosc_settings', wp_unslash(get_option('flosc_settings')))</code> from WP-CLI or a temporary admin action.</p>
+
+<hr style="border:none;border-top:1px dashed #e2e8f0;margin:24px 0;">
+
+<h3>Bug 2: Nickname &amp; Password Prompt Not Appearing After Magic Link Login</h3>
+
+<h4>Symptom</h4>
+<p>After first magic link login, user goes straight to the chat with the welcome message. The nickname/password profile card (which exists in the code at <code>showGuestProfileCard()</code>) never appears.</p>
+
+<h4>The Code That Should Trigger It</h4>
+
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 2050</a> Sets a short-lived transient on first click:</p>
+<pre>
+<span class="keyword">if</span> ($is_first_click) {
+    <span class="fn">set_transient</span>(<span class="string">'flosc_first_guest_login_'</span> . $user_id, <span class="keyword">true</span>, 10 * MINUTE_IN_SECONDS);
+}
+</pre>
+
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/admin/flosc-app.php">admin/flosc-app.php — line 912-918</a> Reads and DELETES that transient when building FLOSC_CONFIG:</p>
+<pre>
+<span class="string">'isFirstGuestLogin'</span> => (<span class="keyword">function</span>() {
+    <span class="keyword">if</span> (!<span class="fn">is_user_logged_in</span>()) <span class="keyword">return false</span>;
+    $key = <span class="string">'flosc_first_guest_login_'</span> . <span class="fn">get_current_user_id</span>();
+    $val = <span class="fn">get_transient</span>($key);
+    <span class="keyword">if</span> ($val === <span class="keyword">false</span>) <span class="keyword">return false</span>;
+    <span class="fn">delete_transient</span>($key);   <span class="comment">// ONE-TIME USE — consumed here</span>
+    <span class="keyword">return true</span>;
+})(),
+</pre>
+
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 326</a> JS checks and shows the card:</p>
+<pre>
+<span class="keyword">if</span> (this.config.isFirstGuestLogin) {
+    this.<span class="fn">showGuestProfileCard</span>();
+}
+</pre>
+
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 4715-4760</a> The profile card itself — already built with nickname input, password input, Save/Skip buttons, REST POST to <code>/update-guest-profile</code>.</p>
+
+<h4>Likely Cause</h4>
+<p>The <code>isFirstGuestLogin</code> check at JS line 326 is nested INSIDE the <code>guestLinkRemaining</code> block (line 318-330). The profile card only shows if <code>guestLinkRemaining !== null</code> AND <code>isFirstGuestLogin === true</code>. Both depend on transients set during the magic link handler and consumed on the next page render. If either transient expires before the page loads (network lag, redirect delay, OPcache serving stale PHP), the flag is <code>false</code> and the card never appears.</p>
+<p>Diagnostic steps:</p>
+<ol>
+  <li>Check if <code>isFirstGuestLogin</code> is actually <code>true</code> in the rendered FLOSC_CONFIG by viewing page source after a first magic link login</li>
+  <li>If it's <code>false</code>: the transient expired or was never set — check the <code>$is_first_click</code> logic in the magic link handler</li>
+  <li>If it's <code>true</code> but the card doesn't appear: the JS execution path has a different issue — check console for errors in <code>showGuestProfileCard()</code></li>
+</ol>
+
+<h4>Required Behavior Change</h4>
+<p>Both nickname and password are <strong>REQUIRED</strong>. The current code treats password as optional (<code>placeholder="Password (optional — min 6 characters)"</code> and the save handler only requires nickname). Fix:</p>
+<pre>
+<span class="comment">// CURRENT (line 4724): password is optional</span>
+placeholder=<span class="string">"Password (optional — min 6 characters)"</span>
+
+<span class="comment">// FIXED: password is required</span>
+placeholder=<span class="string">"Choose a password (min 6 characters)"</span>
+
+<span class="comment">// CURRENT save handler (line 4745): only validates name</span>
+<span class="keyword">if</span> (!name) { nameEl?.<span class="fn">focus</span>(); <span class="keyword">return</span>; }
+
+<span class="comment">// FIXED: validate both fields</span>
+<span class="keyword">if</span> (!name) { nameEl?.<span class="fn">focus</span>(); <span class="keyword">return</span>; }
+<span class="keyword">if</span> (!password || password.length &lt; 6) {
+    <span class="keyword">if</span> (errEl) { errEl.textContent = <span class="string">'Password must be at least 6 characters.'</span>; errEl.style.display = <span class="string">'block'</span>; }
+    passEl?.<span class="fn">focus</span>();
+    <span class="keyword">return</span>;
+}
+</pre>
+
+<h4>Re-prompt Logic</h4>
+<p>Current "Skip for now" removes the card entirely. With both fields required:</p>
+<ul>
+  <li><strong>Dismiss = "not right now"</strong> — card removed for this session only (set <code>sessionStorage.flosc_nickname_prompt_dismissed = true</code>)</li>
+  <li><strong>Next login</strong> — prompt reappears because server-side <code>_flosc_profile_completed</code> meta is still unset</li>
+  <li><strong>Completed</strong> — both saved → <code>update_user_meta($user_id, '_flosc_profile_completed', true)</code> → never prompt again</li>
+  <li><strong>Gate check</strong> — PHP checks <code>get_user_meta($user_id, '_flosc_profile_completed', true)</code>. If truthy, <code>needsProfileCompletion</code> is forced to <code>false</code> regardless of transient state. One check, one field (nickname), since both are saved together or not at all.</li>
+</ul>
+<p>Replace the transient-based <code>isFirstGuestLogin</code> flag with a persistent <code>needsProfileCompletion</code> flag based on user meta:</p>
+<pre>
+<span class="comment">// In admin/flosc-app.php FLOSC_CONFIG builder — REPLACE isFirstGuestLogin with:</span>
+<span class="string">'needsProfileCompletion'</span> => (<span class="keyword">function</span>() {
+    <span class="keyword">if</span> (!<span class="fn">is_user_logged_in</span>()) <span class="keyword">return false</span>;
+    $uid = <span class="fn">get_current_user_id</span>();
+    <span class="keyword">if</span> (<span class="fn">get_user_meta</span>($uid, <span class="string">'_flosc_profile_completed'</span>, <span class="keyword">true</span>)) <span class="keyword">return false</span>;
+    $user = <span class="fn">get_userdata</span>($uid);
+    <span class="keyword">if</span> (!$user || !<span class="fn">in_array</span>(<span class="string">'lesaep_learners'</span>, $user->roles)) <span class="keyword">return false</span>;
+    <span class="keyword">return true</span>;
+})(),
+</pre>
+<pre>
+<span class="comment">// In flosc-app.js init — REPLACE the isFirstGuestLogin check with:</span>
+<span class="keyword">if</span> (this.config.needsProfileCompletion
+    &amp;&amp; !sessionStorage.<span class="fn">getItem</span>(<span class="string">'flosc_nickname_prompt_dismissed'</span>)) {
+    this.<span class="fn">showGuestProfileCard</span>();
+}
+</pre>
+
+<hr style="border:none;border-top:1px dashed #e2e8f0;margin:24px 0;">
+
+<h3>Bug 3: Recordings Not Playable on BuddyBoss LeSAEp Tab</h3>
+
+<h4>Symptom</h4>
+<p>On the BuddyBoss profile → LeSAEp tab → expand a phrase with the down arrow → audio player does not play. The phrase text and percentage score display correctly.</p>
+
+<h4>How Recordings Are Stored</h4>
+<p>During magic link login, the handler at <code>flosc.php:2037</code> calls one of two paths:</p>
+<ol>
+  <li><strong>Path A — DigitalOcean pull</strong> (<code>pull_session_from_do()</code>, line 8564): Downloads audio from <code>https://api.lesaep.com/session/{session_id}/audio/{n}</code> → saves to <code>wp-content/uploads/flosc-users/{user_id}/sessions/{session_id}/phrase-{n}.webm</code></li>
+  <li><strong>Path B — Browser quiz data</strong> (<code>store_browser_quiz_data()</code>, line 8431): Moves files from <code>flosc-temp/{temp_id}/</code> → <code>flosc-users/{user_id}/sessions/{temp_id}/</code></li>
+</ol>
+
+<h4>How Playback Is Built</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 10383-10400</a> In <code>render_buddyboss_quiz_tab()</code>:</p>
+<pre>
+$user_audio_dir = $upload_dir[<span class="string">'basedir'</span>] . <span class="string">'/flosc-users/'</span> . $user_id
+    . <span class="string">'/sessions/'</span> . $session_id;
+<span class="keyword">foreach</span> ([<span class="string">'webm'</span>, <span class="string">'mp4'</span>, <span class="string">'ogg'</span>] <span class="keyword">as</span> $ext) {
+    <span class="keyword">if</span> (<span class="fn">file_exists</span>($user_audio_dir . <span class="string">'/phrase-'</span> . $phrase_num . <span class="string">'.'</span> . $ext)) {
+        $audio_file = <span class="string">'phrase-'</span> . $phrase_num . <span class="string">'.'</span> . $ext;
+        <span class="keyword">break</span>;
+    }
+}
+<span class="keyword">if</span> ($audio_file) {
+    $audio_url = <span class="fn">admin_url</span>(<span class="string">'admin-ajax.php'</span>) . <span class="string">'?'</span> . <span class="fn">http_build_query</span>([
+        <span class="string">'action'</span>     => <span class="string">'flosc_serve_user_audio'</span>,
+        <span class="string">'user_id'</span>    => $user_id,
+        <span class="string">'session_id'</span> => $session_id,
+        <span class="string">'file'</span>       => $audio_file,
+    ]);
+    <span class="keyword">echo</span> <span class="string">'&lt;audio controls src="' . esc_url($audio_url) . '"&gt;&lt;/audio&gt;'</span>;
+}
+</pre>
+
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 10235-10280</a> The AJAX proxy <code>ajax_serve_user_audio()</code> — validates filename regex, validates session_id, builds filesystem path, serves file with correct Content-Type header via <code>readfile()</code>.</p>
+
+<h4>Diagnostic Steps (must do before coding any fix)</h4>
+<ol>
+  <li><strong>SSH to ChemiCloud and check if audio files physically exist:</strong>
+    <pre>ssh chemicloud
+ls -la ~/public_html/wp-content/uploads/flosc-users/</pre>
+    Find the user's ID directory, then check <code>sessions/{session_id}/phrase-*.webm</code></li>
+  <li><strong>Check what <code>session_id</code> is stored in user meta:</strong>
+    <pre>wp user meta get {USER_ID} _flosc_last_quiz_data --format=json \
+  | python3 -m json.tool | grep session_id</pre>
+    Compare this session_id against the directory name under <code>flosc-users/{user_id}/sessions/</code></li>
+  <li><strong>Test the AJAX proxy directly in the browser (while logged in as admin):</strong>
+    <pre>https://dainis.net/wp-admin/admin-ajax.php?action=flosc_serve_user_audio
+  &amp;user_id=X&amp;session_id=Y&amp;file=phrase-1.webm</pre>
+    Check response: 404 = file not found, 403 = permission denied, 400 = bad filename regex</li>
+  <li><strong>Check error log:</strong> <code>grep "flosc_serve_user_audio\|pull_session_from_do" ~/public_html/wp-content/debug.log | tail -20</code></li>
+</ol>
+
+<h4>Likely Causes (ranked by probability)</h4>
+<ul>
+  <li><strong>1. Files never downloaded:</strong> If <code>pull_session_from_do()</code> timed out or the DO API returned non-200, <code>score_data</code> was saved (with session_id) but no audio files were written. The <code>file_exists()</code> check silently returns false → no <code>&lt;audio&gt;</code> tag rendered at all.</li>
+  <li><strong>2. session_id mismatch:</strong> The stored <code>session_id</code> in <code>_flosc_last_quiz_data</code> doesn't match the directory name on disk. Verify with diagnostic steps 1 and 2 above.</li>
+  <li><strong>3. AJAX proxy permission check:</strong> The proxy at line 10245 checks user permission. If the logged-in user is viewing their own profile but the permission check expects admin, playback fails silently.</li>
+</ul>
+
+<h4>Files Summary</h4>
+<table style="width:100%;font-size:13px;border-collapse:collapse;margin:12px 0;">
+<tr style="background:#f1f5f9;"><th style="text-align:left;padding:6px;border:1px solid #e2e8f0;">File</th><th style="text-align:left;padding:6px;border:1px solid #e2e8f0;">Lines</th><th style="text-align:left;padding:6px;border:1px solid #e2e8f0;">Purpose</th></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/admin/flosc-app.php">admin/flosc-app.php</a></td><td style="padding:6px;border:1px solid #e2e8f0;">899-920</td><td style="padding:6px;border:1px solid #e2e8f0;">FLOSC_CONFIG: guest link messages, isFirstGuestLogin flag</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/admin/flosc-app.php">admin/flosc-app.php</a></td><td style="padding:6px;border:1px solid #e2e8f0;">823</td><td style="padding:6px;border:1px solid #e2e8f0;">Stripslashes loop (autoprompts only — needs extending)</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js</a></td><td style="padding:6px;border:1px solid #e2e8f0;">318-330</td><td style="padding:6px;border:1px solid #e2e8f0;">Welcome message + profile card trigger</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js</a></td><td style="padding:6px;border:1px solid #e2e8f0;">4604-4700</td><td style="padding:6px;border:1px solid #e2e8f0;">processEmailAuth() — email submission + quiz data attachment</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js</a></td><td style="padding:6px;border:1px solid #e2e8f0;">4715-4760</td><td style="padding:6px;border:1px solid #e2e8f0;">showGuestProfileCard() — nickname + password card</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php</a></td><td style="padding:6px;border:1px solid #e2e8f0;">2020-2060</td><td style="padding:6px;border:1px solid #e2e8f0;">Magic link handler — transient flags, quiz data pull</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php</a></td><td style="padding:6px;border:1px solid #e2e8f0;">6990-7030</td><td style="padding:6px;border:1px solid #e2e8f0;">handle_email_registration() — sends magic link email</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php</a></td><td style="padding:6px;border:1px solid #e2e8f0;">7103-7134</td><td style="padding:6px;border:1px solid #e2e8f0;">handle_update_guest_profile() — saves nickname + password</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php</a></td><td style="padding:6px;border:1px solid #e2e8f0;">8431-8530</td><td style="padding:6px;border:1px solid #e2e8f0;">store_browser_quiz_data() — Path B: stores quiz + moves audio</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php</a></td><td style="padding:6px;border:1px solid #e2e8f0;">8564-8700</td><td style="padding:6px;border:1px solid #e2e8f0;">pull_session_from_do() — Path A: pulls from DO API + downloads audio</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php</a></td><td style="padding:6px;border:1px solid #e2e8f0;">10235-10280</td><td style="padding:6px;border:1px solid #e2e8f0;">ajax_serve_user_audio() — AJAX proxy for audio playback</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php</a></td><td style="padding:6px;border:1px solid #e2e8f0;">10370-10400</td><td style="padding:6px;border:1px solid #e2e8f0;">render_buddyboss_quiz_tab() — builds audio player HTML</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/admin/login-registration.php">admin/login-registration.php</a></td><td style="padding:6px;border:1px solid #e2e8f0;">—</td><td style="padding:6px;border:1px solid #e2e8f0;">Admin UI for guest link message customization</td></tr>
+</table>
+
+</div>
+
+<!-- ============================================================ -->
+<!-- PLANNED UPGRADES                                              -->
+<!-- ============================================================ -->
+
+<hr class="separator">
+<p class="section-label">Planned Upgrades — Revenue-Enabling, Post Essential Fixes</p>
+
+<!-- TASK 4 ====================================================== -->
+<h2 id="task4" class="upgrade">Task 4: Access Code System Review <span class="status upgrade">Upgrade</span></h2>
+
+<div class="task-card">
+
+<h3>Situation</h3>
+<p>The access code system already exists and is fully wired across frontend and backend. Users can type "access code" in chat or click the access code link in the auth modal. Codes are stored per-flow in the <code>flosc_flow_{flow_id}</code> WordPress option. Redemption grants a role (default: <code>lesaep_learners</code>) and sets member-level meta.</p>
+
+<h4>Files Involved</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 5471</a> Chat-based access code flow</p>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 7580</a> <code>_showAccessCodeInput(context)</code> — UI for code entry</p>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 7647</a> <code>_redeemAccessCode(code, context)</code> — POST to <code>/redeem-access-code</code></p>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 4129</a> REST route <code>/redeem-access-code</code></p>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 6548</a> <code>handle_redeem_access_code()</code> — validates code, grants role</p>
+
+<h3>Proposed Solution</h3>
+<p>Needs review and testing to confirm it works end-to-end on the live site. If functional, this task is done. If broken, specific bugs need to be identified and fixed.</p>
+
+<div class="decision">
+<strong>Decision needed:</strong> Is the current single-code-per-flow model sufficient? Or do you need multiple unique access codes (e.g., one per investor, tracking who redeemed)?
+</div>
+
+</div>
+
+<!-- TASK 5 ====================================================== -->
+<h2 id="task5" class="upgrade">Task 5: User Settings Panel <span class="status upgrade">Upgrade</span></h2>
+
+<div class="task-card">
+
+<h3>Situation</h3>
+<p>An AutoPromptPanel exists for admins (<code>_renderAdminTestPanel()</code>) that shows pills grouped by user state. There is no equivalent panel for regular users with settings like font size, theme, or a link to their WordPress profile.</p>
+
+<h4>Files Involved</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 833</a> <code>floscShowUserAutoPrompts()</code> — controls panel visibility by user state</p>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 891</a> <code>_renderAdminTestPanel()</code> — admin-only panel (model for user panel)</p>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/admin/flosc-app.php">admin/flosc-app.php — line 395</a> HTML container: <code>#flosc_input_user_autoprompts_panel</code></p>
+
+<h3>Proposed Solution</h3>
+<ol>
+  <li>Add a settings icon/button in the FLOSC app header (near the existing controls).</li>
+  <li>When clicked, render a panel (similar to AutoPromptPanel) with:
+    <ul>
+      <li><strong>Font size</strong> — small / medium / large, stored in <code>localStorage</code>, applies CSS variable</li>
+      <li><strong>Theme</strong> — light / dark (if supported), stored in <code>localStorage</code></li>
+      <li><strong>Profile link</strong> — "Manage Account" → opens <code>https://dainis.net/wp-admin/profile.php</code> (or relevant profile URL) in new tab. Only shown to logged-in users.</li>
+    </ul>
+  </li>
+  <li>Persist preferences in <code>localStorage</code> so they survive page reloads without server round-trips.</li>
+</ol>
+
+</div>
+
+<!-- TASK 6 ====================================================== -->
+<h2 id="task6" class="upgrade">Task 6: Social Media Posting Automation <span class="status upgrade">Upgrade</span></h2>
+
+<div class="task-card">
+
+<h3>Situation</h3>
+<p>LeSAEp needs social media presence to drive traffic and attract investors. Most social media platforms restrict or prohibit API-based auto-posting. Manual posting is time-consuming.</p>
+
+<h3>Options to Evaluate</h3>
+<ol>
+  <li><strong>OpenClaw integration</strong> — Browser automation tool that opens a real browser session and posts on your behalf (types text, uploads video, clicks post). Behavior looks organic to the platform. Requires OpenClaw license/setup.</li>
+  <li><strong>Content release schedule tab</strong> — Admin panel within FLOSC where you queue posts (text + media + target platform + scheduled time). Could integrate with:
+    <ul>
+      <li>Buffer/Hootsuite API (for platforms that allow it)</li>
+      <li>OpenClaw or Playwright for platforms that don't</li>
+      <li>Manual workflow: generate post content + notification when it's time to post</li>
+    </ul>
+  </li>
+  <li><strong>AI content generation</strong> — Generate short pronunciation tips, "did you know" posts, lesson previews from IVR content. Schedule and review before posting.</li>
+</ol>
+
+<div class="decision">
+<strong>Decisions needed:</strong>
+<ul>
+  <li>Which platforms are priority? TikTok, Instagram, YouTube Shorts, X/Twitter, Facebook, LinkedIn?</li>
+  <li>Budget for automation tools (OpenClaw license, Buffer plan)?</li>
+  <li>Should this live inside the FLOSC admin panel or be a separate tool?</li>
+</ul>
+</div>
+
+</div>
+
+<!-- TASK 7 ====================================================== -->
+<h2 id="task7" class="upgrade">Task 7: Marketing Launch Assessment <span class="status assessment">Assessment</span></h2>
+
+<div class="task-card">
+<h3>Situation</h3>
+<p>Marketing launch tasks need scoping: landing page readiness, social proof, testimonial collection plan, SEO basics, email list setup, launch announcement channels.</p>
+
+<h3>Proposed Work</h3>
+<p>Audit the current live site (lesaep.com) for launch readiness. Generate a prioritized checklist of marketing deliverables with estimated effort. Present for review.</p>
+</div>
+
+<!-- TASK 8 ====================================================== -->
+<h2 id="task8" class="upgrade">Task 8: Toolbuilder Assessment <span class="status assessment">Assessment</span></h2>
+
+<div class="task-card">
+<h3>Situation</h3>
+<p>Toolbuilder capabilities and integration with FLOSC need evaluation.</p>
+
+<h3>Proposed Work</h3>
+<p>Research and document what Toolbuilder can offer for the FLOSC ecosystem. Present options.</p>
+</div>
+
+<!-- TASK 9 ====================================================== -->
+<h2 id="task9" class="upgrade">Task 9: flosc.ai Chatbot Tier Design <span class="status assessment">Assessment</span></h2>
+
+<div class="task-card">
+<h3>Situation</h3>
+<p>flosc.ai needs a tiered chatbot design — free tier, paid tier, enterprise. Pricing model, feature gates, and usage limits need definition.</p>
+
+<h3>Proposed Work</h3>
+<p>Design tier structure with feature matrix, usage limits (messages/month, quiz attempts, etc.), and pricing recommendations based on competitor analysis. Present for review.</p>
+</div>
+
+<!-- TASK 10 ===================================================== -->
+<h2 id="task10" class="upgrade">Task 10: FloscAdmin Terminal with AI Agent <span class="status upgrade">Upgrade</span></h2>
+
+<div class="task-card">
+<h3>Situation</h3>
+<p>A FloscAdmin terminal with AI agent capabilities needs to be built — allowing admin-level operations via conversational AI interface.</p>
+
+<h3>Proposed Work</h3>
+<p>Scope the architecture: what admin actions the AI agent can perform, security boundaries, approval workflows, and integration with existing FLOSC admin panels. Present design for review before implementation.</p>
+</div>
+
+<!-- TASK 11 ===================================================== -->
+<h2 id="task11" class="upgrade">Task 11: AI2AGI Reciprocity Update <span class="status upgrade">Upgrade</span></h2>
+
+<div class="task-card">
+<h3>Situation</h3>
+<p>AI2AGI reciprocity system needs an update. Specific requirements to be defined.</p>
+
+<h3>Proposed Work</h3>
+<p>Review current AI2AGI implementation, identify what needs updating, and present proposed changes for review.</p>
+</div>
+
+<!-- TASK 12 ===================================================== -->
+<h2 id="task12" class="upgrade">Task 12: TikTok Paid Ads Plan <span class="status assessment">Assessment</span></h2>
+
+<div class="task-card">
+<h3>Situation</h3>
+<p>TikTok paid ads could drive traffic to LeSAEp. Needs a campaign strategy targeting English pronunciation learners.</p>
+
+<h3>Proposed Work</h3>
+<p>Draft ad campaign plan: target demographics, ad formats (in-feed video, spark ads), budget tiers ($10/day, $25/day, $50/day), creative direction (short pronunciation tip videos), landing page optimization, and conversion tracking setup. Present for review.</p>
+</div>
+
+<!-- TASK 13 ===================================================== -->
+<h2 id="task13" class="upgrade">Task 13: Update FLOSC Docs <span class="status upgrade">Upgrade</span></h2>
+
+<div class="task-card">
+<h3>Situation</h3>
+<p>FLOSC documentation needs updating to reflect the current v8.0.0 architecture, IVR system, quiz functionality, SSO setup, and admin configuration.</p>
+
+<h3>Proposed Work</h3>
+<p>Audit existing docs, identify gaps, update or create documentation covering: installation, admin configuration, IVR message setup, SSO provider configuration, access codes, theme customization, and deployment workflow. Present outline for review before writing.</p>
+</div>
+
+<hr class="separator">
+<p style="text-align:center; color:#94a3b8; font-size:12px; padding: 20px 0;">
+  FLOSC Launch Task List &bull; 2026-03m-17d &bull; Pending review and prioritization
+</p>
+
+</body>
+<script>
+document.querySelectorAll('a.file-ref').forEach(function(link) {
+  var href = link.getAttribute('href');
+  if (!href || href.indexOf('file:///') !== 0) return;
+  var dir = href.substring(0, href.lastIndexOf('/') + 1);
+  var btn = document.createElement('a');
+  btn.href = dir;
+  btn.className = 'reveal-finder';
+  btn.title = 'Open containing folder in Finder';
+  btn.textContent = '\uD83D\uDCC1';
+  link.parentNode.insertBefore(btn, link.nextSibling);
+});
+</script>
+</html>
