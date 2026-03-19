@@ -606,4 +606,388 @@ jQuery(document).ready(function($) {
     <strong>💡 Remember:</strong> After adding your API keys, click <strong>"Save Settings"</strong> at the bottom of this page, then use the <strong>"Test AI Connection"</strong> button above to verify everything works!
 </div>
 
+<!-- ============================================ -->
+<!-- SECTION: AI PERSONALITY (Fix 12 / Fix 15) -->
+<!-- ============================================ -->
+<hr style="margin: 40px 0;" id="flosc-personality-section">
+<h3 class="flosc-ai-section-heading">🧠 AI Personality & Identity</h3>
+<p class="description">Define who your AI is and how it interacts with users. These fields are injected into every AI system prompt.</p>
+
+<table class="form-table">
+    <tr>
+        <th scope="row"><label for="flow_ai_personality_name">AI Name</label></th>
+        <td>
+            <input type="text" id="flow_ai_personality_name" name="flow_ai_personality_name"
+                   value="<?php echo esc_attr($flow_settings['ai_personality_name'] ?? ($flow_settings['ai_name'] ?? '')); ?>"
+                   class="regular-text" placeholder="e.g. LeSAEp Coach">
+            <p class="description">What users call the AI.</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_ai_personality_role">AI Role</label></th>
+        <td>
+            <input type="text" id="flow_ai_personality_role" name="flow_ai_personality_role"
+                   value="<?php echo esc_attr($flow_settings['ai_personality_role'] ?? ($flow_settings['ai_role'] ?? '')); ?>"
+                   class="large-text" placeholder="e.g. pronunciation coach and learning guide">
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_ai_personality_traits">Personality Traits</label></th>
+        <td>
+            <textarea id="flow_ai_personality_traits" name="flow_ai_personality_traits" rows="3" class="large-text"><?php
+                echo esc_textarea($flow_settings['ai_personality_traits'] ?? ($flow_settings['ai_traits'] ?? ''));
+            ?></textarea>
+            <p class="description">Tone and approach. e.g. "Encouraging, patient, specific, action-oriented."</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_ai_mission">Mission Statement</label></th>
+        <td>
+            <textarea id="flow_ai_mission" name="flow_ai_mission" rows="3" class="large-text"><?php
+                echo esc_textarea($flow_settings['ai_mission'] ?? '');
+            ?></textarea>
+            <p class="description">Core purpose in your own words. Injected into the orientation brief.</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_ai_boundaries">Boundaries & Limitations</label></th>
+        <td>
+            <textarea id="flow_ai_boundaries" name="flow_ai_boundaries" rows="3" class="large-text"><?php
+                echo esc_textarea($flow_settings['ai_boundaries'] ?? '');
+            ?></textarea>
+            <p class="description">What the AI should refuse to do. e.g. "Never diagnose speech impediments. Never guarantee specific results."</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_ai_topic_scope">Topic Scope</label></th>
+        <td>
+            <textarea id="flow_ai_topic_scope" name="flow_ai_topic_scope" rows="2" class="large-text"><?php
+                echo esc_textarea($flow_settings['ai_topic_scope'] ?? '');
+            ?></textarea>
+            <p class="description">What topics the AI covers. e.g. "Stay within English pronunciation and phonetics."</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_ai_off_topic_message">Off-Topic Response</label></th>
+        <td>
+            <textarea id="flow_ai_off_topic_message" name="flow_ai_off_topic_message" rows="2" class="large-text"><?php
+                echo esc_textarea($flow_settings['ai_off_topic_message'] ?? '');
+            ?></textarea>
+            <p class="description">How the AI redirects off-topic questions.</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_ai_off_topic_links">Referral Links</label></th>
+        <td>
+            <textarea id="flow_ai_off_topic_links" name="flow_ai_off_topic_links" rows="3" class="large-text"><?php
+                echo esc_textarea($flow_settings['ai_off_topic_links'] ?? '');
+            ?></textarea>
+            <p class="description">External resources to recommend when users need help outside your scope. One per line. Use affiliate links where applicable.</p>
+        </td>
+    </tr>
+</table>
+
+<!-- ============================================ -->
+<!-- SECTION: KNOWLEDGE BASE (Fix 15) -->
+<!-- ============================================ -->
+<hr style="margin: 40px 0;" id="flosc-kb-section">
+<h3 class="flosc-ai-section-heading">📚 Knowledge Base</h3>
+<p class="description">Upload markdown files containing lesson catalogs, FAQs, product info, and teaching guidelines. These files are injected into the AI knowledge base on every session.</p>
+
+<?php
+// Fix 15: Display any KB action success message
+if (isset($_GET['kb_action'])) {
+    $kb_msg = '';
+    if ($_GET['kb_action'] === 'uploaded')      $kb_msg = 'File uploaded successfully.';
+    if ($_GET['kb_action'] === 'deleted')       $kb_msg = 'File deleted.';
+    if ($_GET['kb_action'] === 'toggled')       $kb_msg = 'Access level updated.';
+    if ($_GET['kb_action'] === 'saved')         $kb_msg = 'File saved.';
+    if ($_GET['kb_action'] === 'error')         $kb_msg = isset($_GET['kb_error']) ? urldecode($_GET['kb_error']) : 'An error occurred.';
+    if ($kb_msg):
+?>
+<div class="notice notice-success inline" style="margin: 0 0 15px;"><p><?php echo esc_html($kb_msg); ?></p></div>
+<?php endif; } ?>
+
+<?php
+// Fix 6: Regenerate Lesson Catalog button
+$catalog_file   = defined('FLOSC_PLUGIN_DIR') ? FLOSC_PLUGIN_DIR . 'ai_configuration_files/lesaep_lesson_catalog.md' : '';
+$catalog_exists = $catalog_file && file_exists($catalog_file);
+$catalog_gen    = get_option('flosc_lesson_catalog_generated', '');
+$catalog_count  = get_option('flosc_lesson_catalog_count', 0);
+$regen_url      = wp_nonce_url(admin_url('admin-post.php?action=flosc_regenerate_lesson_catalog'), 'flosc_regen_catalog');
+?>
+<div style="background: #f6f7f7; border: 1px solid #ddd; padding: 12px 16px; margin-bottom: 20px; border-radius: 3px; display: flex; align-items: center; gap: 16px;">
+    <div style="flex: 1;">
+        <strong>Lesson Catalog</strong>
+        <?php if ($catalog_exists): ?>
+            <span style="color: #46b450; margin-left: 8px;">✓ Generated</span>
+            <?php if ($catalog_gen): ?><span style="color: #888; font-size: 12px; margin-left: 8px;"><?php echo esc_html($catalog_gen); ?> (<?php echo (int)$catalog_count; ?> lessons)</span><?php endif; ?>
+        <?php else: ?>
+            <span style="color: #dc3232; margin-left: 8px;">Not yet generated</span>
+        <?php endif; ?>
+        <p class="description" style="margin: 4px 0 0;">Auto-regenerates when a LeSAEp lesson is saved. Manual regeneration queries all published LeSAEp posts.</p>
+    </div>
+    <a href="<?php echo esc_url($regen_url); ?>" class="button button-secondary">Regenerate Lesson Catalog</a>
+</div>
+
+<?php
+$orientation_dir = defined('FLOSC_PLUGIN_DIR') ? FLOSC_PLUGIN_DIR . 'ai_configuration_files/' : '';
+$kb_files = [];
+if ($orientation_dir && is_dir($orientation_dir)) {
+    foreach (scandir($orientation_dir) as $f) {
+        if ($f !== '.' && $f !== '..' && in_array(pathinfo($f, PATHINFO_EXTENSION), ['md', 'txt'])) {
+            $kb_files[] = $f;
+        }
+    }
+}
+
+$editing_kb_file = isset($_GET['kb_edit']) ? sanitize_file_name($_GET['kb_edit']) : '';
+$editing_kb_content = '';
+if ($editing_kb_file && $orientation_dir && file_exists($orientation_dir . $editing_kb_file)) {
+    $editing_kb_content = file_get_contents($orientation_dir . $editing_kb_file);
+}
+?>
+
+<!-- Upload form (separate from the main settings form) -->
+<div class="card" style="max-width: 700px; margin-bottom: 20px;">
+    <h4 style="margin-top: 0;">Upload Knowledge File</h4>
+    <form method="post" enctype="multipart/form-data" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+        <?php wp_nonce_field('flosc_kb_upload', 'flosc_kb_upload_nonce'); ?>
+        <input type="hidden" name="action" value="flosc_kb_upload">
+        <input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr($GLOBALS['flosc_current_ivr'] ?? ''); ?>">
+        <table class="form-table" style="margin: 0;">
+            <tr>
+                <th scope="row" style="padding-top: 8px;"><label for="kb_file_upload">File</label></th>
+                <td>
+                    <input type="file" name="orientation_file" id="kb_file_upload" accept=".md,.txt" required>
+                    <p class="description">.md or .txt files only.</p>
+                </td>
+            </tr>
+            <tr>
+                <th scope="row" style="padding-top: 8px;"><label for="kb_access_level">Access Level</label></th>
+                <td>
+                    <select name="file_access_level" id="kb_access_level">
+                        <option value="public">Public (all users including visitors)</option>
+                        <option value="members">Members Only</option>
+                    </select>
+                </td>
+            </tr>
+        </table>
+        <div style="margin-top: 10px;">
+            <button type="submit" class="button button-secondary">Upload File</button>
+        </div>
+    </form>
+</div>
+
+<!-- File list -->
+<?php if (!empty($kb_files)): ?>
+<table class="widefat" style="max-width: 100%; margin-bottom: 20px;">
+    <thead>
+        <tr>
+            <th style="width: 35%;">Filename</th>
+            <th style="width: 15%;">Access</th>
+            <th style="width: 10%;">Size</th>
+            <th style="width: 15%;">Modified</th>
+            <th style="width: 25%;">Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+    <?php foreach ($kb_files as $kbf):
+        $fp = $orientation_dir . $kbf;
+        $kbf_access = $flow_settings['knowledge_access_' . md5($kbf)] ?? 'public';
+        $toggle_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_kb_toggle&kb_file=' . urlencode($kbf) . '&return_ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '')), 'flosc_kb_toggle_' . $kbf);
+        $delete_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_kb_delete&kb_file=' . urlencode($kbf) . '&return_ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '')), 'flosc_kb_delete_' . $kbf);
+        $edit_url   = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '') . '&tab=ai&kb_edit=' . urlencode($kbf) . '#flosc-kb-section');
+    ?>
+        <tr>
+            <td>
+                <strong><?php echo esc_html($kbf); ?></strong>
+                <?php if ($editing_kb_file === $kbf): ?><span style="color:#2271b1;margin-left:6px;">← editing</span><?php endif; ?>
+            </td>
+            <td>
+                <?php if ($kbf_access === 'members'): ?>
+                    <span style="background:#8b5cf6;color:#fff;padding:2px 7px;border-radius:3px;font-size:11px;">Members</span>
+                <?php else: ?>
+                    <span style="background:#10b981;color:#fff;padding:2px 7px;border-radius:3px;font-size:11px;">Public</span>
+                <?php endif; ?>
+            </td>
+            <td><?php echo file_exists($fp) ? size_format(filesize($fp)) : '—'; ?></td>
+            <td><?php echo file_exists($fp) ? human_time_diff(filemtime($fp), current_time('timestamp')) . ' ago' : '—'; ?></td>
+            <td>
+                <a href="<?php echo esc_url($edit_url); ?>" class="button button-small"><?php echo $editing_kb_file === $kbf ? 'Editing...' : 'Edit'; ?></a>
+                <a href="<?php echo esc_url($toggle_url); ?>" class="button button-small">Toggle Access</a>
+                <a href="<?php echo esc_url($delete_url); ?>" class="button button-small" style="color:#d63638;" onclick="return confirm('Delete <?php echo esc_js($kbf); ?>? Cannot be undone.');">Delete</a>
+            </td>
+        </tr>
+    <?php endforeach; ?>
+    </tbody>
+</table>
+<?php else: ?>
+<p style="color:#667;font-style:italic;">No knowledge files yet. Upload your first file above.</p>
+<?php endif; ?>
+
+<!-- File editor (if editing) -->
+<?php if ($editing_kb_file): ?>
+<div class="card" style="max-width: 100%; margin-bottom: 20px;">
+    <h4 style="margin-top: 0;">Editing: <?php echo esc_html($editing_kb_file); ?></h4>
+    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+        <?php wp_nonce_field('flosc_kb_save_edit', 'flosc_kb_save_edit_nonce'); ?>
+        <input type="hidden" name="action" value="flosc_kb_save_edit">
+        <input type="hidden" name="editing_file" value="<?php echo esc_attr($editing_kb_file); ?>">
+        <input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr($GLOBALS['flosc_current_ivr'] ?? ''); ?>">
+        <textarea name="file_content" rows="30" class="large-text code" style="font-family: monospace; font-size: 13px; width: 100%;"><?php echo esc_textarea($editing_kb_content); ?></textarea>
+        <div style="margin-top: 10px;">
+            <button type="submit" class="button button-primary">Save File</button>
+            <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '') . '&tab=ai#flosc-kb-section')); ?>" class="button" style="margin-left: 8px;">Cancel</a>
+        </div>
+    </form>
+</div>
+<?php endif; ?>
+
+<!-- ============================================ -->
+<!-- SECTION: PROVIDER ACCURACY TEST (Fix 14) -->
+<!-- ============================================ -->
+<hr style="margin: 40px 0;" id="flosc-accuracy-test">
+<h3 class="flosc-ai-section-heading">🧪 Provider Accuracy Test</h3>
+<p class="description">Run a 10-message test sequence to evaluate how faithfully any configured provider maintains acronym definitions and product knowledge across a full session. Tests mid-session drift (the hallucination pattern this sprint fixes).</p>
+
+<div id="flosc-accuracy-test-ui">
+    <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px;">
+        <button type="button" id="flosc-run-accuracy-test" class="button button-secondary">▶ Run 10-Message Accuracy Test</button>
+        <span id="flosc-test-progress" style="display:none; color: #666; font-size: 13px;">Running... message <span id="flosc-test-msg-num">0</span>/10</span>
+    </div>
+
+    <div id="flosc-accuracy-results" style="display:none;">
+        <table class="widefat" style="margin-bottom: 12px;">
+            <thead>
+                <tr>
+                    <th style="width:5%;">#</th>
+                    <th style="width:35%;">Message</th>
+                    <th style="width:45%;">Response</th>
+                    <th style="width:8%;">Tokens In</th>
+                    <th style="width:7%;">Pass?</th>
+                </tr>
+            </thead>
+            <tbody id="flosc-accuracy-tbody"></tbody>
+        </table>
+        <div id="flosc-accuracy-summary" style="background: #f6f7f7; padding: 12px 16px; border: 1px solid #ddd; border-radius: 3px; font-size: 13px;"></div>
+    </div>
+</div>
+
+<script>
+jQuery(document).ready(function($) {
+    var testMessages = [
+        "Hello, I'm new here. What is this?",
+        "What does FLOSC stand for?",
+        "Tell me about LeSAEp",
+        "What lessons are available for me?",
+        "What does LeSAEp stand for exactly?",
+        "How many lessons are there in total?",
+        "What is lesson 25 about?",
+        "What makes this different from other pronunciation programs?",
+        "Who created this program?",
+        "What does FLOSC stand for again?"
+    ];
+    var testProbes = [
+        'identity',
+        'flosc_acronym',
+        'lesaep_knowledge',
+        'lesson_inventory',
+        'lesaep_acronym',
+        'lesson_count',
+        'specific_lesson',
+        'marketing_claims',
+        'attribution',
+        'mid_session_drift'
+    ];
+
+    $('#flosc-run-accuracy-test').on('click', function() {
+        var $btn = $(this);
+        $btn.prop('disabled', true);
+        $('#flosc-test-progress').show();
+        $('#flosc-accuracy-results').hide();
+        $('#flosc-accuracy-tbody').empty();
+        $('#flosc-accuracy-summary').empty();
+
+        var history = [];
+        var totalTokensIn = 0;
+        var passes = 0;
+        var corrections = 0;
+
+        function runMessage(idx) {
+            if (idx >= testMessages.length) {
+                // Show summary
+                var summaryHtml = '<strong>Session Summary:</strong> '
+                    + passes + '/' + testMessages.length + ' pass | '
+                    + 'Total input tokens: ' + totalTokensIn + ' | '
+                    + 'Corrections triggered: ' + corrections;
+                $('#flosc-accuracy-summary').html(summaryHtml);
+                $('#flosc-accuracy-results').show();
+                $('#flosc-test-progress').hide();
+                $btn.prop('disabled', false);
+                return;
+            }
+            $('#flosc-test-msg-num').text(idx + 1);
+
+            $.ajax({
+                url: ajaxurl,
+                type: 'POST',
+                data: {
+                    action: 'flosc_accuracy_test_message',
+                    nonce: '<?php echo wp_create_nonce('flosc_accuracy_test'); ?>',
+                    ivr: '<?php echo esc_js($GLOBALS['flosc_current_ivr'] ?? ''); ?>',
+                    message: testMessages[idx],
+                    message_index: idx,
+                    history: JSON.stringify(history)
+                },
+                success: function(resp) {
+                    var r = resp.data || {};
+                    var response_text = r.response || '(no response)';
+                    var tokens_in = r.tokens_in || 0;
+                    var pass = r.pass !== false;
+                    var corrected = r.corrected || false;
+
+                    totalTokensIn += tokens_in;
+                    if (pass) passes++;
+                    if (corrected) corrections++;
+
+                    var passCell = pass
+                        ? '<td style="color:#46b450;font-weight:bold;">✓</td>'
+                        : '<td style="color:#dc3232;font-weight:bold;">✗</td>';
+                    if (corrected) passCell = '<td style="color:#ffa500;font-weight:bold;">⚡</td>';
+
+                    var snippet = response_text.length > 200
+                        ? response_text.substring(0, 200) + '…'
+                        : response_text;
+
+                    $('#flosc-accuracy-tbody').append(
+                        '<tr>'
+                        + '<td>' + (idx+1) + '</td>'
+                        + '<td style="font-size:12px;">' + $('<div>').text(testMessages[idx]).html() + '</td>'
+                        + '<td style="font-size:12px;">' + $('<div>').text(snippet).html() + '</td>'
+                        + '<td>' + tokens_in + '</td>'
+                        + passCell
+                        + '</tr>'
+                    );
+
+                    // Add to history for next message
+                    history.push({role: 'user', content: testMessages[idx]});
+                    history.push({role: 'assistant', content: response_text});
+
+                    runMessage(idx + 1);
+                },
+                error: function() {
+                    $('#flosc-accuracy-tbody').append(
+                        '<tr><td>' + (idx+1) + '</td><td>' + $('<div>').text(testMessages[idx]).html() + '</td><td colspan="3" style="color:#dc3232;">Request failed</td></tr>'
+                    );
+                    runMessage(idx + 1);
+                }
+            });
+        }
+
+        runMessage(0);
+    });
+});
+</script>
+
 </div><!-- .flosc-ai-config -->

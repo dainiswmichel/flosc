@@ -631,6 +631,11 @@ class FLOSC_AI_Chat_Dispatch {
 
         if ($chaining_enabled) {
             $response = $this->get_chained_response($message, $system_prompt, $context);
+        } elseif ($provider === 'openai' && !$test_mode && $this->use_responses_api()) {
+            // Fix 13: OpenAI Responses API — stateful context, no history resend
+            $session_id = $context[0]['session_id'] ?? null; // session_id passed in context if available
+            $is_first   = empty($context) || ($context[0]['role'] ?? '') !== 'assistant';
+            $response = $this->openai_responses_request($message, $system_prompt, $session_id, $is_first, $test_mode);
         } else {
             $response = $this->call_provider($provider, $message, $system_prompt, $context, $test_mode);
         }
@@ -1088,6 +1093,124 @@ class FLOSC_AI_Chat_Dispatch {
         return $body['choices'][0]['message']['content'] ?? null;
     }
     
+    /**
+     * Fix 13: Check whether the OpenAI Responses API path is enabled.
+     * Off by default — enable via ai_openai_use_responses_api setting after testing.
+     */
+    private function use_responses_api() {
+        return (bool) flosc_get_setting('ai_openai_use_responses_api', false);
+    }
+
+    /**
+     * Fix 13: OpenAI Responses API — stateful session management.
+     *
+     * Message 1: send full chatpack as `instructions`, receive response.id.
+     * Messages 2+: send only previous_response_id + new message. OpenAI holds
+     * full context server-side. No history resend, no anchor definitions needed.
+     *
+     * response_id storage:
+     *   - Logged-in users: user meta _flosc_openai_response_id_{session_hash}
+     *   - Visitors:        transient flosc_oai_rid_{session_hash}
+     *
+     * Session hash is derived from the system_prompt (includes FLOSC-SESSION hash).
+     * On first message the hash is extracted and stored alongside the response_id.
+     */
+    private function openai_responses_request($message, $system_prompt, $session_id, $is_first, $test_mode = false) {
+        $api_key = flosc_get_setting('openai_api_key', '');
+        if (empty($api_key)) {
+            if ($test_mode) return new WP_Error('openai_no_api_key', 'No OpenAI API key configured.');
+            return null;
+        }
+
+        $model      = flosc_get_setting('ai_openai_model', 'gpt-4o-mini');
+        $max_tokens = (int) flosc_get_setting('ai_max_tokens', '500');
+
+        // Derive a session key for response_id storage
+        $session_key = $session_id
+            ? 'sess_' . md5($session_id)
+            : 'sess_' . md5($system_prompt);
+
+        $user_id          = get_current_user_id();
+        $stored_resp_id   = null;
+        $meta_key         = '_flosc_openai_response_id_' . $session_key;
+        $transient_key    = 'flosc_oai_rid_' . $session_key;
+
+        if (!$is_first) {
+            $stored_resp_id = $user_id
+                ? get_user_meta($user_id, $meta_key, true)
+                : get_transient($transient_key);
+        }
+
+        // Build request body
+        if ($stored_resp_id) {
+            // Subsequent message — reference stored response
+            $body = [
+                'model'                => $model,
+                'previous_response_id' => $stored_resp_id,
+                'input'                => $message,
+                'max_output_tokens'    => $max_tokens,
+            ];
+        } else {
+            // First message (or no stored ID) — send full chatpack as instructions
+            $body = [
+                'model'             => $model,
+                'instructions'      => $system_prompt,
+                'input'             => $message,
+                'max_output_tokens' => $max_tokens,
+                'store'             => true,
+            ];
+        }
+
+        $response = wp_remote_post('https://api.openai.com/v1/responses', [
+            'headers' => [
+                'Authorization' => 'Bearer ' . $api_key,
+                'Content-Type'  => 'application/json',
+            ],
+            'body'    => json_encode($body),
+            'timeout' => 30,
+        ]);
+
+        if (is_wp_error($response)) {
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) error_log('FLOSC OpenAI Responses Error: ' . $response->get_error_message());
+            if ($test_mode) return new WP_Error('openai_responses_error', $response->get_error_message());
+            return null;
+        }
+
+        $data = json_decode(wp_remote_retrieve_body($response), true);
+
+        if (isset($data['error'])) {
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) error_log('FLOSC OpenAI Responses API Error: ' . $data['error']['message']);
+            if ($test_mode) return new WP_Error('openai_responses_api_error', $data['error']['message']);
+            return null;
+        }
+
+        // Store new response_id for subsequent calls
+        $new_response_id = $data['id'] ?? null;
+        if ($new_response_id) {
+            if ($user_id) {
+                update_user_meta($user_id, $meta_key, $new_response_id);
+            } else {
+                set_transient($transient_key, $new_response_id, HOUR_IN_SECONDS);
+            }
+        }
+
+        // Extract text from response
+        $text = '';
+        if (!empty($data['output'])) {
+            foreach ($data['output'] as $item) {
+                if (($item['type'] ?? '') === 'message' && !empty($item['content'])) {
+                    foreach ($item['content'] as $content) {
+                        if (($content['type'] ?? '') === 'output_text') {
+                            $text .= $content['text'] ?? '';
+                        }
+                    }
+                }
+            }
+        }
+
+        return $text ?: null;
+    }
+
     /**
      * Fix 1: Validate AI response — correct wrong acronym expansions mechanically.
      * Runs on every response before caching. Logs every correction.

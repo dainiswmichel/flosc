@@ -575,6 +575,14 @@ class FLOSC_Chatpack {
             }
         }
 
+        // Fix 11b: Server-generated lesson recommendations (only when quiz taken)
+        if ($quiz_taken) {
+            $recs = self::build_personalized_recommendations($eval_context);
+            if ($recs) {
+                $section .= $recs;
+            }
+        }
+
         // Progress & access data
         if (!empty($eval_context['user_id']) && is_user_logged_in()) {
             $user_id = $eval_context['user_id'];
@@ -773,6 +781,46 @@ class FLOSC_Chatpack {
     // ─────────────────────────────────────────────────────────
 
     /**
+     * Fix 11b: Build server-generated personalized lesson recommendations.
+     * PHP makes the connection between quiz weak sounds and specific lessons.
+     * The AI receives a generated recommendation — no inference required.
+     *
+     * @param array $eval_context
+     * @return string Recommendation block, or empty string if not applicable.
+     */
+    private static function build_personalized_recommendations($eval_context) {
+        $weakest_sounds = $eval_context['ipa_weakest_sounds'] ?? [];
+        if (empty($weakest_sounds)) return '';
+
+        $catalog_path = defined('FLOSC_PLUGIN_DIR')
+            ? FLOSC_PLUGIN_DIR . 'ai_configuration_files/lesaep_lesson_catalog.md'
+            : '';
+        if (!$catalog_path || !file_exists($catalog_path)) return '';
+
+        $catalog = file_get_contents($catalog_path);
+        if (!$catalog) return '';
+
+        $recommendations = [];
+        foreach (array_slice($weakest_sounds, 0, 5) as $sound) {
+            $sound_escaped = preg_quote($sound, '/');
+            // Match table rows: | LessonNum | Title | Sound | ...
+            if (preg_match('/\|\s*(\d+)\s*\|\s*([^|]+?)\s*\|\s*' . $sound_escaped . '\s*\|/i', $catalog, $m)) {
+                $recommendations[] = "Lesson {$m[1]}: " . trim($m[2]) . " (covers {$sound})";
+            }
+        }
+
+        if (empty($recommendations)) return '';
+
+        $section  = "\n**Personalized Lesson Recommendations (server-generated from quiz data):**\n";
+        $section .= "Based on this user's quiz results, their priority lessons are:\n";
+        foreach ($recommendations as $rec) {
+            $section .= "- {$rec}\n";
+        }
+        $section .= "Reference these lessons by name and number. Do not invent additional recommendations.\n";
+        return $section;
+    }
+
+    /**
      * Get phase-specific behavioral instructions.
      */
     private static function get_phase_instructions($phase, $eval_context) {
@@ -826,13 +874,17 @@ class FLOSC_Chatpack {
 
             case 'sale':
             case 'content':
+                // Fix 11b: Include server-generated recommendations when available
+                $recs_block = self::build_personalized_recommendations($eval_context);
                 return "**CURRENT PHASE INSTRUCTIONS ({$phase}):**\n"
                     . "User is a paying member with full access.\n"
                     . "- DO: Be their supportive learning coach\n"
-                    . "- DO: Reference their quiz results to suggest lessons\n"
-                    . "- DO: Celebrate progress and encourage continued learning\n"
+                    . "- DO: When asked what to work on, use the Personalized Lesson Recommendations below as your starting point\n"
+                    . "- DO: If the user describes a pronunciation difficulty, cross-reference it with their known weak sounds and the recommended lessons\n"
+                    . "- DO: Celebrate progress and milestones — every lesson completed is a win worth acknowledging\n"
                     . "- DO: Answer detailed content questions\n"
-                    . "- Full access to all lessons and materials\n";
+                    . "- Full access to all lessons and materials\n"
+                    . $recs_block;
 
             default:
                 return '';

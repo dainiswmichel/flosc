@@ -524,8 +524,6 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
             'style'         => 'Style',
             'ui'            => 'UI & Nav',
             'ai'            => 'AI',
-            'ai-guide'      => 'AI Guide',
-            'knowledge'     => 'Knowledge',
             'quiz'          => 'Quiz',
             'email'         => 'Email',
             'lessons'       => 'Lessons',
@@ -1074,12 +1072,12 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
             
         <?php elseif ($active_tab === 'ai'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/ai-configuration.php'; ?>
-
         <?php elseif ($active_tab === 'ai-guide'): ?>
-            <?php include FLOSC_PLUGIN_DIR . 'admin/ai-configuration-guide.php'; ?>
-
+            <?php /* Redirect legacy tab — ai-guide content is now in Docs → AI Configuration */
+            wp_redirect(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($selected_ivr) . '&tab=documentation&doc=ref-ai-config')); exit; ?>
         <?php elseif ($active_tab === 'knowledge'): ?>
-            <?php include FLOSC_PLUGIN_DIR . 'admin/ai-knowledge.php'; ?>
+            <?php /* Redirect legacy tab — Knowledge is now part of the AI tab */
+            wp_redirect(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($selected_ivr) . '&tab=ai#flosc-kb-section')); exit; ?>
             
         <?php elseif ($active_tab === 'quiz'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/quiz.php'; ?>

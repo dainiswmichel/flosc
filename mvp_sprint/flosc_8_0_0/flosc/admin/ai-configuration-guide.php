@@ -3,26 +3,24 @@
  * FLOSC AI Configuration Guide
  *
  * Help documentation for FloscAdmins configuring AI for their specific content.
- * This guide explains the infrastructure, not specific configuration choices.
- *
- * FLOSC is an "AI to AGI Bridge":
- * - General AI models (GPT, Claude, Grok) have broad knowledge but not YOUR specialized content
- * - FLOSC loads your expert knowledge into AI context
- * - AI becomes an intelligent instructor for YOUR specific domain
- * - Multipass: AI remembers user progress across sessions
+ * This guide explains how FLOSC works with AI providers and how to configure
+ * personality, knowledge base, and phase instructions.
  *
  * v1.7.8: Initial documentation system
+ * Fix 15: Moved from standalone tab to Documentation > AI Configuration Guide
  */
 
 if (!defined('ABSPATH')) exit;
 
-// v1.2.9: Output tab header
-flosc_tab_header('📖', 'AI Guide');
+// Suppress tab header when included from documentation.php
+if (empty($GLOBALS['flosc_suppress_tab_header'])) {
+    flosc_tab_header('📖', 'AI Guide');
+}
 ?>
 
 <!-- Styles in assets/css/flosc-admin.css (AI Guide section) -->
 
-<h2>AI Configuration Guide for FloscAdmins</h2>
+<h2>How FLOSC Works with AI</h2>
 <p class="description">
     Learn how to configure AI to become an intelligent instructor for YOUR content.
     FLOSC bridges the gap between general AI knowledge and your specialized expertise.

@@ -27,6 +27,7 @@ $flosc_doc_topics = [
     ['id' => 'ref-audio-quiz-flow',  'group' => 'reference', 'title' => 'Audio Quiz Flow',                     'status' => 'ready'],
     ['id' => 'ref-admin',            'group' => 'reference', 'title' => 'Admin Pages Reference',               'status' => 'pending'],
     ['id' => 'ref-ai',               'group' => 'reference', 'title' => 'AI & RAG Reference',                  'status' => 'pending'],
+    ['id' => 'ref-ai-config',        'group' => 'reference', 'title' => 'AI Configuration Guide',               'status' => 'ready'],
     ['id' => 'ref-payments',         'group' => 'reference', 'title' => 'Payments & Offers Reference',         'status' => 'pending'],
     ['id' => 'ref-access',           'group' => 'reference', 'title' => 'Access Control Reference',            'status' => 'pending'],
     ['id' => 'ref-sso',              'group' => 'reference', 'title' => 'SSO & OAuth Reference',               'status' => 'pending'],
@@ -146,6 +147,15 @@ $group_labels = [
             <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
                 <?php include FLOSC_PLUGIN_DIR . 'admin/docs/part5-glossary.php'; ?>
             </div>
+
+        <?php elseif ($doc_topic === 'ref-ai-config'): ?>
+            <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
+                <?php
+                // Suppress the tab header when including guide from documentation
+                $GLOBALS['flosc_suppress_tab_header'] = true;
+                include FLOSC_PLUGIN_DIR . 'admin/ai-configuration-guide.php';
+                unset($GLOBALS['flosc_suppress_tab_header']);
+                ?></div>
 
         <?php else: ?>
             <?php

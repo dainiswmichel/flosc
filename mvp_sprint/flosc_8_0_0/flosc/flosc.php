@@ -556,6 +556,15 @@ class FLOSC_Framework {
         add_action('save_post', [$this, 'maybe_regenerate_lesson_catalog'], 20, 2);
         add_action('admin_post_flosc_regenerate_lesson_catalog', [$this, 'handle_regenerate_lesson_catalog']);
 
+        // Fix 15: KB file operation handlers (upload, delete, toggle, save edit)
+        add_action('admin_post_flosc_kb_upload',    [$this, 'handle_kb_upload']);
+        add_action('admin_post_flosc_kb_delete',    [$this, 'handle_kb_delete']);
+        add_action('admin_post_flosc_kb_toggle',    [$this, 'handle_kb_toggle']);
+        add_action('admin_post_flosc_kb_save_edit', [$this, 'handle_kb_save_edit']);
+
+        // Fix 14: Provider Accuracy Test AJAX
+        add_action('wp_ajax_flosc_accuracy_test_message', [$this, 'ajax_accuracy_test_message']);
+
         // Category protection AJAX (v1.0.1)
         add_action('wp_ajax_flosc_protect_category', [$this, 'ajax_protect_category']);
         add_action('wp_ajax_flosc_unprotect_category', [$this, 'ajax_unprotect_category']);
@@ -1641,6 +1650,194 @@ The {product_name} Team";
         file_put_contents($catalog_path, $content);
         update_option('flosc_lesson_catalog_generated', current_time('mysql'));
         update_option('flosc_lesson_catalog_count', $lesson_count);
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Fix 15: KB File Operation Handlers
+    // ─────────────────────────────────────────────────────────
+
+    private function kb_return_url($ivr, $action, $error = '') {
+        $base = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($ivr) . '&tab=ai&kb_action=' . $action . '#flosc-kb-section');
+        if ($error) $base .= '&kb_error=' . urlencode($error);
+        return $base;
+    }
+
+    public function handle_kb_upload() {
+        check_admin_referer('flosc_kb_upload', 'flosc_kb_upload_nonce');
+        if (!current_user_can('manage_options')) wp_die('Unauthorized');
+
+        $ivr = sanitize_file_name($_POST['flosc_return_ivr'] ?? '');
+        $kb_dir = defined('FLOSC_PLUGIN_DIR') ? FLOSC_PLUGIN_DIR . 'ai_configuration_files/' : '';
+
+        if (empty($_FILES['orientation_file']['name'])) {
+            wp_redirect($this->kb_return_url($ivr, 'error', 'No file selected.'));
+            exit;
+        }
+
+        $filename = sanitize_file_name($_FILES['orientation_file']['name']);
+        $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        if (!in_array($ext, ['md', 'txt'], true)) {
+            wp_redirect($this->kb_return_url($ivr, 'error', 'Only .md and .txt files are supported.'));
+            exit;
+        }
+
+        if ($_FILES['orientation_file']['size'] > 500000) {
+            wp_redirect($this->kb_return_url($ivr, 'error', 'File too large (max 500 KB).'));
+            exit;
+        }
+
+        $target = $kb_dir . $filename;
+        if (!move_uploaded_file($_FILES['orientation_file']['tmp_name'], $target)) {
+            wp_redirect($this->kb_return_url($ivr, 'error', 'Upload failed. Check directory permissions.'));
+            exit;
+        }
+
+        // Save access level
+        $access = in_array($_POST['file_access_level'] ?? '', ['public', 'members'], true)
+            ? $_POST['file_access_level']
+            : 'public';
+        $settings_key = 'flosc_flow_' . sanitize_key(pathinfo($ivr, PATHINFO_FILENAME));
+        $flow_settings = get_option($settings_key, []);
+        $flow_settings['knowledge_access_' . md5($filename)] = $access;
+        update_option($settings_key, $flow_settings);
+
+        wp_redirect($this->kb_return_url($ivr, 'uploaded'));
+        exit;
+    }
+
+    public function handle_kb_delete() {
+        $ivr  = sanitize_file_name($_GET['return_ivr'] ?? '');
+        $file = sanitize_file_name($_GET['kb_file'] ?? '');
+        check_admin_referer('flosc_kb_delete_' . $file);
+        if (!current_user_can('manage_options')) wp_die('Unauthorized');
+
+        $kb_dir = defined('FLOSC_PLUGIN_DIR') ? FLOSC_PLUGIN_DIR . 'ai_configuration_files/' : '';
+        $target = $kb_dir . $file;
+        if (file_exists($target)) {
+            unlink($target);
+        }
+        wp_redirect($this->kb_return_url($ivr, 'deleted'));
+        exit;
+    }
+
+    public function handle_kb_toggle() {
+        $ivr  = sanitize_file_name($_GET['return_ivr'] ?? '');
+        $file = sanitize_file_name($_GET['kb_file'] ?? '');
+        check_admin_referer('flosc_kb_toggle_' . $file);
+        if (!current_user_can('manage_options')) wp_die('Unauthorized');
+
+        $settings_key  = 'flosc_flow_' . sanitize_key(pathinfo($ivr, PATHINFO_FILENAME));
+        $flow_settings = get_option($settings_key, []);
+        $meta_key      = 'knowledge_access_' . md5($file);
+        $current       = $flow_settings[$meta_key] ?? 'public';
+        $flow_settings[$meta_key] = ($current === 'public') ? 'members' : 'public';
+        update_option($settings_key, $flow_settings);
+
+        wp_redirect($this->kb_return_url($ivr, 'toggled'));
+        exit;
+    }
+
+    public function handle_kb_save_edit() {
+        check_admin_referer('flosc_kb_save_edit', 'flosc_kb_save_edit_nonce');
+        if (!current_user_can('manage_options')) wp_die('Unauthorized');
+
+        $ivr  = sanitize_file_name($_POST['flosc_return_ivr'] ?? '');
+        $file = sanitize_file_name($_POST['editing_file'] ?? '');
+        $kb_dir = defined('FLOSC_PLUGIN_DIR') ? FLOSC_PLUGIN_DIR . 'ai_configuration_files/' : '';
+        $target = $kb_dir . $file;
+
+        if (!$file || !$kb_dir || !file_exists($target)) {
+            wp_redirect($this->kb_return_url($ivr, 'error', 'File not found.'));
+            exit;
+        }
+
+        $content = wp_unslash($_POST['file_content'] ?? '');
+        file_put_contents($target, $content);
+
+        wp_redirect($this->kb_return_url($ivr, 'saved'));
+        exit;
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Fix 14: Provider Accuracy Test — AJAX handler
+    // ─────────────────────────────────────────────────────────
+
+    public function ajax_accuracy_test_message() {
+        check_ajax_referer('flosc_accuracy_test', 'nonce');
+        if (!current_user_can('manage_options')) wp_send_json_error(['message' => 'Unauthorized']);
+
+        $message = sanitize_textarea_field($_POST['message'] ?? '');
+        $msg_idx = (int) ($_POST['message_index'] ?? 0);
+        $ivr     = sanitize_file_name($_POST['ivr'] ?? '');
+        $history_raw = $_POST['history'] ?? '[]';
+        $history = json_decode(stripslashes($history_raw), true);
+        if (!is_array($history)) $history = [];
+
+        // Set flow context so flosc_get_setting reads the right flow settings (same as ajax_test_ai_connection)
+        if (!empty($ivr)) {
+            $this->set_flow_context(pathinfo($ivr, PATHINFO_FILENAME));
+        }
+
+        // Build chatpack using real FLOSC_Chatpack with a test eval context
+        if (!class_exists('FLOSC_Chatpack') || !$this->ai_chat_dispatch) {
+            wp_send_json_error(['message' => 'Chatpack or AI dispatch not available.']);
+        }
+
+        $eval_context = [
+            'access_level'    => 'member',
+            'user_name'       => 'Test User',
+            'is_admin'        => true,
+            'user_id'         => get_current_user_id(),
+            'quiz_taken'      => true,
+            'quiz_score'      => 72,
+            'ipa_quiz_score'  => 72,
+            'ipa_quiz_tier'   => 'Intermediate',
+            'ipa_weakest_sounds' => ['/θ/', '/ð/', '/r/', '/æ/', '/ʌ/'],
+        ];
+
+        $flosc_hash   = FLOSC_Chatpack::generate_flosc_hash();
+        $session_hash = FLOSC_Chatpack::generate_session_hash($flosc_hash, get_current_user_id(), 'accuracy_test');
+        $pair_num     = $msg_idx + 1;
+
+        if ($msg_idx === 0) {
+            $system_prompt = FLOSC_Chatpack::build_full_chatpack('content', $eval_context, $ivr, $flosc_hash, $session_hash, $pair_num);
+        } else {
+            $system_prompt = FLOSC_Chatpack::build_followup_chatpack('content', $eval_context, $session_hash, $pair_num);
+        }
+
+        // Run through AI — force fresh (no cache) by using test_mode=true
+        $response = $this->ai_chat_dispatch->get_response($message, $system_prompt, $history, true);
+        if (is_wp_error($response)) {
+            wp_send_json_error(['message' => $response->get_error_message()]);
+        }
+
+        $response_text = $response ?? '(no response)';
+
+        // Pass/fail evaluation
+        $pass = true;
+        $corrected = false;
+
+        if (stripos($response_text, 'FLOSC') !== false) {
+            if (preg_match('/FLOSC\s+stands?\s+for/i', $response_text)) {
+                if (!preg_match('/Freeline.*Login.*Offer.*Sale.*Content/i', $response_text)) {
+                    $pass = false;
+                    $corrected = true; // Validation layer should have caught this
+                }
+            }
+        }
+        if (preg_match('/LeSAEp\s+stands?\s+for/i', $response_text)) {
+            if (!preg_match('/Learn\s+Excellent\s+Standard\s+American\s+English\s+Pronunciation/i', $response_text)) {
+                $pass = false;
+                $corrected = true;
+            }
+        }
+
+        wp_send_json_success([
+            'response'  => $response_text,
+            'tokens_in' => 0, // Token tracking requires provider-specific response parsing; placeholder
+            'pass'      => $pass,
+            'corrected' => $corrected,
+        ]);
     }
 
     /**
