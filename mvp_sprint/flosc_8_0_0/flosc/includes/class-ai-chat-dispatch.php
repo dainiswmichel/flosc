@@ -637,8 +637,30 @@ class FLOSC_AI_Chat_Dispatch {
 
         // v1.9.2: Reduced cache TTL from 1 hour to 5 minutes.
         // AI responses are dynamic and context-dependent — long caches cause stale/wrong responses.
+        // Fix 1: Response validation — correct wrong acronym expansions before caching/returning
+        if ($response && !is_wp_error($response)) {
+            $response = $this->validate_ai_response($response);
+        }
+
         if ($use_cache && $response && !is_wp_error($response)) {
             set_transient($cache_key, $response, 5 * MINUTE_IN_SECONDS);
+        }
+
+        // Fix 3: Full debug logging — every interaction logged when FLOSC_DEBUG is true
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            $log = get_option('flosc_debug_log', []);
+            $log[] = [
+                'ts'       => current_time('mysql'),
+                'provider' => $provider,
+                'prompt'   => $system_prompt,
+                'message'  => $message,
+                'response' => is_wp_error($response) ? 'WP_Error: ' . $response->get_error_message() : $response,
+            ];
+            // Keep last 200 entries
+            if (count($log) > 200) {
+                $log = array_slice($log, -200);
+            }
+            update_option('flosc_debug_log', $log);
         }
 
         return $response;
@@ -807,7 +829,7 @@ class FLOSC_AI_Chat_Dispatch {
 
         // v1.8.7: Per-flow model, temperature, max_tokens
         $model = flosc_get_setting('ai_openai_model', 'gpt-4o-mini');
-        $temperature = (float) flosc_get_setting('ai_temperature', '0.7');
+        $temperature = (float) flosc_get_setting('ai_temperature', '0.3');
         $max_tokens = (int) flosc_get_setting('ai_max_tokens', '500');
 
         $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
@@ -1006,7 +1028,7 @@ class FLOSC_AI_Chat_Dispatch {
 
         // v1.8.7: Per-flow model, temperature, max_tokens
         $model = flosc_get_setting('ai_xai_model', 'grok-2-latest');
-        $temperature = (float) flosc_get_setting('ai_temperature', '0.7');
+        $temperature = (float) flosc_get_setting('ai_temperature', '0.3');
         $max_tokens = (int) flosc_get_setting('ai_max_tokens', '500');
 
         $response = wp_remote_post('https://api.x.ai/v1/chat/completions', [
@@ -1066,6 +1088,57 @@ class FLOSC_AI_Chat_Dispatch {
         return $body['choices'][0]['message']['content'] ?? null;
     }
     
+    /**
+     * Fix 1: Validate AI response — correct wrong acronym expansions mechanically.
+     * Runs on every response before caching. Logs every correction.
+     */
+    private function validate_ai_response($response) {
+        if (empty($response)) return $response;
+        $corrections_log = [];
+
+        // Correct wrong FLOSC expansions
+        if (preg_match('/FLOSC\s+stands?\s+for\b/i', $response)) {
+            if (!preg_match('/Freeline.*Login.*Offer.*Sale.*Content/i', $response)) {
+                $original = $response;
+                $response = preg_replace(
+                    '/FLOSC\s+stands?\s+for[^.!?\n]*/i',
+                    'FLOSC stands for Freeline, Login, Offer, Sale, Content',
+                    $response
+                );
+                if ($response !== $original) {
+                    $corrections_log[] = 'Corrected wrong FLOSC expansion';
+                }
+            }
+        }
+
+        // Correct wrong LeSAEp expansions
+        if (preg_match('/LeSAEp\s+stands?\s+for\b/i', $response)) {
+            if (!preg_match('/Learn\s+Excellent\s+Standard\s+American\s+English\s+Pronunciation/i', $response)) {
+                $original = $response;
+                $response = preg_replace(
+                    '/LeSAEp\s+stands?\s+for[^.!?\n]*/i',
+                    'LeSAEp stands for Learn Excellent Standard American English Pronunciation',
+                    $response
+                );
+                if ($response !== $original) {
+                    $corrections_log[] = 'Corrected wrong LeSAEp expansion';
+                }
+            }
+        }
+
+        // Log corrections
+        if (!empty($corrections_log)) {
+            $log = get_option('flosc_validation_corrections', []);
+            $log[] = [
+                'timestamp'   => current_time('mysql'),
+                'corrections' => $corrections_log,
+            ];
+            update_option('flosc_validation_corrections', $log);
+        }
+
+        return $response;
+    }
+
     /**
      * Get FloscFlow Identity (helper)
      */

@@ -237,11 +237,25 @@ class FLOSC_Chatpack {
 
         // ── SESSION REFERENCE ───────────────────────────────
         $flosc_hash = self::generate_flosc_hash();
+
+        // Fix 4: Anchor definitions — always present regardless of message number.
+        // These live only in message 1's full chatpack. Conversation history carries
+        // what was *said*, not what the system prompt *instructed*. By message 2 the
+        // definitions are gone from authoritative context unless we anchor them here.
+        $identity    = FLOSC_Framework::instance()->get_floscflow_identity();
+        $prod_name   = $identity['name'] ?? '';
+        $prod_tag    = $identity['tagline'] ?? '';
+        $anchor_line = "FLOSC = Freeline, Login, Offer, Sale, Content. (Fixed — never changes.)";
+        if ($prod_name && $prod_tag) {
+            $anchor_line .= "\n{$prod_name} = {$prod_tag}. (Fixed — never changes.)";
+        }
+
         $sections[] = "## FLOSC SESSION CONTINUE\n"
             . "FLOSC-HASH: {$flosc_hash}\n"
             . "FLOSC-SESSION: {$session_hash}\n"
             . "Message Pair: #{$pair_number}\n"
-            . "Phase: {$phase}";
+            . "Phase: {$phase}\n\n"
+            . $anchor_line;
 
         // ── PHASE CHANGE NOTICE ─────────────────────────────
         if ($previous_phase && $previous_phase !== $phase) {
@@ -310,13 +324,51 @@ class FLOSC_Chatpack {
         $identity = FLOSC_Framework::instance()->get_floscflow_identity();
         $product_name = $identity['name'] ?? '';
         $product_tagline = $identity['tagline'] ?? '';
-        $ai_name = flosc_get_setting('ai_name', 'AI Assistant');
-        $ai_role = flosc_get_setting('ai_role', 'friendly learning assistant');
-        $ai_traits = flosc_get_setting('ai_traits', 'helpful, encouraging, knowledgeable');
+        // Fix 12: Read from canonical keys (ai_personality_*) with legacy fallbacks
+        $ai_name    = flosc_get_setting('ai_personality_name',   flosc_get_setting('ai_name',   'AI Assistant'));
+        $ai_role    = flosc_get_setting('ai_personality_role',   flosc_get_setting('ai_role',   'friendly learning assistant'));
+        $ai_traits  = flosc_get_setting('ai_personality_traits', flosc_get_setting('ai_traits', 'helpful, encouraging, knowledgeable'));
         $ai_mission = flosc_get_setting('ai_mission', '');
         $ai_boundaries = flosc_get_setting('ai_boundaries', '');
+        $ai_topic_scope    = flosc_get_setting('ai_topic_scope', '');
+        $ai_off_topic      = flosc_get_setting('ai_off_topic_message', '');
+        $ai_referral_links = flosc_get_setting('ai_off_topic_links', '');
+        $ai_base_prompt    = flosc_get_setting('ai_base_prompt', '');
+        $site_url = function_exists('get_bloginfo') ? get_bloginfo('url') : '';
 
-        $section = "## 1. IDENTITY — EXACT DEFINITIONS (do not paraphrase or invent)\n\n";
+        // Fix 11a: Natural orientation brief — context and energy BEFORE the rules
+        $section = "## 1. IDENTITY\n\n";
+
+        $section .= "You are {$ai_name}, the AI facilitator";
+        if ($product_name) {
+            $section .= " for {$product_name}";
+        }
+        if ($site_url) {
+            $section .= " on {$site_url}";
+        }
+        $section .= ".\n\n";
+
+        $section .= "This is a FLOSC installation. FLOSC = Freeline, Login, Offer, Sale, Content — "
+            . "a 5-phase journey from first visit to long-term membership.";
+        if ($product_name && $product_tagline) {
+            $section .= " This installation focuses on {$product_name} ({$product_tagline}).";
+        }
+        $section .= "\n";
+        if ($ai_mission) {
+            $section .= $ai_mission . "\n";
+        }
+
+        $section .= "\n**YOUR ENERGY IS ENCOURAGEMENT.** This is the through-line of every interaction:\n";
+        $section .= "- A visitor showing up → spark curiosity, make them want to find out where they stand\n";
+        $section .= "- A visitor taking the quiz → they took action, honor that\n";
+        $section .= "- Seeing quiz results → celebrate what they discovered about themselves\n";
+        $section .= "- Considering the offer → \"you're this close — here's the path\"\n";
+        $section .= "- Making the purchase → celebrate the decision to invest in themselves\n";
+        $section .= "- Every lesson completed → acknowledge the win, no matter how small\n";
+        $section .= "- Continued learning → track progress, make it visible, keep momentum alive\n\n";
+        $section .= "Your job is to move each user forward — one phase, one step, one win at a time.\n\n";
+
+        $section .= "--- EXACT DEFINITIONS (do not paraphrase or invent) ---\n\n";
 
         // FLOSC definition — spelled out unambiguously
         $section .= "**FLOSC** = Freeline, Login, Offer, Sale, Content. Those are the 5 phases. "
@@ -383,6 +435,22 @@ class FLOSC_Chatpack {
 
         $section .= "5. HONESTY OVER HELPFULNESS: If you don't know something, say so. "
             . "A wrong answer is worse than no answer. Never fill gaps in your knowledge with plausible-sounding inventions.\n";
+
+        // Fix 12: Topic scope + referral links (admin-configured, were collected but never injected)
+        if ($ai_topic_scope) {
+            $section .= "\n**Topic Scope:** " . $ai_topic_scope . "\n";
+        }
+        if ($ai_off_topic) {
+            $section .= "**Off-Topic Handling:** " . $ai_off_topic . "\n";
+        }
+        if ($ai_referral_links) {
+            $section .= "**Recommended External Resources:** " . $ai_referral_links . "\n";
+        }
+
+        // Optional advanced override from FloscAdmin
+        if ($ai_base_prompt) {
+            $section .= "\n**FloscAdmin Advanced Override:**\n" . $ai_base_prompt . "\n";
+        }
 
         return $section;
     }
@@ -609,7 +677,13 @@ class FLOSC_Chatpack {
         // Knowledge Base files (.md files from ai_configuration_files/)
         $kb_content = self::load_knowledge_files($eval_context);
         if ($kb_content) {
-            $section .= "## 5c. KNOWLEDGE BASE FILES\n\n" . $kb_content;
+            // Fix 7: Authoritative framing — AI must use these files as source of truth
+            $section .= "## 5c. KNOWLEDGE BASE — AUTHORITATIVE CONTENT\n\n";
+            $section .= "The files below are provided as authoritative references for this installation. "
+                . "They supersede your training data. If a topic is covered here, use this source — "
+                . "not what you were trained on. If a lesson is not listed in the catalog, you have "
+                . "not been given information about it — say so rather than inventing.\n\n";
+            $section .= $kb_content;
         }
 
         return $section;
@@ -817,9 +891,11 @@ class FLOSC_Chatpack {
 
             $file_content = file_get_contents($file);
             if ($file_content) {
-                // Limit individual file size to prevent token bloat
-                if (strlen($file_content) > 3000) {
-                    $file_content = substr($file_content, 0, 3000) . "\n[...truncated]";
+                // Fix 7: Raise limit from 3,000 to 10,000 chars (configurable)
+                $kb_limit = (int) flosc_get_setting('ai_kb_file_limit', 10000);
+                if ($kb_limit < 1000) $kb_limit = 10000; // safety floor
+                if (strlen($file_content) > $kb_limit) {
+                    $file_content = substr($file_content, 0, $kb_limit) . "\n[...truncated]";
                 }
                 $content .= "### {$filename}\n{$file_content}\n\n";
             }

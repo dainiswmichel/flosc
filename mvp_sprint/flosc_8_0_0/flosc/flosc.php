@@ -552,6 +552,10 @@ class FLOSC_Framework {
         // Admin post handler for flush permalinks (v9.5.1)
         add_action('admin_post_flosc_flush_permalinks', [$this, 'handle_flush_permalinks']);
 
+        // Fix 6: Lesson catalog auto-regeneration on post save + manual admin-post handler
+        add_action('save_post', [$this, 'maybe_regenerate_lesson_catalog'], 20, 2);
+        add_action('admin_post_flosc_regenerate_lesson_catalog', [$this, 'handle_regenerate_lesson_catalog']);
+
         // Category protection AJAX (v1.0.1)
         add_action('wp_ajax_flosc_protect_category', [$this, 'ajax_protect_category']);
         add_action('wp_ajax_flosc_unprotect_category', [$this, 'ajax_unprotect_category']);
@@ -1544,6 +1548,99 @@ The {product_name} Team";
 
         wp_redirect(admin_url('admin.php?page=flosc-settings' . $ivr . $tab . '&flushed=1'));
         exit;
+    }
+
+    // ─────────────────────────────────────────────────────────
+    // Fix 6: Lesson Catalog Auto-Generation
+    // ─────────────────────────────────────────────────────────
+
+    /**
+     * Hook: regenerate lesson catalog when a LeSAEp post is saved.
+     * Only fires for published posts in the LeSAEp category.
+     */
+    public function maybe_regenerate_lesson_catalog($post_id, $post) {
+        if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
+        if ($post->post_status !== 'publish') return;
+        if (!has_category('lesaep', $post_id) && !has_category('LeSAEp', $post_id)) {
+            // Also check term slug variations
+            $terms = get_the_terms($post_id, 'category');
+            if (!$terms || is_wp_error($terms)) return;
+            $slugs = array_column($terms, 'slug');
+            if (!in_array('lesaep', $slugs, true)) return;
+        }
+        $this->generate_lesaep_lesson_catalog();
+    }
+
+    /**
+     * Admin-post handler: manual "Regenerate Lesson Catalog" button.
+     */
+    public function handle_regenerate_lesson_catalog() {
+        check_admin_referer('flosc_regen_catalog');
+        if (!current_user_can('manage_options')) wp_die('Unauthorized');
+        $this->generate_lesaep_lesson_catalog();
+        $referer = wp_get_referer() ?: admin_url('admin.php?page=flosc-settings&tab=ai');
+        wp_redirect(add_query_arg('catalog_regenerated', '1', $referer));
+        exit;
+    }
+
+    /**
+     * Generate lesaep_lesson_catalog.md from all published posts in the LeSAEp category.
+     * Writes to ai_configuration_files/lesaep_lesson_catalog.md.
+     * Auto-updates on save_post hook; also callable manually.
+     */
+    public function generate_lesaep_lesson_catalog() {
+        if (!defined('FLOSC_PLUGIN_DIR')) return;
+        $catalog_path = FLOSC_PLUGIN_DIR . 'ai_configuration_files/lesaep_lesson_catalog.md';
+
+        // Query all published posts in the LeSAEp category
+        $args = [
+            'category_name' => 'lesaep',
+            'post_status'   => 'publish',
+            'posts_per_page'=> -1,
+            'orderby'       => 'date',
+            'order'         => 'ASC',
+        ];
+        $posts = get_posts($args);
+
+        // Filter to actual lesson posts (exclude investment/business-plan posts)
+        $lessons = array_filter($posts, function($p) {
+            // Lesson posts have "Lesson" in the title or lesson_number meta
+            $has_lesson_num = (bool) get_post_meta($p->ID, 'lesson_number', true);
+            $has_lesson_title = stripos($p->post_title, 'lesson') !== false;
+            return $has_lesson_num || $has_lesson_title;
+        });
+
+        if (empty($lessons)) {
+            // Fallback: use all posts in category if filter returns nothing
+            $lessons = $posts;
+        }
+
+        $lesson_count = count($lessons);
+        $date = date('Y-m-d H:i:s');
+
+        $content  = "# LeSAEp Lesson Catalog\n\n";
+        $content .= "Auto-generated: {$date}\n";
+        $content .= "Total lessons: {$lesson_count}\n\n";
+        $content .= "**IMPORTANT:** This catalog is everything you have been given about LeSAEp lessons. "
+            . "If a lesson is not listed here, you have not been given information about it — say so rather than inventing.\n\n";
+        $content .= "| Lesson | Title | Sound | Permalink | Access |\n";
+        $content .= "|--------|-------|-------|-----------|--------|\n";
+
+        $lesson_number = 1;
+        foreach ($lessons as $post) {
+            $title        = $post->post_title;
+            $permalink    = get_permalink($post->ID);
+            $sound        = get_post_meta($post->ID, 'sound_covered', true) ?: get_post_meta($post->ID, 'ipa_sound', true) ?: '';
+            $access       = get_post_meta($post->ID, '_flosc_protection_mode', true) ?: 'member';
+            $access_label = ($access === 'full') ? 'public' : 'member';
+            $num          = get_post_meta($post->ID, 'lesson_number', true) ?: $lesson_number;
+            $content .= "| {$num} | {$title} | {$sound} | {$permalink} | {$access_label} |\n";
+            $lesson_number++;
+        }
+
+        file_put_contents($catalog_path, $content);
+        update_option('flosc_lesson_catalog_generated', current_time('mysql'));
+        update_option('flosc_lesson_catalog_count', $lesson_count);
     }
 
     /**
@@ -4552,7 +4649,7 @@ The {product_name} Team";
                 $chatpack_conv_history = array_map(function($msg) {
                     return [
                         'role' => in_array($msg['role'] ?? '', ['user', 'assistant']) ? $msg['role'] : 'user',
-                        'content' => sanitize_textarea_field(substr($msg['content'] ?? '', 0, 500)),
+                        'content' => sanitize_textarea_field(substr($msg['content'] ?? '', 0, 1500)), // Fix 10: raised from 500
                     ];
                 }, array_slice($visitor_history, -10));
                 // Update pair number based on visitor history
@@ -4789,16 +4886,47 @@ The {product_name} Team";
     
     /**
      * Build system prompt for RAG chat
+     * Fix 8: Use full FLOSC_Chatpack instead of the bare minimal prompt that had no rules/grounding.
      */
     private function build_rag_system_prompt($user_context) {
-        
+
         $access_level = $user_context['access_level'];
+
+        // Fix 8: Build a proper eval_context from the user_context so FLOSC_Chatpack
+        // can assemble an identity + rules + KB chatpack — the same treatment as the
+        // main chat path. Without this, the RAG path had zero acronym definitions,
+        // zero absolute rules, and zero factual grounding.
+        if (class_exists('FLOSC_Chatpack')) {
+            $eval_context = [
+                'access_level'    => $access_level,
+                'user_name'       => $user_context['user_name'] ?? 'User',
+                'is_admin'        => $user_context['is_admin'] ?? false,
+                'user_id'         => $user_context['user_id'] ?? 0,
+                'quiz_taken'      => !empty($user_context['quiz_results']),
+                'quiz_score'      => $user_context['quiz_score'] ?? 0,
+            ];
+            $phase = $user_context['phase'] ?? ($user_context['is_member'] ? 'content' : 'freeline');
+            $flosc_hash    = FLOSC_Chatpack::generate_flosc_hash();
+            $session_hash  = FLOSC_Chatpack::generate_session_hash($flosc_hash, $eval_context['user_id']);
+            $chatpack_prompt = FLOSC_Chatpack::build_full_chatpack($phase, $eval_context, '', $flosc_hash, $session_hash, 1, null);
+
+            // Append RAG-specific tool usage instructions after the full chatpack
+            $chatpack_prompt .= "\n\n**RAG TOOL USAGE:**\n"
+                . "- When you need information about specific lessons, use search_knowledge_base or search_posts\n"
+                . "- When asked about available content, use search_posts\n"
+                . "- When you need full lesson details, use get_lesson_content\n"
+                . "- Always filter responses based on the user's access level\n"
+                . "- DO NOT teach content yourself — point to the actual WordPress lessons";
+            return $chatpack_prompt;
+        }
+
+        // Fallback if chatpack not available
         $personality_name = flosc_get_setting('ai_identity_name', 'AI Assistant');
         $personality_desc = flosc_get_setting('ai_identity_role', 'friendly and knowledgeable learning guide');
-        
+
         // Get access level instructions
         $access_instructions = $this->get_access_level_instructions($access_level);
-        
+
         $prompt = "You are {$personality_name}, a {$personality_desc}.
 
 **YOUR ROLE:**

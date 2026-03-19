@@ -21,7 +21,7 @@ $ai_provider = $flow_settings['ai_provider'] ?? 'ivr';
 $ai_openai_model = $flow_settings['ai_openai_model'] ?? 'gpt-4o-mini';
 $ai_anthropic_model = $flow_settings['ai_anthropic_model'] ?? 'claude-sonnet-4-5-20250929';
 $ai_xai_model = $flow_settings['ai_xai_model'] ?? 'grok-2-latest';
-$ai_temperature = $flow_settings['ai_temperature'] ?? '0.7';
+$ai_temperature = $flow_settings['ai_temperature'] ?? '0.3';
 $ai_max_tokens = $flow_settings['ai_max_tokens'] ?? '500';
 $enable_ivr_context = $flow_settings['ai_enable_ivr_context'] ?? true;
 $enable_content_access = $flow_settings['ai_enable_content_access'] ?? true;
@@ -30,7 +30,38 @@ $enable_chaining = $flow_settings['ai_enable_chaining'] ?? false;
 $chain_provider_1 = $flow_settings['ai_chain_provider_1'] ?? '';
 $chain_provider_2 = $flow_settings['ai_chain_provider_2'] ?? '';
 $chain_provider_3 = $flow_settings['ai_chain_provider_3'] ?? '';
+<?php
+// Fix 9: Risk condition notices — visible warnings for conditions that cause hallucinations
+$identity      = function_exists('flosc') ? FLOSC_Framework::instance()->get_floscflow_identity() : [];
+$product_name  = $identity['name'] ?? $flow_settings['name'] ?? '';
+$product_tag   = $identity['tagline'] ?? $flow_settings['tagline'] ?? '';
+$catalog_file  = defined('FLOSC_PLUGIN_DIR') ? FLOSC_PLUGIN_DIR . 'ai_configuration_files/lesaep_lesson_catalog.md' : '';
+$catalog_age   = ($catalog_file && file_exists($catalog_file)) ? (time() - filemtime($catalog_file)) : PHP_INT_MAX;
+$notices = [];
+if ((float) $ai_temperature > 0.5) {
+    $notices[] = '<strong>Temperature ' . esc_html($ai_temperature) . ' increases fabrication risk.</strong> Recommended: 0.3';
+}
+if (empty($product_name)) {
+    $notices[] = '<strong>Product name not configured.</strong> AI has no identity and will hallucinate.';
+}
+if (!empty($product_name) && empty($product_tag)) {
+    $notices[] = '<strong>Product tagline not configured.</strong> AI cannot verify its own product acronym and will guess.';
+}
+if ($catalog_age > 7 * DAY_IN_SECONDS) {
+    $regen_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_regenerate_lesson_catalog'), 'flosc_regen_catalog');
+    $age_msg = ($catalog_age === PHP_INT_MAX) ? 'Lesson catalog has never been generated.' : 'Lesson catalog is more than 7 days old.';
+    $notices[] = $age_msg . ' <a href="' . esc_url($regen_url) . '" class="button button-small">Regenerate Now</a>';
+}
 ?>
+<?php if (!empty($notices)): ?>
+<div style="margin-bottom: 20px;">
+    <?php foreach ($notices as $notice): ?>
+    <div class="notice notice-warning inline" style="margin: 0 0 8px; padding: 10px 14px;">
+        <p style="margin: 0;"><?php echo wp_kses($notice, ['strong' => [], 'a' => ['href' => [], 'class' => []]]); ?></p>
+    </div>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
 
 <!-- Styles in assets/css/flosc-admin.css (AI Configuration section) -->
 
@@ -53,7 +84,7 @@ $chain_provider_3 = $flow_settings['ai_chain_provider_3'] ?? '';
         <li><strong>Save Settings</strong> at the bottom of this page</li>
     </ol>
     <p class="flosc-ai-tip">
-        💡 <strong>Tip:</strong> Start with <strong>Anthropic (Claude)</strong> for best FLOSC integration, or use <strong>IVR</strong> if you want zero API costs.
+        💡 <strong>Tip:</strong> Use the Provider Accuracy Test (below) to determine which provider gives the most reliable responses for your installation.
     </p>
 </div>
 
