@@ -4837,7 +4837,7 @@ class floscApp {
                         .replace('{name}', name)
                         .replace('{login_url}', `<a href="${loginUrl}" target="_blank">log in directly</a>`)
                         + ' ✨ We\'ve sent your guest access login details to your email.';
-                    this.addMessage('assistant', confirmMsg);
+                    this.addMessage('assistant', confirmMsg, true);
                 } else {
                     if (errEl) { errEl.textContent = result.message || 'Could not save — please try again.'; errEl.style.display = 'block'; }
                     saveBtn.disabled    = false;
