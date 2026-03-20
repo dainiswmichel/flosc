@@ -360,9 +360,9 @@ class floscApp {
             }
 
             // Profile completion prompt — independent of welcome message, persistent across redirects
-            if (this.config.needsProfileCompletion
-                && !sessionStorage.getItem('flosc_nickname_prompt_dismissed')) {
-                this.showGuestProfileCard();
+            if (this.config.pendingCredentialSetup
+                && !sessionStorage.getItem('flosc_credential_setup_dismissed')) {
+                this.showCredentialSetupCard();
             }
 
             // Guest link: handle expired status param (no offer URL configured)
@@ -4753,7 +4753,7 @@ class floscApp {
         }
     }
 
-    showGuestProfileCard() {
+    showCredentialSetupCard() {
         // Generate a readable suggested password
         const _words = ['maple','river','stone','cloud','eagle','frost','grove','cedar','bloom','light'];
         const _w1 = _words[Math.floor(Math.random() * _words.length)];
@@ -4798,7 +4798,7 @@ class floscApp {
 
         skipBtn?.addEventListener('click', (e) => {
             e.preventDefault();
-            sessionStorage.setItem('flosc_nickname_prompt_dismissed', 'true');
+            sessionStorage.setItem('flosc_credential_setup_dismissed', 'true');
             card.closest('.message')?.remove();
         });
 
@@ -7824,6 +7824,7 @@ Purchased: ${ctx.purchased}
                     errEl.style.color = '#10b981';
                     errEl.textContent = 'Welcome, fam! You\'re in.';
                 }
+                sessionStorage.removeItem('flosc_credential_setup_dismissed');
                 setTimeout(() => window.location.reload(), 1500);
             } else {
                 if (context === 'chat') {

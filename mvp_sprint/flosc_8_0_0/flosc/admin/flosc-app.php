@@ -921,11 +921,11 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
             // True if the current user has any SSO provider linked (FB, Google, etc.)
             'hasSsoProvider' => (is_user_logged_in()
                 && !empty(get_user_meta(get_current_user_id(), '_flosc_sso_linked_providers', true))),
-            // Persistent check — shows profile card until user saves nickname, survives cache/redirects
-            // Only for magic link guests (guest state, no SSO — SSO users already have name + login method)
-            'needsProfileCompletion' => ($user_state === 'guest'
-                && is_user_logged_in()
-                && !get_user_meta(get_current_user_id(), '_flosc_profile_completed', true)
+            // Shows credential setup card to magic-link users who have not yet set their password and display name.
+            // Scoped by registration method — not applicable to SSO users or admin/other user types.
+            'pendingCredentialSetup' => (is_user_logged_in()
+                && get_user_meta(get_current_user_id(), '_flosc_registration_method', true) === 'email'
+                && !get_user_meta(get_current_user_id(), '_flosc_magic_link_user_credentials_set', true)
                 && empty(get_user_meta(get_current_user_id(), '_flosc_sso_linked_providers', true))),
             'guestLinkProfileConfirmMessage' => (function() { $v = flosc_get_setting('guest_link_profile_confirm_message', 'Perfect, {name}! You can always log in directly at {login_url}, update your profile, and upgrade to full access.'); $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v; })(),
             // Days of guest access remaining (30-day window from registration)

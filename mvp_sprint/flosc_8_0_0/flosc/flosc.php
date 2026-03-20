@@ -1611,41 +1611,61 @@ The {product_name} Team";
         ];
         $posts = get_posts($args);
 
-        // Filter to actual lesson posts (exclude investment/business-plan posts)
+        // Filter to actual lesson posts only: title must start with "Lesson N:" or "Lesson N.N:"
         $lessons = array_filter($posts, function($p) {
-            // Lesson posts have "Lesson" in the title or lesson_number meta
-            $has_lesson_num = (bool) get_post_meta($p->ID, 'lesson_number', true);
-            $has_lesson_title = stripos($p->post_title, 'lesson') !== false;
-            return $has_lesson_num || $has_lesson_title;
+            return (bool) preg_match('/^Lesson\s+\d+[\d.]*\s*[:\-]/i', $p->post_title);
         });
 
         if (empty($lessons)) {
-            // Fallback: use all posts in category if filter returns nothing
-            $lessons = $posts;
+            return; // Nothing to write — don't overwrite a valid catalog with empty content
         }
+
+        // Sort by lesson number (handles 20.1, 20.2, 20.3 correctly)
+        usort($lessons, function($a, $b) {
+            preg_match('/^Lesson\s+([\d.]+)/i', $a->post_title, $ma);
+            preg_match('/^Lesson\s+([\d.]+)/i', $b->post_title, $mb);
+            $na = isset($ma[1]) ? (float) $ma[1] : 0;
+            $nb = isset($mb[1]) ? (float) $mb[1] : 0;
+            return $na <=> $nb;
+        });
 
         $lesson_count = count($lessons);
-        $date = date('Y-m-d H:i:s');
+        $date = current_time('Y-m-d');
 
         $content  = "# LeSAEp Lesson Catalog\n\n";
-        $content .= "Auto-generated: {$date}\n";
-        $content .= "Total lessons: {$lesson_count}\n\n";
-        $content .= "**IMPORTANT:** This catalog is everything you have been given about LeSAEp lessons. "
-            . "If a lesson is not listed here, you have not been given information about it — say so rather than inventing.\n\n";
-        $content .= "| Lesson | Title | Sound | Permalink | Access |\n";
-        $content .= "|--------|-------|-------|-----------|--------|\n";
+        $content .= "**Auto-generated from WordPress.** This catalog is everything you have been given about\n";
+        $content .= "LeSAEp lessons. If a lesson is not listed here, you have not been given information about\n";
+        $content .= "it — say so rather than inventing titles, numbers, or content.\n\n";
+        $content .= "**Total lessons: {$lesson_count}**\n\n";
+        $content .= "All lessons require membership unless explicitly marked free in a learner's profile.\n\n";
+        $content .= "---\n\n";
+        $content .= "| Lesson | Sound | Title | Permalink |\n";
+        $content .= "|--------|-------|-------|-----------|\n";
 
-        $lesson_number = 1;
         foreach ($lessons as $post) {
-            $title        = $post->post_title;
-            $permalink    = get_permalink($post->ID);
-            $sound        = get_post_meta($post->ID, 'sound_covered', true) ?: get_post_meta($post->ID, 'ipa_sound', true) ?: '';
-            $access       = get_post_meta($post->ID, '_flosc_protection_mode', true) ?: 'member';
-            $access_label = ($access === 'full') ? 'public' : 'member';
-            $num          = get_post_meta($post->ID, 'lesson_number', true) ?: $lesson_number;
-            $content .= "| {$num} | {$title} | {$sound} | {$permalink} | {$access_label} |\n";
-            $lesson_number++;
+            $title     = $post->post_title;
+            $permalink = get_permalink($post->ID);
+
+            // Extract lesson number from title
+            preg_match('/^Lesson\s+([\d.]+)/i', $title, $m);
+            $num = isset($m[1]) ? $m[1] : '';
+
+            // Extract IPA sound: prefer custom meta, fall back to first [...] in title
+            $sound = get_post_meta($post->ID, 'sound_covered', true)
+                  ?: get_post_meta($post->ID, 'ipa_sound', true);
+            if (!$sound) {
+                // Extract from title: text between first [ ] after "Lesson N: "
+                if (preg_match('/^Lesson\s+[\d.]+[:\s]+\[([^\]]+)\]/u', $title, $sm)) {
+                    $sound = $sm[1];
+                }
+            }
+
+            $content .= "| {$num} | {$sound} | {$title} | {$permalink} |\n";
         }
+
+        $content .= "\n---\n\n";
+        $content .= "*Generated: {$date}. Source: WordPress LeSAEp category, published posts only.*\n";
+        $content .= "*If a lesson is not in this table, you do not have information about it — say so.*\n";
 
         file_put_contents($catalog_path, $content);
         update_option('flosc_lesson_catalog_generated', current_time('mysql'));
@@ -7584,8 +7604,8 @@ Example good response:
             }
         }
 
-        // Mark profile as completed — clears needsProfileCompletion flag permanently
-        update_user_meta($user_id, '_flosc_profile_completed', true);
+        // Mark credentials as set — clears pendingCredentialSetup flag permanently
+        update_user_meta($user_id, '_flosc_magic_link_user_credentials_set', true);
 
         if (!empty($password) && strlen($password) >= 6) {
             wp_set_password($password, $user_id);
@@ -10844,7 +10864,7 @@ Example good response:
 
         // Determine profile completion + guest status for the profile owner
         $bb_user          = get_userdata($user_id);
-        $profile_completed = (bool) get_user_meta($user_id, '_flosc_profile_completed', true);
+        $profile_completed = (bool) get_user_meta($user_id, '_flosc_magic_link_user_credentials_set', true);
         $is_guest_user    = $bb_user && (
             in_array('guest_lesaep_learner', (array) $bb_user->roles) ||
             !empty(get_user_meta($user_id, '_flosc_sso_linked_providers', true))
