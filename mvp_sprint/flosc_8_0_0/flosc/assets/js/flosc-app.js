@@ -300,6 +300,16 @@ class floscApp {
                 }
             }
             
+            // Member magic-link login: show confirmation as first message, with fresh chat
+            if (this.config.memberLinkLogin) {
+                this.currentSession = null;          // ensure new session on first message
+                if (this.chatMessages) this.chatMessages.innerHTML = '';  // fresh chat
+                const memberMsg = this.config.memberLinkLogin
+                    .replace('{name}', this.user?.name || '')
+                    .replace('{email}', this.user?.email || '');
+                this.addMessage('assistant', memberMsg, true);
+            }
+
             this.log('[FLOSC] Starting IVR...');
             // v1.6.2: initOfferMessages() REMOVED — offers ARE IVR entries, no bridge needed
             this.startIVR();
@@ -2450,8 +2460,6 @@ class floscApp {
                 break;
             case 'logout':
                 this.addMessage('assistant', 'See you later LeSAEp Fam! 👋');
-                // Clear flosc token cookie client-side — handles cross-domain AJAX gap
-                document.cookie = 'flosc_auth_token=; Max-Age=0; path=/; SameSite=Lax';
                 fetch((this.config.ajaxUrl || '/wp-admin/admin-ajax.php') + '?action=flosc_logout', { method: 'POST' })
                     .then(r => r.json())
                     .then(data => {
@@ -2573,7 +2581,28 @@ class floscApp {
         //         (e.g., user started text quiz but wants IPA audio quiz instead)
         if (this.quiz?.active) {
             if (this.quiz.id === quizId || quizId === 'default') {
-                this.addMessage('assistant', 'You already have a quiz in progress. Please complete it above.');
+                // Offer Continue / Restart — never leave user stuck
+                const resumeHtml = `<div class="flosc-quiz-resume">
+                    <p>You have a quiz in progress.</p>
+                    <button class="flosc-btn flosc-quiz-resume-continue">Continue Quiz</button>
+                    <button class="flosc-btn flosc-quiz-resume-restart">Restart Quiz</button>
+                </div>`;
+                const msgEl = this.addMessage('assistant', resumeHtml, true);
+                setTimeout(() => {
+                    const el = msgEl?.querySelector ? msgEl : this.chatMessages?.lastElementChild;
+                    el?.querySelector('.flosc-quiz-resume-continue')?.addEventListener('click', () => {
+                        const cur = (this.ipaQuiz?.currentIndex ?? 0) + 1;
+                        this._reEnableIpaRecordButton(cur);
+                        this.chatMessages?.querySelector(`#flosc-ipa-record-${cur}`)
+                            ?.closest('.flosc-chat-message')
+                            ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    });
+                    el?.querySelector('.flosc-quiz-resume-restart')?.addEventListener('click', () => {
+                        this.quiz.active = false;
+                        this.ipaQuiz = null;
+                        this.startInChatQuiz(quizId);
+                    });
+                }, 100);
                 return;
             }
             // Different quiz requested — cancel the old one and proceed
@@ -3338,6 +3367,16 @@ class floscApp {
 
         if (this.isRecording) {
             if (this.mediaRecorder) this.mediaRecorder.stop();
+            // Safety: if onstop doesn't fire within 4s, auto-advance with zero score
+            this._ipaStopHandled = false;
+            const _safePhrase = this.ipaQuiz?.phrases?.[this.ipaQuiz?.currentIndex];
+            const _safePhraseNum = phraseNum;
+            setTimeout(() => {
+                if (!this._ipaStopHandled && _safePhrase !== undefined) {
+                    this.logError('[FLOSC IPA] onstop timeout — auto-advancing phrase', _safePhraseNum);
+                    this._advanceIpaWithZeroScore(_safePhrase, _safePhraseNum);
+                }
+            }, 4000);
             this.isRecording = false;
             this.stopWaveformVisualizer();
             if (this.recordingStream) {
@@ -3393,11 +3432,13 @@ class floscApp {
             };
 
             this.mediaRecorder.onstop = () => {
+                this._ipaStopHandled = true;   // mark as handled so safety timeout doesn't fire
                 const blob = new Blob(this.audioChunks, { type: actualMime });
                 const audioUrl = URL.createObjectURL(blob);
                 this.processIpaRecording(blob, audioUrl, audioFormat, phraseNum);
             };
 
+            this._ipaStopHandled = false;   // reset before recording starts
             this.mediaRecorder.start();
             this.isRecording = true;
 
