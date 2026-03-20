@@ -3389,6 +3389,15 @@ class floscApp {
             return;
         }
 
+        // Immediate feedback so the user knows their tap registered (getUserMedia can take several seconds on Android)
+        if (btn) {
+            btn.textContent = '⏹ Stop';
+            btn.classList.remove('flosc-ipa-record-pulse');
+            btn.classList.add('recording');
+            btn.disabled = true;
+        }
+        if (status) status.textContent = 'Requesting microphone…';
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             this.recordingStream = stream;
@@ -3421,16 +3430,16 @@ class floscApp {
             this.mediaRecorder.start();
             this.isRecording = true;
 
-            if (btn) { btn.textContent = '⏹ Stop'; btn.classList.remove('flosc-ipa-record-pulse'); btn.classList.add('recording'); }
-            if (status) status.textContent = 'Recording... tap Stop when done';
+            if (btn) btn.disabled = false;   // re-enable so Stop tap works
+            if (status) status.textContent = 'Recording… tap Stop when done';
 
             // Start waveform visualizer
             this.startWaveformVisualizer(stream, phraseNum);
 
         } catch (e) {
-            this.logError('[FLOSC IPA] Mic access failed', e);
-            if (status) status.textContent = '';
             if (btn) { btn.disabled = false; btn.textContent = '🎤 Record'; btn.classList.remove('recording', 'flosc-ipa-record-pulse'); }
+            if (status) status.textContent = '';
+            this.logError('[FLOSC IPA] Mic access failed', e);
             this.addMessage('assistant', 'Microphone error: ' + (e?.message || 'Could not start recording') + '. Please check mic permissions and try again.');
         }
     }
@@ -3440,6 +3449,7 @@ class floscApp {
     startWaveformVisualizer(stream, phraseNum) {
         try {
             const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            audioCtx.resume();   // Android Chrome: new AudioContexts start suspended
             const source = audioCtx.createMediaStreamSource(stream);
             const analyser = audioCtx.createAnalyser();
             analyser.fftSize = 512;
