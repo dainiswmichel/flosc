@@ -1299,21 +1299,48 @@ The Team',
     }
 
     /**
-     * Action: flosc_sso_user_created — send welcome email to new SSO guest.
+     * Action: flosc_sso_user_created — generate magic link and send "Guest Access Link ready" email.
      */
     public function send_sso_welcome_email($user_id, $provider_id, $user_data) {
         $user = get_userdata($user_id);
         if (!$user || empty($user->user_email)) return;
 
-        $settings = $this->get_flow_settings_for_user($user_id);
-        $subject  = $settings['guest_welcome_subject']
-            ?? 'Welcome to LeSAEp — your 30-day guest access is ready';
-        $body     = $settings['guest_welcome_body']
-            ?? "Hi {name}!\n\nWelcome to LeSAEp (Learn Excellent Standard American English Pronunciation)!\n\nYou've been given complimentary guest access for 30 days. Take the pronunciation quiz, hear your recordings, and explore lessons anytime.\n\nContinue your LeSAEp experience: {chat_url}\n\nWe hope you enjoy every moment!\n\n— The LeSAEp Team";
+        // Generate and store magic link for SSO user (user already exists — use active status directly)
+        $token         = wp_generate_password(32, false, false);
+        $transient_key = 'flosc_magic_' . $token;
+        $payload       = [
+            'status'          => 'active',
+            'email'           => $user->user_email,
+            'temp_id'         => '',
+            'quiz_data'       => null,
+            'session_id'      => '',
+            'created_at'      => time(),
+            'first_clicked_at'=> time(),
+            'use_count'       => 0,
+        ];
+        set_transient($transient_key, $payload, 30 * DAY_IN_SECONDS);
+        update_user_meta($user_id, '_flosc_magic_link_token', $token);
 
-        $subject = $this->replace_guest_email_placeholders($subject, $user, 30);
-        $body    = $this->replace_guest_email_placeholders($body,    $user, 30);
-        wp_mail($user->user_email, $subject, $body);
+        $magic_url      = add_query_arg('flosc_magic', rawurlencode($token), $this->get_app_url());
+        $link_name      = flosc_get_setting('guest_link_name', 'Complimentary LeSAEp Learners Guest Access Link');
+        $safe_link_name = esc_html($link_name);
+        $safe_email     = esc_html($user->user_email);
+        $safe_url       = esc_url($magic_url);
+        $subject        = 'Your Complimentary LeSAEp Learners Guest Access Link is ready';
+
+        $body = '<!doctype html><html><body style="margin:0;padding:0;background:#f6f7fb;font-family:Arial,sans-serif;color:#1f2937;">'
+            . '<div style="max-width:640px;margin:0 auto;padding:32px 20px;">'
+            . '<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:32px;box-shadow:0 10px 30px rgba(0,0,0,0.05);">'
+            . '<h1 style="margin:0 0 16px 0;font-size:28px;line-height:1.2;">Your ' . $safe_link_name . ' is ready</h1>'
+            . '<p style="margin:0 0 24px 0;font-size:16px;line-height:1.6;">Click the button below to access the chat, view your quiz score, free lessons, and a special upgrade offer.</p>'
+            . '<p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:#4b5563;">Your link can be used up to 10 times over 30 days.</p>'
+            . '<p style="margin:0 0 24px 0;"><a href="' . $safe_url . '" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 22px;border-radius:10px;font-weight:700;">' . $safe_link_name . '</a></p>'
+            . '<p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:#4b5563;">If the button does not work, copy and paste this link into your browser:</p>'
+            . '<p style="margin:0 0 24px 0;font-size:14px;line-height:1.6;word-break:break-all;"><a href="' . $safe_url . '">' . $safe_url . '</a></p>'
+            . '<p style="margin:0;font-size:13px;line-height:1.6;color:#6b7280;">This message was sent to ' . $safe_email . '.</p>'
+            . '</div></div></body></html>';
+
+        wp_mail($user->user_email, $subject, $body, ['Content-Type: text/html; charset=UTF-8']);
     }
 
     /**
@@ -2405,18 +2432,25 @@ The {product_name} Team";
             $email        = sanitize_email($payload['email']);
             $is_first_click = ($payload['status'] === 'pending');
 
+            // Check membership before applying use-count limits — members get unlimited access
+            $_pre_user = get_user_by('email', $email);
+            $is_member_user = $_pre_user &&
+                $this->sale_manager->access()->get_simple_state($_pre_user->ID) === 'member';
+
             if ($is_first_click) {
                 // Phase 1 → Phase 2: Activate link on first click
                 $payload['status']         = 'active';
                 $payload['first_clicked_at'] = time();
-                $payload['use_count']      = 1;
+                if (!$is_member_user) {
+                    $payload['use_count'] = 1;
+                }
                 set_transient($transient_key, $payload, 30 * DAY_IN_SECONDS);
             } else {
-                // Phase 2: Enforce 30-day window and 10-use limit
+                // Phase 2: Enforce 30-day window; enforce 10-use limit only for non-members
                 $expired = (
                     $payload['status'] !== 'active' ||
                     (time() - $payload['first_clicked_at']) > (30 * DAY_IN_SECONDS) ||
-                    $payload['use_count'] >= 10
+                    (!$is_member_user && $payload['use_count'] >= 10)
                 );
                 if ($expired) {
                     delete_transient($transient_key);
@@ -2425,14 +2459,16 @@ The {product_name} Team";
                     }
                     wp_safe_redirect(add_query_arg('flosc_guest_status', 'expired', remove_query_arg('flosc_magic'))); exit;
                 }
-                // Increment use_count and re-save with remaining TTL
-                $payload['use_count']++;
+                if (!$is_member_user) {
+                    // Increment use_count and re-save with remaining TTL
+                    $payload['use_count']++;
+                }
                 $elapsed     = time() - $payload['first_clicked_at'];
                 $remaining_ttl = max((30 * DAY_IN_SECONDS) - $elapsed, DAY_IN_SECONDS);
                 set_transient($transient_key, $payload, $remaining_ttl);
             }
 
-            $remaining_after_use = 10 - $payload['use_count'];
+            $remaining_after_use = $is_member_user ? null : (10 - $payload['use_count']);
 
             // Find or create WP user
             $existing_user = get_user_by('email', $email);
@@ -2471,6 +2507,9 @@ The {product_name} Team";
             }
             $this->process_prelogin_data_for_user($user_id);
 
+            // Store token for credential-save email (email-registered users)
+            update_user_meta($user_id, '_flosc_magic_link_token', $token);
+
             // First click only: snapshot send count to user meta for admin profile visibility
             if ($is_first_click) {
                 $log  = get_option('flosc_guest_link_log', []);
@@ -2499,13 +2538,33 @@ The {product_name} Team";
             }
 
             // Short-lived transients consumed by FLOSC_CONFIG on next page render
-            set_transient('flosc_just_guest_login_' . $user_id, (int) $remaining_after_use, 10 * MINUTE_IN_SECONDS);
+            // Members receive a marker value ('member') so memberLinkLogin can detect the magic-link login;
+            // guests receive the remaining-use count for guestLinkRemaining.
+            $_login_transient_val = $is_member_user ? 'member' : (int) $remaining_after_use;
+            set_transient('flosc_just_guest_login_' . $user_id, $_login_transient_val, 10 * MINUTE_IN_SECONDS);
             if ($is_first_click) {
                 set_transient('flosc_first_guest_login_' . $user_id, true, 10 * MINUTE_IN_SECONDS);
             }
 
-            $clean_url = remove_query_arg('flosc_magic');
-            wp_safe_redirect($clean_url);
+            $sync_nonce = wp_generate_password(32, false);
+            set_transient('flosc_wp_sync_' . $sync_nonce, $user_id, 5 * MINUTE_IN_SECONDS);
+            wp_safe_redirect(home_url('/?flosc_wp_sync=' . rawurlencode($sync_nonce)));
+            exit;
+        }
+
+        // Case 3: dainis.net WP auth cookie sync (hop from magic link on lesaep.com)
+        if (!empty($_GET['flosc_wp_sync'])) {
+            $sync_nonce = sanitize_text_field(wp_unslash($_GET['flosc_wp_sync']));
+            $user_id    = get_transient('flosc_wp_sync_' . $sync_nonce);
+            if (!$user_id) {
+                // Invalid or expired nonce — redirect to app anyway, FLOSC token auth will carry them
+                wp_safe_redirect($this->get_app_url());
+                exit;
+            }
+            delete_transient('flosc_wp_sync_' . $sync_nonce);
+            wp_set_current_user((int) $user_id);
+            wp_set_auth_cookie((int) $user_id, true);
+            wp_safe_redirect($this->get_app_url());
             exit;
         }
 
@@ -2687,10 +2746,11 @@ The {product_name} Team";
             return;
         }
 
+        $app_host = parse_url($this->get_app_url(), PHP_URL_HOST) ?: '';
         setcookie('flosc_auth_token', $token, [
             'expires'  => time() + $ttl,
             'path'     => '/',
-            'domain'   => '',  // Empty = current request host
+            'domain'   => $app_host,
             'secure'   => is_ssl(),
             'httponly'  => true,
             'samesite' => 'Lax',
@@ -2760,10 +2820,11 @@ The {product_name} Team";
             return;
         }
 
+        $app_host = parse_url($this->get_app_url(), PHP_URL_HOST) ?: '';
         setcookie('flosc_auth_token', '', [
             'expires'  => time() - YEAR_IN_SECONDS,
             'path'     => '/',
-            'domain'   => '',
+            'domain'   => $app_host,
             'secure'   => is_ssl(),
             'httponly'  => true,
             'samesite' => 'Lax',
@@ -7225,6 +7286,53 @@ Example good response:
             error_log("FLOSC Access Code: User {$user_id} granted {$grants_level} via access code");
         }
 
+        // SSO users: retrieve stored magic link token and send "Access Link ready" email
+        $has_sso = !empty(get_user_meta($user_id, '_flosc_sso_linked_providers', true));
+        if ($has_sso && !empty($user->user_email)) {
+            $magic_token = get_user_meta($user_id, '_flosc_magic_link_token', true);
+            if ($magic_token) {
+                // Re-store transient as active with no use-count limit (member)
+                $transient_key = 'flosc_magic_' . $magic_token;
+                $existing_payload = get_transient($transient_key);
+                if (!$existing_payload) {
+                    $existing_payload = [
+                        'status'           => 'active',
+                        'email'            => $user->user_email,
+                        'temp_id'          => '',
+                        'quiz_data'        => null,
+                        'session_id'       => '',
+                        'created_at'       => time(),
+                        'first_clicked_at' => time(),
+                        'use_count'        => 0,
+                    ];
+                }
+                set_transient($transient_key, $existing_payload, 30 * DAY_IN_SECONDS);
+
+                $magic_url   = add_query_arg('flosc_magic', rawurlencode($magic_token), $this->get_app_url());
+                $chat_url    = $this->get_app_url();
+                $safe_url    = esc_url($magic_url);
+                $safe_chat   = esc_url($chat_url);
+                $safe_email  = esc_html($user->user_email);
+                $safe_name   = esc_html($user->display_name);
+                $subject     = 'Your LeSAEp Learners Access Link is ready';
+
+                $body = '<!doctype html><html><body style="margin:0;padding:0;background:#f6f7fb;font-family:Arial,sans-serif;color:#1f2937;">'
+                    . '<div style="max-width:640px;margin:0 auto;padding:32px 20px;">'
+                    . '<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:32px;box-shadow:0 10px 30px rgba(0,0,0,0.05);">'
+                    . '<h1 style="margin:0 0 16px 0;font-size:28px;line-height:1.2;">Your LeSAEp Learners Access Link is ready</h1>'
+                    . '<p style="margin:0 0 16px 0;font-size:16px;line-height:1.6;">Hi ' . $safe_name . ',</p>'
+                    . '<p style="margin:0 0 24px 0;font-size:16px;line-height:1.6;">Your LeSAEp Learners account is all set. Your Access Link gives you instant one-click access to your lessons and quiz results — unlimited use, active as long as your membership is.</p>'
+                    . '<p style="margin:0 0 24px 0;"><a href="' . $safe_url . '" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 22px;border-radius:10px;font-weight:700;">LeSAEp Learners Access Link</a></p>'
+                    . '<p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:#4b5563;">If the button does not work, copy and paste this link into your browser:</p>'
+                    . '<p style="margin:0 0 24px 0;font-size:14px;line-height:1.6;word-break:break-all;"><a href="' . $safe_url . '">' . $safe_url . '</a></p>'
+                    . '<p style="margin:0 0 16px 0;font-size:14px;line-height:1.6;color:#4b5563;">Continue your LeSAEp experience: <a href="' . $safe_chat . '">' . $safe_chat . '</a></p>'
+                    . '<p style="margin:0;font-size:13px;line-height:1.6;color:#6b7280;">This message was sent to ' . $safe_email . '.</p>'
+                    . '</div></div></body></html>';
+
+                wp_mail($user->user_email, $subject, $body, ['Content-Type: text/html; charset=UTF-8']);
+            }
+        }
+
         return new WP_REST_Response([
             'success' => true,
             'message' => 'Access granted',
@@ -7617,20 +7725,26 @@ Example good response:
             // Send confirmation email with login credentials
             $user      = get_userdata($user_id);
             $user_email = $user->user_email ?? '';
-            $chat_url   = get_home_url() . '/?flosc_open_login=1';
+            $chat_url   = $this->get_app_url() . '/?flosc_open_login=1';
             $profile_url = function_exists('bp_core_get_user_domain') ? bp_core_get_user_domain($user_id) : '';
             $name_for_email = $display_name ?: $user->display_name;
             if ($user_email) {
-                $subject = 'Your LeSAEp Guest Learner account is ready';
-                $body    = "Hi {$name_for_email},\n\n"
-                         . "Your LeSAEp Guest Learner account has been set up. Here are your login details:\n\n"
-                         . "Username:   {$user_email}\n"
-                         . "Password:   {$password}\n\n"
-                         . "Continue your LeSAEp experience:  {$chat_url}\n";
-                if ($profile_url) {
-                    $body .= "Review your pronunciation recordings:  {$profile_url}\n";
+                $magic_token = get_user_meta($user_id, '_flosc_magic_link_token', true);
+                $magic_link_line = '';
+                if ($magic_token) {
+                    $magic_url = add_query_arg('flosc_magic', rawurlencode($magic_token), $this->get_app_url());
+                    $magic_link_line = "Your LeSAEp Learners Access Link gives you instant one-click access to your\nlessons and quiz results — unlimited use, active as long as your membership is.\n\nAccess Link: {$magic_url}\n\n";
                 }
-                $body   .= "\nYou can change your password anytime after logging in.\n\n"
+                $profile_line = $profile_url ? "Your profile and recordings: {$profile_url}\n" : '';
+                $subject = 'Your LeSAEp Learners Access Link is ready';
+                $body    = "Hi {$name_for_email},\n\n"
+                         . "Your LeSAEp Learners account is all set. Here are your login details:\n\n"
+                         . "  Email:     {$user_email}\n"
+                         . "  Password:  {$password}\n\n"
+                         . $magic_link_line
+                         . "Continue your LeSAEp experience: {$chat_url}\n"
+                         . $profile_line
+                         . "\nYou can update your password anytime after logging in.\n\n"
                          . "— The LeSAEp Team";
                 wp_mail($user_email, $subject, $body);
             }
