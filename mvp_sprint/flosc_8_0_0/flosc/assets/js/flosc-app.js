@@ -3058,9 +3058,53 @@ class floscApp {
         }, 100);
     }
 
-    checkMicAndStartQuiz() {
-        // Go straight to tier selection — mic permission is handled at record time
-        this.showQuizTierSelection();
+    async checkMicAndStartQuiz() {
+        // Probe mic while the user gesture from the consent button click is still valid.
+        // Establishes permission here so Record taps later auto-grant instantly.
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            this.showQuizTierSelection();
+            return;
+        }
+
+        try {
+            const stream = await Promise.race([
+                navigator.mediaDevices.getUserMedia({ audio: true }),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('timeout')), 8000)
+                )
+            ]);
+            stream.getTracks().forEach(t => t.stop());
+            this.showQuizTierSelection();
+        } catch (e) {
+            const name = e?.name || '';
+            const msg = e?.message || '';
+            let guidance = '';
+            if (msg === 'timeout') {
+                guidance = 'The microphone permission dialog did not appear. Please check that your browser allows microphone access, then tap Try Again.';
+            } else if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+                const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
+                if (isIos) {
+                    guidance = 'Microphone access was denied. In Safari: Settings → Safari → Microphone → Allow for this site. Then tap Try Again.';
+                } else {
+                    guidance = 'Microphone access was denied. Tap the lock icon in your browser address bar → Site settings → Microphone → Allow. Then tap Try Again.';
+                }
+            } else if (name === 'NotFoundError') {
+                guidance = 'No microphone was found on this device. Please connect a microphone and tap Try Again.';
+            } else {
+                guidance = 'Could not access microphone (' + (msg || name || 'unknown error') + '). Please check your browser settings and tap Try Again.';
+            }
+
+            const retryHtml = `
+                <div class="flosc-mic-error">
+                    <p>${guidance}</p>
+                    <button class="flosc-mic-retry-btn">Try Again</button>
+                </div>`;
+            this.addMessage('assistant', retryHtml, true);
+            setTimeout(() => {
+                const retryBtn = document.querySelector('.flosc-mic-retry-btn');
+                if (retryBtn) retryBtn.addEventListener('click', () => this.checkMicAndStartQuiz());
+            }, 100);
+        }
     }
 
     showQuizTierSelection() {
