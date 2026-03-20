@@ -46,13 +46,10 @@ class floscApp {
         // Prevents information disclosure in production while keeping logs available for dev
         this._debug = Boolean(this.config.debug);
         
-        console.log('FLOSC_BUILD_20260320_V3');
-
         // State tracking
         this.currentSession = null;
         this.visitorInteractions = 0;
         this.isRecording = false;
-        this.isAcquiringMic = false;
         this.mediaRecorder = null;
         this.audioChunks = [];
         this.recordingStream = null;
@@ -3061,6 +3058,7 @@ class floscApp {
     }
 
     checkMicAndStartQuiz() {
+        // Go straight to tier selection — mic permission is handled at record time
         this.showQuizTierSelection();
     }
 
@@ -3342,18 +3340,13 @@ class floscApp {
             this.isRecording = false;
             this.isAcquiringMic = false;
             this.stopWaveformVisualizer();
-            if (this.recordingStream) {
-                this.recordingStream.getTracks().forEach(t => t.stop());
-                this.recordingStream = null;
-            }
             if (btn) {
-                const thankEmojis = ['❤️', '✨', '🙏', '😍', '💖', '💕', '🌟', '😊', '🥰', '💛', '💜', '🫶'];
+                const thankEmojis = ['❤️ ', '✨', '🙏', '😍', '💖', '💕', '🌟', '😊', '🥰', '💛', '💜', '🫶'];
                 btn.textContent = thankEmojis[Math.floor(Math.random() * thankEmojis.length)];
                 btn.classList.remove('recording', 'flosc-ipa-record-pulse');
                 btn.classList.add('completed');
                 btn.disabled = true;
             }
-            // Mark current step as completed (gray + green checkmark)
             const stepBar = btn?.closest('.flosc-ipa-phrase-card')?.querySelector('.flosc-ipa-step-bar');
             if (stepBar) {
                 const activeStep = stepBar.querySelector('.flosc-ipa-step-active');
@@ -3364,7 +3357,6 @@ class floscApp {
                 }
             }
             if (status) status.textContent = 'Analyzing...';
-            // v8.0.1: Auto-scroll so user sees the analyzing state
             requestAnimationFrame(() => {
                 if (this.chatMessages) {
                     this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
@@ -3382,11 +3374,8 @@ class floscApp {
             return;
         }
 
-        // Mark acquisition in progress — prevents re-entrant taps
         this.isAcquiringMic = true;
 
-        // Button stays labeled "🎤 Record" while acquiring — only switches to Stop after
-        // recording is actually live. Do not show Stop during the permission request.
         if (btn) {
             btn.disabled = true;
             btn.textContent = '🎤 Record';
@@ -3394,18 +3383,14 @@ class floscApp {
         }
         if (status) status.textContent = 'Requesting microphone…';
 
-        // getUserMedia with 8-second timeout — prevents infinite UI freeze if the
-        // browser never resolves or rejects (e.g. permission dialog doesn't appear)
-        const getUserMediaWithTimeout = (constraints, ms) =>
-            Promise.race([
-                navigator.mediaDevices.getUserMedia(constraints),
+        try {
+            const stream = await Promise.race([
+                navigator.mediaDevices.getUserMedia({ audio: true }),
                 new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Microphone request timed out')), ms)
+                    setTimeout(() => reject(new Error('Microphone request timed out')), 8000)
                 )
             ]);
 
-        try {
-            const stream = await getUserMediaWithTimeout({ audio: true }, 8000);
             this.recordingStream = stream;
             this.audioChunks = [];
 
@@ -3433,7 +3418,7 @@ class floscApp {
 
             this.mediaRecorder.start();
 
-            // Recording is live — now switch to Stop state
+            // Recording is live — now switch UI to Stop state
             this.isRecording = true;
             this.isAcquiringMic = false;
 
@@ -3444,7 +3429,6 @@ class floscApp {
             }
             if (status) status.textContent = 'Recording… tap Stop when done';
 
-            // Start waveform visualizer
             this.startWaveformVisualizer(stream, phraseNum);
 
         } catch (e) {
@@ -3989,12 +3973,6 @@ class floscApp {
     }
 
     showIpaQuizSummary() {
-        // Release mic stream now that all phrases are recorded
-        if (this.recordingStream) {
-            this.recordingStream.getTracks().forEach(t => t.stop());
-            this.recordingStream = null;
-        }
-
         const results = this.ipaQuiz.results.filter(r => r !== null);
         const allWords = results.flatMap(r => r.data.words || [{ word: r.data.target_text, expected_ipa: r.data.expected_ipa, phonemes: r.data.phonemes }]);
         const allPh = allWords.flatMap(w => w.phonemes);
