@@ -3076,6 +3076,13 @@ class floscApp {
             // Keep stream alive — reused by toggleIpaRecording to avoid a second
             // getUserMedia call, which can hang on Android after hardware release.
             this._probeStream = stream;
+            // Android Chrome auto-releases idle mic tracks not connected to any audio
+            // processing node. Connect to a silent AudioContext to keep hardware awake.
+            try {
+                this._keepAliveCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const src = this._keepAliveCtx.createMediaStreamSource(stream);
+                src.connect(this._keepAliveCtx.createMediaStreamDestination());
+            } catch (_) {}
             this.showQuizTierSelection();
         } catch (e) {
             const name = e?.name || '';
@@ -3454,6 +3461,10 @@ class floscApp {
             if (this._probeStream && this._probeStream.active) {
                 stream = this._probeStream;
                 this._probeStream = null;
+                if (this._keepAliveCtx) {
+                    try { this._keepAliveCtx.close(); } catch (_) {}
+                    this._keepAliveCtx = null;
+                }
             } else if (this.recordingStream && this.recordingStream.active) {
                 stream = this.recordingStream;
             } else {
@@ -4050,6 +4061,10 @@ class floscApp {
         if (this._probeStream) {
             this._probeStream.getTracks().forEach(t => t.stop());
             this._probeStream = null;
+        }
+        if (this._keepAliveCtx) {
+            try { this._keepAliveCtx.close(); } catch (_) {}
+            this._keepAliveCtx = null;
         }
 
         const results = this.ipaQuiz.results.filter(r => r !== null);
