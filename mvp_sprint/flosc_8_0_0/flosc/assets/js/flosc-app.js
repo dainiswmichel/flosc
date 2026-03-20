@@ -1515,7 +1515,7 @@ class floscApp {
     async _generateAIWelcome(ivrWelcomeMsg) {
         const productName = this.config.identity?.name || 'FLOSC';
         const badgeUrl = this.config.identity?.badgeUrl || '';
-        const badge = badgeUrl ? `<div style="display:flex;justify-content:center;width:calc(100% + 44px);margin:16px 0 16px -44px"><img src="${badgeUrl}" alt="${productName}" style="display:block;max-width:55%;border:3px solid rgba(184,148,68,0.2)"></div>` : '';
+        const badge = badgeUrl ? `<div style="text-align:center;margin:16px 0"><img src="${badgeUrl}" alt="${productName}" style="display:inline-block;max-width:55%;border:3px solid rgba(184,148,68,0.2)"></div>` : '';
         const syntheticMessage = `[SYSTEM: Generate a brief welcome greeting for a new visitor to ${productName}. Vary it each time. First line: a warm welcome to ${productName} and what it stands for. Second line (after badge): what the learner will master. Keep each part to one sentence.]`;
         
         try {
@@ -1547,7 +1547,7 @@ class floscApp {
     
     _showFallbackWelcome(ivrMsg, productName) {
         const badgeUrl = this.config.identity?.badgeUrl || '';
-        const badge = badgeUrl ? `<div style="display:flex;justify-content:center;width:calc(100% + 44px);margin:16px 0 16px -44px"><img src="${badgeUrl}" alt="${productName}" style="display:block;max-width:55%;border:3px solid rgba(184,148,68,0.2)"></div>` : '';
+        const badge = badgeUrl ? `<div style="text-align:center;margin:16px 0"><img src="${badgeUrl}" alt="${productName}" style="display:inline-block;max-width:55%;border:3px solid rgba(184,148,68,0.2)"></div>` : '';
         if (ivrMsg) {
             let content = this.replaceVariables(ivrMsg.content);
             content = content.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/~~([^~]+)~~/g, '<del>$1</del>');
