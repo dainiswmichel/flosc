@@ -3387,9 +3387,8 @@ class floscApp {
             this.isRecording = false;
             this.isAcquiringMic = false;
             this.stopWaveformVisualizer();
-            if (this.recordingStream) {
-                this.recordingStream.getTracks().forEach(t => t.stop());
-            }
+            // Do NOT stop stream tracks here — stream is reused for subsequent phrases.
+            // Stopping and re-acquiring on Android causes getUserMedia to hang.
             if (btn) {
                 const thankEmojis = ['❤️', '✨', '🙏', '😍', '💖', '💕', '🌟', '😊', '🥰', '💛', '💜', '🫶'];
                 btn.textContent = thankEmojis[Math.floor(Math.random() * thankEmojis.length)];
@@ -3449,12 +3448,14 @@ class floscApp {
             ]);
 
         try {
-            // Reuse probe stream if available — avoids a second getUserMedia call
-            // which can hang on Android after the hardware was just released.
+            // Reuse existing stream across phrases — avoids repeated getUserMedia calls
+            // which hang on Android after hardware release/re-acquire cycles.
             let stream;
             if (this._probeStream && this._probeStream.active) {
                 stream = this._probeStream;
                 this._probeStream = null;
+            } else if (this.recordingStream && this.recordingStream.active) {
+                stream = this.recordingStream;
             } else {
                 stream = await getUserMediaWithTimeout({ audio: true }, 8000);
             }
@@ -4041,6 +4042,16 @@ class floscApp {
     }
 
     showIpaQuizSummary() {
+        // Release mic stream now that all phrases are recorded
+        if (this.recordingStream) {
+            this.recordingStream.getTracks().forEach(t => t.stop());
+            this.recordingStream = null;
+        }
+        if (this._probeStream) {
+            this._probeStream.getTracks().forEach(t => t.stop());
+            this._probeStream = null;
+        }
+
         const results = this.ipaQuiz.results.filter(r => r !== null);
         const allWords = results.flatMap(r => r.data.words || [{ word: r.data.target_text, expected_ipa: r.data.expected_ipa, phonemes: r.data.phonemes }]);
         const allPh = allWords.flatMap(w => w.phonemes);
