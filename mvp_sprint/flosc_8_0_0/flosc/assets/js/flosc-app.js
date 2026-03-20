@@ -50,6 +50,7 @@ class floscApp {
         this.currentSession = null;
         this.visitorInteractions = 0;
         this.isRecording = false;
+        this.isAcquiringMic = false;
         this.mediaRecorder = null;
         this.audioChunks = [];
         this.recordingStream = null;
@@ -3334,9 +3335,11 @@ class floscApp {
         const btn = document.getElementById(`flosc-ipa-record-${phraseNum}`);
         const status = document.getElementById(`flosc-ipa-status-${phraseNum}`);
 
+        // Stop branch — only when actively recording
         if (this.isRecording) {
             if (this.mediaRecorder) this.mediaRecorder.stop();
             this.isRecording = false;
+            this.isAcquiringMic = false;
             this.stopWaveformVisualizer();
             if (this.recordingStream) {
                 this.recordingStream.getTracks().forEach(t => t.stop());
@@ -3369,15 +3372,38 @@ class floscApp {
             return;
         }
 
+        // Guard: ignore tap if mic acquisition is already in progress
+        if (this.isAcquiringMic) return;
+
         if (typeof MediaRecorder === 'undefined') {
             if (status) status.textContent = 'Audio recording is not supported in this browser. Please try Chrome or Safari 14.3+.';
             return;
         }
 
+        // Mark acquisition in progress — prevents re-entrant taps
+        this.isAcquiringMic = true;
+
+        // Button stays labeled "🎤 Record" while acquiring — only switches to Stop after
+        // recording is actually live. Do not show Stop during the permission request.
+        if (btn) {
+            btn.disabled = true;
+            btn.textContent = '🎤 Record';
+            btn.classList.remove('recording');
+        }
         if (status) status.textContent = 'Requesting microphone…';
 
+        // getUserMedia with 8-second timeout — prevents infinite UI freeze if the
+        // browser never resolves or rejects (e.g. permission dialog doesn't appear)
+        const getUserMediaWithTimeout = (constraints, ms) =>
+            Promise.race([
+                navigator.mediaDevices.getUserMedia(constraints),
+                new Promise((_, reject) =>
+                    setTimeout(() => reject(new Error('Microphone request timed out')), ms)
+                )
+            ]);
+
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const stream = await getUserMediaWithTimeout({ audio: true }, 8000);
             this.recordingStream = stream;
             this.audioChunks = [];
 
@@ -3404,18 +3430,36 @@ class floscApp {
             };
 
             this.mediaRecorder.start();
-            this.isRecording = true;
 
-            if (btn) { btn.textContent = '⏹ Stop'; btn.classList.remove('flosc-ipa-record-pulse'); btn.classList.add('recording'); }
+            // Recording is live — now switch to Stop state
+            this.isRecording = true;
+            this.isAcquiringMic = false;
+
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = '⏹ Stop';
+                btn.classList.add('recording');
+            }
             if (status) status.textContent = 'Recording… tap Stop when done';
 
             // Start waveform visualizer
             this.startWaveformVisualizer(stream, phraseNum);
 
         } catch (e) {
-            if (btn) { btn.disabled = false; btn.textContent = '🎤 Record'; btn.classList.remove('recording', 'flosc-ipa-record-pulse'); }
+            this.isAcquiringMic = false;
+            this.isRecording = false;
+            if (this.recordingStream) {
+                this.recordingStream.getTracks().forEach(t => t.stop());
+                this.recordingStream = null;
+            }
+            if (btn) {
+                btn.disabled = false;
+                btn.textContent = '🎤 Record';
+                btn.classList.remove('recording', 'completed');
+                btn.classList.add('flosc-ipa-record-pulse');
+            }
             this.logError('[FLOSC IPA] Mic access failed', e);
-            if (status) status.textContent = 'Microphone error: ' + (e?.message || 'Could not start recording') + '. Please check permissions and try again.';
+            if (status) status.textContent = 'Could not access microphone. Tap to retry.';
         }
     }
 
