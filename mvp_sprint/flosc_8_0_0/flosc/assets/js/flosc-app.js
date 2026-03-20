@@ -3057,40 +3057,9 @@ class floscApp {
         }, 100);
     }
 
-    async checkMicAndStartQuiz() {
-        // Test mic access before starting quiz
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            stream.getTracks().forEach(t => t.stop());
-            this.showQuizTierSelection();
-        } catch (e) {
-            const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-            let guidance = 'Please allow microphone access to take the pronunciation quiz.';
-            if (e.name === 'NotAllowedError' || e.name === 'PermissionDeniedError') {
-                if (isSafari) {
-                    guidance = '**Microphone blocked.** On Safari, go to <strong>Settings → Safari → Microphone</strong> and allow access for this site, then tap the button below.';
-                } else {
-                    guidance = '**Microphone blocked.** Click the 🔒 icon in your address bar, allow Microphone, then tap the button below.';
-                }
-            } else if (e.name === 'NotFoundError') {
-                guidance = 'No microphone detected. Please connect a microphone and try again.';
-            }
-
-            const retryHtml = `
-                <div class="flosc-consent-card">
-                    <div class="flosc-consent-text">${guidance}</div>
-                    <button class="flosc-consent-btn" id="flosc-mic-retry">🎤 Try Again</button>
-                </div>
-            `;
-            this.addMessage('assistant', retryHtml, true);
-
-            setTimeout(() => {
-                const retryBtn = document.getElementById('flosc-mic-retry');
-                if (retryBtn) {
-                    retryBtn.addEventListener('click', () => this.checkMicAndStartQuiz());
-                }
-            }, 100);
-        }
+    checkMicAndStartQuiz() {
+        // Go straight to tier selection — mic permission is handled at record time
+        this.showQuizTierSelection();
     }
 
     showQuizTierSelection() {
