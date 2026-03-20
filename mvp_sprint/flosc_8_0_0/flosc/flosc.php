@@ -4091,7 +4091,7 @@ The {product_name} Team";
         // 3. Preset CSS (variable definitions only)
         $this->enqueue_chat_style();
 
-        wp_enqueue_script('flosc-app', FLOSC_PLUGIN_URL . 'assets/js/flosc-app.js', [], filemtime(FLOSC_PLUGIN_DIR . 'assets/js/flosc-app.js'), true);
+        wp_enqueue_script('flosc-app', FLOSC_PLUGIN_URL . 'assets/js/flosc-app.js', [], time(), true);
         
         // Stripe.js — DISABLED in v1.7.1 (pending Stripe account verification)
         // $stripe = $this->sale_manager->get_provider('stripe');

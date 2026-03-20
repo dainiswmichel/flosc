@@ -46,6 +46,8 @@ class floscApp {
         // Prevents information disclosure in production while keeping logs available for dev
         this._debug = Boolean(this.config.debug);
         
+        console.log('FLOSC_BUILD_20260320_V3');
+
         // State tracking
         this.currentSession = null;
         this.visitorInteractions = 0;
@@ -3058,65 +3060,8 @@ class floscApp {
         }, 100);
     }
 
-    async checkMicAndStartQuiz() {
-        // Probe mic while the user gesture from the consent button click is still valid.
-        // Establishes permission here so Record taps later auto-grant instantly.
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            this.showQuizTierSelection();
-            return;
-        }
-
-        try {
-            const stream = await Promise.race([
-                navigator.mediaDevices.getUserMedia({ audio: true }),
-                new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('timeout')), 8000)
-                )
-            ]);
-            // Keep stream alive — reused by toggleIpaRecording to avoid a second
-            // getUserMedia call, which can hang on Android after hardware release.
-            this._probeStream = stream;
-            // Keep stream alive between consent and first Record tap.
-            // Audio element approach: compatible with MediaRecorder on the same stream.
-            // AudioContext.createMediaStreamSource would conflict with MediaRecorder on
-            // some Android Chrome versions (stream can't have two audio graph consumers).
-            try {
-                this._keepAliveAudio = new Audio();
-                this._keepAliveAudio.srcObject = stream;
-                this._keepAliveAudio.muted = true;
-                this._keepAliveAudio.play().catch(() => {});
-            } catch (_) {}
-            this.showQuizTierSelection();
-        } catch (e) {
-            const name = e?.name || '';
-            const msg = e?.message || '';
-            let guidance = '';
-            if (msg === 'timeout') {
-                guidance = 'The microphone permission dialog did not appear. Please check that your browser allows microphone access, then tap Try Again.';
-            } else if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-                const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
-                if (isIos) {
-                    guidance = 'Microphone access was denied. In Safari: Settings → Safari → Microphone → Allow for this site. Then tap Try Again.';
-                } else {
-                    guidance = 'Microphone access was denied. Tap the lock icon in your browser address bar → Site settings → Microphone → Allow. Then tap Try Again.';
-                }
-            } else if (name === 'NotFoundError') {
-                guidance = 'No microphone was found on this device. Please connect a microphone and tap Try Again.';
-            } else {
-                guidance = 'Could not access microphone (' + (msg || name || 'unknown error') + '). Please check your browser settings and tap Try Again.';
-            }
-
-            const retryHtml = `
-                <div class="flosc-mic-error">
-                    <p>${guidance}</p>
-                    <button class="flosc-mic-retry-btn">Try Again</button>
-                </div>`;
-            this.addMessage('assistant', retryHtml, true);
-            setTimeout(() => {
-                const retryBtn = document.querySelector('.flosc-mic-retry-btn');
-                if (retryBtn) retryBtn.addEventListener('click', () => this.checkMicAndStartQuiz());
-            }, 100);
-        }
+    checkMicAndStartQuiz() {
+        this.showQuizTierSelection();
     }
 
     showQuizTierSelection() {
@@ -3397,8 +3342,10 @@ class floscApp {
             this.isRecording = false;
             this.isAcquiringMic = false;
             this.stopWaveformVisualizer();
-            // Do NOT stop stream tracks here — stream is reused for subsequent phrases.
-            // Stopping and re-acquiring on Android causes getUserMedia to hang.
+            if (this.recordingStream) {
+                this.recordingStream.getTracks().forEach(t => t.stop());
+                this.recordingStream = null;
+            }
             if (btn) {
                 const thankEmojis = ['❤️', '✨', '🙏', '😍', '💖', '💕', '🌟', '😊', '🥰', '💛', '💜', '🫶'];
                 btn.textContent = thankEmojis[Math.floor(Math.random() * thankEmojis.length)];
@@ -3458,21 +3405,7 @@ class floscApp {
             ]);
 
         try {
-            // Reuse existing stream across phrases — avoids repeated getUserMedia calls
-            // which hang on Android after hardware release/re-acquire cycles.
-            let stream;
-            if (this._probeStream && this._probeStream.active) {
-                stream = this._probeStream;
-                this._probeStream = null;
-                if (this._keepAliveAudio) {
-                    try { this._keepAliveAudio.pause(); this._keepAliveAudio.srcObject = null; } catch (_) {}
-                    this._keepAliveAudio = null;
-                }
-            } else if (this.recordingStream && this.recordingStream.active) {
-                stream = this.recordingStream;
-            } else {
-                stream = await getUserMediaWithTimeout({ audio: true }, 8000);
-            }
+            const stream = await getUserMediaWithTimeout({ audio: true }, 8000);
             this.recordingStream = stream;
             this.audioChunks = [];
 
@@ -4060,14 +3993,6 @@ class floscApp {
         if (this.recordingStream) {
             this.recordingStream.getTracks().forEach(t => t.stop());
             this.recordingStream = null;
-        }
-        if (this._probeStream) {
-            this._probeStream.getTracks().forEach(t => t.stop());
-            this._probeStream = null;
-        }
-        if (this._keepAliveAudio) {
-            try { this._keepAliveAudio.pause(); this._keepAliveAudio.srcObject = null; } catch (_) {}
-            this._keepAliveAudio = null;
         }
 
         const results = this.ipaQuiz.results.filter(r => r !== null);
