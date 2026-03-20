@@ -1510,6 +1510,11 @@ img.flosc-profile-avatar {
         max-width: 85%;
     }
 
+    .message.assistant .message-content,
+    .flosc-message-assistant .flosc-message-content {
+        max-width: 100%;
+    }
+
     .flosc-user-autoprompts,
     .flosc-user-autoprompts-container,
     #flosc_input_user_autoprompts_panel {
