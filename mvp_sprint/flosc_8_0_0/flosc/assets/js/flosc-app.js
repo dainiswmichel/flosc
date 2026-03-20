@@ -3410,6 +3410,12 @@ class floscApp {
             return;
         }
 
+        if (typeof MediaRecorder === 'undefined') {
+            this.addMessage('assistant', 'Audio recording is not supported in this browser. Please try Chrome or Safari 14.3+.');
+            if (btn) { btn.disabled = false; btn.textContent = '🎤 Record'; }
+            return;
+        }
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             this.recordingStream = stream;
@@ -3450,7 +3456,9 @@ class floscApp {
 
         } catch (e) {
             this.logError('[FLOSC IPA] Mic access failed', e);
-            if (status) status.textContent = 'Could not access microphone. Please allow mic access and try again.';
+            if (status) status.textContent = '';
+            if (btn) { btn.disabled = false; btn.textContent = '🎤 Record'; btn.classList.remove('recording', 'flosc-ipa-record-pulse'); }
+            this.addMessage('assistant', 'Microphone error: ' + (e?.message || 'Could not start recording') + '. Please check mic permissions and try again.');
         }
     }
 
