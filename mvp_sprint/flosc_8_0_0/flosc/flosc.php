@@ -7609,6 +7609,7 @@ Example good response:
             'success'          => true,
             'magic_link_sent'  => true,
             'message'          => 'Check your email for your Complimentary LeSAEp Learners Guest Access Link.',
+            'nonce'            => wp_create_nonce('wp_rest'),
         ]);
     }
 

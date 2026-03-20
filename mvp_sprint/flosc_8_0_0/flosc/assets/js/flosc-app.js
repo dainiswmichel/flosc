@@ -3336,20 +3336,6 @@ class floscApp {
 
         if (this.isRecording) {
             if (this.mediaRecorder) this.mediaRecorder.stop();
-            // Safety: if onstop doesn't fire within 4s, auto-advance with zero score
-            this._ipaStopHandled = false;
-            const _safePhrase = this.ipaQuiz?.phrases?.[this.ipaQuiz?.currentIndex];
-            const _safePhraseNum = phraseNum;
-            setTimeout(() => {
-                if (!this._ipaStopHandled && _safePhrase !== undefined) {
-                    this.logError('[FLOSC IPA] onstop timeout — auto-advancing phrase', _safePhraseNum);
-                    if (this.recordingStream) {
-                        this.recordingStream.getTracks().forEach(t => t.stop());
-                        this.recordingStream = null;
-                    }
-                    this._advanceIpaWithZeroScore(_safePhrase, _safePhraseNum);
-                }
-            }, 4000);
             this.isRecording = false;
             this.stopWaveformVisualizer();
             if (this.recordingStream) {
@@ -3384,18 +3370,10 @@ class floscApp {
         }
 
         if (typeof MediaRecorder === 'undefined') {
-            this.addMessage('assistant', 'Audio recording is not supported in this browser. Please try Chrome or Safari 14.3+.');
-            if (btn) { btn.disabled = false; btn.textContent = '🎤 Record'; }
+            if (status) status.textContent = 'Audio recording is not supported in this browser. Please try Chrome or Safari 14.3+.';
             return;
         }
 
-        // Immediate feedback so the user knows their tap registered (getUserMedia can take several seconds on Android)
-        if (btn) {
-            btn.textContent = '⏹ Stop';
-            btn.classList.remove('flosc-ipa-record-pulse');
-            btn.classList.add('recording');
-            btn.disabled = true;
-        }
         if (status) status.textContent = 'Requesting microphone…';
 
         try {
@@ -3420,17 +3398,15 @@ class floscApp {
             };
 
             this.mediaRecorder.onstop = () => {
-                this._ipaStopHandled = true;   // mark as handled so safety timeout doesn't fire
                 const blob = new Blob(this.audioChunks, { type: actualMime });
                 const audioUrl = URL.createObjectURL(blob);
                 this.processIpaRecording(blob, audioUrl, audioFormat, phraseNum);
             };
 
-            this._ipaStopHandled = false;   // reset before recording starts
             this.mediaRecorder.start();
             this.isRecording = true;
 
-            if (btn) btn.disabled = false;   // re-enable so Stop tap works
+            if (btn) { btn.textContent = '⏹ Stop'; btn.classList.remove('flosc-ipa-record-pulse'); btn.classList.add('recording'); }
             if (status) status.textContent = 'Recording… tap Stop when done';
 
             // Start waveform visualizer
@@ -3438,9 +3414,8 @@ class floscApp {
 
         } catch (e) {
             if (btn) { btn.disabled = false; btn.textContent = '🎤 Record'; btn.classList.remove('recording', 'flosc-ipa-record-pulse'); }
-            if (status) status.textContent = '';
             this.logError('[FLOSC IPA] Mic access failed', e);
-            this.addMessage('assistant', 'Microphone error: ' + (e?.message || 'Could not start recording') + '. Please check mic permissions and try again.');
+            if (status) status.textContent = 'Microphone error: ' + (e?.message || 'Could not start recording') + '. Please check permissions and try again.';
         }
     }
 
@@ -3612,11 +3587,22 @@ class floscApp {
             }
         });
 
-        const buf = await blob.arrayBuffer();
-        const bytes = new Uint8Array(buf);
-        let binary = '';
-        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-        const b64 = btoa(binary);
+        let b64;
+        try {
+            const buf = await blob.arrayBuffer();
+            const bytes = new Uint8Array(buf);
+            let binary = '';
+            for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+            b64 = btoa(binary);
+        } catch (e) {
+            this.logError('[FLOSC IPA] Audio processing failed', e);
+            const recBtn = document.getElementById(`flosc-ipa-record-${phraseNum}`);
+            if (recBtn) { recBtn.disabled = false; recBtn.textContent = '🎤 Record'; recBtn.classList.remove('recording', 'completed'); recBtn.classList.add('flosc-ipa-record-pulse'); }
+            const recStatus = document.getElementById(`flosc-ipa-status-${phraseNum}`);
+            if (recStatus) recStatus.textContent = 'Could not submit — tap to retry';
+            this.isRecording = false;
+            return;
+        }
 
         const endpoint = words.length === 1 ? '/analyze' : '/analyze-phrase';
         const body = { audio: b64, target_text: phrase, format: audioFormat, phrase_num: phraseNum };
@@ -4770,6 +4756,10 @@ class floscApp {
             const result = await response.json();
             
             if (result.success) {
+                // Refresh nonce if server returned one — keeps WP REST calls valid
+                if (result.nonce) {
+                    this.config.nonce = result.nonce;
+                }
                 this.hideAuthModal();
                 this.addMessage('assistant', result.magic_link_sent ? checkEmailMsg : (result.message || checkEmailMsg));
             } else {
