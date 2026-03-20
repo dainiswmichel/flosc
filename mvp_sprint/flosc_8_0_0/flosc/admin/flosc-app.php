@@ -910,13 +910,22 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
             'guestLinkWelcomeMessage'    => (function() { $v = flosc_get_setting('guest_link_welcome_message', 'Hi, welcome back! Just to confirm: your email address is {email} and you can use your {link_name} {n} more times to access this chat. <a href="{upgrade_url}">Upgrade</a> for complete access to all lessons, quiz audios, and our LeSAEp Learners network...'); $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v; })(),
             'guestLinkUpgradeUrl'        => flosc_get_setting('guest_link_upgrade_url', ''),
             // One-time injection after redirect-back login (via short-lived transient)
-            'guestLinkRemaining' => (function() {
-                if (!is_user_logged_in()) return null;
+            'guestLinkRemaining' => (function() use ($user_state) {
+                if (!is_user_logged_in() || $user_state !== 'guest') return null;
                 $key       = 'flosc_just_guest_login_' . get_current_user_id();
                 $remaining = get_transient($key);
-                if ($remaining === false) return null;
+                if ($remaining === false || !is_numeric($remaining)) return null;
                 delete_transient($key);
                 return (int) $remaining;
+            })(),
+            'memberLinkLogin' => (function() use ($user_state) {
+                if (!is_user_logged_in() || $user_state !== 'member') return null;
+                $key = 'flosc_just_guest_login_' . get_current_user_id();
+                if (get_transient($key) === false) return null;
+                delete_transient($key);
+                $v = flosc_get_setting('member_link_welcome_message',
+                    'Hi, welcome back {name}! Just to confirm: your email address is {email} and you can use your LeSAEp Learners Access Link unlimited times to access this chat. Enjoy your session!');
+                $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v;
             })(),
             // True if the current user has any SSO provider linked (FB, Google, etc.)
             'hasSsoProvider' => (is_user_logged_in()

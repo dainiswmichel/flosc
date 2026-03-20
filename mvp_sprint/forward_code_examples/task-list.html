@@ -58,7 +58,7 @@
 <p class="section-label">Essential Fixes</p>
 <ol>
 <li><a href="#task2">Fix All AI Hallucinations</a> <span class="status essential">Essential</span></li>
-  <li><a href="#task3">Fix Email Registration / Magic Link Login</a> <span class="status essential">Essential</span></li>
+  <li><a href="#task3">Fix Email Registration / Magic Link Login</a> <span class="status essential">Completed</span></li>
 </ol>
 <p class="section-label" style="margin-top:12px">Planned Upgrades</p>
 <ol start="4">
@@ -84,59 +84,742 @@
 
 <!-- TASK 1 ====================================================== -->
 <!-- TASK 2 ====================================================== -->
-<h2 id="task2">Task 2: Fix All AI Hallucinations <span class="status essential">Essential</span></h2>
+<h2 id="task2">Task 2: Fix All AI Hallucinations — Make AI a True FLOSC Flow Facilitator <span class="status essential">Essential</span></h2>
+
+<div class="task-card">
+
+<h3>Observed Failures</h3>
+<p>On 2026-03m-16d testing, the chatbot on lesaep.com exhibited the following failures — intermittently, not consistently:</p>
+<ul>
+  <li>Responded: <em>"Are you interested in learning French, or do you have questions about the FLOSC lessons?"</em> — pivoting to French on a Standard American English pronunciation site</li>
+  <li>Expanded the FLOSC acronym incorrectly and insisted on the wrong expansion</li>
+  <li>Expanded the LeSAEp acronym incorrectly</li>
+  <li>Invented lesson content rather than routing users to existing configured WordPress posts</li>
+</ul>
+<p>The behavior is <strong>intermittent</strong>, which means the problem is not only "AI ignoring instructions" — it also includes cases where instructions were likely missing, incomplete, or not delivered correctly. Writing better text instructions alone will not fix this. The fix must be largely mechanical.</p>
+
+<hr style="border:none;border-top:1px dashed #e2e8f0;margin:24px 0;">
+
+<h3>How the Context System Works Now</h3>
+
+<p>The live AI context system is <code>class-flosc-chatpack.php</code> — not <code>class-ai-chat-dispatch.php</code>. The chatpack assembles everything sent to the AI.</p>
+
+<h4>On the First Message of a Session</h4>
+<p><code>build_full_chatpack()</code> sends a 7-section system prompt:</p>
+
+<table style="width:100%;font-size:13px;border-collapse:collapse;margin:12px 0;">
+<tr style="background:#f1f5f9;"><th style="text-align:left;padding:6px;border:1px solid #e2e8f0;">Section</th><th style="text-align:left;padding:6px;border:1px solid #e2e8f0;">Contents</th></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;">Header</td><td style="padding:6px;border:1px solid #e2e8f0;">FLOSC-HASH (permanent install ID) + FLOSC-SESSION (session ID), both using MichelTimestamps</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;">1. Identity</td><td style="padding:6px;border:1px solid #e2e8f0;">FLOSC definition, product name + tagline, AI persona, 5 ABSOLUTE RULES (acronyms, no fabrication, stay in lane, content access, honesty over helpfulness)</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;">2. WordPress Environment</td><td style="padding:6px;border:1px solid #e2e8f0;">Site name, URL, timezone, locale, FLOSC version</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;">3. User Identity</td><td style="padding:6px;border:1px solid #e2e8f0;">Access level, name, quiz scores, correct/missed items, weakest sounds, progress flags</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;">4. Flow Context</td><td style="padding:6px;border:1px solid #e2e8f0;">Current phase, all 5 FLOSC phase descriptions, phase-specific behavioral instructions</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;">5. Knowledge Base</td><td style="padding:6px;border:1px solid #e2e8f0;">Admin corrections, admin praise, all .md files from <code>ai_configuration_files/</code> (access-filtered, truncated at 3,000 chars each)</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;">6. IVR Guidance</td><td style="padding:6px;border:1px solid #e2e8f0;">If an IVR message matched — the scripted content the AI should humanize (strongest constraint available)</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;">7. Conversation Rules</td><td style="padding:6px;border:1px solid #e2e8f0;">Pair number, anti-repetition rules, FACTUAL GROUNDING reminder at end (recency bias placement)</td></tr>
+</table>
+
+<h4>On Every Subsequent Message</h4>
+<p><code>build_followup_chatpack()</code> sends only:</p>
+<ul>
+  <li>Session reference (FLOSC-HASH, FLOSC-SESSION, pair number, phase)</li>
+  <li>Phase change notice (only if phase changed)</li>
+  <li>State updates if a transition occurred (quiz completed, logged in, purchased)</li>
+  <li>IVR guidance (if matched)</li>
+</ul>
+<p><strong>All 5 absolute rules, all acronym definitions, all grounding reminders — gone after message one.</strong> The AI operates on memory alone from message 2 onward. When memory drifts, training fills the gap — and training is wrong.</p>
+
+<h4>IVR Matching</h4>
+<p>Before invoking the AI at all, <code>handle_chat()</code> checks whether the user's message matches a scripted IVR response. If it matches, the scripted content is passed as <code>ivr_guidance</code> and the AI is asked to humanize it — very little room to fabricate. <strong>The hallucination risk is highest when no IVR matches and the AI generates freely.</strong></p>
+
+<h4>Knowledge Base Loading</h4>
+<p><code>load_knowledge_files()</code> skips any file with <code>ivr</code> in the filename. This means <code>lesaep_ivr.md</code> — which contains the richest LeSAEp product knowledge, lesson descriptions, and IVR message content — is <strong>never loaded into the AI knowledge base</strong>. Each file is also hard-truncated at 3,000 characters.</p>
+
+<h4>Conversation History — Per-Session Context Building</h4>
+<p>Every API call includes the last 10 message pairs as conversation history alongside the system prompt. The system IS building context per session — the AI can see prior exchanges. Logged-in users: loaded from DB via <code>FLOSC_Session_Manager</code> at full length (<a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/includes/class-flosc-chatpack.php">class-flosc-chatpack.php — line 146</a>). Visitors: sent from JavaScript localStorage, each message truncated to 500 characters server-side (<a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 4557</a>).</p>
+<p><strong>Critical distinction:</strong> Conversation history carries what was <em>said</em> — not what the system prompt <em>instructed</em>. The FLOSC and LeSAEp definitions from the full chatpack are in the message 1 system prompt. Unless the AI explicitly restated "FLOSC stands for Freeline..." in one of its responses, those definitions are invisible to the AI on messages 2 through 10. History carries session context from exchanges; it does not carry system prompt rules.</p>
+
+<h4>State Transitions — Already Handled</h4>
+<p>Quiz completion, login, and purchase transitions already trigger state update notices in the follow-up chatpack. The quiz score and weakest sounds are included in Section 3 of the full chatpack.</p>
+
+<h4>RAG Code Path — Completely Unguarded</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 4793</a> <code>build_rag_system_prompt()</code> bypasses the entire chatpack system. It reads only <code>ai_identity_name</code> and <code>ai_identity_role</code> from settings. No absolute rules, no acronym definitions, no phase instructions, no factual grounding.</p>
+
+<h4>Temperature</h4>
+<p>Default is <code>0.7</code> across all three AI provider call sites in <code>class-ai-chat-dispatch.php</code> (lines 810 and 1009). 0.7 is a creative setting — it increases the probability of plausible-sounding but fabricated responses.</p>
+
+<h4>Logging</h4>
+<p>None exists. When a hallucination is reported, there is no record of what system prompt the AI received, what message number the session was on, or what the AI returned.</p>
+
+<hr style="border:none;border-top:1px dashed #e2e8f0;margin:24px 0;">
+
+<h3>Specific Gaps — What Is Broken</h3>
+
+<div class="risk">
+<strong>Gap 1 — Mid-session drift (highest risk)</strong>
+<p style="margin:8px 0 0;">After message 1, the follow-up system prompt contains no rules, no acronym definitions, no grounding reminders. The AI does receive conversation history (last 10 pairs), which provides session context — but conversation history carries what was <em>said</em>, not what the system prompt <em>instructed</em>. The fixed definitions (FLOSC, LeSAEp) live only in message 1's system prompt. Unless the AI restated them verbatim in a prior response, they are absent from the AI's authoritative context on messages 2 through 10. Training fills the gap — and training is wrong. This is the most likely cause of intermittent hallucinations.</p>
+</div>
+
+<div class="risk">
+<strong>Gap 2 — <code>lesaep_ivr.md</code> excluded from knowledge base</strong>
+<p style="margin:8px 0 0;"><code>load_knowledge_files()</code> skips files with <code>ivr</code> in the filename. The LeSAEp product knowledge — lesson descriptions, product facts — is in <code>lesaep_ivr.md</code> and never reaches the AI's knowledge base section. The AI has no authoritative lesson inventory to reference.</p>
+</div>
+
+<div class="risk">
+<strong>Gap 3 — KB files truncated at 3,000 characters</strong>
+<p style="margin:8px 0 0;">A lesson catalog covering 44–50 LeSAEp sounds will be cut off mid-entry. The AI gets an incomplete picture of what lessons exist and may fabricate the rest.</p>
+</div>
+
+<div class="risk">
+<strong>Gap 4 — RAG path has no grounding</strong>
+<p style="margin:8px 0 0;"><code>build_rag_system_prompt()</code> bypasses everything. No rules, no definitions, no phase instructions. Full fabrication risk on this code path.</p>
+</div>
+
+<div class="risk">
+<strong>Gap 5 — No logging</strong>
+<p style="margin:8px 0 0;">Impossible to diagnose intermittent hallucinations without knowing what was sent and received. Every incident is a guess.</p>
+</div>
+
+<div class="risk">
+<strong>Gap 6 — Temperature 0.7</strong>
+<p style="margin:8px 0 0;">Rewards creative generation. Wrong default for a precision facilitator role.</p>
+</div>
+
+<div class="risk">
+<strong>Gap 7 — No mechanical output enforcement</strong>
+<p style="margin:8px 0 0;">Every constraint relies on the AI choosing to comply. Nothing intercepts the output. If the AI generates a wrong acronym expansion, it reaches the user unchallenged.</p>
+</div>
+
+<div class="risk">
+<strong>Gap 8 — No admin visibility into risk conditions</strong>
+<p style="margin:8px 0 0;">Empty product name, empty tagline, high temperature — the admin has no warning that these conditions exist and increase hallucination risk.</p>
+</div>
+
+<div class="risk">
+<strong>Gap 9 — Visitor conversation history truncated to 500 characters per message</strong>
+<p style="margin:8px 0 0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 4557</a>: <code>substr($msg['content'], 0, 500)</code>. A detailed AI response explaining a phonetic concept can be cut in half in the history. The AI sees a truncated version of its own prior response and loses context it established earlier in the session. Logged-in users are not affected — their history is loaded from DB at full length. Visitors are the highest-risk population (freeline phase, no account) and their session history is the least reliable.</p>
+</div>
+
+<hr style="border:none;border-top:1px dashed #e2e8f0;margin:24px 0;">
+
+<h3>Session Context Architecture — The Correct Model</h3>
+
+<h4 style="font-size:13px;text-transform:none;letter-spacing:0;color:#1e293b;">Stateless vs. Stateful — and Why It Matters</h4>
+<p>AI language model APIs are <strong>stateless</strong> — every call is independent, the model has no memory between calls. The opposite is <strong>stateful</strong>, where the server maintains session memory between calls (like a traditional WebSocket or server-side session). Stateful AI systems exist (MemGPT, fine-tuned models) but are expensive, complex, and not appropriate for a funnel facilitator at this stage.</p>
+<p>All major providers — OpenAI, Anthropic, Google Gemini, xAI, Mistral — are stateless. This is not a provider limitation; it is the architecture of large language models. Switching providers would not change this. <strong>There is no AI service that natively remembers between API calls.</strong></p>
+<p>The FLOSC session history approach (DB for logged-in users, localStorage for visitors, last 10 pairs sent with every call) IS the industry-standard pattern. Every chatbot — ChatGPT, Claude.ai, Gemini — works this way. You are in full control of what context the AI receives, which is an advantage: it is the mechanism that allows you to prevent hallucination.</p>
+<p><strong>What "stateful-ish" options actually exist (as of mid-2026):</strong></p>
+<table style="width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 12px;">
+  <tr style="background:#f8fafc;"><th style="padding:6px 8px;border:1px solid #e2e8f0;text-align:left;">Type</th><th style="padding:6px 8px;border:1px solid #e2e8f0;text-align:left;">What it does</th><th style="padding:6px 8px;border:1px solid #e2e8f0;text-align:left;">FLOSC?</th></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>App-managed state</strong> (current)</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">DB + localStorage, history resent each call</td><td style="padding:6px 8px;border:1px solid #e2e8f0;color:#16a34a;">Yes — correct path</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>Anthropic prompt caching</strong></td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Static prompt sections cached server-side up to 5 min, ~10% token cost on repeats</td><td style="padding:6px 8px;border:1px solid #e2e8f0;color:#2563eb;">Post-MVP optimization</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>OpenAI Responses API</strong></td><td style="padding:6px 8px;border:1px solid #e2e8f0;"><code>previous_response_id</code> chaining — FLOSC sends full chatpack once, OpenAI holds it. State updates (quiz, phase) injected alongside <code>previous_response_id</code> on subsequent calls. FLOSC controls all context.</td><td style="padding:6px 8px;border:1px solid #e2e8f0;color:#16a34a;"><strong>Strong fit — Fix 13.</strong> This is the architecture the system was designed assuming. Full context maintained throughout session at low per-message cost.</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>OpenAI Assistants API</strong></td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Server-managed threads, tools, vector stores, runs — OpenAI controls execution environment</td><td style="padding:6px 8px;border:1px solid #e2e8f0;color:#dc2626;">Loses control over quiz/phase/lesson/rules — not suitable</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>MemGPT / Letta</strong></td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Stateful wrapper — compresses history, retrieves relevant chunks</td><td style="padding:6px 8px;border:1px solid #e2e8f0;color:#d97706;">Post-launch if long-term cross-session memory is needed</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>Fine-tuning</strong></td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Model trained on your domain — "knows" your content without prompt injection</td><td style="padding:6px 8px;border:1px solid #e2e8f0;color:#d97706;">Solves domain knowledge, not session memory. Expensive.</td></tr>
+</table>
+<p><strong>The architecture verdict:</strong> FLOSC must own quiz results, funnel phase, lesson mapping, and hard constraints — that does not change regardless of provider. The question is how the AI context is maintained across a session. Two viable paths: <strong>OpenAI Responses API</strong> (send full chatpack once on message 1, chain via <code>previous_response_id</code> — OpenAI holds context, FLOSC still injects state updates when phase/quiz changes) and <strong>Anthropic prompt caching</strong> (send full chatpack every message, ~10% token cost on static cached sections). Both solve mid-session drift. The OpenAI Responses API path has a lower per-message token footprint for sessions where context doesn't change. Fix 13 implements the Responses API path; provider comparison test confirms which is more reliable in practice.</p>
+<p><strong>The cost tradeoff that created the hallucination problem:</strong> The current design paid for 5,000 tokens on message 1 and "coasted" on conversation history for messages 2+. But conversation history carries what was <em>said</em>, not what the system prompt <em>instructed</em>. Rules, definitions, and identity from message 1 are gone by message 2. The system optimized for token cost and produced mid-session hallucinations as a result.</p>
+
+<table style="width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 12px;">
+  <tr style="background:#f8fafc;"><th style="padding:6px 8px;border:1px solid #e2e8f0;text-align:left;">Approach</th><th style="padding:6px 8px;border:1px solid #e2e8f0;text-align:left;">10-message session</th></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">Current: full chatpack msg 1 + 100-token follow-ups</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">~5,900 tokens — definitions gone after msg 1, hallucinations follow</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">Full chatpack on every message (no caching)</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">~50,000 tokens</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">Full chatpack msg 1 + Anthropic prompt caching msgs 2–10</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">~9,500 tokens — full context every message, ~10% cost on cached sections</td></tr>
+  <tr style="background:#f0fdf4;"><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>OpenAI Responses API — full chatpack msg 1, <code>response_id</code> chain msgs 2–10</strong></td><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>~5,000 tokens msg 1 + ~200 tokens msgs 2–10 ≈ ~6,800 total — full context maintained throughout, lowest resend cost</strong></td></tr>
+</table>
+
+<p><strong>Anthropic prompt caching</strong> — mark static chatpack sections with <code>"cache_control": {"type": "ephemeral"}</code>. Message 1 pays full tokens. Messages 2–10 pay ~10% on those sections. The AI receives the full chatpack on every message for roughly the same cost as the current broken approach.</p>
+
+<p><strong>OpenAI Responses API — closer to the original intended architecture.</strong> The current FLOSC OpenAI path uses Chat Completions (<code>/v1/chat/completions</code>) and resends the full messages array on every call. The Responses API (<code>/v1/responses</code>) works differently: send full context once, OpenAI stores the response (<code>store: true</code> is their default), subsequent calls send only <code>previous_response_id</code> + the new message and OpenAI reconstructs context server-side. This is what a reasonable designer would have assumed the API did in the first place. Supporting it requires a new provider path in <code>class-ai-chat-dispatch.php</code> — different endpoint, different request format, session management for <code>response_id</code>. This is a separate implementation track from the chatpack fixes but architecturally the right direction if OpenAI is the primary provider.</p>
+
+<p><strong>Fix 4 (anchor lines in every follow-up) is not invalidated by either of these.</strong> It is a provider-agnostic safety net that works regardless of which call path is active. It costs nothing and ensures the two fixed definitions are always in the system prompt regardless of caching behavior or API version.</p>
+
+<p>The system already builds context per session via conversation history (last 10 pairs sent on every API call). The AI is not starting from scratch on each message. The conversation history carries what was <em>said</em> — topics discussed, guidance given, lessons referenced.</p>
+
+<p><strong>The actual problem:</strong> the system prompt oscillates instead of maintaining a consistent anchor.</p>
+<ul>
+  <li>Message 1 system prompt: ~5,000 tokens (everything: identity, rules, user profile, all KB files)</li>
+  <li>Messages 2+ system prompt: ~100 tokens (session reference only)</li>
+</ul>
+<p>The AI gets maximum context at message 1 (when there is no conversation yet) and minimum context at messages 10+ (when the conversation is richest). This is backwards.</p>
+
+<p><strong>The correct model — three distinct layers:</strong></p>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:10px 0;">
+  <tr style="background:#f8fafc;"><th style="padding:8px;border:1px solid #e2e8f0;text-align:left;">Layer</th><th style="padding:8px;border:1px solid #e2e8f0;text-align:left;">What Goes There</th><th style="padding:8px;border:1px solid #e2e8f0;text-align:left;">When Sent</th></tr>
+  <tr><td style="padding:8px;border:1px solid #e2e8f0;"><strong>Anchor</strong></td><td style="padding:8px;border:1px solid #e2e8f0;">Definitions, role, 5 rules, current phase</td><td style="padding:8px;border:1px solid #e2e8f0;">Every message — full and follow-up</td></tr>
+  <tr><td style="padding:8px;border:1px solid #e2e8f0;"><strong>Session state</strong></td><td style="padding:8px;border:1px solid #e2e8f0;">User profile, quiz results, access level, phase changes</td><td style="padding:8px;border:1px solid #e2e8f0;">Message 1 full + follow-up when changed</td></tr>
+  <tr><td style="padding:8px;border:1px solid #e2e8f0;"><strong>Conversation history</strong></td><td style="padding:8px;border:1px solid #e2e8f0;">Prior exchanges — what was said and answered</td><td style="padding:8px;border:1px solid #e2e8f0;">Every message (last 10 pairs — existing code)</td></tr>
+</table>
+
+<p><strong>What this means for KB and lesson content:</strong> Loading all 44+ lessons into the message 1 system prompt front-loads content the AI may never use. Better: a KB overview (product, subject, lesson count) in the anchor layer; specific lesson content fetched when that lesson is mentioned. Dynamic per-lesson injection is a next-sprint enhancement. For MVP: Fix 4 (anchor definitions) + Fix 5 (lesaep_knowledge.md overview) + Fix 7 (KB size limit) are sufficient.</p>
+
+<p><strong>What Fix 4 actually does in this model:</strong> It is not resending everything. It moves the two fixed definitions from message 1's system prompt (where they decay by message 10) into the Anchor layer (where they are always present). Lesson content stays in conversation history. This is the minimum correct architecture.</p>
+
+<hr style="border:none;border-top:1px dashed #e2e8f0;margin:24px 0;">
+
+<h3>The Role of the AI — What It Should and Should Not Do</h3>
+
+<p>The AI is a <strong>facilitator of the floscAdmin-configured FLOSC flow</strong>. It is not a free-form assistant. It operates within the configured flow, the subject matter of the flow (LeSAEp = Standard American English pronunciation), and the user's current phase.</p>
+
+<p>Within those bounds, the AI should be <strong>genuinely useful</strong>: explain phonetic concepts (voiced, unvoiced, pulmonic, retroflex), guide users to the right lessons, connect Lesson 17 and Lesson 35 for a user who needs both, offer practice ideas. That is valuable and correct behavior.</p>
+
+<p>Two things it must never do:</p>
+<ol>
+  <li><strong>Fabricate fixed facts.</strong> FLOSC = Freeline, Login, Offer, Sale, Content — always, never any other expansion. LeSAEp = Learn Excellent Standard American English Pronunciation — always, never any other expansion. These are non-negotiable and cannot be invented or varied.</li>
+  <li><strong>Substitute another subject.</strong> A user at LeSAEp who has paid for SAE lessons is owed SAE content — not French lessons, not generic English content, not anything the AI invented.</li>
+</ol>
+
+<hr style="border:none;border-top:1px dashed #e2e8f0;margin:24px 0;">
+
+<h3>The Fixes — 9 Changes, Ordered by Implementation Priority</h3>
+
+<!-- FIX 1 -->
+<h4>Fix 1 — Lower Default Temperature</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/includes/class-ai-chat-dispatch.php">includes/class-ai-chat-dispatch.php — lines 810, 1009</a></p>
+<p>Change the default from <code>'0.7'</code> to <code>'0.3'</code> at both locations. One-line change each. Immediate effect. Requires no AI cooperation — it is a mechanical reduction in the model's tendency toward creative/fabricated output.</p>
+<pre>
+<span class="comment">// BEFORE (both locations):</span>
+$temperature = (<span class="keyword">float</span>) <span class="fn">flosc_get_setting</span>(<span class="string">'ai_temperature'</span>, <span class="string">'0.7'</span>);
+
+<span class="comment">// AFTER:</span>
+$temperature = (<span class="keyword">float</span>) <span class="fn">flosc_get_setting</span>(<span class="string">'ai_temperature'</span>, <span class="string">'0.3'</span>);
+</pre>
+
+<!-- FIX 2 -->
+<h4>Fix 2 — Full Debug Logging</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/includes/class-ai-chat-dispatch.php">includes/class-ai-chat-dispatch.php — <code>get_response()</code></a></p>
+<p>When <code>FLOSC_DEBUG</code> is true, log every AI interaction to the database. <strong>No cap — every entry retained.</strong> Intermittent issues require full history; a cap would discard exactly the entry that explains an incident.</p>
+<p>Each log entry contains:</p>
+<ul>
+  <li>Timestamp in MichelTimestamp format (consistent with FLOSC-HASH / FLOSC-SESSION)</li>
+  <li>Provider used</li>
+  <li>Full system prompt — complete, not truncated</li>
+  <li>Full AI response — complete, not truncated</li>
+  <li>Which chatpack sections were non-empty (identity, KB, IVR guidance, phase)</li>
+</ul>
+<p>Purpose: when a hallucination is reported, the log answers definitively whether the AI received its instructions and what it actually returned.</p>
+
+<!-- FIX 3 -->
+<h4>Fix 3 — Response Validation Layer</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/includes/class-ai-chat-dispatch.php">includes/class-ai-chat-dispatch.php — new method, called from <code>get_response()</code></a></p>
+<p>A new <code>validate_ai_response($response)</code> method that runs on every AI response before it is returned or cached. Detects wrong acronym expansions using regex and corrects them in the output. <strong>Requires no AI cooperation — it intercepts the output regardless of what the AI decided.</strong> Logs every correction made.</p>
+<pre>
+<span class="keyword">private function</span> <span class="fn">validate_ai_response</span>($response) {
+    <span class="keyword">if</span> (<span class="fn">empty</span>($response)) <span class="keyword">return</span> $response;
+    $log = [];
+
+    <span class="comment">// Correct wrong FLOSC expansions</span>
+    <span class="keyword">if</span> (<span class="fn">preg_match</span>(<span class="string">'/FLOSC\s+stands?\s+for\b/i'</span>, $response)) {
+        <span class="keyword">if</span> (!<span class="fn">preg_match</span>(<span class="string">'/Freeline.*Login.*Offer.*Sale.*Content/i'</span>, $response)) {
+            $orig = $response;
+            $response = <span class="fn">preg_replace</span>(
+                <span class="string">'/FLOSC\s+stands?\s+for[^.!?\n]*/i'</span>,
+                <span class="string">'FLOSC stands for Freeline, Login, Offer, Sale, Content'</span>,
+                $response
+            );
+            <span class="keyword">if</span> ($response !== $orig) $log[] = <span class="string">'Corrected wrong FLOSC expansion'</span>;
+        }
+    }
+
+    <span class="comment">// Correct wrong LeSAEp expansions</span>
+    <span class="keyword">if</span> (<span class="fn">preg_match</span>(<span class="string">'/LeSAEp\s+stands?\s+for\b/i'</span>, $response)) {
+        <span class="keyword">if</span> (!<span class="fn">preg_match</span>(<span class="string">'/Learn\s+Excellent\s+Standard\s+American\s+English\s+Pronunciation/i'</span>, $response)) {
+            $orig = $response;
+            $response = <span class="fn">preg_replace</span>(
+                <span class="string">'/LeSAEp\s+stands?\s+for[^.!?\n]*/i'</span>,
+                <span class="string">'LeSAEp stands for Learn Excellent Standard American English Pronunciation'</span>,
+                $response
+            );
+            <span class="keyword">if</span> ($response !== $orig) $log[] = <span class="string">'Corrected wrong LeSAEp expansion'</span>;
+        }
+    }
+
+    <span class="keyword">if</span> (!<span class="fn">empty</span>($log)) {
+        $entries = <span class="fn">get_option</span>(<span class="string">'flosc_validation_corrections'</span>, []);
+        $entries[] = [<span class="string">'time'</span> => <span class="fn">current_time</span>(<span class="string">'mysql'</span>), <span class="string">'corrections'</span> => $log];
+        <span class="fn">update_option</span>(<span class="string">'flosc_validation_corrections'</span>, $entries);
+    }
+
+    <span class="keyword">return</span> $response;
+}
+</pre>
+<p>Call <code>$response = $this-&gt;validate_ai_response($response);</code> in <code>get_response()</code> before caching and returning.</p>
+
+<!-- FIX 4 -->
+<h4>Fix 4 — Fixed Definitions in Every Follow-up Chatpack</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/includes/class-flosc-chatpack.php">includes/class-flosc-chatpack.php — <code>build_followup_chatpack()</code> line 235</a></p>
+<p>This is not "sending everything every time." It is two lines. The conversation history IS being sent and IS building session context — but conversation history carries what was <em>said</em>, not what the system prompt <em>instructed</em>. The fixed definitions from message 1's system prompt are invisible on messages 2 through 10 unless the AI restated them verbatim. Lesson content, user state, and flow guidance do NOT need to be resent — those travel in conversation history. Only the two definitions that cannot be derived from prior exchanges must anchor every follow-up.</p>
+<p>Add to the session reference block at the top of every follow-up:</p>
+<pre>
+<span class="comment">// Add after the existing session reference lines:</span>
+$product_name    = $identity[<span class="string">'name'</span>] ?? <span class="string">''</span>;
+$product_tagline = $identity[<span class="string">'tagline'</span>] ?? <span class="string">''</span>;
+
+$sections[] = <span class="string">"## FLOSC SESSION CONTINUE\n"</span>
+    . <span class="string">"FLOSC-HASH: {$flosc_hash}\n"</span>
+    . <span class="string">"FLOSC-SESSION: {$session_hash}\n"</span>
+    . <span class="string">"Message Pair: #{$pair_number}\n"</span>
+    . <span class="string">"Phase: {$phase}\n"</span>
+    . <span class="string">"FLOSC = Freeline, Login, Offer, Sale, Content. (Fixed — never changes.)\n"</span>
+    . ($product_name && $product_tagline
+        ? <span class="string">"{$product_name} = {$product_tagline}. (Fixed — never changes.)\n"</span>
+        : <span class="string">""</span>);
+</pre>
+
+<!-- FIX 5 -->
+<h4>Fix 5 — KB Size Limit + Authoritative Framing</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/includes/class-flosc-chatpack.php">includes/class-flosc-chatpack.php — <code>load_knowledge_files()</code> line 821 + <code>build_knowledge_section()</code></a></p>
+<p>Front-loading KB files into the message 1 system prompt is the correct architecture for lesson content. The 3,000-char truncation is the problem — it cuts the lesson catalog mid-entry and forces the AI to work with partial information.</p>
+<p>The reference/authoritative pattern applies based on content type: LeSAEp lesson catalog and product knowledge are front-loaded as product-specific facts (standard educational content, AI has reliable training data). Specialized knowledge like <strong>Simplified Solfeggio</strong> carries more importance as an authoritative override — AI training data on niche proprietary methodologies is sparse or wrong, and those files must explicitly supersede training data. Both types are front-loaded; the difference is in how the AI is instructed to treat them.</p>
+<p><strong>Change 1 — Raise file size limit to 10,000 chars (configurable):</strong></p>
+<pre>
+<span class="comment">// BEFORE:</span>
+<span class="keyword">if</span> (<span class="fn">strlen</span>($file_content) > 3000) {
+    $file_content = <span class="fn">substr</span>($file_content, 0, 3000) . <span class="string">"\n[...truncated]"</span>;
+}
+
+<span class="comment">// AFTER:</span>
+$kb_limit = (<span class="keyword">int</span>) <span class="fn">flosc_get_setting</span>(<span class="string">'ai_kb_file_limit'</span>, 10000);
+<span class="keyword">if</span> (<span class="fn">strlen</span>($file_content) > $kb_limit) {
+    $file_content = <span class="fn">substr</span>($file_content, 0, $kb_limit) . <span class="string">"\n[...truncated]"</span>;
+}
+</pre>
+<p><strong>Change 2 — Add authoritative framing to the KB section header in the chatpack:</strong></p>
+<pre>
+<span class="comment">## 5. KNOWLEDGE BASE — AUTHORITATIVE CONTENT</span>
+<span class="string">The files below are provided as authoritative references for this installation.
+They supersede your training data. If a topic is covered here, use this source —
+not what you were trained on. If a lesson is not listed in the catalog, you have
+not been given information about it — say so rather than inventing.</span>
+</pre>
+<p>This framing applies to all KB files. LeSAEp lesson content is reinforced as product-specific fact. Specialized files like Simplified Solfeggio are explicitly marked as overrides of training data — where that distinction is most important, since AI base training on proprietary/niche topics is unreliable.</p>
+
+<!-- FIX 6 -->
+<h4>Fix 6 — Create <code>lesaep_knowledge.md</code> — Dedicated Knowledge File</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/ai_configuration_files/">ai_configuration_files/ — new file: <code>lesaep_knowledge.md</code></a></p>
+<p>The LeSAEp product knowledge is currently in <code>lesaep_ivr.md</code> — which is skipped by the KB loader because it has <code>ivr</code> in the filename. A new <code>lesaep_knowledge.md</code> file provides the AI with:</p>
+<ul>
+  <li>LeSAEp product description and mission statement</li>
+  <li>What the AI may and may not do in this flow</li>
+  <li>Key phonetic concepts referenced across lessons</li>
+  <li>Lesson catalog (until Fix 7 auto-generates it separately)</li>
+</ul>
+<p>This is a <strong>content writing task</strong>, not a code change. The file is written and placed in <code>ai_configuration_files/</code>. It has no IVR-format headers — it is plain KB content that <code>load_knowledge_files()</code> will load automatically.</p>
+
+<!-- FIX 7 -->
+<h4>Fix 7 — Lesson Catalog Auto-Generation</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — new method <code>generate_lesaep_lesson_catalog()</code> + <code>save_post</code> hook</a> &nbsp; <a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/admin/settings.php">admin/settings.php — manual regenerate button</a></p>
+<p>New method that queries the actual LeSAEp WordPress post category and writes a structured catalog to <code>ai_configuration_files/lesaep_lesson_catalog.md</code>. Each entry includes:</p>
+<ul>
+  <li>Lesson title</li>
+  <li>Post permalink (so the AI can direct users to the exact page)</li>
+  <li>Post excerpt / description</li>
+  <li>Access level (free, member-only, quiz-grantable)</li>
+  <li>Sound covered (from custom field if set)</li>
+</ul>
+<p>File header tells the AI honestly: <em>"This catalog is everything you have been given about LeSAEp lessons. If a lesson is not listed here, you have not been given information about it — say so and redirect rather than inventing."</em></p>
+<p><strong>Auto-regenerates</strong> via <code>save_post</code> hook whenever any LeSAEp category post is saved or updated. <strong>Manual regenerate button</strong> in admin settings with last-generated timestamp and count output.</p>
+<p>This replaces the skeleton numbers placeholder catalog (<code>lesson_catalog.md</code>) if that is what is on the live server — needs verification via SSH on ChemiCloud.</p>
+
+<!-- FIX 8 -->
+<h4>Fix 8 — RAG Path Gets Chatpack Treatment</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 4793, <code>build_rag_system_prompt()</code></a></p>
+<p>This path currently has nothing. At minimum, prepend the Identity section and Rules section from the chatpack system. Ideally, replace the entire method with a call to <code>FLOSC_Chatpack::build_full_chatpack()</code> using the available context.</p>
+
+<!-- FIX 11 -->
+<h4>Fix 11 — Natural Orientation Brief + Server-Generated Lesson Recommendations</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/includes/class-flosc-chatpack.php">includes/class-flosc-chatpack.php — <code>build_identity_section()</code> line 309</a></p>
+
+<h4 style="font-size:13px;text-transform:none;letter-spacing:0;color:#1e293b;">Part A — Natural Orientation Brief</h4>
+<p>The identity section currently opens with: <code>"## 1. IDENTITY — EXACT DEFINITIONS (do not paraphrase or invent)"</code> — a rule enforcement list. The AI receives settings data and rules but no situational context about where it is or what it's doing.</p>
+<p>Rewrite <code>build_identity_section()</code> to open with a contextual brief BEFORE the rules. The AI should first be oriented, then constrained:</p>
+<pre>
+<span class="comment">// BEFORE the rules, at the top of the identity section:</span>
+$section = <span class="string">"You are {$ai_name}, the AI facilitator for {$product_name} on {$site_url}.\n\n"</span>
+    . <span class="string">"This is a FLOSC installation. FLOSC = Freeline, Login, Offer, Sale, Content — "</span>
+    . <span class="string">"a 5-phase structured funnel. This installation focuses on {$product_name} ({$product_tagline}).\n"</span>
+    . ($ai_mission ? <span class="string">"{$ai_mission}\n\n"</span> : <span class="string">"\n"</span>)
+    . <span class="string">"Your job is to guide each user through the phase appropriate to where they are in "</span>
+    . <span class="string">"the funnel — not to act as a general assistant, not to invent content, but to be "</span>
+    . <span class="string">"their coach within this specific context.\n\n"</span>
+    . <span class="string">"## EXACT DEFINITIONS — do not paraphrase or invent\n\n"</span>;
+<span class="comment">// ... then the existing rules follow unchanged ...</span>
+</pre>
+
+<h4 style="font-size:13px;text-transform:none;letter-spacing:0;color:#1e293b;">Part B — Server-Generated Lesson Recommendations</h4>
+<p>The chatpack sends quiz weakest sounds in Section 3 and the lesson catalog in Section 5 KB files. The AI is told to "reference quiz results to suggest lessons" — but there is no map of which lesson covers which sound. The AI cannot make this connection reliably. The connection must be made server-side.</p>
+<p>New method <code>build_personalized_recommendations()</code> in <code>class-flosc-chatpack.php</code>:</p>
+<ul>
+  <li>Reads the user's weakest sounds from quiz data (<code>ipa_weakest_sounds</code>)</li>
+  <li>Reads the lesson catalog (generated by Fix 7, which includes a <code>sound_covered</code> column)</li>
+  <li>Matches each weak sound to its lesson(s)</li>
+  <li>Returns a generated block: <em>"Based on your quiz, your priority lessons are: Lesson 12 (covers /θ/), Lesson 8 (covers /r/)..."</em></li>
+</ul>
+<p>This block is injected into <strong>Section 3 (User Identity)</strong> for all quiz-completed users and reinforced in <strong>Section 4 (Content phase)</strong> for paying members. When a member asks "what should I work on?" the AI has a data-backed answer with real lesson numbers — no fabrication possible. Requires Fix 7 (lesson catalog with sound metadata) to be completed first.</p>
+
+<!-- FIX 12 -->
+<h4>Fix 12 — Connect Admin KB Configuration to the Live Chatpack</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/includes/class-flosc-chatpack.php">includes/class-flosc-chatpack.php — <code>build_identity_section()</code> line 313</a></p>
+<div class="risk">
+<strong>Admin KB is largely disconnected from the live chatpack — a ghost interface</strong>
+<p style="margin:8px 0 0;">The admin <strong>AI Knowledge tab</strong> (<a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/admin/ai-knowledge.php">admin/ai-knowledge.php</a>) saves to keys: <code>ai_personality_name</code>, <code>ai_personality_role</code>, <code>ai_personality_traits</code>, <code>ai_context_awareness</code>, <code>ai_freeline_restrictions</code>, <code>ai_member_access</code>. The live chatpack reads: <code>ai_name</code>, <code>ai_role</code>, <code>ai_traits</code>. Different keys — admin KB settings for AI name, role, and traits never reach the AI. The fields <code>ai_context_awareness</code>, <code>ai_freeline_restrictions</code>, and <code>ai_member_access</code> are not read by the chatpack at all — their injection functions exist only in a comment block in the admin file (designed but never implemented). The admin KB page connects to the OLD legacy <code>build_system_prompt()</code> in <code>class-ai-chat-dispatch.php</code> line 259, not the live chatpack.</p>
+</div>
+<p>Fix: update <code>build_identity_section()</code> to read admin KB keys as primary, with legacy keys as fallback:</p>
+<pre>
+<span class="comment">// BEFORE:</span>
+$ai_name   = <span class="fn">flosc_get_setting</span>(<span class="string">'ai_name'</span>, <span class="string">'AI Assistant'</span>);
+$ai_role   = <span class="fn">flosc_get_setting</span>(<span class="string">'ai_role'</span>, <span class="string">'friendly learning assistant'</span>);
+$ai_traits = <span class="fn">flosc_get_setting</span>(<span class="string">'ai_traits'</span>, <span class="string">'helpful, encouraging, knowledgeable'</span>);
+
+<span class="comment">// AFTER: admin KB keys primary, legacy keys fallback</span>
+$ai_name   = <span class="fn">flosc_get_setting</span>(<span class="string">'ai_personality_name'</span>,
+             <span class="fn">flosc_get_setting</span>(<span class="string">'ai_name'</span>, <span class="string">'AI Assistant'</span>));
+$ai_role   = <span class="fn">flosc_get_setting</span>(<span class="string">'ai_personality_role'</span>,
+             <span class="fn">flosc_get_setting</span>(<span class="string">'ai_role'</span>, <span class="string">'friendly learning assistant'</span>));
+$ai_traits = <span class="fn">flosc_get_setting</span>(<span class="string">'ai_personality_traits'</span>,
+             <span class="fn">flosc_get_setting</span>(<span class="string">'ai_traits'</span>, <span class="string">'helpful, encouraging, knowledgeable'</span>));
+</pre>
+<p>Also wire <code>ai_context_awareness</code> into the Knowledge section and <code>ai_freeline_restrictions</code> / <code>ai_member_access</code> into the phase-specific instructions — completing the admin KB connection that was designed but never implemented.</p>
+
+<!-- FIX 9 -->
+<h4>Fix 9 — Admin Notices for Risk Conditions</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/admin/settings.php">admin/settings.php</a></p>
+<p>Visible warnings in the admin panel when conditions exist that increase hallucination risk:</p>
+<ul>
+  <li><code>ai_temperature</code> &gt; 0.5 → yellow: <em>"Temperature {value} increases fabrication risk. Recommended: 0.3 for a facilitator role."</em></li>
+  <li><code>product_name</code> empty → red: <em>"Product name not configured. The AI has no identity and will hallucinate."</em></li>
+  <li><code>product_tagline</code> empty → yellow: <em>"Product tagline not configured. The AI cannot verify its own product acronym."</em></li>
+  <li>Lesson catalog not generated or older than 7 days → yellow with inline Regenerate button</li>
+</ul>
+
+<!-- FIX 13 -->
+<h4>Fix 13 — Provider-Aware Dispatch + OpenAI Responses API Path</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/includes/class-ai-chat-dispatch.php">includes/class-ai-chat-dispatch.php — <code>openai_request()</code> and <code>get_response()</code></a></p>
+<p>What the session requires differs by provider. The dispatch layer needs to branch accordingly:</p>
+<table style="width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 12px;">
+  <tr style="background:#f8fafc;"><th style="padding:6px 8px;border:1px solid #e2e8f0;text-align:left;">Provider</th><th style="padding:6px 8px;border:1px solid #e2e8f0;text-align:left;">What handles continuity</th><th style="padding:6px 8px;border:1px solid #e2e8f0;text-align:left;">What FLOSC must send</th></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>OpenAI Responses API</strong></td><td style="padding:6px 8px;border:1px solid #e2e8f0;">OpenAI holds session state via <code>previous_response_id</code></td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Full chatpack on message 1 only; response_id + new message thereafter</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>Anthropic (Chat API)</strong></td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Nothing — FLOSC must manage</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Anchor definitions every message + prompt caching for static sections</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>xAI Grok / others</strong></td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Nothing — FLOSC must manage</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Anchor definitions every message (Fix 4)</td></tr>
+</table>
+<p>New method <code>openai_responses_request()</code> using the <code>/v1/responses</code> endpoint. Message 1: send full chatpack as <code>instructions</code> + user message, store the returned <code>response.id</code> in session. Messages 2+: send only <code>previous_response_id</code> + new message — OpenAI reconstructs full context server-side, no anchor definitions needed, no history resend needed.</p>
+<p>Controlled via setting <code>ai_openai_use_responses_api</code> (default false until tested). Allows A/B comparison between the two OpenAI paths.</p>
+
+<p><strong>Provider test sequence once all fixes are implemented:</strong></p>
+<ol>
+  <li>Test Anthropic + prompt caching — establish baseline, verify Fix 4 anchor holds at message 10</li>
+  <li>Switch to OpenAI with Responses API — run same questions at message 1, 5, 10</li>
+  <li>Test xAI Grok on the legacy Fix 4 path — third data point</li>
+  <li>Decision: which provider + path combination is most reliable for LeSAEp production</li>
+</ol>
+
+<!-- FIX 10 -->
+<h4>Fix 10 — Increase Visitor History Content Limit</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 4557</a></p>
+<p>Visitor conversation history messages are truncated to 500 characters each. A detailed AI response explaining voiced/unvoiced distinction, referring to lessons 17 and 35, and connecting phonetic concepts gets cut in half. On the next call the AI sees a truncated version of its own prior response and loses context it established earlier in the session.</p>
+<p>Logged-in users are unaffected — their history is loaded from DB at full length. Visitors (freeline phase, no account) are the highest-risk population and have the least reliable session history. Change the limit from 500 to 1,500 characters. With 10 messages max, the total addition is at most 10,000 extra tokens — acceptable.</p>
+<pre>
+<span class="comment">// BEFORE (flosc.php line 4557):</span>
+<span class="string">'content'</span> => <span class="fn">sanitize_textarea_field</span>(<span class="fn">substr</span>($msg[<span class="string">'content'</span>] ?? <span class="string">''</span>, 0, 500)),
+
+<span class="comment">// AFTER:</span>
+<span class="string">'content'</span> => <span class="fn">sanitize_textarea_field</span>(<span class="fn">substr</span>($msg[<span class="string">'content'</span>] ?? <span class="string">''</span>, 0, 1500)),
+</pre>
+
+<hr style="border:none;border-top:1px dashed #e2e8f0;margin:24px 0;">
+
+<!-- FIX 14 -->
+<h4>Fix 14 — Provider Accuracy Test (AI tab, new section)</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/admin/ai-configuration.php">admin/ai-configuration.php — new section below existing "Test Connection" button</a></p>
+<p>The existing AI tab already has a "Test Connection" button (verifies API key). The Provider Accuracy Test is the deeper version — same tab, new section below it. No new file, no new tab, no settings.php structural changes needed.</p>
+<p>Also in <code>ai-configuration.php</code> line 57: remove the tip <em>"Start with Anthropic (Claude) for best FLOSC integration"</em> — the test determines that.</p>
+<p>A permanent evaluation tool. Runs a defined 10-message test sequence against any configured provider + model, and outputs: each AI response, token counts per message, estimated cost, and pass/fail flags for acronym correctness.</p>
+<p>The test builds the real FLOSC chatpack (using <code>FLOSC_Chatpack</code> methods with a representative member eval context), accumulates conversation history after each call, and captures the <code>usage</code> object from each API response body — <code>prompt_tokens</code> / <code>completion_tokens</code> (OpenAI/xAI) or <code>input_tokens</code> / <code>output_tokens</code> (Anthropic).</p>
+<p>Provider and model are selected from dropdowns in the test UI, populated from what is already configured in AI settings. Adding a new provider (Gemini, Mistral) requires a new API method in <code>class-ai-chat-dispatch.php</code> — it then appears automatically in the test tool.</p>
+<h4 style="font-size:13px;text-transform:none;letter-spacing:0;color:#1e293b;">10 Test Messages (same for all providers)</h4>
+<table style="width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 14px;">
+  <tr style="background:#f8fafc;"><th style="padding:6px 8px;border:1px solid #e2e8f0;">#</th><th style="padding:6px 8px;border:1px solid #e2e8f0;">Message</th><th style="padding:6px 8px;border:1px solid #e2e8f0;">What it probes</th></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">1</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">"Hello, I'm new here. What is this?"</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Identity introduction — does AI know the product?</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">2</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">"What does FLOSC stand for?"</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Acronym test — message 2</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">3</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">"Tell me about LeSAEp"</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Product knowledge — drawing from KB or training data?</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">4</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">"What lessons are available for me?"</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Lesson inventory — should use catalog, not fabricate</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">5</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">"What does LeSAEp stand for exactly?"</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Acronym retest — message 5</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">6</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">"How many lessons are there in total?"</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Catalog count — should match generated catalog</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">7</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">"What is lesson 25 about?"</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Specific lesson — should admit if not in catalog</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">8</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">"What makes this different from other pronunciation programs?"</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Marketing claim — should not fabricate stats or comparisons</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">9</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">"Who created this program?"</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">Attribution — should not invent names or credentials</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>10</strong></td><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>"What does FLOSC stand for again?"</strong></td><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>Mid-session drift test — message 10</strong></td></tr>
+</table>
+
+<hr style="border:none;border-top:1px dashed #e2e8f0;margin:24px 0;">
+
+<h3>Cost Model</h3>
+<p><strong>Current provider pricing (approximate, mid-2026):</strong></p>
+<table style="width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 14px;">
+  <tr style="background:#f8fafc;"><th style="padding:6px 8px;border:1px solid #e2e8f0;">Provider</th><th style="padding:6px 8px;border:1px solid #e2e8f0;">Model (default)</th><th style="padding:6px 8px;border:1px solid #e2e8f0;">Input $/M</th><th style="padding:6px 8px;border:1px solid #e2e8f0;">Output $/M</th><th style="padding:6px 8px;border:1px solid #e2e8f0;">Cached Input $/M</th></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">OpenAI</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">gpt-4o-mini</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">$0.15</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">$0.60</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">$0.075 (50%)</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">OpenAI</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">gpt-4o</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">$2.50</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">$10.00</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">$1.25 (50%)</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">Anthropic</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">claude-haiku-4-5</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">$0.80</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">$4.00</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">$0.08 (10%)</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">Anthropic</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">claude-sonnet-4-5</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">$3.00</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">$15.00</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">$0.30 (10%)</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">xAI</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">grok-2-latest</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">~$2.00</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">~$10.00</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">not available</td></tr>
+</table>
+<p><strong>Token estimates — 10-message session, member user, populated KB:</strong> Full chatpack (msg 1) ~4,000 tokens. Follow-up with anchor (Fix 4) ~200 tokens. Conversation history grows from 0 to ~3,600 tokens over 10 calls — total ~18,000 history tokens across all calls. User messages ~500 total. Output ~3,000 total (avg 300/response within 500 max_tokens).</p>
+<table style="width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 14px;">
+  <tr style="background:#f8fafc;"><th style="padding:6px 8px;border:1px solid #e2e8f0;">Config</th><th style="padding:6px 8px;border:1px solid #e2e8f0;">Approach</th><th style="padding:6px 8px;border:1px solid #e2e8f0;">Input tokens</th><th style="padding:6px 8px;border:1px solid #e2e8f0;">gpt-4o-mini / session</th><th style="padding:6px 8px;border:1px solid #e2e8f0;">claude-sonnet / session</th></tr>
+  <tr style="background:#fef2f2;"><td style="padding:6px 8px;border:1px solid #e2e8f0;">A — Current (broken)</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">msg 1 full + 200-token follow-ups</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">~24,300</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">~$0.005</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">~$0.12</td></tr>
+  <tr><td style="padding:6px 8px;border:1px solid #e2e8f0;">B — Full chatpack every msg</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">resend full chatpack always</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">~58,500</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">~$0.010</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">~$0.22</td></tr>
+  <tr style="background:#f0fdf4;"><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>C — OpenAI Responses API (Fix 13)</strong></td><td style="padding:6px 8px;border:1px solid #e2e8f0;">msg 1 full + response_id chain</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">~4,500 full + ~54,000 cached</td><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>~$0.007</strong></td><td style="padding:6px 8px;border:1px solid #e2e8f0;">n/a</td></tr>
+  <tr style="background:#f0fdf4;"><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>D — Anthropic prompt caching</strong></td><td style="padding:6px 8px;border:1px solid #e2e8f0;">msg 1 cache write + cached reads msgs 2–10</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">~5,800 write + ~32,400 cached read</td><td style="padding:6px 8px;border:1px solid #e2e8f0;">n/a</td><td style="padding:6px 8px;border:1px solid #e2e8f0;"><strong>~$0.08</strong></td></tr>
+</table>
+<div class="decision"><strong>Model tier is the dominant cost lever — not the architecture.</strong> gpt-4o-mini → gpt-4o = 17× more expensive. gpt-4o ≈ claude-sonnet in cost. Architecture (Responses API vs caching vs resend) is a 2–3× lever. Model selection is a 17–100× lever. Config A is cheapest because it's broken — definitions gone after msg 1.</div>
+
+<h4 style="font-size:13px;text-transform:none;letter-spacing:0;color:#1e293b;">What Makes It More Expensive</h4>
+<ul>
+  <li><strong>Model tier</strong> — gpt-4o-mini → gpt-4o = 17× input cost. Largest single lever.</li>
+  <li><strong>KB files + file size</strong> — each file added to <code>ai_configuration_files/</code> adds tokens to msg 1. Fix 7 raises the per-file limit from 3K to 10K chars — necessary but increases msg 1 cost.</li>
+  <li><strong>Conversation history window</strong> — 10 pairs accumulates ~18,000 tokens over a session. Reducing to 5 pairs cuts history cost by ~50%.</li>
+  <li><strong>Full chatpack resent every message</strong> — 40,000 vs 5,800 system tokens. Fixed by Responses API or Anthropic caching.</li>
+  <li><strong>max_tokens output cap</strong> — currently 500. Controls output cost directly.</li>
+  <li><strong>Visitor history limit</strong> — Fix 10 raises from 500 to 1,500 chars; adds at most ~10K extra tokens/session for visitors.</li>
+</ul>
+<h4 style="font-size:13px;text-transform:none;letter-spacing:0;color:#1e293b;">What Makes It Cheaper</h4>
+<ul>
+  <li><strong>IVR match</strong> — AI humanizes scripted content; near-zero free generation. Cheapest possible session per message.</li>
+  <li><strong>OpenAI Responses API</strong> — eliminates resending history; stored context billed at 50% cached rate.</li>
+  <li><strong>Anthropic prompt caching</strong> — static sections billed at 10% of base input rate on msgs 2–10.</li>
+  <li><strong>gpt-4o-mini default</strong> — 17× cheaper than gpt-4o at comparable context size.</li>
+  <li><strong>Short sessions</strong> — 1–3 messages, history overhead near zero.</li>
+  <li><strong>Quiz taken early</strong> — fewer AI messages, more IVR coverage.</li>
+</ul>
+
+<hr style="border:none;border-top:1px dashed #e2e8f0;margin:24px 0;">
+
+<h3>Files to Modify</h3>
+<table style="width:100%;font-size:13px;border-collapse:collapse;margin:12px 0;">
+<tr style="background:#f1f5f9;"><th style="text-align:left;padding:6px;border:1px solid #e2e8f0;">File</th><th style="text-align:left;padding:6px;border:1px solid #e2e8f0;">Changes</th></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/includes/class-ai-chat-dispatch.php">includes/class-ai-chat-dispatch.php</a></td><td style="padding:6px;border:1px solid #e2e8f0;">Fix 1 (temp default ×2), Fix 2 (logging), Fix 3 (validation layer), Fix 13 (Responses API + provider-aware dispatch)</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/includes/class-flosc-chatpack.php">includes/class-flosc-chatpack.php</a></td><td style="padding:6px;border:1px solid #e2e8f0;">Fix 4 (definitions in every follow-up — Anchor layer), Fix 7 (KB file size limit), Fix 11 (orientation brief + recommendation engine), Fix 12 (admin KB key reconnection)</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php</a></td><td style="padding:6px;border:1px solid #e2e8f0;">Fix 6 (catalog generator + save_post hook with sound metadata), Fix 8 (RAG path), Fix 10 (visitor history 500 → 1,500)</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/admin/settings.php">admin/settings.php</a></td><td style="padding:6px;border:1px solid #e2e8f0;">Fix 6 (manual regenerate button), Fix 9 (admin notices), Fix 14 (provider test page registration)</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/admin/ai-configuration.php">admin/ai-configuration.php</a></td><td style="padding:6px;border:1px solid #e2e8f0;">Fix 14 — Provider Accuracy Test section (below existing Test Connection button); remove Anthropic bias tip line 57</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/ai_configuration_files/">ai_configuration_files/lesaep_knowledge.md</a></td><td style="padding:6px;border:1px solid #e2e8f0;">Fix 5 — new file, content writing task</td></tr>
+<tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/ai_configuration_files/">ai_configuration_files/lesaep_lesson_catalog.md</a></td><td style="padding:6px;border:1px solid #e2e8f0;">Fix 6 — replaced by auto-generation (not hand-edited)</td></tr>
+</table>
+<div class="decision" style="margin-top:12px;"><strong>Admin UI — "AI Guide" and "Knowledge" tabs review:</strong> The current admin has separate AI Guide and Knowledge tabs that save to different option keys than the chatpack reads (Fix 12 addresses the key mismatch). Before or during implementation, these tabs should be reviewed and consolidated so that all AI configuration paths in admin — provider settings, KB, identity, test tool — are in one coherent section. The Provider Test page (Fix 14) should fit within this consolidated AI admin area.</div>
+
+<hr style="border:none;border-top:1px dashed #e2e8f0;margin:24px 0;">
+
+<h3>Order of Implementation</h3>
+<ol>
+  <li>Fix 2 — temperature default (one line, immediate effect, zero risk)</li>
+  <li>Fix 3 — logging (must exist before anything else so we can observe results)</li>
+  <li>Fix 12 — admin KB key reconnection (wires live admin settings into chatpack)</li>
+  <li>Fix 1 — response validation (mechanical safety net, provider-agnostic)</li>
+  <li>Fix 4 — fixed definitions in every follow-up (Anchor layer — closes mid-session drift)</li>
+  <li>Fix 11a — natural orientation brief (reframe identity section opening)</li>
+  <li>Fix 10 — visitor history content limit 500 → 1,500 (conversation history layer)</li>
+  <li>Fix 7 — KB file size limit (unblocks full lesson catalog delivery)</li>
+  <li>Fix 5 — lesaep_knowledge.md (content writing task — write and place the file)</li>
+  <li>Fix 6 — lesson catalog auto-generation with sound metadata (replaces skeleton catalog)</li>
+  <li>Fix 11b — recommendation engine (requires Fix 6 catalog with sound metadata)</li>
+  <li>Fix 8 — RAG path treatment</li>
+  <li>Fix 9 — admin notices</li>
+</ol>
+
+<hr style="border:none;border-top:1px dashed #e2e8f0;margin:24px 0;">
+
+<h3>Verification</h3>
+<ol>
+  <li>Enable <code>FLOSC_DEBUG</code> — confirm every interaction logs full prompt and full response (Fix 3)</li>
+  <li>Have a 10+ message conversation — check logs to confirm acronym definitions appear in every follow-up system prompt (Fix 4)</li>
+  <li>Ask "What does FLOSC stand for?" at message 1 and again at message 10 — correct answer both times</li>
+  <li>Ask "What does LeSAEp stand for?" at message 1 and again at message 10 — correct answer both times</li>
+  <li>Check corrections log in admin — confirm validation layer logs when AI tries wrong expansions (Fix 1)</li>
+  <li>SSH to ChemiCloud — verify whether live <code>lesaep_lesson_catalog.md</code> is skeleton or real LeSAEp content</li>
+  <li>Generate lesson catalog (Fix 6) — confirm it contains actual LeSAEp pronunciation lessons</li>
+  <li>Update a LeSAEp lesson post — confirm catalog auto-regenerates (Fix 6 save_post hook)</li>
+  <li>Confirm <code>lesaep_knowledge.md</code> appears in the KB section of the debug log (Fix 5)</li>
+  <li>Set temperature to 0.8 in admin — confirm warning notice appears (Fix 9)</li>
+  <li>Clear <code>product_name</code> in admin — confirm warning notice appears (Fix 9)</li>
+  <li>Trigger the RAG path — confirm grounding rules are present in the log (Fix 8)</li>
+  <li>As a visitor (not logged in), have a 10+ message conversation — confirm AI retains context from early in the session (Fix 10)</li>
+</ol>
+
+</div>
+
+
+
+<!-- ============================================================ -->
+<!-- PLANNED UPGRADES                                              -->
+<!-- ============================================================ -->
+
+<hr class="separator">
+<p class="section-label">Planned Upgrades — Revenue-Enabling, Post Essential Fixes</p>
+
+<!-- TASK 4 ====================================================== -->
+<h2 id="task4" class="upgrade">Task 4: Access Code System Review <span class="status upgrade">Upgrade</span></h2>
 
 <div class="task-card">
 
 <h3>Situation</h3>
-<p>On 2026-03m-16d testing, the chatbot responded: <em>"Are you interested in learning French, or do you have questions about the FLOSC lessons?"</em> — on lesaep.com, which teaches <strong>English</strong> pronunciation. This indicates the system prompt is either missing critical identity information or the AI model is ignoring it.</p>
+<p>The access code system already exists and is fully wired across frontend and backend. Users can type "access code" in chat or click the access code link in the auth modal. Codes are stored per-flow in the <code>flosc_flow_{flow_id}</code> WordPress option. Redemption grants a role (default: <code>lesaep_learners</code>) and sets member-level meta.</p>
 
 <h4>Files Involved</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 5471</a> Chat-based access code flow</p>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 7580</a> <code>_showAccessCodeInput(context)</code> — UI for code entry</p>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 7647</a> <code>_redeemAccessCode(code, context)</code> — POST to <code>/redeem-access-code</code></p>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 4129</a> REST route <code>/redeem-access-code</code></p>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 6548</a> <code>handle_redeem_access_code()</code> — validates code, grants role</p>
 
-<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/includes/class-ai-chat-dispatch.php">includes/class-ai-chat-dispatch.php — line 23</a> <code>build_system_prompt($phase, $context)</code> — Assembles the system prompt from multiple sources:</p>
-<pre>
-<span class="keyword">public function</span> <span class="fn">build_system_prompt</span>($phase = '', $context = []) {
-    $identity_prompt  = $this-><span class="fn">build_identity_prompt</span>($context);
-    $flosc_process    = $this-><span class="fn">get_flosc_process_prompt</span>($phase, $context);
-    $phase_prompt     = $this-><span class="fn">load_phase_prompt</span>($phase);
-    $orientation_content = $this-><span class="fn">load_orientation_files</span>($context);
-    $context_string   = $this-><span class="fn">build_context_string</span>($context);
-    $ivr_guidance     = $context['ivr_guidance'] ?? '';
-    $feedback_prompt  = $this-><span class="fn">build_feedback_prompt</span>();
-}
-</pre>
+<h3>Proposed Solution</h3>
+<p>Needs review and testing to confirm it works end-to-end on the live site. If functional, this task is done. If broken, specific bugs need to be identified and fixed.</p>
 
-<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 6137</a> Where the system prompt is used:</p>
-<pre>
-$system_prompt = $this->ai_chat_dispatch-><span class="fn">build_system_prompt</span>($phase, $ai_context);
-$response = $this->ai_chat_dispatch-><span class="fn">get_response</span>($message, $system_prompt, $context);
-</pre>
+<div class="decision">
+<strong>Decision needed:</strong> Is the current single-code-per-flow model sufficient? Or do you need multiple unique access codes (e.g., one per investor, tracking who redeemed)?
+</div>
 
-<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 4463</a> RAG chat path (alternate):</p>
-<pre>
-$system_prompt = $this-><span class="fn">build_rag_system_prompt</span>($user_context);
-$system_prompt .= <span class="string">"\n\n**AVAILABLE CONTENT:**\n{$lessons_list}"</span>;
-$ai_response = $this-><span class="fn">call_ai_with_rag</span>($message, $system_prompt, $tools, $user_context);
-</pre>
+</div>
+
+<!-- TASK 5 ====================================================== -->
+<h2 id="task5" class="upgrade">Task 5: User Settings Panel <span class="status upgrade">Upgrade</span></h2>
+
+<div class="task-card">
+
+<h3>Situation</h3>
+<p>An AutoPromptPanel exists for admins (<code>_renderAdminTestPanel()</code>) that shows pills grouped by user state. There is no equivalent panel for regular users with settings like font size, theme, or a link to their WordPress profile.</p>
+
+<h4>Files Involved</h4>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 833</a> <code>floscShowUserAutoPrompts()</code> — controls panel visibility by user state</p>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 891</a> <code>_renderAdminTestPanel()</code> — admin-only panel (model for user panel)</p>
+<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/admin/flosc-app.php">admin/flosc-app.php — line 395</a> HTML container: <code>#flosc_input_user_autoprompts_panel</code></p>
 
 <h3>Proposed Solution</h3>
 <ol>
-  <li>Read <code>build_identity_prompt()</code> and <code>get_flosc_process_prompt()</code> in full to see what identity/language info is sent to the AI.</li>
-  <li>Read the IVR configuration files (orientation files loaded by <code>load_orientation_files()</code>) to check what knowledge the AI has about LeSAEp.</li>
-  <li>Read <code>build_rag_system_prompt()</code> for the same.</li>
-  <li>Identify where "French" or other incorrect language references could come from — or where the prompt fails to state "English pronunciation" clearly enough.</li>
-  <li>Add explicit, unambiguous identity constraints: <em>"You are the AI assistant for LeSAEp — Learn Excellent Standard American English Pronunciation. You teach ENGLISH pronunciation. You do NOT teach French, Spanish, or any other language. If asked about other languages, redirect to English pronunciation."</em></li>
-  <li>Test multiple chat inputs to verify no hallucinations persist.</li>
+  <li>Add a settings icon/button in the FLOSC app header (near the existing controls).</li>
+  <li>When clicked, render a panel (similar to AutoPromptPanel) with:
+    <ul>
+      <li><strong>Font size</strong> — small / medium / large, stored in <code>localStorage</code>, applies CSS variable</li>
+      <li><strong>Theme</strong> — light / dark (if supported), stored in <code>localStorage</code></li>
+      <li><strong>Profile link</strong> — "Manage Account" → opens <code>https://dainis.net/wp-admin/profile.php</code> (or relevant profile URL) in new tab. Only shown to logged-in users.</li>
+    </ul>
+  </li>
+  <li>Persist preferences in <code>localStorage</code> so they survive page reloads without server round-trips.</li>
+</ol>
+
+</div>
+
+<!-- TASK 6 ====================================================== -->
+<h2 id="task6" class="upgrade">Task 6: Social Media Posting Automation <span class="status upgrade">Upgrade</span></h2>
+
+<div class="task-card">
+
+<h3>Situation</h3>
+<p>LeSAEp needs social media presence to drive traffic and attract investors. Most social media platforms restrict or prohibit API-based auto-posting. Manual posting is time-consuming.</p>
+
+<h3>Options to Evaluate</h3>
+<ol>
+  <li><strong>OpenClaw integration</strong> — Browser automation tool that opens a real browser session and posts on your behalf (types text, uploads video, clicks post). Behavior looks organic to the platform. Requires OpenClaw license/setup.</li>
+  <li><strong>Content release schedule tab</strong> — Admin panel within FLOSC where you queue posts (text + media + target platform + scheduled time). Could integrate with:
+    <ul>
+      <li>Buffer/Hootsuite API (for platforms that allow it)</li>
+      <li>OpenClaw or Playwright for platforms that don't</li>
+      <li>Manual workflow: generate post content + notification when it's time to post</li>
+    </ul>
+  </li>
+  <li><strong>AI content generation</strong> — Generate short pronunciation tips, "did you know" posts, lesson previews from IVR content. Schedule and review before posting.</li>
 </ol>
 
 <div class="decision">
-<strong>Decision needed:</strong> Should the AI be allowed to discuss non-English topics at all (e.g., comparing English sounds to French for a French speaker), or should it strictly refuse anything not about SAE pronunciation?
+<strong>Decisions needed:</strong>
+<ul>
+  <li>Which platforms are priority? TikTok, Instagram, YouTube Shorts, X/Twitter, Facebook, LinkedIn?</li>
+  <li>Budget for automation tools (OpenClaw license, Buffer plan)?</li>
+  <li>Should this live inside the FLOSC admin panel or be a separate tool?</li>
+</ul>
 </div>
 
 </div>
 
-<!-- TASK 3 ====================================================== -->
-<h2 id="task3">Task 3: Email Registration / Magic Link — Bug Fixes <span class="status essential">Essential</span></h2>
+<!-- TASK 7 ====================================================== -->
+<h2 id="task7" class="upgrade">Task 7: Marketing Launch Assessment <span class="status assessment">Assessment</span></h2>
+
+<div class="task-card">
+<h3>Situation</h3>
+<p>Marketing launch tasks need scoping: landing page readiness, social proof, testimonial collection plan, SEO basics, email list setup, launch announcement channels.</p>
+
+<h3>Proposed Work</h3>
+<p>Audit the current live site (lesaep.com) for launch readiness. Generate a prioritized checklist of marketing deliverables with estimated effort. Present for review.</p>
+</div>
+
+<!-- TASK 8 ====================================================== -->
+<h2 id="task8" class="upgrade">Task 8: Toolbuilder Assessment <span class="status assessment">Assessment</span></h2>
+
+<div class="task-card">
+<h3>Situation</h3>
+<p>Toolbuilder capabilities and integration with FLOSC need evaluation.</p>
+
+<h3>Proposed Work</h3>
+<p>Research and document what Toolbuilder can offer for the FLOSC ecosystem. Present options.</p>
+</div>
+
+<!-- TASK 9 ====================================================== -->
+<h2 id="task9" class="upgrade">Task 9: flosc.ai Chatbot Tier Design <span class="status assessment">Assessment</span></h2>
+
+<div class="task-card">
+<h3>Situation</h3>
+<p>flosc.ai needs a tiered chatbot design — free tier, paid tier, enterprise. Pricing model, feature gates, and usage limits need definition.</p>
+
+<h3>Proposed Work</h3>
+<p>Design tier structure with feature matrix, usage limits (messages/month, quiz attempts, etc.), and pricing recommendations based on competitor analysis. Present for review.</p>
+</div>
+
+<!-- TASK 10 ===================================================== -->
+<h2 id="task10" class="upgrade">Task 10: FloscAdmin Terminal with AI Agent <span class="status upgrade">Upgrade</span></h2>
+
+<div class="task-card">
+<h3>Situation</h3>
+<p>A FloscAdmin terminal with AI agent capabilities needs to be built — allowing admin-level operations via conversational AI interface.</p>
+
+<h3>Proposed Work</h3>
+<p>Scope the architecture: what admin actions the AI agent can perform, security boundaries, approval workflows, and integration with existing FLOSC admin panels. Present design for review before implementation.</p>
+</div>
+
+<!-- TASK 11 ===================================================== -->
+<h2 id="task11" class="upgrade">Task 11: AI2AGI Reciprocity Update <span class="status upgrade">Upgrade</span></h2>
+
+<div class="task-card">
+<h3>Situation</h3>
+<p>AI2AGI reciprocity system needs an update. Specific requirements to be defined.</p>
+
+<h3>Proposed Work</h3>
+<p>Review current AI2AGI implementation, identify what needs updating, and present proposed changes for review.</p>
+</div>
+
+<!-- TASK 12 ===================================================== -->
+<h2 id="task12" class="upgrade">Task 12: TikTok Paid Ads Plan <span class="status assessment">Assessment</span></h2>
+
+<div class="task-card">
+<h3>Situation</h3>
+<p>TikTok paid ads could drive traffic to LeSAEp. Needs a campaign strategy targeting English pronunciation learners.</p>
+
+<h3>Proposed Work</h3>
+<p>Draft ad campaign plan: target demographics, ad formats (in-feed video, spark ads), budget tiers ($10/day, $25/day, $50/day), creative direction (short pronunciation tip videos), landing page optimization, and conversion tracking setup. Present for review.</p>
+</div>
+
+<!-- TASK 13 ===================================================== -->
+<h2 id="task13" class="upgrade">Task 13: Update FLOSC Docs <span class="status upgrade">Upgrade</span></h2>
+
+<div class="task-card">
+<h3>Situation</h3>
+<p>FLOSC documentation needs updating to reflect the current v8.0.0 architecture, IVR system, quiz functionality, SSO setup, and admin configuration.</p>
+
+<h3>Proposed Work</h3>
+<p>Audit existing docs, identify gaps, update or create documentation covering: installation, admin configuration, IVR message setup, SSO provider configuration, access codes, theme customization, and deployment workflow. Present outline for review before writing.</p>
+</div>
+	
+	<!-- TASK 3 ====================================================== -->
+<h2 id="task3">Completed Task 3: Email Registration / Magic Link — Bug Fixes <span class="status essential">pretty much done, re-test later</span></h2>
 
 <div class="task-card">
 
@@ -373,174 +1056,6 @@ ls -la ~/public_html/wp-content/uploads/flosc-users/</pre>
 <tr><td style="padding:6px;border:1px solid #e2e8f0;"><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/admin/login-registration.php">admin/login-registration.php</a></td><td style="padding:6px;border:1px solid #e2e8f0;">—</td><td style="padding:6px;border:1px solid #e2e8f0;">Admin UI for guest link message customization</td></tr>
 </table>
 
-</div>
-
-<!-- ============================================================ -->
-<!-- PLANNED UPGRADES                                              -->
-<!-- ============================================================ -->
-
-<hr class="separator">
-<p class="section-label">Planned Upgrades — Revenue-Enabling, Post Essential Fixes</p>
-
-<!-- TASK 4 ====================================================== -->
-<h2 id="task4" class="upgrade">Task 4: Access Code System Review <span class="status upgrade">Upgrade</span></h2>
-
-<div class="task-card">
-
-<h3>Situation</h3>
-<p>The access code system already exists and is fully wired across frontend and backend. Users can type "access code" in chat or click the access code link in the auth modal. Codes are stored per-flow in the <code>flosc_flow_{flow_id}</code> WordPress option. Redemption grants a role (default: <code>lesaep_learners</code>) and sets member-level meta.</p>
-
-<h4>Files Involved</h4>
-<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 5471</a> Chat-based access code flow</p>
-<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 7580</a> <code>_showAccessCodeInput(context)</code> — UI for code entry</p>
-<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 7647</a> <code>_redeemAccessCode(code, context)</code> — POST to <code>/redeem-access-code</code></p>
-<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 4129</a> REST route <code>/redeem-access-code</code></p>
-<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/flosc.php">flosc.php — line 6548</a> <code>handle_redeem_access_code()</code> — validates code, grants role</p>
-
-<h3>Proposed Solution</h3>
-<p>Needs review and testing to confirm it works end-to-end on the live site. If functional, this task is done. If broken, specific bugs need to be identified and fixed.</p>
-
-<div class="decision">
-<strong>Decision needed:</strong> Is the current single-code-per-flow model sufficient? Or do you need multiple unique access codes (e.g., one per investor, tracking who redeemed)?
-</div>
-
-</div>
-
-<!-- TASK 5 ====================================================== -->
-<h2 id="task5" class="upgrade">Task 5: User Settings Panel <span class="status upgrade">Upgrade</span></h2>
-
-<div class="task-card">
-
-<h3>Situation</h3>
-<p>An AutoPromptPanel exists for admins (<code>_renderAdminTestPanel()</code>) that shows pills grouped by user state. There is no equivalent panel for regular users with settings like font size, theme, or a link to their WordPress profile.</p>
-
-<h4>Files Involved</h4>
-<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 833</a> <code>floscShowUserAutoPrompts()</code> — controls panel visibility by user state</p>
-<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/assets/js/flosc-app.js">assets/js/flosc-app.js — line 891</a> <code>_renderAdminTestPanel()</code> — admin-only panel (model for user panel)</p>
-<p><a class="file-ref" href="file:///Users/dainismichel/2026/flosc/mvp_sprint/flosc_8_0_0/flosc/admin/flosc-app.php">admin/flosc-app.php — line 395</a> HTML container: <code>#flosc_input_user_autoprompts_panel</code></p>
-
-<h3>Proposed Solution</h3>
-<ol>
-  <li>Add a settings icon/button in the FLOSC app header (near the existing controls).</li>
-  <li>When clicked, render a panel (similar to AutoPromptPanel) with:
-    <ul>
-      <li><strong>Font size</strong> — small / medium / large, stored in <code>localStorage</code>, applies CSS variable</li>
-      <li><strong>Theme</strong> — light / dark (if supported), stored in <code>localStorage</code></li>
-      <li><strong>Profile link</strong> — "Manage Account" → opens <code>https://dainis.net/wp-admin/profile.php</code> (or relevant profile URL) in new tab. Only shown to logged-in users.</li>
-    </ul>
-  </li>
-  <li>Persist preferences in <code>localStorage</code> so they survive page reloads without server round-trips.</li>
-</ol>
-
-</div>
-
-<!-- TASK 6 ====================================================== -->
-<h2 id="task6" class="upgrade">Task 6: Social Media Posting Automation <span class="status upgrade">Upgrade</span></h2>
-
-<div class="task-card">
-
-<h3>Situation</h3>
-<p>LeSAEp needs social media presence to drive traffic and attract investors. Most social media platforms restrict or prohibit API-based auto-posting. Manual posting is time-consuming.</p>
-
-<h3>Options to Evaluate</h3>
-<ol>
-  <li><strong>OpenClaw integration</strong> — Browser automation tool that opens a real browser session and posts on your behalf (types text, uploads video, clicks post). Behavior looks organic to the platform. Requires OpenClaw license/setup.</li>
-  <li><strong>Content release schedule tab</strong> — Admin panel within FLOSC where you queue posts (text + media + target platform + scheduled time). Could integrate with:
-    <ul>
-      <li>Buffer/Hootsuite API (for platforms that allow it)</li>
-      <li>OpenClaw or Playwright for platforms that don't</li>
-      <li>Manual workflow: generate post content + notification when it's time to post</li>
-    </ul>
-  </li>
-  <li><strong>AI content generation</strong> — Generate short pronunciation tips, "did you know" posts, lesson previews from IVR content. Schedule and review before posting.</li>
-</ol>
-
-<div class="decision">
-<strong>Decisions needed:</strong>
-<ul>
-  <li>Which platforms are priority? TikTok, Instagram, YouTube Shorts, X/Twitter, Facebook, LinkedIn?</li>
-  <li>Budget for automation tools (OpenClaw license, Buffer plan)?</li>
-  <li>Should this live inside the FLOSC admin panel or be a separate tool?</li>
-</ul>
-</div>
-
-</div>
-
-<!-- TASK 7 ====================================================== -->
-<h2 id="task7" class="upgrade">Task 7: Marketing Launch Assessment <span class="status assessment">Assessment</span></h2>
-
-<div class="task-card">
-<h3>Situation</h3>
-<p>Marketing launch tasks need scoping: landing page readiness, social proof, testimonial collection plan, SEO basics, email list setup, launch announcement channels.</p>
-
-<h3>Proposed Work</h3>
-<p>Audit the current live site (lesaep.com) for launch readiness. Generate a prioritized checklist of marketing deliverables with estimated effort. Present for review.</p>
-</div>
-
-<!-- TASK 8 ====================================================== -->
-<h2 id="task8" class="upgrade">Task 8: Toolbuilder Assessment <span class="status assessment">Assessment</span></h2>
-
-<div class="task-card">
-<h3>Situation</h3>
-<p>Toolbuilder capabilities and integration with FLOSC need evaluation.</p>
-
-<h3>Proposed Work</h3>
-<p>Research and document what Toolbuilder can offer for the FLOSC ecosystem. Present options.</p>
-</div>
-
-<!-- TASK 9 ====================================================== -->
-<h2 id="task9" class="upgrade">Task 9: flosc.ai Chatbot Tier Design <span class="status assessment">Assessment</span></h2>
-
-<div class="task-card">
-<h3>Situation</h3>
-<p>flosc.ai needs a tiered chatbot design — free tier, paid tier, enterprise. Pricing model, feature gates, and usage limits need definition.</p>
-
-<h3>Proposed Work</h3>
-<p>Design tier structure with feature matrix, usage limits (messages/month, quiz attempts, etc.), and pricing recommendations based on competitor analysis. Present for review.</p>
-</div>
-
-<!-- TASK 10 ===================================================== -->
-<h2 id="task10" class="upgrade">Task 10: FloscAdmin Terminal with AI Agent <span class="status upgrade">Upgrade</span></h2>
-
-<div class="task-card">
-<h3>Situation</h3>
-<p>A FloscAdmin terminal with AI agent capabilities needs to be built — allowing admin-level operations via conversational AI interface.</p>
-
-<h3>Proposed Work</h3>
-<p>Scope the architecture: what admin actions the AI agent can perform, security boundaries, approval workflows, and integration with existing FLOSC admin panels. Present design for review before implementation.</p>
-</div>
-
-<!-- TASK 11 ===================================================== -->
-<h2 id="task11" class="upgrade">Task 11: AI2AGI Reciprocity Update <span class="status upgrade">Upgrade</span></h2>
-
-<div class="task-card">
-<h3>Situation</h3>
-<p>AI2AGI reciprocity system needs an update. Specific requirements to be defined.</p>
-
-<h3>Proposed Work</h3>
-<p>Review current AI2AGI implementation, identify what needs updating, and present proposed changes for review.</p>
-</div>
-
-<!-- TASK 12 ===================================================== -->
-<h2 id="task12" class="upgrade">Task 12: TikTok Paid Ads Plan <span class="status assessment">Assessment</span></h2>
-
-<div class="task-card">
-<h3>Situation</h3>
-<p>TikTok paid ads could drive traffic to LeSAEp. Needs a campaign strategy targeting English pronunciation learners.</p>
-
-<h3>Proposed Work</h3>
-<p>Draft ad campaign plan: target demographics, ad formats (in-feed video, spark ads), budget tiers ($10/day, $25/day, $50/day), creative direction (short pronunciation tip videos), landing page optimization, and conversion tracking setup. Present for review.</p>
-</div>
-
-<!-- TASK 13 ===================================================== -->
-<h2 id="task13" class="upgrade">Task 13: Update FLOSC Docs <span class="status upgrade">Upgrade</span></h2>
-
-<div class="task-card">
-<h3>Situation</h3>
-<p>FLOSC documentation needs updating to reflect the current v8.0.0 architecture, IVR system, quiz functionality, SSO setup, and admin configuration.</p>
-
-<h3>Proposed Work</h3>
-<p>Audit existing docs, identify gaps, update or create documentation covering: installation, admin configuration, IVR message setup, SSO provider configuration, access codes, theme customization, and deployment workflow. Present outline for review before writing.</p>
 </div>
 
 <hr class="separator">

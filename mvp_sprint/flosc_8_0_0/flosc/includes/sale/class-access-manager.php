@@ -417,6 +417,11 @@ class FLOSC_Access_Manager {
             return 'member';
         }
 
+        // Belt-and-suspenders: WP role granted by grant_level()
+        if (user_can($user_id, 'lesaep_learners') || in_array('lesaep_learners', (array)(get_userdata($user_id)->roles ?? []), true)) {
+            return 'member';
+        }
+
         return 'guest';
     }
 }
