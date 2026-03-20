@@ -3076,12 +3076,15 @@ class floscApp {
             // Keep stream alive — reused by toggleIpaRecording to avoid a second
             // getUserMedia call, which can hang on Android after hardware release.
             this._probeStream = stream;
-            // Android Chrome auto-releases idle mic tracks not connected to any audio
-            // processing node. Connect to a silent AudioContext to keep hardware awake.
+            // Keep stream alive between consent and first Record tap.
+            // Audio element approach: compatible with MediaRecorder on the same stream.
+            // AudioContext.createMediaStreamSource would conflict with MediaRecorder on
+            // some Android Chrome versions (stream can't have two audio graph consumers).
             try {
-                this._keepAliveCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const src = this._keepAliveCtx.createMediaStreamSource(stream);
-                src.connect(this._keepAliveCtx.createMediaStreamDestination());
+                this._keepAliveAudio = new Audio();
+                this._keepAliveAudio.srcObject = stream;
+                this._keepAliveAudio.muted = true;
+                this._keepAliveAudio.play().catch(() => {});
             } catch (_) {}
             this.showQuizTierSelection();
         } catch (e) {
@@ -3461,9 +3464,9 @@ class floscApp {
             if (this._probeStream && this._probeStream.active) {
                 stream = this._probeStream;
                 this._probeStream = null;
-                if (this._keepAliveCtx) {
-                    try { this._keepAliveCtx.close(); } catch (_) {}
-                    this._keepAliveCtx = null;
+                if (this._keepAliveAudio) {
+                    try { this._keepAliveAudio.pause(); this._keepAliveAudio.srcObject = null; } catch (_) {}
+                    this._keepAliveAudio = null;
                 }
             } else if (this.recordingStream && this.recordingStream.active) {
                 stream = this.recordingStream;
@@ -4062,9 +4065,9 @@ class floscApp {
             this._probeStream.getTracks().forEach(t => t.stop());
             this._probeStream = null;
         }
-        if (this._keepAliveCtx) {
-            try { this._keepAliveCtx.close(); } catch (_) {}
-            this._keepAliveCtx = null;
+        if (this._keepAliveAudio) {
+            try { this._keepAliveAudio.pause(); this._keepAliveAudio.srcObject = null; } catch (_) {}
+            this._keepAliveAudio = null;
         }
 
         const results = this.ipaQuiz.results.filter(r => r !== null);
