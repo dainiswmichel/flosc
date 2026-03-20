@@ -1073,11 +1073,13 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
         <?php elseif ($active_tab === 'ai'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/ai-configuration.php'; ?>
         <?php elseif ($active_tab === 'ai-guide'): ?>
-            <?php /* Redirect legacy tab — ai-guide content is now in Docs → AI Configuration */
-            wp_redirect(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($selected_ivr) . '&tab=documentation&doc=ref-ai-config')); exit; ?>
+            <?php $redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($selected_ivr) . '&tab=documentation&doc=ref-ai-config'); ?>
+            <script>window.location.replace(<?php echo wp_json_encode($redirect_url); ?>);</script>
+            <p>Redirecting to <a href="<?php echo esc_url($redirect_url); ?>">AI Configuration Guide in Documentation</a>&hellip;</p>
         <?php elseif ($active_tab === 'knowledge'): ?>
-            <?php /* Redirect legacy tab — Knowledge is now part of the AI tab */
-            wp_redirect(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($selected_ivr) . '&tab=ai#flosc-kb-section')); exit; ?>
+            <?php $redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($selected_ivr) . '&tab=ai#flosc-kb-section'); ?>
+            <script>window.location.replace(<?php echo wp_json_encode($redirect_url); ?>);</script>
+            <p>Redirecting to <a href="<?php echo esc_url($redirect_url); ?>">Knowledge Base in AI tab</a>&hellip;</p>
             
         <?php elseif ($active_tab === 'quiz'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/quiz.php'; ?>

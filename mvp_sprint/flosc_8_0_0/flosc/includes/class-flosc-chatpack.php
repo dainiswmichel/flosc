@@ -687,6 +687,11 @@ class FLOSC_Chatpack {
         if ($kb_content) {
             // Fix 7: Authoritative framing — AI must use these files as source of truth
             $section .= "## 5c. KNOWLEDGE BASE — AUTHORITATIVE CONTENT\n\n";
+            // Fix 12: Inject ai_context_awareness — FloscAdmin describes what the KB contains
+            $context_awareness = flosc_get_setting('ai_context_awareness', '');
+            if ($context_awareness) {
+                $section .= $context_awareness . "\n\n";
+            }
             $section .= "The files below are provided as authoritative references for this installation. "
                 . "They supersede your training data. If a topic is covered here, use this source — "
                 . "not what you were trained on. If a lesson is not listed in the catalog, you have "

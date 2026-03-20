@@ -75,50 +75,50 @@ it wrong.
 
 ### Place of Articulation
 
-**Bilabial** — Both lips come together.
+**Bilabial** — Both lips come together. — Lessons 21, 22, 27, 30, 45
 - Sounds: /p/, /b/, /m/, /w/
 - Plain description: upper and lower lips press together (p, b, m) or round into a tight circle (w)
 
-**Labiodental** — Lower lip touches upper front teeth.
+**Labiodental** — Lower lip touches upper front teeth. — Lessons 33, 34
 - Sounds: /f/, /v/
 - Plain description: rest the lower lip lightly against the cutting edge of the upper front teeth;
   /f/ is voiceless (no vibration), /v/ is voiced (you feel buzz)
 
-**Dental** — Tongue tip touches or approaches upper front teeth.
+**Dental** — Tongue tip touches or approaches upper front teeth. — Lessons 35, 36
 - Sounds: /θ/ (thin), /ð/ (then)
 - Plain description: tongue tip between the teeth or touching the back of upper front teeth;
   /θ/ is voiceless (like air hissing through a gap), /ð/ is voiced (buzz with teeth and tongue)
 
-**Alveolar** — Tongue tip touches the ridge just behind the upper front teeth (alveolar ridge).
+**Alveolar** — Tongue tip touches the ridge just behind the upper front teeth (alveolar ridge). — Lessons 23, 24, 28, 31, 37, 38, 50, 54
 - Sounds: /t/, /d/, /n/, /s/, /z/, /l/, /ɹ/ (r)
 - Plain description: the bumpy ridge you feel with your tongue just behind your upper teeth;
   most English consonants use this area
 
-**Postalveolar** — Tongue blade just behind the alveolar ridge.
+**Postalveolar** — Tongue blade just behind the alveolar ridge. — Lessons 39, 40, 42, 43, 47
 - Sounds: /ʃ/ (shoe), /ʒ/ (measure), /tʃ/ (church), /dʒ/ (judge)
 - Plain description: tongue tip pulls slightly back from the ridge; lips often round slightly
 
-**Palatal** — Tongue body rises toward the hard palate.
+**Palatal** — Tongue body rises toward the hard palate. — Lesson 48
 - Sounds: /j/ (yes)
 - Plain description: tongue hump moves toward the roof of the mouth
 
-**Velar** — Back of tongue rises to the soft palate (velum).
+**Velar** — Back of tongue rises to the soft palate (velum). — Lessons 25, 26, 29, 32
 - Sounds: /k/, /ɡ/, /ŋ/ (sing)
 - Plain description: back of the tongue presses up toward the back of the roof of the mouth
 
-**Bilabial-velar** — Both lips round AND back of tongue rises to velum.
+**Bilabial-velar** — Both lips round AND back of tongue rises to velum. — Lessons 45, 46
 - Sounds: /w/
 - Plain description: double articulation — lips round like a tight circle while tongue back
   raises; /w/ is a glide/semivowel
 
-**Laryngeal / Glottal** — Constriction at the glottis (vocal cords).
+**Laryngeal / Glottal** — Constriction at the glottis (vocal cords). — Lessons 41, 55
 - Sounds: /h/, /ʔ/ (glottal stop)
 - Plain description: /h/ is just an open airstream from the throat with no mouth constriction;
   /ʔ/ is a hard stop made by briefly pressing the vocal cords together (the catch you feel in
   "uh-oh")
 
 **Velarized (dark L)** — The tongue simultaneously raises at the back (velar) while making
-the alveolar /l/ contact.
+the alveolar /l/ contact. — Lesson 57
 - Sounds: /ɫ/ (dark L) — the American English L in syllable-final position (ball, feel, milk)
 - Plain description: say /l/ normally, then notice how the back of your tongue also rises;
   American English always darkens L at the end of syllables; this sounds muddy or "heavy" to
@@ -128,57 +128,57 @@ the alveolar /l/ contact.
 
 ### Manner of Articulation
 
-**Plosive (Stop)** — Complete closure, then release of airflow.
+**Plosive (Stop)** — Complete closure, then release of airflow. — Lessons 21–29
 - Sounds: /p/, /b/, /t/, /d/, /k/, /ɡ/
 - Plain description: airflow is completely stopped, then released in a tiny burst; voiced stops
   (/b/, /d/, /ɡ/) also vibrate the cords during closure
 
-**Nasal** — Airflow redirected through the nose.
+**Nasal** — Airflow redirected through the nose. — Lessons 30–32
 - Sounds: /m/, /n/, /ŋ/
 - Plain description: mouth closes (lips for /m/, tongue-tip for /n/, back of tongue for /ŋ/)
   but the velum drops and air flows out through the nose
 
-**Fricative** — Turbulent airflow through a narrow gap.
+**Fricative** — Turbulent airflow through a narrow gap. — Lessons 33–41
 - Sounds: /f/, /v/, /θ/, /ð/, /s/, /z/, /ʃ/, /ʒ/, /h/
 - Plain description: air is squeezed through a narrow constriction, creating hissing or buzzing;
   voiced fricatives (/v/, /ð/, /z/, /ʒ/) vibrate the cords
 
-**Sibilant** — High-pitched fricatives with a sharp hissing quality.
+**Sibilant** — High-pitched fricatives with a sharp hissing quality. — Lessons 37–40
 - Sounds: /s/, /z/, /ʃ/, /ʒ/, /tʃ/, /dʒ/
 - Plain description: the tongue creates a groove that directs air toward the teeth, producing
   a sharp hiss; /s/ and /z/ are the most prominent sibilants in English
 
-**Affricate** — Stop released into a fricative (two-part).
+**Affricate** — Stop released into a fricative (two-part). — Lessons 42–44
 - Sounds: /tʃ/ (church), /dʒ/ (judge)
 - Plain description: tongue closes fully like a stop, then instead of a clean burst it releases
   slowly into a fricative — you hear two-part sounds: t+sh and d+zh
 
-**Approximant** — Articulator approaches another but doesn't create friction.
+**Approximant** — Articulator approaches another but doesn't create friction. — Lessons 45–50
 - Sounds: /ɹ/ (r), /j/ (y), /w/
 - Plain description: tongue or lips get close to another surface but not close enough to create
   turbulence — the sound glides smoothly
 
-**Lateral Approximant** — Air flows around the sides of the tongue.
-- Sounds: /l/
+**Lateral Approximant** — Air flows around the sides of the tongue. — Lessons 50, 57
+- Sounds: /l/, /ɫ/
 - Plain description: tongue tip touches the alveolar ridge, blocking airflow in the center;
   air flows out around both sides of the tongue
 
-**Flap / Tap** — Very brief contact, faster than a full stop.
+**Flap / Tap** — Very brief contact, faster than a full stop. — Lesson 54
 - Sounds: /ɾ/ — the American English "t" and "d" between vowels (butter, ladder, water)
 - Plain description: tongue tip briefly flaps against the alveolar ridge without full closure;
   sounds like a quick "d" or "r"; this is why "butter" sounds like "budder" in American English
 
-**Glottal Stop** — Vocal cords press together completely.
+**Glottal Stop** — Vocal cords press together completely. — Lesson 55
 - Sounds: /ʔ/
 - Plain description: the catch in "uh-oh"; in American English this often replaces /t/ before
   /n/ in words like "button" (bu[ʔ]n) or at the start of stressed vowels
 
-**Glide / Semivowel** — Vowel-like but used as consonants.
+**Glide / Semivowel** — Vowel-like but used as consonants. — Lessons 45, 48
 - Sounds: /w/, /j/
 - Plain description: /w/ is like a brief /uː/ moving into the next vowel; /j/ is like a brief
   /iː/ moving into the next vowel; they don't hold a position, they glide
 
-**Aspirated** — Puff of air follows the release of a voiceless stop.
+**Aspirated** — Puff of air follows the release of a voiceless stop. — Lessons 21, 23, 25
 - Sounds: /pʰ/, /tʰ/, /kʰ/ — in word-initial position (pin, tin, kin)
 - Plain description: hold your hand in front of your mouth — you should feel a puff of air after
   p/t/k at the start of stressed syllables; non-native speakers often omit this aspiration,
@@ -238,18 +238,20 @@ the alveolar /l/ contact.
 - Plain description: in natural speech, words run together; gaps between words are an accent
   marker that makes speech sound halting
 
-**Yod-dropping** — Loss of /j/ after alveolar consonants in American English.
+**Yod-dropping** — Loss of /j/ after alveolar consonants in American English. — Lesson 56
 - Examples: tune → /tuːn/ (not /tjuːn/), new → /nuː/ (not /njuː/), student → /stuːdənt/
 - Plain description: British English keeps the /j/ (tyoon, nyoo); General American drops it;
   this is a systematic difference, not an error
 
-**Vocal fry** — Low, creaky register at the end of phrases.
+**Vocal fry** — Low, creaky register at the end of phrases. — Lesson 71
 - Plain description: the crackling sound at the bottom of the vocal range; common in casual
   American English; often misread as boredom or disengagement by non-native listeners
 
-**Dark L** — See *Velarized* above.
+**Dark L** — See *Velarized* above. — Lesson 57
 
-**Aspiration** — See *Aspirated* above.
+**Aspiration** — See *Aspirated* above. — Lessons 21, 23, 25
+
+**Linking** — Sounds connect across word boundaries in fluent speech. — Lesson 70
 
 ---
 

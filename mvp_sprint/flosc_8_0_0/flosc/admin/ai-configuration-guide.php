@@ -30,7 +30,7 @@ if (empty($GLOBALS['flosc_suppress_tab_header'])) {
 <!-- SECTION 1: THE AI TO AGI BRIDGE CONCEPT -->
 <!-- ============================================ -->
 <div class="flosc-guide-section">
-    <h3>🌉 The AI to AGI Bridge: What FLOSC Does</h3>
+    <h3>How FLOSC Works with AI</h3>
 
     <p>General AI models like ChatGPT, Claude, and Grok have broad knowledge, but they don't know about <strong>your</strong> specific content:</p>
 

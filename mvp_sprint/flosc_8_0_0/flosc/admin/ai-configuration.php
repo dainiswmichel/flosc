@@ -30,11 +30,10 @@ $enable_chaining = $flow_settings['ai_enable_chaining'] ?? false;
 $chain_provider_1 = $flow_settings['ai_chain_provider_1'] ?? '';
 $chain_provider_2 = $flow_settings['ai_chain_provider_2'] ?? '';
 $chain_provider_3 = $flow_settings['ai_chain_provider_3'] ?? '';
-<?php
-// Fix 9: Risk condition notices — visible warnings for conditions that cause hallucinations
-$identity      = function_exists('flosc') ? FLOSC_Framework::instance()->get_floscflow_identity() : [];
-$product_name  = $identity['name'] ?? $flow_settings['name'] ?? '';
-$product_tag   = $identity['tagline'] ?? $flow_settings['tagline'] ?? '';
+
+// Fix 9: Risk condition notices — read directly from flow settings (get_current_flow() is null in admin context)
+$product_name = $flow_settings['identity']['name'] ?? $flow_settings['name'] ?? '';
+$product_tag  = $flow_settings['identity']['tagline'] ?? $flow_settings['tagline'] ?? '';
 $catalog_file  = defined('FLOSC_PLUGIN_DIR') ? FLOSC_PLUGIN_DIR . 'ai_configuration_files/lesaep_lesson_catalog.md' : '';
 $catalog_age   = ($catalog_file && file_exists($catalog_file)) ? (time() - filemtime($catalog_file)) : PHP_INT_MAX;
 $notices = [];
@@ -241,7 +240,7 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
         <td>
             <input type="number" id="flow_ai_temperature" name="flow_ai_temperature" value="<?php echo esc_attr($ai_temperature); ?>" min="0" max="2" step="0.1" class="flosc-ai-temp-input">
             <p class="description">
-                Controls randomness. <strong>0.0</strong> = deterministic, <strong>0.7</strong> = balanced (default), <strong>1.5+</strong> = creative. Lower for sales scripts, higher for coaching.
+                Controls randomness. <strong>0.0</strong> = fully deterministic, <strong>0.3</strong> = recommended (precision/coaching), <strong>0.7</strong> = creative/balanced, <strong>1.5+</strong> = highly random. Lower values reduce hallucination.
             </p>
         </td>
     </tr>
