@@ -3374,6 +3374,10 @@ class floscApp {
             setTimeout(() => {
                 if (!this._ipaStopHandled && _safePhrase !== undefined) {
                     this.logError('[FLOSC IPA] onstop timeout — auto-advancing phrase', _safePhraseNum);
+                    if (this.recordingStream) {
+                        this.recordingStream.getTracks().forEach(t => t.stop());
+                        this.recordingStream = null;
+                    }
                     this._advanceIpaWithZeroScore(_safePhrase, _safePhraseNum);
                 }
             }, 4000);
