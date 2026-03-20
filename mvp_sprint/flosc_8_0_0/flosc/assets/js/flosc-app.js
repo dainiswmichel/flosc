@@ -3073,7 +3073,9 @@ class floscApp {
                     setTimeout(() => reject(new Error('timeout')), 8000)
                 )
             ]);
-            stream.getTracks().forEach(t => t.stop());
+            // Keep stream alive — reused by toggleIpaRecording to avoid a second
+            // getUserMedia call, which can hang on Android after hardware release.
+            this._probeStream = stream;
             this.showQuizTierSelection();
         } catch (e) {
             const name = e?.name || '';
@@ -3447,7 +3449,15 @@ class floscApp {
             ]);
 
         try {
-            const stream = await getUserMediaWithTimeout({ audio: true }, 8000);
+            // Reuse probe stream if available — avoids a second getUserMedia call
+            // which can hang on Android after the hardware was just released.
+            let stream;
+            if (this._probeStream && this._probeStream.active) {
+                stream = this._probeStream;
+                this._probeStream = null;
+            } else {
+                stream = await getUserMediaWithTimeout({ audio: true }, 8000);
+            }
             this.recordingStream = stream;
             this.audioChunks = [];
 
