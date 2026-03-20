@@ -4832,12 +4832,8 @@ class floscApp {
                     if (dropdownName) dropdownName.textContent = name;
 
                     card.closest('.message')?.remove();
-                    const loginUrl = (this.config.appUrl || window.location.origin) + '/?flosc_open_login=1';
-                    const confirmMsg = (this.config.guestLinkProfileConfirmMessage || 'Perfect, {name}! You can always {login_url}, update your profile, and upgrade to full access.')
-                        .replace('{name}', name)
-                        .replace('{login_url}', `<a href="${loginUrl}" target="_blank">log in directly</a>`)
-                        + ' ✨ We\'ve sent your guest access login details to your email.';
-                    this.addMessage('assistant', confirmMsg, true);
+                    this.addMessage('assistant', `You're all set, ${name}! Loading your account… ✨`);
+                    setTimeout(() => window.location.reload(), 2000);
                 } else {
                     if (errEl) { errEl.textContent = result.message || 'Could not save — please try again.'; errEl.style.display = 'block'; }
                     saveBtn.disabled    = false;
