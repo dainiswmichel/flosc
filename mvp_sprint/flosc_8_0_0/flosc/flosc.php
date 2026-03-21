@@ -2546,8 +2546,9 @@ The {product_name} Team";
                 set_transient('flosc_first_guest_login_' . $user_id, true, 10 * MINUTE_IN_SECONDS);
             }
 
-            $sync_nonce = wp_generate_password(32, false);
-            set_transient('flosc_wp_sync_' . $sync_nonce, $user_id, 5 * MINUTE_IN_SECONDS);
+            $sync_nonce   = wp_generate_password(32, false);
+            $redirect_url = $this->get_app_url(); // capture lesaep.com URL while still on lesaep.com
+            set_transient('flosc_wp_sync_' . $sync_nonce, ['uid' => $user_id, 'url' => $redirect_url], 5 * MINUTE_IN_SECONDS);
             wp_safe_redirect(home_url('/?flosc_wp_sync=' . rawurlencode($sync_nonce)));
             exit;
         }
@@ -2555,16 +2556,18 @@ The {product_name} Team";
         // Case 3: dainis.net WP auth cookie sync (hop from magic link on lesaep.com)
         if (!empty($_GET['flosc_wp_sync'])) {
             $sync_nonce = sanitize_text_field(wp_unslash($_GET['flosc_wp_sync']));
-            $user_id    = get_transient('flosc_wp_sync_' . $sync_nonce);
-            if (!$user_id) {
+            $data       = get_transient('flosc_wp_sync_' . $sync_nonce);
+            if (!$data) {
                 // Invalid or expired nonce — redirect to app anyway, FLOSC token auth will carry them
                 wp_safe_redirect($this->get_app_url());
                 exit;
             }
+            $user_id      = (int) (is_array($data) ? $data['uid'] : $data);
+            $redirect_url = is_array($data) && !empty($data['url']) ? $data['url'] : $this->get_app_url();
             delete_transient('flosc_wp_sync_' . $sync_nonce);
-            wp_set_current_user((int) $user_id);
-            wp_set_auth_cookie((int) $user_id, true);
-            wp_safe_redirect($this->get_app_url());
+            wp_set_current_user($user_id);
+            wp_set_auth_cookie($user_id, true);
+            wp_redirect($redirect_url); // wp_redirect not wp_safe_redirect — cross-domain back to lesaep.com
             exit;
         }
 
