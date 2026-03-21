@@ -491,6 +491,8 @@ class FLOSC_Framework {
         // v8.0.5: Show user audio files on WP admin user profile page
         add_action('edit_user_profile', [$this, 'render_admin_user_audio_section']);
         add_action('show_user_profile', [$this, 'render_admin_user_audio_section']);
+        // Profile reminder for email-registered users who haven't set nickname/password yet
+        add_action('show_user_profile', [$this, 'render_credential_setup_reminder']);
         add_action('wp_ajax_flosc_serve_user_audio', [$this, 'ajax_serve_user_audio']);
         add_action('wp_ajax_nopriv_flosc_serve_user_audio', [$this, 'ajax_serve_user_audio']);
         
@@ -10720,6 +10722,23 @@ Example good response:
     | END FUTURE ENHANCEMENTS
     |--------------------------------------------------------------------------
     */
+
+    /**
+     * Render a profile reminder for email-registered users who have not yet set a nickname/password.
+     * Shown on /wp-admin/profile.php only for the user viewing their own profile.
+     */
+    public function render_credential_setup_reminder($user) {
+        if ($user->ID !== get_current_user_id()) return;
+        if (get_user_meta($user->ID, '_flosc_registration_method', true) !== 'email') return;
+        if (get_user_meta($user->ID, '_flosc_magic_link_user_credentials_set', true)) return;
+
+        $chat_url = $this->get_app_url();
+        echo '<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:16px 20px;margin:24px 0;max-width:640px;">';
+        echo '<p style="margin:0 0 8px;font-weight:600;color:#92400e;font-size:14px;">Complete your LeSAEp account</p>';
+        echo '<p style="margin:0 0 12px;color:#78350f;font-size:13px;">You have not yet set a nickname or password. Visit the chat to complete your profile — the setup card will appear automatically.</p>';
+        echo '<a href="' . esc_url($chat_url) . '" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;">Go to LeSAEp chat</a>';
+        echo '</div>';
+    }
 
     /**
      * v8.0.5: Render audio files section on WP admin user profile page.
