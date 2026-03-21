@@ -11048,8 +11048,8 @@ Example good response:
                 echo '</summary>';
                 echo '<div style="padding:0 12px 12px 12px;">';
 
-                // Audio playback — only shown once profile is completed (not on anonymous public page)
-                if ($profile_completed && $session_id) {
+                // Audio playback — members always get audio; guests only once profile is completed
+                if ((!$is_guest_user || $profile_completed) && $session_id) {
                     $phrase_num = $i + 1;
                     $user_audio_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id . '/sessions/' . $session_id;
                     $audio_file = '';
