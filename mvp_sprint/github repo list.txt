@@ -1,0 +1,115 @@
+2026-03m-21d
+                                                                                           
+  - 2026-03m-21d T00h06m07s  8d88e5c  Restore clean recording state machine — revert       
+  probe/keep-alive
+                                                                                           
+  ---                                                                                      
+  2026-03m-20d
+                                                                                           
+  - 2026-03m-20d T23h03m51s  f781582  Strip speculative probe/keep-alive code, restore
+  fresh getUserMedia per recording                                                         
+  - 2026-03m-20d T22h43m40s  ce53ae2  Replace AudioContext keep-alive with Audio element
+  for stream keep-alive                                                                    
+  - 2026-03m-20d T22h37m50s  61c0153  Keep probe stream alive via AudioContext on Android
+  Chrome                                                                                   
+  - 2026-03m-20d T22h20m50s  de3e656  Keep mic stream open across all phrases to fix
+  Android re-acquire hang                                                                  
+  - 2026-03m-20d T22h17m11s  35fe778  Reuse probe stream in toggleIpaRecording to fix
+  Android double-getUserMedia hang                                                         
+  - 2026-03m-20d T22h11m59s  53f8033  Fix Android getUserMedia freeze: probe mic at consent
+   time                                                                                    
+  - 2026-03m-20d T22h06m02s  853a8f1  Fix toggleIpaRecording: explicit acquiring state + 8s
+   getUserMedia timeout                                                                    
+  - 2026-03m-20d T21h48m39s  086fcfb  Fix IPA quiz recording race condition, hang
+  protection, and nonce refresh                                                            
+  - 2026-03m-20d T13h19m11s  a5f942d  Fix Android Record button hang: immediate UI feedback
+   + AudioContext resume                                                                   
+  - 2026-03m-20d T12h18m23s  87efe49  Fix assistant message-content max-width on mobile
+  - 2026-03m-20d T11h59m55s  a4b879d  Remove getUserMedia probe from checkMicAndStartQuiz —
+   was hanging on Android                                                                  
+  - 2026-03m-20d T11h49m34s  553b5e1  Fix mic stream left open by onstop safety timeout    
+  - 2026-03m-20d T11h35m57s  f350ad6  Fix silent mic failure: guard MediaRecorder + show   
+  error in chat                                                                            
+  - 2026-03m-20d T11h34m06s  4d7a6bf  Fix badge centering on mobile in welcome message     
+  - 2026-03m-20d T11h30m40s  08149fe  Backup: admin, access manager, and task-list forward 
+  code changes                                                                             
+  - 2026-03m-20d T11h28m33s  5ca4746  Fix quiz stuck state: Continue/Restart recovery +    
+  onstop timeout auto-advance                                                              
+  - 2026-03m-20d T11h01m38s  26cf768  Fix magic link WP auth cookie not set on dainis.net
+  - 2026-03m-20d T06h43m45s  5990cbc  Reload page after credential setup to activate full  
+  auth session                                                                             
+  - 2026-03m-20d T06h38m44s  ee97c4e  Fix profile confirm message rendering raw HTML       
+  instead of link                                                                          
+  - 2026-03m-20d T06h36m32s  594b45f  Sync live fixes: admin context bug, JS redirect,
+  chatpack Fix 12, knowledge lesson refs                                                   
+  - 2026-03m-20d T06h33m34s  cf0bb36  Fix credential setup card not appearing after access
+  code upgrade                                                                             
+                  
+  ---                                                                                      
+  2026-03m-19d    
+              
+  - 2026-03m-19d T15h07m29s  929ff63  Implement remaining FLOSC hallucination fixes (Fix
+  11b, 13, 14, 15)                                                                         
+  - 2026-03m-19d T14h54m45s  1f91bda  Implement FLOSC AI hallucination structural fixes
+  (Fixes 1-13)                                                                             
+                  
+  ---                                                                                      
+  2026-03m-18d    
+              
+  - 2026-03m-18d T18h27m45s  6829372  Fix mobile nav button wrapping and badge centering;
+  include admin updates                                                                    
+  - 2026-03m-18d T17h56m33s  8476001  Guest identity: email as username, first_name +
+  xprofile on name save, real-time profile bar update                                      
+  - 2026-03m-18d T14h30m13s  fc74a8a  Profile confirm message: clickable login link + email
+   notification + sparkle                                                                  
+  - 2026-03m-18d T14h26m45s  d7a577f  Option A: view_profile + view_dashboard as
+  configurable repeater actions                                                            
+  - 2026-03m-18d T14h23m11s  d3bbb2e  Profile nav: hide Dashboard link for lesaep_learners,
+   show for members+admins                                                                 
+  - 2026-03m-18d T14h16m51s  cff4a52  Guest days remaining: add to chat welcome message +
+  BuddyBoss tab                                                                            
+  - 2026-03m-18d T14h10m23s  1c6eef6  BuddyBoss tab: show audio-enable nudge for users with
+   incomplete profile                                                                      
+  - 2026-03m-18d T14h08m42s  b98477c  Profile card: suggested password, copy button, Save &
+   Continue, confirmation email                                                            
+  - 2026-03m-18d T13h46m41s  d683b9d  Revert audio gate — restore original
+  render_buddyboss_quiz_tab audio block                                                    
+  - 2026-03m-18d T13h42m48s  a54c2ee  Bug 3: Show profile-completion nudge when session
+  audio not yet available                                                                  
+  - 2026-03m-18d T13h35m16s  9ce91f5  Fix Bug 1 (backslashes in guest messages) + Bug 2
+  (profile card reliability)                                                               
+  - 2026-03m-18d T13h31m48s  afab4a2  pre-fix snapshot — before Bug 1/2 surgical fixes
+                                                                                           
+  ---             
+  2026-03m-17d                                                                             
+                                                                                           
+  - 2026-03m-17d T12h55m42s  308dd5f  Fix admin InfoPanel not rendering; add guest link
+  abuse tracking                                                                           
+  - 2026-03m-17d T12h32m04s  b6c2438  Fix profile card skip/save dismiss — .message not
+  .flosc-message                                                                           
+  - 2026-03m-17d T12h16m19s  df835bb  Fix guest link redirect — use current request URL not
+   get_app_url()                                                                           
+  - 2026-03m-17d T11h52m59s  708d9fa  Add admin Send Guest Link feature + UUID username fix
+  - 2026-03m-17d T11h48m53s  b7abf58  v8.0.0: Email guest link flow — deferred             
+  registration, 30-day/10-use token, profile card                                          
+  - 2026-03m-17d T09h50m57s  5a26741  Add flosc_8_0_0_snapshot_03 (2026-03m-17d)           
+  - 2026-03m-17d T09h49m57s  82562f9  Add launch task list (2026-03m-17d) and session      
+  failure analysis (2026-03m-16d)                                                          
+                                                                                           
+  ---                                                                                      
+  2026-03m-16d    
+                                                                                           
+  - 2026-03m-16d T15h19m20s  5f180c7  v8.0.0: Remove chat mic button, restore working quiz
+  recording, SSO fixes                                                                     
+                  
+  ---                                                                                      
+  2026-03m-14d    
+              
+  - 2026-03m-14d T07h58m03s  36b0f07  v8.0.0: Chat mic speech-to-text + quiz routing fix +
+  quiz guard fix                                                                           
+  - 2026-03m-14d T07h32m05s  ef20000  v8.0.0: Quiz hallucination prevention + LeSAEp tab
+  rename                                                                                   
+  - 2026-03m-14d T00h32m48s  2f4f72c  Simplify audio auth — logged-in user + ownership
+  check, no tokens                                                                         
+  - 2026-03m-14d T00h30m36s  fb07d02  Fix audio playback for non-admin users — use wp_hash
+  token instead of session-bound nonce 
