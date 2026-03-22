@@ -11069,7 +11069,7 @@ Example good response:
                     $phrase_num = $i + 1;
                     $user_audio_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id . '/sessions/' . $session_id;
                     $audio_file = '';
-                    foreach (['webm', 'mp4', 'ogg'] as $ext) {
+                    foreach (['mp4', 'webm', 'ogg'] as $ext) {
                         if (file_exists($user_audio_dir . '/phrase-' . $phrase_num . '.' . $ext)) {
                             $audio_file = 'phrase-' . $phrase_num . '.' . $ext;
                             break;

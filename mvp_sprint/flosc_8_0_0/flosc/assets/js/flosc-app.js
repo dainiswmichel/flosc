@@ -3394,7 +3394,7 @@ class floscApp {
             this.recordingStream = stream;
             this.audioChunks = [];
 
-            const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+            const types = ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'];
             let mimeType = '';
             for (const t of types) {
                 if (MediaRecorder.isTypeSupported(t)) { mimeType = t; break; }
