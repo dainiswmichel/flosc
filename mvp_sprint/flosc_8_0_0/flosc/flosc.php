@@ -11002,10 +11002,7 @@ Example good response:
         // Determine profile completion + guest status for the profile owner
         $bb_user          = get_userdata($user_id);
         $profile_completed = (bool) get_user_meta($user_id, '_flosc_magic_link_user_credentials_set', true);
-        $is_guest_user    = $bb_user && (
-            in_array('guest_lesaep_learner', (array) $bb_user->roles) ||
-            !empty(get_user_meta($user_id, '_flosc_sso_linked_providers', true))
-        );
+        $is_guest_user    = $bb_user && in_array('guest_lesaep_learner', (array) $bb_user->roles);
 
         $days_remaining = null;
         if ($is_guest_user && $bb_user) {
