@@ -634,9 +634,7 @@ class OAuth2_Handler {
         
         // Log the new user in
         $this->log_user_in($new_user_id);
-        
-        do_action('flosc_sso_user_created', $new_user_id, $provider->get_id(), $user_data);
-        
+
         return $new_user_id;
     }
     

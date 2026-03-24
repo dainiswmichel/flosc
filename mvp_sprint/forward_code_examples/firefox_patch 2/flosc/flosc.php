@@ -1342,10 +1342,7 @@ The Team',
             . '<p style="margin:0;font-size:13px;line-height:1.6;color:#6b7280;">This message was sent to ' . $safe_email . '.</p>'
             . '</div></div></body></html>';
 
-        $sent = wp_mail($user->user_email, $subject, $body, ['Content-Type: text/html; charset=UTF-8']);
-        if (!$sent && FLOSC_DEBUG) {
-            error_log("FLOSC SSO: wp_mail failed for user {$user_id} ({$user->user_email})");
-        }
+        wp_mail($user->user_email, $subject, $body, ['Content-Type: text/html; charset=UTF-8']);
     }
 
     /**
@@ -10906,51 +10903,11 @@ Example good response:
         $mimes = ['webm' => 'audio/webm', 'mp4' => 'audio/mp4', 'ogg' => 'audio/ogg', 'wav' => 'audio/wav'];
         $mime = $mimes[$ext] ?? 'application/octet-stream';
 
-        $size  = filesize($filepath);
-        $start = 0;
-        $end   = $size - 1;
-
-        header('Accept-Ranges: bytes');
         header('Content-Type: ' . $mime);
+        header('Content-Length: ' . filesize($filepath));
         header('Content-Disposition: inline; filename="' . $file . '"');
         header('Cache-Control: private, max-age=3600');
-
-        // iOS Safari/WebKit requires Range request support to play <audio>.
-        // It sends Range: bytes=0-1 to probe seekability; without a 206 response it refuses to play.
-        if (isset($_SERVER['HTTP_RANGE'])) {
-            preg_match('/bytes=(\d*)-(\d*)/', $_SERVER['HTTP_RANGE'], $m);
-            $rs = $m[1] !== '' ? intval($m[1]) : null;
-            $re = isset($m[2]) && $m[2] !== '' ? intval($m[2]) : null;
-            if ($rs !== null) {
-                $start = $rs;
-                $end   = $re !== null ? min($re, $size - 1) : $size - 1;
-            } elseif ($re !== null) {
-                $start = max(0, $size - $re);
-            }
-            if ($start > $end || $start >= $size) {
-                header('HTTP/1.1 416 Range Not Satisfiable');
-                header('Content-Range: bytes */' . $size);
-                exit;
-            }
-            $length = $end - $start + 1;
-            header('HTTP/1.1 206 Partial Content');
-            header('Content-Range: bytes ' . $start . '-' . $end . '/' . $size);
-            header('Content-Length: ' . $length);
-        } else {
-            header('Content-Length: ' . $size);
-        }
-
-        $fp = fopen($filepath, 'rb');
-        fseek($fp, $start);
-        $remaining = $end - $start + 1;
-        while ($remaining > 0 && !feof($fp)) {
-            $chunk = fread($fp, min(8192, $remaining));
-            echo $chunk;
-            $remaining -= strlen($chunk);
-            if (ob_get_level()) ob_flush();
-            flush();
-        }
-        fclose($fp);
+        readfile($filepath);
         exit;
     }
 
@@ -11116,7 +11073,7 @@ Example good response:
                     $phrase_num = $i + 1;
                     $user_audio_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id . '/sessions/' . $session_id;
                     $audio_file = '';
-                    foreach (['mp4', 'webm', 'ogg'] as $ext) {
+                    foreach (['webm', 'mp4', 'ogg'] as $ext) {
                         if (file_exists($user_audio_dir . '/phrase-' . $phrase_num . '.' . $ext)) {
                             $audio_file = 'phrase-' . $phrase_num . '.' . $ext;
                             break;

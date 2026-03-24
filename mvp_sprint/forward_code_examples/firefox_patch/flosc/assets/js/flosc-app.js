@@ -50,6 +50,7 @@ class floscApp {
         this.currentSession = null;
         this.visitorInteractions = 0;
         this.isRecording = false;
+        this.isAcquiringMic = false;
         this.mediaRecorder = null;
         this.audioChunks = [];
         this.recordingStream = null;
@@ -2921,33 +2922,14 @@ class floscApp {
             await this.startAudioQuizRecording();
         }
     }
-
-    _resolveMime(recorder) {
-        const m = recorder?.mimeType || '';
-        const _label = (mime) => {
-            if (mime.includes('mp4')) return { mime, format: 'mp4' };
-            if (mime.includes('ogg')) return { mime, format: 'ogg' };
-            return { mime, format: 'webm' };
-        };
-        if (m) return _label(m);
-        if (typeof MediaRecorder !== 'undefined') {
-            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) return { mime: 'audio/webm;codecs=opus', format: 'webm' };
-            if (MediaRecorder.isTypeSupported('audio/ogg;codecs=opus'))  return { mime: 'audio/ogg;codecs=opus',  format: 'ogg'  };
-            if (MediaRecorder.isTypeSupported('audio/mp4'))              return { mime: 'audio/mp4',              format: 'mp4'  };
-        }
-        return { mime: 'audio/webm', format: 'webm' };
-    }
-
+    
     async startAudioQuizRecording() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             this.recordingStream = stream;
             this.audioChunks = [];
-
+            
             this.mediaRecorder = new MediaRecorder(stream);
-            const { mime: audioQuizMime, format: audioQuizFormat } = this._resolveMime(this.mediaRecorder);
-            this.audioQuizMime   = audioQuizMime;
-            this.audioQuizFormat = audioQuizFormat;
             this.mediaRecorder.ondataavailable = (e) => this.audioChunks.push(e.data);
             this.mediaRecorder.onstop = () => this.processAudioQuiz();
             
@@ -2982,11 +2964,11 @@ class floscApp {
     }
     
     async processAudioQuiz() {
-        const mime   = this.audioQuizMime   || this._resolveMime(this.mediaRecorder).mime;
-        const format = this.audioQuizFormat || this._resolveMime(this.mediaRecorder).format;
-        const blob = new Blob(this.audioChunks, { type: mime });
+        const actualMime = this.mediaRecorder?.mimeType || 'audio/webm';
+        const blob = new Blob(this.audioChunks, { type: actualMime });
+        const ext = actualMime.includes('mp4') ? 'mp4' : actualMime.includes('ogg') ? 'ogg' : 'webm';
         const formData = new FormData();
-        formData.append('audio', blob, `quiz-audio.${format}`);
+        formData.append('audio', blob, `quiz-audio.${ext}`);
         
         try {
             const response = await this.authFetch(`${this.config.apiUrl}/process-audio`, {
@@ -3391,7 +3373,15 @@ class floscApp {
         if (this.isAcquiringMic) return;
 
         if (typeof MediaRecorder === 'undefined') {
-            if (status) status.textContent = 'Audio recording is not supported in this browser.';
+            if (status) status.textContent = 'Audio recording is not supported in this browser. Please ensure you are using a recent version of Chrome, Firefox, or Safari.';
+            this.isAcquiringMic = false;
+            return;
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            if (status) status.textContent = 'Microphone access requires a secure connection (HTTPS). Please contact support if this persists.';
+            this.isAcquiringMic = false;
+            if (btn) { btn.disabled = false; btn.classList.add('flosc-ipa-record-pulse'); }
             return;
         }
 
@@ -3415,8 +3405,13 @@ class floscApp {
             this.recordingStream = stream;
             this.audioChunks = [];
 
+            // Let the browser pick its native preferred format — no forced ordering.
+            // Chrome picks webm;opus, Firefox picks ogg;opus, Safari picks mp4.
             this.mediaRecorder = new MediaRecorder(stream);
-            const { mime: actualMime, format: audioFormat } = this._resolveMime(this.mediaRecorder);
+            const actualMime = this.mediaRecorder.mimeType;
+            let audioFormat = 'webm';
+            if (actualMime.includes('mp4')) audioFormat = 'mp4';
+            else if (actualMime.includes('ogg')) audioFormat = 'ogg';
 
             this.mediaRecorder.ondataavailable = (e) => {
                 if (e.data.size > 0) this.audioChunks.push(e.data);
@@ -6353,9 +6348,6 @@ Purchased: ${ctx.purchased}
         try {
             this.quizRecordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
             this.quizMediaRecorder = new MediaRecorder(this.quizRecordingStream);
-            const { mime: qMime, format: qFormat } = this._resolveMime(this.quizMediaRecorder);
-            this.quizRecordingMime   = qMime;
-            this.quizRecordingFormat = qFormat;
             this.quizAudioChunks = [];
             
             this.quizMediaRecorder.ondataavailable = (e) => {
@@ -6404,8 +6396,8 @@ Purchased: ${ctx.purchased}
         const status = document.getElementById('floscQuizRecordingStatus');
         if (status) status.textContent = '⏳ Processing...';
         
-        const mime = this.quizRecordingMime || this._resolveMime(this.quizMediaRecorder).mime;
-        const audioBlob = new Blob(this.quizAudioChunks, { type: mime });
+        const actualMime = this.quizMediaRecorder?.mimeType || 'audio/webm';
+        const audioBlob = new Blob(this.quizAudioChunks, { type: actualMime });
         const formData = new FormData();
         formData.append('audio', audioBlob);
         

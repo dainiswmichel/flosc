@@ -50,6 +50,7 @@ class floscApp {
         this.currentSession = null;
         this.visitorInteractions = 0;
         this.isRecording = false;
+        this.isAcquiringMic = false;
         this.mediaRecorder = null;
         this.audioChunks = [];
         this.recordingStream = null;
@@ -2913,15 +2914,12 @@ class floscApp {
         }, 100);
     }
     
-    // Audio recording for quiz (existing functionality adapted)
-    async toggleAudioQuizRecording() {
-        if (this.isRecording) {
-            this.stopAudioQuizRecording();
-        } else {
-            await this.startAudioQuizRecording();
-        }
-    }
-
+    // Returns { mime, format } for the browser's chosen recording format.
+    // mime  — full MIME string to label the Blob (e.g. 'audio/ogg;codecs=opus')
+    // format — short label for the server (e.g. 'ogg', 'mp4', 'webm')
+    // If the browser returns an empty mimeType (older Android Firefox), we use
+    // isTypeSupported only to detect its native format — the recorder itself is
+    // never forced to a specific format.
     _resolveMime(recorder) {
         const m = recorder?.mimeType || '';
         const _label = (mime) => {
@@ -2938,12 +2936,21 @@ class floscApp {
         return { mime: 'audio/webm', format: 'webm' };
     }
 
+    // Audio recording for quiz (existing functionality adapted)
+    async toggleAudioQuizRecording() {
+        if (this.isRecording) {
+            this.stopAudioQuizRecording();
+        } else {
+            await this.startAudioQuizRecording();
+        }
+    }
+    
     async startAudioQuizRecording() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             this.recordingStream = stream;
             this.audioChunks = [];
-
+            
             this.mediaRecorder = new MediaRecorder(stream);
             const { mime: audioQuizMime, format: audioQuizFormat } = this._resolveMime(this.mediaRecorder);
             this.audioQuizMime   = audioQuizMime;
@@ -3391,7 +3398,15 @@ class floscApp {
         if (this.isAcquiringMic) return;
 
         if (typeof MediaRecorder === 'undefined') {
-            if (status) status.textContent = 'Audio recording is not supported in this browser.';
+            if (status) status.textContent = 'Audio recording is not supported in this browser. Please ensure you are using a recent version of Chrome, Firefox, or Safari.';
+            this.isAcquiringMic = false;
+            return;
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            if (status) status.textContent = 'Microphone access requires a secure connection (HTTPS). Please contact support if this persists.';
+            this.isAcquiringMic = false;
+            if (btn) { btn.disabled = false; btn.classList.add('flosc-ipa-record-pulse'); }
             return;
         }
 
@@ -3415,6 +3430,7 @@ class floscApp {
             this.recordingStream = stream;
             this.audioChunks = [];
 
+            // Let the browser pick its native preferred format — no forced ordering.
             this.mediaRecorder = new MediaRecorder(stream);
             const { mime: actualMime, format: audioFormat } = this._resolveMime(this.mediaRecorder);
 
@@ -6404,7 +6420,8 @@ Purchased: ${ctx.purchased}
         const status = document.getElementById('floscQuizRecordingStatus');
         if (status) status.textContent = '⏳ Processing...';
         
-        const mime = this.quizRecordingMime || this._resolveMime(this.quizMediaRecorder).mime;
+        const mime   = this.quizRecordingMime   || this._resolveMime(this.quizMediaRecorder).mime;
+        const format = this.quizRecordingFormat || this._resolveMime(this.quizMediaRecorder).format;
         const audioBlob = new Blob(this.quizAudioChunks, { type: mime });
         const formData = new FormData();
         formData.append('audio', audioBlob);
