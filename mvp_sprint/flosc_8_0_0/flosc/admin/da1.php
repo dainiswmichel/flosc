@@ -175,7 +175,7 @@ $total = count($rows);
     <div style="display:flex;gap:8px;align-items:center;">
         <span style="font-size:12px;color:#787c82;">Click any cell to edit &mdash; Enter works in all fields</span>
         <button type="button" id="da1-add-row" class="button">+ Add Work</button>
-        <button type="submit" form="da1-catalog-form" class="button button-primary">Save Catalog</button>
+        <button type="button" onclick="document.getElementById('da1-catalog-form').submit()" class="button button-primary">Save Catalog</button>
     </div>
 </div>
 
@@ -384,7 +384,9 @@ $total = count($rows);
             if (inputs[ci]) inputs[ci].value = f.value;
         });
         closeModal();
+        document.getElementById('da1-catalog-form').submit();
     }
+
 
     document.getElementById('da1-add-row').addEventListener('click', addRow);
     document.getElementById('da1-add-row-bottom').addEventListener('click', addRow);
