@@ -191,7 +191,7 @@ $total = count($rows);
         </thead>
         <tbody id="da1-tbody">
         <?php foreach ($rows as $ri => $row): ?>
-            <tr class="da1-row" style="border-bottom:1px solid #e0e0e0;<?php echo ($ri % 2 === 0) ? 'background:#fff;' : 'background:#f9f9f9;'; ?>">
+            <tr class="da1-row" style="border-bottom:1px solid #e0e0e0;">
                 <?php foreach ($columns as $ci => $col):
                     $val      = $row[$ci] ?? '';
                     $is_multi = in_array($ci, $multiline_idx);
@@ -267,7 +267,7 @@ $total = count($rows);
         var ri = nextIndex();
         var tr = document.createElement('tr');
         tr.className     = 'da1-row';
-        tr.style.cssText = 'border-bottom:1px solid #e0e0e0;background:#fff;';
+        tr.style.cssText = 'border-bottom:1px solid #e0e0e0;';
 
         for (var ci = 0; ci < NCOLS; ci++) {
             var td = document.createElement('td');
