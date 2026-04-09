@@ -145,7 +145,7 @@ $total = count($rows);
 #da1-table input[type="text"], #da1-table textarea { background: transparent !important; }
 #da1-table input[type="text"]:focus, #da1-table textarea:focus { background: #fff !important; }
 #da1-table textarea { overflow: hidden !important; resize: none !important; }
-#da1-table textarea:focus { overflow: auto !important; resize: vertical !important; }
+#da1-table textarea:focus { overflow: auto !important; resize: vertical !important; min-height: 160px !important; }
 #da1-table thead th { position: sticky; top: 0; z-index: 2; background: #1d2327; }
 </style>
 
