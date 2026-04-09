@@ -191,9 +191,9 @@ $total = count($rows);
                     $val      = $row[$ci] ?? '';
                     $is_multi = in_array($ci, $multiline_idx);
                     $name     = 'da1_rows[' . $ri . '][' . $ci . ']';
-                    $base   = 'width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,0.15);border-radius:2px;padding:4px 6px;font-size:13px;font-family:inherit;background:transparent;color:#1d2327;';
-                    $focus  = "this.style.borderColor='#2271b1';this.style.background='#fff';this.closest('tr').style.background='#f0f6fc';";
-                    $blur   = "this.style.borderColor='rgba(0,0,0,0.15)';this.style.background='transparent';";
+                    $base   = 'width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,0.20);border-radius:2px;padding:4px 6px;font-size:13px;font-family:inherit;background:transparent!important;color:#1d2327;';
+                    $focus  = "this.style.borderColor='#2271b1';this.style.setProperty('background','#fff','important');this.closest('tr').style.background='#f0f6fc';";
+                    $blur   = "this.style.borderColor='rgba(0,0,0,0.20)';this.style.setProperty('background','transparent','important')";
                 ?>
                 <td style="padding:3px 5px;vertical-align:top;">
                     <?php if ($is_multi): ?>
@@ -250,9 +250,9 @@ $total = count($rows);
 (function () {
     var NCOLS     = <?php echo (int) $ncols; ?>;
     var MULTILINE = <?php echo json_encode(array_values($multiline_idx)); ?>;
-    var base      = 'width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,0.15);border-radius:2px;padding:4px 6px;font-size:13px;font-family:inherit;background:transparent;color:#1d2327;';
-    var focusIn   = "this.style.borderColor='#2271b1';this.style.background='#fff';this.closest('tr').style.background='#f0f6fc';";
-    var focusOut  = "this.style.borderColor='rgba(0,0,0,0.15)';this.style.background='transparent';";
+    var base      = 'width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,0.20);border-radius:2px;padding:4px 6px;font-size:13px;font-family:inherit;background:transparent!important;color:#1d2327;';
+    var focusIn   = "this.style.borderColor='#2271b1';this.style.setProperty('background','#fff','important');this.closest('tr').style.background='#f0f6fc';";
+    var focusOut  = "this.style.borderColor='rgba(0,0,0,0.20)';this.style.setProperty('background','transparent','important')";
 
     function nextIndex() {
         return document.querySelectorAll('#da1-tbody .da1-row').length;
