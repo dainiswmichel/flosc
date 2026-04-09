@@ -53,6 +53,134 @@
 <h1>FLOSC Launch Task List</h1>
 <p class="subtitle">Generated 2026-03m-17d &bull; Session scope document &bull; Workspace: <code>mvp_sprint/flosc_8_0_0/flosc/</code></p>
 
+<!-- ============================================================ -->
+<!-- COPILOT STATUS REPORT — 2026-03m-25d                          -->
+<!-- ============================================================ -->
+<div class="task-card" style="border-left: 4px solid #16a34a; margin-bottom: 16px;">
+<h3 style="margin-top:0">Copilot Deep-Audit Status Report <span style="font-size:12px;font-weight:400;color:#64748b;margin-left:8px">full codebase verification &bull; 2026-03m-25d</span></h3>
+<p style="font-size:12px;color:#64748b;margin-bottom:14px;">Every file and line number below was read and confirmed. Items the previous report marked &ldquo;Unclear&rdquo; have been resolved.</p>
+
+<p class="section-label" style="margin-top:16px">Task 2 — AI Hallucination Fixes &nbsp;<span class="status done">14 of 14 confirmed</span></p>
+<table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:13px">
+  <thead>
+    <tr style="background:#f1f5f9">
+      <th style="text-align:left;padding:6px 10px;border:1px solid #e2e8f0;width:50px">Fix</th>
+      <th style="text-align:left;padding:6px 10px;border:1px solid #e2e8f0">Description</th>
+      <th style="text-align:left;padding:6px 10px;border:1px solid #e2e8f0;width:80px">Status</th>
+      <th style="text-align:left;padding:6px 10px;border:1px solid #e2e8f0">Evidence</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">1</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Temperature default &rarr; 0.3</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><code>class-ai-chat-dispatch.php:837</code> &mdash; <code>flosc_get_setting('ai_temperature', '0.3')</code>. Same at line 1036 for xAI.</td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">2</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Full debug logging</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><code>class-ai-chat-dispatch.php:655-668</code> &mdash; logs full prompt, message, and response to <code>flosc_debug_log</code> when <code>FLOSC_DEBUG</code> is true. Last 200 entries.</td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">3</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Response validation regex</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><code>class-ai-chat-dispatch.php:1218-1264</code> &mdash; <code>validate_ai_response()</code> with two regex checks for FLOSC/LeSAEp expansions. Corrections logged to <code>flosc_validation_corrections</code>.</td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">4</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Anchor definitions every follow-up</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><code>class-flosc-chatpack.php:241-258</code> &mdash; FLOSC + product definitions injected in every <code>build_followup_chatpack()</code> call.</td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">5</td><td style="padding:5px 10px;border:1px solid #e2e8f0">KB limit &rarr; 10,000 chars</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><code>class-flosc-chatpack.php:952-955</code> &mdash; default 10000, safety floor at 1000.</td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">6</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><code>lesaep_knowledge.md</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0">File present in <code>ai_configuration_files/</code>.</td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">7</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Lesson catalog auto-generation</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><code>flosc.php:558</code> &mdash; <code>add_action('save_post', 'maybe_regenerate_lesson_catalog')</code>. Generator at line 1632. Admin regenerate via <code>admin_post_flosc_regenerate_lesson_catalog</code> at line 1618.</td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">8</td><td style="padding:5px 10px;border:1px solid #e2e8f0">RAG path gets chatpack</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><code>flosc.php:5019-5025</code> &mdash; both RAG and non-RAG dispatch paths use the same chatpack builder.</td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">9</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Admin notices for risky settings</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><code>ai-configuration.php:40-57</code> &mdash; 4 warnings: temp &gt; 0.5, empty product_name, missing tagline, stale catalog (&gt; 7 days).</td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">10</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Visitor history limit &rarr; 1,500</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><code>flosc.php:4938</code> &mdash; <code>substr(..., 0, 1500)</code> with comment &ldquo;Fix 10: raised from 500&rdquo;.</td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">11a</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Natural orientation brief</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><code>class-flosc-chatpack.php:339-380</code> &mdash; identity section with &ldquo;YOUR ENERGY IS ENCOURAGEMENT&rdquo; throughline + phase-by-phase guidance.</td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">11b</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Server-generated recommendations</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><code>class-flosc-chatpack.php:578-824</code> &mdash; <code>build_personalized_recommendations()</code> generates lesson recs from quiz data server-side.</td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">12</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Admin KB key reconnection</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><code>class-flosc-chatpack.php:690-694</code> &mdash; reads <code>ai_context_awareness</code> via <code>flosc_get_setting()</code> (resolves key mismatch). Personality traits at line 330 try new key then fall back to old.</td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">13</td><td style="padding:5px 10px;border:1px solid #e2e8f0">OpenAI Responses API</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><code>class-ai-chat-dispatch.php:1118-1210</code> &mdash; <code>openai_responses_request()</code> using <code>/v1/responses</code>. Stores <code>response_id</code> in user meta (logged-in) or transients (visitors).</td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">14</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Provider Accuracy Test</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><code>ai-configuration.php:847-936</code> &mdash; 10-message test sequence UI with per-message results, token counts, pass/fail flags.</td></tr>
+  </tbody>
+</table>
+
+<p class="section-label" style="margin-top:20px">Task 3 — Email / Magic Link Bugs &nbsp;<span class="status done">2 Fixed, 1 Partially Fixed</span></p>
+<table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:13px">
+  <thead>
+    <tr style="background:#f1f5f9">
+      <th style="text-align:left;padding:6px 10px;border:1px solid #e2e8f0;width:60px">Bug</th>
+      <th style="text-align:left;padding:6px 10px;border:1px solid #e2e8f0">Description</th>
+      <th style="text-align:left;padding:6px 10px;border:1px solid #e2e8f0;width:110px">Status</th>
+      <th style="text-align:left;padding:6px 10px;border:1px solid #e2e8f0">Evidence</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">1</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Triple backslashes in &ldquo;We&rsquo;ve sent you&rdquo; message</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Fixed</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><code>flosc-app.php:903-939</code> &mdash; all 4 guest link settings use recursive <code>stripslashes_deep()</code> while-loop (more thorough than single <code>wp_unslash()</code>).</td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">2</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Nickname/password prompt not appearing</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status assessment">Partial</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0">Card logic works via <code>pendingCredentialSetup</code> flag + <code>sessionStorage</code> dismiss. Client validates pw min 6 chars. <strong>Server-side gap:</strong> <code>flosc.php:7725</code> sets <code>_flosc_magic_link_user_credentials_set = true</code> BEFORE the password check at line 7727. Direct POST with only <code>display_name</code> marks profile complete without a password.</td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">3</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Recordings not playable on BuddyBoss tab</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Fixed</span></td><td style="padding:5px 10px;border:1px solid #e2e8f0">Permission: admin OR audio owner. Range requests for iOS Safari. File existence check with mp4/webm/ogg fallback. <code>pull_session_from_do()</code> validates session ID + downloads audio correctly.</td></tr>
+  </tbody>
+</table>
+
+<p class="section-label" style="margin-top:20px">SSO Profile Gate &nbsp;<span class="status done">Fixed</span></p>
+<p style="margin-top:4px;font-size:13px"><code>flosc.php:11047-11048</code> &mdash; <code>|| !empty(get_user_meta($user_id, '_flosc_sso_linked_providers', true))</code> is present. SSO users bypass the magic-link credential check. (This was missing earlier in the session; now confirmed applied.)</p>
+
+<p class="section-label" style="margin-top:20px">Task 4 — Access Code System &nbsp;<span class="status done">Exists</span></p>
+<p style="margin-top:4px;font-size:13px">All components wired: chat trigger (<code>flosc-app.js:5692</code>), UI (<code>_showAccessCodeInput()</code> at 7804, <code>_redeemAccessCode()</code> at 7872), REST route (<code>flosc.php:4800</code>), handler (<code>handle_redeem_access_code()</code> at 7250), auth modal link at 4485. Needs live end-to-end test. Decision pending: single vs. multi-code per flow.</p>
+
+<p class="section-label" style="margin-top:20px">Tasks 5&ndash;13 &nbsp;<span class="status assessment">Planning / Not Started</span></p>
+<table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:13px">
+  <thead>
+    <tr style="background:#f1f5f9">
+      <th style="text-align:left;padding:6px 10px;border:1px solid #e2e8f0;width:60px">Task</th>
+      <th style="text-align:left;padding:6px 10px;border:1px solid #e2e8f0">Description</th>
+      <th style="text-align:left;padding:6px 10px;border:1px solid #e2e8f0;width:130px">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">5</td><td style="padding:5px 10px;border:1px solid #e2e8f0">User Settings Panel (font size, theme, profile link)</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status essential">Not started</span></td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">6</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Social Media Posting Automation</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status essential">Not started</span></td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">7</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Marketing Launch Assessment</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status assessment">Plan only</span></td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">8</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Toolbuilder Assessment</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status assessment">Plan only</span></td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">9</td><td style="padding:5px 10px;border:1px solid #e2e8f0">flosc.ai Chatbot Tier Design</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status assessment">Plan only</span></td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">10</td><td style="padding:5px 10px;border:1px solid #e2e8f0">FloscAdmin Terminal with AI Agent</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status essential">Not started</span></td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">11</td><td style="padding:5px 10px;border:1px solid #e2e8f0">AI2AGI Reciprocity Update</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status assessment">Plan only</span></td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">12</td><td style="padding:5px 10px;border:1px solid #e2e8f0">TikTok Paid Ads Plan</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status assessment">Plan only</span></td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">13</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Update FLOSC Docs</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status assessment">Partial</span> &mdash; <code>readme.md</code> says v5.0.7</td></tr>
+  </tbody>
+</table>
+
+<div class="risk" style="margin-top:20px">
+<strong>Security gap found &mdash; Bug 2 server-side password enforcement</strong>
+<p style="margin:6px 0 0;font-size:13px"><code>flosc.php:7725</code> sets <code>_flosc_magic_link_user_credentials_set = true</code> unconditionally BEFORE the password validation at line 7727. A direct POST to <code>/update-guest-profile</code> with only <code>display_name</code> (no password) marks the profile as complete. Password min-6-char validation is client-side only. The meta flag should be set AFTER both nickname and password pass server-side validation.</p>
+</div>
+
+</div>
+
+<div class="task-card" style="border-left: 4px solid #2563eb; margin-bottom: 32px;">
+<h3 style="margin-top:0">Codebase Status Report <span style="font-size:12px;font-weight:400;color:#64748b;margin-left:8px">vs. this devdoc &bull; 2026-03m-25d</span></h3>
+
+<p class="section-label" style="margin-top:16px">Task 2 — AI Hallucination Fixes &nbsp;<span class="status essential">7 of 14 confirmed</span></p>
+<table style="width:100%;border-collapse:collapse;margin-top:8px;font-size:13px">
+  <thead>
+    <tr style="background:#f1f5f9">
+      <th style="text-align:left;padding:6px 10px;border:1px solid #e2e8f0;width:60px">Fix</th>
+      <th style="text-align:left;padding:6px 10px;border:1px solid #e2e8f0">Description</th>
+      <th style="text-align:left;padding:6px 10px;border:1px solid #e2e8f0;width:110px">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">1</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Temperature default → 0.3</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">2</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Full debug logging — logging exists but capped at last 200 entries in <code>wp_options</code>, not unlimited DB logging as specified</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status assessment">Partial</span></td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">3</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Response validation layer — <code>validate_ai_response()</code> present (lines 1218–1263), regex-corrects FLOSC/LeSAEp expansions, logs corrections</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">4</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Anchor definitions in every follow-up — <code>build_followup_chatpack()</code> re-anchors FLOSC definitions (lines 241–258)</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">5</td><td style="padding:5px 10px;border:1px solid #e2e8f0">KB limit → 10,000 chars + authoritative framing header (lines 688–698)</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">6</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><code>lesaep_knowledge.md</code> created — file present in <code>ai_configuration_files/</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">7</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Lesson catalog auto-generation — <code>lesaep_lesson_catalog.md</code> exists but save_post hook and admin regenerate button not confirmed in code</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status assessment">Unclear</span></td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">8</td><td style="padding:5px 10px;border:1px solid #e2e8f0">RAG path gets chatpack treatment — RAG handler files exist, <code>build_rag_system_prompt()</code> not read</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status assessment">Unclear</span></td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">9</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Admin notices for risk conditions — not confirmed in <code>settings.php</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status assessment">Unclear</span></td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">10</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Visitor history limit 500 → 1,500 chars — <code>flosc.php</code> line 4557 not read</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status assessment">Unclear</span></td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">11A</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Natural orientation brief prepended to identity section — not confirmed</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status assessment">Unclear</span></td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">11B</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Server-generated lesson recommendations — <code>build_personalized_recommendations()</code> present (lines 796–826), matches weak sounds to catalog</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">12</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Admin KB config wired to live chatpack — dispatch uses <code>ai_personality_*</code> keys; chatpack identity section not confirmed to match</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status assessment">Partial</span></td></tr>
+    <tr style="background:#fafafa"><td style="padding:5px 10px;border:1px solid #e2e8f0">13</td><td style="padding:5px 10px;border:1px solid #e2e8f0">OpenAI Responses API path — <code>openai_responses_request()</code> implemented (lines 1118–1212), stores <code>response.id</code> per session</td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status done">Done</span></td></tr>
+    <tr><td style="padding:5px 10px;border:1px solid #e2e8f0">14</td><td style="padding:5px 10px;border:1px solid #e2e8f0">Provider accuracy test in AI tab — not confirmed in <code>ai-configuration.php</code></td><td style="padding:5px 10px;border:1px solid #e2e8f0"><span class="status assessment">Unclear</span></td></tr>
+  </tbody>
+</table>
+
+<p class="section-label" style="margin-top:20px">Task 3 — Email / Magic Link &nbsp;<span class="status assessment">Functional, bugs unconfirmed</span></p>
+<p style="margin-top:8px">Core flow confirmed working (email → magic link → login → quiz transfer → welcome message). Three bugs documented in this devdoc have unclear resolution status:</p>
+<ul style="margin-top:8px">
+  <li><strong>Bug 1</strong> (triple backslashes in guest message) — <code>wp_unslash()</code> fix defined, not confirmed applied</li>
+  <li><strong>Bug 2</strong> (nickname/password prompt not appearing) — fix approach defined, implementation not confirmed</li>
+  <li><strong>Bug 3</strong> (recordings not playable on BuddyBoss tab) — diagnostic-first approach documented, root cause and fix unconfirmed</li>
+</ul>
+</div>
+
 <div class="toc">
 <h3>Contents</h3>
 <p class="section-label">Essential Fixes</p>
