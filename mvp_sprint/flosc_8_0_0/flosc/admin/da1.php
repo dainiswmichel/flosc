@@ -63,7 +63,10 @@ if (file_exists($tsv_path)) {
     $parsed = da1_parse_tsv(file_get_contents($tsv_path));
 
     /* First row is the header — use it as column definitions */
-    $columns = array_map('trim', $parsed[0] ?? []);
+    $columns = array_map(function($c) {
+        $c = trim($c);
+        return ($c === 'Video') ? 'Media' : $c;
+    }, $parsed[0] ?? []);
 
     $rows = array_slice($parsed, 1);
     usort($rows, function ($a, $b) {
@@ -73,7 +76,7 @@ if (file_exists($tsv_path)) {
 
 /* Fallback if file missing or empty */
 if (empty($columns)) {
-    $columns = ['Date', 'Title', 'Description', 'Lyrics', 'Video', 'Notes'];
+    $columns = ['Date', 'Title', 'Description', 'Lyrics', 'Media', 'Notes'];
 }
 if (empty($rows)) {
     $rows = [array_fill(0, count($columns), '')];
@@ -349,6 +352,12 @@ $total = count($rows);
             field.value = val;
             field.setAttribute('data-ci', ci);
             wrap.appendChild(field);
+            if (/media/i.test(col)) {
+                var hint = document.createElement('p');
+                hint.style.cssText = 'margin:5px 0 0;font-size:11px;color:#787c82;';
+                hint.textContent = 'One URL per line. Shown left to right in carousel in the same sequence as top to bottom.';
+                wrap.appendChild(hint);
+            }
             modalBody.appendChild(wrap);
         });
         overlay.style.display = 'flex';
