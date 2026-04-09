@@ -123,14 +123,14 @@ $total = count($rows);
 /* ---- table inputs ---- */
 .da1-inp {
     width:100%; box-sizing:border-box;
-    border:1px solid rgba(0,0,0,0.12);
+    border:1px solid rgba(0,0,0,0.07);
     border-radius:2px; padding:4px 6px; font-size:13px;
     font-family:inherit; background:transparent; color:#1d2327;
 }
 .da1-inp:focus {
     border-color:#2271b1; background:#fff; outline:none;
 }
-textarea.da1-inp { resize:vertical; line-height:1.45; }
+textarea.da1-inp { resize:vertical; line-height:1.45; overflow:hidden; }
 
 /* ---- edit modal ---- */
 #da1-modal-overlay {
