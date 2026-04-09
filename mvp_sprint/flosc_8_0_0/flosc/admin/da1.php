@@ -123,7 +123,7 @@ $total = count($rows);
 /* ---- table inputs ---- */
 .da1-inp {
     width:100%; box-sizing:border-box;
-    border:1px solid rgba(0,0,0,0.07);
+    border:1px solid transparent;
     border-radius:2px; padding:4px 6px; font-size:13px;
     font-family:inherit; background:transparent; color:#1d2327;
 }
