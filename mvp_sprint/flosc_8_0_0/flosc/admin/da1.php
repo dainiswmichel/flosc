@@ -92,7 +92,7 @@ unset($row);
 /* Textarea columns: any column whose name contains Lyrics, Media, or Video */
 $multiline_idx = [];
 foreach ($columns as $ci => $col) {
-    if (preg_match('/lyrics|media|video|notes/i', $col)) $multiline_idx[] = $ci;
+    if (preg_match('/description|lyrics|media|video|notes/i', $col)) $multiline_idx[] = $ci;
 }
 
 /* ------------------------------------------------------------------ Save */
@@ -131,7 +131,7 @@ if (isset($_POST['da1_save_catalog']) && check_admin_referer('da1_catalog_save')
         unset($row);
         $multiline_idx = [];
         foreach ($columns as $ci => $col) {
-            if (preg_match('/lyrics|media|video|notes/i', $col)) $multiline_idx[] = $ci;
+            if (preg_match('/description|lyrics|media|video|notes/i', $col)) $multiline_idx[] = $ci;
         }
     } else {
         $notice_error = 'Could not write to ' . esc_html($tsv_path) . '. Check file permissions.';
