@@ -146,6 +146,7 @@ $total = count($rows);
 #da1-table input[type="text"]:focus, #da1-table textarea:focus { background: #fff !important; }
 #da1-table textarea { overflow: hidden !important; resize: none !important; }
 #da1-table textarea:focus { overflow: auto !important; resize: vertical !important; }
+#da1-table thead th { position: sticky; top: 0; z-index: 2; background: #1d2327; }
 </style>
 
 <div style="max-width:1300px;">
@@ -184,7 +185,7 @@ $total = count($rows);
         <input type="hidden" name="da1_columns[<?php echo $ci; ?>]" value="<?php echo esc_attr($col); ?>">
     <?php endforeach; ?>
 
-    <div style="overflow-x:auto;border:1px solid #c3c4c7;border-radius:2px;">
+    <div style="overflow-x:auto;overflow-y:auto;max-height:70vh;border:1px solid #c3c4c7;border-radius:2px;">
     <table id="da1-table" style="width:100%;min-width:1100px;border-collapse:collapse;font-size:13px;table-layout:auto;">
         <thead>
             <tr style="background:#1d2327;">
