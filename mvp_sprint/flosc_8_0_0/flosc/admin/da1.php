@@ -100,7 +100,7 @@ if (isset($_POST['da1_save_catalog']) && check_admin_referer('da1_catalog_save')
 
     /* Columns come from hidden fields so we preserve the schema on save */
     $saved_columns = $_POST['da1_columns'] ?? $columns;
-    $rows_post     = $_POST['da1_rows'] ?? [];
+    $rows_post     = wp_unslash($_POST['da1_rows'] ?? []);
     $lines         = [];
     $lines[]       = implode("\t", array_map('da1_tsv_cell', $saved_columns));
 
@@ -200,7 +200,7 @@ $total = count($rows);
         <?php foreach ($rows as $ri => $row): ?>
             <tr class="da1-row" style="border-bottom:1px solid #e0e0e0;">
                 <?php foreach ($columns as $ci => $col):
-                    $val      = $row[$ci] ?? '';
+                    $val      = stripslashes($row[$ci] ?? '');
                     $is_multi = in_array($ci, $multiline_idx);
                     $name     = 'da1_rows[' . $ri . '][' . $ci . ']';
                     $base   = 'width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,0.05);border-radius:2px;padding:4px 6px;font-size:13px;font-family:inherit;color:#1d2327;';
