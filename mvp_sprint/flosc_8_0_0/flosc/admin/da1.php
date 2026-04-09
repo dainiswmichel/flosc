@@ -25,6 +25,80 @@ $multiline_idx = [4, 5]; /* Lyrics, Media */
 
 $notice_success = '';
 $notice_error   = '';
+$notice_info    = '';
+
+/* --------------------------------------------------------------- Migrate */
+/* Detects old 6-column schema and rewrites as new 8-column schema.
+ * Old: Date | Title | Description | Lyrics | Video | Notes
+ * New: Date | Title | Description | Language | Lyrics | Media | Score | Notes
+ */
+if (isset($_POST['da1_migrate_schema']) && check_admin_referer('da1_migrate_schema')) {
+
+    $upload_dir_m = wp_upload_dir();
+    $tsv_path_m   = $upload_dir_m['basedir'] . '/' . $tsv_filename;
+
+    if (file_exists($tsv_path_m)) {
+        $raw    = file_get_contents($tsv_path_m);
+        $parsed_m = [];
+        $row_m    = [];
+        $field_m  = '';
+        $in_q_m   = false;
+        $len_m    = strlen($raw);
+
+        for ($i = 0; $i < $len_m; $i++) {
+            $ch = $raw[$i];
+            if ($in_q_m) {
+                if ($ch === '"') {
+                    if ($i + 1 < $len_m && $raw[$i + 1] === '"') { $field_m .= '"'; $i++; }
+                    else { $in_q_m = false; }
+                } else { $field_m .= $ch; }
+            } elseif ($ch === '"')  { $in_q_m = true; }
+            elseif ($ch === "\t")  { $row_m[] = $field_m; $field_m = ''; }
+            elseif ($ch === "\n")  { $row_m[] = $field_m; $field_m = ''; if (!empty($row_m)) { $parsed_m[] = $row_m; } $row_m = []; }
+            elseif ($ch !== "\r")  { $field_m .= $ch; }
+        }
+        if ($field_m !== '' || !empty($row_m)) { $row_m[] = $field_m; $parsed_m[] = $row_m; }
+
+        $lines_m   = [];
+        $lines_m[] = implode("\t", $columns); /* new 8-col header */
+
+        foreach (array_slice($parsed_m, 1) as $old_row) {
+            /* old: [0]=Date [1]=Title [2]=Desc [3]=Lyrics [4]=Video [5]=Notes */
+            $new_row = [
+                $old_row[0] ?? '', /* Date */
+                $old_row[1] ?? '', /* Title */
+                $old_row[2] ?? '', /* Description */
+                '',                /* Language — empty, user fills in */
+                $old_row[3] ?? '', /* Lyrics (was col 3) */
+                $old_row[4] ?? '', /* Media  (was col 4 "Video") */
+                '',                /* Score  — empty, user fills in */
+                $old_row[5] ?? '', /* Notes  (was col 5) */
+            ];
+            $all_empty = (trim(implode('', $new_row)) === '');
+            if ($all_empty) continue;
+
+            $cells_m = [];
+            foreach ($new_row as $val) {
+                $val = str_replace(["\r\n", "\r"], "\n", (string) $val);
+                if (strpos($val, "\t") !== false || strpos($val, "\n") !== false || strpos($val, '"') !== false) {
+                    $val = '"' . str_replace('"', '""', $val) . '"';
+                }
+                $cells_m[] = $val;
+            }
+            $lines_m[] = implode("\t", $cells_m);
+        }
+
+        $content_m = implode("\n", $lines_m) . "\n";
+        if (file_put_contents($tsv_path_m, $content_m) !== false) {
+            $count_m        = count($lines_m) - 1;
+            $notice_success = 'Schema migrated — ' . $count_m . ' work' . ($count_m !== 1 ? 's' : '') . ' converted to 8-column format — ' . flosc_michel_timestamp();
+        } else {
+            $notice_error = 'Migration failed: could not write to ' . esc_html($tsv_path_m) . '.';
+        }
+    } else {
+        $notice_error = 'TSV file not found — nothing to migrate.';
+    }
+}
 
 /* ------------------------------------------------------------------ Save */
 if (isset($_POST['da1_save_catalog']) && check_admin_referer('da1_catalog_save')) {
@@ -62,7 +136,8 @@ if (isset($_POST['da1_save_catalog']) && check_admin_referer('da1_catalog_save')
 }
 
 /* ------------------------------------------------------------------ Read */
-$rows = [];
+$rows         = [];
+$needs_migrate = false;
 
 if (file_exists($tsv_path)) {
     $content  = file_get_contents($tsv_path);
@@ -85,6 +160,11 @@ if (file_exists($tsv_path)) {
         elseif ($ch !== "\r")  { $field .= $ch; }
     }
     if ($field !== '' || !empty($row)) { $row[] = $field; $parsed[] = $row; }
+
+    /* Detect old 6-column schema */
+    $header_row    = $parsed[0] ?? [];
+    $old_6col      = ['Date', 'Title', 'Description', 'Lyrics', 'Video', 'Notes'];
+    $needs_migrate = (count($header_row) === 6 && array_values($header_row) === $old_6col);
 
     /* Skip header row, sort by date desc */
     $rows = array_slice($parsed, 1);
@@ -117,6 +197,21 @@ $ncols = count($columns);
 <?php if ($notice_error): ?>
     <div class="notice notice-error" style="margin:0 0 16px;">
         <p><?php echo $notice_error; ?></p>
+    </div>
+<?php endif; ?>
+<?php if ($needs_migrate): ?>
+    <div class="notice notice-warning" style="margin:0 0 16px;">
+        <p>
+            <strong>Schema update required.</strong>
+            The TSV file uses the old 6-column format (Date, Title, Description, Lyrics, Video, Notes).
+            Click to migrate it to the new 8-column format (adds Language and Score columns, renames Video&nbsp;&rarr;&nbsp;Media).
+            Existing data is preserved. This runs once.
+        </p>
+        <form method="post" style="margin:8px 0 4px;">
+            <?php wp_nonce_field('da1_migrate_schema'); ?>
+            <input type="hidden" name="da1_migrate_schema" value="1">
+            <button type="submit" class="button button-primary">Migrate to 8-column schema</button>
+        </form>
     </div>
 <?php endif; ?>
 
