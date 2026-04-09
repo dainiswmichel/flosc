@@ -138,6 +138,11 @@ if (isset($_POST['da1_save_catalog']) && check_admin_referer('da1_catalog_save')
 $total = count($rows);
 ?>
 
+<style>
+#da1-table input[type="text"], #da1-table textarea { background: transparent !important; }
+#da1-table input[type="text"]:focus, #da1-table textarea:focus { background: #fff !important; }
+</style>
+
 <div style="max-width:1300px;">
 
 <?php if ($notice_success): ?>
@@ -191,9 +196,9 @@ $total = count($rows);
                     $val      = $row[$ci] ?? '';
                     $is_multi = in_array($ci, $multiline_idx);
                     $name     = 'da1_rows[' . $ri . '][' . $ci . ']';
-                    $base   = 'width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,0.20);border-radius:2px;padding:4px 6px;font-size:13px;font-family:inherit;background:transparent!important;color:#1d2327;';
-                    $focus  = "this.style.borderColor='#2271b1';this.style.setProperty('background','#fff','important');this.closest('tr').style.background='#f0f6fc';";
-                    $blur   = "this.style.borderColor='rgba(0,0,0,0.20)';this.style.setProperty('background','transparent','important')";
+                    $base   = 'width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,0.20);border-radius:2px;padding:4px 6px;font-size:13px;font-family:inherit;color:#1d2327;';
+                    $focus  = "this.style.borderColor='#2271b1';this.closest('tr').style.background='#f0f6fc';";
+                    $blur   = "this.style.borderColor='rgba(0,0,0,0.20)';this.closest('tr').style.background='';";
                 ?>
                 <td style="padding:3px 5px;vertical-align:top;">
                     <?php if ($is_multi): ?>
@@ -250,9 +255,9 @@ $total = count($rows);
 (function () {
     var NCOLS     = <?php echo (int) $ncols; ?>;
     var MULTILINE = <?php echo json_encode(array_values($multiline_idx)); ?>;
-    var base      = 'width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,0.20);border-radius:2px;padding:4px 6px;font-size:13px;font-family:inherit;background:transparent!important;color:#1d2327;';
-    var focusIn   = "this.style.borderColor='#2271b1';this.style.setProperty('background','#fff','important');this.closest('tr').style.background='#f0f6fc';";
-    var focusOut  = "this.style.borderColor='rgba(0,0,0,0.20)';this.style.setProperty('background','transparent','important')";
+    var base      = 'width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,0.20);border-radius:2px;padding:4px 6px;font-size:13px;font-family:inherit;color:#1d2327;';
+    var focusIn   = "this.style.borderColor='#2271b1';this.closest('tr').style.background='#f0f6fc';";
+    var focusOut  = "this.style.borderColor='rgba(0,0,0,0.20)';this.closest('tr').style.background='';";
 
     function nextIndex() {
         return document.querySelectorAll('#da1-tbody .da1-row').length;
