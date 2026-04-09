@@ -230,6 +230,11 @@ $total = count($rows);
 
 </div>
 
+<style>
+#da1-tbody .da1-delete { opacity: 0; transition: opacity 0.15s; }
+#da1-tbody .da1-row:hover .da1-delete { opacity: 1; }
+</style>
+
 <script>
 (function () {
     var NCOLS     = <?php echo (int) $ncols; ?>;
