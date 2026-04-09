@@ -7,8 +7,9 @@
  * Reads and writes /wp-content/uploads/dainis-w-michel-list-of-works.tsv
  * Columns are read from the TSV header row — no hardcoded schema.
  *
- * - Inline editing directly in table cells (quick edit)
- * - Edit button per row opens a spacious modal (also the only place to delete)
+ * - Inline editing in table cells
+ * - Textarea fields scroll horizontally (URLs shown in full)
+ * - Edit button opens modal for spacious editing + delete
  * - Sorted by Date descending (michel innovation timestamps)
  */
 
@@ -24,11 +25,7 @@ $notice_error   = '';
 
 /* ----------------------------------------------------------------- Parser */
 function da1_parse_tsv($content) {
-    $parsed = [];
-    $row    = [];
-    $field  = '';
-    $in_q   = false;
-    $len    = strlen($content);
+    $parsed = []; $row = []; $field = ''; $in_q = false; $len = strlen($content);
     for ($i = 0; $i < $len; $i++) {
         $ch = $content[$i];
         if ($in_q) {
@@ -54,16 +51,13 @@ function da1_tsv_cell($val) {
 }
 
 /* ------------------------------------------------------------------ Read */
-$columns = [];
-$rows    = [];
+$columns = []; $rows = [];
 
 if (file_exists($tsv_path)) {
     $parsed  = da1_parse_tsv(file_get_contents($tsv_path));
     $columns = array_map('trim', $parsed[0] ?? []);
     $rows    = array_slice($parsed, 1);
-    usort($rows, function ($a, $b) {
-        return (int) ($b[0] ?? 0) - (int) ($a[0] ?? 0);
-    });
+    usort($rows, function ($a, $b) { return (int)($b[0] ?? 0) - (int)($a[0] ?? 0); });
 }
 
 if (empty($columns)) $columns = ['Date', 'Title', 'Description', 'Lyrics', 'Video', 'Notes'];
@@ -88,7 +82,7 @@ if (isset($_POST['da1_save_catalog']) && check_admin_referer('da1_catalog_save')
     foreach ($rows_post as $row) {
         $cells = []; $all_empty = true;
         foreach ($saved_columns as $ci => $col) {
-            $val = str_replace(["\r\n", "\r"], "\n", (string) ($row[$ci] ?? ''));
+            $val = str_replace(["\r\n", "\r"], "\n", (string)($row[$ci] ?? ''));
             if (trim($val) !== '') $all_empty = false;
             $cells[] = da1_tsv_cell($val);
         }
@@ -120,73 +114,72 @@ $total = count($rows);
 ?>
 
 <style>
-/* ---- table inputs ---- */
 .da1-inp {
-    width:100%; box-sizing:border-box;
-    border:1px solid transparent;
-    border-radius:2px; padding:4px 6px; font-size:13px;
-    font-family:inherit; background:transparent !important; color:#1d2327;
+    width: 100%; box-sizing: border-box;
+    border: 1px solid rgba(0,0,0,0.2);
+    border-radius: 2px; padding: 4px 6px; font-size: 13px;
+    font-family: inherit; background: transparent; color: #1d2327;
 }
 .da1-inp:focus {
-    border-color:#2271b1; background:#fff; outline:none;
+    border-color: #2271b1; background: #fff; outline: none;
 }
-textarea.da1-inp { resize:vertical; line-height:1.45; overflow:hidden; }
+textarea.da1-inp {
+    resize: vertical; line-height: 1.45;
+    white-space: nowrap; overflow-x: auto; overflow-y: hidden;
+}
+textarea.da1-inp:focus { overflow-y: auto; }
 
-/* ---- edit modal ---- */
+/* Edit modal */
 #da1-modal-overlay {
-    display:none; position:fixed; inset:0;
-    background:rgba(0,0,0,.55); z-index:100000;
-    align-items:center; justify-content:center;
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.55); z-index: 100000;
+    align-items: center; justify-content: center;
 }
-#da1-modal-overlay.open { display:flex; }
+#da1-modal-overlay.open { display: flex; }
 #da1-modal {
-    background:#fff; border-radius:4px; width:620px; max-width:96vw;
-    max-height:90vh; display:flex; flex-direction:column;
-    box-shadow:0 8px 40px rgba(0,0,0,.35);
+    background: #fff; border-radius: 4px; width: 620px; max-width: 96vw;
+    max-height: 90vh; display: flex; flex-direction: column;
+    box-shadow: 0 8px 40px rgba(0,0,0,.35);
 }
 #da1-modal-head {
-    padding:16px 20px 14px; border-bottom:1px solid #ddd;
-    font-size:15px; font-weight:600; color:#1d2327;
-    display:flex; justify-content:space-between; align-items:center;
-    flex-shrink:0;
+    padding: 16px 20px 14px; border-bottom: 1px solid #ddd;
+    font-size: 15px; font-weight: 600; color: #1d2327;
+    display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
 }
 #da1-modal-close {
-    background:none; border:none; cursor:pointer;
-    font-size:22px; color:#787c82; line-height:1; padding:0 2px;
+    background: none; border: none; cursor: pointer;
+    font-size: 22px; color: #787c82; line-height: 1; padding: 0 2px;
 }
-#da1-modal-close:hover { color:#1d2327; }
+#da1-modal-close:hover { color: #1d2327; }
 #da1-modal-body {
-    padding:18px 20px; overflow-y:auto; flex:1;
-    display:flex; flex-direction:column; gap:14px;
+    padding: 18px 20px; overflow-y: auto; flex: 1;
+    display: flex; flex-direction: column; gap: 14px;
 }
 .da1-mfield label {
-    display:block; font-size:11px; font-weight:600;
-    text-transform:uppercase; letter-spacing:.05em;
-    color:#50575e; margin-bottom:5px;
+    display: block; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .05em; color: #50575e; margin-bottom: 5px;
 }
-.da1-mfield input[type=text],
-.da1-mfield textarea {
-    width:100%; box-sizing:border-box; border:1px solid #8c8f94;
-    border-radius:3px; padding:8px 10px; font-size:13px;
-    font-family:inherit; color:#1d2327; line-height:1.5;
+.da1-mfield input[type=text], .da1-mfield textarea {
+    width: 100%; box-sizing: border-box; border: 1px solid #8c8f94;
+    border-radius: 3px; padding: 8px 10px; font-size: 13px;
+    font-family: inherit; color: #1d2327; line-height: 1.5;
 }
-.da1-mfield input[type=text]:focus,
-.da1-mfield textarea:focus {
-    border-color:#2271b1; outline:2px solid rgba(34,113,177,.18);
+.da1-mfield input[type=text]:focus, .da1-mfield textarea:focus {
+    border-color: #2271b1; outline: 2px solid rgba(34,113,177,.18);
 }
-.da1-mfield textarea { resize:vertical; }
+.da1-mfield textarea { resize: vertical; }
 #da1-modal-foot {
-    padding:12px 20px; border-top:1px solid #ddd; flex-shrink:0;
-    display:flex; justify-content:space-between; align-items:center;
+    padding: 12px 20px; border-top: 1px solid #ddd; flex-shrink: 0;
+    display: flex; justify-content: space-between; align-items: center;
 }
 #da1-modal-delete {
-    background:none; border:1px solid #b32d2e; color:#b32d2e;
-    border-radius:3px; padding:5px 14px; font-size:12px; cursor:pointer;
+    background: none; border: 1px solid #b32d2e; color: #b32d2e;
+    border-radius: 3px; padding: 5px 14px; font-size: 12px; cursor: pointer;
 }
-#da1-modal-delete:hover { background:#b32d2e; color:#fff; }
+#da1-modal-delete:hover { background: #b32d2e; color: #fff; }
 </style>
 
-<div style="max-width:1300px;">
+<div style="max-width:1400px;">
 
 <?php if ($notice_success): ?>
     <div class="notice notice-success is-dismissible" style="margin:0 0 16px;">
@@ -199,7 +192,6 @@ textarea.da1-inp { resize:vertical; line-height:1.45; overflow:hidden; }
     </div>
 <?php endif; ?>
 
-<!-- Header bar -->
 <div style="background:#f0f0f1;border:1px solid #c3c4c7;padding:12px 18px;border-radius:2px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
     <div>
         <h2 style="margin:0;color:#1d2327;font-size:16px;">DA1 Catalog</h2>
@@ -239,19 +231,21 @@ textarea.da1-inp { resize:vertical; line-height:1.45; overflow:hidden; }
                     $val      = $row[$ci] ?? '';
                     $is_multi = in_array($ci, $multiline_idx);
                     $name     = 'da1_rows[' . $ri . '][' . $ci . ']';
+                    $focus    = "this.style.borderColor='#2271b1';this.style.background='#fff';this.closest('tr').style.background='#f0f6fc';";
+                    $blur     = "this.style.borderColor='rgba(0,0,0,0.2)';this.style.background='transparent';this.closest('tr').style.background='';";
                 ?>
                 <td style="padding:3px 5px;vertical-align:top;">
                     <?php if ($is_multi): ?>
                         <textarea name="<?php echo $name; ?>" rows="3"
                             class="da1-inp"
-                            onfocus="this.closest('tr').style.background='#f0f6fc';"
-                            onblur="this.closest('tr').style.background='';"
+                            onfocus="<?php echo $focus; ?>"
+                            onblur="<?php echo $blur; ?>"
                         ><?php echo esc_textarea($val); ?></textarea>
                     <?php else: ?>
                         <input type="text" name="<?php echo $name; ?>" value="<?php echo esc_attr($val); ?>"
                             class="da1-inp"
-                            onfocus="this.closest('tr').style.background='#f0f6fc';"
-                            onblur="this.closest('tr').style.background='';"
+                            onfocus="<?php echo $focus; ?>"
+                            onblur="<?php echo $blur; ?>"
                         >
                     <?php endif; ?>
                 </td>
@@ -274,7 +268,6 @@ textarea.da1-inp { resize:vertical; line-height:1.45; overflow:hidden; }
 
 </div>
 
-<!-- Edit / Delete modal -->
 <div id="da1-modal-overlay">
     <div id="da1-modal" role="dialog" aria-modal="true" aria-labelledby="da1-modal-title">
         <div id="da1-modal-head">
@@ -302,122 +295,94 @@ textarea.da1-inp { resize:vertical; line-height:1.45; overflow:hidden; }
     var modalTitle= document.getElementById('da1-modal-title');
     var activeRow = null;
 
-    /* ---- read / write row inputs ---- */
-    function getRowInputs(tr) {
-        /* Returns array of the actual input/textarea elements in the row */
-        return Array.from(tr.querySelectorAll('input.da1-inp, textarea.da1-inp'));
+    function getInputs(tr) {
+        return Array.from(tr.querySelectorAll('.da1-inp'));
     }
 
-    /* ---- open modal — populates from the row's live inputs ---- */
     function openModal(tr) {
-        activeRow    = tr;
-        var inputs   = getRowInputs(tr);
-        var titleVal = inputs[1] ? inputs[1].value.trim() : '';
-        modalTitle.textContent = titleVal || 'Edit Work';
-        modalBody.innerHTML    = '';
-
+        activeRow = tr;
+        var inputs = getInputs(tr);
+        modalTitle.textContent = (inputs[1] && inputs[1].value.trim()) ? inputs[1].value.trim() : 'Edit Work';
+        modalBody.innerHTML = '';
         COLUMNS.forEach(function (col, ci) {
-            var val  = inputs[ci] ? inputs[ci].value : '';
-            var wrap = document.createElement('div');
+            var wrap  = document.createElement('div');
             wrap.className = 'da1-mfield';
-
-            var lbl  = document.createElement('label');
-            lbl.textContent      = col;
+            var lbl   = document.createElement('label');
+            lbl.textContent = col;
             lbl.setAttribute('for', 'da1m-' + ci);
             wrap.appendChild(lbl);
-
             var field;
             if (MULTILINE.indexOf(ci) !== -1) {
-                field      = document.createElement('textarea');
+                field = document.createElement('textarea');
                 field.rows = 6;
             } else {
-                field      = document.createElement('input');
+                field = document.createElement('input');
                 field.type = 'text';
             }
             field.id    = 'da1m-' + ci;
-            field.value = val;
+            field.value = inputs[ci] ? inputs[ci].value : '';
             field.setAttribute('data-ci', ci);
             wrap.appendChild(field);
             modalBody.appendChild(wrap);
         });
-
         overlay.classList.add('open');
-        var first = modalBody.querySelector('input, textarea');
+        var first = modalBody.querySelector('input,textarea');
         if (first) { first.focus(); first.select(); }
     }
 
-    function closeModal() {
-        overlay.classList.remove('open');
-        activeRow = null;
-    }
+    function closeModal() { overlay.classList.remove('open'); activeRow = null; }
 
-    /* ---- save: write modal values back into the row's inputs ---- */
     function saveModal() {
         if (!activeRow) return;
-        var inputs = getRowInputs(activeRow);
-        modalBody.querySelectorAll('[data-ci]').forEach(function (field) {
-            var ci = parseInt(field.getAttribute('data-ci'));
-            if (inputs[ci]) inputs[ci].value = field.value;
+        var inputs = getInputs(activeRow);
+        modalBody.querySelectorAll('[data-ci]').forEach(function (f) {
+            var ci = parseInt(f.getAttribute('data-ci'));
+            if (inputs[ci]) inputs[ci].value = f.value;
         });
         closeModal();
     }
 
-    /* ---- add new row ---- */
     function makeRow() {
-        var tbody  = document.getElementById('da1-tbody');
-        var ri     = tbody.querySelectorAll('.da1-row').length;
-        var isEven = ri % 2 === 0;
-        var tr     = document.createElement('tr');
+        var tbody = document.getElementById('da1-tbody');
+        var ri    = tbody.querySelectorAll('.da1-row').length;
+        var tr    = document.createElement('tr');
         tr.className     = 'da1-row';
-        tr.style.cssText = 'border-bottom:1px solid #e0e0e0;background:' + (isEven ? '#fff' : '#f9f9f9') + ';';
-
-        var base    = 'width:100%;box-sizing:border-box;border:1px solid transparent;border-radius:2px;padding:4px 6px;font-size:13px;font-family:inherit;background:transparent;color:#1d2327;';
-        var onFocus = "this.closest('tr').style.background='#f0f6fc';";
-        var onBlur  = "this.closest('tr').style.background='';";
+        tr.style.cssText = 'border-bottom:1px solid #e0e0e0;background:' + (ri % 2 === 0 ? '#fff' : '#f9f9f9') + ';';
+        var focusStyle = "this.style.borderColor='#2271b1';this.style.background='#fff';this.closest('tr').style.background='#f0f6fc';";
+        var blurStyle  = "this.style.borderColor='rgba(0,0,0,0.2)';this.style.background='transparent';this.closest('tr').style.background='';";
 
         for (var ci = 0; ci < NCOLS; ci++) {
-            var td   = document.createElement('td');
+            var td = document.createElement('td');
             td.style.cssText = 'padding:3px 5px;vertical-align:top;';
             var name = 'da1_rows[' + ri + '][' + ci + ']';
             var field;
             if (MULTILINE.indexOf(ci) !== -1) {
-                field       = document.createElement('textarea');
-                field.rows  = 3;
-                field.style.cssText = base + 'resize:vertical;line-height:1.45;';
+                field = document.createElement('textarea');
+                field.rows = 3;
             } else {
-                field       = document.createElement('input');
-                field.type  = 'text';
-                field.style.cssText = base;
+                field = document.createElement('input');
+                field.type = 'text';
             }
-            field.name  = name;
+            field.name = name;
             field.className = 'da1-inp';
-            field.setAttribute('onfocus', onFocus);
-            field.setAttribute('onblur',  onBlur);
+            field.setAttribute('onfocus', focusStyle);
+            field.setAttribute('onblur',  blurStyle);
             td.appendChild(field);
             tr.appendChild(td);
         }
-
         var tdBtn = document.createElement('td');
         tdBtn.style.cssText = 'padding:3px 5px;vertical-align:middle;text-align:right;';
-        var btn   = document.createElement('button');
-        btn.type  = 'button';
-        btn.className = 'da1-open-modal button button-small';
+        var btn = document.createElement('button');
+        btn.type = 'button'; btn.className = 'da1-open-modal button button-small';
         btn.style.cssText = 'font-size:11px;padding:2px 8px;';
         btn.textContent = 'Edit';
-        tdBtn.appendChild(btn);
-        tr.appendChild(tdBtn);
-        tbody.appendChild(tr);
+        tdBtn.appendChild(btn); tr.appendChild(tdBtn);
+        document.getElementById('da1-tbody').appendChild(tr);
         return tr;
     }
 
-    function addRow() {
-        var tr = makeRow();
-        openModal(tr);
-    }
-
-    /* ---- events ---- */
-    document.getElementById('da1-add-row').addEventListener('click', addRow);
-    document.getElementById('da1-add-row-bottom').addEventListener('click', addRow);
+    document.getElementById('da1-add-row').addEventListener('click', function () { openModal(makeRow()); });
+    document.getElementById('da1-add-row-bottom').addEventListener('click', function () { openModal(makeRow()); });
 
     document.getElementById('da1-tbody').addEventListener('click', function (e) {
         var btn = e.target.closest('.da1-open-modal');
@@ -427,28 +392,18 @@ textarea.da1-inp { resize:vertical; line-height:1.45; overflow:hidden; }
     document.getElementById('da1-modal-save').addEventListener('click', saveModal);
     document.getElementById('da1-modal-cancel').addEventListener('click', closeModal);
     document.getElementById('da1-modal-close').addEventListener('click', closeModal);
-
-    overlay.addEventListener('click', function (e) {
-        if (e.target === overlay) closeModal();
-    });
-
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal();
-    });
-
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeModal(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal(); });
     document.getElementById('da1-modal-body').addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
-            e.preventDefault();
-            saveModal();
-        }
+        if (e.key === 'Enter' && e.target.tagName === 'INPUT') { e.preventDefault(); saveModal(); }
     });
 
     document.getElementById('da1-modal-delete').addEventListener('click', function () {
         if (!activeRow) return;
-        var inputs = getRowInputs(activeRow);
+        var inputs = getInputs(activeRow);
         var title  = inputs[1] ? inputs[1].value.trim() : '';
         var label  = title ? '\u201c' + title + '\u201d' : 'this work';
-        if (!confirm('Delete ' + label + '?\n\nThis takes effect when you Save Catalog.')) return;
+        if (!confirm('Delete ' + label + '?\n\nTakes effect when you Save Catalog.')) return;
         activeRow.remove();
         closeModal();
     });
