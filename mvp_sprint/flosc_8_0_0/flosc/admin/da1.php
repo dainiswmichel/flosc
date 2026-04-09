@@ -146,6 +146,7 @@ $total = count($rows);
 #da1-table input[type="text"]:focus, #da1-table textarea:focus { background: #fff !important; }
 #da1-table textarea { overflow: hidden !important; resize: none !important; }
 #da1-table textarea:focus { overflow: auto !important; resize: vertical !important; min-height: 160px !important; }
+#da1-table textarea.da1-media:focus { white-space: nowrap; overflow-x: auto !important; }
 #da1-table thead th { position: sticky; top: 0; z-index: 2; background: #1d2327; }
 </style>
 
@@ -209,6 +210,7 @@ $total = count($rows);
                 <td style="padding:3px 5px;vertical-align:top;">
                     <?php if ($is_multi): ?>
                         <textarea name="<?php echo $name; ?>" rows="3"
+                            <?php if (preg_match('/media|video/i', $col)) echo 'class="da1-media"'; ?>
                             style="<?php echo $base; ?>line-height:1.45;"
                             onfocus="<?php echo $focus; ?>"
                             onblur="<?php echo $blur; ?>"
@@ -285,6 +287,7 @@ $total = count($rows);
                 ta.style.cssText = base + 'line-height:1.45;';
                 ta.setAttribute('onfocus', focusIn);
                 ta.setAttribute('onblur',  focusOut);
+                if (/media|video/i.test(COLUMNS[ci])) ta.className = 'da1-media';
                 td.appendChild(ta);
             } else {
                 var inp = document.createElement('input');
