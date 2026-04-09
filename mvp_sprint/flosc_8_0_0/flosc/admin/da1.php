@@ -114,19 +114,6 @@ $total = count($rows);
 ?>
 
 <style>
-.da1-inp {
-    width: 100%; box-sizing: border-box;
-    border: 1px solid rgba(0,0,0,0.2);
-    border-radius: 2px; padding: 4px 6px; font-size: 13px;
-    font-family: inherit; background: transparent; color: #1d2327;
-}
-.da1-inp:focus {
-    border-color: #2271b1; background: #fff; outline: none;
-}
-textarea.da1-inp {
-    resize: vertical; line-height: 1.45;
-    white-space: nowrap; overflow-x: auto; overflow-y: hidden;
-}
 textarea.da1-inp:focus { overflow-y: auto; }
 
 /* Edit modal */
@@ -231,19 +218,20 @@ textarea.da1-inp:focus { overflow-y: auto; }
                     $val      = $row[$ci] ?? '';
                     $is_multi = in_array($ci, $multiline_idx);
                     $name     = 'da1_rows[' . $ri . '][' . $ci . ']';
-                    $focus    = "this.style.borderColor='#2271b1';this.style.background='#fff';this.closest('tr').style.background='#f0f6fc';";
-                    $blur     = "this.style.borderColor='rgba(0,0,0,0.2)';this.style.background='transparent';this.closest('tr').style.background='';";
+                    $base  = 'width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,0.15);border-radius:2px;padding:4px 6px;font-size:13px;font-family:inherit;background:transparent;color:#1d2327;';
+                    $focus = "this.style.borderColor='#2271b1';this.style.background='#fff';this.closest('tr').style.background='#f0f6fc';";
+                    $blur  = "this.style.borderColor='rgba(0,0,0,0.15)';this.style.background='transparent';this.closest('tr').style.background='';";
                 ?>
                 <td style="padding:3px 5px;vertical-align:top;">
                     <?php if ($is_multi): ?>
                         <textarea name="<?php echo $name; ?>" rows="3"
-                            class="da1-inp"
+                            style="<?php echo $base; ?>resize:vertical;line-height:1.45;white-space:nowrap;overflow-x:auto;overflow-y:hidden;"
                             onfocus="<?php echo $focus; ?>"
                             onblur="<?php echo $blur; ?>"
                         ><?php echo esc_textarea($val); ?></textarea>
                     <?php else: ?>
                         <input type="text" name="<?php echo $name; ?>" value="<?php echo esc_attr($val); ?>"
-                            class="da1-inp"
+                            style="<?php echo $base; ?>"
                             onfocus="<?php echo $focus; ?>"
                             onblur="<?php echo $blur; ?>"
                         >
@@ -348,8 +336,9 @@ textarea.da1-inp:focus { overflow-y: auto; }
         var tr    = document.createElement('tr');
         tr.className     = 'da1-row';
         tr.style.cssText = 'border-bottom:1px solid #e0e0e0;background:' + (ri % 2 === 0 ? '#fff' : '#f9f9f9') + ';';
+        var baseStyle  = 'width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,0.15);border-radius:2px;padding:4px 6px;font-size:13px;font-family:inherit;background:transparent;color:#1d2327;';
         var focusStyle = "this.style.borderColor='#2271b1';this.style.background='#fff';this.closest('tr').style.background='#f0f6fc';";
-        var blurStyle  = "this.style.borderColor='rgba(0,0,0,0.2)';this.style.background='transparent';this.closest('tr').style.background='';";
+        var blurStyle  = "this.style.borderColor='rgba(0,0,0,0.15)';this.style.background='transparent';this.closest('tr').style.background='';";
 
         for (var ci = 0; ci < NCOLS; ci++) {
             var td = document.createElement('td');
@@ -359,9 +348,11 @@ textarea.da1-inp:focus { overflow-y: auto; }
             if (MULTILINE.indexOf(ci) !== -1) {
                 field = document.createElement('textarea');
                 field.rows = 3;
+                field.style.cssText = baseStyle + 'resize:vertical;line-height:1.45;white-space:nowrap;overflow-x:auto;overflow-y:hidden;';
             } else {
                 field = document.createElement('input');
                 field.type = 'text';
+                field.style.cssText = baseStyle;
             }
             field.name = name;
             field.className = 'da1-inp';
