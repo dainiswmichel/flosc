@@ -531,7 +531,6 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
             'sso'           => 'SSO',
             'chat-logs'     => 'Chat Logs',
             'documentation' => '📖 Docs',
-            'da1'           => 'DA1',
         ];
         foreach ($tabs as $tab_id => $tab_label):
         ?>
@@ -1119,12 +1118,9 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
         <?php elseif ($active_tab === 'documentation'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/documentation.php'; ?>
 
-        <?php elseif ($active_tab === 'da1'): ?>
-            <?php include FLOSC_PLUGIN_DIR . 'admin/da1.php'; ?>
-
         <?php endif; ?>
 
-        <?php if ($active_tab !== 'documentation' && $active_tab !== 'autoprompts' && $active_tab !== 'da1'): ?>
+        <?php if ($active_tab !== 'documentation' && $active_tab !== 'autoprompts'): ?>
         <p class="submit" style="margin-top: 20px;">
             <button type="submit" name="flosc_save" class="button button-primary button-large">
                 Save Settings for <?php echo esc_html($flow_settings['identity']['name'] ?? $selected_ivr); ?>

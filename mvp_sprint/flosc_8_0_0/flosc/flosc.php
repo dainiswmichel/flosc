@@ -3667,6 +3667,16 @@ The {product_name} Team";
             'flosc-ui-navigation',
             [$this, 'render_ui_navigation_page']
         );
+
+        // DA1 Catalog — standalone page (not flow-specific)
+        add_submenu_page(
+            'flosc-settings',
+            'DA1 Catalog',
+            '<b>DA1</b>',
+            'manage_options',
+            'flosc-da1',
+            [$this, 'render_da1_page']
+        );
     }
     
     /**
@@ -3990,6 +4000,12 @@ The {product_name} Team";
     public function render_ui_navigation_page() {
         wp_redirect(admin_url('admin.php?page=flosc-settings&tab=ui'));
         exit;
+    }
+
+    public function render_da1_page() {
+        echo '<div class="wrap">';
+        include FLOSC_PLUGIN_DIR . 'admin/da1.php';
+        echo '</div>';
     }
     
     /**
