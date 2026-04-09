@@ -12,6 +12,19 @@
  * Newest entries at the top. Additive only — never delete previous entries.
  * ============================================================================
  *
+ * 2026-04-09 — BuddyBoss + page-builder compatibility (Divi, WPBakery, etc.)
+ *   - BuddyBoss does not strip page-builder shortcodes from search results,
+ *     activity stream, or excerpts. Raw [et_pb_*], [vc_*], [fl_builder_*],
+ *     [fusion_builder_*], [siteorigin_widget_*] shortcodes show as visible text.
+ *   - Fix 1: template override yourtheme/buddypress/search/loop/post.php —
+ *     reads raw post_content, strip_shortcodes() + regex fallback for
+ *     deactivated builders, then wp_strip_all_tags before bp_create_excerpt.
+ *   - Fix 2: bp_get_activity_content_body filter at priority 8 (early pass)
+ *     and priority 10000 (late pass, after BuddyBoss priority-9999 rebuilds
+ *     blog-post activity content from post_content/get_the_excerpt directly).
+ *   - Fix 3: get_the_excerpt filter covers archive, blog, and other contexts.
+ *   - Shared helper dainis_strip_builder_shortcodes_from() used by all three.
+ *
  * 2026-02m-19d — Admin bar: hide for subscribers; site nav silver sheen
  *   - Subscribers (and other non-admin roles) no longer see the black
  *     WordPress admin bar at all (show_admin_bar filter).
@@ -102,10 +115,53 @@ function buddyboss_theme_child_scripts_styles()
 
   // Javascript
   wp_enqueue_script( 'buddyboss-child-js', get_stylesheet_directory_uri().'/assets/js/custom.js' );
+  wp_enqueue_script( 'safari-tiktok-fix', get_stylesheet_directory_uri().'/assets/js/safari-tiktok-fix.js', array(), '20260409a', true );
+  wp_localize_script( 'safari-tiktok-fix', 'safariTikTokFix', array( 'ajaxurl' => admin_url( 'admin-ajax.php' ) ) );
+  wp_enqueue_script( 'works-catalog', get_stylesheet_directory_uri().'/assets/js/works-catalog.js', array(), '20260409f', true );
+  wp_localize_script( 'works-catalog', 'worksCatalogAjax', array( 'ajaxurl' => admin_url( 'admin-ajax.php' ) ) );
 }
 add_action( 'wp_enqueue_scripts', 'buddyboss_theme_child_scripts_styles', 9999 );
 
+/* ---- oEmbed AJAX handler for works-catalog TikTok embeds ---- */
+add_action( 'wp_ajax_works_oembed', 'works_oembed_handler' );
+add_action( 'wp_ajax_nopriv_works_oembed', 'works_oembed_handler' );
+function works_oembed_handler() {
+    $url = isset( $_GET['url'] ) ? esc_url_raw( $_GET['url'] ) : '';
+    if ( ! $url ) {
+        wp_send_json_error( 'No URL provided' );
+    }
+    /* Resolve vm.tiktok.com short URLs to full tiktok.com URLs */
+    if ( preg_match( '/vm\.tiktok\.com/i', $url ) ) {
+        $response = wp_remote_get( $url, array( 'redirection' => 0, 'timeout' => 10 ) );
+        if ( ! is_wp_error( $response ) ) {
+            $resolved = wp_remote_retrieve_header( $response, 'location' );
+            if ( $resolved ) {
+                $url = strtok( $resolved, '?' );
+            }
+        }
+    }
+    $html = wp_oembed_get( $url, array( 'width' => 605 ) );
+    if ( $html ) {
+        wp_send_json_success( $html );
+    } else {
+        wp_send_json_error( 'Could not embed' );
+    }
+}
 
+
+/* ---- TikTok oEmbed thumbnail proxy (Safari CORS workaround) ---- */
+add_action( 'wp_ajax_works_tiktok_thumb', 'works_tiktok_thumb_handler' );
+add_action( 'wp_ajax_nopriv_works_tiktok_thumb', 'works_tiktok_thumb_handler' );
+function works_tiktok_thumb_handler() {
+    $url = isset( $_GET['url'] ) ? esc_url_raw( $_GET['url'] ) : '';
+    if ( ! $url ) { wp_send_json_error( 'No URL' ); }
+    $response = wp_remote_get( 'https://www.tiktok.com/oembed?url=' . rawurlencode( $url ), array( 'timeout' => 10 ) );
+    if ( is_wp_error( $response ) ) { wp_send_json_error( 'Fetch failed' ); }
+    $body = wp_remote_retrieve_body( $response );
+    $data = json_decode( $body, true );
+    if ( empty( $data['thumbnail_url'] ) ) { wp_send_json_error( 'No thumbnail' ); }
+    wp_send_json_success( array( 'thumbnail_url' => $data['thumbnail_url'], 'title' => isset($data['title']) ? $data['title'] : '' ) );
+}
 /****************************** CUSTOM FUNCTIONS ******************************/
 
 /**
@@ -257,6 +313,137 @@ function dainis_skip_excerpt_on_bp_search( $skip ) {
         return true;
     }
     return $skip;
+}
+
+/**
+ * ============================================================================
+ * BUDDYBOSS + PAGE BUILDER COMPATIBILITY LAYER
+ * 2026-04-09
+ *
+ * BuddyBoss Platform does not correctly strip page-builder shortcodes from
+ * search results, activity stream snippets, and excerpts. Raw shortcodes like
+ * [et_pb_section...] (Divi), [vc_row...] (WPBakery), [fl_builder...] (Beaver),
+ * [fusion_builder...] (Avada), [siteorigin_widget...] (SiteOrigin), etc.
+ * appear as visible text in search results and activity cards.
+ *
+ * ROOT CAUSE: BuddyBoss removes page-builder the_content filters before
+ * running its own WP_Query, so shortcodes are never rendered — they fall
+ * through as literal text. BuddyBoss's own strip_shortcodes() call fires
+ * too late or in the wrong order to clean them up.
+ *
+ * STRATEGY:
+ *   Primary:  strip_shortcodes() — removes ALL shortcodes registered via
+ *             add_shortcode(). Covers any active builder automatically.
+ *   Fallback: regex strip of known builder prefixes — covers content from
+ *             deactivated builders whose old shortcodes remain in the DB.
+ *             Prefixes covered: et_pb (Divi), vc (WPBakery), fl (Beaver),
+ *             fusion (Avada), siteorigin (SiteOrigin).
+ *
+ * THREE-PART FIX:
+ *
+ * 1. SEARCH RESULTS (Posts/Pages built with any shortcode builder):
+ *    Template override at yourtheme/buddypress/search/loop/post.php
+ *    (deployed to child theme). Reads raw post_content, applies primary +
+ *    fallback strip, then wp_strip_all_tags before bp_create_excerpt.
+ *    Bypasses BuddyBoss's broken content pipeline entirely.
+ *
+ * 2. ACTIVITY STREAM (blog post activities referencing builder-built posts):
+ *    Filter on bp_get_activity_content_body applies primary + fallback strip
+ *    before BuddyBoss renders the activity content snippet.
+ *
+ * 3. FALLBACK (get_the_excerpt in archive, blog, and other contexts):
+ *    Filter on get_the_excerpt applies primary + fallback strip as a safety
+ *    net for any context where builder shortcodes surface in excerpts.
+ * ============================================================================
+ */
+
+/**
+ * Strip page-builder shortcodes from a string.
+ * Primary: strip_shortcodes() (all registered shortcodes).
+ * Fallback regex: known builder prefixes for deactivated plugins.
+ *
+ * @param string $text Raw content that may contain builder shortcodes.
+ * @return string Clean text with shortcodes removed.
+ */
+function dainis_strip_builder_shortcodes_from( $text ) {
+    // Primary: WordPress strip_shortcodes() handles all active builders.
+    $text = strip_shortcodes( $text );
+
+    // Fallback regex for deactivated-builder content left in the database,
+    // and for truncated fragments: BuddyBoss stores a trimmed copy of post
+    // content in the activity table and inserts [&hellip;] mid-shortcode,
+    // leaving fragments like [et_pb_column type="4_4" that have no closing ].
+    // \]? makes the closing bracket optional so truncated fragments are caught.
+    // /u flag handles Unicode attribute values (smart quotes stored in the DB).
+    // Covers: Divi (et_pb), WPBakery (vc), Beaver Builder (fl_builder),
+    //         Avada Fusion (fusion_builder), SiteOrigin (siteorigin_widget).
+    $bp = 'et_pb|vc|fl_builder|fusion_builder|siteorigin_widget';
+    // Opening and self-closing: [et_pb_section ...] or [et_pb_section .../]
+    $text = preg_replace( '/\[(?:' . $bp . ')[^\]]*\/?\]?/u', '', $text );
+    // Closing tags: [/et_pb_section]
+    $text = preg_replace( '/\[\/(?:' . $bp . ')[^\]]*\]?/u', '', $text );
+
+    return trim( $text );
+}
+
+/**
+ * BuddyBoss + Page Builders: strip builder shortcodes from activity stream.
+ * Covers activity cards in the regular loop and the full search results template.
+ */
+add_filter( 'bp_get_activity_content_body', 'dainis_strip_builder_from_activity', 8 );
+function dainis_strip_builder_from_activity( $content ) {
+    if ( strpos( $content, '[' ) === false ) {
+        return $content; // fast path: no shortcodes at all
+    }
+    return dainis_strip_builder_shortcodes_from( $content );
+}
+
+/**
+ * BuddyBoss + Page Builders: second-pass strip for blog-post activity cards
+ * on the Activity page.
+ *
+ * bp_blogs_activity_content_with_read_more() (buddyboss-platform, priority 9999)
+ * rebuilds the entire activity content body by reading get_the_excerpt() /
+ * post_content directly, then assembles the bb-content-wrp HTML wrapper.
+ * It bypasses whatever our priority-8 filter set — so shortcodes reappear in
+ * the final string. This filter at priority 10000 strips them from the
+ * assembled HTML before BuddyBoss sends it to the template.
+ */
+add_filter( 'bp_get_activity_content_body', 'dainis_strip_builder_from_activity_late', 10000 );
+function dainis_strip_builder_from_activity_late( $content ) {
+    if ( strpos( $content, '[' ) === false ) {
+        return $content;
+    }
+    $bp      = 'et_pb|vc|fl_builder|fusion_builder|siteorigin_widget';
+    $content = preg_replace( '/\[(?:' . $bp . ')[^\]]*\/?\]?/u', '', $content );
+    $content = preg_replace( '/\[\/(?:' . $bp . ')[^\]]*\]?/u', '', $content );
+    return $content;
+}
+
+/**
+ * BuddyBoss + Page Builders: strip builder shortcodes from the AJAX search
+ * activity intro snippet. bp_search_activity_intro() calls
+ * bp_get_activity_content_body() but then runs wp_strip_all_tags + substr,
+ * so any surviving shortcode fragments must also be stripped at this layer.
+ */
+add_filter( 'bp_search_activity_intro', 'dainis_strip_builder_from_activity_intro' );
+function dainis_strip_builder_from_activity_intro( $content ) {
+    if ( strpos( $content, '[' ) === false ) {
+        return $content;
+    }
+    return dainis_strip_builder_shortcodes_from( $content );
+}
+
+/**
+ * BuddyBoss + Page Builders: strip builder shortcodes from excerpts.
+ * Covers archive pages, blog front page, and any other excerpt context.
+ */
+add_filter( 'get_the_excerpt', 'dainis_strip_builder_from_excerpt', 8 );
+function dainis_strip_builder_from_excerpt( $excerpt ) {
+    if ( strpos( $excerpt, '[' ) === false ) {
+        return $excerpt; // fast path: no shortcodes at all
+    }
+    return dainis_strip_builder_shortcodes_from( $excerpt );
 }
 
 /**
