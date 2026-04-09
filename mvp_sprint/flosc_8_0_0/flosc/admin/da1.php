@@ -92,7 +92,7 @@ unset($row);
 /* Textarea columns: any column whose name contains Lyrics, Media, or Video */
 $multiline_idx = [];
 foreach ($columns as $ci => $col) {
-    if (preg_match('/lyrics|media|video/i', $col)) $multiline_idx[] = $ci;
+    if (preg_match('/lyrics|media|video|notes/i', $col)) $multiline_idx[] = $ci;
 }
 
 /* ------------------------------------------------------------------ Save */
@@ -131,7 +131,7 @@ if (isset($_POST['da1_save_catalog']) && check_admin_referer('da1_catalog_save')
         unset($row);
         $multiline_idx = [];
         foreach ($columns as $ci => $col) {
-            if (preg_match('/lyrics|media|video/i', $col)) $multiline_idx[] = $ci;
+            if (preg_match('/lyrics|media|video|notes/i', $col)) $multiline_idx[] = $ci;
         }
     } else {
         $notice_error = 'Could not write to ' . esc_html($tsv_path) . '. Check file permissions.';
@@ -144,6 +144,8 @@ $total = count($rows);
 <style>
 #da1-table input[type="text"], #da1-table textarea { background: transparent !important; }
 #da1-table input[type="text"]:focus, #da1-table textarea:focus { background: #fff !important; }
+#da1-table textarea { overflow: hidden !important; resize: none !important; }
+#da1-table textarea:focus { overflow: auto !important; resize: vertical !important; }
 </style>
 
 <div style="max-width:1300px;">
@@ -183,7 +185,7 @@ $total = count($rows);
     <?php endforeach; ?>
 
     <div style="overflow-x:auto;border:1px solid #c3c4c7;border-radius:2px;">
-    <table id="da1-table" style="width:100%;border-collapse:collapse;font-size:13px;table-layout:auto;">
+    <table id="da1-table" style="width:100%;min-width:1100px;border-collapse:collapse;font-size:13px;table-layout:auto;">
         <thead>
             <tr style="background:#1d2327;">
                 <?php foreach ($columns as $ci => $col): ?>
@@ -206,7 +208,7 @@ $total = count($rows);
                 <td style="padding:3px 5px;vertical-align:top;">
                     <?php if ($is_multi): ?>
                         <textarea name="<?php echo $name; ?>" rows="3"
-                            style="<?php echo $base; ?>resize:vertical;line-height:1.45;"
+                            style="<?php echo $base; ?>line-height:1.45;"
                             onfocus="<?php echo $focus; ?>"
                             onblur="<?php echo $blur; ?>"
                         ><?php echo esc_textarea($val); ?></textarea>
@@ -279,7 +281,7 @@ $total = count($rows);
             if (MULTILINE.indexOf(ci) !== -1) {
                 var ta = document.createElement('textarea');
                 ta.name = name; ta.rows = 3;
-                ta.style.cssText = base + 'resize:vertical;line-height:1.45;';
+                ta.style.cssText = base + 'line-height:1.45;';
                 ta.setAttribute('onfocus', focusIn);
                 ta.setAttribute('onblur',  focusOut);
                 td.appendChild(ta);
