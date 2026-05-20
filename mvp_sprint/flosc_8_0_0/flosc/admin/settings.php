@@ -213,6 +213,8 @@ if (isset($_POST['flosc_save']) && wp_verify_nonce($_POST['_wpnonce'], 'flosc_sa
         'guest_welcome_body', 'guest_day10_body', 'guest_day20_body', 'guest_day28_body',
         // Payments
         'manual_payment_instructions',
+        // Identity — legal pages
+        'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content',
     ];
     
     foreach ($_POST as $key => $value) {
@@ -440,7 +442,7 @@ if (isset($_POST['flosc_save']) && wp_verify_nonce($_POST['_wpnonce'], 'flosc_sa
     // Nest identity fields into the identity sub-array
     // The generic POST loop saves them flat (e.g. $new_settings['chatlogo_url']).
     // get_floscflow_identity() reads from $flow['identity']['chatlogo_url'].
-    $identity_keys = ['name', 'title', 'tagline', 'primary_color', 'chatlogo_url', 'favicon_url', 'badgeUrl', 'share_text'];
+    $identity_keys = ['name', 'title', 'tagline', 'primary_color', 'chatlogo_url', 'favicon_url', 'badgeUrl', 'share_text', 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content'];
     $identity = $new_settings['identity'] ?? [];
     foreach ($identity_keys as $k) {
         if (isset($new_settings[$k])) {
