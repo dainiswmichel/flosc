@@ -55,8 +55,10 @@ if (isset($_POST['flosc_save_flow']) && wp_verify_nonce(sanitize_text_field(wp_u
         update_option('flosc_profile_bar', $profile_bar);
     }
 
-    // Save visitor menu items — preserve associative keys (signup, login, quiz)
-    $visitor_menu_items_post = isset($_POST['visitor_menu_items']) ? wp_unslash($_POST['visitor_menu_items']) : null;
+    // Save visitor menu items — preserve associative keys (signup, login, quiz).
+    // map_deep() sanitizes every leaf value at intake; the loop below shapes
+    // the structure and applies the final per-field types.
+    $visitor_menu_items_post = isset($_POST['visitor_menu_items']) ? map_deep(wp_unslash($_POST['visitor_menu_items']), 'sanitize_text_field') : null;
     if (is_array($visitor_menu_items_post)) {
         $visitor_menu_items = [];
         foreach ($visitor_menu_items_post as $key => $item) {
@@ -112,8 +114,8 @@ if (isset($_POST['flosc_save_flow']) && wp_verify_nonce(sanitize_text_field(wp_u
 
 // Handle team updates (admin only)
 if (isset($_POST['flosc_update_team']) && $is_admin && !$is_new && wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce'] ?? '')), 'flosc_update_team')) {
-    $team_users_post = isset($_POST['team_users']) ? wp_unslash($_POST['team_users']) : [];
-    $selected_users = is_array($team_users_post) ? array_map('intval', $team_users_post) : [];
+    // Sanitize at intake: every submitted value becomes an integer user ID.
+    $selected_users = isset($_POST['team_users']) ? array_map('intval', (array) wp_unslash($_POST['team_users'])) : [];
     
     // Get all users who currently have access
     $current_users = flosc_flows()->get_flow_users($flow_id);

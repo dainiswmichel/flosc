@@ -187,7 +187,7 @@ if (isset($_GET['toggle_status'])) {
     if (!current_user_can('manage_options')) {
         wp_die('Unauthorized action.', 'Insufficient permissions', ['response' => 403]);
     }
-    $nonce = sanitize_text_field($_GET['_wpnonce'] ?? '');
+    $nonce = sanitize_text_field(wp_unslash($_GET['_wpnonce'] ?? ''));
     if (!wp_verify_nonce($nonce, 'flosc_toggle_status')) {
         wp_die('Nonce verification failed.', 'Invalid token', ['response' => 403]);
     }
@@ -224,7 +224,7 @@ if (isset($_GET['set_status']) && isset($_GET['status'])) {
     if (!current_user_can('manage_options')) {
         wp_die('Unauthorized action.', 'Insufficient permissions', ['response' => 403]);
     }
-    $nonce = sanitize_text_field($_GET['_wpnonce'] ?? '');
+    $nonce = sanitize_text_field(wp_unslash($_GET['_wpnonce'] ?? ''));
     if (!wp_verify_nonce($nonce, 'flosc_set_status')) {
         wp_die('Nonce verification failed.', 'Invalid token', ['response' => 403]);
     }

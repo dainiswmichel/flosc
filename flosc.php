@@ -14714,14 +14714,8 @@ function flosc_deactivate() {
     flush_rewrite_rules();
 }
 
-/**
- * Load plugin translations.
- */
-function flosc_load_textdomain() {
-    load_plugin_textdomain('flosc', false, dirname(plugin_basename(__FILE__)) . '/languages');
-}
-
-add_action('plugins_loaded', 'flosc_load_textdomain', 5);
+// Translations load automatically on WordPress.org-hosted plugins (WP 4.6+);
+// no load_plugin_textdomain() call is needed.
 
 // Start the plugin
 add_action('plugins_loaded', 'flosc');
