@@ -1,0 +1,57 @@
+# Distribution exclusions for `git archive` (export-ignore).
+# Files stay TRACKED in the repo; they are omitted from the built release zip.
+#
+# Build a clean plugin-only zip (uses built-in git, no wp-cli needed):
+#   git archive --worktree-attributes --format=zip -o ../flosc-<MTS>.zip HEAD
+# Once this .gitattributes is committed, --worktree-attributes is optional.
+
+# VCS / editor / local state
+.git              export-ignore
+.github           export-ignore
+.githooks         export-ignore
+.gitignore        export-ignore
+.gitattributes    export-ignore
+.distignore       export-ignore
+.claude           export-ignore
+.vscode           export-ignore
+.idea             export-ignore
+.DS_Store         export-ignore
+
+# Dev/coder docs (repo-only, never shipped)
+dev_notes.md      export-ignore
+claude.md         export-ignore
+tech_summary.md   export-ignore
+
+# Non-plugin working directories accidentally tracked at repo root
+brenda_personality_profile_deployables_and_reference export-ignore
+da1ni5_personal_profitability export-ignore
+dev_cool          export-ignore
+flosc_development_archives export-ignore
+flosc_development_worknotes export-ignore
+flosc_documentation export-ignore
+flosc_styling_development export-ignore
+flosc-users       export-ignore
+image_assets      export-ignore
+latvijas_kori     export-ignore
+lesaep            export-ignore
+login_development export-ignore
+logo_marketing_assets export-ignore
+mvp_sprint        export-ignore
+openclaw-for-profits-roadmap export-ignore
+potential_development export-ignore
+quiz_development  export-ignore
+success_planning  export-ignore
+tmp               export-ignore
+wordpress_stuff   export-ignore
+zip-files         export-ignore
+
+# Scratch / debug files
+check_tina.php    export-ignore
+debug-bp-search.php export-ignore
+font-comparison-quickscan.html export-ignore
+font-comparison-round1.html export-ignore
+font-comparison-round2.html export-ignore
+font-comparison.html export-ignore
+wxr-reader.html   export-ignore
+flosc_ai_integration_plan.md export-ignore
+flosc_vocab_draft_01.txt export-ignore

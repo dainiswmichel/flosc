@@ -1,0 +1,278 @@
+<h1 id="ref-core">Part 3: Reference — Core (flosc.php)</h1>
+<p class="skeleton-marker">The main plugin file. ~8,000 lines. Orchestrates everything. Content pending.</p>
+
+<h2 id="core-overview">Overview — Why One Big File?</h2>
+<p class="skeleton-marker">Content pending. Decision archaeology on the monolith approach.</p>
+
+<h3 id="core-class-structure">The FLOSC Class — Singleton Pattern</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-initialization">Initialization Sequence — What Happens on Plugin Load</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="core-hooks-registered">Hooks Registered During Init</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="core-hooks-action-table">Action Hooks Table — init, template_redirect, admin_menu, rest_api_init</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="core-hooks-ajax">AJAX Hooks — protect_category, test_sso, test_ai, chat_logs, rate_log</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="core-hooks-third-party">Third-Party Quiz Hooks — WP Pro Quiz, LearnDash, QSM</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="core-hooks-filters">Filters — query_vars, login_redirect, woocommerce_login_redirect</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="core-conditional-loading">Conditional Loading — Admin vs Frontend</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-component-accessors">Component Accessor Methods — ai(), stt(), quiz(), sessions(), sale(), lessons()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-constants">Plugin Constants — FLOSC_VERSION, FLOSC_DEBUG, FLOSC_PLUGIN_DIR, FLOSC_PLUGIN_URL</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="core-settings">Settings System</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-get-setting">get_setting() — The Universal Settings Reader</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-flow-settings">Flow-Level vs Global Settings</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-settings-save">Settings Save Pipeline</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="core-rest-api">REST API Endpoints</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-chat">POST /flosc/v1/chat — The Main Chat Endpoint</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="core-rest-chat-auth">Authentication & Nonce Validation</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="core-rest-chat-dispatch">Dispatch Logic — IVR vs AI Decision</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-quiz">POST /flosc/v1/quiz — Quiz Submission</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-lessons">GET /flosc/v1/lessons — Lesson Listing</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-lesson">GET /flosc/v1/lesson/{id} — Single Lesson</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-paypal">POST /flosc/v1/paypal/* — Payment Endpoints</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="core-rest-paypal-create">create-order</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="core-rest-paypal-capture">capture-order</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-stripe">POST /flosc/v1/create-payment-intent — Stripe Payment</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-purchase">POST /flosc/v1/purchase & complete-purchase — Generic Purchase</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-sandbox">POST /flosc/v1/sandbox-purchase — Test Purchases</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-sessions">GET/POST/DELETE /flosc/v1/sessions — Session Management</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-offers">GET /flosc/v1/offers & offer-content — Offer Data</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-access">GET /flosc/v1/access — User Access State</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-tokens">GET /flosc/v1/tokens — Token Balance</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-intents">POST /flosc/v1/intents — Purchase Intents</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-ivr-messages">GET /flosc/v1/ivr-messages & ivr/track — IVR Data Endpoints</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-bridge-data">GET /flosc/v1/bridge-data — Bridge Data Retrieval</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-register-email">POST /flosc/v1/register-email — Email Registration</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-free-lesson">GET /flosc/v1/free-lesson — Free Lesson Access</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-corrections">GET/POST/DELETE /flosc/v1/corrections & praises — Admin Feedback</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-audio">POST /flosc/v1/process-audio & transcribe — Audio Processing</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-webhooks">POST /flosc/v1/webhooks/{provider} — Payment Webhooks</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-chat-rag">POST /flosc/v1/chat-rag — RAG Chat Endpoint</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-debug">GET /flosc/v1/debug/funnel-state — Debug Endpoint</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-store-score">POST /flosc/v1/store-score & funnel-complete — Score Storage</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-referral">GET /flosc/v1/referral — Referral Tracking</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-nonce">GET /flosc/v1/nonce — Nonce Refresh</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-test-ai">POST /flosc/v1/test-ai — AI Connection Test</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rest-sso">GET/POST /flosc/v1/sso/* — SSO Endpoints</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="core-phase-system">Phase Detection System</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-determine-phase">determine_flosc_phase() — The Three-Phase Model</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="core-phase-visitor">VISITOR Phase</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="core-phase-freeline">FREELINE Phase</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="core-phase-member">MEMBER Phase</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-phase-context">How Phase Flows Into build_context()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="core-asset-enqueue">Asset Enqueuing</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-frontend-assets">Frontend Assets — JS, CSS, PayPal SDK</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-admin-assets">Admin Assets</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-localize-script">wp_localize_script — Passing Config to JavaScript</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="core-flosc-config-object">The FLOSC_CONFIG Object — What JS Receives</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="core-flosc-config-keys">FLOSC_CONFIG Keys — restUrl, nonce, stripeKey, paypalClientId, ivrMessages, offers, ssoProviders</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="core-flosc-user-object">The FLOSC_USER Object — Identity & State</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="core-flosc-user-keys">FLOSC_USER Keys — id, name, state, purchased, access, tokens, freeLessonDelivered, adminVerification</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="core-registered-settings">Registered Settings — ~80+ Options</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-settings-product">Product Settings — flosc_product_name, tagline, emoji, color, logo, icon</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-settings-ai">AI Settings — provider, api_key, model, temperature, max_tokens</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-settings-stt">STT Settings — provider, assemblyai_key, deepgram_key</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-settings-quiz">Quiz Settings — type, items, pass_score, completion_message</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-settings-payment">Payment Settings — stripe_*, paypal_*</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-settings-chat-style">Chat Style Settings — preset, bubble_shape, accent_color, font, scale, custom_css</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-settings-sso">SSO Settings — per-provider client_id, client_secret</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-settings-ai-identity">AI Identity Settings — ai_name, ai_role, ai_traits, ai_mission, ai_knowledge_file</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-settings-navigation">Navigation Settings — app_slug, login_destination, visitor_dropdown_items</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-settings-email">Email Settings — templates, automation triggers</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="core-shortcodes">Shortcodes</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-shortcode-app">[flosc_app] — The Main Chat Interface</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-shortcode-companion">[flosc_companion] — The Companion Widget</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-shortcode-visitor">[flosc_visitor_only] — Visitor-Gated Content</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-shortcode-member">[flosc_member_only] — Member-Gated Content</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-shortcode-quiz-results">[flosc_quiz_results] — Quiz Results Display</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="core-helper-functions">Global Helper Functions</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-helper-flosc">flosc() — Singleton Accessor</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-helper-get-setting">flosc_get_setting() — Settings Reader</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-helper-import-ivr">flosc_import_ivr_to_database() — IVR Import</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-helper-export-ivr">flosc_export_ivr_backup() & flosc_auto_export_ivr_to_file() — IVR Export</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-helper-adjust-brightness">flosc_adjust_brightness() — Color Utility</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-helper-app-icon">flosc_get_app_icon_url() — Dynamic App Icon</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="core-render-app">render_flosc_app() — The Main Output</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-render-html">HTML Template — What Gets Rendered</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-render-product-config">get_product_config() — Assembling Product Data</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="core-activation">Plugin Activation — flosc_activate()</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-rewrite-rules">Rewrite Rules — add_rewrite_rules(), check_activation_rewrite_flush()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-custom-domain">Custom Domain Handling — handle_custom_domain()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="core-login-token">Login Token System — handle_login_token()</h3>
+<p class="skeleton-marker">Content pending.</p>

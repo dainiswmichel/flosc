@@ -1,0 +1,828 @@
+<?php
+/**
+ * FLOSC Concierge
+ * -----------------------------------------------------------------------------
+ * Concierge is an IVR message TYPE — a keyword-triggered message with an
+ * optional password gate. Because it's just a message type, it rides the whole
+ * IVR machinery for free: stored in the DB, mirrored to the portability .md,
+ * organized by phase, scoped per flow, edited in the IVR editor, and loaded
+ * with every other message. It can live in any phase of any flow.
+ *
+ * The only behavior unique to concierge is the gate:
+ *
+ *   guest says the keyword
+ *     → message has IndividualMessagePassword? ask for it, then on an exact
+ *       match deliver the content
+ *     → no password? deliver immediately, like any keyword message
+ *
+ * This class does that one thing, operating on the IVR config the chat has
+ * ALREADY loaded from the DB — so a concierge check adds no file read, no
+ * markdown parse, and no database query. The gate's "waiting for the password"
+ * state is the only thing it stores, and only while a gate is actually open.
+ *
+ * @package FLOSC
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+class FLOSC_Concierge {
+
+	/** The IVR message type that marks a concierge message. */
+	const TYPE = 'concierge';
+
+	/** Message field holding the optional per-message password. */
+	const PASSWORD_FIELD = 'individual_message_password';
+
+	/** How long (seconds) a guest has to enter the password after the keyword. */
+	const GATE_TTL = 600;
+
+	/**
+	 * How long an opened concierge "desk" stays available for that one guest.
+	 *
+	 * Once the keyword unlocks the desk, the guest can come and go and keep asking
+	 * for the next thing for this long — scoped to their session alone, so it is
+	 * open for them and no one else. Three days suits a personal hand-off: long
+	 * enough to revisit from the same browser, short enough that it isn't forever.
+	 */
+	const OPEN_TTL = 3 * DAY_IN_SECONDS;
+
+	/**
+	 * Handle a chat message against the concierge messages already loaded in the IVR.
+	 *
+	 * Called before the normal IVR/AI path. Operates entirely on the in-memory
+	 * $ivr_config — no queries — so it's free on every non-concierge message too.
+	 *
+	 * @param string $message     The visitor's message.
+	 * @param string $session_key Stable per-conversation key (session id or user).
+	 * @param array  $ivr_config  The loaded IVR config: ['messages' => [...], ...].
+	 * @return array|null A chat response to return, or null when no concierge applies.
+	 */
+	public static function handle( $message, $session_key, $ivr_config ) {
+		$message     = trim( (string) $message );
+		$session_key = (string) $session_key;
+		if ( '' === $message || '' === $session_key ) {
+			return null;
+		}
+
+		$messages = ( isset( $ivr_config['messages'] ) && is_array( $ivr_config['messages'] ) )
+			? $ivr_config['messages']
+			: array();
+		if ( empty( $messages ) ) {
+			return null;
+		}
+
+		$gate_key = 'flosc_concierge_gate_' . md5( $session_key );
+
+		// Step 2: a password gate is open for this session (keyword already hit).
+		$pending = get_transient( $gate_key );
+		if ( is_array( $pending ) && ! empty( $pending['id'] ) && isset( $messages[ $pending['id'] ] ) ) {
+			$msg = $messages[ $pending['id'] ];
+			$max = self::max_tries( $msg );
+
+			// Right password → open the AI-hosted desk and hand the conversation to
+			// the AI path (return null, no short-circuit). The desk is inherently an
+			// AI feature — it must NEVER dump the raw brief, so there is no canned
+			// fallback here. The chat handler resolves the real (per-flow) provider.
+			if ( self::password_matches( $message, (string) ( $msg[ self::PASSWORD_FIELD ] ?? '' ) ) ) {
+				delete_transient( $gate_key );
+				self::open_session( $session_key, $msg );
+				return null;
+			}
+
+			// Wrong password → show this miss's retry line. The final allowed miss
+			// shows its line (typically the "reach out to me" escape note) and then
+			// the gate closes — the conversation falls back to normal chat.
+			$tries = (int) ( $pending['tries'] ?? 0 ) + 1;
+			$line  = self::retry_line( $msg, $tries, $max );
+			if ( $tries >= $max ) {
+				delete_transient( $gate_key );
+			} else {
+				set_transient( $gate_key, array( 'id' => $pending['id'], 'tries' => $tries ), self::GATE_TTL );
+			}
+			return self::prompt( $line );
+		}
+
+		// Step 1: does the message hit a concierge message's keyword?
+		foreach ( $messages as $id => $msg ) {
+			if ( ! isset( $msg['type'] ) || self::TYPE !== $msg['type'] ) {
+				continue;
+			}
+			if ( ! self::keyword_hit( $message, (string) ( $msg['keywords'] ?? '' ) ) ) {
+				continue;
+			}
+			$password = self::normalize_password( (string) ( $msg[ self::PASSWORD_FIELD ] ?? '' ) );
+			if ( '' !== $password ) {
+				set_transient( $gate_key, array( 'id' => $id, 'tries' => 0 ), self::GATE_TTL );
+				return self::prompt( self::text( $msg, 'password_prompt', 'I’ve got something for you — what’s the password?' ) );
+			}
+			// No gate → open the concierge desk for this guest and hand off to the AI
+			// path (return null, no short-circuit). The AI then hosts the reveal in
+			// its own voice, offer by offer, using the desk's brief (active_guidance).
+			// There is deliberately NO canned-dump fallback: dumping the raw brief is
+			// exactly the behaviour we must never produce.
+			self::open_session( $session_key, $msg );
+			return null;
+		}
+
+		return null;
+	}
+
+	/**
+	 * Allowed password attempts for a message (default 3).
+	 *
+	 * @param array $msg IVR message.
+	 * @return int
+	 */
+	protected static function max_tries( $msg ) {
+		$n = (int) ( $msg['password_max_tries'] ?? 3 );
+		return $n > 0 ? $n : 3;
+	}
+
+	/**
+	 * Read a per-message text field, falling back to a default when blank.
+	 *
+	 * Every gate line is the floscAdmin's to write; the defaults only show when
+	 * a field is left empty.
+	 *
+	 * @param array  $msg     IVR message.
+	 * @param string $key     Field key.
+	 * @param string $default Fallback text.
+	 * @return string
+	 */
+	protected static function text( $msg, $key, $default ) {
+		$value = trim( (string) ( $msg[ $key ] ?? '' ) );
+		return '' !== $value ? $value : $default;
+	}
+
+	/**
+	 * Substitute {try} and {max} into a retry line.
+	 *
+	 * @param string $text Retry text.
+	 * @param int    $try  Which attempt this was.
+	 * @param int    $max  Allowed attempts.
+	 * @return string
+	 */
+	protected static function fill_counts( $text, $try, $max ) {
+		return str_replace( array( '{try}', '{max}' ), array( (string) $try, (string) $max ), (string) $text );
+	}
+
+	/**
+	 * The retry line for a given miss, from the per-message retry list.
+	 *
+	 * Line 1 shows on the first miss, line 2 on the second, and so on; if there
+	 * are more misses than lines, the last line repeats. {try}/{max} are filled
+	 * in. The final line is typically the "reach out to me directly" escape note.
+	 *
+	 * @param array $msg IVR message.
+	 * @param int   $try Which miss this is (1-based).
+	 * @param int   $max Allowed attempts.
+	 * @return string
+	 */
+	protected static function retry_line( $msg, $try, $max ) {
+		$list = array();
+		if ( isset( $msg['password_retry_messages'] ) && is_array( $msg['password_retry_messages'] ) ) {
+			foreach ( $msg['password_retry_messages'] as $line ) {
+				$line = trim( (string) $line );
+				if ( '' !== $line ) {
+					$list[] = $line;
+				}
+			}
+		}
+		if ( empty( $list ) ) {
+			$list = array( 'Hmm, not quite — that’s try {try} of {max}.' );
+		}
+		$idx = min( $try - 1, count( $list ) - 1 );
+		return self::fill_counts( $list[ $idx ], $try, $max );
+	}
+
+	/**
+	 * Whole-word, case-insensitive test for any of a message's keywords.
+	 *
+	 * The IVR `keywords` field is comma-separated; a hit on any one counts.
+	 *
+	 * @param string $message  Visitor message.
+	 * @param string $keywords Comma-separated keyword(s).
+	 * @return bool
+	 */
+	protected static function keyword_hit( $message, $keywords ) {
+		$haystack = mb_strtolower( (string) $message );
+		foreach ( explode( ',', (string) $keywords ) as $keyword ) {
+			$keyword = mb_strtolower( trim( $keyword ) );
+			if ( '' === $keyword ) {
+				continue;
+			}
+			// Approximate: case- and position-insensitive containment, so "Narcissist"
+			// matches "you're a narcissist" and "narcissistic" without an exact phrase.
+			if ( false !== mb_strpos( $haystack, $keyword ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Collapse a written "no password" to an actual blank (= no gate).
+	 *
+	 * Admins and OpenClaw naturally write "none", "(none)", or "n/a" to MEAN
+	 * "there is no password" — in the meta-box field or as a `Password:` line in
+	 * the post body. Taken literally, those words become the password itself,
+	 * opening a gate whose secret is the word "none"; worse, the meta box keeps
+	 * re-deriving that word from the body, so clearing the field never sticks.
+	 * Normalizing the whole family of sentinels to '' makes a written "none" do
+	 * what it plainly says: no gate. The trade-off is intentional — a concierge
+	 * password literally equal to one of these words is disallowed, which is fine
+	 * for a friendly handoff that was never a security boundary.
+	 *
+	 * @param string $password Password as resolved from the meta box or post body.
+	 * @return string The password, or '' when it is a "no password" sentinel.
+	 */
+	protected static function normalize_password( $password ) {
+		$sentinels = array( 'none', '(none)', 'n/a', 'n.a.', 'na', 'no', 'no password', 'false', 'nil', 'null', '-', '–', '—' );
+		return in_array( mb_strtolower( trim( (string) $password ) ), $sentinels, true ) ? '' : (string) $password;
+	}
+
+	/**
+	 * Case-insensitive password comparison ("MONKI" == "monki" == "Monki").
+	 *
+	 * Concierge gates are a friendly handoff, not a security boundary, so a guest
+	 * shouldn't be tripped up by capitalization. Both sides are lower-cased and
+	 * trimmed before a constant-time compare. A blank stored password never matches —
+	 * that's the "no gate" case, handled before we reach here.
+	 *
+	 * @param string $given    What the guest typed.
+	 * @param string $expected The message's password.
+	 * @return bool
+	 */
+	protected static function password_matches( $given, $expected ) {
+		$expected = mb_strtolower( trim( (string) $expected ) );
+		if ( '' === $expected ) {
+			return false;
+		}
+		return hash_equals( $expected, mb_strtolower( trim( (string) $given ) ) );
+	}
+
+	/**
+	 * Build a prompt chat response (e.g. asking for the password).
+	 *
+	 * @param string $text Prompt text.
+	 * @return array
+	 */
+	protected static function prompt( $text ) {
+		return array(
+			'success'          => true,
+			'message'          => (string) $text,
+			'user_autoprompts' => array(),
+			'phaseChange'      => null,
+			'flosc_concierge'  => 'awaiting_password',
+		);
+	}
+
+	/* ===========================================================================
+	 * The open concierge desk (AI-hosted reveal)
+	 * ---------------------------------------------------------------------------
+	 * Once a guest clears the keyword (and any password), we don't dump the post's
+	 * content at them. Instead we open a "desk" for THAT guest's session: a brief
+	 * the AI guide is authorized to share — but only a little at a time, only what
+	 * the guest asks for, in the guide's own voice. The desk is a per-session
+	 * transient, so it's open for this one guest and no one else, for OPEN_TTL.
+	 *
+	 * The chat handler reads active_guidance() after handle() and, when a desk is
+	 * open, appends it to the AI's system prompt. handle() itself returns null on
+	 * unlock so the message flows on into the normal AI path (which also means the
+	 * exchange is logged like any other turn, instead of being short-circuited).
+	 * ======================================================================== */
+
+	/** Per-session transient key for an open desk. */
+	protected static function open_key( $session_key ) {
+		return 'flosc_concierge_open_' . md5( (string) $session_key );
+	}
+
+	/**
+	 * Open the concierge desk for one guest's session.
+	 *
+	 * Stores just what the AI needs to host the reveal: the material to draw from
+	 * and the optional per-post delivery style (tone, language, pacing).
+	 *
+	 * @param string $session_key Stable per-conversation key.
+	 * @param array  $msg         The matched concierge IVR message.
+	 * @return void
+	 */
+	protected static function open_session( $session_key, $msg ) {
+		set_transient(
+			self::open_key( $session_key ),
+			array(
+				// The full note is the AI's authoritative SOURCE. It is given as
+				// reference every turn so the AI can quote facts (phone, email)
+				// EXACTLY and never invent them — while the guidance instructs it to
+				// reveal only 1–3 sentences per turn rather than paste the whole note.
+				'brief'    => (string) ( $msg['content'] ?? '' ),
+				'stage'    => 'invited',  // 'invited' → first reply invites; then 'revealing'
+				'delivery' => (string) ( $msg['delivery_style'] ?? '' ),
+				'name'     => (string) ( $msg['name'] ?? '' ),
+			),
+			self::OPEN_TTL
+		);
+	}
+
+	/** Is a concierge desk currently open for this guest's session? */
+	public static function has_active_session( $session_key ) {
+		$data = get_transient( self::open_key( $session_key ) );
+		return is_array( $data ) && '' !== trim( (string) ( $data['brief'] ?? '' ) );
+	}
+
+	/**
+	 * The system-prompt block to inject on THIS turn, and advance the desk's state.
+	 *
+	 * This is the heart of the hosted reveal. It is stateful and called once per
+	 * guest turn:
+	 *   - the first turn returns an INVITATION instruction with NONE of the note;
+	 *   - each later turn hands the AI exactly ONE fragment to voice, then advances
+	 *     the cursor, so the note is revealed strictly one piece per turn;
+	 *   - once every fragment is revealed, it returns a gentle closing instruction.
+	 *
+	 * Because the AI never receives more than a single fragment, a full-note dump is
+	 * impossible by construction — the guidance below is style, not the safeguard.
+	 *
+	 * @param string $session_key Stable per-conversation key.
+	 * @return string Prompt block for this turn, or '' when no desk is open.
+	 */
+	public static function active_guidance( $session_key ) {
+		$key  = self::open_key( $session_key );
+		$data = get_transient( $key );
+		if ( ! is_array( $data ) || '' === trim( (string) ( $data['brief'] ?? '' ) ) ) {
+			return '';
+		}
+
+		$delivery = trim( (string) ( $data['delivery'] ?? '' ) );
+		$style    = ( '' !== $delivery )
+			? $delivery
+			: 'Be warm, friendly and personable, and use the polite form of address.';
+
+		$head = "\n\n**PRIVATE CONCIERGE — you are personally hosting ONE guest. Keep each reply to 1–3 short sentences.**\n"
+			. 'Delivery style: ' . $style . "\n"
+			. "Never mention operational details (keywords, expiry, configuration, or that you are reading from a note). Stay fully in character.\n";
+
+		// Turn 1 — invite only. Reveal nothing from the note yet.
+		if ( 'invited' === ( $data['stage'] ?? 'invited' ) ) {
+			$data['stage'] = 'offered';
+			set_transient( $key, $data, self::OPEN_TTL );
+			return $head
+				. "This is your FIRST reply. Greet the guest warmly by name and let them know the person who introduced you left a short, personal note for them. "
+				. "Invite them to say whether they'd like to hear it. Reveal NONE of the note's content yet. End on an inviting question.";
+		}
+
+		// Reveal stage: the AI gets the full SOURCE so every fact it states is
+		// accurate, but it must reveal only a little per turn and never fabricate.
+		return $head
+			. "Reveal the SOURCE below GRADUALLY — only 1–3 sentences per reply, in order, continuing from what you have already shared (check the conversation so far), and end by inviting them to hear more. NEVER paste, list, or summarise the whole note at once.\n"
+			. "ACCURACY IS ABSOLUTE: every fact you state — ESPECIALLY phone numbers and email addresses — must be copied VERBATIM from the SOURCE. Never invent, guess, alter, reformat, or round a number or address. When the guest asks for a contact detail, quote it EXACTLY as written below. If something is not in the SOURCE, say you don't have it — do not make anything up.\n"
+			. "----- SOURCE (authoritative private reference — quote facts exactly, never paste wholesale) -----\n"
+			. trim( (string) $data['brief'] ) . "\n"
+			. "----- end SOURCE -----";
+	}
+
+	/* ===========================================================================
+	 * Concierge POSTS → DB/IVR sync
+	 * ---------------------------------------------------------------------------
+	 * OpenClaw (or the admin) writes a private post in the concierge category; the
+	 * plugin reads it and upserts a concierge MESSAGE into the post's flow — which
+	 * the integrity hook then mirrors to the .md. There is no authoring surface to
+	 * build: the WordPress post IS the surface. On the post, admins see a read-only
+	 * "what FLOSC understands" confirmation so they can check the setup landed.
+	 * ======================================================================== */
+
+	/** Default category that marks a concierge post. */
+	const CATEGORY = 'concierge';
+
+	/** Post-meta keys for the editable settings (the "FLOSC Concierge" meta box). */
+	const META = array(
+		'flow'      => '_flosc_concierge_flow',
+		'keyword'   => '_flosc_concierge_keyword',
+		'password'  => '_flosc_concierge_password',
+		'success'   => '_flosc_concierge_success',
+		'max_tries' => '_flosc_concierge_max_tries',
+		'retry'     => '_flosc_concierge_retry',
+		'delivery'  => '_flosc_concierge_delivery',
+	);
+
+	/**
+	 * Resolve a concierge post's settings.
+	 *
+	 * The meta box is the editable source of truth; for any field left blank
+	 * there, we fall back to the labeled lines in the post body (the format
+	 * OpenClaw writes), so an OpenClaw-authored post works with no meta set and
+	 * its values pre-fill the meta box. Content delivered is the post body's
+	 * "Content to deliver" block, or the whole body if that label is absent.
+	 *
+	 * @param int|WP_Post $post Post or ID.
+	 * @return array|null
+	 */
+	public static function config_from_post( $post ) {
+		$post = get_post( $post );
+		if ( ! $post instanceof WP_Post ) {
+			return null;
+		}
+		$body = (string) $post->post_content;
+		$meta = static function ( $id, $key ) {
+			$v = get_post_meta( $id, self::META[ $key ], true );
+			return is_string( $v ) ? $v : '';
+		};
+
+		$flow     = $meta( $post->ID, 'flow' );
+		$keyword  = $meta( $post->ID, 'keyword' );
+		$password = $meta( $post->ID, 'password' );
+		$success  = $meta( $post->ID, 'success' );
+		$retry    = $meta( $post->ID, 'retry' );
+		$delivery = $meta( $post->ID, 'delivery' );
+		$max      = (int) $meta( $post->ID, 'max_tries' );
+
+		$deployment    = self::label( $body, 'Deployment' );
+		$floscflow_val = self::label( $body, 'floscFlow' );
+
+		// OpenClaw fallback: resolve the flow for any field left blank in the meta box.
+		// Tried in order of how a person would name it:
+		//   1. an explicit .md filename in floscFlow ("… (dainis_net_ivr.md)")
+		//   2. the flow's NAME in floscFlow ("Brenda", "LeSAEp")
+		//   3. the human-facing Deployment ("dainis.net/chat", "flosc.ai")
+		if ( '' === $flow ) {
+			$flow = self::flow_file( $floscflow_val );
+		}
+		if ( '' === $flow && '' !== $floscflow_val ) {
+			$flow = self::flow_by_name( $floscflow_val );
+		}
+		if ( '' === $flow ) {
+			$flow = self::flow_from_deployment( $deployment );
+		}
+		if ( '' === $keyword ) {
+			$keyword = self::unquote( self::label( $body, 'Keyword' ) );
+		}
+		if ( '' === $password ) {
+			$password = self::unquote( self::label( $body, 'Password' ) );
+		}
+		$password = self::normalize_password( $password );
+		if ( '' === $delivery ) {
+			$delivery = self::label( $body, 'Delivery style' );
+		}
+
+		$content = self::content_to_deliver( $body );
+
+		return array(
+			'flow'       => $flow,
+			'deployment' => self::label( $body, 'Deployment' ),
+			'keyword'    => $keyword,
+			'password'   => $password,
+			'success'    => $success,
+			'max_tries'  => $max > 0 ? $max : 3,
+			'retry'      => $retry,
+			'delivery'   => $delivery,
+			'content'    => $content,
+		);
+	}
+
+	/**
+	 * Render the "FLOSC Concierge" meta box on a concierge post's edit screen.
+	 *
+	 * @param WP_Post $post The post being edited.
+	 * @return void
+	 */
+	public static function render_meta_box( $post ) {
+		$c = self::config_from_post( $post );
+		wp_nonce_field( 'flosc_concierge_meta', 'flosc_concierge_nonce' );
+		// Styles for .flosc-cncrg-* live on the 'flosc-metabox' handle, added in
+		// enqueue_admin_assets() during admin_enqueue_scripts — the only moment
+		// inline style data still reaches the page (see the §12 note there).
+		echo '<div class="flosc-cncrg-row"><label>Flow</label><select name="flosc_cncrg_flow">';
+		$current  = $c['flow'];
+		$files    = function_exists( 'flosc_config_glob' ) ? flosc_config_glob( '*_ivr.md' ) : array();
+		$seen     = array();
+		$have_cur = false;
+		echo '<option value="">— choose a flow —</option>';
+		foreach ( (array) $files as $file ) {
+			$name = basename( (string) $file );
+			if ( '' === $name || isset( $seen[ $name ] ) ) {
+				continue;
+			}
+			$seen[ $name ] = true;
+			$opt   = get_option( 'flosc_flow_' . sanitize_key( pathinfo( $name, PATHINFO_FILENAME ) ), array() );
+			$label = ( is_array( $opt ) && ! empty( $opt['identity']['name'] ) ) ? $opt['identity']['name'] . ' (' . $name . ')' : $name;
+			if ( $name === $current ) {
+				$have_cur = true;
+			}
+			echo '<option value="' . esc_attr( $name ) . '" ' . selected( $current, $name, false ) . '>' . esc_html( $label ) . '</option>';
+		}
+		if ( '' !== $current && ! $have_cur ) {
+			echo '<option value="' . esc_attr( $current ) . '" selected>' . esc_html( $current ) . '</option>';
+		}
+		echo '</select></div>';
+		echo '<div class="flosc-cncrg-row"><label>Keyword</label><input type="text" name="flosc_cncrg_keyword" value="' . esc_attr( $c['keyword'] ) . '" placeholder="the word the guest says"></div>';
+		echo '<div class="flosc-cncrg-row"><label>Password (any capitalization — blank = no gate)</label><input type="text" name="flosc_cncrg_password" value="' . esc_attr( $c['password'] ) . '"></div>';
+		echo '<div class="flosc-cncrg-row"><label>Max tries</label><input type="number" name="flosc_cncrg_max_tries" value="' . esc_attr( (string) $c['max_tries'] ) . '" min="1" style="width:80px;"></div>';
+		echo '<div class="flosc-cncrg-row"><label>Retry messages (one per line; {try}/{max} substituted; last line shows on the final miss)</label><textarea name="flosc_cncrg_retry" rows="3">' . esc_textarea( $c['retry'] ) . '</textarea></div>';
+		echo '<div class="flosc-cncrg-row"><label>Success message (shown just before the content delivers)</label><input type="text" name="flosc_cncrg_success" value="' . esc_attr( $c['success'] ) . '"></div>';
+		echo '<div class="flosc-cncrg-row"><label>Delivery style (how the AI hosts the reveal — tone, language, pacing; blank = a warm, friendly default)</label><textarea name="flosc_cncrg_delivery" rows="3" placeholder="e.g. Warm and professional in English; offer one thing at a time as an easy yes/no question; reveal only what the guest asks for. (Set the persona per guest/purpose here — playful, formal, a specific language, etc.)">' . esc_textarea( $c['delivery'] ) . '</textarea></div>';
+		echo '<p class="description">The post body is the AI\'s private brief — it offers it a little at a time, in your chosen voice, only what the guest asks for. Saving syncs this to the chat (DB and .md).</p>';
+	}
+
+	/**
+	 * Save the meta box fields to post meta.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return void
+	 */
+	public static function save_meta_box( $post_id ) {
+		if ( ! isset( $_POST['flosc_concierge_nonce'] )
+			|| ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['flosc_concierge_nonce'] ) ), 'flosc_concierge_meta' ) ) {
+			return;
+		}
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
+			return;
+		}
+		$map = array(
+			'flow'      => 'flosc_cncrg_flow',
+			'keyword'   => 'flosc_cncrg_keyword',
+			'password'  => 'flosc_cncrg_password',
+			'success'   => 'flosc_cncrg_success',
+			'max_tries' => 'flosc_cncrg_max_tries',
+			'retry'     => 'flosc_cncrg_retry',
+			'delivery'  => 'flosc_cncrg_delivery',
+		);
+		foreach ( $map as $key => $field ) {
+			if ( ! isset( $_POST[ $field ] ) ) {
+				continue;
+			}
+			// Sanitize at the point of access, per field type.
+			if ( 'retry' === $key || 'delivery' === $key ) {
+				$value = sanitize_textarea_field( wp_unslash( $_POST[ $field ] ) );
+			} elseif ( 'max_tries' === $key ) {
+				$value = (string) max( 1, absint( wp_unslash( $_POST[ $field ] ) ) );
+			} else {
+				$value = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
+			}
+			update_post_meta( $post_id, self::META[ $key ], $value );
+		}
+	}
+
+	/**
+	 * Sync a concierge post into its flow's DB (upsert a concierge message).
+	 *
+	 * @param int|WP_Post $post Post or ID.
+	 * @return void
+	 */
+	public static function sync_post( $post ) {
+		$post = get_post( $post );
+		if ( ! $post instanceof WP_Post || ! self::is_concierge_post( $post ) ) {
+			return;
+		}
+		if ( 'trash' === $post->post_status ) {
+			self::unsync_post( $post );
+			return;
+		}
+
+		$c        = self::config_from_post( $post );
+		$flow_key = self::flow_key( $c['flow'] );
+		if ( '' === $flow_key || '' === $c['keyword'] ) {
+			return; // Needs a resolvable flow and a keyword to be actionable.
+		}
+
+		$retry_list = array();
+		foreach ( preg_split( '/\r\n|\r|\n/', (string) $c['retry'] ) as $line ) {
+			$line = trim( $line );
+			if ( '' !== $line ) {
+				$retry_list[] = $line;
+			}
+		}
+
+		$fs = get_option( $flow_key, array() );
+		if ( ! isset( $fs['ivr_messages'] ) || ! is_array( $fs['ivr_messages'] ) ) {
+			$fs['ivr_messages'] = array();
+		}
+		$id = self::post_message_id( $post );
+
+		$fs['ivr_messages'][ $id ] = array(
+			'name'                        => $id,
+			'type'                        => self::TYPE,
+			'phase'                       => 'freeline',
+			'keywords'                    => $c['keyword'],
+			'individual_message_password' => $c['password'],
+			'password_success'            => $c['success'],
+			'password_max_tries'          => $c['max_tries'],
+			'password_retry_messages'     => $retry_list,
+			'delivery_style'              => $c['delivery'],
+			'content'                     => $c['content'],
+			'source'                      => 'concierge_post',
+			'concierge_post_id'           => (int) $post->ID,
+		);
+		update_option( $flow_key, $fs ); // The integrity hook mirrors this to the .md.
+	}
+
+	/**
+	 * Remove a concierge post's synced message from its flow.
+	 *
+	 * @param int|WP_Post $post Post or ID.
+	 * @return void
+	 */
+	public static function unsync_post( $post ) {
+		$post = get_post( $post );
+		if ( ! $post instanceof WP_Post ) {
+			return;
+		}
+		$flow_key = self::flow_key( self::flow_file( self::label( (string) $post->post_content, 'floscFlow' ) ) );
+		if ( '' === $flow_key ) {
+			return;
+		}
+		$fs = get_option( $flow_key, array() );
+		$id = self::post_message_id( $post );
+		if ( isset( $fs['ivr_messages'][ $id ] ) ) {
+			unset( $fs['ivr_messages'][ $id ] );
+			update_option( $flow_key, $fs );
+		}
+	}
+
+	/**
+	 * Append the admin-only "what FLOSC understands" confirmation to a concierge post.
+	 *
+	 * Read-only by design — editing happens in the post itself, and saving re-syncs.
+	 *
+	 * @param string $content Post content.
+	 * @return string
+	 */
+	public static function maybe_append_confirmation( $content ) {
+		if ( is_admin() || ! is_singular() || ! current_user_can( 'manage_options' ) ) {
+			return $content;
+		}
+		$post = get_post();
+		if ( ! $post instanceof WP_Post || ! self::is_concierge_post( $post ) ) {
+			return $content;
+		}
+
+		$c         = self::config_from_post( $post );
+		$flow_stem = ( '' !== $c['flow'] ) ? sanitize_key( pathinfo( $c['flow'], PATHINFO_FILENAME ) ) : '';
+		$flow_ok   = ( '' !== $flow_stem ) && ! empty( get_option( 'flosc_flow_' . $flow_stem ) );
+		$active    = ( '' !== $c['keyword'] && $flow_ok );
+		$delivers  = trim( (string) preg_replace( '/\s+/', ' ', (string) $c['content'] ) );
+
+		$lines = array(
+			'deployment : ' . ( '' !== $c['deployment'] ? $c['deployment'] : '(none)' ),
+			'flow       : ' . ( '' !== $flow_stem ? $flow_stem . ( $flow_ok ? ' ✓' : ' — not found' ) : '(missing flow)' ),
+			'keyword    : ' . ( '' !== $c['keyword'] ? $c['keyword'] : '(missing — required)' ),
+			'password   : ' . ( '' !== $c['password'] ? 'set (exact)' : '(none — instant)' ),
+			'delivers   : ' . ( '' !== $delivers ? mb_strimwidth( $delivers, 0, 90, '…' ) : '(empty)' ),
+			'status     : ' . ( $active ? 'active on ' . $flow_stem : 'NOT active — fix the above' ),
+		);
+
+		$mono = 'ui-monospace,Menlo,Consolas,monospace';
+		$html  = '<div style="margin-top:24px;border:1px dashed #999;background:#fafafa;padding:12px 16px;">';
+		$html .= '<div style="font:600 12px/1.2 ' . $mono . ';color:#444;margin-bottom:6px;">— what FLOSC understands (admin only) —</div>';
+		$html .= '<pre style="font:13px/1.6 ' . $mono . ';color:#222;margin:0;white-space:pre-wrap;">' . esc_html( implode( "\n", $lines ) ) . '</pre>';
+		$html .= '<div style="font:11px/1.4 ' . $mono . ';color:#777;margin-top:8px;">Edit this post to change the setup; saving re-syncs it to the chat.</div>';
+		$html .= '</div>';
+
+		return $content . $html;
+	}
+
+	/** Is this post in the concierge category? */
+	public static function is_concierge_post( $post ) {
+		return has_category( self::CATEGORY, $post );
+	}
+
+	/** Stable, slug-derived message id for a post-sourced concierge message. */
+	protected static function post_message_id( $post ) {
+		$slug = ( '' !== $post->post_name ) ? $post->post_name : ( 'post' . $post->ID );
+		return 'concierge_' . sanitize_key( $slug );
+	}
+
+	/** Resolve a flow option key from a flow file ('dainis_net_ivr.md' -> 'flosc_flow_dainis_net_ivr'). */
+	protected static function flow_key( $flow_file ) {
+		$flow_file = (string) $flow_file;
+		if ( '' === $flow_file ) {
+			return '';
+		}
+		return 'flosc_flow_' . sanitize_key( pathinfo( $flow_file, PATHINFO_FILENAME ) );
+	}
+
+	/** Pull a '*.md' flow file out of a floscFlow value ('Brenda (dainis_net_ivr.md)' -> 'dainis_net_ivr.md'). */
+	protected static function flow_file( $value ) {
+		if ( preg_match( '/([A-Za-z0-9_\-]+\.md)\b/i', (string) $value, $m ) ) {
+			return $m[1];
+		}
+		return '';
+	}
+
+	/**
+	 * Resolve a flow file from a flow's NAME ('Brenda' -> 'dainis_net_ivr.md').
+	 *
+	 * Every flow carries a human name (identity.name) — the same name shown in the
+	 * IVR editor and the Flow dropdown. Matching is case-insensitive and ignores
+	 * surrounding quotes, so an admin or OpenClaw can simply name the flow.
+	 *
+	 * @param string $value A flow name, possibly quoted.
+	 * @return string Flow file (e.g. 'dainis_net_ivr.md'), or '' if no name matches.
+	 */
+	protected static function flow_by_name( $value ) {
+		$name = mb_strtolower( self::unquote( (string) $value ) );
+		if ( '' === $name ) {
+			return '';
+		}
+		$files = function_exists( 'flosc_config_glob' ) ? flosc_config_glob( '*_ivr.md' ) : array();
+		foreach ( (array) $files as $file ) {
+			$fname = basename( (string) $file );
+			$opt   = get_option( 'flosc_flow_' . sanitize_key( pathinfo( $fname, PATHINFO_FILENAME ) ), array() );
+			$iname = ( is_array( $opt ) && ! empty( $opt['identity']['name'] ) ) ? mb_strtolower( (string) $opt['identity']['name'] ) : '';
+			if ( '' !== $iname && $iname === $name ) {
+				return $fname;
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * Resolve a flow file from a human-facing Deployment ('dainis.net/chat' -> 'dainis_net_ivr.md').
+	 *
+	 * OpenClaw writes the deployment it knows — "dainis.net/chat", "flosc.ai",
+	 * "lesaep.com" — never the internal filename. We reduce that to a bare domain,
+	 * turn it into a stem ("dainis.net" -> "dainis_net"), and match it against the
+	 * actual *_ivr.md flow files so their names stay the single source of truth.
+	 *
+	 * @param string $deployment Deployment value from the post body.
+	 * @return string Flow file (e.g. 'dainis_net_ivr.md'), or '' if none matches.
+	 */
+	protected static function flow_from_deployment( $deployment ) {
+		$host = strtolower( trim( (string) $deployment ) );
+		if ( '' === $host ) {
+			return '';
+		}
+		$host = preg_replace( '#^[a-z][a-z0-9+.\-]*://#', '', $host ); // drop scheme
+		$host = preg_replace( '#[/?\#].*$#', '', $host );              // drop path/query/fragment
+		$host = preg_replace( '#^www\.#', '', $host );                 // drop www.
+		$stem = trim( (string) preg_replace( '/[^a-z0-9]+/', '_', $host ), '_' ); // dainis.net -> dainis_net
+		if ( '' === $stem ) {
+			return '';
+		}
+		$files = function_exists( 'flosc_config_glob' ) ? flosc_config_glob( '*_ivr.md' ) : array();
+		foreach ( (array) $files as $file ) {
+			$name  = basename( (string) $file );
+			$fstem = pathinfo( $name, PATHINFO_FILENAME );             // e.g. dainis_net_ivr
+			if ( $fstem === $stem || 0 === strpos( $fstem, $stem . '_' ) ) {
+				if ( ! empty( get_option( 'flosc_flow_' . sanitize_key( $fstem ) ) ) ) {
+					return $name;
+				}
+			}
+		}
+		return '';
+	}
+
+	/** Read a single-line "Label: value", quotes preserved, returning the trimmed value. */
+	protected static function label( $body, $label ) {
+		$pattern = '/^[ \t>*_\-]*' . preg_quote( $label, '/' ) . '[ \t]*:[ \t]*(.+?)[ \t]*$/mi';
+		return preg_match( $pattern, (string) $body, $m ) ? trim( $m[1] ) : '';
+	}
+
+	/**
+	 * Resolve the content a concierge message delivers, from the post body.
+	 *
+	 * What the bot delivers is everything after the "Content to deliver:" line. If
+	 * that label is absent, the body is served with the config lines (floscFlow/
+	 * Deployment/Keyword/Password) stripped, so a password is never handed out.
+	 *
+	 * @param string $body Post body.
+	 * @return string
+	 */
+	protected static function content_to_deliver( $body ) {
+		$body = (string) $body;
+
+		// What the bot delivers is everything after the "Content to deliver:" line.
+		$block = self::content_block( $body, 'Content to deliver' );
+		if ( '' !== $block ) {
+			return $block;
+		}
+
+		// Safety net only (no label present): serve the body with the config lines
+		// removed, so a password is never handed to the guest.
+		$stripped = preg_replace( '/^[ \t>*_\-]*(floscFlow|Deployment|Keyword|Password)[ \t]*:.*$/mi', '', $body );
+		return trim( (string) $stripped );
+	}
+
+	/** Read everything from a "Label:" to the end of the body. */
+	protected static function content_block( $body, $label ) {
+		$pattern = '/^[ \t>*_\-]*' . preg_quote( $label, '/' ) . '[ \t]*:[ \t]*/mi';
+		if ( preg_match( $pattern, (string) $body, $m, PREG_OFFSET_CAPTURE ) ) {
+			return trim( substr( (string) $body, $m[0][1] + strlen( $m[0][0] ) ) );
+		}
+		return '';
+	}
+
+	/** Strip one pair of matching surrounding quotes. */
+	protected static function unquote( $value ) {
+		$value = trim( (string) $value );
+		if ( strlen( $value ) >= 2 ) {
+			$first = $value[0];
+			$last  = substr( $value, -1 );
+			if ( ( '"' === $first && '"' === $last ) || ( "'" === $first && "'" === $last ) ) {
+				return substr( $value, 1, -1 );
+			}
+		}
+		return $value;
+	}
+}

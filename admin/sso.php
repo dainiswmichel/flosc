@@ -1,0 +1,482 @@
+<?php
+/**
+ * FLOSC SSO / Social Login Settings
+ * 
+ * @package FLOSC
+ * @subpackage Admin
+ * @since v1.4.0
+ * 
+ * Provides admin UI for configuring OAuth2/SSO providers:
+ * - Google
+ * - Apple
+ * - Facebook  
+ * - Microsoft
+ * - LinkedIn
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+// Get callback base URL
+$site_url = get_site_url();
+$callback_base = $site_url . '/wp-json/flosc/v1/sso/callback/';
+
+// Provider configurations
+$providers = [
+    'google' => [
+        'name' => 'Google',
+        'icon' => '🔵',
+        'docs_url' => 'https://console.cloud.google.com/apis/credentials',
+        'instructions' => [
+            'Go to <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a>',
+            'Create a new project or select existing',
+            'Navigate to "APIs & Services" → "Credentials"',
+            'Click "Create Credentials" → "OAuth Client ID"',
+            'Select "Web application" as Application type',
+            'Under "Authorized redirect URIs", add your callback URL (shown below)',
+            'Copy the Client ID and Client Secret to the fields below',
+            'Enable the "Google+ API" or "People API" in the API Library',
+        ],
+    ],
+    'apple' => [
+        'name' => 'Apple',
+        'icon' => '🍎',
+        'docs_url' => 'https://developer.apple.com/account/resources/identifiers/list',
+        'instructions' => [
+            'Go to <a href="https://developer.apple.com/account" target="_blank">Apple Developer Portal</a>',
+            'Navigate to "Certificates, Identifiers & Profiles"',
+            'Under "Identifiers", create a new App ID with "Sign in with Apple" enabled',
+            'Under "Keys", create a new key with "Sign in with Apple" enabled',
+            'Download the private key file (.p8) - this can only be downloaded once',
+            'Note your Team ID (top right of developer portal)',
+            'Note your Key ID (from the key you just created)',
+            'Your Client ID (Service ID) should be in reverse domain notation (e.g., com.example.app)',
+            'The Client Secret is automatically generated using your Team ID, Key ID, and Private Key',
+        ],
+        'extra_fields' => ['team_id', 'key_id', 'private_key'],
+    ],
+    'facebook' => [
+        'name' => 'Facebook',
+        'icon' => '📘',
+        'docs_url' => 'https://developers.facebook.com/apps',
+        'instructions' => [
+            'Go to <a href="https://developers.facebook.com/apps" target="_blank">Facebook Developers</a>',
+            'Create a new app or select existing (choose "Consumer" type)',
+            'In the dashboard, add "Facebook Login" product',
+            'Go to "Facebook Login" → "Settings"',
+            'Add your callback URL to "Valid OAuth Redirect URIs"',
+            'Go to "Settings" → "Basic" to find your App ID and App Secret',
+            'Switch the app to "Live" mode when ready for production',
+            'Note: Users must have roles assigned to test in development mode',
+        ],
+    ],
+    'microsoft' => [
+        'name' => 'Microsoft',
+        'icon' => '🪟',
+        'docs_url' => 'https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade',
+        'instructions' => [
+            'Go to <a href="https://portal.azure.com/" target="_blank">Azure Portal</a>',
+            'Navigate to "Azure Active Directory" → "App registrations"',
+            'Click "New registration"',
+            'Set account type (personal accounts, work accounts, or both)',
+            'Add your callback URL as a "Web" redirect URI',
+            'After creation, note the "Application (client) ID"',
+            'Go to "Certificates & secrets" → "New client secret"',
+            'Copy the secret value immediately (it\'s only shown once)',
+        ],
+    ],
+    'linkedin' => [
+        'name' => 'LinkedIn',
+        'icon' => '💼',
+        'docs_url' => 'https://www.linkedin.com/developers/apps',
+        'instructions' => [
+            'Go to <a href="https://www.linkedin.com/developers/apps" target="_blank">LinkedIn Developers</a>',
+            'Create a new app or select existing',
+            'Go to the "Auth" tab',
+            'Under "OAuth 2.0 settings", add your callback URL',
+            'Request access to "Sign In with LinkedIn using OpenID Connect" product',
+            'Copy your Client ID and Client Secret from the "Auth" tab',
+            'Note: API access requires app verification for some features',
+        ],
+    ],
+];
+
+// v1.4.9: SSO settings are PER-FLOW, stored in the flow settings array
+$flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
+$selected_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
+$sso_docs_url = add_query_arg([
+    'page' => 'flosc-settings',
+    'ivr'  => $selected_ivr,
+    'tab'  => 'documentation',
+    'doc'  => 'ref-admin',
+], admin_url('admin.php')) . '#tab-sso';
+$flow_display_name = trim((string)($flow_settings['identity']['name'] ?? ''));
+if ($flow_display_name === '') {
+    $flow_display_name = trim((string)($flow_settings['name'] ?? ''));
+}
+if ($flow_display_name === '') {
+    $flow_display_name = $selected_ivr;
+}
+$current_flow_id = $selected_ivr ? sanitize_key(pathinfo($selected_ivr, PATHINFO_FILENAME)) : '';
+?>
+
+<div class="flosc-sso-settings">
+    <div style="margin:0 0 14px; text-align:right;">
+        <a href="<?php echo esc_url($sso_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+        <div>
+            <h2 style="margin-bottom: 4px;">🔐 SSO / Social Login Settings</h2>
+            <p class="description" style="margin-top: 0;">Configure OAuth2 providers to enable social login in your FLOSC chat. Users can sign in with their existing accounts.</p>
+        </div>
+        <button type="submit" name="flosc_save" class="button button-primary" style="margin-top: 10px;">
+            💾 Save SSO Settings for <?php echo esc_html($flow_display_name); ?>
+        </button>
+    </div>
+    
+    <?php
+    // Build the flow-based fallback app URL used when state.redirect_to is missing.
+    $configured_post_login_redirect = trim((string)($flow_settings['sso_post_login_redirect_url'] ?? ''));
+    if (!empty($configured_post_login_redirect) && wp_http_validate_url($configured_post_login_redirect)) {
+        $flow_fallback_url = $configured_post_login_redirect;
+        $redirect_source = 'flow setting: Post-login fallback URL';
+    } else {
+    $configured_domain = trim((string)($flow_settings['custom_domain'] ?? ($flow_settings['domain'] ?? '')));
+    $configured_domain = preg_replace('#^https?://#i', '', $configured_domain);
+    $configured_domain = trim($configured_domain, " \t\n\r\0\x0B/");
+    $flow_slug = trim((string)($flow_settings['slug'] ?? ''), '/');
+
+    if ($current_flow_id === 'dainis_net_ivr') {
+        $flow_fallback_url = home_url('/chat');
+        $redirect_source = '/chat deployment shortcut';
+    } elseif (!empty($configured_domain)) {
+        $flow_fallback_url = 'https://' . $configured_domain . '/';
+        $redirect_source = 'flow custom domain';
+    } elseif (!empty($flow_slug)) {
+        $flow_fallback_url = home_url('/' . $flow_slug . '/');
+        $redirect_source = 'flow slug';
+    } else {
+        $flow_fallback_url = home_url('/');
+        $redirect_source = 'site home fallback';
+    }
+    }
+    ?>
+
+    <div class="card" style="padding: 14px 16px; margin: 12px 0 18px; border-left: 4px solid #0073aa; background: #f0f7ff;">
+        <h3 style="margin: 0 0 8px;">Flow Redirect Context</h3>
+        <p style="margin: 0 0 6px;"><strong>IVR file:</strong> <code><?php echo esc_html($selected_ivr ?: '(none selected)'); ?></code></p>
+        <p style="margin: 0 0 6px;"><strong>flow_id parameter:</strong> <code><?php echo esc_html($current_flow_id ?: '(none)'); ?></code></p>
+        <p style="margin: 0 0 6px;"><strong>Runtime redirect_to (primary):</strong> <code>window.location.href</code> from chat page at click-time</p>
+        <p style="margin: 0 0 6px;"><strong>Configured Post-login redirect URL:</strong>
+            <input type="url"
+                   name="flow_sso_post_login_redirect_url"
+                   value="<?php echo esc_attr($flow_settings['sso_post_login_redirect_url'] ?? ''); ?>"
+                   class="regular-text"
+                   style="max-width: 520px; margin-left: 8px;"
+                   placeholder="https://flosc.ai/">
+        </p>
+        <p class="description" style="margin: 0 0 6px 0;">Used only if OAuth state has no <code>redirect_to</code>. Leave empty to use flow domain/slug fallback.</p>
+        <p style="margin: 0 0 6px;"><strong>Fallback app URL (if state has no redirect_to):</strong> <code><?php echo esc_html($flow_fallback_url); ?></code></p>
+        <p style="margin: 0;"><strong>Fallback source:</strong> <?php echo esc_html($redirect_source); ?></p>
+    </div>
+
+    <?php foreach ($providers as $provider_id => $provider): ?>
+        <?php
+        $is_enabled = !empty($flow_settings["sso_{$provider_id}_enabled"]);
+        $client_id = $flow_settings["sso_{$provider_id}_client_id"] ?? '';
+        $client_secret = $flow_settings["sso_{$provider_id}_client_secret"] ?? '';
+        $callback_url = $callback_base . $provider_id;
+        $authorize_url_example = add_query_arg(
+            [
+                'flow_id' => $current_flow_id,
+                'redirect_to' => $flow_fallback_url,
+            ],
+            $site_url . '/wp-json/flosc/v1/sso/authorize/' . $provider_id
+        );
+        ?>
+        
+        <div class="flosc-sso-provider card" style="margin-bottom: 20px; padding: 20px; border-left: 4px solid <?php echo esc_attr($is_enabled ? '#28a745' : '#ccc'); ?>;">
+            <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.5em;"><?php echo esc_html($provider['icon']); ?></span>
+                <?php echo esc_html($provider['name']); ?>
+                <?php if ($is_enabled && $client_id && $client_secret): ?>
+                    <span style="background: #28a745; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: normal;">ENABLED</span>
+                <?php endif; ?>
+            </h3>
+            
+            <table class="form-table" style="margin-top: 0;">
+                <tr>
+                    <th scope="row">Enable <?php echo esc_html($provider['name']); ?></th>
+                    <td>
+                        <label>
+                            <input type="checkbox" 
+                                name="flow_sso_<?php echo esc_attr($provider_id); ?>_enabled" 
+                                   value="1" 
+                                   <?php checked($is_enabled, true); ?>>
+                            Allow users to sign in with <?php echo esc_html($provider['name']); ?>
+                        </label>
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th scope="row">Client ID</th>
+                    <td>
+                           <input type="text" 
+                               name="flow_sso_<?php echo esc_attr($provider_id); ?>_client_id" 
+                               value="<?php echo esc_attr($client_id); ?>" 
+                               class="regular-text"
+                               placeholder="<?php echo esc_attr($provider_id === 'apple' ? 'Service ID (e.g., com.example.app)' : 'Your ' . $provider['name'] . ' Client/App ID'); ?>">
+                    </td>
+                </tr>
+                
+                <tr>
+                    <th scope="row">Client Secret</th>
+                    <td>
+                           <input type="password" 
+                               name="flow_sso_<?php echo esc_attr($provider_id); ?>_client_secret" 
+                               value="<?php echo esc_attr($client_secret); ?>" 
+                               class="regular-text"
+                               placeholder="<?php echo esc_attr($provider_id === 'apple' ? 'Leave empty - auto-generated from keys' : 'Your ' . $provider['name'] . ' Client Secret'); ?>"
+                               <?php if ($provider_id === 'apple') : ?>readonly style="background: #f0f0f0;"<?php endif; ?>>
+                        <?php if ($provider_id === 'apple'): ?>
+                            <p class="description">Apple client secrets are automatically generated from Team ID, Key ID, and Private Key below.</p>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                
+                <?php if (isset($provider['extra_fields']) && in_array('team_id', $provider['extra_fields'])): ?>
+                    <?php
+                    $team_id = $flow_settings["sso_{$provider_id}_team_id"] ?? '';
+                    $key_id = $flow_settings["sso_{$provider_id}_key_id"] ?? '';
+                    $private_key = $flow_settings["sso_{$provider_id}_private_key"] ?? '';
+                    ?>
+                    <tr>
+                        <th scope="row">Team ID</th>
+                        <td>
+                            <input type="text" 
+                                name="flow_sso_<?php echo esc_attr($provider_id); ?>_team_id" 
+                                   value="<?php echo esc_attr($team_id); ?>" 
+                                   class="regular-text"
+                                   placeholder="10-character Team ID (e.g., ABCDE12345)">
+                            <p class="description">Found in the top right of your Apple Developer account</p>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row">Key ID</th>
+                        <td>
+                            <input type="text" 
+                                name="flow_sso_<?php echo esc_attr($provider_id); ?>_key_id" 
+                                   value="<?php echo esc_attr($key_id); ?>" 
+                                   class="regular-text"
+                                   placeholder="10-character Key ID">
+                            <p class="description">Found in the key details page in Apple Developer</p>
+                        </td>
+                    </tr>
+                    
+                    <tr>
+                        <th scope="row">Private Key</th>
+                        <td>
+                            <textarea name="flow_sso_<?php echo esc_attr($provider_id); ?>_private_key" 
+                                      rows="5" 
+                                      class="large-text code"
+                                      placeholder="-----BEGIN PRIVATE KEY-----&#10;Paste your .p8 file contents here&#10;-----END PRIVATE KEY-----"><?php echo esc_textarea($private_key); ?></textarea>
+                            <p class="description">Contents of the .p8 file downloaded from Apple Developer. Keep this secure!</p>
+                        </td>
+                    </tr>
+                <?php endif; ?>
+                
+                <tr>
+                    <th scope="row">Callback URL</th>
+                    <td>
+                        <code style="display: inline-block; padding: 8px 12px; background: #f5f5f5; border-radius: 4px; word-break: break-all;"><?php echo esc_html($callback_url); ?></code>
+                        <button type="button" 
+                                class="button button-small" 
+                                onclick="navigator.clipboard.writeText('<?php echo esc_js($callback_url); ?>').then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 2000); });">
+                            Copy
+                        </button>
+                        <p class="description">Add this URL to your <?php echo esc_html($provider['name']); ?> app's authorized redirect URIs.</p>
+                    </td>
+                </tr>
+
+                <tr>
+                    <th scope="row">Authorize URL (Diagnostic Example)</th>
+                    <td>
+                        <code style="display: inline-block; padding: 8px 12px; background: #f5f5f5; border-radius: 4px; word-break: break-all;"><?php echo esc_html($authorize_url_example); ?></code>
+                        <button type="button"
+                                class="button button-small"
+                                onclick="navigator.clipboard.writeText('<?php echo esc_js($authorize_url_example); ?>').then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 2000); });">
+                            Copy
+                        </button>
+                        <p class="description">Diagnostic URL with selected <code>flow_id</code>. Production chat uses the current page URL as <code>redirect_to</code> at click-time.</p>
+                    </td>
+                </tr>
+            </table>
+            
+            <!-- Setup Instructions (Collapsible) -->
+            <details style="margin-top: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
+                <summary style="cursor: pointer; font-weight: 600; color: #0073aa;">
+                    📖 Setup Instructions for <?php echo esc_html($provider['name']); ?>
+                </summary>
+                <ol style="margin-top: 10px; padding-left: 20px;">
+                    <?php foreach ($provider['instructions'] as $step): ?>
+                        <li style="margin-bottom: 8px;"><?php echo wp_kses_post($step); ?></li>
+                    <?php endforeach; ?>
+                </ol>
+                <?php if (!empty($provider['docs_url'])): ?>
+                    <p style="margin-top: 10px;">
+                        <a href="<?php echo esc_url($provider['docs_url']); ?>" target="_blank" class="button button-secondary button-small">
+                            Open <?php echo esc_html($provider['name']); ?> Developer Console →
+                        </a>
+                    </p>
+                <?php endif; ?>
+            </details>
+
+            <!-- v1.5.0: Inline Connection Test -->
+            <div class="flosc-sso-test" style="margin-top: 15px; padding: 12px 16px; background: #fafafa; border: 1px solid #e0e0e0; border-radius: 6px;">
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <button type="button" 
+                            class="button flosc-test-connection-btn" 
+                            data-provider="<?php echo esc_attr($provider_id); ?>"
+                            style="font-weight: 600;">
+                        🔌 Test Connection
+                    </button>
+                    <span class="flosc-test-status" id="flosc-test-status-<?php echo esc_attr($provider_id); ?>" style="font-size: 13px; color: #666;">
+                        Click to verify your <?php echo esc_html($provider['name']); ?> credentials without leaving this page
+                    </span>
+                </div>
+                <div class="flosc-test-results" id="flosc-test-results-<?php echo esc_attr($provider_id); ?>" style="display: none; margin-top: 12px;">
+                    <!-- Results injected by JS -->
+                </div>
+            </div>
+        </div>
+    <?php endforeach; ?>
+    
+    <p class="submit" style="margin: 10px 0 20px;">
+        <button type="submit" name="flosc_save" class="button button-primary" style="margin-top: 0;">
+            💾 Save SSO Settings for <?php echo esc_html($flow_display_name); ?>
+        </button>
+    </p>
+    
+    <!-- General SSO Info -->
+    <div class="card" style="padding: 20px; background: #f0f7ff; border-left: 4px solid #0073aa;">
+        <h3 style="margin-top: 0;">ℹ️ How SSO Works</h3>
+        <p>When a user clicks a social login button in the FLOSC chat:</p>
+        <ol>
+            <li>They're redirected to the provider's login page</li>
+            <li>After authenticating, they're redirected back to your site</li>
+            <li>FLOSC creates or links their WordPress account automatically</li>
+            <li>Their chat session continues with full access</li>
+        </ol>
+        <p><strong>Account Linking:</strong> If a user already has an account with the same email, their social login will be linked to the existing account.</p>
+    </div>
+    
+    <!-- Test Endpoints -->
+    <div class="card" style="padding: 20px; margin-top: 20px;">
+        <h3 style="margin-top: 0;">🔧 API Endpoints</h3>
+        <table class="widefat" style="max-width: 600px;">
+            <tr>
+                <th>Endpoint</th>
+                <th>URL</th>
+            </tr>
+            <tr>
+                <td>Get Enabled Providers</td>
+                <td><code><?php echo esc_html($site_url); ?>/wp-json/flosc/v1/sso/providers</code></td>
+            </tr>
+            <tr>
+                <td>Initiate Login</td>
+                <td><code><?php echo esc_html($site_url); ?>/wp-json/flosc/v1/sso/authorize/{provider}</code></td>
+            </tr>
+            <tr>
+                <td>Callback (auto)</td>
+                <td><code><?php echo esc_html($site_url); ?>/wp-json/flosc/v1/sso/callback/{provider}</code></td>
+            </tr>
+        </table>
+    </div>
+</div>
+
+<!-- Styles in assets/css/flosc-admin.css -->
+
+<!-- v1.5.0: Connection Test AJAX -->
+<?php ob_start(); ?>
+(function() {
+    var nonce = '<?php echo esc_js(wp_create_nonce('flosc_test_sso')); ?>';
+    var ajaxUrl = '<?php echo esc_js(admin_url('admin-ajax.php')); ?>';
+    // v1.5.0: Pass flow_id so test reads per-flow SSO settings
+    var flowId = '<?php echo esc_js(sanitize_key(pathinfo($GLOBALS['flosc_current_ivr'] ?? '', PATHINFO_FILENAME))); ?>';
+
+    document.querySelectorAll('.flosc-test-connection-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var provider = this.dataset.provider;
+            var statusEl = document.getElementById('flosc-test-status-' + provider);
+            var resultsEl = document.getElementById('flosc-test-results-' + provider);
+
+            // Disable button, show loading
+            btn.disabled = true;
+            btn.textContent = '⏳ Testing...';
+            statusEl.textContent = 'Connecting to ' + provider + '...';
+            statusEl.style.color = '#666';
+            resultsEl.style.display = 'none';
+            resultsEl.innerHTML = '';
+
+            var formData = new FormData();
+            formData.append('action', 'flosc_test_sso_connection');
+            formData.append('nonce', nonce);
+            formData.append('provider', provider);
+            formData.append('flow_id', flowId);
+
+            fetch(ajaxUrl, { method: 'POST', body: formData, credentials: 'same-origin' })
+                .then(function(r) { return r.json(); })
+                .then(function(resp) {
+                    btn.disabled = false;
+                    btn.textContent = '🔌 Test Connection';
+
+                    if (!resp.success) {
+                        statusEl.textContent = '❌ Broken';
+                        statusEl.style.color = '#d63638';
+                        return;
+                    }
+
+                    var data = resp.data;
+                    var html = '';
+
+                    data.checks.forEach(function(check) {
+                        var cls = check.pass ? 'pass' : 'fail';
+                        var icon = check.pass ? '✅' : '❌';
+                        html += '<div class="flosc-test-check ' + cls + '">'
+                            + '<span class="flosc-test-check-icon">' + icon + '</span>'
+                            + '<span class="flosc-test-check-label">' + escHtml(check.label) + '</span>'
+                            + '<span class="flosc-test-check-detail">' + escHtml(check.detail) + '</span>'
+                            + '</div>';
+                    });
+
+                    if (data.all_pass) {
+                        html += '<div class="flosc-test-summary all-pass">✅ Live</div>';
+                        statusEl.textContent = '✅ Live';
+                        statusEl.style.color = '#00a32a';
+                    } else {
+                        html += '<div class="flosc-test-summary has-fail">❌ Broken</div>';
+                        statusEl.textContent = '❌ Broken';
+                        statusEl.style.color = '#d63638';
+                    }
+
+                    resultsEl.innerHTML = html;
+                    resultsEl.style.display = 'block';
+                })
+                .catch(function(err) {
+                    btn.disabled = false;
+                    btn.textContent = '🔌 Test Connection';
+                    statusEl.textContent = '❌ Network error: ' + err.message;
+                    statusEl.style.color = '#d63638';
+                });
+        });
+    });
+
+    function escHtml(str) {
+        var div = document.createElement('div');
+        div.appendChild(document.createTextNode(str));
+        return div.innerHTML;
+    }
+})();
+<?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
