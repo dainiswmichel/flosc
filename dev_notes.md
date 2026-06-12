@@ -240,6 +240,33 @@ asserting "all tests pass" without the command output is not evidence.
 
 ## 6. Dev log (reverse chronological — newest entry on top)
 
+### 2026-06m-12d-TZEEST-17h53m20s — fresh-baseline repo, Plugin Check clean, submission candidate
+
+- **Repo re-initialized at a plugin-only baseline** (`ac425d0`). Pre-launch history
+  (all commits, 9 tags, all branches) archived as verified `--all` bundles in
+  `flosc_development_archives/repo_cleanup_2026-06m-12d/` at the project root, with
+  a browsable copy of every removed file alongside. GitHub `main` force-reset to
+  the baseline; pre-baseline tags removed from the remote. `.git` went 306 MB → 2.5 MB;
+  the plugin folder is now ~9 MB total. §4 records the rationale.
+- **Folder discipline restored:** `mvp_sprint/flosc_8_0_0/` holds only `flosc/` and
+  `svn-assets/`; all dev material lives at the project root. The February cruft
+  commits can no longer resurface via reset/clone — they are not in the repo.
+- **Plugin Check findings resolved and tool-verified** (phpcs + WPCS 3.x installed
+  locally; control run confirmed the sniff flags the pre-edit code):
+  - `flow-edit.php`: `visitor_menu_items` sanitized at intake via `map_deep()`;
+    `team_users` folded to a single sanitized intake expression. Behavior identical.
+  - `offers.php`: both nonce reads wrapped in `wp_unslash()`.
+  - `flosc.php`: dead `load_plugin_textdomain()` removed (`languages/` holds only an
+    index stub; wp.org language packs auto-load on WP 7.0).
+  - `class-usage-tracker.php` / `class-clickbank-provider.php`: translators comments
+    added for placeholder strings. Plugin-wide I18n + ValidatedSanitizedInput sweeps: clean.
+- **Delivery state:** HEAD `360ffee` == `origin/main`. `flosc.zip` built per §2
+  (`git archive`), 146 files, SHA-256 `02b11affaffe19f6fae85d0b1058db74a2336d9df4c58934546fd01a92d9ab3a`.
+  Live ChemiCloud deploy hash-matched, opcache reset, all three domains 200.
+  The local Plugin Check WP install (`flosc_development_worknotes/wp-content/`) now
+  carries the exact zip contents — its next scan certifies the submission artifact.
+- Open: a clean Plugin Check re-run on the updated install is the final binary gate.
+
 Each work session = one MTS-stamped entry below, prepended above the previous
 one. Each entry lists task items with a priority and status.
 
