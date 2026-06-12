@@ -212,6 +212,7 @@ class FLOSC_Usage_Tracker {
         if (!$this->has_quota($user_id, $event, $quantity)) {
             return new WP_Error(
                 'quota_exceeded',
+                /* translators: 1: usage event name (e.g. a quiz or chat request), 2: remaining quota count. */
                 sprintf(__('Usage limit exceeded for %1$s. Remaining: %2$d', 'flosc'), $event, $this->get_remaining($user_id, $event)),
                 [
                     'event' => $event,

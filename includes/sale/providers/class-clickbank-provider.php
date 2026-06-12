@@ -143,6 +143,7 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
         $required = ['ctransaction', 'ctransreceipt', 'cvendor', 'ccustname', 'ccustemail'];
         foreach ($required as $field) {
             if (empty($params[$field])) {
+                /* translators: %s: name of the missing ClickBank webhook field. */
                 return new WP_Error('missing_field', sprintf(__('Missing required field: %s', 'flosc'), $field), ['status' => 400]);
             }
         }
