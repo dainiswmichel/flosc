@@ -610,8 +610,14 @@ class FLOSC_Content_Protection {
         $cta .= '💬 Chat with us to unlock access';
         $cta .= '</a>';
         $cta .= '</div>';
-        
-        return apply_filters('flosc_chatbot_cta', $cta, $post_id);
+
+        // Escape at the source. The CTA is FLOSC-built markup with no relayed
+        // core content, so wp_kses_post() here is safe (it strips nothing from
+        // this hardcoded fragment) and idempotent where a caller wraps again.
+        // This guarantees the CTA is escaped in every consumption path —
+        // including the preview tier, which deliberately leaves its own return
+        // unwrapped to preserve oEmbed embeds in the relayed $preview.
+        return wp_kses_post( apply_filters( 'flosc_chatbot_cta', $cta, $post_id ) );
     }
     
     /**
