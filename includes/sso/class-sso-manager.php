@@ -577,40 +577,6 @@ class SSO_Manager {
             'available_providers' => array_keys(array_diff_key($this->get_enabled_providers(), array_flip($linked))),
         ));
     }
-    
-    /**
-     * Get SSO buttons HTML for FLOSC chat widget
-     * 
-     * @return string HTML
-     */
-    public function get_chat_sso_buttons_html() {
-        $providers = $this->get_enabled_providers();
-        
-        if (empty($providers)) {
-            return '';
-        }
-        
-        $html = '<div class="flosc-chat-sso-buttons">';
-        $html .= '<div class="flosc-sso-divider"><span>or continue with</span></div>';
-        
-        foreach ($providers as $provider) {
-            $html .= sprintf(
-                '<button type="button" class="flosc-chat-sso-btn flosc-chat-sso-%s" data-provider="%s" data-auth-url="%s">
-                    <span class="sso-icon">%s</span>
-                    <span class="sso-label">%s</span>
-                </button>',
-                esc_attr($provider->get_id()),
-                esc_attr($provider->get_id()),
-                esc_url(rest_url("flosc/v1/sso/authorize/{$provider->get_id()}")),
-                $provider->get_icon(),
-                esc_html($provider->get_name())
-            );
-        }
-        
-        $html .= '</div>';
-        
-        return $html;
-    }
 }
 
 /**
