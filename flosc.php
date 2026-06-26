@@ -280,16 +280,16 @@ if (!function_exists('flosc_issue_post_purchase_session')) {
      * own browser. This is the single sanctioned post-purchase login path; every
      * browser-facing payment handler routes through it.
      *
-     * The flosc_post_purchase_instant_login filter (default true) lets an operator
+    * The flosc_post_purchase_instant_login filter (default false) lets an operator
      * — or a stricter review policy — require email-loop confirmation instead:
      *
      *     add_filter('flosc_post_purchase_instant_login', '__return_false');
      *
-     * Enabling that routes every buyer through the emailed single-use link before
+    * The default routes every buyer through the emailed single-use link before
      * any session exists, which lengthens the purchase-to-content path (leave the
      * chat, open email, click, return). It is therefore not the default: a buyer
-     * who just completed a verified payment from this browser, holding a
-     * server-issued single-use binding token, has already proven enough.
+    * who just completed a verified payment from this browser, holding a
+    * server-issued single-use binding token, has already proven enough.
      *
      * @param int    $user_id     The buyer.
      * @param string $redirect_to Optional safe redirect target after login.
@@ -297,7 +297,7 @@ if (!function_exists('flosc_issue_post_purchase_session')) {
      */
     function flosc_issue_post_purchase_session($user_id, $redirect_to = '') {
         $user_id = absint($user_id);
-        if (!$user_id || !apply_filters('flosc_post_purchase_instant_login', true)) {
+        if (!$user_id || !apply_filters('flosc_post_purchase_instant_login', false)) {
             return false;
         }
         $user = get_userdata($user_id);
@@ -10452,6 +10452,17 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] X-WP-Nonce 
         }
 
         $user_id = get_current_user_id();
+        $binding_record = null;
+
+        // Enforce buyer-browser proof before any account creation or access grant
+        // in visitor purchase flows. Logged-in buyers already have an authenticated
+        // browser session from WordPress auth.
+        if (!$user_id) {
+            $binding_record = flosc_checkout_binding_verify($binding_token, $binding_session);
+            if (!$binding_record) {
+                return new WP_Error('invalid_checkout_binding', __('Missing or invalid checkout binding token.', 'flosc'), ['status' => 403]);
+            }
+        }
 
         // Visitor purchasing: no WP account yet — we'll create one from PayPal subscriber data
         // after verifying the subscription with PayPal.
@@ -10622,7 +10633,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
         if (!$already_logged_in
             && $is_new_user
             && false === get_transient($claim_key)
-            && flosc_checkout_binding_verify($binding_token, $binding_session)) {
+            && !empty($binding_record)) {
             if (flosc_issue_post_purchase_session($user_id)) {
                 set_transient($claim_key, time(), WEEK_IN_SECONDS); // Burn the one allowed claim.
                 $auth_token    = $this->generate_flosc_auth_token($user_id);

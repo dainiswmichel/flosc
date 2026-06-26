@@ -496,7 +496,7 @@ class FLOSC_Content_Protection {
         // free posts. Escape-what-we-build; never re-filter relayed core content.
         $content .= wp_kses_post($cta_box);
 
-        return apply_filters('flosc_public_post_content', $content, $post_id);
+        return $content;
     }
     
     /**
@@ -579,7 +579,7 @@ class FLOSC_Content_Protection {
         // is core's partial post content. Relay it untouched so a free preview
         // keeps any oEmbed/video it contains — wp_kses_post() here would strip
         // those iframes. Escape-what-we-build; never re-filter relayed content.
-        return apply_filters('flosc_preview_content', $output, $post_id, $preview);
+        return $output;
     }
     
     /**
