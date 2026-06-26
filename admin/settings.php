@@ -301,6 +301,9 @@ $flosc_identity_view = isset($flosc_get['view']) ? sanitize_text_field($flosc_ge
 if (!in_array($flosc_identity_view, ['single', 'all'], true)) {
     $flosc_identity_view = 'single';
 }
+// Backward-compat aliases for template references still using the pre-prefix names.
+$selected_ivr   = $flosc_selected_ivr;
+$identity_view  = $flosc_identity_view;
 
 // Handle save
 if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flosc_post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
