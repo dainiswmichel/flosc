@@ -546,7 +546,7 @@ if (!get_option('flosc_ivr_reparse_800')) {
 
 // v1.2.9: Michel timestamp generator (global scope for activation hook)
 function flosc_michel_timestamp_global() {
-    return gmdate('Y') . 'y-' . gmdate('m') . 'm-' . gmdate('d') . 'd-T' . gmdate('H') . 'h:' . gmdate('i') . 'm:' . gmdate('s') . 's';
+    return gmdate('Y') . 'y-' . gmdate('m') . 'm-' . gmdate('d') . 'd-UTC' . gmdate('H') . 'h-' . gmdate('i') . 'm-' . gmdate('s') . 's';
 }
 
 /**

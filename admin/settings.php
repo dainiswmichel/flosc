@@ -56,13 +56,13 @@ if (!function_exists('flosc_tab_footer')) {
 
 /**
  * Generate Michel Timestamp - overthetop silly specific format
- * Format: 2026y-02m-05d-T10h:43m:22s
+ * Format: 2026y-02m-05d-UTC10h-43m-22s
  * 
  * @return string
  */
 if (!function_exists('flosc_michel_timestamp')) {
     function flosc_michel_timestamp() {
-        return gmdate('Y') . 'y-' . gmdate('m') . 'm-' . gmdate('d') . 'd-T' . gmdate('H') . 'h:' . gmdate('i') . 'm:' . gmdate('s') . 's';
+        return gmdate('Y') . 'y-' . gmdate('m') . 'm-' . gmdate('d') . 'd-UTC' . gmdate('H') . 'h-' . gmdate('i') . 'm-' . gmdate('s') . 's';
     }
 }
 
