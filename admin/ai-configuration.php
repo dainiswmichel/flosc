@@ -15,53 +15,53 @@ if (!defined('ABSPATH')) exit;
 
 flosc_tab_header('🤖', 'AI');
 
-$flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
-$current_ivr   = $GLOBALS['flosc_current_ivr'] ?? '';
-$ai_docs_url = add_query_arg([
+$flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
+$flosc_current_ivr   = $GLOBALS['flosc_current_ivr'] ?? '';
+$flosc_ai_docs_url = add_query_arg([
     'page' => 'flosc-settings',
-    'ivr'  => $current_ivr,
+    'ivr'  => $flosc_current_ivr,
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-ai';
-$base_prompt = $flow_settings['ai_base_prompt'] ?? '';
-$ai_provider = $flow_settings['ai_provider'] ?? 'ivr';
-$ai_openai_model = $flow_settings['ai_openai_model'] ?? 'gpt-4o-mini';
-$ai_anthropic_model = $flow_settings['ai_anthropic_model'] ?? 'claude-sonnet-4-5-20250929';
-$ai_xai_model = $flow_settings['ai_xai_model'] ?? 'grok-2-latest';
-$ai_temperature = $flow_settings['ai_temperature'] ?? '0.3';
-$ai_max_tokens = $flow_settings['ai_max_tokens'] ?? '500';
-$enable_ivr_context = $flow_settings['ai_enable_ivr_context'] ?? true;
-$enable_content_access = $flow_settings['ai_enable_content_access'] ?? true;
-$ai_response_mode = $flow_settings['ai_response_mode'] ?? 'enhanced';
-$enable_chaining = $flow_settings['ai_enable_chaining'] ?? false;
-$chain_provider_1 = $flow_settings['ai_chain_provider_1'] ?? '';
-$chain_provider_2 = $flow_settings['ai_chain_provider_2'] ?? '';
-$chain_provider_3 = $flow_settings['ai_chain_provider_3'] ?? '';
+$flosc_base_prompt = $flosc_flow_settings['ai_base_prompt'] ?? '';
+$flosc_ai_provider = $flosc_flow_settings['ai_provider'] ?? 'ivr';
+$flosc_ai_openai_model = $flosc_flow_settings['ai_openai_model'] ?? 'gpt-4o-mini';
+$flosc_ai_anthropic_model = $flosc_flow_settings['ai_anthropic_model'] ?? 'claude-sonnet-4-5-20250929';
+$flosc_ai_xai_model = $flosc_flow_settings['ai_xai_model'] ?? 'grok-2-latest';
+$flosc_ai_temperature = $flosc_flow_settings['ai_temperature'] ?? '0.3';
+$flosc_ai_max_tokens = $flosc_flow_settings['ai_max_tokens'] ?? '500';
+$flosc_enable_ivr_context = $flosc_flow_settings['ai_enable_ivr_context'] ?? true;
+$flosc_enable_content_access = $flosc_flow_settings['ai_enable_content_access'] ?? true;
+$flosc_ai_response_mode = $flosc_flow_settings['ai_response_mode'] ?? 'enhanced';
+$flosc_enable_chaining = $flosc_flow_settings['ai_enable_chaining'] ?? false;
+$flosc_chain_provider_1 = $flosc_flow_settings['ai_chain_provider_1'] ?? '';
+$flosc_chain_provider_2 = $flosc_flow_settings['ai_chain_provider_2'] ?? '';
+$flosc_chain_provider_3 = $flosc_flow_settings['ai_chain_provider_3'] ?? '';
 
 // Fix 9: Risk condition notices — read directly from flow settings (get_current_flow() is null in admin context)
-$product_name = $flow_settings['identity']['name'] ?? $flow_settings['name'] ?? '';
-$product_tag  = $flow_settings['identity']['tagline'] ?? $flow_settings['tagline'] ?? '';
-$catalog_file  = function_exists('flosc_config_file') ? flosc_config_file('lesaep_lesson_catalog.md') : '';
-$catalog_age   = ($catalog_file && file_exists($catalog_file)) ? (time() - filemtime($catalog_file)) : PHP_INT_MAX;
-$notices = [];
-if ((float) $ai_temperature > 0.5) {
-    $notices[] = '<strong>Temperature ' . esc_html($ai_temperature) . ' increases fabrication risk.</strong> Recommended: 0.3';
+$flosc_product_name = $flosc_flow_settings['identity']['name'] ?? $flosc_flow_settings['name'] ?? '';
+$flosc_product_tag  = $flosc_flow_settings['identity']['tagline'] ?? $flosc_flow_settings['tagline'] ?? '';
+$flosc_catalog_file  = function_exists('flosc_config_file') ? flosc_config_file('lesaep_lesson_catalog.md') : '';
+$flosc_catalog_age   = ($flosc_catalog_file && file_exists($flosc_catalog_file)) ? (time() - filemtime($flosc_catalog_file)) : PHP_INT_MAX;
+$flosc_notices = [];
+if ((float) $flosc_ai_temperature > 0.5) {
+    $flosc_notices[] = '<strong>Temperature ' . esc_html($flosc_ai_temperature) . ' increases fabrication risk.</strong> Recommended: 0.3';
 }
-if (empty($product_name)) {
-    $notices[] = '<strong>Product name not configured.</strong> AI has no identity and will hallucinate.';
+if (empty($flosc_product_name)) {
+    $flosc_notices[] = '<strong>Product name not configured.</strong> AI has no identity and will hallucinate.';
 }
-if (!empty($product_name) && empty($product_tag)) {
-    $notices[] = '<strong>Product tagline not configured.</strong> AI cannot verify its own product acronym and will guess.';
+if (!empty($flosc_product_name) && empty($flosc_product_tag)) {
+    $flosc_notices[] = '<strong>Product tagline not configured.</strong> AI cannot verify its own product acronym and will guess.';
 }
-if ($catalog_age > 7 * DAY_IN_SECONDS) {
-    $regen_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_regenerate_lesson_catalog'), 'flosc_regen_catalog');
-    $age_msg = ($catalog_age === PHP_INT_MAX) ? 'Lesson catalog has never been generated.' : 'Lesson catalog is more than 7 days old.';
-    $notices[] = $age_msg . ' <a href="' . esc_url($regen_url) . '" class="button button-small">Regenerate Now</a>';
+if ($flosc_catalog_age > 7 * DAY_IN_SECONDS) {
+    $flosc_regen_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_regenerate_lesson_catalog'), 'flosc_regen_catalog');
+    $flosc_age_msg = ($flosc_catalog_age === PHP_INT_MAX) ? 'Lesson catalog has never been generated.' : 'Lesson catalog is more than 7 days old.';
+    $flosc_notices[] = $flosc_age_msg . ' <a href="' . esc_url($flosc_regen_url) . '" class="button button-small">Regenerate Now</a>';
 }
 ?>
-<?php if (!empty($notices)): ?>
+<?php if (!empty($flosc_notices)): ?>
 <div style="margin-bottom: 20px;">
-    <?php foreach ($notices as $notice): ?>
+    <?php foreach ($flosc_notices as $flosc_notice): ?>
     <div class="notice notice-warning inline" style="margin: 0 0 8px; padding: 10px 14px;">
         <p style="margin: 0;"><?php echo wp_kses($notice, ['strong' => [], 'a' => ['href' => [], 'class' => []]]); ?></p>
     </div>
@@ -70,7 +70,7 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
 <?php endif; ?>
 
 <div style="margin:-8px 0 14px; text-align:right;">
-    <a href="<?php echo esc_url($ai_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
+    <a href="<?php echo esc_url($flosc_ai_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
 </div>
 
 <!-- Styles in assets/css/flosc-admin.css (AI Configuration section) -->
@@ -114,10 +114,10 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
         <th scope="row"><label for="flow_ai_provider">Primary AI Provider</label></th>
         <td>
             <select name="flow_ai_provider" id="flow_ai_provider" class="flosc-ai-provider-select">
-                <option value="ivr" <?php selected($ai_provider, 'ivr'); ?>>IVR Only (Scripted Responses - Zero API Cost)</option>
-                <option value="anthropic" <?php selected($ai_provider, 'anthropic'); ?>>Anthropic Claude (Recommended for FLOSC)</option>
-                <option value="openai" <?php selected($ai_provider, 'openai'); ?>>OpenAI (Fast & Affordable)</option>
-                <option value="xai" <?php selected($ai_provider, 'xai'); ?>>xAI Grok</option>
+                <option value="ivr" <?php selected($flosc_ai_provider, 'ivr'); ?>>IVR Only (Scripted Responses - Zero API Cost)</option>
+                <option value="anthropic" <?php selected($flosc_ai_provider, 'anthropic'); ?>>Anthropic Claude (Recommended for FLOSC)</option>
+                <option value="openai" <?php selected($flosc_ai_provider, 'openai'); ?>>OpenAI (Fast & Affordable)</option>
+                <option value="xai" <?php selected($flosc_ai_provider, 'xai'); ?>>xAI Grok</option>
             </select>
             <p class="description">
                 <strong>IVR:</strong> Uses your configured messages only (no AI, no costs).<br>
@@ -145,7 +145,7 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
             <label for="flow_anthropic_api_key"><strong>Anthropic API Key</strong></label>
         </th>
         <td>
-            <input type="password" id="flow_anthropic_api_key" name="flow_anthropic_api_key" value="<?php echo esc_attr($flow_settings['anthropic_api_key'] ?? ''); ?>" class="regular-text flosc-ai-key-input" placeholder="sk-ant-api03-...">
+            <input type="password" id="flow_anthropic_api_key" name="flow_anthropic_api_key" value="<?php echo esc_attr($flosc_flow_settings['anthropic_api_key'] ?? ''); ?>" class="regular-text flosc-ai-key-input" placeholder="sk-ant-api03-...">
             <p class="description">
                 <a href="https://console.anthropic.com/settings/keys" target="_blank" class="button button-secondary flosc-ai-key-link">
                     📥 Get Your Anthropic API Key Here
@@ -158,10 +158,10 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
         <th scope="row"><label for="flow_ai_anthropic_model">Anthropic Model</label></th>
         <td>
             <select name="flow_ai_anthropic_model" id="flow_ai_anthropic_model" class="flosc-ai-model-select">
-                <option value="claude-sonnet-4-5-20250929" <?php selected($ai_anthropic_model, 'claude-sonnet-4-5-20250929'); ?>>Claude Sonnet 4.5 (Recommended)</option>
-                <option value="claude-haiku-4-5-20251001" <?php selected($ai_anthropic_model, 'claude-haiku-4-5-20251001'); ?>>Claude Haiku 4.5 (Fastest, cheapest)</option>
-                <option value="claude-opus-4-6" <?php selected($ai_anthropic_model, 'claude-opus-4-6'); ?>>Claude Opus 4.6 (Most capable)</option>
-                <option value="claude-3-5-sonnet-20241022" <?php selected($ai_anthropic_model, 'claude-3-5-sonnet-20241022'); ?>>Claude 3.5 Sonnet (Legacy)</option>
+                <option value="claude-sonnet-4-5-20250929" <?php selected($flosc_ai_anthropic_model, 'claude-sonnet-4-5-20250929'); ?>>Claude Sonnet 4.5 (Recommended)</option>
+                <option value="claude-haiku-4-5-20251001" <?php selected($flosc_ai_anthropic_model, 'claude-haiku-4-5-20251001'); ?>>Claude Haiku 4.5 (Fastest, cheapest)</option>
+                <option value="claude-opus-4-6" <?php selected($flosc_ai_anthropic_model, 'claude-opus-4-6'); ?>>Claude Opus 4.6 (Most capable)</option>
+                <option value="claude-3-5-sonnet-20241022" <?php selected($flosc_ai_anthropic_model, 'claude-3-5-sonnet-20241022'); ?>>Claude 3.5 Sonnet (Legacy)</option>
             </select>
             <p class="description">Choose which Claude model to use for this flow.</p>
         </td>
@@ -177,7 +177,7 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
             <label for="flow_openai_api_key"><strong>OpenAI API Key</strong></label>
         </th>
         <td>
-            <input type="password" id="flow_openai_api_key" name="flow_openai_api_key" value="<?php echo esc_attr($flow_settings['openai_api_key'] ?? ''); ?>" class="regular-text flosc-ai-key-input" placeholder="sk-proj-...">
+            <input type="password" id="flow_openai_api_key" name="flow_openai_api_key" value="<?php echo esc_attr($flosc_flow_settings['openai_api_key'] ?? ''); ?>" class="regular-text flosc-ai-key-input" placeholder="sk-proj-...">
             <p class="description">
                 <a href="https://platform.openai.com/api-keys" target="_blank" class="button button-secondary flosc-ai-key-link">
                     📥 Get Your OpenAI API Key Here
@@ -190,11 +190,11 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
         <th scope="row"><label for="flow_ai_openai_model">OpenAI Model</label></th>
         <td>
             <select name="flow_ai_openai_model" id="flow_ai_openai_model" class="flosc-ai-model-select">
-                <option value="gpt-4o-mini" <?php selected($ai_openai_model, 'gpt-4o-mini'); ?>>GPT-4o-mini (Fast & affordable)</option>
-                <option value="gpt-4o" <?php selected($ai_openai_model, 'gpt-4o'); ?>>GPT-4o (More capable)</option>
-                <option value="gpt-4.1" <?php selected($ai_openai_model, 'gpt-4.1'); ?>>GPT-4.1 (Latest)</option>
-                <option value="gpt-4.1-mini" <?php selected($ai_openai_model, 'gpt-4.1-mini'); ?>>GPT-4.1 Mini (Latest affordable)</option>
-                <option value="gpt-4.1-nano" <?php selected($ai_openai_model, 'gpt-4.1-nano'); ?>>GPT-4.1 Nano (Cheapest)</option>
+                <option value="gpt-4o-mini" <?php selected($flosc_ai_openai_model, 'gpt-4o-mini'); ?>>GPT-4o-mini (Fast & affordable)</option>
+                <option value="gpt-4o" <?php selected($flosc_ai_openai_model, 'gpt-4o'); ?>>GPT-4o (More capable)</option>
+                <option value="gpt-4.1" <?php selected($flosc_ai_openai_model, 'gpt-4.1'); ?>>GPT-4.1 (Latest)</option>
+                <option value="gpt-4.1-mini" <?php selected($flosc_ai_openai_model, 'gpt-4.1-mini'); ?>>GPT-4.1 Mini (Latest affordable)</option>
+                <option value="gpt-4.1-nano" <?php selected($flosc_ai_openai_model, 'gpt-4.1-nano'); ?>>GPT-4.1 Nano (Cheapest)</option>
             </select>
             <p class="description">Choose which OpenAI model to use for this flow.</p>
         </td>
@@ -210,7 +210,7 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
             <label for="flow_xai_api_key"><strong>xAI API Key</strong></label>
         </th>
         <td>
-            <input type="password" id="flow_xai_api_key" name="flow_xai_api_key" value="<?php echo esc_attr($flow_settings['xai_api_key'] ?? ''); ?>" class="regular-text flosc-ai-key-input" placeholder="xai-...">
+            <input type="password" id="flow_xai_api_key" name="flow_xai_api_key" value="<?php echo esc_attr($flosc_flow_settings['xai_api_key'] ?? ''); ?>" class="regular-text flosc-ai-key-input" placeholder="xai-...">
             <p class="description">
                 <a href="https://console.x.ai" target="_blank" class="button button-secondary flosc-ai-key-link">
                     📥 Get Your xAI API Key Here
@@ -223,8 +223,8 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
         <th scope="row"><label for="flow_ai_xai_model">xAI Model</label></th>
         <td>
             <select name="flow_ai_xai_model" id="flow_ai_xai_model" class="flosc-ai-model-select">
-                <option value="grok-2-latest" <?php selected($ai_xai_model, 'grok-2-latest'); ?>>Grok 2 (Recommended)</option>
-                <option value="grok-beta" <?php selected($ai_xai_model, 'grok-beta'); ?>>Grok Beta (Legacy)</option>
+                <option value="grok-2-latest" <?php selected($flosc_ai_xai_model, 'grok-2-latest'); ?>>Grok 2 (Recommended)</option>
+                <option value="grok-beta" <?php selected($flosc_ai_xai_model, 'grok-beta'); ?>>Grok Beta (Legacy)</option>
             </select>
             <p class="description">Choose which Grok model to use for this flow.</p>
         </td>
@@ -249,7 +249,7 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
     <tr>
         <th scope="row"><label for="flow_ai_temperature">Temperature</label></th>
         <td>
-            <input type="number" id="flow_ai_temperature" name="flow_ai_temperature" value="<?php echo esc_attr($ai_temperature); ?>" min="0" max="2" step="0.1" class="flosc-ai-temp-input">
+            <input type="number" id="flow_ai_temperature" name="flow_ai_temperature" value="<?php echo esc_attr($flosc_ai_temperature); ?>" min="0" max="2" step="0.1" class="flosc-ai-temp-input">
             <p class="description">
                 Controls randomness. <strong>0.0</strong> = fully deterministic, <strong>0.3</strong> = recommended (precision/coaching), <strong>0.7</strong> = creative/balanced, <strong>1.5+</strong> = highly random. Lower values reduce hallucination.
             </p>
@@ -258,7 +258,7 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
     <tr>
         <th scope="row"><label for="flow_ai_max_tokens">Max Tokens</label></th>
         <td>
-            <input type="number" id="flow_ai_max_tokens" name="flow_ai_max_tokens" value="<?php echo esc_attr($ai_max_tokens); ?>" min="50" max="4096" step="50" class="flosc-ai-tokens-input">
+            <input type="number" id="flow_ai_max_tokens" name="flow_ai_max_tokens" value="<?php echo esc_attr($flosc_ai_max_tokens); ?>" min="50" max="4096" step="50" class="flosc-ai-tokens-input">
             <p class="description">
                 Maximum response length. <strong>500</strong> = concise chat (default), <strong>1000</strong> = detailed explanations, <strong>2000+</strong> = long-form. Higher values cost more per response.
             </p>
@@ -278,7 +278,7 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
     <tr>
         <th scope="row">
             <label for="flow_ai_enable_chaining">
-                <input type="checkbox" name="flow_ai_enable_chaining" id="flow_ai_enable_chaining" value="1" <?php checked($enable_chaining, true); ?>>
+                <input type="checkbox" name="flow_ai_enable_chaining" id="flow_ai_enable_chaining" value="1" <?php checked($flosc_enable_chaining, true); ?>>
                 Enable Provider Chaining
             </label>
         </th>
@@ -290,16 +290,16 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
     </tr>
 </table>
 
-<div id="flosc-chain-config" class="flosc-ai-chain-config" style="<?php echo $enable_chaining ? '' : 'display:none;'; ?>">
+<div id="flosc-chain-config" class="flosc-ai-chain-config" style="<?php echo $flosc_enable_chaining ? '' : 'display:none;'; ?>">
     <table class="form-table">
         <tr>
             <th scope="row"><label for="flow_ai_chain_provider_1">Provider 1 (Drafts)</label></th>
             <td>
                 <select name="flow_ai_chain_provider_1" id="flow_ai_chain_provider_1" class="flosc-ai-model-select">
                     <option value="none">— Select —</option>
-                    <option value="openai" <?php selected($chain_provider_1, 'openai'); ?>>OpenAI</option>
-                    <option value="anthropic" <?php selected($chain_provider_1, 'anthropic'); ?>>Anthropic Claude</option>
-                    <option value="xai" <?php selected($chain_provider_1, 'xai'); ?>>xAI Grok</option>
+                    <option value="openai" <?php selected($flosc_chain_provider_1, 'openai'); ?>>OpenAI</option>
+                    <option value="anthropic" <?php selected($flosc_chain_provider_1, 'anthropic'); ?>>Anthropic Claude</option>
+                    <option value="xai" <?php selected($flosc_chain_provider_1, 'xai'); ?>>xAI Grok</option>
                 </select>
                 <span class="description">Generates the initial response.</span>
             </td>
@@ -309,9 +309,9 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
             <td>
                 <select name="flow_ai_chain_provider_2" id="flow_ai_chain_provider_2" class="flosc-ai-model-select">
                     <option value="none">— Select —</option>
-                    <option value="openai" <?php selected($chain_provider_2, 'openai'); ?>>OpenAI</option>
-                    <option value="anthropic" <?php selected($chain_provider_2, 'anthropic'); ?>>Anthropic Claude</option>
-                    <option value="xai" <?php selected($chain_provider_2, 'xai'); ?>>xAI Grok</option>
+                    <option value="openai" <?php selected($flosc_chain_provider_2, 'openai'); ?>>OpenAI</option>
+                    <option value="anthropic" <?php selected($flosc_chain_provider_2, 'anthropic'); ?>>Anthropic Claude</option>
+                    <option value="xai" <?php selected($flosc_chain_provider_2, 'xai'); ?>>xAI Grok</option>
                 </select>
                 <span class="description">Reviews and refines Provider 1's response.</span>
             </td>
@@ -321,9 +321,9 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
             <td>
                 <select name="flow_ai_chain_provider_3" id="flow_ai_chain_provider_3" class="flosc-ai-model-select">
                     <option value="none">— None —</option>
-                    <option value="openai" <?php selected($chain_provider_3, 'openai'); ?>>OpenAI</option>
-                    <option value="anthropic" <?php selected($chain_provider_3, 'anthropic'); ?>>Anthropic Claude</option>
-                    <option value="xai" <?php selected($chain_provider_3, 'xai'); ?>>xAI Grok</option>
+                    <option value="openai" <?php selected($flosc_chain_provider_3, 'openai'); ?>>OpenAI</option>
+                    <option value="anthropic" <?php selected($flosc_chain_provider_3, 'anthropic'); ?>>Anthropic Claude</option>
+                    <option value="xai" <?php selected($flosc_chain_provider_3, 'xai'); ?>>xAI Grok</option>
                 </select>
                 <span class="description">Optional third pass. Leave as "None" for 2-provider chain.</span>
             </td>
@@ -362,7 +362,7 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
     <tr>
         <th scope="row"><label for="flow_ai_base_prompt">Base System Prompt</label></th>
         <td>
-            <textarea id="flow_ai_base_prompt" name="flow_ai_base_prompt" rows="6" class="large-text flosc-ai-prompt-textarea" placeholder="Define your AI's personality and behavior here. Example: You are a friendly coach who helps users improve their skills..."><?php echo esc_textarea($base_prompt); ?></textarea>
+            <textarea id="flow_ai_base_prompt" name="flow_ai_base_prompt" rows="6" class="large-text flosc-ai-prompt-textarea" placeholder="Define your AI's personality and behavior here. Example: You are a friendly coach who helps users improve their skills..."><?php echo esc_textarea($flosc_base_prompt); ?></textarea>
             <p class="description">
                 Define your AI's core personality and behavior. FLOSC automatically adds phase-specific instructions on top of this base prompt. Leave blank to use the AI Knowledge tab settings only.
             </p>
@@ -383,8 +383,8 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
         <th scope="row"><label for="flow_ai_response_mode">Response Mode</label></th>
         <td>
             <select name="flow_ai_response_mode" id="flow_ai_response_mode">
-                <option value="strict" <?php selected($ai_response_mode, 'strict'); ?>>Strict IVR (AI only rephrases configured messages)</option>
-                <option value="enhanced" <?php selected($ai_response_mode, 'enhanced'); ?>>Enhanced (AI can expand on messages with context)</option>
+                <option value="strict" <?php selected($flosc_ai_response_mode, 'strict'); ?>>Strict IVR (AI only rephrases configured messages)</option>
+                <option value="enhanced" <?php selected($flosc_ai_response_mode, 'enhanced'); ?>>Enhanced (AI can expand on messages with context)</option>
             </select>
             <p class="description">
                 <strong>Strict:</strong> AI generates natural variations of IVR messages ONLY. Conditions still determine WHEN to respond.<br>
@@ -405,7 +405,7 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
     <tr>
         <th scope="row">
             <label for="flow_ai_enable_ivr_context">
-                <input type="checkbox" name="flow_ai_enable_ivr_context" id="flow_ai_enable_ivr_context" value="1" <?php checked($enable_ivr_context, true); ?>>
+                <input type="checkbox" name="flow_ai_enable_ivr_context" id="flow_ai_enable_ivr_context" value="1" <?php checked($flosc_enable_ivr_context, true); ?>>
                 Enable IVR Context
             </label>
         </th>
@@ -419,7 +419,7 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
     <tr>
         <th scope="row">
             <label for="flow_ai_enable_content_access">
-                <input type="checkbox" name="flow_ai_enable_content_access" id="flow_ai_enable_content_access" value="1" <?php checked($enable_content_access, true); ?>>
+                <input type="checkbox" name="flow_ai_enable_content_access" id="flow_ai_enable_content_access" value="1" <?php checked($flosc_enable_content_access, true); ?>>
                 Enable Content Access
             </label>
         </th>
@@ -450,8 +450,8 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
     <tr>
         <th scope="row"><label for="flow_ai_prompt_freeline">Freeline Phase</label></th>
         <td>
-            <textarea name="flow_ai_prompt_freeline" id="flow_ai_prompt_freeline" rows="3" class="large-text" placeholder="e.g. Encourage user to take the quiz. Be curious about their goals."><?php echo esc_textarea($flow_settings['ai_prompt_freeline'] ?? ''); ?></textarea>
-            <textarea name="flow_phase_outcomes_freeline" id="flow_phase_outcomes_freeline" rows="2" class="large-text" placeholder="Phase outcomes (one per line), e.g.&#10;Inquiry clarification&#10;Contact exchange"><?php echo esc_textarea($flow_settings['phase_outcomes_freeline'] ?? ''); ?></textarea>
+            <textarea name="flow_ai_prompt_freeline" id="flow_ai_prompt_freeline" rows="3" class="large-text" placeholder="e.g. Encourage user to take the quiz. Be curious about their goals."><?php echo esc_textarea($flosc_flow_settings['ai_prompt_freeline'] ?? ''); ?></textarea>
+            <textarea name="flow_phase_outcomes_freeline" id="flow_phase_outcomes_freeline" rows="2" class="large-text" placeholder="Phase outcomes (one per line), e.g.&#10;Inquiry clarification&#10;Contact exchange"><?php echo esc_textarea($flosc_flow_settings['phase_outcomes_freeline'] ?? ''); ?></textarea>
             <p class="description">Optional outcomes for Freeline. One outcome per line.</p>
             <p class="description">Visitors who haven't taken the quiz yet.</p>
         </td>
@@ -459,8 +459,8 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
     <tr>
         <th scope="row"><label for="flow_ai_prompt_login">Login Phase</label></th>
         <td>
-            <textarea name="flow_ai_prompt_login" id="flow_ai_prompt_login" rows="3" class="large-text" placeholder="e.g. Deliver free lesson based on quiz results. Build trust before presenting offer."><?php echo esc_textarea($flow_settings['ai_prompt_login'] ?? ''); ?></textarea>
-            <textarea name="flow_phase_outcomes_login" id="flow_phase_outcomes_login" rows="2" class="large-text" placeholder="Phase outcomes (one per line), e.g.&#10;Quiz result clarity&#10;Free lesson delivery"><?php echo esc_textarea($flow_settings['phase_outcomes_login'] ?? ''); ?></textarea>
+            <textarea name="flow_ai_prompt_login" id="flow_ai_prompt_login" rows="3" class="large-text" placeholder="e.g. Deliver free lesson based on quiz results. Build trust before presenting offer."><?php echo esc_textarea($flosc_flow_settings['ai_prompt_login'] ?? ''); ?></textarea>
+            <textarea name="flow_phase_outcomes_login" id="flow_phase_outcomes_login" rows="2" class="large-text" placeholder="Phase outcomes (one per line), e.g.&#10;Quiz result clarity&#10;Free lesson delivery"><?php echo esc_textarea($flosc_flow_settings['phase_outcomes_login'] ?? ''); ?></textarea>
             <p class="description">Optional outcomes for Login. One outcome per line.</p>
             <p class="description">Post-quiz visitors and logged-in users.</p>
         </td>
@@ -468,8 +468,8 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
     <tr>
         <th scope="row"><label for="flow_ai_prompt_offer">Offer Phase</label></th>
         <td>
-            <textarea name="flow_ai_prompt_offer" id="flow_ai_prompt_offer" rows="3" class="large-text" placeholder="e.g. Present personalized offer. Address objections. Show value specific to their quiz results."><?php echo esc_textarea($flow_settings['ai_prompt_offer'] ?? ''); ?></textarea>
-            <textarea name="flow_phase_outcomes_offer" id="flow_phase_outcomes_offer" rows="2" class="large-text" placeholder="Phase outcomes (one per line), e.g.&#10;Offer readiness&#10;Objection handling"><?php echo esc_textarea($flow_settings['phase_outcomes_offer'] ?? ''); ?></textarea>
+            <textarea name="flow_ai_prompt_offer" id="flow_ai_prompt_offer" rows="3" class="large-text" placeholder="e.g. Present personalized offer. Address objections. Show value specific to their quiz results."><?php echo esc_textarea($flosc_flow_settings['ai_prompt_offer'] ?? ''); ?></textarea>
+            <textarea name="flow_phase_outcomes_offer" id="flow_phase_outcomes_offer" rows="2" class="large-text" placeholder="Phase outcomes (one per line), e.g.&#10;Offer readiness&#10;Objection handling"><?php echo esc_textarea($flosc_flow_settings['phase_outcomes_offer'] ?? ''); ?></textarea>
             <p class="description">Optional outcomes for Offer. One outcome per line.</p>
             <p class="description">Sales pitch mode.</p>
         </td>
@@ -477,8 +477,8 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
     <tr>
         <th scope="row"><label for="flow_ai_prompt_sale">Sale Phase</label></th>
         <td>
-            <textarea name="flow_ai_prompt_sale" id="flow_ai_prompt_sale" rows="3" class="large-text" placeholder="e.g. Onboard user to content. Explain navigation. Build excitement for their purchase."><?php echo esc_textarea($flow_settings['ai_prompt_sale'] ?? ''); ?></textarea>
-            <textarea name="flow_phase_outcomes_sale" id="flow_phase_outcomes_sale" rows="2" class="large-text" placeholder="Phase outcomes (one per line), e.g.&#10;Member onboarding&#10;First content step"><?php echo esc_textarea($flow_settings['phase_outcomes_sale'] ?? ''); ?></textarea>
+            <textarea name="flow_ai_prompt_sale" id="flow_ai_prompt_sale" rows="3" class="large-text" placeholder="e.g. Onboard user to content. Explain navigation. Build excitement for their purchase."><?php echo esc_textarea($flosc_flow_settings['ai_prompt_sale'] ?? ''); ?></textarea>
+            <textarea name="flow_phase_outcomes_sale" id="flow_phase_outcomes_sale" rows="2" class="large-text" placeholder="Phase outcomes (one per line), e.g.&#10;Member onboarding&#10;First content step"><?php echo esc_textarea($flosc_flow_settings['phase_outcomes_sale'] ?? ''); ?></textarea>
             <p class="description">Optional outcomes for Sale. One outcome per line.</p>
             <p class="description">Post-purchase onboarding.</p>
         </td>
@@ -486,8 +486,8 @@ if ($catalog_age > 7 * DAY_IN_SECONDS) {
     <tr>
         <th scope="row"><label for="flow_ai_prompt_content">Content Phase</label></th>
         <td>
-            <textarea name="flow_ai_prompt_content" id="flow_ai_prompt_content" rows="3" class="large-text" placeholder="e.g. Support learning journey. Answer questions. Encourage progress and celebrate wins."><?php echo esc_textarea($flow_settings['ai_prompt_content'] ?? ''); ?></textarea>
-            <textarea name="flow_phase_outcomes_content" id="flow_phase_outcomes_content" rows="2" class="large-text" placeholder="Phase outcomes (one per line), e.g.&#10;Learning momentum&#10;Progress reinforcement"><?php echo esc_textarea($flow_settings['phase_outcomes_content'] ?? ''); ?></textarea>
+            <textarea name="flow_ai_prompt_content" id="flow_ai_prompt_content" rows="3" class="large-text" placeholder="e.g. Support learning journey. Answer questions. Encourage progress and celebrate wins."><?php echo esc_textarea($flosc_flow_settings['ai_prompt_content'] ?? ''); ?></textarea>
+            <textarea name="flow_phase_outcomes_content" id="flow_phase_outcomes_content" rows="2" class="large-text" placeholder="Phase outcomes (one per line), e.g.&#10;Learning momentum&#10;Progress reinforcement"><?php echo esc_textarea($flosc_flow_settings['phase_outcomes_content'] ?? ''); ?></textarea>
             <p class="description">Optional outcomes for Content. One outcome per line.</p>
             <p class="description">Ongoing support for paying customers.</p>
         </td>
@@ -575,9 +575,9 @@ jQuery(document).ready(function($) {
         <th scope="row"><label for="flow_stt_provider">Speech-to-Text Provider</label></th>
         <td>
             <select name="flow_stt_provider" id="flow_stt_provider" class="flosc-ai-provider-select">
-                <option value="assemblyai" <?php selected($flow_settings['stt_provider'] ?? '', 'assemblyai'); ?>>AssemblyAI (High Accuracy)</option>
-                <option value="openai" <?php selected($flow_settings['stt_provider'] ?? '', 'openai'); ?>>OpenAI Whisper (Multilingual)</option>
-                <option value="custom" <?php selected($flow_settings['stt_provider'] ?? '', 'custom'); ?>>Custom Endpoint (Self-hosted)</option>
+                <option value="assemblyai" <?php selected($flosc_flow_settings['stt_provider'] ?? '', 'assemblyai'); ?>>AssemblyAI (High Accuracy)</option>
+                <option value="openai" <?php selected($flosc_flow_settings['stt_provider'] ?? '', 'openai'); ?>>OpenAI Whisper (Multilingual)</option>
+                <option value="custom" <?php selected($flosc_flow_settings['stt_provider'] ?? '', 'custom'); ?>>Custom Endpoint (Self-hosted)</option>
             </select>
             <p class="description">Choose the service that will transcribe audio recordings from quiz takers.</p>
         </td>
@@ -587,7 +587,7 @@ jQuery(document).ready(function($) {
             <label for="flow_assemblyai_api_key"><strong>AssemblyAI API Key</strong></label>
         </th>
         <td>
-            <input type="password" id="flow_assemblyai_api_key" name="flow_assemblyai_api_key" value="<?php echo esc_attr($flow_settings['assemblyai_api_key'] ?? ''); ?>" class="regular-text flosc-ai-stt-input" placeholder="Your AssemblyAI key">
+            <input type="password" id="flow_assemblyai_api_key" name="flow_assemblyai_api_key" value="<?php echo esc_attr($flosc_flow_settings['assemblyai_api_key'] ?? ''); ?>" class="regular-text flosc-ai-stt-input" placeholder="Your AssemblyAI key">
             <p class="description">
                 <a href="https://www.assemblyai.com/dashboard/signup" target="_blank" class="button button-secondary flosc-ai-key-link">
                     📥 Get Your AssemblyAI API Key Here
@@ -601,7 +601,7 @@ jQuery(document).ready(function($) {
             <label for="flow_custom_stt_endpoint"><strong>Custom STT Endpoint URL</strong></label>
         </th>
         <td>
-            <input type="url" id="flow_custom_stt_endpoint" name="flow_custom_stt_endpoint" value="<?php echo esc_attr($flow_settings['custom_stt_endpoint'] ?? ''); ?>" class="regular-text flosc-ai-stt-input" placeholder="https://your-stt-endpoint.com/transcribe">
+            <input type="url" id="flow_custom_stt_endpoint" name="flow_custom_stt_endpoint" value="<?php echo esc_attr($flosc_flow_settings['custom_stt_endpoint'] ?? ''); ?>" class="regular-text flosc-ai-stt-input" placeholder="https://your-stt-endpoint.com/transcribe">
             <p class="description">Only required if using "Custom Endpoint" option above. URL to your self-hosted speech-to-text service.</p>
         </td>
     </tr>
@@ -623,7 +623,7 @@ jQuery(document).ready(function($) {
         <th scope="row"><label for="flow_ai_personality_name">AI Name</label></th>
         <td>
             <input type="text" id="flow_ai_personality_name" name="flow_ai_personality_name"
-                   value="<?php echo esc_attr($flow_settings['ai_personality_name'] ?? ($flow_settings['ai_name'] ?? '')); ?>"
+                   value="<?php echo esc_attr($flosc_flow_settings['ai_personality_name'] ?? ($flosc_flow_settings['ai_name'] ?? '')); ?>"
                    class="regular-text" placeholder="e.g. LeSAEp Coach">
             <p class="description">What users call the AI.</p>
         </td>
@@ -632,7 +632,7 @@ jQuery(document).ready(function($) {
         <th scope="row"><label for="flow_ai_personality_role">AI Role</label></th>
         <td>
             <input type="text" id="flow_ai_personality_role" name="flow_ai_personality_role"
-                   value="<?php echo esc_attr($flow_settings['ai_personality_role'] ?? ($flow_settings['ai_role'] ?? '')); ?>"
+                   value="<?php echo esc_attr($flosc_flow_settings['ai_personality_role'] ?? ($flosc_flow_settings['ai_role'] ?? '')); ?>"
                    class="large-text" placeholder="e.g. pronunciation coach and learning guide">
         </td>
     </tr>
@@ -640,7 +640,7 @@ jQuery(document).ready(function($) {
         <th scope="row"><label for="flow_ai_personality_traits">Personality Traits</label></th>
         <td>
             <textarea id="flow_ai_personality_traits" name="flow_ai_personality_traits" rows="3" class="large-text"><?php
-                echo esc_textarea($flow_settings['ai_personality_traits'] ?? ($flow_settings['ai_traits'] ?? ''));
+                echo esc_textarea($flosc_flow_settings['ai_personality_traits'] ?? ($flosc_flow_settings['ai_traits'] ?? ''));
             ?></textarea>
             <p class="description">Tone and approach. e.g. "Encouraging, patient, specific, action-oriented."</p>
         </td>
@@ -649,7 +649,7 @@ jQuery(document).ready(function($) {
         <th scope="row"><label for="flow_ai_mission">Mission Statement</label></th>
         <td>
             <textarea id="flow_ai_mission" name="flow_ai_mission" rows="3" class="large-text"><?php
-                echo esc_textarea($flow_settings['ai_mission'] ?? '');
+                echo esc_textarea($flosc_flow_settings['ai_mission'] ?? '');
             ?></textarea>
             <p class="description">Core purpose in your own words. Injected into the orientation brief.</p>
         </td>
@@ -658,7 +658,7 @@ jQuery(document).ready(function($) {
         <th scope="row"><label for="flow_ai_boundaries">Boundaries & Limitations</label></th>
         <td>
             <textarea id="flow_ai_boundaries" name="flow_ai_boundaries" rows="3" class="large-text"><?php
-                echo esc_textarea($flow_settings['ai_boundaries'] ?? '');
+                echo esc_textarea($flosc_flow_settings['ai_boundaries'] ?? '');
             ?></textarea>
             <p class="description">What the AI should refuse to do. e.g. "Never diagnose speech impediments. Never guarantee specific results."</p>
         </td>
@@ -667,7 +667,7 @@ jQuery(document).ready(function($) {
         <th scope="row"><label for="flow_ai_topic_scope">Topic Scope</label></th>
         <td>
             <textarea id="flow_ai_topic_scope" name="flow_ai_topic_scope" rows="2" class="large-text"><?php
-                echo esc_textarea($flow_settings['ai_topic_scope'] ?? '');
+                echo esc_textarea($flosc_flow_settings['ai_topic_scope'] ?? '');
             ?></textarea>
             <p class="description">What topics the AI covers. e.g. "Stay within English pronunciation and phonetics."</p>
         </td>
@@ -676,7 +676,7 @@ jQuery(document).ready(function($) {
         <th scope="row"><label for="flow_ai_off_topic_message">Off-Topic Response</label></th>
         <td>
             <textarea id="flow_ai_off_topic_message" name="flow_ai_off_topic_message" rows="2" class="large-text"><?php
-                echo esc_textarea($flow_settings['ai_off_topic_message'] ?? '');
+                echo esc_textarea($flosc_flow_settings['ai_off_topic_message'] ?? '');
             ?></textarea>
             <p class="description">How the AI redirects off-topic questions.</p>
         </td>
@@ -685,7 +685,7 @@ jQuery(document).ready(function($) {
         <th scope="row"><label for="flow_ai_off_topic_links">Referral Links</label></th>
         <td>
             <textarea id="flow_ai_off_topic_links" name="flow_ai_off_topic_links" rows="3" class="large-text"><?php
-                echo esc_textarea($flow_settings['ai_off_topic_links'] ?? '');
+                echo esc_textarea($flosc_flow_settings['ai_off_topic_links'] ?? '');
             ?></textarea>
             <p class="description">External resources to recommend when users need help outside your scope. One per line. Use affiliate links where applicable.</p>
         </td>
@@ -702,60 +702,60 @@ jQuery(document).ready(function($) {
 <?php
 // Fix 15: Display any KB action success message
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only status parameters for admin notice display
- $get = wp_unslash($_GET);
-if (isset($get['kb_action'])) {
-    $kb_action = sanitize_key($get['kb_action']);
-    $kb_msg = '';
-    if ($kb_action === 'uploaded')      $kb_msg = 'File uploaded successfully.';
-    if ($kb_action === 'deleted')       $kb_msg = 'File deleted.';
-    if ($kb_action === 'toggled')       $kb_msg = 'Access level updated.';
-    if ($kb_action === 'saved')         $kb_msg = 'File saved.';
-    if ($kb_action === 'error')         $kb_msg = isset($get['kb_error']) ? sanitize_text_field(urldecode((string) $get['kb_error'])) : 'An error occurred.';
-    if ($kb_msg):
+ $flosc_get = wp_unslash($_GET);
+if (isset($flosc_get['kb_action'])) {
+    $flosc_kb_action = sanitize_key($flosc_get['kb_action']);
+    $flosc_kb_msg = '';
+    if ($flosc_kb_action === 'uploaded')      $flosc_kb_msg = 'File uploaded successfully.';
+    if ($flosc_kb_action === 'deleted')       $flosc_kb_msg = 'File deleted.';
+    if ($flosc_kb_action === 'toggled')       $flosc_kb_msg = 'Access level updated.';
+    if ($flosc_kb_action === 'saved')         $flosc_kb_msg = 'File saved.';
+    if ($flosc_kb_action === 'error')         $flosc_kb_msg = isset($flosc_get['kb_error']) ? sanitize_text_field(urldecode((string) $flosc_get['kb_error'])) : 'An error occurred.';
+    if ($flosc_kb_msg):
 ?>
-<div class="notice notice-success inline" style="margin: 0 0 15px;"><p><?php echo esc_html($kb_msg); ?></p></div>
+<div class="notice notice-success inline" style="margin: 0 0 15px;"><p><?php echo esc_html($flosc_kb_msg); ?></p></div>
 <?php endif; } ?>
 
 <?php
 // Fix 6: Regenerate Lesson Catalog button
-$catalog_file   = function_exists('flosc_config_file') ? flosc_config_file('lesaep_lesson_catalog.md') : '';
-$catalog_exists = $catalog_file && file_exists($catalog_file);
-$catalog_gen    = get_option('flosc_lesson_catalog_generated', '');
-$catalog_count  = get_option('flosc_lesson_catalog_count', 0);
-$regen_url      = wp_nonce_url(admin_url('admin-post.php?action=flosc_regenerate_lesson_catalog'), 'flosc_regen_catalog');
+$flosc_catalog_file   = function_exists('flosc_config_file') ? flosc_config_file('lesaep_lesson_catalog.md') : '';
+$flosc_catalog_exists = $flosc_catalog_file && file_exists($flosc_catalog_file);
+$flosc_catalog_gen    = get_option('flosc_lesson_catalog_generated', '');
+$flosc_catalog_count  = get_option('flosc_lesson_catalog_count', 0);
+$flosc_regen_url      = wp_nonce_url(admin_url('admin-post.php?action=flosc_regenerate_lesson_catalog'), 'flosc_regen_catalog');
 ?>
 <div style="background: #f6f7f7; border: 1px solid #ddd; padding: 12px 16px; margin-bottom: 20px; border-radius: 3px; display: flex; align-items: center; gap: 16px;">
     <div style="flex: 1;">
         <strong>Lesson Catalog</strong>
-        <?php if ($catalog_exists): ?>
+        <?php if ($flosc_catalog_exists): ?>
             <span style="color: #46b450; margin-left: 8px;">✓ Generated</span>
-            <?php if ($catalog_gen): ?><span style="color: #888; font-size: 12px; margin-left: 8px;"><?php echo esc_html($catalog_gen); ?> (<?php echo (int)$catalog_count; ?> lessons)</span><?php endif; ?>
+            <?php if ($flosc_catalog_gen): ?><span style="color: #888; font-size: 12px; margin-left: 8px;"><?php echo esc_html($flosc_catalog_gen); ?> (<?php echo (int)$flosc_catalog_count; ?> lessons)</span><?php endif; ?>
         <?php else: ?>
             <span style="color: #dc3232; margin-left: 8px;">Not yet generated</span>
         <?php endif; ?>
         <p class="description" style="margin: 4px 0 0;">Auto-regenerates when a LeSAEp lesson is saved. Manual regeneration queries all published LeSAEp posts.</p>
     </div>
-    <a href="<?php echo esc_url($regen_url); ?>" class="button button-secondary">Regenerate Lesson Catalog</a>
+    <a href="<?php echo esc_url($flosc_regen_url); ?>" class="button button-secondary">Regenerate Lesson Catalog</a>
 </div>
 
 <?php
 // Per-flow basket: list ONLY this flow's own uploaded files. Each flow's folder is
 // physically separate, so another flow's files can never appear here (no bleed).
-$flow_stem = sanitize_key(pathinfo($GLOBALS['flosc_current_ivr'] ?? '', PATHINFO_FILENAME));
-$kb_dir    = function_exists('flosc_flow_kb_dir') ? flosc_flow_kb_dir($flow_stem) : '';
-$kb_files  = [];
-if ($kb_dir && is_dir($kb_dir)) {
-    foreach (glob($kb_dir . '*.{md,txt}', GLOB_BRACE) ?: [] as $fp) {
-        $kb_files[] = basename($fp);
+$flosc_flow_stem = sanitize_key(pathinfo($GLOBALS['flosc_current_ivr'] ?? '', PATHINFO_FILENAME));
+$flosc_kb_dir    = function_exists('flosc_flow_kb_dir') ? flosc_flow_kb_dir($flosc_flow_stem) : '';
+$flosc_kb_files  = [];
+if ($flosc_kb_dir && is_dir($flosc_kb_dir)) {
+    foreach (glob($flosc_kb_dir . '*.{md,txt}', GLOB_BRACE) ?: [] as $flosc_fp) {
+        $flosc_kb_files[] = basename($flosc_fp);
     }
 }
-sort($kb_files);
+sort($flosc_kb_files);
 
-$editing_kb_file = isset($get['kb_edit']) ? sanitize_file_name($get['kb_edit']) : '';
-$editing_kb_content = '';
-$editing_kb_path = ($editing_kb_file && $kb_dir) ? $kb_dir . $editing_kb_file : '';
-if ($editing_kb_path && file_exists($editing_kb_path)) {
-    $editing_kb_content = file_get_contents($editing_kb_path);
+$flosc_editing_kb_file = isset($flosc_get['kb_edit']) ? sanitize_file_name($flosc_get['kb_edit']) : '';
+$flosc_editing_kb_content = '';
+$flosc_editing_kb_path = ($flosc_editing_kb_file && $flosc_kb_dir) ? $flosc_kb_dir . $flosc_editing_kb_file : '';
+if ($flosc_editing_kb_path && file_exists($flosc_editing_kb_path)) {
+    $flosc_editing_kb_content = file_get_contents($flosc_editing_kb_path);
 }
 ?>
 
@@ -793,7 +793,7 @@ if ($editing_kb_path && file_exists($editing_kb_path)) {
 </div>
 
 <!-- File list -->
-<?php if (!empty($kb_files)): ?>
+<?php if (!empty($flosc_kb_files)): ?>
 <table class="widefat" style="max-width: 100%; margin-bottom: 20px;">
     <thead>
         <tr>
@@ -805,30 +805,30 @@ if ($editing_kb_path && file_exists($editing_kb_path)) {
         </tr>
     </thead>
     <tbody>
-    <?php foreach ($kb_files as $kbf):
-        $fp = $kb_dir . $kbf;
-        $kbf_access = $flow_settings['knowledge_access_' . md5($kbf)] ?? 'visitor';
-        if ($kbf_access === 'public')  $kbf_access = 'visitor';
-        if ($kbf_access === 'members') $kbf_access = 'member';
-        $kbf_badge = ['visitor' => ['Visitor', '#10b981'], 'guest' => ['Guest', '#2271b1'], 'member' => ['Member', '#8b5cf6']][$kbf_access] ?? ['Visitor', '#10b981'];
-        $toggle_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_kb_toggle&kb_file=' . urlencode($kbf) . '&return_ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '')), 'flosc_kb_toggle_' . $kbf);
-        $delete_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_kb_delete&kb_file=' . urlencode($kbf) . '&return_ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '')), 'flosc_kb_delete_' . $kbf);
-        $edit_url   = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '') . '&tab=ai&kb_edit=' . urlencode($kbf) . '#flosc-kb-section');
+    <?php foreach ($flosc_kb_files as $flosc_kbf):
+        $flosc_fp = $flosc_kb_dir . $flosc_kbf;
+        $flosc_kbf_access = $flosc_flow_settings['knowledge_access_' . md5($flosc_kbf)] ?? 'visitor';
+        if ($flosc_kbf_access === 'public')  $flosc_kbf_access = 'visitor';
+        if ($flosc_kbf_access === 'members') $flosc_kbf_access = 'member';
+        $flosc_kbf_badge = ['visitor' => ['Visitor', '#10b981'], 'guest' => ['Guest', '#2271b1'], 'member' => ['Member', '#8b5cf6']][$flosc_kbf_access] ?? ['Visitor', '#10b981'];
+        $flosc_toggle_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_kb_toggle&kb_file=' . urlencode($flosc_kbf) . '&return_ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '')), 'flosc_kb_toggle_' . $flosc_kbf);
+        $flosc_delete_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_kb_delete&kb_file=' . urlencode($flosc_kbf) . '&return_ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '')), 'flosc_kb_delete_' . $flosc_kbf);
+        $flosc_edit_url   = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '') . '&tab=ai&kb_edit=' . urlencode($flosc_kbf) . '#flosc-kb-section');
     ?>
         <tr>
             <td>
-                <strong><?php echo esc_html($kbf); ?></strong>
-                <?php if ($editing_kb_file === $kbf): ?><span style="color:#2271b1;margin-left:6px;">← editing</span><?php endif; ?>
+                <strong><?php echo esc_html($flosc_kbf); ?></strong>
+                <?php if ($flosc_editing_kb_file === $flosc_kbf): ?><span style="color:#2271b1;margin-left:6px;">← editing</span><?php endif; ?>
             </td>
             <td>
-                <span style="background:<?php echo esc_attr($kbf_badge[1]); ?>;color:#fff;padding:2px 7px;border-radius:3px;font-size:11px;"><?php echo esc_html($kbf_badge[0]); ?></span>
+                <span style="background:<?php echo esc_attr($flosc_kbf_badge[1]); ?>;color:#fff;padding:2px 7px;border-radius:3px;font-size:11px;"><?php echo esc_html($flosc_kbf_badge[0]); ?></span>
             </td>
-            <td><?php echo file_exists($fp) ? esc_html(size_format(filesize($fp))) : '—'; ?></td>
-            <td><?php echo file_exists($fp) ? esc_html(human_time_diff(filemtime($fp), current_time('timestamp')) . ' ago') : '—'; ?></td>
+            <td><?php echo file_exists($flosc_fp) ? esc_html(size_format(filesize($flosc_fp))) : '—'; ?></td>
+            <td><?php echo file_exists($flosc_fp) ? esc_html(human_time_diff(filemtime($flosc_fp), current_time('timestamp')) . ' ago') : '—'; ?></td>
             <td>
-                <a href="<?php echo esc_url($edit_url); ?>" class="button button-small"><?php echo $editing_kb_file === $kbf ? 'Editing...' : 'Edit'; ?></a>
-                <a href="<?php echo esc_url($toggle_url); ?>" class="button button-small">Toggle Access</a>
-                <a href="<?php echo esc_url($delete_url); ?>" class="button button-small" style="color:#d63638;" onclick="return confirm('Delete <?php echo esc_js($kbf); ?>? Cannot be undone.');">Delete</a>
+                <a href="<?php echo esc_url($flosc_edit_url); ?>" class="button button-small"><?php echo $flosc_editing_kb_file === $flosc_kbf ? 'Editing...' : 'Edit'; ?></a>
+                <a href="<?php echo esc_url($flosc_toggle_url); ?>" class="button button-small">Toggle Access</a>
+                <a href="<?php echo esc_url($flosc_delete_url); ?>" class="button button-small" style="color:#d63638;" onclick="return confirm('Delete <?php echo esc_js($flosc_kbf); ?>? Cannot be undone.');">Delete</a>
             </td>
         </tr>
     <?php endforeach; ?>
@@ -839,15 +839,15 @@ if ($editing_kb_path && file_exists($editing_kb_path)) {
 <?php endif; ?>
 
 <!-- File editor (if editing) -->
-<?php if ($editing_kb_file): ?>
+<?php if ($flosc_editing_kb_file): ?>
 <div class="card" style="max-width: 100%; margin-bottom: 20px;">
-    <h4 style="margin-top: 0;">Editing: <?php echo esc_html($editing_kb_file); ?></h4>
+    <h4 style="margin-top: 0;">Editing: <?php echo esc_html($flosc_editing_kb_file); ?></h4>
     <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
         <?php wp_nonce_field('flosc_kb_save_edit', 'flosc_kb_save_edit_nonce'); ?>
         <input type="hidden" name="action" value="flosc_kb_save_edit">
-        <input type="hidden" name="editing_file" value="<?php echo esc_attr($editing_kb_file); ?>">
+        <input type="hidden" name="editing_file" value="<?php echo esc_attr($flosc_editing_kb_file); ?>">
         <input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr($GLOBALS['flosc_current_ivr'] ?? ''); ?>">
-        <textarea name="file_content" rows="30" class="large-text code" style="font-family: monospace; font-size: 13px; width: 100%;"><?php echo esc_textarea($editing_kb_content); ?></textarea>
+        <textarea name="file_content" rows="30" class="large-text code" style="font-family: monospace; font-size: 13px; width: 100%;"><?php echo esc_textarea($flosc_editing_kb_content); ?></textarea>
         <div style="margin-top: 10px;">
             <button type="submit" class="button button-primary">Save File</button>
             <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '') . '&tab=ai#flosc-kb-section')); ?>" class="button" style="margin-left: 8px;">Cancel</a>

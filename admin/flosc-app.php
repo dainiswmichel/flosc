@@ -66,16 +66,16 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
          (Safari ignores sized icon links in some versions). -->
     <?php
     remove_action('wp_head', 'wp_site_icon', 99);
-    $favicon_generic = function_exists('flosc_get_favicon_url') ? flosc_get_favicon_url()     : '';
-    $favicon_32      = function_exists('flosc_get_favicon_url') ? flosc_get_favicon_url('32')  : '';
-    $favicon_180     = function_exists('flosc_get_favicon_url') ? flosc_get_favicon_url('180') : '';
-    if (!$favicon_generic) $favicon_generic = FLOSC_PLUGIN_URL . 'assets/img/flosc-icon.png';
-    if (!$favicon_32)      $favicon_32      = FLOSC_PLUGIN_URL . 'assets/img/flosc-icon-32.png';
-    if (!$favicon_180)     $favicon_180     = FLOSC_PLUGIN_URL . 'assets/img/flosc-icon-180.png';
+    $flosc_favicon_generic = function_exists('flosc_get_favicon_url') ? flosc_get_favicon_url()     : '';
+    $flosc_favicon_32      = function_exists('flosc_get_favicon_url') ? flosc_get_favicon_url('32')  : '';
+    $flosc_favicon_180     = function_exists('flosc_get_favicon_url') ? flosc_get_favicon_url('180') : '';
+    if (!$flosc_favicon_generic) $flosc_favicon_generic = FLOSC_PLUGIN_URL . 'assets/img/flosc-icon.png';
+    if (!$flosc_favicon_32)      $flosc_favicon_32      = FLOSC_PLUGIN_URL . 'assets/img/flosc-icon-32.png';
+    if (!$flosc_favicon_180)     $flosc_favicon_180     = FLOSC_PLUGIN_URL . 'assets/img/flosc-icon-180.png';
     ?>
-    <link rel="icon" href="<?php echo esc_url($favicon_generic); ?>">
-    <link rel="icon" type="image/png" sizes="32x32" href="<?php echo esc_url($favicon_32); ?>">
-    <link rel="apple-touch-icon" sizes="180x180" href="<?php echo esc_url($favicon_180); ?>">
+    <link rel="icon" href="<?php echo esc_url($flosc_favicon_generic); ?>">
+    <link rel="icon" type="image/png" sizes="32x32" href="<?php echo esc_url($flosc_favicon_32); ?>">
+    <link rel="apple-touch-icon" sizes="180x180" href="<?php echo esc_url($flosc_favicon_180); ?>">
     
     <!-- Dynamic Primary Color -->
     <?php // §12: dynamic CSS vars attached to the enqueued flosc-theme handle (prints in <head> via wp_head) instead of an inline <style> tag. ?>
@@ -87,17 +87,17 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
             /* v1.8.3: Avatar shape — 8px = rounded rectangle, 50% = circle. Configurable by floscAdmin. */
             <?php
             // Read avatar_radius from flow settings (available to all users, not just admins)
-            $avatar_radius = '8px';
+            $flosc_avatar_radius = '8px';
             if (function_exists('flosc')) {
-                $_flow = flosc()->get_current_flow();
-                if ($_flow && !empty($_flow['ivr_file'])) {
-                    $_fkey = 'flosc_flow_' . sanitize_key(pathinfo(basename($_flow['ivr_file']), PATHINFO_FILENAME));
-                    $_fs = get_option($_fkey, []);
-                    if (!empty($_fs['avatar_radius'])) $avatar_radius = $_fs['avatar_radius'];
+                $flosc_flow = flosc()->get_current_flow();
+                if ($flosc_flow && !empty($flosc_flow['ivr_file'])) {
+                    $flosc_fkey = 'flosc_flow_' . sanitize_key(pathinfo(basename($flosc_flow['ivr_file']), PATHINFO_FILENAME));
+                    $flosc_fs = get_option($flosc_fkey, []);
+                    if (!empty($flosc_fs['avatar_radius'])) $flosc_avatar_radius = $flosc_fs['avatar_radius'];
                 }
             }
             ?>
-            --flosc-avatar-radius: <?php echo esc_attr($avatar_radius); ?>;
+            --flosc-avatar-radius: <?php echo esc_attr($flosc_avatar_radius); ?>;
         }
     <?php wp_add_inline_style('flosc-theme', ob_get_clean()); ?>
 
@@ -115,20 +115,20 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
 </head>
 <?php
 // Determine if funnel is completed (for conditional rendering)
-$funnel_completed = is_user_logged_in() && get_user_meta(get_current_user_id(), '_flosc_funnel_completed', true);
+$flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id(), '_flosc_funnel_completed', true);
 
 // v9.0.8: Chat styling data attributes (font, theme, preset, scale)
-$chat_font   = get_option('flosc_chat_style_font', 'system');
-$chat_theme  = get_option('flosc_chat_style_theme', 'default');
-$chat_preset = get_option('flosc_chat_style_preset', 'flosc');
-$chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
+$flosc_chat_font   = get_option('flosc_chat_style_font', 'system');
+$flosc_chat_theme  = get_option('flosc_chat_style_theme', 'default');
+$flosc_chat_preset = get_option('flosc_chat_style_preset', 'flosc');
+$flosc_chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
 ?>
 <body class="flosc-app<?php echo is_admin_bar_showing() ? ' admin-bar' : ''; ?>"
       data-user-state="<?php echo esc_attr($user_state); ?>"
-      data-flosc-font="<?php echo esc_attr($chat_font); ?>"
-    data-flosc-theme="<?php echo esc_attr($chat_theme); ?>"
-    data-flosc-style-preset="<?php echo esc_attr($chat_preset); ?>"
-    style="--flosc-scale: <?php echo esc_attr($chat_scale); ?>%;">
+      data-flosc-font="<?php echo esc_attr($flosc_chat_font); ?>"
+    data-flosc-theme="<?php echo esc_attr($flosc_chat_theme); ?>"
+    data-flosc-style-preset="<?php echo esc_attr($flosc_chat_preset); ?>"
+    style="--flosc-scale: <?php echo esc_attr($flosc_chat_scale); ?>%;">
 
     <!-- Sidebar -->
     <!--
@@ -201,61 +201,61 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
         <!-- User Profile Bar — one component, 3 states: visitor | guest | member -->
         <?php
         $current_user = is_user_logged_in() ? wp_get_current_user() : null;
-        $profile_bar = get_option('flosc_profile_bar', []);
-        $pb_visitor = wp_parse_args($profile_bar['visitor'] ?? [], [
+        $flosc_profile_bar = get_option('flosc_profile_bar', []);
+        $flosc_pb_visitor = wp_parse_args($flosc_profile_bar['visitor'] ?? [], [
             'name'  => 'Visitor',
             'badge' => 'Hope you enjoy our chat :-)',
             'icon'  => '👋',
         ]);
-        $pb_guest = wp_parse_args($profile_bar['guest'] ?? [], [
+        $flosc_pb_guest = wp_parse_args($flosc_profile_bar['guest'] ?? [], [
             'badge'         => 'Guest',
             'upgrade_label' => 'Upgrade to Pro',
         ]);
-        $pb_member = wp_parse_args($profile_bar['member'] ?? [], [
+        $flosc_pb_member = wp_parse_args($flosc_profile_bar['member'] ?? [], [
             'badge' => 'Member',
         ]);
         // v1.8.2: Dynamic visitor menu — indexed array of [label, action] pairs
-        $visitor_menu_raw = get_option('flosc_visitor_menu_items', []);
-        $visitor_menu = [];
-        if (!empty($visitor_menu_raw)) {
+        $flosc_visitor_menu_raw = get_option('flosc_visitor_menu_items', []);
+        $flosc_visitor_menu = [];
+        if (!empty($flosc_visitor_menu_raw)) {
             // Backward-compat: convert old associative format
-            if (isset($visitor_menu_raw['signup']) || isset($visitor_menu_raw['login']) || isset($visitor_menu_raw['quiz'])) {
-                $action_map = ['signup' => 'open_registration', 'login' => 'login', 'quiz' => 'open_quiz'];
-                foreach ($visitor_menu_raw as $key => $item) {
-                    if (!empty($item['enabled'])) {
-                        $visitor_menu[] = ['label' => $item['label'] ?? ucfirst($key), 'action' => $action_map[$key] ?? $key];
+            if (isset($flosc_visitor_menu_raw['signup']) || isset($flosc_visitor_menu_raw['login']) || isset($flosc_visitor_menu_raw['quiz'])) {
+                $flosc_action_map = ['signup' => 'open_registration', 'login' => 'login', 'quiz' => 'open_quiz'];
+                foreach ($flosc_visitor_menu_raw as $flosc_key => $flosc_item) {
+                    if (!empty($flosc_item['enabled'])) {
+                        $flosc_visitor_menu[] = ['label' => $flosc_item['label'] ?? ucfirst($key), 'action' => $flosc_action_map[$key] ?? $key];
                     }
                 }
             } else {
-                $visitor_menu = $visitor_menu_raw;
+                $flosc_visitor_menu = $flosc_visitor_menu_raw;
             }
         }
-        if (empty($visitor_menu)) {
-            $visitor_menu = [
+        if (empty($flosc_visitor_menu)) {
+            $flosc_visitor_menu = [
                 ['label' => 'Sign Up',   'action' => 'open_registration'],
                 ['label' => 'Log In',    'action' => 'login'],
                 ['label' => 'Take Quiz', 'action' => 'open_quiz'],
             ];
         }
-        $profile_url = ($current_user && function_exists('bp_core_get_user_domain'))
+        $flosc_profile_url = ($current_user && function_exists('bp_core_get_user_domain'))
             ? bp_core_get_user_domain($current_user->ID)
             : admin_url('profile.php');
         ?>
         <div class="user-profile-bar" id="flosc_user_profile_bar"
-             data-guest-badge="<?php echo esc_attr($pb_guest['badge']); ?>"
-             data-member-badge="<?php echo esc_attr($pb_member['badge']); ?>"
-             data-upgrade-label="<?php echo esc_attr($pb_guest['upgrade_label']); ?>">
+             data-guest-badge="<?php echo esc_attr($flosc_pb_guest['badge']); ?>"
+             data-member-badge="<?php echo esc_attr($flosc_pb_member['badge']); ?>"
+             data-upgrade-label="<?php echo esc_attr($flosc_pb_guest['upgrade_label']); ?>">
             <button class="profile-button" id="flosc_profile_button">
                 <!-- Visitor state: profile bar icon -->
                 <div class="flosc-profile-avatar profile-avatar visitor-avatar" data-show="visitor">
-                    <?php echo esc_html($pb_visitor['icon']); ?>
+                    <?php echo esc_html($flosc_pb_visitor['icon']); ?>
                 </div>
                 <!-- Guest/Member state: user avatar -->
                 <img src="" alt="" class="flosc-profile-avatar profile-avatar" id="flosc_profile_avatar" data-show="logged-in">
                 <div class="profile-info">
-                    <div class="profile-name" data-show="visitor"><?php echo esc_html($pb_visitor['name']); ?></div>
+                    <div class="profile-name" data-show="visitor"><?php echo esc_html($flosc_pb_visitor['name']); ?></div>
                     <div class="profile-name" id="flosc_profile_name" data-show="logged-in"></div>
-                    <div class="profile-badge" data-show="visitor"><?php echo esc_html($pb_visitor['badge']); ?></div>
+                    <div class="profile-badge" data-show="visitor"><?php echo esc_html($flosc_pb_visitor['badge']); ?></div>
                     <div class="profile-badge" id="flosc_profile_badge" data-show="logged-in"></div>
                 </div>
                 <svg class="dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -266,21 +266,21 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
             <div class="profile-dropdown" id="flosc_profile_dropdown">
                 <!-- Visitor dropdown items — v1.8.2 dynamic menu -->
                 <div class="profile-dropdown-group" data-show="visitor">
-                    <?php foreach ($visitor_menu as $item):
-                        $is_offer = (strpos($item['action'], 'show_offer') === 0 || $item['action'] === 'open_sandbox_purchase');
+                    <?php foreach ($flosc_visitor_menu as $flosc_item):
+                        $flosc_is_offer = (strpos($flosc_item['action'], 'show_offer') === 0 || $flosc_item['action'] === 'open_sandbox_purchase');
                     ?>
-                    <?php if ($is_offer): ?>
+                    <?php if ($flosc_is_offer): ?>
                     <div class="upgrade-container">
-                        <button class="upgrade-btn" data-action="<?php echo esc_attr($item['action']); ?>">
+                        <button class="upgrade-btn" data-action="<?php echo esc_attr($flosc_item['action']); ?>">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                             </svg>
-                            <?php echo esc_html($item['label']); ?>
+                            <?php echo esc_html($flosc_item['label']); ?>
                         </button>
                     </div>
                     <?php else: ?>
-                    <a href="#" class="profile-dropdown-item" data-action="<?php echo esc_attr($item['action']); ?>">
-                        <?php echo esc_html($item['label']); ?>
+                    <a href="#" class="profile-dropdown-item" data-action="<?php echo esc_attr($flosc_item['action']); ?>">
+                        <?php echo esc_html($flosc_item['label']); ?>
                     </a>
                     <?php endif; ?>
                     <?php endforeach; ?>
@@ -298,23 +298,23 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                             </svg>
-                            <?php echo esc_html($pb_guest['upgrade_label']); ?>
+                            <?php echo esc_html($flosc_pb_guest['upgrade_label']); ?>
                         </button>
                     </div>
                     <?php
                     // Read admin-configured menu for the current user state
-                    $_li_menu = ($user_state === 'member')
+                    $flosc_li_menu = ($user_state === 'member')
                         ? get_option('flosc_member_menu_items', [])
                         : get_option('flosc_guest_menu_items', []);
-                    if (empty($_li_menu)) {
-                        $_li_menu = ($user_state === 'member')
+                    if (empty($flosc_li_menu)) {
+                        $flosc_li_menu = ($user_state === 'member')
                             ? [['label' => 'Log Out', 'action' => 'logout']]
                             : [['label' => 'Log Out', 'action' => 'logout']];
                     }
-                    foreach ($_li_menu as $_li_item):
+                    foreach ($flosc_li_menu as $flosc_li_item):
                     ?>
-                    <a href="#" class="profile-dropdown-item" data-action="<?php echo esc_attr($_li_item['action']); ?>">
-                        <?php echo esc_html($_li_item['label']); ?>
+                    <a href="#" class="profile-dropdown-item" data-action="<?php echo esc_attr($flosc_li_item['action']); ?>">
+                        <?php echo esc_html($flosc_li_item['label']); ?>
                     </a>
                     <?php endforeach; ?>
                 </div>
@@ -344,11 +344,11 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
                 <!-- Visitor: auth buttons -->
                 <div class="auth-buttons" id="flosc_app_auth_buttons">
                     <?php
-                    $login_action = flosc_get_setting('header_login_action', 'open_login_modal');
-                    $signup_action = flosc_get_setting('header_signup_action', 'open_login_modal');
+                    $flosc_login_action = flosc_get_setting('header_login_action', 'open_login_modal');
+                    $flosc_signup_action = flosc_get_setting('header_signup_action', 'open_login_modal');
                     ?>
-                    <a href="#" onclick="window.floscAppInstance.performIVRAction('<?php echo esc_js($login_action); ?>'); return false;" class="btn-secondary"><?php echo esc_html(flosc_get_setting('header_login_text', 'Log in')); ?></a>
-                    <a href="#" onclick="window.floscAppInstance.performIVRAction('<?php echo esc_js($signup_action); ?>'); return false;" class="btn-primary"><?php echo esc_html(flosc_get_setting('header_signup_text', 'Sign up')); ?></a>
+                    <a href="#" onclick="window.floscAppInstance.performIVRAction('<?php echo esc_js($flosc_login_action); ?>'); return false;" class="btn-secondary"><?php echo esc_html(flosc_get_setting('header_login_text', 'Log in')); ?></a>
+                    <a href="#" onclick="window.floscAppInstance.performIVRAction('<?php echo esc_js($flosc_signup_action); ?>'); return false;" class="btn-primary"><?php echo esc_html(flosc_get_setting('header_signup_text', 'Sign up')); ?></a>
                 </div>
 
                 <!-- Logged in: share button -->
@@ -372,9 +372,9 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
                 <div class="landing-header">
                     <?php
                     // v1.9.7: Landing state uses logo. Falls back to FLOSC default icon.
-                    $landing_logo = function_exists('flosc_get_chatlogo_url') ? flosc_get_chatlogo_url() : (FLOSC_PLUGIN_URL . 'assets/img/flosc-icon.png');
+                    $flosc_landing_logo = function_exists('flosc_get_chatlogo_url') ? flosc_get_chatlogo_url() : (FLOSC_PLUGIN_URL . 'assets/img/flosc-icon.png');
                     ?>
-                        <img src="<?php echo esc_url($landing_logo); ?>" alt="" class="landing-icon">
+                        <img src="<?php echo esc_url($flosc_landing_logo); ?>" alt="" class="landing-icon">
                     <span class="landing-title"><?php echo esc_html($identity['name'] ?: 'FLOSC'); ?></span>
                     <?php if (!empty($identity['title'])): ?>
                         <span class="landing-subtitle"><?php echo esc_html($identity['title']); ?></span>
@@ -446,18 +446,18 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
             <div class="flosc-modal-body">
                 <?php
                 // Get first enabled quiz content for display
-                $enabled_quizzes = flosc_get_setting( 'enabled_quizzes', [] );
-                $quiz_id         = ! empty( $enabled_quizzes ) ? $enabled_quizzes[0] : 'flosc_sample_data_numbers_quiz';
-                $quiz_content    = flosc_get_setting( 'quiz_content_' . $quiz_id, '1,2,3,4,5,6,7,8,9,10' );
-                $items = array_map('trim', explode(',', $quiz_content));
-                $items_display = implode(', ', $items);
+                $flosc_enabled_quizzes = flosc_get_setting( 'enabled_quizzes', [] );
+                $flosc_quiz_id         = ! empty( $flosc_enabled_quizzes ) ? $flosc_enabled_quizzes[0] : 'flosc_sample_data_numbers_quiz';
+                $flosc_quiz_content    = flosc_get_setting( 'quiz_content_' . $flosc_quiz_id, '1,2,3,4,5,6,7,8,9,10' );
+                $flosc_items = array_map('trim', explode(',', $flosc_quiz_content));
+                $flosc_items_display = implode(', ', $flosc_items);
                 ?>
                 
                 <!-- Quiz Prompt -->
                 <div class="quiz-prompt">
                     <p class="quiz-prompt-label">Repeat this sequence:</p>
                     <p class="quiz-sequence" id="floscQuizSequence">
-                        <?php echo esc_html($items_display); ?>
+                        <?php echo esc_html($flosc_items_display); ?>
                     </p>
                 </div>
                 
@@ -654,88 +654,88 @@ $chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
     <?php ob_start(); ?>
         <?php
         // v1.2.3: Load IVR parser config - now flow-aware
-        $ivr_parser = FLOSC_IVR_Parser::flosc_instance();
-        $ivr_config = $ivr_parser->flosc_load_config(); // Load from current flow's IVR file
+        $flosc_ivr_parser = FLOSC_IVR_Parser::flosc_instance();
+        $flosc_ivr_config = $flosc_ivr_parser->flosc_load_config(); // Load from current flow's IVR file
         
         // v1.2.3: Get flow's IVR file for version tracking
-        $current_flow = flosc()->get_current_flow();
-        $ivr_filename = ($current_flow && !empty($current_flow['ivr_file'])) 
-            ? $current_flow['ivr_file'] 
+        $flosc_current_flow = flosc()->get_current_flow();
+        $flosc_ivr_filename = ($flosc_current_flow && !empty($flosc_current_flow['ivr_file'])) 
+            ? $flosc_current_flow['ivr_file'] 
             : 'flosc_default_ivr.md';
-        $ivr_file = flosc_config_file($ivr_filename);
-        $ivr_version = file_exists($ivr_file) ? filemtime($ivr_file) : time();
+        $flosc_ivr_file = flosc_config_file($flosc_ivr_filename);
+        $flosc_ivr_version = file_exists($flosc_ivr_file) ? filemtime($flosc_ivr_file) : time();
 
             // v1.0.7: DEBUG - Check if messages loaded (only when FLOSC_DEBUG enabled)
-            if (empty($ivr_config['messages'])) {
+            if (empty($flosc_ivr_config['messages'])) {
                 if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: WARNING - No IVR messages loaded from ' . $ivr_filename);
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: Config keys: ' . implode(', ', array_keys($ivr_config)));
+if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: WARNING - No IVR messages loaded from ' . $flosc_ivr_filename);
+if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: Config keys: ' . implode(', ', array_keys($flosc_ivr_config)));
                 }
             
                 // Force re-parse if empty
-                if (file_exists($ivr_file)) {
+                if (file_exists($flosc_ivr_file)) {
                     if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: ' . $ivr_filename . ' exists, forcing re-parse...');
+if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: ' . $flosc_ivr_filename . ' exists, forcing re-parse...');
                     }
-                    $markdown = file_get_contents($ivr_file);
-                    $ivr_config = $ivr_parser->flosc_parse($markdown);
+                    $flosc_markdown = file_get_contents($flosc_ivr_file);
+                    $flosc_ivr_config = $flosc_ivr_parser->flosc_parse($flosc_markdown);
                     if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: Re-parse complete. Messages: ' . count($ivr_config['messages'] ?? []));
+if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: Re-parse complete. Messages: ' . count($flosc_ivr_config['messages'] ?? []));
                     }
                 } else {
                     if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: ERROR - IVR file not found at: ' . $ivr_file);
+if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: ERROR - IVR file not found at: ' . $flosc_ivr_file);
                     }
                 }
             } else {
                 if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config loaded successfully. Messages: ' . count($ivr_config['messages']));
+if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config loaded successfully. Messages: ' . count($flosc_ivr_config['messages']));
                 }
             }
         ?>
         window.FLOSC_CONFIG = <?php 
             // v1.4.9: Get SSO providers from per-flow settings (not global options)
-            $sso_providers = [];
+            $flosc_sso_providers = [];
             if (class_exists('\FLOSC\SSO\SSO_Manager')) {
-                $sso_manager = \FLOSC\SSO\SSO_Manager::get_instance();
-                $flow_id_for_sso = $current_flow ? ($current_flow['id'] ?? '') : '';
+                $flosc_sso_manager = \FLOSC\SSO\SSO_Manager::get_instance();
+                $flosc_flow_id_for_sso = $flosc_current_flow ? ($flosc_current_flow['id'] ?? '') : '';
                 
                 // Load per-flow SSO settings
-                $sso_flow_settings = [];
-                if (!empty($flow_id_for_sso)) {
-                    $sso_settings_key = 'flosc_flow_' . sanitize_key($flow_id_for_sso);
-                    $sso_flow_settings = get_option($sso_settings_key, []);
+                $flosc_sso_flow_settings = [];
+                if (!empty($flosc_flow_id_for_sso)) {
+                    $flosc_sso_settings_key = 'flosc_flow_' . sanitize_key($flosc_flow_id_for_sso);
+                    $flosc_sso_flow_settings = get_option($flosc_sso_settings_key, []);
                 }
                 
                 // Check each registered provider against flow settings
-                $sso_provider_ids = ['google', 'facebook', 'apple', 'microsoft', 'linkedin'];
-                foreach ($sso_provider_ids as $pid) {
-                    $flow_enabled = !empty($sso_flow_settings["sso_{$pid}_enabled"]);
-                    $flow_client_id = $sso_flow_settings["sso_{$pid}_client_id"] ?? '';
-                    $flow_client_secret = $sso_flow_settings["sso_{$pid}_client_secret"] ?? '';
+                $flosc_sso_provider_ids = ['google', 'facebook', 'apple', 'microsoft', 'linkedin'];
+                foreach ($flosc_sso_provider_ids as $flosc_pid) {
+                    $flosc_flow_enabled = !empty($flosc_sso_flow_settings["sso_{$flosc_pid}_enabled"]);
+                    $flosc_flow_client_id = $flosc_sso_flow_settings["sso_{$flosc_pid}_client_id"] ?? '';
+                    $flosc_flow_client_secret = $flosc_sso_flow_settings["sso_{$flosc_pid}_client_secret"] ?? '';
                     
-                    if ($flow_enabled && !empty($flow_client_id) && !empty($flow_client_secret)) {
-                        $provider = $sso_manager->get_provider($pid);
-                        if ($provider) {
+                    if ($flosc_flow_enabled && !empty($flosc_flow_client_id) && !empty($flosc_flow_client_secret)) {
+                        $flosc_provider = $flosc_sso_manager->get_provider($flosc_pid);
+                        if ($flosc_provider) {
                             // v1.7.5: SSO auth URL must use host domain for cookie consistency
                             if (defined('FLOSC_CUSTOM_DOMAIN_ACTIVE') && FLOSC_CUSTOM_DOMAIN_ACTIVE) {
-                                $scheme = is_ssl() ? 'https://' : 'http://';
-                                $current_host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- HTTP_HOST is unslashed and sanitized inline
-                                $rest_prefix = rest_get_url_prefix();
-                                $auth_url = $scheme . $current_host . '/' . $rest_prefix . "/flosc/v1/sso/authorize/{$pid}";
+                                $flosc_scheme = is_ssl() ? 'https://' : 'http://';
+                                $flosc_current_host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- HTTP_HOST is unslashed and sanitized inline
+                                $flosc_rest_prefix = rest_get_url_prefix();
+                                $flosc_auth_url = $flosc_scheme . $flosc_current_host . '/' . $flosc_rest_prefix . "/flosc/v1/sso/authorize/{$flosc_pid}";
                             } else {
-                                $auth_url = rest_url("flosc/v1/sso/authorize/{$pid}");
+                                $flosc_auth_url = rest_url("flosc/v1/sso/authorize/{$flosc_pid}");
                             }
                             // v1.4.9: Include flow_id so OAuth handler loads per-flow credentials
-                            if (!empty($flow_id_for_sso)) {
-                                $auth_url = add_query_arg('flow_id', urlencode($flow_id_for_sso), $auth_url);
+                            if (!empty($flosc_flow_id_for_sso)) {
+                                $flosc_auth_url = add_query_arg('flow_id', urlencode($flosc_flow_id_for_sso), $flosc_auth_url);
                             }
-                            $sso_providers[] = [
-                                'id' => $pid,
-                                'name' => $provider->get_name(),
-                                'icon' => $provider->get_icon(),
-                                'colors' => $provider->get_button_colors(),
-                                'authUrl' => $auth_url,
+                            $flosc_sso_providers[] = [
+                                'id' => $flosc_pid,
+                                'name' => $flosc_provider->get_name(),
+                                'icon' => $flosc_provider->get_icon(),
+                                'colors' => $flosc_provider->get_button_colors(),
+                                'authUrl' => $flosc_auth_url,
                             ];
                         }
                     }
@@ -743,23 +743,23 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             }
             
             // v1.4.9: Use flow-aware app URL for custom domain support
-            $app_url = flosc()->get_app_url();
+            $flosc_app_url = flosc()->get_app_url();
             
             // v1.7.5: REST API URL must use the SAME origin as the page
             // so cookies/nonce travel with the request. When on a custom domain
             // (flosc.ai), rest_url() returns dainis.net which is cross-origin.
-            $rest_base = rest_url('flosc/v1');
+            $flosc_rest_base = rest_url('flosc/v1');
             if (defined('FLOSC_CUSTOM_DOMAIN_ACTIVE') && FLOSC_CUSTOM_DOMAIN_ACTIVE) {
                 // Build REST URL on current domain so it's same-origin
-                $scheme = is_ssl() ? 'https://' : 'http://';
-                $current_host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- HTTP_HOST is unslashed and sanitized inline
-                $rest_prefix = rest_get_url_prefix(); // usually "wp-json"
-                $rest_base = $scheme . $current_host . '/' . $rest_prefix . '/flosc/v1';
+                $flosc_scheme = is_ssl() ? 'https://' : 'http://';
+                $flosc_current_host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- HTTP_HOST is unslashed and sanitized inline
+                $flosc_rest_prefix = rest_get_url_prefix(); // usually "wp-json"
+                $flosc_rest_base = $flosc_scheme . $flosc_current_host . '/' . $flosc_rest_prefix . '/flosc/v1';
             }
             
             echo wp_json_encode([
-            'restUrl' => $rest_base . '/',
-            'apiUrl' => $rest_base,
+            'restUrl' => $flosc_rest_base . '/',
+            'apiUrl' => $flosc_rest_base,
             'nonce' => wp_create_nonce('wp_rest'),
             'stripeKey' => '', // v1.7.1: Stripe disabled pending account verification
             // v5.0.7: PayPal config from provider — includes currency for SDK/order alignment
@@ -789,45 +789,45 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             })(),
             'identity' => $identity,
             'offers' => array_values($offers),
-            'appUrl' => $app_url,
+            'appUrl' => $flosc_app_url,
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'profileUrl' => ($current_user && function_exists('bp_core_get_user_domain')) ? bp_core_get_user_domain($current_user->ID) : admin_url('profile.php'),
             'dashboardUrl' => admin_url(),
-            'loginUrl' => wp_login_url($app_url),
+            'loginUrl' => wp_login_url($flosc_app_url),
             'logoutUrl' => add_query_arg('flosc_logout', '1', home_url()),
             'registerUrl' => wp_registration_url(),
             'registrationUrl' => wp_registration_url(),
             'lessonsUrl' => home_url('/lessons/'),
             'checkoutUrl' => home_url('/checkout/'),
-            'lessonsCategory' => $current_flow['lessons_category'] ?? get_option('flosc_lessons_category', ''),
-            'otoOfferId' => $current_flow['oto_offer_id'] ?? get_option('flosc_oto_offer_id', ''),
+            'lessonsCategory' => $flosc_current_flow['lessons_category'] ?? get_option('flosc_lessons_category', ''),
+            'otoOfferId' => $flosc_current_flow['oto_offer_id'] ?? get_option('flosc_oto_offer_id', ''),
             'tokenName' => get_option('flosc_token_name', 'tokens'),
             // v1.3.7: Flow context for API calls
-            'flowId' => $current_flow ? ($current_flow['id'] ?? null) : null,
-            'ivrFile' => $ivr_filename,
+            'flowId' => $flosc_current_flow ? ($flosc_current_flow['id'] ?? null) : null,
+            'ivrFile' => $flosc_ivr_filename,
             // v07.09: IVR Configuration
-            'ivrMessages' => array_filter( $ivr_config['messages'] ?? [], static function ( $m ) {
+            'ivrMessages' => array_filter( $flosc_ivr_config['messages'] ?? [], static function ( $m ) {
                 // Concierge messages are server-only (keyword-gated, AI-hosted, revealed
                 // in fragments). Shipping them here would leak the note into the browser
                 // and let the client matcher serve it raw — exactly the dump we forbid.
                 return ( $m['type'] ?? '' ) !== 'concierge';
             } ),
-            'ivrStyles' => $ivr_config['styles'] ?? [],
-            'ivrStylesCss' => $ivr_parser->get_flosc_styles_css(),
-            'ivrVersion' => $ivr_version,
+            'ivrStyles' => $flosc_ivr_config['styles'] ?? [],
+            'ivrStylesCss' => $flosc_ivr_parser->get_flosc_styles_css(),
+            'ivrVersion' => $flosc_ivr_version,
             // v8.0.0: AI provider is PER-FLOW (the global flosc_ai_provider is
             // intentionally empty in the per-flow model). Read it from THIS flow's
             // settings so the browser correctly knows AI is active and routes every
             // message through the server (where concierge / RAG / hosting live)
             // instead of resolving matches client-side.
-            'aiProvider' => ( static function () use ( $current_flow ) {
-                $fid = $current_flow ? ( $current_flow['id'] ?? '' ) : '';
+            'aiProvider' => ( static function () use ( $flosc_current_flow ) {
+                $fid = $flosc_current_flow ? ( $flosc_current_flow['id'] ?? '' ) : '';
                 $fs  = $fid ? get_option( 'flosc_flow_' . sanitize_key( $fid ), [] ) : [];
                 $p   = $fs['ai']['provider'] ?? ( $fs['ai_provider'] ?? '' );
                 return ( $p !== '' ) ? $p : flosc_get_setting( 'ai_provider', 'ivr' );
             } )(),
             // v1.4.0: SSO Providers
-            'ssoProviders' => $sso_providers,
+            'ssoProviders' => $flosc_sso_providers,
             // v3.0.0: FLOSC auth token for cross-domain authentication
             // Cookie-based auth (flosc_auth_token cookie set at login by
             // set_flosc_auth_cookie) handles this. The cookie is on the current

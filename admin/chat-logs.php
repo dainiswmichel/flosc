@@ -14,55 +14,55 @@
 
 if (!defined('ABSPATH')) exit;
 
-$logger = FLOSC_Chat_Logger::instance();
-$current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
-$chat_logs_docs_url = add_query_arg([
+$flosc_logger = FLOSC_Chat_Logger::instance();
+$flosc_current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
+$flosc_chat_logs_docs_url = add_query_arg([
     'page' => 'flosc-settings',
-    'ivr'  => $current_ivr,
+    'ivr'  => $flosc_current_ivr,
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-chat-logs';
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only admin filter parameter
-$get = wp_unslash($_GET);
-$selected_user_id = isset($get['flosc_user_id']) ? absint($get['flosc_user_id']) : 0;
+$flosc_get = wp_unslash($_GET);
+$flosc_selected_user_id = isset($flosc_get['flosc_user_id']) ? absint($flosc_get['flosc_user_id']) : 0;
 // Scope chat logs to the selected flow. Stored flow_id has no file extension
 // (e.g. "dainis_net_ivr"), while $current_ivr is the filename ("dainis_net_ivr.md").
-$current_flow_id = $current_ivr !== '' ? pathinfo($current_ivr, PATHINFO_FILENAME) : '';
-$total_logs = $logger->flosc_get_log_count($current_flow_id);
+$flosc_current_flow_id = $flosc_current_ivr !== '' ? pathinfo($flosc_current_ivr, PATHINFO_FILENAME) : '';
+$flosc_total_logs = $flosc_logger->flosc_get_log_count($flosc_current_flow_id);
 $flosc_chat_logs_nonce = wp_create_nonce('flosc_chat_logs');
 
 // Two ways to read the same logs: grouped by conversation (default) or the flat
 // chronological table. The flat view keeps the live 5s poll + rating widgets.
-$logview = (isset($get['logview']) && $get['logview'] === 'flat') ? 'flat' : 'sessions';
-$view_base = add_query_arg([
+$flosc_logview = (isset($flosc_get['logview']) && $flosc_get['logview'] === 'flat') ? 'flat' : 'sessions';
+$flosc_view_base = add_query_arg([
     'page' => 'flosc-settings',
-    'ivr'  => $current_ivr,
+    'ivr'  => $flosc_current_ivr,
     'tab'  => 'chat-logs',
 ], admin_url('admin.php'));
-$sessions_url = add_query_arg('logview', 'sessions', $view_base);
-$flat_url     = add_query_arg('logview', 'flat', $view_base);
+$flosc_sessions_url = add_query_arg('logview', 'sessions', $flosc_view_base);
+$flosc_flat_url     = add_query_arg('logview', 'flat', $flosc_view_base);
 ?>
 
 <div class="flosc-chat-logs-wrap">
     <h2 style="display:flex;align-items:center;gap:12px;">
         <span>Chat Logs</span>
-        <a href="<?php echo esc_url($chat_logs_docs_url); ?>" style="font-size:12px;text-decoration:none;color:#2271b1;margin-left:auto;">Docs</a>
+        <a href="<?php echo esc_url($flosc_chat_logs_docs_url); ?>" style="font-size:12px;text-decoration:none;color:#2271b1;margin-left:auto;">Docs</a>
     </h2>
-    <p class="description">All chat exchanges for this flow.<?php echo $logview === 'sessions' ? ' Grouped by conversation, newest first — click a session to read the thread.' : ' Flat view, newest first. Auto-refreshes every 5 seconds.'; ?></p>
-    <?php if ($selected_user_id > 0): ?>
-        <p class="description"><strong>User filter:</strong> Showing only User #<?php echo intval($selected_user_id); ?>. <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=chat-logs')); ?>">Clear filter</a></p>
+    <p class="description">All chat exchanges for this flow.<?php echo $flosc_logview === 'sessions' ? ' Grouped by conversation, newest first — click a session to read the thread.' : ' Flat view, newest first. Auto-refreshes every 5 seconds.'; ?></p>
+    <?php if ($flosc_selected_user_id > 0): ?>
+        <p class="description"><strong>User filter:</strong> Showing only User #<?php echo intval($flosc_selected_user_id); ?>. <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=chat-logs')); ?>">Clear filter</a></p>
     <?php endif; ?>
 
     <div class="flosc-chat-logs-toolbar">
-        <span class="flosc-chat-logs-count">Total: <strong id="flosc-log-count"><?php echo intval($total_logs); ?></strong> entries</span>
+        <span class="flosc-chat-logs-count">Total: <strong id="flosc-log-count"><?php echo intval($flosc_total_logs); ?></strong> entries</span>
 
         <span class="flosc-log-viewswitch" style="margin-left:8px;">
             View:
-            <a href="<?php echo esc_url($sessions_url); ?>" class="<?php echo $logview === 'sessions' ? 'button button-primary button-small' : 'button button-small'; ?>">Sessions</a>
-            <a href="<?php echo esc_url($flat_url); ?>" class="<?php echo $logview === 'flat' ? 'button button-primary button-small' : 'button button-small'; ?>">All entries</a>
+            <a href="<?php echo esc_url($flosc_sessions_url); ?>" class="<?php echo $flosc_logview === 'sessions' ? 'button button-primary button-small' : 'button button-small'; ?>">Sessions</a>
+            <a href="<?php echo esc_url($flosc_flat_url); ?>" class="<?php echo $flosc_logview === 'flat' ? 'button button-primary button-small' : 'button button-small'; ?>">All entries</a>
         </span>
 
-        <?php if ($logview === 'flat'): ?>
+        <?php if ($flosc_logview === 'flat'): ?>
             <label for="flosc-log-filter-phase">Phase:</label>
             <select id="flosc-log-filter-phase" class="flosc-ai-model-select">
                 <option value="">All</option>
@@ -85,8 +85,8 @@ $flat_url     = add_query_arg('logview', 'flat', $view_base);
         <button type="button" id="flosc-log-clear-btn" class="button" title="Clear logs older than 30 days">Clear Old Logs</button>
     </div>
 
-<?php if ($logview === 'sessions'): ?>
-    <?php $flosc_sessions = $logger->flosc_get_sessions($current_flow_id, 800); ?>
+<?php if ($flosc_logview === 'sessions'): ?>
+    <?php $flosc_sessions = $flosc_logger->flosc_get_sessions($flosc_current_flow_id, 800); ?>
     <?php // Chat Logs styles (.flosc-session*, .flosc-msg*) live in assets/css/flosc-admin.css, enqueued on FLOSC admin pages. ?>
     <div id="flosc-sessions">
         <?php if (empty($flosc_sessions)): ?>
@@ -196,10 +196,10 @@ $flat_url     = add_query_arg('logview', 'flat', $view_base);
 
 <?php else: ?>
     <?php
-    $recent_logs = $logger->flosc_get_logs([
+    $flosc_recent_logs = $flosc_logger->flosc_get_logs([
         'limit'   => 50,
-        'user_id' => $selected_user_id,
-        'flow_id' => $current_flow_id,
+        'user_id' => $flosc_selected_user_id,
+        'flow_id' => $flosc_current_flow_id,
     ]);
     ?>
     <table class="widefat striped flosc-chat-logs-table">
@@ -216,11 +216,11 @@ $flat_url     = add_query_arg('logview', 'flat', $view_base);
             </tr>
         </thead>
         <tbody id="flosc-chat-logs-body">
-            <?php if (empty($recent_logs)): ?>
+            <?php if (empty($flosc_recent_logs)): ?>
                 <tr id="flosc-log-empty-row"><td colspan="8">No chat logs yet. Logs will appear here as users chat.</td></tr>
             <?php else: ?>
-                <?php foreach ($recent_logs as $log): ?>
-                    <?php echo wp_kses_post( flosc_render_chat_log_row($log) ); ?>
+                <?php foreach ($flosc_recent_logs as $flosc_log): ?>
+                    <?php echo wp_kses_post( flosc_render_chat_log_row($flosc_log) ); ?>
                 <?php endforeach; ?>
             <?php endif; ?>
         </tbody>
@@ -228,11 +228,11 @@ $flat_url     = add_query_arg('logview', 'flat', $view_base);
 
     <?php ob_start(); ?>
     jQuery(function($) {
-        var maxId = <?php echo intval($recent_logs[0]['id'] ?? 0); ?>;
-        var selectedUserId = <?php echo intval($selected_user_id); ?>;
+        var maxId = <?php echo intval($flosc_recent_logs[0]['id'] ?? 0); ?>;
+        var selectedUserId = <?php echo intval($flosc_selected_user_id); ?>;
         var pollTimer = null;
         var nonce = '<?php echo esc_js($flosc_chat_logs_nonce); ?>';
-        var floscFlowId = '<?php echo esc_js($current_flow_id); ?>'; // scope the 5s live poll to the selected flow
+        var floscFlowId = '<?php echo esc_js($flosc_current_flow_id); ?>'; // scope the 5s live poll to the selected flow
 
         function startPolling() {
             if (pollTimer) return;

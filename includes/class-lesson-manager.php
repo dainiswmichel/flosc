@@ -378,6 +378,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log( '[FLOSC Lessons] v3.0.8 ge
         }
         
         if ($include_content) {
+            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core WordPress content filter.
             $lesson['content'] = apply_filters('the_content', $post->post_content);
         }
         

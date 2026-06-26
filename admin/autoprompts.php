@@ -22,17 +22,17 @@ if (!defined('ABSPATH')) exit;
 
 flosc_tab_header('💊', 'AutoPrompts');
 
-$flow_key    = $GLOBALS['flosc_settings_key'] ?? '';
-$current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
+$flosc_flow_key    = $GLOBALS['flosc_settings_key'] ?? '';
+$flosc_current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
 
-$autoprompt_docs_base = add_query_arg([
+$flosc_autoprompt_docs_base = add_query_arg([
     'page' => 'flosc-settings',
-    'ivr'  => $current_ivr,
+    'ivr'  => $flosc_current_ivr,
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php'));
 
-$autoprompt_docs_anchor = [
+$flosc_autoprompt_docs_anchor = [
     'visitor' => 'visitor-autoprompts-intropanelshow-panel',
     'guest'   => 'guest-autoprompts-promptpanelshow-panel',
     'member'  => 'member-autoprompts-memberpromptpanelshow-panel',
@@ -54,20 +54,20 @@ function flosc_handle_autoprompts_save() {
     $fk = sanitize_text_field($post['flosc_flow_key'] ?? '');
     if ($fk === '' || !in_array($fk, flosc_known_flow_option_keys(), true)) return;
 
-    $fs = get_option($fk, []);
+    $flosc_fs = get_option($fk, []);
     $states = ['visitor', 'guest', 'member'];
     $autoprompts = [];
 
     // Save panel header text per state
-    $panel_headers = [];
+    $flosc_panel_headers = [];
     foreach ($states as $state) {
-        $panel_headers[$state] = sanitize_text_field($post['panel_header_' . $state] ?? 'Try these AutoPrompts!');
+        $flosc_panel_headers[$state] = sanitize_text_field($post['panel_header_' . $state] ?? 'Try these AutoPrompts!');
     }
 
     // Save panel show/hide toggle per state (checkbox — absent means unchecked = 0)
-    $panel_enabled = [];
+    $flosc_panel_enabled = [];
     foreach ($states as $state) {
-        $panel_enabled[$state] = isset($post['panel_enabled_' . $state]) ? 1 : 0;
+        $flosc_panel_enabled[$state] = isset($post['panel_enabled_' . $state]) ? 1 : 0;
     }
 
     foreach ($states as $state) {
@@ -76,33 +76,33 @@ function flosc_handle_autoprompts_save() {
         $inputs         = $post[$state . '_pill_user_input']     ?? [];
         $trigger_types  = $post[$state . '_pill_trigger_type']   ?? [];
         $trigger_values = $post[$state . '_pill_trigger_value']  ?? [];
-        $conditions     = $post[$state . '_pill_conditions']     ?? [];
+        $flosc_conditions     = $post[$state . '_pill_conditions']     ?? [];
         $styles         = $post[$state . '_pill_style']          ?? [];
 
-        $pills = [];
+        $flosc_pills = [];
         foreach ($labels as $i => $label) {
             $label = sanitize_text_field($label);
             if (!$label) continue;
-            $ttype  = sanitize_key($trigger_types[$i] ?? 'ai') ?: 'ai';
-            $tval   = sanitize_text_field($trigger_values[$i] ?? '');
-            $pills[] = [
+            $flosc_ttype  = sanitize_key($trigger_types[$i] ?? 'ai') ?: 'ai';
+            $flosc_tval   = sanitize_text_field($trigger_values[$i] ?? '');
+            $flosc_pills[] = [
                 'icon'          => sanitize_text_field($icons[$i] ?? ''),
                 'label'         => $label,
                 'user_input'    => sanitize_text_field($inputs[$i] ?? '') ?: $label,
-                'trigger_type'  => $ttype,
-                'trigger_value' => $tval,
-                'action'        => $ttype === 'ai' ? '' : ($ttype === 'offer' ? 'show_offer_' . $tval : $tval),
-                'conditions'    => sanitize_text_field($conditions[$i] ?? ('is_' . $state)),
+                'trigger_type'  => $flosc_ttype,
+                'trigger_value' => $flosc_tval,
+                'action'        => $flosc_ttype === 'ai' ? '' : ($flosc_ttype === 'offer' ? 'show_offer_' . $flosc_tval : $flosc_tval),
+                'conditions'    => sanitize_text_field($flosc_conditions[$i] ?? ('is_' . $state)),
                 'style'         => sanitize_key($styles[$i] ?? 'pill') ?: 'pill',
             ];
         }
-        $autoprompts[$state] = $pills;
+        $autoprompts[$state] = $flosc_pills;
     }
 
-    $fs['autoprompts']              = $autoprompts;
-    $fs['autoprompt_headers']       = $panel_headers;
-    $fs['autoprompt_panel_enabled'] = $panel_enabled;
-    update_option($fk, $fs);
+    $flosc_fs['autoprompts']              = $autoprompts;
+    $flosc_fs['autoprompt_headers']       = $flosc_panel_headers;
+    $flosc_fs['autoprompt_panel_enabled'] = $flosc_panel_enabled;
+    update_option($fk, $flosc_fs);
 
     $ivr = sanitize_file_name($post['flosc_ivr'] ?? '');
     wp_safe_redirect(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($ivr) . '&tab=autoprompts&saved=1'));
@@ -110,52 +110,52 @@ function flosc_handle_autoprompts_save() {
 }
 flosc_handle_autoprompts_save();
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query parameters used for tab/view state
-$get = wp_unslash($_GET);
+$flosc_get = wp_unslash($_GET);
 
 // ============================================
 // LOAD CURRENT DATA
 // ============================================
-$fs             = $flow_key ? get_option($flow_key, []) : [];
+$flosc_fs             = $flosc_flow_key ? get_option($flosc_flow_key, []) : [];
 
 // Strip all accumulated backslash layers from previously corrupted DB data
-$_ap_raw  = $fs['autoprompts'] ?? [];
-$_ap_prev = null;
-while ( $_ap_prev !== $_ap_raw ) { $_ap_prev = $_ap_raw; $_ap_raw = stripslashes_deep( $_ap_raw ); }
-$saved_prompts = $_ap_raw;
+$flosc_ap_raw  = $flosc_fs['autoprompts'] ?? [];
+$flosc_ap_prev = null;
+while ( $flosc_ap_prev !== $flosc_ap_raw ) { $flosc_ap_prev = $flosc_ap_raw; $flosc_ap_raw = stripslashes_deep( $flosc_ap_raw ); }
+$flosc_saved_prompts = $flosc_ap_raw;
 
-$_ah_raw  = $fs['autoprompt_headers'] ?? [];
-$_ah_prev = null;
-while ( $_ah_prev !== $_ah_raw ) { $_ah_prev = $_ah_raw; $_ah_raw = stripslashes_deep( $_ah_raw ); }
-$saved_headers = $_ah_raw;
-$panel_headers  = [
-    'visitor' => $saved_headers['visitor'] ?? 'Try these AutoPrompts!',
-    'guest'   => $saved_headers['guest']   ?? 'You\'re almost there — try these:',
-    'member'  => $saved_headers['member']  ?? 'Welcome, LeSAEp Learner! What would you like to do?',
+$flosc_ah_raw  = $flosc_fs['autoprompt_headers'] ?? [];
+$flosc_ah_prev = null;
+while ( $flosc_ah_prev !== $flosc_ah_raw ) { $flosc_ah_prev = $flosc_ah_raw; $flosc_ah_raw = stripslashes_deep( $flosc_ah_raw ); }
+$flosc_saved_headers = $flosc_ah_raw;
+$flosc_panel_headers  = [
+    'visitor' => $flosc_saved_headers['visitor'] ?? 'Try these AutoPrompts!',
+    'guest'   => $flosc_saved_headers['guest']   ?? 'You\'re almost there — try these:',
+    'member'  => $flosc_saved_headers['member']  ?? 'Welcome, LeSAEp Learner! What would you like to do?',
 ];
-$saved_panel_enabled = $fs['autoprompt_panel_enabled'] ?? [];
-$panel_enabled = [
-    'visitor' => $saved_panel_enabled['visitor'] ?? 1,
-    'guest'   => $saved_panel_enabled['guest']   ?? 1,
-    'member'  => $saved_panel_enabled['member']  ?? 1,
+$flosc_saved_panel_enabled = $flosc_fs['autoprompt_panel_enabled'] ?? [];
+$flosc_panel_enabled = [
+    'visitor' => $flosc_saved_panel_enabled['visitor'] ?? 1,
+    'guest'   => $flosc_saved_panel_enabled['guest']   ?? 1,
+    'member'  => $flosc_saved_panel_enabled['member']  ?? 1,
 ];
 
-$prompts = [
-    'visitor' => is_array($saved_prompts['visitor'] ?? null) ? $saved_prompts['visitor'] : [],
-    'guest'   => is_array($saved_prompts['guest'] ?? null)   ? $saved_prompts['guest']   : [],
-    'member'  => is_array($saved_prompts['member'] ?? null)  ? $saved_prompts['member']  : [],
+$flosc_prompts = [
+    'visitor' => is_array($flosc_saved_prompts['visitor'] ?? null) ? $flosc_saved_prompts['visitor'] : [],
+    'guest'   => is_array($flosc_saved_prompts['guest'] ?? null)   ? $flosc_saved_prompts['guest']   : [],
+    'member'  => is_array($flosc_saved_prompts['member'] ?? null)  ? $flosc_saved_prompts['member']  : [],
 ];
 
 // Available offers for trigger dropdown
-$offers_for_trigger = [];
-$flow_id_for_offers = $flow_key ? str_replace('flosc_flow_', '', $flow_key) : null;
-if (function_exists('flosc') && $flow_id_for_offers) {
-    foreach (flosc()->sale()->offers()->get_all_offers($flow_id_for_offers) as $oid => $o) {
-        $offers_for_trigger[$oid] = $o['name'] ?? $oid;
+$flosc_offers_for_trigger = [];
+$flosc_flow_id_for_offers = $flosc_flow_key ? str_replace('flosc_flow_', '', $flosc_flow_key) : null;
+if (function_exists('flosc') && $flosc_flow_id_for_offers) {
+    foreach (flosc()->sale()->offers()->get_all_offers($flosc_flow_id_for_offers) as $flosc_oid => $flosc_o) {
+        $flosc_offers_for_trigger[$oid] = $o['name'] ?? $oid;
     }
 }
 
 // Available actions
-$available_actions = [
+$flosc_available_actions = [
     'open_quiz'            => 'open_quiz — Take Quiz',
     'open_free_lesson'     => 'open_free_lesson — View Free Lesson',
     'open_lesson_library'  => 'open_lesson_library — Lesson Library',
@@ -167,7 +167,7 @@ $available_actions = [
     'show_full_score'      => 'show_full_score — Show Full Score',
 ];
 
-$available_conditions = [
+$flosc_available_conditions = [
     'is_visitor'                                    => 'is_visitor',
     'is_visitor && quiz_taken'                      => 'is_visitor && quiz_taken',
     'is_guest'                                      => 'is_guest',
@@ -186,18 +186,18 @@ $available_conditions = [
 ];
 ?>
 
-<?php if (isset($get['saved'])): ?>
+<?php if (isset($flosc_get['saved'])): ?>
 <div class="notice notice-success is-dismissible"><p>AutoPrompts saved successfully.</p></div>
 <?php endif; ?>
 
 <p>Configure the quick-reply pills shown in FLOSC chat per user state. Pills send a chat message to the AI, trigger an offer to display, or fire an in-chat action (quiz, lesson, checkout, etc.).</p>
 
 <?php wp_nonce_field('flosc_save_autoprompts', 'flosc_autoprompts_nonce'); ?>
-    <input type="hidden" name="flosc_flow_key" value="<?php echo esc_attr($flow_key); ?>">
-    <input type="hidden" name="flosc_ivr" value="<?php echo esc_attr($current_ivr); ?>">
+    <input type="hidden" name="flosc_flow_key" value="<?php echo esc_attr($flosc_flow_key); ?>">
+    <input type="hidden" name="flosc_ivr" value="<?php echo esc_attr($flosc_current_ivr); ?>">
 
 <?php
-$state_config = [
+$flosc_state_config = [
     'visitor' => [
         'label'  => 'Visitor AutoPrompts — IntroPanel',
         'icon'   => '⚪',
@@ -224,17 +224,17 @@ $state_config = [
     ],
 ];
 
-foreach ($state_config as $state => $sc):
-    $pills = $prompts[$state];
+foreach ($flosc_state_config as $flosc_state => $flosc_sc):
+    $flosc_pills = $flosc_prompts[$state];
 ?>
 <div class="flosc-autoprompt-section" style="background:<?php echo esc_attr( $sc['color'] ); ?>; border:1px solid <?php echo esc_attr( $sc['border'] ); ?>; border-radius:6px; padding:20px; margin-bottom:24px;">
     <h3 style="margin-top:0; display:flex; align-items:center; gap:12px;">
         <span><?php echo esc_html( $sc['icon'] ); ?> <?php echo esc_html( $sc['label'] ); ?></span>
         <label style="display:inline-flex; align-items:center; gap:5px; font-size:13px; font-weight:normal; cursor:pointer; margin:0;">
-            <input type="checkbox" name="panel_enabled_<?php echo esc_attr( $state ); ?>" value="1" <?php checked($panel_enabled[$state], 1); ?>>
+            <input type="checkbox" name="panel_enabled_<?php echo esc_attr( $state ); ?>" value="1" <?php checked($flosc_panel_enabled[$state], 1); ?>>
             Show panel
         </label>
-        <a href="<?php echo esc_url($autoprompt_docs_base . '#' . ($autoprompt_docs_anchor[$state] ?? 'admin-doc-jit-links')); ?>"
+        <a href="<?php echo esc_url($flosc_autoprompt_docs_base . '#' . ($flosc_autoprompt_docs_anchor[$state] ?? 'admin-doc-jit-links')); ?>"
            style="margin-left:auto; font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
     </h3>
     <p class="description" style="margin-top:0;"><?php echo esc_html( $sc['desc'] ); ?></p>
@@ -246,7 +246,7 @@ foreach ($state_config as $state => $sc):
             <span style="font-weight:normal; color:#787c82;">(the eyebrow text shown above the pills)</span>
         </label>
          <input type="text" name="panel_header_<?php echo esc_attr( $state ); ?>"
-               value="<?php echo esc_attr($panel_headers[$state]); ?>"
+               value="<?php echo esc_attr($flosc_panel_headers[$state]); ?>"
                class="large-text" placeholder="Try these AutoPrompts!"
              oninput="document.getElementById('header-preview-<?php echo esc_attr( $state ); ?>').textContent = this.value">
     </div>
@@ -254,12 +254,12 @@ foreach ($state_config as $state => $sc):
     <!-- Live pill preview -->
     <div style="background:#fff; border:1px solid <?php echo esc_attr( $sc['border'] ); ?>; border-radius:8px; padding:10px 14px; margin-bottom:14px; max-width:600px;">
         <div style="font-size:11px; font-weight:600; color:#787c82; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:6px;"><?php echo esc_html( $sc['panel'] ); ?> — Preview</div>
-        <div id="header-preview-<?php echo esc_attr( $state ); ?>" style="font-size:11px; color:#50575e; margin-bottom:6px;"><?php echo esc_html( $panel_headers[$state] ); ?></div>
+        <div id="header-preview-<?php echo esc_attr( $state ); ?>" style="font-size:11px; color:#50575e; margin-bottom:6px;"><?php echo esc_html( $flosc_panel_headers[$state] ); ?></div>
         <div id="preview-<?php echo esc_attr( $state ); ?>" style="display:flex; flex-wrap:wrap; gap:6px; min-height:28px;">
-            <?php foreach ($pills as $pill): ?>
+            <?php foreach ($flosc_pills as $flosc_pill): ?>
             <span class="flosc-preview-pill-chip" style="background:rgba(255,255,255,0.9);border:1px solid rgba(0,0,0,0.1);border-radius:16px;padding:4px 12px;font-size:12px;display:inline-flex;align-items:center;gap:5px;">
-                <?php if ($pill['icon']): ?><span><?php echo esc_html($pill['icon']); ?></span><?php endif; ?>
-                <?php echo esc_html($pill['label']); ?>
+                <?php if ($flosc_pill['icon']): ?><span><?php echo esc_html($flosc_pill['icon']); ?></span><?php endif; ?>
+                <?php echo esc_html($flosc_pill['label']); ?>
             </span>
             <?php endforeach; ?>
         </div>
@@ -280,72 +280,72 @@ foreach ($state_config as $state => $sc):
             </tr>
         </thead>
         <tbody id="tbody-<?php echo esc_attr( $state ); ?>">
-        <?php foreach ($pills as $pill):
-            $ttype = $pill['trigger_type'] ?? 'ai';
-            $tval  = $pill['trigger_value'] ?? '';
+        <?php foreach ($flosc_pills as $flosc_pill):
+            $flosc_ttype = $flosc_pill['trigger_type'] ?? 'ai';
+            $flosc_tval  = $flosc_pill['trigger_value'] ?? '';
             // Back-compat: derive trigger_type from action field
-            if (!isset($pill['trigger_type']) && !empty($pill['action'])) {
-                if (strpos($pill['action'], 'show_offer_') === 0) {
-                    $ttype = 'offer';
-                    $tval  = str_replace('show_offer_', '', $pill['action']);
+            if (!isset($flosc_pill['trigger_type']) && !empty($flosc_pill['action'])) {
+                if (strpos($flosc_pill['action'], 'show_offer_') === 0) {
+                    $flosc_ttype = 'offer';
+                    $flosc_tval  = str_replace('show_offer_', '', $flosc_pill['action']);
                 } else {
-                    $ttype = 'action';
-                    $tval  = $pill['action'];
+                    $flosc_ttype = 'action';
+                    $flosc_tval  = $flosc_pill['action'];
                 }
             }
         ?>
             <tr class="flosc-ap-row" style="border-bottom:1px solid #eee;">
-                <td style="padding:5px 6px;"><input type="text" name="<?php echo esc_attr( $state ); ?>_pill_icon[]" value="<?php echo esc_attr($pill['icon'] ?? ''); ?>" style="width:44px;font-size:18px;text-align:center;border:1px solid #c3c4c7;border-radius:3px;" placeholder="💊"></td>
-                <td style="padding:5px 6px;"><input type="text" name="<?php echo esc_attr( $state ); ?>_pill_label[]" value="<?php echo esc_attr($pill['label'] ?? ''); ?>" style="width:100%;box-sizing:border-box;" class="regular-text" placeholder="Pill label"></td>
-                <td style="padding:5px 6px;"><input type="text" name="<?php echo esc_attr( $state ); ?>_pill_user_input[]" value="<?php echo esc_attr($pill['user_input'] ?? ''); ?>" style="width:100%;box-sizing:border-box;" placeholder="Same as label"></td>
+                <td style="padding:5px 6px;"><input type="text" name="<?php echo esc_attr( $state ); ?>_pill_icon[]" value="<?php echo esc_attr($flosc_pill['icon'] ?? ''); ?>" style="width:44px;font-size:18px;text-align:center;border:1px solid #c3c4c7;border-radius:3px;" placeholder="💊"></td>
+                <td style="padding:5px 6px;"><input type="text" name="<?php echo esc_attr( $state ); ?>_pill_label[]" value="<?php echo esc_attr($flosc_pill['label'] ?? ''); ?>" style="width:100%;box-sizing:border-box;" class="regular-text" placeholder="Pill label"></td>
+                <td style="padding:5px 6px;"><input type="text" name="<?php echo esc_attr( $state ); ?>_pill_user_input[]" value="<?php echo esc_attr($flosc_pill['user_input'] ?? ''); ?>" style="width:100%;box-sizing:border-box;" placeholder="Same as label"></td>
                 <td style="padding:5px 6px;">
                     <select name="<?php echo esc_attr( $state ); ?>_pill_trigger_type[]" style="width:100%;" onchange="floscToggleTriggerValue(this)">
-                        <option value="ai"     <?php selected($ttype,'ai'); ?>>💬 AI</option>
-                        <option value="offer"  <?php selected($ttype,'offer'); ?>>💰 Offer</option>
-                        <option value="action" <?php selected($ttype,'action'); ?>>⚡ Action</option>
+                        <option value="ai"     <?php selected($flosc_ttype,'ai'); ?>>💬 AI</option>
+                        <option value="offer"  <?php selected($flosc_ttype,'offer'); ?>>💰 Offer</option>
+                        <option value="action" <?php selected($flosc_ttype,'action'); ?>>⚡ Action</option>
                     </select>
                 </td>
                 <td style="padding:5px 6px;" class="flosc-trigger-value-cell">
                     <!-- AI: no value needed -->
-                    <span class="flosc-tv-ai"  style="<?php echo esc_attr( $ttype !== 'ai'     ? 'display:none;' : '' ); ?> color:#787c82; font-size:12px; padding:4px;">Sends user_input to AI</span>
+                    <span class="flosc-tv-ai"  style="<?php echo esc_attr( $flosc_ttype !== 'ai'     ? 'display:none;' : '' ); ?> color:#787c82; font-size:12px; padding:4px;">Sends user_input to AI</span>
                     <!-- Offer picker -->
-                    <select name="<?php echo esc_attr( $state ); ?>_pill_trigger_value_offer[]" style="width:100%; <?php echo esc_attr( $ttype !== 'offer' ? 'display:none;' : '' ); ?>" class="flosc-tv-offer">
-                        <?php foreach ($offers_for_trigger as $oid => $oname): ?>
-                            <option value="<?php echo esc_attr($oid); ?>" <?php selected($tval, $oid); ?>><?php echo esc_html($oname); ?> (<?php echo esc_html($oid); ?>)</option>
+                    <select name="<?php echo esc_attr( $state ); ?>_pill_trigger_value_offer[]" style="width:100%; <?php echo esc_attr( $flosc_ttype !== 'offer' ? 'display:none;' : '' ); ?>" class="flosc-tv-offer">
+                        <?php foreach ($flosc_offers_for_trigger as $flosc_oid => $flosc_oname): ?>
+                            <option value="<?php echo esc_attr($oid); ?>" <?php selected($flosc_tval, $oid); ?>><?php echo esc_html($oname); ?> (<?php echo esc_html($oid); ?>)</option>
                         <?php endforeach; ?>
-                        <?php if (empty($offers_for_trigger)): ?>
-                            <option value="full_access" <?php selected($tval,'full_access'); ?>>full_access (default)</option>
+                        <?php if (empty($flosc_offers_for_trigger)): ?>
+                            <option value="full_access" <?php selected($flosc_tval,'full_access'); ?>>full_access (default)</option>
                         <?php endif; ?>
                     </select>
                     <!-- Action picker -->
-                    <select name="<?php echo esc_attr( $state ); ?>_pill_trigger_value_action[]" style="width:100%; <?php echo esc_attr( $ttype !== 'action' ? 'display:none;' : '' ); ?>" class="flosc-tv-action">
-                        <?php foreach ($available_actions as $aval => $adesc): ?>
-                            <option value="<?php echo esc_attr($aval); ?>" <?php selected($tval, $aval); ?>><?php echo esc_html($adesc); ?></option>
+                    <select name="<?php echo esc_attr( $state ); ?>_pill_trigger_value_action[]" style="width:100%; <?php echo esc_attr( $flosc_ttype !== 'action' ? 'display:none;' : '' ); ?>" class="flosc-tv-action">
+                        <?php foreach ($flosc_available_actions as $flosc_aval => $flosc_adesc): ?>
+                            <option value="<?php echo esc_attr($aval); ?>" <?php selected($flosc_tval, $aval); ?>><?php echo esc_html($adesc); ?></option>
                         <?php endforeach; ?>
                     </select>
                     <!-- Hidden field that submits the actual trigger_value -->
-                    <input type="hidden" name="<?php echo esc_attr( $state ); ?>_pill_trigger_value[]" value="<?php echo esc_attr($tval); ?>" class="flosc-tv-hidden">
+                    <input type="hidden" name="<?php echo esc_attr( $state ); ?>_pill_trigger_value[]" value="<?php echo esc_attr($flosc_tval); ?>" class="flosc-tv-hidden">
                 </td>
                 <td style="padding:5px 6px;">
                     <select name="<?php echo esc_attr( $state ); ?>_pill_conditions[]" style="width:100%;">
                         <?php
-                        $cond = $pill['conditions'] ?? ('is_' . $state);
-                        $found = false;
-                        foreach ($available_conditions as $cval => $cdesc):
-                            if ($cond === $cval) $found = true;
+                        $flosc_cond = $flosc_pill['conditions'] ?? ('is_' . $state);
+                        $flosc_found = false;
+                        foreach ($flosc_available_conditions as $flosc_cval => $flosc_cdesc):
+                            if ($flosc_cond === $cval) $flosc_found = true;
                         ?>
-                            <option value="<?php echo esc_attr($cval); ?>" <?php selected($cond, $cval); ?>><?php echo esc_html($cdesc); ?></option>
+                            <option value="<?php echo esc_attr($cval); ?>" <?php selected($flosc_cond, $cval); ?>><?php echo esc_html($cdesc); ?></option>
                         <?php endforeach; ?>
-                        <?php if (!$found && $cond): ?>
-                            <option value="<?php echo esc_attr($cond); ?>" selected><?php echo esc_html($cond); ?> (custom)</option>
+                        <?php if (!$flosc_found && $flosc_cond): ?>
+                            <option value="<?php echo esc_attr($flosc_cond); ?>" selected><?php echo esc_html($flosc_cond); ?> (custom)</option>
                         <?php endif; ?>
                     </select>
                 </td>
                 <td style="padding:5px 6px;">
                     <select name="<?php echo esc_attr( $state ); ?>_pill_style[]" style="width:100%;">
-                        <option value="pill"   <?php selected($pill['style'] ?? 'pill', 'pill'); ?>>pill</option>
-                        <option value="button" <?php selected($pill['style'] ?? '', 'button'); ?>>button</option>
-                        <option value="chip"   <?php selected($pill['style'] ?? '', 'chip'); ?>>chip</option>
+                        <option value="pill"   <?php selected($flosc_pill['style'] ?? 'pill', 'pill'); ?>>pill</option>
+                        <option value="button" <?php selected($flosc_pill['style'] ?? '', 'button'); ?>>button</option>
+                        <option value="chip"   <?php selected($flosc_pill['style'] ?? '', 'chip'); ?>>chip</option>
                     </select>
                 </td>
                 <td style="padding:5px 4px;"><button type="button" class="button flosc-ap-remove" title="Remove">&times;</button></td>
@@ -373,7 +373,7 @@ foreach ($state_config as $state => $sc):
 
 <!-- ── Demo Pill Sets ─────────────────────────────────────────────────────── -->
 <?php
-$pill_demos = [
+$flosc_pill_demos = [
     'visitor' => [
         [
             'name' => 'LeSAEp Visitor Starter Pack',
@@ -432,20 +432,20 @@ $pill_demos = [
         </p>
         <div style="display:flex;flex-direction:column;gap:10px;">
         <?php
-        $state_colors = [ 'visitor'=>'#c3c4c7', 'guest'=>'#f59e0b', 'member'=>'#86efac' ];
-        foreach ( $pill_demos as $state => $sets ):
-            $border = $state_colors[$state] ?? '#c3c4c7';
-            foreach ( $sets as $set ):
+        $flosc_state_colors = [ 'visitor'=>'#c3c4c7', 'guest'=>'#f59e0b', 'member'=>'#86efac' ];
+        foreach ( $flosc_pill_demos as $flosc_state => $flosc_sets ):
+            $flosc_border = $flosc_state_colors[$state] ?? '#c3c4c7';
+            foreach ( $flosc_sets as $flosc_set ):
         ?>
-        <div style="background:#fff;border:1px solid <?php echo esc_attr( $border ); ?>;border-left:4px solid <?php echo esc_attr( $border ); ?>;border-radius:5px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
+        <div style="background:#fff;border:1px solid <?php echo esc_attr( $flosc_border ); ?>;border-left:4px solid <?php echo esc_attr( $flosc_border ); ?>;border-radius:5px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
             <div style="flex:1;">
-                <strong style="font-size:13px;"><?php echo esc_html( ucfirst($state) . ' — ' . $set['name'] ); ?></strong>
-                <span style="display:block;font-size:12px;color:#50575e;margin-top:3px;"><?php echo esc_html( $set['desc'] ); ?></span>
+                <strong style="font-size:13px;"><?php echo esc_html( ucfirst($state) . ' — ' . $flosc_set['name'] ); ?></strong>
+                <span style="display:block;font-size:12px;color:#50575e;margin-top:3px;"><?php echo esc_html( $flosc_set['desc'] ); ?></span>
             </div>
             <button type="button"
                     class="button button-small flosc-load-pill-set"
                     data-state="<?php echo esc_attr( $state ); ?>"
-                    data-pills="<?php echo esc_attr( json_encode( $set['pills'] ) ); ?>"
+                    data-pills="<?php echo esc_attr( json_encode( $flosc_set['pills'] ) ); ?>"
                     style="flex-shrink:0;white-space:nowrap;">
                 Load Set →
             </button>
@@ -487,9 +487,9 @@ $pill_demos = [
     });
 
     // ---- Available data for new rows ----
-    const conditionOptions = <?php echo wp_json_encode( $available_conditions ); ?>;
-    const actionOptions    = <?php echo wp_json_encode( $available_actions ); ?>;
-    const offerOptions     = <?php echo wp_json_encode( $offers_for_trigger ); ?>;
+    const conditionOptions = <?php echo wp_json_encode( $flosc_available_conditions ); ?>;
+    const actionOptions    = <?php echo wp_json_encode( $flosc_available_actions ); ?>;
+    const offerOptions     = <?php echo wp_json_encode( $flosc_offers_for_trigger ); ?>;
 
     function buildOptions(opts, selected) {
         return Object.entries(opts).map(([v, l]) =>

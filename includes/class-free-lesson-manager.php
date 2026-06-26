@@ -402,6 +402,7 @@ class FLOSC_Free_Lesson_Manager {
             if ($post) {
                 // v1.8.3: Run content through the_content filters so WordPress
                 // renders shortcodes, wpautop, embeds, etc.
+                // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core WordPress content filter.
                 $rendered_content = apply_filters('the_content', $post->post_content);
                 $lessons[] = [
                     'post_id'       => $post->ID,

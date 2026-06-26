@@ -16,16 +16,16 @@ if (!defined('ABSPATH')) exit;
 // v1.2.9: Output tab header
 flosc_tab_header('🎨', 'Style');
 
-$current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
-$style_docs_url = add_query_arg([
+$flosc_current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
+$flosc_style_docs_url = add_query_arg([
     'page' => 'flosc-settings',
-    'ivr'  => $current_ivr,
+    'ivr'  => $flosc_current_ivr,
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-style';
 
 echo '<div style="margin:-8px 0 14px; text-align:right;">'
-   . '<a href="' . esc_url($style_docs_url) . '" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>'
+   . '<a href="' . esc_url($flosc_style_docs_url) . '" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>'
    . '</div>';
 
 echo '<div style="margin: 0 0 20px; padding: 22px 24px; border: 1px solid #dbe7ff; border-radius: 16px; background: linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%); box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);">'
@@ -45,26 +45,26 @@ echo '<div style="margin: 0 0 20px; padding: 22px 24px; border: 1px solid #dbe7f
 
 // Handle reset action
 if (isset($_POST['flosc_reset_chat_style']) && check_admin_referer('flosc_reset_chat_style_nonce')) {
-    $reset_key = $GLOBALS['flosc_settings_key'] ?? '';
-    if ($reset_key) {
-        $fs = get_option($reset_key, []);
-        unset($fs['chat_style_preset'], $fs['chat_style_bubble'], $fs['chat_style_accent'], $fs['chat_style_font'], $fs['chat_style_scale']);
-        update_option($reset_key, $fs);
-        $GLOBALS['flosc_current_settings'] = $fs;
+    $flosc_reset_key = $GLOBALS['flosc_settings_key'] ?? '';
+    if ($flosc_reset_key) {
+        $flosc_fs = get_option($flosc_reset_key, []);
+        unset($flosc_fs['chat_style_preset'], $flosc_fs['chat_style_bubble'], $flosc_fs['chat_style_accent'], $flosc_fs['chat_style_font'], $flosc_fs['chat_style_scale']);
+        update_option($flosc_reset_key, $flosc_fs);
+        $GLOBALS['flosc_current_settings'] = $flosc_fs;
     }
     echo '<div class="notice notice-success"><p>✓ Chat styling reset to defaults.</p></div>';
 }
 
 // Get current values (defaults match enqueue_chat_style)
-$flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
-$current_preset = $flow_settings['chat_style_preset'] ?? 'light';
-$current_bubble = $flow_settings['chat_style_bubble'] ?? 'subtle-notch';
-$current_accent = $flow_settings['chat_style_accent'] ?? '#2563eb';
-$current_font = $flow_settings['chat_style_font'] ?? 'system';
-$current_scale = $flow_settings['chat_style_scale'] ?? 100;
+$flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
+$flosc_current_preset = $flosc_flow_settings['chat_style_preset'] ?? 'light';
+$flosc_current_bubble = $flosc_flow_settings['chat_style_bubble'] ?? 'subtle-notch';
+$flosc_current_accent = $flosc_flow_settings['chat_style_accent'] ?? '#2563eb';
+$flosc_current_font = $flosc_flow_settings['chat_style_font'] ?? 'system';
+$flosc_current_scale = $flosc_flow_settings['chat_style_scale'] ?? 100;
 
 // Bubble style presets
-$bubble_styles = [
+$flosc_bubble_styles = [
     'subtle-notch' => [
         'name' => 'Subtle Notch',
         'user' => '18px 18px 4px 18px',
@@ -114,9 +114,9 @@ $bubble_styles = [
         <th scope="row"><label for="flow_chat_style_preset">Theme</label></th>
         <td>
             <select name="flow_chat_style_preset" id="flow_chat_style_preset" class="regular-text">
-                <option value="auto" <?php selected($current_preset, 'auto'); ?>>🖥️ Auto (System)</option>
-                <option value="light" <?php selected($current_preset, 'light'); ?>>☀️ Light</option>
-                <option value="dark" <?php selected($current_preset, 'dark'); ?>>🌙 Dark</option>
+                <option value="auto" <?php selected($flosc_current_preset, 'auto'); ?>>🖥️ Auto (System)</option>
+                <option value="light" <?php selected($flosc_current_preset, 'light'); ?>>☀️ Light</option>
+                <option value="dark" <?php selected($flosc_current_preset, 'dark'); ?>>🌙 Dark</option>
             </select>
             <p class="description">Choose <strong>Auto</strong> to match the user's system preference. Light is the FLOSC Signature Template base, and Dark keeps the same geometry with a darker surface.</p>
         </td>
@@ -127,9 +127,9 @@ $bubble_styles = [
         <th scope="row"><label for="flow_chat_style_bubble">Bubble Style</label></th>
         <td>
             <select name="flow_chat_style_bubble" id="flow_chat_style_bubble" class="regular-text">
-                <?php foreach ($bubble_styles as $key => $style): ?>
-                    <option value="<?php echo esc_attr($key); ?>" <?php selected($current_bubble, $key); ?>>
-                        <?php echo esc_html($style['name']); ?>
+                <?php foreach ($flosc_bubble_styles as $flosc_key => $flosc_style): ?>
+                    <option value="<?php echo esc_attr($flosc_key); ?>" <?php selected($flosc_current_bubble, $flosc_key); ?>>
+                        <?php echo esc_html($flosc_style['name']); ?>
                     </option>
                 <?php endforeach; ?>
             </select>
@@ -163,18 +163,18 @@ $bubble_styles = [
     <tr>
         <th scope="row"><label for="flow_chat_style_accent">Accent Color</label></th>
         <td>
-            <input type="color" name="flow_chat_style_accent" id="flow_chat_style_accent" value="<?php echo esc_attr($current_accent); ?>" style="width: 60px; height: 36px; padding: 0; border: 1px solid #ccc; border-radius: 4px;">
-            <input type="text" id="flow_chat_style_accent_hex" value="<?php echo esc_attr($current_accent); ?>" style="width: 100px; margin-left: 8px;" readonly>
+            <input type="color" name="flow_chat_style_accent" id="flow_chat_style_accent" value="<?php echo esc_attr($flosc_current_accent); ?>" style="width: 60px; height: 36px; padding: 0; border: 1px solid #ccc; border-radius: 4px;">
+            <input type="text" id="flow_chat_style_accent_hex" value="<?php echo esc_attr($flosc_current_accent); ?>" style="width: 100px; margin-left: 8px;" readonly>
             <p class="description">Controls the active accent across user bubbles, the send button, links, hover states, and quiz highlights. Sets <code>--flosc-accent</code>.</p>
             
             <!-- Quick color swatches -->
             <div style="margin-top: 8px; display: flex; gap: 6px;">
                 <?php 
-                $swatches = ['#2563eb', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899', '#1d4ed8'];
-                foreach ($swatches as $color): ?>
-                    <button type="button" class="color-swatch" data-color="<?php echo esc_attr($color); ?>" 
-                        style="width: 28px; height: 28px; border-radius: 4px; border: 2px solid <?php echo esc_attr(($color === $current_accent) ? '#000' : 'transparent'); ?>; 
-                        background: <?php echo esc_attr($color); ?>; cursor: pointer;" title="<?php echo esc_attr($color); ?>"></button>
+                $flosc_swatches = ['#2563eb', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899', '#1d4ed8'];
+                foreach ($flosc_swatches as $flosc_color): ?>
+                    <button type="button" class="color-swatch" data-color="<?php echo esc_attr($flosc_color); ?>" 
+                        style="width: 28px; height: 28px; border-radius: 4px; border: 2px solid <?php echo esc_attr(($flosc_color === $flosc_current_accent) ? '#000' : 'transparent'); ?>; 
+                        background: <?php echo esc_attr($flosc_color); ?>; cursor: pointer;" title="<?php echo esc_attr($flosc_color); ?>"></button>
                 <?php endforeach; ?>
             </div>
         </td>
@@ -185,13 +185,13 @@ $bubble_styles = [
         <th scope="row"><label for="flow_chat_style_font">Font</label></th>
         <td>
             <select name="flow_chat_style_font" id="flow_chat_style_font" class="regular-text">
-                <option value="system" <?php selected($current_font, 'system'); ?>>System Default</option>
-                <option value="inter" <?php selected($current_font, 'inter'); ?>>Inter</option>
-                <option value="ibm-plex-sans" <?php selected($current_font, 'ibm-plex-sans'); ?>>IBM Plex Sans</option>
-                <option value="ibm-plex-mono" <?php selected($current_font, 'ibm-plex-mono'); ?>>IBM Plex Mono</option>
-                <option value="roboto" <?php selected($current_font, 'roboto'); ?>>Roboto</option>
-                <option value="roboto-mono" <?php selected($current_font, 'roboto-mono'); ?>>Roboto Mono</option>
-                <option value="fira-code" <?php selected($current_font, 'fira-code'); ?>>Fira Code</option>
+                <option value="system" <?php selected($flosc_current_font, 'system'); ?>>System Default</option>
+                <option value="inter" <?php selected($flosc_current_font, 'inter'); ?>>Inter</option>
+                <option value="ibm-plex-sans" <?php selected($flosc_current_font, 'ibm-plex-sans'); ?>>IBM Plex Sans</option>
+                <option value="ibm-plex-mono" <?php selected($flosc_current_font, 'ibm-plex-mono'); ?>>IBM Plex Mono</option>
+                <option value="roboto" <?php selected($flosc_current_font, 'roboto'); ?>>Roboto</option>
+                <option value="roboto-mono" <?php selected($flosc_current_font, 'roboto-mono'); ?>>Roboto Mono</option>
+                <option value="fira-code" <?php selected($flosc_current_font, 'fira-code'); ?>>Fira Code</option>
             </select>
             <p class="description">Choose a system-safe default or a documented web font. Monospace options help distinguish similar characters like I, l, 1.</p>
         </td>
@@ -203,9 +203,9 @@ $bubble_styles = [
         <td>
             <input type="range" name="flow_chat_style_scale" id="flow_chat_style_scale" 
                 min="100" max="150" step="10" 
-                value="<?php echo esc_attr($current_scale); ?>" 
+                value="<?php echo esc_attr($flosc_current_scale); ?>" 
                 style="width: 200px; vertical-align: middle;">
-            <span id="scale_value" style="margin-left: 10px; font-weight: 600; min-width: 50px; display: inline-block;"><?php echo esc_html($current_scale); ?>%</span>
+            <span id="scale_value" style="margin-left: 10px; font-weight: 600; min-width: 50px; display: inline-block;"><?php echo esc_html($flosc_current_scale); ?>%</span>
             <p class="description">Increase text size for better readability. 100% matches the browser default baseline.</p>
         </td>
     </tr>
@@ -239,7 +239,7 @@ $bubble_styles = [
 <?php ob_start(); ?>
 jQuery(document).ready(function($) {
     // Bubble style data
-    var bubbleStyles = <?php echo json_encode($bubble_styles); ?>;
+    var bubbleStyles = <?php echo json_encode($flosc_bubble_styles); ?>;
     
     // Update bubble preview
     function updateBubblePreview() {

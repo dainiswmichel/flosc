@@ -21,30 +21,30 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 flosc_tab_header( '🔐', 'Member Levels' );
 
-$flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
-$settings_key  = $GLOBALS['flosc_settings_key']     ?? '';
-$current_ivr   = $GLOBALS['flosc_current_ivr']      ?? '';
+$flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
+$flosc_settings_key  = $GLOBALS['flosc_settings_key']     ?? '';
+$flosc_current_ivr   = $GLOBALS['flosc_current_ivr']      ?? '';
 
-$member_levels_docs_url = add_query_arg([
+$flosc_member_levels_docs_url = add_query_arg([
     'page' => 'flosc-settings',
-    'ivr'  => $current_ivr,
+    'ivr'  => $flosc_current_ivr,
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-member-levels';
 
 // ─── 1. Level Registry ──────────────────────────────────────────────────────
 
-$member_levels = $flow_settings['member_levels'] ?? [];
+$flosc_member_levels = $flosc_flow_settings['member_levels'] ?? [];
 
 // Empty row so the admin has something to fill in on first visit
-if ( empty( $member_levels ) ) {
-    $member_levels[''] = [ 'slug' => '', 'name' => '', 'description' => '' ];
+if ( empty( $flosc_member_levels ) ) {
+    $flosc_member_levels[''] = [ 'slug' => '', 'name' => '', 'description' => '' ];
 }
 
 ?>
 
 <div style="margin:-8px 0 14px; text-align:right;">
-    <a href="<?php echo esc_url($member_levels_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
+    <a href="<?php echo esc_url($flosc_member_levels_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
 </div>
 
 <!-- ─── Level Registry ────────────────────────────────────────────────── -->
@@ -61,11 +61,11 @@ if ( empty( $member_levels ) ) {
         </tr>
     </thead>
     <tbody id="flosc-levels-body">
-        <?php foreach ( $member_levels as $level_key => $level ) : ?>
+        <?php foreach ( $flosc_member_levels as $flosc_level_key => $flosc_level ) : ?>
         <tr class="flosc-level-row">
             <td>
                 <input type="text" name="level_slug[]" 
-                       value="<?php echo esc_attr( $level['slug'] ?? $level_key ); ?>" 
+                       value="<?php echo esc_attr( $flosc_level['slug'] ?? $flosc_level_key ); ?>" 
                        class="regular-text flosc-level-slug" 
                        placeholder="full_access" 
                        pattern="[a-z0-9_]+" 
@@ -74,14 +74,14 @@ if ( empty( $member_levels ) ) {
             </td>
             <td>
                 <input type="text" name="level_name[]" 
-                       value="<?php echo esc_attr( $level['name'] ?? '' ); ?>" 
+                       value="<?php echo esc_attr( $flosc_level['name'] ?? '' ); ?>" 
                        class="regular-text" 
                        placeholder="Full Access"
                        style="width: 100%;">
             </td>
             <td>
                 <input type="text" name="level_description[]" 
-                       value="<?php echo esc_attr( $level['description'] ?? '' ); ?>" 
+                       value="<?php echo esc_attr( $flosc_level['description'] ?? '' ); ?>" 
                        class="regular-text" 
                        placeholder="Complete access to all course content"
                        style="width: 100%;">
@@ -105,14 +105,14 @@ if ( empty( $member_levels ) ) {
 // ─── 2. Content Protection ──────────────────────────────────────────────────
 
 // Build the level list for dropdowns (from saved levels, not from the form — form hasn't been submitted yet)
-$saved_levels = $flow_settings['member_levels'] ?? $member_levels;
+$flosc_saved_levels = $flosc_flow_settings['member_levels'] ?? $flosc_member_levels;
 
 // Gather all WordPress categories and tags
-$categories = get_categories( [ 'hide_empty' => false ] );
-$tags       = get_tags( [ 'hide_empty' => false ] );
+$flosc_categories = get_categories( [ 'hide_empty' => false ] );
+$flosc_tags       = get_tags( [ 'hide_empty' => false ] );
 
 // Load existing protection data
-$protected_items = $flow_settings['protected_content'] ?? [];
+$flosc_protected_items = $flosc_flow_settings['protected_content'] ?? [];
 ?>
 
 <hr style="margin: 40px 0;">
@@ -129,39 +129,39 @@ $protected_items = $flow_settings['protected_content'] ?? [];
         </tr>
     </thead>
     <tbody id="flosc-protection-body">
-        <?php if ( ! empty( $protected_items ) ) : ?>
-            <?php foreach ( $protected_items as $i => $item ) : ?>
+        <?php if ( ! empty( $flosc_protected_items ) ) : ?>
+            <?php foreach ( $flosc_protected_items as $flosc_i => $flosc_item ) : ?>
             <tr class="flosc-protection-row">
                 <td>
                     <select name="protection_type[]" class="flosc-protection-type" style="width: 100%;">
-                        <option value="category" <?php selected( $item['type'] ?? '', 'category' ); ?>>Category</option>
-                        <option value="tag" <?php selected( $item['type'] ?? '', 'tag' ); ?>>Tag</option>
-                        <option value="post" <?php selected( $item['type'] ?? '', 'post' ); ?>>Post (ID)</option>
-                        <option value="page" <?php selected( $item['type'] ?? '', 'page' ); ?>>Page (ID)</option>
+                        <option value="category" <?php selected( $flosc_item['type'] ?? '', 'category' ); ?>>Category</option>
+                        <option value="tag" <?php selected( $flosc_item['type'] ?? '', 'tag' ); ?>>Tag</option>
+                        <option value="post" <?php selected( $flosc_item['type'] ?? '', 'post' ); ?>>Post (ID)</option>
+                        <option value="page" <?php selected( $flosc_item['type'] ?? '', 'page' ); ?>>Page (ID)</option>
                     </select>
                 </td>
                 <td>
                     <?php
-                    $item_type = $item['type'] ?? 'category';
-                    if ( in_array( $item_type, [ 'post', 'page' ] ) ) : ?>
+                    $flosc_item_type = $flosc_item['type'] ?? 'category';
+                    if ( in_array( $flosc_item_type, [ 'post', 'page' ] ) ) : ?>
                         <input type="text" name="protection_value[]" 
-                               value="<?php echo esc_attr( $item['id'] ?? '' ); ?>" 
+                               value="<?php echo esc_attr( $flosc_item['id'] ?? '' ); ?>" 
                                class="regular-text flosc-protection-value" 
                                placeholder="Post/Page ID" style="width: 100%;">
                     <?php else : ?>
                         <select name="protection_value[]" class="flosc-protection-value" style="width: 100%;">
                             <option value="">— Select —</option>
-                            <?php if ( $item_type === 'category' ) : ?>
-                                <?php foreach ( $categories as $cat ) : ?>
+                            <?php if ( $flosc_item_type === 'category' ) : ?>
+                                <?php foreach ( $flosc_categories as $cat ) : ?>
                                     <option value="<?php echo esc_attr( $cat->term_id ); ?>" 
-                                            <?php selected( $item['id'] ?? '', $cat->term_id ); ?>>
+                                            <?php selected( $flosc_item['id'] ?? '', $cat->term_id ); ?>>
                                         <?php echo esc_html( $cat->name ); ?> (<?php echo esc_html( (string) $cat->count ); ?> posts)
                                     </option>
                                 <?php endforeach; ?>
-                            <?php elseif ( $item_type === 'tag' ) : ?>
-                                <?php foreach ( $tags as $tag ) : ?>
+                            <?php elseif ( $flosc_item_type === 'tag' ) : ?>
+                                <?php foreach ( $flosc_tags as $tag ) : ?>
                                     <option value="<?php echo esc_attr( $tag->term_id ); ?>" 
-                                            <?php selected( $item['id'] ?? '', $tag->term_id ); ?>>
+                                            <?php selected( $flosc_item['id'] ?? '', $tag->term_id ); ?>>
                                         <?php echo esc_html( $tag->name ); ?> (<?php echo esc_html( (string) $tag->count ); ?> posts)
                                     </option>
                                 <?php endforeach; ?>
@@ -172,13 +172,13 @@ $protected_items = $flow_settings['protected_content'] ?? [];
                 <td>
                     <select name="protection_level[]" class="flosc-protection-level-select" style="width: 100%;">
                         <option value="">— Any Member —</option>
-                        <?php foreach ( $saved_levels as $lk => $lv ) : 
-                            $slug = $lv['slug'] ?? $lk;
-                            if ( empty( $slug ) ) continue;
+                        <?php foreach ( $flosc_saved_levels as $flosc_lk => $flosc_lv ) : 
+                            $flosc_slug = $flosc_lv['slug'] ?? $flosc_lk;
+                            if ( empty( $flosc_slug ) ) continue;
                         ?>
-                            <option value="<?php echo esc_attr( $slug ); ?>" 
-                                    <?php selected( $item['level'] ?? '', $slug ); ?>>
-                                <?php echo esc_html( ( $lv['name'] ?? '' ) ?: $slug ); ?>
+                            <option value="<?php echo esc_attr( $flosc_slug ); ?>" 
+                                    <?php selected( $flosc_item['level'] ?? '', $flosc_slug ); ?>>
+                                <?php echo esc_html( ( $flosc_lv['name'] ?? '' ) ?: $flosc_slug ); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -203,10 +203,10 @@ $protected_items = $flow_settings['protected_content'] ?? [];
 <?php
 // ─── 3. Guest Access & Free Lessons ─────────────────────────────────────────
 
-$free_lesson_mode       = $flow_settings['free_lesson_mode']       ?? 'fixed';
-$free_lesson_count      = $flow_settings['free_lesson_count']      ?? 1;
-$free_lesson_proportion = $flow_settings['free_lesson_proportion'] ?? '1/3';
-$guest_access_days      = $flow_settings['guest_access_days']      ?? 0;
+$flosc_free_lesson_mode       = $flosc_flow_settings['free_lesson_mode']       ?? 'fixed';
+$flosc_free_lesson_count      = $flosc_flow_settings['free_lesson_count']      ?? 1;
+$flosc_free_lesson_proportion = $flosc_flow_settings['free_lesson_proportion'] ?? '1/3';
+$flosc_guest_access_days      = $flosc_flow_settings['guest_access_days']      ?? 0;
 ?>
 
 <hr style="margin: 40px 0;">
@@ -218,8 +218,8 @@ $guest_access_days      = $flow_settings['guest_access_days']      ?? 0;
         <th scope="row"><label for="flow_free_lesson_mode">Free Lesson Mode</label></th>
         <td>
             <select name="flow_free_lesson_mode" id="flow_free_lesson_mode">
-                <option value="fixed" <?php selected( $free_lesson_mode, 'fixed' ); ?>>Fixed Number</option>
-                <option value="proportion" <?php selected( $free_lesson_mode, 'proportion' ); ?>>Proportion of Missed</option>
+                <option value="fixed" <?php selected( $flosc_free_lesson_mode, 'fixed' ); ?>>Fixed Number</option>
+                <option value="proportion" <?php selected( $flosc_free_lesson_mode, 'proportion' ); ?>>Proportion of Missed</option>
             </select>
             <p class="description">How to calculate how many free lessons guests receive.</p>
         </td>
@@ -228,7 +228,7 @@ $guest_access_days      = $flow_settings['guest_access_days']      ?? 0;
         <th scope="row"><label for="flow_free_lesson_count">Free Lesson Count</label></th>
         <td>
             <input type="number" id="flow_free_lesson_count" name="flow_free_lesson_count" 
-                   value="<?php echo esc_attr( $free_lesson_count ); ?>" min="1" max="50" class="small-text">
+                   value="<?php echo esc_attr( $flosc_free_lesson_count ); ?>" min="1" max="50" class="small-text">
             <p class="description">Number of free lessons to give guests. (For "Fixed Number" mode)</p>
         </td>
     </tr>
@@ -236,10 +236,10 @@ $guest_access_days      = $flow_settings['guest_access_days']      ?? 0;
         <th scope="row"><label for="flow_free_lesson_proportion">Free Lesson Proportion</label></th>
         <td>
             <select name="flow_free_lesson_proportion" id="flow_free_lesson_proportion">
-                <option value="1/5" <?php selected( $free_lesson_proportion, '1/5' ); ?>>1/5 of missed lessons</option>
-                <option value="1/4" <?php selected( $free_lesson_proportion, '1/4' ); ?>>1/4 of missed lessons</option>
-                <option value="1/3" <?php selected( $free_lesson_proportion, '1/3' ); ?>>1/3 of missed lessons</option>
-                <option value="1/2" <?php selected( $free_lesson_proportion, '1/2' ); ?>>1/2 of missed lessons</option>
+                <option value="1/5" <?php selected( $flosc_free_lesson_proportion, '1/5' ); ?>>1/5 of missed lessons</option>
+                <option value="1/4" <?php selected( $flosc_free_lesson_proportion, '1/4' ); ?>>1/4 of missed lessons</option>
+                <option value="1/3" <?php selected( $flosc_free_lesson_proportion, '1/3' ); ?>>1/3 of missed lessons</option>
+                <option value="1/2" <?php selected( $flosc_free_lesson_proportion, '1/2' ); ?>>1/2 of missed lessons</option>
             </select>
             <p class="description">Proportion of missed quiz items to give as free lessons. (For "Proportion" mode)</p>
         </td>
@@ -248,7 +248,7 @@ $guest_access_days      = $flow_settings['guest_access_days']      ?? 0;
         <th scope="row"><label for="flow_guest_access_days">Guest Access Duration</label></th>
         <td>
             <input type="number" id="flow_guest_access_days" name="flow_guest_access_days" 
-                   value="<?php echo esc_attr( $guest_access_days ); ?>" min="0" max="365" class="small-text"> days
+                   value="<?php echo esc_attr( $flosc_guest_access_days ); ?>" min="0" max="365" class="small-text"> days
             <p class="description">How long guests can access their free lessons. Set to 0 for unlimited access.</p>
         </td>
     </tr>
@@ -295,11 +295,11 @@ jQuery(document).ready(function($) {
     // Auto-generate slug from display name
     $(document).on('input', '.flosc-level-row input[name="level_name[]"]', function() {
         var $row = $(this).closest('tr');
-        var $slug = $row.find('.flosc-level-slug');
+        var $flosc_slug = $row.find('.flosc-level-slug');
         // Only auto-fill if slug is currently empty
-        if ($slug.val() === '') {
+        if ($flosc_slug.val() === '') {
             var slug = $(this).val().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
-            $slug.val(slug);
+            $flosc_slug.val(slug);
         }
     });
 
@@ -313,30 +313,30 @@ jQuery(document).ready(function($) {
 
     // Build option strings for JS-generated rows
     var categoryOptions = <?php
-        $opts = '<option value="">— Select —</option>';
-        foreach ( $categories as $cat ) {
-            $opts .= '<option value="' . esc_attr( $cat->term_id ) . '">' . esc_html( $cat->name ) . ' (' . intval( $cat->count ) . ' posts)</option>';
+        $flosc_opts = '<option value="">— Select —</option>';
+        foreach ( $flosc_categories as $cat ) {
+            $flosc_opts .= '<option value="' . esc_attr( $cat->term_id ) . '">' . esc_html( $cat->name ) . ' (' . intval( $cat->count ) . ' posts)</option>';
         }
-        echo wp_json_encode( $opts );
+        echo wp_json_encode( $flosc_opts );
     ?>;
 
     var tagOptions = <?php
-        $opts = '<option value="">— Select —</option>';
-        foreach ( $tags as $tag ) {
-            $opts .= '<option value="' . esc_attr( $tag->term_id ) . '">' . esc_html( $tag->name ) . ' (' . intval( $tag->count ) . ' posts)</option>';
+        $flosc_opts = '<option value="">— Select —</option>';
+        foreach ( $flosc_tags as $tag ) {
+            $flosc_opts .= '<option value="' . esc_attr( $tag->term_id ) . '">' . esc_html( $tag->name ) . ' (' . intval( $tag->count ) . ' posts)</option>';
         }
-        echo wp_json_encode( $opts );
+        echo wp_json_encode( $flosc_opts );
     ?>;
 
     var levelOptions = <?php
-        $opts = '<option value="">— Any Member —</option>';
-        foreach ( $saved_levels as $lk => $lv ) {
-            $slug = $lv['slug'] ?? $lk;
-            if ( empty( $slug ) ) continue;
-            $label = ( $lv['name'] ?? '' ) ?: $slug;
-            $opts .= '<option value="' . esc_attr( $slug ) . '">' . esc_html( $label ) . '</option>';
+        $flosc_opts = '<option value="">— Any Member —</option>';
+        foreach ( $flosc_saved_levels as $flosc_lk => $flosc_lv ) {
+            $flosc_slug = $flosc_lv['slug'] ?? $flosc_lk;
+            if ( empty( $flosc_slug ) ) continue;
+            $flosc_label = ( $flosc_lv['name'] ?? '' ) ?: $flosc_slug;
+            $flosc_opts .= '<option value="' . esc_attr( $flosc_slug ) . '">' . esc_html( $flosc_label ) . '</option>';
         }
-        echo wp_json_encode( $opts );
+        echo wp_json_encode( $flosc_opts );
     ?>;
 
     function buildContentField(type) {

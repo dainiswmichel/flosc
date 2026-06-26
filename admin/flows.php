@@ -6,14 +6,14 @@
 
 if (!defined('ABSPATH')) exit;
 
-$flows = flosc_flows()->get_user_flows();
-$is_admin = current_user_can('manage_options');
-$get = wp_unslash( $_GET );
+$flosc_flows = flosc_flows()->get_user_flows();
+$flosc_is_admin = current_user_can('manage_options');
+$flosc_get = wp_unslash( $_GET );
 
 // Handle delete
-if (isset($get['delete_flow']) && $is_admin && isset($get['_wpnonce']) && wp_verify_nonce(sanitize_text_field($get['_wpnonce']), 'flosc_delete_flow')) {
-    $result = flosc_flows()->delete_flow(sanitize_key($get['delete_flow']));
-    if (!is_wp_error($result)) {
+if (isset($flosc_get['delete_flow']) && $flosc_is_admin && isset($flosc_get['_wpnonce']) && wp_verify_nonce(sanitize_text_field($flosc_get['_wpnonce']), 'flosc_delete_flow')) {
+    $flosc_result = flosc_flows()->delete_flow(sanitize_key($flosc_get['delete_flow']));
+    if (!is_wp_error($flosc_result)) {
         wp_safe_redirect(admin_url('admin.php?page=flosc-flows&deleted=1'));
         exit;
     }
@@ -22,7 +22,7 @@ if (isset($get['delete_flow']) && $is_admin && isset($get['_wpnonce']) && wp_ver
 
 <div class="wrap">
     <h1 class="wp-heading-inline">FLOSC Flows</h1>
-    <?php if ($is_admin): ?>
+    <?php if ($flosc_is_admin): ?>
         <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-flow-edit&flow_id=new')); ?>" class="page-title-action">Add New</a>
     <?php endif; ?>
     <hr class="wp-header-end">
@@ -35,7 +35,7 @@ if (isset($get['delete_flow']) && $is_admin && isset($get['_wpnonce']) && wp_ver
         Quick overview of your flows. Click <strong>Configure</strong> to edit all settings for a flow.
     </p>
     
-    <?php if (empty($flows)): ?>
+    <?php if (empty($flosc_flows)): ?>
         <div class="notice notice-warning">
             <p>No flows yet. <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-flow-edit&flow_id=new')); ?>">Create your first flow</a>.</p>
         </div>
@@ -53,56 +53,56 @@ if (isset($get['delete_flow']) && $is_admin && isset($get['_wpnonce']) && wp_ver
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($flows as $flow): ?>
+            <?php foreach ($flosc_flows as $flosc_flow): ?>
                 <?php
-                $flow_url = '';
-                if (!empty($flow['custom_domain'])) {
-                    $flow_url = (is_ssl() ? 'https://' : 'http://') . rtrim($flow['custom_domain'], '/') . '/';
-                } elseif (!empty($flow['slug'])) {
-                    $flow_url = home_url('/' . $flow['slug'] . '/');
+                $flosc_flow_url = '';
+                if (!empty($flosc_flow['custom_domain'])) {
+                    $flosc_flow_url = (is_ssl() ? 'https://' : 'http://') . rtrim($flosc_flow['custom_domain'], '/') . '/';
+                } elseif (!empty($flosc_flow['slug'])) {
+                    $flosc_flow_url = home_url('/' . $flosc_flow['slug'] . '/');
                 }
                 ?>
                 <tr>
                     <td style="text-align: center;">
-                        <?php $fi = $flow['identity'] ?? []; ?>
-                        <span style="display:inline-block;width:24px;height:24px;border-radius:4px;background:<?php echo esc_attr($fi['primary_color'] ?? '#4f46e5'); ?>;"></span>
+                        <?php $flosc_fi = $flosc_flow['identity'] ?? []; ?>
+                        <span style="display:inline-block;width:24px;height:24px;border-radius:4px;background:<?php echo esc_attr($flosc_fi['primary_color'] ?? '#4f46e5'); ?>;"></span>
                     </td>
                     <td>
-                        <strong><?php echo esc_html($fi['name'] ?? $flow['id']); ?></strong>
-                        <?php if (!empty($fi['tagline'])): ?>
-                            <br><small style="color: #666;"><?php echo esc_html($fi['tagline']); ?></small>
+                        <strong><?php echo esc_html($flosc_fi['name'] ?? $flosc_flow['id']); ?></strong>
+                        <?php if (!empty($flosc_fi['tagline'])): ?>
+                            <br><small style="color: #666;"><?php echo esc_html($flosc_fi['tagline']); ?></small>
                         <?php endif; ?>
                     </td>
                     <td>
-                        <?php if ($flow_url): ?>
-                            <a href="<?php echo esc_url($flow_url); ?>" target="_blank">
-                                <?php echo esc_html(preg_replace('#^https?://#', '', $flow_url)); ?>
+                        <?php if ($flosc_flow_url): ?>
+                            <a href="<?php echo esc_url($flosc_flow_url); ?>" target="_blank">
+                                <?php echo esc_html(preg_replace('#^https?://#', '', $flosc_flow_url)); ?>
                             </a>
                         <?php else: ?>
                             <em>No URL set</em>
                         <?php endif; ?>
                     </td>
                     <td>
-                        <code style="font-size: 12px;"><?php echo esc_html($flow['ivr_file'] ?? 'default'); ?></code>
+                        <code style="font-size: 12px;"><?php echo esc_html($flosc_flow['ivr_file'] ?? 'default'); ?></code>
                     </td>
                     <td>
-                        <?php if ($flow['status'] === 'active'): ?>
+                        <?php if ($flosc_flow['status'] === 'active'): ?>
                             <span style="color: #059669; font-weight: 600;">● Active</span>
                         <?php else: ?>
                             <span style="color: #d97706;">○ Draft</span>
                         <?php endif; ?>
                     </td>
                     <td>
-                                <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&flow=' . rawurlencode($flow['id']))); ?>" 
+                                <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&flow=' . rawurlencode($flosc_flow['id']))); ?>" 
                            class="button button-primary button-small">Configure</a>
                         
-                        <?php if ($flow_url && $flow['status'] === 'active'): ?>
-                            <a href="<?php echo esc_url($flow_url); ?>" target="_blank" 
+                        <?php if ($flosc_flow_url && $flosc_flow['status'] === 'active'): ?>
+                            <a href="<?php echo esc_url($flosc_flow_url); ?>" target="_blank" 
                                class="button button-small">View ↗</a>
                         <?php endif; ?>
                         
-                        <?php if ($is_admin && count($flows) > 1): ?>
-                                     <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=flosc-flows&delete_flow=' . rawurlencode($flow['id'])), 'flosc_delete_flow')); ?>" 
+                        <?php if ($flosc_is_admin && count($flosc_flows) > 1): ?>
+                                     <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=flosc-flows&delete_flow=' . rawurlencode($flosc_flow['id'])), 'flosc_delete_flow')); ?>" 
                                class="button button-small" style="color: #dc2626;"
                                onclick="return confirm('Delete this flow? This cannot be undone.');">Delete</a>
                         <?php endif; ?>

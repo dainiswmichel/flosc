@@ -7,42 +7,42 @@
 
 if (!defined('ABSPATH')) exit;
 
-$current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
-$administration_docs_url = add_query_arg([
+$flosc_current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
+$flosc_administration_docs_url = add_query_arg([
     'page' => 'flosc-settings',
-    'ivr'  => $current_ivr,
+    'ivr'  => $flosc_current_ivr,
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-administration';
 
 $current_user = wp_get_current_user();
-$user_id = get_current_user_id();
+$flosc_user_id = get_current_user_id();
 
-$first_name = $user_id > 0 ? (string) get_user_meta($user_id, 'first_name', true) : '';
-$last_name = $user_id > 0 ? (string) get_user_meta($user_id, 'last_name', true) : '';
-$roles = (!empty($current_user->roles) && is_array($current_user->roles)) ? implode(', ', $current_user->roles) : '';
+$flosc_first_name = $flosc_user_id > 0 ? (string) get_user_meta($flosc_user_id, 'first_name', true) : '';
+$flosc_last_name = $flosc_user_id > 0 ? (string) get_user_meta($flosc_user_id, 'last_name', true) : '';
+$flosc_roles = (!empty($current_user->roles) && is_array($current_user->roles)) ? implode(', ', $current_user->roles) : '';
 
-$account_plan = get_option('flosc_account_plan', 'free');
-if (!in_array($account_plan, ['free', 'paid', 'enterprise'], true)) {
-    $account_plan = 'free';
+$flosc_account_plan = get_option('flosc_account_plan', 'free');
+if (!in_array($flosc_account_plan, ['free', 'paid', 'enterprise'], true)) {
+    $flosc_account_plan = 'free';
 }
 
-$manual_purchases_raw = (string) get_option('flosc_account_purchases_manual', '');
-$manual_purchase_lines = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $manual_purchases_raw))));
+$flosc_manual_purchases_raw = (string) get_option('flosc_account_purchases_manual', '');
+$flosc_manual_purchase_lines = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $flosc_manual_purchases_raw))));
 
-$debug_mode = get_option('flosc_debug_mode', 'inherit');
-if (!in_array($debug_mode, ['inherit', 'on', 'off'], true)) {
-    $debug_mode = 'inherit';
+$flosc_debug_mode = get_option('flosc_debug_mode', 'inherit');
+if (!in_array($flosc_debug_mode, ['inherit', 'on', 'off'], true)) {
+    $flosc_debug_mode = 'inherit';
 }
 
-$wp_debug = defined('WP_DEBUG') && WP_DEBUG;
-$effective_debug = ($debug_mode === 'on') ? true : (($debug_mode === 'off') ? false : $wp_debug);
+$flosc_wp_debug = defined('WP_DEBUG') && WP_DEBUG;
+$flosc_effective_debug = ($flosc_debug_mode === 'on') ? true : (($flosc_debug_mode === 'off') ? false : $flosc_wp_debug);
 
-$runtime_access = 'visitor';
-if ($user_id > 0) {
-    $runtime_access = 'free';
+$flosc_runtime_access = 'visitor';
+if ($flosc_user_id > 0) {
+    $flosc_runtime_access = 'free';
     if (function_exists('flosc') && method_exists(flosc(), 'sale')) {
-        $runtime_access = flosc()->sale()->access()->can_access($user_id, 'full') ? 'paid' : 'free';
+        $flosc_runtime_access = flosc()->sale()->access()->can_access($flosc_user_id, 'full') ? 'paid' : 'free';
     }
 }
 ?>
@@ -50,7 +50,7 @@ if ($user_id > 0) {
 <div class="card" style="max-width: 980px; padding: 18px 20px; margin-top: 12px;">
     <h2 style="margin-top: 0; display:flex; align-items:center; gap:12px;">
         <span>Administration</span>
-        <a href="<?php echo esc_url($administration_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1; margin-left:auto;">Docs</a>
+        <a href="<?php echo esc_url($flosc_administration_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1; margin-left:auto;">Docs</a>
     </h2>
     <p class="description" style="margin-top: 0;">
         Central account and debug controls.
@@ -70,31 +70,31 @@ if ($user_id > 0) {
             </tr>
             <tr>
                 <td>Current access level</td>
-                <td><?php echo esc_html(ucfirst($runtime_access)); ?></td>
+                <td><?php echo esc_html(ucfirst($flosc_runtime_access)); ?></td>
             </tr>
             <tr>
                 <td>Configured account plan</td>
-                <td><?php echo esc_html(ucfirst($account_plan)); ?></td>
+                <td><?php echo esc_html(ucfirst($flosc_account_plan)); ?></td>
             </tr>
             <tr>
                 <td>Configured purchased items</td>
-                <td><?php echo esc_html((string)count($manual_purchase_lines)); ?></td>
+                <td><?php echo esc_html((string)count($flosc_manual_purchase_lines)); ?></td>
             </tr>
             <tr>
                 <td>WP_DEBUG</td>
-                <td><?php echo $wp_debug ? 'ON' : 'OFF'; ?></td>
+                <td><?php echo $flosc_wp_debug ? 'ON' : 'OFF'; ?></td>
             </tr>
             <tr>
                 <td>FLOSC debug mode</td>
-                <td><?php echo esc_html(strtoupper($debug_mode)); ?></td>
+                <td><?php echo esc_html(strtoupper($flosc_debug_mode)); ?></td>
             </tr>
             <tr>
                 <td>Effective FLOSC_DEBUG</td>
-                <td><?php echo $effective_debug ? 'ON' : 'OFF'; ?></td>
+                <td><?php echo $flosc_effective_debug ? 'ON' : 'OFF'; ?></td>
             </tr>
             <tr>
                 <td>Debug badge visibility</td>
-                <td><?php echo $effective_debug ? 'Visible' : 'Hidden'; ?></td>
+                <td><?php echo $flosc_effective_debug ? 'Visible' : 'Hidden'; ?></td>
             </tr>
         </tbody>
     </table>
@@ -105,9 +105,9 @@ if ($user_id > 0) {
             <th scope="row"><label for="flosc_debug_mode">Debug mode</label></th>
             <td>
                 <select id="flosc_debug_mode" name="flosc_debug_mode">
-                    <option value="inherit" <?php selected($debug_mode, 'inherit'); ?>>Use WordPress setting (WP_DEBUG)</option>
-                    <option value="off" <?php selected($debug_mode, 'off'); ?>>Disable FLOSC debug output</option>
-                    <option value="on" <?php selected($debug_mode, 'on'); ?>>Enable FLOSC debug output</option>
+                    <option value="inherit" <?php selected($flosc_debug_mode, 'inherit'); ?>>Use WordPress setting (WP_DEBUG)</option>
+                    <option value="off" <?php selected($flosc_debug_mode, 'off'); ?>>Disable FLOSC debug output</option>
+                    <option value="on" <?php selected($flosc_debug_mode, 'on'); ?>>Enable FLOSC debug output</option>
                 </select>
                 <p class="description">Set this to "Disable FLOSC debug output" to remove the FLOSC DEBUG badge.</p>
             </td>
@@ -125,7 +125,7 @@ if ($user_id > 0) {
         <tbody>
             <tr>
                 <td>User ID</td>
-                <td><?php echo esc_html($user_id > 0 ? (string) $user_id : 'Not logged in'); ?></td>
+                <td><?php echo esc_html($flosc_user_id > 0 ? (string) $flosc_user_id : 'Not logged in'); ?></td>
             </tr>
             <tr>
                 <td>Login</td>
@@ -141,15 +141,15 @@ if ($user_id > 0) {
             </tr>
             <tr>
                 <td>First name</td>
-                <td><?php echo esc_html($first_name !== '' ? $first_name : 'Not set'); ?></td>
+                <td><?php echo esc_html($flosc_first_name !== '' ? $flosc_first_name : 'Not set'); ?></td>
             </tr>
             <tr>
                 <td>Last name</td>
-                <td><?php echo esc_html($last_name !== '' ? $last_name : 'Not set'); ?></td>
+                <td><?php echo esc_html($flosc_last_name !== '' ? $flosc_last_name : 'Not set'); ?></td>
             </tr>
             <tr>
                 <td>Roles</td>
-                <td><?php echo esc_html($roles !== '' ? $roles : 'None'); ?></td>
+                <td><?php echo esc_html($flosc_roles !== '' ? $flosc_roles : 'None'); ?></td>
             </tr>
             <tr>
                 <td>Registered</td>
@@ -164,9 +164,9 @@ if ($user_id > 0) {
             <th scope="row"><label for="flosc_account_plan">Account plan</label></th>
             <td>
                 <select id="flosc_account_plan" name="flosc_account_plan">
-                    <option value="free" <?php selected($account_plan, 'free'); ?>>Free</option>
-                    <option value="paid" <?php selected($account_plan, 'paid'); ?>>Paid</option>
-                    <option value="enterprise" <?php selected($account_plan, 'enterprise'); ?>>Enterprise</option>
+                    <option value="free" <?php selected($flosc_account_plan, 'free'); ?>>Free</option>
+                    <option value="paid" <?php selected($flosc_account_plan, 'paid'); ?>>Paid</option>
+                    <option value="enterprise" <?php selected($flosc_account_plan, 'enterprise'); ?>>Enterprise</option>
                 </select>
                 <p class="description">Stored as FLOSC account metadata.</p>
             </td>
@@ -174,7 +174,7 @@ if ($user_id > 0) {
         <tr>
             <th scope="row"><label for="flosc_account_purchases_manual">Purchased items (manual)</label></th>
             <td>
-                <textarea id="flosc_account_purchases_manual" name="flosc_account_purchases_manual" rows="6" class="large-text" placeholder="One item per line, e.g.&#10;LeSAEp Advanced Bundle&#10;LeSAEp Member Access"><?php echo esc_textarea($manual_purchases_raw); ?></textarea>
+                <textarea id="flosc_account_purchases_manual" name="flosc_account_purchases_manual" rows="6" class="large-text" placeholder="One item per line, e.g.&#10;LeSAEp Advanced Bundle&#10;LeSAEp Member Access"><?php echo esc_textarea($flosc_manual_purchases_raw); ?></textarea>
                 <p class="description">Enter one item per line.</p>
             </td>
         </tr>
@@ -182,10 +182,10 @@ if ($user_id > 0) {
 
     <h3 style="margin: 14px 0 10px;">Configured Purchased Items</h3>
     <div class="card" style="padding: 12px 14px; margin: 0 0 16px; max-width: 980px;">
-        <?php if (!empty($manual_purchase_lines)): ?>
+        <?php if (!empty($flosc_manual_purchase_lines)): ?>
             <ol style="margin: 0 0 0 18px;">
-                <?php foreach ($manual_purchase_lines as $item): ?>
-                    <li><?php echo esc_html($item); ?></li>
+                <?php foreach ($flosc_manual_purchase_lines as $flosc_item): ?>
+                    <li><?php echo esc_html($flosc_item); ?></li>
                 <?php endforeach; ?>
             </ol>
         <?php else: ?>

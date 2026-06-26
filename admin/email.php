@@ -29,19 +29,19 @@ if (!defined('ABSPATH')) exit;
 // v1.2.9: Output tab header
 flosc_tab_header('📧', 'Email');
 
-$flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
-$current_ivr   = $GLOBALS['flosc_current_ivr'] ?? '';
-$email_docs_url = add_query_arg([
+$flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
+$flosc_current_ivr   = $GLOBALS['flosc_current_ivr'] ?? '';
+$flosc_email_docs_url = add_query_arg([
     'page' => 'flosc-settings',
-    'ivr'  => $current_ivr,
+    'ivr'  => $flosc_current_ivr,
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-email';
-$product_name = $flow_settings['name'] ?? 'FLOSC App';
-$default_subject = "Your {$product_name} Quiz Results: {score}%";
-$default_body = "Hi {name},
+$flosc_product_name = $flosc_flow_settings['name'] ?? 'FLOSC App';
+$flosc_default_subject = "Your {$flosc_product_name} Quiz Results: {score}%";
+$flosc_default_body = "Hi {name},
 
-Thanks for taking the {product_name} quiz!
+Thanks for taking the {$flosc_product_name} quiz!
 
 YOUR SCORE: {score}%
 
@@ -53,11 +53,11 @@ Your personalized learning path is ready. Log in to get your FREE lesson and sta
 {app_link}
 
 Best,
-The {product_name} Team";
+The {$flosc_product_name} Team";
 ?>
 
 <div style="margin:-8px 0 14px; text-align:right;">
-    <a href="<?php echo esc_url($email_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
+    <a href="<?php echo esc_url($flosc_email_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
 </div>
 
 <h2>Email Templates & Automation</h2>
@@ -129,7 +129,7 @@ $flosc_render_email_series = function ($prefix, $flow_settings, $welcome_default
     <tr>
         <th scope="row"><label for="flow_newsletter_optin_text">Opt-in Prompt Text</label></th>
         <td><input type="text" id="flow_newsletter_optin_text" name="flow_newsletter_optin_text"
-                   value="<?php echo esc_attr($flow_settings['newsletter_optin_text'] ?? 'Enter your email to subscribe to our newsletter:'); ?>"
+                   value="<?php echo esc_attr($flosc_flow_settings['newsletter_optin_text'] ?? 'Enter your email to subscribe to our newsletter:'); ?>"
                    class="large-text">
             <p class="description">Shown by the chatbot when offering the newsletter sign-up.</p></td>
     </tr>
@@ -137,7 +137,7 @@ $flosc_render_email_series = function ($prefix, $flow_settings, $welcome_default
 <?php
 $flosc_render_email_series(
     'newsletter',
-    $flow_settings,
+    $flosc_flow_settings,
     'Thanks for subscribing to {app_name}',
     "Hi {name}!\n\nThanks for subscribing to the {app_name} newsletter. We'll keep you posted.\n\n— The {team_name}"
 );
@@ -154,7 +154,7 @@ $flosc_render_email_series(
         <th scope="row"><label for="flow_email_subject">Email Subject</label></th>
         <td>
             <input type="text" id="flow_email_subject" name="flow_email_subject" 
-                   value="<?php echo esc_attr($flow_settings['email_subject'] ?? $default_subject); ?>" 
+                   value="<?php echo esc_attr($flosc_flow_settings['email_subject'] ?? $flosc_default_subject); ?>" 
                    class="large-text">
             <p class="description">Available placeholders: <code>{score}</code>, <code>{product_name}</code>, <code>{name}</code></p>
         </td>
@@ -163,7 +163,7 @@ $flosc_render_email_series(
         <th scope="row"><label for="flow_email_body">Email Body</label></th>
         <td>
             <textarea id="flow_email_body" name="flow_email_body" rows="15" class="large-text code"><?php 
-                echo esc_textarea($flow_settings['email_body'] ?? $default_body); 
+                echo esc_textarea($flosc_flow_settings['email_body'] ?? $flosc_default_body); 
             ?></textarea>
             <p class="description">
                 Available placeholders: <code>{name}</code>, <code>{score}</code>, <code>{correct}</code>, 
@@ -186,7 +186,7 @@ $flosc_render_email_series(
         <td>
             <label>
                 <input type="checkbox" id="flow_email_on_quiz_complete" name="flow_email_on_quiz_complete" 
-                      value="1" <?php checked($flow_settings['email_on_quiz_complete'] ?? false); ?>>
+                      value="1" <?php checked($flosc_flow_settings['email_on_quiz_complete'] ?? false); ?>>
                 Send quiz results email immediately after completion
             </label>
             <p class="description">Uses template above. Triggered when user completes quiz and enters email.</p>
@@ -197,7 +197,7 @@ $flosc_render_email_series(
         <th scope="row"><label for="flow_email_congrats_threshold">Congratulations Email Threshold</label></th>
         <td>
             <input type="number" id="flow_email_congrats_threshold" name="flow_email_congrats_threshold" 
-                   value="<?php echo esc_attr($flow_settings['email_congrats_threshold'] ?? 80); ?>" 
+                   value="<?php echo esc_attr($flosc_flow_settings['email_congrats_threshold'] ?? 80); ?>" 
                    min="0" max="100" class="small-text"> %
             <p class="description">Send congratulations variant when score is at or above this percentage.</p>
         </td>
@@ -207,7 +207,7 @@ $flosc_render_email_series(
         <th scope="row"><label for="flow_email_encouragement_threshold">Encouragement Email Threshold</label></th>
         <td>
             <input type="number" id="flow_email_encouragement_threshold" name="flow_email_encouragement_threshold" 
-                   value="<?php echo esc_attr($flow_settings['email_encouragement_threshold'] ?? 60); ?>" 
+                   value="<?php echo esc_attr($flosc_flow_settings['email_encouragement_threshold'] ?? 60); ?>" 
                    min="0" max="100" class="small-text"> %
             <p class="description">Send encouragement variant when score is below this percentage.</p>
         </td>
@@ -217,11 +217,11 @@ $flosc_render_email_series(
         <th scope="row"><label for="flow_email_reengagement_days">Re-engagement Email</label></th>
         <td>
             <input type="number" id="flow_email_reengagement_days" name="flow_email_reengagement_days" 
-                   value="<?php echo esc_attr($flow_settings['email_reengagement_days'] ?? 7); ?>" 
+                   value="<?php echo esc_attr($flosc_flow_settings['email_reengagement_days'] ?? 7); ?>" 
                    min="1" class="small-text"> days of inactivity
             <label style="margin-left: 15px;">
                 <input type="checkbox" name="flow_email_reengagement_enabled" value="1" 
-                       <?php checked($flow_settings['email_reengagement_enabled'] ?? false); ?>>
+                       <?php checked($flosc_flow_settings['email_reengagement_enabled'] ?? false); ?>>
                 Enable
             </label>
             <p class="description">Send "we miss you" email after user hasn't logged in for specified days.</p>
@@ -233,7 +233,7 @@ $flosc_render_email_series(
         <td>
             <label>
                 <input type="checkbox" id="flow_email_weekly_summary" name="flow_email_weekly_summary" 
-                       value="1" <?php checked($flow_settings['email_weekly_summary'] ?? false); ?>>
+                       value="1" <?php checked($flosc_flow_settings['email_weekly_summary'] ?? false); ?>>
                 Send weekly progress summary to active users
             </label>
             <p class="description">Summary includes: lessons completed this week, quiz attempts, upcoming content.</p>
@@ -322,7 +322,7 @@ function flosc_send_reengagement_emails() {
 </p>
 
 <?php
-$guest_emails = [
+$flosc_guest_emails = [
     'guest_welcome' => [
         'label'           => 'Welcome Email',
         'timing'          => 'Sent immediately on first login for this flow',
@@ -354,45 +354,45 @@ $guest_emails = [
         'default_max_day' => 30,
     ],
 ];
-foreach ($guest_emails as $key => $cfg):
+foreach ($flosc_guest_emails as $flosc_key => $flosc_cfg):
 ?>
 <hr style="margin: 24px 0 16px; border: none; border-top: 1px solid #e0e0e0;">
-<h4 style="margin: 0 0 4px;"><?php echo esc_html($cfg['label']); ?></h4>
-<p class="description" style="margin-bottom: 12px;"><?php echo esc_html($cfg['timing']); ?></p>
+<h4 style="margin: 0 0 4px;"><?php echo esc_html($flosc_cfg['label']); ?></h4>
+<p class="description" style="margin-bottom: 12px;"><?php echo esc_html($flosc_cfg['timing']); ?></p>
 <table class="form-table" style="margin-bottom: 0;">
     <tr>
         <th scope="row"><label>Subject</label></th>
         <td>
-            <input type="text" name="flow_<?php echo esc_attr($key); ?>_subject"
-                   value="<?php echo esc_attr($flow_settings[$key . '_subject'] ?? $cfg['default_subject']); ?>"
+            <input type="text" name="flow_<?php echo esc_attr($flosc_key); ?>_subject"
+                   value="<?php echo esc_attr($flosc_flow_settings[$flosc_key . '_subject'] ?? $flosc_cfg['default_subject']); ?>"
                    class="large-text">
         </td>
     </tr>
     <tr>
         <th scope="row"><label>Body</label></th>
         <td>
-            <textarea name="flow_<?php echo esc_attr($key); ?>_body" rows="8" class="large-text code"><?php
-                echo esc_textarea($flow_settings[$key . '_body'] ?? $cfg['default_body']);
+            <textarea name="flow_<?php echo esc_attr($flosc_key); ?>_body" rows="8" class="large-text code"><?php
+                echo esc_textarea($flosc_flow_settings[$flosc_key . '_body'] ?? $flosc_cfg['default_body']);
             ?></textarea>
         </td>
     </tr>
-    <?php if ($key !== 'guest_welcome'): ?>
+    <?php if ($flosc_key !== 'guest_welcome'): ?>
     <tr>
         <th scope="row"><label>Send Window (days)</label></th>
         <td>
             <?php
-            $min_key = $key . '_min_day';
-            $max_key = $key . '_max_day';
-            $min_default = (int) ($cfg['default_min_day'] ?? 0);
-            $max_default = (int) ($cfg['default_max_day'] ?? $min_default);
+            $flosc_min_key = $flosc_key . '_min_day';
+            $flosc_max_key = $flosc_key . '_max_day';
+            $flosc_min_default = (int) ($flosc_cfg['default_min_day'] ?? 0);
+            $flosc_max_default = (int) ($flosc_cfg['default_max_day'] ?? $flosc_min_default);
             ?>
             <label style="margin-right: 10px;">From day
-                <input type="number" min="0" max="365" class="small-text" name="flow_<?php echo esc_attr($min_key); ?>"
-                       value="<?php echo esc_attr((int) ($flow_settings[$min_key] ?? $min_default)); ?>">
+                <input type="number" min="0" max="365" class="small-text" name="flow_<?php echo esc_attr($flosc_min_key); ?>"
+                       value="<?php echo esc_attr((int) ($flosc_flow_settings[$flosc_min_key] ?? $flosc_min_default)); ?>">
             </label>
             <label>to day
-                <input type="number" min="0" max="365" class="small-text" name="flow_<?php echo esc_attr($max_key); ?>"
-                       value="<?php echo esc_attr((int) ($flow_settings[$max_key] ?? $max_default)); ?>">
+                <input type="number" min="0" max="365" class="small-text" name="flow_<?php echo esc_attr($flosc_max_key); ?>"
+                       value="<?php echo esc_attr((int) ($flosc_flow_settings[$flosc_max_key] ?? $flosc_max_default)); ?>">
             </label>
             <p class="description" style="margin-top:6px;">Per-flow control: set Day10 to Day9 by changing this window (for example 9 to 11).</p>
         </td>
@@ -411,22 +411,22 @@ foreach ($guest_emails as $key => $cfg):
     Placeholders: <code>{name}</code>, <code>{chat_url}</code>, <code>{profile_url}</code>, <code>{upgrade_url}</code>, <code>{app_name}</code>, <code>{team_name}</code>.
 </p>
 <?php
-$member_levels = $flow_settings['member_levels'] ?? [];
-$has_levels = false;
-foreach ((array) $member_levels as $lvl_key => $lvl) {
-    $slug = sanitize_key($lvl['slug'] ?? $lvl_key);
-    if ($slug === '') { continue; }
-    $has_levels = true;
-    $lname = trim((string) ($lvl['name'] ?? '')) ?: $slug;
-    echo '<h4 style="margin:28px 0 0;">Level: ' . esc_html($lname) . ' <code>' . esc_html($slug) . '</code></h4>';
+$flosc_member_levels = $flosc_flow_settings['member_levels'] ?? [];
+$flosc_has_levels = false;
+foreach ((array) $flosc_member_levels as $flosc_lvl_key => $flosc_lvl) {
+    $flosc_slug = sanitize_key($flosc_lvl['slug'] ?? $flosc_lvl_key);
+    if ($flosc_slug === '') { continue; }
+    $flosc_has_levels = true;
+    $flosc_lname = trim((string) ($flosc_lvl['name'] ?? '')) ?: $flosc_slug;
+    echo '<h4 style="margin:28px 0 0;">Level: ' . esc_html($flosc_lname) . ' <code>' . esc_html($flosc_slug) . '</code></h4>';
     $flosc_render_email_series(
-        'member_' . $slug,
-        $flow_settings,
+        'member_' . $flosc_slug,
+        $flosc_flow_settings,
         'Welcome to {app_name} — your membership is active',
         "Hi {name}!\n\nYour {app_name} membership is now active. Your access link gives you one-click access any time.\n\nContinue here: {chat_url}\n\n— The {team_name}"
     );
 }
-if (!$has_levels):
+if (!$flosc_has_levels):
 ?>
 <p class="description"><em>No member levels defined yet. Add levels in the <strong>Member Levels</strong> tab, then their email series will appear here.</em></p>
 <?php endif; ?>
@@ -486,7 +486,7 @@ if (!$has_levels):
         <th scope="row"><label for="flow_email_from_name">From Name</label></th>
         <td>
             <input type="text" id="flow_email_from_name" name="flow_email_from_name" 
-                   value="<?php echo esc_attr($flow_settings['email_from_name'] ?? ($flow_settings['name'] ?? 'FLOSC App')); ?>" 
+                   value="<?php echo esc_attr($flosc_flow_settings['email_from_name'] ?? ($flosc_flow_settings['name'] ?? 'FLOSC App')); ?>" 
                    class="regular-text">
             <p class="description">Name that appears in "From" field (e.g., "LeSAEp Team")</p>
         </td>
@@ -496,7 +496,7 @@ if (!$has_levels):
         <th scope="row"><label for="flow_email_from_address">From Email Address</label></th>
         <td>
             <input type="email" id="flow_email_from_address" name="flow_email_from_address" 
-                   value="<?php echo esc_attr($flow_settings['email_from_address'] ?? get_option('admin_email')); ?>" 
+                   value="<?php echo esc_attr($flosc_flow_settings['email_from_address'] ?? get_option('admin_email')); ?>" 
                    class="regular-text">
             <p class="description">Email address that appears in "From" field</p>
         </td>
@@ -506,7 +506,7 @@ if (!$has_levels):
         <th scope="row"><label for="flow_support_email">Reply-To Support Email</label></th>
         <td>
             <input type="email" id="flow_support_email" name="flow_support_email"
-                   value="<?php echo esc_attr($flow_settings['support_email'] ?? 'dainiswmichel@gmail.com'); ?>"
+                   value="<?php echo esc_attr($flosc_flow_settings['support_email'] ?? 'dainiswmichel@gmail.com'); ?>"
                    class="regular-text">
             <p class="description">Replies from FLOSC emails will go to this address. Default: dainiswmichel@gmail.com</p>
         </td>

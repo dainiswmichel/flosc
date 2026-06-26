@@ -421,11 +421,11 @@ class SSO_Manager {
             
             foreach ($fields as $field) {
                 $setting_args = array(
-                    'type'              => ($field['type'] ?? '') === 'checkbox' ? 'boolean' : 'string',
+                    'type'              => ($field['type'] ?? '') === 'checkbox' ? 'integer' : 'string',
                     'sanitize_callback' => ($field['type'] ?? '') === 'checkbox'
                         ? array($this, 'sanitize_checkbox_setting')
                         : array($this, 'sanitize_text_setting'),
-                    'default'           => $field['default'] ?? (($field['type'] ?? '') === 'checkbox' ? false : ''),
+                    'default'           => $field['default'] ?? (($field['type'] ?? '') === 'checkbox' ? 0 : ''),
                 );
 
                 register_setting('flosc_sso_settings', $field['id'], $setting_args);
@@ -449,7 +449,7 @@ class SSO_Manager {
      * @return string
      */
     public function sanitize_text_setting($value) {
-        return sanitize_text_field((string) $value);
+        return sanitize_text_field(wp_unslash((string) $value));
     }
 
     /**

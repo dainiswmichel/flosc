@@ -307,6 +307,7 @@ if (!function_exists('flosc_issue_post_purchase_session')) {
 
         wp_set_current_user($user_id);
         wp_set_auth_cookie($user_id, true);
+        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core WordPress login hook.
         do_action('wp_login', $user->user_login, $user); // Let session-aware plugins observe the login.
 
         // FLOSC's own cross-domain auth cookie rides alongside the WP cookie so a
@@ -1173,7 +1174,7 @@ class FLOSC_Framework {
     /**
      * Permission Callbacks for REST API
      */
-    public function check_paid_endpoint_permission($request) {
+    public function check_metered_visitor_compute_permission($request) {
         // Check rate limit first
         if (!$this->check_rate_limit('paid_endpoint', 20, 3600)) {
             return new WP_Error('rate_limit', __('Too many requests. Please try again later.', 'flosc'), ['status' => 429]);
@@ -1190,6 +1191,16 @@ class FLOSC_Framework {
         }
 
         return true;
+    }
+
+    /**
+     * Backward-compatible wrapper for legacy callback name.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return true|WP_Error
+     */
+    public function check_paid_endpoint_permission($request) {
+        return $this->check_metered_visitor_compute_permission($request);
     }
     
     /**
@@ -1214,6 +1225,20 @@ class FLOSC_Framework {
         // Visitors get stricter limits
         if (!$this->check_rate_limit('public_visitor_' . $endpoint, 60, 3600)) {
             return new WP_Error('rate_limit', __('Rate limit reached. Please try again later.', 'flosc'), ['status' => 429]);
+        }
+
+        return true;
+    }
+
+    /**
+     * Permission callback for routes that require a logged-in user.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return true|WP_Error
+     */
+    public function check_authenticated_user_permission($request) {
+        if (!is_user_logged_in()) {
+            return new WP_Error('flosc_login_required', __('Login is required.', 'flosc'), ['status' => 401]);
         }
 
         return true;
@@ -1248,9 +1273,32 @@ class FLOSC_Framework {
     }
 
     /**
+     * Normalize and validate IVR phase from request input.
+     *
+     * Missing phase defaults to freeline for compatibility. Unknown phases are
+     * rejected to keep authorization behavior explicit and auditable.
+     *
+     * @param mixed $raw_phase Raw phase parameter.
+     * @return string|WP_Error
+     */
+    private function normalize_ivr_phase($raw_phase) {
+        $phase = (null === $raw_phase || '' === $raw_phase)
+            ? 'freeline'
+            : sanitize_key((string) $raw_phase);
+
+        $valid_phases = ['freeline', 'login', 'offer', 'sale', 'content'];
+        if (!in_array($phase, $valid_phases, true)) {
+            return new WP_Error('flosc_invalid_phase', __('Invalid FLOSC phase.', 'flosc'), ['status' => 400]);
+        }
+
+        return $phase;
+    }
+
+    /**
      * §4: Permission callback for /ivr-messages.
-     * Preserves the existing public rate limiting and visitor-safe phases,
-     * but blocks the sale/content (member) payload for non-entitled users.
+     * Preserves public rate limiting for visitor-safe phases.
+     * Only content phase is entitlement-gated; sale remains part of the public
+     * purchase journey.
      */
     public function check_ivr_messages_permission($request) {
         // Keep the existing public rate-limit behavior for the visitor funnel.
@@ -1259,10 +1307,13 @@ class FLOSC_Framework {
             return $rate;
         }
 
-        // sale/content phases expose member/monetization content — gate to entitled members.
-        // Visitor-safe phases (freeline, login, offer) remain open.
-        $phase = sanitize_text_field($request->get_param('phase') ?: 'freeline');
-        if (in_array($phase, ['sale', 'content'], true)) {
+        $phase = $this->normalize_ivr_phase($request->get_param('phase'));
+        if (is_wp_error($phase)) {
+            return $phase;
+        }
+
+        // Content is the only protected phase.
+        if ($phase === 'content') {
             $user_id = get_current_user_id();
             // The meta is stored as the string 'true' / 'false' (see
             // FLOSC_Member_Access). A (bool) cast would treat the revoked value
@@ -1272,6 +1323,90 @@ class FLOSC_Framework {
             if (!$has_member_access) {
                 return new WP_Error('forbidden', __('Not entitled to this content.', 'flosc'), ['status' => 403]);
             }
+        }
+
+        return true;
+    }
+
+    /**
+     * Build transient storage key for one visitor session's poll token hash.
+     *
+     * @param int $session_id Conversation/session ID.
+     * @return string
+     */
+    private function get_admin_poll_token_storage_key($session_id) {
+        return 'flosc_admin_poll_' . md5((string) absint($session_id));
+    }
+
+    /**
+     * Mint poll token for visitor admin-message polling.
+     *
+     * @param int $session_id Conversation/session ID.
+     * @return string
+     */
+    private function issue_admin_poll_token($session_id) {
+        $session_id = absint($session_id);
+        $token = wp_generate_password(43, false, false);
+        $token_hash = hash_hmac('sha256', $token, flosc_token_secret());
+
+        set_transient(
+            $this->get_admin_poll_token_storage_key($session_id),
+            [
+                'session_id' => $session_id,
+                'token_hash' => $token_hash,
+                'issued_at'  => time(),
+            ],
+            HOUR_IN_SECONDS
+        );
+
+        return $token;
+    }
+
+    /**
+     * Verify poll token ownership for the provided session.
+     *
+     * @param int    $session_id Session ID.
+     * @param string $poll_token Token provided by visitor.
+     * @return bool
+     */
+    private function verify_admin_poll_token($session_id, $poll_token) {
+        $session_id = absint($session_id);
+        $poll_token = sanitize_text_field((string) $poll_token);
+        if ($session_id <= 0 || $poll_token === '') {
+            return false;
+        }
+
+        $record = get_transient($this->get_admin_poll_token_storage_key($session_id));
+        if (!is_array($record) || empty($record['token_hash'])) {
+            return false;
+        }
+
+        $presented_hash = hash_hmac('sha256', $poll_token, flosc_token_secret());
+        return hash_equals((string) $record['token_hash'], $presented_hash);
+    }
+
+    /**
+     * Permission callback for visitor admin-message polling.
+     *
+     * Requires session ownership proof via poll token bound to session_id.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return true|WP_Error
+     */
+    public function check_visitor_session_poll_permission($request) {
+        $session_id = absint($request->get_param('session_id'));
+        $poll_token = sanitize_text_field((string) $request->get_param('poll_token'));
+
+        if ($session_id <= 0 || $poll_token === '') {
+            return new WP_Error('flosc_missing_session_token', __('Missing session token.', 'flosc'), ['status' => 403]);
+        }
+
+        if (!$this->verify_admin_poll_token($session_id, $poll_token)) {
+            return new WP_Error('flosc_invalid_session_token', __('Invalid session token.', 'flosc'), ['status' => 403]);
+        }
+
+        if (!$this->check_rate_limit('visitor_admin_poll_' . $session_id, 120, HOUR_IN_SECONDS)) {
+            return new WP_Error('flosc_rate_limit', __('Too many requests.', 'flosc'), ['status' => 429]);
         }
 
         return true;
@@ -4656,6 +4791,7 @@ HTML;
                         if (!$post || $post->post_status !== 'publish') continue;
                         $lessons[] = [
                             'title' => $post->post_title,
+                            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core WordPress content filter.
                             'content' => apply_filters('the_content', $post->post_content),
                             'url' => get_permalink($post_id),
                             'lesson_number' => isset($lesson_numbers[$i]) ? $lesson_numbers[$i] : null,
@@ -5332,13 +5468,53 @@ HTML;
                 break;
         }
 
+        $setting_args = array(
+            'type'              => $this->get_setting_registration_type($sanitize_type),
+            'sanitize_callback' => $sanitize_callback,
+            'default'           => $this->get_setting_default_value($sanitize_type),
+        );
+
         register_setting(
             'flosc_settings',
             $option_name,
-            array(
-                'sanitize_callback' => $sanitize_callback,
-            )
+            $setting_args
         );
+    }
+
+    /**
+     * Map sanitizer type to register_setting type metadata.
+     *
+     * @param string $sanitize_type Sanitizer category.
+     * @return string
+     */
+    private function get_setting_registration_type($sanitize_type) {
+        if ($sanitize_type === 'array') {
+            return 'array';
+        }
+
+        if ($sanitize_type === 'bool') {
+            return 'integer';
+        }
+
+        return 'string';
+    }
+
+    /**
+     * Default values aligned to sanitizer type.
+     *
+     * @param string $sanitize_type Sanitizer category.
+     * @return mixed
+     */
+    private function get_setting_default_value($sanitize_type) {
+        if ($sanitize_type === 'array') {
+            return array();
+        }
+
+        if ($sanitize_type === 'bool') {
+            return 0;
+        }
+
+        return '';
     }
 
     /**
@@ -6097,7 +6273,14 @@ HTML;
         register_rest_route('flosc/v1', '/admin-messages', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_admin_messages_poll'],
-            'permission_callback' => '__return_true',
+            'permission_callback' => [$this, 'check_visitor_session_poll_permission'],
+        ]);
+
+        // Visitor poll token minting for admin-message ownership proof.
+        register_rest_route('flosc/v1', '/admin-messages-token', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_admin_messages_token'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
         ]);
 
         // Quiz Submission (NEW: for collecting quiz answers)
@@ -6130,28 +6313,28 @@ HTML;
         register_rest_route('flosc/v1', '/ai-query', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_ai_query'],
-            'permission_callback' => [$this, 'check_paid_endpoint_permission'],
+            'permission_callback' => [$this, 'check_metered_visitor_compute_permission'],
         ]);
 
         // Process Audio (for audio-based quiz types)
         register_rest_route('flosc/v1', '/process-audio', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_process_audio'],
-            'permission_callback' => [$this, 'check_paid_endpoint_permission'],
+            'permission_callback' => [$this, 'check_metered_visitor_compute_permission'],
         ]);
 
         // v1.7.7: Transcribe alias — JS voice recording and quiz audio both call /transcribe
         register_rest_route('flosc/v1', '/transcribe', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_process_audio'],
-            'permission_callback' => [$this, 'check_paid_endpoint_permission'],
+            'permission_callback' => [$this, 'check_metered_visitor_compute_permission'],
         ]);
 
         // Process Quiz (for text-based quiz types)
         register_rest_route('flosc/v1', '/process-quiz', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_process_quiz'],
-            'permission_callback' => [$this, 'check_paid_endpoint_permission'],
+            'permission_callback' => [$this, 'check_metered_visitor_compute_permission'],
         ]);
         
         // Sessions
@@ -6378,7 +6561,7 @@ HTML;
             register_rest_route('flosc/v1', '/debug/funnel-state', [
                 'methods' => 'GET',
                 'callback' => [$this, 'get_debug_funnel_state'],
-                'permission_callback' => 'is_user_logged_in',
+                'permission_callback' => [$this, 'check_admin_endpoint_permission'],
             ]);
         }
         
@@ -6410,9 +6593,7 @@ HTML;
         register_rest_route('flosc/v1', '/test-ai', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_test_ai'],
-            'permission_callback' => function() {
-                return current_user_can('manage_options');
-            }
+            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
         ]);
 
         // v07.09: IVR message tracking
@@ -6451,7 +6632,7 @@ HTML;
         register_rest_route('flosc/v1', '/score-pending-audio', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_score_pending_audio'],
-            'permission_callback' => function() { return is_user_logged_in(); },
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // v8.0.8: Store browser-computed quiz data — no server-side re-scoring needed.
@@ -6461,54 +6642,39 @@ HTML;
         register_rest_route('flosc/v1', '/store-quiz-data', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_store_quiz_data'],
-            'permission_callback' => function() {
-                $logged_in = is_user_logged_in();
-                $uid = get_current_user_id();
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data PERMISSION: logged_in={$logged_in}, user_id={$uid}");
-                return $logged_in;
-            },
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // v1.9.0: AI Feedback — admin flags bad AI responses to improve quality
         register_rest_route('flosc/v1', '/feedback', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_save_feedback'],
-            'permission_callback' => function() {
-                return current_user_can('manage_options');
-            }
+            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
         ]);
 
         register_rest_route('flosc/v1', '/feedback', [
             'methods' => 'GET',
             'callback' => [$this, 'handle_get_feedback'],
-            'permission_callback' => function() {
-                return current_user_can('manage_options');
-            }
+            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
         ]);
 
         register_rest_route('flosc/v1', '/feedback/(?P<feedback_id>[a-z0-9]+)', [
             'methods' => 'DELETE',
             'callback' => [$this, 'handle_delete_feedback'],
-            'permission_callback' => function() {
-                return current_user_can('manage_options');
-            }
+            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
         ]);
 
         // v1.9.0: AI Praise — admin reinforces good AI responses
         register_rest_route('flosc/v1', '/praises', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_save_praise'],
-            'permission_callback' => function() {
-                return current_user_can('manage_options');
-            }
+            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
         ]);
 
         register_rest_route('flosc/v1', '/praises/(?P<praise_id>[a-z0-9_]+)', [
             'methods' => 'DELETE',
             'callback' => [$this, 'handle_delete_praise'],
-            'permission_callback' => function() {
-                return current_user_can('manage_options');
-            }
+            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
         ]);
 
         // v8.0.0: Redeem access code — grants role directly, no payment
@@ -8993,6 +9159,7 @@ Example good response:
                     return new WP_REST_Response(['error' => 'Post not found'], 404);
                 }
                 return new WP_REST_Response([
+                    // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core WordPress content filter.
                     'html' => wp_kses_post(apply_filters('the_content', $post->post_content)),
                 ]);
                 
@@ -10636,7 +10803,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] capture_ord
      * v1.3.8: Accept explicit flow_id/ivr_file params from frontend (REST context fix)
      */
     public function get_ivr_messages($request) {
-        $phase = sanitize_text_field($request->get_param('phase') ?: 'freeline');
+        $phase = $this->normalize_ivr_phase($request->get_param('phase'));
+        if (is_wp_error($phase)) {
+            return $phase;
+        }
         
         // v1.3.8: Get flow context from request (same pattern as handle_chat)
         $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
@@ -12117,6 +12287,24 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * v8.0.0: Visitor poll — return admin "(admin)" messages posted into this
      * conversation since the given cursor. Public, read-only, lightweight.
      */
+    public function handle_admin_messages_token($request) {
+        $session_id = absint($request->get_param('session_id'));
+        if ($session_id <= 0) {
+            return new WP_Error('invalid_session_id', __('Invalid session id.', 'flosc'), ['status' => 400]);
+        }
+
+        $token = $this->issue_admin_poll_token($session_id);
+
+        return new WP_REST_Response([
+            'success' => true,
+            'poll_token' => $token,
+        ]);
+    }
+
+    /**
+     * v8.0.0: Visitor poll — return admin "(admin)" messages posted into this
+     * conversation since the given cursor. Public, read-only, lightweight.
+     */
     public function handle_admin_messages_poll($request) {
         nocache_headers(); // belt-and-suspenders against any caching layer
         $session_id = intval($request->get_param('session_id'));
@@ -12380,7 +12568,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * Get applicable IVR messages for current user/context (v07.09)
      */
     public function handle_ivr_get_messages($request) {
-        $phase = sanitize_text_field($request->get_param('phase'));
+        $phase = $this->normalize_ivr_phase($request->get_param('phase'));
+        if (is_wp_error($phase)) {
+            return $phase;
+        }
         $type = sanitize_text_field($request->get_param('type')); // auto, suggested_user_autoprompt, offer
 
         // Build context
@@ -12396,7 +12587,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
 
         // Get parser
         $parser = FLOSC_IVR_Parser::flosc_instance();
-        $messages = $phase ? $parser->get_flosc_phase_messages($phase) : array_values($parser->get_flosc_config()['messages']);
+        $messages = $parser->get_flosc_phase_messages($phase);
 
         // Filter by type if specified
         if ($type) {
@@ -13261,6 +13452,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             echo 'LeSAEp';
         });
         add_action('bp_template_content', [$this, 'render_buddyboss_quiz_tab']);
+        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core BuddyPress/BuddyBoss template filter.
         bp_core_load_template(apply_filters('bp_core_template_plugin', 'members/single/plugins'));
     }
 

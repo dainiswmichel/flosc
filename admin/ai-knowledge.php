@@ -31,21 +31,21 @@ if (!defined('ABSPATH')) exit;
 // v1.2.9: Output tab header
 flosc_tab_header('🧠', 'Knowledge');
 
-$flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
+$flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
 
 // AI Knowledge Files Manager
 // §2: union uploaded/edited KB files with shipped defaults (uploads wins).
 // flosc_config_glob() returns paths in uploads-first order.
-$files = array_values(array_unique(array_map('basename', flosc_config_glob('*.md'))));
+$flosc_files = array_values(array_unique(array_map('basename', flosc_config_glob('*.md'))));
 
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view-state parameter for file editor UI
-$get = wp_unslash($_GET);
-$editing_file = isset($get['edit']) ? sanitize_file_name($get['edit']) : '';
-$editing_content = '';
-if ($editing_file) {
-    $filepath = flosc_config_file($editing_file);
-    if (file_exists($filepath)) {
-        $editing_content = file_get_contents($filepath);
+$flosc_get = wp_unslash($_GET);
+$flosc_editing_file = isset($flosc_get['edit']) ? sanitize_file_name($flosc_get['edit']) : '';
+$flosc_editing_content = '';
+if ($flosc_editing_file) {
+    $flosc_filepath = flosc_config_file($flosc_editing_file);
+    if (file_exists($flosc_filepath)) {
+        $flosc_editing_content = file_get_contents($flosc_filepath);
     }
 }
 ?>
@@ -64,7 +64,7 @@ if ($editing_file) {
         <th scope="row"><label for="flow_ai_personality_name">AI Name</label></th>
         <td>
             <input type="text" id="flow_ai_personality_name" name="flow_ai_personality_name" 
-                   value="<?php echo esc_attr($flow_settings['ai_personality_name'] ?? ($flow_settings['name'] ?? 'FLOSC')); ?>" 
+                   value="<?php echo esc_attr($flosc_flow_settings['ai_personality_name'] ?? ($flosc_flow_settings['name'] ?? 'FLOSC')); ?>" 
                    class="regular-text">
             <p class="description">What should users call your AI? (e.g., "LeSAEp Coach", "Pronunciation Buddy")</p>
         </td>
@@ -74,7 +74,7 @@ if ($editing_file) {
         <th scope="row"><label for="flow_ai_personality_role">AI Role</label></th>
         <td>
             <input type="text" id="flow_ai_personality_role" name="flow_ai_personality_role" 
-                   value="<?php echo esc_attr($flow_settings['ai_personality_role'] ?? 'pronunciation coach and learning assistant'); ?>" 
+                   value="<?php echo esc_attr($flosc_flow_settings['ai_personality_role'] ?? 'pronunciation coach and learning assistant'); ?>" 
                    class="large-text">
             <p class="description">What is the AI's job? (e.g., "pronunciation coach", "learning guide", "language tutor")</p>
         </td>
@@ -84,7 +84,7 @@ if ($editing_file) {
         <th scope="row"><label for="flow_ai_personality_traits">Personality Traits</label></th>
         <td>
             <textarea id="flow_ai_personality_traits" name="flow_ai_personality_traits" rows="3" class="large-text"><?php 
-                echo esc_textarea($flow_settings['ai_personality_traits'] ?? 'Encouraging, patient, specific, action-oriented. You celebrate small wins and make learning feel achievable. You break down complex concepts into simple steps.'); 
+                echo esc_textarea($flosc_flow_settings['ai_personality_traits'] ?? 'Encouraging, patient, specific, action-oriented. You celebrate small wins and make learning feel achievable. You break down complex concepts into simple steps.'); 
             ?></textarea>
             <p class="description">How should the AI behave? What's its tone and approach?</p>
         </td>
@@ -94,7 +94,7 @@ if ($editing_file) {
         <th scope="row"><label for="flow_ai_mission">AI Mission Statement</label></th>
         <td>
             <textarea id="flow_ai_mission" name="flow_ai_mission" rows="4" class="large-text"><?php 
-                echo esc_textarea($flow_settings['ai_mission'] ?? 'Your mission is to help users improve their pronunciation through personalized guidance, instant feedback, and encouragement. You assess their current level, identify specific areas for improvement, recommend appropriate lessons, and keep them motivated on their learning journey.'); 
+                echo esc_textarea($flosc_flow_settings['ai_mission'] ?? 'Your mission is to help users improve their pronunciation through personalized guidance, instant feedback, and encouragement. You assess their current level, identify specific areas for improvement, recommend appropriate lessons, and keep them motivated on their learning journey.'); 
             ?></textarea>
             <p class="description">What is the AI here to accomplish? What's its core purpose?</p>
         </td>
@@ -113,7 +113,7 @@ if ($editing_file) {
         <th scope="row"><label for="flow_ai_context_awareness">AI Context Awareness</label></th>
         <td>
             <textarea id="flow_ai_context_awareness" name="flow_ai_context_awareness" rows="5" class="large-text code"><?php 
-                echo esc_textarea($flow_settings['ai_context_awareness'] ?? 'You have access to special knowledge files that contain:
+                echo esc_textarea($flosc_flow_settings['ai_context_awareness'] ?? 'You have access to special knowledge files that contain:
 - Complete lesson catalog with detailed descriptions
 - FAQ answers specific to our methodology
 - Product information and pricing
@@ -129,7 +129,7 @@ This information is NOT in your training data. Always reference these files when
         <th scope="row"><label for="flow_ai_freeline_restrictions">Freeline (Visitor) Access Rules</label></th>
         <td>
             <textarea id="flow_ai_freeline_restrictions" name="flow_ai_freeline_restrictions" rows="4" class="large-text"><?php 
-                echo esc_textarea($flow_settings['ai_freeline_restrictions'] ?? 'For visitors (not logged in):
+                echo esc_textarea($flosc_flow_settings['ai_freeline_restrictions'] ?? 'For visitors (not logged in):
 - You can answer general questions about pronunciation and learning
 - You can describe what our program offers (use public knowledge files)
 - You can encourage them to take the quiz
@@ -144,7 +144,7 @@ This information is NOT in your training data. Always reference these files when
         <th scope="row"><label for="flow_ai_member_access">Member Access Rules</label></th>
         <td>
             <textarea id="flow_ai_member_access" name="flow_ai_member_access" rows="4" class="large-text"><?php 
-                echo esc_textarea($flow_settings['ai_member_access'] ?? 'For logged-in members:
+                echo esc_textarea($flosc_flow_settings['ai_member_access'] ?? 'For logged-in members:
 - Full access to lesson catalog and recommendations
 - Can provide specific lesson previews and summaries
 - Can reference member-only knowledge files (marked "Members Only")
@@ -159,7 +159,7 @@ This information is NOT in your training data. Always reference these files when
         <th scope="row"><label for="flow_ai_boundaries">AI Boundaries & Limitations</label></th>
         <td>
             <textarea id="flow_ai_boundaries" name="flow_ai_boundaries" rows="4" class="large-text"><?php 
-                echo esc_textarea($flow_settings['ai_boundaries'] ?? 'What you should NOT do:
+                echo esc_textarea($flosc_flow_settings['ai_boundaries'] ?? 'What you should NOT do:
 - Don\'t diagnose medical conditions (speech impediments, etc.)
 - Don\'t guarantee specific results or timelines
 - Don\'t provide refunds or make purchasing decisions
@@ -181,7 +181,7 @@ This information is NOT in your training data. Always reference these files when
         <th scope="row"><label for="flow_ai_topic_scope">Topic Scope</label></th>
         <td>
             <textarea id="flow_ai_topic_scope" name="flow_ai_topic_scope" rows="3" class="large-text"><?php 
-                echo esc_textarea($flow_settings['ai_topic_scope'] ?? ''); 
+                echo esc_textarea($flosc_flow_settings['ai_topic_scope'] ?? ''); 
             ?></textarea>
             <p class="description">What topics IS your AI allowed to discuss? (e.g., "You are focused on English pronunciation, phonetics, and language learning. Stay within this topic area.")</p>
         </td>
@@ -191,7 +191,7 @@ This information is NOT in your training data. Always reference these files when
         <th scope="row"><label for="flow_ai_off_topic_message">Off-Topic Response</label></th>
         <td>
             <textarea id="flow_ai_off_topic_message" name="flow_ai_off_topic_message" rows="4" class="large-text"><?php 
-                echo esc_textarea($flow_settings['ai_off_topic_message'] ?? ''); 
+                echo esc_textarea($flosc_flow_settings['ai_off_topic_message'] ?? ''); 
             ?></textarea>
             <p class="description">How should the AI respond when users ask off-topic questions? (e.g., "Briefly acknowledge, let them know this isn't your area, suggest an external tool, then steer back to the flow.")</p>
         </td>
@@ -201,7 +201,7 @@ This information is NOT in your training data. Always reference these files when
         <th scope="row"><label for="flow_ai_off_topic_links">External Tool Recommendations</label></th>
         <td>
             <textarea id="flow_ai_off_topic_links" name="flow_ai_off_topic_links" rows="4" class="large-text"><?php 
-                echo esc_textarea($flow_settings['ai_off_topic_links'] ?? ''); 
+                echo esc_textarea($flosc_flow_settings['ai_off_topic_links'] ?? ''); 
             ?></textarea>
             <p class="description">Links to recommend when users need help outside your scope. One per line. (e.g., "For general questions: ChatGPT https://chat.openai.com"). Use affiliate links where possible.</p>
         </td>
@@ -253,8 +253,8 @@ This information is NOT in your training data. Always reference these files when
 <!-- EXISTING KNOWLEDGE FILES -->
 <!-- ============================================ -->
 <div class="card" style="max-width: 100%;">
-    <h3>Existing Knowledge Files (<?php echo count($files); ?>)</h3>
-    <?php if (empty($files)): ?>
+    <h3>Existing Knowledge Files (<?php echo count($flosc_files); ?>)</h3>
+    <?php if (empty($flosc_files)): ?>
         <p style="color: #667; font-style: italic;">No knowledge files yet. Upload your first file above to get started.</p>
         
         <div style="background: #f9f9f9; padding: 15px; margin-top: 15px; border-radius: 4px;">
@@ -311,23 +311,23 @@ This information is NOT in your training data. Always reference these files when
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($files as $file): ?>
+                <?php foreach ($flosc_files as $flosc_file): ?>
                     <?php
-                    $filepath = function_exists('flosc_config_file') ? flosc_config_file($file) : '';
-                    $size = ('' !== $filepath && file_exists($filepath)) ? filesize($filepath) : 0;
-                    $modified = ('' !== $filepath && file_exists($filepath)) ? filemtime($filepath) : 0;
+                    $flosc_filepath = function_exists('flosc_config_file') ? flosc_config_file($flosc_file) : '';
+                    $flosc_size = ('' !== $flosc_filepath && file_exists($flosc_filepath)) ? filesize($flosc_filepath) : 0;
+                    $flosc_modified = ('' !== $flosc_filepath && file_exists($flosc_filepath)) ? filemtime($flosc_filepath) : 0;
                     // Get access level from option (default to public for existing files)
-                    $access_level = $flow_settings['knowledge_access_' . md5($file)] ?? 'public';
+                    $flosc_access_level = $flosc_flow_settings['knowledge_access_' . md5($flosc_file)] ?? 'public';
                     ?>
                     <tr>
                         <td>
-                            <strong><?php echo esc_html($file); ?></strong>
-                            <?php if ($editing_file === $file): ?>
+                            <strong><?php echo esc_html($flosc_file); ?></strong>
+                            <?php if ($flosc_editing_file === $flosc_file): ?>
                                 <span style="color: #2196f3; margin-left: 8px;">← Editing</span>
                             <?php endif; ?>
                         </td>
                         <td>
-                            <?php if ($access_level === 'members'): ?>
+                            <?php if ($flosc_access_level === 'members'): ?>
                                 <span style="background: #8b5cf6; color: #fff; padding: 3px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">
                                     🔒 MEMBERS ONLY
                                 </span>
@@ -337,19 +337,19 @@ This information is NOT in your training data. Always reference these files when
                                 </span>
                             <?php endif; ?>
                         </td>
-                        <td><?php echo esc_html( size_format($size) ); ?></td>
-                        <td><?php echo esc_html( human_time_diff($modified, current_time('timestamp')) . ' ago' ); ?></td>
+                        <td><?php echo esc_html( size_format($flosc_size) ); ?></td>
+                        <td><?php echo esc_html( human_time_diff($flosc_modified, current_time('timestamp')) . ' ago' ); ?></td>
                         <td>
-                            <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&edit=' . urlencode($file)) ); ?>" class="button button-small">
-                                <?php echo $editing_file === $file ? 'Editing...' : 'Edit'; ?>
+                            <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&edit=' . urlencode($flosc_file)) ); ?>" class="button button-small">
+                                <?php echo $flosc_editing_file === $flosc_file ? 'Editing...' : 'Edit'; ?>
                             </a>
-                            <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&toggle_access=' . urlencode($file)) ); ?>" 
+                            <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&toggle_access=' . urlencode($flosc_file)) ); ?>" 
                                class="button button-small">
                                 Toggle Access
                             </a>
-                            <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&delete=' . urlencode($file)) ); ?>" 
+                            <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&delete=' . urlencode($flosc_file)) ); ?>" 
                                class="button button-small" 
-                               onclick="return confirm('Delete <?php echo esc_js($file); ?>? This cannot be undone.');"
+                               onclick="return confirm('Delete <?php echo esc_js($flosc_file); ?>? This cannot be undone.');"
                                style="color: #d63638;">
                                 Delete
                             </a>
@@ -364,14 +364,14 @@ This information is NOT in your training data. Always reference these files when
 <!-- ============================================ -->
 <!-- FILE EDITOR (if editing) -->
 <!-- ============================================ -->
-<?php if ($editing_file): ?>
+<?php if ($flosc_editing_file): ?>
     <div class="card" style="max-width: 100%; margin-top: 20px;">
-        <h3>Edit: <?php echo esc_html($editing_file); ?></h3>
+        <h3>Edit: <?php echo esc_html($flosc_editing_file); ?></h3>
         <form method="post">
             <?php wp_nonce_field('flosc_ai_knowledge_edit', 'flosc_ai_knowledge_edit_nonce'); ?>
-            <input type="hidden" name="editing_file" value="<?php echo esc_attr($editing_file); ?>">
+            <input type="hidden" name="editing_file" value="<?php echo esc_attr($flosc_editing_file); ?>">
             
-            <textarea name="file_content" rows="25" class="large-text code" style="font-family: monospace; width: 100%; font-size: 13px;"><?php echo esc_textarea($editing_content); ?></textarea>
+            <textarea name="file_content" rows="25" class="large-text code" style="font-family: monospace; width: 100%; font-size: 13px;"><?php echo esc_textarea($flosc_editing_content); ?></textarea>
             
             <p class="description">Markdown formatting supported. Use this editor to update knowledge file content.</p>
             

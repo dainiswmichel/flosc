@@ -16,24 +16,24 @@ if (!defined('ABSPATH')) exit;
 
 // ── v1.9.5: Rated Responses from DB ──
 global $wpdb;
-$logs_table = $wpdb->prefix . 'flosc_chat_logs';
-$rated_logs = [];
+$flosc_logs_table = $wpdb->prefix . 'flosc_chat_logs';
+$flosc_rated_logs = [];
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- explicit coverage for Plugin Check entries on this query line
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only schema probe on plugin-owned table
-$col_check = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM %i LIKE %s", $logs_table, 'admin_rating'));
-if (!empty($col_check)) {
+$flosc_col_check = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM %i LIKE %s", $flosc_logs_table, 'admin_rating'));
+if (!empty($flosc_col_check)) {
     // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- explicit coverage for Plugin Check entries on this query line
     // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only admin listing from plugin-owned table
-    $rated_logs = $wpdb->get_results($wpdb->prepare("SELECT id, timestamp, user_message, ai_response, admin_rating, admin_note, rated_at FROM %i WHERE admin_rating != 0 ORDER BY admin_rating ASC, rated_at DESC LIMIT 50", $logs_table), ARRAY_A);
+    $flosc_rated_logs = $wpdb->get_results($wpdb->prepare("SELECT id, timestamp, user_message, ai_response, admin_rating, admin_note, rated_at FROM %i WHERE admin_rating != 0 ORDER BY admin_rating ASC, rated_at DESC LIMIT 50", $flosc_logs_table), ARRAY_A);
 }
-$rated_count = count($rated_logs);
+$flosc_rated_count = count($flosc_rated_logs);
 ?>
 
-<?php if ($rated_count > 0): ?>
+<?php if ($flosc_rated_count > 0): ?>
 <div class="flosc-feedback-section">
     <h3 class="flosc-feedback-header">
         Rated Responses
-        <span class="flosc-feedback-count" style="background: #6366f1;"><?php echo esc_html( (string) $rated_count ); ?></span>
+        <span class="flosc-feedback-count" style="background: #6366f1;"><?php echo esc_html( (string) $flosc_rated_count ); ?></span>
     </h3>
     <p class="flosc-feedback-description">
         These are chat log entries you scored in the Chat Logs tab above. 
@@ -52,20 +52,20 @@ $rated_count = count($rated_logs);
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($rated_logs as $rlog): ?>
+            <?php foreach ($flosc_rated_logs as $flosc_rlog): ?>
             <?php
-                $score = intval($rlog['admin_rating']);
-                $score_class = $score > 0 ? 'flosc-rating-positive' : ($score < 0 ? 'flosc-rating-negative' : '');
-                $score_display = $score > 0 ? '+' . $score : $score;
+                $flosc_score = intval($flosc_rlog['admin_rating']);
+                $flosc_score_class = $flosc_score > 0 ? 'flosc-rating-positive' : ($flosc_score < 0 ? 'flosc-rating-negative' : '');
+                $flosc_score_display = $flosc_score > 0 ? '+' . $flosc_score : $flosc_score;
             ?>
             <tr>
                 <td>
-                    <span class="flosc-rated-score <?php echo esc_attr( $score_class ); ?>"><?php echo esc_html( (string) $score_display ); ?></span>
+                    <span class="flosc-rated-score <?php echo esc_attr( $flosc_score_class ); ?>"><?php echo esc_html( (string) $flosc_score_display ); ?></span>
                 </td>
-                <td><?php echo esc_html(substr($rlog['rated_at'] ?? '', 0, 16)); ?></td>
-                <td><?php echo esc_html(mb_strimwidth($rlog['user_message'] ?? '', 0, 100, '...')); ?></td>
-                <td><?php echo esc_html(mb_strimwidth($rlog['ai_response'] ?? '', 0, 150, '...')); ?></td>
-                <td><?php echo esc_html($rlog['admin_note'] ?? ''); ?></td>
+                <td><?php echo esc_html(substr($flosc_rlog['rated_at'] ?? '', 0, 16)); ?></td>
+                <td><?php echo esc_html(mb_strimwidth($flosc_rlog['user_message'] ?? '', 0, 100, '...')); ?></td>
+                <td><?php echo esc_html(mb_strimwidth($flosc_rlog['ai_response'] ?? '', 0, 150, '...')); ?></td>
+                <td><?php echo esc_html($flosc_rlog['admin_note'] ?? ''); ?></td>
             </tr>
             <?php endforeach; ?>
         </tbody>
@@ -75,20 +75,20 @@ $rated_count = count($rated_logs);
 
 <?php
 // ── Feedback ──
-$feedback_items = $flow_settings['ai_feedback'] ?? [];
-$feedback_count = count($feedback_items);
+$flosc_feedback_items = $flosc_flow_settings['ai_feedback'] ?? [];
+$flosc_feedback_count = count($flosc_feedback_items);
 
 // Handle delete feedback
 if (isset($_POST['flosc_delete_feedback'])) {
     $post = wp_unslash($_POST);
     if (wp_verify_nonce(sanitize_text_field($post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
-    $delete_id = sanitize_text_field($post['flosc_delete_feedback'] ?? '');
-    $feedback_items = array_values(array_filter($feedback_items, function($c) use ($delete_id) {
-        return ($c['id'] ?? '') !== $delete_id;
+    $flosc_delete_id = sanitize_text_field($post['flosc_delete_feedback'] ?? '');
+    $flosc_feedback_items = array_values(array_filter($flosc_feedback_items, function($c) use ($flosc_delete_id) {
+        return ($c['id'] ?? '') !== $flosc_delete_id;
     }));
-    $flow_settings['ai_feedback'] = $feedback_items;
-    update_option($settings_key, $flow_settings);
-    $feedback_count = count($feedback_items);
+    $flosc_flow_settings['ai_feedback'] = $flosc_feedback_items;
+    update_option($settings_key, $flosc_flow_settings);
+    $flosc_feedback_count = count($flosc_feedback_items);
     echo '<div class="notice notice-success is-dismissible"><p>Feedback deleted.</p></div>';
     }
 }
@@ -97,7 +97,7 @@ if (isset($_POST['flosc_delete_feedback'])) {
 if (isset($_POST['flosc_add_feedback'])) {
     $post = wp_unslash($_POST);
     if (wp_verify_nonce(sanitize_text_field($post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
-        $new_feedback_item = [
+        $flosc_new_feedback_item = [
             'id'                 => uniqid('corr_'),
             'timestamp'          => current_time('mysql'),
             'user_message'       => sanitize_textarea_field($post['feedback_user_message'] ?? ''),
@@ -107,31 +107,31 @@ if (isset($_POST['flosc_add_feedback'])) {
             'admin_user_id'      => get_current_user_id(),
         ];
 
-        if (!empty($new_feedback_item['user_message']) && !empty($new_feedback_item['admin_note'])) {
-            $feedback_items[] = $new_feedback_item;
-            $flow_settings['ai_feedback'] = $feedback_items;
-            update_option($settings_key, $flow_settings);
-            $feedback_count = count($feedback_items);
+        if (!empty($flosc_new_feedback_item['user_message']) && !empty($flosc_new_feedback_item['admin_note'])) {
+            $flosc_feedback_items[] = $flosc_new_feedback_item;
+            $flosc_flow_settings['ai_feedback'] = $flosc_feedback_items;
+            update_option($settings_key, $flosc_flow_settings);
+            $flosc_feedback_count = count($flosc_feedback_items);
             echo '<div class="notice notice-success is-dismissible"><p>Feedback added. The AI will follow this guidance on next response.</p></div>';
         }
     }
 }
 
 // ── Praises ──
-$praises = $flow_settings['ai_praises'] ?? [];
-$praises_count = count($praises);
+$flosc_praises = $flosc_flow_settings['ai_praises'] ?? [];
+$flosc_praises_count = count($flosc_praises);
 
 // Handle delete praise
 if (isset($_POST['flosc_delete_praise'])) {
     $post = wp_unslash($_POST);
     if (wp_verify_nonce(sanitize_text_field($post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
-    $delete_id = sanitize_text_field($post['flosc_delete_praise'] ?? '');
-    $praises = array_values(array_filter($praises, function($p) use ($delete_id) {
-        return ($p['id'] ?? '') !== $delete_id;
+    $flosc_delete_id = sanitize_text_field($post['flosc_delete_praise'] ?? '');
+    $flosc_praises = array_values(array_filter($flosc_praises, function($p) use ($flosc_delete_id) {
+        return ($p['id'] ?? '') !== $flosc_delete_id;
     }));
-    $flow_settings['ai_praises'] = $praises;
-    update_option($settings_key, $flow_settings);
-    $praises_count = count($praises);
+    $flosc_flow_settings['ai_praises'] = $flosc_praises;
+    update_option($settings_key, $flosc_flow_settings);
+    $flosc_praises_count = count($flosc_praises);
     echo '<div class="notice notice-success is-dismissible"><p>Praise deleted.</p></div>';
     }
 }
@@ -140,7 +140,7 @@ if (isset($_POST['flosc_delete_praise'])) {
 if (isset($_POST['flosc_add_praise'])) {
     $post = wp_unslash($_POST);
     if (wp_verify_nonce(sanitize_text_field($post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
-        $new_praise = [
+        $flosc_new_praise = [
             'id'            => uniqid('praise_'),
             'timestamp'     => current_time('mysql'),
             'user_message'  => sanitize_textarea_field($post['praise_user_message'] ?? ''),
@@ -149,11 +149,11 @@ if (isset($_POST['flosc_add_praise'])) {
             'admin_user_id' => get_current_user_id(),
         ];
 
-        if (!empty($new_praise['user_message']) && !empty($new_praise['admin_note'])) {
-            $praises[] = $new_praise;
-            $flow_settings['ai_praises'] = $praises;
-            update_option($settings_key, $flow_settings);
-            $praises_count = count($praises);
+        if (!empty($flosc_new_praise['user_message']) && !empty($flosc_new_praise['admin_note'])) {
+            $flosc_praises[] = $flosc_new_praise;
+            $flosc_flow_settings['ai_praises'] = $flosc_praises;
+            update_option($settings_key, $flosc_flow_settings);
+            $flosc_praises_count = count($flosc_praises);
             echo '<div class="notice notice-success is-dismissible"><p>Praise added. The AI will reinforce this behavior.</p></div>';
         }
     }
@@ -163,7 +163,7 @@ if (isset($_POST['flosc_add_praise'])) {
 <div class="flosc-feedback-section">
     <h3 class="flosc-feedback-header">
         AI Feedback
-        <span class="flosc-feedback-count"><?php echo esc_html( (string) $feedback_count ); ?></span>
+        <span class="flosc-feedback-count"><?php echo esc_html( (string) $flosc_feedback_count ); ?></span>
     </h3>
     <p class="flosc-feedback-description">
         When you flag an AI response in the chat (using the ⚑ button), or add a feedback here manually, 
@@ -171,7 +171,7 @@ if (isset($_POST['flosc_add_praise'])) {
         what NOT to do and how to respond instead.
     </p>
 
-    <?php if ($feedback_count > 0): ?>
+    <?php if ($flosc_feedback_count > 0): ?>
     <table class="flosc-feedback-table widefat striped">
         <thead>
             <tr>
@@ -183,33 +183,33 @@ if (isset($_POST['flosc_add_praise'])) {
             </tr>
         </thead>
         <tbody>
-            <?php foreach (array_reverse($feedback_items) as $feedback_item): ?>
+            <?php foreach (array_reverse($flosc_feedback_items) as $flosc_feedback_item): ?>
             <tr>
                 <td class="flosc-feedback-col-date">
-                    <?php echo esc_html(gmdate('Y-m-d H:i', strtotime($feedback_item['timestamp'] ?? ''))); ?>
+                    <?php echo esc_html(gmdate('Y-m-d H:i', strtotime($flosc_feedback_item['timestamp'] ?? ''))); ?>
                 </td>
                 <td class="flosc-feedback-col-input">
-                    <div class="flosc-feedback-text" title="<?php echo esc_attr($feedback_item['user_message'] ?? ''); ?>">
-                        <?php echo esc_html(mb_strimwidth($feedback_item['user_message'] ?? '', 0, 80, '...')); ?>
+                    <div class="flosc-feedback-text" title="<?php echo esc_attr($flosc_feedback_item['user_message'] ?? ''); ?>">
+                        <?php echo esc_html(mb_strimwidth($flosc_feedback_item['user_message'] ?? '', 0, 80, '...')); ?>
                     </div>
-                    <?php if (!empty($feedback_item['bad_response'])): ?>
-                    <div class="flosc-feedback-bad-preview" title="<?php echo esc_attr($feedback_item['bad_response']); ?>">
-                        Bad: <?php echo esc_html(mb_strimwidth($feedback_item['bad_response'], 0, 60, '...')); ?>
+                    <?php if (!empty($flosc_feedback_item['bad_response'])): ?>
+                    <div class="flosc-feedback-bad-preview" title="<?php echo esc_attr($flosc_feedback_item['bad_response']); ?>">
+                        Bad: <?php echo esc_html(mb_strimwidth($flosc_feedback_item['bad_response'], 0, 60, '...')); ?>
                     </div>
                     <?php endif; ?>
                 </td>
                 <td class="flosc-feedback-col-issue">
-                    <?php echo esc_html($feedback_item['admin_note'] ?? ''); ?>
+                    <?php echo esc_html($flosc_feedback_item['admin_note'] ?? ''); ?>
                 </td>
                 <td class="flosc-feedback-col-preferred">
-                    <?php if (!empty($feedback_item['preferred_response'])): ?>
-                        <?php echo esc_html(mb_strimwidth($feedback_item['preferred_response'], 0, 100, '...')); ?>
+                    <?php if (!empty($flosc_feedback_item['preferred_response'])): ?>
+                        <?php echo esc_html(mb_strimwidth($flosc_feedback_item['preferred_response'], 0, 100, '...')); ?>
                     <?php else: ?>
                         <em class="flosc-feedback-none">—</em>
                     <?php endif; ?>
                 </td>
                 <td class="flosc-feedback-col-actions">
-                    <button type="submit" name="flosc_delete_feedback" value="<?php echo esc_attr($feedback_item['id']); ?>" 
+                    <button type="submit" name="flosc_delete_feedback" value="<?php echo esc_attr($flosc_feedback_item['id']); ?>" 
                             class="button button-small flosc-feedback-delete"
                             onclick="return confirm('Delete this feedback?');">
                         Delete
@@ -272,7 +272,7 @@ if (isset($_POST['flosc_add_praise'])) {
 <div class="flosc-feedback-section flosc-praise-section">
     <h3 class="flosc-feedback-header">
         AI Praise
-        <span class="flosc-praise-count"><?php echo esc_html( (string) $praises_count ); ?></span>
+        <span class="flosc-praise-count"><?php echo esc_html( (string) $flosc_praises_count ); ?></span>
     </h3>
     <p class="flosc-feedback-description">
         When you praise an AI response in the chat (using the ✓ button), or add praise here manually, 
@@ -280,7 +280,7 @@ if (isset($_POST['flosc_add_praise'])) {
         and approach you want the AI to keep using.
     </p>
 
-    <?php if ($praises_count > 0): ?>
+    <?php if ($flosc_praises_count > 0): ?>
     <table class="flosc-feedback-table flosc-praise-table widefat striped">
         <thead>
             <tr>
@@ -292,26 +292,26 @@ if (isset($_POST['flosc_add_praise'])) {
             </tr>
         </thead>
         <tbody>
-            <?php foreach (array_reverse($praises) as $praise): ?>
+            <?php foreach (array_reverse($flosc_praises) as $flosc_praise): ?>
             <tr>
                 <td class="flosc-feedback-col-date">
-                    <?php echo esc_html(gmdate('Y-m-d H:i', strtotime($praise['timestamp'] ?? ''))); ?>
+                    <?php echo esc_html(gmdate('Y-m-d H:i', strtotime($flosc_praise['timestamp'] ?? ''))); ?>
                 </td>
                 <td class="flosc-feedback-col-input">
-                    <div class="flosc-feedback-text" title="<?php echo esc_attr($praise['user_message'] ?? ''); ?>">
-                        <?php echo esc_html(mb_strimwidth($praise['user_message'] ?? '', 0, 80, '...')); ?>
+                    <div class="flosc-feedback-text" title="<?php echo esc_attr($flosc_praise['user_message'] ?? ''); ?>">
+                        <?php echo esc_html(mb_strimwidth($flosc_praise['user_message'] ?? '', 0, 80, '...')); ?>
                     </div>
                 </td>
                 <td class="flosc-feedback-col-issue">
-                    <div class="flosc-feedback-text flosc-feedback-good-preview" title="<?php echo esc_attr($praise['good_response'] ?? ''); ?>">
-                        <?php echo esc_html(mb_strimwidth($praise['good_response'] ?? '', 0, 100, '...')); ?>
+                    <div class="flosc-feedback-text flosc-feedback-good-preview" title="<?php echo esc_attr($flosc_praise['good_response'] ?? ''); ?>">
+                        <?php echo esc_html(mb_strimwidth($flosc_praise['good_response'] ?? '', 0, 100, '...')); ?>
                     </div>
                 </td>
                 <td class="flosc-feedback-col-preferred">
-                    <?php echo esc_html($praise['admin_note'] ?? ''); ?>
+                    <?php echo esc_html($flosc_praise['admin_note'] ?? ''); ?>
                 </td>
                 <td class="flosc-feedback-col-actions">
-                    <button type="submit" name="flosc_delete_praise" value="<?php echo esc_attr($praise['id']); ?>" 
+                    <button type="submit" name="flosc_delete_praise" value="<?php echo esc_attr($flosc_praise['id']); ?>" 
                             class="button button-small flosc-feedback-praise-delete"
                             onclick="return confirm('Delete this praise?');">
                         Delete

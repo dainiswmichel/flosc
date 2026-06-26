@@ -16,35 +16,35 @@ if (!defined('ABSPATH')) exit;
 
 // v1.8.2 format: indexed array [['label'=>'…','action'=>'…'], …]
 // Backward-compat: if old associative format is stored, convert it
-$visitor_menu_raw = get_option('flosc_visitor_menu_items', []);
-$visitor_menu = [];
+$flosc_visitor_menu_raw = get_option('flosc_visitor_menu_items', []);
+$flosc_visitor_menu = [];
 
-if (!empty($visitor_menu_raw)) {
+if (!empty($flosc_visitor_menu_raw)) {
     // Check if old associative format (keys like 'signup', 'login', 'quiz')
-    if (isset($visitor_menu_raw['signup']) || isset($visitor_menu_raw['login']) || isset($visitor_menu_raw['quiz'])) {
+    if (isset($flosc_visitor_menu_raw['signup']) || isset($flosc_visitor_menu_raw['login']) || isset($flosc_visitor_menu_raw['quiz'])) {
         // Migrate old format → new indexed format
-        $action_map = [
+        $flosc_action_map = [
             'signup' => 'open_registration',
             'login'  => 'login',
             'quiz'   => 'open_quiz',
         ];
-        foreach ($visitor_menu_raw as $key => $item) {
+        foreach ($flosc_visitor_menu_raw as $flosc_key => $flosc_item) {
             if (!empty($item['enabled'])) {
-                $visitor_menu[] = [
+                $flosc_visitor_menu[] = [
                     'label'  => $item['label'] ?? ucfirst($key),
-                    'action' => $action_map[$key] ?? $key,
+                    'action' => $flosc_action_map[$key] ?? $key,
                 ];
             }
         }
     } else {
         // Already new format
-        $visitor_menu = $visitor_menu_raw;
+        $flosc_visitor_menu = $flosc_visitor_menu_raw;
     }
 }
 
 // Default if empty
-if (empty($visitor_menu)) {
-    $visitor_menu = [
+if (empty($flosc_visitor_menu)) {
+    $flosc_visitor_menu = [
         ['label' => 'Sign Up',    'action' => 'open_registration'],
         ['label' => 'Log In',     'action' => 'login'],
         ['label' => 'Take Quiz',  'action' => 'open_quiz'],
@@ -52,9 +52,9 @@ if (empty($visitor_menu)) {
 }
 
 // v1.9.8: Guest menu (logged-in, not purchased)
-$guest_menu = get_option('flosc_guest_menu_items', []);
-if (empty($guest_menu)) {
-    $guest_menu = [
+$flosc_guest_menu = get_option('flosc_guest_menu_items', []);
+if (empty($flosc_guest_menu)) {
+    $flosc_guest_menu = [
         ['label' => 'My Profile', 'action' => 'view_profile'],
         ['label' => 'Take Quiz',  'action' => 'open_quiz'],
         ['label' => 'Upgrade',    'action' => 'open_sandbox_purchase'],
@@ -63,9 +63,9 @@ if (empty($guest_menu)) {
 }
 
 // v1.9.8: Member menu (logged-in, purchased)
-$member_menu = get_option('flosc_member_menu_items', []);
-if (empty($member_menu)) {
-    $member_menu = [
+$flosc_member_menu = get_option('flosc_member_menu_items', []);
+if (empty($flosc_member_menu)) {
+    $flosc_member_menu = [
         ['label' => 'My Profile',     'action' => 'view_profile'],
         ['label' => 'My Lessons',     'action' => 'open_lesson_library'],
         ['label' => 'Take Quiz',      'action' => 'open_quiz'],
@@ -73,26 +73,26 @@ if (empty($member_menu)) {
     ];
 }
 
-$login_destination = get_option('flosc_login_destination', '');
+$flosc_login_destination = get_option('flosc_login_destination', '');
 
-$profile_bar = get_option('flosc_profile_bar', [
+$flosc_profile_bar = get_option('flosc_profile_bar', [
     'visitor' => ['name' => 'Visitor', 'badge' => 'Hope you enjoy our chat :-)', 'icon' => '👋'],
     'guest'   => ['badge' => 'Guest', 'upgrade_label' => 'Upgrade to Pro'],
     'member'  => ['badge' => 'Member'],
 ]);
 
-$app_url = flosc()->get_app_url();
-$current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
-$ui_docs_url = add_query_arg([
+$flosc_app_url = flosc()->get_app_url();
+$flosc_current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
+$flosc_ui_docs_url = add_query_arg([
     'page' => 'flosc-settings',
-    'ivr'  => $current_ivr,
+    'ivr'  => $flosc_current_ivr,
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-ui';
 // UI tab doc link is rendered below.
 
 // Available in-chat actions for the dropdown
-$available_actions = [
+$flosc_available_actions = [
     'open_registration'    => 'Sign Up — open registration modal',
     'open_login_modal'     => 'Log In — open login modal',
     'logout'               => 'Log Out — end session and return to visitor state',
@@ -108,18 +108,18 @@ $available_actions = [
 ];
 
 // v1.9.8: Guest and Member menus
-$guest_menu = get_option('flosc_guest_menu_items', []);
-if (empty($guest_menu)) {
-    $guest_menu = [
+$flosc_guest_menu = get_option('flosc_guest_menu_items', []);
+if (empty($flosc_guest_menu)) {
+    $flosc_guest_menu = [
         ['label' => 'Take Quiz',  'action' => 'open_quiz'],
         ['label' => 'Upgrade',    'action' => 'open_sandbox_purchase'],
         ['label' => 'Log Out',    'action' => 'logout'],
     ];
 }
 
-$member_menu = get_option('flosc_member_menu_items', []);
-if (empty($member_menu)) {
-    $member_menu = [
+$flosc_member_menu = get_option('flosc_member_menu_items', []);
+if (empty($flosc_member_menu)) {
+    $flosc_member_menu = [
         ['label' => 'Lesson Library', 'action' => 'open_lesson_library'],
         ['label' => 'Quiz Library',   'action' => 'open_quiz_library'],
         ['label' => 'Log Out',        'action' => 'logout'],
@@ -128,7 +128,7 @@ if (empty($member_menu)) {
 ?>
 
 <div style="margin:0 0 14px; text-align:right;">
-    <a href="<?php echo esc_url($ui_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
+    <a href="<?php echo esc_url($flosc_ui_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════
@@ -141,15 +141,15 @@ if (empty($member_menu)) {
 <p class="description">Shown to users who are not logged in.</p>
 <table class="form-table">
     <!-- v1.8.3: Avatar Shape (applies to all states) -->
-    <?php $current_avatar_radius = $flow_settings['avatar_radius'] ?? '8px'; ?>
+    <?php $flosc_current_avatar_radius = $flow_settings['avatar_radius'] ?? '8px'; ?>
     <tr>
         <th scope="row">Avatar Shape</th>
         <td>
             <select name="flow_avatar_radius" id="flow_avatar_radius">
-                <option value="8px" <?php selected($current_avatar_radius, '8px'); ?>>Rounded Rectangle</option>
-                <option value="50%" <?php selected($current_avatar_radius, '50%'); ?>>Circle</option>
-                <option value="4px" <?php selected($current_avatar_radius, '4px'); ?>>Slightly Rounded</option>
-                <option value="0" <?php selected($current_avatar_radius, '0'); ?>>Square</option>
+                <option value="8px" <?php selected($flosc_current_avatar_radius, '8px'); ?>>Rounded Rectangle</option>
+                <option value="50%" <?php selected($flosc_current_avatar_radius, '50%'); ?>>Circle</option>
+                <option value="4px" <?php selected($flosc_current_avatar_radius, '4px'); ?>>Slightly Rounded</option>
+                <option value="0" <?php selected($flosc_current_avatar_radius, '0'); ?>>Square</option>
             </select>
             <p class="description">Shape of the user avatar in the profile bar and chat messages.</p>
         </td>
@@ -158,7 +158,7 @@ if (empty($member_menu)) {
         <th scope="row">Avatar Icon</th>
         <td>
             <input type="text" name="profile_bar_visitor_icon"
-                   value="<?php echo esc_attr($profile_bar['visitor']['icon'] ?? '👋'); ?>"
+                   value="<?php echo esc_attr($flosc_profile_bar['visitor']['icon'] ?? '👋'); ?>"
                    class="small-text" style="font-size: 24px; width: 60px; text-align: center;">
             <p class="description">Emoji displayed as the visitor avatar.</p>
         </td>
@@ -167,7 +167,7 @@ if (empty($member_menu)) {
         <th scope="row">Display Name</th>
         <td>
             <input type="text" name="profile_bar_visitor_name"
-                   value="<?php echo esc_attr($profile_bar['visitor']['name'] ?? 'Visitor'); ?>"
+                   value="<?php echo esc_attr($flosc_profile_bar['visitor']['name'] ?? 'Visitor'); ?>"
                    class="regular-text">
         </td>
     </tr>
@@ -175,7 +175,7 @@ if (empty($member_menu)) {
         <th scope="row">Badge Text</th>
         <td>
             <input type="text" name="profile_bar_visitor_badge"
-                   value="<?php echo esc_attr($profile_bar['visitor']['badge'] ?? 'Hope you enjoy our chat :-)'); ?>"
+                   value="<?php echo esc_attr($flosc_profile_bar['visitor']['badge'] ?? 'Hope you enjoy our chat :-)'); ?>"
                    class="large-text">
             <p class="description">Subtitle shown below the visitor name.</p>
         </td>
@@ -202,7 +202,7 @@ if (empty($member_menu)) {
             </tr>
         </thead>
         <tbody id="flosc-menu-items-body">
-            <?php foreach ($visitor_menu as $i => $item): ?>
+            <?php foreach ($flosc_visitor_menu as $flosc_i => $flosc_item): ?>
             <tr class="flosc-menu-row">
                 <td class="flosc-menu-row-number"><?php echo esc_html((string) ($i + 1)); ?></td>
                 <td>
@@ -212,7 +212,7 @@ if (empty($member_menu)) {
                 </td>
                 <td>
                     <select name="visitor_menu_action[]" style="min-width: 260px;">
-                        <?php foreach ($available_actions as $val => $desc): ?>
+                        <?php foreach ($flosc_available_actions as $flosc_val => $flosc_desc): ?>
                         <option value="<?php echo esc_attr($val); ?>" <?php selected($item['action'], $val); ?>>
                             <?php echo esc_html($desc); ?>
                         </option>
@@ -238,7 +238,7 @@ if (empty($member_menu)) {
     const addBtn = document.getElementById('flosc-add-menu-item');
 
     // Available actions for new rows
-    const actions = <?php echo wp_json_encode($available_actions); ?>;
+    const actions = <?php echo wp_json_encode($flosc_available_actions); ?>;
 
     function buildActionOptions(selected) {
         let html = '';
@@ -290,7 +290,7 @@ if (empty($member_menu)) {
         <th scope="row">Badge Text</th>
         <td>
             <input type="text" name="profile_bar_guest_badge"
-                   value="<?php echo esc_attr($profile_bar['guest']['badge'] ?? 'Guest'); ?>"
+                   value="<?php echo esc_attr($flosc_profile_bar['guest']['badge'] ?? 'Guest'); ?>"
                    class="regular-text">
             <p class="description">Shown below the user's name (e.g., "Guest", "Free Account").</p>
         </td>
@@ -299,7 +299,7 @@ if (empty($member_menu)) {
         <th scope="row">Upgrade Button Label</th>
         <td>
             <input type="text" name="profile_bar_guest_upgrade"
-                   value="<?php echo esc_attr($profile_bar['guest']['upgrade_label'] ?? 'Upgrade to Pro'); ?>"
+                   value="<?php echo esc_attr($flosc_profile_bar['guest']['upgrade_label'] ?? 'Upgrade to Pro'); ?>"
                    class="regular-text">
             <p class="description">Button shown in guest dropdown to encourage purchase.</p>
         </td>
@@ -325,7 +325,7 @@ if (empty($member_menu)) {
             </tr>
         </thead>
         <tbody id="flosc-guest-menu-items-body">
-            <?php foreach ($guest_menu as $i => $item): ?>
+            <?php foreach ($flosc_guest_menu as $flosc_i => $flosc_item): ?>
             <tr class="flosc-guest-menu-row">
                 <td class="flosc-guest-menu-row-number"><?php echo esc_html( (string) ($i + 1) ); ?></td>
                 <td>
@@ -335,7 +335,7 @@ if (empty($member_menu)) {
                 </td>
                 <td>
                     <select name="guest_menu_action[]" style="min-width: 260px;">
-                        <?php foreach ($available_actions as $val => $desc): ?>
+                        <?php foreach ($flosc_available_actions as $flosc_val => $flosc_desc): ?>
                         <option value="<?php echo esc_attr($val); ?>" <?php selected($item['action'], $val); ?>>
                             <?php echo esc_html($desc); ?>
                         </option>
@@ -359,7 +359,7 @@ if (empty($member_menu)) {
 (function() {
     const tbody = document.getElementById('flosc-guest-menu-items-body');
     const addBtn = document.getElementById('flosc-guest-add-menu-item');
-    const actions = <?php echo wp_json_encode($available_actions); ?>;
+    const actions = <?php echo wp_json_encode($flosc_available_actions); ?>;
 
     function buildActionOptions(selected) {
         let html = '';
@@ -409,7 +409,7 @@ if (empty($member_menu)) {
         <th scope="row">Badge Text</th>
         <td>
             <input type="text" name="profile_bar_member_badge"
-                   value="<?php echo esc_attr($profile_bar['member']['badge'] ?? 'Member'); ?>"
+                   value="<?php echo esc_attr($flosc_profile_bar['member']['badge'] ?? 'Member'); ?>"
                    class="regular-text">
             <p class="description">Shown below the user's name (e.g., "Member", "Pro", "Premium").</p>
         </td>
@@ -435,7 +435,7 @@ if (empty($member_menu)) {
             </tr>
         </thead>
         <tbody id="flosc-member-menu-items-body">
-            <?php foreach ($member_menu as $i => $item): ?>
+            <?php foreach ($flosc_member_menu as $flosc_i => $flosc_item): ?>
             <tr class="flosc-member-menu-row">
                 <td class="flosc-member-menu-row-number"><?php echo esc_html( (string) ($i + 1) ); ?></td>
                 <td>
@@ -445,7 +445,7 @@ if (empty($member_menu)) {
                 </td>
                 <td>
                     <select name="member_menu_action[]" style="min-width: 260px;">
-                        <?php foreach ($available_actions as $val => $desc): ?>
+                        <?php foreach ($flosc_available_actions as $flosc_val => $flosc_desc): ?>
                         <option value="<?php echo esc_attr($val); ?>" <?php selected($item['action'], $val); ?>>
                             <?php echo esc_html($desc); ?>
                         </option>
@@ -469,7 +469,7 @@ if (empty($member_menu)) {
 (function() {
     const tbody = document.getElementById('flosc-member-menu-items-body');
     const addBtn = document.getElementById('flosc-member-add-menu-item');
-    const actions = <?php echo wp_json_encode($available_actions); ?>;
+    const actions = <?php echo wp_json_encode($flosc_available_actions); ?>;
 
     function buildActionOptions(selected) {
         let html = '';
@@ -520,10 +520,10 @@ if (empty($member_menu)) {
         <th scope="row">After login, redirect to</th>
         <td>
             <input type="url" name="flosc_login_destination" class="large-text"
-                   value="<?php echo esc_attr($login_destination); ?>"
-                   placeholder="<?php echo esc_attr($app_url); ?>">
+                   value="<?php echo esc_attr($flosc_login_destination); ?>"
+                   placeholder="<?php echo esc_attr($flosc_app_url); ?>">
             <p class="description">
-                Full URL. Leave empty to default to this flow's chat URL: <code><?php echo esc_html($app_url); ?></code><br>
+                Full URL. Leave empty to default to this flow's chat URL: <code><?php echo esc_html($flosc_app_url); ?></code><br>
                 Only applies when login originates from the FLOSC chat. Normal WordPress logins are unaffected.
             </p>
         </td>
@@ -544,7 +544,7 @@ if (empty($member_menu)) {
         </tr>
     </thead>
     <tbody>
-        <?php foreach ($available_actions as $key => $desc): ?>
+        <?php foreach ($flosc_available_actions as $flosc_key => $flosc_desc): ?>
         <tr>
             <td><code><?php echo esc_html($key); ?></code></td>
             <td><?php echo esc_html($desc); ?></td>

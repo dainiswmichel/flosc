@@ -16,83 +16,83 @@
 if (!defined('ABSPATH')) exit;
 if (!current_user_can('manage_options')) return;
 
-$tsv_filename = 'dainis-w-michel-list-of-works.tsv';
-$upload_dir   = wp_upload_dir();
-$tsv_path     = $upload_dir['basedir'] . '/' . $tsv_filename;
+$flosc_tsv_filename = 'dainis-w-michel-list-of-works.tsv';
+$flosc_upload_dir   = wp_upload_dir();
+$flosc_tsv_path     = $flosc_upload_dir['basedir'] . '/' . $flosc_tsv_filename;
 
-$notice_success = '';
-$notice_error   = '';
+$flosc_notice_success = '';
+$flosc_notice_error   = '';
 
 /* ----------------------------------------------------------------- Parser */
-function da1_parse_tsv($content) {
-    $parsed = [];
-    $row    = [];
+function flosc_da1_parse_tsv($flosc_content) {
+    $flosc_parsed = [];
+    $flosc_row    = [];
     $field  = '';
     $in_q   = false;
-    $len    = strlen($content);
+    $len    = strlen($flosc_content);
 
     for ($i = 0; $i < $len; $i++) {
-        $ch = $content[$i];
+        $ch = $flosc_content[$i];
         if ($in_q) {
             if ($ch === '"') {
-                if ($i + 1 < $len && $content[$i + 1] === '"') { $field .= '"'; $i++; }
+                if ($i + 1 < $len && $flosc_content[$i + 1] === '"') { $field .= '"'; $i++; }
                 else { $in_q = false; }
             } else { $field .= $ch; }
         } elseif ($ch === '"')  { $in_q = true; }
-        elseif ($ch === "\t")  { $row[] = $field; $field = ''; }
-        elseif ($ch === "\n")  { $row[] = $field; $field = ''; if (!empty($row)) { $parsed[] = $row; } $row = []; }
+        elseif ($ch === "\t")  { $flosc_row[] = $field; $field = ''; }
+        elseif ($ch === "\n")  { $flosc_row[] = $field; $field = ''; if (!empty($flosc_row)) { $flosc_parsed[] = $flosc_row; } $flosc_row = []; }
         elseif ($ch !== "\r")  { $field .= $ch; }
     }
-    if ($field !== '' || !empty($row)) { $row[] = $field; $parsed[] = $row; }
-    return $parsed;
+    if ($field !== '' || !empty($flosc_row)) { $flosc_row[] = $field; $flosc_parsed[] = $flosc_row; }
+    return $flosc_parsed;
 }
 
-function da1_tsv_cell($val) {
-    $val = str_replace(["\r\n", "\r"], "\n", (string) $val);
-    if (strpos($val, "\t") !== false || strpos($val, "\n") !== false || strpos($val, '"') !== false) {
-        $val = '"' . str_replace('"', '""', $val) . '"';
+function flosc_da1_tsv_cell($flosc_val) {
+    $flosc_val = str_replace(["\r\n", "\r"], "\n", (string) $flosc_val);
+    if (strpos($flosc_val, "\t") !== false || strpos($flosc_val, "\n") !== false || strpos($flosc_val, '"') !== false) {
+        $flosc_val = '"' . str_replace('"', '""', $flosc_val) . '"';
     }
-    return $val;
+    return $flosc_val;
 }
 
 /* ------------------------------------------------------------------ Read */
-$columns = [];
-$rows    = [];
+$flosc_columns = [];
+$flosc_rows    = [];
 
-if (file_exists($tsv_path)) {
-    $parsed = da1_parse_tsv(file_get_contents($tsv_path));
+if (file_exists($flosc_tsv_path)) {
+    $flosc_parsed = flosc_da1_parse_tsv(file_get_contents($flosc_tsv_path));
 
     /* First row is the header — use it as column definitions */
-    $columns = array_map(function($c) {
+    $flosc_columns = array_map(function($c) {
         $c = trim($c);
         return ($c === 'Video') ? 'Media' : $c;
-    }, $parsed[0] ?? []);
+    }, $flosc_parsed[0] ?? []);
 
-    $rows = array_slice($parsed, 1);
-    usort($rows, function ($a, $b) {
+    $flosc_rows = array_slice($flosc_parsed, 1);
+    usort($flosc_rows, function ($a, $b) {
         return (int) ($b[0] ?? 0) - (int) ($a[0] ?? 0);
     });
 }
 
 /* Fallback if file missing or empty */
-if (empty($columns)) {
-    $columns = ['Date', 'Title', 'Description', 'Lyrics', 'Media', 'Notes'];
+if (empty($flosc_columns)) {
+    $flosc_columns = ['Date', 'Title', 'Description', 'Lyrics', 'Media', 'Notes'];
 }
-if (empty($rows)) {
-    $rows = [array_fill(0, count($columns), '')];
+if (empty($flosc_rows)) {
+    $flosc_rows = [array_fill(0, count($flosc_columns), '')];
 }
 
 /* Pad all rows to column count */
-$ncols = count($columns);
-foreach ($rows as &$row) {
-    while (count($row) < $ncols) $row[] = '';
+$flosc_ncols = count($flosc_columns);
+foreach ($flosc_rows as &$flosc_row) {
+    while (count($flosc_row) < $flosc_ncols) $flosc_row[] = '';
 }
-unset($row);
+unset($flosc_row);
 
 /* Textarea columns: any column whose name contains Lyrics, Media, or Video */
-$multiline_idx = [];
-foreach ($columns as $ci => $col) {
-    if (preg_match('/description|lyrics|media|video|notes/i', $col)) $multiline_idx[] = $ci;
+$flosc_multiline_idx = [];
+foreach ($flosc_columns as $flosc_ci => $flosc_col) {
+    if (preg_match('/description|lyrics|media|video|notes/i', $flosc_col)) $flosc_multiline_idx[] = $flosc_ci;
 }
 
 /* ------------------------------------------------------------------ Save */
@@ -101,63 +101,63 @@ if (isset($_POST['da1_save_catalog'])) {
     check_admin_referer('da1_catalog_save');
 
     /* Columns come from hidden fields so we preserve the schema on save */
-    $saved_columns = $post['da1_columns'] ?? $columns;
-    $rows_post     = $post['da1_rows'] ?? [];
-    $lines         = [];
-    $lines[]       = implode("\t", array_map('da1_tsv_cell', $saved_columns));
+    $flosc_saved_columns = $post['da1_columns'] ?? $flosc_columns;
+    $flosc_rows_post     = $post['da1_rows'] ?? [];
+    $flosc_lines         = [];
+    $flosc_lines[]       = implode("\t", array_map('flosc_da1_tsv_cell', $flosc_saved_columns));
 
-    foreach ($rows_post as $row) {
-        $cells     = [];
-        $all_empty = true;
-        foreach ($saved_columns as $ci => $col) {
-            $raw = isset($row[$ci]) ? (string) $row[$ci] : '';
-            $val = in_array($ci, $multiline_idx, true)
-                ? sanitize_textarea_field($raw)
-                : sanitize_text_field($raw);
-            $val = str_replace(["\r\n", "\r"], "\n", $val);
-            if (trim($val) !== '') $all_empty = false;
-            $cells[] = da1_tsv_cell($val);
+    foreach ($flosc_rows_post as $flosc_row) {
+        $flosc_cells     = [];
+        $flosc_all_empty = true;
+        foreach ($flosc_saved_columns as $flosc_ci => $flosc_col) {
+            $flosc_raw = isset($flosc_row[$flosc_ci]) ? (string) $flosc_row[$flosc_ci] : '';
+            $flosc_val = in_array($flosc_ci, $flosc_multiline_idx, true)
+                ? sanitize_textarea_field($flosc_raw)
+                : sanitize_text_field($flosc_raw);
+            $flosc_val = str_replace(["\r\n", "\r"], "\n", $flosc_val);
+            if (trim($flosc_val) !== '') $flosc_all_empty = false;
+            $flosc_cells[] = flosc_da1_tsv_cell($flosc_val);
         }
-        if (!$all_empty) $lines[] = implode("\t", $cells);
+        if (!$flosc_all_empty) $flosc_lines[] = implode("\t", $flosc_cells);
     }
 
-    $content = implode("\n", $lines) . "\n";
+    $flosc_content = implode("\n", $flosc_lines) . "\n";
 
-    if (file_put_contents($tsv_path, $content) !== false) {
-        $count          = count($lines) - 1;
-        $notice_success = $count . ' work' . ($count !== 1 ? 's' : '') . ' saved — ' . flosc_michel_timestamp();
+    if (file_put_contents($flosc_tsv_path, $flosc_content) !== false) {
+        $flosc_count          = count($flosc_lines) - 1;
+        $flosc_notice_success = $flosc_count . ' work' . ($flosc_count !== 1 ? 's' : '') . ' saved — ' . flosc_michel_timestamp();
         /* Re-read so the editor reflects what was just written */
-        $parsed  = da1_parse_tsv($content);
-        $columns = array_map('trim', $parsed[0] ?? $columns);
-        $ncols   = count($columns);
-        $rows    = array_slice($parsed, 1);
-        usort($rows, function ($a, $b) { return (int)($b[0] ?? 0) - (int)($a[0] ?? 0); });
-        foreach ($rows as &$row) { while (count($row) < $ncols) $row[] = ''; }
-        unset($row);
-        $multiline_idx = [];
-        foreach ($columns as $ci => $col) {
-            if (preg_match('/description|lyrics|media|video|notes/i', $col)) $multiline_idx[] = $ci;
+        $flosc_parsed  = flosc_da1_parse_tsv($flosc_content);
+        $flosc_columns = array_map('trim', $flosc_parsed[0] ?? $flosc_columns);
+        $flosc_ncols   = count($flosc_columns);
+        $flosc_rows    = array_slice($flosc_parsed, 1);
+        usort($flosc_rows, function ($a, $b) { return (int)($b[0] ?? 0) - (int)($a[0] ?? 0); });
+        foreach ($flosc_rows as &$flosc_row) { while (count($flosc_row) < $flosc_ncols) $flosc_row[] = ''; }
+        unset($flosc_row);
+        $flosc_multiline_idx = [];
+        foreach ($flosc_columns as $flosc_ci => $flosc_col) {
+            if (preg_match('/description|lyrics|media|video|notes/i', $flosc_col)) $flosc_multiline_idx[] = $flosc_ci;
         }
     } else {
-        $notice_error = 'Could not write to ' . esc_html($tsv_path) . '. Check file permissions.';
+        $flosc_notice_error = 'Could not write to ' . esc_html($flosc_tsv_path) . '. Check file permissions.';
     }
 }
 
-$total = count($rows);
+$flosc_total = count($flosc_rows);
 ?>
 
 <?php // §12: #da1-table styles moved to assets/css/flosc-admin.css (enqueued on FLOSC admin pages). ?>
 
 <div style="max-width:1300px;">
 
-<?php if ($notice_success): ?>
+<?php if ($flosc_notice_success): ?>
     <div class="notice notice-success is-dismissible" style="margin:0 0 16px;">
-        <p><?php echo esc_html($notice_success); ?></p>
+        <p><?php echo esc_html($flosc_notice_success); ?></p>
     </div>
 <?php endif; ?>
-<?php if ($notice_error): ?>
+<?php if ($flosc_notice_error): ?>
     <div class="notice notice-error" style="margin:0 0 16px;">
-        <p><?php echo esc_html( $notice_error ); ?></p>
+        <p><?php echo esc_html( $flosc_notice_error ); ?></p>
     </div>
 <?php endif; ?>
 
@@ -166,8 +166,8 @@ $total = count($rows);
     <div>
         <h2 style="margin:0;color:#1d2327;font-size:16px;">DA1 Catalog</h2>
         <p style="margin:3px 0 0;color:#50575e;font-size:13px;">
-            <?php echo esc_html( (string) $total ); ?> works &mdash;
-            <code style="background:#e0e0e0;padding:2px 8px;border-radius:2px;color:#1d2327;font-size:11px;"><?php echo esc_html($tsv_filename); ?></code>
+            <?php echo esc_html( (string) $flosc_total ); ?> works &mdash;
+            <code style="background:#e0e0e0;padding:2px 8px;border-radius:2px;color:#1d2327;font-size:11px;"><?php echo esc_html($flosc_tsv_filename); ?></code>
         </p>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
@@ -180,44 +180,44 @@ $total = count($rows);
 <form id="da1-catalog-form" method="post">
     <?php wp_nonce_field('da1_catalog_save'); ?>
     <input type="hidden" name="da1_save_catalog" value="1">
-    <?php foreach ($columns as $ci => $col): ?>
-        <input type="hidden" name="da1_columns[<?php echo esc_attr( (string) $ci ); ?>]" value="<?php echo esc_attr($col); ?>">
+    <?php foreach ($flosc_columns as $flosc_ci => $flosc_col): ?>
+        <input type="hidden" name="da1_columns[<?php echo esc_attr( (string) $flosc_ci ); ?>]" value="<?php echo esc_attr($flosc_col); ?>">
     <?php endforeach; ?>
 
     <div style="overflow-x:auto;overflow-y:auto;max-height:70vh;border:1px solid #c3c4c7;border-radius:2px;">
     <table id="da1-table" style="width:100%;min-width:1100px;border-collapse:collapse;font-size:13px;table-layout:auto;">
         <thead>
             <tr style="background:#1d2327;">
-                <?php foreach ($columns as $ci => $col): ?>
-                <th style="padding:8px 10px;color:#f0f0f1;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;"><?php echo esc_html($col); ?></th>
+                <?php foreach ($flosc_columns as $flosc_ci => $flosc_col): ?>
+                <th style="padding:8px 10px;color:#f0f0f1;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;"><?php echo esc_html($flosc_col); ?></th>
                 <?php endforeach; ?>
                 <th style="padding:8px 10px;width:36px;"></th>
             </tr>
         </thead>
         <tbody id="da1-tbody">
-        <?php foreach ($rows as $ri => $row): ?>
+        <?php foreach ($flosc_rows as $flosc_ri => $flosc_row): ?>
             <tr class="da1-row" style="border-bottom:1px solid #e0e0e0;">
-                <?php foreach ($columns as $ci => $col):
-                    $val      = stripslashes($row[$ci] ?? '');
-                    $is_multi = in_array($ci, $multiline_idx);
-                    $name     = 'da1_rows[' . $ri . '][' . $ci . ']';
-                    $base   = 'width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,0.05);border-radius:2px;padding:4px 6px;font-size:13px;font-family:inherit;color:#1d2327;';
-                    $focus  = "this.style.borderColor='#2271b1';this.closest('tr').style.background='#f0f6fc';";
-                    $blur   = "this.style.borderColor='rgba(0,0,0,0.05)';this.closest('tr').style.background='';";
+                <?php foreach ($flosc_columns as $flosc_ci => $flosc_col):
+                    $flosc_val      = stripslashes($flosc_row[$flosc_ci] ?? '');
+                    $flosc_is_multi = in_array($flosc_ci, $flosc_multiline_idx);
+                    $flosc_name     = 'da1_rows[' . $flosc_ri . '][' . $flosc_ci . ']';
+                    $flosc_base   = 'width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,0.05);border-radius:2px;padding:4px 6px;font-size:13px;font-family:inherit;color:#1d2327;';
+                    $flosc_focus  = "this.style.borderColor='#2271b1';this.closest('tr').style.background='#f0f6fc';";
+                    $flosc_blur   = "this.style.borderColor='rgba(0,0,0,0.05)';this.closest('tr').style.background='';";
                 ?>
                 <td style="padding:3px 5px;vertical-align:top;">
-                    <?php if ($is_multi): ?>
-                        <textarea name="<?php echo esc_attr( $name ); ?>" rows="3"
-                            <?php if (preg_match('/media|video/i', $col)) echo 'class="da1-media"'; ?>
-                            style="<?php echo esc_attr( $base ); ?>line-height:1.45;"
-                            onfocus="<?php echo esc_attr( $focus ); ?>"
-                            onblur="<?php echo esc_attr( $blur ); ?>"
-                        ><?php echo esc_textarea($val); ?></textarea>
+                    <?php if ($flosc_is_multi): ?>
+                        <textarea name="<?php echo esc_attr( $flosc_name ); ?>" rows="3"
+                            <?php if (preg_match('/media|video/i', $flosc_col)) echo 'class="da1-media"'; ?>
+                            style="<?php echo esc_attr( $flosc_base ); ?>line-height:1.45;"
+                            onfocus="<?php echo esc_attr( $flosc_focus ); ?>"
+                            onblur="<?php echo esc_attr( $flosc_blur ); ?>"
+                        ><?php echo esc_textarea($flosc_val); ?></textarea>
                     <?php else: ?>
-                        <input type="text" name="<?php echo esc_attr( $name ); ?>" value="<?php echo esc_attr($val); ?>"
-                            style="<?php echo esc_attr( $base ); ?>"
-                            onfocus="<?php echo esc_attr( $focus ); ?>"
-                            onblur="<?php echo esc_attr( $blur ); ?>"
+                        <input type="text" name="<?php echo esc_attr( $flosc_name ); ?>" value="<?php echo esc_attr($flosc_val); ?>"
+                            style="<?php echo esc_attr( $flosc_base ); ?>"
+                            onfocus="<?php echo esc_attr( $flosc_focus ); ?>"
+                            onblur="<?php echo esc_attr( $flosc_blur ); ?>"
                         >
                     <?php endif; ?>
                 </td>
@@ -259,8 +259,8 @@ $total = count($rows);
 
 <?php ob_start(); ?>
 (function () {
-    var NCOLS     = <?php echo (int) $ncols; ?>;
-    var MULTILINE = <?php echo json_encode(array_values($multiline_idx)); ?>;
+    var NCOLS     = <?php echo (int) $flosc_ncols; ?>;
+    var MULTILINE = <?php echo json_encode(array_values($flosc_multiline_idx)); ?>;
     var base      = 'width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,0.05);border-radius:2px;padding:4px 6px;font-size:13px;font-family:inherit;color:#1d2327;';
     var focusIn   = "this.style.borderColor='#2271b1';this.closest('tr').style.background='#f0f6fc';";
     var focusOut  = "this.style.borderColor='rgba(0,0,0,0.05)';this.closest('tr').style.background='';";
@@ -317,7 +317,7 @@ $total = count($rows);
     }
 
     /* ---- modal ---- */
-    var COLUMNS   = <?php echo json_encode(array_values($columns)); ?>;
+    var COLUMNS   = <?php echo json_encode(array_values($flosc_columns)); ?>;
     var overlay   = document.getElementById('da1-modal-overlay');
     var modalBody = document.getElementById('da1-modal-body');
     var modalTitle= document.getElementById('da1-modal-title');

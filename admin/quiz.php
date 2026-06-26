@@ -12,23 +12,23 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 flosc_tab_header( '❓', 'Quiz' );
 
-$flow_settings   = $GLOBALS['flosc_current_settings'] ?? [];
-$current_ivr     = $GLOBALS['flosc_current_ivr'] ?? '';
-$quiz_docs_url = add_query_arg([
+$flosc_flow_settings   = $GLOBALS['flosc_current_settings'] ?? [];
+$flosc_current_ivr     = $GLOBALS['flosc_current_ivr'] ?? '';
+$flosc_quiz_docs_url = add_query_arg([
     'page' => 'flosc-settings',
-    'ivr'  => $current_ivr,
+    'ivr'  => $flosc_current_ivr,
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-quiz';
-$enabled_quizzes = $flow_settings['enabled_quizzes'] ?? ['flosc_sample_data_numbers_quiz'];
-if ( ! is_array( $enabled_quizzes ) ) $enabled_quizzes = ['flosc_sample_data_numbers_quiz'];
-$all_quiz_types  = FLOSC_Quiz_Registry::get_all_quizzes();
+$flosc_enabled_quizzes = $flosc_flow_settings['enabled_quizzes'] ?? ['flosc_sample_data_numbers_quiz'];
+if ( ! is_array( $flosc_enabled_quizzes ) ) $flosc_enabled_quizzes = ['flosc_sample_data_numbers_quiz'];
+$flosc_all_quiz_types  = FLOSC_Quiz_Registry::get_all_quizzes();
 
 echo '<div style="margin:-8px 0 14px; text-align:right;">'
-   . '<a href="' . esc_url($quiz_docs_url) . '" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>'
+   . '<a href="' . esc_url($flosc_quiz_docs_url) . '" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>'
    . '</div>';
 
-if ( empty( $all_quiz_types ) ) {
+if ( empty( $flosc_all_quiz_types ) ) {
     echo '<div class="notice notice-error"><p>No quiz types registered. Please reinstall FLOSC.</p></div>';
     return;
 }
@@ -36,7 +36,7 @@ if ( empty( $all_quiz_types ) ) {
 // ── Demo library ──────────────────────────────────────────────────────────────
 // Each entry: [ 'name', 'desc', 'content' ]
 // Content format must match the quiz type's own get_instructions() format.
-$quiz_demos = [
+$flosc_quiz_demos = [
 
     // ── LeSAEp Pronunciation (Q+options block format) ──────────────────────
     'pronunciation_assessment_quiz' => [
@@ -395,64 +395,64 @@ DEMO,
 
     <?php
     // Split quiz types: ready (functional) vs coming soon (needs STT/microphone)
-    $ready_quizzes  = [];
-    $coming_quizzes = [];
-    foreach ( $all_quiz_types as $qid => $qt ) {
-        if ( method_exists( $qt, 'needs_stt' ) && $qt->needs_stt() ) {
-            $coming_quizzes[ $qid ] = $qt;
+    $flosc_ready_quizzes  = [];
+    $flosc_coming_quizzes = [];
+    foreach ( $flosc_all_quiz_types as $flosc_qid => $flosc_qt ) {
+        if ( method_exists( $flosc_qt, 'needs_stt' ) && $flosc_qt->needs_stt() ) {
+            $flosc_coming_quizzes[ $flosc_qid ] = $flosc_qt;
         } else {
-            $ready_quizzes[ $qid ] = $qt;
+            $flosc_ready_quizzes[ $flosc_qid ] = $flosc_qt;
         }
     }
-    $active_quiz_types = array_filter( $enabled_quizzes, fn( $qid ) => isset( $ready_quizzes[ $qid ] ) );
+    $flosc_active_quiz_types = array_filter( $flosc_enabled_quizzes, fn( $flosc_qid ) => isset( $flosc_ready_quizzes[ $flosc_qid ] ) );
     ?>
 
     <!-- ── Audio Quiz Messages — configurable chatbot responses ─────────── -->
     <h3>💬 Audio Quiz Messages
         <?php
-        $helplink_url = add_query_arg([
+        $flosc_helplink_url = add_query_arg([
             'page' => 'flosc-settings',
             'ivr'  => isset($selected_ivr) ? $selected_ivr : '',
             'tab'  => 'documentation',
             'doc'  => 'ref-audio-quiz-flow',
         ], admin_url('admin.php'));
         ?>
-        <a href="<?php echo esc_url($helplink_url); ?>" style="font-size: 12px; font-weight: normal; margin-left: 8px; text-decoration: none;" title="Full documentation for the Audio Quiz Flow">📖 Help</a>
+        <a href="<?php echo esc_url($flosc_helplink_url); ?>" style="font-size: 12px; font-weight: normal; margin-left: 8px; text-decoration: none;" title="Full documentation for the Audio Quiz Flow">📖 Help</a>
     </h3>
     <p class="description">These messages appear in the chatbot during and after the audio pronunciation quiz. Placeholders: <code>{current}</code> = phrase number, <code>{total}</code> = total phrases.</p>
     <table class="form-table" style="margin:0 0 24px;">
         <tr>
             <th scope="row" style="width:200px;"><label for="flow_audio_quiz_phrase_complete_message">Phrase Complete</label></th>
             <td>
-                <input type="text" id="flow_audio_quiz_phrase_complete_message" name="flow_audio_quiz_phrase_complete_message" class="large-text" value="<?php echo esc_attr( $flow_settings['audio_quiz_phrase_complete_message'] ?? 'Thank you. {current} of {total} recorded.' ); ?>">
+                <input type="text" id="flow_audio_quiz_phrase_complete_message" name="flow_audio_quiz_phrase_complete_message" class="large-text" value="<?php echo esc_attr( $flosc_flow_settings['audio_quiz_phrase_complete_message'] ?? 'Thank you. {current} of {total} recorded.' ); ?>">
                 <p class="description">Shown after each phrase is recorded.</p>
             </td>
         </tr>
         <tr>
             <th scope="row"><label for="flow_audio_quiz_complete_message">Quiz Complete (Visitors)</label></th>
             <td>
-                <input type="text" id="flow_audio_quiz_complete_message" name="flow_audio_quiz_complete_message" class="large-text" value="<?php echo esc_attr( $flow_settings['audio_quiz_complete_message'] ?? 'Pronunciation assessment complete! All {total} phrases recorded and analyzed. Sign up to see your results.' ); ?>">
+                <input type="text" id="flow_audio_quiz_complete_message" name="flow_audio_quiz_complete_message" class="large-text" value="<?php echo esc_attr( $flosc_flow_settings['audio_quiz_complete_message'] ?? 'Pronunciation assessment complete! All {total} phrases recorded and analyzed. Sign up to see your results.' ); ?>">
                 <p class="description">Shown to visitors after all phrases are done.</p>
             </td>
         </tr>
         <tr>
             <th scope="row"><label for="flow_audio_quiz_results_message">Results Intro</label></th>
             <td>
-                <input type="text" id="flow_audio_quiz_results_message" name="flow_audio_quiz_results_message" class="large-text" value="<?php echo esc_attr( $flow_settings['audio_quiz_results_message'] ?? 'Welcome! Here are your pronunciation assessment results.' ); ?>">
+                <input type="text" id="flow_audio_quiz_results_message" name="flow_audio_quiz_results_message" class="large-text" value="<?php echo esc_attr( $flosc_flow_settings['audio_quiz_results_message'] ?? 'Welcome! Here are your pronunciation assessment results.' ); ?>">
                 <p class="description">Shown after login, before the detailed results.</p>
             </td>
         </tr>
         <tr>
             <th scope="row"><label for="flow_audio_quiz_upsell_message">Upsell Message</label></th>
             <td>
-                <input type="text" id="flow_audio_quiz_upsell_message" name="flow_audio_quiz_upsell_message" class="large-text" value="<?php echo esc_attr( $flow_settings['audio_quiz_upsell_message'] ?? 'Our accent analysis shows you would benefit from lessons on {1st}, {2nd}, and {4th}. Upgrade today for full access to all lessons.' ); ?>">
+                <input type="text" id="flow_audio_quiz_upsell_message" name="flow_audio_quiz_upsell_message" class="large-text" value="<?php echo esc_attr( $flosc_flow_settings['audio_quiz_upsell_message'] ?? 'Our accent analysis shows you would benefit from lessons on {1st}, {2nd}, and {4th}. Upgrade today for full access to all lessons.' ); ?>">
                 <p class="description">Shown after login results. Placeholders: <code>{1st}</code>, <code>{2nd}</code>, <code>{3rd}</code>, <code>{4th}</code> = worst phoneme names (by rank).</p>
             </td>
         </tr>
         <tr>
             <th scope="row"><label for="flow_audio_quiz_phoneme_lesson_map">Phoneme → Lesson Map</label></th>
             <td>
-                <textarea id="flow_audio_quiz_phoneme_lesson_map" name="flow_audio_quiz_phoneme_lesson_map" class="large-text" rows="6"><?php echo esc_textarea( $flow_settings['audio_quiz_phoneme_lesson_map'] ?? '{}' ); ?></textarea>
+                <textarea id="flow_audio_quiz_phoneme_lesson_map" name="flow_audio_quiz_phoneme_lesson_map" class="large-text" rows="6"><?php echo esc_textarea( $flosc_flow_settings['audio_quiz_phoneme_lesson_map'] ?? '{}' ); ?></textarea>
                 <p class="description">JSON object mapping IPA phoneme symbols (as returned by the pronunciation API) to lesson numbers. Example: <code>{"æ": 1, "θ": 35, "ð": 36}</code></p>
             </td>
         </tr>
@@ -460,18 +460,18 @@ DEMO,
 
     <!-- ── Active Quizzes — summary of what is live in the funnel ────────── -->
     <h3>✅ Active Quizzes</h3>
-    <?php if ( empty( $active_quiz_types ) ): ?>
+    <?php if ( empty( $flosc_active_quiz_types ) ): ?>
     <p style="color:#996633;background:#fff8e1;border:1px solid #f0ad4e;border-radius:4px;padding:8px 12px;display:inline-block;">
         No quizzes are currently active. Enable one in the Quiz Deck below.
     </p>
     <?php else: ?>
     <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
-        <?php foreach ( $active_quiz_types as $qid ):
-            $qt = $ready_quizzes[ $qid ] ?? null;
-            if ( ! $qt ) continue;
+        <?php foreach ( $flosc_active_quiz_types as $flosc_qid ):
+            $flosc_qt = $flosc_ready_quizzes[ $flosc_qid ] ?? null;
+            if ( ! $flosc_qt ) continue;
         ?>
         <span style="display:inline-flex;align-items:center;gap:6px;background:#d4edda;border:1px solid #c3e6cb;border-radius:20px;padding:4px 12px;font-size:13px;font-weight:600;color:#155724;">
-            ✅ <?php echo esc_html( $qt->get_icon() . ' ' . $qt->get_name() ); ?>
+            ✅ <?php echo esc_html( $flosc_qt->get_icon() . ' ' . $flosc_qt->get_name() ); ?>
         </span>
         <?php endforeach; ?>
     </div>
@@ -483,34 +483,34 @@ DEMO,
     <p>Your library of available quizzes. Enable a quiz to make it Active. Load a demo below to populate the question editor.</p>
 
     <div class="flosc-quiz-grid">
-    <?php foreach ( $ready_quizzes as $quiz_id => $qt ):
-        $is_enabled = in_array( $quiz_id, $enabled_quizzes );
-        $content    = ! empty( $flow_settings[ 'quiz_content_' . $quiz_id ] )
-                        ? $flow_settings[ 'quiz_content_' . $quiz_id ]
-                        : $qt->get_default_content();
-        $ta_id      = 'flosc_quiz_editor_' . esc_attr( $quiz_id );
-        $det_id     = 'flosc_quiz_details_' . esc_attr( $quiz_id );
+    <?php foreach ( $flosc_ready_quizzes as $flosc_quiz_id => $flosc_qt ):
+        $flosc_is_enabled = in_array( $flosc_quiz_id, $flosc_enabled_quizzes );
+        $flosc_content    = ! empty( $flosc_flow_settings[ 'quiz_content_' . $flosc_quiz_id ] )
+                        ? $flosc_flow_settings[ 'quiz_content_' . $flosc_quiz_id ]
+                        : $flosc_qt->get_default_content();
+        $flosc_ta_id      = 'flosc_quiz_editor_' . esc_attr( $flosc_quiz_id );
+        $flosc_det_id     = 'flosc_quiz_details_' . esc_attr( $flosc_quiz_id );
     ?>
-        <div class="flosc-quiz-card <?php echo esc_attr($is_enabled ? 'active' : ''); ?>">
+        <div class="flosc-quiz-card <?php echo esc_attr($flosc_is_enabled ? 'active' : ''); ?>">
             <h4>
-                <span class="icon"><?php echo esc_html( $qt->get_icon() ); ?></span>
-                <?php echo esc_html( $qt->get_name() ); ?>
+                <span class="icon"><?php echo esc_html( $flosc_qt->get_icon() ); ?></span>
+                <?php echo esc_html( $flosc_qt->get_name() ); ?>
                 <span class="badge native">NATIVE</span>
-                <?php if ( $is_enabled ): ?>
+                <?php if ( $flosc_is_enabled ): ?>
                 <span class="badge" style="background:#d4edda;color:#155724;margin-left:4px;">✅ Active</span>
                 <?php endif; ?>
             </h4>
-            <p class="desc"><?php echo esc_html( $qt->get_description() ); ?></p>
+            <p class="desc"><?php echo esc_html( $flosc_qt->get_description() ); ?></p>
 
             <div class="flosc-quiz-toggle">
                 <input type="checkbox"
                        name="flow_enabled_quizzes[]"
-                       value="<?php echo esc_attr( $quiz_id ); ?>"
-                       <?php checked( $is_enabled ); ?>>
+                       value="<?php echo esc_attr( $flosc_quiz_id ); ?>"
+                       <?php checked( $flosc_is_enabled ); ?>>
                 <label>Enable (make Active)</label>
             </div>
 
-            <details id="<?php echo esc_attr($det_id); ?>" style="margin-top:12px;">
+            <details id="<?php echo esc_attr($flosc_det_id); ?>" style="margin-top:12px;">
                 <summary style="cursor:pointer;color:#0073aa;font-size:12px;font-weight:600;list-style:none;display:flex;align-items:center;gap:4px;">
                     ✏️ Edit Quiz
                 </summary>
@@ -518,20 +518,20 @@ DEMO,
 
                     <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#50575e;margin:0 0 6px;">Questions, Correct Answers &amp; WordPress Topic Links</p>
                     <textarea
-                        id="<?php echo esc_attr($ta_id); ?>"
-                        name="flow_quiz_content_<?php echo esc_attr( $quiz_id ); ?>"
+                        id="<?php echo esc_attr($flosc_ta_id); ?>"
+                        name="flow_quiz_content_<?php echo esc_attr( $flosc_quiz_id ); ?>"
                         rows="14"
                         class="large-text code"
                         style="font-size:12px;"
-                        placeholder="<?php echo esc_attr( $qt->get_default_content() ); ?>"
-                    ><?php echo esc_textarea( $content ); ?></textarea>
+                        placeholder="<?php echo esc_attr( $flosc_qt->get_default_content() ); ?>"
+                    ><?php echo esc_textarea( $flosc_content ); ?></textarea>
                     <p class="description" style="margin-top:6px;">
-                        <strong>Format:</strong> <?php echo esc_html( $qt->get_instructions() ); ?>
+                        <strong>Format:</strong> <?php echo esc_html( $flosc_qt->get_instructions() ); ?>
                     </p>
 
                     <?php
-                    $templates = $qt->get_default_response_templates();
-                    if ( ! empty( $templates ) ):
+                    $flosc_templates = $flosc_qt->get_default_response_templates();
+                    if ( ! empty( $flosc_templates ) ):
                     ?>
                     <div style="margin-top:16px;border-top:1px solid #e0e0e0;padding-top:12px;">
                         <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#50575e;margin:0 0 6px;">Score Feedback Templates</p>
@@ -540,22 +540,22 @@ DEMO,
                             Placeholders: <code>{score}</code> <code>{total_correct}</code> <code>{total_possible}</code> <code>{lesson_recommendations}</code>
                         </p>
                         <table class="form-table" style="margin:0;">
-                        <?php foreach ( $templates as $range => $default ):
-                            $key   = 'quiz_' . $quiz_id . '_template_' . $range;
-                            $value = ! empty( $flow_settings[ $key ] ) ? $flow_settings[ $key ] : $default;
+                        <?php foreach ( $flosc_templates as $flosc_range => $flosc_default ):
+                            $flosc_key   = 'quiz_' . $flosc_quiz_id . '_template_' . $flosc_range;
+                            $flosc_value = ! empty( $flosc_flow_settings[ $flosc_key ] ) ? $flosc_flow_settings[ $flosc_key ] : $flosc_default;
                         ?>
                         <tr>
                             <th scope="row" style="width:100px;padding:4px 10px 4px 0;font-size:12px;">
-                                <label for="<?php echo esc_attr( 'flow_' . $key ); ?>"><?php echo esc_html( $range ); ?>%</label>
+                                <label for="<?php echo esc_attr( 'flow_' . $flosc_key ); ?>"><?php echo esc_html( $flosc_range ); ?>%</label>
                             </th>
                             <td style="padding:4px 0;">
                                 <textarea
-                                    id="<?php echo esc_attr( 'flow_' . $key ); ?>"
-                                    name="flow_<?php echo esc_attr( $key ); ?>"
+                                    id="<?php echo esc_attr( 'flow_' . $flosc_key ); ?>"
+                                    name="flow_<?php echo esc_attr( $flosc_key ); ?>"
                                     rows="2"
                                     class="large-text"
                                     style="font-size:12px;"
-                                ><?php echo esc_textarea( $value ); ?></textarea>
+                                ><?php echo esc_textarea( $flosc_value ); ?></textarea>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -567,40 +567,40 @@ DEMO,
         </div>
     <?php endforeach; ?>
 
-    <?php foreach ( $coming_quizzes as $quiz_id => $qt ):
-        $content = ! empty( $flow_settings[ 'quiz_content_' . $quiz_id ] )
-                    ? $flow_settings[ 'quiz_content_' . $quiz_id ]
-                    : $qt->get_default_content();
-        $ta_id   = 'flosc_quiz_editor_' . esc_attr( $quiz_id );
-        $det_id  = 'flosc_quiz_details_' . esc_attr( $quiz_id );
+    <?php foreach ( $flosc_coming_quizzes as $flosc_quiz_id => $flosc_qt ):
+        $flosc_content = ! empty( $flosc_flow_settings[ 'quiz_content_' . $flosc_quiz_id ] )
+                    ? $flosc_flow_settings[ 'quiz_content_' . $flosc_quiz_id ]
+                    : $flosc_qt->get_default_content();
+        $flosc_ta_id   = 'flosc_quiz_editor_' . esc_attr( $flosc_quiz_id );
+        $flosc_det_id  = 'flosc_quiz_details_' . esc_attr( $flosc_quiz_id );
     ?>
         <div class="flosc-quiz-card" style="opacity:0.7;border-style:dashed;">
             <h4>
-                <span class="icon"><?php echo esc_html( $qt->get_icon() ); ?></span>
-                <?php echo esc_html( $qt->get_name() ); ?>
+                <span class="icon"><?php echo esc_html( $flosc_qt->get_icon() ); ?></span>
+                <?php echo esc_html( $flosc_qt->get_name() ); ?>
                 <span class="badge native">NATIVE</span>
             </h4>
-            <p class="desc"><?php echo esc_html( $qt->get_description() ); ?></p>
+            <p class="desc"><?php echo esc_html( $flosc_qt->get_description() ); ?></p>
             <p style="font-size:12px;color:#996633;background:#fff8e1;border:1px solid #f0ad4e;border-radius:4px;padding:6px 10px;margin:8px 0 0;">
                 🎤 Requires microphone + speech-to-text — not yet functional.
             </p>
 
-            <details id="<?php echo esc_attr($det_id); ?>" style="margin-top:12px;">
+            <details id="<?php echo esc_attr($flosc_det_id); ?>" style="margin-top:12px;">
                 <summary style="cursor:pointer;color:#6c757d;font-size:12px;font-weight:600;list-style:none;display:flex;align-items:center;gap:4px;">
                     ✏️ Edit Quiz
                 </summary>
                 <div style="margin-top:8px;">
                     <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#50575e;margin:0 0 6px;">Questions, Correct Answers &amp; WordPress Topic Links</p>
                     <textarea
-                        id="<?php echo esc_attr($ta_id); ?>"
-                        name="flow_quiz_content_<?php echo esc_attr( $quiz_id ); ?>"
+                        id="<?php echo esc_attr($flosc_ta_id); ?>"
+                        name="flow_quiz_content_<?php echo esc_attr( $flosc_quiz_id ); ?>"
                         rows="8"
                         class="large-text code"
                         style="font-size:12px;"
                         readonly
-                    ><?php echo esc_textarea( $content ); ?></textarea>
+                    ><?php echo esc_textarea( $flosc_content ); ?></textarea>
                     <p class="description" style="margin-top:6px;">
-                        <strong>Format:</strong> <?php echo esc_html( $qt->get_instructions() ); ?>
+                        <strong>Format:</strong> <?php echo esc_html( $flosc_qt->get_instructions() ); ?>
                     </p>
                 </div>
             </details>
@@ -618,33 +618,33 @@ DEMO,
                 Click <strong>Load →</strong> to fill that quiz's editor with demo content. Then enable the quiz above, customize as needed, and save.
             </p>
 
-            <?php foreach ( $quiz_demos as $quiz_id => $demos ):
-                $qt = FLOSC_Quiz_Registry::get_quiz( $quiz_id );
-                if ( ! $qt ) continue;
-                $ta_id  = 'flosc_quiz_editor_' . esc_attr( $quiz_id );
-                $det_id = 'flosc_quiz_details_' . esc_attr( $quiz_id );
+            <?php foreach ( $flosc_quiz_demos as $flosc_quiz_id => $flosc_demos ):
+                $flosc_qt = FLOSC_Quiz_Registry::get_quiz( $flosc_quiz_id );
+                if ( ! $flosc_qt ) continue;
+                $flosc_ta_id  = 'flosc_quiz_editor_' . esc_attr( $flosc_quiz_id );
+                $flosc_det_id = 'flosc_quiz_details_' . esc_attr( $flosc_quiz_id );
             ?>
             <h4 style="margin:20px 0 10px;font-size:13px;color:#1d2327;border-bottom:1px solid #e0e0e0;padding-bottom:6px;">
-                <?php echo esc_html( $qt->get_icon() . ' ' . $qt->get_name() ); ?>
+                <?php echo esc_html( $flosc_qt->get_icon() . ' ' . $flosc_qt->get_name() ); ?>
             </h4>
             <div style="display:flex;flex-direction:column;gap:8px;">
-                <?php foreach ( $demos as $i => $demo ): ?>
+                <?php foreach ( $flosc_demos as $flosc_i => $flosc_demo ): ?>
                 <div style="background:#fff;border:1px solid #ddd;border-radius:5px;padding:12px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
                     <div style="flex:1;">
-                        <strong style="font-size:13px;"><?php echo esc_html( $demo['name'] ); ?></strong>
-                        <span style="display:block;font-size:12px;color:#50575e;margin-top:2px;"><?php echo esc_html( $demo['desc'] ); ?></span>
+                        <strong style="font-size:13px;"><?php echo esc_html( $flosc_demo['name'] ); ?></strong>
+                        <span style="display:block;font-size:12px;color:#50575e;margin-top:2px;"><?php echo esc_html( $flosc_demo['desc'] ); ?></span>
                     </div>
                     <textarea
-                        id="flosc_demo_<?php echo esc_attr( $quiz_id ); ?>_<?php echo esc_attr((string) $i); ?>"
+                        id="flosc_demo_<?php echo esc_attr( $flosc_quiz_id ); ?>_<?php echo esc_attr((string) $flosc_i); ?>"
                         style="display:none;"
                         readonly
-                    ><?php echo esc_textarea( $demo['content'] ); ?></textarea>
+                    ><?php echo esc_textarea( $flosc_demo['content'] ); ?></textarea>
                     <button
                         type="button"
                         class="button button-small flosc-load-demo"
-                        data-textarea="<?php echo esc_attr( $ta_id ); ?>"
-                        data-details="<?php echo esc_attr( $det_id ); ?>"
-                        data-source="flosc_demo_<?php echo esc_attr( $quiz_id ); ?>_<?php echo esc_attr((string) $i); ?>"
+                        data-textarea="<?php echo esc_attr( $flosc_ta_id ); ?>"
+                        data-details="<?php echo esc_attr( $flosc_det_id ); ?>"
+                        data-source="flosc_demo_<?php echo esc_attr( $flosc_quiz_id ); ?>_<?php echo esc_attr((string) $flosc_i); ?>"
                         style="flex-shrink:0;white-space:nowrap;"
                     >Load →</button>
                 </div>

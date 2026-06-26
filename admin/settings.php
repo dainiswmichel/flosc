@@ -24,9 +24,9 @@ if (!defined('ABSPATH')) exit;
  */
 if (!function_exists('flosc_tab_header')) {
     function flosc_tab_header($emoji, $tab_name) {
-        $ivr_file = $GLOBALS['flosc_current_ivr'] ?? '';
-        $settings = $GLOBALS['flosc_current_settings'] ?? [];
-        $flow_name = $settings['identity']['name'] ?? ucwords(str_replace(['_', '-', '.md'], [' ', ' ', ''], $ivr_file));
+        $flosc_ivr_file = $GLOBALS['flosc_current_ivr'] ?? '';
+        $flosc_settings = $GLOBALS['flosc_current_settings'] ?? [];
+        $flow_name = $flosc_settings['identity']['name'] ?? ucwords(str_replace(['_', '-', '.md'], [' ', ' ', ''], $flosc_ivr_file));
         
         echo '<div class="flosc-tab-header" style="background: #f0f0f1; border: 1px solid #c3c4c7; padding: 12px 18px; border-radius: 2px; margin-bottom: 20px;">';
         echo '<h2 style="margin: 0; color: #1d2327; font-size: 16px;">';
@@ -34,7 +34,7 @@ if (!function_exists('flosc_tab_header')) {
         echo '</h2>';
         echo '<p style="margin: 5px 0 0; color: #50575e; font-size: 13px;">';
         echo 'Flow: <strong>' . esc_html($flow_name) . '</strong> ';
-        echo '<code style="background: #e0e0e0; padding: 2px 8px; border-radius: 2px; color: #1d2327;">(' . esc_html($ivr_file) . ')</code>';
+        echo '<code style="background: #e0e0e0; padding: 2px 8px; border-radius: 2px; color: #1d2327;">(' . esc_html($flosc_ivr_file) . ')</code>';
         echo '</p>';
         echo '</div>';
     }
@@ -148,15 +148,15 @@ if (!function_exists('flosc_permalink_status_indicator')) {
  * Resolve the canonical flow option key for a given IVR file.
  * Prevents duplicate flow option construction for the same file.
  *
- * @param string $ivr_filename
+ * @param string $flosc_ivr_filename
  * @return string
  */
 if (!function_exists('flosc_resolve_flow_option_key_for_ivr')) {
-    function flosc_resolve_flow_option_key_for_ivr($ivr_filename) {
+    function flosc_resolve_flow_option_key_for_ivr($flosc_ivr_filename) {
         global $wpdb;
 
-        $ivr_filename = basename((string) $ivr_filename);
-        $target_stem = sanitize_key(pathinfo($ivr_filename, PATHINFO_FILENAME));
+        $flosc_ivr_filename = basename((string) $flosc_ivr_filename);
+        $target_stem = sanitize_key(pathinfo($flosc_ivr_filename, PATHINFO_FILENAME));
         $default_key = 'flosc_flow_' . $target_stem;
 
         // Start with deterministic default key and score it conservatively.
@@ -165,29 +165,29 @@ if (!function_exists('flosc_resolve_flow_option_key_for_ivr')) {
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only scan of plugin flow options for deterministic key resolution
-        $rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only scan of plugin flow options for deterministic key resolution
+        $flosc_rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only scan of plugin flow options for deterministic key resolution
             "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE 'flosc_flow_%'"
         );
 
-        if (!is_array($rows)) {
+        if (!is_array($flosc_rows)) {
             return $default_key;
         }
 
-        foreach ($rows as $row) {
+        foreach ($flosc_rows as $flosc_row) {
             $option_name = (string) ($row->option_name ?? '');
             if ($option_name === '') {
                 continue;
             }
 
-            $settings = maybe_unserialize($row->option_value ?? null);
-            if (!is_array($settings)) {
+            $flosc_settings = maybe_unserialize($row->option_value ?? null);
+            if (!is_array($flosc_settings)) {
                 continue;
             }
 
-            $active = basename((string) ($settings['active_ivr_file'] ?? ''));
-            $primary = basename((string) ($settings['ivr_file'] ?? ''));
-            $matches_active = ($active !== '' && $active === $ivr_filename);
-            $matches_primary = ($primary !== '' && $primary === $ivr_filename);
+            $active = basename((string) ($flosc_settings['active_ivr_file'] ?? ''));
+            $primary = basename((string) ($flosc_settings['ivr_file'] ?? ''));
+            $matches_active = ($active !== '' && $active === $flosc_ivr_filename);
+            $matches_primary = ($primary !== '' && $primary === $flosc_ivr_filename);
 
             // Only consider keys that are explicitly tied to this IVR filename.
             if (!$matches_active && !$matches_primary && $option_name !== $default_key) {
@@ -195,8 +195,8 @@ if (!function_exists('flosc_resolve_flow_option_key_for_ivr')) {
             }
 
             $message_count = 0;
-            if (isset($settings['ivr_messages']) && is_array($settings['ivr_messages'])) {
-                $message_count = count($settings['ivr_messages']);
+            if (isset($flosc_settings['ivr_messages']) && is_array($flosc_settings['ivr_messages'])) {
+                $message_count = count($flosc_settings['ivr_messages']);
             }
 
             $score = 0;
@@ -246,70 +246,70 @@ if (!function_exists('flosc_known_flow_option_keys')) {
 
 // Get available IVR files
 // §2: union shipped defaults with uploaded/edited IVR files (uploads wins).
-$ivr_files = [];
-$files = flosc_config_glob(['*_ivr.md', 'ivr*.md']);
-sort($files);
-if (!empty($files)) {
-    foreach ($files as $file) {
-        $filename = basename($file);
-        if (strpos($filename, 'backup') === false) {
-            $ivr_files[] = $filename;
+$flosc_ivr_files = [];
+$flosc_files = flosc_config_glob(['*_ivr.md', 'ivr*.md']);
+sort($flosc_files);
+if (!empty($flosc_files)) {
+    foreach ($flosc_files as $flosc_file) {
+        $flosc_filename = basename($flosc_file);
+        if (strpos($flosc_filename, 'backup') === false) {
+            $flosc_ivr_files[] = $flosc_filename;
         }
     }
 }
 // De-dupe: the glob unions the uploads copy with the shipped plugin defaults,
 // so the same flow file can appear twice. Keep one entry per filename.
-$ivr_files = array_values( array_unique( $ivr_files ) );
+$flosc_ivr_files = array_values( array_unique( $flosc_ivr_files ) );
 
-// Read request vars early. The flow selector below reads $get['ivr'] to know
+// Read request vars early. The flow selector below reads $flosc_get['ivr'] to know
 // which flow is selected. ($get was previously first defined further down — after
-// this point — so the selector always fell back to $ivr_files[0] and ignored the URL.)
-$get = wp_unslash( $_GET );
+// this point — so the selector always fell back to $flosc_ivr_files[0] and ignored the URL.)
+$flosc_get = wp_unslash( $_GET );
 
 // Selected IVR file (flow)
-$selected_ivr = isset($get['ivr']) ? sanitize_file_name($get['ivr']) : '';
-if (empty($selected_ivr) && !empty($ivr_files)) {
-    $selected_ivr = $ivr_files[0];
+$flosc_selected_ivr = isset($flosc_get['ivr']) ? sanitize_file_name($flosc_get['ivr']) : '';
+if (empty($flosc_selected_ivr) && !empty($flosc_ivr_files)) {
+    $flosc_selected_ivr = $flosc_ivr_files[0];
 }
 
 // Settings key for this flow
-$settings_key = flosc_resolve_flow_option_key_for_ivr($selected_ivr);
+$flosc_settings_key = flosc_resolve_flow_option_key_for_ivr($flosc_selected_ivr);
 
 // Load settings for this flow
-$flow_settings = get_option($settings_key, []);
+$flosc_flow_settings = get_option($flosc_settings_key, []);
 
 // Set defaults if empty AND save them (v1.3.0 fix)
-if (empty($flow_settings)) {
+if (empty($flosc_flow_settings)) {
     // v1.3.5: Preserve underscores in default slug (don't use sanitize_title which converts to hyphens)
-    $default_slug = strtolower(preg_replace('/[^a-z0-9_-]/i', '', pathinfo($selected_ivr, PATHINFO_FILENAME)));
-    $flow_settings = [
-        'name' => ucwords(str_replace(['_', '-', 'ivr', '.md'], [' ', ' ', '', ''], $selected_ivr)),
+    $flosc_default_slug = strtolower(preg_replace('/[^a-z0-9_-]/i', '', pathinfo($flosc_selected_ivr, PATHINFO_FILENAME)));
+    $flosc_flow_settings = [
+        'name' => ucwords(str_replace(['_', '-', 'ivr', '.md'], [' ', ' ', '', ''], $flosc_selected_ivr)),
         'title' => '',
         'tagline' => '',
-        'slug' => $default_slug,
+        'slug' => $flosc_default_slug,
         'primary_color' => '#4f46e5',
         'status' => 'active',
     ];
     // v1.3.0: Save defaults so rewrite rules can find them
-    update_option($settings_key, $flow_settings);
+    update_option($flosc_settings_key, $flosc_flow_settings);
 }
 
-$get = wp_unslash($_GET);
-$post = wp_unslash($_POST);
-$active_tab = isset($get['tab']) ? sanitize_text_field($get['tab']) : 'identity';
-$identity_view = isset($get['view']) ? sanitize_text_field($get['view']) : 'single';
-if (!in_array($identity_view, ['single', 'all'], true)) {
-    $identity_view = 'single';
+$flosc_get = wp_unslash($_GET);
+$flosc_post = wp_unslash($_POST);
+$flosc_active_tab = isset($flosc_get['tab']) ? sanitize_text_field($flosc_get['tab']) : 'identity';
+$flosc_identity_view = isset($flosc_get['view']) ? sanitize_text_field($flosc_get['view']) : 'single';
+if (!in_array($flosc_identity_view, ['single', 'all'], true)) {
+    $flosc_identity_view = 'single';
 }
 
 // Handle save
-if (isset($post['flosc_save']) && wp_verify_nonce(sanitize_text_field($post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
+if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flosc_post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
     
     // Collect all POST data for this flow
-    $new_settings = $flow_settings; // Start with existing
+    $flosc_new_settings = $flosc_flow_settings; // Start with existing
     
     // v1.5.0: Keys that contain multiline content (stored in flow settings via flow_ prefix)
-    $textarea_flow_keys = [
+    $flosc_textarea_flow_keys = [
         'sso_apple_private_key',
         // AI configuration
         'ai_base_prompt', 'ai_prompt_freeline', 'ai_prompt_login', 'ai_prompt_offer', 'ai_prompt_sale', 'ai_prompt_content',
@@ -328,166 +328,166 @@ if (isset($post['flosc_save']) && wp_verify_nonce(sanitize_text_field($post['_wp
         'data_deletion_content',
         'platform_compliance_content',
     ];
-    $identity_html_keys = ['privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content'];
+    $flosc_identity_html_keys = ['privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content'];
     
-    foreach ($post as $key => $value) {
-        if (strpos($key, 'flow_') === 0) {
-            $setting_key = substr($key, 5); // Remove 'flow_' prefix
+    foreach ($flosc_post as $flosc_key => $flosc_value) {
+        if (strpos($flosc_key, 'flow_') === 0) {
+            $flosc_setting_key = substr($flosc_key, 5); // Remove 'flow_' prefix
             // Check static textarea keys OR dynamic quiz content/template keys
-            $is_textarea = in_array($setting_key, $textarea_flow_keys, true)
-                || strpos($setting_key, 'quiz_content_') === 0
-                || strpos($setting_key, '_template_') !== false
-                || substr($setting_key, -5) === '_body'; // email bodies (guest/member/newsletter) — preserve newlines
-            if (in_array($setting_key, $identity_html_keys, true)) {
-                $new_settings[$setting_key] = wp_kses_post($value);
-            } elseif ($is_textarea) {
-                $new_settings[$setting_key] = sanitize_textarea_field($value);
-            } elseif (is_array($value)) {
-                $new_settings[$setting_key] = array_map('sanitize_text_field', $value);
+            $flosc_is_textarea = in_array($flosc_setting_key, $flosc_textarea_flow_keys, true)
+                || strpos($flosc_setting_key, 'quiz_content_') === 0
+                || strpos($flosc_setting_key, '_template_') !== false
+                || substr($flosc_setting_key, -5) === '_body'; // email bodies (guest/member/newsletter) — preserve newlines
+            if (in_array($flosc_setting_key, $flosc_identity_html_keys, true)) {
+                $flosc_new_settings[$flosc_setting_key] = wp_kses_post($flosc_value);
+            } elseif ($flosc_is_textarea) {
+                $flosc_new_settings[$flosc_setting_key] = sanitize_textarea_field($flosc_value);
+            } elseif (is_array($flosc_value)) {
+                $flosc_new_settings[$flosc_setting_key] = array_map('sanitize_text_field', $flosc_value);
             } else {
-                $new_settings[$setting_key] = sanitize_text_field($value);
+                $flosc_new_settings[$flosc_setting_key] = sanitize_text_field($flosc_value);
             }
         }
     }
     
     // v1.5.0: Handle checkbox unchecking — checkboxes don't POST when unchecked
     // Only handle checkboxes for the current tab to avoid wiping other tabs' values
-    if ($active_tab === 'sso') {
-        $sso_providers = ['google', 'apple', 'facebook', 'microsoft', 'linkedin'];
-        foreach ($sso_providers as $provider) {
-            if (!isset($post["flow_sso_{$provider}_enabled"])) {
-                $new_settings["sso_{$provider}_enabled"] = '';
+    if ($flosc_active_tab === 'sso') {
+        $flosc_sso_providers = ['google', 'apple', 'facebook', 'microsoft', 'linkedin'];
+        foreach ($flosc_sso_providers as $flosc_provider) {
+            if (!isset($flosc_post["flow_sso_{$provider}_enabled"])) {
+                $flosc_new_settings["sso_{$provider}_enabled"] = '';
             }
         }
     }
-    if ($active_tab === 'ai') {
-        foreach (['ai_enable_ivr_context', 'ai_enable_content_access', 'ai_enable_chaining'] as $cb) {
-            if (!isset($post["flow_{$cb}"])) {
-                $new_settings[$cb] = '';
+    if ($flosc_active_tab === 'ai') {
+        foreach (['ai_enable_ivr_context', 'ai_enable_content_access', 'ai_enable_chaining'] as $flosc_cb) {
+            if (!isset($flosc_post["flow_{$cb}"])) {
+                $flosc_new_settings[$cb] = '';
             }
         }
     }
-    if ($active_tab === 'email') {
-        foreach (['email_on_quiz_complete', 'email_reengagement_enabled', 'email_weekly_summary'] as $cb) {
-            if (!isset($post["flow_{$cb}"])) {
-                $new_settings[$cb] = '';
+    if ($flosc_active_tab === 'email') {
+        foreach (['email_on_quiz_complete', 'email_reengagement_enabled', 'email_weekly_summary'] as $flosc_cb) {
+            if (!isset($flosc_post["flow_{$cb}"])) {
+                $flosc_new_settings[$cb] = '';
             }
         }
         // Follow-up repeaters (newsletter + member per level): store as <prefix>_followups arrays.
         // Day offsets and the number of follow-ups are per-flow parameters, not hardcoded stages.
-        $fu_prefixes = ['newsletter'];
-        foreach ((array) ($flow_settings['member_levels'] ?? []) as $lk => $lv) {
-            $s = sanitize_key($lv['slug'] ?? $lk);
-            if ($s !== '') { $fu_prefixes[] = 'member_' . $s; }
+        $flosc_fu_prefixes = ['newsletter'];
+        foreach ((array) ($flosc_flow_settings['member_levels'] ?? []) as $flosc_lk => $flosc_lv) {
+            $s = sanitize_key($flosc_lv['slug'] ?? $lk);
+            if ($s !== '') { $flosc_fu_prefixes[] = 'member_' . $s; }
         }
-        foreach ($fu_prefixes as $pfx) {
-            $days = (array) ($post[$pfx . '_fu_day'] ?? []);
-            $subs = (array) ($post[$pfx . '_fu_subject'] ?? []);
-            $bods = (array) ($post[$pfx . '_fu_body'] ?? []);
-            $rows = [];
-            foreach ($days as $i => $d) {
-                $subject = sanitize_text_field($subs[$i] ?? '');
-                $body    = sanitize_textarea_field($bods[$i] ?? '');
-                if ($subject === '' && $body === '') { continue; }
-                $rows[] = [
+        foreach ($flosc_fu_prefixes as $flosc_pfx) {
+            $flosc_days = (array) ($flosc_post[$flosc_pfx . '_fu_day'] ?? []);
+            $flosc_subs = (array) ($flosc_post[$flosc_pfx . '_fu_subject'] ?? []);
+            $flosc_bods = (array) ($flosc_post[$flosc_pfx . '_fu_body'] ?? []);
+            $flosc_rows = [];
+            foreach ($flosc_days as $flosc_i => $flosc_d) {
+                $flosc_subject = sanitize_text_field($flosc_subs[$flosc_i] ?? '');
+                $flosc_body    = sanitize_textarea_field($flosc_bods[$flosc_i] ?? '');
+                if ($flosc_subject === '' && $flosc_body === '') { continue; }
+                $flosc_rows[] = [
                     'day'     => max(0, min(365, (int) $d)),
-                    'subject' => $subject,
-                    'body'    => $body,
+                    'subject' => $flosc_subject,
+                    'body'    => $flosc_body,
                 ];
             }
-            $new_settings[$pfx . '_followups'] = $rows;
+            $flosc_new_settings[$flosc_pfx . '_followups'] = $flosc_rows;
         }
     }
-    if ($active_tab === 'payments') {
-        foreach (['stripe_enabled', 'paypal_enabled', 'manual_payments_enabled'] as $cb) {
-            if (!isset($post["flow_{$cb}"])) {
-                $new_settings[$cb] = '';
+    if ($flosc_active_tab === 'payments') {
+        foreach (['stripe_enabled', 'paypal_enabled', 'manual_payments_enabled'] as $flosc_cb) {
+            if (!isset($flosc_post["flow_{$cb}"])) {
+                $flosc_new_settings[$cb] = '';
             }
         }
     }
-    if ($active_tab === 'quiz') {
-        foreach (['wpq_integration', 'ld_integration', 'qsm_integration'] as $cb) {
-            if (!isset($post["flow_{$cb}"])) {
-                $new_settings[$cb] = '';
+    if ($flosc_active_tab === 'quiz') {
+        foreach (['wpq_integration', 'ld_integration', 'qsm_integration'] as $flosc_cb) {
+            if (!isset($flosc_post["flow_{$cb}"])) {
+                $flosc_new_settings[$cb] = '';
             }
         }
-        if (!isset($post['flow_enabled_quizzes'])) {
-            $new_settings['enabled_quizzes'] = [];
+        if (!isset($flosc_post['flow_enabled_quizzes'])) {
+            $flosc_new_settings['enabled_quizzes'] = [];
         }
-        foreach (['A', 'B', 'C', 'D', 'E'] as $letter) {
-            if (!isset($post["flow_quiz_variant_{$letter}_enabled"])) {
-                $new_settings["quiz_variant_{$letter}_enabled"] = '';
+        foreach (['A', 'B', 'C', 'D', 'E'] as $flosc_letter) {
+            if (!isset($flosc_post["flow_quiz_variant_{$letter}_enabled"])) {
+                $flosc_new_settings["quiz_variant_{$letter}_enabled"] = '';
             }
         }
     }
 
     // v8.1.0: Member Levels tab — parse level registry + content protection repeaters
-    if ($active_tab === 'member-levels') {
+    if ($flosc_active_tab === 'member-levels') {
         // Level registry repeater
-        $level_slugs        = $post['level_slug']        ?? [];
-        $level_names        = $post['level_name']        ?? [];
-        $level_descriptions = $post['level_description'] ?? [];
-        $member_levels = [];
-        foreach ($level_slugs as $i => $slug) {
-            $slug = sanitize_key($slug);
-            if ($slug === '') continue;
-            $member_levels[$slug] = [
+        $flosc_level_slugs        = $flosc_post['level_slug']        ?? [];
+        $flosc_level_names        = $flosc_post['level_name']        ?? [];
+        $flosc_level_descriptions = $flosc_post['level_description'] ?? [];
+        $flosc_member_levels = [];
+        foreach ($flosc_level_slugs as $flosc_i => $flosc_slug) {
+            $flosc_slug = sanitize_key($slug);
+            if ($flosc_slug === '') continue;
+            $flosc_member_levels[$slug] = [
                 'slug'        => $slug,
-                'name'        => sanitize_text_field($level_names[$i] ?? ''),
-                'description' => sanitize_text_field($level_descriptions[$i] ?? ''),
+                'name'        => sanitize_text_field($flosc_level_names[$flosc_i] ?? ''),
+                'description' => sanitize_text_field($flosc_level_descriptions[$flosc_i] ?? ''),
             ];
         }
-        $new_settings['member_levels'] = $member_levels;
+        $flosc_new_settings['member_levels'] = $flosc_member_levels;
 
         // Content protection repeater
-        $prot_types  = $post['protection_type']  ?? [];
-        $prot_values = $post['protection_value'] ?? [];
-        $prot_levels = $post['protection_level'] ?? [];
-        $protected_content = [];
-        foreach ($prot_types as $i => $type) {
+        $flosc_prot_types  = $flosc_post['protection_type']  ?? [];
+        $flosc_prot_values = $flosc_post['protection_value'] ?? [];
+        $flosc_prot_levels = $flosc_post['protection_level'] ?? [];
+        $flosc_protected_content = [];
+        foreach ($flosc_prot_types as $flosc_i => $type) {
             $type  = sanitize_text_field($type);
-            $value = sanitize_text_field($prot_values[$i] ?? '');
-            $level = sanitize_key($prot_levels[$i] ?? '');
-            if ($value === '') continue;
-            $item = [
-                'type'  => $type,
-                'id'    => $value,
-                'level' => $level,
+            $flosc_value = sanitize_text_field($flosc_prot_values[$flosc_i] ?? '');
+            $flosc_level = sanitize_key($flosc_prot_levels[$flosc_i] ?? '');
+            if ($flosc_value === '') continue;
+            $flosc_item = [
+                'type'  => $flosc_type,
+                'id'    => $flosc_value,
+                'level' => $flosc_level,
             ];
             // Resolve names for display
-            if (in_array($type, ['category', 'tag'])) {
-                $term = get_term(intval($value));
+            if (in_array($flosc_type, ['category', 'tag'])) {
+                $term = get_term(intval($flosc_value));
                 if ($term && !is_wp_error($term)) {
-                    $item['slug'] = $term->slug;
-                    $item['name'] = $term->name;
+                    $flosc_item['slug'] = $term->slug;
+                    $flosc_item['name'] = $term->name;
                 }
-            } elseif (in_array($type, ['post', 'page'])) {
-                $post_obj = get_post(intval($value));
-                if ($post_obj) {
-                    $item['name'] = $post_obj->post_title;
+            } elseif (in_array($flosc_type, ['post', 'page'])) {
+                $flosc_post_obj = get_post(intval($flosc_value));
+                if ($flosc_post_obj) {
+                    $flosc_item['name'] = $flosc_post_obj->post_title;
                 }
             }
-            $protected_content[] = $item;
+            $flosc_protected_content[] = $flosc_item;
         }
-        $new_settings['protected_content'] = $protected_content;
+        $flosc_new_settings['protected_content'] = $flosc_protected_content;
 
         // Sync to term_meta — class-content-protection.php reads from term_meta currently.
         // TODO: Refactor class-content-protection.php to read from flow_settings['protected_content']
         // and remove this sync entirely.
         // First clear old protection flags from categories no longer protected
-        $old_protected = $flow_settings['protected_content'] ?? [];
-        foreach ($old_protected as $old_item) {
-            if ($old_item['type'] === 'category') {
-                delete_term_meta(intval($old_item['id']), '_flosc_protected');
-                delete_term_meta(intval($old_item['id']), '_flosc_required_level');
+        $flosc_old_protected = $flosc_flow_settings['protected_content'] ?? [];
+        foreach ($flosc_old_protected as $flosc_old_item) {
+            if ($flosc_old_item['type'] === 'category') {
+                delete_term_meta(intval($flosc_old_item['id']), '_flosc_protected');
+                delete_term_meta(intval($flosc_old_item['id']), '_flosc_required_level');
             }
         }
         // Set new protection flags
-        foreach ($protected_content as $item) {
-            if ($item['type'] === 'category') {
-                update_term_meta(intval($item['id']), '_flosc_protected', 'yes');
-                if (!empty($item['level'])) {
-                    update_term_meta(intval($item['id']), '_flosc_required_level', $item['level']);
+        foreach ($flosc_protected_content as $flosc_item) {
+            if ($flosc_item['type'] === 'category') {
+                update_term_meta(intval($flosc_item['id']), '_flosc_protected', 'yes');
+                if (!empty($flosc_item['level'])) {
+                    update_term_meta(intval($flosc_item['id']), '_flosc_required_level', $flosc_item['level']);
                 }
             }
         }
@@ -495,113 +495,113 @@ if (isset($post['flosc_save']) && wp_verify_nonce(sanitize_text_field($post['_wp
 
     // v3.0.0: Lessons tab — parse lesson_groups repeater
     // Repeater fields are NOT flow_-prefixed (lesson_group_quiz[], lesson_group_category[])
-    if ($active_tab === 'lessons') {
-        $group_quizzes    = $post['lesson_group_quiz']     ?? [];
-        $group_categories = $post['lesson_group_category'] ?? [];
-        $lesson_groups = [];
-        foreach ($group_categories as $i => $cat) {
+    if ($flosc_active_tab === 'lessons') {
+        $flosc_group_quizzes    = $flosc_post['lesson_group_quiz']     ?? [];
+        $flosc_group_categories = $flosc_post['lesson_group_category'] ?? [];
+        $flosc_lesson_groups = [];
+        foreach ($flosc_group_categories as $flosc_i => $cat) {
             $cat = sanitize_text_field($cat);
             if ($cat === '') continue; // Skip rows with no category selected
-            $quiz = sanitize_text_field($group_quizzes[$i] ?? '');
-            $lesson_groups[] = [
-                'quiz_id'  => $quiz,
+            $flosc_quiz = sanitize_text_field($flosc_group_quizzes[$flosc_i] ?? '');
+            $flosc_lesson_groups[] = [
+                'quiz_id'  => $flosc_quiz,
                 'category' => $cat,
             ];
         }
         // Only overwrite lesson_groups when the form actually submitted rows.
         // An accidental save on an empty/wrong-flow form must not wipe existing config.
-        if (!empty($lesson_groups)) {
-            $new_settings['lesson_groups']    = $lesson_groups;
-            $new_settings['lessons_category'] = $lesson_groups[0]['category'];
+        if (!empty($flosc_lesson_groups)) {
+            $flosc_new_settings['lesson_groups']    = $flosc_lesson_groups;
+            $flosc_new_settings['lessons_category'] = $flosc_lesson_groups[0]['category'];
         }
     }
 
     // v1.8.2: UI & Nav tab uses WordPress options (global, not per-flow)
-    if ($active_tab === 'ui') {
+    if ($flosc_active_tab === 'ui') {
         // Visitor menu — dynamic items from repeater
-        $menu_labels  = $post['visitor_menu_label']  ?? [];
-        $menu_actions = $post['visitor_menu_action'] ?? [];
-        $new_menu = [];
-        foreach ($menu_labels as $i => $label) {
-            $label  = sanitize_text_field($label);
-            $action = sanitize_text_field($menu_actions[$i] ?? '');
-            if ($label !== '' && $action !== '') {
-                $new_menu[] = ['label' => $label, 'action' => $action];
+        $flosc_menu_labels  = $flosc_post['visitor_menu_label']  ?? [];
+        $flosc_menu_actions = $flosc_post['visitor_menu_action'] ?? [];
+        $flosc_new_menu = [];
+        foreach ($flosc_menu_labels as $flosc_i => $flosc_label) {
+            $flosc_label  = sanitize_text_field($flosc_label);
+            $action = sanitize_text_field($flosc_menu_actions[$flosc_i] ?? '');
+            if ($flosc_label !== '' && $action !== '') {
+                $flosc_new_menu[] = ['label' => $flosc_label, 'action' => $action];
             }
         }
-        update_option('flosc_visitor_menu_items', $new_menu);
+        update_option('flosc_visitor_menu_items', $flosc_new_menu);
 
         // v1.9.8: Guest menu — dynamic items from repeater
-        $guest_labels  = $post['guest_menu_label']  ?? [];
-        $guest_actions = $post['guest_menu_action'] ?? [];
-        $new_guest_menu = [];
-        foreach ($guest_labels as $i => $label) {
-            $label  = sanitize_text_field($label);
-            $action = sanitize_text_field($guest_actions[$i] ?? '');
-            if ($label !== '' && $action !== '') {
-                $new_guest_menu[] = ['label' => $label, 'action' => $action];
+        $flosc_guest_labels  = $flosc_post['guest_menu_label']  ?? [];
+        $flosc_guest_actions = $flosc_post['guest_menu_action'] ?? [];
+        $flosc_new_guest_menu = [];
+        foreach ($flosc_guest_labels as $flosc_i => $flosc_label) {
+            $flosc_label  = sanitize_text_field($flosc_label);
+            $action = sanitize_text_field($flosc_guest_actions[$flosc_i] ?? '');
+            if ($flosc_label !== '' && $action !== '') {
+                $flosc_new_guest_menu[] = ['label' => $flosc_label, 'action' => $action];
             }
         }
-        update_option('flosc_guest_menu_items', $new_guest_menu);
+        update_option('flosc_guest_menu_items', $flosc_new_guest_menu);
 
         // v1.9.8: Member menu — dynamic items from repeater
-        $member_labels  = $post['member_menu_label']  ?? [];
-        $member_actions = $post['member_menu_action'] ?? [];
-        $new_member_menu = [];
-        foreach ($member_labels as $i => $label) {
-            $label  = sanitize_text_field($label);
-            $action = sanitize_text_field($member_actions[$i] ?? '');
-            if ($label !== '' && $action !== '') {
-                $new_member_menu[] = ['label' => $label, 'action' => $action];
+        $flosc_member_labels  = $flosc_post['member_menu_label']  ?? [];
+        $flosc_member_actions = $flosc_post['member_menu_action'] ?? [];
+        $flosc_new_member_menu = [];
+        foreach ($flosc_member_labels as $flosc_i => $flosc_label) {
+            $flosc_label  = sanitize_text_field($flosc_label);
+            $action = sanitize_text_field($flosc_member_actions[$flosc_i] ?? '');
+            if ($flosc_label !== '' && $action !== '') {
+                $flosc_new_member_menu[] = ['label' => $flosc_label, 'action' => $action];
             }
         }
-        update_option('flosc_member_menu_items', $new_member_menu);
+        update_option('flosc_member_menu_items', $flosc_new_member_menu);
 
         // Login destination — v1.9.8: now a URL, not a key
-        $login_dest = trim($post['flosc_login_destination'] ?? '');
-        update_option('flosc_login_destination', $login_dest !== '' ? esc_url_raw($login_dest) : '');
+        $flosc_login_dest = trim($flosc_post['flosc_login_destination'] ?? '');
+        update_option('flosc_login_destination', $flosc_login_dest !== '' ? esc_url_raw($flosc_login_dest) : '');
 
         // Profile bar per-state settings
-        $profile_bar = [
+        $flosc_profile_bar = [
             'visitor' => [
-                'name'  => sanitize_text_field($post['profile_bar_visitor_name'] ?? 'Visitor'),
-                'badge' => sanitize_text_field($post['profile_bar_visitor_badge'] ?? 'Hope you enjoy our chat :-)'),
-                'icon'  => sanitize_text_field($post['profile_bar_visitor_icon'] ?? '👋'),
+                'name'  => sanitize_text_field($flosc_post['profile_bar_visitor_name'] ?? 'Visitor'),
+                'badge' => sanitize_text_field($flosc_post['profile_bar_visitor_badge'] ?? 'Hope you enjoy our chat :-)'),
+                'icon'  => sanitize_text_field($flosc_post['profile_bar_visitor_icon'] ?? '👋'),
             ],
             'guest' => [
-                'badge' => sanitize_text_field($post['profile_bar_guest_badge'] ?? 'Guest'),
-                'upgrade_label' => sanitize_text_field($post['profile_bar_guest_upgrade'] ?? 'Upgrade to Pro'),
+                'badge' => sanitize_text_field($flosc_post['profile_bar_guest_badge'] ?? 'Guest'),
+                'upgrade_label' => sanitize_text_field($flosc_post['profile_bar_guest_upgrade'] ?? 'Upgrade to Pro'),
             ],
             'member' => [
-                'badge' => sanitize_text_field($post['profile_bar_member_badge'] ?? 'Member'),
+                'badge' => sanitize_text_field($flosc_post['profile_bar_member_badge'] ?? 'Member'),
             ],
         ];
-        update_option('flosc_profile_bar', $profile_bar);
+        update_option('flosc_profile_bar', $flosc_profile_bar);
     }
 
-    if ($active_tab === 'administration') {
-        $allowed_plans = ['free', 'paid', 'enterprise'];
-        $plan = sanitize_key($post['flosc_account_plan'] ?? 'free');
-        if (!in_array($plan, $allowed_plans, true)) {
-            $plan = 'free';
+    if ($flosc_active_tab === 'administration') {
+        $flosc_allowed_plans = ['free', 'paid', 'enterprise'];
+        $flosc_plan = sanitize_key($flosc_post['flosc_account_plan'] ?? 'free');
+        if (!in_array($flosc_plan, $flosc_allowed_plans, true)) {
+            $flosc_plan = 'free';
         }
-        update_option('flosc_account_plan', $plan);
+        update_option('flosc_account_plan', $flosc_plan);
 
-        $manual_purchases = sanitize_textarea_field($post['flosc_account_purchases_manual'] ?? '');
-        update_option('flosc_account_purchases_manual', $manual_purchases);
+        $flosc_manual_purchases = sanitize_textarea_field($flosc_post['flosc_account_purchases_manual'] ?? '');
+        update_option('flosc_account_purchases_manual', $flosc_manual_purchases);
 
-        $allowed_debug_modes = ['inherit', 'on', 'off'];
-        $debug_mode = sanitize_key($post['flosc_debug_mode'] ?? 'inherit');
-        if (!in_array($debug_mode, $allowed_debug_modes, true)) {
-            $debug_mode = 'inherit';
+        $flosc_allowed_debug_modes = ['inherit', 'on', 'off'];
+        $flosc_debug_mode = sanitize_key($flosc_post['flosc_debug_mode'] ?? 'inherit');
+        if (!in_array($flosc_debug_mode, $flosc_allowed_debug_modes, true)) {
+            $flosc_debug_mode = 'inherit';
         }
-        update_option('flosc_debug_mode', $debug_mode);
+        update_option('flosc_debug_mode', $flosc_debug_mode);
     }
 
     // Nest identity fields into the identity sub-array
-    // The generic POST loop saves them flat (e.g. $new_settings['chatlogo_url']).
+    // The generic POST loop saves them flat (e.g. $flosc_new_settings['chatlogo_url']).
     // get_floscflow_identity() reads from $flow['identity']['chatlogo_url'].
-    $identity_keys = [
+    $flosc_identity_keys = [
         'name',
         'title',
         'tagline',
@@ -615,29 +615,56 @@ if (isset($post['flosc_save']) && wp_verify_nonce(sanitize_text_field($post['_wp
         'data_deletion_content',
         'platform_compliance_content',
     ];
-    $identity = $new_settings['identity'] ?? [];
-    foreach ($identity_keys as $k) {
-        if (isset($new_settings[$k])) {
-            $identity[$k] = $new_settings[$k];
-            unset($new_settings[$k]);
+    $flosc_identity = $flosc_new_settings['identity'] ?? [];
+    foreach ($flosc_identity_keys as $flosc_k) {
+        if (isset($flosc_new_settings[$flosc_k])) {
+            $flosc_identity[$flosc_k] = $flosc_new_settings[$flosc_k];
+            unset($flosc_new_settings[$flosc_k]);
         }
     }
-    $new_settings['identity'] = $identity;
+    $flosc_new_settings['identity'] = $identity;
 
     // Save flow settings (ALL tabs now per-flow)
-    update_option($settings_key, $new_settings);
-    $flow_settings = $new_settings;
+    update_option($settings_key, $flosc_new_settings);
+    $flosc_flow_settings = $flosc_new_settings;
     
-    $saved = true;
+    $flosc_saved = true;
 }
 
 // Build flow URL
-$flow_url = home_url('/' . ($flow_settings['slug'] ?? 'flosc') . '/');
+$flosc_flow_url = home_url('/' . ($flosc_flow_settings['slug'] ?? 'flosc') . '/');
 
 // Set global context for tab includes
 $GLOBALS['flosc_current_ivr'] = $selected_ivr;
 $GLOBALS['flosc_current_settings'] = $flow_settings;
 $GLOBALS['flosc_settings_key'] = $settings_key;
+
+// Build display labels for selector options: show flow name, keep filename as value.
+$flosc_flow_selector_labels = [];
+foreach ($flosc_ivr_files as $flosc_selector_file) {
+    $flosc_selector_key = flosc_resolve_flow_option_key_for_ivr($flosc_selector_file);
+    $flosc_selector_settings = get_option($flosc_selector_key, []);
+    $flosc_selector_name = '';
+
+    if (is_array($flosc_selector_settings)) {
+        $flosc_selector_name = trim((string) ($flosc_selector_settings['identity']['name'] ?? ''));
+        if ($flosc_selector_name === '') {
+            $flosc_selector_name = trim((string) ($flosc_selector_settings['name'] ?? ''));
+        }
+    }
+
+    if ($flosc_selector_name === '') {
+        $flosc_selector_name = ucwords(str_replace(['_', '-', 'ivr', '.md'], [' ', ' ', '', ''], $flosc_selector_file));
+    }
+
+    $flosc_flow_selector_labels[$flosc_selector_file] = $flosc_selector_name;
+}
+
+$flosc_selected_flow_name = $flosc_flow_selector_labels[$selected_ivr]
+    ?? trim((string) ($flosc_flow_settings['identity']['name'] ?? ($flosc_flow_settings['name'] ?? '')));
+if ($flosc_selected_flow_name === '') {
+    $flosc_selected_flow_name = $selected_ivr;
+}
 
 ?>
 <div class="wrap flosc-admin">
@@ -646,9 +673,9 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
         <span style="font-size: 12px; font-weight: normal; color: #50575e; background: #f0f0f1; padding: 3px 10px; border-radius: 2px;">v<?php echo esc_html(FLOSC_VERSION); ?></span>
     </h1>
     
-    <?php if (isset($saved)): ?>
+    <?php if (isset($flosc_saved)): ?>
         <div class="notice notice-success is-dismissible">
-            <p>✓ Settings saved for <strong><?php echo esc_html($flow_settings['identity']['name'] ?? $selected_ivr); ?></strong></p>
+            <p>✓ Settings saved for <strong><?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $selected_ivr); ?></strong></p>
         </div>
     <?php endif; ?>
     
@@ -659,9 +686,9 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
         <?php if ($identity_view === 'all'): ?>
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
                 <span style="color: #9ca3af; font-size: 13px;">All flows:</span>
-                <?php foreach ($ivr_files as $file): $flosc_is_current_flow = ($file === $selected_ivr); ?>
+                <?php foreach ($flosc_ivr_files as $flosc_file): $flosc_is_current_flow = ($flosc_file === $selected_ivr); ?>
                     <span style="display: inline-block; padding: 3px 11px; border-radius: 12px; font-size: 12px; background: <?php echo $flosc_is_current_flow ? '#2271b1' : '#3c434a'; ?>; color: <?php echo $flosc_is_current_flow ? '#ffffff' : '#c3c4c7'; ?>; font-weight: <?php echo $flosc_is_current_flow ? '700' : '400'; ?>;">
-                        <?php echo esc_html($file); ?>
+                        <?php echo esc_html($flosc_file); ?>
                     </span>
                 <?php endforeach; ?>
             </div>
@@ -669,23 +696,22 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
             <div style="margin-bottom: 12px; color: #9ca3af; font-size: 13px;">
                 Working on:
                 <span style="display: inline-block; margin-left: 4px; padding: 3px 12px; border-radius: 12px; background: #2271b1; color: #ffffff; font-weight: 700; font-size: 13px;">
-                    <?php echo esc_html($flow_settings['identity']['name'] ?? $selected_ivr); ?>
+                    <?php echo esc_html($flosc_selected_flow_name); ?>
                 </span>
-                <span style="margin-left: 8px; color: #6b7280; font-size: 12px;"><?php echo esc_html($selected_ivr); ?></span>
             </div>
         <?php endif; ?>
 
         <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
             <label style="color: #f0f0f1; font-weight: 600; font-size: 14px;">Select Flow:</label>
             <select id="ivr-select" onchange="switchIVR(this.value);" style="padding: 8px 12px; border-radius: 2px; border: 1px solid #50575e; min-width: 250px; font-size: 14px;">
-                <?php foreach ($ivr_files as $file): ?>
-                    <option value="<?php echo esc_attr($file); ?>" <?php selected($selected_ivr, $file); ?>>
-                        <?php echo esc_html($file); ?>
+                <?php foreach ($flosc_ivr_files as $flosc_file): ?>
+                    <option value="<?php echo esc_attr($flosc_file); ?>" <?php selected($selected_ivr, $flosc_file); ?>>
+                        <?php echo esc_html($flosc_flow_selector_labels[$flosc_file] ?? $flosc_file); ?>
                     </option>
                 <?php endforeach; ?>
             </select>
             
-            <?php if ($flow_settings['status'] === 'active' && !empty($flow_settings['slug'])): ?>
+            <?php if ($flosc_flow_settings['status'] === 'active' && !empty($flosc_flow_settings['slug'])): ?>
                 <a href="<?php echo esc_url($flow_url); ?>" target="_blank" class="button button-small" style="font-size: 13px;">
                     View App &#8599;
                 </a>
@@ -700,22 +726,26 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                 Administration
             </a>
         </div>
+
+        <div style="margin-top: 8px; color: #9ca3af; font-size: 12px;">
+            floscFlowFileName: <span style="color: #c3c4c7;"><?php echo esc_html($selected_ivr); ?></span>
+        </div>
         
         <!-- Permalink Status Row -->
         <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #50575e;">
-            <?php flosc_permalink_status_indicator($flow_settings['slug'] ?? ''); ?>
+            <?php flosc_permalink_status_indicator($flosc_flow_settings['slug'] ?? ''); ?>
         </div>
     </div>
     
     <?php ob_start(); ?>
     function switchIVR(ivr) {
-        const tab = '<?php echo esc_js($active_tab); ?>';
+        const tab = '<?php echo esc_js($flosc_active_tab); ?>';
         const view = '<?php echo esc_js($identity_view); ?>';
         window.location.href = '<?php echo esc_js( admin_url('admin.php?page=flosc-settings') ); ?>&ivr=' + encodeURIComponent(ivr) + '&tab=' + tab + '&view=' + encodeURIComponent(view);
     }
 
     (function () {
-        const tab = '<?php echo esc_js($active_tab); ?>';
+        const tab = '<?php echo esc_js($flosc_active_tab); ?>';
         const tabTitles = {
             'flow': 'Flow',
             'identity': 'Identity',
@@ -767,17 +797,17 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
             'documentation' => '📖 Docs',
             'da1'           => 'DA1',
         ];
-        foreach ($tabs as $tab_id => $tab_label):
-            $tab_url = add_query_arg([
+        foreach ($tabs as $flosc_tab_id => $flosc_tab_label):
+            $flosc_tab_url = add_query_arg([
                 'page' => 'flosc-settings',
                 'ivr' => $selected_ivr,
-                'tab' => $tab_id,
+                'tab' => $flosc_tab_id,
                 'view' => $identity_view,
             ], admin_url('admin.php'));
         ?>
-            <a href="<?php echo esc_url($tab_url); ?>" 
-               class="nav-tab <?php echo esc_attr( $active_tab === $tab_id ? 'nav-tab-active' : '' ); ?>">
-                <?php echo esc_html( $tab_label ); ?>
+            <a href="<?php echo esc_url($flosc_tab_url); ?>" 
+               class="nav-tab <?php echo esc_attr( $flosc_active_tab === $flosc_tab_id ? 'nav-tab-active' : '' ); ?>">
+                <?php echo esc_html( $flosc_tab_label ); ?>
             </a>
         <?php endforeach; ?>
     </nav>
@@ -786,27 +816,27 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
     <form method="post" class="flosc-settings-form">
         <?php wp_nonce_field('flosc_save_settings'); ?>
         
-        <?php if ($active_tab === 'flow'): ?>
+        <?php if ($flosc_active_tab === 'flow'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/flow.php'; ?>
 
-        <?php elseif ($active_tab === 'identity'): ?>
+        <?php elseif ($flosc_active_tab === 'identity'): ?>
             <!-- Identity Tab v1.3.3 - All Flows = fully expanded inline editing -->
             
             <?php
             // View mode: single flow or all flows
-            $view_mode = $identity_view;
+            $flosc_view_mode = $identity_view;
             
             // Get all flows data
-            $all_flows = [];
-            foreach ($ivr_files as $ivr_file) {
-                $key = flosc_resolve_flow_option_key_for_ivr($ivr_file);
-                $settings = get_option($key, []);
-                if (empty($settings)) {
+            $flosc_all_flows = [];
+            foreach ($flosc_ivr_files as $flosc_ivr_file) {
+                $flosc_key = flosc_resolve_flow_option_key_for_ivr($flosc_ivr_file);
+                $flosc_settings = get_option($flosc_key, []);
+                if (empty($flosc_settings)) {
                     // v1.3.5: Preserve underscores in default slug
-                    $default_slug = strtolower(preg_replace('/[^a-z0-9_-]/i', '', pathinfo($ivr_file, PATHINFO_FILENAME)));
-                    $settings = [
-                        'name' => ucwords(str_replace(['_', '-', 'ivr', '.md'], [' ', ' ', '', ''], $ivr_file)),
-                        'slug' => $default_slug,
+                    $flosc_default_slug = strtolower(preg_replace('/[^a-z0-9_-]/i', '', pathinfo($flosc_ivr_file, PATHINFO_FILENAME)));
+                    $flosc_settings = [
+                        'name' => ucwords(str_replace(['_', '-', 'ivr', '.md'], [' ', ' ', '', ''], $flosc_ivr_file)),
+                        'slug' => $flosc_default_slug,
                         'domain' => '',
                         'title' => '',
                         'tagline' => '',
@@ -814,32 +844,32 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                         'status' => 'active',
                     ];
                 }
-                $all_flows[$ivr_file] = ['key' => $key, 'settings' => $settings];
+                $flosc_all_flows[$flosc_ivr_file] = ['key' => $flosc_key, 'settings' => $flosc_settings];
             }
             
             // Handle individual flow save via AJAX or form
-            if (isset($post['flosc_save_flow']) && wp_verify_nonce(sanitize_text_field($post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
-                $save_ivr = sanitize_file_name($post['flosc_save_flow']);
-                if (isset($all_flows[$save_ivr])) {
-                    $flow_key = $all_flows[$save_ivr]['key'];
-                    $new_settings = $all_flows[$save_ivr]['settings'];
+            if (isset($flosc_post['flosc_save_flow']) && wp_verify_nonce(sanitize_text_field($flosc_post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
+                $flosc_save_ivr = sanitize_file_name($flosc_post['flosc_save_flow']);
+                if (isset($flosc_all_flows[$flosc_save_ivr])) {
+                    $flosc_flow_key = $flosc_all_flows[$flosc_save_ivr]['key'];
+                    $flosc_new_settings = $flosc_all_flows[$flosc_save_ivr]['settings'];
                     
                     // Update from POST data (fields prefixed with ivr filename hash)
-                    $prefix = 'flow_' . md5($save_ivr) . '_';
-                    $identity_html_keys = ['privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content'];
-                    foreach ($post as $key => $value) {
-                        if (strpos($key, $prefix) === 0) {
-                            $setting_key = substr($key, strlen($prefix));
-                            if (in_array($setting_key, $identity_html_keys, true)) {
-                                $new_settings[$setting_key] = wp_kses_post($value);
+                    $flosc_prefix = 'flow_' . md5($flosc_save_ivr) . '_';
+                    $flosc_identity_html_keys = ['privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content'];
+                    foreach ($post as $flosc_key => $flosc_value) {
+                        if (strpos($flosc_key, $flosc_prefix) === 0) {
+                            $flosc_setting_key = substr($flosc_key, strlen($flosc_prefix));
+                            if (in_array($flosc_setting_key, $flosc_identity_html_keys, true)) {
+                                $flosc_new_settings[$flosc_setting_key] = wp_kses_post($flosc_value);
                             } else {
-                                $new_settings[$setting_key] = sanitize_text_field($value);
+                                $flosc_new_settings[$flosc_setting_key] = sanitize_text_field($flosc_value);
                             }
                         }
                     }
                     
                     // v2.0.0: Nest identity fields into identity sub-array
-                    $id_keys = [
+                    $flosc_id_keys = [
                         'name',
                         'title',
                         'tagline',
@@ -853,42 +883,42 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                         'data_deletion_content',
                         'platform_compliance_content',
                     ];
-                    $id = $new_settings['identity'] ?? [];
-                    foreach ($id_keys as $ik) {
-                        if (isset($new_settings[$ik])) {
-                            $id[$ik] = $new_settings[$ik];
-                            unset($new_settings[$ik]);
+                    $id = $flosc_new_settings['identity'] ?? [];
+                    foreach ($flosc_id_keys as $flosc_ik) {
+                        if (isset($flosc_new_settings[$flosc_ik])) {
+                            $id[$flosc_ik] = $flosc_new_settings[$flosc_ik];
+                            unset($flosc_new_settings[$flosc_ik]);
                         }
                     }
-                    $new_settings['identity'] = $id;
+                    $flosc_new_settings['identity'] = $id;
                     
-                    update_option($flow_key, $new_settings);
-                    $all_flows[$save_ivr]['settings'] = $new_settings;
-                    $individual_saved = $save_ivr;
+                    update_option($flosc_flow_key, $flosc_new_settings);
+                    $flosc_all_flows[$flosc_save_ivr]['settings'] = $flosc_new_settings;
+                    $flosc_individual_saved = $flosc_save_ivr;
                 }
             }
             
             // Handle save all flows
-            if (isset($post['flosc_save_all_flows']) && wp_verify_nonce(sanitize_text_field($post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
-                foreach ($all_flows as $ivr_file => $flow_data) {
-                    $flow_key = $flow_data['key'];
-                    $new_settings = $flow_data['settings'];
+            if (isset($flosc_post['flosc_save_all_flows']) && wp_verify_nonce(sanitize_text_field($flosc_post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
+                foreach ($flosc_all_flows as $flosc_ivr_file => $flosc_flow_data) {
+                    $flosc_flow_key = $flosc_flow_data['key'];
+                    $flosc_new_settings = $flosc_flow_data['settings'];
                     
-                    $prefix = 'flow_' . md5($ivr_file) . '_';
-                    $identity_html_keys = ['privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content'];
-                    foreach ($post as $key => $value) {
-                        if (strpos($key, $prefix) === 0) {
-                            $setting_key = substr($key, strlen($prefix));
-                            if (in_array($setting_key, $identity_html_keys, true)) {
-                                $new_settings[$setting_key] = wp_kses_post($value);
+                    $flosc_prefix = 'flow_' . md5($flosc_ivr_file) . '_';
+                    $flosc_identity_html_keys = ['privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content'];
+                    foreach ($post as $flosc_key => $flosc_value) {
+                        if (strpos($flosc_key, $flosc_prefix) === 0) {
+                            $flosc_setting_key = substr($flosc_key, strlen($flosc_prefix));
+                            if (in_array($flosc_setting_key, $flosc_identity_html_keys, true)) {
+                                $flosc_new_settings[$flosc_setting_key] = wp_kses_post($flosc_value);
                             } else {
-                                $new_settings[$setting_key] = sanitize_text_field($value);
+                                $flosc_new_settings[$flosc_setting_key] = sanitize_text_field($flosc_value);
                             }
                         }
                     }
                     
                     // v2.0.0: Nest identity fields into identity sub-array
-                    $id_keys = [
+                    $flosc_id_keys = [
                         'name',
                         'title',
                         'tagline',
@@ -902,44 +932,44 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                         'data_deletion_content',
                         'platform_compliance_content',
                     ];
-                    $id = $new_settings['identity'] ?? [];
-                    foreach ($id_keys as $ik) {
-                        if (isset($new_settings[$ik])) {
-                            $id[$ik] = $new_settings[$ik];
-                            unset($new_settings[$ik]);
+                    $id = $flosc_new_settings['identity'] ?? [];
+                    foreach ($flosc_id_keys as $flosc_ik) {
+                        if (isset($flosc_new_settings[$flosc_ik])) {
+                            $id[$flosc_ik] = $flosc_new_settings[$flosc_ik];
+                            unset($flosc_new_settings[$flosc_ik]);
                         }
                     }
-                    $new_settings['identity'] = $id;
+                    $flosc_new_settings['identity'] = $id;
                     
-                    update_option($flow_key, $new_settings);
-                    $all_flows[$ivr_file]['settings'] = $new_settings;
+                    update_option($flosc_flow_key, $flosc_new_settings);
+                    $flosc_all_flows[$flosc_ivr_file]['settings'] = $flosc_new_settings;
                 }
-                $all_saved = true;
+                $flosc_all_saved = true;
             }
             ?>
             
             <!-- View Toggle -->
             <div style="display: flex; gap: 10px; margin: 20px 0;">
                 <a href="<?php echo esc_url( '?page=flosc-settings&ivr=' . urlencode( $selected_ivr ) . '&tab=identity&view=single' ); ?>" 
-                   class="button <?php echo esc_attr( $view_mode === 'single' ? 'button-primary' : '' ); ?>">
+                   class="button <?php echo esc_attr( $flosc_view_mode === 'single' ? 'button-primary' : '' ); ?>">
                     Single Flow
                 </a>
                 <a href="<?php echo esc_url( '?page=flosc-settings&ivr=' . urlencode( $selected_ivr ) . '&tab=identity&view=all' ); ?>" 
-                   class="button <?php echo esc_attr( $view_mode === 'all' ? 'button-primary' : '' ); ?>">
-                    All Flows (<?php echo count($ivr_files); ?>)
+                   class="button <?php echo esc_attr( $flosc_view_mode === 'all' ? 'button-primary' : '' ); ?>">
+                    All Flows (<?php echo count($flosc_ivr_files); ?>)
                 </a>
             </div>
             
             <?php if (isset($all_saved)): ?>
                 <div class="notice notice-success is-dismissible"><p>✓ All flows saved!</p></div>
             <?php endif; ?>
-            <?php if (isset($individual_saved)): ?>
-                <div class="notice notice-success is-dismissible"><p>✓ Saved: <?php echo esc_html($individual_saved); ?></p></div>
+            <?php if (isset($flosc_individual_saved)): ?>
+                <div class="notice notice-success is-dismissible"><p>✓ Saved: <?php echo esc_html($flosc_individual_saved); ?></p></div>
             <?php endif; ?>
             
-            <?php if ($view_mode === 'all'): ?>
+            <?php if ($flosc_view_mode === 'all'): ?>
             <?php
-            $identity_docs_url_all = add_query_arg([
+            $flosc_identity_docs_url_all = add_query_arg([
                 'page' => 'flosc-settings',
                 'ivr'  => $selected_ivr,
                 'tab'  => 'documentation',
@@ -952,50 +982,50 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                 <div style="background: #2f363d; border: 1px solid #3c434a; padding: 15px 20px; border-radius: 4px 4px 0 0; margin-bottom: 20px;">
                     <h2 style="margin: 0; color: #f0f0f1; font-size: 16px; display:flex; align-items:center; gap:10px;">
                         <span>All FLOSC Flows &mdash; Identity Settings</span>
-                        <a href="<?php echo esc_url($identity_docs_url_all); ?>" style="margin-left:auto; font-size:12px; text-decoration:none; color:#8ec5ff;">Docs</a>
+                        <a href="<?php echo esc_url($flosc_identity_docs_url_all); ?>" style="margin-left:auto; font-size:12px; text-decoration:none; color:#8ec5ff;">Docs</a>
                     </h2>
                     <p style="margin: 5px 0 0; color: #a7aaad; font-size: 13px;">
                         All flows expanded. Edit any field, then save individually or save all at bottom.
                     </p>
                 </div>
                 
-                <?php foreach ($all_flows as $ivr_file => $flow_data): 
-                    $settings = $flow_data['settings'];
+                <?php foreach ($flosc_all_flows as $flosc_ivr_file => $flosc_flow_data): 
+                    $flosc_settings = $flosc_flow_data['settings'];
                     // v2.0.0: Merge identity sub-array up for form display
                     // Identity fields are stored nested but form fields read flat
-                    $si = $settings['identity'] ?? [];
-                    foreach (['name', 'title', 'tagline', 'primary_color', 'chatlogo_url', 'favicon_url', 'badgeUrl', 'share_text', 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content'] as $_ik) {
-                        if (isset($si[$_ik]) && !isset($settings[$_ik])) {
-                            $settings[$_ik] = $si[$_ik];
+                    $flosc_si = $flosc_settings['identity'] ?? [];
+                    foreach (['name', 'title', 'tagline', 'primary_color', 'chatlogo_url', 'favicon_url', 'badgeUrl', 'share_text', 'privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content'] as $flosc__ik) {
+                        if (isset($flosc_si[$flosc__ik]) && !isset($flosc_settings[$flosc__ik])) {
+                            $flosc_settings[$flosc__ik] = $flosc_si[$flosc__ik];
                         }
                     }
-                    $prefix = 'flow_' . md5($ivr_file) . '_';
-                    $is_current = ($ivr_file === $selected_ivr);
+                    $flosc_prefix = 'flow_' . md5($flosc_ivr_file) . '_';
+                    $flosc_is_current = ($flosc_ivr_file === $selected_ivr);
                     // v1.3.5: Preserve underscores in default slug
-                    $default_slug = strtolower(preg_replace('/[^a-z0-9_-]/i', '', pathinfo($ivr_file, PATHINFO_FILENAME)));
-                    $slug = $settings['slug'] ?? $default_slug;
-                    $flow_url = home_url('/' . $slug . '/');
-                    $full_url = !empty($settings['domain']) ? 'https://' . $settings['domain'] . '/' : $flow_url;
+                    $flosc_default_slug = strtolower(preg_replace('/[^a-z0-9_-]/i', '', pathinfo($flosc_ivr_file, PATHINFO_FILENAME)));
+                    $flosc_slug = $flosc_settings['slug'] ?? $flosc_default_slug;
+                    $flosc_flow_url = home_url('/' . $slug . '/');
+                    $flosc_full_url = !empty($flosc_settings['domain']) ? 'https://' . $flosc_settings['domain'] . '/' : $flow_url;
                 ?>
                 
-                <div class="flosc-flow-block" style="background: white; border: 2px solid <?php echo esc_attr( $is_current ? '#2271b1' : '#c3c4c7' ); ?>; border-radius: 2px; padding: 25px; margin-bottom: 20px;">
+                <div class="flosc-flow-block" style="background: white; border: 2px solid <?php echo esc_attr( $flosc_is_current ? '#2271b1' : '#c3c4c7' ); ?>; border-radius: 2px; padding: 25px; margin-bottom: 20px;">
                     
                     <!-- Flow Header with IVR file -->
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #c3c4c7;">
                         <div>
                             <h3 style="margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px;">
-                                <?php echo esc_html($settings['name'] ?? $ivr_file); ?>
-                                <?php if ($is_current): ?>
+                                <?php echo esc_html($flosc_settings['name'] ?? $flosc_ivr_file); ?>
+                                <?php if ($flosc_is_current): ?>
                                     <span style="background: #2271b1; color: white; padding: 3px 10px; border-radius: 2px; font-size: 11px;">CURRENT</span>
                                 <?php endif; ?>
                             </h3>
                             <div style="margin-top: 5px;">
-                                <code style="background: #f3f4f6; padding: 3px 8px; border-radius: 4px; font-size: 12px;"><?php echo esc_html($ivr_file); ?></code>
+                                <code style="background: #f3f4f6; padding: 3px 8px; border-radius: 4px; font-size: 12px;"><?php echo esc_html($flosc_ivr_file); ?></code>
                             </div>
                         </div>
                         <div style="text-align: right;">
-                            <span style="background: <?php echo ($settings['status'] ?? 'active') === 'active' ? '#d4edda' : '#f0f0f1'; ?>; color: <?php echo ($settings['status'] ?? 'active') === 'active' ? '#155724' : '#50575e'; ?>; padding: 4px 12px; border-radius: 2px; font-size: 12px; font-weight: 600;">
-                                <?php echo esc_html(ucfirst($settings['status'] ?? 'active')); ?>
+                            <span style="background: <?php echo ($flosc_settings['status'] ?? 'active') === 'active' ? '#d4edda' : '#f0f0f1'; ?>; color: <?php echo ($flosc_settings['status'] ?? 'active') === 'active' ? '#155724' : '#50575e'; ?>; padding: 4px 12px; border-radius: 2px; font-size: 12px; font-weight: 600;">
+                                <?php echo esc_html(ucfirst($flosc_settings['status'] ?? 'active')); ?>
                             </span>
                         </div>
                     </div>
@@ -1007,10 +1037,10 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                             <a href="<?php echo esc_url($flow_url); ?>" target="_blank" style="color: #2271b1; text-decoration: none;">
                                 <?php echo esc_html($flow_url); ?> &#8599;
                             </a>
-                            <?php if (!empty($settings['domain'])): ?>
+                            <?php if (!empty($flosc_settings['domain'])): ?>
                                 <span style="color: #787c82; margin: 0 8px;">&rarr;</span>
-                                <a href="https://<?php echo esc_attr($settings['domain']); ?>/" target="_blank" style="color: #2271b1; text-decoration: none;">
-                                    https://<?php echo esc_html($settings['domain']); ?>/ &#8599;
+                                <a href="https://<?php echo esc_attr($flosc_settings['domain']); ?>/" target="_blank" style="color: #2271b1; text-decoration: none;">
+                                    https://<?php echo esc_html($flosc_settings['domain']); ?>/ &#8599;
                                 </a>
                             <?php endif; ?>
                         </div>
@@ -1025,7 +1055,7 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                                 <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">URL Slug <span style="color: #d63638;">(required)</span></label>
                                 <div style="display: flex; align-items: center; gap: 5px;">
                                     <code style="background: #f3f4f6; padding: 8px 10px; border-radius: 4px; font-size: 13px;"><?php echo esc_html( home_url('/') ); ?></code>
-                                    <input type="text" name="<?php echo esc_attr( $prefix ); ?>slug" 
+                                    <input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>slug" 
                                            value="<?php echo esc_attr($slug); ?>"
                                            placeholder="myapp"
                                            style="width: 250px; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px; font-weight: 600;">
@@ -1036,8 +1066,8 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                             
                             <div style="margin-bottom: 15px;">
                                 <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Custom Domain</label>
-                                <input type="text" name="<?php echo esc_attr( $prefix ); ?>domain" 
-                                       value="<?php echo esc_attr($settings['domain'] ?? ''); ?>"
+                                <input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>domain" 
+                                       value="<?php echo esc_attr($flosc_settings['domain'] ?? ''); ?>"
                                        placeholder="e.g., flosc.ai or lesaep.com"
                                        style="width: 100%; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
                                 <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">Custom domain pointing to this flow</p>
@@ -1045,16 +1075,16 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                             
                             <div style="margin-bottom: 15px;">
                                 <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Name</label>
-                                <input type="text" name="<?php echo esc_attr( $prefix ); ?>name" 
-                                       value="<?php echo esc_attr($settings['name'] ?? ''); ?>"
+                                <input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>name" 
+                                       value="<?php echo esc_attr($flosc_settings['name'] ?? ''); ?>"
                                        placeholder="e.g., FLOSC or LeSAEp"
                                        style="width: 100%; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
                             </div>
                             
                             <div style="margin-bottom: 15px;">
                                 <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Title</label>
-                                <input type="text" name="<?php echo esc_attr( $prefix ); ?>title" 
-                                       value="<?php echo esc_attr($settings['title'] ?? ''); ?>"
+                                <input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>title" 
+                                       value="<?php echo esc_attr($flosc_settings['title'] ?? ''); ?>"
                                        placeholder="e.g., Learn Excellent Standard American English Pronunciation"
                                        style="width: 100%; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
                                 <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">Description shown under the name</p>
@@ -1062,8 +1092,8 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                             
                             <div style="margin-bottom: 15px;">
                                 <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Tagline</label>
-                                <input type="text" name="<?php echo esc_attr( $prefix ); ?>tagline" 
-                                       value="<?php echo esc_attr($settings['tagline'] ?? ''); ?>"
+                                <input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>tagline" 
+                                       value="<?php echo esc_attr($flosc_settings['tagline'] ?? ''); ?>"
                                        placeholder="e.g., Freeline → Login → Offer → Sale → Content"
                                        style="width: 100%; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
                                 <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">Short tagline shown below the title (leave empty to hide)</p>
@@ -1075,47 +1105,47 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                             <div style="display: flex; gap: 15px; margin-bottom: 15px;">
                                 <div>
                                     <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Brand Color</label>
-                                    <input type="color" name="<?php echo esc_attr( $prefix ); ?>primary_color" 
-                                           value="<?php echo esc_attr($settings['primary_color'] ?? '#4f46e5'); ?>"
+                                    <input type="color" name="<?php echo esc_attr( $flosc_prefix ); ?>primary_color" 
+                                           value="<?php echo esc_attr($flosc_settings['primary_color'] ?? '#4f46e5'); ?>"
                                            style="width: 60px; height: 38px; padding: 0; border: 1px solid #c3c4c7; border-radius: 2px; cursor: pointer;">
                                 </div>
                                 <div>
                                     <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Status</label>
-                                    <select name="<?php echo esc_attr( $prefix ); ?>status" style="padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
-                                        <option value="active" <?php selected($settings['status'] ?? '', 'active'); ?>>Active</option>
-                                        <option value="draft" <?php selected($settings['status'] ?? '', 'draft'); ?>>Draft</option>
+                                    <select name="<?php echo esc_attr( $flosc_prefix ); ?>status" style="padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
+                                        <option value="active" <?php selected($flosc_settings['status'] ?? '', 'active'); ?>>Active</option>
+                                        <option value="draft" <?php selected($flosc_settings['status'] ?? '', 'draft'); ?>>Draft</option>
                                     </select>
                                 </div>
                             </div>
 
                             <div style="margin-bottom: 12px;">
                                 <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Chat Logo URL</label>
-                                <input type="url" name="<?php echo esc_attr( $prefix ); ?>chatlogo_url"
-                                       value="<?php echo esc_attr($settings['chatlogo_url'] ?? ''); ?>"
+                                <input type="url" name="<?php echo esc_attr( $flosc_prefix ); ?>chatlogo_url"
+                                       value="<?php echo esc_attr($flosc_settings['chatlogo_url'] ?? ''); ?>"
                                        placeholder="https://..."
                                        style="width: 100%; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
                             </div>
 
                             <div style="margin-bottom: 12px;">
                                 <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Favicon URL</label>
-                                <input type="url" name="<?php echo esc_attr( $prefix ); ?>favicon_url"
-                                       value="<?php echo esc_attr($settings['favicon_url'] ?? ''); ?>"
+                                <input type="url" name="<?php echo esc_attr( $flosc_prefix ); ?>favicon_url"
+                                       value="<?php echo esc_attr($flosc_settings['favicon_url'] ?? ''); ?>"
                                        placeholder="https://..."
                                        style="width: 100%; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
                             </div>
 
                             <div style="margin-bottom: 15px;">
                                 <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Badge Image URL</label>
-                                <input type="url" name="<?php echo esc_attr( $prefix ); ?>badgeUrl"
-                                       value="<?php echo esc_attr($settings['badgeUrl'] ?? ''); ?>"
+                                <input type="url" name="<?php echo esc_attr( $flosc_prefix ); ?>badgeUrl"
+                                       value="<?php echo esc_attr($flosc_settings['badgeUrl'] ?? ''); ?>"
                                        placeholder="https://..."
                                        style="width: 100%; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
                             </div>
                             
                             <!-- DNS Setup Info (if custom domain set) -->
-                            <?php if (!empty($settings['domain'])): ?>
+                            <?php if (!empty($flosc_settings['domain'])): ?>
                             <div style="background: #fef3c7; border: 1px solid #dba617; padding: 12px 15px; border-radius: 2px; margin-bottom: 15px;">
-                                <div style="font-weight: 600; font-size: 12px; color: #50575e; margin-bottom: 5px;">DNS Setup for <?php echo esc_html($settings['domain']); ?></div>
+                                <div style="font-weight: 600; font-size: 12px; color: #50575e; margin-bottom: 5px;">DNS Setup for <?php echo esc_html($flosc_settings['domain']); ?></div>
                                 <div style="font-size: 11px; color: #50575e;">
                                     Point your domain to: <code style="background: white; padding: 2px 6px; border-radius: 3px;"><?php echo esc_html(wp_parse_url(home_url(), PHP_URL_HOST)); ?></code><br>
                                     <a href="https://flosc.ai/docs/dns" target="_blank" style="color: #50575e;">Full DNS guide →</a>
@@ -1130,33 +1160,33 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
 
                         <div style="margin-bottom: 12px;">
                             <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Privacy Policy Content</label>
-                            <textarea name="<?php echo esc_attr( $prefix ); ?>privacy_policy_content" rows="8" style="width: 100%; padding: 8px 10px; border: 1px solid #c3c4c7; border-radius: 2px; font-family: monospace;"><?php echo esc_textarea($settings['privacy_policy_content'] ?? ''); ?></textarea>
+                            <textarea name="<?php echo esc_attr( $flosc_prefix ); ?>privacy_policy_content" rows="8" style="width: 100%; padding: 8px 10px; border: 1px solid #c3c4c7; border-radius: 2px; font-family: monospace;"><?php echo esc_textarea($flosc_settings['privacy_policy_content'] ?? ''); ?></textarea>
                             <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">Shown at /privacy for this flow domain. HTML is allowed.</p>
                         </div>
 
                         <div style="margin-bottom: 12px;">
                             <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Terms of Service Content</label>
-                            <textarea name="<?php echo esc_attr( $prefix ); ?>terms_of_service_content" rows="8" style="width: 100%; padding: 8px 10px; border: 1px solid #c3c4c7; border-radius: 2px; font-family: monospace;"><?php echo esc_textarea($settings['terms_of_service_content'] ?? ''); ?></textarea>
+                            <textarea name="<?php echo esc_attr( $flosc_prefix ); ?>terms_of_service_content" rows="8" style="width: 100%; padding: 8px 10px; border: 1px solid #c3c4c7; border-radius: 2px; font-family: monospace;"><?php echo esc_textarea($flosc_settings['terms_of_service_content'] ?? ''); ?></textarea>
                             <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">Shown at /terms-of-service for this flow domain. HTML is allowed.</p>
                         </div>
 
                         <div style="margin-bottom: 12px;">
                             <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Data Deletion Content</label>
-                            <textarea name="<?php echo esc_attr( $prefix ); ?>data_deletion_content" rows="8" style="width: 100%; padding: 8px 10px; border: 1px solid #c3c4c7; border-radius: 2px; font-family: monospace;"><?php echo esc_textarea($settings['data_deletion_content'] ?? ''); ?></textarea>
+                            <textarea name="<?php echo esc_attr( $flosc_prefix ); ?>data_deletion_content" rows="8" style="width: 100%; padding: 8px 10px; border: 1px solid #c3c4c7; border-radius: 2px; font-family: monospace;"><?php echo esc_textarea($flosc_settings['data_deletion_content'] ?? ''); ?></textarea>
                             <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">Shown at /data-deletion for this flow domain. HTML is allowed.</p>
                         </div>
 
                         <div>
                             <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Platform Compliance Content</label>
-                            <textarea name="<?php echo esc_attr( $prefix ); ?>platform_compliance_content" rows="8" style="width: 100%; padding: 8px 10px; border: 1px solid #c3c4c7; border-radius: 2px; font-family: monospace;"><?php echo esc_textarea($settings['platform_compliance_content'] ?? ''); ?></textarea>
+                            <textarea name="<?php echo esc_attr( $flosc_prefix ); ?>platform_compliance_content" rows="8" style="width: 100%; padding: 8px 10px; border: 1px solid #c3c4c7; border-radius: 2px; font-family: monospace;"><?php echo esc_textarea($flosc_settings['platform_compliance_content'] ?? ''); ?></textarea>
                             <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">Appended to all three policy pages (privacy, terms-of-service, data-deletion). HTML is allowed.</p>
                         </div>
                     </div>
                     
                     <!-- Save This Flow Button -->
                     <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #c3c4c7;">
-                        <button type="submit" name="flosc_save_flow" value="<?php echo esc_attr($ivr_file); ?>" class="button button-secondary">
-                            Save <?php echo esc_html($settings['name'] ?? $ivr_file); ?>
+                        <button type="submit" name="flosc_save_flow" value="<?php echo esc_attr($flosc_ivr_file); ?>" class="button button-secondary">
+                            Save <?php echo esc_html($flosc_settings['name'] ?? $flosc_ivr_file); ?>
                         </button>
                     </div>
                 </div>
@@ -1203,7 +1233,7 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                     <button type="submit" name="flosc_save_all_flows" value="1" class="button button-primary button-large">
                         Save All Flows
                     </button>
-                    <p style="margin: 10px 0 0; font-size: 12px; color: #50575e;">Saves identity settings for all <?php echo count($all_flows); ?> flows at once</p>
+                    <p style="margin: 10px 0 0; font-size: 12px; color: #50575e;">Saves identity settings for all <?php echo count($flosc_all_flows); ?> flows at once</p>
                 </div>
             </div>
             
@@ -1213,7 +1243,7 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
             <div class="card" style="max-width: 900px; padding: 20px; margin-top: 20px;">
                 <?php flosc_tab_header('🏷️', 'Identity'); ?>
                 <?php
-                $identity_docs_url = add_query_arg([
+                $flosc_identity_docs_url = add_query_arg([
                     'page' => 'flosc-settings',
                     'ivr'  => $selected_ivr,
                     'tab'  => 'documentation',
@@ -1221,15 +1251,15 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                 ], admin_url('admin.php')) . '#tab-identity';
                 ?>
                 <div style="margin:-8px 0 14px; text-align:right;">
-                    <a href="<?php echo esc_url($identity_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
+                    <a href="<?php echo esc_url($flosc_identity_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
                 </div>
                 
                 <!-- URL Mapping Info Box -->
                 <?php 
                 // v1.3.5: Preserve underscores in default slug
-                $default_slug = strtolower(preg_replace('/[^a-z0-9_-]/i', '', pathinfo($selected_ivr, PATHINFO_FILENAME)));
-                $current_slug = $flow_settings['slug'] ?? $default_slug;
-                $flow_url = home_url('/' . $current_slug . '/');
+                $flosc_default_slug = strtolower(preg_replace('/[^a-z0-9_-]/i', '', pathinfo($selected_ivr, PATHINFO_FILENAME)));
+                $flosc_current_slug = $flosc_flow_settings['slug'] ?? $flosc_default_slug;
+                $flosc_flow_url = home_url('/' . $flosc_current_slug . '/');
                 ?>
                 <div style="background: #f0f6fc; border: 1px solid #c3c4c7; padding: 20px; border-radius: 2px; color: #1d2327; margin-bottom: 25px;">
                     <div style="font-size: 12px; color: #50575e; margin-bottom: 5px;">This flow is accessible at:</div>
@@ -1237,10 +1267,10 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                         <a href="<?php echo esc_url($flow_url); ?>" target="_blank" style="color: #2271b1; text-decoration: none;">
                             <?php echo esc_html($flow_url); ?> &#8599;
                         </a>
-                        <?php if (!empty($flow_settings['domain'])): ?>
+                        <?php if (!empty($flosc_flow_settings['domain'])): ?>
                             <span style="color: #787c82; margin: 0 10px;">&rarr;</span>
-                            <a href="https://<?php echo esc_attr($flow_settings['domain']); ?>/" target="_blank" style="color: #2271b1; text-decoration: none;">
-                                https://<?php echo esc_html($flow_settings['domain']); ?>/ &#8599;
+                            <a href="https://<?php echo esc_attr($flosc_flow_settings['domain']); ?>/" target="_blank" style="color: #2271b1; text-decoration: none;">
+                                https://<?php echo esc_html($flosc_flow_settings['domain']); ?>/ &#8599;
                             </a>
                         <?php endif; ?>
                     </div>
@@ -1249,7 +1279,7 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                     </div>
                 </div>
                 
-                <?php $fi = $flow_settings['identity'] ?? []; ?>
+                <?php $flosc_fi = $flosc_flow_settings['identity'] ?? []; ?>
                 <table class="form-table">
                     <tr>
                         <th><label for="flow_slug">URL Slug</label></th>
@@ -1257,7 +1287,7 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                             <div style="display: flex; align-items: center; gap: 5px;">
                                 <code style="background: #f3f4f6; padding: 8px 12px; border-radius: 4px;"><?php echo esc_html( home_url('/') ); ?></code>
                                 <input type="text" id="flow_slug" name="flow_slug" style="width: 180px; font-weight: 600;"
-                                       value="<?php echo esc_attr($current_slug); ?>"
+                                       value="<?php echo esc_attr($flosc_current_slug); ?>"
                                        placeholder="myapp">
                                 <code style="background: #f3f4f6; padding: 8px 12px; border-radius: 4px;">/</code>
                             </div>
@@ -1268,7 +1298,7 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                         <th><label for="flow_domain">Custom Domain</label></th>
                         <td>
                             <input type="text" id="flow_domain" name="flow_domain" class="regular-text"
-                                   value="<?php echo esc_attr($flow_settings['domain'] ?? ''); ?>"
+                                   value="<?php echo esc_attr($flosc_flow_settings['domain'] ?? ''); ?>"
                                    placeholder="e.g., flosc.ai or lesaep.com">
                             <p class="description">Custom domain pointing to this flow</p>
                         </td>
@@ -1277,7 +1307,7 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                         <th><label for="flow_name">Name</label></th>
                         <td>
                             <input type="text" id="flow_name" name="flow_name" class="regular-text"
-                                   value="<?php echo esc_attr($fi['name'] ?? ''); ?>"
+                                   value="<?php echo esc_attr($flosc_fi['name'] ?? ''); ?>"
                                    placeholder="e.g., FLOSC or LeSAEp">
                             <p class="description">Display name shown in the chat header.</p>
                         </td>
@@ -1286,7 +1316,7 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                         <th><label for="flow_title">Title</label></th>
                         <td>
                             <input type="text" id="flow_title" name="flow_title" class="regular-text"
-                                   value="<?php echo esc_attr($fi['title'] ?? ''); ?>"
+                                   value="<?php echo esc_attr($flosc_fi['title'] ?? ''); ?>"
                                    placeholder="e.g., Learn Excellent Standard American English Pronunciation">
                             <p class="description">Description shown under the name.</p>
                         </td>
@@ -1295,7 +1325,7 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                         <th><label for="flow_tagline">Tagline</label></th>
                         <td>
                             <input type="text" id="flow_tagline" name="flow_tagline" class="regular-text"
-                                   value="<?php echo esc_attr($fi['tagline'] ?? ''); ?>"
+                                   value="<?php echo esc_attr($flosc_fi['tagline'] ?? ''); ?>"
                                    placeholder="e.g., Freeline → Login → Offer → Sale → Content">
                             <p class="description">Short tagline shown below the title. Leave empty to hide.</p>
                         </td>
@@ -1304,9 +1334,9 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                         <th><label for="flow_primary_color">Brand Color</label></th>
                         <td>
                             <input type="color" id="flow_primary_color" name="flow_primary_color"
-                                   value="<?php echo esc_attr($fi['primary_color'] ?? '#4f46e5'); ?>"
+                                   value="<?php echo esc_attr($flosc_fi['primary_color'] ?? '#4f46e5'); ?>"
                                    style="width: 60px; height: 40px; padding: 0; border: 1px solid #ccc; cursor: pointer;">
-                            <span id="color-preview" style="margin-left: 10px; padding: 5px 15px; border-radius: 4px; color: white; background: <?php echo esc_attr($fi['primary_color'] ?? '#4f46e5'); ?>;">
+                            <span id="color-preview" style="margin-left: 10px; padding: 5px 15px; border-radius: 4px; color: white; background: <?php echo esc_attr($flosc_fi['primary_color'] ?? '#4f46e5'); ?>;">
                                 Preview
                             </span>
                             <p class="description">Lesson highlights, form buttons, focus rings, carousel controls. Sets <code>--flosc-primary</code>.</p>
@@ -1322,12 +1352,12 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                         <td>
                             <div style="display: flex; align-items: center; gap: 12px;">
                                 <input type="url" id="flow_chatlogo_url" name="flow_chatlogo_url" class="regular-text"
-                                       value="<?php echo esc_attr($fi['chatlogo_url'] ?? ''); ?>"
+                                       value="<?php echo esc_attr($flosc_fi['chatlogo_url'] ?? ''); ?>"
                                        placeholder="https://...">
                                 <button type="button" class="button" id="flosc_upload_chatlogo">Choose Image</button>
-                                <img src="<?php echo esc_url($fi['chatlogo_url'] ?? ''); ?>" 
+                                <img src="<?php echo esc_url($flosc_fi['chatlogo_url'] ?? ''); ?>" 
                                      alt="" id="flosc_chatlogo_preview"
-                                     style="max-height: 40px; border-radius: 4px;<?php echo empty($fi['chatlogo_url']) ? ' display: none;' : ''; ?>">
+                                     style="max-height: 40px; border-radius: 4px;<?php echo empty($flosc_fi['chatlogo_url']) ? ' display: none;' : ''; ?>">
                             </div>
                             <p class="description">Image shown in the chat header beside the name. Wider/rectangular formats welcome.</p>
                         </td>
@@ -1337,12 +1367,12 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                         <td>
                             <div style="display: flex; align-items: center; gap: 12px;">
                                 <input type="url" id="flow_favicon_url" name="flow_favicon_url" class="regular-text"
-                                       value="<?php echo esc_attr($fi['favicon_url'] ?? ''); ?>"
+                                       value="<?php echo esc_attr($flosc_fi['favicon_url'] ?? ''); ?>"
                                        placeholder="https://...">
                                 <button type="button" class="button" id="flosc_upload_favicon">Choose Image</button>
-                                <img src="<?php echo esc_url($fi['favicon_url'] ?? ''); ?>" 
+                                <img src="<?php echo esc_url($flosc_fi['favicon_url'] ?? ''); ?>" 
                                      alt="" id="flosc_favicon_preview"
-                                     style="width: 32px; height: 32px; border-radius: 6px;<?php echo empty($fi['favicon_url']) ? ' display: none;' : ''; ?>">
+                                     style="width: 32px; height: 32px; border-radius: 6px;<?php echo empty($flosc_fi['favicon_url']) ? ' display: none;' : ''; ?>">
                             </div>
                             <p class="description">Browser tab icon. Square PNG recommended (512&times;512+).</p>
                         </td>
@@ -1353,12 +1383,12 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                         <td>
                             <div style="display: flex; align-items: center; gap: 12px;">
                                 <input type="url" id="flow_badgeUrl" name="flow_badgeUrl" class="regular-text"
-                                       value="<?php echo esc_attr($fi['badgeUrl'] ?? ''); ?>"
+                                       value="<?php echo esc_attr($flosc_fi['badgeUrl'] ?? ''); ?>"
                                        placeholder="https://...">
                                 <button type="button" class="button" id="flosc_upload_badge">Choose Image</button>
-                                <img src="<?php echo esc_url($fi['badgeUrl'] ?? ''); ?>" 
+                                <img src="<?php echo esc_url($flosc_fi['badgeUrl'] ?? ''); ?>" 
                                      alt="" id="flosc_badge_preview"
-                                     style="max-height: 40px; border-radius: 6px;<?php echo empty($fi['badgeUrl']) ? ' display: none;' : ''; ?>">
+                                     style="max-height: 40px; border-radius: 6px;<?php echo empty($flosc_fi['badgeUrl']) ? ' display: none;' : ''; ?>">
                             </div>
                             <p class="description">Badge shown in the AI welcome message. Leave empty for no badge.</p>
                         </td>
@@ -1367,8 +1397,8 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                         <th><label for="flow_status">Status</label></th>
                         <td>
                             <select id="flow_status" name="flow_status">
-                                <option value="active" <?php selected($flow_settings['status'] ?? '', 'active'); ?>>Active</option>
-                                <option value="draft" <?php selected($flow_settings['status'] ?? '', 'draft'); ?>>Draft</option>
+                                <option value="active" <?php selected($flosc_flow_settings['status'] ?? '', 'active'); ?>>Active</option>
+                                <option value="draft" <?php selected($flosc_flow_settings['status'] ?? '', 'draft'); ?>>Draft</option>
                             </select>
                             <p class="description">Draft flows are only visible to admins.</p>
                         </td>
@@ -1376,28 +1406,28 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                     <tr>
                         <th><label for="flow_privacy_policy_content">Privacy Policy Content</label></th>
                         <td>
-                            <textarea id="flow_privacy_policy_content" name="flow_privacy_policy_content" class="large-text" rows="8"><?php echo esc_textarea($fi['privacy_policy_content'] ?? ''); ?></textarea>
+                            <textarea id="flow_privacy_policy_content" name="flow_privacy_policy_content" class="large-text" rows="8"><?php echo esc_textarea($flosc_fi['privacy_policy_content'] ?? ''); ?></textarea>
                             <p class="description">Per-flow content shown at /privacy. HTML is allowed.</p>
                         </td>
                     </tr>
                     <tr>
                         <th><label for="flow_terms_of_service_content">Terms of Service Content</label></th>
                         <td>
-                            <textarea id="flow_terms_of_service_content" name="flow_terms_of_service_content" class="large-text" rows="8"><?php echo esc_textarea($fi['terms_of_service_content'] ?? ''); ?></textarea>
+                            <textarea id="flow_terms_of_service_content" name="flow_terms_of_service_content" class="large-text" rows="8"><?php echo esc_textarea($flosc_fi['terms_of_service_content'] ?? ''); ?></textarea>
                             <p class="description">Per-flow content shown at /terms-of-service. HTML is allowed.</p>
                         </td>
                     </tr>
                     <tr>
                         <th><label for="flow_data_deletion_content">Data Deletion Content</label></th>
                         <td>
-                            <textarea id="flow_data_deletion_content" name="flow_data_deletion_content" class="large-text" rows="8"><?php echo esc_textarea($fi['data_deletion_content'] ?? ''); ?></textarea>
+                            <textarea id="flow_data_deletion_content" name="flow_data_deletion_content" class="large-text" rows="8"><?php echo esc_textarea($flosc_fi['data_deletion_content'] ?? ''); ?></textarea>
                             <p class="description">Per-flow content shown at /data-deletion. HTML is allowed.</p>
                         </td>
                     </tr>
                     <tr>
                         <th><label for="flow_platform_compliance_content">Platform Compliance Content</label></th>
                         <td>
-                            <textarea id="flow_platform_compliance_content" name="flow_platform_compliance_content" class="large-text" rows="8"><?php echo esc_textarea($fi['platform_compliance_content'] ?? ''); ?></textarea>
+                            <textarea id="flow_platform_compliance_content" name="flow_platform_compliance_content" class="large-text" rows="8"><?php echo esc_textarea($flosc_fi['platform_compliance_content'] ?? ''); ?></textarea>
                             <p class="description">Appended to all three policy pages (privacy, terms-of-service, data-deletion). HTML is allowed.</p>
                         </td>
                     </tr>
@@ -1428,9 +1458,9 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
                 <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
                 
                 <!-- DNS Setup Info (if custom domain set) -->
-                <?php if (!empty($flow_settings['domain'])): ?>
+                <?php if (!empty($flosc_flow_settings['domain'])): ?>
                 <div style="background: #fef3c7; border: 1px solid #dba617; padding: 15px 20px; border-radius: 2px; margin-top: 20px;">
-                    <h4 style="margin: 0 0 10px; color: #50575e; font-size: 14px;">DNS Setup for <?php echo esc_html($flow_settings['domain']); ?></h4>
+                    <h4 style="margin: 0 0 10px; color: #50575e; font-size: 14px;">DNS Setup for <?php echo esc_html($flosc_flow_settings['domain']); ?></h4>
                     <p style="font-size: 13px; color: #50575e; margin: 0;">
                         Point your domain to: <code style="background: white; padding: 3px 8px; border-radius: 4px;"><?php echo esc_html(wp_parse_url(home_url(), PHP_URL_HOST)); ?></code>
                     </p>
@@ -1443,68 +1473,68 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
             
             <?php endif; ?>
             
-        <?php elseif ($active_tab === 'ivr-messages'): ?>
+        <?php elseif ($flosc_active_tab === 'ivr-messages'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/ivr-messages.php'; ?>
             
-        <?php elseif ($active_tab === 'style'): ?>
+        <?php elseif ($flosc_active_tab === 'style'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/chat-styling.php'; ?>
             
-        <?php elseif ($active_tab === 'ai'): ?>
+        <?php elseif ($flosc_active_tab === 'ai'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/ai-configuration.php'; ?>
-        <?php elseif ($active_tab === 'ai-knowledge'): ?>
-            <?php $redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($selected_ivr) . '&tab=ai#flosc-kb-section'); ?>
-            <?php wp_add_inline_script('flosc-admin', 'window.location.replace(' . wp_json_encode($redirect_url) . ');'); ?>
-            <p>Redirecting to <a href="<?php echo esc_url($redirect_url); ?>">Knowledge Base in AI tab</a>&hellip;</p>
-        <?php elseif ($active_tab === 'ai-guide'): ?>
-            <?php $redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($selected_ivr) . '&tab=documentation&doc=ref-ai-config'); ?>
-            <?php wp_add_inline_script('flosc-admin', 'window.location.replace(' . wp_json_encode($redirect_url) . ');'); ?>
-            <p>Redirecting to <a href="<?php echo esc_url($redirect_url); ?>">AI Configuration Guide in Documentation</a>&hellip;</p>
-        <?php elseif ($active_tab === 'knowledge'): ?>
-            <?php $redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($selected_ivr) . '&tab=ai#flosc-kb-section'); ?>
-            <?php wp_add_inline_script('flosc-admin', 'window.location.replace(' . wp_json_encode($redirect_url) . ');'); ?>
-            <p>Redirecting to <a href="<?php echo esc_url($redirect_url); ?>">Knowledge Base in AI tab</a>&hellip;</p>
+        <?php elseif ($flosc_active_tab === 'ai-knowledge'): ?>
+            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($selected_ivr) . '&tab=ai#flosc-kb-section'); ?>
+            <?php wp_add_inline_script('flosc-admin', 'window.location.replace(' . wp_json_encode($flosc_redirect_url) . ');'); ?>
+            <p>Redirecting to <a href="<?php echo esc_url($flosc_redirect_url); ?>">Knowledge Base in AI tab</a>&hellip;</p>
+        <?php elseif ($flosc_active_tab === 'ai-guide'): ?>
+            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($selected_ivr) . '&tab=documentation&doc=ref-ai-config'); ?>
+            <?php wp_add_inline_script('flosc-admin', 'window.location.replace(' . wp_json_encode($flosc_redirect_url) . ');'); ?>
+            <p>Redirecting to <a href="<?php echo esc_url($flosc_redirect_url); ?>">AI Configuration Guide in Documentation</a>&hellip;</p>
+        <?php elseif ($flosc_active_tab === 'knowledge'): ?>
+            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($selected_ivr) . '&tab=ai#flosc-kb-section'); ?>
+            <?php wp_add_inline_script('flosc-admin', 'window.location.replace(' . wp_json_encode($flosc_redirect_url) . ');'); ?>
+            <p>Redirecting to <a href="<?php echo esc_url($flosc_redirect_url); ?>">Knowledge Base in AI tab</a>&hellip;</p>
             
-        <?php elseif ($active_tab === 'quiz'): ?>
+        <?php elseif ($flosc_active_tab === 'quiz'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/quiz.php'; ?>
             
-        <?php elseif ($active_tab === 'email'): ?>
+        <?php elseif ($flosc_active_tab === 'email'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/email.php'; ?>
             
-        <?php elseif ($active_tab === 'lessons'): ?>
+        <?php elseif ($flosc_active_tab === 'lessons'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/lessons.php'; ?>
             
-        <?php elseif ($active_tab === 'autoprompts'): ?>
+        <?php elseif ($flosc_active_tab === 'autoprompts'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/autoprompts.php'; ?>
 
-        <?php elseif ($active_tab === 'member-levels'): ?>
+        <?php elseif ($flosc_active_tab === 'member-levels'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/member-levels.php'; ?>
 
-        <?php elseif ($active_tab === 'offers'): ?>
+        <?php elseif ($flosc_active_tab === 'offers'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/offers.php'; ?>
 
-        <?php elseif ($active_tab === 'login'): ?>
+        <?php elseif ($flosc_active_tab === 'login'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/login-registration.php'; ?>
             
-        <?php elseif ($active_tab === 'payments'): ?>
+        <?php elseif ($flosc_active_tab === 'payments'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/payments.php'; ?>
             
-        <?php elseif ($active_tab === 'sso'): ?>
+        <?php elseif ($flosc_active_tab === 'sso'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/sso.php'; ?>
 
-        <?php elseif ($active_tab === 'administration'): ?>
+        <?php elseif ($flosc_active_tab === 'administration'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/administration.php'; ?>
 
-        <?php elseif ($active_tab === 'ui'): ?>
+        <?php elseif ($flosc_active_tab === 'ui'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/ui-navigation.php'; ?>
 
-        <?php elseif ($active_tab === 'chat-logs'): ?>
+        <?php elseif ($flosc_active_tab === 'chat-logs'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/chat-logs.php'; ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/ai-feedback.php'; ?>
 
-        <?php elseif ($active_tab === 'documentation'): ?>
+        <?php elseif ($flosc_active_tab === 'documentation'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/documentation.php'; ?>
 
-        <?php elseif ($active_tab === 'da1'): ?>
+        <?php elseif ($flosc_active_tab === 'da1'): ?>
             <div style="margin: 18px 0;">
                 <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-da1') ); ?>" class="button button-primary">Open DA1 Catalog</a>
             </div>
@@ -1512,10 +1542,10 @@ $GLOBALS['flosc_settings_key'] = $settings_key;
 
         <?php endif; ?>
 
-        <?php if ($active_tab !== 'documentation' && $active_tab !== 'autoprompts' && $active_tab !== 'da1'): ?>
+        <?php if ($flosc_active_tab !== 'documentation' && $flosc_active_tab !== 'autoprompts' && $flosc_active_tab !== 'da1'): ?>
         <p class="submit" style="margin-top: 20px;">
             <button type="submit" name="flosc_save" class="button button-primary button-large">
-                Save Settings for <?php echo esc_html($flow_settings['identity']['name'] ?? $selected_ivr); ?>
+                Save Settings for <?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $selected_ivr); ?>
             </button>
         </p>
         <?php endif; ?>

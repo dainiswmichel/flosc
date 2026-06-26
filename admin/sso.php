@@ -19,11 +19,11 @@ if (!defined('ABSPATH')) {
 }
 
 // Get callback base URL
-$site_url = get_site_url();
-$callback_base = $site_url . '/wp-json/flosc/v1/sso/callback/';
+$flosc_site_url = get_site_url();
+$flosc_callback_base = $flosc_site_url . '/wp-json/flosc/v1/sso/callback/';
 
 // Provider configurations
-$providers = [
+$flosc_providers = [
     'google' => [
         'name' => 'Google',
         'icon' => '🔵',
@@ -103,27 +103,27 @@ $providers = [
 ];
 
 // v1.4.9: SSO settings are PER-FLOW, stored in the flow settings array
-$flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
-$selected_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
-$sso_docs_url = add_query_arg([
+$flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
+$flosc_selected_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
+$flosc_sso_docs_url = add_query_arg([
     'page' => 'flosc-settings',
-    'ivr'  => $selected_ivr,
+    'ivr'  => $flosc_selected_ivr,
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-sso';
-$flow_display_name = trim((string)($flow_settings['identity']['name'] ?? ''));
-if ($flow_display_name === '') {
-    $flow_display_name = trim((string)($flow_settings['name'] ?? ''));
+$flosc_flow_display_name = trim((string)($flosc_flow_settings['identity']['name'] ?? ''));
+if ($flosc_flow_display_name === '') {
+    $flosc_flow_display_name = trim((string)($flosc_flow_settings['name'] ?? ''));
 }
-if ($flow_display_name === '') {
-    $flow_display_name = $selected_ivr;
+if ($flosc_flow_display_name === '') {
+    $flosc_flow_display_name = $flosc_selected_ivr;
 }
-$current_flow_id = $selected_ivr ? sanitize_key(pathinfo($selected_ivr, PATHINFO_FILENAME)) : '';
+$flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_selected_ivr, PATHINFO_FILENAME)) : '';
 ?>
 
 <div class="flosc-sso-settings">
     <div style="margin:0 0 14px; text-align:right;">
-        <a href="<?php echo esc_url($sso_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
+        <a href="<?php echo esc_url($flosc_sso_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
     </div>
     <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
         <div>
@@ -131,76 +131,76 @@ $current_flow_id = $selected_ivr ? sanitize_key(pathinfo($selected_ivr, PATHINFO
             <p class="description" style="margin-top: 0;">Configure OAuth2 providers to enable social login in your FLOSC chat. Users can sign in with their existing accounts.</p>
         </div>
         <button type="submit" name="flosc_save" class="button button-primary" style="margin-top: 10px;">
-            💾 Save SSO Settings for <?php echo esc_html($flow_display_name); ?>
+            💾 Save SSO Settings for <?php echo esc_html($flosc_flow_display_name); ?>
         </button>
     </div>
     
     <?php
     // Build the flow-based fallback app URL used when state.redirect_to is missing.
-    $configured_post_login_redirect = trim((string)($flow_settings['sso_post_login_redirect_url'] ?? ''));
-    if (!empty($configured_post_login_redirect) && wp_http_validate_url($configured_post_login_redirect)) {
-        $flow_fallback_url = $configured_post_login_redirect;
-        $redirect_source = 'flow setting: Post-login fallback URL';
+    $flosc_configured_post_login_redirect = trim((string)($flosc_flow_settings['sso_post_login_redirect_url'] ?? ''));
+    if (!empty($flosc_configured_post_login_redirect) && wp_http_validate_url($flosc_configured_post_login_redirect)) {
+        $flosc_flow_fallback_url = $flosc_configured_post_login_redirect;
+        $flosc_redirect_source = 'flow setting: Post-login fallback URL';
     } else {
-    $configured_domain = trim((string)($flow_settings['custom_domain'] ?? ($flow_settings['domain'] ?? '')));
-    $configured_domain = preg_replace('#^https?://#i', '', $configured_domain);
-    $configured_domain = trim($configured_domain, " \t\n\r\0\x0B/");
-    $flow_slug = trim((string)($flow_settings['slug'] ?? ''), '/');
+    $flosc_configured_domain = trim((string)($flosc_flow_settings['custom_domain'] ?? ($flosc_flow_settings['domain'] ?? '')));
+    $flosc_configured_domain = preg_replace('#^https?://#i', '', $flosc_configured_domain);
+    $flosc_configured_domain = trim($flosc_configured_domain, " \t\n\r\0\x0B/");
+    $flosc_flow_slug = trim((string)($flosc_flow_settings['slug'] ?? ''), '/');
 
-    if ($current_flow_id === 'dainis_net_ivr') {
-        $flow_fallback_url = home_url('/chat');
-        $redirect_source = '/chat deployment shortcut';
-    } elseif (!empty($configured_domain)) {
-        $flow_fallback_url = 'https://' . $configured_domain . '/';
-        $redirect_source = 'flow custom domain';
-    } elseif (!empty($flow_slug)) {
-        $flow_fallback_url = home_url('/' . $flow_slug . '/');
-        $redirect_source = 'flow slug';
+    if ($flosc_current_flow_id === 'dainis_net_ivr') {
+        $flosc_flow_fallback_url = home_url('/chat');
+        $flosc_redirect_source = '/chat deployment shortcut';
+    } elseif (!empty($flosc_configured_domain)) {
+        $flosc_flow_fallback_url = 'https://' . $flosc_configured_domain . '/';
+        $flosc_redirect_source = 'flow custom domain';
+    } elseif (!empty($flosc_flow_slug)) {
+        $flosc_flow_fallback_url = home_url('/' . $flosc_flow_slug . '/');
+        $flosc_redirect_source = 'flow slug';
     } else {
-        $flow_fallback_url = home_url('/');
-        $redirect_source = 'site home fallback';
+        $flosc_flow_fallback_url = home_url('/');
+        $flosc_redirect_source = 'site home fallback';
     }
     }
     ?>
 
     <div class="card" style="padding: 14px 16px; margin: 12px 0 18px; border-left: 4px solid #0073aa; background: #f0f7ff;">
         <h3 style="margin: 0 0 8px;">Flow Redirect Context</h3>
-        <p style="margin: 0 0 6px;"><strong>IVR file:</strong> <code><?php echo esc_html($selected_ivr ?: '(none selected)'); ?></code></p>
-        <p style="margin: 0 0 6px;"><strong>flow_id parameter:</strong> <code><?php echo esc_html($current_flow_id ?: '(none)'); ?></code></p>
+        <p style="margin: 0 0 6px;"><strong>IVR file:</strong> <code><?php echo esc_html($flosc_selected_ivr ?: '(none selected)'); ?></code></p>
+        <p style="margin: 0 0 6px;"><strong>flow_id parameter:</strong> <code><?php echo esc_html($flosc_current_flow_id ?: '(none)'); ?></code></p>
         <p style="margin: 0 0 6px;"><strong>Runtime redirect_to (primary):</strong> <code>window.location.href</code> from chat page at click-time</p>
         <p style="margin: 0 0 6px;"><strong>Configured Post-login redirect URL:</strong>
             <input type="url"
                    name="flow_sso_post_login_redirect_url"
-                   value="<?php echo esc_attr($flow_settings['sso_post_login_redirect_url'] ?? ''); ?>"
+                   value="<?php echo esc_attr($flosc_flow_settings['sso_post_login_redirect_url'] ?? ''); ?>"
                    class="regular-text"
                    style="max-width: 520px; margin-left: 8px;"
                    placeholder="https://flosc.ai/">
         </p>
         <p class="description" style="margin: 0 0 6px 0;">Used only if OAuth state has no <code>redirect_to</code>. Leave empty to use flow domain/slug fallback.</p>
-        <p style="margin: 0 0 6px;"><strong>Fallback app URL (if state has no redirect_to):</strong> <code><?php echo esc_html($flow_fallback_url); ?></code></p>
-        <p style="margin: 0;"><strong>Fallback source:</strong> <?php echo esc_html($redirect_source); ?></p>
+        <p style="margin: 0 0 6px;"><strong>Fallback app URL (if state has no redirect_to):</strong> <code><?php echo esc_html($flosc_flow_fallback_url); ?></code></p>
+        <p style="margin: 0;"><strong>Fallback source:</strong> <?php echo esc_html($flosc_redirect_source); ?></p>
     </div>
 
-    <?php foreach ($providers as $provider_id => $provider): ?>
+    <?php foreach ($flosc_providers as $flosc_provider_id => $flosc_provider): ?>
         <?php
-        $is_enabled = !empty($flow_settings["sso_{$provider_id}_enabled"]);
-        $client_id = $flow_settings["sso_{$provider_id}_client_id"] ?? '';
-        $client_secret = $flow_settings["sso_{$provider_id}_client_secret"] ?? '';
-        $callback_url = $callback_base . $provider_id;
-        $authorize_url_example = add_query_arg(
+        $flosc_is_enabled = !empty($flosc_flow_settings["sso_{$provider_id}_enabled"]);
+        $flosc_client_id = $flosc_flow_settings["sso_{$provider_id}_client_id"] ?? '';
+        $flosc_client_secret = $flosc_flow_settings["sso_{$provider_id}_client_secret"] ?? '';
+        $flosc_callback_url = $flosc_callback_base . $provider_id;
+        $flosc_authorize_url_example = add_query_arg(
             [
-                'flow_id' => $current_flow_id,
-                'redirect_to' => $flow_fallback_url,
+                'flow_id' => $flosc_current_flow_id,
+                'redirect_to' => $flosc_flow_fallback_url,
             ],
-            $site_url . '/wp-json/flosc/v1/sso/authorize/' . $provider_id
+            $flosc_site_url . '/wp-json/flosc/v1/sso/authorize/' . $provider_id
         );
         ?>
         
-        <div class="flosc-sso-provider card" style="margin-bottom: 20px; padding: 20px; border-left: 4px solid <?php echo esc_attr($is_enabled ? '#28a745' : '#ccc'); ?>;">
+        <div class="flosc-sso-provider card" style="margin-bottom: 20px; padding: 20px; border-left: 4px solid <?php echo esc_attr($flosc_is_enabled ? '#28a745' : '#ccc'); ?>;">
             <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
             <span style="font-size: 1.5em;"><?php echo esc_html($provider['icon']); ?></span>
                 <?php echo esc_html($provider['name']); ?>
-                <?php if ($is_enabled && $client_id && $client_secret): ?>
+                <?php if ($flosc_is_enabled && $flosc_client_id && $flosc_client_secret): ?>
                     <span style="background: #28a745; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: normal;">ENABLED</span>
                 <?php endif; ?>
             </h3>
@@ -213,7 +213,7 @@ $current_flow_id = $selected_ivr ? sanitize_key(pathinfo($selected_ivr, PATHINFO
                             <input type="checkbox" 
                                 name="flow_sso_<?php echo esc_attr($provider_id); ?>_enabled" 
                                    value="1" 
-                                   <?php checked($is_enabled, true); ?>>
+                                   <?php checked($flosc_is_enabled, true); ?>>
                             Allow users to sign in with <?php echo esc_html($provider['name']); ?>
                         </label>
                     </td>
@@ -224,7 +224,7 @@ $current_flow_id = $selected_ivr ? sanitize_key(pathinfo($selected_ivr, PATHINFO
                     <td>
                            <input type="text" 
                                name="flow_sso_<?php echo esc_attr($provider_id); ?>_client_id" 
-                               value="<?php echo esc_attr($client_id); ?>" 
+                               value="<?php echo esc_attr($flosc_client_id); ?>" 
                                class="regular-text"
                                placeholder="<?php echo esc_attr($provider_id === 'apple' ? 'Service ID (e.g., com.example.app)' : 'Your ' . $provider['name'] . ' Client/App ID'); ?>">
                     </td>
@@ -235,7 +235,7 @@ $current_flow_id = $selected_ivr ? sanitize_key(pathinfo($selected_ivr, PATHINFO
                     <td>
                            <input type="password" 
                                name="flow_sso_<?php echo esc_attr($provider_id); ?>_client_secret" 
-                               value="<?php echo esc_attr($client_secret); ?>" 
+                               value="<?php echo esc_attr($flosc_client_secret); ?>" 
                                class="regular-text"
                                placeholder="<?php echo esc_attr($provider_id === 'apple' ? 'Leave empty - auto-generated from keys' : 'Your ' . $provider['name'] . ' Client Secret'); ?>"
                                <?php if ($provider_id === 'apple') : ?>readonly style="background: #f0f0f0;"<?php endif; ?>>
@@ -247,16 +247,16 @@ $current_flow_id = $selected_ivr ? sanitize_key(pathinfo($selected_ivr, PATHINFO
                 
                 <?php if (isset($provider['extra_fields']) && in_array('team_id', $provider['extra_fields'])): ?>
                     <?php
-                    $team_id = $flow_settings["sso_{$provider_id}_team_id"] ?? '';
-                    $key_id = $flow_settings["sso_{$provider_id}_key_id"] ?? '';
-                    $private_key = $flow_settings["sso_{$provider_id}_private_key"] ?? '';
+                    $flosc_team_id = $flosc_flow_settings["sso_{$provider_id}_team_id"] ?? '';
+                    $flosc_key_id = $flosc_flow_settings["sso_{$provider_id}_key_id"] ?? '';
+                    $flosc_private_key = $flosc_flow_settings["sso_{$provider_id}_private_key"] ?? '';
                     ?>
                     <tr>
                         <th scope="row">Team ID</th>
                         <td>
                             <input type="text" 
                                 name="flow_sso_<?php echo esc_attr($provider_id); ?>_team_id" 
-                                   value="<?php echo esc_attr($team_id); ?>" 
+                                   value="<?php echo esc_attr($flosc_team_id); ?>" 
                                    class="regular-text"
                                    placeholder="10-character Team ID (e.g., ABCDE12345)">
                             <p class="description">Found in the top right of your Apple Developer account</p>
@@ -268,7 +268,7 @@ $current_flow_id = $selected_ivr ? sanitize_key(pathinfo($selected_ivr, PATHINFO
                         <td>
                             <input type="text" 
                                 name="flow_sso_<?php echo esc_attr($provider_id); ?>_key_id" 
-                                   value="<?php echo esc_attr($key_id); ?>" 
+                                   value="<?php echo esc_attr($flosc_key_id); ?>" 
                                    class="regular-text"
                                    placeholder="10-character Key ID">
                             <p class="description">Found in the key details page in Apple Developer</p>
@@ -281,7 +281,7 @@ $current_flow_id = $selected_ivr ? sanitize_key(pathinfo($selected_ivr, PATHINFO
                             <textarea name="flow_sso_<?php echo esc_attr($provider_id); ?>_private_key" 
                                       rows="5" 
                                       class="large-text code"
-                                      placeholder="-----BEGIN PRIVATE KEY-----&#10;Paste your .p8 file contents here&#10;-----END PRIVATE KEY-----"><?php echo esc_textarea($private_key); ?></textarea>
+                                      placeholder="-----BEGIN PRIVATE KEY-----&#10;Paste your .p8 file contents here&#10;-----END PRIVATE KEY-----"><?php echo esc_textarea($flosc_private_key); ?></textarea>
                             <p class="description">Contents of the .p8 file downloaded from Apple Developer. Keep this secure!</p>
                         </td>
                     </tr>
@@ -290,10 +290,10 @@ $current_flow_id = $selected_ivr ? sanitize_key(pathinfo($selected_ivr, PATHINFO
                 <tr>
                     <th scope="row">Callback URL</th>
                     <td>
-                        <code style="display: inline-block; padding: 8px 12px; background: #f5f5f5; border-radius: 4px; word-break: break-all;"><?php echo esc_html($callback_url); ?></code>
+                        <code style="display: inline-block; padding: 8px 12px; background: #f5f5f5; border-radius: 4px; word-break: break-all;"><?php echo esc_html($flosc_callback_url); ?></code>
                         <button type="button" 
                                 class="button button-small" 
-                                onclick="navigator.clipboard.writeText('<?php echo esc_js($callback_url); ?>').then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 2000); });">
+                                onclick="navigator.clipboard.writeText('<?php echo esc_js($flosc_callback_url); ?>').then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 2000); });">
                             Copy
                         </button>
                         <p class="description">Add this URL to your <?php echo esc_html($provider['name']); ?> app's authorized redirect URIs.</p>
@@ -303,10 +303,10 @@ $current_flow_id = $selected_ivr ? sanitize_key(pathinfo($selected_ivr, PATHINFO
                 <tr>
                     <th scope="row">Authorize URL (Diagnostic Example)</th>
                     <td>
-                        <code style="display: inline-block; padding: 8px 12px; background: #f5f5f5; border-radius: 4px; word-break: break-all;"><?php echo esc_html($authorize_url_example); ?></code>
+                        <code style="display: inline-block; padding: 8px 12px; background: #f5f5f5; border-radius: 4px; word-break: break-all;"><?php echo esc_html($flosc_authorize_url_example); ?></code>
                         <button type="button"
                                 class="button button-small"
-                                onclick="navigator.clipboard.writeText('<?php echo esc_js($authorize_url_example); ?>').then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 2000); });">
+                                onclick="navigator.clipboard.writeText('<?php echo esc_js($flosc_authorize_url_example); ?>').then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 2000); });">
                             Copy
                         </button>
                         <p class="description">Diagnostic URL with selected <code>flow_id</code>. Production chat uses the current page URL as <code>redirect_to</code> at click-time.</p>
@@ -320,7 +320,7 @@ $current_flow_id = $selected_ivr ? sanitize_key(pathinfo($selected_ivr, PATHINFO
                     📖 Setup Instructions for <?php echo esc_html($provider['name']); ?>
                 </summary>
                 <ol style="margin-top: 10px; padding-left: 20px;">
-                    <?php foreach ($provider['instructions'] as $step): ?>
+                    <?php foreach ($provider['instructions'] as $flosc_step): ?>
                         <li style="margin-bottom: 8px;"><?php echo wp_kses_post($step); ?></li>
                     <?php endforeach; ?>
                 </ol>
@@ -355,7 +355,7 @@ $current_flow_id = $selected_ivr ? sanitize_key(pathinfo($selected_ivr, PATHINFO
     
     <p class="submit" style="margin: 10px 0 20px;">
         <button type="submit" name="flosc_save" class="button button-primary" style="margin-top: 0;">
-            💾 Save SSO Settings for <?php echo esc_html($flow_display_name); ?>
+            💾 Save SSO Settings for <?php echo esc_html($flosc_flow_display_name); ?>
         </button>
     </p>
     
@@ -382,15 +382,15 @@ $current_flow_id = $selected_ivr ? sanitize_key(pathinfo($selected_ivr, PATHINFO
             </tr>
             <tr>
                 <td>Get Enabled Providers</td>
-                <td><code><?php echo esc_html($site_url); ?>/wp-json/flosc/v1/sso/providers</code></td>
+                <td><code><?php echo esc_html($flosc_site_url); ?>/wp-json/flosc/v1/sso/providers</code></td>
             </tr>
             <tr>
                 <td>Initiate Login</td>
-                <td><code><?php echo esc_html($site_url); ?>/wp-json/flosc/v1/sso/authorize/{provider}</code></td>
+                <td><code><?php echo esc_html($flosc_site_url); ?>/wp-json/flosc/v1/sso/authorize/{provider}</code></td>
             </tr>
             <tr>
                 <td>Callback (auto)</td>
-                <td><code><?php echo esc_html($site_url); ?>/wp-json/flosc/v1/sso/callback/{provider}</code></td>
+                <td><code><?php echo esc_html($flosc_site_url); ?>/wp-json/flosc/v1/sso/callback/{provider}</code></td>
             </tr>
         </table>
     </div>

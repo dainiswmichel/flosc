@@ -39,11 +39,11 @@ $flosc_doc_topics = [
 
 // Which topic is currently selected?
 // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query parameters used for documentation navigation
-$get = wp_unslash($_GET);
-$doc_topic = isset($get['doc']) ? sanitize_text_field($get['doc']) : '';
+$flosc_get = wp_unslash($_GET);
+$flosc_doc_topic = isset($flosc_get['doc']) ? sanitize_text_field($flosc_get['doc']) : '';
 
 // Group labels for the sidebar
-$group_labels = [
+$flosc_group_labels = [
     'journey'      => 'Part 1: The Journey',
     'architecture' => 'Part 2: Architecture',
     'reference'    => 'Part 3: Reference',
@@ -60,28 +60,28 @@ $group_labels = [
             <h3 style="margin: 0 0 12px; font-size: 14px; color: #1d2327;">📖 Documentation</h3>
             <p style="font-size: 11px; color: #888; margin: 0 0 12px;">✅ Written &nbsp; 🔲 Coming soon</p>
             <?php
-            $current_group = '';
-            foreach ($flosc_doc_topics as $topic):
-                if ($topic['group'] !== $current_group):
-                    $current_group = $topic['group'];
+            $flosc_current_group = '';
+            foreach ($flosc_doc_topics as $flosc_topic):
+                if ($flosc_topic['group'] !== $flosc_current_group):
+                    $flosc_current_group = $flosc_topic['group'];
                     ?>
                     <div style="font-size: 11px; font-weight: 600; color: #666; margin: 14px 0 4px; text-transform: uppercase; letter-spacing: 0.5px;">
-                        <?php echo esc_html($group_labels[$current_group]); ?>
+                        <?php echo esc_html($flosc_group_labels[$flosc_current_group]); ?>
                     </div>
                 <?php endif; ?>
                 <?php
-                $is_active = ($doc_topic === $topic['id']);
-                $status_icon = $topic['status'] === 'ready' ? '✅' : '🔲';
-                $link_url = add_query_arg([
+                $flosc_is_active = ($flosc_doc_topic === $flosc_topic['id']);
+                $flosc_status_icon = $flosc_topic['status'] === 'ready' ? '✅' : '🔲';
+                $flosc_link_url = add_query_arg([
                     'page' => 'flosc-settings',
                     'ivr'  => isset($selected_ivr) ? $selected_ivr : '',
                     'tab'  => 'documentation',
-                    'doc'  => $topic['id'],
+                    'doc'  => $flosc_topic['id'],
                 ], admin_url('admin.php'));
                 ?>
-                     <a href="<?php echo esc_url($link_url); ?>"
-                         style="display: block; padding: 5px 10px; margin: 1px 0; font-size: 13px; text-decoration: none; border-radius: 4px; color: <?php echo esc_attr($is_active ? '#fff' : '#2271b1'); ?>; background: <?php echo esc_attr($is_active ? '#2271b1' : 'transparent'); ?>;">
-                          <?php echo esc_html($status_icon) . ' ' . esc_html($topic['title']); ?>
+                     <a href="<?php echo esc_url($flosc_link_url); ?>"
+                         style="display: block; padding: 5px 10px; margin: 1px 0; font-size: 13px; text-decoration: none; border-radius: 4px; color: <?php echo esc_attr($flosc_is_active ? '#fff' : '#2271b1'); ?>; background: <?php echo esc_attr($flosc_is_active ? '#2271b1' : 'transparent'); ?>;">
+                          <?php echo esc_html($flosc_status_icon) . ' ' . esc_html($flosc_topic['title']); ?>
                 </a>
             <?php endforeach; ?>
         </div>
@@ -89,38 +89,38 @@ $group_labels = [
 
     <!-- Content area -->
     <div class="flosc-docs-content" style="flex: 1; min-width: 0; max-width: 900px;">
-        <?php if (empty($doc_topic)): ?>
+        <?php if (empty($flosc_doc_topic)): ?>
             <!-- Landing page -->
             <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;">
                 <h2 style="margin-top: 0;">FLOSC Documentation</h2>
                 <p>Reference manual for the FLOSC conversational learning platform. Select a topic from the sidebar, or start here:</p>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px;">
-                    <?php foreach ($group_labels as $gid => $glabel):
+                    <?php foreach ($flosc_group_labels as $flosc_gid => $flosc_glabel):
                         // Find first topic in this group
-                        $first = null;
-                        foreach ($flosc_doc_topics as $t) {
-                            if ($t['group'] === $gid) { $first = $t; break; }
+                        $flosc_first = null;
+                        foreach ($flosc_doc_topics as $flosc_t) {
+                            if ($flosc_t['group'] === $flosc_gid) { $flosc_first = $flosc_t; break; }
                         }
-                        if (!$first) continue;
-                        $ready_count = 0;
-                        $total_count = 0;
-                        foreach ($flosc_doc_topics as $t) {
-                            if ($t['group'] === $gid) {
-                                $total_count++;
-                                if ($t['status'] === 'ready') $ready_count++;
+                        if (!$flosc_first) continue;
+                        $flosc_ready_count = 0;
+                        $flosc_total_count = 0;
+                        foreach ($flosc_doc_topics as $flosc_t) {
+                            if ($flosc_t['group'] === $flosc_gid) {
+                                $flosc_total_count++;
+                                if ($flosc_t['status'] === 'ready') $flosc_ready_count++;
                             }
                         }
-                        $card_url = add_query_arg([
+                        $flosc_card_url = add_query_arg([
                             'page' => 'flosc-settings',
                             'ivr'  => isset($selected_ivr) ? $selected_ivr : '',
                             'tab'  => 'documentation',
-                            'doc'  => $first['id'],
+                            'doc'  => $flosc_first['id'],
                         ], admin_url('admin.php'));
                     ?>
-                        <a href="<?php echo esc_url($card_url); ?>" style="display: block; padding: 16px; background: #f6f7f7; border: 1px solid #ddd; border-radius: 6px; text-decoration: none; color: #1d2327;">
-                            <strong style="font-size: 14px;"><?php echo esc_html($glabel); ?></strong>
-                            <span style="display: block; font-size: 12px; color: #888; margin-top: 4px;"><?php echo esc_html((string) $ready_count); ?>/<?php echo esc_html((string) $total_count); ?> sections written</span>
+                        <a href="<?php echo esc_url($flosc_card_url); ?>" style="display: block; padding: 16px; background: #f6f7f7; border: 1px solid #ddd; border-radius: 6px; text-decoration: none; color: #1d2327;">
+                            <strong style="font-size: 14px;"><?php echo esc_html($flosc_glabel); ?></strong>
+                            <span style="display: block; font-size: 12px; color: #888; margin-top: 4px;"><?php echo esc_html((string) $flosc_ready_count); ?>/<?php echo esc_html((string) $flosc_total_count); ?> sections written</span>
                         </a>
                     <?php endforeach; ?>
                 </div>
@@ -130,37 +130,37 @@ $group_labels = [
                 </div>
             </div>
 
-        <?php elseif ($doc_topic === 'the-journey'): ?>
+        <?php elseif ($flosc_doc_topic === 'the-journey'): ?>
             <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
                 <?php include FLOSC_PLUGIN_DIR . 'admin/docs/part1-journey.php'; ?>
             </div>
 
-        <?php elseif ($doc_topic === 'ref-quiz'): ?>
+        <?php elseif ($flosc_doc_topic === 'ref-quiz'): ?>
             <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
                 <?php include FLOSC_PLUGIN_DIR . 'admin/docs/part3-ref-quiz.php'; ?>
             </div>
 
-        <?php elseif ($doc_topic === 'ref-audio-quiz-flow'): ?>
+        <?php elseif ($flosc_doc_topic === 'ref-audio-quiz-flow'): ?>
             <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
                 <?php include FLOSC_PLUGIN_DIR . 'admin/docs/part3-ref-audio-quiz-flow.php'; ?>
             </div>
 
-        <?php elseif ($doc_topic === 'glossary'): ?>
+        <?php elseif ($flosc_doc_topic === 'glossary'): ?>
             <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
                 <?php include FLOSC_PLUGIN_DIR . 'admin/docs/part5-glossary.php'; ?>
             </div>
 
-        <?php elseif ($doc_topic === 'ref-core'): ?>
+        <?php elseif ($flosc_doc_topic === 'ref-core'): ?>
             <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
                 <?php include FLOSC_PLUGIN_DIR . 'admin/docs/ref_core_skeleton.php'; ?>
             </div>
 
-        <?php elseif ($doc_topic === 'ref-admin'): ?>
+        <?php elseif ($flosc_doc_topic === 'ref-admin'): ?>
             <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
                 <?php include FLOSC_PLUGIN_DIR . 'admin/docs/ref_admin_skeleton.php'; ?>
             </div>
 
-        <?php elseif ($doc_topic === 'ref-ai-config'): ?>
+        <?php elseif ($flosc_doc_topic === 'ref-ai-config'): ?>
             <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
                 <?php
                 // Suppress the tab header when including guide from documentation
@@ -172,22 +172,22 @@ $group_labels = [
         <?php else: ?>
             <?php
             // Pending topic — show heading skeleton
-            $current_topic = null;
-            foreach ($flosc_doc_topics as $t) {
-                if ($t['id'] === $doc_topic) { $current_topic = $t; break; }
+            $flosc_current_topic = null;
+            foreach ($flosc_doc_topics as $flosc_t) {
+                if ($flosc_t['id'] === $flosc_doc_topic) { $flosc_current_topic = $flosc_t; break; }
             }
-            if ($current_topic):
+            if ($flosc_current_topic):
             ?>
             <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;">
-                <h2 style="margin-top: 0;"><?php echo esc_html($current_topic['title']); ?></h2>
+                <h2 style="margin-top: 0;"><?php echo esc_html($flosc_current_topic['title']); ?></h2>
                 <div style="padding: 16px; background: #fff8e5; border: 1px solid #f0c36d; border-radius: 4px; margin-bottom: 20px;">
                     <strong>🔲 Content pending</strong> — This section has a heading structure prepared. Content will be written as the corresponding features stabilize.
                 </div>
                 <?php
                 // Load the skeleton file if it exists
-                $skeleton_file = FLOSC_PLUGIN_DIR . 'admin/docs/' . str_replace('-', '_', $doc_topic) . '_skeleton.php';
-                if (file_exists($skeleton_file)) {
-                    include $skeleton_file;
+                $flosc_skeleton_file = FLOSC_PLUGIN_DIR . 'admin/docs/' . str_replace('-', '_', $flosc_doc_topic) . '_skeleton.php';
+                if (file_exists($flosc_skeleton_file)) {
+                    include $flosc_skeleton_file;
                 }
                 ?>
             </div>

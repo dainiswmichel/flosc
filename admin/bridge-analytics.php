@@ -28,14 +28,14 @@ global $wpdb;
 // Count users with bridge data
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only analytics aggregate query
-$users_with_bridge = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only analytics aggregate query
+$flosc_users_with_bridge = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only analytics aggregate query
     "SELECT COUNT(DISTINCT user_id) FROM {$wpdb->usermeta} WHERE meta_key = '_flosc_bridge_data'"
 );
 
 // Count users currently in bridge state (quiz taken, not purchased)
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only analytics aggregate query
-$users_in_bridge = $wpdb->get_var(" // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only analytics aggregate query
+$flosc_users_in_bridge = $wpdb->get_var(" // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only analytics aggregate query
     SELECT COUNT(DISTINCT um1.user_id)
     FROM {$wpdb->usermeta} um1
     WHERE um1.meta_key = '_flosc_bridge_data'
@@ -50,7 +50,7 @@ $users_in_bridge = $wpdb->get_var(" // phpcs:ignore WordPress.DB.DirectDatabaseQ
 // Count users who converted (had bridge data and then purchased)
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only analytics aggregate query
-$users_converted = $wpdb->get_var(" // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only analytics aggregate query
+$flosc_users_converted = $wpdb->get_var(" // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only analytics aggregate query
     SELECT COUNT(DISTINCT um1.user_id)
     FROM {$wpdb->usermeta} um1
     INNER JOIN {$wpdb->usermeta} um2 ON um1.user_id = um2.user_id
@@ -60,33 +60,33 @@ $users_converted = $wpdb->get_var(" // phpcs:ignore WordPress.DB.DirectDatabaseQ
 ");
 
 // Calculate conversion rate
-$conversion_rate = $users_with_bridge > 0 
-    ? round(($users_converted / $users_with_bridge) * 100, 1)
+$flosc_conversion_rate = $flosc_users_with_bridge > 0 
+    ? round(($flosc_users_converted / $flosc_users_with_bridge) * 100, 1)
     : 0;
 
 // Get weakness category distribution
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only analytics distribution query
-$weakness_data = $wpdb->get_results(" // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only analytics distribution query
+$flosc_weakness_data = $wpdb->get_results(" // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only analytics distribution query
     SELECT meta_value FROM {$wpdb->usermeta}
     WHERE meta_key = '_flosc_weakest_category'
     AND meta_value != ''
 ");
 
-$weakness_counts = [];
-foreach ($weakness_data as $row) {
-    $category = $row->meta_value;
-    if (!isset($weakness_counts[$category])) {
-        $weakness_counts[$category] = 0;
+$flosc_weakness_counts = [];
+foreach ($flosc_weakness_data as $flosc_row) {
+    $flosc_category = $flosc_row->meta_value;
+    if (!isset($flosc_weakness_counts[$flosc_category])) {
+        $flosc_weakness_counts[$flosc_category] = 0;
     }
-    $weakness_counts[$category]++;
+    $flosc_weakness_counts[$flosc_category]++;
 }
-arsort($weakness_counts);
+arsort($flosc_weakness_counts);
 
 // Get recent bridge users (last 10)
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only analytics recent users query
-$recent_bridge_users = $wpdb->get_results("
+$flosc_recent_bridge_users = $wpdb->get_results("
     SELECT u.ID, u.user_email, u.display_name, um.meta_value as bridge_data
     FROM {$wpdb->users} u
     INNER JOIN {$wpdb->usermeta} um ON u.ID = um.user_id
@@ -107,25 +107,25 @@ $recent_bridge_users = $wpdb->get_results("
 <div class="flosc-bridge-stats">
     <div class="flosc-bridge-stat">
         <div class="flosc-bridge-stat__icon">📊</div>
-        <div class="flosc-bridge-stat__value"><?php echo esc_html($users_with_bridge); ?></div>
+        <div class="flosc-bridge-stat__value"><?php echo esc_html($flosc_users_with_bridge); ?></div>
         <div class="flosc-bridge-stat__label">Total Quiz Completions</div>
     </div>
     
     <div class="flosc-bridge-stat">
         <div class="flosc-bridge-stat__icon">🌉</div>
-        <div class="flosc-bridge-stat__value"><?php echo esc_html($users_in_bridge); ?></div>
+        <div class="flosc-bridge-stat__value"><?php echo esc_html($flosc_users_in_bridge); ?></div>
         <div class="flosc-bridge-stat__label">Currently in Bridge</div>
     </div>
     
     <div class="flosc-bridge-stat">
         <div class="flosc-bridge-stat__icon">✅</div>
-        <div class="flosc-bridge-stat__value"><?php echo esc_html($users_converted); ?></div>
+        <div class="flosc-bridge-stat__value"><?php echo esc_html($flosc_users_converted); ?></div>
         <div class="flosc-bridge-stat__label">Converted to Purchase</div>
     </div>
     
     <div class="flosc-bridge-stat">
         <div class="flosc-bridge-stat__icon">📈</div>
-        <div class="flosc-bridge-stat__value"><?php echo esc_html($conversion_rate); ?>%</div>
+        <div class="flosc-bridge-stat__value"><?php echo esc_html($flosc_conversion_rate); ?>%</div>
         <div class="flosc-bridge-stat__label">Conversion Rate</div>
     </div>
 </div>
@@ -145,18 +145,18 @@ $recent_bridge_users = $wpdb->get_results("
 <h3>📉 Top Weakness Categories</h3>
 <p class="description">Most common areas where users struggle. Use for targeted content recommendations.</p>
 
-<?php if (!empty($weakness_counts)): ?>
+<?php if (!empty($flosc_weakness_counts)): ?>
     <div class="flosc-weakness-chart">
         <?php 
-        $max_count = max($weakness_counts);
-        foreach ($weakness_counts as $category => $count): 
-            $percentage = $max_count > 0 ? round(($count / $max_count) * 100) : 0;
+        $flosc_max_count = max($flosc_weakness_counts);
+        foreach ($flosc_weakness_counts as $flosc_category => $flosc_count): 
+            $flosc_percentage = $flosc_max_count > 0 ? round(($flosc_count / $flosc_max_count) * 100) : 0;
         ?>
             <div class="flosc-weakness-bar">
-                <div class="flosc-weakness-bar__label"><?php echo esc_html($category); ?></div>
+                <div class="flosc-weakness-bar__label"><?php echo esc_html($flosc_category); ?></div>
                 <div class="flosc-weakness-bar__track">
-                    <div class="flosc-weakness-bar__fill" style="width: <?php echo esc_attr($percentage); ?>%;">
-                        <?php echo esc_html($count); ?>
+                    <div class="flosc-weakness-bar__fill" style="width: <?php echo esc_attr($flosc_percentage); ?>%;">
+                        <?php echo esc_html($flosc_count); ?>
                     </div>
                 </div>
             </div>
@@ -172,7 +172,7 @@ $recent_bridge_users = $wpdb->get_results("
 <h3>👥 Recent Bridge Users</h3>
 <p class="description">Last 10 users who completed the quiz.</p>
 
-<?php if (!empty($recent_bridge_users)): ?>
+<?php if (!empty($flosc_recent_bridge_users)): ?>
     <table class="flosc-table widefat">
         <thead>
             <tr>
@@ -184,23 +184,23 @@ $recent_bridge_users = $wpdb->get_results("
             </tr>
         </thead>
         <tbody>
-            <?php foreach ($recent_bridge_users as $user): 
-                $bridge_data = maybe_unserialize($user->bridge_data);
-                $score = $bridge_data['score'] ?? 0;
-                $correct = count($bridge_data['correct_items'] ?? []);
-                $incorrect = count($bridge_data['incorrect_items'] ?? []);
-                $purchased = get_user_meta($user->ID, '_flosc_purchased', true);
+            <?php foreach ($flosc_recent_bridge_users as $flosc_user): 
+                $flosc_bridge_data = maybe_unserialize($flosc_user->bridge_data);
+                $flosc_score = $flosc_bridge_data['score'] ?? 0;
+                $flosc_correct = count($flosc_bridge_data['correct_items'] ?? []);
+                $flosc_incorrect = count($flosc_bridge_data['incorrect_items'] ?? []);
+                $flosc_purchased = get_user_meta($flosc_user->ID, '_flosc_purchased', true);
             ?>
                 <tr>
-                    <td><?php echo esc_html($user->display_name ?: 'User #' . $user->ID); ?></td>
-                    <td><?php echo esc_html($user->user_email); ?></td>
-                    <td><?php echo esc_html($score); ?>%</td>
+                    <td><?php echo esc_html($flosc_user->display_name ?: 'User #' . $flosc_user->ID); ?></td>
+                    <td><?php echo esc_html($flosc_user->user_email); ?></td>
+                    <td><?php echo esc_html($flosc_score); ?>%</td>
                     <td>
-                        <span style="color: green;">✓ <?php echo esc_html($correct); ?></span> / 
-                        <span style="color: red;">✗ <?php echo esc_html($incorrect); ?></span>
+                        <span style="color: green;">✓ <?php echo esc_html($flosc_correct); ?></span> / 
+                        <span style="color: red;">✗ <?php echo esc_html($flosc_incorrect); ?></span>
                     </td>
                     <td>
-                        <?php if ($purchased): ?>
+                        <?php if ($flosc_purchased): ?>
                             <span class="flosc-status flosc-status--active">Purchased</span>
                         <?php else: ?>
                             <span class="flosc-status flosc-status--pending">In Bridge</span>

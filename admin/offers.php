@@ -20,20 +20,20 @@ if (!defined('ABSPATH')) exit;
 // v1.2.9: Output tab header
 flosc_tab_header('💰', 'Offers');
 
-$flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
-$flow_key = $GLOBALS['flosc_settings_key'] ?? '';
-$current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
+$flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
+$flosc_flow_key = $GLOBALS['flosc_settings_key'] ?? '';
+$flosc_current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
 
-$offers_docs_url = add_query_arg([
+$flosc_offers_docs_url = add_query_arg([
     'page' => 'flosc-settings',
-    'ivr'  => $current_ivr,
+    'ivr'  => $flosc_current_ivr,
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-offers';
 // tab links are rendered into admin HTML below.
 
 echo '<div style="margin:-8px 0 14px; text-align:right;">'
-   . '<a href="' . esc_url($offers_docs_url) . '" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>'
+   . '<a href="' . esc_url($flosc_offers_docs_url) . '" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>'
    . '</div>';
 
 // ============================================
@@ -57,9 +57,9 @@ function flosc_handle_offer_save() {
         return;
     }
 
-    $offer_id = sanitize_text_field($post['offer_id'] ?? '');
-    if ($offer_id === 'new') {
-        $offer_id = 'offer_' . wp_generate_password(8, false);
+    $flosc_offer_id = sanitize_text_field($post['offer_id'] ?? '');
+    if ($flosc_offer_id === 'new') {
+        $flosc_offer_id = 'offer_' . wp_generate_password(8, false);
     }
 
     $all_formats = ['card', 'pill', 'compact', 'banner', 'featured', 'text', 'inline-checkout'];
@@ -89,7 +89,7 @@ function flosc_handle_offer_save() {
     }
 
     $offer_data = [
-        'id'             => $offer_id,
+        'id'             => $flosc_offer_id,
         'name'           => sanitize_text_field($post['offer_name'] ?? ''),
         'type'           => sanitize_text_field($post['offer_type'] ?? ''),
         'price'          => floatval($post['offer_price'] ?? 0),
@@ -133,9 +133,9 @@ function flosc_handle_offer_save() {
         'updated'         => current_time('mysql'),
     ];
 
-    $fs = get_option($fk, []);
-    $all_offers = $fs['offers'] ?? [];
-    $existing_offer = $all_offers[$offer_id] ?? null;
+    $flosc_fs = get_option($fk, []);
+    $all_offers = $flosc_fs['offers'] ?? [];
+    $existing_offer = $all_offers[$flosc_offer_id] ?? null;
 
     if ($existing_offer) {
         $offer_data['conversions'] = $existing_offer['conversions'] ?? 0;
@@ -153,29 +153,29 @@ function flosc_handle_offer_save() {
         'pill_phrase'     => sanitize_text_field($post['fmt_pill_phrase'] ?? ''),
     ]);
 
-    $all_offers[$offer_id] = $offer_data;
-    $fs['offers'] = $all_offers;
-    update_option($fk, $fs);
+    $all_offers[$flosc_offer_id] = $offer_data;
+    $flosc_fs['offers'] = $all_offers;
+    update_option($fk, $flosc_fs);
 
     $ivr = sanitize_file_name($post['flosc_ivr'] ?? '');
     wp_safe_redirect(esc_url_raw(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($ivr) . '&tab=offers&saved=1')));
     exit;
 }
 flosc_handle_offer_save(); // v1.6.5: Execute at include time
-$get = wp_unslash($_GET);
+$flosc_get = wp_unslash($_GET);
 
 // Handle delete
 if (isset($_GET['delete_offer']) && isset($_GET['_wpnonce'])) {
-    $get = wp_unslash($_GET);
-    $del_id = sanitize_text_field($get['delete_offer'] ?? '');
-    if (wp_verify_nonce(sanitize_text_field($get['_wpnonce'] ?? ''), 'flosc_delete_offer_' . $del_id) && current_user_can('manage_options')) {
-        if ($flow_key) {
-            $fs = get_option($flow_key, []);
-            $all = $fs['offers'] ?? [];
-            unset($all[$del_id]);
-            $fs['offers'] = $all;
-            update_option($flow_key, $fs);
-            $flow_settings = $fs;
+    $flosc_get = wp_unslash($_GET);
+    $flosc_del_id = sanitize_text_field($flosc_get['delete_offer'] ?? '');
+    if (wp_verify_nonce(sanitize_text_field($flosc_get['_wpnonce'] ?? ''), 'flosc_delete_offer_' . $flosc_del_id) && current_user_can('manage_options')) {
+        if ($flosc_flow_key) {
+            $flosc_fs = get_option($flosc_flow_key, []);
+            $flosc_all = $flosc_fs['offers'] ?? [];
+            unset($flosc_all[$flosc_del_id]);
+            $flosc_fs['offers'] = $flosc_all;
+            update_option($flosc_flow_key, $flosc_fs);
+            $flosc_flow_settings = $flosc_fs;
         }
         add_settings_error('flosc_settings', 'offer_deleted', 'Offer deleted.', 'success');
     }
@@ -187,33 +187,33 @@ if (isset($_GET['toggle_status'])) {
     if (!current_user_can('manage_options')) {
         wp_die('Unauthorized action.', 'Insufficient permissions', ['response' => 403]);
     }
-    $nonce = sanitize_text_field(wp_unslash($_GET['_wpnonce'] ?? ''));
-    if (!wp_verify_nonce($nonce, 'flosc_toggle_status')) {
+    $flosc_nonce = sanitize_text_field(wp_unslash($_GET['_wpnonce'] ?? ''));
+    if (!wp_verify_nonce($flosc_nonce, 'flosc_toggle_status')) {
         wp_die('Nonce verification failed.', 'Invalid token', ['response' => 403]);
     }
     
-    $get = wp_unslash($_GET);
-    $toggle_id = sanitize_text_field($get['toggle_status'] ?? '');
-    if ($flow_key) {
-        $fs = get_option($flow_key, []);
-        $all = $fs['offers'] ?? [];
-        if (isset($all[$toggle_id])) {
-            $current_status = strtolower((string)($all[$toggle_id]['status'] ?? 'active'));
-            $currently_active = !empty($all[$toggle_id]['active']);
+    $flosc_get = wp_unslash($_GET);
+    $flosc_toggle_id = sanitize_text_field($flosc_get['toggle_status'] ?? '');
+    if ($flosc_flow_key) {
+        $flosc_fs = get_option($flosc_flow_key, []);
+        $flosc_all = $flosc_fs['offers'] ?? [];
+        if (isset($flosc_all[$flosc_toggle_id])) {
+            $flosc_current_status = strtolower((string)($flosc_all[$flosc_toggle_id]['status'] ?? 'active'));
+            $flosc_currently_active = !empty($flosc_all[$flosc_toggle_id]['active']);
 
-            if ($current_status === 'draft') {
-                $all[$toggle_id]['active'] = true;
-                $all[$toggle_id]['status'] = 'active';
-            } elseif ($currently_active) {
-                $all[$toggle_id]['active'] = false;
-                $all[$toggle_id]['status'] = 'inactive';
+            if ($flosc_current_status === 'draft') {
+                $flosc_all[$flosc_toggle_id]['active'] = true;
+                $flosc_all[$flosc_toggle_id]['status'] = 'active';
+            } elseif ($flosc_currently_active) {
+                $flosc_all[$flosc_toggle_id]['active'] = false;
+                $flosc_all[$flosc_toggle_id]['status'] = 'inactive';
             } else {
-                $all[$toggle_id]['active'] = true;
-                $all[$toggle_id]['status'] = 'active';
+                $flosc_all[$flosc_toggle_id]['active'] = true;
+                $flosc_all[$flosc_toggle_id]['status'] = 'active';
             }
-            $fs['offers'] = $all;
-            update_option($flow_key, $fs);
-            $flow_settings = $fs;
+            $flosc_fs['offers'] = $flosc_all;
+            update_option($flosc_flow_key, $flosc_fs);
+            $flosc_flow_settings = $flosc_fs;
         }
     }
 }
@@ -224,38 +224,38 @@ if (isset($_GET['set_status']) && isset($_GET['status'])) {
     if (!current_user_can('manage_options')) {
         wp_die('Unauthorized action.', 'Insufficient permissions', ['response' => 403]);
     }
-    $nonce = sanitize_text_field(wp_unslash($_GET['_wpnonce'] ?? ''));
-    if (!wp_verify_nonce($nonce, 'flosc_set_status')) {
+    $flosc_nonce = sanitize_text_field(wp_unslash($_GET['_wpnonce'] ?? ''));
+    if (!wp_verify_nonce($flosc_nonce, 'flosc_set_status')) {
         wp_die('Nonce verification failed.', 'Invalid token', ['response' => 403]);
     }
     
-    $get = wp_unslash($_GET);
-    $target_id = sanitize_text_field($get['set_status'] ?? '');
-    $target_status = sanitize_key($get['status'] ?? '');
-    if (in_array($target_status, ['draft', 'inactive', 'active'], true) && $flow_key) {
-        $fs = get_option($flow_key, []);
-        $all = $fs['offers'] ?? [];
-        if (isset($all[$target_id])) {
-            $all[$target_id]['status'] = $target_status;
-            $all[$target_id]['active'] = ($target_status === 'active');
-            $fs['offers'] = $all;
-            update_option($flow_key, $fs);
-            $flow_settings = $fs;
+    $flosc_get = wp_unslash($_GET);
+    $flosc_target_id = sanitize_text_field($flosc_get['set_status'] ?? '');
+    $flosc_target_status = sanitize_key($flosc_get['status'] ?? '');
+    if (in_array($flosc_target_status, ['draft', 'inactive', 'active'], true) && $flosc_flow_key) {
+        $flosc_fs = get_option($flosc_flow_key, []);
+        $flosc_all = $flosc_fs['offers'] ?? [];
+        if (isset($flosc_all[$flosc_target_id])) {
+            $flosc_all[$flosc_target_id]['status'] = $flosc_target_status;
+            $flosc_all[$flosc_target_id]['active'] = ($flosc_target_status === 'active');
+            $flosc_fs['offers'] = $flosc_all;
+            update_option($flosc_flow_key, $flosc_fs);
+            $flosc_flow_settings = $flosc_fs;
         }
     }
 }
 
 // Load offers
-$flow_id_for_offers = null;
-if (!empty($flow_key)) {
-    $flow_id_for_offers = str_replace('flosc_flow_', '', $flow_key);
+$flosc_flow_id_for_offers = null;
+if (!empty($flosc_flow_key)) {
+    $flosc_flow_id_for_offers = str_replace('flosc_flow_', '', $flosc_flow_key);
 }
-$offers = flosc()->sale()->offers()->get_all_offers($flow_id_for_offers);
-$get = wp_unslash($_GET);
-$expand_id = $get['edit_offer'] ?? $get['expand'] ?? null;
+$flosc_offers = flosc()->sale()->offers()->get_all_offers($flosc_flow_id_for_offers);
+$flosc_get = wp_unslash($_GET);
+$flosc_expand_id = $flosc_get['edit_offer'] ?? $flosc_get['expand'] ?? null;
 
 // All 7 display formats with metadata
-$all_format_meta = [
+$flosc_all_format_meta = [
     'card'            => ['icon' => '🃏', 'label' => 'Card',            'desc' => 'Rich card with headline, features, pricing, CTA button'],
     'pill'            => ['icon' => '💊', 'label' => 'Pill',            'desc' => 'Compact clickable pill in PromptPanel (AutoPrompt-style)'],
     'compact'         => ['icon' => '📋', 'label' => 'Compact',         'desc' => 'Minimal one-line offer with price and CTA'],
@@ -271,7 +271,7 @@ $all_format_meta = [
 <h2>Offers & Pricing — All Offers</h2>
 <p>Create and manage product offers. Each offer can appear in <strong>multiple display formats</strong> — pill in the panel, card in chat, banner on timer, etc.</p>
 
-<?php if (isset($get['saved'])): ?>
+<?php if (isset($flosc_get['saved'])): ?>
 <div class="notice notice-success is-dismissible"><p>Offer saved successfully.</p></div>
 <?php endif; ?>
 
@@ -281,41 +281,41 @@ $all_format_meta = [
 // ============================================
 // ACTIVE OFFERS SUMMARY
 // ============================================
-$active_offers = [];
-foreach ($offers as $offer_id => $offer) {
-    $status = strtolower((string)($offer['status'] ?? ''));
-    $is_active = !empty($offer['active']) && $status !== 'draft';
-    if (!$is_active) {
+$flosc_active_offers = [];
+foreach ($flosc_offers as $flosc_offer_id => $flosc_offer) {
+    $status = strtolower((string)($flosc_offer['status'] ?? ''));
+    $flosc_is_active = !empty($flosc_offer['active']) && $status !== 'draft';
+    if (!$flosc_is_active) {
         continue;
     }
 
-    $formats = [];
-    $df = $offer['display_formats'] ?? [];
-    foreach ($all_format_meta as $fmt_key => $fmt_meta) {
-        if (!empty($df[$fmt_key]['enabled'])) {
-            $formats[] = $fmt_meta['label'];
+    $flosc_formats = [];
+    $flosc_df = $flosc_offer['display_formats'] ?? [];
+    foreach ($flosc_all_format_meta as $flosc_fmt_key => $flosc_fmt_meta) {
+        if (!empty($flosc_df[$flosc_fmt_key]['enabled'])) {
+            $flosc_formats[] = $flosc_fmt_meta['label'];
         }
     }
-    if (empty($formats)) {
-        $formats[] = ucfirst((string)($offer['display_format'] ?? 'card'));
+    if (empty($flosc_formats)) {
+        $flosc_formats[] = ucfirst((string)($flosc_offer['display_format'] ?? 'card'));
     }
 
-    $active_offers[] = [
-        'id' => (string)($offer['id'] ?? $offer_id),
-        'name' => (string)($offer['name'] ?? $offer_id),
-        'formats' => implode(', ', $formats),
-        'condition' => (string)($offer['condition'] ?? 'always'),
-        'cta' => (string)($offer['cta'] ?? ''),
+    $flosc_active_offers[] = [
+        'id' => (string)($flosc_offer['id'] ?? $flosc_offer_id),
+        'name' => (string)($flosc_offer['name'] ?? $flosc_offer_id),
+        'formats' => implode(', ', $flosc_formats),
+        'condition' => (string)($flosc_offer['condition'] ?? 'always'),
+        'cta' => (string)($flosc_offer['cta'] ?? ''),
         'status' => $status === '' ? 'active' : $status,
     ];
 }
 ?>
 
-<?php if (!empty($active_offers)): ?>
+<?php if (!empty($flosc_active_offers)): ?>
 <div class="flosc-pills-summary">
     <div class="flosc-pills-summary-header">
         <strong>Active Offers</strong>
-        <span class="flosc-pills-count"><?php echo count($active_offers); ?> active</span>
+        <span class="flosc-pills-count"><?php echo count($flosc_active_offers); ?> active</span>
     </div>
     <table class="flosc-pills-summary-table">
         <thead>
@@ -329,19 +329,19 @@ foreach ($offers as $offer_id => $offer) {
             </tr>
         </thead>
         <tbody>
-        <?php foreach ($active_offers as $item): ?>
+        <?php foreach ($flosc_active_offers as $flosc_item): ?>
             <tr>
-                <td class="pill-source"><?php echo esc_html($item['name']); ?></td>
-                <td><?php echo esc_html($item['formats']); ?></td>
-                <td><code><?php echo esc_html($item['cta'] ?: '(none)'); ?></code></td>
-                <td><code><?php echo esc_html($item['condition'] ?: 'always'); ?></code></td>
-                <td><a class="button button-small" href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers&edit_offer=' . urlencode($item['id']))); ?>">Edit</a></td>
+                <td class="pill-source"><?php echo esc_html($flosc_item['name']); ?></td>
+                <td><?php echo esc_html($flosc_item['formats']); ?></td>
+                <td><code><?php echo esc_html($flosc_item['cta'] ?: '(none)'); ?></code></td>
+                <td><code><?php echo esc_html($flosc_item['condition'] ?: 'always'); ?></code></td>
+                <td><a class="button button-small" href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($flosc_current_ivr) . '&tab=offers&edit_offer=' . urlencode($flosc_item['id']))); ?>">Edit</a></td>
                 <td>
                     <select onchange="if(this.value){window.location=this.value;}">
                         <option value="">Set...</option>
-                        <option value="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers&set_status=' . urlencode($item['id']) . '&status=draft&_wpnonce=' . wp_create_nonce('flosc_set_status'))); ?>" <?php selected($item['status'], 'draft'); ?>>draft</option>
-                        <option value="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers&set_status=' . urlencode($item['id']) . '&status=inactive&_wpnonce=' . wp_create_nonce('flosc_set_status'))); ?>" <?php selected($item['status'], 'inactive'); ?>>inactive</option>
-                        <option value="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers&set_status=' . urlencode($item['id']) . '&status=active&_wpnonce=' . wp_create_nonce('flosc_set_status'))); ?>" <?php selected($item['status'], 'active'); ?>>active</option>
+                        <option value="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($flosc_current_ivr) . '&tab=offers&set_status=' . urlencode($flosc_item['id']) . '&status=draft&_wpnonce=' . wp_create_nonce('flosc_set_status'))); ?>" <?php selected($flosc_item['status'], 'draft'); ?>>draft</option>
+                        <option value="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($flosc_current_ivr) . '&tab=offers&set_status=' . urlencode($flosc_item['id']) . '&status=inactive&_wpnonce=' . wp_create_nonce('flosc_set_status'))); ?>" <?php selected($flosc_item['status'], 'inactive'); ?>>inactive</option>
+                        <option value="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($flosc_current_ivr) . '&tab=offers&set_status=' . urlencode($flosc_item['id']) . '&status=active&_wpnonce=' . wp_create_nonce('flosc_set_status'))); ?>" <?php selected($flosc_item['status'], 'active'); ?>>active</option>
                     </select>
                 </td>
             </tr>
@@ -351,100 +351,100 @@ foreach ($offers as $offer_id => $offer) {
 </div>
 <?php endif; ?>
 
-<?php if (empty($offers) && $expand_id !== 'new'): ?>
+<?php if (empty($flosc_offers) && $flosc_expand_id !== 'new'): ?>
 <div style="background: #e7f3ff; border-left: 4px solid #2196f3; padding: 20px; border-radius: 4px; margin-bottom: 20px;">
     <strong>💡 No offers yet.</strong>
     <p style="margin: 8px 0 0;">Click "+ Create New Offer" below to set up your first product offer with multi-format display support.</p>
 </div>
 <?php else: ?>
 <p style="margin-bottom: 12px; color: #667;">
-    <strong><?php echo count($offers); ?></strong> offer(s) configured
+    <strong><?php echo count($flosc_offers); ?></strong> offer(s) configured
 </p>
 <?php endif; ?>
 
 <!-- ============================================ -->
 <!-- OFFERS LIST — SCROLLABLE ACCORDION -->
 <!-- ============================================ -->
-<?php foreach ($offers as $offer):
-    $is_open = ($expand_id === $offer['id']);
-    $raw_status = strtolower((string)($offer['status'] ?? ''));
-    $is_active = !empty($offer['active']) && $raw_status !== 'draft';
-    if ($raw_status === 'draft') {
-        $status_label = '○ Draft';
-        $status_class = 'draft';
-    } elseif ($is_active) {
-        $status_label = '● Active';
-        $status_class = 'active';
+<?php foreach ($flosc_offers as $flosc_offer):
+    $flosc_is_open = ($flosc_expand_id === $flosc_offer['id']);
+    $flosc_raw_status = strtolower((string)($flosc_offer['status'] ?? ''));
+    $flosc_is_active = !empty($flosc_offer['active']) && $flosc_raw_status !== 'draft';
+    if ($flosc_raw_status === 'draft') {
+        $flosc_status_label = '○ Draft';
+        $flosc_status_class = 'draft';
+    } elseif ($flosc_is_active) {
+        $flosc_status_label = '● Active';
+        $flosc_status_class = 'active';
     } else {
-        $status_label = '◐ Inactive';
-        $status_class = 'draft';
+        $flosc_status_label = '◐ Inactive';
+        $flosc_status_class = 'draft';
     }
-    $status_for_select = $raw_status !== '' ? $raw_status : ($is_active ? 'active' : 'inactive');
-    $conversions = $offer['conversions'] ?? 0;
-    $views = $offer['views'] ?? 0;
-    $rate = $views > 0 ? round(($conversions / $views) * 100, 1) : 0;
-    $safe_id = esc_attr($offer['id']);
+    $flosc_status_for_select = $flosc_raw_status !== '' ? $flosc_raw_status : ($flosc_is_active ? 'active' : 'inactive');
+    $flosc_conversions = $flosc_offer['conversions'] ?? 0;
+    $flosc_views = $flosc_offer['views'] ?? 0;
+    $flosc_rate = $flosc_views > 0 ? round(($flosc_conversions / $flosc_views) * 100, 1) : 0;
+    $flosc_safe_id = esc_attr($flosc_offer['id']);
     
     // Determine enabled formats
-    $df = $offer['display_formats'] ?? [];
-    $enabled_fmts = [];
-    foreach ($all_format_meta as $fid => $fm) {
-        if (!empty($df[$fid]['enabled'])) $enabled_fmts[] = $fm['icon'] . ' ' . $fm['label'];
+    $flosc_df = $flosc_offer['display_formats'] ?? [];
+    $flosc_enabled_fmts = [];
+    foreach ($flosc_all_format_meta as $flosc_fid => $flosc_fm) {
+        if (!empty($flosc_df[$flosc_fid]['enabled'])) $flosc_enabled_fmts[] = $flosc_fm['icon'] . ' ' . $flosc_fm['label'];
     }
     // Backward compat: old single display_format
-    if (empty($enabled_fmts) && !empty($offer['display_format'])) {
-        $bf = $offer['display_format'];
-        if (isset($all_format_meta[$bf])) $enabled_fmts[] = $all_format_meta[$bf]['icon'] . ' ' . $all_format_meta[$bf]['label'];
+    if (empty($flosc_enabled_fmts) && !empty($flosc_offer['display_format'])) {
+        $flosc_bf = $flosc_offer['display_format'];
+        if (isset($flosc_all_format_meta[$flosc_bf])) $flosc_enabled_fmts[] = $flosc_all_format_meta[$flosc_bf]['icon'] . ' ' . $flosc_all_format_meta[$flosc_bf]['label'];
     }
-    if (empty($enabled_fmts)) $enabled_fmts[] = '🃏 Card';
+    if (empty($flosc_enabled_fmts)) $flosc_enabled_fmts[] = '🃏 Card';
 ?>
-<div class="flosc-offer-card <?php echo esc_attr( $is_open ? 'is-open' : '' ); ?>" id="offer-<?php echo esc_attr( $safe_id ); ?>">
-    <div class="flosc-offer-header" onclick="floscToggleOffer('<?php echo esc_js($offer['id']); ?>')">
+<div class="flosc-offer-card <?php echo esc_attr( $flosc_is_open ? 'is-open' : '' ); ?>" id="offer-<?php echo esc_attr( $flosc_safe_id ); ?>">
+    <div class="flosc-offer-header" onclick="floscToggleOffer('<?php echo esc_js($flosc_offer['id']); ?>')">
         <span class="toggle">▶</span>
-        <span class="offer-name"><?php echo esc_html($offer['name']); ?></span>
+        <span class="offer-name"><?php echo esc_html($flosc_offer['name']); ?></span>
         <span class="offer-price">
-            <?php if (!empty($offer['original_price']) && $offer['original_price'] != $offer['price']): ?>
-                <span class="original">$<?php echo esc_html(number_format($offer['original_price'], 2)); ?></span>
+            <?php if (!empty($flosc_offer['original_price']) && $flosc_offer['original_price'] != $flosc_offer['price']): ?>
+                <span class="original">$<?php echo esc_html(number_format($flosc_offer['original_price'], 2)); ?></span>
             <?php endif; ?>
-            $<?php echo esc_html(number_format($offer['price'] ?? 0, 2)); ?>
+            $<?php echo esc_html(number_format($flosc_offer['price'] ?? 0, 2)); ?>
         </span>
-        <span class="offer-status <?php echo esc_attr($status_class); ?>">
-            <?php echo esc_html($status_label); ?>
+        <span class="offer-status <?php echo esc_attr($flosc_status_class); ?>">
+            <?php echo esc_html($flosc_status_label); ?>
         </span>
         <span class="offer-formats">
-            <?php foreach ($enabled_fmts as $ef): ?>
-                <span class="fmt-badge"><?php echo esc_html($ef); ?></span>
+            <?php foreach ($flosc_enabled_fmts as $flosc_ef): ?>
+                <span class="fmt-badge"><?php echo esc_html($flosc_ef); ?></span>
             <?php endforeach; ?>
         </span>
         <span class="offer-stats" onclick="event.stopPropagation();">
             <select onchange="if(this.value){window.location=this.value;}">
-                <option value="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers&set_status=' . urlencode($offer['id']) . '&status=draft&_wpnonce=' . wp_create_nonce('flosc_set_status'))); ?>" <?php selected($status_for_select, 'draft'); ?>>draft</option>
-                <option value="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers&set_status=' . urlencode($offer['id']) . '&status=inactive&_wpnonce=' . wp_create_nonce('flosc_set_status'))); ?>" <?php selected($status_for_select, 'inactive'); ?>>inactive</option>
-                <option value="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers&set_status=' . urlencode($offer['id']) . '&status=active&_wpnonce=' . wp_create_nonce('flosc_set_status'))); ?>" <?php selected($status_for_select, 'active'); ?>>active</option>
+                <option value="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($flosc_current_ivr) . '&tab=offers&set_status=' . urlencode($flosc_offer['id']) . '&status=draft&_wpnonce=' . wp_create_nonce('flosc_set_status'))); ?>" <?php selected($flosc_status_for_select, 'draft'); ?>>draft</option>
+                <option value="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($flosc_current_ivr) . '&tab=offers&set_status=' . urlencode($flosc_offer['id']) . '&status=inactive&_wpnonce=' . wp_create_nonce('flosc_set_status'))); ?>" <?php selected($flosc_status_for_select, 'inactive'); ?>>inactive</option>
+                <option value="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($flosc_current_ivr) . '&tab=offers&set_status=' . urlencode($flosc_offer['id']) . '&status=active&_wpnonce=' . wp_create_nonce('flosc_set_status'))); ?>" <?php selected($flosc_status_for_select, 'active'); ?>>active</option>
             </select>
         </span>
     </div>
     
     <div class="flosc-offer-editor">
-        <?php flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_format_meta); ?>
+        <?php flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_current_ivr, $flosc_all_format_meta); ?>
     </div>
 </div>
 <?php endforeach; ?>
 
 <!-- NEW OFFER (inline) -->
-<?php if ($expand_id === 'new'): ?>
+<?php if ($flosc_expand_id === 'new'): ?>
 <div class="flosc-offer-card is-open" id="offer-new">
     <div class="flosc-offer-header">
         <span class="toggle" style="transform: rotate(90deg);">▶</span>
         <span class="offer-name" style="color: #2271b1;">✨ New Offer</span>
     </div>
     <div class="flosc-offer-editor" style="display: block;">
-        <?php flosc_render_offer_editor_v2(null, $flow_key, $current_ivr, $all_format_meta); ?>
+        <?php flosc_render_offer_editor_v2(null, $flosc_flow_key, $flosc_current_ivr, $flosc_all_format_meta); ?>
     </div>
 </div>
 <?php endif; ?>
 
-<button type="button" class="flosc-add-offer-btn" onclick="window.location='<?php echo esc_js( esc_url( admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers&edit_offer=new') ) ); ?>'">
+<button type="button" class="flosc-add-offer-btn" onclick="window.location='<?php echo esc_js( esc_url( admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($flosc_current_ivr) . '&tab=offers&edit_offer=new') ) ); ?>'">
     + Create New Offer
 </button>
 
@@ -452,7 +452,7 @@ foreach ($offers as $offer_id => $offer) {
 <!-- DEMO OFFERS — create as drafts, then customize & activate -->
 <!-- ============================================ -->
 <?php
-$demo_offers = [
+$flosc_demo_offers = [
     [
         'key'              => 'post_quiz_oto',
         'color'            => '#f59e0b',
@@ -569,53 +569,53 @@ $demo_offers = [
             Click <strong>Create as Draft →</strong> to add the offer to your list. It will appear above as a draft — open it, update the price and details for your product, then activate.
         </p>
         <div style="display:flex;flex-direction:column;gap:10px;">
-        <?php foreach ( $demo_offers as $demo ): ?>
-        <div style="background:#fff;border:1px solid #e0e0e0;border-left:4px solid <?php echo esc_attr( $demo['color'] ); ?>;border-radius:5px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
+        <?php foreach ( $flosc_demo_offers as $flosc_demo ): ?>
+        <div style="background:#fff;border:1px solid #e0e0e0;border-left:4px solid <?php echo esc_attr( $flosc_demo['color'] ); ?>;border-radius:5px;padding:14px 16px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;">
             <div style="flex:1;">
-                <strong style="font-size:13px;"><?php echo esc_html( $demo['emoji'] . ' ' . $demo['title'] ); ?></strong>
-                <span style="display:block;font-size:12px;color:#50575e;margin-top:3px;"><?php echo esc_html( $demo['subtitle'] ); ?></span>
+                <strong style="font-size:13px;"><?php echo esc_html( $flosc_demo['emoji'] . ' ' . $flosc_demo['title'] ); ?></strong>
+                <span style="display:block;font-size:12px;color:#50575e;margin-top:3px;"><?php echo esc_html( $flosc_demo['subtitle'] ); ?></span>
             </div>
             <form method="post" style="flex-shrink:0;">
                 <?php wp_nonce_field( 'flosc_save_offer', 'flosc_save_offer_nonce' ); ?>
                 <input type="hidden" name="save_offer"            value="1">
                 <input type="hidden" name="offer_id"              value="new">
-                <input type="hidden" name="flosc_flow_key"        value="<?php echo esc_attr( $flow_key ); ?>">
-                <input type="hidden" name="flosc_ivr"             value="<?php echo esc_attr( $current_ivr ); ?>">
-                <input type="hidden" name="offer_name"            value="<?php echo esc_attr( $demo['offer_name'] ); ?>">
+                <input type="hidden" name="flosc_flow_key"        value="<?php echo esc_attr( $flosc_flow_key ); ?>">
+                <input type="hidden" name="flosc_ivr"             value="<?php echo esc_attr( $flosc_current_ivr ); ?>">
+                <input type="hidden" name="offer_name"            value="<?php echo esc_attr( $flosc_demo['offer_name'] ); ?>">
                 <input type="hidden" name="offer_type"            value="one_time">
-                <input type="hidden" name="offer_price"           value="<?php echo esc_attr( $demo['offer_price'] ); ?>">
-                <input type="hidden" name="offer_original_price"  value="<?php echo esc_attr( $demo['offer_original'] ); ?>">
-                <input type="hidden" name="offer_headline"        value="<?php echo esc_attr( $demo['offer_headline'] ); ?>">
-                <input type="hidden" name="offer_description"     value="<?php echo esc_attr( $demo['offer_description'] ); ?>">
-                <input type="hidden" name="offer_features"        value="<?php echo esc_attr( $demo['offer_features'] ); ?>">
-                <input type="hidden" name="offer_cta"             value="<?php echo esc_attr( $demo['offer_cta'] ); ?>">
+                <input type="hidden" name="offer_price"           value="<?php echo esc_attr( $flosc_demo['offer_price'] ); ?>">
+                <input type="hidden" name="offer_original_price"  value="<?php echo esc_attr( $flosc_demo['offer_original'] ); ?>">
+                <input type="hidden" name="offer_headline"        value="<?php echo esc_attr( $flosc_demo['offer_headline'] ); ?>">
+                <input type="hidden" name="offer_description"     value="<?php echo esc_attr( $flosc_demo['offer_description'] ); ?>">
+                <input type="hidden" name="offer_features"        value="<?php echo esc_attr( $flosc_demo['offer_features'] ); ?>">
+                <input type="hidden" name="offer_cta"             value="<?php echo esc_attr( $flosc_demo['offer_cta'] ); ?>">
                 <input type="hidden" name="offer_trigger"         value="always">
                 <input type="hidden" name="offer_condition"       value="">
                 <input type="hidden" name="offer_reveal_phrase"   value="">
                 <input type="hidden" name="offer_match_type"      value="exact">
-                <input type="hidden" name="offer_grants_level"    value="<?php echo esc_attr( $demo['offer_grants'] ); ?>">
-                <input type="hidden" name="offer_timer"           value="<?php echo esc_attr( $demo['offer_timer'] ); ?>">
+                <input type="hidden" name="offer_grants_level"    value="<?php echo esc_attr( $flosc_demo['offer_grants'] ); ?>">
+                <input type="hidden" name="offer_timer"           value="<?php echo esc_attr( $flosc_demo['offer_timer'] ); ?>">
                 <input type="hidden" name="offer_currency"        value="USD">
                 <input type="hidden" name="offer_processor"       value="paypal">
                 <input type="hidden" name="offer_stripe_price_id" value="">
                 <input type="hidden" name="offer_stripe_product_id" value="">
                 <input type="hidden" name="offer_redirect_url"    value="">
-                <input type="hidden" name="offer_guarantee"       value="<?php echo esc_attr( $demo['offer_guarantee'] ); ?>">
-                <input type="hidden" name="offer_icon"            value="<?php echo esc_attr( $demo['offer_icon'] ); ?>">
-                <input type="hidden" name="offer_badge"           value="<?php echo esc_attr( $demo['offer_badge'] ); ?>">
-                <input type="hidden" name="offer_savings"         value="<?php echo esc_attr( $demo['offer_savings'] ); ?>">
-                <?php if ( ! empty( $demo['fmt_card'] ) ): ?>
+                <input type="hidden" name="offer_guarantee"       value="<?php echo esc_attr( $flosc_demo['offer_guarantee'] ); ?>">
+                <input type="hidden" name="offer_icon"            value="<?php echo esc_attr( $flosc_demo['offer_icon'] ); ?>">
+                <input type="hidden" name="offer_badge"           value="<?php echo esc_attr( $flosc_demo['offer_badge'] ); ?>">
+                <input type="hidden" name="offer_savings"         value="<?php echo esc_attr( $flosc_demo['offer_savings'] ); ?>">
+                <?php if ( ! empty( $flosc_demo['fmt_card'] ) ): ?>
                 <input type="hidden" name="fmt_card_enabled"      value="1">
                 <?php endif; ?>
-                <?php if ( ! empty( $demo['fmt_featured'] ) ): ?>
+                <?php if ( ! empty( $flosc_demo['fmt_featured'] ) ): ?>
                 <input type="hidden" name="fmt_featured_enabled"  value="1">
                 <?php endif; ?>
-                <?php if ( ! empty( $demo['fmt_pill'] ) ): ?>
+                <?php if ( ! empty( $flosc_demo['fmt_pill'] ) ): ?>
                 <input type="hidden" name="fmt_pill_enabled"      value="1">
-                <input type="hidden" name="fmt_pill_label"        value="<?php echo esc_attr( $demo['pill_label'] ); ?>">
-                <input type="hidden" name="fmt_pill_icon"         value="<?php echo esc_attr( $demo['pill_icon'] ); ?>">
-                <input type="hidden" name="fmt_pill_phrase"       value="<?php echo esc_attr( $demo['pill_phrase'] ); ?>">
-                <input type="hidden" name="fmt_pill_target_panel" value="<?php echo esc_attr( $demo['pill_panel'] ); ?>">
+                <input type="hidden" name="fmt_pill_label"        value="<?php echo esc_attr( $flosc_demo['pill_label'] ); ?>">
+                <input type="hidden" name="fmt_pill_icon"         value="<?php echo esc_attr( $flosc_demo['pill_icon'] ); ?>">
+                <input type="hidden" name="fmt_pill_phrase"       value="<?php echo esc_attr( $flosc_demo['pill_phrase'] ); ?>">
+                <input type="hidden" name="fmt_pill_target_panel" value="<?php echo esc_attr( $flosc_demo['pill_panel'] ); ?>">
                 <?php endif; ?>
                 <!-- status: no offer_active input = saved as draft -->
                 <button type="submit" class="button button-small" style="white-space:nowrap;">
@@ -691,40 +691,40 @@ document.addEventListener('DOMContentLoaded', function() {
 // ============================================
 // OFFER EDITOR RENDER FUNCTION
 // ============================================
-function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_format_meta) {
-    $is_new = empty($offer);
-    $offer_id = $offer['id'] ?? 'new';
-    $safe_id = esc_attr($offer_id);
+function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_current_ivr, $flosc_all_format_meta) {
+    $is_new = empty($flosc_offer);
+    $flosc_offer_id = $flosc_offer['id'] ?? 'new';
+    $flosc_safe_id = esc_attr($flosc_offer_id);
     
     // Merge display_formats with defaults
-    $df = $offer['display_formats'] ?? [];
+    $flosc_df = $flosc_offer['display_formats'] ?? [];
     // Backward compat
-    if (empty($df) && !empty($offer['display_format'])) {
-        $df[$offer['display_format']] = ['enabled' => true];
+    if (empty($flosc_df) && !empty($flosc_offer['display_format'])) {
+        $flosc_df[$flosc_offer['display_format']] = ['enabled' => true];
     }
-    if (empty($df) && $is_new) {
-        $df['card'] = ['enabled' => true];
+    if (empty($flosc_df) && $is_new) {
+        $flosc_df['card'] = ['enabled' => true];
     }
 ?>
     <form method="post">
         <?php wp_nonce_field('flosc_save_offer', 'flosc_save_offer_nonce'); ?>
-        <input type="hidden" name="offer_id" value="<?php echo esc_attr( $safe_id ); ?>">
-        <input type="hidden" name="flosc_flow_key" value="<?php echo esc_attr($flow_key); ?>">
-        <input type="hidden" name="flosc_ivr" value="<?php echo esc_attr($current_ivr); ?>">
+        <input type="hidden" name="offer_id" value="<?php echo esc_attr( $flosc_safe_id ); ?>">
+        <input type="hidden" name="flosc_flow_key" value="<?php echo esc_attr($flosc_flow_key); ?>">
+        <input type="hidden" name="flosc_ivr" value="<?php echo esc_attr($flosc_current_ivr); ?>">
         
         <!-- CORE OFFER DATA -->
         <div class="flosc-offer-section-label">📦 Offer Details</div>
         <table class="form-table" style="margin: 0;">
             <tr>
                 <th style="width: 150px;"><label>Offer Name</label></th>
-                <td><input type="text" name="offer_name" value="<?php echo esc_attr($offer['name'] ?? ''); ?>" class="large-text" required placeholder="Premium Annual - 50% Off OTO"></td>
+                <td><input type="text" name="offer_name" value="<?php echo esc_attr($flosc_offer['name'] ?? ''); ?>" class="large-text" required placeholder="Premium Annual - 50% Off OTO"></td>
             </tr>
             <tr>
                 <th><label>Type</label></th>
                 <td>
                     <select name="offer_type">
                         <?php foreach (['one-time'=>'One-Time Purchase','subscription'=>'Recurring Subscription','bundle'=>'Bundle','upsell'=>'Upsell / Cross-sell'] as $v => $l): ?>
-                            <option value="<?php echo esc_attr( $v ); ?>" <?php selected($offer['type'] ?? '', $v); ?>><?php echo esc_html( $l ); ?></option>
+                            <option value="<?php echo esc_attr( $v ); ?>" <?php selected($flosc_offer['type'] ?? '', $v); ?>><?php echo esc_html( $l ); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </td>
@@ -732,11 +732,11 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
             <tr>
                 <th>Pricing</th>
                 <td>
-                    <label>Price: $<input type="number" name="offer_price" value="<?php echo esc_attr($offer['price'] ?? ''); ?>" step="0.01" min="0" class="small-text" id="offer-price-<?php echo esc_attr( $safe_id ); ?>"></label>
-                    <label style="margin-left: 16px;">Was: $<input type="number" name="offer_original_price" value="<?php echo esc_attr($offer['original_price'] ?? ''); ?>" step="0.01" min="0" class="small-text"></label>
+                    <label>Price: $<input type="number" name="offer_price" value="<?php echo esc_attr($flosc_offer['price'] ?? ''); ?>" step="0.01" min="0" class="small-text" id="offer-price-<?php echo esc_attr( $flosc_safe_id ); ?>"></label>
+                    <label style="margin-left: 16px;">Was: $<input type="number" name="offer_original_price" value="<?php echo esc_attr($flosc_offer['original_price'] ?? ''); ?>" step="0.01" min="0" class="small-text"></label>
                     <p class="description">Enter 0 for a free offer.</p>
                     <div style="margin-top: 8px;">
-                        <label>Button price label: <input type="text" name="offer_display_price" value="<?php echo esc_attr($offer['display_price'] ?? ''); ?>" class="regular-text" placeholder="e.g. $100/yr or $10/mo"></label>
+                        <label>Button price label: <input type="text" name="offer_display_price" value="<?php echo esc_attr($flosc_offer['display_price'] ?? ''); ?>" class="regular-text" placeholder="e.g. $100/yr or $10/mo"></label>
                         <p class="description">Shown on the CTA button. Leave empty to auto-generate from price.</p>
                     </div>
                 </td>
@@ -745,10 +745,10 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
                 <th><label>Payment Processor</label></th>
                 <td>
                     <?php
-                    $proc = $offer['pricing']['processor'] ?? 'paypal';
+                    $proc = $flosc_offer['pricing']['processor'] ?? 'paypal';
                     ?>
-                    <select name="offer_processor" id="offer-processor-<?php echo esc_attr( $safe_id ); ?>"
-                            onchange="floscToggleProcessorFields('<?php echo esc_js($safe_id); ?>', this.value)">
+                    <select name="offer_processor" id="offer-processor-<?php echo esc_attr( $flosc_safe_id ); ?>"
+                            onchange="floscToggleProcessorFields('<?php echo esc_js($flosc_safe_id); ?>', this.value)">
                         <option value="paypal"   <?php selected($proc, 'paypal'); ?>>PayPal</option>
                         <option value="stripe"   <?php selected($proc, 'stripe'); ?>>Stripe</option>
                         <option value="free"     <?php selected($proc, 'free'); ?>>Free (no payment)</option>
@@ -757,14 +757,14 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
                     <p class="description">Choose how this offer is purchased. PayPal and Stripe require payment credentials in FLOSC Settings.</p>
 
                     <!-- PayPal fields (shown when processor = paypal) -->
-                    <div id="proc-paypal-<?php echo esc_attr( $safe_id ); ?>" class="flosc-proc-fields" style="<?php echo esc_attr( $proc !== 'paypal' ? 'display:none;' : '' ); ?> margin-top:10px;">
+                    <div id="proc-paypal-<?php echo esc_attr( $flosc_safe_id ); ?>" class="flosc-proc-fields" style="<?php echo esc_attr( $proc !== 'paypal' ? 'display:none;' : '' ); ?> margin-top:10px;">
                         <table style="width:100%; border-collapse:collapse;">
                             <tr>
                                 <td style="padding:4px 8px 4px 0; width:120px;"><label>Currency</label></td>
                                 <td>
                                     <select name="offer_currency" style="width:100px;">
                                         <?php foreach (['USD','EUR','GBP','CAD','AUD'] as $cur): ?>
-                                            <option value="<?php echo esc_attr( $cur ); ?>" <?php selected($offer['pricing']['currency'] ?? 'USD', $cur); ?>><?php echo esc_html( $cur ); ?></option>
+                                            <option value="<?php echo esc_attr( $cur ); ?>" <?php selected($flosc_offer['pricing']['currency'] ?? 'USD', $cur); ?>><?php echo esc_html( $cur ); ?></option>
                                         <?php endforeach; ?>
                                     </select>
                                     <span class="description" style="margin-left:8px;">PayPal will charge the price above in this currency.</span>
@@ -774,13 +774,13 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
                     </div>
 
                     <!-- Stripe fields (shown when processor = stripe) -->
-                    <div id="proc-stripe-<?php echo esc_attr( $safe_id ); ?>" class="flosc-proc-fields" style="<?php echo esc_attr( $proc !== 'stripe' ? 'display:none;' : '' ); ?> margin-top:10px;">
+                    <div id="proc-stripe-<?php echo esc_attr( $flosc_safe_id ); ?>" class="flosc-proc-fields" style="<?php echo esc_attr( $proc !== 'stripe' ? 'display:none;' : '' ); ?> margin-top:10px;">
                         <table style="width:100%; border-collapse:collapse;">
                             <tr>
                                 <td style="padding:4px 8px 4px 0; width:120px;"><label>Stripe Price ID</label></td>
                                 <td>
                                     <input type="text" name="offer_stripe_price_id"
-                                           value="<?php echo esc_attr($offer['pricing']['stripe']['price_id'] ?? ''); ?>"
+                                           value="<?php echo esc_attr($flosc_offer['pricing']['stripe']['price_id'] ?? ''); ?>"
                                            style="width:100%;" placeholder="price_1ABC...">
                                     <p class="description">From your <a href="https://dashboard.stripe.com/products" target="_blank">Stripe Dashboard → Products</a>. Format: <code>price_1...</code></p>
                                 </td>
@@ -789,7 +789,7 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
                                 <td style="padding:4px 8px 4px 0;"><label>Stripe Product ID</label></td>
                                 <td>
                                     <input type="text" name="offer_stripe_product_id"
-                                           value="<?php echo esc_attr($offer['pricing']['stripe']['product_id'] ?? ''); ?>"
+                                           value="<?php echo esc_attr($flosc_offer['pricing']['stripe']['product_id'] ?? ''); ?>"
                                            style="width:100%;" placeholder="prod_1ABC... (optional)">
                                 </td>
                             </tr>
@@ -797,13 +797,13 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
                     </div>
 
                     <!-- Redirect fields (shown when processor = redirect) -->
-                    <div id="proc-redirect-<?php echo esc_attr( $safe_id ); ?>" class="flosc-proc-fields" style="<?php echo esc_attr( $proc !== 'redirect' ? 'display:none;' : '' ); ?> margin-top:10px;">
+                    <div id="proc-redirect-<?php echo esc_attr( $flosc_safe_id ); ?>" class="flosc-proc-fields" style="<?php echo esc_attr( $proc !== 'redirect' ? 'display:none;' : '' ); ?> margin-top:10px;">
                         <table style="width:100%; border-collapse:collapse;">
                             <tr>
                                 <td style="padding:4px 8px 4px 0; width:120px;"><label>Checkout URL</label></td>
                                 <td>
                                     <input type="url" name="offer_redirect_url"
-                                           value="<?php echo esc_attr($offer['pricing']['redirect_url'] ?? ''); ?>"
+                                           value="<?php echo esc_attr($flosc_offer['pricing']['redirect_url'] ?? ''); ?>"
                                            style="width:100%;" placeholder="https://checkout.example.com/buy">
                                     <p class="description">User will be redirected to this URL when they click the CTA.</p>
                                 </td>
@@ -814,19 +814,19 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
             </tr>
             <tr>
                 <th><label>Sales Headline</label></th>
-                <td><input type="text" name="offer_headline" value="<?php echo esc_attr($offer['headline'] ?? ''); ?>" class="large-text" placeholder="Get Full Access - Limited Time 50% Off!"></td>
+                <td><input type="text" name="offer_headline" value="<?php echo esc_attr($flosc_offer['headline'] ?? ''); ?>" class="large-text" placeholder="Get Full Access - Limited Time 50% Off!"></td>
             </tr>
             <tr>
                 <th><label>Description</label></th>
-                <td><textarea name="offer_description" rows="4" class="large-text"><?php echo esc_textarea($offer['description'] ?? ''); ?></textarea></td>
+                <td><textarea name="offer_description" rows="4" class="large-text"><?php echo esc_textarea($flosc_offer['description'] ?? ''); ?></textarea></td>
             </tr>
             <tr>
                 <th><label>Features (one/line)</label></th>
-                <td><textarea name="offer_features" rows="4" class="large-text" placeholder="Complete access to all 50+ lessons&#10;AI-powered feedback&#10;Certificate of completion"><?php echo esc_textarea($offer['features'] ?? ''); ?></textarea></td>
+                <td><textarea name="offer_features" rows="4" class="large-text" placeholder="Complete access to all 50+ lessons&#10;AI-powered feedback&#10;Certificate of completion"><?php echo esc_textarea($flosc_offer['features'] ?? ''); ?></textarea></td>
             </tr>
             <tr>
                 <th><label>CTA Button</label></th>
-                <td><input type="text" name="offer_cta" value="<?php echo esc_attr($offer['cta'] ?? 'Get Access Now'); ?>" class="regular-text"></td>
+                <td><input type="text" name="offer_cta" value="<?php echo esc_attr($flosc_offer['cta'] ?? 'Get Access Now'); ?>" class="regular-text"></td>
             </tr>
         </table>
         
@@ -838,7 +838,7 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
                 <td>
                     <select name="offer_trigger">
                         <?php foreach (['manual'=>'Manual (pill/phrase only)','quiz_complete'=>'Quiz Completed','lesson_complete'=>'First Lesson Completed','login_phase'=>'User Enters Login Phase','inactivity'=>'After 7 Days Inactivity'] as $v => $l): ?>
-                            <option value="<?php echo esc_attr( $v ); ?>" <?php selected($offer['trigger'] ?? '', $v); ?>><?php echo esc_html( $l ); ?></option>
+                            <option value="<?php echo esc_attr( $v ); ?>" <?php selected($flosc_offer['trigger'] ?? '', $v); ?>><?php echo esc_html( $l ); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </td>
@@ -846,14 +846,14 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
             <tr>
                 <th><label>Condition</label></th>
                 <td>
-                    <input type="text" name="offer_condition" value="<?php echo esc_attr($offer['condition'] ?? ''); ?>" class="large-text" placeholder="score >= 70 && !purchased">
-                    <p class="description">Global condition for ALL formats. Per-format conditions below can override. <a href="#" onclick="document.getElementById('flosc-condition-ref-<?php echo esc_js( $safe_id ); ?>').open = !document.getElementById('flosc-condition-ref-<?php echo esc_js( $safe_id ); ?>').open; return false;">📖 View all available conditions</a></p>
+                    <input type="text" name="offer_condition" value="<?php echo esc_attr($flosc_offer['condition'] ?? ''); ?>" class="large-text" placeholder="score >= 70 && !purchased">
+                    <p class="description">Global condition for ALL formats. Per-format conditions below can override. <a href="#" onclick="document.getElementById('flosc-condition-ref-<?php echo esc_js( $flosc_safe_id ); ?>').open = !document.getElementById('flosc-condition-ref-<?php echo esc_js( $flosc_safe_id ); ?>').open; return false;">📖 View all available conditions</a></p>
                 </td>
             </tr>
             <tr>
                 <th><label>Timer (min)</label></th>
                 <td>
-                    <input type="number" name="offer_timer" value="<?php echo esc_attr($offer['timer_minutes'] ?? ''); ?>" min="0" class="small-text" placeholder="15">
+                    <input type="number" name="offer_timer" value="<?php echo esc_attr($flosc_offer['timer_minutes'] ?? ''); ?>" min="0" class="small-text" placeholder="15">
                     <span class="description" style="margin-left: 8px;">Global default. Per-format timers can override.</span>
                 </td>
             </tr>
@@ -862,8 +862,8 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
                 <td>
                     <?php
                     // v8.1.0: Dropdown from Member Levels registry (single source of truth)
-                    $ml_registry = $flow_settings['member_levels'] ?? [];
-                    $current_level = $offer['grants_level'] ?? '';
+                    $ml_registry = $flosc_flow_settings['member_levels'] ?? [];
+                    $current_level = $flosc_offer['grants_level'] ?? '';
                     ?>
                     <select name="offer_grants_level" class="regular-text">
                         <option value="">— None —</option>
@@ -877,7 +877,7 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <p class="description">Select a level from the <a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $current_ivr, 'tab' => 'member-levels' ), admin_url( 'admin.php' ) ) ); ?>">Member Levels</a> tab.</p>
+                    <p class="description">Select a level from the <a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_current_ivr, 'tab' => 'member-levels' ), admin_url( 'admin.php' ) ) ); ?>">Member Levels</a> tab.</p>
                 </td>
             </tr>
         </table>
@@ -888,7 +888,7 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
             <tr>
                 <th style="width: 150px;"><label>Reveal Phrase</label></th>
                 <td>
-                    <input type="text" name="offer_reveal_phrase" value="<?php echo esc_attr($offer['reveal_phrase'] ?? ''); ?>" class="large-text" placeholder="Tell me about the full access plan">
+                    <input type="text" name="offer_reveal_phrase" value="<?php echo esc_attr($flosc_offer['reveal_phrase'] ?? ''); ?>" class="large-text" placeholder="Tell me about the full access plan">
                     <p class="description">When a user types this phrase (or clicks a pill that sends it), this offer will be displayed. Leave empty to disable phrase-triggering.</p>
                 </td>
             </tr>
@@ -896,8 +896,8 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
                 <th><label>Match Type</label></th>
                 <td>
                     <select name="offer_match_type">
-                        <option value="exact" <?php selected($offer['match_type'] ?? 'exact', 'exact'); ?>>Exact Match — user's text must match the phrase exactly (case-insensitive)</option>
-                        <option value="ai_interpretation" <?php selected($offer['match_type'] ?? '', 'ai_interpretation'); ?>>AI Interpretation — AI decides if user's intent matches this offer's phrase</option>
+                        <option value="exact" <?php selected($flosc_offer['match_type'] ?? 'exact', 'exact'); ?>>Exact Match — user's text must match the phrase exactly (case-insensitive)</option>
+                        <option value="ai_interpretation" <?php selected($flosc_offer['match_type'] ?? '', 'ai_interpretation'); ?>>AI Interpretation — AI decides if user's intent matches this offer's phrase</option>
                     </select>
                     <p class="description">
                         <strong>Exact Match:</strong> User types "Tell me about full access" → phrase is "Tell me about full access" → match. Fast, reliable, no AI cost.<br>
@@ -908,7 +908,7 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
         </table>
         
         <!-- CONDITION REFERENCE (collapsible) -->
-        <details class="flosc-condition-reference" id="flosc-condition-ref-<?php echo esc_attr( $safe_id ); ?>">
+        <details class="flosc-condition-reference" id="flosc-condition-ref-<?php echo esc_attr( $flosc_safe_id ); ?>">
             <summary>📖 Condition Reference — All Available Conditions (click to expand)</summary>
             <div class="flosc-condition-ref-body">
                 <p>Conditions control when an offer (or a specific format of an offer) is shown. Combine conditions with <code>&&</code> (AND), <code>||</code> (OR), <code>!</code> (NOT), and <code>()</code> (grouping). Click any condition to copy it.</p>
@@ -1037,23 +1037,23 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
         <table class="form-table" style="margin: 0;">
             <tr>
                 <th style="width: 150px;"><label>Icon</label></th>
-                <td><input type="text" name="offer_icon" value="<?php echo esc_attr($offer['meta']['icon'] ?? '⭐'); ?>" class="small-text"></td>
+                <td><input type="text" name="offer_icon" value="<?php echo esc_attr($flosc_offer['meta']['icon'] ?? '⭐'); ?>" class="small-text"></td>
             </tr>
             <tr>
                 <th><label>Badge</label></th>
-                <td><input type="text" name="offer_badge" value="<?php echo esc_attr($offer['meta']['badge'] ?? ''); ?>" class="regular-text" placeholder="Most Popular"></td>
+                <td><input type="text" name="offer_badge" value="<?php echo esc_attr($flosc_offer['meta']['badge'] ?? ''); ?>" class="regular-text" placeholder="Most Popular"></td>
             </tr>
             <tr>
                 <th><label>Savings Text</label></th>
-                <td><input type="text" name="offer_savings" value="<?php echo esc_attr($offer['meta']['savings'] ?? ''); ?>" class="regular-text" placeholder="Save $50!"></td>
+                <td><input type="text" name="offer_savings" value="<?php echo esc_attr($flosc_offer['meta']['savings'] ?? ''); ?>" class="regular-text" placeholder="Save $50!"></td>
             </tr>
             <tr>
                 <th><label>Guarantee</label></th>
-                <td><input type="text" name="offer_guarantee" value="<?php echo esc_attr($offer['guarantee'] ?? 'Risk-free with our 30-day money-back guarantee'); ?>" class="large-text"></td>
+                <td><input type="text" name="offer_guarantee" value="<?php echo esc_attr($flosc_offer['guarantee'] ?? 'Risk-free with our 30-day money-back guarantee'); ?>" class="large-text"></td>
             </tr>
             <tr>
                 <th><label>Status</label></th>
-                <td><label><input type="checkbox" name="offer_active" value="1" <?php checked($offer['active'] ?? true); ?>> Active (visible to users)</label></td>
+                <td><label><input type="checkbox" name="offer_active" value="1" <?php checked($flosc_offer['active'] ?? true); ?>> Active (visible to users)</label></td>
             </tr>
         </table>
         
@@ -1064,33 +1064,33 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
         </p>
         
         <div class="flosc-fmt-grid">
-        <?php foreach ($all_format_meta as $fmt_id => $fmt_meta):
-            $fmt_key = str_replace('-', '_', $fmt_id);
-            $fmt_data = $df[$fmt_id] ?? [];
+        <?php foreach ($flosc_all_format_meta as $fmt_id => $flosc_fmt_meta):
+            $flosc_fmt_key = str_replace('-', '_', $fmt_id);
+            $fmt_data = $flosc_df[$fmt_id] ?? [];
             $fmt_enabled = !empty($fmt_data['enabled']);
         ?>
             <div class="flosc-fmt-card <?php echo esc_attr( $fmt_enabled ? 'is-enabled' : '' ); ?>">
                 <div class="fmt-header">
-                    <span style="font-size: 16px;"><?php echo esc_html( $fmt_meta['icon'] ); ?></span>
+                    <span style="font-size: 16px;"><?php echo esc_html( $flosc_fmt_meta['icon'] ); ?></span>
                     <label>
-                        <input type="checkbox" name="fmt_<?php echo esc_attr( $fmt_key ); ?>_enabled" value="1" 
+                        <input type="checkbox" name="fmt_<?php echo esc_attr( $flosc_fmt_key ); ?>_enabled" value="1" 
                                <?php checked($fmt_enabled); ?>
                                onchange="floscToggleFmt(this)">
-                        <?php echo esc_html($fmt_meta['label']); ?>
+                        <?php echo esc_html($flosc_fmt_meta['label']); ?>
                     </label>
                 </div>
-                <div class="fmt-desc"><?php echo esc_html($fmt_meta['desc']); ?></div>
+                <div class="fmt-desc"><?php echo esc_html($flosc_fmt_meta['desc']); ?></div>
                 
                 <div class="fmt-fields">
                     <div class="field-row">
                         <label>Condition override:</label>
-                        <input type="text" name="fmt_<?php echo esc_attr( $fmt_key ); ?>_condition" 
+                        <input type="text" name="fmt_<?php echo esc_attr( $flosc_fmt_key ); ?>_condition" 
                                value="<?php echo esc_attr($fmt_data['condition'] ?? ''); ?>" 
                                style="width: 100%;" placeholder="Uses global condition if empty">
                     </div>
                     <div class="field-row">
                         <label>Timer override (seconds):</label>
-                        <input type="number" name="fmt_<?php echo esc_attr( $fmt_key ); ?>_timer" 
+                        <input type="number" name="fmt_<?php echo esc_attr( $flosc_fmt_key ); ?>_timer" 
                                value="<?php echo esc_attr($fmt_data['timer'] ?? ''); ?>" 
                                class="small-text" placeholder="0">
                     </div>
@@ -1099,7 +1099,7 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
                     <div class="field-row">
                         <label>Target panel (where this pill appears):</label>
                         <select name="fmt_pill_target_panel" style="width: 100%;">
-                            <option value="guest" <?php selected($fmt_data['target_panel'] ?? $offer['pill_target_panel'] ?? '', 'guest'); ?>>🟢 GuestPanel — logged-in users who haven't purchased</option>
+                            <option value="guest" <?php selected($fmt_data['target_panel'] ?? $flosc_offer['pill_target_panel'] ?? '', 'guest'); ?>>🟢 GuestPanel — logged-in users who haven't purchased</option>
                             <option value="member" <?php selected($fmt_data['target_panel'] ?? '', 'member'); ?>>🔵 MemberPanel — users who have purchased</option>
                             <option value="intro" <?php selected($fmt_data['target_panel'] ?? '', 'intro'); ?>>⚪ IntroPanel — visitors (not logged in)</option>
                             <option value="both" <?php selected($fmt_data['target_panel'] ?? '', 'both'); ?>>🟢🔵 Guest + Member — all logged-in users</option>
@@ -1108,19 +1108,19 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
                     <div class="field-row">
                         <label>Pill label (text shown on the pill):</label>
                         <input type="text" name="fmt_pill_label" 
-                               value="<?php echo esc_attr($fmt_data['label'] ?? $offer['pill_label'] ?? ''); ?>" 
-                               style="width: 100%;" placeholder="<?php echo esc_attr($offer['name'] ?? 'Special Offer'); ?>">
+                               value="<?php echo esc_attr($fmt_data['label'] ?? $flosc_offer['pill_label'] ?? ''); ?>" 
+                               style="width: 100%;" placeholder="<?php echo esc_attr($flosc_offer['name'] ?? 'Special Offer'); ?>">
                     </div>
                     <div class="field-row">
                         <label>Pill icon (emoji shown before the label):</label>
                         <input type="text" name="fmt_pill_icon" 
-                               value="<?php echo esc_attr($fmt_data['icon'] ?? $offer['pill_icon'] ?? ''); ?>" 
+                               value="<?php echo esc_attr($fmt_data['icon'] ?? $flosc_offer['pill_icon'] ?? ''); ?>" 
                                class="small-text" placeholder="🎁">
                     </div>
                     <div class="field-row">
                         <label>Pill phrase (sent as user message when clicked):</label>
                         <input type="text" name="fmt_pill_phrase" 
-                               value="<?php echo esc_attr($fmt_data['phrase'] ?? $offer['pill_phrase'] ?? ''); ?>" 
+                               value="<?php echo esc_attr($fmt_data['phrase'] ?? $flosc_offer['pill_phrase'] ?? ''); ?>" 
                                style="width: 100%;" placeholder="Uses Reveal Phrase if empty">
                         <p class="description" style="margin-top: 2px; font-size: 11px;">When user clicks this pill, this text is sent as their message. If empty, uses the Reveal Phrase from above. If both empty, sends the pill label text.</p>
                     </div>
@@ -1129,7 +1129,7 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
                     <?php if (in_array($fmt_id, ['card','featured','banner'])): ?>
                     <div class="field-row">
                         <label>Headline override:</label>
-                        <input type="text" name="fmt_<?php echo esc_attr( $fmt_key ); ?>_headline" 
+                        <input type="text" name="fmt_<?php echo esc_attr( $flosc_fmt_key ); ?>_headline" 
                                value="<?php echo esc_attr($fmt_data['headline_override'] ?? ''); ?>" 
                                style="width: 100%;" placeholder="Uses main headline if empty">
                     </div>
@@ -1144,11 +1144,11 @@ function flosc_render_offer_editor_v2($offer, $flow_key, $current_ivr, $all_form
             <?php submit_button('Save Offer', 'primary', 'save_offer', false); ?>
             
             <?php if (!$is_new): ?>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers&toggle_status=' . urlencode($offer_id) . '&_wpnonce=' . wp_create_nonce('flosc_toggle_status'))); ?>" 
+                <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($flosc_current_ivr) . '&tab=offers&toggle_status=' . urlencode($flosc_offer_id) . '&_wpnonce=' . wp_create_nonce('flosc_toggle_status'))); ?>" 
                    class="button">
-                    <?php echo ($offer['active'] ?? true) ? 'Deactivate' : 'Activate'; ?>
+                    <?php echo ($flosc_offer['active'] ?? true) ? 'Deactivate' : 'Activate'; ?>
                 </a>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($current_ivr) . '&tab=offers&delete_offer=' . urlencode($offer_id) . '&_wpnonce=' . wp_create_nonce('flosc_delete_offer_' . $offer_id))); ?>" 
+                <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($flosc_current_ivr) . '&tab=offers&delete_offer=' . urlencode($flosc_offer_id) . '&_wpnonce=' . wp_create_nonce('flosc_delete_offer_' . $flosc_offer_id))); ?>" 
                    class="button" style="color: #d63638; margin-left: auto;"
                    onclick="return confirm('Permanently delete this offer?');">
                     Delete Offer

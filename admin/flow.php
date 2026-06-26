@@ -3,20 +3,20 @@
  * FLOSC Flow Tab — F→L→O→S→C read-only phase overview
  *
  * Shows live counts and edit links for each of the five FLOSC funnel phases.
- * Data sourced from $flow_settings (via $GLOBALS) and flosc() helper objects.
+ * Data sourced from $flosc_flow_settings (via $GLOBALS) and flosc() helper objects.
  *
  * v4.0.0: Initial implementation
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-$flow_settings  = $GLOBALS['flosc_current_settings'] ?? [];
-$selected_ivr   = $GLOBALS['flosc_current_ivr']      ?? '';
-$ivr_param      = urlencode( $selected_ivr );
-$base_url       = admin_url( 'admin.php?page=flosc-settings&ivr=' . $ivr_param . '&tab=' );
-$flow_docs_url  = add_query_arg([
+$flosc_flow_settings  = $GLOBALS['flosc_current_settings'] ?? [];
+$flosc_selected_ivr   = $GLOBALS['flosc_current_ivr']      ?? '';
+$flosc_ivr_param      = urlencode( $flosc_selected_ivr );
+$flosc_base_url       = admin_url( 'admin.php?page=flosc-settings&ivr=' . $flosc_ivr_param . '&tab=' );
+$flosc_flow_docs_url  = add_query_arg([
     'page' => 'flosc-settings',
-    'ivr'  => $selected_ivr,
+    'ivr'  => $flosc_selected_ivr,
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-flow';
@@ -24,15 +24,15 @@ $flow_docs_url  = add_query_arg([
 // ── Gather live data ──────────────────────────────────────────────────────────
 
 // ── Parse IVR file once — used for pill counts across all phases ──────────────
-$ivr_pill_counts = [ 'freeline' => 0, 'offer' => 0, 'content' => 0 ];
-$ivr_path = flosc_config_file($selected_ivr);
-if ( $selected_ivr && file_exists( $ivr_path ) && class_exists( 'FLOSC_IVR_Parser' ) ) {
-    $ivr_parser = FLOSC_IVR_Parser::flosc_instance();
-    $ivr_data   = $ivr_parser->flosc_parse( file_get_contents( $ivr_path ) );
-    foreach ( array_keys( $ivr_pill_counts ) as $phase ) {
-        foreach ( $ivr_data['phases'][ $phase ] ?? [] as $name ) {
-            if ( ( $ivr_data['messages'][ $name ]['type'] ?? '' ) === 'suggested_user_autoprompt' ) {
-                $ivr_pill_counts[ $phase ]++;
+$flosc_ivr_pill_counts = [ 'freeline' => 0, 'offer' => 0, 'content' => 0 ];
+$flosc_ivr_path = flosc_config_file($flosc_selected_ivr);
+if ( $flosc_selected_ivr && file_exists( $flosc_ivr_path ) && class_exists( 'FLOSC_IVR_Parser' ) ) {
+    $flosc_ivr_parser = FLOSC_IVR_Parser::flosc_instance();
+    $flosc_ivr_data   = $flosc_ivr_parser->flosc_parse( file_get_contents( $flosc_ivr_path ) );
+    foreach ( array_keys( $flosc_ivr_pill_counts ) as $flosc_phase ) {
+        foreach ( $flosc_ivr_data['phases'][ $flosc_phase ] ?? [] as $flosc_name ) {
+            if ( ( $flosc_ivr_data['messages'][ $flosc_name ]['type'] ?? '' ) === 'suggested_user_autoprompt' ) {
+                $flosc_ivr_pill_counts[ $flosc_phase ]++;
             }
         }
     }
@@ -40,93 +40,93 @@ if ( $selected_ivr && file_exists( $ivr_path ) && class_exists( 'FLOSC_IVR_Parse
 
 // F — Freeline: quiz + visitor pills + IVR file
 // Match quiz.php's default: flosc_sample_data_numbers_quiz is the default active quiz
-$enabled_quizzes = $flow_settings['enabled_quizzes'] ?? ['flosc_sample_data_numbers_quiz'];
-if ( ! is_array( $enabled_quizzes ) ) $enabled_quizzes = ['flosc_sample_data_numbers_quiz'];
-$quiz_configured  = ! empty( $enabled_quizzes );
-$quiz_count       = count( $enabled_quizzes );
-$quiz_word        = $quiz_count === 1 ? 'Quiz' : 'Quizzes';
-$edit_quiz_label  = $quiz_count === 1 ? 'Edit Quiz →' : 'Edit Quizzes →';
+$flosc_enabled_quizzes = $flosc_flow_settings['enabled_quizzes'] ?? ['flosc_sample_data_numbers_quiz'];
+if ( ! is_array( $flosc_enabled_quizzes ) ) $flosc_enabled_quizzes = ['flosc_sample_data_numbers_quiz'];
+$flosc_quiz_configured  = ! empty( $flosc_enabled_quizzes );
+$flosc_quiz_count       = count( $flosc_enabled_quizzes );
+$flosc_quiz_word        = $flosc_quiz_count === 1 ? 'Quiz' : 'Quizzes';
+$flosc_edit_quiz_label  = $flosc_quiz_count === 1 ? 'Edit Quiz →' : 'Edit Quizzes →';
 
-if ( $quiz_configured && class_exists( 'FLOSC_Quiz_Registry' ) ) {
-    $names = [];
-    foreach ( $enabled_quizzes as $qid ) {
-        $qt      = FLOSC_Quiz_Registry::get_quiz( $qid );
-        $names[] = $qt ? $qt->get_name() : ucwords( str_replace( '_', ' ', $qid ) );
+if ( $flosc_quiz_configured && class_exists( 'FLOSC_Quiz_Registry' ) ) {
+    $flosc_names = [];
+    foreach ( $flosc_enabled_quizzes as $flosc_qid ) {
+        $flosc_qt      = FLOSC_Quiz_Registry::get_quiz( $flosc_qid );
+        $flosc_names[] = $flosc_qt ? $flosc_qt->get_name() : ucwords( str_replace( '_', ' ', $flosc_qid ) );
     }
-    $bullets         = array_map( fn( $n ) => '<span style="display:block;padding-left:8px;font-size:12px;color:#50575e;">• ' . esc_html( $n ) . '</span>', $names );
-    $quiz_label_html = '<strong>' . $quiz_count . ' ' . $quiz_word . ' ✅</strong>' . implode( '', $bullets );
+    $flosc_bullets         = array_map( fn( $n ) => '<span style="display:block;padding-left:8px;font-size:12px;color:#50575e;">• ' . esc_html( $n ) . '</span>', $flosc_names );
+    $flosc_quiz_label_html = '<strong>' . $flosc_quiz_count . ' ' . $flosc_quiz_word . ' ✅</strong>' . implode( '', $flosc_bullets );
 } else {
-    $quiz_label_html = '<strong>0 Quizzes ❌</strong>';
-    $edit_quiz_label = 'Edit Quiz →';
+    $flosc_quiz_label_html = '<strong>0 Quizzes ❌</strong>';
+    $flosc_edit_quiz_label = 'Edit Quiz →';
 }
 
-$visitor_pills = count( $flow_settings['autoprompts']['visitor'] ?? [] );
-$ivr_file_label      = $selected_ivr ?: 'None configured';
+$flosc_visitor_pills = count( $flosc_flow_settings['autoprompts']['visitor'] ?? [] );
+$flosc_ivr_file_label      = $flosc_selected_ivr ?: 'None configured';
 
 // L — Login: SSO providers
-$sso_providers   = [];
-foreach ( ['google', 'apple', 'facebook', 'microsoft', 'linkedin'] as $p ) {
-    if ( ! empty( $flow_settings[ 'sso_' . $p . '_enabled' ] ) ) {
-        $sso_providers[] = ucfirst( $p );
+$flosc_sso_providers   = [];
+foreach ( ['google', 'apple', 'facebook', 'microsoft', 'linkedin'] as $flosc_p ) {
+    if ( ! empty( $flosc_flow_settings[ 'sso_' . $flosc_p . '_enabled' ] ) ) {
+        $flosc_sso_providers[] = ucfirst( $flosc_p );
     }
 }
-$sso_label = $sso_providers ? implode( ', ', $sso_providers ) : 'WordPress native';
+$flosc_sso_label = $flosc_sso_providers ? implode( ', ', $flosc_sso_providers ) : 'WordPress native';
 
 // O — Offer: offers count + guest pills
-$flow_id_key    = $selected_ivr ? pathinfo( $selected_ivr, PATHINFO_FILENAME ) : null;
-$all_offers     = [];
-$active_count   = 0;
-$draft_count    = 0;
-if ( function_exists( 'flosc' ) && $flow_id_key ) {
-    $all_offers = flosc()->sale()->offers()->get_all_offers( $flow_id_key );
-    foreach ( $all_offers as $o ) {
-        if ( ( $o['status'] ?? 'draft' ) === 'active' ) {
-            $active_count++;
+$flosc_flow_id_key    = $flosc_selected_ivr ? pathinfo( $flosc_selected_ivr, PATHINFO_FILENAME ) : null;
+$flosc_all_offers     = [];
+$flosc_active_count   = 0;
+$flosc_draft_count    = 0;
+if ( function_exists( 'flosc' ) && $flosc_flow_id_key ) {
+    $flosc_all_offers = flosc()->sale()->offers()->get_all_offers( $flosc_flow_id_key );
+    foreach ( $flosc_all_offers as $flosc_o ) {
+        if ( ( $flosc_o['status'] ?? 'draft' ) === 'active' ) {
+            $flosc_active_count++;
         } else {
-            $draft_count++;
+            $flosc_draft_count++;
         }
     }
 }
-$offers_label  = $active_count . ' active' . ( $draft_count ? ', ' . $draft_count . ' draft' : '' );
-$guest_pills   = count( $flow_settings['autoprompts']['guest'] ?? [] ) + $ivr_pill_counts['offer'];
+$flosc_offers_label  = $flosc_active_count . ' active' . ( $flosc_draft_count ? ', ' . $flosc_draft_count . ' draft' : '' );
+$flosc_guest_pills   = count( $flosc_flow_settings['autoprompts']['guest'] ?? [] ) + $flosc_ivr_pill_counts['offer'];
 
 // S — Sale: payment providers (read directly from flow_settings — same source as Payments tab)
-$paypal_cfg  = ! empty( $flow_settings['paypal_enabled'] )
-               && ! empty( $flow_settings['paypal_client_id'] )
-               && ! empty( $flow_settings['paypal_secret'] );
-$paypal_mode = $flow_settings['paypal_mode'] ?? 'sandbox';
+$flosc_paypal_cfg  = ! empty( $flosc_flow_settings['paypal_enabled'] )
+               && ! empty( $flosc_flow_settings['paypal_client_id'] )
+               && ! empty( $flosc_flow_settings['paypal_secret'] );
+$flosc_paypal_mode = $flosc_flow_settings['paypal_mode'] ?? 'sandbox';
 
-$stripe_mode = $flow_settings['stripe_mode'] ?? 'test';
-$stripe_sk   = $stripe_mode === 'live'
-               ? ( $flow_settings['stripe_live_sk'] ?? '' )
-               : ( $flow_settings['stripe_test_sk'] ?? '' );
-$stripe_cfg  = ! empty( $flow_settings['stripe_enabled'] ) && ! empty( $stripe_sk );
+$flosc_stripe_mode = $flosc_flow_settings['stripe_mode'] ?? 'test';
+$flosc_stripe_sk   = $flosc_stripe_mode === 'live'
+               ? ( $flosc_flow_settings['stripe_live_sk'] ?? '' )
+               : ( $flosc_flow_settings['stripe_test_sk'] ?? '' );
+$flosc_stripe_cfg  = ! empty( $flosc_flow_settings['stripe_enabled'] ) && ! empty( $flosc_stripe_sk );
 
 // C — Content: lessons + member pills + AI provider
-$lesson_groups  = $flow_settings['lesson_groups'] ?? [];
-if ( empty( $lesson_groups ) && ! empty( $flow_settings['lessons_category'] ) ) {
-    $lesson_groups = [ [ 'category' => $flow_settings['lessons_category'] ] ];
+$flosc_lesson_groups  = $flosc_flow_settings['lesson_groups'] ?? [];
+if ( empty( $flosc_lesson_groups ) && ! empty( $flosc_flow_settings['lessons_category'] ) ) {
+    $flosc_lesson_groups = [ [ 'category' => $flosc_flow_settings['lessons_category'] ] ];
 }
-$lesson_count  = count( $lesson_groups );
-$lessons_label = $lesson_count ? $lesson_count . ' lesson group' . ( $lesson_count !== 1 ? 's' : '' ) : 'Not configured';
+$flosc_lesson_count  = count( $flosc_lesson_groups );
+$flosc_lessons_label = $flosc_lesson_count ? $flosc_lesson_count . ' lesson group' . ( $flosc_lesson_count !== 1 ? 's' : '' ) : 'Not configured';
 
-$member_pills  = count( $flow_settings['autoprompts']['member'] ?? [] ) + $ivr_pill_counts['content'];
+$flosc_member_pills  = count( $flosc_flow_settings['autoprompts']['member'] ?? [] ) + $flosc_ivr_pill_counts['content'];
 
-$ai_provider   = $flow_settings['ai_provider'] ?? 'ivr';
-$ai_labels     = [
+$flosc_ai_provider   = $flosc_flow_settings['ai_provider'] ?? 'ivr';
+$flosc_ai_labels     = [
     'ivr'       => 'IVR / Scripted only',
     'anthropic' => 'Anthropic Claude',
     'openai'    => 'OpenAI',
     'xai'       => 'xAI Grok',
 ];
-$ai_label = $ai_labels[ $ai_provider ] ?? ucfirst( $ai_provider );
-if ( $ai_provider === 'anthropic' ) {
-    $ai_model  = $flow_settings['ai_model'] ?? flosc_get_setting( 'ai_model', 'claude-sonnet-4-6' );
-    $ai_label .= ' (' . esc_html( $ai_model ) . ')';
+$flosc_ai_label = $flosc_ai_labels[ $flosc_ai_provider ] ?? ucfirst( $flosc_ai_provider );
+if ( $flosc_ai_provider === 'anthropic' ) {
+    $flosc_ai_model  = $flosc_flow_settings['ai_model'] ?? flosc_get_setting( 'ai_model', 'claude-sonnet-4-6' );
+    $flosc_ai_label .= ' (' . esc_html( $flosc_ai_model ) . ')';
 }
 
 // ── Helper: render a phase card ───────────────────────────────────────────────
-function flosc_flow_card( $letter, $phase_name, $subtitle, $rows ) {
+function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
     $colors = [
         'F' => [ 'bg' => '#f0f0f1', 'border' => '#c3c4c7', 'badge' => '#3c434a', 'badge_text' => '#fff' ],
         'L' => [ 'bg' => '#fff4e6', 'border' => '#f59e0b', 'badge' => '#f59e0b', 'badge_text' => '#fff' ],
@@ -139,7 +139,7 @@ function flosc_flow_card( $letter, $phase_name, $subtitle, $rows ) {
     echo '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">';
     echo '<span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:' . esc_attr( $c['badge'] ) . ';color:' . esc_attr( $c['badge_text'] ) . ';font-size:18px;font-weight:900;flex-shrink:0;">' . esc_html( $letter ) . '</span>';
     echo '<div>';
-    echo '<div style="font-size:15px;font-weight:700;color:#1d2327;">' . esc_html( strtoupper( $phase_name ) ) . '</div>';
+    echo '<div style="font-size:15px;font-weight:700;color:#1d2327;">' . esc_html( strtoupper( $flosc_phase_name ) ) . '</div>';
     echo '<div style="font-size:12px;color:#50575e;">' . esc_html( $subtitle ) . '</div>';
     echo '</div>';
     echo '</div>';
@@ -165,27 +165,27 @@ function flosc_flow_card( $letter, $phase_name, $subtitle, $rows ) {
     <div style="background:#fff;border:1px solid #c3c4c7;border-radius:6px;padding:14px 18px;margin-bottom:20px;">
         <h2 style="margin:0 0 4px;font-size:16px;color:#1d2327;display:flex;align-items:center;gap:10px;">
             <span>🗺 FLOSC Funnel Overview</span>
-            <a href="<?php echo esc_url($flow_docs_url); ?>" style="margin-left:auto;font-size:12px;text-decoration:none;color:#2271b1;">Docs</a>
+            <a href="<?php echo esc_url($flosc_flow_docs_url); ?>" style="margin-left:auto;font-size:12px;text-decoration:none;color:#2271b1;">Docs</a>
         </h2>
-        <p style="margin:0;color:#50575e;font-size:13px;">Read-only snapshot of all five funnel phases for <strong><?php echo esc_html( $selected_ivr ?: 'this flow' ); ?></strong>. Click any Edit button to jump to that tab.</p>
+        <p style="margin:0;color:#50575e;font-size:13px;">Read-only snapshot of all five funnel phases for <strong><?php echo esc_html( $flosc_selected_ivr ?: 'this flow' ); ?></strong>. Click any Edit button to jump to that tab.</p>
     </div>
 
     <?php
     // ── F — Freeline ──────────────────────────────────────────────────────────
     flosc_flow_card( 'F', 'Freeline', 'What visitors see before logging in', [
         [
-            'label'      => $quiz_label_html,
-            'edit_url'   => $base_url . 'quiz',
-            'edit_label' => $edit_quiz_label,
+            'label'      => $flosc_quiz_label_html,
+            'edit_url'   => $flosc_base_url . 'quiz',
+            'edit_label' => $flosc_edit_quiz_label,
         ],
         [
-            'label'      => 'Visitor pills: ' . $visitor_pills . ' configured',
-            'edit_url'   => $base_url . 'autoprompts',
+            'label'      => 'Visitor pills: ' . $flosc_visitor_pills . ' configured',
+            'edit_url'   => $flosc_base_url . 'autoprompts',
             'edit_label' => 'Edit Pills →',
         ],
         [
-            'label'      => 'IVR file: ' . esc_html( $ivr_file_label ),
-            'edit_url'   => $base_url . 'ivr-messages',
+            'label'      => 'IVR file: ' . esc_html( $flosc_ivr_file_label ),
+            'edit_url'   => $flosc_base_url . 'ivr-messages',
             'edit_label' => 'Edit IVR →',
         ],
     ] );
@@ -193,54 +193,54 @@ function flosc_flow_card( $letter, $phase_name, $subtitle, $rows ) {
     // ── L — Login ─────────────────────────────────────────────────────────────
     flosc_flow_card( 'L', 'Login', 'Account gate', [
         [
-            'label'      => 'SSO: ' . esc_html( $sso_label ),
-            'edit_url'   => $base_url . 'sso',
+            'label'      => 'SSO: ' . esc_html( $flosc_sso_label ),
+            'edit_url'   => $flosc_base_url . 'sso',
             'edit_label' => 'Edit SSO →',
         ],
     ] );
 
     // ── O — Offer ─────────────────────────────────────────────────────────────
     // v8.1.0: Member levels summary
-    $ml_registry = $flow_settings['member_levels'] ?? [];
-    $ml_count    = count( array_filter( $ml_registry, fn( $l ) => ! empty( $l['slug'] ?? '' ) ) );
-    $ml_names    = array_map( fn( $l ) => $l['name'] ?: ( $l['slug'] ?? '?' ), array_filter( $ml_registry, fn( $l ) => ! empty( $l['slug'] ?? '' ) ) );
-    $ml_label    = $ml_count ? $ml_count . ' level' . ( $ml_count !== 1 ? 's' : '' ) . ' (' . implode( ', ', $ml_names ) . ')' : 'None configured';
+    $flosc_ml_registry = $flosc_flow_settings['member_levels'] ?? [];
+    $flosc_ml_count    = count( array_filter( $flosc_ml_registry, fn( $l ) => ! empty( $l['slug'] ?? '' ) ) );
+    $flosc_ml_names    = array_map( fn( $l ) => $l['name'] ?: ( $l['slug'] ?? '?' ), array_filter( $flosc_ml_registry, fn( $l ) => ! empty( $l['slug'] ?? '' ) ) );
+    $flosc_ml_label    = $flosc_ml_count ? $flosc_ml_count . ' level' . ( $flosc_ml_count !== 1 ? 's' : '' ) . ' (' . implode( ', ', $flosc_ml_names ) . ')' : 'None configured';
 
     flosc_flow_card( 'O', 'Offer', 'Upgrade prompts for guests', [
         [
-            'label'      => 'Member Levels: ' . esc_html( $ml_label ),
-            'edit_url'   => $base_url . 'member-levels',
+            'label'      => 'Member Levels: ' . esc_html( $flosc_ml_label ),
+            'edit_url'   => $flosc_base_url . 'member-levels',
             'edit_label' => 'Edit Levels →',
         ],
         [
-            'label'      => 'Offers: ' . esc_html( $offers_label ?: 'None configured' ),
-            'edit_url'   => $base_url . 'offers',
+            'label'      => 'Offers: ' . esc_html( $flosc_offers_label ?: 'None configured' ),
+            'edit_url'   => $flosc_base_url . 'offers',
             'edit_label' => 'Edit Offers →',
         ],
         [
-            'label'      => 'Guest pills: ' . $guest_pills . ' configured',
-            'edit_url'   => $base_url . 'autoprompts',
+            'label'      => 'Guest pills: ' . $flosc_guest_pills . ' configured',
+            'edit_url'   => $flosc_base_url . 'autoprompts',
             'edit_label' => 'Edit Pills →',
         ],
     ] );
 
     // ── S — Sale ──────────────────────────────────────────────────────────────
-    $stripe_status = $stripe_cfg
-        ? '✅ configured' . ( $stripe_mode ? ' (' . esc_html( $stripe_mode ) . ')' : '' )
+    $flosc_stripe_status = $flosc_stripe_cfg
+        ? '✅ configured' . ( $flosc_stripe_mode ? ' (' . esc_html( $flosc_stripe_mode ) . ')' : '' )
         : '❌ not configured';
-    $paypal_status = $paypal_cfg
-        ? '✅ configured' . ( $paypal_mode ? ' (' . esc_html( $paypal_mode ) . ')' : '' )
+    $flosc_paypal_status = $flosc_paypal_cfg
+        ? '✅ configured' . ( $flosc_paypal_mode ? ' (' . esc_html( $flosc_paypal_mode ) . ')' : '' )
         : '❌ not configured';
 
     flosc_flow_card( 'S', 'Sale', 'Payment processing', [
         [
-            'label'      => 'Stripe: ' . $stripe_status,
-            'edit_url'   => $base_url . 'payments',
+            'label'      => 'Stripe: ' . $flosc_stripe_status,
+            'edit_url'   => $flosc_base_url . 'payments',
             'edit_label' => 'Edit Pay →',
         ],
         [
-            'label'      => 'PayPal: ' . $paypal_status,
-            'edit_url'   => $base_url . 'payments',
+            'label'      => 'PayPal: ' . $flosc_paypal_status,
+            'edit_url'   => $flosc_base_url . 'payments',
             'edit_label' => 'Edit Pay →',
         ],
     ] );
@@ -248,18 +248,18 @@ function flosc_flow_card( $letter, $phase_name, $subtitle, $rows ) {
     // ── C — Content ───────────────────────────────────────────────────────────
     flosc_flow_card( 'C', 'Content', 'What learners see after purchase', [
         [
-            'label'      => 'Lessons: ' . esc_html( $lessons_label ),
-            'edit_url'   => $base_url . 'lessons',
+            'label'      => 'Lessons: ' . esc_html( $flosc_lessons_label ),
+            'edit_url'   => $flosc_base_url . 'lessons',
             'edit_label' => 'Edit Lessons →',
         ],
         [
-            'label'      => 'Member pills: ' . $member_pills . ' configured',
-            'edit_url'   => $base_url . 'autoprompts',
+            'label'      => 'Member pills: ' . $flosc_member_pills . ' configured',
+            'edit_url'   => $flosc_base_url . 'autoprompts',
             'edit_label' => 'Edit Pills →',
         ],
         [
-            'label'      => 'AI: ' . esc_html( $ai_label ),
-            'edit_url'   => $base_url . 'ai',
+            'label'      => 'AI: ' . esc_html( $flosc_ai_label ),
+            'edit_url'   => $flosc_base_url . 'ai',
             'edit_label' => 'Edit AI →',
         ],
     ] );

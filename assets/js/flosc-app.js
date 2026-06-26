@@ -585,18 +585,66 @@ class floscApp {
     startAdminPoll() {
         if (this._adminPollTimer) return;
         this._adminSince = this._adminSince || 0;
+        this._adminPollSessionId = this._adminPollSessionId || null;
+        this._adminPollToken = this._adminPollToken || '';
+
+        const ensureAdminPollToken = async (sessionId) => {
+            if (!sessionId) return '';
+
+            if (this._adminPollSessionId !== sessionId) {
+                this._adminPollSessionId = sessionId;
+                this._adminPollToken = '';
+            }
+
+            if (this._adminPollToken) {
+                return this._adminPollToken;
+            }
+
+            try {
+                const res = await fetch(this.config.apiUrl + '/admin-messages-token', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId }),
+                });
+                const data = await res.json();
+                this._adminPollToken = (data && data.poll_token) ? data.poll_token : '';
+            } catch (_) {
+                this._adminPollToken = '';
+            }
+
+            return this._adminPollToken;
+        };
+
         const poll = () => {
             const sid = (this.currentSession && this.currentSession.id) || this.getVisitorSessionId();
             if (!sid) return;
-            // POST (not GET) so the host page cache never serves a stale empty result.
-            fetch(this.config.apiUrl + '/admin-messages', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ session_id: sid, since_id: this._adminSince || 0 })
-            })
-                .then(r => r.json())
+
+            ensureAdminPollToken(sid)
+                .then((pollToken) => {
+                    if (!pollToken) return null;
+
+                    // POST (not GET) so the host page cache never serves a stale empty result.
+                    return fetch(this.config.apiUrl + '/admin-messages', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            session_id: sid,
+                            since_id: this._adminSince || 0,
+                            poll_token: pollToken,
+                        })
+                    });
+                })
+                .then((r) => {
+                    if (!r) return null;
+                    if (!r.ok && (r.status === 403 || r.status === 400)) {
+                        this._adminPollToken = '';
+                    }
+                    return r.json();
+                })
                 .then(d => {
+                    if (!d) return;
                     const msgs = (d && d.messages) || [];
                     msgs.forEach(m => {
                         if (parseInt(m.id) > (this._adminSince || 0)) this._adminSince = parseInt(m.id);

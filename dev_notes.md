@@ -656,13 +656,13 @@ Tool-verified review of the June 2 wp.org pre-review against current code (HEAD
 `7546000`); stood up PHPCS 3.13.5 + WPCS 3.3.0 locally (`~/flosc-phpcs-tools`,
 outside the plugin). Authoritative result: with `--ignore-annotations`, the whole
 shipping codebase carries only 8 sniff-errors, not 190 problems — most of the 190
-`phpcs:ignore` directives cover the legitimate `DirectQuery`/`NoCaching` *warnings*
+`phpcs:ignore` directives cover legitimate `DirectQuery`/`NoCaching` *warnings*
 on plugin-owned tables or sniffs that never fire.
 - `[P2] [x]` Resolved the one real prepared-SQL error at source: `uninstall.php`
   `DROP TABLE` now binds the table via `$wpdb->prepare('… %i', $table)`.
 - `[P2] [x]` Bound table names via `%i` in `class-lesaep-lessons-table.php` (6 sites)
   and `class-flosc-chat-logger.php` (3 sites) — real identifier binding, decorative
-  suppressions removed. PHPCS-clean on all DB/security sniffs; `php -l` clean.
+  false-positive exemptions removed. PHPCS-clean on all DB/security sniffs; `php -l` clean.
 - `[P2] [~]` Removing orphaned/doubled `phpcs:ignore` directives (stacked standalone
   comments that silence nothing). Done in `class-ai-chat-dispatch.php` (13 → 3,
   PHPCS-verified clean). Remaining files identified; backups at
@@ -693,7 +693,7 @@ Accessibility), both Error and Warning types, AI Analysis enabled →
 "Checks complete. No errors found." Submission zip rebuilt and verified clean.
 - `[P1] [x]` Cleared 6 `PluginCheck.Security.DirectDB.UnescapedDBParameter` warnings
   via the `%i` identifier placeholder in `$wpdb->prepare()` (proper escaping, not
-  suppression). Files: `admin/ai-corrections.php`, `includes/class-ai-chat-dispatch.php`,
+  false-positive exemption). Files: `admin/ai-corrections.php`, `includes/class-ai-chat-dispatch.php`,
   `includes/class-flosc-chat-logger.php`.
 - `[P1] [x]` Rewrote `flosc_get_logs()` to a single fully-literal prepared statement
   with pass-through guards (`( %s = '' OR col = %s )`) — removes the dynamic-WHERE
@@ -703,7 +703,7 @@ Accessibility), both Error and Warning types, AI Analysis enabled →
   were only ever added by a post-create `ALTER TABLE` in `flosc_upgrade_table()`.
   Since 8.0.0 is the first public release there are no legacy schemas to migrate, so
   the columns now live in `CREATE TABLE` and the migration method was deleted — no
-  suppression comment needed. Fresh installs get the full schema directly; existing
+  false-positive exemption comment needed. Fresh installs get the full schema directly; existing
   tables already have the columns.
 - `[P2] [x]` Commits: `36c66ba` (%i + WHERE rewrite) → `c8f85d3` (superseded, ALTER
   ignore) → `6ef1fa8` (CREATE TABLE columns; ALTER removed). All pushed to origin/main.

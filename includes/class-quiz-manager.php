@@ -67,18 +67,27 @@ class FLOSC_Quiz_Manager {
         register_rest_route('flosc/v1', '/external-quiz', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_external_quiz_rest'],
-            'permission_callback' => function($request) {
-                // Require valid API key or logged-in user
-                $api_key = $request->get_header('X-FLOSC-API-Key');
-                $stored_key = get_option('flosc_external_api_key', '');
-                
-                if ($api_key && $stored_key && hash_equals($stored_key, $api_key)) {
-                    return true;
-                }
-                
-                return is_user_logged_in();
-            },
+            'permission_callback' => [$this, 'check_external_quiz_permission'],
         ]);
+    }
+
+    /**
+     * Permission callback for external quiz submissions.
+     *
+     * Allows either a valid configured API key or an authenticated user.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return bool
+     */
+    public function check_external_quiz_permission($request) {
+        $api_key = sanitize_text_field((string) $request->get_header('X-FLOSC-API-Key'));
+        $stored_key = (string) get_option('flosc_external_api_key', '');
+
+        if ($api_key !== '' && $stored_key !== '' && hash_equals($stored_key, $api_key)) {
+            return true;
+        }
+
+        return is_user_logged_in();
     }
     
     /**
@@ -88,9 +97,20 @@ class FLOSC_Quiz_Manager {
      * @return WP_REST_Response
      */
     public function handle_external_quiz_rest($request) {
-        $user_id = $request->get_param('user_id') ?: get_current_user_id();
+        $user_id = absint($request->get_param('user_id') ?: get_current_user_id());
         $quiz_id = $request->get_param('quiz_id');
         $score_data = $request->get_param('score_data');
+
+        $api_key = sanitize_text_field((string) $request->get_header('X-FLOSC-API-Key'));
+        $stored_key = (string) get_option('flosc_external_api_key', '');
+        $using_api_key = ($api_key !== '' && $stored_key !== '' && hash_equals($stored_key, $api_key));
+
+        if (!$using_api_key && !current_user_can('manage_options') && $user_id !== get_current_user_id()) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error' => 'Cannot submit quiz data for another user.',
+            ], 403);
+        }
         
         if (!$user_id || !$quiz_id) {
             return new WP_REST_Response([

@@ -29,22 +29,22 @@ if (!defined('ABSPATH')) exit;
 // v1.2.9: Output tab header
 flosc_tab_header('💳', 'Payments');
 
-$flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
-$current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
-$payments_docs_url = add_query_arg([
+$flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
+$flosc_current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
+$flosc_payments_docs_url = add_query_arg([
     'page' => 'flosc-settings',
-    'ivr'  => $current_ivr,
+    'ivr'  => $flosc_current_ivr,
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-payments';
-$stripe_enabled = $flow_settings['stripe_enabled'] ?? false;
-$stripe_mode = $flow_settings['stripe_mode'] ?? 'test';
-$paypal_enabled = $flow_settings['paypal_enabled'] ?? false;
-$manual_payments_enabled = $flow_settings['manual_payments_enabled'] ?? false;
+$flosc_stripe_enabled = $flosc_flow_settings['stripe_enabled'] ?? false;
+$flosc_stripe_mode = $flosc_flow_settings['stripe_mode'] ?? 'test';
+$flosc_paypal_enabled = $flosc_flow_settings['paypal_enabled'] ?? false;
+$flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled'] ?? false;
 ?>
 
 <div style="margin:-8px 0 14px; text-align:right;">
-    <a href="<?php echo esc_url($payments_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
+    <a href="<?php echo esc_url($flosc_payments_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
 </div>
 
 <h2>Payment Processing Configuration</h2>
@@ -65,7 +65,7 @@ $manual_payments_enabled = $flow_settings['manual_payments_enabled'] ?? false;
         <th scope="row">Enable Stripe</th>
         <td>
             <label>
-                <input type="checkbox" name="flow_stripe_enabled" value="1" <?php checked($stripe_enabled); ?>>
+                <input type="checkbox" name="flow_stripe_enabled" value="1" <?php checked($flosc_stripe_enabled); ?>>
                 <strong>Enable Stripe Payments</strong>
             </label>
             <p class="description">Accept credit/debit cards via Stripe. <a href="https://stripe.com" target="_blank">Sign up for Stripe →</a></p>
@@ -76,8 +76,8 @@ $manual_payments_enabled = $flow_settings['manual_payments_enabled'] ?? false;
         <th scope="row"><label for="flow_stripe_mode">Stripe Mode</label></th>
         <td>
             <select name="flow_stripe_mode" id="flow_stripe_mode" class="regular-text">
-                <option value="test" <?php selected($stripe_mode, 'test'); ?>>🧪 Test Mode (Use test keys)</option>
-                <option value="live" <?php selected($stripe_mode, 'live'); ?>>🟢 Live Mode (Real payments)</option>
+                <option value="test" <?php selected($flosc_stripe_mode, 'test'); ?>>🧪 Test Mode (Use test keys)</option>
+                <option value="live" <?php selected($flosc_stripe_mode, 'live'); ?>>🟢 Live Mode (Real payments)</option>
             </select>
             <p class="description">Always start in test mode. Switch to live mode only when ready to accept real payments.</p>
         </td>
@@ -91,7 +91,7 @@ $manual_payments_enabled = $flow_settings['manual_payments_enabled'] ?? false;
         <th scope="row"><label for="flow_stripe_test_pk">Test Publishable Key</label></th>
         <td>
             <input type="text" id="flow_stripe_test_pk" name="flow_stripe_test_pk" 
-                   value="<?php echo esc_attr($flow_settings['stripe_test_pk'] ?? ''); ?>" 
+                   value="<?php echo esc_attr($flosc_flow_settings['stripe_test_pk'] ?? ''); ?>" 
                    class="large-text" placeholder="pk_test_...">
             <p class="description">Starts with <code>pk_test_</code>. Find in Stripe Dashboard → Developers → API Keys</p>
         </td>
@@ -101,7 +101,7 @@ $manual_payments_enabled = $flow_settings['manual_payments_enabled'] ?? false;
         <th scope="row"><label for="flow_stripe_test_sk">Test Secret Key</label></th>
         <td>
             <input type="password" id="flow_stripe_test_sk" name="flow_stripe_test_sk" 
-                   value="<?php echo esc_attr($flow_settings['stripe_test_sk'] ?? ''); ?>" 
+                   value="<?php echo esc_attr($flosc_flow_settings['stripe_test_sk'] ?? ''); ?>" 
                    class="large-text" placeholder="sk_test_...">
             <p class="description">Starts with <code>sk_test_</code>. Keep this secret! Never share publicly.</p>
         </td>
@@ -115,7 +115,7 @@ $manual_payments_enabled = $flow_settings['manual_payments_enabled'] ?? false;
         <th scope="row"><label for="flow_stripe_live_pk">Live Publishable Key</label></th>
         <td>
             <input type="text" id="flow_stripe_live_pk" name="flow_stripe_live_pk" 
-                   value="<?php echo esc_attr($flow_settings['stripe_live_pk'] ?? ''); ?>" 
+                   value="<?php echo esc_attr($flosc_flow_settings['stripe_live_pk'] ?? ''); ?>" 
                    class="large-text" placeholder="pk_live_...">
             <p class="description">Starts with <code>pk_live_</code>. Only use when ready for real payments.</p>
         </td>
@@ -125,7 +125,7 @@ $manual_payments_enabled = $flow_settings['manual_payments_enabled'] ?? false;
         <th scope="row"><label for="flow_stripe_live_sk">Live Secret Key</label></th>
         <td>
             <input type="password" id="flow_stripe_live_sk" name="flow_stripe_live_sk" 
-                   value="<?php echo esc_attr($flow_settings['stripe_live_sk'] ?? ''); ?>" 
+                   value="<?php echo esc_attr($flosc_flow_settings['stripe_live_sk'] ?? ''); ?>" 
                    class="large-text" placeholder="sk_live_...">
             <p class="description">Starts with <code>sk_live_</code>. EXTREMELY SENSITIVE - never share or commit to code.</p>
         </td>
@@ -135,7 +135,7 @@ $manual_payments_enabled = $flow_settings['manual_payments_enabled'] ?? false;
         <th scope="row"><label for="flow_stripe_webhook_secret">Webhook Signing Secret</label></th>
         <td>
             <input type="password" id="flow_stripe_webhook_secret" name="flow_stripe_webhook_secret" 
-                   value="<?php echo esc_attr($flow_settings['stripe_webhook_secret'] ?? ''); ?>" 
+                   value="<?php echo esc_attr($flosc_flow_settings['stripe_webhook_secret'] ?? ''); ?>" 
                    class="large-text" placeholder="whsec_...">
             <p class="description">
                 Webhook endpoint: <code><?php echo esc_html(home_url('/flosc-webhook/stripe')); ?></code><br>
@@ -157,7 +157,7 @@ $manual_payments_enabled = $flow_settings['manual_payments_enabled'] ?? false;
         <th scope="row">Enable PayPal</th>
         <td>
             <label>
-                <input type="checkbox" name="flow_paypal_enabled" value="1" <?php checked($paypal_enabled); ?>>
+                <input type="checkbox" name="flow_paypal_enabled" value="1" <?php checked($flosc_paypal_enabled); ?>>
                 <strong>Enable PayPal Payments</strong>
             </label>
             <p class="description">Accept payments via PayPal. <a href="https://www.paypal.com/merchantapps" target="_blank">Sign up for PayPal Business →</a></p>
@@ -168,7 +168,7 @@ $manual_payments_enabled = $flow_settings['manual_payments_enabled'] ?? false;
         <th scope="row"><label for="flow_paypal_client_id">PayPal Client ID</label></th>
         <td>
             <input type="text" id="flow_paypal_client_id" name="flow_paypal_client_id" 
-                   value="<?php echo esc_attr($flow_settings['paypal_client_id'] ?? ''); ?>" 
+                   value="<?php echo esc_attr($flosc_flow_settings['paypal_client_id'] ?? ''); ?>" 
                    class="large-text">
             <p class="description">Find in PayPal Developer Dashboard → My Apps & Credentials</p>
         </td>
@@ -178,7 +178,7 @@ $manual_payments_enabled = $flow_settings['manual_payments_enabled'] ?? false;
         <th scope="row"><label for="flow_paypal_secret">PayPal Secret</label></th>
         <td>
             <input type="password" id="flow_paypal_secret" name="flow_paypal_secret" 
-                   value="<?php echo esc_attr($flow_settings['paypal_secret'] ?? ''); ?>" 
+                   value="<?php echo esc_attr($flosc_flow_settings['paypal_secret'] ?? ''); ?>" 
                    class="large-text">
             <p class="description">Keep this secret. Used for server-side verification.</p>
         </td>
@@ -188,8 +188,8 @@ $manual_payments_enabled = $flow_settings['manual_payments_enabled'] ?? false;
         <th scope="row"><label for="flow_paypal_mode">PayPal Mode</label></th>
         <td>
             <select name="flow_paypal_mode" id="flow_paypal_mode" class="regular-text">
-                <option value="sandbox" <?php selected($flow_settings['paypal_mode'] ?? 'sandbox', 'sandbox'); ?>>Sandbox (Testing)</option>
-                <option value="live" <?php selected($flow_settings['paypal_mode'] ?? 'sandbox', 'live'); ?>>Live (Production)</option>
+                <option value="sandbox" <?php selected($flosc_flow_settings['paypal_mode'] ?? 'sandbox', 'sandbox'); ?>>Sandbox (Testing)</option>
+                <option value="live" <?php selected($flosc_flow_settings['paypal_mode'] ?? 'sandbox', 'live'); ?>>Live (Production)</option>
             </select>
         </td>
     </tr>
@@ -239,7 +239,7 @@ $manual_payments_enabled = $flow_settings['manual_payments_enabled'] ?? false;
         <th scope="row">Enable Manual Payments</th>
         <td>
             <label>
-                <input type="checkbox" name="flow_manual_payments_enabled" value="1" <?php checked($manual_payments_enabled); ?>>
+                <input type="checkbox" name="flow_manual_payments_enabled" value="1" <?php checked($flosc_manual_payments_enabled); ?>>
                 <strong>Enable Manual Payment Option</strong>
             </label>
             <p class="description">Show "Pay by Bank Transfer" or "Contact for Payment" option on checkout.</p>
@@ -251,7 +251,7 @@ $manual_payments_enabled = $flow_settings['manual_payments_enabled'] ?? false;
         <td>
             <textarea id="flow_manual_payment_instructions" name="flow_manual_payment_instructions" 
                       rows="6" class="large-text"><?php 
-                echo esc_textarea($flow_settings['manual_payment_instructions'] ?? 'Bank Transfer Instructions:
+                echo esc_textarea($flosc_flow_settings['manual_payment_instructions'] ?? 'Bank Transfer Instructions:
 
 Account Name: Your Business Name
 Bank: Your Bank
