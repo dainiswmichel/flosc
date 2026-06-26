@@ -238,6 +238,13 @@ Purpose: score quiz submissions and finalize/retrieve session scoring data for f
 Data sent: quiz audio, answer payloads, and session-finalization data required by the configured provider. FLOSC also sends request-signing headers: X-FLOSC-Site, X-FLOSC-MTS (UTC Michel timestamp), and X-FLOSC-Signature (HMAC-SHA256 over payload_json + newline + mts + newline + site).
 Configuration note: floscAdmins can configure a per-flow external scoring endpoint. If a flow uses an external scoring provider, quiz audio and related scoring payloads may be sent to that provider. Audio playback conversion dispatch is optional and flow-scoped through the Audio Conversion Provider setting (none|lesaep).
 
+15. LeSAEp API (for LeSAEp pronunciation scoring and optional playback conversion)
+Endpoint examples: https://api.lesaep.com/analyze, https://api.lesaep.com/analyze-phrase, https://api.lesaep.com/finalize-session, https://api.lesaep.com/session/{id}
+Purpose: process LeSAEp pronunciation scoring requests when a flow is configured to use LeSAEp as its external scoring provider; optionally dispatch playback conversion jobs when Audio Conversion Provider is set to lesaep.
+Data sent: quiz audio, phrase/answer payloads, session identifiers, and signed request headers (X-FLOSC-Site, X-FLOSC-MTS, X-FLOSC-Signature).
+Service terms: https://lesaep.com/
+Privacy policy: https://lesaep.com/privacy-policy/
+
 = FLOSC Site Policies =
 
 These are the public policy pages for the FLOSC install. They are first-party pages and should be listed in the plugin disclosure block so WordPress can review them directly.

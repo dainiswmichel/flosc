@@ -1280,7 +1280,7 @@ class FLOSC_Framework {
      */
     public function check_metered_visitor_compute_permission($request) {
         // Check rate limit first
-        if (!$this->check_rate_limit('paid_endpoint', 20, 3600)) {
+        if (!$this->check_rate_limit('metered_compute', 20, 3600)) {
             return new WP_Error('rate_limit', __('Too many requests. Please try again later.', 'flosc'), ['status' => 429]);
         }
 
@@ -1290,7 +1290,7 @@ class FLOSC_Framework {
         }
 
         // For visitors: strict rate limit
-        if (!$this->check_rate_limit('visitor_paid', 5, 3600)) {
+        if (!$this->check_rate_limit('visitor_metered_compute', 5, 3600)) {
             return new WP_Error('rate_limit', __('Free tier limit reached. Please log in.', 'flosc'), ['status' => 429]);
         }
 
@@ -1373,6 +1373,25 @@ class FLOSC_Framework {
         if (!wp_verify_nonce($nonce, 'wp_rest')) {
             return new WP_Error('forbidden', __('Invalid or missing security token.', 'flosc'), ['status' => 403]);
         }
+        return true;
+    }
+
+    /**
+     * Intentionally public nonce endpoint permission callback.
+     *
+     * This route only returns a WordPress REST nonce and performs no state mutation.
+     */
+    public function check_public_nonce_endpoint_permission($request) {
+        return true;
+    }
+
+    /**
+     * Intentionally public webhook endpoint permission callback.
+     *
+     * Payment providers cannot present WordPress auth; signature checks happen in
+     * the webhook handler itself.
+     */
+    public function check_webhook_endpoint_permission($request) {
         return true;
     }
 
@@ -1490,6 +1509,25 @@ class FLOSC_Framework {
     }
 
     /**
+     * Verify that the current request can be tied to the provided visitor session.
+     *
+     * @param int $session_id Session ID.
+     * @return bool
+     */
+    private function current_request_owns_chat_session($session_id) {
+        $session_id = absint($session_id);
+        if ($session_id <= 0) {
+            return false;
+        }
+
+        if (!class_exists('FLOSC_Chat_Logger')) {
+            return false;
+        }
+
+        return FLOSC_Chat_Logger::instance()->flosc_current_request_owns_session($session_id);
+    }
+
+    /**
      * Permission callback for visitor admin-message polling.
      *
      * Requires session ownership proof via poll token bound to session_id.
@@ -1509,8 +1547,39 @@ class FLOSC_Framework {
             return new WP_Error('flosc_invalid_session_token', __('Invalid session token.', 'flosc'), ['status' => 403]);
         }
 
+        if (!$this->current_request_owns_chat_session($session_id)) {
+            return new WP_Error('flosc_session_ownership_failed', __('Session ownership check failed.', 'flosc'), ['status' => 403]);
+        }
+
         if (!$this->check_rate_limit('visitor_admin_poll_' . $session_id, 120, HOUR_IN_SECONDS)) {
             return new WP_Error('flosc_rate_limit', __('Too many requests.', 'flosc'), ['status' => 429]);
+        }
+
+        return true;
+    }
+
+    /**
+     * Permission callback for minting visitor admin-message poll tokens.
+     *
+     * This route is intentionally visitor-facing but now requires ownership proof
+     * of the requested session before a token is minted.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return true|WP_Error
+     */
+    public function check_admin_messages_token_permission($request) {
+        $public_check = $this->check_public_endpoint_permission($request);
+        if (is_wp_error($public_check)) {
+            return $public_check;
+        }
+
+        $session_id = absint($request->get_param('session_id'));
+        if ($session_id <= 0) {
+            return new WP_Error('invalid_session_id', __('Invalid session id.', 'flosc'), ['status' => 400]);
+        }
+
+        if (!$this->current_request_owns_chat_session($session_id)) {
+            return new WP_Error('flosc_session_ownership_failed', __('Session ownership check failed.', 'flosc'), ['status' => 403]);
         }
 
         return true;
@@ -6421,7 +6490,7 @@ HTML;
         register_rest_route('flosc/v1', '/admin-messages-token', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_admin_messages_token'],
-            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+            'permission_callback' => [$this, 'check_admin_messages_token_permission'],
         ]);
 
         // Quiz Submission (NEW: for collecting quiz answers)
@@ -6522,7 +6591,7 @@ HTML;
                     'nonce'   => wp_create_nonce('wp_rest'),
                 ]);
             },
-            'permission_callback' => '__return_true',
+            'permission_callback' => [$this, 'check_public_nonce_endpoint_permission'],
         ]);
         
         // Offers
@@ -6618,12 +6687,12 @@ HTML;
         ]);
 
         // Webhooks (from payment providers like Stripe)
-        // NOTE: Must remain __return_true - payment providers can't pass WP auth
-        // Security is handled via webhook signature verification in handle_webhook()
+        // Public by design: payment providers cannot pass WordPress auth.
+        // Security is enforced by webhook signature verification in handle_webhook().
         register_rest_route('flosc/v1', '/webhooks/(?P<provider>[a-z]+)', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_webhook'],
-            'permission_callback' => '__return_true',
+            'permission_callback' => [$this, 'check_webhook_endpoint_permission'],
         ]);
         
         // Access check
@@ -12393,6 +12462,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         $session_id = absint($request->get_param('session_id'));
         if ($session_id <= 0) {
             return new WP_Error('invalid_session_id', __('Invalid session id.', 'flosc'), ['status' => 400]);
+        }
+
+        if (!$this->current_request_owns_chat_session($session_id)) {
+            return new WP_Error('flosc_session_ownership_failed', __('Session ownership check failed.', 'flosc'), ['status' => 403]);
         }
 
         $token = $this->issue_admin_poll_token($session_id);

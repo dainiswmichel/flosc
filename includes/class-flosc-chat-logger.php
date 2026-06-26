@@ -372,6 +372,54 @@ class FLOSC_Chat_Logger {
     }
 
     /**
+     * Verify whether the current request appears to own the given session.
+     *
+     * Ownership model:
+     * - Logged-in users: at least one row for this session with their user_id.
+     * - Visitors: at least one row for this session with current visitor_ip hash.
+     *
+     * @param int $session_id Visitor session identifier.
+     * @return bool
+     */
+    public function flosc_current_request_owns_session($session_id) {
+        global $wpdb;
+        $this->flosc_ensure_table();
+
+        $session_id = intval($session_id);
+        if ($session_id <= 0) {
+            return false;
+        }
+
+        $user_id = get_current_user_id();
+        if ($user_id > 0) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- ownership check on plugin-owned table
+            $owned = $wpdb->get_var(
+                $wpdb->prepare(
+                    "SELECT id FROM %i WHERE session_id = %d AND user_id = %d LIMIT 1",
+                    $this->table_name,
+                    $session_id,
+                    intval($user_id)
+                )
+            );
+
+            return !empty($owned);
+        }
+
+        $visitor_ip = $this->flosc_get_hashed_ip();
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- ownership check on plugin-owned table
+        $owned = $wpdb->get_var(
+            $wpdb->prepare(
+                "SELECT id FROM %i WHERE session_id = %d AND user_id = 0 AND visitor_ip = %s LIMIT 1",
+                $this->table_name,
+                $session_id,
+                $visitor_ip
+            )
+        );
+
+        return !empty($owned);
+    }
+
+    /**
      * Identify which conversation a log row belongs to.
      *
      * Multiple people can be chatting at once, so the flat log is unreadable. We

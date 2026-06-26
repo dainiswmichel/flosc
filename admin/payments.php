@@ -13,13 +13,13 @@
  * - User accounts (grants access after successful payment)
  * - Email automation (sends receipts, confirmations)
  * 
- * BACKEND STATUS v1.0.4: 
+ * BACKEND STATUS v8.0.0:
  * - Settings UI: COMPLETE
- * - Stripe payment intents: COMPLETE (see create_payment_intent in flosc.php)
- * - Webhook handling: COMPLETE (see handle_webhook in flosc.php)
- * - Signature verification: IMPLEMENTED (TASK-015)
- * - PayPal integration: DEFERRED (not in MVP scope)
- * - Manual payments: DEFERRED (not in MVP scope)
+ * - Stripe payment intents: COMPLETE
+ * - Webhook handling: COMPLETE
+ * - Signature verification: IMPLEMENTED
+ * - PayPal integration: AVAILABLE
+ * - Manual payment instructions: AVAILABLE
  * 
  * v1.2.9: Added tab header for flow context
  */
@@ -50,8 +50,8 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
 <h2>Payment Processing Configuration</h2>
 <p>Configure your payment providers to accept payments for offers. Start with test mode, then switch to live when ready.</p>
 
-<div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 20px;">
-    <strong>⚠️ Development Status:</strong> Payment provider configuration is ready. Actual payment processing, webhooks, and order management require backend implementation (pseudocode provided below).
+<div style="background: #ecfeff; border-left: 4px solid #06b6d4; padding: 15px; margin-bottom: 20px;">
+    <strong>Payment status:</strong> FLOSC payment routes are active. Use test/sandbox credentials to validate your full checkout path before switching to live keys.
 </div>
 
 <!-- ============================================ -->
@@ -292,7 +292,7 @@ Access will be granted within 24 hours of payment confirmation.');
         <tbody>
             <tr>
                 <td colspan="7" style="text-align: center; padding: 20px; color: #999;">
-                    Order data will appear here after payment integration
+                    Order history appears here as transactions are processed.
                 </td>
             </tr>
         </tbody>
@@ -332,198 +332,3 @@ Access will be granted within 24 hours of payment confirmation.');
     <p style="margin: 10px 0 0 0;"><a href="https://stripe.com/docs/testing" target="_blank">See full list of test cards →</a></p>
 </div>
 
-<!--
-BACKEND IMPLEMENTATION NOTES:
-=============================
-
-Payment processing flow integrates Stripe, PayPal, and manual payments.
-
-STRIPE PAYMENT PROCESSING:
-
-function flosc_process_stripe_payment($flow_settings, $offer_id, $user_email, $user_name) {
-    require_once 'vendor/autoload.php'; // Stripe PHP library
-    
-    $mode = $flow_settings['stripe_mode'] ?? 'test';
-    $secret_key = $mode === 'live' 
-        ? ($flow_settings['stripe_live_sk'] ?? '')
-        : ($flow_settings['stripe_test_sk'] ?? '');
-    
-    \Stripe\Stripe::setApiKey($secret_key);
-    
-    $offer = flosc()->sale()->offers()->get_offer($offer_id);
-    
-    try {
-        $session = \Stripe\Checkout\Session::create([
-            'payment_method_types' => ['card'],
-            'line_items' => [[
-                'price_data' => [
-                    'currency' => 'usd',
-                    'product_data' => [
-                        'name' => $offer['name'],
-                        'description' => $offer['description'],
-                    ],
-                    'unit_amount' => $offer['price'] * 100, // Cents
-                ],
-                'quantity' => 1,
-            ]],
-            'mode' => $offer['type'] === 'subscription' ? 'subscription' : 'payment',
-            'success_url' => home_url('/success?session_id={CHECKOUT_SESSION_ID}'),
-            'cancel_url' => home_url('/checkout?cancelled=1'),
-            'customer_email' => $user_email,
-            'client_reference_id' => $user_email,
-            'metadata' => [
-                'offer_id' => $offer_id,
-                'user_name' => $user_name,
-            ],
-        ]);
-        
-        return ['success' => true, 'checkout_url' => $session->url];
-        
-    } catch (\Exception $e) {
-        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('Stripe payment error: ' . $e->getMessage());
-        return ['success' => false, 'error' => $e->getMessage()];
-    }
-}
-
-STRIPE WEBHOOK HANDLER:
-
-add_action('rest_api_init', function() {
-    register_rest_route('flosc/v1', '/webhook/stripe', [
-        'methods' => 'POST',
-        'callback' => 'flosc_handle_stripe_webhook',
-        'permission_callback' => '__return_true',
-    ]);
-});
-
-function flosc_handle_stripe_webhook($request) {
-    $payload = $request->get_body();
-    $sig_header = $request->get_header('stripe_signature');
-    // Get flow settings from webhook metadata to identify the flow
-    $flow_settings = flosc_get_flow_settings_from_webhook($payload);
-    $webhook_secret = $flow_settings['stripe_webhook_secret'] ?? '';
-    
-    try {
-        $event = \Stripe\Webhook::constructEvent($payload, $sig_header, $webhook_secret);
-        
-        switch ($event->type) {
-            case 'checkout.session.completed':
-                $session = $event->data->object;
-                
-                // Grant access to user
-                $user_email = $session->customer_email;
-                $offer_id = $session->metadata->offer_id;
-                
-                flosc_grant_offer_access($user_email, $offer_id);
-                flosc_send_purchase_confirmation_email($user_email, $offer_id);
-                flosc_track_offer_conversion($offer_id, $user_email, $session->amount_total / 100);
-                
-                break;
-                
-            case 'invoice.paid':
-                // Handle subscription renewal
-                break;
-                
-            case 'customer.subscription.deleted':
-                // Revoke access when subscription cancelled
-                break;
-        }
-        
-        return new WP_REST_Response(['received' => true], 200);
-        
-    } catch (\Exception $e) {
-        return new WP_REST_Response(['error' => $e->getMessage()], 400);
-    }
-}
-
-GRANT ACCESS AFTER PAYMENT:
-
-function flosc_grant_offer_access($user_email, $offer_id) {
-    $user = get_user_by('email', $user_email);
-    if (!$user) {
-        // Create user account if doesn't exist
-        $user_id = wp_create_user($user_email, wp_generate_password(), $user_email);
-        $user = get_user_by('id', $user_id);
-    }
-    
-    // Grant access to offer content
-    $purchased_offers = get_user_meta($user->ID, 'flosc_purchased_offers', true) ?: [];
-    $purchased_offers[] = [
-        'offer_id' => $offer_id,
-        'purchased_at' => current_time('mysql'),
-        'status' => 'active',
-    ];
-    update_user_meta($user->ID, 'flosc_purchased_offers', $purchased_offers);
-    
-    // Update user phase to 'sale' or 'content'
-    update_user_meta($user->ID, 'flosc_user_phase', 'sale');
-    
-    // Log transaction
-    flosc_log_transaction([
-        'user_id' => $user->ID,
-        'offer_id' => $offer_id,
-        'amount' => flosc()->sale()->offers()->get_offer($offer_id)['price'],
-        'payment_method' => 'stripe',
-        'status' => 'completed',
-        'timestamp' => current_time('mysql'),
-    ]);
-}
-
-PAYPAL INTEGRATION (similar pattern):
-
-function flosc_process_paypal_payment($offer_id, $user_email) {
-    // Use PayPal PHP SDK
-    // Create order, redirect to PayPal, handle return webhook
-    // Similar to Stripe but using PayPal's API
-}
-
-MANUAL PAYMENT WORKFLOW:
-
-function flosc_create_manual_payment_order($flow_settings, $offer_id, $user_email, $user_name) {
-    $order_id = 'manual_' . wp_generate_password(8, false);
-    
-    $order = [
-        'id' => $order_id,
-        'offer_id' => $offer_id,
-        'user_email' => $user_email,
-        'user_name' => $user_name,
-        'status' => 'pending_payment',
-        'payment_method' => 'manual',
-        'created_at' => current_time('mysql'),
-    ];
-    
-    // Store order in flow settings
-    $flow_key = $GLOBALS['flosc_settings_key'] ?? '';
-    if ($flow_key) {
-        $fs = get_option($flow_key, []);
-        $orders = $fs['manual_orders'] ?? [];
-        $orders[$order_id] = $order;
-        $fs['manual_orders'] = $orders;
-        update_option($flow_key, $fs);
-    }
-    
-    // Send email with payment instructions
-    flosc_send_manual_payment_instructions($user_email, $order_id);
-    
-    return $order;
-}
-
-// Admin manually confirms payment and grants access
-function flosc_confirm_manual_payment($flow_settings, $order_id) {
-    $flow_key = $GLOBALS['flosc_settings_key'] ?? '';
-    if (!$flow_key) return;
-    
-    $fs = get_option($flow_key, []);
-    $orders = $fs['manual_orders'] ?? [];
-    if (isset($orders[$order_id])) {
-        $order = $orders[$order_id];
-        $order['status'] = 'completed';
-        $order['confirmed_at'] = current_time('mysql');
-        $orders[$order_id] = $order;
-        $fs['manual_orders'] = $orders;
-        update_option($flow_key, $fs);
-        
-        flosc_grant_offer_access($order['user_email'], $order['offer_id']);
-        flosc_send_purchase_confirmation_email($order['user_email'], $order['offer_id']);
-    }
-}
--->

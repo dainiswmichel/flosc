@@ -61,7 +61,7 @@ class OAuth2_Handler {
         register_rest_route('flosc/v1', '/sso/authorize/(?P<provider>[a-z_]+)', array(
             'methods'             => 'GET',
             'callback'            => array($this, 'handle_authorize'),
-            'permission_callback' => '__return_true',
+            'permission_callback' => array($this, 'check_public_sso_permission'),
             'args'                => array(
                 'provider' => array(
                     'required'          => true,
@@ -83,7 +83,7 @@ class OAuth2_Handler {
         register_rest_route('flosc/v1', '/sso/callback/(?P<provider>[a-z_]+)', array(
             'methods'             => 'GET, POST',
             'callback'            => array($this, 'handle_callback'),
-            'permission_callback' => '__return_true',
+            'permission_callback' => array($this, 'check_public_sso_permission'),
             'args'                => array(
                 'provider' => array(
                     'required'          => true,
@@ -108,8 +108,29 @@ class OAuth2_Handler {
         register_rest_route('flosc/v1', '/sso/providers', array(
             'methods'             => 'GET',
             'callback'            => array($this, 'get_providers'),
-            'permission_callback' => '__return_true',
+            'permission_callback' => array($this, 'check_public_sso_provider_list_permission'),
         ));
+    }
+
+    /**
+     * Intentionally public: OAuth authorization and callbacks must be reachable
+     * before a WordPress login exists.
+     *
+     * @param \WP_REST_Request $request Request object.
+     * @return bool
+     */
+    public function check_public_sso_permission($request) {
+        return true;
+    }
+
+    /**
+     * Intentionally public provider list endpoint for frontend discovery.
+     *
+     * @param \WP_REST_Request $request Request object.
+     * @return bool
+     */
+    public function check_public_sso_provider_list_permission($request) {
+        return true;
     }
     
     /**

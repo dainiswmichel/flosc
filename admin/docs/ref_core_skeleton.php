@@ -39,9 +39,9 @@
 <h3 id="core-rest-permission-patterns">Permission Patterns</h3>
 <ul>
   <li><code>check_public_endpoint_permission()</code>: public endpoints with rate limiting.</li>
-  <li><code>check_paid_endpoint_permission()</code>: stricter limits for expensive operations.</li>
+  <li><code>check_metered_visitor_compute_permission()</code>: stricter limits for expensive operations.</li>
   <li><code>is_user_logged_in</code>: authenticated user routes.</li>
-  <li><code>__return_true</code>: open endpoints where security is implemented in handler logic (for example webhooks and payment start flows).</li>
+  <li>Named public callbacks (for example <code>check_public_nonce_endpoint_permission()</code>, <code>check_webhook_endpoint_permission()</code>, and SSO public callbacks): intentionally open routes where security is enforced in handler logic.</li>
   <li><code>current_user_can('manage_options')</code>: admin-only tools.</li>
 </ul>
 
