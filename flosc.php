@@ -5088,7 +5088,7 @@ HTML;
         add_menu_page(
             'FLOSC',
             'FLOSC',
-            'manage_options',
+            'edit_others_posts',
             'flosc-settings',
             [$this, 'render_admin_page'],
             'dashicons-format-chat',
@@ -5100,7 +5100,7 @@ HTML;
             'flosc-settings',
             'Settings',
             'Settings',
-            'manage_options',
+            'edit_others_posts',
             'flosc-settings',
             [$this, 'render_admin_page']
         );
@@ -5612,7 +5612,44 @@ HTML;
      * Render Admin Pages
      */
     public function render_admin_page() {
+        // Site admins always have FLOSC settings access.
+        if (!current_user_can('manage_options')) {
+            // Delegated floscEditors must be Editor+ and assigned to at least one flow.
+            if (!current_user_can('edit_others_posts')) {
+                wp_die(esc_html__('You do not have permission to access FLOSC settings.', 'flosc'));
+            }
+
+            $flosc_user_flows = flosc_flows()->get_user_flows(get_current_user_id());
+            if (empty($flosc_user_flows)) {
+                wp_die(esc_html__('You do not have FLOSC flow assignments yet. Ask a site admin to assign you in Administration for a flow.', 'flosc'));
+            }
+        }
+
         include FLOSC_PLUGIN_DIR . 'admin/settings.php';
+    }
+
+    /**
+     * Check whether current user can manage chat logs for a specific flow.
+     * Site admins are always allowed; delegated floscEditors require flow assignment.
+     *
+     * @param string $flow_id Flow stem (for example dainis_net_ivr).
+     * @return bool
+     */
+    private function can_manage_flow_chat_logs($flow_id) {
+        if (current_user_can('manage_options')) {
+            return true;
+        }
+
+        if (!current_user_can('edit_others_posts')) {
+            return false;
+        }
+
+        $flow_id = sanitize_key((string) $flow_id);
+        if ($flow_id === '') {
+            return false;
+        }
+
+        return flosc_flows()->can_access_flow_admin($flow_id, get_current_user_id());
     }
     
     /**
@@ -12142,7 +12179,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      */
     public function ajax_flosc_get_chat_logs() {
         $post = wp_unslash($_POST);
-        if (!current_user_can('manage_options')) {
+        $flow_id = sanitize_key((string) ($post['flow_id'] ?? ''));
+        if (!$this->can_manage_flow_chat_logs($flow_id)) {
             wp_send_json_error(['message' => 'Unauthorized'], 403);
         }
 
@@ -12151,7 +12189,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         $logger = FLOSC_Chat_Logger::instance();
         $filters = [
             'since_id' => intval($post['since_id'] ?? 0),
-            'flow_id'  => sanitize_text_field($post['flow_id'] ?? ''),
+            'flow_id'  => $flow_id,
             'phase'    => sanitize_text_field($post['phase'] ?? ''),
             'user_id'  => intval($post['user_id'] ?? 0),
             'limit'    => intval($post['limit'] ?? 50),
@@ -12224,7 +12262,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      */
     public function ajax_flosc_delete_chat_session() {
         $post = wp_unslash($_POST);
-        if (!current_user_can('manage_options')) {
+        $flow  = sanitize_key((string) ($post['flow_id'] ?? ''));
+        if (!$this->can_manage_flow_chat_logs($flow)) {
             wp_send_json_error(['message' => 'Unauthorized'], 403);
         }
 
@@ -12232,7 +12271,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
 
         $by    = sanitize_text_field($post['by'] ?? '');
         $value = sanitize_text_field($post['value'] ?? '');
-        $flow  = sanitize_text_field($post['flow_id'] ?? '');
 
         if ($by === '' || $value === '') {
             wp_send_json_error(['message' => 'Missing session identifier']);
@@ -12249,13 +12287,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      */
     public function ajax_flosc_admin_join() {
         $post = wp_unslash($_POST);
-        if (!current_user_can('manage_options')) {
+        $flow = sanitize_key((string) ($post['flow_id'] ?? ''));
+        if (!$this->can_manage_flow_chat_logs($flow)) {
             wp_send_json_error(['message' => 'Unauthorized'], 403);
         }
         check_ajax_referer('flosc_chat_logs', 'nonce');
 
         $session_id = intval($post['session_id'] ?? 0);
-        $flow       = sanitize_text_field($post['flow_id'] ?? '');
         $text       = sanitize_textarea_field($post['text'] ?? '');
         $as         = (sanitize_text_field($post['as'] ?? 'admin') === 'bot') ? 'bot' : 'admin';
         if ($session_id <= 0 || $text === '') {

@@ -45,6 +45,23 @@ if ($flosc_user_id > 0) {
         $flosc_runtime_access = flosc()->sale()->access()->can_access($flosc_user_id, 'full') ? 'paid' : 'free';
     }
 }
+
+$flosc_flow_id = sanitize_key(pathinfo($flosc_current_ivr, PATHINFO_FILENAME));
+$flosc_can_assign_editors = current_user_can('manage_options') && $flosc_flow_id !== '';
+$flosc_assignable_users = [];
+$flosc_assigned_editor_ids = [];
+
+if ($flosc_can_assign_editors) {
+    $flosc_assignable_users = get_users([
+        'role__in' => ['administrator', 'editor'],
+        'orderby' => 'display_name',
+    ]);
+
+    $flosc_current_team = flosc_flows()->get_flow_users($flosc_flow_id);
+    $flosc_assigned_editor_ids = array_map(static function($flosc_user) {
+        return (int) $flosc_user->ID;
+    }, $flosc_current_team);
+}
 ?>
 
 <div class="card" style="max-width: 980px; padding: 18px 20px; margin-top: 12px;">
@@ -192,4 +209,50 @@ if ($flosc_user_id > 0) {
             <p style="margin: 0;">No items listed.</p>
         <?php endif; ?>
     </div>
+
+    <?php if ($flosc_can_assign_editors): ?>
+        <h3 style="margin: 18px 0 10px;">Assign floscEditors for This Flow</h3>
+        <p class="description" style="margin-top: 0;">
+            Assign WordPress Editors (and optionally Administrators) to manage this flow. Site admin remains global floscAdmin authority.
+        </p>
+
+        <?php if (empty($flosc_assignable_users)): ?>
+            <p><em>No Editor or Administrator users were found.</em></p>
+        <?php else: ?>
+            <table class="widefat striped" style="max-width: 980px; margin-bottom: 12px;">
+                <thead>
+                    <tr>
+                        <th style="width: 70px;">Assign</th>
+                        <th>User</th>
+                        <th>Role</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($flosc_assignable_users as $flosc_candidate_user): ?>
+                        <tr>
+                            <td>
+                                <input
+                                    type="checkbox"
+                                    name="flosc_flow_editors[]"
+                                    value="<?php echo esc_attr((string) $flosc_candidate_user->ID); ?>"
+                                    <?php checked(in_array((int) $flosc_candidate_user->ID, $flosc_assigned_editor_ids, true)); ?>
+                                >
+                            </td>
+                            <td>
+                                <strong><?php echo esc_html($flosc_candidate_user->display_name); ?></strong><br>
+                                <small><?php echo esc_html($flosc_candidate_user->user_email); ?></small>
+                            </td>
+                            <td><?php echo esc_html(implode(', ', (array) $flosc_candidate_user->roles)); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+
+            <p>
+                <button type="submit" name="flosc_update_flosc_editors" value="1" class="button button-secondary">
+                    Update floscEditors for <?php echo esc_html($flosc_flow_id); ?>
+                </button>
+            </p>
+        <?php endif; ?>
+    <?php endif; ?>
 </div>

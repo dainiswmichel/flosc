@@ -261,6 +261,29 @@ if (!empty($flosc_files)) {
 // so the same flow file can appear twice. Keep one entry per filename.
 $flosc_ivr_files = array_values( array_unique( $flosc_ivr_files ) );
 
+// Delegated floscEditors only see the flows they were assigned to.
+$flosc_is_site_admin = current_user_can('manage_options');
+if (!$flosc_is_site_admin) {
+    $flosc_user_flows = flosc_flows()->get_user_flows(get_current_user_id());
+    $flosc_allowed_flow_ids = [];
+    foreach ($flosc_user_flows as $flosc_user_flow) {
+        $flosc_allowed_flow_ids[] = sanitize_key((string) ($flosc_user_flow['id'] ?? ''));
+    }
+
+    $flosc_ivr_files = array_values(array_filter(
+        $flosc_ivr_files,
+        static function($flosc_file) use ($flosc_allowed_flow_ids) {
+            $flosc_flow_id = sanitize_key(pathinfo((string) $flosc_file, PATHINFO_FILENAME));
+            return in_array($flosc_flow_id, $flosc_allowed_flow_ids, true);
+        }
+    ));
+}
+
+if (empty($flosc_ivr_files)) {
+    echo '<div class="notice notice-error"><p>' . esc_html__('No accessible FLOSC flows were found for your account. Ask a site admin to assign you as a floscEditor for a flow.', 'flosc') . '</p></div>';
+    return;
+}
+
 // Read request vars early. The flow selector below reads $flosc_get['ivr'] to know
 // which flow is selected. ($get was previously first defined further down — after
 // this point — so the selector always fell back to $flosc_ivr_files[0] and ignored the URL.)
@@ -268,9 +291,18 @@ $flosc_get = wp_unslash( $_GET );
 
 // Selected IVR file (flow)
 $flosc_selected_ivr = isset($flosc_get['ivr']) ? sanitize_file_name($flosc_get['ivr']) : '';
+if (!in_array($flosc_selected_ivr, $flosc_ivr_files, true)) {
+    $flosc_selected_ivr = '';
+}
 if (empty($flosc_selected_ivr) && !empty($flosc_ivr_files)) {
     $flosc_selected_ivr = $flosc_ivr_files[0];
 }
+
+$flosc_selected_flow_id = sanitize_key(pathinfo($flosc_selected_ivr, PATHINFO_FILENAME));
+if (!flosc_flows()->can_access_flow_admin($flosc_selected_flow_id)) {
+    wp_die(esc_html__('You do not have access to this FLOSC flow.', 'flosc'));
+}
+$flosc_can_view_administration = flosc_flows()->can_access_flow_admin($flosc_selected_flow_id);
 
 // Settings key for this flow
 $flosc_settings_key = flosc_resolve_flow_option_key_for_ivr($flosc_selected_ivr);
@@ -297,16 +329,20 @@ if (empty($flosc_flow_settings)) {
 $flosc_get = wp_unslash($_GET);
 $flosc_post = wp_unslash($_POST);
 $flosc_active_tab = isset($flosc_get['tab']) ? sanitize_text_field($flosc_get['tab']) : 'identity';
+$flosc_can_manage_administration = current_user_can('manage_options');
+if ($flosc_active_tab === 'administration' && !$flosc_can_view_administration) {
+    $flosc_active_tab = 'identity';
+}
 $flosc_identity_view = isset($flosc_get['view']) ? sanitize_text_field($flosc_get['view']) : 'single';
 if (!in_array($flosc_identity_view, ['single', 'all'], true)) {
     $flosc_identity_view = 'single';
 }
-// Backward-compat aliases for template references still using the pre-prefix names.
-$selected_ivr   = $flosc_selected_ivr;
-$identity_view  = $flosc_identity_view;
 
 // Handle save
 if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flosc_post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
+    if (!flosc_flows()->can_access_flow_admin($flosc_selected_flow_id)) {
+        wp_die(esc_html__('You do not have permission to save this FLOSC flow.', 'flosc'));
+    }
     
     // Collect all POST data for this flow
     $flosc_new_settings = $flosc_flow_settings; // Start with existing
@@ -583,22 +619,60 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
     }
 
     if ($flosc_active_tab === 'administration') {
-        $flosc_allowed_plans = ['free', 'paid', 'enterprise'];
-        $flosc_plan = sanitize_key($flosc_post['flosc_account_plan'] ?? 'free');
-        if (!in_array($flosc_plan, $flosc_allowed_plans, true)) {
-            $flosc_plan = 'free';
-        }
-        update_option('flosc_account_plan', $flosc_plan);
+        if (current_user_can('manage_options')) {
+            $flosc_allowed_plans = ['free', 'paid', 'enterprise'];
+            $flosc_plan = sanitize_key($flosc_post['flosc_account_plan'] ?? 'free');
+            if (!in_array($flosc_plan, $flosc_allowed_plans, true)) {
+                $flosc_plan = 'free';
+            }
+            update_option('flosc_account_plan', $flosc_plan);
 
-        $flosc_manual_purchases = sanitize_textarea_field($flosc_post['flosc_account_purchases_manual'] ?? '');
-        update_option('flosc_account_purchases_manual', $flosc_manual_purchases);
+            $flosc_manual_purchases = sanitize_textarea_field($flosc_post['flosc_account_purchases_manual'] ?? '');
+            update_option('flosc_account_purchases_manual', $flosc_manual_purchases);
 
-        $flosc_allowed_debug_modes = ['inherit', 'on', 'off'];
-        $flosc_debug_mode = sanitize_key($flosc_post['flosc_debug_mode'] ?? 'inherit');
-        if (!in_array($flosc_debug_mode, $flosc_allowed_debug_modes, true)) {
-            $flosc_debug_mode = 'inherit';
+            $flosc_allowed_debug_modes = ['inherit', 'on', 'off'];
+            $flosc_debug_mode = sanitize_key($flosc_post['flosc_debug_mode'] ?? 'inherit');
+            if (!in_array($flosc_debug_mode, $flosc_allowed_debug_modes, true)) {
+                $flosc_debug_mode = 'inherit';
+            }
+            update_option('flosc_debug_mode', $flosc_debug_mode);
         }
-        update_option('flosc_debug_mode', $flosc_debug_mode);
+
+        // Site admin assigns floscEditors (Editor or above) to this flow.
+        if (current_user_can('manage_options') && isset($flosc_post['flosc_update_flosc_editors'])) {
+            $flosc_selected_editor_ids = array_map('intval', (array) ($flosc_post['flosc_flow_editors'] ?? []));
+
+            $flosc_assignable_users = get_users([
+                'role__in' => ['administrator', 'editor'],
+                'fields' => ['ID', 'roles'],
+            ]);
+
+            $flosc_allowed_user_ids = [];
+            foreach ($flosc_assignable_users as $flosc_assignable_user) {
+                $flosc_allowed_user_ids[] = (int) $flosc_assignable_user->ID;
+            }
+
+            $flosc_selected_editor_ids = array_values(array_intersect($flosc_selected_editor_ids, $flosc_allowed_user_ids));
+
+            $flosc_current_team = flosc_flows()->get_flow_users($flosc_selected_flow_id);
+            $flosc_current_team_ids = array_map(static function($flosc_user) {
+                return (int) $flosc_user->ID;
+            }, $flosc_current_team);
+
+            // Remove users no longer selected.
+            foreach ($flosc_current_team_ids as $flosc_uid) {
+                if (!in_array($flosc_uid, $flosc_selected_editor_ids, true)) {
+                    flosc_flows()->revoke_flow_access($flosc_uid, $flosc_selected_flow_id);
+                }
+            }
+
+            // Grant selected Editor+ users; admins naturally retain global authority.
+            foreach ($flosc_selected_editor_ids as $flosc_uid) {
+                if (user_can($flosc_uid, 'edit_others_posts')) {
+                    flosc_flows()->grant_flow_access($flosc_uid, $flosc_selected_flow_id);
+                }
+            }
+        }
     }
 
     // Nest identity fields into the identity sub-array
@@ -625,10 +699,10 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
             unset($flosc_new_settings[$flosc_k]);
         }
     }
-    $flosc_new_settings['identity'] = $identity;
+    $flosc_new_settings['identity'] = $flosc_identity;
 
     // Save flow settings (ALL tabs now per-flow)
-    update_option($settings_key, $flosc_new_settings);
+    update_option($flosc_settings_key, $flosc_new_settings);
     $flosc_flow_settings = $flosc_new_settings;
     
     $flosc_saved = true;
@@ -638,9 +712,9 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
 $flosc_flow_url = home_url('/' . ($flosc_flow_settings['slug'] ?? 'flosc') . '/');
 
 // Set global context for tab includes
-$GLOBALS['flosc_current_ivr'] = $selected_ivr;
-$GLOBALS['flosc_current_settings'] = $flow_settings;
-$GLOBALS['flosc_settings_key'] = $settings_key;
+$GLOBALS['flosc_current_ivr'] = $flosc_selected_ivr;
+$GLOBALS['flosc_current_settings'] = $flosc_flow_settings;
+$GLOBALS['flosc_settings_key'] = $flosc_settings_key;
 
 // Build display labels for selector options: show flow name, keep filename as value.
 $flosc_flow_selector_labels = [];
@@ -663,10 +737,10 @@ foreach ($flosc_ivr_files as $flosc_selector_file) {
     $flosc_flow_selector_labels[$flosc_selector_file] = $flosc_selector_name;
 }
 
-$flosc_selected_flow_name = $flosc_flow_selector_labels[$selected_ivr]
+$flosc_selected_flow_name = $flosc_flow_selector_labels[$flosc_selected_ivr]
     ?? trim((string) ($flosc_flow_settings['identity']['name'] ?? ($flosc_flow_settings['name'] ?? '')));
 if ($flosc_selected_flow_name === '') {
-    $flosc_selected_flow_name = $selected_ivr;
+    $flosc_selected_flow_name = $flosc_selected_ivr;
 }
 
 ?>
@@ -678,7 +752,7 @@ if ($flosc_selected_flow_name === '') {
     
     <?php if (isset($flosc_saved)): ?>
         <div class="notice notice-success is-dismissible">
-            <p>✓ Settings saved for <strong><?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $selected_ivr); ?></strong></p>
+            <p>✓ Settings saved for <strong><?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $flosc_selected_ivr); ?></strong></p>
         </div>
     <?php endif; ?>
     
@@ -686,10 +760,10 @@ if ($flosc_selected_flow_name === '') {
     <div class="flosc-ivr-selector" style="background: #2f363d; border: 1px solid #3c434a; padding: 15px 20px; border-radius: 4px 4px 0 0; margin-bottom: 20px;">
 
         <?php // Flow-context row above the selector: single-flow view highlights the active flow; all-flows view lists every flow with the active one highlighted + bold. ?>
-        <?php if ($identity_view === 'all'): ?>
+        <?php if ($flosc_identity_view === 'all'): ?>
             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;">
                 <span style="color: #9ca3af; font-size: 13px;">All flows:</span>
-                <?php foreach ($flosc_ivr_files as $flosc_file): $flosc_is_current_flow = ($flosc_file === $selected_ivr); ?>
+                <?php foreach ($flosc_ivr_files as $flosc_file): $flosc_is_current_flow = ($flosc_file === $flosc_selected_ivr); ?>
                     <span style="display: inline-block; padding: 3px 11px; border-radius: 12px; font-size: 12px; background: <?php echo $flosc_is_current_flow ? '#2271b1' : '#3c434a'; ?>; color: <?php echo $flosc_is_current_flow ? '#ffffff' : '#c3c4c7'; ?>; font-weight: <?php echo $flosc_is_current_flow ? '700' : '400'; ?>;">
                         <?php echo esc_html($flosc_file); ?>
                     </span>
@@ -708,7 +782,7 @@ if ($flosc_selected_flow_name === '') {
             <label style="color: #f0f0f1; font-weight: 600; font-size: 14px;">Select Flow:</label>
             <select id="ivr-select" onchange="switchIVR(this.value);" style="padding: 8px 12px; border-radius: 2px; border: 1px solid #50575e; min-width: 250px; font-size: 14px;">
                 <?php foreach ($flosc_ivr_files as $flosc_file): ?>
-                    <option value="<?php echo esc_attr($flosc_file); ?>" <?php selected($selected_ivr, $flosc_file); ?>>
+                    <option value="<?php echo esc_attr($flosc_file); ?>" <?php selected($flosc_selected_ivr, $flosc_file); ?>>
                         <?php echo esc_html($flosc_flow_selector_labels[$flosc_file] ?? $flosc_file); ?>
                     </option>
                 <?php endforeach; ?>
@@ -720,18 +794,20 @@ if ($flosc_selected_flow_name === '') {
                 </a>
             <?php endif; ?>
 
-            <a href="<?php echo esc_url(add_query_arg([
-                'page' => 'flosc-settings',
-                'ivr' => $selected_ivr,
-                'tab' => 'administration',
-                'view' => $identity_view,
-            ], admin_url('admin.php'))); ?>" class="button button-small" style="font-size: 13px;">
-                Administration
-            </a>
+            <?php if ($flosc_can_view_administration): ?>
+                <a href="<?php echo esc_url(add_query_arg([
+                    'page' => 'flosc-settings',
+                    'ivr' => $flosc_selected_ivr,
+                    'tab' => 'administration',
+                    'view' => $flosc_identity_view,
+                ], admin_url('admin.php'))); ?>" class="button button-small" style="font-size: 13px;">
+                    Administration
+                </a>
+            <?php endif; ?>
         </div>
 
         <div style="margin-top: 8px; color: #9ca3af; font-size: 12px;">
-            floscFlowFileName: <span style="color: #c3c4c7;"><?php echo esc_html($selected_ivr); ?></span>
+            floscFlowFileName: <span style="color: #c3c4c7;"><?php echo esc_html($flosc_selected_ivr); ?></span>
         </div>
         
         <!-- Permalink Status Row -->
@@ -743,7 +819,7 @@ if ($flosc_selected_flow_name === '') {
     <?php ob_start(); ?>
     function switchIVR(ivr) {
         const tab = '<?php echo esc_js($flosc_active_tab); ?>';
-        const view = '<?php echo esc_js($identity_view); ?>';
+        const view = '<?php echo esc_js($flosc_identity_view); ?>';
         window.location.href = '<?php echo esc_js( admin_url('admin.php?page=flosc-settings') ); ?>&ivr=' + encodeURIComponent(ivr) + '&tab=' + tab + '&view=' + encodeURIComponent(view);
     }
 
@@ -800,12 +876,15 @@ if ($flosc_selected_flow_name === '') {
             'documentation' => '📖 Docs',
             'da1'           => 'DA1',
         ];
+        if (!$flosc_can_view_administration) {
+            unset($tabs['administration']);
+        }
         foreach ($tabs as $flosc_tab_id => $flosc_tab_label):
             $flosc_tab_url = add_query_arg([
                 'page' => 'flosc-settings',
-                'ivr' => $selected_ivr,
+                'ivr' => $flosc_selected_ivr,
                 'tab' => $flosc_tab_id,
-                'view' => $identity_view,
+                'view' => $flosc_identity_view,
             ], admin_url('admin.php'));
         ?>
             <a href="<?php echo esc_url($flosc_tab_url); ?>" 
@@ -827,7 +906,7 @@ if ($flosc_selected_flow_name === '') {
             
             <?php
             // View mode: single flow or all flows
-            $flosc_view_mode = $identity_view;
+            $flosc_view_mode = $flosc_identity_view;
             
             // Get all flows data
             $flosc_all_flows = [];
@@ -953,11 +1032,11 @@ if ($flosc_selected_flow_name === '') {
             
             <!-- View Toggle -->
             <div style="display: flex; gap: 10px; margin: 20px 0;">
-                <a href="<?php echo esc_url( '?page=flosc-settings&ivr=' . urlencode( $selected_ivr ) . '&tab=identity&view=single' ); ?>" 
+                <a href="<?php echo esc_url( '?page=flosc-settings&ivr=' . urlencode( $flosc_selected_ivr ) . '&tab=identity&view=single' ); ?>" 
                    class="button <?php echo esc_attr( $flosc_view_mode === 'single' ? 'button-primary' : '' ); ?>">
                     Single Flow
                 </a>
-                <a href="<?php echo esc_url( '?page=flosc-settings&ivr=' . urlencode( $selected_ivr ) . '&tab=identity&view=all' ); ?>" 
+                <a href="<?php echo esc_url( '?page=flosc-settings&ivr=' . urlencode( $flosc_selected_ivr ) . '&tab=identity&view=all' ); ?>" 
                    class="button <?php echo esc_attr( $flosc_view_mode === 'all' ? 'button-primary' : '' ); ?>">
                     All Flows (<?php echo count($flosc_ivr_files); ?>)
                 </a>
@@ -974,7 +1053,7 @@ if ($flosc_selected_flow_name === '') {
             <?php
             $flosc_identity_docs_url_all = add_query_arg([
                 'page' => 'flosc-settings',
-                'ivr'  => $selected_ivr,
+                'ivr'  => $flosc_selected_ivr,
                 'tab'  => 'documentation',
                 'doc'  => 'ref-admin',
             ], admin_url('admin.php')) . '#tab-identity';
@@ -1003,7 +1082,7 @@ if ($flosc_selected_flow_name === '') {
                         }
                     }
                     $flosc_prefix = 'flow_' . md5($flosc_ivr_file) . '_';
-                    $flosc_is_current = ($flosc_ivr_file === $selected_ivr);
+                    $flosc_is_current = ($flosc_ivr_file === $flosc_selected_ivr);
                     // v1.3.5: Preserve underscores in default slug
                     $flosc_default_slug = strtolower(preg_replace('/[^a-z0-9_-]/i', '', pathinfo($flosc_ivr_file, PATHINFO_FILENAME)));
                     $flosc_slug = $flosc_settings['slug'] ?? $flosc_default_slug;
@@ -1248,7 +1327,7 @@ if ($flosc_selected_flow_name === '') {
                 <?php
                 $flosc_identity_docs_url = add_query_arg([
                     'page' => 'flosc-settings',
-                    'ivr'  => $selected_ivr,
+                    'ivr'  => $flosc_selected_ivr,
                     'tab'  => 'documentation',
                     'doc'  => 'ref-admin',
                 ], admin_url('admin.php')) . '#tab-identity';
@@ -1260,7 +1339,7 @@ if ($flosc_selected_flow_name === '') {
                 <!-- URL Mapping Info Box -->
                 <?php 
                 // v1.3.5: Preserve underscores in default slug
-                $flosc_default_slug = strtolower(preg_replace('/[^a-z0-9_-]/i', '', pathinfo($selected_ivr, PATHINFO_FILENAME)));
+                $flosc_default_slug = strtolower(preg_replace('/[^a-z0-9_-]/i', '', pathinfo($flosc_selected_ivr, PATHINFO_FILENAME)));
                 $flosc_current_slug = $flosc_flow_settings['slug'] ?? $flosc_default_slug;
                 $flosc_flow_url = home_url('/' . $flosc_current_slug . '/');
                 ?>
@@ -1278,7 +1357,7 @@ if ($flosc_selected_flow_name === '') {
                         <?php endif; ?>
                     </div>
                     <div style="font-size: 11px; color: #787c82; margin-top: 8px;">
-                        IVR File: <code style="background: #e0e0e0; padding: 2px 6px; border-radius: 2px;"><?php echo esc_html($selected_ivr); ?></code>
+                        IVR File: <code style="background: #e0e0e0; padding: 2px 6px; border-radius: 2px;"><?php echo esc_html($flosc_selected_ivr); ?></code>
                     </div>
                 </div>
                 
@@ -1485,15 +1564,15 @@ if ($flosc_selected_flow_name === '') {
         <?php elseif ($flosc_active_tab === 'ai'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/ai-configuration.php'; ?>
         <?php elseif ($flosc_active_tab === 'ai-knowledge'): ?>
-            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($selected_ivr) . '&tab=ai#flosc-kb-section'); ?>
+            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($flosc_selected_ivr) . '&tab=ai#flosc-kb-section'); ?>
             <?php wp_add_inline_script('flosc-admin', 'window.location.replace(' . wp_json_encode($flosc_redirect_url) . ');'); ?>
             <p>Redirecting to <a href="<?php echo esc_url($flosc_redirect_url); ?>">Knowledge Base in AI tab</a>&hellip;</p>
         <?php elseif ($flosc_active_tab === 'ai-guide'): ?>
-            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($selected_ivr) . '&tab=documentation&doc=ref-ai-config'); ?>
+            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($flosc_selected_ivr) . '&tab=documentation&doc=ref-ai-config'); ?>
             <?php wp_add_inline_script('flosc-admin', 'window.location.replace(' . wp_json_encode($flosc_redirect_url) . ');'); ?>
             <p>Redirecting to <a href="<?php echo esc_url($flosc_redirect_url); ?>">AI Configuration Guide in Documentation</a>&hellip;</p>
         <?php elseif ($flosc_active_tab === 'knowledge'): ?>
-            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($selected_ivr) . '&tab=ai#flosc-kb-section'); ?>
+            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($flosc_selected_ivr) . '&tab=ai#flosc-kb-section'); ?>
             <?php wp_add_inline_script('flosc-admin', 'window.location.replace(' . wp_json_encode($flosc_redirect_url) . ');'); ?>
             <p>Redirecting to <a href="<?php echo esc_url($flosc_redirect_url); ?>">Knowledge Base in AI tab</a>&hellip;</p>
             
@@ -1548,7 +1627,7 @@ if ($flosc_selected_flow_name === '') {
         <?php if ($flosc_active_tab !== 'documentation' && $flosc_active_tab !== 'autoprompts' && $flosc_active_tab !== 'da1'): ?>
         <p class="submit" style="margin-top: 20px;">
             <button type="submit" name="flosc_save" class="button button-primary button-large">
-                Save Settings for <?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $selected_ivr); ?>
+                Save Settings for <?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $flosc_selected_ivr); ?>
             </button>
         </p>
         <?php endif; ?>
