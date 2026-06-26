@@ -666,6 +666,110 @@ class FLOSC_Framework {
         return true;
     }
 
+    /**
+     * Write file contents through WP_Filesystem when available.
+     */
+    private function write_file_safely($path, $content) {
+        $filesystem = $this->get_wp_filesystem();
+        if ($filesystem && method_exists($filesystem, 'put_contents')) {
+            return (bool) $filesystem->put_contents($path, $content, FS_CHMOD_FILE);
+        }
+
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- fallback when WP_Filesystem is unavailable
+        return false !== file_put_contents($path, $content);
+    }
+
+    /**
+     * Atomic JSON write: write temp file then move into place.
+     */
+    private function write_json_atomic($path, $data) {
+        $json = wp_json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        if (!is_string($json) || $json === '') {
+            return false;
+        }
+
+        $tmp_path = $path . '.tmp';
+        if (!$this->write_file_safely($tmp_path, $json)) {
+            return false;
+        }
+
+        return $this->move_file_safely($tmp_path, $path);
+    }
+
+    /**
+     * Canonical FLOSC UTC MTS format.
+     */
+    private function get_utc_mts() {
+        return gmdate('Y') . 'y-' . gmdate('m') . 'm-' . gmdate('d') . 'd-UTC' . gmdate('H') . 'h-' . gmdate('i') . 'm-' . gmdate('s') . 's';
+    }
+
+    /**
+     * Build signed outbound headers for provider requests.
+     */
+    private function build_flosc_signed_headers($payload_json) {
+        $site = wp_parse_url(home_url(), PHP_URL_HOST);
+        $site = is_string($site) && $site !== '' ? strtolower($site) : 'unknown';
+        $mts = $this->get_utc_mts();
+
+        $signature_base = (string) $payload_json . "\n" . $mts . "\n" . $site;
+
+        $signature = hash_hmac('sha256', $signature_base, flosc_token_secret());
+
+        return [
+            'X-FLOSC-Site' => $site,
+            'X-FLOSC-MTS' => $mts,
+            'X-FLOSC-Signature' => $signature,
+        ];
+    }
+
+    /**
+     * Dispatch one best-effort remote conversion request for session playback copies.
+     * Non-blocking by design: failures only update metadata status.
+     */
+    private function dispatch_remote_playback_conversion($session_id, $targets) {
+        if (!preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $session_id)) {
+            return ['ok' => false, 'status' => 'invalid_session'];
+        }
+
+        $provider = strtolower((string) flosc_get_setting('audio_conversion_provider', 'none'));
+        if ($provider !== 'lesaep') {
+            return ['ok' => false, 'status' => 'provider_none'];
+        }
+
+        $api_base = untrailingslashit((string) flosc_get_setting('ipa_api_base_url', ''));
+        if ($api_base === '') {
+            return ['ok' => false, 'status' => 'missing_api_base'];
+        }
+
+        $payload = [
+            'session_id' => $session_id,
+            'targets' => array_values($targets),
+        ];
+        $payload_json = wp_json_encode($payload);
+        $headers = array_merge(
+            ['Content-Type' => 'application/json'],
+            $this->build_flosc_signed_headers($payload_json)
+        );
+
+        $response = wp_remote_post($api_base . '/convert-session-playback', [
+            'headers' => $headers,
+            'body' => $payload_json,
+            'timeout' => 6,
+            'sslverify' => true,
+        ]);
+
+        if (is_wp_error($response)) {
+            return ['ok' => false, 'status' => 'request_error'];
+        }
+
+        $code = (int) wp_remote_retrieve_response_code($response);
+        if ($code >= 200 && $code < 300) {
+            return ['ok' => true, 'status' => 'requested'];
+        }
+
+        return ['ok' => false, 'status' => 'http_' . $code];
+    }
+
     private function boot() {
         $this->load_dependencies();
         $this->init_hooks();
@@ -11183,7 +11287,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC v1.3.8] IVR file no
             return new WP_Error('write_failed', __('Invalid uploaded audio', 'flosc'), ['status' => 400]);
         }
 
-        if (!copy($tmp_audio, $filepath)) {
+        $uploaded_audio = file_get_contents($tmp_audio);
+        if ($uploaded_audio === false || !$this->write_file_safely($filepath, $uploaded_audio)) {
             return new WP_Error('write_failed', __('Could not save audio', 'flosc'), ['status' => 500]);
         }
 
@@ -11211,7 +11316,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC v1.3.8] IVR file no
 
         // Sort by phrase number
         usort($meta['phrases'], function($a, $b) { return $a['num'] - $b['num']; });
-        file_put_contents($meta_path, wp_json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        if (!$this->write_json_atomic($meta_path, $meta)) {
+            return new WP_Error('write_failed', __('Could not update session metadata', 'flosc'), ['status' => 500]);
+        }
 
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
     if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC v8.0.0: Stored visitor audio phrase-{$phrase_num} in {$temp_id}/ (" . filesize($filepath) . " bytes)");
@@ -11354,140 +11461,91 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC v8.0.8: store_browse
         return true;
     }
 
-    /* ---------------------------------------------------------------------------
-     * Note to plugin reviewers — an intentional, justified shell-function use.
-     *
-     * The method below transcodes a learner's own recorded phrase audio
-     * (webm/ogg/wav) into .mp4 so the recordings replay in every browser,
-     * Safari/iOS included, inside the learner and coach review screens. This is
-     * central to the pronunciation experience FLOSC powers: a learner records
-     * their voice and replays it anywhere, on any device.
-     *
-     * Why ffmpeg is invoked, and why we believe it is safe:
-     *   - There is no native PHP path to transcode audio; ffmpeg is the standard
-     *     and is invoked through a PHP shell function only for that purpose.
-     *   - Every argument is passed through escapeshellarg(); the command is built
-     *     solely from a validated ffmpeg binary path and plugin-generated file
-     *     paths. No user-supplied string ever reaches the shell.
-     *   - It is fully optional and self-disabling: if the shell function is
-     *     unavailable or ffmpeg is absent, the method is a safe no-op and the
-     *     original recordings are served unchanged.
-     *   - It operates only on a logged-in learner's own session files, never on
-     *     request input.
-     *
-     * We respectfully ask that this remain — it delivers the cross-device
-     * playback that makes the product work for real learners.
-     * ------------------------------------------------------------------------- */
     /**
-     * Generate phrase-*.mp4 copies for a session (without deleting source files).
-     * If ffmpeg is unavailable, this is a safe no-op.
+     * Normalize phrase metadata for playback without local shell conversion.
+     *
+     * Local transcoding is intentionally disabled. Playback uses existing files
+     * only, preferring mp4 when present. Original source files are retained.
      */
     private function ensure_session_mp4_copies($session_dir) {
         if (!is_dir($session_dir)) {
             return false;
         }
 
-        // Some shared hosts disable shell_exec; conversion is optional, so bail safely.
-        if (!function_exists('shell_exec')) {
-            return false;
-        }
-
-        $ffmpeg = '';
-        $candidates = [];
-
-        $configured_ffmpeg = trim((string) get_option('flosc_ffmpeg_path', ''));
-        if ($configured_ffmpeg !== '') {
-            $candidates[] = $configured_ffmpeg;
-        }
-
-        if (function_exists('shell_exec')) {
-            $from_path = trim((string) @shell_exec('command -v ffmpeg 2>/dev/null'));
-            if ($from_path !== '') {
-                $candidates[] = $from_path;
-            }
-        }
-
-        $home = trim((string) getenv('HOME'));
-        if ($home !== '') {
-            $candidates[] = $home . '/tools/ffmpeg/ffmpeg';
-            $candidates[] = $home . '/da1.fm/tools/ffmpeg/ffmpeg';
-        }
-
-        $candidates[] = '/usr/bin/ffmpeg';
-        $candidates[] = '/usr/local/bin/ffmpeg';
-        $candidates[] = '/opt/homebrew/bin/ffmpeg';
-        $candidates[] = '/opt/ffmpeg/bin/ffmpeg';
-        $candidates[] = '/opt/cpanel/ea-ffmpeg/usr/bin/ffmpeg';
-
-        foreach (array_unique(array_filter($candidates)) as $candidate) {
-            if (is_file($candidate) && is_executable($candidate)) {
-                $ffmpeg = $candidate;
-                break;
-            }
-        }
-
-        if ($ffmpeg === '') {
-            return false;
-        }
-
-        $converted = false;
-        $inputs = array_merge(
-            glob($session_dir . '/phrase-*.webm') ?: [],
-            glob($session_dir . '/phrase-*.ogg') ?: [],
-            glob($session_dir . '/phrase-*.wav') ?: []
-        );
-
-        foreach ($inputs as $in_file) {
-            if (!is_file($in_file)) {
-                continue;
-            }
-
-            $out_file = preg_replace('/\.(webm|ogg|wav)$/', '.mp4', $in_file);
-            if (!$out_file || file_exists($out_file)) {
-                continue;
-            }
-
-            $cmd = escapeshellarg($ffmpeg)
-                . ' -y -i ' . escapeshellarg($in_file)
-                . ' -c:a aac -b:a 128k -movflags +faststart -vn '
-                . escapeshellarg($out_file)
-                . ' 2>/dev/null';
-            @shell_exec($cmd);
-
-            if (file_exists($out_file) && filesize($out_file) > 0) {
-                $converted = true;
-            }
-        }
-
-        // If metadata exists, prefer mp4 entries when the mp4 copy is present.
+        $updated = false;
         $meta_path = $session_dir . '/metadata.json';
         if (file_exists($meta_path)) {
             $meta = json_decode((string) file_get_contents($meta_path), true);
             if (is_array($meta) && !empty($meta['phrases']) && is_array($meta['phrases'])) {
-                $updated = false;
+                $conversion_targets = [];
                 foreach ($meta['phrases'] as &$phrase) {
                     $num = intval($phrase['num'] ?? 0);
                     if ($num <= 0) {
                         continue;
                     }
-                    $mp4_name = 'phrase-' . $num . '.mp4';
-                    if (file_exists($session_dir . '/' . $mp4_name)) {
-                        if (($phrase['file'] ?? '') !== $mp4_name || ($phrase['format'] ?? '') !== 'mp4') {
-                            $phrase['file'] = $mp4_name;
-                            $phrase['format'] = 'mp4';
+                    $current_file = (string) ($phrase['file'] ?? '');
+
+                    $ready = null;
+                    foreach (['mp4', 'm4a', 'wav'] as $ext) {
+                        $name = 'phrase-' . $num . '.' . $ext;
+                        if (file_exists($session_dir . '/' . $name)) {
+                            $ready = ['file' => $name, 'format' => $ext];
+                            break;
+                        }
+                    }
+
+                    if ($ready) {
+                        if (($phrase['file'] ?? '') !== $ready['file'] || ($phrase['format'] ?? '') !== $ready['format'] || ($phrase['playback_status'] ?? '') !== 'ready') {
+                            $phrase['file'] = $ready['file'];
+                            $phrase['format'] = $ready['format'];
+                            $phrase['playback_file'] = $ready['file'];
+                            $phrase['playback_status'] = 'ready';
                             $updated = true;
                         }
+                        continue;
+                    }
+
+                    $has_source = false;
+                    foreach (['webm', 'ogg'] as $ext) {
+                        $name = 'phrase-' . $num . '.' . $ext;
+                        if (file_exists($session_dir . '/' . $name)) {
+                            $has_source = true;
+                            if ($current_file === '' || !file_exists($session_dir . '/' . $current_file)) {
+                                $phrase['file'] = $name;
+                                $phrase['format'] = $ext;
+                                $updated = true;
+                            }
+                            $conversion_targets[] = ['phrase_num' => $num, 'source_format' => $ext];
+                            break;
+                        }
+                    }
+
+                    if ($has_source && ($phrase['playback_status'] ?? '') !== 'processing') {
+                        $phrase['playback_status'] = 'processing';
+                        $updated = true;
                     }
                 }
                 unset($phrase);
 
+                $session_id = basename($session_dir);
+                $already_attempted = !empty($meta['conversion']['attempted_at']);
+                if (!$already_attempted && !empty($conversion_targets)) {
+                    $dispatch = $this->dispatch_remote_playback_conversion($session_id, $conversion_targets);
+                    $meta['conversion'] = [
+                        'provider' => strtolower((string) flosc_get_setting('audio_conversion_provider', 'none')),
+                        'attempted_at' => $this->get_utc_mts(),
+                        'status' => $dispatch['status'] ?? 'unknown',
+                    ];
+                    $updated = true;
+                }
+
                 if ($updated) {
-                    file_put_contents($meta_path, wp_json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+                    $this->write_json_atomic($meta_path, $meta);
                 }
             }
         }
 
-        return $converted;
+        return $updated;
     }
 
     /**
@@ -11661,7 +11719,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_session_from_d
                 elseif (strpos($content_type, 'ogg') !== false) $ext = 'ogg';
 
                 $filename = "phrase-{$n}.{$ext}";
-                file_put_contents($session_dir . '/' . $filename, wp_remote_retrieve_body($audio_resp));
+                $this->write_file_safely($session_dir . '/' . $filename, wp_remote_retrieve_body($audio_resp));
                 $session_phrases[] = [
                     'num' => $n,
                     'text' => $phrase_results[$n - 1]['phrase'] ?? '',
@@ -11673,14 +11731,14 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_session_from_d
 
         // Write metadata.json so admin audio section can find files
         if ($session_phrases) {
-            file_put_contents($session_dir . '/metadata.json', wp_json_encode([
+            $this->write_json_atomic($session_dir . '/metadata.json', [
                 'session_id' => $session_id,
                 'quiz_id' => $default_audio_quiz_id,
                 'phrases' => $session_phrases,
                 'scored_at' => gmdate('Y') . '-' . gmdate('m') . 'm-' . gmdate('d') . 'd-'
                              . gmdate('H') . 'h-' . gmdate('i') . 'm-' . gmdate('s') . 's',
                 'score' => $score,
-            ], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            ]);
 
             // Keep source files and add mp4 copies when conversion tooling is available.
             $this->ensure_session_mp4_copies($session_dir);
@@ -11822,9 +11880,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 $body['target_ipa'] = $phrase_info['target_ipa'];
             }
 
+            $payload_json = wp_json_encode($body);
             $response = wp_remote_post($api_base . $endpoint, [
-                'headers' => ['Content-Type' => 'application/json'],
-                'body' => wp_json_encode($body),
+                'headers' => array_merge(
+                    ['Content-Type' => 'application/json'],
+                    $this->build_flosc_signed_headers($payload_json)
+                ),
+                'body' => $payload_json,
                 'timeout' => 30,
                 'sslverify' => true, // TLS certificate required on the configured pronunciation API host
             ]);
@@ -11926,7 +11988,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         $user_meta['score'] = $score;
         $user_meta['ranked_phonemes'] = $ranked_for_upsell;
         $user_meta['results'] = $all_results;
-        file_put_contents($user_meta_path, wp_json_encode($user_meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        if (!$this->write_json_atomic($user_meta_path, $user_meta)) {
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC v8.0.0: failed to persist scored metadata for session {$temp_id}");
+        }
 
         // Keep source files and add mp4 copies when conversion tooling is available.
         $this->ensure_session_mp4_copies($session_dir);
@@ -13375,7 +13439,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         // Validate filename: only allow phrase-N.ext pattern
-        if (!preg_match('/^phrase-\d+\.(webm|mp4|ogg|wav)$/', $file)) {
+        if (!preg_match('/^phrase-\d+\.(webm|mp4|m4a|ogg|wav)$/', $file)) {
             wp_die('Invalid file', 400);
         }
 
@@ -13391,7 +13455,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         $ext = pathinfo($file, PATHINFO_EXTENSION);
-        $mimes = ['webm' => 'audio/webm', 'mp4' => 'audio/mp4', 'ogg' => 'audio/ogg', 'wav' => 'audio/wav'];
+        $mimes = ['webm' => 'audio/webm', 'mp4' => 'audio/mp4', 'm4a' => 'audio/mp4', 'ogg' => 'audio/ogg', 'wav' => 'audio/wav'];
         $mime = $mimes[$ext] ?? 'application/octet-stream';
 
         $size  = filesize($filepath);
@@ -13405,7 +13469,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 ? str_pad((string) intval($pm[1]), 2, '0', STR_PAD_LEFT)
                 : '01';
             $ext = strtolower((string) pathinfo($file, PATHINFO_EXTENSION));
-            $ext = in_array($ext, ['mp4', 'webm', 'ogg', 'wav'], true) ? $ext : 'bin';
+            $ext = in_array($ext, ['mp4', 'm4a', 'webm', 'ogg', 'wav'], true) ? $ext : 'bin';
             $download_name = 'phrase_' . $phrase_num . '_' . $mts_stamp . '.' . $ext;
         }
 
@@ -13902,7 +13966,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      */
     private function render_phrase_audio_player_and_download($user_id, $session_id, $phrase_num, $user_audio_dir) {
         $audio_file = '';
-        foreach (['mp4', 'webm', 'ogg', 'wav'] as $ext) {
+        foreach (['mp4', 'm4a', 'wav'] as $ext) {
             if (file_exists($user_audio_dir . '/phrase-' . $phrase_num . '.' . $ext)) {
                 $audio_file = 'phrase-' . $phrase_num . '.' . $ext;
                 break;
@@ -13910,6 +13974,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         if (!$audio_file) {
+            if (file_exists($user_audio_dir . '/phrase-' . $phrase_num . '.webm') || file_exists($user_audio_dir . '/phrase-' . $phrase_num . '.ogg')) {
+                echo '<div style="margin-bottom:12px;font-size:12px;color:#6b7280;">Playback copy is processing. Please refresh shortly.</div>';
+            }
             return;
         }
 

@@ -422,6 +422,16 @@ DEMO,
     <p class="description">These messages appear in the chatbot during and after the audio pronunciation quiz. Placeholders: <code>{current}</code> = phrase number, <code>{total}</code> = total phrases.</p>
     <table class="form-table" style="margin:0 0 24px;">
         <tr>
+            <th scope="row"><label for="flow_audio_conversion_provider">Audio Conversion Provider</label></th>
+            <td>
+                <select id="flow_audio_conversion_provider" name="flow_audio_conversion_provider">
+                    <option value="none" <?php selected( $flosc_flow_settings['audio_conversion_provider'] ?? 'none', 'none' ); ?>>none (default)</option>
+                    <option value="lesaep" <?php selected( $flosc_flow_settings['audio_conversion_provider'] ?? 'none', 'lesaep' ); ?>>lesaep</option>
+                </select>
+                <p class="description">Select <code>lesaep</code> only when your flow is configured to call a compatible remote conversion endpoint. <code>none</code> keeps conversion dispatch disabled.</p>
+            </td>
+        </tr>
+        <tr>
             <th scope="row" style="width:200px;"><label for="flow_audio_quiz_phrase_complete_message">Phrase Complete</label></th>
             <td>
                 <input type="text" id="flow_audio_quiz_phrase_complete_message" name="flow_audio_quiz_phrase_complete_message" class="large-text" value="<?php echo esc_attr( $flosc_flow_settings['audio_quiz_phrase_complete_message'] ?? 'Thank you. {current} of {total} recorded.' ); ?>">

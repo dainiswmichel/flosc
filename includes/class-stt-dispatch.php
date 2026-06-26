@@ -14,6 +14,32 @@ class FLOSC_STT_Dispatch {
         // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
         $this->provider = flosc_get_setting('stt_provider', 'assemblyai');
     }
+
+    /**
+     * Resolve multipart filename and MIME from the real source file.
+     *
+     * @param string $audio_path
+     * @return array{filename:string,mime:string}
+     */
+    private function resolve_audio_upload_meta($audio_path) {
+        $ext = strtolower((string) pathinfo((string) $audio_path, PATHINFO_EXTENSION));
+        $allowed = [
+            'webm' => 'audio/webm',
+            'mp4'  => 'audio/mp4',
+            'm4a'  => 'audio/mp4',
+            'ogg'  => 'audio/ogg',
+            'wav'  => 'audio/wav',
+        ];
+
+        if (!isset($allowed[$ext])) {
+            $ext = 'webm';
+        }
+
+        return [
+            'filename' => 'audio.' . $ext,
+            'mime' => $allowed[$ext] ?? 'application/octet-stream',
+        ];
+    }
     
     /**
      * Transcribe Audio File
@@ -155,11 +181,12 @@ class FLOSC_STT_Dispatch {
         // Prepare multipart form data
         $boundary = wp_generate_password(24, false);
         $body = '';
+        $upload_meta = $this->resolve_audio_upload_meta($audio_path);
         
         // Add file
         $body .= "--{$boundary}\r\n";
-        $body .= "Content-Disposition: form-data; name=\"file\"; filename=\"audio.webm\"\r\n";
-        $body .= "Content-Type: audio/webm\r\n\r\n";
+        $body .= "Content-Disposition: form-data; name=\"file\"; filename=\"{$upload_meta['filename']}\"\r\n";
+        $body .= "Content-Type: {$upload_meta['mime']}\r\n\r\n";
         $body .= file_get_contents($audio_path) . "\r\n";
         
         // Add model
@@ -211,10 +238,11 @@ class FLOSC_STT_Dispatch {
         // Prepare multipart form data
         $boundary = wp_generate_password(24, false);
         $body = '';
+        $upload_meta = $this->resolve_audio_upload_meta($audio_path);
         
         $body .= "--{$boundary}\r\n";
-        $body .= "Content-Disposition: form-data; name=\"audio\"; filename=\"audio.webm\"\r\n";
-        $body .= "Content-Type: audio/webm\r\n\r\n";
+        $body .= "Content-Disposition: form-data; name=\"audio\"; filename=\"{$upload_meta['filename']}\"\r\n";
+        $body .= "Content-Type: {$upload_meta['mime']}\r\n\r\n";
         $body .= file_get_contents($audio_path) . "\r\n";
         $body .= "--{$boundary}--\r\n";
         

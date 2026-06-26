@@ -235,8 +235,8 @@ Privacy policy: https://www.linkedin.com/legal/privacy-policy
 14. Flow-configured external quiz or pronunciation scoring provider
 Endpoint examples: https://api.yourdomain.tld/analyze, https://api.yourdomain.tld/analyze-phrase, https://api.yourdomain.tld/finalize-session, https://api.yourdomain.tld/session/{id}
 Purpose: score quiz submissions and finalize/retrieve session scoring data for flows that use an external scoring provider.
-Data sent: quiz audio, answer payloads, and session-finalization data required by the configured provider.
-Configuration note: floscAdmins can configure a per-flow external scoring endpoint. If a flow uses an external scoring provider, quiz audio and related scoring payloads may be sent to that provider.
+Data sent: quiz audio, answer payloads, and session-finalization data required by the configured provider. FLOSC also sends request-signing headers: X-FLOSC-Site, X-FLOSC-MTS (UTC Michel timestamp), and X-FLOSC-Signature (HMAC-SHA256 over payload_json + newline + mts + newline + site).
+Configuration note: floscAdmins can configure a per-flow external scoring endpoint. If a flow uses an external scoring provider, quiz audio and related scoring payloads may be sent to that provider. Audio playback conversion dispatch is optional and flow-scoped through the Audio Conversion Provider setting (none|lesaep).
 
 = FLOSC Site Policies =
 
