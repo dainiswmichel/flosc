@@ -26,6 +26,8 @@ uninstall.php
 .githooks/**/*
 
 # Tracked development documentation (export-ignored from the release zip).
+flosc_documentation/*
+flosc_documentation/**/*
 claude.md
 CLAUDE.md
 dev_notes.md
