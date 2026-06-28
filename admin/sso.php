@@ -183,23 +183,23 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
 
     <?php foreach ($flosc_providers as $flosc_provider_id => $flosc_provider): ?>
         <?php
-        $flosc_is_enabled = !empty($flosc_flow_settings["sso_{$provider_id}_enabled"]);
-        $flosc_client_id = $flosc_flow_settings["sso_{$provider_id}_client_id"] ?? '';
-        $flosc_client_secret = $flosc_flow_settings["sso_{$provider_id}_client_secret"] ?? '';
-        $flosc_callback_url = $flosc_callback_base . $provider_id;
+        $flosc_is_enabled = !empty($flosc_flow_settings["sso_{$flosc_provider_id}_enabled"]);
+        $flosc_client_id = $flosc_flow_settings["sso_{$flosc_provider_id}_client_id"] ?? '';
+        $flosc_client_secret = $flosc_flow_settings["sso_{$flosc_provider_id}_client_secret"] ?? '';
+        $flosc_callback_url = $flosc_callback_base . $flosc_provider_id;
         $flosc_authorize_url_example = add_query_arg(
             [
                 'flow_id' => $flosc_current_flow_id,
                 'redirect_to' => $flosc_flow_fallback_url,
             ],
-            $flosc_site_url . '/wp-json/flosc/v1/sso/authorize/' . $provider_id
+            $flosc_site_url . '/wp-json/flosc/v1/sso/authorize/' . $flosc_provider_id
         );
         ?>
         
         <div class="flosc-sso-provider card" style="margin-bottom: 20px; padding: 20px; border-left: 4px solid <?php echo esc_attr($flosc_is_enabled ? '#28a745' : '#ccc'); ?>;">
             <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 1.5em;"><?php echo esc_html($provider['icon']); ?></span>
-                <?php echo esc_html($provider['name']); ?>
+            <span style="font-size: 1.5em;"><?php echo esc_html($flosc_provider['icon']); ?></span>
+                <?php echo esc_html($flosc_provider['name']); ?>
                 <?php if ($flosc_is_enabled && $flosc_client_id && $flosc_client_secret): ?>
                     <span style="background: #28a745; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: normal;">ENABLED</span>
                 <?php endif; ?>
@@ -207,14 +207,14 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
             
             <table class="form-table" style="margin-top: 0;">
                 <tr>
-                    <th scope="row">Enable <?php echo esc_html($provider['name']); ?></th>
+                    <th scope="row">Enable <?php echo esc_html($flosc_provider['name']); ?></th>
                     <td>
                         <label>
                             <input type="checkbox" 
-                                name="flow_sso_<?php echo esc_attr($provider_id); ?>_enabled" 
+                                name="flow_sso_<?php echo esc_attr($flosc_provider_id); ?>_enabled" 
                                    value="1" 
                                    <?php checked($flosc_is_enabled, true); ?>>
-                            Allow users to sign in with <?php echo esc_html($provider['name']); ?>
+                            Allow users to sign in with <?php echo esc_html($flosc_provider['name']); ?>
                         </label>
                     </td>
                 </tr>
@@ -223,10 +223,10 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
                     <th scope="row">Client ID</th>
                     <td>
                            <input type="text" 
-                               name="flow_sso_<?php echo esc_attr($provider_id); ?>_client_id" 
+                               name="flow_sso_<?php echo esc_attr($flosc_provider_id); ?>_client_id" 
                                value="<?php echo esc_attr($flosc_client_id); ?>" 
                                class="regular-text"
-                               placeholder="<?php echo esc_attr($provider_id === 'apple' ? 'Service ID (e.g., com.example.app)' : 'Your ' . $provider['name'] . ' Client/App ID'); ?>">
+                               placeholder="<?php echo esc_attr($flosc_provider_id === 'apple' ? 'Service ID (e.g., com.example.app)' : 'Your ' . $flosc_provider['name'] . ' Client/App ID'); ?>">
                     </td>
                 </tr>
                 
@@ -234,28 +234,28 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
                     <th scope="row">Client Secret</th>
                     <td>
                            <input type="password" 
-                               name="flow_sso_<?php echo esc_attr($provider_id); ?>_client_secret" 
+                               name="flow_sso_<?php echo esc_attr($flosc_provider_id); ?>_client_secret" 
                                value="<?php echo esc_attr($flosc_client_secret); ?>" 
                                class="regular-text"
-                               placeholder="<?php echo esc_attr($provider_id === 'apple' ? 'Leave empty - auto-generated from keys' : 'Your ' . $provider['name'] . ' Client Secret'); ?>"
-                               <?php if ($provider_id === 'apple') : ?>readonly style="background: #f0f0f0;"<?php endif; ?>>
-                        <?php if ($provider_id === 'apple'): ?>
+                               placeholder="<?php echo esc_attr($flosc_provider_id === 'apple' ? 'Leave empty - auto-generated from keys' : 'Your ' . $flosc_provider['name'] . ' Client Secret'); ?>"
+                               <?php if ($flosc_provider_id === 'apple') : ?>readonly style="background: #f0f0f0;"<?php endif; ?>>
+                        <?php if ($flosc_provider_id === 'apple'): ?>
                             <p class="description">Apple client secrets are automatically generated from Team ID, Key ID, and Private Key below.</p>
                         <?php endif; ?>
                     </td>
                 </tr>
                 
-                <?php if (isset($provider['extra_fields']) && in_array('team_id', $provider['extra_fields'])): ?>
+                <?php if (isset($flosc_provider['extra_fields']) && in_array('team_id', $flosc_provider['extra_fields'])): ?>
                     <?php
-                    $flosc_team_id = $flosc_flow_settings["sso_{$provider_id}_team_id"] ?? '';
-                    $flosc_key_id = $flosc_flow_settings["sso_{$provider_id}_key_id"] ?? '';
-                    $flosc_private_key = $flosc_flow_settings["sso_{$provider_id}_private_key"] ?? '';
+                    $flosc_team_id = $flosc_flow_settings["sso_{$flosc_provider_id}_team_id"] ?? '';
+                    $flosc_key_id = $flosc_flow_settings["sso_{$flosc_provider_id}_key_id"] ?? '';
+                    $flosc_private_key = $flosc_flow_settings["sso_{$flosc_provider_id}_private_key"] ?? '';
                     ?>
                     <tr>
                         <th scope="row">Team ID</th>
                         <td>
                             <input type="text" 
-                                name="flow_sso_<?php echo esc_attr($provider_id); ?>_team_id" 
+                                name="flow_sso_<?php echo esc_attr($flosc_provider_id); ?>_team_id" 
                                    value="<?php echo esc_attr($flosc_team_id); ?>" 
                                    class="regular-text"
                                    placeholder="10-character Team ID (e.g., ABCDE12345)">
@@ -267,7 +267,7 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
                         <th scope="row">Key ID</th>
                         <td>
                             <input type="text" 
-                                name="flow_sso_<?php echo esc_attr($provider_id); ?>_key_id" 
+                                name="flow_sso_<?php echo esc_attr($flosc_provider_id); ?>_key_id" 
                                    value="<?php echo esc_attr($flosc_key_id); ?>" 
                                    class="regular-text"
                                    placeholder="10-character Key ID">
@@ -278,7 +278,7 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
                     <tr>
                         <th scope="row">Private Key</th>
                         <td>
-                            <textarea name="flow_sso_<?php echo esc_attr($provider_id); ?>_private_key" 
+                            <textarea name="flow_sso_<?php echo esc_attr($flosc_provider_id); ?>_private_key" 
                                       rows="5" 
                                       class="large-text code"
                                       placeholder="-----BEGIN PRIVATE KEY-----&#10;Paste your .p8 file contents here&#10;-----END PRIVATE KEY-----"><?php echo esc_textarea($flosc_private_key); ?></textarea>
@@ -296,7 +296,7 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
                                 onclick="navigator.clipboard.writeText('<?php echo esc_js($flosc_callback_url); ?>').then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 2000); });">
                             Copy
                         </button>
-                        <p class="description">Add this URL to your <?php echo esc_html($provider['name']); ?> app's authorized redirect URIs.</p>
+                        <p class="description">Add this URL to your <?php echo esc_html($flosc_provider['name']); ?> app's authorized redirect URIs.</p>
                     </td>
                 </tr>
 
@@ -317,17 +317,17 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
             <!-- Setup Instructions (Collapsible) -->
             <details style="margin-top: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
                 <summary style="cursor: pointer; font-weight: 600; color: #0073aa;">
-                    📖 Setup Instructions for <?php echo esc_html($provider['name']); ?>
+                    📖 Setup Instructions for <?php echo esc_html($flosc_provider['name']); ?>
                 </summary>
                 <ol style="margin-top: 10px; padding-left: 20px;">
-                    <?php foreach ($provider['instructions'] as $flosc_step): ?>
-                        <li style="margin-bottom: 8px;"><?php echo wp_kses_post($step); ?></li>
+                    <?php foreach ($flosc_provider['instructions'] as $flosc_step): ?>
+                        <li style="margin-bottom: 8px;"><?php echo wp_kses_post($flosc_step); ?></li>
                     <?php endforeach; ?>
                 </ol>
-                <?php if (!empty($provider['docs_url'])): ?>
+                <?php if (!empty($flosc_provider['docs_url'])): ?>
                     <p style="margin-top: 10px;">
-                        <a href="<?php echo esc_url($provider['docs_url']); ?>" target="_blank" class="button button-secondary button-small">
-                            Open <?php echo esc_html($provider['name']); ?> Developer Console →
+                        <a href="<?php echo esc_url($flosc_provider['docs_url']); ?>" target="_blank" class="button button-secondary button-small">
+                            Open <?php echo esc_html($flosc_provider['name']); ?> Developer Console →
                         </a>
                     </p>
                 <?php endif; ?>
@@ -338,15 +338,15 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
                 <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                     <button type="button" 
                             class="button flosc-test-connection-btn" 
-                            data-provider="<?php echo esc_attr($provider_id); ?>"
+                            data-provider="<?php echo esc_attr($flosc_provider_id); ?>"
                             style="font-weight: 600;">
                         🔌 Test Connection
                     </button>
-                    <span class="flosc-test-status" id="flosc-test-status-<?php echo esc_attr($provider_id); ?>" style="font-size: 13px; color: #666;">
-                        Click to verify your <?php echo esc_html($provider['name']); ?> credentials without leaving this page
+                    <span class="flosc-test-status" id="flosc-test-status-<?php echo esc_attr($flosc_provider_id); ?>" style="font-size: 13px; color: #666;">
+                        Click to verify your <?php echo esc_html($flosc_provider['name']); ?> credentials without leaving this page
                     </span>
                 </div>
-                <div class="flosc-test-results" id="flosc-test-results-<?php echo esc_attr($provider_id); ?>" style="display: none; margin-top: 12px;">
+                <div class="flosc-test-results" id="flosc-test-results-<?php echo esc_attr($flosc_provider_id); ?>" style="display: none; margin-top: 12px;">
                     <!-- Results injected by JS -->
                 </div>
             </div>

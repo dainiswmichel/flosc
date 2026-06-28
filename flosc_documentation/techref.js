@@ -99,6 +99,12 @@
             part: 5,
             partTitle: 'Glossary',
             file: 'chapters/part5-glossary.html'
+        },
+        {
+            id: 'part6-development',
+            part: 6,
+            partTitle: 'Development',
+            file: 'chapters/part6-development.html'
         }
     ];
 

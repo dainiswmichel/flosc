@@ -35,6 +35,11 @@ $flosc_doc_topics = [
     ['id' => 'security',             'group' => 'security', 'title' => 'Security',                             'status' => 'pending'],
     // Part 5: Glossary
     ['id' => 'glossary',             'group' => 'glossary', 'title' => 'Glossary — Every FLOSC Term Defined',  'status' => 'ready'],
+    // Part 6: Development
+    ['id' => 'development-team',     'group' => 'development', 'title' => 'Team',                                               'status' => 'ready', 'anchor' => 'team'],
+    ['id' => 'development-devnotes', 'group' => 'development', 'title' => 'Devnotes',                                           'status' => 'ready', 'anchor' => 'devnotes'],
+    ['id' => 'development-future',   'group' => 'development', 'title' => 'Future Features',                                    'status' => 'ready', 'anchor' => 'future-features'],
+    ['id' => 'development-wishlist', 'group' => 'development', 'title' => 'User Wishlist',                                      'status' => 'ready', 'anchor' => 'user-wishlist'],
 ];
 
 // Which topic is currently selected?
@@ -49,7 +54,16 @@ $flosc_group_labels = [
     'reference'    => 'Part 3: Reference',
     'security'     => 'Part 4: Security',
     'glossary'     => 'Part 5: Glossary',
+    'development'  => 'Part 6: Development',
 ];
+
+// First topic per group (used for clickable part headings and landing cards).
+$flosc_group_first_topic = [];
+foreach ($flosc_doc_topics as $flosc_topic) {
+    if (!isset($flosc_group_first_topic[$flosc_topic['group']])) {
+        $flosc_group_first_topic[$flosc_topic['group']] = $flosc_topic;
+    }
+}
 ?>
 
 <div class="flosc-docs-wrap" style="display: flex; gap: 20px; margin-top: 15px;">
@@ -64,9 +78,28 @@ $flosc_group_labels = [
             foreach ($flosc_doc_topics as $flosc_topic):
                 if ($flosc_topic['group'] !== $flosc_current_group):
                     $flosc_current_group = $flosc_topic['group'];
+                    $flosc_group_heading_url = '';
+                    if (isset($flosc_group_first_topic[$flosc_current_group])) {
+                        $flosc_group_heading_topic = $flosc_group_first_topic[$flosc_current_group];
+                        $flosc_group_heading_url = add_query_arg([
+                            'page' => 'flosc-settings',
+                            'ivr'  => isset($selected_ivr) ? $selected_ivr : '',
+                            'tab'  => 'documentation',
+                            'doc'  => $flosc_group_heading_topic['id'],
+                        ], admin_url('admin.php'));
+                        if (!empty($flosc_group_heading_topic['anchor'])) {
+                            $flosc_group_heading_url .= '#' . sanitize_key($flosc_group_heading_topic['anchor']);
+                        }
+                    }
                     ?>
                     <div style="font-size: 11px; font-weight: 600; color: #666; margin: 14px 0 4px; text-transform: uppercase; letter-spacing: 0.5px;">
-                        <?php echo esc_html($flosc_group_labels[$flosc_current_group]); ?>
+                        <?php if (!empty($flosc_group_heading_url)): ?>
+                            <a href="<?php echo esc_url($flosc_group_heading_url); ?>" style="color: #666; text-decoration: none;">
+                                <?php echo esc_html($flosc_group_labels[$flosc_current_group]); ?>
+                            </a>
+                        <?php else: ?>
+                            <?php echo esc_html($flosc_group_labels[$flosc_current_group]); ?>
+                        <?php endif; ?>
                     </div>
                 <?php endif; ?>
                 <?php
@@ -78,6 +111,9 @@ $flosc_group_labels = [
                     'tab'  => 'documentation',
                     'doc'  => $flosc_topic['id'],
                 ], admin_url('admin.php'));
+                if (!empty($flosc_topic['anchor'])) {
+                    $flosc_link_url .= '#' . sanitize_key($flosc_topic['anchor']);
+                }
                 ?>
                      <a href="<?php echo esc_url($flosc_link_url); ?>"
                          style="display: block; padding: 5px 10px; margin: 1px 0; font-size: 13px; text-decoration: none; border-radius: 4px; color: <?php echo esc_attr($flosc_is_active ? '#fff' : '#2271b1'); ?>; background: <?php echo esc_attr($flosc_is_active ? '#2271b1' : 'transparent'); ?>;">
@@ -98,10 +134,7 @@ $flosc_group_labels = [
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px;">
                     <?php foreach ($flosc_group_labels as $flosc_gid => $flosc_glabel):
                         // Find first topic in this group
-                        $flosc_first = null;
-                        foreach ($flosc_doc_topics as $flosc_t) {
-                            if ($flosc_t['group'] === $flosc_gid) { $flosc_first = $flosc_t; break; }
-                        }
+                        $flosc_first = isset($flosc_group_first_topic[$flosc_gid]) ? $flosc_group_first_topic[$flosc_gid] : null;
                         if (!$flosc_first) continue;
                         $flosc_ready_count = 0;
                         $flosc_total_count = 0;
@@ -148,6 +181,11 @@ $flosc_group_labels = [
         <?php elseif ($flosc_doc_topic === 'glossary'): ?>
             <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
                 <?php include FLOSC_PLUGIN_DIR . 'admin/docs/part5-glossary.php'; ?>
+            </div>
+
+        <?php elseif (in_array($flosc_doc_topic, ['development-team', 'development-devnotes', 'development-future', 'development-wishlist'], true)): ?>
+            <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
+                <?php include FLOSC_PLUGIN_DIR . 'admin/docs/part6-development.php'; ?>
             </div>
 
         <?php elseif ($flosc_doc_topic === 'ref-core'): ?>

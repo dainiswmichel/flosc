@@ -29,10 +29,10 @@ if (!empty($flosc_visitor_menu_raw)) {
             'quiz'   => 'open_quiz',
         ];
         foreach ($flosc_visitor_menu_raw as $flosc_key => $flosc_item) {
-            if (!empty($item['enabled'])) {
+            if (!empty($flosc_item['enabled'])) {
                 $flosc_visitor_menu[] = [
-                    'label'  => $item['label'] ?? ucfirst($key),
-                    'action' => $flosc_action_map[$key] ?? $key,
+                    'label'  => $flosc_item['label'] ?? ucfirst($flosc_key),
+                    'action' => $flosc_action_map[$flosc_key] ?? $flosc_key,
                 ];
             }
         }
@@ -204,17 +204,17 @@ if (empty($flosc_member_menu)) {
         <tbody id="flosc-menu-items-body">
             <?php foreach ($flosc_visitor_menu as $flosc_i => $flosc_item): ?>
             <tr class="flosc-menu-row">
-                <td class="flosc-menu-row-number"><?php echo esc_html((string) ($i + 1)); ?></td>
+                <td class="flosc-menu-row-number"><?php echo esc_html((string) ($flosc_i + 1)); ?></td>
                 <td>
                     <input type="text" name="visitor_menu_label[]"
-                           value="<?php echo esc_attr($item['label']); ?>"
+                           value="<?php echo esc_attr($flosc_item['label']); ?>"
                            class="regular-text" placeholder="Menu label" required>
                 </td>
                 <td>
                     <select name="visitor_menu_action[]" style="min-width: 260px;">
                         <?php foreach ($flosc_available_actions as $flosc_val => $flosc_desc): ?>
-                        <option value="<?php echo esc_attr($val); ?>" <?php selected($item['action'], $val); ?>>
-                            <?php echo esc_html($desc); ?>
+                        <option value="<?php echo esc_attr($flosc_val); ?>" <?php selected($flosc_item['action'], $flosc_val); ?>>
+                            <?php echo esc_html($flosc_desc); ?>
                         </option>
                         <?php endforeach; ?>
                     </select>
@@ -327,17 +327,17 @@ if (empty($flosc_member_menu)) {
         <tbody id="flosc-guest-menu-items-body">
             <?php foreach ($flosc_guest_menu as $flosc_i => $flosc_item): ?>
             <tr class="flosc-guest-menu-row">
-                <td class="flosc-guest-menu-row-number"><?php echo esc_html( (string) ($i + 1) ); ?></td>
+                <td class="flosc-guest-menu-row-number"><?php echo esc_html( (string) ($flosc_i + 1) ); ?></td>
                 <td>
                     <input type="text" name="guest_menu_label[]"
-                           value="<?php echo esc_attr($item['label']); ?>"
+                           value="<?php echo esc_attr($flosc_item['label']); ?>"
                            class="regular-text" placeholder="Menu label" required>
                 </td>
                 <td>
                     <select name="guest_menu_action[]" style="min-width: 260px;">
                         <?php foreach ($flosc_available_actions as $flosc_val => $flosc_desc): ?>
-                        <option value="<?php echo esc_attr($val); ?>" <?php selected($item['action'], $val); ?>>
-                            <?php echo esc_html($desc); ?>
+                        <option value="<?php echo esc_attr($flosc_val); ?>" <?php selected($flosc_item['action'], $flosc_val); ?>>
+                            <?php echo esc_html($flosc_desc); ?>
                         </option>
                         <?php endforeach; ?>
                     </select>
@@ -437,17 +437,17 @@ if (empty($flosc_member_menu)) {
         <tbody id="flosc-member-menu-items-body">
             <?php foreach ($flosc_member_menu as $flosc_i => $flosc_item): ?>
             <tr class="flosc-member-menu-row">
-                <td class="flosc-member-menu-row-number"><?php echo esc_html( (string) ($i + 1) ); ?></td>
+                <td class="flosc-member-menu-row-number"><?php echo esc_html( (string) ($flosc_i + 1) ); ?></td>
                 <td>
                     <input type="text" name="member_menu_label[]"
-                           value="<?php echo esc_attr($item['label']); ?>"
+                           value="<?php echo esc_attr($flosc_item['label']); ?>"
                            class="regular-text" placeholder="Menu label" required>
                 </td>
                 <td>
                     <select name="member_menu_action[]" style="min-width: 260px;">
                         <?php foreach ($flosc_available_actions as $flosc_val => $flosc_desc): ?>
-                        <option value="<?php echo esc_attr($val); ?>" <?php selected($item['action'], $val); ?>>
-                            <?php echo esc_html($desc); ?>
+                        <option value="<?php echo esc_attr($flosc_val); ?>" <?php selected($flosc_item['action'], $flosc_val); ?>>
+                            <?php echo esc_html($flosc_desc); ?>
                         </option>
                         <?php endforeach; ?>
                     </select>
@@ -546,8 +546,8 @@ if (empty($flosc_member_menu)) {
     <tbody>
         <?php foreach ($flosc_available_actions as $flosc_key => $flosc_desc): ?>
         <tr>
-            <td><code><?php echo esc_html($key); ?></code></td>
-            <td><?php echo esc_html($desc); ?></td>
+            <td><code><?php echo esc_html($flosc_key); ?></code></td>
+            <td><?php echo esc_html($flosc_desc); ?></td>
         </tr>
         <?php endforeach; ?>
     </tbody>

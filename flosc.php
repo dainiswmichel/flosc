@@ -167,6 +167,34 @@ if (!function_exists('flosc_flow_kb_dir')) {
         return trailingslashit($dir);
     }
 }
+if (!function_exists('flosc_chat_archive_dir')) {
+    /**
+     * Get the uploads-rooted directory used for exported chat archives.
+     *
+     * Chat archives are stored separately from the live chat log table so the
+     * retention job can export rows before deletion without writing into the
+     * plugin folder. The path is under wp-content/uploads/flosc/chat-archives/.
+     *
+     * @return string Trailing-slashed archive directory, or '' if unavailable.
+     */
+    function flosc_chat_archive_dir() {
+        $uploads = wp_upload_dir();
+        if (!empty($uploads['error']) || empty($uploads['basedir'])) {
+            return '';
+        }
+
+        $dir = trailingslashit($uploads['basedir']) . 'flosc/chat-archives';
+        if (!file_exists($dir)) {
+            wp_mkdir_p($dir);
+        }
+        if (!is_dir($dir) || !wp_is_writable($dir)) {
+            return '';
+        }
+
+        flosc_protect_uploads_directory($dir);
+        return trailingslashit($dir);
+    }
+}
 
 /* =============================================================================
  * §5 — Token signing secret (dedicated; NOT the WordPress auth salt)
@@ -5893,6 +5921,22 @@ HTML;
         // body still prints in the admin footer. jQuery dep covers the existing jQuery use.
         wp_register_script('flosc-admin', false, ['jquery'], FLOSC_VERSION, true);
         wp_enqueue_script('flosc-admin');
+
+        // Dedicated AutoPrompts admin runtime (externalized from inline tab template JS).
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query var used only to choose admin assets.
+        $flosc_tab = isset($_GET['tab']) ? sanitize_key(wp_unslash($_GET['tab'])) : '';
+        if ($flosc_tab === 'autoprompts') {
+            $flosc_autoprompts_js_path = FLOSC_PLUGIN_DIR . 'assets/js/flosc-autoprompts-admin.js';
+            if (file_exists($flosc_autoprompts_js_path)) {
+                wp_enqueue_script(
+                    'flosc-autoprompts-admin',
+                    FLOSC_PLUGIN_URL . 'assets/js/flosc-autoprompts-admin.js',
+                    ['flosc-admin'],
+                    filemtime($flosc_autoprompts_js_path),
+                    true
+                );
+            }
+        }
         
         // Debug mode badge
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
@@ -13175,7 +13219,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
     
     Three tiers of log lifecycle:
       1. ACTIVE — recent logs, visible in Chat Logs tab, full detail
-      2. ARCHIVED — exported to CSV in wp-content/flosc-archives/, removed from DB
+            2. ARCHIVED — exported to CSV in wp-content/uploads/flosc/chat-archives/, removed from DB
       3. EXPUNGED — deleted permanently (only unrated/unprotected logs)
     
     Protected logs (is_protected = 1) are NEVER auto-expunged.
@@ -13241,9 +13285,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             
             if (empty($logs)) return 0;
             
-            // Write CSV to flosc-archives directory
-            $archive_dir = WP_CONTENT_DIR . '/flosc-archives/';
-            if (!file_exists($archive_dir)) wp_mkdir_p($archive_dir);
+            // Write CSV to the uploads-rooted chat-archives directory.
+            $archive_dir = flosc_chat_archive_dir();
+            if ('' === $archive_dir) {
+                return 0;
+            }
+                2. ARCHIVED — exported to CSV in wp-content/uploads/flosc/chat-archives/, removed from DB
             
             // Michel Date Stamp format: YYYY-MMm-DDd
             $datestamp = gmdate('Y') . '-' . gmdate('m') . 'm-' . gmdate('d') . 'd';
@@ -14323,9 +14370,48 @@ function flosc_import_ivr_to_database($preview_only = false, $custom_ivr_file = 
         $compare_fields = ['title', 'name', 'type', 'style', 'panel', 'icon',
             'user_input', 'keywords', 'action', 'conditions', 'phase',
             'offer_id', 'price', 'discount_price', 'timer', 'display_format', 'content'];
+
+        // Normalize messages to a compare shape so sparse DB rows and parser-defaulted
+        // file rows can be compared semantically instead of by raw array structure.
+        $normalize_for_compare = static function ($msg) {
+            if (!is_array($msg)) {
+                $msg = [];
+            }
+
+            $normalized = [
+                'name'           => (string) ($msg['name'] ?? ''),
+                'type'           => (string) ($msg['type'] ?? 'auto'),
+                'style'          => (string) ($msg['style'] ?? 'pill'),
+                'panel'          => (string) ($msg['panel'] ?? ''),
+                'icon'           => (string) ($msg['icon'] ?? ''),
+                'user_input'     => (string) ($msg['user_input'] ?? ''),
+                'keywords'       => (string) ($msg['keywords'] ?? ''),
+                'action'         => (string) ($msg['action'] ?? ''),
+                'conditions'     => (string) ($msg['conditions'] ?? 'always'),
+                'phase'          => (string) ($msg['phase'] ?? 'freeline'),
+                'offer_id'       => (string) ($msg['offer_id'] ?? ''),
+                'price'          => (string) ($msg['price'] ?? ''),
+                'discount_price' => (string) ($msg['discount_price'] ?? ''),
+                'timer'          => (string) (isset($msg['timer']) ? intval($msg['timer']) : ''),
+                'display_format' => (string) ($msg['display_format'] ?? ''),
+                'content'        => (string) ($msg['content'] ?? ''),
+            ];
+
+            $normalized['title'] = (string) ($msg['title'] ?? $normalized['name']);
+
+            if (strtolower(trim($normalized['type'])) === 'offer' && $normalized['display_format'] === '') {
+                $normalized['display_format'] = 'card';
+            }
+
+            // Avoid CRLF/LF-only differences being reported as content drift.
+            $normalized['content'] = trim((string) preg_replace('/\r\n?|\n/', "\n", $normalized['content']));
+
+            return $normalized;
+        };
+
         foreach ($to_update as $msg_id) {
-            $db_msg  = $current_messages[$msg_id] ?? [];
-            $file_msg = $incoming_messages[$msg_id] ?? [];
+            $db_msg  = $normalize_for_compare($current_messages[$msg_id] ?? []);
+            $file_msg = $normalize_for_compare($incoming_messages[$msg_id] ?? []);
             $diffs = [];
             foreach ($compare_fields as $field) {
                 $db_val   = (string) ($db_msg[$field] ?? '');

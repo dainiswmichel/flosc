@@ -998,6 +998,312 @@
 }
 .flosc-admin .card { margin-top: 20px; }
 
+.flosc-ivr-selector {
+    background: #2f363d;
+    border: 1px solid #3c434a;
+    padding: 15px 20px;
+    border-radius: 4px 4px 0 0;
+    margin-bottom: 20px;
+}
+
+.flosc-ivr-context-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+}
+
+.flosc-ivr-context-label,
+.flosc-ivr-working-row,
+.flosc-ivr-meta-row {
+    color: #9ca3af;
+    font-size: 13px;
+}
+
+.flosc-ivr-chip {
+    display: inline-block;
+    padding: 3px 11px;
+    border-radius: 12px;
+    font-size: 12px;
+    background: #3c434a;
+    color: #c3c4c7;
+    font-weight: 400;
+}
+
+.flosc-ivr-chip.is-current {
+    background: #2271b1;
+    color: #fff;
+    font-weight: 700;
+}
+
+.flosc-ivr-working-row {
+    margin-bottom: 12px;
+}
+
+.flosc-ivr-working-chip {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 3px 12px;
+    border-radius: 12px;
+    background: #2271b1;
+    color: #fff;
+    font-weight: 700;
+}
+
+.flosc-ivr-controls-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.flosc-ivr-select-label {
+    color: #f0f0f1;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.flosc-ivr-select-control {
+    padding: 8px 12px;
+    border-radius: 2px;
+    border: 1px solid #50575e;
+    min-width: 250px;
+    font-size: 14px;
+}
+
+.flosc-default-flow-form {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+}
+
+.flosc-ivr-meta-row {
+    margin-top: 8px;
+}
+
+.flosc-ivr-default-note {
+    margin-left: 6px;
+    color: #8ec5ff;
+    font-weight: 600;
+}
+
+.flosc-ivr-permalink-row {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #50575e;
+}
+
+/* ========================================
+   AUTOPROMPTS DEMO SETS
+   ======================================== */
+
+.flosc-demo-sets-section {
+    margin-top: 28px;
+}
+
+.flosc-demo-sets-heading {
+    margin: 0;
+    padding: 10px 0;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.flosc-demo-sets-body {
+    margin-top: 10px;
+    padding: 16px;
+    background: #f9f9f9;
+    border-radius: 6px;
+}
+
+.flosc-demo-sets-desc {
+    margin-bottom: 16px;
+}
+
+.flosc-demo-set-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.flosc-demo-set-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-left: 4px solid #c3c4c7;
+    border-radius: 5px;
+    padding: 14px 16px;
+}
+
+.flosc-demo-set-card--state-guest {
+    border-color: #f59e0b;
+    border-left-color: #f59e0b;
+}
+
+.flosc-demo-set-card--state-member {
+    border-color: #86efac;
+    border-left-color: #86efac;
+}
+
+.flosc-demo-set-card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.flosc-demo-set-meta {
+    flex: 1;
+}
+
+.flosc-demo-set-title {
+    font-size: 13px;
+}
+
+.flosc-demo-set-description {
+    display: block;
+    font-size: 12px;
+    color: #50575e;
+    margin-top: 3px;
+}
+
+.flosc-demo-set-preview {
+    margin-top: 10px;
+}
+
+.flosc-demo-set-preview > summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.flosc-demo-set-preview-body {
+    margin-top: 8px;
+}
+
+.flosc-ap-scroll-hint {
+    margin: 0 0 6px;
+    font-size: 12px;
+    color: #646970;
+}
+
+.flosc-ap-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #dcdcde;
+    border-radius: 6px;
+    background: #fff;
+}
+
+.flosc-ap-table {
+    min-width: 600px;
+    table-layout: fixed;
+    width: 100%;
+}
+
+.flosc-ap-table th,
+.flosc-ap-table td {
+    vertical-align: top;
+}
+
+.flosc-ap-table th {
+    padding: 9px 10px !important;
+}
+
+.flosc-ap-item-row td {
+    padding: 7px 8px !important;
+}
+
+.flosc-demo-items-table th,
+.flosc-demo-items-table td {
+    font-size: 12px;
+    vertical-align: top;
+}
+
+.flosc-demo-item-row.is-even td,
+.flosc-demo-item-expected-row.is-even td {
+    background: #fff;
+}
+
+.flosc-demo-item-row.is-odd td,
+.flosc-demo-item-expected-row.is-odd td {
+    background: #f6f7f7;
+}
+
+.flosc-demo-item-expected-row td {
+    border-top: 0;
+    padding: 8px 10px;
+    color: #5f646b;
+    font-style: italic;
+}
+
+.flosc-demo-item-expected-label,
+.flosc-ap-expected-label {
+    display: block;
+    margin: 0 0 6px 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    font-size: 13px;
+    font-style: italic;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0;
+    color: #2c3338;
+    background: transparent;
+}
+
+.flosc-demo-item-expected-text,
+.flosc-ap-expected-text {
+    display: block;
+    inline-size: 100%;
+    max-inline-size: none;
+    color: #3f464d;
+    font-size: 13px;
+    font-style: italic;
+    font-weight: 500;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+    line-height: 1.62;
+}
+
+.flosc-ap-item-row.flosc-ap-pair-even td,
+.flosc-ap-expected-row.flosc-ap-pair-even td {
+    background: #fff;
+}
+
+.flosc-ap-item-row.flosc-ap-pair-odd td,
+.flosc-ap-expected-row.flosc-ap-pair-odd td {
+    background: #f6f7f7;
+}
+
+.flosc-ap-item-row td {
+    border-bottom: 1px solid #eee;
+}
+
+.flosc-ap-expected-row td {
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 10px 8px 12px;
+    color: #5f646b;
+    font-style: italic;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+    white-space: normal !important;
+}
+
+.flosc-ap-expected-row td,
+.flosc-demo-item-expected-row td {
+    line-height: 1.45;
+}
+
+.flosc-demo-sets-tip {
+    background: #e7f3ff;
+    border-left: 4px solid #2196f3;
+    padding: 12px 15px;
+    margin-top: 16px;
+    font-size: 12px;
+}
+
 /* ========================================
    IVR MESSAGES ADMIN
    Moved from admin/ivr-messages.php v1.7.8
@@ -1590,3 +1896,231 @@
 .flosc-msg-ai .flosc-msg-body { background: #eef6fb; }
 .flosc-msg-user { text-align: right; }
 .flosc-msg-user .flosc-msg-body { background: #f6f7f7; }
+
+/* ========================================
+   AUTOPROMPTS TAB
+   v1.1.1 - Extracted from inline styles (autoprompts.php)
+   ======================================== */
+
+.flosc-hidden {
+    display: none !important;
+}
+
+.flosc-autoprompt-section {
+    --flosc-ap-bg: #f9f9f9;
+    --flosc-ap-border: #c3c4c7;
+    background: var(--flosc-ap-bg);
+    border: 1px solid var(--flosc-ap-border);
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.flosc-autoprompt-section--visitor {
+    --flosc-ap-bg: #f9f9f9;
+    --flosc-ap-border: #c3c4c7;
+}
+
+.flosc-autoprompt-section--guest {
+    --flosc-ap-bg: #f0fdf4;
+    --flosc-ap-border: #86efac;
+}
+
+.flosc-autoprompt-section--member {
+    --flosc-ap-bg: #eff6ff;
+    --flosc-ap-border: #93c5fd;
+}
+
+.flosc-autoprompt-section__title {
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.flosc-autoprompt-section__panel-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 13px;
+    font-weight: 400;
+    cursor: pointer;
+    margin: 0;
+}
+
+.flosc-autoprompt-section__docs {
+    margin-left: auto;
+    font-size: 12px;
+    text-decoration: none;
+    color: #2271b1;
+}
+
+.flosc-ap-desc-flush {
+    margin-top: 0;
+}
+
+.flosc-ap-field {
+    margin-bottom: 14px;
+    max-width: 600px;
+}
+
+.flosc-ap-field__label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+    font-size: 13px;
+}
+
+.flosc-ap-hint {
+    font-weight: 400;
+    color: #787c82;
+}
+
+.flosc-ap-preview {
+    background: #fff;
+    border: 1px solid var(--flosc-ap-border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    max-width: 600px;
+}
+
+.flosc-ap-preview__eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    color: #787c82;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.flosc-ap-preview__header {
+    font-size: 11px;
+    color: #50575e;
+    margin-bottom: 6px;
+}
+
+.flosc-ap-preview__pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 28px;
+}
+
+.flosc-preview-pill-chip {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 16px;
+    padding: 4px 12px;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.flosc-ap-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+}
+
+.flosc-ap-table__head {
+    background: #f0f0f1;
+}
+
+.flosc-ap-col-icon {
+    width: 62px;
+}
+
+.flosc-ap-col-label {
+    width: 28%;
+}
+
+.flosc-ap-col-input {
+    width: 72%;
+}
+
+.flosc-ap-col-remove {
+    width: 46px;
+}
+
+.flosc-ap-cell {
+    padding: 7px 8px;
+}
+
+.flosc-ap-cell--w150 {
+    max-width: 150px;
+}
+
+.flosc-trigger-value-cell {
+    padding: 7px 8px;
+    max-width: 200px;
+    overflow-x: auto;
+}
+
+.flosc-ap-microlabel {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    color: #646970;
+    margin: 0 0 4px;
+}
+
+.flosc-ap-icon-input {
+    width: 44px;
+    font-size: 18px;
+    text-align: center;
+    border: 1px solid #c3c4c7;
+    border-radius: 3px;
+}
+
+.flosc-ap-input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.flosc-ap-input--w400 {
+    max-width: 400px;
+}
+
+.flosc-ap-select {
+    width: 100%;
+}
+
+.flosc-ap-select--w150 {
+    max-width: 150px;
+}
+
+.flosc-ap-select--w200 {
+    max-width: 200px;
+}
+
+.flosc-tv-hint {
+    color: #787c82;
+    font-size: 12px;
+    padding: 4px;
+}
+
+.flosc-ap-expected-cell {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    white-space: normal;
+    overflow: visible;
+}
+
+.flosc-ap-expected-text {
+    margin-top: 4px;
+}
+
+.flosc-ap-add-row {
+    margin-top: 10px;
+}
+
+.flosc-ap-legend {
+    padding: 16px 0;
+}
+
+.flosc-ap-legend__intro {
+    margin-bottom: 12px;
+}

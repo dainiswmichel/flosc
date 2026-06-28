@@ -169,10 +169,48 @@ function flosc_run_ivr_diagnostics() {
             $compare_fields = ['title', 'name', 'type', 'style', 'panel', 'icon',
                 'user_input', 'keywords', 'action', 'conditions', 'phase',
                 'offer_id', 'price', 'discount_price', 'timer', 'display_format', 'content'];
+
+            // Compare with normalized defaults so sparse DB rows and parser-defaulted
+            // file rows are treated as equivalent when they are semantically identical.
+            $normalize_for_compare = static function ($msg) {
+                if (!is_array($msg)) {
+                    $msg = [];
+                }
+
+                $normalized = [
+                    'name'           => (string) ($msg['name'] ?? ''),
+                    'type'           => (string) ($msg['type'] ?? 'auto'),
+                    'style'          => (string) ($msg['style'] ?? 'pill'),
+                    'panel'          => (string) ($msg['panel'] ?? ''),
+                    'icon'           => (string) ($msg['icon'] ?? ''),
+                    'user_input'     => (string) ($msg['user_input'] ?? ''),
+                    'keywords'       => (string) ($msg['keywords'] ?? ''),
+                    'action'         => (string) ($msg['action'] ?? ''),
+                    'conditions'     => (string) ($msg['conditions'] ?? 'always'),
+                    'phase'          => (string) ($msg['phase'] ?? 'freeline'),
+                    'offer_id'       => (string) ($msg['offer_id'] ?? ''),
+                    'price'          => (string) ($msg['price'] ?? ''),
+                    'discount_price' => (string) ($msg['discount_price'] ?? ''),
+                    'timer'          => (string) (isset($msg['timer']) ? intval($msg['timer']) : ''),
+                    'display_format' => (string) ($msg['display_format'] ?? ''),
+                    'content'        => (string) ($msg['content'] ?? ''),
+                ];
+
+                $normalized['title'] = (string) ($msg['title'] ?? $normalized['name']);
+
+                if (strtolower(trim($normalized['type'])) === 'offer' && $normalized['display_format'] === '') {
+                    $normalized['display_format'] = 'card';
+                }
+
+                $normalized['content'] = trim((string) preg_replace('/\r\n?|\n/', "\n", $normalized['content']));
+
+                return $normalized;
+            };
+
             $mismatches = [];
             foreach ($file_ids as $id) {
-                $file_msg = $config['messages'][$id] ?? [];
-                $db_msg   = $db_messages[$id] ?? [];
+                $file_msg = $normalize_for_compare($config['messages'][$id] ?? []);
+                $db_msg   = $normalize_for_compare($db_messages[$id] ?? []);
                 foreach ($compare_fields as $field) {
                     if ((string) ($file_msg[$field] ?? '') !== (string) ($db_msg[$field] ?? '')) {
                         $mismatches[] = $id;
@@ -965,19 +1003,19 @@ flosc_tab_header('💬', 'IVR Management');
         ];
         
         foreach ($flosc_ivr_diagnostics as $flosc_check_id => $flosc_check): 
-            $flosc_colors = $flosc_status_colors[$check['status']];
+            $flosc_colors = $flosc_status_colors[$flosc_check['status']];
         ?>
         <div style="background: <?php echo esc_attr( $flosc_colors['bg'] ); ?>; border-left: 4px solid <?php echo esc_attr( $flosc_colors['border'] ); ?>; padding: 12px; border-radius: 4px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                <strong><?php echo esc_html( $flosc_check_labels[$check_id] ); ?></strong>
+                <strong><?php echo esc_html( $flosc_check_labels[$flosc_check_id] ); ?></strong>
                 <span style="font-size: 18px;"><?php echo esc_html( $flosc_colors['icon'] ); ?></span>
             </div>
             <div style="font-size: 14px; color: #333; font-weight: 500;">
-                <?php echo esc_html($check['message']); ?>
+                <?php echo esc_html($flosc_check['message']); ?>
             </div>
-            <?php if (!empty($check['details'])): ?>
+            <?php if (!empty($flosc_check['details'])): ?>
             <div style="font-size: 11px; color: #667; margin-top: 5px; overflow-wrap: anywhere; word-break: break-word;">
-                <?php foreach ($check['details'] as $flosc_detail): ?>
+                <?php foreach ($flosc_check['details'] as $flosc_detail): ?>
                     <?php if (!empty($flosc_detail)): ?>
                     <div style="margin: 2px 0;"><?php echo esc_html($flosc_detail); ?></div>
                     <?php endif; ?>
