@@ -19,6 +19,7 @@ readme.txt
 uninstall.php
 .gitignore
 .distignore
+build-dist-zip.sh
 
 .github/copilot-instructions.md
 .github/push-allowlist.txt
