@@ -23,8 +23,8 @@ $flosc_login_docs_url = add_query_arg([
 ], admin_url('admin.php')) . '#tab-login';
 ?>
 
-<div style="margin:-8px 0 14px; text-align:right;">
-    <a href="<?php echo esc_url($flosc_login_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
+<div class="flosc-login-docs-wrap">
+    <a href="<?php echo esc_url($flosc_login_docs_url); ?>" class="flosc-login-docs-link">Docs</a>
 </div>
 
 <?php
@@ -329,20 +329,20 @@ $flosc_signup_action = $flosc_flow_settings['header_signup_action'] ?? 'open_log
     </tr>
 </table>
 
-<hr style="margin:32px 0;">
+<hr class="flosc-login-divider">
 <h2>Send <?php echo esc_html($flosc_flow_settings['guest_link_name'] ?? 'Complimentary LeSAEp Learners Guest Access Link'); ?></h2>
 <p>Send a working guest access link directly to any email address — same flow as if the user entered their own email in the chat.</p>
-<div style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-top:12px;">
+<div class="flosc-login-send-row">
     <div>
-        <label for="flosc-send-guest-link-email" style="display:block;font-weight:600;margin-bottom:4px;">Email address</label>
+        <label for="flosc-send-guest-link-email" class="flosc-login-email-label">Email address</label>
         <input type="email" id="flosc-send-guest-link-email" placeholder="recipient@example.com"
-               style="width:320px;padding:8px 10px;border:1px solid #8c8f94;border-radius:4px;font-size:14px;">
+               class="flosc-login-email-input">
     </div>
     <button type="button" id="flosc-send-guest-link-btn" class="button button-primary">
         Send <?php echo esc_html($flosc_flow_settings['guest_link_name'] ?? 'Complimentary LeSAEp Learners Guest Access Link'); ?>
     </button>
 </div>
-<p id="flosc-send-guest-link-result" style="margin-top:10px;font-size:14px;display:none;"></p>
+<p id="flosc-send-guest-link-result" class="flosc-login-send-result"></p>
 
 <?php ob_start(); ?>
 (function() {
@@ -390,24 +390,24 @@ $flosc_signup_action = $flosc_flow_settings['header_signup_action'] ?? 'open_log
 })();
 <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
 
-<hr style="margin:32px 0;">
+<hr class="flosc-login-divider">
 <h2>Guest Link Activity Log</h2>
 <p>Emails that have requested guest access links, sorted by request count. Counts reset after 90 days of inactivity.</p>
 <?php
 $flosc_guest_log = get_option('flosc_guest_link_log', []);
 if (empty($flosc_guest_log)) {
-    echo '<p style="color:#646970;">No guest link requests recorded yet.</p>';
+    echo '<p class="flosc-login-empty-log">No guest link requests recorded yet.</p>';
 } else {
     // Sort by count descending
     uasort($flosc_guest_log, fn($a, $b) => $b['count'] <=> $a['count']);
-    echo '<table class="widefat striped" style="max-width:800px;">';
+    echo '<table class="widefat striped flosc-login-activity-table">';
     echo '<thead><tr><th>Email</th><th>Links Sent</th><th>First Request</th><th>Last Request</th></tr></thead>';
     echo '<tbody>';
     foreach ($flosc_guest_log as $flosc_entry) {
         $flosc_count      = (int) ($flosc_entry['count'] ?? 0);
         $flosc_first_sent = isset($flosc_entry['first_sent']) ? wp_date('Y-m-d H:i', $flosc_entry['first_sent']) : '—';
         $flosc_last_sent  = isset($flosc_entry['last_sent'])  ? wp_date('Y-m-d H:i', $flosc_entry['last_sent'])  : '—';
-        $flosc_color      = $flosc_count >= 6 ? 'color:#d63638;font-weight:700;' : '';
+        $flosc_count_class = $flosc_count >= 6 ? 'flosc-login-count-cell flosc-login-count-cell--warn' : 'flosc-login-count-cell';
         // Link to WP user profile if user exists
         $flosc_wp_user = get_user_by('email', $flosc_entry['email']);
         $flosc_email_display = $flosc_wp_user
@@ -415,7 +415,7 @@ if (empty($flosc_guest_log)) {
             : esc_html($flosc_entry['email']);
         echo '<tr>';
         echo '<td>' . wp_kses_post( $flosc_email_display ) . '</td>';
-        echo '<td style="' . esc_attr($flosc_color) . '">' . esc_html($flosc_count) . ($flosc_count >= 6 ? ' ⚠️' : '') . '</td>';
+        echo '<td class="' . esc_attr($flosc_count_class) . '">' . esc_html($flosc_count) . ($flosc_count >= 6 ? ' ⚠️' : '') . '</td>';
         echo '<td>' . esc_html($flosc_first_sent) . '</td>';
         echo '<td>' . esc_html($flosc_last_sent) . '</td>';
         echo '</tr>';

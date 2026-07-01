@@ -2,6 +2,12 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+
+// v9.0.8: Chat styling data attributes (font, theme, preset, scale)
+$flosc_chat_font   = get_option('flosc_chat_style_font', 'system');
+$flosc_chat_theme  = get_option('flosc_chat_style_theme', 'default');
+$flosc_chat_preset = get_option('flosc_chat_style_preset', 'flosc');
+$flosc_chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
 ?>
 <!DOCTYPE html>
 <?php /* ====  Source documentation — kept in the file for maintainers, NOT emitted to the browser. ====
@@ -23,9 +29,11 @@ ARCHITECTURE OVERVIEW:
 │  ├── Data attributes for JavaScript hooks (id="flosc_*")                    │
 │  └── NO inline styles except CSS custom properties (variables)              │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  flosc-layout.css = STRUCTURE (flexbox, grid, positioning, dimensions)      │
-│  flosc-theme.css  = COLORS (reads CSS variables, applies to elements)       │
-│  chat-style-*.css = PRESETS (defines CSS variable values)                   │
+│  flosc-chat.css     = CHAT INTERFACE (messages, prompts, chat layout)       │
+│  flosc-offers.css   = OFFER PRESENTATION (in-chat and optional frontend)    │
+│  flosc-frontend.css = NON-CHAT SERVED CONTENT (legal, landing, content)     │
+│  flosc-access.css   = ACCESS/UNLOCK GATE UI                                  │
+│  chat-style-*.css   = CHAT PRESET VARIABLE PACKS                             │
 └─────────────────────────────────────────────────────────────────────────────┘
 
 ⚠️  HARD-LEARNED LESSON (2026-01m-25d):
@@ -78,12 +86,13 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
     <link rel="apple-touch-icon" sizes="180x180" href="<?php echo esc_url($flosc_favicon_180); ?>">
     
     <!-- Dynamic Primary Color -->
-    <?php // §12: dynamic CSS vars attached to the enqueued flosc-theme handle (prints in <head> via wp_head) instead of an inline <style> tag. ?>
+    <?php // §12: dynamic CSS vars attached to the enqueued flosc-chat handle (prints in <head> via wp_head) instead of an inline <style> tag. ?>
     <?php ob_start(); ?>
         :root {
             --flosc-primary: <?php echo esc_attr($identity['primary_color']); ?>;
             --flosc-primary-hover: <?php echo esc_attr(flosc_adjust_brightness($identity['primary_color'], -20)); ?>;
             --flosc-primary-light: <?php echo esc_attr($identity['primary_color']); ?>15;
+            --flosc-scale: <?php echo esc_attr($flosc_chat_scale); ?>%;
             /* v1.8.3: Avatar shape — 8px = rounded rectangle, 50% = circle. Configurable by floscAdmin. */
             <?php
             // Read avatar_radius from flow settings (available to all users, not just admins)
@@ -99,7 +108,7 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
             ?>
             --flosc-avatar-radius: <?php echo esc_attr($flosc_avatar_radius); ?>;
         }
-    <?php wp_add_inline_style('flosc-theme', ob_get_clean()); ?>
+    <?php wp_add_inline_style('flosc-chat', ob_get_clean()); ?>
 
     <!-- Markdown parser fallback for IVR rendering when a parser is not already loaded. -->
     <?php // §12: attached to flosc-app as a 'before' inline script so it still defines window.marked prior to flosc-app.js. ?>
@@ -116,19 +125,12 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
 <?php
 // Determine if funnel is completed (for conditional rendering)
 $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id(), '_flosc_funnel_completed', true);
-
-// v9.0.8: Chat styling data attributes (font, theme, preset, scale)
-$flosc_chat_font   = get_option('flosc_chat_style_font', 'system');
-$flosc_chat_theme  = get_option('flosc_chat_style_theme', 'default');
-$flosc_chat_preset = get_option('flosc_chat_style_preset', 'flosc');
-$flosc_chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // percent
 ?>
 <body class="flosc-app<?php echo is_admin_bar_showing() ? ' admin-bar' : ''; ?>"
       data-user-state="<?php echo esc_attr($user_state); ?>"
       data-flosc-font="<?php echo esc_attr($flosc_chat_font); ?>"
     data-flosc-theme="<?php echo esc_attr($flosc_chat_theme); ?>"
-    data-flosc-style-preset="<?php echo esc_attr($flosc_chat_preset); ?>"
-    style="--flosc-scale: <?php echo esc_attr($flosc_chat_scale); ?>%;">
+        data-flosc-style-preset="<?php echo esc_attr($flosc_chat_preset); ?>">
 
     <!-- Sidebar -->
     <!--
@@ -143,12 +145,12 @@ $flosc_chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // perce
        - stroke-width="2" (consistent line weight)
        - Explicit width/height attributes
     
-    2. BUTTON CSS (in flosc-layout.css + flosc-theme.css):
+    2. BUTTON CSS (in active frontend/chat stylesheets):
        - Parent button MUST have explicit color (not just inherit)
        - SVG must have display: block (prevents inline spacing bugs)
        - Hover states must change color (which SVG inherits)
     
-    3. ANIMATIONS (in flosc-layout.css):
+    3. ANIMATIONS (in active frontend/chat stylesheets):
        - .spinning class triggers rotation animation
        - @keyframes spin defined once, used via class toggle
        - JavaScript adds/removes .spinning class
@@ -335,7 +337,7 @@ $flosc_chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // perce
                     </svg>
                 </button>
                 <div class="logo-mobile">
-                    <img src="<?php echo esc_url(flosc_get_chatlogo_url()); ?>" alt="" style="width:36px;height:36px;object-fit:contain;">
+                    <img src="<?php echo esc_url(flosc_get_chatlogo_url()); ?>" alt="" class="logo-mobile__img">
                     <?php echo esc_html($identity['name'] ?: 'FLOSC'); ?>
                 </div>
             </div>
@@ -347,8 +349,8 @@ $flosc_chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // perce
                     $flosc_login_action = flosc_get_setting('header_login_action', 'open_login_modal');
                     $flosc_signup_action = flosc_get_setting('header_signup_action', 'open_login_modal');
                     ?>
-                    <a href="#" onclick="window.floscAppInstance.performIVRAction('<?php echo esc_js($flosc_login_action); ?>'); return false;" class="btn-secondary"><?php echo esc_html(flosc_get_setting('header_login_text', 'Log in')); ?></a>
-                    <a href="#" onclick="window.floscAppInstance.performIVRAction('<?php echo esc_js($flosc_signup_action); ?>'); return false;" class="btn-primary"><?php echo esc_html(flosc_get_setting('header_signup_text', 'Sign up')); ?></a>
+                    <a href="#" class="btn-secondary" data-flosc-action="perform-ivr-action" data-ivr-action="<?php echo esc_attr($flosc_login_action); ?>"><?php echo esc_html(flosc_get_setting('header_login_text', 'Log in')); ?></a>
+                    <a href="#" class="btn-primary" data-flosc-action="perform-ivr-action" data-ivr-action="<?php echo esc_attr($flosc_signup_action); ?>"><?php echo esc_html(flosc_get_setting('header_signup_text', 'Sign up')); ?></a>
                 </div>
 
                 <!-- Logged in: share button -->
@@ -393,7 +395,7 @@ $flosc_chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // perce
             <div class="messages" id="flosc_output_chat_responses">
                 <?php if (is_user_logged_in()): ?>
                 <!-- Greeting for logged in users only -->
-                <div class="greeting" id="greeting" style="display: none;">
+                <div class="greeting flosc-hidden" id="greeting">
                     <h2 class="greeting-title" id="greetingTitle"></h2>
                 </div>
                 <?php endif; ?>
@@ -486,7 +488,7 @@ $flosc_chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // perce
                 </div>
                 
                 <!-- Quiz Audio Panel (hidden by default) -->
-                <div class="quiz-panel quiz-audio-panel" id="floscQuizAudioPanel" style="display: none;">
+                <div class="quiz-panel quiz-audio-panel flosc-hidden" id="floscQuizAudioPanel">
                     <div class="quiz-waveform" id="floscQuizWaveformContainer">
                         <canvas id="waveformCanvas" width="280" height="60"></canvas>
                     </div>
@@ -500,7 +502,7 @@ $flosc_chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // perce
                             </svg>
                             <span>Start Recording</span>
                         </button>
-                        <button class="quiz-stop-btn" id="floscQuizStopButton" style="display: none;">
+                        <button class="quiz-stop-btn flosc-hidden" id="floscQuizStopButton">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                                 <rect x="6" y="6" width="12" height="12" rx="2"></rect>
                             </svg>
@@ -510,21 +512,21 @@ $flosc_chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // perce
                     
                     <div class="quiz-recording-status" id="floscQuizRecordingStatus"></div>
                     
-                    <div class="quiz-playback" id="floscQuizRecordingPlayback" style="display: none;">
-                        <audio id="floscQuizRecordingAudio" controls style="width: 100%;"></audio>
+                    <div class="quiz-playback flosc-hidden" id="floscQuizRecordingPlayback">
+                        <audio id="floscQuizRecordingAudio" class="quiz-playback-audio" controls></audio>
                         <div class="quiz-playback-actions">
                             <button class="btn-secondary" id="floscQuizRerecordButton">Re-record</button>
                             <button class="quiz-submit-btn" id="floscQuizSubmitRecordingButton">Submit →</button>
                         </div>
                     </div>
                     
-                    <div class="quiz-error" id="floscQuizRecordingError" style="display: none;">
+                    <div class="quiz-error flosc-hidden" id="floscQuizRecordingError">
                         <p>Microphone access denied. Please enable it in your browser settings.</p>
                     </div>
                 </div>
                 
                 <!-- Quiz Result Panel (hidden by default) -->
-                <div class="quiz-result-panel" id="floscQuizResultPanel" style="display: none;">
+                <div class="quiz-result-panel flosc-hidden" id="floscQuizResultPanel">
                     <div class="quiz-score-display" id="floscQuizScoreDisplay">0%</div>
                     <p class="quiz-result-message" id="floscQuizResultMessage">Calculating your score...</p>
                     <button type="button" id="floscQuizContinueButton" class="quiz-continue-btn">
@@ -579,7 +581,7 @@ $flosc_chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // perce
                 <div class="flosc-payment-summary">
                     <div class="flosc-payment-product">
                         <?php if (!empty($identity['chatlogo_url'])): ?>
-                            <img src="<?php echo esc_url($identity['chatlogo_url']); ?>" alt="" class="flosc-product-icon" style="width:40px;height:40px;object-fit:contain;">
+                            <img src="<?php echo esc_url($identity['chatlogo_url']); ?>" alt="" class="flosc-product-icon flosc-product-icon--image">
                         <?php endif; ?>
                         <div class="flosc-product-info">
                             <div class="flosc-product-name">Full Access</div>
@@ -590,10 +592,10 @@ $flosc_chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // perce
                 </div>
                 
                 <!-- v1.6.9: PayPal Button Container (rendered by PayPal JS SDK) -->
-                <div id="paypal-button-container" class="flosc-paypal-buttons" style="display:none; margin-bottom: 16px;"></div>
+                <div id="paypal-button-container" class="flosc-paypal-buttons flosc-paypal-buttons--spaced flosc-hidden"></div>
                 
                 <!-- Separator between PayPal and Card (shown when both are available) -->
-                <div id="payment-separator" class="flosc-payment-separator" style="display:none;">
+                <div id="payment-separator" class="flosc-payment-separator flosc-hidden">
                     <span>or pay with card</span>
                 </div>
                 
@@ -617,8 +619,8 @@ $flosc_chat_scale  = intval(get_option('flosc_chat_style_scale', 112)); // perce
                     </svg>
                     <span>Secure payment</span>
                 </div>
-                <div id="flosc-access-code-trigger" style="text-align:center;margin-top:14px;">
-                    <a href="#" style="color:#aaa;font-size:12px;text-decoration:none;" onclick="event.preventDefault();window.floscAppInstance && window.floscAppInstance._showAccessCodeInput('payment')">Access Code</a>
+                <div id="flosc-access-code-trigger" class="flosc-access-code-trigger">
+                    <a href="#" class="flosc-access-code-link" data-flosc-action="open-access-code-payment">Access Code</a>
                 </div>
             </div>
         </div>

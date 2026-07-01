@@ -127,8 +127,8 @@ if (empty($flosc_member_menu)) {
 }
 ?>
 
-<div style="margin:0 0 14px; text-align:right;">
-    <a href="<?php echo esc_url($flosc_ui_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
+<div class="flosc-ui-docs-wrap">
+    <a href="<?php echo esc_url($flosc_ui_docs_url); ?>" class="flosc-ui-docs-link">Docs</a>
 </div>
 
 <!-- ═══════════════════════════════════════════════════════════════════
@@ -137,7 +137,7 @@ if (empty($flosc_member_menu)) {
 <h2 class="title">User Profile Bar</h2>
 <p class="description">The profile bar appears at the bottom of the sidebar. Its avatar, name, badge, and dropdown menu change based on user state.</p>
 
-<h3 style="border-bottom: 1px solid #c3c4c7; padding-bottom: 8px;">Visitor State</h3>
+<h3 class="flosc-ui-section-title">Visitor State</h3>
 <p class="description">Shown to users who are not logged in.</p>
 <table class="form-table">
     <!-- v1.8.3: Avatar Shape (applies to all states) -->
@@ -159,7 +159,7 @@ if (empty($flosc_member_menu)) {
         <td>
             <input type="text" name="profile_bar_visitor_icon"
                    value="<?php echo esc_attr($flosc_profile_bar['visitor']['icon'] ?? '👋'); ?>"
-                   class="small-text" style="font-size: 24px; width: 60px; text-align: center;">
+                   class="small-text flosc-ui-visitor-icon-input">
             <p class="description">Emoji displayed as the visitor avatar.</p>
         </td>
     </tr>
@@ -185,20 +185,20 @@ if (empty($flosc_member_menu)) {
 <!-- ═══════════════════════════════════════════════════════════════════
      SECTION: Visitor Dropdown Menu — Dynamic Repeater
      ═══════════════════════════════════════════════════════════════════ -->
-<h3 style="border-bottom: 1px solid #c3c4c7; padding-bottom: 8px;">Visitor Dropdown Menu</h3>
+<h3 class="flosc-ui-section-title">Visitor Dropdown Menu</h3>
 <p class="description">
     Configure the menu items visitors see when they click the profile bar.
     All actions happen in-chat — no page navigation.
 </p>
 
 <div id="flosc-visitor-menu-repeater">
-    <table class="widefat" style="max-width: 700px;">
+    <table class="widefat flosc-ui-menu-table">
         <thead>
             <tr>
-                <th style="width: 30px;">#</th>
+                <th class="flosc-ui-col-index">#</th>
                 <th>Label</th>
                 <th>Action</th>
-                <th style="width: 60px;"></th>
+                <th class="flosc-ui-col-actions"></th>
             </tr>
         </thead>
         <tbody id="flosc-menu-items-body">
@@ -211,7 +211,7 @@ if (empty($flosc_member_menu)) {
                            class="regular-text" placeholder="Menu label" required>
                 </td>
                 <td>
-                    <select name="visitor_menu_action[]" style="min-width: 260px;">
+                    <select name="visitor_menu_action[]" class="flosc-ui-action-select">
                         <?php foreach ($flosc_available_actions as $flosc_val => $flosc_desc): ?>
                         <option value="<?php echo esc_attr($flosc_val); ?>" <?php selected($flosc_item['action'], $flosc_val); ?>>
                             <?php echo esc_html($flosc_desc); ?>
@@ -227,7 +227,7 @@ if (empty($flosc_member_menu)) {
         </tbody>
     </table>
 
-    <p style="margin-top: 10px;">
+    <p class="flosc-ui-menu-actions-wrap">
         <button type="button" class="button" id="flosc-add-menu-item">+ Add Menu Item</button>
     </p>
 </div>
@@ -262,7 +262,7 @@ if (empty($flosc_member_menu)) {
         tr.innerHTML = `
             <td class="flosc-menu-row-number"></td>
             <td><input type="text" name="visitor_menu_label[]" class="regular-text" placeholder="Menu label" required></td>
-            <td><select name="visitor_menu_action[]" style="min-width: 260px;">${buildActionOptions('open_quiz')}</select></td>
+            <td><select name="visitor_menu_action[]" class="flosc-ui-action-select">${buildActionOptions('open_quiz')}</select></td>
             <td><button type="button" class="button flosc-remove-menu-item" title="Remove item">&times;</button></td>
         `;
         tbody.appendChild(tr);
@@ -283,7 +283,7 @@ if (empty($flosc_member_menu)) {
 <!-- ═══════════════════════════════════════════════════════════════════
      SECTION: Guest State
      ═══════════════════════════════════════════════════════════════════ -->
-<h3 style="border-bottom: 1px solid #c3c4c7; padding-bottom: 8px;">Guest State</h3>
+<h3 class="flosc-ui-section-title">Guest State</h3>
 <p class="description">Shown to logged-in users who have not purchased. Avatar and display name come from their WordPress account.</p>
 <table class="form-table">
     <tr>
@@ -309,19 +309,19 @@ if (empty($flosc_member_menu)) {
 <!-- ═══════════════════════════════════════════════════════════════════
      SECTION: Guest Dropdown Menu — Dynamic Repeater
      ═══════════════════════════════════════════════════════════════════ -->
-<h3 style="border-bottom: 1px solid #c3c4c7; padding-bottom: 8px;">Guest Dropdown Menu</h3>
+<h3 class="flosc-ui-section-title">Guest Dropdown Menu</h3>
 <p class="description">
     Menu items for logged-in users who have not purchased.
 </p>
 
 <div id="flosc-guest-menu-repeater">
-    <table class="widefat" style="max-width: 700px;">
+    <table class="widefat flosc-ui-menu-table">
         <thead>
             <tr>
-                <th style="width: 30px;">#</th>
+                <th class="flosc-ui-col-index">#</th>
                 <th>Label</th>
                 <th>Action</th>
-                <th style="width: 60px;"></th>
+                <th class="flosc-ui-col-actions"></th>
             </tr>
         </thead>
         <tbody id="flosc-guest-menu-items-body">
@@ -334,7 +334,7 @@ if (empty($flosc_member_menu)) {
                            class="regular-text" placeholder="Menu label" required>
                 </td>
                 <td>
-                    <select name="guest_menu_action[]" style="min-width: 260px;">
+                    <select name="guest_menu_action[]" class="flosc-ui-action-select">
                         <?php foreach ($flosc_available_actions as $flosc_val => $flosc_desc): ?>
                         <option value="<?php echo esc_attr($flosc_val); ?>" <?php selected($flosc_item['action'], $flosc_val); ?>>
                             <?php echo esc_html($flosc_desc); ?>
@@ -350,7 +350,7 @@ if (empty($flosc_member_menu)) {
         </tbody>
     </table>
 
-    <p style="margin-top: 10px;">
+    <p class="flosc-ui-menu-actions-wrap">
         <button type="button" class="button" id="flosc-guest-add-menu-item">+ Add Menu Item</button>
     </p>
 </div>
@@ -382,7 +382,7 @@ if (empty($flosc_member_menu)) {
         tr.innerHTML = `
             <td class="flosc-guest-menu-row-number"></td>
             <td><input type="text" name="guest_menu_label[]" class="regular-text" placeholder="Menu label" required></td>
-            <td><select name="guest_menu_action[]" style="min-width: 260px;">${buildActionOptions('open_quiz')}</select></td>
+            <td><select name="guest_menu_action[]" class="flosc-ui-action-select">${buildActionOptions('open_quiz')}</select></td>
             <td><button type="button" class="button flosc-guest-remove-menu-item" title="Remove item">&times;</button></td>
         `;
         tbody.appendChild(tr);
@@ -402,7 +402,7 @@ if (empty($flosc_member_menu)) {
 <!-- ═══════════════════════════════════════════════════════════════════
      SECTION: Member State
      ═══════════════════════════════════════════════════════════════════ -->
-<h3 style="border-bottom: 1px solid #c3c4c7; padding-bottom: 8px;">Member State</h3>
+<h3 class="flosc-ui-section-title">Member State</h3>
 <p class="description">Shown to logged-in users who have purchased. No upgrade button. Avatar and name from WordPress.</p>
 <table class="form-table">
     <tr>
@@ -419,19 +419,19 @@ if (empty($flosc_member_menu)) {
 <!-- ═══════════════════════════════════════════════════════════════════
      SECTION: Member Dropdown Menu — Dynamic Repeater
      ═══════════════════════════════════════════════════════════════════ -->
-<h3 style="border-bottom: 1px solid #c3c4c7; padding-bottom: 8px;">Member Dropdown Menu</h3>
+<h3 class="flosc-ui-section-title">Member Dropdown Menu</h3>
 <p class="description">
     Menu items for logged-in users who have purchased.
 </p>
 
 <div id="flosc-member-menu-repeater">
-    <table class="widefat" style="max-width: 700px;">
+    <table class="widefat flosc-ui-menu-table">
         <thead>
             <tr>
-                <th style="width: 30px;">#</th>
+                <th class="flosc-ui-col-index">#</th>
                 <th>Label</th>
                 <th>Action</th>
-                <th style="width: 60px;"></th>
+                <th class="flosc-ui-col-actions"></th>
             </tr>
         </thead>
         <tbody id="flosc-member-menu-items-body">
@@ -444,7 +444,7 @@ if (empty($flosc_member_menu)) {
                            class="regular-text" placeholder="Menu label" required>
                 </td>
                 <td>
-                    <select name="member_menu_action[]" style="min-width: 260px;">
+                    <select name="member_menu_action[]" class="flosc-ui-action-select">
                         <?php foreach ($flosc_available_actions as $flosc_val => $flosc_desc): ?>
                         <option value="<?php echo esc_attr($flosc_val); ?>" <?php selected($flosc_item['action'], $flosc_val); ?>>
                             <?php echo esc_html($flosc_desc); ?>
@@ -460,7 +460,7 @@ if (empty($flosc_member_menu)) {
         </tbody>
     </table>
 
-    <p style="margin-top: 10px;">
+    <p class="flosc-ui-menu-actions-wrap">
         <button type="button" class="button" id="flosc-member-add-menu-item">+ Add Menu Item</button>
     </p>
 </div>
@@ -492,7 +492,7 @@ if (empty($flosc_member_menu)) {
         tr.innerHTML = `
             <td class="flosc-member-menu-row-number"></td>
             <td><input type="text" name="member_menu_label[]" class="regular-text" placeholder="Menu label" required></td>
-            <td><select name="member_menu_action[]" style="min-width: 260px;">${buildActionOptions('open_lesson_library')}</select></td>
+            <td><select name="member_menu_action[]" class="flosc-ui-action-select">${buildActionOptions('open_lesson_library')}</select></td>
             <td><button type="button" class="button flosc-member-remove-menu-item" title="Remove item">&times;</button></td>
         `;
         tbody.appendChild(tr);
@@ -536,7 +536,7 @@ if (empty($flosc_member_menu)) {
 <h2 class="title">Available In-Chat Actions</h2>
 <p class="description">These actions can be assigned to Visitor, Guest, and Member menu items above. All stay in-chat — no page navigation (except Log In/Out).</p>
 
-<table class="widefat striped" style="max-width: 700px;">
+<table class="widefat striped flosc-ui-actions-table">
     <thead>
         <tr>
             <th>Action Key</th>

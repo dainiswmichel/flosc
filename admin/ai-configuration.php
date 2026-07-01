@@ -60,17 +60,17 @@ if ($flosc_catalog_age > 7 * DAY_IN_SECONDS) {
 }
 ?>
 <?php if (!empty($flosc_notices)): ?>
-<div style="margin-bottom: 20px;">
+<div class="flosc-margin-bottom-20">
     <?php foreach ($flosc_notices as $flosc_notice): ?>
-    <div class="notice notice-warning inline" style="margin: 0 0 8px; padding: 10px 14px;">
-        <p style="margin: 0;"><?php echo wp_kses($notice, ['strong' => [], 'a' => ['href' => [], 'class' => []]]); ?></p>
+    <div class="notice notice-warning inline flosc-notice-compact">
+        <p class="flosc-text-zero-margin"><?php echo wp_kses($flosc_notice, ['strong' => [], 'a' => ['href' => [], 'class' => []]]); ?></p>
     </div>
     <?php endforeach; ?>
 </div>
 <?php endif; ?>
 
-<div style="margin:-8px 0 14px; text-align:right;">
-    <a href="<?php echo esc_url($flosc_ai_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
+<div class="flosc-docs-link-wrap">
+    <a href="<?php echo esc_url($flosc_ai_docs_url); ?>" class="flosc-docs-link">Docs</a>
 </div>
 
 <!-- Styles in assets/css/flosc-admin.css (AI Configuration section) -->
@@ -290,7 +290,7 @@ if ($flosc_catalog_age > 7 * DAY_IN_SECONDS) {
     </tr>
 </table>
 
-<div id="flosc-chain-config" class="flosc-ai-chain-config" style="<?php echo $flosc_enable_chaining ? '' : 'display:none;'; ?>">
+<div id="flosc-chain-config" class="flosc-ai-chain-config<?php echo $flosc_enable_chaining ? '' : ' flosc-hidden'; ?>">
     <table class="form-table">
         <tr>
             <th scope="row"><label for="flow_ai_chain_provider_1">Provider 1 (Drafts)</label></th>
@@ -343,11 +343,11 @@ if ($flosc_catalog_age > 7 * DAY_IN_SECONDS) {
     <button type="button" id="test-ai-connection" class="button button-primary button-large flosc-ai-test-btn">
         🚀 Test AI Connection Now
     </button>
-    <div id="test-results" class="flosc-ai-test-results" style="display: none;">
+    <div id="test-results" class="flosc-ai-test-results flosc-hidden">
         <div id="test-status"></div>
         <div id="test-details" class="flosc-ai-test-details"></div>
     </div>
-    <div id="test-loading" class="flosc-ai-test-loading" style="display: none;">
+    <div id="test-loading" class="flosc-ai-test-loading flosc-hidden">
         <span class="spinner is-active"></span>
         <span>Testing connection to AI provider...</span>
     </div>
@@ -541,17 +541,17 @@ jQuery(document).ready(function($) {
                 $results.show();
                 
                 if (response.success) {
-                    $status.html('<span style="color: #46b450; font-weight: bold;">✓ Connection Successful!</span>');
+                    $status.html('<span class="flosc-pass-status flosc-pass-status--pass">✓ Connection Successful!</span>');
                     $details.text('Provider: ' + response.data.provider + '\nResponse: ' + response.data.response);
                 } else {
-                    $status.html('<span style="color: #dc3232; font-weight: bold;">✗ Connection Failed</span>');
+                    $status.html('<span class="flosc-pass-status flosc-pass-status--fail">✗ Connection Failed</span>');
                     $details.text(response.data.message || 'Unknown error');
                 }
             },
             error: function() {
                 $loading.hide();
                 $results.show();
-                $status.html('<span style="color: #dc3232; font-weight: bold;">✗ Request Failed</span>');
+                $status.html('<span class="flosc-pass-status flosc-pass-status--fail">✗ Request Failed</span>');
                 $details.text('Could not reach the server. Please try again.');
             },
             complete: function() {
@@ -614,7 +614,7 @@ jQuery(document).ready(function($) {
 <!-- ============================================ -->
 <!-- SECTION: AI PERSONALITY (Fix 12 / Fix 15) -->
 <!-- ============================================ -->
-<hr style="margin: 40px 0;" id="flosc-personality-section">
+<hr class="flosc-section-divider" id="flosc-personality-section">
 <h3 class="flosc-ai-section-heading">🧠 AI Personality & Identity</h3>
 <p class="description">Define who your AI is and how it interacts with users. These fields are injected into every AI system prompt.</p>
 
@@ -695,7 +695,7 @@ jQuery(document).ready(function($) {
 <!-- ============================================ -->
 <!-- SECTION: KNOWLEDGE BASE (Fix 15) -->
 <!-- ============================================ -->
-<hr style="margin: 40px 0;" id="flosc-kb-section">
+<hr class="flosc-section-divider" id="flosc-kb-section">
 <h3 class="flosc-ai-section-heading">📚 Knowledge Base</h3>
 <p class="description">Upload markdown files containing lesson catalogs, FAQs, product info, and teaching guidelines. These files are injected into the AI knowledge base on every session.</p>
 
@@ -713,7 +713,7 @@ if (isset($flosc_get['kb_action'])) {
     if ($flosc_kb_action === 'error')         $flosc_kb_msg = isset($flosc_get['kb_error']) ? sanitize_text_field(urldecode((string) $flosc_get['kb_error'])) : 'An error occurred.';
     if ($flosc_kb_msg):
 ?>
-<div class="notice notice-success inline" style="margin: 0 0 15px;"><p><?php echo esc_html($flosc_kb_msg); ?></p></div>
+<div class="notice notice-success inline flosc-margin-bottom-15"><p><?php echo esc_html($flosc_kb_msg); ?></p></div>
 <?php endif; } ?>
 
 <?php
@@ -724,16 +724,16 @@ $flosc_catalog_gen    = get_option('flosc_lesson_catalog_generated', '');
 $flosc_catalog_count  = get_option('flosc_lesson_catalog_count', 0);
 $flosc_regen_url      = wp_nonce_url(admin_url('admin-post.php?action=flosc_regenerate_lesson_catalog'), 'flosc_regen_catalog');
 ?>
-<div style="background: #f6f7f7; border: 1px solid #ddd; padding: 12px 16px; margin-bottom: 20px; border-radius: 3px; display: flex; align-items: center; gap: 16px;">
-    <div style="flex: 1;">
+<div class="flosc-card-soft flosc-flex-row flosc-flex-align-center flosc-gap-16 flosc-margin-bottom-20">
+    <div class="flosc-flex-1">
         <strong>Lesson Catalog</strong>
         <?php if ($flosc_catalog_exists): ?>
-            <span style="color: #46b450; margin-left: 8px;">✓ Generated</span>
-            <?php if ($flosc_catalog_gen): ?><span style="color: #888; font-size: 12px; margin-left: 8px;"><?php echo esc_html($flosc_catalog_gen); ?> (<?php echo (int)$flosc_catalog_count; ?> lessons)</span><?php endif; ?>
+            <span class="flosc-text-green flosc-margin-left-8">✓ Generated</span>
+            <?php if ($flosc_catalog_gen): ?><span class="flosc-text-gray-888 flosc-text-12 flosc-margin-left-8"><?php echo esc_html($flosc_catalog_gen); ?> (<?php echo (int)$flosc_catalog_count; ?> lessons)</span><?php endif; ?>
         <?php else: ?>
-            <span style="color: #dc3232; margin-left: 8px;">Not yet generated</span>
+            <span class="flosc-text-danger flosc-margin-left-8">Not yet generated</span>
         <?php endif; ?>
-        <p class="description" style="margin: 4px 0 0;">Auto-regenerates when a LeSAEp lesson is saved. Manual regeneration queries all published LeSAEp posts.</p>
+        <p class="description flosc-margin-top-4">Auto-regenerates when a LeSAEp lesson is saved. Manual regeneration queries all published LeSAEp posts.</p>
     </div>
     <a href="<?php echo esc_url($flosc_regen_url); ?>" class="button button-secondary">Regenerate Lesson Catalog</a>
 </div>
@@ -760,22 +760,22 @@ if ($flosc_editing_kb_path && file_exists($flosc_editing_kb_path)) {
 ?>
 
 <!-- Upload form (separate from the main settings form) -->
-<div class="card" style="max-width: 700px; margin-bottom: 20px;">
-    <h4 style="margin-top: 0;">Upload Knowledge File</h4>
+<div class="card flosc-card-max-700">
+    <h4 class="flosc-card-title-reset">Upload Knowledge File</h4>
     <form method="post" enctype="multipart/form-data" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
         <?php wp_nonce_field('flosc_kb_upload', 'flosc_kb_upload_nonce'); ?>
         <input type="hidden" name="action" value="flosc_kb_upload">
         <input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr($GLOBALS['flosc_current_ivr'] ?? ''); ?>">
-        <table class="form-table" style="margin: 0;">
+        <table class="form-table flosc-form-table-reset">
             <tr>
-                <th scope="row" style="padding-top: 8px;"><label for="kb_file_upload">File</label></th>
+            <th scope="row" class="flosc-th-pad-top-8"><label for="kb_file_upload">File</label></th>
                 <td>
                     <input type="file" name="orientation_file" id="kb_file_upload" accept=".md,.txt" required>
                     <p class="description">.md or .txt files only.</p>
                 </td>
             </tr>
             <tr>
-                <th scope="row" style="padding-top: 8px;"><label for="kb_access_level">Access Level</label></th>
+                <th scope="row" class="flosc-th-pad-top-8"><label for="kb_access_level">Access Level</label></th>
                 <td>
                     <select name="file_access_level" id="kb_access_level">
                         <option value="visitor">Visitor — everyone, including pre-login</option>
@@ -786,7 +786,7 @@ if ($flosc_editing_kb_path && file_exists($flosc_editing_kb_path)) {
                 </td>
             </tr>
         </table>
-        <div style="margin-top: 10px;">
+        <div class="flosc-margin-top-10">
             <button type="submit" class="button button-secondary">Upload File</button>
         </div>
     </form>
@@ -794,14 +794,14 @@ if ($flosc_editing_kb_path && file_exists($flosc_editing_kb_path)) {
 
 <!-- File list -->
 <?php if (!empty($flosc_kb_files)): ?>
-<table class="widefat" style="max-width: 100%; margin-bottom: 20px;">
+<table class="widefat flosc-table-full">
     <thead>
         <tr>
-            <th style="width: 35%;">Filename</th>
-            <th style="width: 15%;">Access</th>
-            <th style="width: 10%;">Size</th>
-            <th style="width: 15%;">Modified</th>
-            <th style="width: 25%;">Actions</th>
+            <th class="flosc-width-35">Filename</th>
+            <th class="flosc-width-15">Access</th>
+            <th class="flosc-width-10">Size</th>
+            <th class="flosc-width-15">Modified</th>
+            <th class="flosc-width-25">Actions</th>
         </tr>
     </thead>
     <tbody>
@@ -810,7 +810,11 @@ if ($flosc_editing_kb_path && file_exists($flosc_editing_kb_path)) {
         $flosc_kbf_access = $flosc_flow_settings['knowledge_access_' . md5($flosc_kbf)] ?? 'visitor';
         if ($flosc_kbf_access === 'public')  $flosc_kbf_access = 'visitor';
         if ($flosc_kbf_access === 'members') $flosc_kbf_access = 'member';
-        $flosc_kbf_badge = ['visitor' => ['Visitor', '#10b981'], 'guest' => ['Guest', '#2271b1'], 'member' => ['Member', '#8b5cf6']][$flosc_kbf_access] ?? ['Visitor', '#10b981'];
+        $flosc_kbf_badge = [
+            'visitor' => ['Visitor', 'flosc-inline-badge flosc-inline-badge--visitor'],
+            'guest'   => ['Guest', 'flosc-inline-badge flosc-inline-badge--guest'],
+            'member'  => ['Member', 'flosc-inline-badge flosc-inline-badge--member'],
+        ][$flosc_kbf_access] ?? ['Visitor', 'flosc-inline-badge flosc-inline-badge--visitor'];
         $flosc_toggle_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_kb_toggle&kb_file=' . urlencode($flosc_kbf) . '&return_ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '')), 'flosc_kb_toggle_' . $flosc_kbf);
         $flosc_delete_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_kb_delete&kb_file=' . urlencode($flosc_kbf) . '&return_ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '')), 'flosc_kb_delete_' . $flosc_kbf);
         $flosc_edit_url   = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '') . '&tab=ai&kb_edit=' . urlencode($flosc_kbf) . '#flosc-kb-section');
@@ -818,39 +822,39 @@ if ($flosc_editing_kb_path && file_exists($flosc_editing_kb_path)) {
         <tr>
             <td>
                 <strong><?php echo esc_html($flosc_kbf); ?></strong>
-                <?php if ($flosc_editing_kb_file === $flosc_kbf): ?><span style="color:#2271b1;margin-left:6px;">← editing</span><?php endif; ?>
+                <?php if ($flosc_editing_kb_file === $flosc_kbf): ?><span class="flosc-text-blue flosc-margin-left-6">← editing</span><?php endif; ?>
             </td>
             <td>
-                <span style="background:<?php echo esc_attr($flosc_kbf_badge[1]); ?>;color:#fff;padding:2px 7px;border-radius:3px;font-size:11px;"><?php echo esc_html($flosc_kbf_badge[0]); ?></span>
+                <span class="<?php echo esc_attr($flosc_kbf_badge[1]); ?>"><?php echo esc_html($flosc_kbf_badge[0]); ?></span>
             </td>
             <td><?php echo file_exists($flosc_fp) ? esc_html(size_format(filesize($flosc_fp))) : '—'; ?></td>
             <td><?php echo file_exists($flosc_fp) ? esc_html(human_time_diff(filemtime($flosc_fp), current_time('timestamp')) . ' ago') : '—'; ?></td>
             <td>
                 <a href="<?php echo esc_url($flosc_edit_url); ?>" class="button button-small"><?php echo $flosc_editing_kb_file === $flosc_kbf ? 'Editing...' : 'Edit'; ?></a>
                 <a href="<?php echo esc_url($flosc_toggle_url); ?>" class="button button-small">Toggle Access</a>
-                <a href="<?php echo esc_url($flosc_delete_url); ?>" class="button button-small" style="color:#d63638;" onclick="return confirm('Delete <?php echo esc_js($flosc_kbf); ?>? Cannot be undone.');">Delete</a>
+                <a href="<?php echo esc_url($flosc_delete_url); ?>" class="button button-small flosc-ai-kb-delete" data-confirm-message="Delete <?php echo esc_attr($flosc_kbf); ?>? Cannot be undone.">Delete</a>
             </td>
         </tr>
     <?php endforeach; ?>
     </tbody>
 </table>
 <?php else: ?>
-<p style="color:#667;font-style:italic;">No knowledge files yet. Upload your first file above.</p>
+<p class="flosc-text-muted-italic">No knowledge files yet. Upload your first file above.</p>
 <?php endif; ?>
 
 <!-- File editor (if editing) -->
 <?php if ($flosc_editing_kb_file): ?>
-<div class="card" style="max-width: 100%; margin-bottom: 20px;">
-    <h4 style="margin-top: 0;">Editing: <?php echo esc_html($flosc_editing_kb_file); ?></h4>
+<div class="card flosc-card-max-full">
+    <h4 class="flosc-card-title-reset">Editing: <?php echo esc_html($flosc_editing_kb_file); ?></h4>
     <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
         <?php wp_nonce_field('flosc_kb_save_edit', 'flosc_kb_save_edit_nonce'); ?>
         <input type="hidden" name="action" value="flosc_kb_save_edit">
         <input type="hidden" name="editing_file" value="<?php echo esc_attr($flosc_editing_kb_file); ?>">
         <input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr($GLOBALS['flosc_current_ivr'] ?? ''); ?>">
-        <textarea name="file_content" rows="30" class="large-text code" style="font-family: monospace; font-size: 13px; width: 100%;"><?php echo esc_textarea($flosc_editing_kb_content); ?></textarea>
-        <div style="margin-top: 10px;">
+        <textarea name="file_content" rows="30" class="large-text code flosc-code-textarea"><?php echo esc_textarea($flosc_editing_kb_content); ?></textarea>
+        <div class="flosc-margin-top-10">
             <button type="submit" class="button button-primary">Save File</button>
-            <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '') . '&tab=ai#flosc-kb-section')); ?>" class="button" style="margin-left: 8px;">Cancel</a>
+            <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '') . '&tab=ai#flosc-kb-section')); ?>" class="button flosc-margin-left-8">Cancel</a>
         </div>
     </form>
 </div>
@@ -859,30 +863,30 @@ if ($flosc_editing_kb_path && file_exists($flosc_editing_kb_path)) {
 <!-- ============================================ -->
 <!-- SECTION: PROVIDER ACCURACY TEST (Fix 14) -->
 <!-- ============================================ -->
-<hr style="margin: 40px 0;" id="flosc-accuracy-test">
+<hr class="flosc-section-divider" id="flosc-accuracy-test">
 <h3 class="flosc-ai-section-heading">🧪 Provider Accuracy Test</h3>
 <p class="description">Run a 10-message test sequence to evaluate how faithfully any configured provider maintains acronym definitions and product knowledge across a full session. Tests mid-session drift (the hallucination pattern this sprint fixes).</p>
 
 <div id="flosc-accuracy-test-ui">
-    <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 12px;">
+    <div class="flosc-ai-accuracy-controls">
         <button type="button" id="flosc-run-accuracy-test" class="button button-secondary">▶ Run 10-Message Accuracy Test</button>
-        <span id="flosc-test-progress" style="display:none; color: #666; font-size: 13px;">Running... message <span id="flosc-test-msg-num">0</span>/10</span>
+        <span id="flosc-test-progress" class="flosc-ai-progress flosc-hidden">Running... message <span id="flosc-test-msg-num">0</span>/10</span>
     </div>
 
-    <div id="flosc-accuracy-results" style="display:none;">
-        <table class="widefat" style="margin-bottom: 12px;">
+    <div id="flosc-accuracy-results" class="flosc-hidden">
+        <table class="widefat flosc-margin-bottom-12">
             <thead>
                 <tr>
-                    <th style="width:5%;">#</th>
-                    <th style="width:35%;">Message</th>
-                    <th style="width:45%;">Response</th>
-                    <th style="width:8%;">Tokens In</th>
-                    <th style="width:7%;">Pass?</th>
+                    <th class="flosc-width-5">#</th>
+                    <th class="flosc-width-35">Message</th>
+                    <th class="flosc-width-45">Response</th>
+                    <th class="flosc-width-8">Tokens In</th>
+                    <th class="flosc-width-7">Pass?</th>
                 </tr>
             </thead>
             <tbody id="flosc-accuracy-tbody"></tbody>
         </table>
-        <div id="flosc-accuracy-summary" style="background: #f6f7f7; padding: 12px 16px; border: 1px solid #ddd; border-radius: 3px; font-size: 13px;"></div>
+        <div id="flosc-accuracy-summary" class="flosc-ai-summary"></div>
     </div>
 </div>
 
@@ -964,9 +968,9 @@ jQuery(document).ready(function($) {
                     if (corrected) feedback++;
 
                     var passCell = pass
-                        ? '<td style="color:#46b450;font-weight:bold;">✓</td>'
-                        : '<td style="color:#dc3232;font-weight:bold;">✗</td>';
-                    if (corrected) passCell = '<td style="color:#ffa500;font-weight:bold;">⚡</td>';
+                        ? '<td class="flosc-pass-status flosc-pass-status--pass">✓</td>'
+                        : '<td class="flosc-pass-status flosc-pass-status--fail">✗</td>';
+                    if (corrected) passCell = '<td class="flosc-pass-status flosc-pass-status--corrected">⚡</td>';
 
                     var snippet = response_text.length > 200
                         ? response_text.substring(0, 200) + '…'
@@ -975,8 +979,8 @@ jQuery(document).ready(function($) {
                     $('#flosc-accuracy-tbody').append(
                         '<tr>'
                         + '<td>' + (idx+1) + '</td>'
-                        + '<td style="font-size:12px;">' + $('<div>').text(testMessages[idx]).html() + '</td>'
-                        + '<td style="font-size:12px;">' + $('<div>').text(snippet).html() + '</td>'
+                        + '<td class="flosc-text-12">' + $('<div>').text(testMessages[idx]).html() + '</td>'
+                        + '<td class="flosc-text-12">' + $('<div>').text(snippet).html() + '</td>'
                         + '<td>' + tokens_in + '</td>'
                         + passCell
                         + '</tr>'
@@ -990,7 +994,7 @@ jQuery(document).ready(function($) {
                 },
                 error: function() {
                     $('#flosc-accuracy-tbody').append(
-                        '<tr><td>' + (idx+1) + '</td><td>' + $('<div>').text(testMessages[idx]).html() + '</td><td colspan="3" style="color:#dc3232;">Request failed</td></tr>'
+                        '<tr><td>' + (idx+1) + '</td><td>' + $('<div>').text(testMessages[idx]).html() + '</td><td colspan="3" class="flosc-request-failed">Request failed</td></tr>'
                     );
                     runMessage(idx + 1);
                 }

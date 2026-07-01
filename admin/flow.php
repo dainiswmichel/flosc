@@ -53,7 +53,7 @@ if ( $flosc_quiz_configured && class_exists( 'FLOSC_Quiz_Registry' ) ) {
         $flosc_qt      = FLOSC_Quiz_Registry::get_quiz( $flosc_qid );
         $flosc_names[] = $flosc_qt ? $flosc_qt->get_name() : ucwords( str_replace( '_', ' ', $flosc_qid ) );
     }
-    $flosc_bullets         = array_map( fn( $n ) => '<span style="display:block;padding-left:8px;font-size:12px;color:#50575e;">• ' . esc_html( $n ) . '</span>', $flosc_names );
+    $flosc_bullets         = array_map( fn( $n ) => '<span class="flosc-flow-bullet">• ' . esc_html( $n ) . '</span>', $flosc_names );
     $flosc_quiz_label_html = '<strong>' . $flosc_quiz_count . ' ' . $flosc_quiz_word . ' ✅</strong>' . implode( '', $flosc_bullets );
 } else {
     $flosc_quiz_label_html = '<strong>0 Quizzes ❌</strong>';
@@ -127,29 +127,22 @@ if ( $flosc_ai_provider === 'anthropic' ) {
 
 // ── Helper: render a phase card ───────────────────────────────────────────────
 function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
-    $colors = [
-        'F' => [ 'bg' => '#f0f0f1', 'border' => '#c3c4c7', 'badge' => '#3c434a', 'badge_text' => '#fff' ],
-        'L' => [ 'bg' => '#fff4e6', 'border' => '#f59e0b', 'badge' => '#f59e0b', 'badge_text' => '#fff' ],
-        'O' => [ 'bg' => '#fef3c7', 'border' => '#fbbf24', 'badge' => '#d97706', 'badge_text' => '#fff' ],
-        'S' => [ 'bg' => '#fef9c3', 'border' => '#facc15', 'badge' => '#ca8a04', 'badge_text' => '#fff' ],
-        'C' => [ 'bg' => '#f0fdf4', 'border' => '#86efac', 'badge' => '#16a34a', 'badge_text' => '#fff' ],
-    ];
-    $c = $colors[ $letter ] ?? $colors['F'];
-    echo '<div style="background:' . esc_attr( $c['bg'] ) . ';border:1px solid ' . esc_attr( $c['border'] ) . ';border-radius:6px;padding:16px 18px;margin-bottom:12px;">';
-    echo '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">';
-    echo '<span style="display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:' . esc_attr( $c['badge'] ) . ';color:' . esc_attr( $c['badge_text'] ) . ';font-size:18px;font-weight:900;flex-shrink:0;">' . esc_html( $letter ) . '</span>';
+    $phase_class = strtolower( $letter );
+    echo '<div class="flosc-flow-card flosc-flow-card--' . esc_attr( $phase_class ) . '">';
+    echo '<div class="flosc-flow-card__header">';
+    echo '<span class="flosc-flow-card__badge flosc-flow-card__badge--' . esc_attr( $phase_class ) . '">' . esc_html( $letter ) . '</span>';
     echo '<div>';
-    echo '<div style="font-size:15px;font-weight:700;color:#1d2327;">' . esc_html( strtoupper( $flosc_phase_name ) ) . '</div>';
-    echo '<div style="font-size:12px;color:#50575e;">' . esc_html( $subtitle ) . '</div>';
+    echo '<div class="flosc-flow-card__phase">' . esc_html( strtoupper( $flosc_phase_name ) ) . '</div>';
+    echo '<div class="flosc-flow-card__subtitle">' . esc_html( $subtitle ) . '</div>';
     echo '</div>';
     echo '</div>';
-    echo '<table style="width:100%;border-collapse:collapse;">';
+    echo '<table class="flosc-flow-card__table">';
     foreach ( $rows as $row ) {
         echo '<tr>';
-        echo '<td style="padding:5px 0;color:#3c434a;font-size:13px;width:65%;">' . wp_kses_post( $row['label'] ) . '</td>';
-        echo '<td style="padding:5px 0;text-align:right;">';
+        echo '<td class="flosc-flow-card__label">' . wp_kses_post( $row['label'] ) . '</td>';
+        echo '<td class="flosc-flow-card__action">';
         if ( ! empty( $row['edit_url'] ) ) {
-            echo '<a href="' . esc_url( $row['edit_url'] ) . '" class="button button-small" style="font-size:11px;">' . esc_html( $row['edit_label'] ?? 'Edit →' ) . '</a>';
+            echo '<a href="' . esc_url( $row['edit_url'] ) . '" class="button button-small flosc-flow-card__action-link">' . esc_html( $row['edit_label'] ?? 'Edit →' ) . '</a>';
         }
         echo '</td>';
         echo '</tr>';
@@ -160,14 +153,14 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 
 // ── Output ────────────────────────────────────────────────────────────────────
 ?>
-<div style="max-width:720px;">
+<div class="flosc-flow-overview">
 
-    <div style="background:#fff;border:1px solid #c3c4c7;border-radius:6px;padding:14px 18px;margin-bottom:20px;">
-        <h2 style="margin:0 0 4px;font-size:16px;color:#1d2327;display:flex;align-items:center;gap:10px;">
+    <div class="flosc-flow-overview-header">
+        <h2 class="flosc-flow-overview-title">
             <span>🗺 FLOSC Funnel Overview</span>
-            <a href="<?php echo esc_url($flosc_flow_docs_url); ?>" style="margin-left:auto;font-size:12px;text-decoration:none;color:#2271b1;">Docs</a>
+            <a href="<?php echo esc_url($flosc_flow_docs_url); ?>" class="flosc-docs-link">Docs</a>
         </h2>
-        <p style="margin:0;color:#50575e;font-size:13px;">Read-only snapshot of all five funnel phases for <strong><?php echo esc_html( $flosc_selected_ivr ?: 'this flow' ); ?></strong>. Click any Edit button to jump to that tab.</p>
+        <p class="flosc-flow-overview-summary">Read-only snapshot of all five funnel phases for <strong><?php echo esc_html( $flosc_selected_ivr ?: 'this flow' ); ?></strong>. Click any Edit button to jump to that tab.</p>
     </div>
 
     <?php

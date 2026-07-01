@@ -64,16 +64,16 @@ if ($flosc_can_assign_editors) {
 }
 ?>
 
-<div class="card" style="max-width: 980px; padding: 18px 20px; margin-top: 12px;">
-    <h2 style="margin-top: 0; display:flex; align-items:center; gap:12px;">
+<div class="card flosc-admin-card">
+    <h2 class="flosc-admin-title-row">
         <span>Administration</span>
-        <a href="<?php echo esc_url($flosc_administration_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1; margin-left:auto;">Docs</a>
+        <a href="<?php echo esc_url($flosc_administration_docs_url); ?>" class="flosc-admin-docs-link">Docs</a>
     </h2>
-    <p class="description" style="margin-top: 0;">
+    <p class="description flosc-admin-subtitle">
         Central account and debug controls.
     </p>
 
-    <table class="widefat striped" style="margin: 16px 0 22px; max-width: 980px;">
+    <table class="widefat striped flosc-admin-status-table">
         <thead>
             <tr>
                 <th>Runtime Status</th>
@@ -116,8 +116,8 @@ if ($flosc_can_assign_editors) {
         </tbody>
     </table>
 
-    <h3 style="margin: 14px 0 10px;">Debug Display</h3>
-    <table class="form-table" style="margin-top: 0;">
+    <h3 class="flosc-admin-section-title">Debug Display</h3>
+    <table class="form-table flosc-admin-form-table">
         <tr>
             <th scope="row"><label for="flosc_debug_mode">Debug mode</label></th>
             <td>
@@ -131,8 +131,8 @@ if ($flosc_can_assign_editors) {
         </tr>
     </table>
 
-    <h3 style="margin: 14px 0 10px;">User Profile Parameters</h3>
-    <table class="widefat striped" style="margin: 0 0 22px; max-width: 980px;">
+    <h3 class="flosc-admin-section-title">User Profile Parameters</h3>
+    <table class="widefat striped flosc-admin-profile-table">
         <thead>
             <tr>
                 <th>Field</th>
@@ -175,8 +175,8 @@ if ($flosc_can_assign_editors) {
         </tbody>
     </table>
 
-    <h3 style="margin: 0 0 10px;">Account Management</h3>
-    <table class="form-table" style="margin-top: 0;">
+    <h3 class="flosc-admin-section-title flosc-admin-section-title-topless">Account Management</h3>
+    <table class="form-table flosc-admin-form-table">
         <tr>
             <th scope="row"><label for="flosc_account_plan">Account plan</label></th>
             <td>
@@ -197,32 +197,32 @@ if ($flosc_can_assign_editors) {
         </tr>
     </table>
 
-    <h3 style="margin: 14px 0 10px;">Configured Purchased Items</h3>
-    <div class="card" style="padding: 12px 14px; margin: 0 0 16px; max-width: 980px;">
+    <h3 class="flosc-admin-section-title">Configured Purchased Items</h3>
+    <div class="card flosc-admin-purchases-card">
         <?php if (!empty($flosc_manual_purchase_lines)): ?>
-            <ol style="margin: 0 0 0 18px;">
+            <ol class="flosc-admin-purchases-list">
                 <?php foreach ($flosc_manual_purchase_lines as $flosc_item): ?>
                     <li><?php echo esc_html($flosc_item); ?></li>
                 <?php endforeach; ?>
             </ol>
         <?php else: ?>
-            <p style="margin: 0;">No items listed.</p>
+            <p class="flosc-admin-purchases-empty">No items listed.</p>
         <?php endif; ?>
     </div>
 
     <?php if ($flosc_can_assign_editors): ?>
-        <h3 style="margin: 18px 0 10px;">Assign floscEditors for This Flow</h3>
-        <p class="description" style="margin-top: 0;">
+        <h3 class="flosc-admin-section-title flosc-admin-editors-title">Assign floscEditors for This Flow</h3>
+        <p class="description flosc-admin-subtitle">
             Assign WordPress Editors (and optionally Administrators) to manage this flow. Site admin remains global floscAdmin authority.
         </p>
 
         <?php if (empty($flosc_assignable_users)): ?>
             <p><em>No Editor or Administrator users were found.</em></p>
         <?php else: ?>
-            <table class="widefat striped" style="max-width: 980px; margin-bottom: 12px;">
+            <table class="widefat striped flosc-admin-editors-table">
                 <thead>
                     <tr>
-                        <th style="width: 70px;">Assign</th>
+                        <th class="flosc-admin-col-assign">Assign</th>
                         <th>User</th>
                         <th>Role</th>
                     </tr>

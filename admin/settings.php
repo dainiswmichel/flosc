@@ -28,13 +28,13 @@ if (!function_exists('flosc_tab_header')) {
         $flosc_settings = $GLOBALS['flosc_current_settings'] ?? [];
         $flow_name = $flosc_settings['identity']['name'] ?? ucwords(str_replace(['_', '-', '.md'], [' ', ' ', ''], $flosc_ivr_file));
         
-        echo '<div class="flosc-tab-header" style="background: #f0f0f1; border: 1px solid #c3c4c7; padding: 12px 18px; border-radius: 2px; margin-bottom: 20px;">';
-        echo '<h2 style="margin: 0; color: #1d2327; font-size: 16px;">';
+        echo '<div class="flosc-tab-header">';
+        echo '<h2 class="flosc-tab-header__title">';
         echo esc_html($tab_name . ' Configuration');
         echo '</h2>';
-        echo '<p style="margin: 5px 0 0; color: #50575e; font-size: 13px;">';
+        echo '<p class="flosc-tab-header__meta">';
         echo 'Flow: <strong>' . esc_html($flow_name) . '</strong> ';
-        echo '<code style="background: #e0e0e0; padding: 2px 8px; border-radius: 2px; color: #1d2327;">(' . esc_html($flosc_ivr_file) . ')</code>';
+        echo '<code class="flosc-tab-header__file">(' . esc_html($flosc_ivr_file) . ')</code>';
         echo '</p>';
         echo '</div>';
     }
@@ -48,8 +48,8 @@ if (!function_exists('flosc_tab_header')) {
 if (!function_exists('flosc_tab_footer')) {
     function flosc_tab_footer() {
         $version = defined('FLOSC_VERSION') ? FLOSC_VERSION : '?.?.?';
-        echo '<div class="flosc-tab-footer" style="margin-top: 30px; padding-top: 15px; border-top: 1px solid #c3c4c7; text-align: right;">';
-        echo '<span style="color: #787c82; font-size: 11px;">FLOSC v' . esc_html($version) . '</span>';
+        echo '<div class="flosc-tab-footer">';
+        echo '<span class="flosc-tab-footer__version">FLOSC v' . esc_html($version) . '</span>';
         echo '</div>';
     }
 }
@@ -113,33 +113,33 @@ if (!function_exists('flosc_permalink_status_indicator')) {
         $last_flush = get_option('flosc_last_permalink_flush', null);
         
         $colors = [
-            'ok' => ['bg' => '#d4edda', 'text_color' => '#155724', 'text' => '&#10003; Permalinks OK'],
-            'missing' => ['bg' => '#f8d7da', 'text_color' => '#721c24', 'text' => '&#9888; Needs Flush'],
-            'unknown' => ['bg' => '#fff3cd', 'text_color' => '#856404', 'text' => '? Status Unknown'],
+            'ok' => ['class' => 'flosc-permalink-badge--ok', 'text' => '&#10003; Permalinks OK'],
+            'missing' => ['class' => 'flosc-permalink-badge--missing', 'text' => '&#9888; Needs Flush'],
+            'unknown' => ['class' => 'flosc-permalink-badge--unknown', 'text' => '? Status Unknown'],
         ];
         
         $color = $colors[$status];
         
-        echo '<div class="flosc-permalink-status" style="display: inline-flex; align-items: center; gap: 10px; margin-left: 15px;">';
+        echo '<div class="flosc-permalink-status">';
 
         // Badge 1: Permalinks status
-        echo '<span style="background: ' . esc_attr( $color['bg'] ) . '; color: ' . esc_attr( $color['text_color'] ) . '; padding: 4px 10px; border-radius: 2px; font-size: 12px; font-weight: 600;">';
+        echo '<span class="flosc-permalink-badge ' . esc_attr($color['class']) . '">';
         echo esc_html( $color['text'] );
         echo '</span>';
 
         // Badge 2: FLOW settings backfill status
         $last_backfill = get_option( 'flosc_last_flow_backfill', null );
         if ( $last_backfill ) {
-            echo '<span style="background: #d4edda; color: #155724; padding: 4px 10px; border-radius: 2px; font-size: 12px; font-weight: 600;">&#10003; FLOW Settings OK</span>';
+            echo '<span class="flosc-permalink-badge flosc-permalink-badge--ok">&#10003; FLOW Settings OK</span>';
         }
 
         if ($last_flush) {
-            echo '<span style="color: #c3c4c7; font-size: 11px;">Last flush: ' . esc_html($last_flush) . '</span>';
+            echo '<span class="flosc-permalink-last-flush">Last flush: ' . esc_html($last_flush) . '</span>';
         }
 
         // Flush button
         $flush_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_flush_permalinks_v129'), 'flosc_flush_v129');
-        echo '<a href="' . esc_url($flush_url) . '" class="button button-small" style="font-size: 11px;">Flush Now</a>';
+        echo '<a href="' . esc_url($flush_url) . '" class="button button-small flosc-permalink-flush-btn">Flush Now</a>';
         echo '</div>';
     }
 }
@@ -775,9 +775,9 @@ if ($flosc_selected_flow_name === '') {
 
 ?>
 <div class="wrap flosc-admin">
-    <h1 style="display: flex; align-items: center; gap: 10px;">
+    <h1 class="flosc-settings-title">
         FLOSC Settings 
-        <span style="font-size: 12px; font-weight: normal; color: #50575e; background: #f0f0f1; padding: 3px 10px; border-radius: 2px;">v<?php echo esc_html(FLOSC_VERSION); ?></span>
+        <span class="flosc-settings-version">v<?php echo esc_html(FLOSC_VERSION); ?></span>
     </h1>
     
     <?php if (isset($flosc_saved)): ?>
@@ -816,7 +816,7 @@ if ($flosc_selected_flow_name === '') {
 
         <div class="flosc-ivr-controls-row">
             <label class="flosc-ivr-select-label">Select Flow:</label>
-            <select id="ivr-select" onchange="switchIVR(this.value);" class="flosc-ivr-select-control">
+            <select id="ivr-select" class="flosc-ivr-select-control">
                 <?php foreach ($flosc_ivr_files as $flosc_file): ?>
                     <option value="<?php echo esc_attr($flosc_file); ?>" <?php selected($flosc_selected_ivr, $flosc_file); ?>>
                         <?php echo esc_html($flosc_flow_selector_labels[$flosc_file] ?? $flosc_file); ?>
@@ -839,7 +839,7 @@ if ($flosc_selected_flow_name === '') {
         </div>
 
         <div class="flosc-ivr-meta-row">
-            floscFlowFileName: <span style="color: #c3c4c7;"><?php echo esc_html($flosc_selected_ivr); ?></span>
+            floscFlowFileName: <span class="flosc-ivr-meta-filename"><?php echo esc_html($flosc_selected_ivr); ?></span>
             <?php if ($flosc_user_default_ivr === $flosc_selected_ivr): ?>
                 <span class="flosc-ivr-default-note">(default)</span>
             <?php endif; ?>
@@ -859,6 +859,13 @@ if ($flosc_selected_flow_name === '') {
     }
 
     (function () {
+        const ivrSelect = document.getElementById('ivr-select');
+        if (ivrSelect) {
+            ivrSelect.addEventListener('change', function () {
+                switchIVR(this.value);
+            });
+        }
+
         const tab = '<?php echo esc_js($flosc_active_tab); ?>';
         const tabTitles = {
             'flow': 'Flow',
@@ -1066,7 +1073,7 @@ if ($flosc_selected_flow_name === '') {
             ?>
             
             <!-- View Toggle -->
-            <div style="display: flex; gap: 10px; margin: 20px 0;">
+            <div class="flosc-view-toggle-row">
                 <a href="<?php echo esc_url( '?page=flosc-settings&ivr=' . urlencode( $flosc_selected_ivr ) . '&tab=identity&view=single' ); ?>" 
                    class="button <?php echo esc_attr( $flosc_view_mode === 'single' ? 'button-primary' : '' ); ?>">
                     Single Flow
@@ -1095,13 +1102,13 @@ if ($flosc_selected_flow_name === '') {
             ?>
             
             <!-- ALL FLOWS - FULLY EXPANDED INLINE EDITING -->
-            <div style="max-width: 1000px;">
-                <div style="background: #2f363d; border: 1px solid #3c434a; padding: 15px 20px; border-radius: 4px 4px 0 0; margin-bottom: 20px;">
-                    <h2 style="margin: 0; color: #f0f0f1; font-size: 16px; display:flex; align-items:center; gap:10px;">
+            <div class="flosc-flow-editor-all">
+                <div class="flosc-flow-editor-all__header">
+                    <h2 class="flosc-flow-editor-all__title">
                         <span>All FLOSC Flows &mdash; Identity Settings</span>
-                        <a href="<?php echo esc_url($flosc_identity_docs_url_all); ?>" style="margin-left:auto; font-size:12px; text-decoration:none; color:#8ec5ff;">Docs</a>
+                        <a href="<?php echo esc_url($flosc_identity_docs_url_all); ?>" class="flosc-flow-editor-all__docs-link">Docs</a>
                     </h2>
-                    <p style="margin: 5px 0 0; color: #a7aaad; font-size: 13px;">
+                    <p class="flosc-flow-editor-all__subtitle">
                         All flows expanded. Edit any field, then save individually or save all at bottom.
                     </p>
                 </div>
@@ -1118,45 +1125,48 @@ if ($flosc_selected_flow_name === '') {
                     }
                     $flosc_prefix = 'flow_' . md5($flosc_ivr_file) . '_';
                     $flosc_is_current = ($flosc_ivr_file === $flosc_selected_ivr);
+                    $flosc_flow_block_classes = 'flosc-flow-block' . ( $flosc_is_current ? ' is-current' : '' );
                     // v1.3.5: Preserve underscores in default slug
                     $flosc_default_slug = strtolower(preg_replace('/[^a-z0-9_-]/i', '', pathinfo($flosc_ivr_file, PATHINFO_FILENAME)));
                     $flosc_slug = $flosc_settings['slug'] ?? $flosc_default_slug;
                     $flosc_flow_url = home_url('/' . $flosc_slug . '/');
                     $flosc_full_url = !empty($flosc_settings['domain']) ? 'https://' . $flosc_settings['domain'] . '/' : $flosc_flow_url;
+                    $flosc_status_value = $flosc_settings['status'] ?? 'active';
+                    $flosc_status_badge_class = 'flosc-flow-status-badge' . ( $flosc_status_value === 'active' ? ' is-active' : ' is-draft' );
                 ?>
                 
-                <div class="flosc-flow-block" style="background: white; border: 2px solid <?php echo esc_attr( $flosc_is_current ? '#2271b1' : '#c3c4c7' ); ?>; border-radius: 2px; padding: 25px; margin-bottom: 20px;">
+                <div class="<?php echo esc_attr( $flosc_flow_block_classes ); ?>">
                     
                     <!-- Flow Header with IVR file -->
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #c3c4c7;">
+                    <div class="flosc-flow-block__header">
                         <div>
-                            <h3 style="margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px;">
+                            <h3 class="flosc-flow-block__title">
                                 <?php echo esc_html($flosc_settings['name'] ?? $flosc_ivr_file); ?>
                                 <?php if ($flosc_is_current): ?>
-                                    <span style="background: #2271b1; color: white; padding: 3px 10px; border-radius: 2px; font-size: 11px;">CURRENT</span>
+                                    <span class="flosc-flow-block__current-badge">CURRENT</span>
                                 <?php endif; ?>
                             </h3>
-                            <div style="margin-top: 5px;">
-                                <code style="background: #f3f4f6; padding: 3px 8px; border-radius: 4px; font-size: 12px;"><?php echo esc_html($flosc_ivr_file); ?></code>
+                            <div class="flosc-flow-block__file-row">
+                                <code class="flosc-flow-block__file-pill"><?php echo esc_html($flosc_ivr_file); ?></code>
                             </div>
                         </div>
-                        <div style="text-align: right;">
-                            <span style="background: <?php echo ($flosc_settings['status'] ?? 'active') === 'active' ? '#d4edda' : '#f0f0f1'; ?>; color: <?php echo ($flosc_settings['status'] ?? 'active') === 'active' ? '#155724' : '#50575e'; ?>; padding: 4px 12px; border-radius: 2px; font-size: 12px; font-weight: 600;">
-                                <?php echo esc_html(ucfirst($flosc_settings['status'] ?? 'active')); ?>
+                        <div class="flosc-flow-block__status-wrap">
+                            <span class="<?php echo esc_attr( $flosc_status_badge_class ); ?>">
+                                <?php echo esc_html(ucfirst($flosc_status_value)); ?>
                             </span>
                         </div>
                     </div>
                     
                     <!-- URL Mapping Summary -->
-                    <div style="background: #f0f6fc; border: 1px solid #c3c4c7; padding: 15px 20px; border-radius: 2px; color: #1d2327; margin-bottom: 20px;">
-                        <div style="font-size: 11px; color: #50575e; margin-bottom: 3px;">This flow is accessible at:</div>
-                        <div style="font-family: monospace; font-size: 15px; font-weight: 600;">
-                            <a href="<?php echo esc_url($flosc_flow_url); ?>" target="_blank" style="color: #2271b1; text-decoration: none;">
+                    <div class="flosc-flow-block__url-box">
+                        <div class="flosc-flow-block__url-label">This flow is accessible at:</div>
+                        <div class="flosc-flow-block__url-value">
+                            <a href="<?php echo esc_url($flosc_flow_url); ?>" target="_blank" class="flosc-flow-block__url-link">
                                 <?php echo esc_html($flosc_flow_url); ?> &#8599;
                             </a>
                             <?php if (!empty($flosc_settings['domain'])): ?>
-                                <span style="color: #787c82; margin: 0 8px;">&rarr;</span>
-                                <a href="https://<?php echo esc_attr($flosc_settings['domain']); ?>/" target="_blank" style="color: #2271b1; text-decoration: none;">
+                                <span class="flosc-flow-block__url-arrow">&rarr;</span>
+                                <a href="https://<?php echo esc_attr($flosc_settings['domain']); ?>/" target="_blank" class="flosc-flow-block__url-link">
                                     https://<?php echo esc_html($flosc_settings['domain']); ?>/ &#8599;
                                 </a>
                             <?php endif; ?>
@@ -1164,144 +1174,144 @@ if ($flosc_selected_flow_name === '') {
                     </div>
                     
                     <!-- ALL EDITABLE FIELDS - Slug first -->
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="flosc-flow-block__grid">
                         
                         <!-- Left Column -->
                         <div>
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">URL Slug <span style="color: #d63638;">(required)</span></label>
-                                <div style="display: flex; align-items: center; gap: 5px;">
-                                    <code style="background: #f3f4f6; padding: 8px 10px; border-radius: 4px; font-size: 13px;"><?php echo esc_html( home_url('/') ); ?></code>
+                            <div class="flosc-flow-field">
+                                <label class="flosc-flow-field__label">URL Slug <span class="flosc-flow-field__required">(required)</span></label>
+                                <div class="flosc-flow-field__slug-row">
+                                    <code class="flosc-flow-field__slug-code"><?php echo esc_html( home_url('/') ); ?></code>
                                     <input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>slug" 
                                          value="<?php echo esc_attr($flosc_slug); ?>"
                                            placeholder="myapp"
-                                           style="width: 250px; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px; font-weight: 600;">
-                                    <code style="background: #f3f4f6; padding: 8px 10px; border-radius: 4px; font-size: 13px;">/</code>
+                                           class="flosc-flow-input flosc-flow-input--slug">
+                                    <code class="flosc-flow-field__slug-code">/</code>
                                 </div>
-                                <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">The URL path where this flow is served on your WordPress site</p>
+                                <p class="flosc-flow-field__hint">The URL path where this flow is served on your WordPress site</p>
                             </div>
                             
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Custom Domain</label>
+                            <div class="flosc-flow-field">
+                                <label class="flosc-flow-field__label">Custom Domain</label>
                                 <input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>domain" 
                                        value="<?php echo esc_attr($flosc_settings['domain'] ?? ''); ?>"
                                        placeholder="e.g., flosc.ai or lesaep.com"
-                                       style="width: 100%; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
-                                <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">Custom domain pointing to this flow</p>
+                                       class="flosc-flow-input">
+                                <p class="flosc-flow-field__hint">Custom domain pointing to this flow</p>
                             </div>
                             
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Name</label>
+                            <div class="flosc-flow-field">
+                                <label class="flosc-flow-field__label">Name</label>
                                 <input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>name" 
                                        value="<?php echo esc_attr($flosc_settings['name'] ?? ''); ?>"
                                        placeholder="e.g., FLOSC or LeSAEp"
-                                       style="width: 100%; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
+                                       class="flosc-flow-input">
                             </div>
                             
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Title</label>
+                            <div class="flosc-flow-field">
+                                <label class="flosc-flow-field__label">Title</label>
                                 <input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>title" 
                                        value="<?php echo esc_attr($flosc_settings['title'] ?? ''); ?>"
                                        placeholder="e.g., Learn Excellent Standard American English Pronunciation"
-                                       style="width: 100%; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
-                                <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">Description shown under the name</p>
+                                       class="flosc-flow-input">
+                                <p class="flosc-flow-field__hint">Description shown under the name</p>
                             </div>
                             
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Tagline</label>
+                            <div class="flosc-flow-field">
+                                <label class="flosc-flow-field__label">Tagline</label>
                                 <input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>tagline" 
                                        value="<?php echo esc_attr($flosc_settings['tagline'] ?? ''); ?>"
                                        placeholder="e.g., Freeline → Login → Offer → Sale → Content"
-                                       style="width: 100%; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
-                                <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">Short tagline shown below the title (leave empty to hide)</p>
+                                       class="flosc-flow-input">
+                                <p class="flosc-flow-field__hint">Short tagline shown below the title (leave empty to hide)</p>
                             </div>
                         </div>
                         
                         <!-- Right Column -->
                         <div>
-                            <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                            <div class="flosc-flow-field-row">
                                 <div>
-                                    <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Brand Color</label>
+                                    <label class="flosc-flow-field__label">Brand Color</label>
                                     <input type="color" name="<?php echo esc_attr( $flosc_prefix ); ?>primary_color" 
                                            value="<?php echo esc_attr($flosc_settings['primary_color'] ?? '#4f46e5'); ?>"
-                                           style="width: 60px; height: 38px; padding: 0; border: 1px solid #c3c4c7; border-radius: 2px; cursor: pointer;">
+                                           class="flosc-flow-input-color">
                                 </div>
                                 <div>
-                                    <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Status</label>
-                                    <select name="<?php echo esc_attr( $flosc_prefix ); ?>status" style="padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
+                                    <label class="flosc-flow-field__label">Status</label>
+                                    <select name="<?php echo esc_attr( $flosc_prefix ); ?>status" class="flosc-flow-input flosc-flow-input--status">
                                         <option value="active" <?php selected($flosc_settings['status'] ?? '', 'active'); ?>>Active</option>
                                         <option value="draft" <?php selected($flosc_settings['status'] ?? '', 'draft'); ?>>Draft</option>
                                     </select>
                                 </div>
                             </div>
 
-                            <div style="margin-bottom: 12px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Chat Logo URL</label>
+                            <div class="flosc-flow-field flosc-flow-field--tight">
+                                <label class="flosc-flow-field__label">Chat Logo URL</label>
                                 <input type="url" name="<?php echo esc_attr( $flosc_prefix ); ?>chatlogo_url"
                                        value="<?php echo esc_attr($flosc_settings['chatlogo_url'] ?? ''); ?>"
                                        placeholder="https://..."
-                                       style="width: 100%; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
+                                       class="flosc-flow-input">
                             </div>
 
-                            <div style="margin-bottom: 12px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Favicon URL</label>
+                            <div class="flosc-flow-field flosc-flow-field--tight">
+                                <label class="flosc-flow-field__label">Favicon URL</label>
                                 <input type="url" name="<?php echo esc_attr( $flosc_prefix ); ?>favicon_url"
                                        value="<?php echo esc_attr($flosc_settings['favicon_url'] ?? ''); ?>"
                                        placeholder="https://..."
-                                       style="width: 100%; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
+                                       class="flosc-flow-input">
                             </div>
 
-                            <div style="margin-bottom: 15px;">
-                                <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Badge Image URL</label>
+                            <div class="flosc-flow-field">
+                                <label class="flosc-flow-field__label">Badge Image URL</label>
                                 <input type="url" name="<?php echo esc_attr( $flosc_prefix ); ?>badgeUrl"
                                        value="<?php echo esc_attr($flosc_settings['badgeUrl'] ?? ''); ?>"
                                        placeholder="https://..."
-                                       style="width: 100%; padding: 8px 12px; border: 1px solid #c3c4c7; border-radius: 2px;">
+                                       class="flosc-flow-input">
                             </div>
                             
                             <!-- DNS Setup Info (if custom domain set) -->
                             <?php if (!empty($flosc_settings['domain'])): ?>
-                            <div style="background: #fef3c7; border: 1px solid #dba617; padding: 12px 15px; border-radius: 2px; margin-bottom: 15px;">
-                                <div style="font-weight: 600; font-size: 12px; color: #50575e; margin-bottom: 5px;">DNS Setup for <?php echo esc_html($flosc_settings['domain']); ?></div>
-                                <div style="font-size: 11px; color: #50575e;">
-                                    Point your domain to: <code style="background: white; padding: 2px 6px; border-radius: 3px;"><?php echo esc_html(wp_parse_url(home_url(), PHP_URL_HOST)); ?></code><br>
-                                    <a href="https://flosc.ai/docs/dns" target="_blank" style="color: #50575e;">Full DNS guide →</a>
+                            <div class="flosc-flow-dns-inline-box">
+                                <div class="flosc-flow-dns-inline-box__title">DNS Setup for <?php echo esc_html($flosc_settings['domain']); ?></div>
+                                <div class="flosc-flow-dns-inline-box__body">
+                                    Point your domain to: <code class="flosc-flow-dns-inline-box__code"><?php echo esc_html(wp_parse_url(home_url(), PHP_URL_HOST)); ?></code><br>
+                                    <a href="https://flosc.ai/docs/dns" target="_blank" class="flosc-flow-dns-inline-box__link">Full DNS guide →</a>
                                 </div>
                             </div>
                             <?php endif; ?>
                         </div>
                     </div>
 
-                    <div style="margin-top: 20px; border-top: 1px solid #c3c4c7; padding-top: 20px;">
-                        <h4 style="margin: 0 0 12px; font-size: 14px; color: #1d2327;">Policy Pages Content (Per Flow)</h4>
+                    <div class="flosc-flow-policies">
+                        <h4 class="flosc-flow-policies__title">Policy Pages Content (Per Flow)</h4>
 
-                        <div style="margin-bottom: 12px;">
-                            <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Privacy Policy Content</label>
-                            <textarea name="<?php echo esc_attr( $flosc_prefix ); ?>privacy_policy_content" rows="8" style="width: 100%; padding: 8px 10px; border: 1px solid #c3c4c7; border-radius: 2px; font-family: monospace;"><?php echo esc_textarea($flosc_settings['privacy_policy_content'] ?? ''); ?></textarea>
-                            <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">Shown at /privacy for this flow domain. HTML is allowed.</p>
+                        <div class="flosc-flow-field flosc-flow-field--tight">
+                            <label class="flosc-flow-field__label">Privacy Policy Content</label>
+                            <textarea name="<?php echo esc_attr( $flosc_prefix ); ?>privacy_policy_content" rows="8" class="flosc-flow-textarea"><?php echo esc_textarea($flosc_settings['privacy_policy_content'] ?? ''); ?></textarea>
+                            <p class="flosc-flow-field__hint">Shown at /privacy for this flow domain. HTML is allowed.</p>
                         </div>
 
-                        <div style="margin-bottom: 12px;">
-                            <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Terms of Service Content</label>
-                            <textarea name="<?php echo esc_attr( $flosc_prefix ); ?>terms_of_service_content" rows="8" style="width: 100%; padding: 8px 10px; border: 1px solid #c3c4c7; border-radius: 2px; font-family: monospace;"><?php echo esc_textarea($flosc_settings['terms_of_service_content'] ?? ''); ?></textarea>
-                            <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">Shown at /terms-of-service for this flow domain. HTML is allowed.</p>
+                        <div class="flosc-flow-field flosc-flow-field--tight">
+                            <label class="flosc-flow-field__label">Terms of Service Content</label>
+                            <textarea name="<?php echo esc_attr( $flosc_prefix ); ?>terms_of_service_content" rows="8" class="flosc-flow-textarea"><?php echo esc_textarea($flosc_settings['terms_of_service_content'] ?? ''); ?></textarea>
+                            <p class="flosc-flow-field__hint">Shown at /terms-of-service for this flow domain. HTML is allowed.</p>
                         </div>
 
-                        <div style="margin-bottom: 12px;">
-                            <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Data Deletion Content</label>
-                            <textarea name="<?php echo esc_attr( $flosc_prefix ); ?>data_deletion_content" rows="8" style="width: 100%; padding: 8px 10px; border: 1px solid #c3c4c7; border-radius: 2px; font-family: monospace;"><?php echo esc_textarea($flosc_settings['data_deletion_content'] ?? ''); ?></textarea>
-                            <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">Shown at /data-deletion for this flow domain. HTML is allowed.</p>
+                        <div class="flosc-flow-field flosc-flow-field--tight">
+                            <label class="flosc-flow-field__label">Data Deletion Content</label>
+                            <textarea name="<?php echo esc_attr( $flosc_prefix ); ?>data_deletion_content" rows="8" class="flosc-flow-textarea"><?php echo esc_textarea($flosc_settings['data_deletion_content'] ?? ''); ?></textarea>
+                            <p class="flosc-flow-field__hint">Shown at /data-deletion for this flow domain. HTML is allowed.</p>
                         </div>
 
                         <div>
-                            <label style="display: block; font-weight: 600; margin-bottom: 5px; font-size: 13px;">Platform Compliance Content</label>
-                            <textarea name="<?php echo esc_attr( $flosc_prefix ); ?>platform_compliance_content" rows="8" style="width: 100%; padding: 8px 10px; border: 1px solid #c3c4c7; border-radius: 2px; font-family: monospace;"><?php echo esc_textarea($flosc_settings['platform_compliance_content'] ?? ''); ?></textarea>
-                            <p style="font-size: 11px; color: #50575e; margin: 4px 0 0;">Appended to all three policy pages (privacy, terms-of-service, data-deletion). HTML is allowed.</p>
+                            <label class="flosc-flow-field__label">Platform Compliance Content</label>
+                            <textarea name="<?php echo esc_attr( $flosc_prefix ); ?>platform_compliance_content" rows="8" class="flosc-flow-textarea"><?php echo esc_textarea($flosc_settings['platform_compliance_content'] ?? ''); ?></textarea>
+                            <p class="flosc-flow-field__hint">Appended to all three policy pages (privacy, terms-of-service, data-deletion). HTML is allowed.</p>
                         </div>
                     </div>
                     
                     <!-- Save This Flow Button -->
-                    <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #c3c4c7;">
+                    <div class="flosc-flow-block__save-row">
                         <button type="submit" name="flosc_save_flow" value="<?php echo esc_attr($flosc_ivr_file); ?>" class="button button-secondary">
                             Save <?php echo esc_html($flosc_settings['name'] ?? $flosc_ivr_file); ?>
                         </button>
@@ -1311,34 +1321,34 @@ if ($flosc_selected_flow_name === '') {
                 <?php endforeach; ?>
                 
                 <!-- DNS Setup Guide -->
-                <div style="background: #f0f6fc; border: 1px solid #c3c4c7; padding: 20px; border-radius: 2px; margin-bottom: 20px;">
-                    <h4 style="margin: 0 0 15px; color: #1d2327; font-size: 15px;">Custom Domain DNS Setup</h4>
+                <div class="flosc-domain-guide">
+                    <h4 class="flosc-domain-guide__title">Custom Domain DNS Setup</h4>
                     
-                    <p style="font-size: 13px; color: #1d2327; margin: 0 0 15px; line-height: 1.6;">
+                    <p class="flosc-domain-guide__intro">
                         <strong>How it works:</strong> Your custom domain (e.g., <code>flosc.ai</code>) will point to this WordPress installation, 
                         and FLOSC will automatically serve the correct flow when visitors access that domain.
                     </p>
                     
-                    <div style="background: white; padding: 15px; border-radius: 2px; margin-bottom: 15px;">
-                        <p style="font-size: 13px; color: #1d2327; margin: 0 0 10px;"><strong>Step 1: Configure your DNS records</strong></p>
-                        <ul style="font-size: 12px; color: #1d2327; margin: 0; padding-left: 20px; list-style: disc;">
-                            <li style="margin-bottom: 5px;">Add a <strong>CNAME record</strong> pointing your domain to: <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 3px;"><?php echo esc_html(wp_parse_url(home_url(), PHP_URL_HOST)); ?></code></li>
-                            <li style="margin-bottom: 5px;">Or add an <strong>A record</strong> pointing to your server's IP address</li>
+                    <div class="flosc-domain-guide__step">
+                        <p class="flosc-domain-guide__step-title"><strong>Step 1: Configure your DNS records</strong></p>
+                        <ul class="flosc-domain-guide__step-list">
+                            <li class="flosc-domain-guide__step-list-item">Add a <strong>CNAME record</strong> pointing your domain to: <code class="flosc-domain-guide__code"><?php echo esc_html(wp_parse_url(home_url(), PHP_URL_HOST)); ?></code></li>
+                            <li class="flosc-domain-guide__step-list-item">Or add an <strong>A record</strong> pointing to your server's IP address</li>
                             <li>For www subdomain, add another CNAME pointing <code>www.yourdomain.com</code> → <code>yourdomain.com</code></li>
                         </ul>
                     </div>
                     
-                    <div style="background: white; padding: 15px; border-radius: 2px; margin-bottom: 15px;">
-                        <p style="font-size: 13px; color: #1d2327; margin: 0 0 10px;"><strong>Step 2: Configure your web server</strong></p>
-                        <p style="font-size: 12px; color: #1d2327; margin: 0;">
+                    <div class="flosc-domain-guide__step">
+                        <p class="flosc-domain-guide__step-title"><strong>Step 2: Configure your web server</strong></p>
+                        <p class="flosc-domain-guide__step-text">
                             Your web server (Apache/Nginx) must be configured to accept requests for the custom domain 
                             and route them to this WordPress installation. Contact your hosting provider if needed.
                         </p>
                     </div>
                     
-                    <div style="background: white; padding: 15px; border-radius: 2px;">
-                        <p style="font-size: 13px; color: #1d2327; margin: 0 0 10px;"><strong>Step 3: Enter the domain above</strong></p>
-                        <p style="font-size: 12px; color: #1d2327; margin: 0;">
+                    <div class="flosc-domain-guide__step flosc-domain-guide__step--last">
+                        <p class="flosc-domain-guide__step-title"><strong>Step 3: Enter the domain above</strong></p>
+                        <p class="flosc-domain-guide__step-text">
                             Enter just the domain name (e.g., <code>flosc.ai</code>) in the Custom Domain field for your flow. 
                             FLOSC will handle the rest!
                         </p>
@@ -1346,18 +1356,18 @@ if ($flosc_selected_flow_name === '') {
                 </div>
                 
                 <!-- Save All Flows Button -->
-                <div style="background: #f0f0f1; padding: 20px; border-radius: 2px; text-align: center; margin-top: 20px;">
+                <div class="flosc-flow-save-all-row">
                     <button type="submit" name="flosc_save_all_flows" value="1" class="button button-primary button-large">
                         Save All Flows
                     </button>
-                    <p style="margin: 10px 0 0; font-size: 12px; color: #50575e;">Saves identity settings for all <?php echo count($flosc_all_flows); ?> flows at once</p>
+                    <p class="flosc-flow-save-all-row__hint">Saves identity settings for all <?php echo count($flosc_all_flows); ?> flows at once</p>
                 </div>
             </div>
             
             <?php else: ?>
             
             <!-- SINGLE FLOW EDIT VIEW -->
-            <div class="card" style="max-width: 900px; padding: 20px; margin-top: 20px;">
+            <div class="card flosc-settings-card">
                 <?php flosc_tab_header('🏷️', 'Identity'); ?>
                 <?php
                 $flosc_identity_docs_url = add_query_arg([
@@ -1367,8 +1377,8 @@ if ($flosc_selected_flow_name === '') {
                     'doc'  => 'ref-admin',
                 ], admin_url('admin.php')) . '#tab-identity';
                 ?>
-                <div style="margin:-8px 0 14px; text-align:right;">
-                    <a href="<?php echo esc_url($flosc_identity_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
+                <div class="flosc-settings-docs-row">
+                    <a href="<?php echo esc_url($flosc_identity_docs_url); ?>" class="flosc-settings-docs-link">Docs</a>
                 </div>
                 
                 <!-- URL Mapping Info Box -->
@@ -1378,21 +1388,21 @@ if ($flosc_selected_flow_name === '') {
                 $flosc_current_slug = $flosc_flow_settings['slug'] ?? $flosc_default_slug;
                 $flosc_flow_url = home_url('/' . $flosc_current_slug . '/');
                 ?>
-                <div style="background: #f0f6fc; border: 1px solid #c3c4c7; padding: 20px; border-radius: 2px; color: #1d2327; margin-bottom: 25px;">
-                    <div style="font-size: 12px; color: #50575e; margin-bottom: 5px;">This flow is accessible at:</div>
-                    <div style="font-family: monospace; font-size: 18px; font-weight: 600;">
-                        <a href="<?php echo esc_url($flosc_flow_url); ?>" target="_blank" style="color: #2271b1; text-decoration: none;">
+                <div class="flosc-flow-url-box">
+                    <div class="flosc-flow-url-box__label">This flow is accessible at:</div>
+                    <div class="flosc-flow-url-box__value">
+                        <a href="<?php echo esc_url($flosc_flow_url); ?>" target="_blank" class="flosc-flow-url-box__link">
                             <?php echo esc_html($flosc_flow_url); ?> &#8599;
                         </a>
                         <?php if (!empty($flosc_flow_settings['domain'])): ?>
-                            <span style="color: #787c82; margin: 0 10px;">&rarr;</span>
-                            <a href="https://<?php echo esc_attr($flosc_flow_settings['domain']); ?>/" target="_blank" style="color: #2271b1; text-decoration: none;">
+                            <span class="flosc-flow-url-box__arrow">&rarr;</span>
+                            <a href="https://<?php echo esc_attr($flosc_flow_settings['domain']); ?>/" target="_blank" class="flosc-flow-url-box__link">
                                 https://<?php echo esc_html($flosc_flow_settings['domain']); ?>/ &#8599;
                             </a>
                         <?php endif; ?>
                     </div>
-                    <div style="font-size: 11px; color: #787c82; margin-top: 8px;">
-                        IVR File: <code style="background: #e0e0e0; padding: 2px 6px; border-radius: 2px;"><?php echo esc_html($flosc_selected_ivr); ?></code>
+                    <div class="flosc-flow-url-box__meta">
+                        IVR File: <code class="flosc-flow-url-box__ivr-file"><?php echo esc_html($flosc_selected_ivr); ?></code>
                     </div>
                 </div>
                 
@@ -1401,12 +1411,12 @@ if ($flosc_selected_flow_name === '') {
                     <tr>
                         <th><label for="flow_slug">URL Slug</label></th>
                         <td>
-                            <div style="display: flex; align-items: center; gap: 5px;">
-                                <code style="background: #f3f4f6; padding: 8px 12px; border-radius: 4px;"><?php echo esc_html( home_url('/') ); ?></code>
-                                <input type="text" id="flow_slug" name="flow_slug" style="width: 180px; font-weight: 600;"
+                            <div class="flosc-flow-slug-row">
+                                <code class="flosc-flow-slug-row__code"><?php echo esc_html( home_url('/') ); ?></code>
+                                <input type="text" id="flow_slug" name="flow_slug" class="flosc-flow-slug-row__input"
                                        value="<?php echo esc_attr($flosc_current_slug); ?>"
                                        placeholder="myapp">
-                                <code style="background: #f3f4f6; padding: 8px 12px; border-radius: 4px;">/</code>
+                                <code class="flosc-flow-slug-row__code">/</code>
                             </div>
                             <p class="description">The URL path where this flow is served. Lowercase letters, numbers, hyphens only.</p>
                         </td>
@@ -1452,8 +1462,8 @@ if ($flosc_selected_flow_name === '') {
                         <td>
                             <input type="color" id="flow_primary_color" name="flow_primary_color"
                                    value="<?php echo esc_attr($flosc_fi['primary_color'] ?? '#4f46e5'); ?>"
-                                   style="width: 60px; height: 40px; padding: 0; border: 1px solid #ccc; cursor: pointer;">
-                            <span id="color-preview" style="margin-left: 10px; padding: 5px 15px; border-radius: 4px; color: white; background: <?php echo esc_attr($flosc_fi['primary_color'] ?? '#4f46e5'); ?>;">
+                                class="flosc-flow-color-input">
+                            <span id="color-preview" class="flosc-flow-color-preview" data-color="<?php echo esc_attr($flosc_fi['primary_color'] ?? '#4f46e5'); ?>">
                                 Preview
                             </span>
                             <p class="description">Lesson highlights, form buttons, focus rings, carousel controls. Sets <code>--flosc-primary</code>.</p>
@@ -1461,20 +1471,26 @@ if ($flosc_selected_flow_name === '') {
                             document.getElementById('flow_primary_color').addEventListener('input', function(e) {
                                 document.getElementById('color-preview').style.background = e.target.value;
                             });
+                            (function () {
+                                var preview = document.getElementById('color-preview');
+                                if (preview) {
+                                    preview.style.background = preview.getAttribute('data-color') || '#4f46e5';
+                                }
+                            })();
                             <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
                         </td>
                     </tr>
                     <tr>
                         <th><label for="flow_chatlogo_url">Chat Logo</label></th>
                         <td>
-                            <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="flosc-flow-media-row">
                                 <input type="url" id="flow_chatlogo_url" name="flow_chatlogo_url" class="regular-text"
                                        value="<?php echo esc_attr($flosc_fi['chatlogo_url'] ?? ''); ?>"
                                        placeholder="https://...">
                                 <button type="button" class="button" id="flosc_upload_chatlogo">Choose Image</button>
                                 <img src="<?php echo esc_url($flosc_fi['chatlogo_url'] ?? ''); ?>" 
                                      alt="" id="flosc_chatlogo_preview"
-                                     style="max-height: 40px; border-radius: 4px;<?php echo empty($flosc_fi['chatlogo_url']) ? ' display: none;' : ''; ?>">
+                                     class="flosc-flow-media-preview flosc-flow-media-preview--chatlogo<?php echo empty($flosc_fi['chatlogo_url']) ? ' flosc-hidden' : ''; ?>">
                             </div>
                             <p class="description">Image shown in the chat header beside the name. Wider/rectangular formats welcome.</p>
                         </td>
@@ -1482,14 +1498,14 @@ if ($flosc_selected_flow_name === '') {
                     <tr>
                         <th><label for="flow_favicon_url">Favicon</label></th>
                         <td>
-                            <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="flosc-flow-media-row">
                                 <input type="url" id="flow_favicon_url" name="flow_favicon_url" class="regular-text"
                                        value="<?php echo esc_attr($flosc_fi['favicon_url'] ?? ''); ?>"
                                        placeholder="https://...">
                                 <button type="button" class="button" id="flosc_upload_favicon">Choose Image</button>
                                 <img src="<?php echo esc_url($flosc_fi['favicon_url'] ?? ''); ?>" 
                                      alt="" id="flosc_favicon_preview"
-                                     style="width: 32px; height: 32px; border-radius: 6px;<?php echo empty($flosc_fi['favicon_url']) ? ' display: none;' : ''; ?>">
+                                     class="flosc-flow-media-preview flosc-flow-media-preview--favicon<?php echo empty($flosc_fi['favicon_url']) ? ' flosc-hidden' : ''; ?>">
                             </div>
                             <p class="description">Browser tab icon. Square PNG recommended (512&times;512+).</p>
                         </td>
@@ -1498,14 +1514,14 @@ if ($flosc_selected_flow_name === '') {
                     <tr>
                         <th><label for="flow_badgeUrl">Badge Image</label></th>
                         <td>
-                            <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="flosc-flow-media-row">
                                 <input type="url" id="flow_badgeUrl" name="flow_badgeUrl" class="regular-text"
                                        value="<?php echo esc_attr($flosc_fi['badgeUrl'] ?? ''); ?>"
                                        placeholder="https://...">
                                 <button type="button" class="button" id="flosc_upload_badge">Choose Image</button>
                                 <img src="<?php echo esc_url($flosc_fi['badgeUrl'] ?? ''); ?>" 
                                      alt="" id="flosc_badge_preview"
-                                     style="max-height: 40px; border-radius: 6px;<?php echo empty($flosc_fi['badgeUrl']) ? ' display: none;' : ''; ?>">
+                                     class="flosc-flow-media-preview flosc-flow-media-preview--badge<?php echo empty($flosc_fi['badgeUrl']) ? ' flosc-hidden' : ''; ?>">
                             </div>
                             <p class="description">Badge shown in the AI welcome message. Leave empty for no badge.</p>
                         </td>
@@ -1576,13 +1592,13 @@ if ($flosc_selected_flow_name === '') {
                 
                 <!-- DNS Setup Info (if custom domain set) -->
                 <?php if (!empty($flosc_flow_settings['domain'])): ?>
-                <div style="background: #fef3c7; border: 1px solid #dba617; padding: 15px 20px; border-radius: 2px; margin-top: 20px;">
-                    <h4 style="margin: 0 0 10px; color: #50575e; font-size: 14px;">DNS Setup for <?php echo esc_html($flosc_flow_settings['domain']); ?></h4>
-                    <p style="font-size: 13px; color: #50575e; margin: 0;">
-                        Point your domain to: <code style="background: white; padding: 3px 8px; border-radius: 4px;"><?php echo esc_html(wp_parse_url(home_url(), PHP_URL_HOST)); ?></code>
+                <div class="flosc-flow-dns-box">
+                    <h4 class="flosc-flow-dns-box__title">DNS Setup for <?php echo esc_html($flosc_flow_settings['domain']); ?></h4>
+                    <p class="flosc-flow-dns-box__text">
+                        Point your domain to: <code class="flosc-flow-dns-box__code"><?php echo esc_html(wp_parse_url(home_url(), PHP_URL_HOST)); ?></code>
                     </p>
-                    <p style="font-size: 12px; color: #50575e; margin: 8px 0 0;">
-                        <a href="https://flosc.ai/docs/dns" target="_blank" style="color: #50575e;">Full DNS Configuration Guide</a>
+                    <p class="flosc-flow-dns-box__text flosc-flow-dns-box__text--spaced">
+                        <a href="https://flosc.ai/docs/dns" target="_blank" class="flosc-flow-dns-box__link">Full DNS Configuration Guide</a>
                     </p>
                 </div>
                 <?php endif; ?>
@@ -1652,7 +1668,7 @@ if ($flosc_selected_flow_name === '') {
             <?php include FLOSC_PLUGIN_DIR . 'admin/documentation.php'; ?>
 
         <?php elseif ($flosc_active_tab === 'da1'): ?>
-            <div style="margin: 18px 0;">
+            <div class="flosc-da1-launch-row">
                 <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-da1') ); ?>" class="button button-primary">Open DA1 Catalog</a>
             </div>
             <p>DA1 catalog is available as a dedicated admin page.</p>
@@ -1660,7 +1676,7 @@ if ($flosc_selected_flow_name === '') {
         <?php endif; ?>
 
         <?php if ($flosc_active_tab !== 'documentation' && $flosc_active_tab !== 'autoprompts' && $flosc_active_tab !== 'da1'): ?>
-        <p class="submit" style="margin-top: 20px;">
+        <p class="submit flosc-settings-submit-row">
             <button type="submit" name="flosc_save" class="button button-primary button-large">
                 Save Settings for <?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $flosc_selected_ivr); ?>
             </button>

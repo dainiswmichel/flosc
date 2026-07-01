@@ -31,7 +31,7 @@ if (isset($flosc_get['delete_flow']) && $flosc_is_admin && isset($flosc_get['_wp
         <div class="notice notice-success is-dismissible"><p>Flow deleted.</p></div>
     <?php endif; ?>
     
-    <p class="description" style="margin-bottom: 20px;">
+    <p class="description flosc-flows-description">
         Quick overview of your flows. Click <strong>Configure</strong> to edit all settings for a flow.
     </p>
     
@@ -44,7 +44,7 @@ if (isset($flosc_get['delete_flow']) && $flosc_is_admin && isset($flosc_get['_wp
     <table class="wp-list-table widefat fixed striped">
         <thead>
             <tr>
-                <th style="width: 50px;"></th>
+                <th class="flosc-flows-col-color"></th>
                 <th>Name</th>
                 <th>URL</th>
                 <th>IVR File</th>
@@ -63,14 +63,14 @@ if (isset($flosc_get['delete_flow']) && $flosc_is_admin && isset($flosc_get['_wp
                 }
                 ?>
                 <tr>
-                    <td style="text-align: center;">
+                    <td class="flosc-flows-color-cell">
                         <?php $flosc_fi = $flosc_flow['identity'] ?? []; ?>
-                        <span style="display:inline-block;width:24px;height:24px;border-radius:4px;background:<?php echo esc_attr($flosc_fi['primary_color'] ?? '#4f46e5'); ?>;"></span>
+                        <span class="flosc-flows-color-dot"></span>
                     </td>
                     <td>
                         <strong><?php echo esc_html($flosc_fi['name'] ?? $flosc_flow['id']); ?></strong>
                         <?php if (!empty($flosc_fi['tagline'])): ?>
-                            <br><small style="color: #666;"><?php echo esc_html($flosc_fi['tagline']); ?></small>
+                            <br><small class="flosc-flows-tagline"><?php echo esc_html($flosc_fi['tagline']); ?></small>
                         <?php endif; ?>
                     </td>
                     <td>
@@ -83,13 +83,13 @@ if (isset($flosc_get['delete_flow']) && $flosc_is_admin && isset($flosc_get['_wp
                         <?php endif; ?>
                     </td>
                     <td>
-                        <code style="font-size: 12px;"><?php echo esc_html($flosc_flow['ivr_file'] ?? 'default'); ?></code>
+                        <code class="flosc-flows-ivr-code"><?php echo esc_html($flosc_flow['ivr_file'] ?? 'default'); ?></code>
                     </td>
                     <td>
                         <?php if ($flosc_flow['status'] === 'active'): ?>
-                            <span style="color: #059669; font-weight: 600;">● Active</span>
+                            <span class="flosc-flows-status flosc-flows-status--active">● Active</span>
                         <?php else: ?>
-                            <span style="color: #d97706;">○ Draft</span>
+                            <span class="flosc-flows-status flosc-flows-status--draft">○ Draft</span>
                         <?php endif; ?>
                     </td>
                     <td>
@@ -103,8 +103,8 @@ if (isset($flosc_get['delete_flow']) && $flosc_is_admin && isset($flosc_get['_wp
                         
                         <?php if ($flosc_is_admin && count($flosc_flows) > 1): ?>
                                      <a href="<?php echo esc_url(wp_nonce_url(admin_url('admin.php?page=flosc-flows&delete_flow=' . rawurlencode($flosc_flow['id'])), 'flosc_delete_flow')); ?>" 
-                               class="button button-small" style="color: #dc2626;"
-                               onclick="return confirm('Delete this flow? This cannot be undone.');">Delete</a>
+                               class="button button-small flosc-flows-delete-btn"
+                                 data-confirm-message="Delete this flow? This cannot be undone.">Delete</a>
                         <?php endif; ?>
                     </td>
                 </tr>
@@ -114,8 +114,8 @@ if (isset($flosc_get['delete_flow']) && $flosc_is_admin && isset($flosc_get['_wp
     
     <?php endif; ?>
     
-    <div style="margin-top: 30px; padding: 20px; background: #f0f6fc; border-left: 4px solid #2271b1; border-radius: 4px;">
-        <h3 style="margin-top: 0;">💡 Tip: Use the Settings Page</h3>
+    <div class="flosc-flows-tip-box">
+        <h3 class="flosc-flows-tip-title">💡 Tip: Use the Settings Page</h3>
         <p>The <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings')); ?>"><strong>Settings</strong></a> page is where you configure everything for each flow. 
         Use the dropdown at the top to switch between flows.</p>
     </div>

@@ -587,6 +587,14 @@
     animation: flosc-spin 0.8s linear infinite;
 }
 
+.flosc-checkout-btn-spinner.flosc-hidden {
+    display: none;
+}
+
+.flosc-offer-cta-price {
+    opacity: 0.9;
+}
+
 @keyframes flosc-spin {
     to { transform: rotate(360deg); }
 }
@@ -764,6 +772,7 @@
 .flosc-quiz-progress-bar {
     height: 100%;
     background: var(--flosc-quiz-inline-accent);
+    width: 0;
     transition: width 0.3s ease;
 }
 
@@ -818,6 +827,9 @@
    Used by showQuizResults() in flosc-app.js
    ============================================ */
 .flosc-quiz-score-circle {
+    --flosc-ring-deg: 0deg;
+    --flosc-ring-start: var(--flosc-offer-cta-bg);
+    --flosc-ring-end: var(--flosc-quiz-score-ring);
     width: 120px;
     height: 120px;
     border-radius: 50%;
@@ -825,9 +837,63 @@
     align-items: center;
     justify-content: center;
     margin: 0 auto 16px;
-    background: conic-gradient(var(--flosc-offer-cta-bg) 0deg, var(--flosc-quiz-score-ring) 0deg);
+    background: conic-gradient(var(--flosc-ring-start) var(--flosc-ring-deg), var(--flosc-ring-end) var(--flosc-ring-deg));
     position: relative;
 }
+
+.flosc-quiz-score-circle.flosc-score-ring-solid {
+    --flosc-ring-start: #10b981;
+    --flosc-ring-end: #e5e7eb;
+}
+
+.flosc-quiz-score-circle.flosc-score-ring-theme {
+    --flosc-ring-start: var(--flosc-offer-cta-bg);
+    --flosc-ring-end: var(--flosc-quiz-score-ring);
+}
+
+.flosc-ring-0 { --flosc-ring-deg: 0deg; }
+.flosc-ring-5 { --flosc-ring-deg: 18deg; }
+.flosc-ring-10 { --flosc-ring-deg: 36deg; }
+.flosc-ring-15 { --flosc-ring-deg: 54deg; }
+.flosc-ring-20 { --flosc-ring-deg: 72deg; }
+.flosc-ring-25 { --flosc-ring-deg: 90deg; }
+.flosc-ring-30 { --flosc-ring-deg: 108deg; }
+.flosc-ring-35 { --flosc-ring-deg: 126deg; }
+.flosc-ring-40 { --flosc-ring-deg: 144deg; }
+.flosc-ring-45 { --flosc-ring-deg: 162deg; }
+.flosc-ring-50 { --flosc-ring-deg: 180deg; }
+.flosc-ring-55 { --flosc-ring-deg: 198deg; }
+.flosc-ring-60 { --flosc-ring-deg: 216deg; }
+.flosc-ring-65 { --flosc-ring-deg: 234deg; }
+.flosc-ring-70 { --flosc-ring-deg: 252deg; }
+.flosc-ring-75 { --flosc-ring-deg: 270deg; }
+.flosc-ring-80 { --flosc-ring-deg: 288deg; }
+.flosc-ring-85 { --flosc-ring-deg: 306deg; }
+.flosc-ring-90 { --flosc-ring-deg: 324deg; }
+.flosc-ring-95 { --flosc-ring-deg: 342deg; }
+.flosc-ring-100 { --flosc-ring-deg: 360deg; }
+
+.flosc-w-0 { width: 0%; }
+.flosc-w-5 { width: 5%; }
+.flosc-w-10 { width: 10%; }
+.flosc-w-15 { width: 15%; }
+.flosc-w-20 { width: 20%; }
+.flosc-w-25 { width: 25%; }
+.flosc-w-30 { width: 30%; }
+.flosc-w-35 { width: 35%; }
+.flosc-w-40 { width: 40%; }
+.flosc-w-45 { width: 45%; }
+.flosc-w-50 { width: 50%; }
+.flosc-w-55 { width: 55%; }
+.flosc-w-60 { width: 60%; }
+.flosc-w-65 { width: 65%; }
+.flosc-w-70 { width: 70%; }
+.flosc-w-75 { width: 75%; }
+.flosc-w-80 { width: 80%; }
+.flosc-w-85 { width: 85%; }
+.flosc-w-90 { width: 90%; }
+.flosc-w-95 { width: 95%; }
+.flosc-w-100 { width: 100%; }
 
 .flosc-quiz-score-circle::after {
     content: '';
@@ -1177,6 +1243,10 @@
     font-size: 14px;
 }
 
+.flosc-ipa-score-value {
+    font-weight: 700;
+}
+
 .flosc-ipa-weak-sym {
     font-family: 'Gentium Plus', 'Charis SIL', serif;
     font-size: 16px;
@@ -1229,6 +1299,144 @@
     flex-shrink: 0;
     font-weight: 700;
     margin-left: 12px;
+}
+
+.flosc-ipa-phoneme-chip-high {
+    border-color: var(--flosc-ipa-high);
+}
+
+.flosc-ipa-phoneme-chip-med {
+    border-color: var(--flosc-ipa-med);
+}
+
+.flosc-ipa-phoneme-chip-low {
+    border-color: var(--flosc-ipa-low);
+}
+
+.flosc-plan-picker {
+    margin-bottom: 16px;
+}
+
+.flosc-plan-picker-title {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.flosc-plan-options {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.flosc-plan-option {
+    flex: 1;
+    max-width: 180px;
+    padding: 14px 10px;
+    border: 2px solid #d1d5db;
+    border-radius: 10px;
+    text-align: center;
+    cursor: pointer;
+    background: #fff;
+    position: relative;
+}
+
+.flosc-plan-option-selected {
+    border-color: #10b981;
+    background: #ecfdf5;
+}
+
+.flosc-plan-option-input {
+    display: none;
+}
+
+.flosc-plan-badge {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #10b981;
+    color: #fff;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 8px;
+    white-space: nowrap;
+}
+
+.flosc-plan-amount {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.flosc-plan-interval {
+    font-size: 13px;
+    color: #374151;
+}
+
+.flosc-plan-interval-yearly {
+    color: #065f46;
+}
+
+.flosc-plan-savings {
+    font-size: 11px;
+    color: #10b981;
+    margin-top: 4px;
+}
+
+.flosc-sub-paypal-btn {
+    min-height: 55px;
+}
+
+.flosc-sub-status {
+    text-align: center;
+    font-size: 13px;
+    color: #666;
+    margin-top: 8px;
+}
+
+.flosc-status-error {
+    color: #dc2626;
+}
+
+.flosc-paypal-status {
+    text-align: center;
+    padding: 16px;
+    color: #666;
+}
+
+.flosc-paypal-status-sm {
+    font-size: 14px;
+}
+
+.flosc-paypal-status-error {
+    color: #dc2626;
+}
+
+.flosc-paypal-status-muted {
+    padding: 14px;
+    font-size: 13px;
+}
+
+.flosc-paypal-retry-wrap {
+    text-align: center;
+    padding: 14px;
+    font-size: 13px;
+}
+
+.flosc-paypal-retry-error {
+    color: #dc2626;
+    margin-bottom: 10px;
+}
+
+.flosc-paypal-retry-btn {
+    padding: 8px 18px;
+    background: #0070ba;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
 }
 
 .flosc-ipa-accordion-body {
@@ -1300,7 +1508,6 @@
     color: rgb(107, 114, 128);
     pointer-events: none;
     z-index: 9999;
-    animation: flosc-ipa-flyup 1s ease-out forwards;
 }
 
 @keyframes flosc-ipa-flyup {

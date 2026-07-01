@@ -469,6 +469,7 @@ if (isset($flosc_post['flosc_upload_ivr_file']) && isset($_FILES['ivr_file_uploa
 
             if (isset($flosc_handled_upload['error'])) {
                 add_settings_error('flosc_settings', 'upload_failed', 'Upload failed: ' . $flosc_handled_upload['error'], 'error');
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- copy uploaded temp file into managed IVR directory
             } elseif (!empty($flosc_handled_upload['file']) && @copy($flosc_handled_upload['file'], $flosc_target_path)) {
                 wp_delete_file($flosc_handled_upload['file']);
                 if ($flosc_flow_key) {
@@ -616,6 +617,7 @@ if (isset($flosc_post['flosc_duplicate_ivr_file']) && isset($flosc_post['duplica
             $flosc_counter++;
         }
 
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- duplicate operation constrained to managed IVR files
         if (!copy($flosc_source_path, $flosc_duplicate_path)) {
             add_settings_error('flosc_settings', 'duplicate_failed', 'Could not duplicate IVR file. Check file permissions.', 'error');
         } else {
@@ -955,27 +957,27 @@ flosc_tab_header('💬', 'IVR Management');
 
 ?>
 
-<div style="margin:-8px 0 14px; text-align:right;">
-    <a href="<?php echo esc_url($flosc_ivr_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
+<div class="flosc-docs-link-wrap">
+    <a href="<?php echo esc_url($flosc_ivr_docs_url); ?>" class="flosc-docs-link">Docs</a>
 </div>
 
 </form>
 
 <!-- IVR System Status Panel -->
-<div class="flosc-diagnostics-panel" style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-    <h3 style="margin-top: 0; display: flex; align-items: center; gap: 10px;">
+<div class="flosc-diagnostics-panel flosc-ivr-panel">
+    <h3 class="flosc-ivr-panel__title">
         🔧 IVR Management
-        <span style="font-size: 12px; font-weight: normal; color: #667;">(v<?php echo esc_html( FLOSC_VERSION ); ?>)</span>
-        <code style="margin-left: 8px; background: #dcfce7; color: #166534; padding: 4px 12px; border-radius: 4px; font-size: 13px;">
+        <span class="flosc-ivr-panel__version">(v<?php echo esc_html( FLOSC_VERSION ); ?>)</span>
+        <code class="flosc-ivr-panel__file-chip">
             <?php echo esc_html($flosc_active_ivr_file); ?>
         </code>
     </h3>
     
-    <p class="description" style="margin-bottom: 15px;">
+    <p class="description flosc-ivr-panel__intro">
         Editing IVR messages for this flow. Use the Flow dropdown above to switch to a different IVR file.
     </p>
 
-    <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap:wrap;">
+    <div class="flosc-ivr-actions-row">
         <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=single')); ?>" class="button <?php echo $flosc_ivr_management_view === 'single' ? 'button-primary' : ''; ?>">
             Single Flow IVR Management
         </a>
@@ -985,7 +987,7 @@ flosc_tab_header('💬', 'IVR Management');
     </div>
     
     <!-- Status Indicators -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+    <div class="flosc-ivr-status-grid">
         <?php
         $flosc_status_colors = [
             'green' => ['bg' => '#d4edda', 'border' => '#28a745', 'icon' => '✅'],
@@ -1005,19 +1007,19 @@ flosc_tab_header('💬', 'IVR Management');
         foreach ($flosc_ivr_diagnostics as $flosc_check_id => $flosc_check): 
             $flosc_colors = $flosc_status_colors[$flosc_check['status']];
         ?>
-        <div style="background: <?php echo esc_attr( $flosc_colors['bg'] ); ?>; border-left: 4px solid <?php echo esc_attr( $flosc_colors['border'] ); ?>; padding: 12px; border-radius: 4px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+        <div class="flosc-ivr-status-card flosc-ivr-status-card--<?php echo esc_attr( $flosc_check['status'] ); ?>">
+            <div class="flosc-ivr-status-card__header">
                 <strong><?php echo esc_html( $flosc_check_labels[$flosc_check_id] ); ?></strong>
-                <span style="font-size: 18px;"><?php echo esc_html( $flosc_colors['icon'] ); ?></span>
+                <span class="flosc-ivr-status-card__icon"><?php echo esc_html( $flosc_colors['icon'] ); ?></span>
             </div>
-            <div style="font-size: 14px; color: #333; font-weight: 500;">
+            <div class="flosc-ivr-status-card__message">
                 <?php echo esc_html($flosc_check['message']); ?>
             </div>
             <?php if (!empty($flosc_check['details'])): ?>
-            <div style="font-size: 11px; color: #667; margin-top: 5px; overflow-wrap: anywhere; word-break: break-word;">
+            <div class="flosc-ivr-status-card__details">
                 <?php foreach ($flosc_check['details'] as $flosc_detail): ?>
                     <?php if (!empty($flosc_detail)): ?>
-                    <div style="margin: 2px 0;"><?php echo esc_html($flosc_detail); ?></div>
+                    <div class="flosc-ivr-status-card__detail"><?php echo esc_html($flosc_detail); ?></div>
                     <?php endif; ?>
                 <?php endforeach; ?>
             </div>
@@ -1027,15 +1029,15 @@ flosc_tab_header('💬', 'IVR Management');
     </div>
     
     <!-- v3.0.9: Action Buttons — framed as two distinct workflows -->
-    <div style="border-top: 1px solid #dee2e6; padding-top: 20px;">
+    <div class="flosc-ivr-section-divider">
 
         <!-- Step 0: Compare (shared first step) -->
-        <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 14px 18px; margin-bottom: 18px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
-            <div style="flex: 1; min-width: 200px;">
-                <strong style="font-size: 13px;">Not sure what's different?</strong>
-                <p style="margin: 4px 0 0; font-size: 12px; color: #555;">Compare the file and the DB before acting — shows new, changed, and unchanged messages.</p>
+        <div class="flosc-ivr-compare-banner">
+            <div class="flosc-ivr-compare-banner__body">
+                <strong class="flosc-ivr-compare-banner__title">Not sure what's different?</strong>
+                <p class="flosc-ivr-compare-banner__text">Compare the file and the DB before acting — shows new, changed, and unchanged messages.</p>
             </div>
-            <form method="post" action="<?php echo esc_url($flosc_ivr_management_phase_url); ?>" style="flex-shrink: 0;">
+            <form method="post" action="<?php echo esc_url($flosc_ivr_management_phase_url); ?>" class="flosc-ivr-compare-banner__form">
                 <?php wp_nonce_field('flosc_preview_import'); ?>
                 <button type="submit" name="flosc_preview_import" class="button button-secondary">
                     🔍 Compare File ↔ DB
@@ -1044,35 +1046,35 @@ flosc_tab_header('💬', 'IVR Management');
         </div>
 
         <!-- Two workflow cards side by side -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 18px;">
+        <div class="flosc-ivr-workflow-grid">
 
             <!-- Workflow A: Edited in admin → push DB to file -->
-            <div style="background: #eaf4fb; border: 2px solid #90caf9; border-radius: 8px; padding: 18px;">
-                <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #1565c0;">Workflow A</p>
-                <p style="margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #1a1a1a;">I edited messages in this admin tab</p>
-                <p style="margin: 0 0 14px; font-size: 12px; color: #444; line-height: 1.5;">
+            <div class="flosc-ivr-workflow-card flosc-ivr-workflow-card--admin">
+                <p class="flosc-ivr-workflow-card__eyebrow">Workflow A</p>
+                <p class="flosc-ivr-workflow-card__title">I edited messages in this admin tab</p>
+                <p class="flosc-ivr-workflow-card__text">
                     Your edits are already live on the frontend (DB is updated on Save).
                     Push the DB → file so the <code>.md</code> file stays in sync with your changes.
                 </p>
                 <form method="post" action="<?php echo esc_url($flosc_ivr_management_phase_url); ?>">
                     <?php wp_nonce_field('flosc_export_ivr'); ?>
-                    <button type="submit" name="flosc_export_ivr" class="button button-primary" style="width: 100%;">
+                    <button type="submit" name="flosc_export_ivr" class="button button-primary flosc-ivr-button-full">
                         🔄 Save DB → IVR File
                     </button>
                 </form>
             </div>
 
             <!-- Workflow B: Edited the .md file → pull file into DB -->
-            <div style="background: #f0faf0; border: 2px solid #a5d6a7; border-radius: 8px; padding: 18px;">
-                <p style="margin: 0 0 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #2e7d32;">Workflow B</p>
-                <p style="margin: 0 0 10px; font-size: 14px; font-weight: 600; color: #1a1a1a;">I edited the <code>.md</code> file directly</p>
-                <p style="margin: 0 0 14px; font-size: 12px; color: #444; line-height: 1.5;">
+            <div class="flosc-ivr-workflow-card flosc-ivr-workflow-card--file">
+                <p class="flosc-ivr-workflow-card__eyebrow">Workflow B</p>
+                <p class="flosc-ivr-workflow-card__title">I edited the <code>.md</code> file directly</p>
+                <p class="flosc-ivr-workflow-card__text">
                     Merge now performs union sync: keep entries from both sides, then sync both sides to the same result.
                     If one side has more entries, those entries are preserved and copied to the other side so parity is restored.
                 </p>
                 <form method="post" action="<?php echo esc_url($flosc_ivr_management_phase_url); ?>">
                     <?php wp_nonce_field('flosc_force_resync'); ?>
-                    <button type="submit" name="flosc_force_resync" class="button button-primary" style="width: 100%; background: #2e7d32; border-color: #2e7d32;">
+                    <button type="submit" name="flosc_force_resync" class="button button-primary flosc-ivr-button-full flosc-ivr-button-green">
                         📥 Merge And Sync File ↔ DB
                     </button>
                 </form>
@@ -1081,34 +1083,34 @@ flosc_tab_header('💬', 'IVR Management');
         </div>
 
         <!-- Utility row: Test API (small) -->
-        <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-            <button type="button" id="flosc-test-api" class="button button-secondary" onclick="floscTestAPI()">
+        <div class="flosc-ivr-utility-row">
+            <button type="button" id="flosc-test-api" class="button button-secondary" data-flosc-action="test-api-endpoint">
                 🔌 Test API Endpoint
             </button>
-            <span style="font-size: 12px; color: #888;">Check that the REST API is returning messages from the DB to the frontend chat.</span>
+            <span class="flosc-ivr-utility-note">Check that the REST API is returning messages from the DB to the frontend chat.</span>
         </div>
             
         </div>
         
         <!-- Secondary Actions -->
-        <div style="margin-top: 15px; padding-top: 15px; border-top: 1px dashed #ddd; display: flex; gap: 10px; align-items: center;">
+        <div class="flosc-ivr-secondary-row">
             <a href="<?php echo esc_url($flosc_ivr_management_phase_url); ?>" class="button">
                 🔃 Refresh Diagnostics
             </a>
-            <form method="post" action="<?php echo esc_url($flosc_ivr_management_phase_url); ?>" style="display: inline;" onsubmit="return confirm('⚠️ WARNING: This will clear ALL IVR messages from the FLOSC DB.\n\nA backup will be created first, but you will need to reload from a file to restore messages.\n\nAre you sure you want to clear the FLOSC DB?');">
+            <form method="post" action="<?php echo esc_url($flosc_ivr_management_phase_url); ?>" class="flosc-ivr-inline-form" data-confirm-message="⚠️ WARNING: This will clear ALL IVR messages from the FLOSC DB. A backup will be created first, but you will need to reload from a file to restore messages. Continue?">
                 <?php wp_nonce_field('flosc_clear_ivr_db'); ?>
-                <button type="submit" name="flosc_clear_ivr_db" class="button" style="color: #dc3545; border-color: #dc3545;">
+                <button type="submit" name="flosc_clear_ivr_db" class="button flosc-ivr-danger-btn">
                     🗑️ Clear FLOSC DB
                 </button>
             </form>
-            <span style="font-size: 11px; color: #999;">
+            <span class="flosc-ivr-last-sync">
                 Last sync: <?php echo esc_html($flosc_flow_settings['ivr_last_import'] ?? 'Never'); ?>
             </span>
         </div>
     </div>
     
     <!-- API Test Result Area -->
-    <div id="flosc-api-test-result" style="display: none; margin-top: 15px; padding: 15px; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 300px; overflow: auto;">
+    <div id="flosc-api-test-result" class="flosc-ivr-api-result">
     </div>
 </div>
 
@@ -1164,25 +1166,25 @@ function floscTestAPI() {
 
 <!-- File Management + Full Text Editor -->
 <?php if ($flosc_ivr_management_view === 'all'): ?>
-<div class="flosc-info-box" style="margin: 18px 0; padding: 16px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc;">
-    <h3 style="margin-top: 0;">IVR File Management</h3>
-    <p style="margin: 6px 0 14px;">Refresh the file list, delete unwanted IVR files, and edit the full text of the active IVR file.</p>
+<div class="flosc-info-box flosc-ivr-info-box">
+    <h3 class="flosc-ivr-info-box__title">IVR File Management</h3>
+    <p class="flosc-ivr-info-box__lead">Refresh the file list, delete unwanted IVR files, and edit the full text of the active IVR file.</p>
 
-    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+    <div class="flosc-ivr-file-actions">
         <a href="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" class="button">🔃 Refresh File List</a>
-        <form method="post" action="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" enctype="multipart/form-data" style="display:flex; gap:8px; align-items:center; margin:0;">
+        <form method="post" action="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" enctype="multipart/form-data" class="flosc-ivr-upload-form">
             <?php wp_nonce_field('flosc_upload_ivr_file'); ?>
             <input type="file" name="ivr_file_upload" accept=".md,text/markdown" required>
             <button type="submit" name="flosc_upload_ivr_file" class="button button-secondary">📤 Upload IVR .md</button>
         </form>
     </div>
 
-    <table class="widefat striped" style="margin-bottom: 14px;">
+    <table class="widefat striped flosc-ivr-file-table">
         <thead>
             <tr>
                 <th>File</th>
-                <th style="width:110px;">Status</th>
-                <th style="width:160px;">Actions</th>
+                <th class="flosc-ivr-col-status">Status</th>
+                <th class="flosc-ivr-col-actions">Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -1198,23 +1200,23 @@ function floscTestAPI() {
                 <td><code><?php echo esc_html($flosc_ivr_filename); ?></code></td>
                 <td><?php echo $flosc_is_active_row ? 'Active' : 'Managed'; ?></td>
                 <td>
-                    <div style="display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                    <div class="flosc-ivr-file-action-group">
                         <a href="<?php echo esc_url($flosc_edit_url); ?>" class="button button-small">Edit</a>
                         <a href="<?php echo esc_url($flosc_download_url); ?>" class="button button-small">Download</a>
-                        <form method="post" action="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" style="display:inline; margin:0;">
+                        <form method="post" action="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" class="flosc-ivr-inline-form">
                             <?php wp_nonce_field('flosc_duplicate_ivr_file'); ?>
                             <input type="hidden" name="duplicate_ivr_file" value="<?php echo esc_attr($flosc_ivr_filename); ?>">
                             <button type="submit" name="flosc_duplicate_ivr_file" class="button button-small">Duplicate</button>
                         </form>
-                        <form method="post" action="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" style="display:inline; margin:0;">
+                        <form method="post" action="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" class="flosc-ivr-inline-form">
                             <?php wp_nonce_field('flosc_import_selected_ivr_file'); ?>
                             <input type="hidden" name="import_ivr_file" value="<?php echo esc_attr($flosc_ivr_filename); ?>">
                             <button type="submit" name="flosc_import_selected_ivr_file" class="button button-small">Merge And Sync File ↔ DB</button>
                         </form>
-                        <form method="post" action="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" style="display:inline; margin:0;" onsubmit="return confirm('Delete IVR file ' + <?php echo wp_json_encode($flosc_ivr_filename); ?> + '? This cannot be undone from this panel.');">
+                        <form method="post" action="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" class="flosc-ivr-inline-form flosc-ivr-inline-form--warn" data-confirm-message="Delete IVR file <?php echo esc_attr($flosc_ivr_filename); ?>? This cannot be undone from this panel.">
                             <?php wp_nonce_field('flosc_delete_ivr_file'); ?>
                             <input type="hidden" name="delete_ivr_file" value="<?php echo esc_attr($flosc_ivr_filename); ?>">
-                            <button type="submit" name="flosc_delete_ivr_file" class="button button-small" style="color:#b91c1c; border-color:#b91c1c;">Delete</button>
+                            <button type="submit" name="flosc_delete_ivr_file" class="button button-small">Delete</button>
                         </form>
                     </div>
                 </td>
@@ -1235,24 +1237,24 @@ function floscTestAPI() {
     <form method="post" action="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>">
         <?php wp_nonce_field('flosc_save_full_ivr'); ?>
         <label for="ivr_full_text"><strong>Full Text Editor: <?php echo esc_html($flosc_active_ivr_file); ?></strong></label>
-        <textarea id="ivr_full_text" name="ivr_full_text" rows="20" class="large-text code" style="font-family: monospace; margin-top: 8px;"><?php echo esc_textarea($flosc_active_ivr_full_text); ?></textarea>
-        <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+        <textarea id="ivr_full_text" name="ivr_full_text" rows="20" class="large-text code flosc-ivr-full-editor"><?php echo esc_textarea($flosc_active_ivr_full_text); ?></textarea>
+        <div class="flosc-ivr-full-editor-actions">
             <button type="submit" name="flosc_save_full_ivr" class="button button-primary">💾 Save Full IVR File</button>
-            <span style="font-size:12px; color:#475569;">After save, use <strong>Merge IVR File → DB</strong> to refresh runtime messages.</span>
+            <span class="flosc-ivr-full-editor-note">After save, use <strong>Merge IVR File → DB</strong> to refresh runtime messages.</span>
         </div>
     </form>
 </div>
 <?php else: ?>
-<div class="flosc-info-box" style="margin: 18px 0; padding: 16px; border: 1px solid #d1d5db; border-radius: 8px; background: #f8fafc;">
+<div class="flosc-info-box flosc-ivr-info-box flosc-ivr-info-box--muted">
     <strong>IVR File Management</strong>
-    <p style="margin: 6px 0 0;">Click <strong>View All Flows and Access File Management</strong> above to refresh/delete IVR files and use the full-text editor.</p>
+    <p class="flosc-ivr-info-box__lead">Click <strong>View All Flows and Access File Management</strong> above to refresh/delete IVR files and use the full-text editor.</p>
 </div>
 <?php endif; ?>
 
-<div class="flosc-info-box" style="margin-bottom: 20px;">
+<div class="flosc-info-box flosc-ivr-message-overview">
     <strong>💾 FLOSC IVR Messages</strong>
     <p>All messages across every phase, in one scrollable page. Click any message header to expand its editor. Save individually.</p>
-    <p style="margin-top: 8px;"><strong>Workflow:</strong> Expand → Edit → Save → Changes go live and sync to IVR file</p>
+    <p class="flosc-ivr-message-overview__workflow"><strong>Workflow:</strong> Expand → Edit → Save → Changes go live and sync to IVR file</p>
 </div>
 
 <?php if ($flosc_import_preview !== null):
@@ -1276,18 +1278,18 @@ function floscTestAPI() {
     }
 ?>
     <!-- Comparison Results -->
-    <div class="flosc-import-preview" style="background: #fff3cd; padding: 20px; border-left: 5px solid #ffc107; margin-bottom: 20px;">
-        <h3 style="margin-top: 0; color: #856404;">📋 Comparison: Active IVR Messages MD file ↔ FLOSC DB</h3>
+    <div class="flosc-import-preview flosc-ivr-compare-preview">
+        <h3 class="flosc-ivr-compare-preview__title">📋 Comparison: Active IVR Messages MD file ↔ FLOSC DB</h3>
 
-        <p style="background: white; padding: 10px; border: 1px solid #ddd;">
+        <p class="flosc-ivr-compare-preview__intro">
             This shows the differences between your <strong>Active IVR Messages MD file</strong> and the <strong>FLOSC DB</strong>.
             Merge performs union sync and ends in parity. Replace makes the DB match the file exactly (destructive when DB has extra entries).
         </p>
 
         <!-- Summary row counts -->
-        <div style="background: white; padding: 15px; margin: 15px 0; border: 1px solid #ddd;">
-            <h4 style="margin-top: 0;">Comparison Results:</h4>
-            <ul style="margin: 5px 0 0 20px; line-height: 2;">
+        <div class="flosc-ivr-compare-preview__panel">
+            <h4 class="flosc-ivr-compare-preview__panel-title">Comparison Results:</h4>
+            <ul class="flosc-ivr-compare-preview__list">
 
                 <li>📊 <strong>FLOSC DB:</strong> <?php echo esc_html( (string) $flosc_import_preview['current_count'] ); ?> messages</li>
                 <li>📄 <strong>Active IVR Messages MD file:</strong> <?php echo esc_html( (string) $flosc_import_preview['incoming_count'] ); ?> messages</li>
@@ -1295,11 +1297,11 @@ function floscTestAPI() {
                 <!-- New in file -->
                 <li>✅ <strong>New in file:</strong> <?php echo count($flosc_import_preview['added']); ?>
                     <?php if (!empty($flosc_import_preview['added'])): ?>
-                    <details style="display:inline-block; vertical-align:middle; margin-left:6px;">
-                        <summary style="cursor:pointer; color:#0073aa; font-size:12px; list-style:none;">▼ show all</summary>
-                        <div style="margin-top:6px; padding:6px 10px; background:#f0fff0; border:1px solid #c3e6cb; border-radius:3px; font-size:12px; line-height:1.8;">
+                    <details class="flosc-ivr-inline-details">
+                        <summary class="flosc-ivr-inline-details__summary flosc-ivr-inline-details__summary--blue">▼ show all</summary>
+                        <div class="flosc-ivr-id-cloud flosc-ivr-id-cloud--green">
                             <?php foreach ($flosc_import_preview['added'] as $id): ?>
-                                <code style="display:inline-block; margin:2px 4px 2px 0;"><?php echo esc_html($id); ?></code>
+                                <code class="flosc-ivr-id-chip"><?php echo esc_html($id); ?></code>
                             <?php endforeach; ?>
                         </div>
                     </details>
@@ -1307,14 +1309,14 @@ function floscTestAPI() {
                 </li>
 
                 <?php if (!empty($flosc_import_preview['added'])): ?>
-                <li style="margin-top:6px;">
+                <li class="flosc-ivr-list-item-top-gap">
                     <details>
-                        <summary style="cursor:pointer; color:#0073aa; font-size:12px;">Show full entries: New in file</summary>
-                        <div style="margin-top:8px; display:grid; gap:10px;">
+                        <summary class="flosc-ivr-inline-details__summary flosc-ivr-inline-details__summary--blue">Show full entries: New in file</summary>
+                        <div class="flosc-ivr-entry-grid">
                             <?php foreach ($flosc_import_preview['added'] as $id): ?>
-                                <div style="border:1px solid #cbd5e1; border-radius:4px; padding:8px; background:#f8fbff;">
-                                    <div style="font-weight:600; margin-bottom:6px;"><?php echo esc_html($id); ?></div>
-                                    <pre style="white-space:pre-wrap; word-break:break-word; margin:0; font-size:12px;"><?php echo esc_html(wp_json_encode($flosc_file_messages_for_compare[$id] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)); ?></pre>
+                                <div class="flosc-ivr-entry-card flosc-ivr-entry-card--file">
+                                    <div class="flosc-ivr-entry-card__title"><?php echo esc_html($id); ?></div>
+                                    <pre class="flosc-ivr-entry-card__json"><?php echo esc_html(wp_json_encode($flosc_file_messages_for_compare[$id] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)); ?></pre>
                                 </div>
                             <?php endforeach; ?>
                         </div>
@@ -1330,11 +1332,11 @@ function floscTestAPI() {
                 <!-- Unchanged (present in both, identical content) -->
                 <?php if (!empty($flosc_unchanged_ids)): ?>
                 <li>⚡ <strong>Present in both</strong> (unchanged): <?php echo count($flosc_unchanged_ids); ?>
-                    <details style="display:inline-block; vertical-align:middle; margin-left:6px;">
-                        <summary style="cursor:pointer; color:#666; font-size:12px; list-style:none;">▼ show all</summary>
-                        <div style="margin-top:6px; padding:6px 10px; background:#f7f7f7; border:1px solid #ddd; border-radius:3px; font-size:12px; line-height:1.8;">
+                    <details class="flosc-ivr-inline-details">
+                        <summary class="flosc-ivr-inline-details__summary flosc-ivr-inline-details__summary--gray">▼ show all</summary>
+                        <div class="flosc-ivr-id-cloud flosc-ivr-id-cloud--gray">
                             <?php foreach ($flosc_unchanged_ids as $id): ?>
-                                <code style="display:inline-block; margin:2px 4px 2px 0;"><?php echo esc_html($id); ?></code>
+                                <code class="flosc-ivr-id-chip"><?php echo esc_html($id); ?></code>
                             <?php endforeach; ?>
                         </div>
                     </details>
@@ -1343,42 +1345,42 @@ function floscTestAPI() {
 
                 <!-- DB-only messages -->
                 <?php if ($flosc_import_preview['has_deletions']): ?>
-                <li style="color: #b45309;">↔ <strong>Only in DB:</strong> <?php echo count($flosc_import_preview['deleted']); ?>
-                    <details style="display:inline-block; vertical-align:middle; margin-left:6px;">
-                        <summary style="cursor:pointer; color:#b45309; font-size:12px; list-style:none;">▼ show all</summary>
-                        <div style="margin-top:6px; padding:6px 10px; background:#fff7ed; border:1px solid #fdba74; border-radius:3px; font-size:12px; line-height:1.8;">
+                <li class="flosc-ivr-list-item-db-only">↔ <strong>Only in DB:</strong> <?php echo count($flosc_import_preview['deleted']); ?>
+                    <details class="flosc-ivr-inline-details">
+                        <summary class="flosc-ivr-inline-details__summary flosc-ivr-inline-details__summary--orange">▼ show all</summary>
+                        <div class="flosc-ivr-id-cloud flosc-ivr-id-cloud--orange">
                             <?php foreach ($flosc_import_preview['deleted'] as $id): ?>
-                                <code style="display:inline-block; margin:2px 4px 2px 0;"><?php echo esc_html($id); ?></code>
+                                <code class="flosc-ivr-id-chip"><?php echo esc_html($id); ?></code>
                             <?php endforeach; ?>
                         </div>
                     </details>
-                    <div style="margin-top:6px; font-size:12px; color:#7c2d12;">Merge keeps these messages and writes them into the IVR file so file ↔ DB parity is restored.</div>
+                    <div class="flosc-ivr-db-only-note">Merge keeps these messages and writes them into the IVR file so file ↔ DB parity is restored.</div>
                 </li>
 
                 <li>
                     <details>
-                        <summary style="cursor:pointer; color:#b45309; font-size:12px;">Show full entries: Only in DB</summary>
-                        <div style="margin-top:8px; display:grid; gap:10px;">
+                        <summary class="flosc-ivr-inline-details__summary flosc-ivr-inline-details__summary--orange">Show full entries: Only in DB</summary>
+                        <div class="flosc-ivr-entry-grid">
                             <?php foreach ($flosc_import_preview['deleted'] as $id): ?>
-                                <div style="border:1px solid #fdba74; border-radius:4px; padding:8px; background:#fffaf5;">
-                                    <div style="font-weight:600; margin-bottom:6px;"><?php echo esc_html($id); ?></div>
-                                    <pre style="white-space:pre-wrap; word-break:break-word; margin:0; font-size:12px;"><?php echo esc_html(wp_json_encode($flosc_db_messages_for_compare[$id] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)); ?></pre>
+                                <div class="flosc-ivr-entry-card flosc-ivr-entry-card--db-only">
+                                    <div class="flosc-ivr-entry-card__title"><?php echo esc_html($id); ?></div>
+                                    <pre class="flosc-ivr-entry-card__json"><?php echo esc_html(wp_json_encode($flosc_db_messages_for_compare[$id] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)); ?></pre>
                                 </div>
                             <?php endforeach; ?>
                         </div>
                     </details>
                 </li>
                 <?php else: ?>
-                <li style="color: #2e7d32;">✓ No DB-only messages</li>
+                <li class="flosc-ivr-list-item-good">✓ No DB-only messages</li>
                 <?php endif; ?>
 
-                <li style="margin-top: 8px; border-top: 1px dashed #ddd; padding-top: 8px;">
+                <li class="flosc-ivr-list-item-dashed-top">
                     <strong>After Merge And Sync:</strong> file = DB = <?php echo (int) $flosc_after_merge_count; ?> entries
                 </li>
                 <li>
                     <strong>After Replace:</strong> file = DB = <?php echo (int) $flosc_after_replace_count; ?> entries
                     <?php if ($flosc_replace_removed_count > 0): ?>
-                        <span style="color:#b91c1c;">(removes <?php echo (int) $flosc_replace_removed_count; ?> DB-only entries)</span>
+                        <span class="flosc-ivr-text-danger">(removes <?php echo (int) $flosc_replace_removed_count; ?> DB-only entries)</span>
                     <?php endif; ?>
                 </li>
 
@@ -1387,47 +1389,47 @@ function floscTestAPI() {
 
         <!-- v3.0.9: Field-level diff table — one <details> row per changed message -->
         <?php if (!empty($flosc_field_diffs)): ?>
-        <div style="background: white; padding: 15px; margin: 15px 0; border: 1px solid #ddd;">
-            <h4 style="margin-top: 0;">🔍 Field-Level Differences (<?php echo count($flosc_field_diffs); ?> message<?php echo count($flosc_field_diffs) !== 1 ? 's' : ''; ?> changed):</h4>
+        <div class="flosc-ivr-field-diff-wrap">
+            <h4 class="flosc-ivr-field-diff-wrap__title">🔍 Field-Level Differences (<?php echo count($flosc_field_diffs); ?> message<?php echo count($flosc_field_diffs) !== 1 ? 's' : ''; ?> changed):</h4>
             <?php foreach ($flosc_field_diffs as $flosc_msg_id => $flosc_diffs): ?>
-            <details style="margin-bottom: 8px; border: 1px solid #e0e0e0; border-radius: 4px;">
-                <summary style="padding: 8px 12px; background: #f7f7f7; cursor: pointer; font-weight: 600; list-style: none;">
+            <details class="flosc-ivr-field-diff-item">
+                <summary class="flosc-ivr-field-diff-item__summary">
                     ▶ <?php echo esc_html($flosc_msg_id); ?> — <?php echo count($flosc_diffs); ?> field<?php echo count($flosc_diffs) !== 1 ? 's' : ''; ?> changed
                 </summary>
-                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <table class="flosc-ivr-field-diff-table">
                     <thead>
-                        <tr style="background: #f0f0f0;">
-                            <th style="text-align: left; padding: 6px 10px; border-bottom: 2px solid #ccc; width: 15%;">Field</th>
-                            <th style="text-align: left; padding: 6px 10px; border-bottom: 2px solid #ccc; width: 42%;">DB Value</th>
-                            <th style="text-align: left; padding: 6px 10px; border-bottom: 2px solid #ccc; width: 42%;">File Value</th>
+                        <tr class="flosc-ivr-field-diff-table__head-row">
+                            <th class="flosc-ivr-field-diff-table__head flosc-ivr-field-diff-table__head--field">Field</th>
+                            <th class="flosc-ivr-field-diff-table__head flosc-ivr-field-diff-table__head--db">DB Value</th>
+                            <th class="flosc-ivr-field-diff-table__head flosc-ivr-field-diff-table__head--file">File Value</th>
                         </tr>
                     </thead>
                     <tbody>
                     <?php foreach ($flosc_diffs as $flosc_field => $flosc_vals):
                         $flosc_db_display   = esc_html($vals['db']);
                         $flosc_file_display = esc_html($vals['file']);
-                        if ($flosc_db_display === '') $flosc_db_display = '<em style="color:#999;">(empty)</em>';
-                        if ($flosc_file_display === '') $flosc_file_display = '<em style="color:#999;">(empty)</em>';
+                        if ($flosc_db_display === '') $flosc_db_display = '<em class="flosc-ivr-empty-value">(empty)</em>';
+                        if ($flosc_file_display === '') $flosc_file_display = '<em class="flosc-ivr-empty-value">(empty)</em>';
                     ?>
-                        <tr style="border-bottom: 1px solid #eee;">
-                            <td style="padding: 6px 10px; font-weight: 500;"><?php echo esc_html($field); ?></td>
-                            <td style="padding: 6px 10px; background: #fff0f0; word-break: break-word;"><pre style="white-space:pre-wrap; margin:0;"><?php echo wp_kses_post( $flosc_db_display ); ?></pre></td>
-                            <td style="padding: 6px 10px; background: #f0fff0; word-break: break-word;"><pre style="white-space:pre-wrap; margin:0;"><?php echo wp_kses_post( $flosc_file_display ); ?></pre></td>
+                        <tr class="flosc-ivr-field-diff-table__row">
+                            <td class="flosc-ivr-field-diff-table__cell flosc-ivr-field-diff-table__cell--field"><?php echo esc_html($field); ?></td>
+                            <td class="flosc-ivr-field-diff-table__cell flosc-ivr-field-diff-table__cell--db"><pre class="flosc-ivr-field-diff-table__pre"><?php echo wp_kses_post( $flosc_db_display ); ?></pre></td>
+                            <td class="flosc-ivr-field-diff-table__cell flosc-ivr-field-diff-table__cell--file"><pre class="flosc-ivr-field-diff-table__pre"><?php echo wp_kses_post( $flosc_file_display ); ?></pre></td>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>
                 </table>
 
-                <details style="margin: 10px;">
-                    <summary style="cursor:pointer; font-size:12px; color:#555;">Show full DB entry and file entry</summary>
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
-                        <div style="border:1px solid #fecaca; border-radius:4px; padding:8px; background:#fff7f7;">
-                            <div style="font-weight:600; margin-bottom:6px;">DB Entry</div>
-                            <pre style="white-space:pre-wrap; word-break:break-word; margin:0; font-size:12px;"><?php echo esc_html(wp_json_encode($flosc_db_messages_for_compare[$flosc_msg_id] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)); ?></pre>
+                <details class="flosc-ivr-full-entry-details">
+                    <summary class="flosc-ivr-inline-details__summary flosc-ivr-inline-details__summary--gray">Show full DB entry and file entry</summary>
+                    <div class="flosc-ivr-full-entry-grid">
+                        <div class="flosc-ivr-full-entry-card flosc-ivr-full-entry-card--db">
+                            <div class="flosc-ivr-entry-card__title">DB Entry</div>
+                            <pre class="flosc-ivr-entry-card__json"><?php echo esc_html(wp_json_encode($flosc_db_messages_for_compare[$flosc_msg_id] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)); ?></pre>
                         </div>
-                        <div style="border:1px solid #bbf7d0; border-radius:4px; padding:8px; background:#f5fff7;">
-                            <div style="font-weight:600; margin-bottom:6px;">File Entry</div>
-                            <pre style="white-space:pre-wrap; word-break:break-word; margin:0; font-size:12px;"><?php echo esc_html(wp_json_encode($flosc_file_messages_for_compare[$flosc_msg_id] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)); ?></pre>
+                        <div class="flosc-ivr-full-entry-card flosc-ivr-full-entry-card--file">
+                            <div class="flosc-ivr-entry-card__title">File Entry</div>
+                            <pre class="flosc-ivr-entry-card__json"><?php echo esc_html(wp_json_encode($flosc_file_messages_for_compare[$flosc_msg_id] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)); ?></pre>
                         </div>
                     </div>
                 </details>
@@ -1436,8 +1438,8 @@ function floscTestAPI() {
         </div>
         <?php endif; ?>
 
-        <div style="margin-top:15px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
-            <form method="post" action="<?php echo esc_url($flosc_ivr_management_phase_url); ?>" style="display:inline; margin:0;">
+        <div class="flosc-ivr-compare-actions">
+            <form method="post" action="<?php echo esc_url($flosc_ivr_management_phase_url); ?>" class="flosc-ivr-inline-form">
                 <?php wp_nonce_field('flosc_confirm_import'); ?>
                 <input type="hidden" name="flosc_import_mode" value="merge">
                 <button type="submit" name="flosc_confirm_import" class="button button-primary">
@@ -1445,7 +1447,7 @@ function floscTestAPI() {
                 </button>
             </form>
 
-            <form method="post" action="<?php echo esc_url($flosc_ivr_management_phase_url); ?>" style="display:inline; margin:0;">
+            <form method="post" action="<?php echo esc_url($flosc_ivr_management_phase_url); ?>" class="flosc-ivr-inline-form">
                 <?php wp_nonce_field('flosc_export_ivr'); ?>
                 <button type="submit" name="flosc_export_ivr" class="button button-secondary">
                     🔄 Save DB → IVR File
@@ -1453,11 +1455,11 @@ function floscTestAPI() {
             </form>
 
             <?php if ($flosc_import_preview['has_deletions']): ?>
-            <form method="post" action="<?php echo esc_url($flosc_ivr_management_phase_url); ?>" style="display:inline; margin:0;">
+            <form method="post" action="<?php echo esc_url($flosc_ivr_management_phase_url); ?>" class="flosc-ivr-inline-form">
                 <?php wp_nonce_field('flosc_confirm_import'); ?>
                 <input type="hidden" name="flosc_import_mode" value="replace">
-                <button type="submit" name="flosc_confirm_import" class="button" style="color:#b91c1c; border-color:#b91c1c;"
-                        onclick="return confirm('Replace is destructive. Replace FLOSC DB with the IVR file and remove DB-only messages?');">
+                <button type="submit" name="flosc_confirm_import" class="button flosc-ivr-replace-btn"
+                        data-confirm-message="Replace is destructive. Replace FLOSC DB with the IVR file and remove DB-only messages?">
                     Replace DB To Match File
                 </button>
             </form>
@@ -1485,14 +1487,14 @@ $flosc_total_count = count($flosc_messages);
 
 <!-- Styles in assets/css/flosc-admin.css -->
 
-<p style="margin-bottom: 15px; color: #667;">
+<p class="flosc-ivr-phase-summary">
     <strong><?php echo esc_html( (string) $flosc_total_count ); ?></strong> messages across <?php echo esc_html( (string) count(array_filter($flosc_phases, fn($ids) => !empty($ids))) ); ?> phases
     <?php
     // Quick jump links
     $flosc_active_phases = [];
     foreach ($flosc_phase_meta as $flosc_pid => $flosc_pm) {
         $flosc_cnt = count($flosc_phases[$flosc_pid] ?? []);
-        if ($flosc_cnt > 0) $flosc_active_phases[] = '<a href="#phase-' . esc_attr( $flosc_pid ) . '" style="text-decoration:none;">' . esc_html( $flosc_pm['icon'] . ' ' . $flosc_pm['label'] . ' (' . $flosc_cnt . ')' ) . '</a>';
+        if ($flosc_cnt > 0) $flosc_active_phases[] = '<a href="#phase-' . esc_attr( $flosc_pid ) . '" class="flosc-ivr-phase-link">' . esc_html( $flosc_pm['icon'] . ' ' . $flosc_pm['label'] . ' (' . $flosc_cnt . ')' ) . '</a>';
     }
     if ($flosc_active_phases): ?>
         — Jump: <?php echo wp_kses_post( implode(' · ', $flosc_active_phases) ); ?>
@@ -1512,7 +1514,7 @@ $flosc_total_count = count($flosc_messages);
     </div>
     
     <?php if (empty($flosc_phase_msg_ids)): ?>
-        <div class="flosc-msg-card" style="padding: 20px; color: #999; font-style: italic; border-radius: 0;">
+        <div class="flosc-msg-card flosc-ivr-empty-phase-card">
             No messages in this phase yet.
         </div>
     <?php endif; ?>
@@ -1525,17 +1527,17 @@ $flosc_total_count = count($flosc_messages);
         $flosc_safe_id = esc_attr($flosc_msg_id);
     ?>
     <div class="flosc-msg-card <?php echo esc_attr( $flosc_is_open ? 'is-open' : '' ); ?>" id="card-<?php echo esc_attr( $flosc_safe_id ); ?>">
-        <div class="flosc-msg-card-header" onclick="floscToggleMsg('<?php echo esc_js($flosc_msg_id); ?>')">
+        <div class="flosc-msg-card-header" data-flosc-action="toggle-msg-card" data-msg-id="<?php echo esc_attr($flosc_msg_id); ?>">
             <span class="flosc-msg-toggle">▶</span>
             <span class="flosc-msg-name"><?php echo esc_html($flosc_msg['name'] ?? $flosc_msg_id); ?></span>
             <span class="flosc-msg-id"><?php echo esc_html($flosc_msg_id); ?></span>
             <span class="flosc-msg-type-badge <?php echo esc_attr( $flosc_type_class ); ?>"><?php echo esc_html($flosc_msg['type'] ?? 'auto'); ?></span>
             <?php if (!empty($flosc_msg['conditions'])): ?>
-                <span style="font-size: 11px; color: #8b5cf6;" title="<?php echo esc_attr($flosc_msg['conditions']); ?>">⚡ conditional</span>
+                <span class="flosc-ivr-conditional-badge" title="<?php echo esc_attr($flosc_msg['conditions']); ?>">⚡ conditional</span>
             <?php endif; ?>
             <span class="flosc-msg-preview"><?php echo esc_html(wp_trim_words($flosc_msg['content'] ?? '', 12)); ?></span>
             <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=' . urlencode($flosc_ivr_management_view) . '&ivr_phase=' . urlencode($flosc_active_phase) . '&delete_message=' . urlencode($flosc_msg_id) . '&phase=' . urlencode($flosc_phase_id) . '&_wpnonce=' . wp_create_nonce('flosc_delete_message_' . $flosc_msg_id))); ?>" 
-               class="flosc-msg-delete" onclick="event.stopPropagation(); return confirm('Delete message: <?php echo esc_js($flosc_msg['name'] ?? $flosc_msg_id); ?>?');">✕ Delete</a>
+               class="flosc-msg-delete" data-stop-propagation="1" data-confirm-message="Delete message: <?php echo esc_attr($flosc_msg['name'] ?? $flosc_msg_id); ?>?">✕ Delete</a>
         </div>
         
         <div class="flosc-msg-editor">
@@ -1561,7 +1563,7 @@ $flosc_total_count = count($flosc_messages);
                     <tr>
                         <th>Type</th>
                         <td>
-                            <select name="message_type" onchange="floscToggleOfferFields(this, '<?php echo esc_js($flosc_msg_id); ?>')">
+                            <select name="message_type" data-flosc-action="toggle-offer-fields" data-msg-id="<?php echo esc_attr($flosc_msg_id); ?>">
                                 <option value="auto" <?php selected($flosc_msg['type'] ?? '', 'auto'); ?>>Auto (bot sends automatically)</option>
                                 <option value="suggested_user_autoprompt" <?php selected($flosc_msg['type'] ?? '', 'suggested_user_autoprompt'); ?>>Pill Button (user clicks to send)</option>
                                 <option value="offer" <?php selected($flosc_msg['type'] ?? '', 'offer'); ?>>Offer</option>
@@ -1573,9 +1575,9 @@ $flosc_total_count = count($flosc_messages);
                         <th>Conditions</th>
                         <td>
                             <input type="text" name="message_conditions" value="<?php echo esc_attr($flosc_msg['conditions'] ?? ''); ?>" class="large-text" placeholder="e.g. is_visitor && first_show_session">
-                            <details style="margin-top: 6px; font-size: 12px; color: #666;">
-                                <summary style="cursor: pointer; color: #2271b1;">Available conditions reference</summary>
-                                <div style="margin-top: 6px; line-height: 1.8;">
+                            <details class="flosc-ivr-help-details">
+                                <summary class="flosc-ivr-help-summary">Available conditions reference</summary>
+                                <div class="flosc-ivr-help-body">
                                     <strong>Boolean flags:</strong> <code>is_visitor</code>, <code>logged_in</code>, <code>quiz_taken</code>, <code>purchased</code>, <code>first_show_session</code>, <code>first_show_ever</code>, <code>offer_shown</code>, <code>offer_clicked</code>, <code>offer_dismissed</code>, <code>timer_expired</code>, <code>email_collected</code>, <code>has_active_sub</code><br>
                                     <strong>Numeric:</strong> <code>score &gt;= 80</code>, <code>message_count &gt; 3</code>, <code>session_seconds &gt; 60</code><br>
                                     <strong>String:</strong> <code>command == "take_quiz"</code>, <code>quiz_id == "ipa_quiz_01"</code><br>
@@ -1620,9 +1622,9 @@ $flosc_total_count = count($flosc_messages);
                         <th>Action After Chatbot Response</th>
                         <td>
                             <input type="text" name="message_action" value="<?php echo esc_attr($flosc_msg['action'] ?? ''); ?>" class="regular-text" placeholder="show_offer:offer_001, start_quiz, navigate:/lessons">
-                            <details style="margin-top: 6px; font-size: 12px; color: #666;">
-                                <summary style="cursor: pointer; color: #2271b1;">Available actions reference</summary>
-                                <div style="margin-top: 6px; line-height: 1.8;">
+                            <details class="flosc-ivr-help-details">
+                                <summary class="flosc-ivr-help-summary">Available actions reference</summary>
+                                <div class="flosc-ivr-help-body">
                                     <strong>Quiz:</strong> <code>open_quiz:{id}</code>, <code>start_quiz</code><br>
                                     <strong>Offers:</strong> <code>show_offer:{id}</code>, <code>checkout:{id}</code><br>
                                     <strong>Navigation:</strong> <code>navigate:{url}</code>, <code>open_registration</code>, <code>open_free_lesson</code><br>
@@ -1635,9 +1637,9 @@ $flosc_total_count = count($flosc_messages);
                 </table>
                 
                 <!-- Offer-specific fields -->
-                <div class="flosc-offer-fields-inner" id="offer-fields-<?php echo esc_attr( $flosc_safe_id ); ?>" style="<?php echo esc_attr( ($flosc_msg['type'] ?? '') === 'offer' ? '' : 'display:none;' ); ?>">
-                    <h4 style="margin: 0 0 10px;">🏷️ Offer Fields</h4>
-                    <table class="form-table" style="margin: 0;">
+                <div class="flosc-offer-fields-inner <?php echo esc_attr( ($flosc_msg['type'] ?? '') === 'offer' ? '' : 'flosc-hidden' ); ?>" id="offer-fields-<?php echo esc_attr( $flosc_safe_id ); ?>">
+                    <h4 class="flosc-ivr-subsection-title">🏷️ Offer Fields</h4>
+                    <table class="form-table flosc-form-table-reset">
                         <tr><th>Offer ID</th><td><input type="text" name="message_offer_id" value="<?php echo esc_attr($flosc_msg['offer_id'] ?? ''); ?>" class="regular-text" placeholder="full_access"></td></tr>
                         <tr><th>Price</th><td><input type="text" name="message_price" value="<?php echo esc_attr($flosc_msg['price'] ?? ''); ?>" class="small-text" placeholder="49"></td></tr>
                         <tr><th>Discount Price</th><td><input type="text" name="message_discount_price" value="<?php echo esc_attr($flosc_msg['discount_price'] ?? ''); ?>" class="small-text" placeholder="24.50"></td></tr>
@@ -1655,8 +1657,8 @@ $flosc_total_count = count($flosc_messages);
                         <tr>
                             <th>Content Source</th>
                             <td>
-                                <input type="text" name="message_html_file" value="<?php echo esc_attr($flosc_msg['html_file'] ?? ''); ?>" class="regular-text" placeholder="offer-page.html" style="margin-bottom: 4px;"><br>
-                                <input type="text" name="message_woo_product" value="<?php echo esc_attr($flosc_msg['woo_product'] ?? ''); ?>" class="small-text" placeholder="WooCommerce Product ID" style="margin-bottom: 4px;">
+                                <input type="text" name="message_html_file" value="<?php echo esc_attr($flosc_msg['html_file'] ?? ''); ?>" class="regular-text flosc-ivr-field-tight" placeholder="offer-page.html"><br>
+                                <input type="text" name="message_woo_product" value="<?php echo esc_attr($flosc_msg['woo_product'] ?? ''); ?>" class="small-text flosc-ivr-field-tight" placeholder="WooCommerce Product ID">
                                 <input type="number" name="message_post_id" value="<?php echo esc_attr($flosc_msg['post_id'] ?? ''); ?>" class="small-text" placeholder="WP Post ID">
                             </td>
                         </tr>
@@ -1664,9 +1666,9 @@ $flosc_total_count = count($flosc_messages);
                 </div>
                 
                 <!-- Concierge-specific fields -->
-                <div class="flosc-concierge-fields-inner" id="concierge-fields-<?php echo esc_attr( $flosc_safe_id ); ?>" style="<?php echo esc_attr( ($flosc_msg['type'] ?? '') === 'concierge' ? '' : 'display:none;' ); ?>">
-                    <h4 style="margin: 0 0 10px;">🔐 Concierge Fields</h4>
-                    <table class="form-table" style="margin: 0;">
+                <div class="flosc-concierge-fields-inner <?php echo esc_attr( ($flosc_msg['type'] ?? '') === 'concierge' ? '' : 'flosc-hidden' ); ?>" id="concierge-fields-<?php echo esc_attr( $flosc_safe_id ); ?>">
+                    <h4 class="flosc-ivr-subsection-title">🔐 Concierge Fields</h4>
+                    <table class="form-table flosc-form-table-reset">
                         <tr><th>Individual Message Password</th><td><input type="text" name="message_individual_password" value="<?php echo esc_attr($flosc_msg['individual_message_password'] ?? ''); ?>" class="regular-text" placeholder="usually blank; exact, case-sensitive"></td></tr>
                         <tr><th>Password Prompt</th><td><input type="text" name="message_password_prompt" value="<?php echo esc_attr($flosc_msg['password_prompt'] ?? ''); ?>" class="large-text" placeholder="What the bot asks when the keyword is used"></td></tr>
                         <tr><th>Password Success</th><td><input type="text" name="message_password_success" value="<?php echo esc_attr($flosc_msg['password_success'] ?? ''); ?>" class="large-text" placeholder="Affirmation shown just before the content delivers"></td></tr>
@@ -1681,9 +1683,9 @@ $flosc_total_count = count($flosc_messages);
                     </table>
                 </div>
 
-                <div style="display: flex; gap: 8px; align-items: center; margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee;">
+                <div class="flosc-ivr-editor-actions">
                     <button type="submit" name="save_ivr_message" class="button button-primary">💾 Save</button>
-                    <span style="font-size: 11px; color: #999; margin-left: auto;">ID: <?php echo esc_html($flosc_msg_id); ?></span>
+                    <span class="flosc-ivr-msg-id-note">ID: <?php echo esc_html($flosc_msg_id); ?></span>
                 </div>
             </form>
         </div>
@@ -1692,12 +1694,12 @@ $flosc_total_count = count($flosc_messages);
     
     <!-- Add New Message to this phase -->
     <?php $flosc_new_id = 'new_' . $flosc_phase_id . '_' . time(); ?>
-    <div class="flosc-msg-card" id="card-<?php echo esc_attr($flosc_new_id); ?>" style="border-radius: 0;">
-        <div class="flosc-msg-editor" id="editor-new-<?php echo esc_attr( $flosc_phase_id ); ?>" style="display: none;">
+    <div class="flosc-msg-card flosc-msg-card--flat" id="card-<?php echo esc_attr($flosc_new_id); ?>">
+        <div class="flosc-msg-editor flosc-hidden" id="editor-new-<?php echo esc_attr( $flosc_phase_id ); ?>">
             <form method="post" action="<?php echo esc_url($flosc_ivr_management_phase_url); ?>">
                 <?php wp_nonce_field('flosc_save_ivr_message'); ?>
                 <input type="hidden" name="message_id" value="<?php echo esc_attr($flosc_new_id); ?>">
-                <h4 style="margin: 0 0 12px;">✨ New <?php echo esc_html($flosc_pm['label']); ?> Message</h4>
+                <h4 class="flosc-ivr-new-msg-title">✨ New <?php echo esc_html($flosc_pm['label']); ?> Message</h4>
                 <table class="form-table">
                     <tr>
                         <th>Phase</th>
@@ -1713,7 +1715,7 @@ $flosc_total_count = count($flosc_messages);
                     <tr>
                         <th>Type</th>
                         <td>
-                            <select name="message_type" onchange="floscToggleOfferFields(this, '<?php echo esc_js($flosc_new_id); ?>')">
+                            <select name="message_type" data-flosc-action="toggle-offer-fields" data-msg-id="<?php echo esc_attr($flosc_new_id); ?>">
                                 <option value="auto">Auto (bot sends automatically)</option>
                                 <option value="suggested_user_autoprompt">Pill Button (user clicks to send)</option>
                                 <option value="offer">Offer</option>
@@ -1725,9 +1727,9 @@ $flosc_total_count = count($flosc_messages);
                         <th>Conditions</th>
                         <td>
                             <input type="text" name="message_conditions" class="large-text" placeholder="e.g. is_visitor && first_show_session">
-                            <details style="margin-top: 6px; font-size: 12px; color: #666;">
-                                <summary style="cursor: pointer; color: #2271b1;">Available conditions reference</summary>
-                                <div style="margin-top: 6px; line-height: 1.8;">
+                            <details class="flosc-ivr-help-details">
+                                <summary class="flosc-ivr-help-summary">Available conditions reference</summary>
+                                <div class="flosc-ivr-help-body">
                                     <strong>Boolean flags:</strong> <code>is_visitor</code>, <code>logged_in</code>, <code>quiz_taken</code>, <code>purchased</code>, <code>first_show_session</code>, <code>first_show_ever</code>, <code>offer_shown</code>, <code>offer_clicked</code>, <code>offer_dismissed</code>, <code>timer_expired</code>, <code>email_collected</code>, <code>has_active_sub</code><br>
                                     <strong>Numeric:</strong> <code>score &gt;= 80</code>, <code>message_count &gt; 3</code>, <code>session_seconds &gt; 60</code><br>
                                     <strong>String:</strong> <code>command == "take_quiz"</code>, <code>quiz_id == "ipa_quiz_01"</code><br>
@@ -1754,9 +1756,9 @@ $flosc_total_count = count($flosc_messages);
                         <th>Action After Chatbot Response</th>
                         <td>
                             <input type="text" name="message_action" class="regular-text" placeholder="show_offer:offer_001">
-                            <details style="margin-top: 6px; font-size: 12px; color: #666;">
-                                <summary style="cursor: pointer; color: #2271b1;">Available actions reference</summary>
-                                <div style="margin-top: 6px; line-height: 1.8;">
+                            <details class="flosc-ivr-help-details">
+                                <summary class="flosc-ivr-help-summary">Available actions reference</summary>
+                                <div class="flosc-ivr-help-body">
                                     <strong>Quiz:</strong> <code>open_quiz:{id}</code>, <code>start_quiz</code><br>
                                     <strong>Offers:</strong> <code>show_offer:{id}</code>, <code>checkout:{id}</code><br>
                                     <strong>Navigation:</strong> <code>navigate:{url}</code>, <code>open_registration</code>, <code>open_free_lesson</code><br>
@@ -1768,9 +1770,9 @@ $flosc_total_count = count($flosc_messages);
                     </tr>
                 </table>
                 
-                <div class="flosc-offer-fields-inner" id="offer-fields-<?php echo esc_attr($flosc_new_id); ?>" style="display:none;">
-                    <h4 style="margin: 0 0 10px;">🏷️ Offer Fields</h4>
-                    <table class="form-table" style="margin: 0;">
+                <div class="flosc-offer-fields-inner flosc-hidden" id="offer-fields-<?php echo esc_attr($flosc_new_id); ?>">
+                    <h4 class="flosc-ivr-subsection-title">🏷️ Offer Fields</h4>
+                    <table class="form-table flosc-form-table-reset">
                         <tr><th>Offer ID</th><td><input type="text" name="message_offer_id" class="regular-text" placeholder="full_access"></td></tr>
                         <tr><th>Price</th><td><input type="text" name="message_price" class="small-text" placeholder="49"></td></tr>
                         <tr><th>Discount Price</th><td><input type="text" name="message_discount_price" class="small-text" placeholder="24.50"></td></tr>
@@ -1783,17 +1785,17 @@ $flosc_total_count = count($flosc_messages);
                             </select>
                         </td></tr>
                         <tr><th>Content Source</th><td>
-                            <input type="text" name="message_html_file" class="regular-text" placeholder="offer-page.html" style="margin-bottom:4px;"><br>
-                            <input type="text" name="message_woo_product" class="small-text" placeholder="WooCommerce Product ID" style="margin-bottom:4px;">
+                            <input type="text" name="message_html_file" class="regular-text flosc-ivr-field-tight" placeholder="offer-page.html"><br>
+                            <input type="text" name="message_woo_product" class="small-text flosc-ivr-field-tight" placeholder="WooCommerce Product ID">
                             <input type="number" name="message_post_id" class="small-text" placeholder="WP Post ID">
                         </td></tr>
                     </table>
                 </div>
                 
                 <!-- Concierge-specific fields -->
-                <div class="flosc-concierge-fields-inner" id="concierge-fields-<?php echo esc_attr($flosc_new_id); ?>" style="display:none;">
-                    <h4 style="margin: 0 0 10px;">🔐 Concierge Fields</h4>
-                    <table class="form-table" style="margin: 0;">
+                <div class="flosc-concierge-fields-inner flosc-hidden" id="concierge-fields-<?php echo esc_attr($flosc_new_id); ?>">
+                    <h4 class="flosc-ivr-subsection-title">🔐 Concierge Fields</h4>
+                    <table class="form-table flosc-form-table-reset">
                         <tr><th>Individual Message Password</th><td><input type="text" name="message_individual_password" class="regular-text" placeholder="usually blank; exact, case-sensitive"></td></tr>
                         <tr><th>Password Prompt</th><td><input type="text" name="message_password_prompt" class="large-text" placeholder="What the bot asks when the keyword is used"></td></tr>
                         <tr><th>Password Success</th><td><input type="text" name="message_password_success" class="large-text" placeholder="Affirmation shown just before the content delivers"></td></tr>
@@ -1805,14 +1807,14 @@ $flosc_total_count = count($flosc_messages);
                     </table>
                 </div>
 
-                <div style="display: flex; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid #eee;">
+                <div class="flosc-ivr-editor-actions flosc-ivr-editor-actions--new">
                     <button type="submit" name="save_ivr_message" class="button button-primary">💾 Save</button>
-                    <button type="button" class="button" onclick="document.getElementById('editor-new-<?php echo esc_js( $flosc_phase_id ); ?>').style.display='none';">Cancel</button>
+                    <button type="button" class="button" data-flosc-action="toggle-new-editor" data-phase-id="<?php echo esc_attr( $flosc_phase_id ); ?>" data-open="0">Cancel</button>
                 </div>
             </form>
         </div>
     </div>
-    <button type="button" class="flosc-add-msg-btn" onclick="document.getElementById('editor-new-<?php echo esc_js( $flosc_phase_id ); ?>').style.display='block'; this.style.display='none';">
+    <button type="button" class="flosc-add-msg-btn" id="add-btn-<?php echo esc_attr( $flosc_phase_id ); ?>" data-flosc-action="toggle-new-editor" data-phase-id="<?php echo esc_attr( $flosc_phase_id ); ?>" data-open="1">
         + Add <?php echo esc_html($flosc_pm['label']); ?> Message
     </button>
 </div>
@@ -1826,9 +1828,19 @@ function floscToggleMsg(id) {
 }
 function floscToggleOfferFields(selectEl, msgId) {
     const panel = document.getElementById('offer-fields-' + msgId);
-    if (panel) panel.style.display = selectEl.value === 'offer' ? '' : 'none';
+    if (panel) panel.classList.toggle('flosc-hidden', selectEl.value !== 'offer');
     const cpanel = document.getElementById('concierge-fields-' + msgId);
-    if (cpanel) cpanel.style.display = selectEl.value === 'concierge' ? '' : 'none';
+    if (cpanel) cpanel.classList.toggle('flosc-hidden', selectEl.value !== 'concierge');
+}
+function floscToggleNewEditor(phaseId, shouldOpen) {
+    const editor = document.getElementById('editor-new-' + phaseId);
+    const button = document.getElementById('add-btn-' + phaseId);
+    if (editor) {
+        editor.classList.toggle('flosc-hidden', !shouldOpen);
+    }
+    if (button) {
+        button.classList.toggle('flosc-hidden', !!shouldOpen);
+    }
 }
 // Auto-scroll to expanded message on page load
 document.addEventListener('DOMContentLoaded', function() {

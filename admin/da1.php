@@ -123,6 +123,7 @@ if (isset($_POST['da1_save_catalog'])) {
 
     $flosc_content = implode("\n", $flosc_lines) . "\n";
 
+    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- admin-authenticated save to explicit DA1 TSV path
     if (file_put_contents($flosc_tsv_path, $flosc_content) !== false) {
         $flosc_count          = count($flosc_lines) - 1;
         $flosc_notice_success = $flosc_count . ' work' . ($flosc_count !== 1 ? 's' : '') . ' saved — ' . flosc_michel_timestamp();
@@ -148,32 +149,32 @@ $flosc_total = count($flosc_rows);
 
 <?php // §12: #da1-table styles moved to assets/css/flosc-admin.css (enqueued on FLOSC admin pages). ?>
 
-<div style="max-width:1300px;">
+<div class="flosc-da1-wrap">
 
 <?php if ($flosc_notice_success): ?>
-    <div class="notice notice-success is-dismissible" style="margin:0 0 16px;">
+    <div class="notice notice-success is-dismissible flosc-da1-notice">
         <p><?php echo esc_html($flosc_notice_success); ?></p>
     </div>
 <?php endif; ?>
 <?php if ($flosc_notice_error): ?>
-    <div class="notice notice-error" style="margin:0 0 16px;">
+    <div class="notice notice-error flosc-da1-notice">
         <p><?php echo esc_html( $flosc_notice_error ); ?></p>
     </div>
 <?php endif; ?>
 
 <!-- Header bar -->
-<div style="background:#f0f0f1;border:1px solid #c3c4c7;padding:12px 18px;border-radius:2px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+<div class="flosc-da1-header">
     <div>
-        <h2 style="margin:0;color:#1d2327;font-size:16px;">DA1 Catalog</h2>
-        <p style="margin:3px 0 0;color:#50575e;font-size:13px;">
+        <h2 class="flosc-da1-title">DA1 Catalog</h2>
+        <p class="flosc-da1-meta">
             <?php echo esc_html( (string) $flosc_total ); ?> works &mdash;
-            <code style="background:#e0e0e0;padding:2px 8px;border-radius:2px;color:#1d2327;font-size:11px;"><?php echo esc_html($flosc_tsv_filename); ?></code>
+            <code class="flosc-da1-filename"><?php echo esc_html($flosc_tsv_filename); ?></code>
         </p>
     </div>
-    <div style="display:flex;gap:8px;align-items:center;">
-        <span style="font-size:12px;color:#787c82;">Click any cell to edit &mdash; Enter works in all fields</span>
+    <div class="flosc-da1-actions-top">
+        <span class="flosc-da1-hint">Click any cell to edit &mdash; Enter works in all fields</span>
         <button type="button" id="da1-add-row" class="button">+ Add Work</button>
-        <button type="button" onclick="document.getElementById('da1-catalog-form').submit()" class="button button-primary">Save Catalog</button>
+        <button type="button" class="button button-primary" data-flosc-action="submit-form" data-form-id="da1-catalog-form">Save Catalog</button>
     </div>
 </div>
 
@@ -184,47 +185,38 @@ $flosc_total = count($flosc_rows);
         <input type="hidden" name="da1_columns[<?php echo esc_attr( (string) $flosc_ci ); ?>]" value="<?php echo esc_attr($flosc_col); ?>">
     <?php endforeach; ?>
 
-    <div style="overflow-x:auto;overflow-y:auto;max-height:70vh;border:1px solid #c3c4c7;border-radius:2px;">
-    <table id="da1-table" style="width:100%;min-width:1100px;border-collapse:collapse;font-size:13px;table-layout:auto;">
+    <div class="flosc-da1-table-wrap">
+    <table id="da1-table" class="flosc-da1-table">
         <thead>
-            <tr style="background:#1d2327;">
+            <tr class="flosc-da1-head-row">
                 <?php foreach ($flosc_columns as $flosc_ci => $flosc_col): ?>
-                <th style="padding:8px 10px;color:#f0f0f1;font-size:11px;text-transform:uppercase;letter-spacing:0.04em;white-space:nowrap;"><?php echo esc_html($flosc_col); ?></th>
+                <th class="flosc-da1-head-cell"><?php echo esc_html($flosc_col); ?></th>
                 <?php endforeach; ?>
-                <th style="padding:8px 10px;width:36px;"></th>
+                <th class="flosc-da1-head-cell flosc-da1-head-cell-actions"></th>
             </tr>
         </thead>
         <tbody id="da1-tbody">
         <?php foreach ($flosc_rows as $flosc_ri => $flosc_row): ?>
-            <tr class="da1-row" style="border-bottom:1px solid #e0e0e0;">
+            <tr class="da1-row flosc-da1-row">
                 <?php foreach ($flosc_columns as $flosc_ci => $flosc_col):
                     $flosc_val      = stripslashes($flosc_row[$flosc_ci] ?? '');
                     $flosc_is_multi = in_array($flosc_ci, $flosc_multiline_idx);
                     $flosc_name     = 'da1_rows[' . $flosc_ri . '][' . $flosc_ci . ']';
-                    $flosc_base   = 'width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,0.05);border-radius:2px;padding:4px 6px;font-size:13px;font-family:inherit;color:#1d2327;';
-                    $flosc_focus  = "this.style.borderColor='#2271b1';this.closest('tr').style.background='#f0f6fc';";
-                    $flosc_blur   = "this.style.borderColor='rgba(0,0,0,0.05)';this.closest('tr').style.background='';";
                 ?>
-                <td style="padding:3px 5px;vertical-align:top;">
+                <td class="flosc-da1-cell">
                     <?php if ($flosc_is_multi): ?>
                         <textarea name="<?php echo esc_attr( $flosc_name ); ?>" rows="3"
-                            <?php if (preg_match('/media|video/i', $flosc_col)) echo 'class="da1-media"'; ?>
-                            style="<?php echo esc_attr( $flosc_base ); ?>line-height:1.45;"
-                            onfocus="<?php echo esc_attr( $flosc_focus ); ?>"
-                            onblur="<?php echo esc_attr( $flosc_blur ); ?>"
+                            class="flosc-da1-input flosc-da1-textarea <?php echo preg_match('/media|video/i', $flosc_col) ? 'da1-media' : ''; ?>"
                         ><?php echo esc_textarea($flosc_val); ?></textarea>
                     <?php else: ?>
                         <input type="text" name="<?php echo esc_attr( $flosc_name ); ?>" value="<?php echo esc_attr($flosc_val); ?>"
-                            style="<?php echo esc_attr( $flosc_base ); ?>"
-                            onfocus="<?php echo esc_attr( $flosc_focus ); ?>"
-                            onblur="<?php echo esc_attr( $flosc_blur ); ?>"
+                            class="flosc-da1-input"
                         >
                     <?php endif; ?>
                 </td>
                 <?php endforeach; ?>
-                <td style="padding:3px 5px;vertical-align:middle;text-align:right;">
-                    <button type="button" class="da1-open-modal button button-small"
-                        style="font-size:11px;padding:2px 8px;">Edit</button>
+                <td class="flosc-da1-cell flosc-da1-cell-actions">
+                    <button type="button" class="da1-open-modal button button-small flosc-da1-edit-btn">Edit</button>
                 </td>
             </tr>
         <?php endforeach; ?>
@@ -232,7 +224,7 @@ $flosc_total = count($flosc_rows);
     </table>
     </div>
 
-    <div style="margin-top:14px;display:flex;justify-content:space-between;align-items:center;">
+    <div class="flosc-da1-actions-bottom">
         <button type="button" id="da1-add-row-bottom" class="button">+ Add Work</button>
         <button type="submit" class="button button-primary button-large">Save Catalog</button>
     </div>
@@ -240,16 +232,16 @@ $flosc_total = count($flosc_rows);
 
 </div>
 
-<div id="da1-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100000;align-items:center;justify-content:center;">
-    <div style="background:#fff;border-radius:4px;width:620px;max-width:96vw;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.35);">
-        <div style="padding:16px 20px 14px;border-bottom:1px solid #ddd;font-size:15px;font-weight:600;color:#1d2327;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+<div id="da1-modal-overlay" class="flosc-da1-modal-overlay">
+    <div class="flosc-da1-modal">
+        <div class="flosc-da1-modal-header">
             <span id="da1-modal-title">Edit Work</span>
-            <button type="button" id="da1-modal-close" style="background:none;border:none;cursor:pointer;font-size:22px;color:#787c82;line-height:1;padding:0 2px;">&times;</button>
+            <button type="button" id="da1-modal-close" class="flosc-da1-modal-close">&times;</button>
         </div>
-        <div id="da1-modal-body" style="padding:18px 20px;overflow-y:auto;flex:1;"></div>
-        <div style="padding:12px 20px;border-top:1px solid #ddd;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;">
-            <button type="button" id="da1-modal-delete" style="background:none;border:1px solid #b32d2e;color:#b32d2e;border-radius:3px;padding:5px 14px;font-size:12px;cursor:pointer;">Delete this work</button>
-            <div style="display:flex;gap:8px;">
+        <div id="da1-modal-body" class="flosc-da1-modal-body"></div>
+        <div class="flosc-da1-modal-footer">
+            <button type="button" id="da1-modal-delete" class="flosc-da1-modal-delete">Delete this work</button>
+            <div class="flosc-da1-modal-actions">
                 <button type="button" id="da1-modal-cancel" class="button">Cancel</button>
                 <button type="button" id="da1-modal-save" class="button button-primary">Save</button>
             </div>
@@ -261,9 +253,6 @@ $flosc_total = count($flosc_rows);
 (function () {
     var NCOLS     = <?php echo (int) $flosc_ncols; ?>;
     var MULTILINE = <?php echo json_encode(array_values($flosc_multiline_idx)); ?>;
-    var base      = 'width:100%;box-sizing:border-box;border:1px solid rgba(0,0,0,0.05);border-radius:2px;padding:4px 6px;font-size:13px;font-family:inherit;color:#1d2327;';
-    var focusIn   = "this.style.borderColor='#2271b1';this.closest('tr').style.background='#f0f6fc';";
-    var focusOut  = "this.style.borderColor='rgba(0,0,0,0.05)';this.closest('tr').style.background='';";
 
     function nextIndex() {
         return document.querySelectorAll('#da1-tbody .da1-row').length;
@@ -272,38 +261,32 @@ $flosc_total = count($flosc_rows);
     function makeRow() {
         var ri = nextIndex();
         var tr = document.createElement('tr');
-        tr.className     = 'da1-row';
-        tr.style.cssText = 'border-bottom:1px solid #e0e0e0;';
+        tr.className     = 'da1-row flosc-da1-row';
 
         for (var ci = 0; ci < NCOLS; ci++) {
             var td = document.createElement('td');
-            td.style.cssText = 'padding:3px 5px;vertical-align:top;';
+            td.className = 'flosc-da1-cell';
             var name = 'da1_rows[' + ri + '][' + ci + ']';
             if (MULTILINE.indexOf(ci) !== -1) {
                 var ta = document.createElement('textarea');
                 ta.name = name; ta.rows = 3;
-                ta.style.cssText = base + 'line-height:1.45;';
-                ta.setAttribute('onfocus', focusIn);
-                ta.setAttribute('onblur',  focusOut);
-                if (/media|video/i.test(COLUMNS[ci])) ta.className = 'da1-media';
+                ta.className = 'flosc-da1-input flosc-da1-textarea';
+                if (/media|video/i.test(COLUMNS[ci])) ta.className += ' da1-media';
                 td.appendChild(ta);
             } else {
                 var inp = document.createElement('input');
                 inp.type = 'text'; inp.name = name;
-                inp.style.cssText = base;
-                inp.setAttribute('onfocus', focusIn);
-                inp.setAttribute('onblur',  focusOut);
+                inp.className = 'flosc-da1-input';
                 td.appendChild(inp);
             }
             tr.appendChild(td);
         }
 
         var tdBtn = document.createElement('td');
-        tdBtn.style.cssText = 'padding:3px 5px;vertical-align:middle;text-align:right;';
+        tdBtn.className = 'flosc-da1-cell flosc-da1-cell-actions';
         var btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'da1-open-modal button button-small';
-        btn.style.cssText = 'font-size:11px;padding:2px 8px;';
+        btn.className = 'da1-open-modal button button-small flosc-da1-edit-btn';
         btn.textContent = 'Edit';
         tdBtn.appendChild(btn);
         tr.appendChild(tdBtn);
@@ -336,21 +319,21 @@ $flosc_total = count($flosc_rows);
         COLUMNS.forEach(function (col, ci) {
             var val  = inputs[ci] ? inputs[ci].value : '';
             var wrap = document.createElement('div');
-            wrap.style.cssText = 'margin-bottom:14px;';
+            wrap.className = 'flosc-da1-modal-field';
             var lbl  = document.createElement('label');
             lbl.textContent = col;
             lbl.setAttribute('for', 'da1m-' + ci);
-            lbl.style.cssText = 'display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#50575e;margin-bottom:5px;';
+            lbl.className = 'flosc-da1-modal-label';
             wrap.appendChild(lbl);
             var field;
             if (MULTILINE.indexOf(ci) !== -1) {
                 field = document.createElement('textarea');
                 field.rows = 6;
-                field.style.cssText = 'width:100%;box-sizing:border-box;border:1px solid #8c8f94;border-radius:3px;padding:8px 10px;font-size:13px;font-family:inherit;color:#1d2327;line-height:1.5;resize:vertical;';
+                field.className = 'flosc-da1-modal-input flosc-da1-modal-textarea';
             } else {
                 field = document.createElement('input');
                 field.type = 'text';
-                field.style.cssText = 'width:100%;box-sizing:border-box;border:1px solid #8c8f94;border-radius:3px;padding:8px 10px;font-size:13px;font-family:inherit;color:#1d2327;';
+                field.className = 'flosc-da1-modal-input';
             }
             field.id    = 'da1m-' + ci;
             field.value = val;
@@ -358,7 +341,7 @@ $flosc_total = count($flosc_rows);
             wrap.appendChild(field);
             if (/media/i.test(col)) {
                 var hint = document.createElement('p');
-                hint.style.cssText = 'margin:5px 0 0;font-size:11px;color:#787c82;';
+                hint.className = 'flosc-da1-modal-hint';
                 hint.textContent = 'One URL per line. Shown left to right in carousel in the same sequence as top to bottom.';
                 wrap.appendChild(hint);
             }

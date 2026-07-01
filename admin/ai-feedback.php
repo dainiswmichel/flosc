@@ -33,7 +33,7 @@ $flosc_rated_count = count($flosc_rated_logs);
 <div class="flosc-feedback-section">
     <h3 class="flosc-feedback-header">
         Rated Responses
-        <span class="flosc-feedback-count" style="background: #6366f1;"><?php echo esc_html( (string) $flosc_rated_count ); ?></span>
+        <span class="flosc-feedback-count flosc-feedback-count--rated"><?php echo esc_html( (string) $flosc_rated_count ); ?></span>
     </h3>
     <p class="flosc-feedback-description">
         These are chat log entries you scored in the Chat Logs tab above. 
@@ -44,8 +44,8 @@ $flosc_rated_count = count($flosc_rated_logs);
     <table class="flosc-feedback-table widefat striped">
         <thead>
             <tr>
-                <th style="width: 60px;">Score</th>
-                <th style="width: 100px;">Rated</th>
+                <th class="flosc-feedback-col-score">Score</th>
+                <th class="flosc-feedback-col-rated">Rated</th>
                 <th>User Said</th>
                 <th>AI Response</th>
                 <th>Admin Note</th>
@@ -211,7 +211,7 @@ if (isset($_POST['flosc_add_praise'])) {
                 <td class="flosc-feedback-col-actions">
                     <button type="submit" name="flosc_delete_feedback" value="<?php echo esc_attr($flosc_feedback_item['id']); ?>" 
                             class="button button-small flosc-feedback-delete"
-                            onclick="return confirm('Delete this feedback?');">
+                            data-confirm-message="Delete this feedback?">
                         Delete
                     </button>
                 </td>
@@ -313,7 +313,7 @@ if (isset($_POST['flosc_add_praise'])) {
                 <td class="flosc-feedback-col-actions">
                     <button type="submit" name="flosc_delete_praise" value="<?php echo esc_attr($flosc_praise['id']); ?>" 
                             class="button button-small flosc-feedback-praise-delete"
-                            onclick="return confirm('Delete this praise?');">
+                            data-confirm-message="Delete this praise?">
                         Delete
                     </button>
                 </td>

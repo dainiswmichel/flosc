@@ -133,7 +133,7 @@ $flosc_recent_bridge_users = $wpdb->get_results("
 <!-- IVR Targeting Info -->
 <div class="flosc-banner flosc-banner--info">
     <strong>💡 IVR Targeting:</strong> Use these conditions in IVR messages:
-    <ul style="margin: 10px 0 0 20px;">
+    <ul class="flosc-bridge-targeting-list">
         <li><code>in_bridge_state = true</code> — User completed quiz but hasn't purchased</li>
         <li><code>bridge_score >= 70</code> — User scored 70% or higher on quiz</li>
         <li><code>weakest_category = "category_name"</code> — Target by weakness area</li>
@@ -155,9 +155,8 @@ $flosc_recent_bridge_users = $wpdb->get_results("
             <div class="flosc-weakness-bar">
                 <div class="flosc-weakness-bar__label"><?php echo esc_html($flosc_category); ?></div>
                 <div class="flosc-weakness-bar__track">
-                    <div class="flosc-weakness-bar__fill" style="width: <?php echo esc_attr($flosc_percentage); ?>%;">
-                        <?php echo esc_html($flosc_count); ?>
-                    </div>
+                    <progress class="flosc-weakness-progress" max="100" value="<?php echo esc_attr($flosc_percentage); ?>"></progress>
+                    <span class="flosc-weakness-bar__count"><?php echo esc_html($flosc_count); ?></span>
                 </div>
             </div>
         <?php endforeach; ?>
@@ -196,8 +195,8 @@ $flosc_recent_bridge_users = $wpdb->get_results("
                     <td><?php echo esc_html($flosc_user->user_email); ?></td>
                     <td><?php echo esc_html($flosc_score); ?>%</td>
                     <td>
-                        <span style="color: green;">✓ <?php echo esc_html($flosc_correct); ?></span> / 
-                        <span style="color: red;">✗ <?php echo esc_html($flosc_incorrect); ?></span>
+                        <span class="flosc-bridge-correct">✓ <?php echo esc_html($flosc_correct); ?></span> / 
+                        <span class="flosc-bridge-incorrect">✗ <?php echo esc_html($flosc_incorrect); ?></span>
                     </td>
                     <td>
                         <?php if ($flosc_purchased): ?>

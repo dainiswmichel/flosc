@@ -122,15 +122,15 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
 ?>
 
 <div class="flosc-sso-settings">
-    <div style="margin:0 0 14px; text-align:right;">
-        <a href="<?php echo esc_url($flosc_sso_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
+    <div class="flosc-sso-docs-wrap">
+        <a href="<?php echo esc_url($flosc_sso_docs_url); ?>" class="flosc-sso-docs-link">Docs</a>
     </div>
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 10px;">
+    <div class="flosc-sso-header">
         <div>
-            <h2 style="margin-bottom: 4px;">🔐 SSO / Social Login Settings</h2>
-            <p class="description" style="margin-top: 0;">Configure OAuth2 providers to enable social login in your FLOSC chat. Users can sign in with their existing accounts.</p>
+            <h2 class="flosc-sso-title">🔐 SSO / Social Login Settings</h2>
+            <p class="description flosc-sso-subtitle">Configure OAuth2 providers to enable social login in your FLOSC chat. Users can sign in with their existing accounts.</p>
         </div>
-        <button type="submit" name="flosc_save" class="button button-primary" style="margin-top: 10px;">
+        <button type="submit" name="flosc_save" class="button button-primary flosc-sso-save-top">
             💾 Save SSO Settings for <?php echo esc_html($flosc_flow_display_name); ?>
         </button>
     </div>
@@ -163,22 +163,21 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
     }
     ?>
 
-    <div class="card" style="padding: 14px 16px; margin: 12px 0 18px; border-left: 4px solid #0073aa; background: #f0f7ff;">
-        <h3 style="margin: 0 0 8px;">Flow Redirect Context</h3>
-        <p style="margin: 0 0 6px;"><strong>IVR file:</strong> <code><?php echo esc_html($flosc_selected_ivr ?: '(none selected)'); ?></code></p>
-        <p style="margin: 0 0 6px;"><strong>flow_id parameter:</strong> <code><?php echo esc_html($flosc_current_flow_id ?: '(none)'); ?></code></p>
-        <p style="margin: 0 0 6px;"><strong>Runtime redirect_to (primary):</strong> <code>window.location.href</code> from chat page at click-time</p>
-        <p style="margin: 0 0 6px;"><strong>Configured Post-login redirect URL:</strong>
+    <div class="card flosc-sso-flow-card">
+        <h3 class="flosc-sso-flow-title">Flow Redirect Context</h3>
+        <p class="flosc-sso-flow-row"><strong>IVR file:</strong> <code><?php echo esc_html($flosc_selected_ivr ?: '(none selected)'); ?></code></p>
+        <p class="flosc-sso-flow-row"><strong>flow_id parameter:</strong> <code><?php echo esc_html($flosc_current_flow_id ?: '(none)'); ?></code></p>
+        <p class="flosc-sso-flow-row"><strong>Runtime redirect_to (primary):</strong> <code>window.location.href</code> from chat page at click-time</p>
+        <p class="flosc-sso-flow-row"><strong>Configured Post-login redirect URL:</strong>
             <input type="url"
                    name="flow_sso_post_login_redirect_url"
                    value="<?php echo esc_attr($flosc_flow_settings['sso_post_login_redirect_url'] ?? ''); ?>"
-                   class="regular-text"
-                   style="max-width: 520px; margin-left: 8px;"
+                   class="regular-text flosc-sso-post-login-url"
                    placeholder="https://flosc.ai/">
         </p>
-        <p class="description" style="margin: 0 0 6px 0;">Used only if OAuth state has no <code>redirect_to</code>. Leave empty to use flow domain/slug fallback.</p>
-        <p style="margin: 0 0 6px;"><strong>Fallback app URL (if state has no redirect_to):</strong> <code><?php echo esc_html($flosc_flow_fallback_url); ?></code></p>
-        <p style="margin: 0;"><strong>Fallback source:</strong> <?php echo esc_html($flosc_redirect_source); ?></p>
+        <p class="description flosc-sso-flow-row">Used only if OAuth state has no <code>redirect_to</code>. Leave empty to use flow domain/slug fallback.</p>
+        <p class="flosc-sso-flow-row"><strong>Fallback app URL (if state has no redirect_to):</strong> <code><?php echo esc_html($flosc_flow_fallback_url); ?></code></p>
+        <p class="flosc-sso-flow-row flosc-sso-flow-row-last"><strong>Fallback source:</strong> <?php echo esc_html($flosc_redirect_source); ?></p>
     </div>
 
     <?php foreach ($flosc_providers as $flosc_provider_id => $flosc_provider): ?>
@@ -196,16 +195,16 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
         );
         ?>
         
-        <div class="flosc-sso-provider card" style="margin-bottom: 20px; padding: 20px; border-left: 4px solid <?php echo esc_attr($flosc_is_enabled ? '#28a745' : '#ccc'); ?>;">
-            <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 1.5em;"><?php echo esc_html($flosc_provider['icon']); ?></span>
+        <div class="flosc-sso-provider card <?php echo $flosc_is_enabled ? 'flosc-sso-provider--enabled' : 'flosc-sso-provider--disabled'; ?>">
+            <h3 class="flosc-sso-provider-title">
+            <span class="flosc-sso-provider-icon"><?php echo esc_html($flosc_provider['icon']); ?></span>
                 <?php echo esc_html($flosc_provider['name']); ?>
                 <?php if ($flosc_is_enabled && $flosc_client_id && $flosc_client_secret): ?>
-                    <span style="background: #28a745; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: normal;">ENABLED</span>
+                    <span class="flosc-sso-enabled-badge">ENABLED</span>
                 <?php endif; ?>
             </h3>
             
-            <table class="form-table" style="margin-top: 0;">
+            <table class="form-table flosc-sso-form-table">
                 <tr>
                     <th scope="row">Enable <?php echo esc_html($flosc_provider['name']); ?></th>
                     <td>
@@ -236,9 +235,9 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
                            <input type="password" 
                                name="flow_sso_<?php echo esc_attr($flosc_provider_id); ?>_client_secret" 
                                value="<?php echo esc_attr($flosc_client_secret); ?>" 
-                               class="regular-text"
+                               class="regular-text <?php echo $flosc_provider_id === 'apple' ? 'flosc-sso-apple-secret' : ''; ?>"
                                placeholder="<?php echo esc_attr($flosc_provider_id === 'apple' ? 'Leave empty - auto-generated from keys' : 'Your ' . $flosc_provider['name'] . ' Client Secret'); ?>"
-                               <?php if ($flosc_provider_id === 'apple') : ?>readonly style="background: #f0f0f0;"<?php endif; ?>>
+                               <?php if ($flosc_provider_id === 'apple') : ?>readonly<?php endif; ?>>
                         <?php if ($flosc_provider_id === 'apple'): ?>
                             <p class="description">Apple client secrets are automatically generated from Team ID, Key ID, and Private Key below.</p>
                         <?php endif; ?>
@@ -290,10 +289,11 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
                 <tr>
                     <th scope="row">Callback URL</th>
                     <td>
-                        <code style="display: inline-block; padding: 8px 12px; background: #f5f5f5; border-radius: 4px; word-break: break-all;"><?php echo esc_html($flosc_callback_url); ?></code>
+                        <code class="flosc-sso-code-url"><?php echo esc_html($flosc_callback_url); ?></code>
                         <button type="button" 
-                                class="button button-small" 
-                                onclick="navigator.clipboard.writeText('<?php echo esc_js($flosc_callback_url); ?>').then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 2000); });">
+                                class="button button-small"
+                                data-flosc-action="copy-text"
+                                data-copy-text="<?php echo esc_attr($flosc_callback_url); ?>">
                             Copy
                         </button>
                         <p class="description">Add this URL to your <?php echo esc_html($flosc_provider['name']); ?> app's authorized redirect URIs.</p>
@@ -303,10 +303,11 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
                 <tr>
                     <th scope="row">Authorize URL (Diagnostic Example)</th>
                     <td>
-                        <code style="display: inline-block; padding: 8px 12px; background: #f5f5f5; border-radius: 4px; word-break: break-all;"><?php echo esc_html($flosc_authorize_url_example); ?></code>
+                        <code class="flosc-sso-code-url"><?php echo esc_html($flosc_authorize_url_example); ?></code>
                         <button type="button"
                                 class="button button-small"
-                                onclick="navigator.clipboard.writeText('<?php echo esc_js($flosc_authorize_url_example); ?>').then(() => { this.textContent = 'Copied!'; setTimeout(() => { this.textContent = 'Copy'; }, 2000); });">
+                                data-flosc-action="copy-text"
+                                data-copy-text="<?php echo esc_attr($flosc_authorize_url_example); ?>">
                             Copy
                         </button>
                         <p class="description">Diagnostic URL with selected <code>flow_id</code>. Production chat uses the current page URL as <code>redirect_to</code> at click-time.</p>
@@ -315,17 +316,17 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
             </table>
             
             <!-- Setup Instructions (Collapsible) -->
-            <details style="margin-top: 15px; padding: 10px; background: #f9f9f9; border-radius: 4px;">
-                <summary style="cursor: pointer; font-weight: 600; color: #0073aa;">
+            <details class="flosc-sso-setup-details">
+                <summary class="flosc-sso-setup-summary">
                     📖 Setup Instructions for <?php echo esc_html($flosc_provider['name']); ?>
                 </summary>
-                <ol style="margin-top: 10px; padding-left: 20px;">
+                <ol class="flosc-sso-setup-list">
                     <?php foreach ($flosc_provider['instructions'] as $flosc_step): ?>
-                        <li style="margin-bottom: 8px;"><?php echo wp_kses_post($flosc_step); ?></li>
+                        <li class="flosc-sso-setup-item"><?php echo wp_kses_post($flosc_step); ?></li>
                     <?php endforeach; ?>
                 </ol>
                 <?php if (!empty($flosc_provider['docs_url'])): ?>
-                    <p style="margin-top: 10px;">
+                    <p class="flosc-sso-setup-link-wrap">
                         <a href="<?php echo esc_url($flosc_provider['docs_url']); ?>" target="_blank" class="button button-secondary button-small">
                             Open <?php echo esc_html($flosc_provider['name']); ?> Developer Console →
                         </a>
@@ -334,34 +335,34 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
             </details>
 
             <!-- v1.5.0: Inline Connection Test -->
-            <div class="flosc-sso-test" style="margin-top: 15px; padding: 12px 16px; background: #fafafa; border: 1px solid #e0e0e0; border-radius: 6px;">
-                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div class="flosc-sso-test">
+                <div class="flosc-sso-test-head">
                     <button type="button" 
                             class="button flosc-test-connection-btn" 
                             data-provider="<?php echo esc_attr($flosc_provider_id); ?>"
-                            style="font-weight: 600;">
+                            >
                         🔌 Test Connection
                     </button>
-                    <span class="flosc-test-status" id="flosc-test-status-<?php echo esc_attr($flosc_provider_id); ?>" style="font-size: 13px; color: #666;">
+                    <span class="flosc-test-status" id="flosc-test-status-<?php echo esc_attr($flosc_provider_id); ?>">
                         Click to verify your <?php echo esc_html($flosc_provider['name']); ?> credentials without leaving this page
                     </span>
                 </div>
-                <div class="flosc-test-results" id="flosc-test-results-<?php echo esc_attr($flosc_provider_id); ?>" style="display: none; margin-top: 12px;">
+                <div class="flosc-test-results" id="flosc-test-results-<?php echo esc_attr($flosc_provider_id); ?>">
                     <!-- Results injected by JS -->
                 </div>
             </div>
         </div>
     <?php endforeach; ?>
     
-    <p class="submit" style="margin: 10px 0 20px;">
-        <button type="submit" name="flosc_save" class="button button-primary" style="margin-top: 0;">
+    <p class="submit flosc-sso-submit-wrap">
+        <button type="submit" name="flosc_save" class="button button-primary flosc-sso-save-bottom">
             💾 Save SSO Settings for <?php echo esc_html($flosc_flow_display_name); ?>
         </button>
     </p>
     
     <!-- General SSO Info -->
-    <div class="card" style="padding: 20px; background: #f0f7ff; border-left: 4px solid #0073aa;">
-        <h3 style="margin-top: 0;">ℹ️ How SSO Works</h3>
+    <div class="card flosc-sso-info-card">
+        <h3 class="flosc-sso-card-title">ℹ️ How SSO Works</h3>
         <p>When a user clicks a social login button in the FLOSC chat:</p>
         <ol>
             <li>They're redirected to the provider's login page</li>
@@ -373,9 +374,9 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
     </div>
     
     <!-- Test Endpoints -->
-    <div class="card" style="padding: 20px; margin-top: 20px;">
-        <h3 style="margin-top: 0;">🔧 API Endpoints</h3>
-        <table class="widefat" style="max-width: 600px;">
+    <div class="card flosc-sso-endpoints-card">
+        <h3 class="flosc-sso-card-title">🔧 API Endpoints</h3>
+        <table class="widefat flosc-sso-endpoints-table">
             <tr>
                 <th>Endpoint</th>
                 <th>URL</th>

@@ -70,9 +70,11 @@ if (!function_exists('flosc_protect_uploads_directory')) {
     function flosc_protect_uploads_directory($dir) {
         $dir = trailingslashit($dir);
         if (!file_exists($dir . 'index.php')) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- guarded one-time protection file under uploads-only FLOSC directory
             file_put_contents($dir . 'index.php', "<?php // Silence is golden.\n");
         }
         if (!file_exists($dir . '.htaccess')) {
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- guarded one-time protection file under uploads-only FLOSC directory
             file_put_contents($dir . '.htaccess', "Deny from all\n");
         }
     }
@@ -129,6 +131,7 @@ if (!function_exists('flosc_write_data_file')) {
         if (0 !== strpos(trailingslashit($dir_real), trailingslashit($base_real))) {
             return false;
         }
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- centralized uploads-only write gate with path containment checks
         return false !== file_put_contents($target, $content);
     }
 }
@@ -577,10 +580,15 @@ function flosc_michel_timestamp_global() {
     return gmdate('Y') . 'y-' . gmdate('m') . 'm-' . gmdate('d') . 'd-UTC' . gmdate('H') . 'h-' . gmdate('i') . 'm-' . gmdate('s') . 's';
 }
 
+require_once FLOSC_PLUGIN_DIR . 'includes/flosc-rest.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/flosc-admin.php';
+
 /**
  * Main FLOSC Framework Class
  */
 class FLOSC_Framework {
+    use FLOSC_REST_Trait;
+    use FLOSC_Admin_Trait;
     
     private static $instance = null;
     
@@ -663,6 +671,7 @@ class FLOSC_Framework {
             return $filesystem->move($source, $destination, true);
         }
 
+        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- fallback when WP_Filesystem move is unavailable
         return copy($source, $destination) && $this->delete_file_safely($source);
     }
 
@@ -1304,316 +1313,6 @@ class FLOSC_Framework {
     }
 
     /**
-     * Permission Callbacks for REST API
-     */
-    public function check_metered_visitor_compute_permission($request) {
-        // Check rate limit first
-        if (!$this->check_rate_limit('metered_compute', 20, 3600)) {
-            return new WP_Error('rate_limit', __('Too many requests. Please try again later.', 'flosc'), ['status' => 429]);
-        }
-
-        // Allow logged-in users with usage tracking
-        if (is_user_logged_in()) {
-            return true;
-        }
-
-        // For visitors: strict rate limit
-        if (!$this->check_rate_limit('visitor_metered_compute', 5, 3600)) {
-            return new WP_Error('rate_limit', __('Free tier limit reached. Please log in.', 'flosc'), ['status' => 429]);
-        }
-
-        return true;
-    }
-
-    /**
-     * Backward-compatible wrapper for legacy callback name.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return true|WP_Error
-     */
-    public function check_paid_endpoint_permission($request) {
-        return $this->check_metered_visitor_compute_permission($request);
-    }
-    
-    /**
-     * v9.4.2: Permission callback for public endpoints that need rate limiting
-     * 
-     * Unlike check_paid_endpoint_permission(), this is for truly public endpoints
-     * like IVR chat that don't consume expensive AI credits but should still
-     * be protected from abuse.
-     * 
-     * Limits: 60 requests/hour for logged-in users, 30/hour for visitors
-     */
-    public function check_public_endpoint_permission($request) {
-        $endpoint = $request->get_route();
-        
-        if (is_user_logged_in()) {
-            if (!$this->check_rate_limit('public_auth_' . $endpoint, 60, 3600)) {
-                return new WP_Error('rate_limit', __('Too many requests. Please slow down.', 'flosc'), ['status' => 429]);
-            }
-            return true;
-        }
-        
-        // Visitors get stricter limits
-        if (!$this->check_rate_limit('public_visitor_' . $endpoint, 60, 3600)) {
-            return new WP_Error('rate_limit', __('Rate limit reached. Please try again later.', 'flosc'), ['status' => 429]);
-        }
-
-        return true;
-    }
-
-    /**
-     * Permission callback for routes that require a logged-in user.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return true|WP_Error
-     */
-    public function check_authenticated_user_permission($request) {
-        if (!is_user_logged_in()) {
-            return new WP_Error('flosc_login_required', __('Login is required.', 'flosc'), ['status' => 401]);
-        }
-
-        return true;
-    }
-
-    /**
-     * §4: Permission callback for privileged admin-only REST actions.
-     * Grants only to users who can manage_options; everyone else gets 403.
-     */
-    public function check_admin_endpoint_permission($request) {
-        if (!current_user_can('manage_options')) {
-            return new WP_Error('forbidden', __('Administrator privileges required.', 'flosc'), ['status' => 403]);
-        }
-        return true;
-    }
-
-    /**
-     * §4: Permission callback for buyer-scoped checkout/payment REST actions.
-     * Requires a valid checkout-issued wp_rest nonce: X-WP-Nonce header first,
-     * falling back to the _wpnonce request param. Handler then binds to the buyer.
-     */
-    public function check_checkout_endpoint_permission($request) {
-        $nonce = $request->get_header('X-WP-Nonce');
-        if (empty($nonce)) {
-            $nonce = $request->get_param('_wpnonce');
-        }
-        $nonce = sanitize_text_field((string) $nonce);
-        if (!wp_verify_nonce($nonce, 'wp_rest')) {
-            return new WP_Error('forbidden', __('Invalid or missing security token.', 'flosc'), ['status' => 403]);
-        }
-        return true;
-    }
-
-    /**
-     * Intentionally public nonce endpoint permission callback.
-     *
-     * This route only returns a WordPress REST nonce and performs no state mutation.
-     */
-    public function check_public_nonce_endpoint_permission($request) {
-        return true;
-    }
-
-    /**
-     * Intentionally public webhook endpoint permission callback.
-     *
-     * Payment providers cannot present WordPress auth; signature checks happen in
-     * the webhook handler itself.
-     */
-    public function check_webhook_endpoint_permission($request) {
-        return true;
-    }
-
-    /**
-     * Normalize and validate IVR phase from request input.
-     *
-     * Missing phase defaults to freeline for compatibility. Unknown phases are
-     * rejected to keep authorization behavior explicit and auditable.
-     *
-     * @param mixed $raw_phase Raw phase parameter.
-     * @return string|WP_Error
-     */
-    private function normalize_ivr_phase($raw_phase) {
-        $phase = (null === $raw_phase || '' === $raw_phase)
-            ? 'freeline'
-            : sanitize_key((string) $raw_phase);
-
-        $valid_phases = ['freeline', 'login', 'offer', 'sale', 'content'];
-        if (!in_array($phase, $valid_phases, true)) {
-            return new WP_Error('flosc_invalid_phase', __('Invalid FLOSC phase.', 'flosc'), ['status' => 400]);
-        }
-
-        return $phase;
-    }
-
-    /**
-     * §4: Permission callback for /ivr-messages.
-     * Preserves public rate limiting for visitor-safe phases.
-     * Only content phase is entitlement-gated; sale remains part of the public
-     * purchase journey.
-     */
-    public function check_ivr_messages_permission($request) {
-        // Keep the existing public rate-limit behavior for the visitor funnel.
-        $rate = $this->check_public_endpoint_permission($request);
-        if ($rate !== true) {
-            return $rate;
-        }
-
-        $phase = $this->normalize_ivr_phase($request->get_param('phase'));
-        if (is_wp_error($phase)) {
-            return $phase;
-        }
-
-        // Content is the only protected phase.
-        if ($phase === 'content') {
-            $user_id = get_current_user_id();
-            // The meta is stored as the string 'true' / 'false' (see
-            // FLOSC_Member_Access). A (bool) cast would treat the revoked value
-            // 'false' as truthy and let a revoked member through — compare the
-            // string explicitly.
-            $has_member_access = $user_id && 'true' === get_user_meta($user_id, '_flosc_member_access', true);
-            if (!$has_member_access) {
-                return new WP_Error('forbidden', __('Not entitled to this content.', 'flosc'), ['status' => 403]);
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Build transient storage key for one visitor session's poll token hash.
-     *
-     * @param int $session_id Conversation/session ID.
-     * @return string
-     */
-    private function get_admin_poll_token_storage_key($session_id) {
-        return 'flosc_admin_poll_' . md5((string) absint($session_id));
-    }
-
-    /**
-     * Mint poll token for visitor admin-message polling.
-     *
-     * @param int $session_id Conversation/session ID.
-     * @return string
-     */
-    private function issue_admin_poll_token($session_id) {
-        $session_id = absint($session_id);
-        $token = wp_generate_password(43, false, false);
-        $token_hash = hash_hmac('sha256', $token, flosc_token_secret());
-
-        set_transient(
-            $this->get_admin_poll_token_storage_key($session_id),
-            [
-                'session_id' => $session_id,
-                'token_hash' => $token_hash,
-                'issued_at'  => time(),
-            ],
-            HOUR_IN_SECONDS
-        );
-
-        return $token;
-    }
-
-    /**
-     * Verify poll token ownership for the provided session.
-     *
-     * @param int    $session_id Session ID.
-     * @param string $poll_token Token provided by visitor.
-     * @return bool
-     */
-    private function verify_admin_poll_token($session_id, $poll_token) {
-        $session_id = absint($session_id);
-        $poll_token = sanitize_text_field((string) $poll_token);
-        if ($session_id <= 0 || $poll_token === '') {
-            return false;
-        }
-
-        $record = get_transient($this->get_admin_poll_token_storage_key($session_id));
-        if (!is_array($record) || empty($record['token_hash'])) {
-            return false;
-        }
-
-        $presented_hash = hash_hmac('sha256', $poll_token, flosc_token_secret());
-        return hash_equals((string) $record['token_hash'], $presented_hash);
-    }
-
-    /**
-     * Verify that the current request can be tied to the provided visitor session.
-     *
-     * @param int $session_id Session ID.
-     * @return bool
-     */
-    private function current_request_owns_chat_session($session_id) {
-        $session_id = absint($session_id);
-        if ($session_id <= 0) {
-            return false;
-        }
-
-        if (!class_exists('FLOSC_Chat_Logger')) {
-            return false;
-        }
-
-        return FLOSC_Chat_Logger::instance()->flosc_current_request_owns_session($session_id);
-    }
-
-    /**
-     * Permission callback for visitor admin-message polling.
-     *
-     * Requires session ownership proof via poll token bound to session_id.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return true|WP_Error
-     */
-    public function check_visitor_session_poll_permission($request) {
-        $session_id = absint($request->get_param('session_id'));
-        $poll_token = sanitize_text_field((string) $request->get_param('poll_token'));
-
-        if ($session_id <= 0 || $poll_token === '') {
-            return new WP_Error('flosc_missing_session_token', __('Missing session token.', 'flosc'), ['status' => 403]);
-        }
-
-        if (!$this->verify_admin_poll_token($session_id, $poll_token)) {
-            return new WP_Error('flosc_invalid_session_token', __('Invalid session token.', 'flosc'), ['status' => 403]);
-        }
-
-        if (!$this->current_request_owns_chat_session($session_id)) {
-            return new WP_Error('flosc_session_ownership_failed', __('Session ownership check failed.', 'flosc'), ['status' => 403]);
-        }
-
-        if (!$this->check_rate_limit('visitor_admin_poll_' . $session_id, 120, HOUR_IN_SECONDS)) {
-            return new WP_Error('flosc_rate_limit', __('Too many requests.', 'flosc'), ['status' => 429]);
-        }
-
-        return true;
-    }
-
-    /**
-     * Permission callback for minting visitor admin-message poll tokens.
-     *
-     * This route is intentionally visitor-facing but now requires ownership proof
-     * of the requested session before a token is minted.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return true|WP_Error
-     */
-    public function check_admin_messages_token_permission($request) {
-        $public_check = $this->check_public_endpoint_permission($request);
-        if (is_wp_error($public_check)) {
-            return $public_check;
-        }
-
-        $session_id = absint($request->get_param('session_id'));
-        if ($session_id <= 0) {
-            return new WP_Error('invalid_session_id', __('Invalid session id.', 'flosc'), ['status' => 400]);
-        }
-
-        if (!$this->current_request_owns_chat_session($session_id)) {
-            return new WP_Error('flosc_session_ownership_failed', __('Session ownership check failed.', 'flosc'), ['status' => 403]);
-        }
-
-        return true;
-    }
-
-    /**
      * Plugin Activation
      */
     // v9.1.1: Activation logic moved to global flosc_activate() function (line ~2285)
@@ -2018,7 +1717,7 @@ The Team',
                 'flosc_user_id' => intval($user_id),
             ], admin_url('admin.php'));
 
-            $time_html = $at !== '' ? '<br><small style="color:#666;">' . esc_html($at) . '</small>' : '';
+            $time_html = $at !== '' ? '<br><small class="flosc-muted-meta">' . esc_html($at) . '</small>' : '';
             return implode(' | ', $parts) . $time_html . '<br><a href="' . esc_url($chat_logs_url) . '">View chats</a>';
         }
 
@@ -2034,7 +1733,7 @@ The Team',
                 $rows[] = esc_html($flow) . ': ' . intval($count);
             }
 
-            $more = count($counts) > 4 ? '<br><small style="color:#666;">+' . (count($counts) - 4) . ' more</small>' : '';
+            $more = count($counts) > 4 ? '<br><small class="flosc-muted-meta">+' . (count($counts) - 4) . ' more</small>' : '';
             return implode('<br>', $rows) . $more;
         }
 
@@ -2449,16 +2148,16 @@ The Team',
         $welcome_text = str_replace('{magic_url}', $magic_url, $welcome_text);
         $welcome_html = nl2br(esc_html($welcome_text));
 
-        $body = '<!doctype html><html><body style="margin:0;padding:0;background:#f6f7fb;font-family:Arial,sans-serif;color:#1f2937;">'
-            . '<div style="max-width:640px;margin:0 auto;padding:32px 20px;">'
-            . '<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:32px;box-shadow:0 10px 30px rgba(0,0,0,0.05);">'
-            . '<h1 style="margin:0 0 16px 0;font-size:28px;line-height:1.2;">Your ' . $safe_link_name . ' is ready</h1>'
-            . '<p style="margin:0 0 24px 0;font-size:16px;line-height:1.6;">' . $welcome_html . '</p>'
-            . '<p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:#4b5563;">Your link can be used up to 10 times over 30 days.</p>'
-            . '<p style="margin:0 0 24px 0;"><a href="' . $safe_url . '" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 22px;border-radius:10px;font-weight:700;">' . $safe_link_name . '</a></p>'
-            . '<p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:#4b5563;">If the button does not work, copy and paste this link into your browser:</p>'
-            . '<p style="margin:0 0 24px 0;font-size:14px;line-height:1.6;word-break:break-all;"><a href="' . $safe_url . '">' . $safe_url . '</a></p>'
-            . '<p style="margin:0;font-size:13px;line-height:1.6;color:#6b7280;">This message was sent to ' . $safe_email . '.</p>'
+        $body = '<!doctype html><html><body class="flosc-email-body">'
+            . '<div class="flosc-email-wrap">'
+            . '<div class="flosc-email-card">'
+            . '<h1 class="flosc-email-title">Your ' . $safe_link_name . ' is ready</h1>'
+            . '<p class="flosc-email-lead">' . $welcome_html . '</p>'
+            . '<p class="flosc-email-copy">Your link can be used up to 10 times over 30 days.</p>'
+            . '<p class="flosc-email-cta-wrap"><a class="flosc-email-cta" href="' . $safe_url . '">' . $safe_link_name . '</a></p>'
+            . '<p class="flosc-email-copy">If the button does not work, copy and paste this link into your browser:</p>'
+            . '<p class="flosc-email-url"><a href="' . $safe_url . '">' . $safe_url . '</a></p>'
+            . '<p class="flosc-email-foot">This message was sent to ' . $safe_email . '.</p>'
             . '</div></div></body></html>';
 
         $sent = wp_mail(
@@ -2586,10 +2285,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC SSO: wp_mail failed 
         if ($max > 0 && $this->flosc_email_sent_this_run >= $max) {
             return false;
         }
-        $spacing_ms = (int) apply_filters('flosc_email_send_spacing_ms', 200);
-        if ($spacing_ms > 0 && $this->flosc_email_sent_this_run > 0) {
-            usleep($spacing_ms * 1000); // configurable spacing between sends
-        }
         $this->flosc_email_sent_this_run++;
         return wp_mail($to, $subject, $body, $headers);
     }
@@ -2600,18 +2295,18 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC SSO: wp_mail failed 
     private function flosc_email_html_card($context, $user, $body_text, $button_url = '', $button_label = '') {
         $safe_email = esc_html($user->user_email);
         $body_html  = nl2br(esc_html($body_text));
-        $html = '<!doctype html><html><body style="margin:0;padding:0;background:#f6f7fb;font-family:Arial,sans-serif;color:#1f2937;">'
-            . '<div style="max-width:640px;margin:0 auto;padding:32px 20px;">'
-            . '<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:32px;box-shadow:0 10px 30px rgba(0,0,0,0.05);">'
-            . '<p style="margin:0 0 24px 0;font-size:16px;line-height:1.6;">' . $body_html . '</p>';
+        $html = '<!doctype html><html><body class="flosc-email-body">'
+            . '<div class="flosc-email-wrap">'
+            . '<div class="flosc-email-card">'
+            . '<p class="flosc-email-lead">' . $body_html . '</p>';
         if ($button_url !== '') {
             $safe_url = esc_url($button_url);
             $label    = esc_html($button_label !== '' ? $button_label : (string) ($context['link_name'] ?? 'Open'));
-            $html .= '<p style="margin:0 0 24px 0;"><a href="' . $safe_url . '" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 22px;border-radius:10px;font-weight:700;">' . $label . '</a></p>'
-                . '<p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:#4b5563;">If the button does not work, copy and paste this link into your browser:</p>'
-                . '<p style="margin:0 0 24px 0;font-size:14px;line-height:1.6;word-break:break-all;"><a href="' . $safe_url . '">' . $safe_url . '</a></p>';
+            $html .= '<p class="flosc-email-cta-wrap"><a class="flosc-email-cta" href="' . $safe_url . '">' . $label . '</a></p>'
+                . '<p class="flosc-email-copy">If the button does not work, copy and paste this link into your browser:</p>'
+                . '<p class="flosc-email-url"><a href="' . $safe_url . '">' . $safe_url . '</a></p>';
         }
-        $html .= '<p style="margin:0;font-size:13px;line-height:1.6;color:#6b7280;">This message was sent to ' . $safe_email . '.</p>'
+        $html .= '<p class="flosc-email-foot">This message was sent to ' . $safe_email . '.</p>'
             . '</div></div></body></html>';
         return $html;
     }
@@ -3816,7 +3511,7 @@ The {product_name} Team";
                 🔒 Protected by FLOSC category: <strong><?php echo esc_html($protected_cat_name); ?></strong>
             </div>
             
-            <div class="flosc-protection-options" style="margin-top: 10px;">
+            <div class="flosc-protection-options flosc-protection-options--spaced">
                 <label>
                     <input type="radio" name="flosc_protection_mode" value="protected" <?php checked($protection_mode, 'protected'); ?>>
                     <strong>Protected</strong>
@@ -4328,6 +4023,104 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
     }
 
     /**
+     * Shared class-based styles for quiz/profile cards rendered from PHP.
+     * Kept as an inline style handle to avoid inline style attributes in markup.
+     */
+    private function enqueue_flosc_quiz_ui_styles() {
+        static $done = false;
+        if ($done) {
+            return;
+        }
+        $done = true;
+
+        wp_register_style('flosc-quiz-ui', false, [], FLOSC_VERSION);
+        wp_enqueue_style('flosc-quiz-ui');
+        wp_add_inline_style('flosc-quiz-ui', '
+            .flosc-score-wrap { text-align: center; margin-bottom: 24px; }
+            .flosc-score-ring { display: inline-flex; align-items: center; justify-content: center; width: 120px; height: 120px; border-radius: 50%; border: 6px solid currentColor; font-size: 36px; font-weight: 700; }
+            .flosc-score-date { margin-top: 8px; color: #666; font-size: 14px; }
+            .flosc-score--good { color: #22c55e; }
+            .flosc-score--warn { color: #eab308; }
+            .flosc-score--bad { color: #ef4444; }
+
+            .flosc-weakness-wrap { margin-bottom: 24px; }
+            .flosc-quiz-section-title { font-size: 16px; margin-bottom: 8px; }
+            .flosc-weakness-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+            .flosc-weakness-tag { display: inline-block; padding: 4px 12px; border-radius: 16px; background: #f3f4f6; border: 1px solid #d1d5db; font-family: monospace; font-size: 15px; }
+
+            .flosc-guest-warning-card { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 10px; padding: 14px 16px; margin-bottom: 20px; }
+            .flosc-guest-warning-card--wide { border-radius: 8px; padding: 16px 20px; margin: 24px 0; max-width: 640px; }
+            .flosc-guest-warning-title { margin: 0 0 6px; font-size: 14px; font-weight: 600; color: #92400e; }
+            .flosc-guest-warning-copy { margin: 0 0 6px; font-size: 13px; color: #78350f; }
+            .flosc-guest-warning-copy--tight { margin: 0; }
+            .flosc-guest-warning-link { color: #b45309; font-weight: 600; }
+            .flosc-guest-warning-cta { display: inline-block; background: #2563eb; color: #fff; text-decoration: none; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; }
+            .flosc-guest-remaining { font-size: 13px; color: #374151; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; }
+            .flosc-guest-remaining-link { color: #2563eb; font-weight: 600; }
+
+            .flosc-quiz-sessions-wrap { margin-bottom: 20px; }
+            .flosc-quiz-details { margin-bottom: 8px; border: 1px solid #e5e7eb; border-radius: 8px; background: #fafafa; }
+            .flosc-quiz-summary { padding: 12px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; list-style: none; }
+            .flosc-quiz-summary-left { display: flex; align-items: center; gap: 6px; }
+            .flosc-quiz-chevron { font-size: 12px; color: #71717a; display: inline-block; transition: transform 0.2s; }
+            .flosc-quiz-summary-title { font-size: 15px; font-weight: 700; }
+            .flosc-quiz-summary-text { font-size: 15px; }
+            .flosc-quiz-summary-score { font-weight: 700; color: #111827; }
+            .flosc-quiz-score { font-weight: 700; }
+            .flosc-quiz-details-body { padding: 0 12px 12px 12px; }
+
+            .flosc-my-files { margin-top: 20px; border: 1px solid #e5e7eb; border-radius: 10px; background: #fff; }
+            .flosc-my-files-head { padding: 12px 14px; border-bottom: 1px solid #e5e7eb; }
+            .flosc-my-files-title { font-size: 16px; margin: 0; }
+            .flosc-my-files-subtitle { font-size: 13px; color: #6b7280; margin: 6px 0 0; }
+            .flosc-my-files-body { padding: 10px 14px 14px; }
+            .flosc-my-files-session { margin: 10px 0 8px; font-size: 13px; font-weight: 700; color: #111827; }
+            .flosc-my-files-list { margin: 0 0 6px 18px; padding: 0; }
+            .flosc-my-files-item { margin: 5px 0; font-size: 13px; }
+            .flosc-my-files-link { color: #2563eb; text-decoration: none; font-weight: 600; }
+            .flosc-my-files-name { color: #6b7280; }
+
+            .flosc-phrase-breakdown-wrap { margin-top: 12px; }
+            .flosc-phrase-breakdown-title { font-size: 14px; margin: 0 0 8px; }
+            .flosc-phrase-breakdown-note { font-size: 13px; color: #71717a; font-style: italic; margin-bottom: 12px; }
+
+            .flosc-word-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+            .flosc-word-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+            .flosc-word-title { font-weight: 600; }
+            .flosc-word-score { font-weight: 700; }
+            .flosc-ipa-row { display: flex; gap: 8px; font-size: 13px; margin-bottom: 2px; }
+            .flosc-ipa-label { color: #71717a; min-width: 110px; }
+            .flosc-ipa-value { font-family: monospace; }
+
+            .flosc-phoneme-row { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; font-size: 13px; }
+            .flosc-phoneme-ipa { font-family: monospace; width: 30px; text-align: center; }
+            .flosc-phoneme-progress { flex: 1; height: 8px; }
+            .flosc-phoneme-score { width: 42px; text-align: right; }
+
+            .flosc-audio-wrap { margin-bottom: 12px; }
+            .flosc-audio-stream { width: 100%; height: 36px; border-radius: 8px; }
+            .flosc-playback-pending { margin-bottom: 12px; font-size: 12px; color: #6b7280; }
+
+            .flosc-audio-list { display: flex; flex-direction: column; gap: 12px; }
+            .flosc-audio-item { border: 1px solid #ddd; border-radius: 6px; padding: 10px; background: #fafafa; }
+            .flosc-audio-item-title { margin-bottom: 6px; }
+            .flosc-audio-player { width: 100%; max-width: 400px; }
+
+            .flosc-links-sent { font-weight: 700; }
+            .flosc-links-sent--ok { color: #1a7f37; }
+            .flosc-links-sent--warn { color: #d63638; }
+            .flosc-links-sent-meta { color: #646970; font-size: 12px; }
+
+            .flosc-muted-meta { color: #666; }
+            .flosc-protection-options--spaced { margin-top: 10px; }
+
+            .flosc-bb-chevron { display: inline-block; }
+            details[open] > summary .flosc-bb-chevron { transform: rotate(90deg); }
+            details summary::-webkit-details-marker { display: none; }
+        ');
+    }
+
+    /**
      * Render the existing single-session result card format for one quiz payload.
      */
     private function render_session_result_card($user_id, $quiz_data, $is_guest_user, $profile_completed) {
@@ -4341,24 +4134,25 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
         $timestamp = $quiz_data['timestamp'] ?? 0;
         $date_str = $timestamp ? wp_date('F j, Y', $timestamp) : '';
 
-        $score_color = $score >= 80 ? '#22c55e' : ($score >= 60 ? '#eab308' : '#ef4444');
+        $score_class = $score >= 80 ? 'flosc-score--good' : ($score >= 60 ? 'flosc-score--warn' : 'flosc-score--bad');
+        $this->enqueue_flosc_quiz_ui_styles();
 
-        echo '<div style="text-align:center;margin-bottom:24px;">';
-        echo '<div style="display:inline-flex;align-items:center;justify-content:center;width:120px;height:120px;border-radius:50%;border:6px solid ' . esc_attr($score_color) . ';font-size:36px;font-weight:700;color:' . esc_attr($score_color) . ';">';
+        echo '<div class="flosc-score-wrap">';
+        echo '<div class="flosc-score-ring ' . esc_attr($score_class) . '">';
         echo esc_html($score) . '%';
         echo '</div>';
         if ($date_str) {
-            echo '<div style="margin-top:8px;color:#666;font-size:14px;">Taken ' . esc_html($date_str) . '</div>';
+            echo '<div class="flosc-score-date">Taken ' . esc_html($date_str) . '</div>';
         }
         echo '</div>';
 
         if ($ranked_phonemes) {
             $top_weak = array_slice($ranked_phonemes, 0, 10);
-            echo '<div style="margin-bottom:24px;">';
-            echo '<h3 style="font-size:16px;margin-bottom:8px;">Areas for Improvement</h3>';
-            echo '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+            echo '<div class="flosc-weakness-wrap">';
+            echo '<h3 class="flosc-quiz-section-title">Areas for Improvement</h3>';
+            echo '<div class="flosc-weakness-tags">';
             foreach ($top_weak as $ipa) {
-                echo '<span style="display:inline-block;padding:4px 12px;border-radius:16px;background:#f3f4f6;border:1px solid #d1d5db;font-family:monospace;font-size:15px;">' . esc_html($ipa) . '</span>';
+                echo '<span class="flosc-weakness-tag">' . esc_html($ipa) . '</span>';
             }
             echo '</div>';
             echo '</div>';
@@ -4734,7 +4528,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
         // callbacks at priority > 1, which fires after do_action('wp_enqueue_scripts')).
         // These hooks fire inside wp_print_styles()/wp_print_head_scripts()
         // just before the actual output, catching anything that slipped through.
-        $flosc_style_whitelist = ['flosc-layout', 'flosc-theme', 'flosc-offers', 'flosc-preset'];
+        $flosc_style_whitelist = ['flosc-frontend', 'flosc-chat', 'flosc-offers', 'flosc-access', 'flosc-preset'];
         add_action('wp_print_styles', function() use ($flosc_style_whitelist) {
             global $wp_styles;
             foreach ($wp_styles->queue as $handle) {
@@ -4861,7 +4655,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
         echo '<meta name="viewport" content="width=device-width, initial-scale=1">';
         echo '<title>' . esc_html($current['title'] . ' | ' . $site_name) . '</title>';
         // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- standalone legal page bypasses wp_head; wp_enqueue_style() is not available here
-        echo '<link rel="stylesheet" href="' . esc_url(FLOSC_PLUGIN_URL . 'assets/css/flosc-legal.css') . '">';
+        echo '<link rel="stylesheet" href="' . esc_url(FLOSC_PLUGIN_URL . 'assets/css/flosc-frontend.css') . '">';
         echo '</head>';
         echo '<body>';
         echo '<main class="flosc-legal-shell">';
@@ -5278,1676 +5072,9 @@ HTML;
     }
 
     /**
-     * Admin Menu
-     * v05_02: Menu shortcuts to Settings tabs in logical order
-     */
-    public function add_admin_menu() {
-        // v1.2.8: Simplified - Settings page IS the main page
-        // IVR file dropdown selects which flow to edit
-        
-        // Main FLOSC menu - goes directly to Settings
-        add_menu_page(
-            'FLOSC',
-            'FLOSC',
-            'edit_others_posts',
-            'flosc-settings',
-            [$this, 'render_admin_page'],
-            'dashicons-format-chat',
-            30
-        );
-
-        // 1. Settings (main page - all tabs, flow selector at top)
-        add_submenu_page(
-            'flosc-settings',
-            'Settings',
-            'Settings',
-            'edit_others_posts',
-            'flosc-settings',
-            [$this, 'render_admin_page']
-        );
-
-        // 1a. Flow (shortcut to Flow tab)
-        add_submenu_page(
-            'flosc-settings',
-            'Flow',
-            '🗺 Flow',
-            'manage_options',
-            'flosc-flow',
-            [$this, 'redirect_to_flow_tab']
-        );
-
-        // Identity
-        add_submenu_page(
-            'flosc-settings',
-            'Identity',
-            'Identity',
-            'manage_options',
-            'flosc-identity',
-            [$this, 'redirect_to_identity_tab']
-        );
-
-        // 2. IVR Messages (redirect to Settings > IVR tab)
-        add_submenu_page(
-            'flosc-settings',
-            'IVR Management',
-            'IVR Management',
-            'manage_options',
-            'flosc-ivr-messages',
-            [$this, 'redirect_to_ivr_tab']
-        );
-
-        // AutoPrompt Panel
-        add_submenu_page(
-            'flosc-settings',
-            'AutoPrompt Panel',
-            'AutoPrompt Panel',
-            'manage_options',
-            'flosc-autoprompts',
-            [$this, 'redirect_to_autoprompts_tab']
-        );
-
-        // Member Levels
-        add_submenu_page(
-            'flosc-settings',
-            'Member Levels',
-            'Member Levels',
-            'manage_options',
-            'flosc-member-levels',
-            [$this, 'redirect_to_member_levels_tab']
-        );
-
-        // Offers
-        add_submenu_page(
-            'flosc-settings',
-            'Offers',
-            'Offers',
-            'manage_options',
-            'flosc-offers',
-            [$this, 'redirect_to_offers_tab']
-        );
-
-        // Register & Login
-        add_submenu_page(
-            'flosc-settings',
-            'Register & Login',
-            'Register & Login',
-            'manage_options',
-            'flosc-login',
-            [$this, 'redirect_to_login_tab']
-        );
-
-        // 3. Chat Styling
-        add_submenu_page(
-            'flosc-settings',
-            'Style',
-            'Style',
-            'manage_options',
-            'flosc-chat-style',
-            [$this, 'redirect_to_style_tab']
-        );
-
-        // v1.8.0: UI & Navigation
-        add_submenu_page(
-            'flosc-settings',
-            'UI & Nav',
-            'UI & Nav',
-            'manage_options',
-            'flosc-ui-navigation',
-            [$this, 'render_ui_navigation_page']
-        );
-
-        // 4. AI Configuration
-        add_submenu_page(
-            'flosc-settings',
-            'AI',
-            'AI',
-            'manage_options',
-            'flosc-ai-config',
-            [$this, 'redirect_to_ai_tab']
-        );
-
-        // Quiz
-        add_submenu_page(
-            'flosc-settings',
-            'Quiz Settings',
-            'Quiz',
-            'manage_options',
-            'flosc-quiz',
-            [$this, 'redirect_to_quiz_tab']
-        );
-
-        // Email
-        add_submenu_page(
-            'flosc-settings',
-            'Email Settings',
-            'Email',
-            'manage_options',
-            'flosc-email',
-            [$this, 'redirect_to_email_tab']
-        );
-
-        // Payments
-        add_submenu_page(
-            'flosc-settings',
-            'Payments',
-            'Payments',
-            'manage_options',
-            'flosc-payments',
-            [$this, 'redirect_to_payments_tab']
-        );
-
-        // Lessons
-        add_submenu_page(
-            'flosc-settings',
-            'Lessons',
-            'Lessons',
-            'manage_options',
-            'flosc-lessons',
-            [$this, 'redirect_to_lessons_tab']
-        );
-
-        // SSO / Social Login (v1.4.0)
-        add_submenu_page(
-            'flosc-settings',
-            'SSO / Social Login',
-            'SSO',
-            'manage_options',
-            'flosc-sso',
-            [$this, 'redirect_to_sso_tab']
-        );
-
-        // Chat Logs
-        add_submenu_page(
-            'flosc-settings',
-            'Chat Logs',
-            'Chat Logs',
-            'manage_options',
-            'flosc-chat-logs',
-            [$this, 'redirect_to_chat_logs_tab']
-        );
-
-        // Administration (global account/debug controls)
-        add_submenu_page(
-            'flosc-settings',
-            'Administration',
-            'Administration',
-            'manage_options',
-            'flosc-administration',
-            [$this, 'redirect_to_administration_tab']
-        );
-
-        // Docs
-        add_submenu_page(
-            'flosc-settings',
-            'Docs',
-            '📖 Docs',
-            'manage_options',
-            'flosc-docs',
-            [$this, 'redirect_to_docs_tab']
-        );
-
-        // DA1 Catalog — standalone page (not flow-specific)
-        add_submenu_page(
-            'flosc-settings',
-            'DA1 Catalog',
-            '<b>DA1</b>',
-            'manage_options',
-            'flosc-da1',
-            [$this, 'render_da1_page']
-        );
-    }
-    
-    /**
-     * Register Settings
-     */
-    public function register_settings() {
-        $this->register_settings_group(array(
-            'flosc_app_slug',
-            'flosc_custom_domain',
-            'flosc_product_name',
-            'flosc_product_title',
-            'flosc_product_tagline',
-            'flosc_share_text',
-            'flosc_email_subject',
-            'flosc_email_body',
-            'flosc_account_plan',
-            'flosc_account_purchases_manual',
-            'flosc_ai_provider',
-            'flosc_openai_api_key',
-            'flosc_anthropic_api_key',
-            'flosc_xai_api_key',
-            'flosc_ai_openai_model',
-            'flosc_ai_anthropic_model',
-            'flosc_ai_xai_model',
-            'flosc_ai_temperature',
-            'flosc_ai_max_tokens',
-            'flosc_stt_provider',
-            'flosc_assemblyai_api_key',
-            'flosc_custom_stt_endpoint',
-            'flosc_buddyboss_group_id',
-            'flosc_lessons_category',
-            'flosc_oto_offer_id',
-            'flosc_free_lesson_mode',
-            'flosc_free_lesson_count',
-            'flosc_free_lesson_proportion',
-            'flosc_guest_access_days',
-            'flosc_stripe_enabled',
-            'flosc_stripe_mode',
-            'flosc_stripe_test_pk',
-            'flosc_stripe_test_sk',
-            'flosc_stripe_live_pk',
-            'flosc_stripe_live_sk',
-            'flosc_clickbank_enabled',
-            'flosc_clickbank_mode',
-            'flosc_clickbank_vendor',
-            'flosc_clickbank_secret',
-            'flosc_clickbank_product',
-            'flosc_clickbank_access_level',
-            'flosc_paypal_mode',
-            'flosc_paypal_client_id',
-            'flosc_paypal_secret',
-            'flosc_chat_style_preset',
-            'flosc_chat_style_bubble',
-            'flosc_chat_style_font',
-        ));
-
-        $this->register_settings_group(array(
-            'flosc_product_logo' => 'url',
-            'flosc_primary_color' => 'hex',
-            'flosc_login_destination' => 'url',
-            'flosc_profile_bar' => 'array',
-            'flosc_visitor_menu_items' => 'array',
-            'flosc_debug_mode' => 'bool',
-            'flosc_enabled_quizzes' => 'array',
-            'flosc_wpq_integration' => 'bool',
-            'flosc_ld_integration' => 'bool',
-            'flosc_qsm_integration' => 'bool',
-            'flosc_chat_style_scale' => 'text',
-            'flosc_chat_style_accent' => 'hex',
-            'flosc_sso_google_enabled' => 'bool',
-            'flosc_sso_google_client_id' => 'text',
-            'flosc_sso_google_client_secret' => 'text',
-            'flosc_sso_apple_enabled' => 'bool',
-            'flosc_sso_apple_client_id' => 'text',
-            'flosc_sso_apple_client_secret' => 'text',
-            'flosc_sso_facebook_enabled' => 'bool',
-            'flosc_sso_facebook_client_id' => 'text',
-            'flosc_sso_facebook_client_secret' => 'text',
-            'flosc_sso_microsoft_enabled' => 'bool',
-            'flosc_sso_microsoft_client_id' => 'text',
-            'flosc_sso_microsoft_client_secret' => 'text',
-            'flosc_sso_linkedin_enabled' => 'bool',
-            'flosc_sso_linkedin_client_id' => 'text',
-            'flosc_sso_linkedin_client_secret' => 'text',
-            'flosc_sso_apple_team_id' => 'text',
-            'flosc_sso_apple_key_id' => 'text',
-            'flosc_sso_apple_private_key' => 'textarea',
-            'flosc_ai_base_prompt' => 'textarea',
-            'flosc_ai_personality_name' => 'textarea',
-            'flosc_ai_personality_role' => 'textarea',
-            'flosc_ai_personality_traits' => 'textarea',
-            'flosc_ai_mission' => 'textarea',
-            'flosc_ai_boundaries' => 'textarea',
-            'flosc_ai_context_awareness' => 'textarea',
-            'flosc_ai_freeline_restrictions' => 'textarea',
-            'flosc_ai_member_access' => 'textarea',
-        ));
-
-        // User Profile Bar (v1.8.0: unified 3-state bar replaces v1.7.8 visitor-only settings)
-
-        // v1.8.0: UI & Navigation
-
-        // v1.7.7: Removed duplicate AI settings registration (was under both flosc_settings and flosc_ai_settings)
-        // All settings now live under flosc_settings only
-
-        // STT Provider
-
-        // Quiz Type System
-
-        // Third-party quiz plugin integrations (v9.3.4)
-
-        // Register quiz content settings for each quiz type dynamically
-        $quiz_types = FLOSC_Quiz_Registry::get_all_quizzes();
-        foreach ($quiz_types as $quiz_id => $quiz_type) {
-            $this->register_setting_value('flosc_quiz_content_' . $quiz_id, 'textarea');
-
-            $settings_fields = $quiz_type->get_settings_fields();
-            foreach ($settings_fields as $field_key => $field_config) {
-                $this->register_setting_value('flosc_quiz_' . $quiz_id . '_' . $field_key, $field_config['type'] ?? 'text');
-            }
-
-            $templates = $quiz_type->get_default_response_templates();
-            foreach (array_keys($templates) as $template_key) {
-                $this->register_setting_value('flosc_quiz_' . $quiz_id . '_template_' . $template_key, 'textarea');
-            }
-        }
-
-        // v1.7.7: Removed auto-seeded PayPal sandbox credentials (security)
-        // PayPal credentials must be configured via Settings > FLOSC > PayPal
-    }
-
-    /**
-     * Register one or more settings with a shared sanitizer.
-     *
-     * @param array $settings List of setting names or name => sanitizer type pairs.
-     */
-    private function register_settings_group($settings) {
-        foreach ($settings as $key => $value) {
-            if (is_int($key)) {
-                $this->register_setting_value($value, 'text');
-            } else {
-                $this->register_setting_value($key, $value);
-            }
-        }
-    }
-
-    /**
-     * Register a single setting with the appropriate sanitizer.
-     *
-     * @param string $option_name Setting name.
-     * @param string $sanitize_type text, textarea, url, hex, bool, or array.
-     */
-    private function register_setting_value($option_name, $sanitize_type = 'text') {
-        switch ($sanitize_type) {
-            case 'textarea':
-                $sanitize_callback = array($this, 'sanitize_textarea_setting');
-                break;
-            case 'url':
-                $sanitize_callback = array($this, 'sanitize_url_setting');
-                break;
-            case 'hex':
-                $sanitize_callback = array($this, 'sanitize_hex_setting');
-                break;
-            case 'bool':
-                $sanitize_callback = array($this, 'sanitize_bool_setting');
-                break;
-            case 'array':
-                $sanitize_callback = array($this, 'sanitize_array_setting');
-                break;
-            default:
-                $sanitize_callback = array($this, 'sanitize_text_setting');
-                break;
-        }
-
-        $setting_args = array(
-            'type'              => $this->get_setting_registration_type($sanitize_type),
-            'sanitize_callback' => $sanitize_callback,
-            'default'           => $this->get_setting_default_value($sanitize_type),
-        );
-
-        register_setting(
-            'flosc_settings',
-            $option_name,
-            $setting_args
-        );
-    }
-
-    /**
-     * Map sanitizer type to register_setting type metadata.
-     *
-     * @param string $sanitize_type Sanitizer category.
-     * @return string
-     */
-    private function get_setting_registration_type($sanitize_type) {
-        if ($sanitize_type === 'array') {
-            return 'array';
-        }
-
-        if ($sanitize_type === 'bool') {
-            return 'integer';
-        }
-
-        return 'string';
-    }
-
-    /**
-     * Default values aligned to sanitizer type.
-     *
-     * @param string $sanitize_type Sanitizer category.
-     * @return mixed
-     */
-    private function get_setting_default_value($sanitize_type) {
-        if ($sanitize_type === 'array') {
-            return array();
-        }
-
-        if ($sanitize_type === 'bool') {
-            return 0;
-        }
-
-        return '';
-    }
-
-    /**
-     * Sanitize a text setting.
-     *
-     * MUST stay public: registered as a register_setting() sanitize_callback,
-     * which WordPress core invokes from outside this class via the
-     * sanitize_option_{$option} filter. A private method here fatals
-     * ("Call to private method") on every settings save. The same applies to
-     * the five sibling sanitizers below — do not narrow their visibility.
-     *
-     * @param mixed $value Raw value.
-     * @return string|array
-     */
-    public function sanitize_text_setting($value) {
-        if (is_array($value)) {
-            return array_map(array($this, 'sanitize_text_setting'), $value);
-        }
-
-        return sanitize_text_field(wp_unslash((string) $value));
-    }
-
-    /**
-     * Sanitize a textarea setting.
-     *
-     * @param mixed $value Raw value.
-     * @return string|array
-     */
-    public function sanitize_textarea_setting($value) {
-        if (is_array($value)) {
-            return array_map(array($this, 'sanitize_textarea_setting'), $value);
-        }
-
-        return sanitize_textarea_field(wp_unslash((string) $value));
-    }
-
-    /**
-     * Sanitize a URL setting.
-     *
-     * @param mixed $value Raw value.
-     * @return string|array
-     */
-    public function sanitize_url_setting($value) {
-        if (is_array($value)) {
-            return array_map(array($this, 'sanitize_url_setting'), $value);
-        }
-
-        return esc_url_raw(wp_unslash((string) $value));
-    }
-
-    /**
-     * Sanitize a hex color setting.
-     *
-     * @param mixed $value Raw value.
-     * @return string
-     */
-    public function sanitize_hex_setting($value) {
-        $sanitized = sanitize_hex_color(wp_unslash((string) $value));
-        return $sanitized ? $sanitized : '';
-    }
-
-    /**
-     * Sanitize a boolean setting.
-     *
-     * @param mixed $value Raw value.
-     * @return int
-     */
-    public function sanitize_bool_setting($value) {
-        return !empty($value) ? 1 : 0;
-    }
-
-    /**
-     * Sanitize nested array settings.
-     *
-     * @param mixed $value Raw value.
-     * @return array|string
-     */
-    public function sanitize_array_setting($value) {
-        if (!is_array($value)) {
-            return sanitize_text_field(wp_unslash((string) $value));
-        }
-
-        $sanitized = array();
-        foreach ($value as $key => $item) {
-            $sanitized_key = is_string($key) ? sanitize_key($key) : $key;
-            $sanitized[$sanitized_key] = is_array($item)
-                ? $this->sanitize_array_setting($item)
-                : sanitize_text_field(wp_unslash((string) $item));
-        }
-
-        return $sanitized;
-    }
-    
-    /**
-     * Render Admin Pages
-     */
-    public function render_admin_page() {
-        // Site admins always have FLOSC settings access.
-        if (!current_user_can('manage_options')) {
-            // Delegated floscEditors must be Editor+ and assigned to at least one flow.
-            if (!current_user_can('edit_others_posts')) {
-                wp_die(esc_html__('You do not have permission to access FLOSC settings.', 'flosc'));
-            }
-
-            $flosc_user_flows = flosc_flows()->get_user_flows(get_current_user_id());
-            if (empty($flosc_user_flows)) {
-                wp_die(esc_html__('You do not have FLOSC flow assignments yet. Ask a site admin to assign you in Administration for a flow.', 'flosc'));
-            }
-        }
-
-        include FLOSC_PLUGIN_DIR . 'admin/settings.php';
-    }
-
-    /**
-     * Check whether current user can manage chat logs for a specific flow.
-     * Site admins are always allowed; delegated floscEditors require flow assignment.
-     *
-     * @param string $flow_id Flow stem (for example dainis_net_ivr).
-     * @return bool
-     */
-    private function can_manage_flow_chat_logs($flow_id) {
-        if (current_user_can('manage_options')) {
-            return true;
-        }
-
-        if (!current_user_can('edit_others_posts')) {
-            return false;
-        }
-
-        $flow_id = sanitize_key((string) $flow_id);
-        if ($flow_id === '') {
-            return false;
-        }
-
-        return flosc_flows()->can_access_flow_admin($flow_id, get_current_user_id());
-    }
-    
-    /**
-     * v1.2.2: Render Flows list page
-     */
-    public function render_flows_page() {
-        include FLOSC_PLUGIN_DIR . 'admin/flows.php';
-    }
-    
-    /**
-     * v1.2.2: Render Flow edit page
-     */
-    public function render_flow_edit_page() {
-        include FLOSC_PLUGIN_DIR . 'admin/flow-edit.php';
-    }
-    
-    /**
-     * v1.0.4: Enqueue admin assets (TASK-006)
-     * Loads flosc-admin.css on FLOSC admin pages
-     */
-    public function enqueue_admin_assets($hook) {
-        // §12: Post-visibility metabox styles render on the post editor (post.php / post-new.php),
-        // which is a different screen than the FLOSC settings pages. Enqueue them there via an
-        // inline-only style handle instead of echoing a <style> tag inside the metabox markup.
-        if ($hook === 'post.php' || $hook === 'post-new.php') {
-            wp_register_style('flosc-metabox', false, [], FLOSC_VERSION);
-            wp_enqueue_style('flosc-metabox');
-            wp_add_inline_style('flosc-metabox',
-                '.flosc-post-visibility-meta-box .flosc-description { color: #666; font-size: 12px; margin-top: 4px; }' .
-                '.flosc-post-visibility-meta-box .flosc-protected-notice { background: #fff3cd; padding: 8px; border-radius: 4px; margin-bottom: 10px; font-size: 12px; }' .
-                '.flosc-post-visibility-meta-box .flosc-protection-options label { display: block; margin: 6px 0; padding: 6px 8px; border-radius: 4px; cursor: pointer; }' .
-                '.flosc-post-visibility-meta-box .flosc-protection-options label:hover { background: #f0f0f1; }' .
-                '.flosc-post-visibility-meta-box .flosc-protection-options .option-desc { color: #666; font-size: 11px; display: block; margin-left: 22px; }'
-            );
-            // Concierge metabox rules ride the same handle. They must be added
-            // HERE (admin_enqueue_scripts) and not inside render_meta_box():
-            // by metabox render time the head styles have already printed, and
-            // inline data attached to a printed handle is silently discarded.
-            wp_add_inline_style('flosc-metabox',
-                '.flosc-cncrg-row { margin: 0 0 12px; }' .
-                '.flosc-cncrg-row label { display: block; font-weight: 600; margin: 0 0 4px; }' .
-                '.flosc-cncrg-row input, .flosc-cncrg-row textarea { width: 100%; font-family: ui-monospace, Menlo, Consolas, monospace; }'
-            );
-            return;
-        }
-
-        // Only load on FLOSC admin pages
-        // v1.2.8: Simplified - just check for 'flosc'
-        if (strpos($hook, 'flosc') === false &&
-            $hook !== 'toplevel_page_flosc-settings') {
-            return;
-        }
-        
-        $css_path = FLOSC_PLUGIN_DIR . 'assets/css/flosc-admin.css';
-        if (file_exists($css_path)) {
-            wp_enqueue_style(
-                'flosc-admin',
-                FLOSC_PLUGIN_URL . 'assets/css/flosc-admin.css',
-                [],
-                filemtime($css_path)
-            );
-        }
-
-        // §12: Footer-printed script handle (no src) that FLOSC admin page templates
-        // attach their page JS to via wp_add_inline_script('flosc-admin', ...), instead
-        // of echoing raw <script> tags. Registering it here (on admin_enqueue_scripts)
-        // means the handle is enqueued before render, so inline JS added during the page
-        // body still prints in the admin footer. jQuery dep covers the existing jQuery use.
-        wp_register_script('flosc-admin', false, ['jquery'], FLOSC_VERSION, true);
-        wp_enqueue_script('flosc-admin');
-
-        // Dedicated AutoPrompts admin runtime (externalized from inline tab template JS).
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query var used only to choose admin assets.
-        $flosc_tab = isset($_GET['tab']) ? sanitize_key(wp_unslash($_GET['tab'])) : '';
-        if ($flosc_tab === 'autoprompts') {
-            $flosc_autoprompts_js_path = FLOSC_PLUGIN_DIR . 'assets/js/flosc-autoprompts-admin.js';
-            if (file_exists($flosc_autoprompts_js_path)) {
-                wp_enqueue_script(
-                    'flosc-autoprompts-admin',
-                    FLOSC_PLUGIN_URL . 'assets/js/flosc-autoprompts-admin.js',
-                    ['flosc-admin'],
-                    filemtime($flosc_autoprompts_js_path),
-                    true
-                );
-            }
-        }
-        
-        // Debug mode badge
-        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-            wp_add_inline_style('flosc-admin', '
-                body.wp-admin:after {
-                    content: "FLOSC DEBUG";
-                    position: fixed;
-                    bottom: 10px;
-                    right: 10px;
-                    background: #dc3545;
-                    color: #fff;
-                    padding: 5px 10px;
-                    border-radius: 4px;
-                    font-size: 11px;
-                    font-weight: bold;
-                    z-index: 9999;
-                    opacity: 0.8;
-                }
-            ');
-        }
-        
-        // Tame WordPress admin footer (#wpfooter) on FLOSC pages.
-        // WP core uses position:fixed/absolute which causes the "Version X.X.X" text
-        // to float over FLOSC admin content at various zoom levels.
-        // Fix: make it flow normally in the document, properly positioned at the bottom.
-        wp_add_inline_style('flosc-admin', '
-            #wpfooter { position: static; padding: 15px 20px; text-align: right; }
-        ');
-    }
-    
-    /**
-     * v8.0.0: Relabel right side of WP admin footer on FLOSC pages.
-     * WordPress shows "Version 6.9.3" — we relabel to "WordPress 6.9.3 | FLOSC v8.0.0"
-     * so it's clear what each version number refers to.
-     * Only applies on FLOSC admin pages (checked via current screen).
-     */
-    public function relabel_admin_footer($text) {
-        $screen = get_current_screen();
-        if ($screen && strpos($screen->id, 'flosc') !== false) {
-            global $wp_version;
-            return 'WordPress ' . esc_html($wp_version) . ' | FLOSC v' . esc_html(FLOSC_VERSION);
-        }
-        return $text;
-    }
-    
-    /**
-     * v8.0.0: Replace left-side "Thank you for creating with WordPress" with FLOSC branding
-     * on FLOSC admin pages only.
-     */
-    public function relabel_admin_footer_left($text) {
-        $screen = get_current_screen();
-        if ($screen && strpos($screen->id, 'flosc') !== false) {
-            return '<span id="footer-thankyou">FLOSC &mdash; Flow-Oriented Sales Companion</span>';
-        }
-        return $text;
-    }
-    
-    // Offers now integrated into main settings page
-    
-    // Payments now integrated into main settings page
-
-    // AI Config now integrated into main settings page
-
-    // AI Knowledge now integrated into main settings page
-
-    // Chat Style now integrated into main settings page
-
-    /**
-     * Redirect handlers for tab shortcuts - ALL menu items go to Settings tabs
-     */
-    public function redirect_to_product_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=product'));
-        exit;
-    }
-
-    public function redirect_to_flow_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=flow'));
-        exit;
-    }
-
-    public function redirect_to_identity_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=identity'));
-        exit;
-    }
-
-    public function redirect_to_ivr_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=ivr-messages'));
-        exit;
-    }
-
-    public function redirect_to_autoprompts_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=autoprompts'));
-        exit;
-    }
-
-    public function redirect_to_member_levels_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=member-levels'));
-        exit;
-    }
-
-    public function redirect_to_style_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=style'));
-        exit;
-    }
-
-    public function redirect_to_ai_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=ai'));
-        exit;
-    }
-
-    public function redirect_to_quiz_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=quiz'));
-        exit;
-    }
-
-    public function redirect_to_email_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=email'));
-        exit;
-    }
-
-    public function redirect_to_ai_knowledge_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=ai-knowledge'));
-        exit;
-    }
-
-    public function redirect_to_login_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=login'));
-        exit;
-    }
-
-    public function redirect_to_offers_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=offers'));
-        exit;
-    }
-
-    public function redirect_to_payments_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=payments'));
-        exit;
-    }
-
-    public function redirect_to_lessons_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=lessons'));
-        exit;
-    }
-
-    public function redirect_to_sso_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=sso'));
-        exit;
-    }
-
-    public function redirect_to_administration_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=administration'));
-        exit;
-    }
-
-    public function redirect_to_chat_logs_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=chat-logs'));
-        exit;
-    }
-
-    public function redirect_to_docs_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=documentation'));
-        exit;
-    }
-
-    /**
-     * v1.8.0 → v1.8.2: UI & Navigation is now a tab on the main settings page.
-     * This redirect keeps the old submenu link working.
-     */
-    public function render_ui_navigation_page() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=ui'));
-        exit;
-    }
-
-    public function render_da1_page() {
-        echo '<div class="wrap">';
-        include FLOSC_PLUGIN_DIR . 'admin/da1.php';
-        echo '</div>';
-    }
-    
-    /**
-     * Shortcode: [flosc_visitor_only]
-     * Shows content only to non-logged-in visitors
-     */
-    public function shortcode_visitor_only($atts, $content = '') {
-        if (!is_user_logged_in()) {
-            return wp_kses_post(do_shortcode($content));
-        }
-        return '';
-    }
-    
-    /**
-     * Shortcode: [flosc_member_only]
-     * Shows content only to members (users with _flosc_member_access = true)
-     * 
-     * Usage: [flosc_member_only fallback="Upgrade to unlock"]Content here[/flosc_member_only]
-     * 
-     * @param array $atts Shortcode attributes (fallback message)
-     * @param string $content Shortcode content
-     * @return string
-     */
-    public function shortcode_member_only($atts, $content = '') {
-        // Parse attributes
-        $atts = shortcode_atts([
-            'fallback' => '', // Optional fallback message for non-members
-        ], $atts);
-        
-        if (!is_user_logged_in()) {
-            return $atts['fallback'] ? wp_kses_post('<div class="flosc-member-only-fallback">' . esc_html($atts['fallback']) . '</div>') : '';
-        }
-        
-        $user_id = get_current_user_id();
-        $is_member = get_user_meta($user_id, '_flosc_member_access', true);
-        
-        if ($is_member === 'true' || $is_member === true) {
-            return wp_kses_post(do_shortcode($content));
-        }
-        
-        // Not a member - show fallback if provided
-        return $atts['fallback'] ? wp_kses_post('<div class="flosc-member-only-fallback">' . esc_html($atts['fallback']) . '</div>') : '';
-    }
-
-    /**
-     * Enqueue Assets
-     * v1.2.1: Uses is_flosc_request() to check both slug and custom domain
-     * v1.9.5: Nuclear dequeue — removes ALL theme/plugin CSS and JS.
-     *   The FLOSC app page is a standalone SPA; it needs zero theme assets.
-     *   Previously ran at priority 10 which let 22 theme CSS files and 93 scripts
-     *   survive because BuddyBoss/Divi/WooCommerce enqueued at the same priority.
-     *   Now runs at priority 9999 so everything is already in the queue when we clean it.
-     */
-    public function enqueue_assets() {
-        if (!$this->is_flosc_request()) return;
-        
-        // ── NUCLEAR DEQUEUE: Remove ALL non-FLOSC styles ──
-        // At priority 9999, every theme/plugin has already enqueued.
-        // We iterate the full queue and remove everything not ours.
-        global $wp_styles, $wp_scripts;
-        
-        $flosc_style_whitelist = ['flosc-layout', 'flosc-theme', 'flosc-offers', 'flosc-preset'];
-        foreach ($wp_styles->queue as $handle) {
-            if (in_array($handle, $flosc_style_whitelist, true)) {
-                continue;
-            }
-            wp_dequeue_style($handle);
-            wp_deregister_style($handle);
-        }
-        
-        // ── NUCLEAR DEQUEUE: Remove ALL non-FLOSC scripts ──
-        // Keep only flosc-app.js and payment SDKs (PayPal, Stripe).
-        $flosc_script_whitelist = ['flosc-app', 'paypal-js', 'stripe-js'];
-        foreach ($wp_scripts->queue as $handle) {
-            if (in_array($handle, $flosc_script_whitelist, true)) {
-                continue;
-            }
-            wp_dequeue_script($handle);
-            wp_deregister_script($handle);
-        }
-        
-        // Our assets - v9.3.7 Clean CSS Architecture
-        // 1. Layout CSS (structure only, no colors)
-        wp_enqueue_style(
-            'flosc-layout', 
-            FLOSC_PLUGIN_URL . 'assets/css/flosc-layout.css', 
-            [], 
-            filemtime(FLOSC_PLUGIN_DIR . 'assets/css/flosc-layout.css')
-        );
-        
-        // 2. Theme CSS (connects variables to selectors)
-        wp_enqueue_style(
-            'flosc-theme', 
-            FLOSC_PLUGIN_URL . 'assets/css/flosc-theme.css', 
-            ['flosc-layout'], 
-            filemtime(FLOSC_PLUGIN_DIR . 'assets/css/flosc-theme.css')
-        );
-        
-        // v1.6.2: Offer/checkout/autoprompt CSS (extracted from inline JS)
-        wp_enqueue_style(
-            'flosc-offers',
-            FLOSC_PLUGIN_URL . 'assets/css/flosc-offers.css',
-            ['flosc-theme'],
-            filemtime(FLOSC_PLUGIN_DIR . 'assets/css/flosc-offers.css')
-        );
-        
-        // 3. Preset CSS (variable definitions only)
-        $this->enqueue_chat_style();
-
-        wp_enqueue_script('flosc-app', FLOSC_PLUGIN_URL . 'assets/js/flosc-app.js', [], time(), true);
-        
-        // Stripe.js — DISABLED in v1.7.1 (pending Stripe account verification)
-        // $stripe = $this->sale_manager->get_provider('stripe');
-        // if ($stripe && $stripe->is_configured()) {
-        //     wp_enqueue_script('stripe-js', 'https://js.stripe.com/v3/', [], null, false);
-        // }
-        
-        // v5.0.7: PayPal JS SDK — use provider's centralized currency to guarantee
-        // SDK currency matches the order currency (mismatch = silent failure).
-        $paypal = $this->sale_manager->get_provider('paypal');
-        if ($paypal && $paypal->has_client_id()) {
-            $pp_config = $paypal->get_client_config();
-            $pp_client_id = $pp_config['clientId'] ?? '';
-            if ($pp_client_id) {
-                $pp_currency = $pp_config['currency'] ?? 'USD';
-                wp_enqueue_script('paypal-js', 'https://www.paypal.com/sdk/js?client-id=' . urlencode($pp_client_id) . '&currency=' . urlencode($pp_currency) . '&intent=subscription&vault=true', [], FLOSC_VERSION, true);
-            }
-        }
-    }
-
-    /**
-     * v1.6.1: Enqueue companion widget on non-app WordPress pages.
-     * Only loads if companion mode is enabled for the current flow.
-     * v1.6.3: Fixed to read from flat per-flow settings (matching admin save pattern)
-     */
-    public function enqueue_companion() {
-        // Don't load on app pages (they get the full experience)
-        if ($this->is_flosc_request()) return;
-
-        // Read from per-flow settings (flat keys, not overrides)
-        $enabled = $this->get_setting('companion_enabled', false);
-        if (!$enabled) return;
-
-        $app_url = $this->get_app_url();
-        if (empty($app_url)) return;
-
-        $accent = $this->get_setting('companion_accent_color', '#2563eb');
-        $title  = $this->get_setting('companion_greeting', 'Chat with us');
-
-        wp_enqueue_style(
-            'flosc-companion',
-            FLOSC_PLUGIN_URL . 'assets/css/flosc-companion.css',
-            [],
-            filemtime(FLOSC_PLUGIN_DIR . 'assets/css/flosc-companion.css')
-        );
-
-        wp_enqueue_script(
-            'flosc-companion',
-            FLOSC_PLUGIN_URL . 'assets/js/flosc-companion.js',
-            [],
-            filemtime(FLOSC_PLUGIN_DIR . 'assets/js/flosc-companion.js'),
-            true
-        );
-
-        wp_add_inline_script('flosc-companion', sprintf(
-            'FloscCompanion.init(%s);',
-            wp_json_encode([
-                'appUrl'      => $app_url,
-                'title'       => $title,
-                'accentColor' => $accent ?: '#2563eb',
-            ])
-        ));
-    }
-
-    /**
-     * Enqueue chat styling (v9.3.9 - Bulletproof Architecture)
-     *
-     * Architecture:
-     * 1. flosc-layout.css - Structure only (already enqueued)
-     * 2. flosc-theme.css - Variable consumption (already enqueued)
-     * 3. This method - Variable definitions via inline CSS
-     * 
-    * Presets: auto (system preference), light, dark
-    * Customization: bubble style, accent color, font, scale
-     */
-    private function enqueue_chat_style() {
-        // v1.6.1: Per-flow settings via FLOSC_Flow_Manager::get_setting()
-        $fm = FLOSC_Flow_Manager::instance();
-        $preset     = $fm->get_setting('flosc_chat_style_preset', 'style', 'preset', 'light');
-        $bubble     = $fm->get_setting('flosc_chat_style_bubble', 'style', 'bubble', 'subtle-notch');
-        $accent     = $fm->get_setting('flosc_chat_style_accent', 'style', 'accent', '');
-        $font       = $fm->get_setting('flosc_chat_style_font', 'style', 'font', 'system');
-        $scale      = intval($fm->get_setting('flosc_chat_style_scale', 'style', 'scale', 100));
-
-        // Bubble style presets (border-radius values per FLOSC_STYLE_GUIDE.md)
-        $bubble_styles = [
-            'subtle-notch' => ['user' => '18px 18px 4px 18px', 'assistant' => '4px 18px 18px 18px'],
-            'classic'      => ['user' => '18px 18px 0 18px',   'assistant' => '0 18px 18px 18px'],
-            'modern'       => ['user' => '20px 20px 6px 20px', 'assistant' => '6px 20px 20px 20px'],
-            'minimal'      => ['user' => '16px',               'assistant' => '16px'],
-            'sharp'        => ['user' => '12px 12px 2px 12px', 'assistant' => '2px 12px 12px 12px'],
-        ];
-
-        // Font family map
-        $font_families = [
-            'system'        => '',
-            'inter'         => '"Inter", -apple-system, sans-serif',
-            'ibm-plex-sans' => '"IBM Plex Sans", -apple-system, sans-serif',
-            'ibm-plex-mono' => '"IBM Plex Mono", "SF Mono", Monaco, monospace',
-            'roboto'        => '"Roboto", -apple-system, sans-serif',
-            'roboto-mono'   => '"Roboto Mono", "SF Mono", Monaco, monospace',
-            'fira-code'     => '"Fira Code", "SF Mono", Monaco, monospace',
-        ];
-
-        // File paths
-        $light_path = FLOSC_PLUGIN_DIR . 'assets/css/chat-style-light.css';
-        $dark_path  = FLOSC_PLUGIN_DIR . 'assets/css/chat-style-dark.css';
-        
-        $inline_css = "";
-
-        // ===========================================
-        // PRESET LOADING
-        // ===========================================
-        if ($preset === 'auto') {
-            // Auto mode: Light by default, dark via prefers-color-scheme
-            if (file_exists($light_path) && file_exists($dark_path)) {
-                $light_content = @file_get_contents($light_path);
-                $dark_content  = @file_get_contents($dark_path);
-                
-                if ($light_content) {
-                    $light_vars = $this->extract_css_variables($light_content);
-                    if ($light_vars) {
-                        $inline_css .= "/* Light Theme (Default) */\n:root {\n{$light_vars}}\n\n";
-                    }
-                }
-                
-                if ($dark_content) {
-                    $dark_vars = $this->extract_css_variables($dark_content);
-                    if ($dark_vars) {
-                        $inline_css .= "/* Dark Theme (System Preference) */\n@media (prefers-color-scheme: dark) {\n  :root {\n{$dark_vars}  }\n}\n\n";
-                    }
-                }
-            }
-        } else {
-            // Named preset (light, dark, chatgpt, claude, grok): load as external stylesheet
-            $safe_preset = preg_replace('/[^a-z0-9-]/', '', $preset);
-            $preset_path = FLOSC_PLUGIN_DIR . 'assets/css/chat-style-' . $safe_preset . '.css';
-            if (file_exists($preset_path)) {
-                wp_enqueue_style(
-                    'flosc-preset',
-                    FLOSC_PLUGIN_URL . 'assets/css/chat-style-' . $safe_preset . '.css',
-                    ['flosc-theme'],
-                    filemtime($preset_path)
-                );
-            }
-        }
-
-        // ===========================================
-        // DYNAMIC OVERRIDES
-        // ===========================================
-        $bubble_config = $bubble_styles[$bubble] ?? $bubble_styles['subtle-notch'];
-        
-        $overrides = [];
-        $overrides[] = "--flosc-user-message-radius: {$bubble_config['user']}";
-        $overrides[] = "--flosc-assistant-message-radius: {$bubble_config['assistant']}";
-        
-        // v1.6.1: Full accent color cascade (5→15 derived variables)
-        if (!empty($accent) && $accent !== '#2563eb') {
-            // Compute derived colors from hex accent
-            $hover   = $this->adjust_color_brightness($accent, -15);
-            $subtle  = $this->hex_to_rgba($accent, 0.06);
-            $subtle4 = $this->hex_to_rgba($accent, 0.04);
-            $light   = $this->adjust_color_brightness($accent, 40);
-
-            // Core accent
-            $overrides[] = "--flosc-accent: {$accent}";
-            $overrides[] = "--flosc-accent-hover: {$hover}";
-            $overrides[] = "--flosc-accent-subtle: {$subtle}";
-
-            // Components that derive from accent
-            $overrides[] = "--flosc-user-message-bg: {$accent}";
-            $overrides[] = "--flosc-user-avatar-bg: {$accent}";
-            $overrides[] = "--flosc-send-btn-bg: {$accent}";
-            $overrides[] = "--flosc-pill-hover-text: {$accent}";
-            $overrides[] = "--flosc-pill-hover-border: {$light}";
-            $overrides[] = "--flosc-card-hover-text: {$accent}";
-            $overrides[] = "--flosc-card-hover-border: {$light}";
-            $overrides[] = "--flosc-content-link: {$accent}";
-            $overrides[] = "--flosc-content-link-hover: {$hover}";
-            $overrides[] = "--flosc-content-blockquote-border: {$accent}";
-            $overrides[] = "--flosc-content-blockquote-bg: {$subtle4}";
-            $overrides[] = "--flosc-quiz-tab-active-bg: {$accent}";
-            $overrides[] = "--flosc-quiz-input-focus-border: {$accent}";
-        }
-        
-        // Scale factor
-        if ($scale !== 100 && $scale > 0) {
-            $scale_factor = $scale / 100;
-            $overrides[] = "--flosc-scale: {$scale_factor}";
-        }
-        
-        // Font family
-        if ($font !== 'system' && isset($font_families[$font]) && !empty($font_families[$font])) {
-            $overrides[] = "--flosc-font-family: {$font_families[$font]}";
-        }
-        
-        if (!empty($overrides)) {
-            $inline_css .= "/* Dynamic Overrides */\n:root {\n    " . implode(";\n    ", $overrides) . ";\n}\n\n";
-        }
-        
-        // Font application
-        if ($font !== 'system' && isset($font_families[$font]) && !empty($font_families[$font])) {
-            $inline_css .= "/* Font Application */\n";
-            $inline_css .= ".flosc-app,\n.flosc-app .messages,\n.flosc-app .message-text {\n";
-            $inline_css .= "    font-family: var(--flosc-font-family) !important;\n}\n\n";
-        }
-
-        // Attach inline styles to flosc-theme handle (always exists)
-        if (!empty(trim($inline_css))) {
-            wp_add_inline_style('flosc-theme', $inline_css);
-        }
-    }
-
-    /**
-     * Extract CSS variables from stylesheet content
-     * Returns the inner content of :root { } block
-     * 
-     * @param string $css_content Raw CSS file content
-     * @return string Variable declarations or empty string
-     */
-    private function extract_css_variables($css_content) {
-        if (empty($css_content)) {
-            return '';
-        }
-        
-        // Remove CSS comments
-        $css = preg_replace('/\/\*[\s\S]*?\*\//', '', $css_content);
-        
-        // Extract content inside :root { }
-        if (preg_match('/:root\s*\{([^}]+)\}/s', $css, $matches)) {
-            return trim($matches[1]) . "\n";
-        }
-        
-        return '';
-    }
-
-    /**
-     * Adjust hex color brightness by a percentage (-100 to +100).
-     * Negative = darker, positive = lighter.
-     * v1.6.1: Used for accent color cascade.
-     */
-    private function adjust_color_brightness($hex, $percent) {
-        $hex = ltrim($hex, '#');
-        if (strlen($hex) === 3) {
-            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
-        }
-        $r = hexdec(substr($hex, 0, 2));
-        $g = hexdec(substr($hex, 2, 2));
-        $b = hexdec(substr($hex, 4, 2));
-
-        $r = max(0, min(255, $r + round($r * $percent / 100)));
-        $g = max(0, min(255, $g + round($g * $percent / 100)));
-        $b = max(0, min(255, $b + round($b * $percent / 100)));
-
-        return sprintf('#%02x%02x%02x', $r, $g, $b);
-    }
-
-    /**
-     * Convert hex color to rgba string.
-     * v1.6.1: Used for accent-subtle generation.
-     */
-    private function hex_to_rgba($hex, $alpha) {
-        $hex = ltrim($hex, '#');
-        if (strlen($hex) === 3) {
-            $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
-        }
-        $r = hexdec(substr($hex, 0, 2));
-        $g = hexdec(substr($hex, 2, 2));
-        $b = hexdec(substr($hex, 4, 2));
-        return "rgba({$r}, {$g}, {$b}, {$alpha})";
-    }
-
-    /**
-     * REST API Routes
-     * v9.4.2: Added rate limiting to public endpoints
-     */
-    public function register_rest_routes() {
-        // IVR Chat (primary endpoint)
-        // v9.4.2: Now rate-limited via check_public_endpoint_permission
-        register_rest_route('flosc/v1', '/chat', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_chat'],
-            'permission_callback' => [$this, 'check_public_endpoint_permission'],
-        ]);
-        
-        // RAG Chat (v9.1.6 - AI with search capabilities)
-        // v9.4.2: Now rate-limited via check_public_endpoint_permission
-        register_rest_route('flosc/v1', '/chat-rag', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_chat_with_rag'],
-            'permission_callback' => [$this, 'check_public_endpoint_permission'],
-        ]);
-
-        // v8.0.0: Admin-join poll — the visitor's widget fetches any human "(admin)"
-        // messages an admin posted into its conversation. Read-only and low-sensitivity
-        // (returns only the admin lines for a given session id), so it's public and
-        // intentionally NOT behind the chat AI rate limit (the widget polls it).
-        // POST (not GET) so the host/LiteSpeed page cache never serves a stale empty
-        // result to the visitor's poll — GET responses to wp-json get cached.
-        register_rest_route('flosc/v1', '/admin-messages', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_admin_messages_poll'],
-            'permission_callback' => [$this, 'check_visitor_session_poll_permission'],
-        ]);
-
-        // Visitor poll token minting for admin-message ownership proof.
-        register_rest_route('flosc/v1', '/admin-messages-token', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_admin_messages_token'],
-            'permission_callback' => [$this, 'check_admin_messages_token_permission'],
-        ]);
-
-        // Quiz Submission (NEW: for collecting quiz answers)
-        // v9.4.2: Now rate-limited via check_public_endpoint_permission
-        // v1.0.5: This endpoint returns bridge data status (reads, not writes)
-        // Actual quiz storage: POST /quiz-result | Processing: POST /process-quiz
-        register_rest_route('flosc/v1', '/quiz', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_quiz_submission'],
-            'permission_callback' => [$this, 'check_public_endpoint_permission'],
-        ]);
-
-        // v9.3.2: GET quiz questions for in-chat quiz
-        // v9.4.2: Now rate-limited via check_public_endpoint_permission
-        register_rest_route('flosc/v1', '/quiz', [
-            'methods' => 'GET',
-            'callback' => [$this, 'get_quiz_questions'],
-            'permission_callback' => [$this, 'check_public_endpoint_permission'],
-        ]);
-
-        // v9.3.2: Store quiz results
-        // v9.4.2: Now rate-limited via check_public_endpoint_permission
-        register_rest_route('flosc/v1', '/quiz-result', [
-            'methods' => 'POST',
-            'callback' => [$this, 'store_quiz_result'],
-            'permission_callback' => [$this, 'check_public_endpoint_permission'],
-        ]);
-
-        // AI Query
-        register_rest_route('flosc/v1', '/ai-query', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_ai_query'],
-            'permission_callback' => [$this, 'check_metered_visitor_compute_permission'],
-        ]);
-
-        // Process Audio (for audio-based quiz types)
-        register_rest_route('flosc/v1', '/process-audio', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_process_audio'],
-            'permission_callback' => [$this, 'check_metered_visitor_compute_permission'],
-        ]);
-
-        // v1.7.7: Transcribe alias — JS voice recording and quiz audio both call /transcribe
-        register_rest_route('flosc/v1', '/transcribe', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_process_audio'],
-            'permission_callback' => [$this, 'check_metered_visitor_compute_permission'],
-        ]);
-
-        // Process Quiz (for text-based quiz types)
-        register_rest_route('flosc/v1', '/process-quiz', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_process_quiz'],
-            'permission_callback' => [$this, 'check_metered_visitor_compute_permission'],
-        ]);
-        
-        // Sessions
-        register_rest_route('flosc/v1', '/sessions', [
-            'methods' => 'GET',
-            'callback' => [$this, 'get_sessions'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-        
-        register_rest_route('flosc/v1', '/sessions', [
-            'methods' => 'POST',
-            'callback' => [$this, 'create_session'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-
-        // v1.7.0: Get single session by ID
-        register_rest_route('flosc/v1', '/sessions/(?P<id>\d+)', [
-            'methods' => 'GET',
-            'callback' => [$this, 'get_single_session'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-
-        // v8.0.11: Delete a session
-        register_rest_route('flosc/v1', '/sessions/(?P<id>\d+)', [
-            'methods' => 'DELETE',
-            'callback' => [$this, 'delete_session'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-
-        // v8.0.11: Rename a session
-        register_rest_route('flosc/v1', '/sessions/(?P<id>\d+)', [
-            'methods' => 'PUT',
-            'callback' => [$this, 'rename_session'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-
-        // v1.7.1: Nonce refresh endpoint
-        // v4.0.8: Open to visitors — they need a nonce to call payment endpoints before account creation
-        register_rest_route('flosc/v1', '/nonce', [
-            'methods' => 'GET',
-            'callback' => function() {
-                return new WP_REST_Response([
-                    'success' => true,
-                    'nonce'   => wp_create_nonce('wp_rest'),
-                ]);
-            },
-            'permission_callback' => [$this, 'check_public_nonce_endpoint_permission'],
-        ]);
-        
-        // Offers
-        // v9.4.2: Now rate-limited via check_public_endpoint_permission
-        register_rest_route('flosc/v1', '/offers', [
-            'methods' => 'GET',
-            'callback' => [$this, 'get_offers'],
-            'permission_callback' => [$this, 'check_public_endpoint_permission'],
-        ]);
-        
-        // v1.6.2: Offer content source (HtmlFile, WooProduct, PostID)
-        register_rest_route('flosc/v1', '/offer-content', [
-            'methods' => 'GET',
-            'callback' => [$this, 'get_offer_content'],
-            'permission_callback' => [$this, 'check_public_endpoint_permission'],
-        ]);
-        
-        // Purchase
-        register_rest_route('flosc/v1', '/purchase', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_purchase'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-        
-        // v1.3.1: Sandbox Purchase (fun "pay what you want" testing)
-        register_rest_route('flosc/v1', '/sandbox-purchase', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_sandbox_purchase'],
-            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
-        ]);
-        
-        // Free Lesson (v9.1.9) — v1.4.6: Accept both GET and POST (JS sends POST)
-        register_rest_route('flosc/v1', '/free-lesson', [
-            'methods' => ['GET', 'POST'],
-            'callback' => [$this, 'get_free_lesson'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-        
-        // Create Payment Intent (for Stripe)
-        // v4.0.8: Open to visitors — Stripe checkout starts before account creation
-        register_rest_route('flosc/v1', '/create-payment-intent', [
-            'methods' => 'POST',
-            'callback' => [$this, 'create_payment_intent'],
-            'permission_callback' => [$this, 'check_checkout_endpoint_permission'],
-        ]);
-
-        // v1.4.1: Complete purchase (verify and grant access after client-side payment)
-        // v4.0.8: Open to visitors — account creation happens inside complete_purchase
-        register_rest_route('flosc/v1', '/complete-purchase', [
-            'methods' => 'POST',
-            'callback' => [$this, 'complete_purchase'],
-            'permission_callback' => [$this, 'check_checkout_endpoint_permission'],
-        ]);
-        
-        // PayPal - Create Order
-        register_rest_route('flosc/v1', '/paypal/create-order', [
-            'methods' => 'POST',
-            'callback' => [$this, 'paypal_create_order'],
-            'permission_callback' => [$this, 'check_checkout_endpoint_permission'],
-        ]);
-
-        // PayPal - Capture Order
-        register_rest_route('flosc/v1', '/paypal/capture-order', [
-            'methods' => 'POST',
-            'callback' => [$this, 'paypal_capture_order'],
-            'permission_callback' => [$this, 'check_checkout_endpoint_permission'],
-        ]);
-
-        // PayPal Subscriptions - Get/create plans (auto-setup)
-        register_rest_route('flosc/v1', '/paypal/get-plans', [
-            'methods' => 'POST',
-            'callback' => [$this, 'paypal_get_plans'],
-            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
-        ]);
-
-        // PayPal Subscriptions - Activate after user approves
-        register_rest_route('flosc/v1', '/paypal/activate-subscription', [
-            'methods' => 'POST',
-            'callback' => [$this, 'paypal_activate_subscription'],
-            'permission_callback' => [$this, 'check_checkout_endpoint_permission'],
-        ]);
-
-        // Checkout binding token (provider-neutral). The browser calls this once
-        // when it begins checkout; the server mints a single-use token bound to
-        // this session and returns it. The browser presents it back at payment
-        // completion, which is how a completion handler proves the request is the
-        // buyer's own browser rather than a replayed payment id. Public + rate
-        // limited: minting a token bound to the caller's own session leaks nothing.
-        register_rest_route('flosc/v1', '/checkout/binding', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_checkout_binding'],
-            'permission_callback' => [$this, 'check_public_endpoint_permission'],
-        ]);
-
-        // Webhooks (from payment providers like Stripe)
-        // Public by design: payment providers cannot pass WordPress auth.
-        // Security is enforced by webhook signature verification in handle_webhook().
-        register_rest_route('flosc/v1', '/webhooks/(?P<provider>[a-z]+)', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_webhook'],
-            'permission_callback' => [$this, 'check_webhook_endpoint_permission'],
-        ]);
-        
-        // Access check
-        // v9.4.2: Now rate-limited via check_public_endpoint_permission
-        register_rest_route('flosc/v1', '/access', [
-            'methods' => 'GET',
-            'callback' => [$this, 'check_access'],
-            'permission_callback' => [$this, 'check_public_endpoint_permission'],
-        ]);
-        
-        // Token balance
-        register_rest_route('flosc/v1', '/tokens', [
-            'methods' => 'GET',
-            'callback' => [$this, 'get_token_balance'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-        
-        // Purchase intents (affiliate system)
-        register_rest_route('flosc/v1', '/intents', [
-            'methods' => 'POST',
-            'callback' => [$this, 'declare_intent'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-        
-        register_rest_route('flosc/v1', '/intents/(?P<id>[a-z0-9_]+)/offers', [
-            'methods' => 'GET',
-            'callback' => [$this, 'get_intent_offers'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-        
-        // Referral
-        register_rest_route('flosc/v1', '/referral', [
-            'methods' => 'GET',
-            'callback' => [$this, 'generate_referral'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-        
-        // Lessons
-        // v1.7.8: Lesson list requires login (matches JS access gate)
-        register_rest_route('flosc/v1', '/lessons', [
-            'methods' => 'GET',
-            'callback' => [$this, 'get_lessons'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-        
-        register_rest_route('flosc/v1', '/lessons/(?P<id>\d+)', [
-            'methods' => 'GET',
-            'callback' => [$this, 'get_lesson'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-        
-        register_rest_route('flosc/v1', '/lessons/free', [
-            'methods' => 'GET',
-            'callback' => [$this, 'get_free_lesson'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-        
-        // IVR Messages (v9.2.2)
-        // v9.4.2: Now rate-limited via check_public_endpoint_permission
-        register_rest_route('flosc/v1', '/ivr-messages', [
-            'methods' => 'GET',
-            'callback' => [$this, 'get_ivr_messages'],
-            'permission_callback' => [$this, 'check_ivr_messages_permission'],
-        ]);
-        
-        // v1.0.4: Bridge Data endpoint (TASK-008) - quiz state between phases
-        register_rest_route('flosc/v1', '/bridge-data', [
-            'methods' => 'GET',
-            'callback' => [$this, 'get_bridge_data'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-        
-        // v1.0.5: Debug endpoint - full funnel state (TASK-108)
-        // Only available when FLOSC_DEBUG is true
-        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-            register_rest_route('flosc/v1', '/debug/funnel-state', [
-                'methods' => 'GET',
-                'callback' => [$this, 'get_debug_funnel_state'],
-                'permission_callback' => [$this, 'check_admin_endpoint_permission'],
-            ]);
-        }
-        
-        // Store pre-login score
-        // v9.4.2: Now rate-limited via check_public_endpoint_permission
-        register_rest_route('flosc/v1', '/store-score', [
-            'methods' => 'POST',
-            'callback' => [$this, 'store_prelogin_score'],
-            'permission_callback' => [$this, 'check_public_endpoint_permission'],
-        ]);
-
-        // v8.0.0: Store visitor audio for deferred scoring
-        // Visitors upload audio here instead of calling pronunciation API directly.
-        // Audio is scored server-side after login/registration.
-        register_rest_route('flosc/v1', '/store-visitor-audio', [
-            'methods' => 'POST',
-            'callback' => [$this, 'store_visitor_audio'],
-            'permission_callback' => [$this, 'check_public_endpoint_permission'],
-        ]);
-
-        // Mark funnel completed (v3.0.4)
-        register_rest_route('flosc/v1', '/funnel-complete', [
-            'methods' => 'POST',
-            'callback' => [$this, 'mark_funnel_complete'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-
-        // Test AI connection (v04_05)
-        register_rest_route('flosc/v1', '/test-ai', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_test_ai'],
-            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
-        ]);
-
-        // v07.09: IVR message tracking
-        // v9.4.2: Now rate-limited via check_public_endpoint_permission
-        register_rest_route('flosc/v1', '/ivr/track', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_ivr_track'],
-            'permission_callback' => [$this, 'check_public_endpoint_permission'],
-        ]);
-
-        // v9.4.2: Now rate-limited via check_public_endpoint_permission
-        // Task 4: Add entitlement gating — phase-level (permission callback) and per-message (handler filtering)
-        register_rest_route('flosc/v1', '/ivr/messages', [
-            'methods' => 'GET',
-            'callback' => [$this, 'handle_ivr_get_messages'],
-            'permission_callback' => [$this, 'check_ivr_messages_permission'],
-        ]);
-        
-        // v1.4.0: Email registration (sends guest link — deferred user creation)
-        register_rest_route('flosc/v1', '/register-email', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_email_registration'],
-            'permission_callback' => [$this, 'check_public_endpoint_permission'],
-        ]);
-
-        // Guest profile setup — save nickname + optional password from in-chat card
-        register_rest_route('flosc/v1', '/update-guest-profile', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_update_guest_profile'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-
-        // v8.0.7: Score pending audio — called by JS after ANY login method (email, FB, Google).
-        // JS sends the temp_id from localStorage. Server scores audio and returns results.
-        // This replaces the unreliable cookie-based approach for SSO paths.
-        register_rest_route('flosc/v1', '/score-pending-audio', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_score_pending_audio'],
-            'permission_callback' => [$this, 'check_authenticated_user_permission'],
-        ]);
-
-        // v8.0.8: Store browser-computed quiz data — no server-side re-scoring needed.
-        // The browser already scored each phrase against the flow-configured pronunciation API during the quiz.
-        // This endpoint accepts those results and stores them in user meta + moves audio files.
-        // Used by SSO path (post-reload) when email registration didn't carry quiz_data.
-        register_rest_route('flosc/v1', '/store-quiz-data', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_store_quiz_data'],
-            'permission_callback' => [$this, 'check_authenticated_user_permission'],
-        ]);
-
-        // v1.9.0: AI Feedback — admin flags bad AI responses to improve quality
-        register_rest_route('flosc/v1', '/feedback', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_save_feedback'],
-            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
-        ]);
-
-        register_rest_route('flosc/v1', '/feedback', [
-            'methods' => 'GET',
-            'callback' => [$this, 'handle_get_feedback'],
-            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
-        ]);
-
-        register_rest_route('flosc/v1', '/feedback/(?P<feedback_id>[a-z0-9]+)', [
-            'methods' => 'DELETE',
-            'callback' => [$this, 'handle_delete_feedback'],
-            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
-        ]);
-
-        // v1.9.0: AI Praise — admin reinforces good AI responses
-        register_rest_route('flosc/v1', '/praises', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_save_praise'],
-            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
-        ]);
-
-        register_rest_route('flosc/v1', '/praises/(?P<praise_id>[a-z0-9_]+)', [
-            'methods' => 'DELETE',
-            'callback' => [$this, 'handle_delete_praise'],
-            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
-        ]);
-
-        // v8.0.0: Redeem access code — grants role directly, no payment
-        register_rest_route('flosc/v1', '/redeem-access-code', [
-            'methods' => 'POST',
-            'callback' => [$this, 'handle_redeem_access_code'],
-            'permission_callback' => 'is_user_logged_in',
-        ]);
-    }
-    
-    /**
      * REST Handlers
      */
     
-    /**
-     * Handle IVR Chat - Process user messages through IVR system
-     * Returns next IVR message/response based on current phase and conditions
-     * v1.3.7: Now flow-aware - loads IVR config from flow's specific IVR file
-     */
     public function handle_chat($request) {
         $flosc_chat_start_time = microtime(true);
         $flosc_response_source = 'ivr'; // Track how response was generated
@@ -9871,16 +7998,16 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("[FLOSC v8.0.7] score_visit
         $safe_email     = esc_html($email);
         $safe_url       = esc_url($magic_url);
 
-        $body = '<!doctype html><html><body style="margin:0;padding:0;background:#f6f7fb;font-family:Arial,sans-serif;color:#1f2937;">'
-            . '<div style="max-width:640px;margin:0 auto;padding:32px 20px;">'
-            . '<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:32px;box-shadow:0 10px 30px rgba(0,0,0,0.05);">'
-            . '<h1 style="margin:0 0 16px 0;font-size:28px;line-height:1.2;">Your ' . $safe_link_name . ' is ready</h1>'
-            . '<p style="margin:0 0 24px 0;font-size:16px;line-height:1.6;">Click the button below to access the chat, view your quiz score, free lessons, and a special upgrade offer.</p>'
-            . '<p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:#4b5563;">Your link is valid for 7 days and can be used up to 10 times over 30 days.</p>'
-            . '<p style="margin:0 0 24px 0;"><a href="' . $safe_url . '" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;padding:14px 22px;border-radius:10px;font-weight:700;">' . $safe_link_name . '</a></p>'
-            . '<p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:#4b5563;">If the button does not work, copy and paste this link into your browser:</p>'
-            . '<p style="margin:0 0 24px 0;font-size:14px;line-height:1.6;word-break:break-all;"><a href="' . $safe_url . '">' . $safe_url . '</a></p>'
-            . '<p style="margin:0;font-size:13px;line-height:1.6;color:#6b7280;">This message was sent to ' . $safe_email . '.</p>'
+        $body = '<!doctype html><html><body class="flosc-email-body">'
+            . '<div class="flosc-email-wrap">'
+            . '<div class="flosc-email-card">'
+            . '<h1 class="flosc-email-title">Your ' . $safe_link_name . ' is ready</h1>'
+            . '<p class="flosc-email-lead">Click the button below to access the chat, view your quiz score, free lessons, and a special upgrade offer.</p>'
+            . '<p class="flosc-email-copy">Your link is valid for 7 days and can be used up to 10 times over 30 days.</p>'
+            . '<p class="flosc-email-cta-wrap"><a class="flosc-email-cta" href="' . $safe_url . '">' . $safe_link_name . '</a></p>'
+            . '<p class="flosc-email-copy">If the button does not work, copy and paste this link into your browser:</p>'
+            . '<p class="flosc-email-url"><a href="' . $safe_url . '">' . $safe_url . '</a></p>'
+            . '<p class="flosc-email-foot">This message was sent to ' . $safe_email . '.</p>'
             . '</div></div></body></html>';
 
         $headers = $this->get_flosc_mail_headers($flow_id, 0, true);
@@ -9932,16 +8059,16 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("[FLOSC v8.0.7] score_visit
 
         $subject = "A note about your {$link_name} requests";
 
-        $body = '<!doctype html><html><body style="margin:0;padding:0;background:#f6f7fb;font-family:Arial,sans-serif;color:#1f2937;">'
-            . '<div style="max-width:640px;margin:0 auto;padding:32px 20px;">'
-            . '<div style="background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:32px;box-shadow:0 10px 30px rgba(0,0,0,0.05);">'
-            . '<h1 style="margin:0 0 16px 0;font-size:24px;line-height:1.3;">A quick note</h1>'
-            . '<p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;">We\'ve noticed that ' . $safe_email . ' has requested <strong>' . (int) $count . ' ' . $safe_name . 's</strong>.</p>'
-            . '<p style="margin:0 0 16px 0;font-size:16px;line-height:1.7;">If you are a sincere learner — that\'s absolutely fine! We look forward to welcoming you as a full member soon.'
-            . ($safe_upg ? ' <a href="' . $safe_upg . '" style="color:#2563eb;">Click here to upgrade</a> and get complete access.' : '')
+        $body = '<!doctype html><html><body class="flosc-email-body">'
+            . '<div class="flosc-email-wrap">'
+            . '<div class="flosc-email-card">'
+            . '<h1 class="flosc-email-title flosc-email-title--small">A quick note</h1>'
+            . '<p class="flosc-email-lead flosc-email-lead--spaced">We\'ve noticed that ' . $safe_email . ' has requested <strong>' . (int) $count . ' ' . $safe_name . 's</strong>.</p>'
+            . '<p class="flosc-email-lead flosc-email-lead--spaced">If you are a sincere learner — that\'s absolutely fine! We look forward to welcoming you as a full member soon.'
+            . ($safe_upg ? ' <a class="flosc-email-link" href="' . $safe_upg . '">Click here to upgrade</a> and get complete access.' : '')
             . '</p>'
-            . '<p style="margin:0 0 16px 0;font-size:15px;line-height:1.7;color:#4b5563;">If you are acting maliciously: we are now tracking IP address, geolocation, device fingerprint, and other identifying data associated with these requests. This data is retained and can be reported to the appropriate authorities.</p>'
-            . '<p style="margin:0;font-size:13px;line-height:1.6;color:#9ca3af;">LeSAEp Learners</p>'
+            . '<p class="flosc-email-copy">If you are acting maliciously: we are now tracking IP address, geolocation, device fingerprint, and other identifying data associated with these requests. This data is retained and can be reported to the appropriate authorities.</p>'
+            . '<p class="flosc-email-foot flosc-email-foot--brand">LeSAEp Learners</p>'
             . '</div></div></body></html>';
 
         $headers = $this->get_flosc_mail_headers('', 0, true);
@@ -10522,37 +8649,24 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] X-WP-Nonce 
             return new WP_Error('paypal_not_configured', __('PayPal is not configured', 'flosc'), ['status' => 500]);
         }
 
-        // Verify subscription status with PayPal — retry loop for APPROVAL_PENDING
-        // PayPal sandbox (and occasionally production) may return APPROVAL_PENDING
-        // for a few seconds after onApprove fires before transitioning to ACTIVE.
+        // Verify subscription status with PayPal in a non-blocking single check.
+        // Any transient APPROVAL_PENDING state should be retried by the caller.
         $sub = null;
         $status = '';
-        $max_attempts = 6;
+        $sub = $paypal->get_subscription($subscription_id);
+        if (is_wp_error($sub)) return $sub;
 
-        for ($i = 0; $i < $max_attempts; $i++) {
-            $sub = $paypal->get_subscription($subscription_id);
-            if (is_wp_error($sub)) return $sub;
+        $status = strtoupper($sub['status'] ?? '');
 
-            $status = strtoupper($sub['status'] ?? '');
-
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] activate-subscription check #' . ($i + 1) . ' status=' . $status);
-            }
-
-            if (in_array($status, ['ACTIVE', 'APPROVED'], true)) {
-                break;
-            }
-
-            if ($i < $max_attempts - 1) {
-                sleep(1);
-            }
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            flosc_log('[FLOSC-PAYPAL] activate-subscription check status=' . $status);
         }
 
         if (!in_array($status, ['ACTIVE', 'APPROVED'], true)) {
             if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] activate-subscription FAIL after retries: status=' . $status . ' sub=' . $subscription_id);
+                flosc_log('[FLOSC-PAYPAL] activate-subscription not active: status=' . $status . ' sub=' . $subscription_id);
             }
-            return new WP_Error('subscription_not_active', 'Subscription status after retry: ' . $status, ['status' => 400]);
+            return new WP_Error('subscription_not_active', 'Subscription status not active: ' . $status, ['status' => 400]);
         }
 
         $plan_type = $this->resolve_paypal_subscription_plan_type($sub, $requested_plan_type);
@@ -11398,6 +9512,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC v1.3.8] IVR file no
         if (!file_exists($temp_dir)) {
             wp_mkdir_p($temp_dir);
             // Block direct HTTP access to audio files
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- uploads temp directory protection file
             file_put_contents($temp_dir . '/.htaccess', "Deny from all\n");
         }
 
@@ -11565,6 +9680,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC v8.0.8: store_browse
         $user_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id;
         if (!file_exists($user_dir)) {
             wp_mkdir_p($user_dir);
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- uploads user directory protection file
             file_put_contents($user_dir . '/.htaccess', "Deny from all\n");
         }
 
@@ -11822,6 +9938,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_session_from_d
         $user_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id;
         if (!file_exists($user_dir)) {
             wp_mkdir_p($user_dir);
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- uploads user directory protection file
             file_put_contents($user_dir . '/.htaccess', "Deny from all\n");
         }
 
@@ -12829,9 +10946,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         // Evaluate conditions. The Condition Evaluator is the per-message
         // authority: it resolves each message's MessageConditions expression
         // (is_visitor / is_guest / is_member, session state, quiz state)
-        // against the requesting user's real context. Entitlement above the
-        // message level lives in the route's permission callback, which gates
-        // the sale/content phases to entitled members.
+        // against the requesting user's real context.
         $evaluator = new FLOSC_Condition_Evaluator($context);
         $applicable = $evaluator->get_applicable_messages($messages, $type);
 
@@ -13182,8 +11297,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
     <!-- Each log row gets a rating slider when expanded -->
     <div class="flosc-log-rating" data-log-id="123">
         <input type="range" min="-10" max="10" value="0" step="1"
-               class="flosc-rating-slider" 
-               style="width: 200px; accent-color: var(--flosc-primary);">
+             class="flosc-rating-slider flosc-rating-slider--wide">
         <span class="flosc-rating-value">0</span>
         <span class="flosc-rating-label">Neutral</span>
         <textarea class="flosc-rating-note" placeholder="Why? (optional)" rows="1"></textarea>
@@ -13409,12 +11523,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         if ($user->ID !== get_current_user_id()) return;
         if (get_user_meta($user->ID, '_flosc_registration_method', true) !== 'email') return;
         if (get_user_meta($user->ID, '_flosc_magic_link_user_credentials_set', true)) return;
+        $this->enqueue_flosc_quiz_ui_styles();
 
         $chat_url = $this->get_app_url();
-        echo '<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:16px 20px;margin:24px 0;max-width:640px;">';
-        echo '<p style="margin:0 0 8px;font-weight:600;color:#92400e;font-size:14px;">Complete your LeSAEp account</p>';
-        echo '<p style="margin:0 0 12px;color:#78350f;font-size:13px;">You have not yet set a nickname or password. Visit the chat to complete your profile — the setup card will appear automatically.</p>';
-        echo '<a href="' . esc_url($chat_url) . '" style="display:inline-block;background:#2563eb;color:#fff;text-decoration:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:600;">Go to LeSAEp chat</a>';
+        echo '<div class="flosc-guest-warning-card flosc-guest-warning-card--wide">';
+        echo '<p class="flosc-guest-warning-title">Complete your LeSAEp account</p>';
+        echo '<p class="flosc-guest-warning-copy">You have not yet set a nickname or password. Visit the chat to complete your profile — the setup card will appear automatically.</p>';
+        echo '<a href="' . esc_url($chat_url) . '" class="flosc-guest-warning-cta">Go to LeSAEp chat</a>';
         echo '</div>';
     }
 
@@ -13431,6 +11546,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         $user_id = $user->ID;
+        $this->enqueue_flosc_quiz_ui_styles();
         $upload_dir = wp_upload_dir();
         $user_audio_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id;
 
@@ -13475,8 +11591,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             $first_sent = $log_entry ? wp_date('Y-m-d', $log_entry['first_sent']) : '—';
             $last_sent  = $log_entry ? wp_date('Y-m-d', $log_entry['last_sent'])  : '—';
             $color = ($links_sent >= 6) ? '#d63638' : '#1a7f37';
-            echo '<tr><th>Guest Links Sent</th><td><strong style="color:' . esc_attr( $color ) . '">' . esc_html($links_sent) . '</strong>';
-            echo ' <span style="color:#646970;font-size:12px;">(first: ' . esc_html($first_sent) . ' / last: ' . esc_html($last_sent) . ')</span></td></tr>';
+            echo '<tr><th>Guest Links Sent</th><td><strong class="flosc-links-sent ' . (($links_sent >= 6) ? 'flosc-links-sent--warn' : 'flosc-links-sent--ok') . '">' . esc_html($links_sent) . '</strong>';
+            echo ' <span class="flosc-links-sent-meta">(first: ' . esc_html($first_sent) . ' / last: ' . esc_html($last_sent) . ')</span></td></tr>';
         }
 
         // Show score summary from user meta (already loaded above)
@@ -13503,7 +11619,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
 
             if ($phrases) {
                 echo '<tr><th>Audio Recordings</th><td>';
-                echo '<div style="display:flex;flex-direction:column;gap:12px;">';
+                echo '<div class="flosc-audio-list">';
                 foreach ($phrases as $phrase) {
                     $num = $phrase['num'] ?? '?';
                     $text = $phrase['text'] ?? '';
@@ -13522,9 +11638,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                     if ($format === 'mp4') $mime = 'audio/mp4';
                     if ($format === 'ogg') $mime = 'audio/ogg';
 
-                    echo '<div style="border:1px solid #ddd;border-radius:6px;padding:10px;background:#fafafa;">';
-                    echo '<div style="margin-bottom:6px;"><strong>Phrase ' . esc_html($num) . ':</strong> ' . esc_html($text) . '</div>';
-                    echo '<audio controls preload="none" style="width:100%;max-width:400px;">';
+                    echo '<div class="flosc-audio-item">';
+                    echo '<div class="flosc-audio-item-title"><strong>Phrase ' . esc_html($num) . ':</strong> ' . esc_html($text) . '</div>';
+                    echo '<audio class="flosc-audio-player" controls preload="none">';
                     echo '<source src="' . esc_url($audio_url) . '" type="' . esc_attr($mime) . '">';
                     echo 'Your browser does not support audio playback.';
                     echo '</audio>';
@@ -13715,8 +11831,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         $timestamp = $quiz_data['timestamp'] ?? 0;
         $date_str = $timestamp ? wp_date('F j, Y', $timestamp) : '';
 
-        // Score color: green ≥80, yellow ≥60, red <60
-        $score_color = $score >= 80 ? '#22c55e' : ($score >= 60 ? '#eab308' : '#ef4444');
+        // Score tier: good ≥80, warn ≥60, bad <60
+        $score_class = $score >= 80 ? 'flosc-score--good' : ($score >= 60 ? 'flosc-score--warn' : 'flosc-score--bad');
+        $this->enqueue_flosc_quiz_ui_styles();
 
         echo '<div class="flosc-quiz-results-tab">';
 
@@ -13724,23 +11841,23 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         // With attempts, render_session_result_card() inside each session accordion already renders these.
         if (empty($quiz_attempts)) {
             // Score circle
-            echo '<div style="text-align:center;margin-bottom:24px;">';
-            echo '<div style="display:inline-flex;align-items:center;justify-content:center;width:120px;height:120px;border-radius:50%;border:6px solid ' . esc_attr($score_color) . ';font-size:36px;font-weight:700;color:' . esc_attr($score_color) . ';">';
+            echo '<div class="flosc-score-wrap">';
+            echo '<div class="flosc-score-ring ' . esc_attr($score_class) . '">';
             echo esc_html($score) . '%';
             echo '</div>';
             if ($date_str) {
-                echo '<div style="margin-top:8px;color:#666;font-size:14px;">Taken ' . esc_html($date_str) . '</div>';
+                echo '<div class="flosc-score-date">Taken ' . esc_html($date_str) . '</div>';
             }
             echo '</div>';
 
             // Weakest phonemes
             if ($ranked_phonemes) {
                 $top_weak = array_slice($ranked_phonemes, 0, 10);
-                echo '<div style="margin-bottom:24px;">';
-                echo '<h3 style="font-size:16px;margin-bottom:8px;">Areas for Improvement</h3>';
-                echo '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+                echo '<div class="flosc-weakness-wrap">';
+                echo '<h3 class="flosc-quiz-section-title">Areas for Improvement</h3>';
+                echo '<div class="flosc-weakness-tags">';
                 foreach ($top_weak as $ipa) {
-                    echo '<span style="display:inline-block;padding:4px 12px;border-radius:16px;background:#f3f4f6;border:1px solid #d1d5db;font-family:monospace;font-size:15px;">' . esc_html($ipa) . '</span>';
+                    echo '<span class="flosc-weakness-tag">' . esc_html($ipa) . '</span>';
                 }
                 echo '</div>';
                 echo '</div>';
@@ -13767,19 +11884,19 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
 
         if (!$profile_completed && $is_guest_user) {
             // Anonymous public page notice — shown until guest completes profile
-            $upgrade_link = $upgrade_url ? ' <a href="' . esc_url($upgrade_url) . '" style="color:#b45309;font-weight:600;">Upgrade for full access.</a>' : '';
+            $upgrade_link = $upgrade_url ? ' <a href="' . esc_url($upgrade_url) . '" class="flosc-guest-warning-link">Upgrade for full access.</a>' : '';
             $days_note    = ($days_remaining !== null)
                 ? 'This page and all associated data will be removed from our servers in <strong>' . esc_html($days_remaining) . '</strong> day' . ($days_remaining !== 1 ? 's' : '') . ' if you don\'t upgrade.' . $upgrade_link
                 : '';
-            echo '<div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:14px 16px;margin-bottom:20px;">';
-            echo '<p style="margin:0 0 6px;font-size:14px;font-weight:600;color:#92400e;">This is your anonymous, public quiz score page.</p>';
-            echo '<p style="margin:0 0 6px;font-size:13px;color:#78350f;">It becomes <strong>private</strong> — and you can listen to your recordings — once you complete your guest learner profile.</p>';
-            if ($days_note) echo '<p style="margin:0;font-size:13px;color:#78350f;">' . wp_kses_post( $days_note ) . '</p>';
+            echo '<div class="flosc-guest-warning-card">';
+            echo '<p class="flosc-guest-warning-title">This is your anonymous, public quiz score page.</p>';
+            echo '<p class="flosc-guest-warning-copy">It becomes <strong>private</strong> — and you can listen to your recordings — once you complete your guest learner profile.</p>';
+            if ($days_note) echo '<p class="flosc-guest-warning-copy flosc-guest-warning-copy--tight">' . wp_kses_post( $days_note ) . '</p>';
             echo '</div>';
         } elseif ($profile_completed && $is_guest_user && $days_remaining !== null) {
             // Profile completed — show simple days remaining banner
-            $upgrade_link = $upgrade_url ? ' <a href="' . esc_url($upgrade_url) . '" style="color:#2563eb;font-weight:600;">Upgrade for full access here.</a>' : '';
-            echo '<p style="font-size:13px;color:#374151;background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px 14px;margin-bottom:16px;">You have <strong>' . esc_html($days_remaining) . '</strong> day' . ($days_remaining !== 1 ? 's' : '') . ' of guest access remaining — we hope you are enjoying your experience as a Complimentary Guest LeSAEp Learner!' . wp_kses_post( $upgrade_link ) . '</p>';
+            $upgrade_link = $upgrade_url ? ' <a href="' . esc_url($upgrade_url) . '" class="flosc-guest-remaining-link">Upgrade for full access here.</a>' : '';
+            echo '<p class="flosc-guest-remaining">You have <strong>' . esc_html($days_remaining) . '</strong> day' . ($days_remaining !== 1 ? 's' : '') . ' of guest access remaining — we hope you are enjoying your experience as a Complimentary Guest LeSAEp Learner!' . wp_kses_post( $upgrade_link ) . '</p>';
         }
 
         // Sessions: 1 session → display the result card directly; 2+ → wrap each in an accordion.
@@ -13788,8 +11905,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             $multi = count($quiz_attempts) > 1;
 
             if ($multi) {
-                echo '<div style="margin-bottom:20px;">';
-                echo '<h3 style="font-size:16px;margin-bottom:8px;">Quiz Sessions</h3>';
+                echo '<div class="flosc-quiz-sessions-wrap">';
+                echo '<h3 class="flosc-quiz-section-title">Quiz Sessions</h3>';
             }
 
             foreach ($quiz_attempts as $idx => $attempt) {
@@ -13798,15 +11915,15 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 $attempt_sid = $attempt['session_id'] ?? '';
 
                 if ($multi) {
-                    echo '<details style="margin-bottom:8px;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa;">';
-                    echo '<summary style="padding:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;list-style:none;">';
-                    echo '<span style="display:flex;align-items:center;gap:6px;">';
-                    echo '<span style="font-size:12px;color:#71717a;display:inline-block;transition:transform 0.2s;" class="flosc-bb-chevron">&#9654;</span>';
-                    echo '<span style="font-size:15px;font-weight:700;">Quiz Session ' . esc_html(str_pad((string) $session_num, 2, '0', STR_PAD_LEFT)) . '</span>';
+                    echo '<details class="flosc-quiz-details">';
+                    echo '<summary class="flosc-quiz-summary">';
+                    echo '<span class="flosc-quiz-summary-left">';
+                    echo '<span class="flosc-bb-chevron flosc-quiz-chevron">&#9654;</span>';
+                    echo '<span class="flosc-quiz-summary-title">Quiz Session ' . esc_html(str_pad((string) $session_num, 2, '0', STR_PAD_LEFT)) . '</span>';
                     echo '</span>';
-                    echo '<span style="font-weight:700;color:#111827;">' . esc_html($attempt_score) . '%</span>';
+                    echo '<span class="flosc-quiz-summary-score">' . esc_html($attempt_score) . '%</span>';
                     echo '</summary>';
-                    echo '<div style="padding:0 12px 12px 12px;">';
+                    echo '<div class="flosc-quiz-details-body">';
                 }
 
                 $attempt_quiz_data = $this->find_quiz_data_by_session($user_id, $attempt_sid, $quiz_data);
@@ -13908,12 +12025,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                     return strcmp($b['sid'], $a['sid']);
                 });
 
-                echo '<div style="margin-top:20px;border:1px solid #e5e7eb;border-radius:10px;background:#ffffff;">';
-                echo '<div style="padding:12px 14px;border-bottom:1px solid #e5e7eb;">';
-                echo '<h3 style="font-size:16px;margin:0;">My Files</h3>';
-                echo '<p style="font-size:13px;color:#6b7280;margin:6px 0 0;">Download your recording files (MP4 and WebM) by session.</p>';
+                echo '<div class="flosc-my-files">';
+                echo '<div class="flosc-my-files-head">';
+                echo '<h3 class="flosc-my-files-title">My Files</h3>';
+                echo '<p class="flosc-my-files-subtitle">Download your recording files (MP4 and WebM) by session.</p>';
                 echo '</div>';
-                echo '<div style="padding:10px 14px 14px;">';
+                echo '<div class="flosc-my-files-body">';
 
                 $current_sid = '';
                 foreach ($recording_items as $item) {
@@ -13922,12 +12039,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                             echo '</ul>';
                         }
                         $current_sid = $item['sid'];
-                        echo '<p style="margin:10px 0 8px;font-size:13px;font-weight:700;color:#111827;">Session: ' . esc_html($item['sid_display']) . '</p>';
-                        echo '<ul style="margin:0 0 6px 18px;padding:0;">';
+                        echo '<p class="flosc-my-files-session">Session: ' . esc_html($item['sid_display']) . '</p>';
+                        echo '<ul class="flosc-my-files-list">';
                     }
-                    echo '<li style="margin:5px 0;font-size:13px;">';
-                    echo '<a href="' . esc_url($item['url']) . '" download="' . esc_attr($item['name']) . '" style="color:#2563eb;text-decoration:none;font-weight:600;">Download ' . esc_html(strtoupper($item['ext'])) . '</a>';
-                    echo ' <span style="color:#6b7280;">' . esc_html($item['name']) . '</span>';
+                    echo '<li class="flosc-my-files-item">';
+                    echo '<a class="flosc-my-files-link" href="' . esc_url($item['url']) . '" download="' . esc_attr($item['name']) . '">Download ' . esc_html(strtoupper($item['ext'])) . '</a>';
+                    echo ' <span class="flosc-my-files-name">' . esc_html($item['name']) . '</span>';
                     echo '</li>';
                 }
                 if ($current_sid !== '') {
@@ -13946,8 +12063,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             $upload_dir = wp_upload_dir();
 
             echo '<div>';
-            echo '<h3 style="font-size:16px;margin-bottom:8px;">Phrase Breakdown</h3>';
-            echo '<p style="font-size:13px;color:#71717a;font-style:italic;margin-bottom:12px;">Click each phrase to expand the detailed analysis</p>';
+            echo '<h3 class="flosc-quiz-section-title">Phrase Breakdown</h3>';
+            echo '<p class="flosc-phrase-breakdown-note">Click each phrase to expand the detailed analysis</p>';
             foreach ($phrase_results as $i => $pr) {
                 $phrase_text = $pr['phrase'] ?? '';
                 $data = $pr['data'] ?? [];
@@ -13964,15 +12081,15 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 $pct = $phoneme_count > 0 ? intval(round(($phrase_score / $phoneme_count) * 100)) : 0;
                 $pct_color = $pct >= 80 ? '#22c55e' : ($pct >= 60 ? '#eab308' : '#ef4444');
 
-                echo '<details style="margin-bottom:8px;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa;">';
-                echo '<summary style="padding:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;list-style:none;">';
-                echo '<span style="display:flex;align-items:center;gap:6px;">';
-                echo '<span style="font-size:12px;color:#71717a;display:inline-block;transition:transform 0.2s;" class="flosc-bb-chevron">&#9654;</span>';
-                echo '<span style="font-size:15px;"><strong>Phrase ' . esc_html($i + 1) . ':</strong> ' . esc_html($phrase_text) . '</span>';
+                echo '<details class="flosc-quiz-details">';
+                echo '<summary class="flosc-quiz-summary">';
+                echo '<span class="flosc-quiz-summary-left">';
+                echo '<span class="flosc-bb-chevron flosc-quiz-chevron">&#9654;</span>';
+                echo '<span class="flosc-quiz-summary-text"><strong>Phrase ' . esc_html($i + 1) . ':</strong> ' . esc_html($phrase_text) . '</span>';
                 echo '</span>';
-                echo '<span style="font-weight:700;color:' . esc_attr($pct_color) . ';">' . esc_html($pct) . '%</span>';
+                echo '<span class="flosc-quiz-score ' . esc_attr($pct >= 80 ? 'flosc-score--good' : ($pct >= 60 ? 'flosc-score--warn' : 'flosc-score--bad')) . '">' . esc_html($pct) . '%</span>';
                 echo '</summary>';
-                echo '<div style="padding:0 12px 12px 12px;">';
+                echo '<div class="flosc-quiz-details-body">';
 
                 // Audio playback — members always get audio; guests only once profile is completed
                 if ((!$is_guest_user || $profile_completed) && $session_id) {
@@ -13991,10 +12108,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                     $key = strtolower($word_text);
                     $ipa_data = $word_ipa[$key] ?? [];
 
-                    echo '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin-bottom:8px;">';
-                    echo '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
-                    echo '<span style="font-weight:600;">' . esc_html($word_text) . '</span>';
-                    echo '<span style="font-weight:700;color:' . esc_attr($w_color) . ';">' . esc_html($w_pct) . '%</span>';
+                    echo '<div class="flosc-word-card">';
+                    echo '<div class="flosc-word-head">';
+                    echo '<span class="flosc-word-title">' . esc_html($word_text) . '</span>';
+                    echo '<span class="flosc-word-score ' . esc_attr($w_avg >= 0.5 ? 'flosc-score--good' : ($w_avg >= 0.1 ? 'flosc-score--warn' : 'flosc-score--bad')) . '">' . esc_html($w_pct) . '%</span>';
                     echo '</div>';
 
                     // IPA reference rows (when word_ipa data is available)
@@ -14006,9 +12123,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                         if ($da1ni5_val) $ipa_rows['da1ni5'] = $da1ni5_val;
                         if (!empty($w['expected_ipa'])) $ipa_rows['scored as'] = $w['expected_ipa'];
                         foreach ($ipa_rows as $label => $val) {
-                            echo '<div style="display:flex;gap:8px;font-size:13px;margin-bottom:2px;">';
-                            echo '<span style="color:#71717a;min-width:110px;">' . esc_html($label) . '</span>';
-                            echo '<span style="font-family:monospace;">[' . esc_html($val) . ']</span>';
+                            echo '<div class="flosc-ipa-row">';
+                            echo '<span class="flosc-ipa-label">' . esc_html($label) . '</span>';
+                            echo '<span class="flosc-ipa-value">[' . esc_html($val) . ']</span>';
                             echo '</div>';
                         }
                     }
@@ -14019,10 +12136,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                         $ph_pct = round($conf * 100, 1);
                         $bar_w = max(1, $conf * 100);
                         $ph_color = $conf >= 0.5 ? '#22c55e' : ($conf >= 0.1 ? '#eab308' : '#ef4444');
-                        echo '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:13px;">';
-                        echo '<span style="font-family:monospace;width:30px;text-align:center;">' . esc_html($ph['ipa'] ?? '') . '</span>';
-                        echo '<div style="flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;"><div style="height:100%;width:' . esc_attr($bar_w) . '%;background:' . esc_attr($ph_color) . ';border-radius:4px;"></div></div>';
-                        echo '<span style="width:42px;text-align:right;color:' . esc_attr($ph_color) . ';">' . esc_html($ph_pct) . '%</span>';
+                        echo '<div class="flosc-phoneme-row">';
+                        echo '<span class="flosc-phoneme-ipa">' . esc_html($ph['ipa'] ?? '') . '</span>';
+                        echo '<progress class="flosc-phoneme-progress" max="100" value="' . esc_attr($bar_w) . '"></progress>';
+                        echo '<span class="flosc-phoneme-score ' . esc_attr($conf >= 0.5 ? 'flosc-score--good' : ($conf >= 0.1 ? 'flosc-score--warn' : 'flosc-score--bad')) . '">' . esc_html($ph_pct) . '%</span>';
                         echo '</div>';
                     }
 
@@ -14034,13 +12151,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             }
             echo '</div>';
         }
-
-        // Chevron rotation
-        // §12: chevron styles via an inline-only style handle (WordPress prints it in the footer
-        // through print_late_styles) instead of an inline <style> tag on the BuddyBoss profile tab.
-        wp_register_style('flosc-bb-quiz', false, [], FLOSC_VERSION);
-        wp_enqueue_style('flosc-bb-quiz');
-        wp_add_inline_style('flosc-bb-quiz', '.flosc-bb-chevron { display:inline-block; } details[open] > summary .flosc-bb-chevron { transform: rotate(90deg); } details summary::-webkit-details-marker { display:none; }');
 
         echo '</div>';
     }
@@ -14106,7 +12216,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
 
         if (!$audio_file) {
             if (file_exists($user_audio_dir . '/phrase-' . $phrase_num . '.webm') || file_exists($user_audio_dir . '/phrase-' . $phrase_num . '.ogg')) {
-                echo '<div style="margin-bottom:12px;font-size:12px;color:#6b7280;">Playback copy is processing. Please refresh shortly.</div>';
+                echo '<div class="flosc-playback-pending">Playback copy is processing. Please refresh shortly.</div>';
             }
             return;
         }
@@ -14123,8 +12233,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'sig' => $sig,
         ]);
 
-        echo '<div style="margin-bottom:12px;">';
-        echo '<audio controls controlsList="nodownload" style="width:100%;height:36px;border-radius:8px;" src="' . esc_url($audio_url) . '"></audio>';
+        echo '<div class="flosc-audio-wrap">';
+        echo '<audio class="flosc-audio-stream" controls controlsList="nodownload" src="' . esc_url($audio_url) . '"></audio>';
 
         echo '</div>';
     }
@@ -14177,9 +12287,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         $session_id = $quiz_data['session_id'] ?? '';
         $upload_dir = wp_upload_dir();
 
-        echo '<div style="margin-top:12px;">';
-        echo '<h4 style="font-size:14px;margin:0 0 8px;">Phrase Breakdown</h4>';
-        echo '<p style="font-size:13px;color:#71717a;font-style:italic;margin-bottom:12px;">Click each phrase to expand the detailed analysis</p>';
+        echo '<div class="flosc-phrase-breakdown-wrap">';
+        echo '<h4 class="flosc-phrase-breakdown-title">Phrase Breakdown</h4>';
+        echo '<p class="flosc-phrase-breakdown-note">Click each phrase to expand the detailed analysis</p>';
 
         foreach ($phrase_results as $i => $pr) {
             $phrase_text = $pr['phrase'] ?? '';
@@ -14197,15 +12307,15 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             $pct = $phoneme_count > 0 ? intval(round(($phrase_score / $phoneme_count) * 100)) : 0;
             $pct_color = $pct >= 80 ? '#22c55e' : ($pct >= 60 ? '#eab308' : '#ef4444');
 
-            echo '<details style="margin-bottom:8px;border:1px solid #e5e7eb;border-radius:8px;background:#fafafa;">';
-            echo '<summary style="padding:12px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;list-style:none;">';
-            echo '<span style="display:flex;align-items:center;gap:6px;">';
-            echo '<span style="font-size:12px;color:#71717a;display:inline-block;transition:transform 0.2s;" class="flosc-bb-chevron">&#9654;</span>';
-            echo '<span style="font-size:15px;"><strong>Phrase ' . esc_html($i + 1) . ':</strong> ' . esc_html($phrase_text) . '</span>';
+            echo '<details class="flosc-quiz-details">';
+            echo '<summary class="flosc-quiz-summary">';
+            echo '<span class="flosc-quiz-summary-left">';
+            echo '<span class="flosc-bb-chevron flosc-quiz-chevron">&#9654;</span>';
+            echo '<span class="flosc-quiz-summary-text"><strong>Phrase ' . esc_html($i + 1) . ':</strong> ' . esc_html($phrase_text) . '</span>';
             echo '</span>';
-            echo '<span style="font-weight:700;color:' . esc_attr($pct_color) . ';">' . esc_html($pct) . '%</span>';
+            echo '<span class="flosc-quiz-score ' . esc_attr($pct >= 80 ? 'flosc-score--good' : ($pct >= 60 ? 'flosc-score--warn' : 'flosc-score--bad')) . '">' . esc_html($pct) . '%</span>';
             echo '</summary>';
-            echo '<div style="padding:0 12px 12px 12px;">';
+            echo '<div class="flosc-quiz-details-body">';
 
             if ((!$is_guest_user || $profile_completed) && $session_id) {
                 $phrase_num = $i + 1;
@@ -14222,10 +12332,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 $key = strtolower($word_text);
                 $ipa_data = $word_ipa[$key] ?? [];
 
-                echo '<div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:10px;margin-bottom:8px;">';
-                echo '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">';
-                echo '<span style="font-weight:600;">' . esc_html($word_text) . '</span>';
-                echo '<span style="font-weight:700;color:' . esc_attr($w_color) . ';">' . esc_html($w_pct) . '%</span>';
+                echo '<div class="flosc-word-card">';
+                echo '<div class="flosc-word-head">';
+                echo '<span class="flosc-word-title">' . esc_html($word_text) . '</span>';
+                echo '<span class="flosc-word-score ' . esc_attr($w_avg >= 0.5 ? 'flosc-score--good' : ($w_avg >= 0.1 ? 'flosc-score--warn' : 'flosc-score--bad')) . '">' . esc_html($w_pct) . '%</span>';
                 echo '</div>';
 
                 if (!empty($ipa_data)) {
@@ -14236,9 +12346,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                     if ($da1ni5_val) $ipa_rows['da1ni5'] = $da1ni5_val;
                     if (!empty($w['expected_ipa'])) $ipa_rows['scored as'] = $w['expected_ipa'];
                     foreach ($ipa_rows as $label => $val) {
-                        echo '<div style="display:flex;gap:8px;font-size:13px;margin-bottom:2px;">';
-                        echo '<span style="color:#71717a;min-width:110px;">' . esc_html($label) . '</span>';
-                        echo '<span style="font-family:monospace;">[' . esc_html($val) . ']</span>';
+                        echo '<div class="flosc-ipa-row">';
+                        echo '<span class="flosc-ipa-label">' . esc_html($label) . '</span>';
+                        echo '<span class="flosc-ipa-value">[' . esc_html($val) . ']</span>';
                         echo '</div>';
                     }
                 }
@@ -14248,10 +12358,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                     $ph_pct = round($conf * 100, 1);
                     $bar_w = max(1, $conf * 100);
                     $ph_color = $conf >= 0.5 ? '#22c55e' : ($conf >= 0.1 ? '#eab308' : '#ef4444');
-                    echo '<div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;font-size:13px;">';
-                    echo '<span style="font-family:monospace;width:30px;text-align:center;">' . esc_html($ph['ipa'] ?? '') . '</span>';
-                    echo '<div style="flex:1;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;"><div style="height:100%;width:' . esc_attr($bar_w) . '%;background:' . esc_attr($ph_color) . ';border-radius:4px;"></div></div>';
-                    echo '<span style="width:42px;text-align:right;color:' . esc_attr($ph_color) . ';">' . esc_html($ph_pct) . '%</span>';
+                    echo '<div class="flosc-phoneme-row">';
+                    echo '<span class="flosc-phoneme-ipa">' . esc_html($ph['ipa'] ?? '') . '</span>';
+                    echo '<progress class="flosc-phoneme-progress" max="100" value="' . esc_attr($bar_w) . '"></progress>';
+                    echo '<span class="flosc-phoneme-score ' . esc_attr($conf >= 0.5 ? 'flosc-score--good' : ($conf >= 0.1 ? 'flosc-score--warn' : 'flosc-score--bad')) . '">' . esc_html($ph_pct) . '%</span>';
                     echo '</div>';
                 }
 
@@ -14263,6 +12373,362 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         echo '</div>';
+    }
+
+    /**
+     * Enqueue Assets
+     * v1.2.1: Uses is_flosc_request() to check both slug and custom domain
+     * v1.9.5: Nuclear dequeue - removes ALL theme/plugin CSS and JS.
+     *   The FLOSC app page is a standalone SPA; it needs zero theme assets.
+     *   Previously ran at priority 10 which let 22 theme CSS files and 93 scripts
+     *   survive because BuddyBoss/Divi/WooCommerce enqueued at the same priority.
+     *   Now runs at priority 9999 so everything is already in the queue when we clean it.
+     */
+    public function enqueue_assets() {
+        if (!$this->is_flosc_request()) {
+            return;
+        }
+
+        // -- NUCLEAR DEQUEUE: Remove ALL non-FLOSC styles --
+        // At priority 9999, every theme/plugin has already enqueued.
+        // We iterate the full queue and remove everything not ours.
+        global $wp_styles, $wp_scripts;
+
+        $flosc_style_whitelist = ['flosc-layout', 'flosc-theme', 'flosc-offers', 'flosc-preset'];
+        if (isset($wp_styles->queue) && is_array($wp_styles->queue)) {
+            foreach ($wp_styles->queue as $handle) {
+                if (in_array($handle, $flosc_style_whitelist, true)) {
+                    continue;
+                }
+                wp_dequeue_style($handle);
+                wp_deregister_style($handle);
+            }
+        }
+
+        // -- NUCLEAR DEQUEUE: Remove ALL non-FLOSC scripts --
+        // Keep only flosc-app.js and payment SDKs (PayPal, Stripe).
+        $flosc_script_whitelist = ['flosc-app', 'paypal-js', 'stripe-js'];
+        if (isset($wp_scripts->queue) && is_array($wp_scripts->queue)) {
+            foreach ($wp_scripts->queue as $handle) {
+                if (in_array($handle, $flosc_script_whitelist, true)) {
+                    continue;
+                }
+                wp_dequeue_script($handle);
+                wp_deregister_script($handle);
+            }
+        }
+
+        // Our assets - v9.3.7 Clean CSS Architecture
+        // 1. Layout CSS (structure only, no colors)
+        wp_enqueue_style(
+            'flosc-layout',
+            FLOSC_PLUGIN_URL . 'assets/css/flosc-layout.css',
+            [],
+            filemtime(FLOSC_PLUGIN_DIR . 'assets/css/flosc-layout.css')
+        );
+
+        // 2. Theme CSS (connects variables to selectors)
+        wp_enqueue_style(
+            'flosc-theme',
+            FLOSC_PLUGIN_URL . 'assets/css/flosc-theme.css',
+            ['flosc-layout'],
+            filemtime(FLOSC_PLUGIN_DIR . 'assets/css/flosc-theme.css')
+        );
+
+        // v1.6.2: Offer/checkout/autoprompt CSS (extracted from inline JS)
+        wp_enqueue_style(
+            'flosc-offers',
+            FLOSC_PLUGIN_URL . 'assets/css/flosc-offers.css',
+            ['flosc-theme'],
+            filemtime(FLOSC_PLUGIN_DIR . 'assets/css/flosc-offers.css')
+        );
+
+        // 3. Preset CSS (variable definitions only)
+        $this->enqueue_chat_style();
+
+        wp_enqueue_script('flosc-app', FLOSC_PLUGIN_URL . 'assets/js/flosc-app.js', [], time(), true);
+
+        // Stripe.js - DISABLED in v1.7.1 (pending Stripe account verification)
+        // $stripe = $this->sale_manager->get_provider('stripe');
+        // if ($stripe && $stripe->is_configured()) {
+        //     wp_enqueue_script('stripe-js', 'https://js.stripe.com/v3/', [], null, false);
+        // }
+
+        // v5.0.7: PayPal JS SDK - use provider's centralized currency to guarantee
+        // SDK currency matches the order currency (mismatch = silent failure).
+        $paypal = $this->sale_manager->get_provider('paypal');
+        if ($paypal && $paypal->has_client_id()) {
+            $pp_config = $paypal->get_client_config();
+            $pp_client_id = $pp_config['clientId'] ?? '';
+            if ($pp_client_id) {
+                $pp_currency = $pp_config['currency'] ?? 'USD';
+                wp_enqueue_script('paypal-js', 'https://www.paypal.com/sdk/js?client-id=' . urlencode($pp_client_id) . '&currency=' . urlencode($pp_currency) . '&intent=subscription&vault=true', [], null, true);
+            }
+        }
+    }
+
+    /**
+     * v1.6.1: Enqueue companion widget on non-app WordPress pages.
+     * Only loads if companion mode is enabled for the current flow.
+     * v1.6.3: Fixed to read from flat per-flow settings (matching admin save pattern)
+     */
+    public function enqueue_companion() {
+        // Don't load on app pages (they get the full experience)
+        if ($this->is_flosc_request()) {
+            return;
+        }
+
+        // Read from per-flow settings (flat keys, not overrides)
+        $enabled = $this->get_setting('companion_enabled', false);
+        if (!$enabled) {
+            return;
+        }
+
+        $app_url = $this->get_app_url();
+        if (empty($app_url)) {
+            return;
+        }
+
+        $accent = $this->get_setting('companion_accent_color', '#2563eb');
+        $title  = $this->get_setting('companion_greeting', 'Chat with us');
+
+        wp_enqueue_style(
+            'flosc-companion',
+            FLOSC_PLUGIN_URL . 'assets/css/flosc-companion.css',
+            [],
+            filemtime(FLOSC_PLUGIN_DIR . 'assets/css/flosc-companion.css')
+        );
+
+        wp_enqueue_script(
+            'flosc-companion',
+            FLOSC_PLUGIN_URL . 'assets/js/flosc-companion.js',
+            [],
+            filemtime(FLOSC_PLUGIN_DIR . 'assets/js/flosc-companion.js'),
+            true
+        );
+
+        wp_add_inline_script('flosc-companion', sprintf(
+            'FloscCompanion.init(%s);',
+            wp_json_encode([
+                'appUrl' => $app_url,
+                'title' => $title,
+                'accentColor' => $accent ?: '#2563eb',
+            ])
+        ));
+    }
+
+    /**
+     * Enqueue chat styling (v9.3.9 - Bulletproof Architecture)
+     *
+     * Architecture:
+     * 1. flosc-layout.css - Structure only (already enqueued)
+     * 2. flosc-theme.css - Variable consumption (already enqueued)
+     * 3. This method - Variable definitions via inline CSS
+     *
+     * Presets: auto (system preference), light, dark
+     * Customization: bubble style, accent color, font, scale, custom CSS
+     */
+    private function enqueue_chat_style() {
+        // v1.6.1: Per-flow settings via FLOSC_Flow_Manager::get_setting()
+        $fm = FLOSC_Flow_Manager::instance();
+        $preset     = $fm->get_setting('flosc_chat_style_preset', 'style', 'preset', 'light');
+        $bubble     = $fm->get_setting('flosc_chat_style_bubble', 'style', 'bubble', 'subtle-notch');
+        $accent     = $fm->get_setting('flosc_chat_style_accent', 'style', 'accent', '');
+        $font       = $fm->get_setting('flosc_chat_style_font', 'style', 'font', 'system');
+        $scale      = intval($fm->get_setting('flosc_chat_style_scale', 'style', 'scale', 100));
+        $custom_css = $fm->get_setting('flosc_chat_style_custom_css', 'style', 'custom_css', '');
+
+        // Bubble style presets (border-radius values per FLOSC_STYLE_GUIDE.md)
+        $bubble_styles = [
+            'subtle-notch' => ['user' => '18px 18px 4px 18px', 'assistant' => '4px 18px 18px 18px'],
+            'classic'      => ['user' => '18px 18px 0 18px',   'assistant' => '0 18px 18px 18px'],
+            'modern'       => ['user' => '20px 20px 6px 20px', 'assistant' => '6px 20px 20px 20px'],
+            'minimal'      => ['user' => '16px',               'assistant' => '16px'],
+            'sharp'        => ['user' => '12px 12px 2px 12px', 'assistant' => '2px 12px 12px 12px'],
+        ];
+
+        // Font family map
+        $font_families = [
+            'system'        => '',
+            'inter'         => '"Inter", -apple-system, sans-serif',
+            'ibm-plex-sans' => '"IBM Plex Sans", -apple-system, sans-serif',
+            'ibm-plex-mono' => '"IBM Plex Mono", "SF Mono", Monaco, monospace',
+            'roboto'        => '"Roboto", -apple-system, sans-serif',
+            'roboto-mono'   => '"Roboto Mono", "SF Mono", Monaco, monospace',
+            'fira-code'     => '"Fira Code", "SF Mono", Monaco, monospace',
+        ];
+
+        // File paths
+        $light_path = FLOSC_PLUGIN_DIR . 'assets/css/chat-style-light.css';
+        $dark_path  = FLOSC_PLUGIN_DIR . 'assets/css/chat-style-dark.css';
+
+        $inline_css = '';
+
+        // ===========================================
+        // PRESET LOADING
+        // ===========================================
+        if ($preset === 'auto') {
+            // Auto mode: Light by default, dark via prefers-color-scheme
+            if (file_exists($light_path) && file_exists($dark_path)) {
+                $light_content = @file_get_contents($light_path);
+                $dark_content  = @file_get_contents($dark_path);
+
+                if ($light_content) {
+                    $light_vars = $this->extract_css_variables($light_content);
+                    if ($light_vars) {
+                        $inline_css .= "/* Light Theme (Default) */\n:root {\n{$light_vars}}\n\n";
+                    }
+                }
+
+                if ($dark_content) {
+                    $dark_vars = $this->extract_css_variables($dark_content);
+                    if ($dark_vars) {
+                        $inline_css .= "/* Dark Theme (System Preference) */\n@media (prefers-color-scheme: dark) {\n  :root {\n{$dark_vars}  }\n}\n\n";
+                    }
+                }
+            }
+        } else {
+            // Named preset (light, dark, chatgpt, claude, grok): load as external stylesheet
+            $safe_preset = preg_replace('/[^a-z0-9-]/', '', $preset);
+            $preset_path = FLOSC_PLUGIN_DIR . 'assets/css/chat-style-' . $safe_preset . '.css';
+            if (file_exists($preset_path)) {
+                wp_enqueue_style(
+                    'flosc-preset',
+                    FLOSC_PLUGIN_URL . 'assets/css/chat-style-' . $safe_preset . '.css',
+                    ['flosc-theme'],
+                    filemtime($preset_path)
+                );
+            }
+        }
+
+        // ===========================================
+        // DYNAMIC OVERRIDES
+        // ===========================================
+        $bubble_config = $bubble_styles[$bubble] ?? $bubble_styles['subtle-notch'];
+
+        $overrides = [];
+        $overrides[] = "--flosc-user-message-radius: {$bubble_config['user']}";
+        $overrides[] = "--flosc-assistant-message-radius: {$bubble_config['assistant']}";
+
+        // v1.6.1: Full accent color cascade (5->15 derived variables)
+        if (!empty($accent) && $accent !== '#2563eb') {
+            // Compute derived colors from hex accent
+            $hover   = $this->adjust_color_brightness($accent, -15);
+            $subtle  = $this->hex_to_rgba($accent, 0.06);
+            $subtle4 = $this->hex_to_rgba($accent, 0.04);
+            $light   = $this->adjust_color_brightness($accent, 40);
+
+            // Core accent
+            $overrides[] = "--flosc-accent: {$accent}";
+            $overrides[] = "--flosc-accent-hover: {$hover}";
+            $overrides[] = "--flosc-accent-subtle: {$subtle}";
+
+            // Components that derive from accent
+            $overrides[] = "--flosc-user-message-bg: {$accent}";
+            $overrides[] = "--flosc-user-avatar-bg: {$accent}";
+            $overrides[] = "--flosc-send-btn-bg: {$accent}";
+            $overrides[] = "--flosc-pill-hover-text: {$accent}";
+            $overrides[] = "--flosc-pill-hover-border: {$light}";
+            $overrides[] = "--flosc-card-hover-text: {$accent}";
+            $overrides[] = "--flosc-card-hover-border: {$light}";
+            $overrides[] = "--flosc-content-link: {$accent}";
+            $overrides[] = "--flosc-content-link-hover: {$hover}";
+            $overrides[] = "--flosc-content-blockquote-border: {$accent}";
+            $overrides[] = "--flosc-content-blockquote-bg: {$subtle4}";
+            $overrides[] = "--flosc-quiz-tab-active-bg: {$accent}";
+            $overrides[] = "--flosc-quiz-input-focus-border: {$accent}";
+        }
+
+        // Scale factor
+        if ($scale !== 100 && $scale > 0) {
+            $scale_factor = $scale / 100;
+            $overrides[] = "--flosc-scale: {$scale_factor}";
+        }
+
+        // Font family
+        if ($font !== 'system' && isset($font_families[$font]) && !empty($font_families[$font])) {
+            $overrides[] = "--flosc-font-family: {$font_families[$font]}";
+        }
+
+        if (!empty($overrides)) {
+            $inline_css .= "/* Dynamic Overrides */\n:root {\n    " . implode(";\n    ", $overrides) . ";\n}\n\n";
+        }
+
+        // Font application
+        if ($font !== 'system' && isset($font_families[$font]) && !empty($font_families[$font])) {
+            $inline_css .= "/* Font Application */\n";
+            $inline_css .= ".flosc-app,\n.flosc-app .messages,\n.flosc-app .message-text {\n";
+            $inline_css .= "    font-family: var(--flosc-font-family) !important;\n}\n\n";
+        }
+
+        // Custom CSS
+        if (!empty(trim($custom_css))) {
+            $inline_css .= "/* Custom CSS */\n" . trim($custom_css) . "\n";
+        }
+
+        // Attach inline styles to flosc-theme handle (always exists)
+        if (!empty(trim($inline_css))) {
+            wp_add_inline_style('flosc-theme', $inline_css);
+        }
+    }
+
+    /**
+     * Extract CSS variables from stylesheet content
+     * Returns the inner content of :root { } block
+     *
+     * @param string $css_content Raw CSS file content
+     * @return string Variable declarations or empty string
+     */
+    private function extract_css_variables($css_content) {
+        if (empty($css_content)) {
+            return '';
+        }
+
+        // Remove CSS comments
+        $css = preg_replace('/\/\*[\s\S]*?\*\//', '', $css_content);
+
+        // Extract content inside :root { }
+        if (preg_match('/:root\s*\{([^}]+)\}/s', $css, $matches)) {
+            return trim($matches[1]) . "\n";
+        }
+
+        return '';
+    }
+
+    /**
+     * Adjust hex color brightness by a percentage (-100 to +100).
+     * Negative = darker, positive = lighter.
+     * v1.6.1: Used for accent color cascade.
+     */
+    private function adjust_color_brightness($hex, $percent) {
+        $hex = ltrim($hex, '#');
+        if (strlen($hex) === 3) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+
+        $r = max(0, min(255, $r + round($r * $percent / 100)));
+        $g = max(0, min(255, $g + round($g * $percent / 100)));
+        $b = max(0, min(255, $b + round($b * $percent / 100)));
+
+        return sprintf('#%02x%02x%02x', $r, $g, $b);
+    }
+
+    /**
+     * Convert hex color to rgba string.
+     * v1.6.1: Used for accent-subtle generation.
+     */
+    private function hex_to_rgba($hex, $alpha) {
+        $hex = ltrim($hex, '#');
+        if (strlen($hex) === 3) {
+            $hex = $hex[0] . $hex[0] . $hex[1] . $hex[1] . $hex[2] . $hex[2];
+        }
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+        return "rgba({$r}, {$g}, {$b}, {$alpha})";
     }
 }
 
@@ -14291,855 +12757,16 @@ function flosc_adjust_brightness($hex, $percent) {
 }
 
 /**
- * Import IVR from ivr.md to database (REPLACE MODE - ivr.md is source of truth)
- * v9.2.2: IVR Database Integration
- * v1.6.4: Added $custom_ivr_file and $flow_key params for per-flow storage
- * 
- * @param bool $preview_only If true, returns preview without making changes
- * @param string|null $custom_ivr_file Optional path to IVR file (defaults to flosc_default_ivr.md)
- * @param string|null $flow_key Optional per-flow option key (e.g. 'flosc_flow_flosc_default_ivr')
- * @return array Result with success, stats, message, and preview data
+ * IVR import/export/sync hooks were extracted to a dedicated include to keep
+ * this bootstrap file smaller and easier to maintain.
  */
-function flosc_import_ivr_to_database($preview_only = false, $custom_ivr_file = null, $flow_key = null, $mode = 'merge') {
-    $ivr_file = $custom_ivr_file ?? flosc_config_file('flosc_default_ivr.md');
-    $mode = ($mode === 'replace') ? 'replace' : 'merge';
-    
-    if (!file_exists($ivr_file)) {
-        return ['success' => false, 'message' => 'flosc_default_ivr.md file not found'];
-    }
-    
-    require_once FLOSC_PLUGIN_DIR . 'includes/class-ivr-parser.php';
-    $parser = FLOSC_IVR_Parser::flosc_instance();
-    $markdown = file_get_contents($ivr_file);
-    $config = $parser->flosc_parse($markdown);
-    
-    if (empty($config)) {
-        return ['success' => false, 'message' => 'Failed to parse flosc_default_ivr.md'];
-    }
-    
-    // Get current database state (per-flow if flow_key provided, else global)
-    if ($flow_key) {
-        $fs = get_option($flow_key, []);
-        $current_messages = $fs['ivr_messages'] ?? [];
-    } else {
-        $current_messages = get_option('flosc_ivr_messages', []);
-    }
-
-    // Normalize DB defaults so compare logic matches runtime/export behavior.
-    foreach ($current_messages as &$current_msg) {
-        $msg_type = strtolower(trim((string)($current_msg['type'] ?? '')));
-        if ($msg_type === 'offer' && empty($current_msg['display_format'])) {
-            $current_msg['display_format'] = 'card';
-        }
-    }
-    unset($current_msg);
-
-    $incoming_messages = $config['messages'] ?? [];
-
-    // Normalize defaults so preview/compare and runtime storage use the same shape.
-    foreach ($incoming_messages as &$incoming_msg) {
-        $msg_type = strtolower(trim((string)($incoming_msg['type'] ?? '')));
-        if ($msg_type === 'offer' && empty($incoming_msg['display_format'])) {
-            $incoming_msg['display_format'] = 'card';
-        }
-    }
-    unset($incoming_msg);
-    
-    // Calculate changes
-    $current_ids = array_keys($current_messages);
-    $incoming_ids = array_keys($incoming_messages);
-    
-    $to_add = array_diff($incoming_ids, $current_ids);
-    $to_update = array_intersect($incoming_ids, $current_ids);
-    $to_delete = array_diff($current_ids, $incoming_ids);
-    
-    $stats = [
-        'added' => array_values($to_add),
-        'updated' => array_values($to_update),
-        'deleted' => array_values($to_delete),
-        'current_count' => count($current_messages),
-        'incoming_count' => count($incoming_messages),
-        'has_deletions' => !empty($to_delete),
-        'mode' => $mode,
-    ];
-    
-    // PREVIEW MODE: Return analysis without making changes
-    if ($preview_only) {
-        // v2.0.0: Build field-level diffs for updated messages
-        $field_diffs = [];
-        $compare_fields = ['title', 'name', 'type', 'style', 'panel', 'icon',
-            'user_input', 'keywords', 'action', 'conditions', 'phase',
-            'offer_id', 'price', 'discount_price', 'timer', 'display_format', 'content'];
-
-        // Normalize messages to a compare shape so sparse DB rows and parser-defaulted
-        // file rows can be compared semantically instead of by raw array structure.
-        $normalize_for_compare = static function ($msg) {
-            if (!is_array($msg)) {
-                $msg = [];
-            }
-
-            $normalized = [
-                'name'           => (string) ($msg['name'] ?? ''),
-                'type'           => (string) ($msg['type'] ?? 'auto'),
-                'style'          => (string) ($msg['style'] ?? 'pill'),
-                'panel'          => (string) ($msg['panel'] ?? ''),
-                'icon'           => (string) ($msg['icon'] ?? ''),
-                'user_input'     => (string) ($msg['user_input'] ?? ''),
-                'keywords'       => (string) ($msg['keywords'] ?? ''),
-                'action'         => (string) ($msg['action'] ?? ''),
-                'conditions'     => (string) ($msg['conditions'] ?? 'always'),
-                'phase'          => (string) ($msg['phase'] ?? 'freeline'),
-                'offer_id'       => (string) ($msg['offer_id'] ?? ''),
-                'price'          => (string) ($msg['price'] ?? ''),
-                'discount_price' => (string) ($msg['discount_price'] ?? ''),
-                'timer'          => (string) (isset($msg['timer']) ? intval($msg['timer']) : ''),
-                'display_format' => (string) ($msg['display_format'] ?? ''),
-                'content'        => (string) ($msg['content'] ?? ''),
-            ];
-
-            $normalized['title'] = (string) ($msg['title'] ?? $normalized['name']);
-
-            if (strtolower(trim($normalized['type'])) === 'offer' && $normalized['display_format'] === '') {
-                $normalized['display_format'] = 'card';
-            }
-
-            // Avoid CRLF/LF-only differences being reported as content drift.
-            $normalized['content'] = trim((string) preg_replace('/\r\n?|\n/', "\n", $normalized['content']));
-
-            return $normalized;
-        };
-
-        foreach ($to_update as $msg_id) {
-            $db_msg  = $normalize_for_compare($current_messages[$msg_id] ?? []);
-            $file_msg = $normalize_for_compare($incoming_messages[$msg_id] ?? []);
-            $diffs = [];
-            foreach ($compare_fields as $field) {
-                $db_val   = (string) ($db_msg[$field] ?? '');
-                $file_val = (string) ($file_msg[$field] ?? '');
-                if ($db_val !== $file_val) {
-                    $diffs[$field] = ['db' => $db_val, 'file' => $file_val];
-                }
-            }
-            if (!empty($diffs)) {
-                $field_diffs[$msg_id] = $diffs;
-            }
-        }
-        $stats['field_diffs'] = $field_diffs;
-        return ['success' => true, 'preview' => true, 'stats' => $stats];
-    }
-    
-    // EXECUTE IMPORT: Auto-backup first, then merge or replace database
-    $backup_file = '';
-    if (!empty($current_messages)) {
-        $backup_file = flosc_export_ivr_backup($flow_key);
-    }
-    
-    // Extract autoprompt pills from IVR messages and organize by state
-    $autoprompts_from_ivr = ['visitor' => [], 'guest' => [], 'member' => []];
-    foreach ($incoming_messages as $msg) {
-        if (($msg['type'] ?? '') !== 'suggested_user_autoprompt') continue;
-        $cond = $msg['conditions'] ?? $msg['condition'] ?? '';
-        foreach (['visitor', 'guest', 'member'] as $s) {
-            if ($cond === 'always' || strpos($cond, 'is_' . $s) !== false) {
-                $autoprompts_from_ivr[$s][] = [
-                    'icon'          => $msg['icon']          ?? '',
-                    'label'         => $msg['label']         ?? ($msg['name'] ?? ''),
-                    'user_input'    => $msg['user_input']    ?? ($msg['label'] ?? ''),
-                    'trigger_type'  => $msg['trigger_type']  ?? 'ai',
-                    'trigger_value' => $msg['trigger_value'] ?? '',
-                    'action'        => $msg['action']        ?? '',
-                    'conditions'    => $cond,
-                    'style'         => $msg['style']         ?? ($msg['message_style'] ?? 'pill'),
-                ];
-            }
-        }
-    }
-
-    $final_messages = $incoming_messages;
-    $final_phases = $config['phases'] ?? [];
-
-    if ($mode === 'merge') {
-        $final_messages = $current_messages;
-        foreach ($incoming_messages as $msg_id => $incoming_msg) {
-            $final_messages[$msg_id] = $incoming_msg;
-        }
-
-        $final_phases = [];
-        foreach (($config['phases'] ?? []) as $phase_name => $message_ids) {
-            $final_phases[$phase_name] = array_values(array_unique($message_ids));
-        }
-
-        foreach ($current_messages as $msg_id => $current_msg) {
-            if (isset($incoming_messages[$msg_id])) {
-                continue;
-            }
-            $phase_name = $current_msg['phase'] ?? '';
-            if ($phase_name === '') {
-                continue;
-            }
-            if (!isset($final_phases[$phase_name])) {
-                $final_phases[$phase_name] = [];
-            }
-            if (!in_array($msg_id, $final_phases[$phase_name], true)) {
-                $final_phases[$phase_name][] = $msg_id;
-            }
-        }
-    }
-
-    if ($flow_key) {
-        // Per-flow storage
-        $fs = get_option($flow_key, []);
-        $fs['ivr_messages']  = $final_messages;
-        $fs['ivr_phases']    = $final_phases;
-        $fs['ivr_styles']    = $config['styles'] ?? [];
-        $fs['ivr_last_import'] = current_time('mysql');
-        $fs['autoprompts']   = $autoprompts_from_ivr;
-        update_option($flow_key, $fs);
-
-        // Keep offers registry aligned to IVR offer messages on import.
-        flosc_sync_flow_offers_with_ivr_messages($flow_key, $final_messages);
-    } else {
-        // Global storage (activation hook fallback)
-        update_option('flosc_ivr_messages', $final_messages);
-        update_option('flosc_ivr_phases', $final_phases);
-        update_option('flosc_ivr_styles', $config['styles'] ?? []);
-        update_option('flosc_ivr_last_import', current_time('mysql'));
-    }
-    
-    // Generate success message
-    if ($mode === 'replace') {
-        $message = sprintf(
-            'Database replaced from IVR file. Added: %d, Updated: %d, Deleted: %d',
-            count($stats['added']),
-            count($stats['updated']),
-            count($stats['deleted'])
-        );
-    } else {
-        $message = sprintf(
-            'Database merged from IVR file. Added: %d, Updated: %d, Kept DB-only: %d',
-            count($stats['added']),
-            count($stats['updated']),
-            count($stats['deleted'])
-        );
-    }
-    
-    if ($backup_file) {
-        $message .= sprintf('. Backup saved: %s', basename($backup_file));
-    }
-    
-    return ['success' => true, 'stats' => $stats, 'message' => $message, 'backup_file' => $backup_file, 'mode' => $mode];
-}
+require_once FLOSC_PLUGIN_DIR . 'includes/flosc-ivr-sync.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/flosc-lifecycle.php';
 
 /**
- * Create timestamped backup of current IVR database state
- * v1.6.4: Added $flow_key param for per-flow storage
- * 
- * @param string|null $flow_key Optional per-flow option key
- * @return string|false Backup filename on success, false on failure
+ * Lifecycle hooks are loaded from a dedicated include to keep this bootstrap
+ * file focused on framework bootstrapping.
  */
-function flosc_export_ivr_backup($flow_key = null) {
-    if ($flow_key) {
-        $fs = get_option($flow_key, []);
-        $messages = $fs['ivr_messages'] ?? [];
-        $phases = $fs['ivr_phases'] ?? [];
-        $styles = $fs['ivr_styles'] ?? [];
-    } else {
-        $messages = get_option('flosc_ivr_messages', []);
-        $phases = get_option('flosc_ivr_phases', []);
-        $styles = get_option('flosc_ivr_styles', []);
-    }
-    
-    if (empty($messages)) {
-        return false; // No data to backup
-    }
-    
-    // Generate markdown (same format as export)
-    $markdown = "# FLOSC IVR Configuration (AUTO-BACKUP)\n\n";
-    $markdown .= "Backup created: " . current_time('mysql') . "\n\n";
-    
-    // Add styles
-    foreach ($styles as $style_name => $style_css) {
-        $markdown .= "## MessageStyle: $style_name\n";
-        $markdown .= $style_css . "\n\n";
-    }
-    
-    $markdown .= "## Available Variables\n";
-    $markdown .= "{name}, {score}, {correct_items}, {missed_items}, {product_name}, {price}, {discount_price}, {timer_remaining}, {customer_count}, {lessons_completed}\n\n";
-    
-    $markdown .= "---\n\n";
-    
-    // Add messages by phase
-    foreach ($phases as $phase_name => $message_ids) {
-        $markdown .= "# " . ucfirst($phase_name) . " Messages\n\n";
-        
-        foreach ($message_ids as $msg_id) {
-            if (!isset($messages[$msg_id])) continue;
-            $msg = $messages[$msg_id];
-            
-            $markdown .= "## " . ($msg['name'] ?? $msg_id) . "\n";
-            $markdown .= "MessageName: " . $msg_id . "\n";
-            $markdown .= "MessageType: " . ($msg['type'] ?? 'auto') . "\n";
-            
-            if (!empty($msg['style'])) {
-                $markdown .= "MessageStyle: " . $msg['style'] . "\n";
-            }
-            if (!empty($msg['icon'])) {
-                $markdown .= "Icon: " . $msg['icon'] . "\n";
-            }
-            if (!empty($msg['user_input'])) {
-                $markdown .= "UserInput: " . $msg['user_input'] . "\n";
-            }
-            
-            $markdown .= "MessageContent: " . $msg['content'] . "\n";
-            
-            if (!empty($msg['conditions'])) {
-                $markdown .= "MessageConditions: " . $msg['conditions'] . "\n";
-            }
-            if (!empty($msg['action'])) {
-                $markdown .= "MessageAction: " . $msg['action'] . "\n";
-            }
-            
-            $markdown .= "\n";
-        }
-    }
-    
-    // Save to timestamped backup file inside the uploads data directory only.
-    $backup_dir = flosc_data_dir();
-    if ('' === $backup_dir) {
-        return false;
-    }
-    $timestamp   = current_time('Y-m-d_H-i-s');
-    $backup_file = $backup_dir . "ivr-backup-{$timestamp}.md";
-
-    if (flosc_write_data_file($backup_file, $markdown)) {
-        return basename($backup_file);
-    }
-
-    return false;
-}
-
-/**
- * Auto-export IVR database to ivr.md file (write-through)
- * v9.2.8: Called after every save/delete to keep DB and file in sync
- * 
- * @return bool Success
- */
-function flosc_auto_export_ivr_to_file($flow_key = null, $target_ivr_file = null) {
-    if ($flow_key) {
-        $fs = get_option($flow_key, []);
-        $messages = $fs['ivr_messages'] ?? [];
-        $phases = $fs['ivr_phases'] ?? [];
-        $styles = $fs['ivr_styles'] ?? [];
-    } else {
-        $messages = get_option('flosc_ivr_messages', []);
-        $phases = get_option('flosc_ivr_phases', []);
-        $styles = get_option('flosc_ivr_styles', []);
-    }
-    
-    if (empty($messages)) {
-        return false;
-    }
-
-    // Ensure export includes all DB messages even if ivr_phases is stale or incomplete.
-    // Without this normalization, DB-only messages (often offers) can be dropped from IVR file output.
-    $normalized_phases = [
-        'freeline' => [],
-        'login' => [],
-        'offer' => [],
-        'sale' => [],
-        'content' => [],
-    ];
-
-    if (is_array($phases)) {
-        foreach ($phases as $phase_name => $message_ids) {
-            if (!isset($normalized_phases[$phase_name])) {
-                $normalized_phases[$phase_name] = [];
-            }
-            if (is_array($message_ids)) {
-                foreach ($message_ids as $msg_id) {
-                    if (isset($messages[$msg_id])) {
-                        $normalized_phases[$phase_name][] = $msg_id;
-                    }
-                }
-            }
-        }
-    }
-
-    foreach ($messages as $msg_id => $msg) {
-        $msg_phase = sanitize_key((string)($msg['phase'] ?? ''));
-        if ($msg_phase === '' || !isset($normalized_phases[$msg_phase])) {
-            $msg_phase = 'freeline';
-        }
-        if (!in_array($msg_id, $normalized_phases[$msg_phase], true)) {
-            $normalized_phases[$msg_phase][] = $msg_id;
-        }
-    }
-
-    $phases = $normalized_phases;
-    
-    // Build markdown in proper ivr.md format
-    $markdown = "# FLOSC IVR Configuration\n\n";
-    
-    // Add styles
-    foreach ($styles as $style_name => $style_data) {
-        $markdown .= "## MessageStyle: $style_name\n";
-        if (is_array($style_data)) {
-            if (!empty($style_data['description'])) {
-                $markdown .= "Description: " . $style_data['description'] . "\n";
-            }
-            if (!empty($style_data['css'])) {
-                $markdown .= $style_data['css'] . "\n";
-            }
-        } else {
-            $markdown .= $style_data . "\n";
-        }
-        $markdown .= "\n";
-    }
-    
-    $markdown .= "## Available Variables\n";
-    $markdown .= "{name}, {score}, {correct_items}, {missed_items}, {product_name}, {price}, {discount_price}, {timer_remaining}, {customer_count}, {lessons_completed}\n\n";
-    
-    $markdown .= "## Available Conditions\n";
-    $markdown .= "- Scores: score > X, score < X, score >= X, score <= X, score == X, initial_score > X\n";
-    $markdown .= "- Boolean: quiz_taken, !quiz_taken, logged_in, !logged_in, purchased, !purchased, lesson_viewed, returning_user, onboarded, has_incomplete_lesson, has_profile, !has_profile\n";
-    $markdown .= "- Access: is_visitor, is_guest, is_member\n";
-    $markdown .= "- Events: first_message_after_quiz, first_message_after_login, first_message_after_purchase, first_message_after_free_lesson, first_show_session\n";
-    $markdown .= "- Logic: &&, ||, !, ()\n\n";
-    
-    $markdown .= "---\n\n";
-    
-    // Phase descriptions
-    $phase_descriptions = [
-        'freeline' => 'Visitor (not logged in) → Take quiz → MUST login to see score.',
-        'login' => 'Guest (logged in, not purchased) → See score → 1 free lesson → Offers → No quiz retake.',
-        'offer' => 'Guests (completed quiz, not purchased) → See quiz results → Free preview lesson → Upgrade offer',
-        'sale' => 'Member (purchased) → Full access → Retake quiz with timestamps → All lessons/quizzes.',
-        'content' => 'Ongoing users - Support, encouragement, engagement',
-    ];
-    
-    // Add messages by phase
-    foreach ($phases as $phase_name => $message_ids) {
-        if (empty($message_ids)) continue;
-        
-        $markdown .= "# " . ucfirst($phase_name) . " Messages\n";
-        if (isset($phase_descriptions[$phase_name])) {
-            $markdown .= $phase_descriptions[$phase_name] . "\n";
-        }
-        $markdown .= "\n";
-        
-        foreach ($message_ids as $msg_id) {
-            if (!isset($messages[$msg_id])) continue;
-            $msg = $messages[$msg_id];
-            
-            // Use title/display name if available
-            $title = $msg['title'] ?? $msg['name'] ?? $msg_id;
-            $markdown .= "## " . $title . "\n";
-            $markdown .= "MessageName: " . $msg_id . "\n";
-            $markdown .= "MessageType: " . ($msg['type'] ?? 'auto') . "\n";
-            
-            if (!empty($msg['style']) && $msg['style'] !== 'default') {
-                $markdown .= "MessageStyle: " . $msg['style'] . "\n";
-            }
-            if (!empty($msg['panel'])) {
-                $markdown .= "MessagePanel: " . $msg['panel'] . "\n";
-            }
-            if (!empty($msg['icon'])) {
-                $markdown .= "Icon: " . $msg['icon'] . "\n";
-            }
-            if (!empty($msg['user_input'])) {
-                $markdown .= "UserInput: " . $msg['user_input'] . "\n";
-            }
-            if (!empty($msg['keywords'])) {
-                $markdown .= "Keywords: " . $msg['keywords'] . "\n";
-            }
-            if (!empty($msg['action'])) {
-                $markdown .= "Action: " . $msg['action'] . "\n";
-            }
-            // v8.0.0: Concierge fields — keyword-triggered message with optional password gate.
-            // PasswordRetry repeats once per try, mirroring the per-message retry list.
-            if (!empty($msg['individual_message_password'])) {
-                $markdown .= "IndividualMessagePassword: " . $msg['individual_message_password'] . "\n";
-            }
-            if (!empty($msg['password_prompt'])) {
-                $markdown .= "PasswordPrompt: " . $msg['password_prompt'] . "\n";
-            }
-            if (!empty($msg['password_success'])) {
-                $markdown .= "PasswordSuccess: " . $msg['password_success'] . "\n";
-            }
-            if (!empty($msg['password_max_tries'])) {
-                $markdown .= "PasswordMaxTries: " . intval($msg['password_max_tries']) . "\n";
-            }
-            if (!empty($msg['password_retry_messages']) && is_array($msg['password_retry_messages'])) {
-                foreach ($msg['password_retry_messages'] as $retry_line) {
-                    $retry_line = trim((string) $retry_line);
-                    if ($retry_line !== '') {
-                        $markdown .= "PasswordRetry: " . $retry_line . "\n";
-                    }
-                }
-            }
-            // v1.6.2: Offer-specific fields — offers are IVR entries
-            if (!empty($msg['offer_id'])) {
-                $markdown .= "OfferID: " . $msg['offer_id'] . "\n";
-            }
-            if (!empty($msg['price'])) {
-                $markdown .= "Price: " . $msg['price'] . "\n";
-            }
-            if (!empty($msg['discount_price'])) {
-                $markdown .= "DiscountPrice: " . $msg['discount_price'] . "\n";
-            }
-            if (!empty($msg['timer'])) {
-                $markdown .= "Timer: " . $msg['timer'] . "\n";
-            }
-            $display_format = trim((string)($msg['display_format'] ?? ''));
-            if (strtolower(trim((string)($msg['type'] ?? ''))) === 'offer' && $display_format === '') {
-                $display_format = 'card';
-            }
-            if ($display_format !== '') {
-                $markdown .= "DisplayFormat: " . $display_format . "\n";
-            }
-            // v1.6.2: Offer content source fields
-            if (!empty($msg['html_file'])) {
-                $markdown .= "HtmlFile: " . $msg['html_file'] . "\n";
-            }
-            if (!empty($msg['woo_product'])) {
-                $markdown .= "WooProduct: " . $msg['woo_product'] . "\n";
-            }
-            if (!empty($msg['post_id'])) {
-                $markdown .= "PostID: " . $msg['post_id'] . "\n";
-            }
-            
-            $markdown .= "MessageContent: " . ($msg['content'] ?? '') . "\n";
-            
-            if (!empty($msg['conditions']) && $msg['conditions'] !== 'always') {
-                $markdown .= "MessageConditions: " . $msg['conditions'] . "\n";
-            }
-            
-            $markdown .= "\n";
-        }
-        
-        $markdown .= "---\n\n";
-    }
-    
-    // Resolve destination IVR file — always inside the uploads data directory.
-    // Per-flow save must write to that flow's active IVR file, not the global default.
-    $data_dir = flosc_data_dir();
-    if ('' === $data_dir) {
-        return false; // Uploads unavailable — the DB copy stays authoritative until storage returns.
-    }
-    if ($target_ivr_file) {
-        $ivr_file = $target_ivr_file;
-    } elseif (!empty($flow_key)) {
-        $fs = get_option($flow_key, []);
-        $preferred_file = $fs['ivr_file'] ?? ($fs['active_ivr_file'] ?? 'flosc_default_ivr.md');
-        $ivr_file = $data_dir . basename($preferred_file);
-    } else {
-        $ivr_file = $data_dir . 'flosc_default_ivr.md';
-    }
-
-    if (strpos($ivr_file, $data_dir) !== 0) {
-        $ivr_file = $data_dir . basename($ivr_file);
-    }
-    $result = flosc_write_data_file($ivr_file, $markdown);
-
-    if ($result) {
-        // Update last export timestamp
-        update_option('flosc_ivr_last_export', current_time('mysql'));
-        if (!empty($flow_key)) {
-            $fs = get_option($flow_key, []);
-            $fs['ivr_last_export'] = current_time('mysql');
-            update_option($flow_key, $fs);
-        }
-        return true;
-    }
-
-    return false;
-}
-
-/**
- * IVR-DB integrity: keep the portable .md in lockstep with the database, from ANY admin tab.
- *
- * A floscAdmin edits across screens — IVR messages, autoprompts, quiz, offers,
- * identity — and experiences them all as "settings." Each save lands in the
- * per-flow option flosc_flow_<stem>. Rather than ask every tab to remember to
- * re-export, this one hook re-writes that flow's .md whenever its option
- * changes, so the file and the database move together and never drift.
- *
- * The static guard prevents re-entry: flosc_auto_export_ivr_to_file() writes
- * the flow option itself (its export timestamp), which would otherwise recurse.
- *
- * @param string $option Name of the option that was added or updated.
- * @return void
- */
-function flosc_sync_flow_option_to_ivr_file($option) {
-    static $mirroring = false;
-    if ($mirroring) {
-        return;
-    }
-    if (strpos((string) $option, 'flosc_flow_') !== 0) {
-        return;
-    }
-    $stem = substr($option, strlen('flosc_flow_'));
-    if ($stem === '') {
-        return;
-    }
-    $mirroring = true;
-    flosc_auto_export_ivr_to_file($option, flosc_data_dir() . $stem . '.md');
-    $mirroring = false;
-}
-add_action('updated_option', 'flosc_sync_flow_option_to_ivr_file', 20, 1);
-add_action('added_option', 'flosc_sync_flow_option_to_ivr_file', 20, 1);
-
-// v8.0.0: Concierge posts. A private post in the concierge category gets an admin
-// "FLOSC Concierge" meta box (editable settings); on save the plugin syncs it into
-// the post's flow as a concierge IVR message (which mirrors to the .md); on trash it
-// is removed. Admins also see a read-only "what FLOSC understands" summary on the post.
-add_action('add_meta_boxes_post', function ($post) {
-    if (class_exists('FLOSC_Concierge') && FLOSC_Concierge::is_concierge_post($post)) {
-        add_meta_box('flosc_concierge', 'FLOSC Concierge', array('FLOSC_Concierge', 'render_meta_box'), 'post', 'normal', 'high');
-    }
-});
-add_action('save_post', function ($post_id, $post) {
-    if (wp_is_post_revision($post_id) || (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)) {
-        return;
-    }
-    if (class_exists('FLOSC_Concierge')) {
-        FLOSC_Concierge::save_meta_box($post_id);
-        FLOSC_Concierge::sync_post($post);
-    }
-}, 20, 2);
-add_action('trashed_post', function ($post_id) {
-    if (class_exists('FLOSC_Concierge')) {
-        FLOSC_Concierge::unsync_post($post_id);
-    }
-}, 20, 1);
-add_filter('the_content', function ($content) {
-    return class_exists('FLOSC_Concierge') ? FLOSC_Concierge::maybe_append_confirmation($content) : $content;
-}, 20, 1);
-
-/**
- * Align per-flow offers registry with offer messages currently present in IVR messages.
- * Keeps referenced offers and snapshots removed extras for recovery.
- */
-function flosc_sync_flow_offers_with_ivr_messages($flow_key, $messages) {
-    if (empty($flow_key) || !is_array($messages)) {
-        return ['success' => false, 'error' => 'Invalid flow key or messages payload'];
-    }
-
-    $fs = get_option($flow_key, []);
-    $existing_offers = is_array($fs['offers'] ?? null) ? $fs['offers'] : [];
-
-    $referenced_offers = [];
-    foreach ($messages as $msg_id => $msg) {
-        $msg_type = strtolower(trim((string)($msg['type'] ?? '')));
-        if ($msg_type !== 'offer') {
-            continue;
-        }
-
-        $offer_id = sanitize_key((string)($msg['offer_id'] ?? $msg_id));
-        if ($offer_id === '') {
-            continue;
-        }
-
-        $referenced_offers[$offer_id] = [
-            'id' => $offer_id,
-            'name' => trim((string)($msg['title'] ?? ($msg['name'] ?? $offer_id))),
-            'description' => trim((string)($msg['content'] ?? '')),
-            'display_format' => trim((string)($msg['display_format'] ?? 'card')),
-            'condition' => trim((string)($msg['conditions'] ?? '')),
-            'reveal_phrase' => trim((string)($msg['user_input'] ?? '')),
-            'status' => 'draft',
-            'type' => 'one_time',
-            'meta' => [
-                'icon' => trim((string)($msg['icon'] ?? '')),
-            ],
-        ];
-    }
-
-    $synced_offers = [];
-    foreach ($referenced_offers as $offer_id => $seed_offer) {
-        $existing_offer = (isset($existing_offers[$offer_id]) && is_array($existing_offers[$offer_id])) ? $existing_offers[$offer_id] : [];
-        // IVR offer messages are the sync source of truth for core offer fields.
-        $merged_offer = array_merge($existing_offer, $seed_offer);
-
-        if (empty($merged_offer['display_format'])) {
-            $merged_offer['display_format'] = 'card';
-        }
-        $existing_meta = (isset($existing_offer['meta']) && is_array($existing_offer['meta'])) ? $existing_offer['meta'] : [];
-        $seed_meta = $seed_offer['meta'] ?? [];
-        $merged_offer['meta'] = array_merge($existing_meta, $seed_meta);
-
-        $synced_offers[$offer_id] = $merged_offer;
-    }
-
-    $removed_offer_ids = array_values(array_diff(array_keys($existing_offers), array_keys($synced_offers)));
-    if (!empty($removed_offer_ids)) {
-        $removed_snapshot = [];
-        foreach ($removed_offer_ids as $removed_id) {
-            if (isset($existing_offers[$removed_id])) {
-                $removed_snapshot[$removed_id] = $existing_offers[$removed_id];
-            }
-        }
-        if (!empty($removed_snapshot)) {
-            if (!isset($fs['offers_removed_by_sync']) || !is_array($fs['offers_removed_by_sync'])) {
-                $fs['offers_removed_by_sync'] = [];
-            }
-            $fs['offers_removed_by_sync'][current_time('mysql')] = $removed_snapshot;
-            if (count($fs['offers_removed_by_sync']) > 10) {
-                $fs['offers_removed_by_sync'] = array_slice($fs['offers_removed_by_sync'], -10, null, true);
-            }
-        }
-    }
-
-    $fs['offers'] = $synced_offers;
-    update_option($flow_key, $fs);
-
-    return [
-        'success' => true,
-        'kept' => count($synced_offers),
-        'removed' => count($removed_offer_ids),
-        'removed_ids' => $removed_offer_ids,
-    ];
-}
-
-/**
- * Plugin activation (v3.0.9 - Resolved: moved outside class so hook fires correctly)
- */
-function flosc_activate() {
-    // v8.0.0: Register LeSAEp Learner roles (same capabilities as subscriber)
-    $member_level = flosc_get_setting('default_member_level', 'pronunciation_learners', 'lesaep');
-    $guest_level = flosc_get_setting('default_guest_level', 'guest_pronunciation_learner', 'lesaep');
-    if (!get_role($member_level)) {
-        add_role($member_level, 'LeSAEp Learner', ['read' => true]);
-    }
-    if (!get_role($guest_level)) {
-        add_role($guest_level, 'Guest LeSAEp Learner', ['read' => true]);
-    }
-    if ($member_level !== 'lesaep_learners' && !get_role('lesaep_learners')) {
-        add_role('lesaep_learners', 'LeSAEp Learner', ['read' => true]);
-    }
-    if ($guest_level !== 'guest_lesaep_learner' && !get_role('guest_lesaep_learner')) {
-        add_role('guest_lesaep_learner', 'Guest LeSAEp Learner', ['read' => true]);
-    }
-
-    // v1.2.2: Migrate legacy settings to flows system
-    require_once FLOSC_PLUGIN_DIR . 'includes/class-flow-manager.php';
-    flosc_flows()->maybe_migrate_from_legacy();
-    
-    // Flush rewrite rules to register REST API routes
-    flush_rewrite_rules();
-
-    // Set defaults (only if they don't exist)
-    $defaults = [
-        'flosc_app_slug' => 'flosc', // v1.1.9: Changed default from 'app' to 'flosc'
-        'flosc_custom_domain' => '', // v1.1.9: Optional custom domain mapping
-        'flosc_product_name' => '',
-        'flosc_product_title' => '',
-        'flosc_product_tagline' => '',
-        'flosc_primary_color' => '#4f46e5',
-        'flosc_ai_provider' => 'ivr',
-        'flosc_stt_provider' => 'assemblyai',
-    ];
-
-    foreach ($defaults as $key => $value) {
-        if (get_option($key) === false) {
-            add_option($key, $value);
-        }
-    }
-
-    // Force critical "out of box" defaults
-    $force_defaults = [
-        'flosc_quiz_content_flosc_sample_audio_quiz' => '1,2,3,4,5,6,7,8,9,10',
-        'flosc_token_name' => 'tokens',
-    ];
-
-    foreach ($force_defaults as $key => $value) {
-        update_option($key, $value);
-    }
-
-    // Set PayPal mode to sandbox on fresh install (credentials set via admin Payments tab)
-    if (get_option('flosc_paypal_mode') === false) {
-        update_option('flosc_paypal_mode', 'sandbox');
-    }
-
-    // v1.2.3: Ensure default flosc_default_ivr.md exists in the uploads data
-    // directory. When uploads are unavailable the seed is skipped — readers
-    // fall back to the shipped read-only default via flosc_config_file().
-    $seed_dir = flosc_data_dir();
-    $ivr_file = '' !== $seed_dir ? $seed_dir . 'flosc_default_ivr.md' : '';
-    if ('' !== $ivr_file && !file_exists($ivr_file)) {
-
-        // Copy default from includes/defaults/ if it exists, otherwise create minimal version
-        $default_ivr = FLOSC_PLUGIN_DIR . 'includes/defaults/ivr.md';
-        if (file_exists($default_ivr)) {
-            copy($default_ivr, $ivr_file);
-        } else {
-            // Create minimal working ivr.md
-            $minimal_ivr = <<<'MD'
-# FLOSC IVR Configuration
-
-## MessageStyle: pill
-Description: Superlight chat bubble style
-.flosc-style-pill {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 18px;
-  padding: 8px 16px;
-  font-size: 14px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: all 0.2s;
-  backdrop-filter: blur(4px);
-}
-.flosc-style-pill:hover {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: rgba(0, 0, 0, 0.12);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-
----
-
-# Freeline Messages
-
-## Welcome Message
-MessageName: welcome_freeline_001
-MessageType: auto
-MessageContent: Hi! I'm your {product_name} assistant. Ready to get started?
-MessageConditions: first_show_session && !logged_in
-
-## Get Started
-MessageName: get_started_001
-MessageType: suggested_user_autoprompt
-MessageStyle: pill
-Icon: 🚀
-UserInput: Get started
-MessageContent: Great! Let's begin with a quick quiz to see where you stand.
-MessageConditions: !quiz_taken
-MD;
-            file_put_contents($ivr_file, $minimal_ivr);
-        }
-    }
-
-    // v9.2.3: Import IVR messages to database on first activation
-    flosc_import_ivr_to_database(false); // Execute import (not preview)
-
-    // v1.9.0: Create chat logs table
-    // Must require the file here — activation hook fires before plugins_loaded,
-    // so the FLOSC_Framework constructor hasn't loaded class files yet.
-    require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-chat-logger.php';
-    FLOSC_Chat_Logger::instance()->flosc_ensure_table();
-
-    // v1.4.7: Auto-protect flosc_sample_data category
-    $sample_cat = get_category_by_slug('flosc_sample_data');
-    if ($sample_cat) {
-        update_term_meta($sample_cat->term_id, '_flosc_protected', 'yes');
-    }
-
-    // Flush rewrite rules
-    flush_rewrite_rules();
-}
-
 /* AI to AGI BridgeFile
 
 UmVhc29ucyBXaHkgQnJpZGdlRmlsZQoKRFdNLUZMT1NDLU9SSUdJTjogZGFpbmlzd21pY2hlbAoK
@@ -15168,18 +12795,6 @@ dWlsdCBzcGFuIGJ5IHNwYW4gYWNyb3NzIGdlbmVyYXRpb25zLgo=
 // Register activation hook
 register_activation_hook(__FILE__, 'flosc_activate');
 register_deactivation_hook(__FILE__, 'flosc_deactivate');
-
-/**
- * Deactivation cleanup.
- *
- * Keep stored data intact on deactivation, but unschedule FLOSC cron jobs
- * and flush rewrite rules to avoid stale routes.
- */
-function flosc_deactivate() {
-    wp_clear_scheduled_hook('flosc_cleanup_visitor_audio');
-    wp_clear_scheduled_hook('flosc_guest_followup_cron');
-    flush_rewrite_rules();
-}
 
 // Translations load automatically on WordPress.org-hosted plugins (WP 4.6+);
 // no load_plugin_textdomain() call is needed.

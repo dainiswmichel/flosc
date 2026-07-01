@@ -44,8 +44,8 @@ $flosc_lessons_docs_url = add_query_arg([
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-lessons';
 
-echo '<div style="margin:-8px 0 14px; text-align:right;">'
-   . '<a href="' . esc_url($flosc_lessons_docs_url) . '" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>'
+echo '<div class="flosc-docs-link-wrap">'
+    . '<a href="' . esc_url($flosc_lessons_docs_url) . '" class="flosc-docs-link">Docs</a>'
    . '</div>';
 
 // ─── Data for dropdowns ────────────────────────────────────────────
@@ -118,19 +118,19 @@ foreach ($flosc_lesson_groups as $flosc_group) {
 <h2>Lesson Groups</h2>
 <p>Map quizzes to lesson categories. Each row connects an optional quiz to a WordPress category containing lesson posts. Categories without a quiz serve as standalone lesson libraries.</p>
 
-<table class="widefat flosc-lesson-groups-table" style="max-width: 860px;">
+<table class="widefat flosc-lesson-groups-table flosc-table-max-860">
     <thead>
         <tr>
-            <th style="width: 40%;">Quiz <span style="color:#999; font-weight:normal;">(optional)</span></th>
-            <th style="width: 45%;">Category <span style="color:#999; font-weight:normal;">(required)</span></th>
-            <th style="width: 15%; text-align: center;">Actions</th>
+            <th class="flosc-col-quiz">Quiz <span class="flosc-note-optional">(optional)</span></th>
+            <th class="flosc-col-category">Category <span class="flosc-note-optional">(required)</span></th>
+            <th class="flosc-col-actions">Actions</th>
         </tr>
     </thead>
     <tbody id="flosc-lesson-groups-body">
         <?php foreach ($flosc_lesson_groups as $flosc_i => $flosc_group): ?>
         <tr class="flosc-lesson-group-row">
             <td>
-                <select name="lesson_group_quiz[]" class="regular-text" style="width: 100%;">
+                <select name="lesson_group_quiz[]" class="regular-text flosc-width-full">
                     <option value="">— No Quiz (Standalone) —</option>
                     <?php foreach ($flosc_enabled_quizzes as $flosc_eq): ?>
                         <option value="<?php echo esc_attr($flosc_eq); ?>" <?php selected($flosc_group['quiz_id'] ?? '', $flosc_eq); ?>>
@@ -140,7 +140,7 @@ foreach ($flosc_lesson_groups as $flosc_group) {
                 </select>
             </td>
             <td>
-                <select name="lesson_group_category[]" class="regular-text" style="width: 100%;">
+                <select name="lesson_group_category[]" class="regular-text flosc-width-full">
                     <option value="">— Select Category —</option>
                     <?php foreach ($flosc_categories as $cat): ?>
                         <option value="<?php echo esc_attr($cat->slug); ?>" <?php selected($flosc_group['category'] ?? '', $cat->slug); ?>>
@@ -149,23 +149,23 @@ foreach ($flosc_lesson_groups as $flosc_group) {
                     <?php endforeach; ?>
                 </select>
             </td>
-            <td style="text-align: center;">
+            <td class="flosc-text-center">
                 <button type="button" class="button flosc-remove-lesson-group" title="Remove this group">&times;</button>
             </td>
         </tr>
         <?php endforeach; ?>
     </tbody>
 </table>
-<p style="margin-top: 10px;">
+<p class="flosc-margin-top-10">
     <button type="button" class="button" id="flosc-add-lesson-group">+ Add Lesson Group</button>
 </p>
-<p class="description" style="margin-top: 6px;">
+<p class="description flosc-margin-top-6">
     Each lesson post should be tagged with quiz item numbers (e.g., "5", "phoneme-5").
     When a user misses an item, FLOSC delivers the matching lesson from the quiz's mapped category.
 </p>
 
 <!-- Content Protection (v3.0.0: per-lesson-group categories) -->
-<hr style="margin: 40px 0;">
+<hr class="flosc-section-divider">
 <h2>Content Protection</h2>
 
 <?php if (!empty($flosc_protected_categories)): ?>
@@ -179,19 +179,19 @@ foreach ($flosc_lesson_groups as $flosc_group) {
             ? '"' . ($flosc_available_levels[$flosc_req_level]['offer_name'] ?? '') . '"'
             : $flosc_req_level;
     ?>
-    <div class="flosc-protection-block" style="background: #f9f9f9; border: 1px solid #ddd; padding: 16px; border-radius: 6px; margin-bottom: 16px;">
-        <p style="margin-top: 0;">
+    <div class="flosc-protection-block">
+        <p class="flosc-protection-block__title">
             <strong>"<?php echo esc_html($flosc_cat_obj->name); ?>"</strong> (<?php echo esc_html($flosc_cat_obj->count); ?> posts)
             <?php if ($flosc_is_protected): ?>
-                <span style="color: #46b450;">— Protected</span>
+                <span class="flosc-text-success">— Protected</span>
                 <?php if ($flosc_req_level): ?>
-                    <span style="color: #666;"> &mdash; required level: <code><?php echo esc_html($flosc_req_level); ?></code> (<?php echo esc_html($flosc_req_level_label); ?>)</span>
+                    <span class="flosc-text-muted"> &mdash; required level: <code><?php echo esc_html($flosc_req_level); ?></code> (<?php echo esc_html($flosc_req_level_label); ?>)</span>
                 <?php endif; ?>
             <?php else: ?>
-                <span style="color: #dba617;">— Not yet protected</span>
+                <span class="flosc-text-warning">— Not yet protected</span>
             <?php endif; ?>
         </p>
-        <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="flosc-flex-row-gap-8">
             <?php if (!empty($flosc_available_levels)): ?>
                 <select class="flosc-protection-level regular-text" data-cat-id="<?php echo esc_attr($flosc_cat_obj->term_id); ?>">
                     <option value="">— Select Required Level —</option>
@@ -218,7 +218,7 @@ foreach ($flosc_lesson_groups as $flosc_group) {
             <?php else: ?>
                 <button type="button" class="button button-primary flosc-update-protection"
                         data-cat-id="<?php echo esc_attr($flosc_cat_obj->term_id); ?>">Save</button>
-                <button type="button" class="button flosc-remove-protection" style="color: #b32d2e;"
+                <button type="button" class="button flosc-remove-protection flosc-button-danger"
                         data-cat-id="<?php echo esc_attr($flosc_cat_obj->term_id); ?>">Remove Protection</button>
             <?php endif; ?>
         </div>
@@ -226,13 +226,13 @@ foreach ($flosc_lesson_groups as $flosc_group) {
     <?php endforeach; ?>
 
 <?php else: ?>
-    <p style="color: #667; font-style: italic;">Configure at least one Lesson Group with a category above and save to see content protection options.</p>
+    <p class="flosc-text-muted-italic">Configure at least one Lesson Group with a category above and save to see content protection options.</p>
 <?php endif; ?>
 
     <!-- Per-Post Protection Override (v1.8.2, v3.0.0: updated for multi-category) -->
     <h3>Per-Post Protection Overrides</h3>
     <p>Individual posts can selectively disable content protection. Edit any lesson post to see the FLOSC Content Access meta box with these options:</p>
-    <ul style="list-style: disc; padding-left: 20px; color: #50575e;">
+    <ul class="flosc-list-disc-muted">
         <li><strong>Protected (default)</strong> — Full FLOSC protection. Non-members see nothing.</li>
         <li><strong>Show Title &amp; Excerpt</strong> — Non-members see the title and excerpt only.</li>
         <li><strong>Show Title &amp; Content through Read More</strong> — Non-members see content before the <code>&lt;!--more--&gt;</code> tag.</li>
@@ -240,16 +240,16 @@ foreach ($flosc_lesson_groups as $flosc_group) {
     </ul>
 
     <!-- How It Works (v3.0.0: updated for lesson_groups) -->
-    <div style="background: #f0f7ff; border: 1px solid #c3dafe; padding: 20px; border-radius: 8px; margin: 20px 0;">
-        <h3 style="margin-top: 0; color: #1e40af;">How Content Protection Works</h3>
-        <p style="margin-bottom: 8px; color: #374151;">
+    <div class="flosc-lessons-info-box">
+        <h3 class="flosc-lessons-info-box__title">How Content Protection Works</h3>
+        <p class="flosc-lessons-info-box__lead">
             <strong>Flow:</strong> User takes quiz → missed items map to lessons in the quiz's category →
             first lesson is free → purchase offer → gets <code>_flosc_memberlevel_{level}</code> → all lessons unlock.
         </p>
         <?php if (!empty($flosc_available_levels) && !empty($flosc_protected_categories)): ?>
-        <table class="widefat" style="max-width: 700px;">
+        <table class="widefat flosc-table-max-700">
             <thead>
-                <tr style="background: #e0ecff;">
+            <tr class="flosc-lessons-table-head">
                     <th>Category</th>
                     <th>Required Level</th>
                     <th>Granted By Offer</th>
@@ -267,7 +267,7 @@ foreach ($flosc_lesson_groups as $flosc_group) {
                         <?php if ( $flosc_matching_level ) : ?>
                             <?php echo esc_html($flosc_matching_level['offer_name']); ?>
                         <?php else : ?>
-                            <em style="color:#999;">—</em>
+                            <em class="flosc-empty-dash">—</em>
                         <?php endif; ?>
                     </td>
                     <td><?php echo $flosc_matching_level ? esc_html($flosc_matching_level['price']) : esc_html('—'); ?></td>
@@ -303,9 +303,9 @@ jQuery(document).ready(function($) {
     // Add new row
     $('#flosc-add-lesson-group').on('click', function() {
         var row = '<tr class="flosc-lesson-group-row">'
-            + '<td><select name="lesson_group_quiz[]" class="regular-text" style="width:100%;">' + quizOptions + '</select></td>'
-            + '<td><select name="lesson_group_category[]" class="regular-text" style="width:100%;">' + catOptions + '</select></td>'
-            + '<td style="text-align:center;"><button type="button" class="button flosc-remove-lesson-group" title="Remove this group">&times;</button></td>'
+            + '<td><select name="lesson_group_quiz[]" class="regular-text flosc-width-full">' + quizOptions + '</select></td>'
+            + '<td><select name="lesson_group_category[]" class="regular-text flosc-width-full">' + catOptions + '</select></td>'
+            + '<td class="flosc-text-center"><button type="button" class="button flosc-remove-lesson-group" title="Remove this group">&times;</button></td>'
             + '</tr>';
         $('#flosc-lesson-groups-body').append(row);
     });
@@ -366,7 +366,7 @@ jQuery(document).ready(function($) {
 <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
 
 <h3>How Lesson Groups Work</h3>
-<div style="background: #f0f0f1; padding: 20px; border-radius: 4px; margin: 20px 0;">
+<div class="flosc-lessons-workflow-box">
     <ol>
         <li>Create a <strong>Lesson Group</strong> above: pick a quiz (optional) and a category (required)</li>
         <li>Create posts in that category, tagged with quiz item numbers:
@@ -382,7 +382,7 @@ jQuery(document).ready(function($) {
 </div>
 
 <!-- Guest Access & Free Lessons Configuration (v1.0.1) -->
-<hr style="margin: 40px 0;">
+<hr class="flosc-section-divider">
 <h2>Guest Access & Free Lessons</h2>
 <p>Configure how many free lessons guests receive after completing the quiz, and how long they have access.</p>
 
@@ -399,8 +399,8 @@ $flosc_free_lesson_guaranteed  = $flosc_flow_settings['free_lesson_guaranteed'] 
     <tr>
         <th scope="row">Free Lesson Selection</th>
         <td>
-            <p style="margin: 0 0 6px;"><strong>Tier-walk</strong> — IPA audio quiz</p>
-            <p class="description" style="margin: 0; line-height: 1.6;">
+            <p class="flosc-lessons-tierwalk-title"><strong>Tier-walk</strong> — IPA audio quiz</p>
+            <p class="description flosc-lessons-tierwalk-description">
                 Walk worst-to-best phoneme tiers. Skip a tier if only one phoneme sits there (protect it as upsell hook).<br>
                 Give a random lesson from the first tier that has multiple phonemes.<br>
                 If no such tier exists in the first two, give a random from Tier 3 regardless.<br>
@@ -409,7 +409,7 @@ $flosc_free_lesson_guaranteed  = $flosc_flow_settings['free_lesson_guaranteed'] 
         </td>
     </tr>
     <tr>
-        <th scope="row"><label for="flow_free_lesson_mode">Free Lesson Mode <span style="font-weight:normal;color:#999;">(non-IPA)</span></label></th>
+        <th scope="row"><label for="flow_free_lesson_mode">Free Lesson Mode <span class="flosc-note-optional">(non-IPA)</span></label></th>
         <td>
             <select name="flow_free_lesson_mode" id="flow_free_lesson_mode">
                 <option value="fixed" <?php selected($flosc_free_lesson_mode, 'fixed'); ?>>Fixed Number</option>
@@ -419,14 +419,14 @@ $flosc_free_lesson_guaranteed  = $flosc_flow_settings['free_lesson_guaranteed'] 
         </td>
     </tr>
     <tr id="flow_free_lesson_count_row">
-        <th scope="row"><label for="flow_free_lesson_count">Free Lesson Count <span style="font-weight:normal;color:#999;">(non-IPA)</span></label></th>
+        <th scope="row"><label for="flow_free_lesson_count">Free Lesson Count <span class="flosc-note-optional">(non-IPA)</span></label></th>
         <td>
             <input type="number" id="flow_free_lesson_count" name="flow_free_lesson_count" value="<?php echo esc_attr($flosc_free_lesson_count); ?>" min="1" max="50" class="small-text">
             <p class="description">Non-IPA quizzes only, Fixed Number mode. IPA audio quizzes use the tier-walk above.</p>
         </td>
     </tr>
     <tr id="flow_free_lesson_proportion_row">
-        <th scope="row"><label for="flow_free_lesson_proportion">Free Lesson Proportion <span style="font-weight:normal;color:#999;">(non-IPA)</span></label></th>
+        <th scope="row"><label for="flow_free_lesson_proportion">Free Lesson Proportion <span class="flosc-note-optional">(non-IPA)</span></label></th>
         <td>
             <select name="flow_free_lesson_proportion" id="flow_free_lesson_proportion">
                 <option value="1/5" <?php selected($flosc_free_lesson_proportion, '1/5'); ?>>1/5 of missed lessons</option>

@@ -104,7 +104,7 @@ if ($flosc_editing_file) {
 <!-- ============================================ -->
 <!-- KNOWLEDGE ACCESS RULES -->
 <!-- ============================================ -->
-<hr style="margin: 40px 0;">
+<hr class="flosc-ai-knowledge-divider">
 <h3>Knowledge Access & Context Rules</h3>
 <p class="description">Configure what information the AI has access to and when it can use it.</p>
 
@@ -173,8 +173,8 @@ This information is NOT in your training data. Always reference these files when
     <!-- TOPIC SCOPE & OFF-TOPIC HANDLING -->
     <!-- ============================================ -->
     <tr>
-        <td colspan="2"><hr style="margin: 20px 0;"><h3 style="margin: 0;">Topic Scope & Off-Topic Handling</h3>
-        <p class="description" style="margin-top: 5px;">Control what your AI discusses and how it handles questions outside your product's scope.</p></td>
+        <td colspan="2"><hr class="flosc-ai-knowledge-sub-divider"><h3 class="flosc-ai-knowledge-sub-title">Topic Scope & Off-Topic Handling</h3>
+        <p class="description flosc-ai-knowledge-sub-copy">Control what your AI discusses and how it handles questions outside your product's scope.</p></td>
     </tr>
     
     <tr>
@@ -211,18 +211,18 @@ This information is NOT in your training data. Always reference these files when
 <!-- ============================================ -->
 <!-- KNOWLEDGE FILE MANAGER -->
 <!-- ============================================ -->
-<hr style="margin: 40px 0;">
+<hr class="flosc-ai-knowledge-divider">
 <h3>Knowledge Files</h3>
 <p class="description">Upload markdown files containing lesson catalogs, FAQs, product info, and teaching guidelines. Mark files as "Public" (freeline access) or "Members Only".</p>
 
-<div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin-bottom: 20px;">
+<div class="flosc-ai-knowledge-access-note">
     <strong>💡 Access Control:</strong> Public files are available to ALL users (including visitors). Member-only files are only accessible after login. Use this to control what information the AI can share with different user types.
 </div>
 
 <!-- ============================================ -->
 <!-- UPLOAD NEW KNOWLEDGE FILE -->
 <!-- ============================================ -->
-<div class="card" style="max-width: 800px; margin-bottom: 20px;">
+<div class="card flosc-ai-knowledge-upload-card">
     <h3>Upload New Knowledge File</h3>
     <form method="post" enctype="multipart/form-data">
         <?php wp_nonce_field('flosc_ai_knowledge', 'flosc_ai_knowledge_nonce'); ?>
@@ -252,15 +252,15 @@ This information is NOT in your training data. Always reference these files when
 <!-- ============================================ -->
 <!-- EXISTING KNOWLEDGE FILES -->
 <!-- ============================================ -->
-<div class="card" style="max-width: 100%;">
+<div class="card flosc-ai-knowledge-files-card">
     <h3>Existing Knowledge Files (<?php echo count($flosc_files); ?>)</h3>
     <?php if (empty($flosc_files)): ?>
-        <p style="color: #667; font-style: italic;">No knowledge files yet. Upload your first file above to get started.</p>
+        <p class="flosc-ai-knowledge-empty">No knowledge files yet. Upload your first file above to get started.</p>
         
-        <div style="background: #f9f9f9; padding: 15px; margin-top: 15px; border-radius: 4px;">
-            <h4 style="margin-top: 0;">Example: lesson_catalog.md (Public)</h4>
+        <div class="flosc-ai-knowledge-example-box">
+            <h4 class="flosc-ai-knowledge-h4-zero">Example: lesson_catalog.md (Public)</h4>
             <p class="description">Public files let visitors know WHAT you offer without revealing the actual lesson content.</p>
-            <pre style="background: white; padding: 10px; overflow-x: auto; font-size: 12px;"># Lesson Catalog
+            <pre class="flosc-ai-knowledge-pre"># Lesson Catalog
 
 ## Phoneme Lessons
 
@@ -276,9 +276,9 @@ This information is NOT in your training data. Always reference these files when
 **Duration:** 15 minutes
 **Description:** Master the challenging "TH" sound (as in "think" and "this").</pre>
             
-            <h4 style="margin-top: 20px;">Example: lesson_content.md (Members Only)</h4>
+            <h4 class="flosc-ai-knowledge-h4-20">Example: lesson_content.md (Members Only)</h4>
             <p class="description">Member-only files contain detailed lesson instructions, exercises, and answers.</p>
-            <pre style="background: white; padding: 10px; overflow-x: auto; font-size: 12px;"># Lesson Content - The "S" Sound (MEMBERS ONLY)
+            <pre class="flosc-ai-knowledge-pre"># Lesson Content - The "S" Sound (MEMBERS ONLY)
 
 ## Step-by-Step Instructions
 
@@ -300,14 +300,14 @@ This information is NOT in your training data. Always reference these files when
         </div>
         
     <?php else: ?>
-        <table class="widefat" style="margin-top: 10px;">
+        <table class="widefat flosc-ai-knowledge-table">
             <thead>
                 <tr>
-                    <th style="width: 30%;">Filename</th>
-                    <th style="width: 15%;">Access Level</th>
-                    <th style="width: 10%;">Size</th>
-                    <th style="width: 15%;">Last Modified</th>
-                    <th style="width: 30%;">Actions</th>
+                    <th class="flosc-ai-col-file">Filename</th>
+                    <th class="flosc-ai-col-access">Access Level</th>
+                    <th class="flosc-ai-col-size">Size</th>
+                    <th class="flosc-ai-col-modified">Last Modified</th>
+                    <th class="flosc-ai-col-actions">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -323,16 +323,16 @@ This information is NOT in your training data. Always reference these files when
                         <td>
                             <strong><?php echo esc_html($flosc_file); ?></strong>
                             <?php if ($flosc_editing_file === $flosc_file): ?>
-                                <span style="color: #2196f3; margin-left: 8px;">← Editing</span>
+                                <span class="flosc-ai-editing-flag">← Editing</span>
                             <?php endif; ?>
                         </td>
                         <td>
                             <?php if ($flosc_access_level === 'members'): ?>
-                                <span style="background: #8b5cf6; color: #fff; padding: 3px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">
+                                <span class="flosc-ai-badge flosc-ai-badge-members">
                                     🔒 MEMBERS ONLY
                                 </span>
                             <?php else: ?>
-                                <span style="background: #10b981; color: #fff; padding: 3px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">
+                                <span class="flosc-ai-badge flosc-ai-badge-public">
                                     🌐 PUBLIC
                                 </span>
                             <?php endif; ?>
@@ -349,9 +349,9 @@ This information is NOT in your training data. Always reference these files when
                             </a>
                             <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&delete=' . urlencode($flosc_file)) ); ?>" 
                                class="button button-small" 
-                               onclick="return confirm('Delete <?php echo esc_js($flosc_file); ?>? This cannot be undone.');"
-                               style="color: #d63638;">
-                                Delete
+                                         data-confirm-message="Delete <?php echo esc_attr($flosc_file); ?>? This cannot be undone."
+                               >
+                                <span class="flosc-ai-delete-label">Delete</span>
                             </a>
                         </td>
                     </tr>
@@ -365,19 +365,19 @@ This information is NOT in your training data. Always reference these files when
 <!-- FILE EDITOR (if editing) -->
 <!-- ============================================ -->
 <?php if ($flosc_editing_file): ?>
-    <div class="card" style="max-width: 100%; margin-top: 20px;">
+    <div class="card flosc-ai-knowledge-editor-card">
         <h3>Edit: <?php echo esc_html($flosc_editing_file); ?></h3>
         <form method="post">
             <?php wp_nonce_field('flosc_ai_knowledge_edit', 'flosc_ai_knowledge_edit_nonce'); ?>
             <input type="hidden" name="editing_file" value="<?php echo esc_attr($flosc_editing_file); ?>">
             
-            <textarea name="file_content" rows="25" class="large-text code" style="font-family: monospace; width: 100%; font-size: 13px;"><?php echo esc_textarea($flosc_editing_content); ?></textarea>
+            <textarea name="file_content" rows="25" class="large-text code flosc-ai-editor-textarea"><?php echo esc_textarea($flosc_editing_content); ?></textarea>
             
             <p class="description">Markdown formatting supported. Use this editor to update knowledge file content.</p>
             
-            <div style="margin-top: 15px;">
+            <div class="flosc-ai-editor-actions">
                 <?php submit_button('Save Changes', 'primary', 'save_knowledge_file', false); ?>
-                <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-settings&tab=ai-knowledge') ); ?>" class="button" style="margin-left: 10px;">Cancel</a>
+                <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-settings&tab=ai-knowledge') ); ?>" class="button flosc-ai-editor-cancel">Cancel</a>
             </div>
         </form>
     </div>
@@ -386,15 +386,15 @@ This information is NOT in your training data. Always reference these files when
 <!-- ============================================ -->
 <!-- KNOWLEDGE FILE TEMPLATES & EXAMPLES -->
 <!-- ============================================ -->
-<hr style="margin: 40px 0;">
+<hr class="flosc-ai-knowledge-divider">
 <h3>Knowledge File Templates & Best Practices</h3>
 <p class="description">Copy these templates as starting points for your knowledge files.</p>
 
-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #9c27b0;">
-    <h4 style="margin-top: 0;">📚 Template: lesson_catalog.md</h4>
+<div class="flosc-ai-template-box flosc-ai-template-box--catalog">
+    <h4 class="flosc-ai-knowledge-h4-zero">📚 Template: lesson_catalog.md</h4>
     <p><strong>Purpose:</strong> Provide AI with structured information about available lessons</p>
-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-lesson-catalog').textContent); alert('Template copied to clipboard!');">Copy Template</button>
-    <pre id="template-lesson-catalog" style="background: white; padding: 10px; overflow-x: auto; font-size: 12px; margin-top: 10px;"># Lesson Catalog
+    <button type="button" class="button button-small" data-flosc-action="copy-element-text" data-source-id="template-lesson-catalog" data-alert-message="Template copied to clipboard!">Copy Template</button>
+    <pre id="template-lesson-catalog" class="flosc-ai-template-pre"># Lesson Catalog
 
 This file helps the AI understand what lessons are available and recommend appropriate content to users.
 
@@ -419,11 +419,11 @@ This file helps the AI understand what lessons are available and recommend appro
 ## Add more lessons following this format...</pre>
 </div>
 
-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #ff9800;">
-    <h4 style="margin-top: 0;">❓ Template: faq.md</h4>
+<div class="flosc-ai-template-box flosc-ai-template-box--faq">
+    <h4 class="flosc-ai-knowledge-h4-zero">❓ Template: faq.md</h4>
     <p><strong>Purpose:</strong> Common questions and answers the AI can reference</p>
-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-faq').textContent); alert('Template copied to clipboard!');">Copy Template</button>
-    <pre id="template-faq" style="background: white; padding: 10px; overflow-x: auto; font-size: 12px; margin-top: 10px;"># Frequently Asked Questions
+    <button type="button" class="button button-small" data-flosc-action="copy-element-text" data-source-id="template-faq" data-alert-message="Template copied to clipboard!">Copy Template</button>
+    <pre id="template-faq" class="flosc-ai-template-pre"># Frequently Asked Questions
 
 ## General Questions
 
@@ -447,11 +447,11 @@ A: Yes! Our platform is fully mobile-responsive and works on iOS and Android dev
 ## Add more FAQs following this format...</pre>
 </div>
 
-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #4caf50;">
-    <h4 style="margin-top: 0;">🎯 Template: teaching_methodology.md</h4>
+<div class="flosc-ai-template-box flosc-ai-template-box--methodology">
+    <h4 class="flosc-ai-knowledge-h4-zero">🎯 Template: teaching_methodology.md</h4>
     <p><strong>Purpose:</strong> Guide AI on teaching approach and pedagogical principles</p>
-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-methodology').textContent); alert('Template copied to clipboard!');">Copy Template</button>
-    <pre id="template-methodology" style="background: white; padding: 10px; overflow-x: auto; font-size: 12px; margin-top: 10px;"># Teaching Methodology & AI Guidelines
+    <button type="button" class="button button-small" data-flosc-action="copy-element-text" data-source-id="template-methodology" data-alert-message="Template copied to clipboard!">Copy Template</button>
+    <pre id="template-methodology" class="flosc-ai-template-pre"># Teaching Methodology & AI Guidelines
 
 ## Our Teaching Philosophy
 
@@ -490,11 +490,11 @@ We use a **scaffolded learning approach** that builds from simple to complex:
 - Provide immediate, specific feedback</pre>
 </div>
 
-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #e91e63;">
-    <h4 style="margin-top: 0;">💼 Template: product_info.md</h4>
+<div class="flosc-ai-template-box flosc-ai-template-box--product">
+    <h4 class="flosc-ai-knowledge-h4-zero">💼 Template: product_info.md</h4>
     <p><strong>Purpose:</strong> Product details, pricing, features for sales conversations</p>
-    <button type="button" class="button button-small" onclick="navigator.clipboard.writeText(document.getElementById('template-product').textContent); alert('Template copied to clipboard!');">Copy Template</button>
-    <pre id="template-product" style="background: white; padding: 10px; overflow-x: auto; font-size: 12px; margin-top: 10px;"># Product Information
+    <button type="button" class="button button-small" data-flosc-action="copy-element-text" data-source-id="template-product" data-alert-message="Template copied to clipboard!">Copy Template</button>
+    <pre id="template-product" class="flosc-ai-template-pre"># Product Information
 
 ## What We Offer
 

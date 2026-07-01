@@ -44,9 +44,9 @@ $flosc_flat_url     = add_query_arg('logview', 'flat', $flosc_view_base);
 ?>
 
 <div class="flosc-chat-logs-wrap">
-    <h2 style="display:flex;align-items:center;gap:12px;">
+    <h2 class="flosc-chat-logs-title-row">
         <span>Chat Logs</span>
-        <a href="<?php echo esc_url($flosc_chat_logs_docs_url); ?>" style="font-size:12px;text-decoration:none;color:#2271b1;margin-left:auto;">Docs</a>
+        <a href="<?php echo esc_url($flosc_chat_logs_docs_url); ?>" class="flosc-chat-logs-docs-link">Docs</a>
     </h2>
     <p class="description">All chat exchanges for this flow.<?php echo $flosc_logview === 'sessions' ? ' Grouped by conversation, newest first — click a session to read the thread.' : ' Flat view, newest first. Auto-refreshes every 5 seconds.'; ?></p>
     <?php if ($flosc_selected_user_id > 0): ?>
@@ -56,7 +56,7 @@ $flosc_flat_url     = add_query_arg('logview', 'flat', $flosc_view_base);
     <div class="flosc-chat-logs-toolbar">
         <span class="flosc-chat-logs-count">Total: <strong id="flosc-log-count"><?php echo intval($flosc_total_logs); ?></strong> entries</span>
 
-        <span class="flosc-log-viewswitch" style="margin-left:8px;">
+        <span class="flosc-log-viewswitch flosc-log-viewswitch-spaced">
             View:
             <a href="<?php echo esc_url($flosc_sessions_url); ?>" class="<?php echo $flosc_logview === 'sessions' ? 'button button-primary button-small' : 'button button-small'; ?>">Sessions</a>
             <a href="<?php echo esc_url($flosc_flat_url); ?>" class="<?php echo $flosc_logview === 'flat' ? 'button button-primary button-small' : 'button button-small'; ?>">All entries</a>

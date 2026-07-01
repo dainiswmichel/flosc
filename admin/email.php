@@ -19,7 +19,7 @@
  * {app_link} - Link to app
  * {oto_section} - One-time offer content (if applicable)
  * 
- * BACKEND STATUS: Email templates functional, automation triggers pseudocoded
+ * BACKEND STATUS: Email templates functional. Guest/member automation sequences are live.
  * 
  * v1.2.9: Added tab header for flow context
  */
@@ -56,8 +56,8 @@ Best,
 The {$flosc_product_name} Team";
 ?>
 
-<div style="margin:-8px 0 14px; text-align:right;">
-    <a href="<?php echo esc_url($flosc_email_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
+<div class="flosc-docs-link-wrap">
+    <a href="<?php echo esc_url($flosc_email_docs_url); ?>" class="flosc-docs-link">Docs</a>
 </div>
 
 <h2>Email Templates & Automation</h2>
@@ -76,7 +76,7 @@ $flosc_render_email_series = function ($prefix, $flow_settings, $welcome_default
     $followups = $flow_settings[$prefix . '_followups'] ?? [];
     if (!is_array($followups)) { $followups = []; }
 ?>
-<table class="form-table" style="margin-bottom:0;">
+<table class="form-table flosc-form-table-reset">
     <tr>
         <th scope="row"><label>Welcome Subject</label></th>
         <td><input type="text" name="flow_<?php echo esc_attr($prefix); ?>_welcome_subject"
@@ -91,27 +91,27 @@ $flosc_render_email_series = function ($prefix, $flow_settings, $welcome_default
         </td>
     </tr>
 </table>
-<p style="margin:12px 0 4px;"><strong>Follow-up Emails</strong></p>
-<p class="description" style="margin-bottom:8px;">Add as many as you like. Each sends once, the given number of days after entry. The number of days is configurable per row.</p>
-<table class="widefat flosc-fu-table" data-prefix="<?php echo esc_attr($prefix); ?>" style="max-width:980px;">
+<p class="flosc-email-followup-title"><strong>Follow-up Emails</strong></p>
+<p class="description flosc-email-followup-desc">Add as many as you like. Each sends once, the given number of days after entry. The number of days is configurable per row.</p>
+<table class="widefat flosc-fu-table flosc-email-fu-table" data-prefix="<?php echo esc_attr($prefix); ?>">
     <thead><tr>
-        <th style="width:110px;">After (days)</th>
-        <th style="width:30%;">Subject</th>
+        <th class="flosc-email-col-days">After (days)</th>
+        <th class="flosc-email-col-subject">Subject</th>
         <th>Body</th>
-        <th style="width:60px;text-align:center;">Remove</th>
+        <th class="flosc-email-col-remove">Remove</th>
     </tr></thead>
     <tbody class="flosc-fu-body">
     <?php foreach ($followups as $fu): ?>
         <tr class="flosc-fu-row">
             <td><input type="number" min="0" max="365" class="small-text" name="<?php echo esc_attr($prefix); ?>_fu_day[]" value="<?php echo esc_attr((int) ($fu['day'] ?? 0)); ?>"></td>
-            <td><input type="text" name="<?php echo esc_attr($prefix); ?>_fu_subject[]" value="<?php echo esc_attr($fu['subject'] ?? ''); ?>" style="width:100%;"></td>
-            <td><textarea name="<?php echo esc_attr($prefix); ?>_fu_body[]" rows="3" style="width:100%;"><?php echo esc_textarea($fu['body'] ?? ''); ?></textarea></td>
-            <td style="text-align:center;"><button type="button" class="button flosc-fu-remove" title="Remove">&times;</button></td>
+            <td><input type="text" name="<?php echo esc_attr($prefix); ?>_fu_subject[]" value="<?php echo esc_attr($fu['subject'] ?? ''); ?>" class="flosc-width-full"></td>
+            <td><textarea name="<?php echo esc_attr($prefix); ?>_fu_body[]" rows="3" class="flosc-width-full"><?php echo esc_textarea($fu['body'] ?? ''); ?></textarea></td>
+            <td class="flosc-text-center"><button type="button" class="button flosc-fu-remove" title="Remove">&times;</button></td>
         </tr>
     <?php endforeach; ?>
     </tbody>
 </table>
-<p style="margin-top:8px;"><button type="button" class="button flosc-fu-add" data-prefix="<?php echo esc_attr($prefix); ?>">+ Add Follow-up</button></p>
+<p class="flosc-margin-top-8"><button type="button" class="button flosc-fu-add" data-prefix="<?php echo esc_attr($prefix); ?>">+ Add Follow-up</button></p>
 <?php
 };
 ?>
@@ -119,13 +119,13 @@ $flosc_render_email_series = function ($prefix, $flow_settings, $welcome_default
 <!-- ============================================ -->
 <!-- NEWSLETTER EMAIL SEQUENCE (optional / lead-gen) -->
 <!-- ============================================ -->
-<hr style="margin: 28px 0;">
-<h3>Newsletter Email Sequence <span style="background:#6b7280;color:#fff;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:bold;">OPTIONAL</span></h3>
+<hr class="flosc-email-hr-top">
+<h3>Newsletter Email Sequence <span class="flosc-email-status-badge flosc-email-status-badge--optional">OPTIONAL</span></h3>
 <p class="description">
     Optional sequence for users who opt into the newsletter (a profile checkbox; the chatbot can also offer sign-up).
     Placeholders: <code>{name}</code>, <code>{chat_url}</code>, <code>{profile_url}</code>, <code>{app_name}</code>, <code>{team_name}</code>.
 </p>
-<table class="form-table" style="margin-bottom:0;">
+<table class="form-table flosc-form-table-reset">
     <tr>
         <th scope="row"><label for="flow_newsletter_optin_text">Opt-in Prompt Text</label></th>
         <td><input type="text" id="flow_newsletter_optin_text" name="flow_newsletter_optin_text"
@@ -146,7 +146,7 @@ $flosc_render_email_series(
 <!-- ============================================ -->
 <!-- PRIMARY QUIZ RESULTS EMAIL -->
 <!-- ============================================ -->
-<h3>Quiz Results Email <span style="background: #10b981; color: #fff; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">READY</span></h3>
+<h3>Quiz Results Email <span class="flosc-email-status-badge flosc-email-status-badge--ready">READY</span></h3>
 <p class="description">Sent after user completes quiz. Customize subject and body with placeholders.</p>
 
 <table class="form-table">
@@ -174,11 +174,11 @@ $flosc_render_email_series(
 </table>
 
 <!-- ============================================ -->
-<!-- EMAIL AUTOMATION TRIGGERS [BACKEND NEEDED] -->
+<!-- EMAIL AUTOMATION TRIGGERS [PLANNED UI] -->
 <!-- ============================================ -->
-<hr style="margin: 40px 0;">
-<h3>Email Automation Triggers <span style="background: #ffc107; color: #000; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">BACKEND NEEDED</span></h3>
-<p class="description">Configure when emails are automatically sent. Uses condition system similar to IVR messages.</p>
+<hr class="flosc-email-hr">
+<h3>Email Automation Triggers <span class="flosc-email-status-badge flosc-email-status-badge--backend">PLANNED UI</span></h3>
+<p class="description">Configuration controls reserved for a future automation module. These fields are not used by current runtime dispatch.</p>
 
 <table class="form-table">
     <tr>
@@ -219,7 +219,7 @@ $flosc_render_email_series(
             <input type="number" id="flow_email_reengagement_days" name="flow_email_reengagement_days" 
                    value="<?php echo esc_attr($flosc_flow_settings['email_reengagement_days'] ?? 7); ?>" 
                    min="1" class="small-text"> days of inactivity
-            <label style="margin-left: 15px;">
+            <label class="flosc-email-inline-label-left">
                 <input type="checkbox" name="flow_email_reengagement_enabled" value="1" 
                        <?php checked($flosc_flow_settings['email_reengagement_enabled'] ?? false); ?>>
                 Enable
@@ -241,81 +241,11 @@ $flosc_render_email_series(
     </tr>
 </table>
 
-<!--
-BACKEND IMPLEMENTATION NOTES:
-=============================
-
-Hook into these WordPress actions:
-1. flosc_quiz_completed - Send quiz results email
-2. flosc_user_registered - Send welcome email
-3. flosc_lesson_completed - Send lesson completion congrats
-4. Daily cron job - Check for re-engagement candidates
-
-Pseudocode for quiz results:
-
-add_action('flosc_quiz_completed', 'flosc_send_quiz_results_email', 10, 2);
-function flosc_send_quiz_results_email($user_email, $quiz_data) {
-    if (!($flow_settings['email_on_quiz_complete'] ?? true)) return;
-    
-    $score = $quiz_data['score'];
-    $congrats_threshold = $flow_settings['email_congrats_threshold'] ?? 80;
-    $encouragement_threshold = $flow_settings['email_encouragement_threshold'] ?? 60;
-    
-    // Choose template variant based on score
-    if ($score >= $congrats_threshold) {
-        $template = 'congrats'; // High score variant
-    } elseif ($score < $encouragement_threshold) {
-        $template = 'encouragement'; // Needs improvement variant
-    } else {
-        $template = 'standard'; // Mid-range variant
-    }
-    
-    $subject = $flow_settings['email_subject'] ?? '';
-    $body = $flow_settings['email_body'] ?? '';
-    
-    // Replace placeholders
-    $placeholders = [
-        '{name}' => $quiz_data['name'],
-        '{score}' => $score,
-        '{correct}' => $quiz_data['correct'],
-        '{incorrect}' => $quiz_data['incorrect'],
-        '{product_name}' => $flow_settings['product_name'] ?? '',
-        '{app_link}' => home_url('/' . ($flow_settings['app_slug'] ?? '') . '/'),
-        '{oto_section}' => flosc_get_oto_content($quiz_data),
-    ];
-    
-    $subject = str_replace(array_keys($placeholders), array_values($placeholders), $subject);
-    $body = str_replace(array_keys($placeholders), array_values($placeholders), $body);
-    
-    wp_mail($user_email, $subject, $body);
-}
-
-Pseudocode for re-engagement:
-
-add_action('flosc_daily_cron', 'flosc_send_reengagement_emails');
-function flosc_send_reengagement_emails() {
-    if (!($flow_settings['email_reengagement_enabled'] ?? false)) return;
-    
-    $days = $flow_settings['email_reengagement_days'] ?? 7;
-    $inactive_users = flosc_get_inactive_users($days);
-    
-    foreach ($inactive_users as $user) {
-        // Send re-engagement email
-        $subject = "We miss you! Your personalized lesson is waiting";
-        $body = flosc_get_reengagement_email_template($user);
-        wp_mail($user->email, $subject, $body);
-        
-        // Mark as sent to avoid spam
-        update_user_meta($user->ID, 'flosc_last_reengagement_email', current_time('timestamp'));
-    }
-}
--->
-
 <!-- ============================================ -->
 <!-- GUEST ACCESS EMAIL SEQUENCE [LIVE] -->
 <!-- ============================================ -->
-<hr style="margin: 40px 0;">
-<h3>Guest Access Email Sequence <span style="background: #10b981; color: #fff; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">LIVE</span></h3>
+<hr class="flosc-email-hr">
+<h3>Guest Access Email Sequence <span class="flosc-email-status-badge flosc-email-status-badge--live">LIVE</span></h3>
 <p class="description">
     Emails sent automatically to guests who have not purchased.
     Placeholders: <code>{name}</code>, <code>{days_remaining}</code>, <code>{chat_url}</code>, <code>{profile_url}</code>, <code>{upgrade_url}</code>.
@@ -356,10 +286,10 @@ $flosc_guest_emails = [
 ];
 foreach ($flosc_guest_emails as $flosc_key => $flosc_cfg):
 ?>
-<hr style="margin: 24px 0 16px; border: none; border-top: 1px solid #e0e0e0;">
-<h4 style="margin: 0 0 4px;"><?php echo esc_html($flosc_cfg['label']); ?></h4>
-<p class="description" style="margin-bottom: 12px;"><?php echo esc_html($flosc_cfg['timing']); ?></p>
-<table class="form-table" style="margin-bottom: 0;">
+<hr class="flosc-email-hr-divider">
+<h4 class="flosc-email-section-subtitle"><?php echo esc_html($flosc_cfg['label']); ?></h4>
+<p class="description flosc-email-subdesc"><?php echo esc_html($flosc_cfg['timing']); ?></p>
+<table class="form-table flosc-form-table-reset">
     <tr>
         <th scope="row"><label>Subject</label></th>
         <td>
@@ -386,7 +316,7 @@ foreach ($flosc_guest_emails as $flosc_key => $flosc_cfg):
             $flosc_min_default = (int) ($flosc_cfg['default_min_day'] ?? 0);
             $flosc_max_default = (int) ($flosc_cfg['default_max_day'] ?? $flosc_min_default);
             ?>
-            <label style="margin-right: 10px;">From day
+            <label class="flosc-email-inline-label-right">From day
                 <input type="number" min="0" max="365" class="small-text" name="flow_<?php echo esc_attr($flosc_min_key); ?>"
                        value="<?php echo esc_attr((int) ($flosc_flow_settings[$flosc_min_key] ?? $flosc_min_default)); ?>">
             </label>
@@ -394,7 +324,7 @@ foreach ($flosc_guest_emails as $flosc_key => $flosc_cfg):
                 <input type="number" min="0" max="365" class="small-text" name="flow_<?php echo esc_attr($flosc_max_key); ?>"
                        value="<?php echo esc_attr((int) ($flosc_flow_settings[$flosc_max_key] ?? $flosc_max_default)); ?>">
             </label>
-            <p class="description" style="margin-top:6px;">Per-flow control: set Day10 to Day9 by changing this window (for example 9 to 11).</p>
+            <p class="description flosc-margin-top-6">Per-flow control: set Day10 to Day9 by changing this window (for example 9 to 11).</p>
         </td>
     </tr>
     <?php endif; ?>
@@ -404,7 +334,7 @@ foreach ($flosc_guest_emails as $flosc_key => $flosc_cfg):
 <!-- ============================================ -->
 <!-- MEMBER EMAIL SEQUENCE (per level) -->
 <!-- ============================================ -->
-<hr style="margin: 40px 0;">
+<hr class="flosc-email-hr">
 <h3>Member Email Sequence</h3>
 <p class="description">
     Per-level emails sent to members. Levels come from the <strong>Member Levels</strong> tab.
@@ -418,7 +348,7 @@ foreach ((array) $flosc_member_levels as $flosc_lvl_key => $flosc_lvl) {
     if ($flosc_slug === '') { continue; }
     $flosc_has_levels = true;
     $flosc_lname = trim((string) ($flosc_lvl['name'] ?? '')) ?: $flosc_slug;
-    echo '<h4 style="margin:28px 0 0;">Level: ' . esc_html($flosc_lname) . ' <code>' . esc_html($flosc_slug) . '</code></h4>';
+    echo '<h4 class="flosc-email-level-title">Level: ' . esc_html($flosc_lname) . ' <code>' . esc_html($flosc_slug) . '</code></h4>';
     $flosc_render_email_series(
         'member_' . $flosc_slug,
         $flosc_flow_settings,
@@ -442,9 +372,9 @@ if (!$flosc_has_levels):
         tr.className = 'flosc-fu-row';
         tr.innerHTML =
             '<td><input type="number" min="0" max="365" class="small-text" name="' + prefix + '_fu_day[]" value="0"></td>' +
-            '<td><input type="text" name="' + prefix + '_fu_subject[]" value="" style="width:100%;"></td>' +
-            '<td><textarea name="' + prefix + '_fu_body[]" rows="3" style="width:100%;"></textarea></td>' +
-            '<td style="text-align:center;"><button type="button" class="button flosc-fu-remove" title="Remove">&times;</button></td>';
+            '<td><input type="text" name="' + prefix + '_fu_subject[]" value="" class="flosc-width-full"></td>' +
+            '<td><textarea name="' + prefix + '_fu_body[]" rows="3" class="flosc-width-full"></textarea></td>' +
+            '<td class="flosc-text-center"><button type="button" class="button flosc-fu-remove" title="Remove">&times;</button></td>';
         tbody.appendChild(tr);
     }
     document.addEventListener('click', function (e) {
@@ -463,8 +393,8 @@ if (!$flosc_has_levels):
 <!-- ============================================ -->
 <!-- EMAIL PROVIDER SETTINGS [BACKEND NEEDED] -->
 <!-- ============================================ -->
-<hr style="margin: 40px 0;">
-<h3>Email Provider Settings <span style="background: #ffc107; color: #000; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold;">BACKEND NEEDED</span></h3>
+<hr class="flosc-email-hr">
+<h3>Email Provider Settings <span class="flosc-email-status-badge flosc-email-status-badge--backend">BACKEND NEEDED</span></h3>
 <p class="description">Configure email delivery provider. Currently uses WordPress default (wp_mail).</p>
 
 <table class="form-table">
@@ -516,15 +446,15 @@ if (!$flosc_has_levels):
 <!-- ============================================ -->
 <!-- TEMPLATE EXAMPLES & INSPIRATION -->
 <!-- ============================================ -->
-<hr style="margin: 40px 0;">
+<hr class="flosc-email-hr">
 <h3>Email Template Examples (Copy-Paste Reference)</h3>
 <p class="description">Best practice email templates for different scenarios. Copy and customize as needed.</p>
 
-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #4f46e5;">
-    <h4 style="margin-top: 0;">🎉 Congratulations Email (High Score: 80%+)</h4>
+<div class="flosc-email-template-card flosc-email-template-card--congrats">
+    <h4 class="flosc-email-template-title">🎉 Congratulations Email (High Score: 80%+)</h4>
     <p><strong>Subject:</strong> <code>Amazing! You scored {score}% on the {product_name} quiz 🎉</code></p>
     <p><strong>Body:</strong></p>
-    <pre style="background: white; padding: 10px; overflow-x: auto; font-size: 13px;">Hi {name},
+    <pre class="flosc-email-template-pre">Hi {name},
 
 WOW! You scored {score}% on the {product_name} quick assessment! 🎯
 
@@ -553,11 +483,11 @@ The {product_name} Team
 P.S. High performers like you often benefit most from targeted practice. Your free lesson is designed specifically for your level.</pre>
 </div>
 
-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #f59e0b;">
-    <h4 style="margin-top: 0;">💪 Encouragement Email (Low Score: Below 60%)</h4>
+<div class="flosc-email-template-card flosc-email-template-card--encouragement">
+    <h4 class="flosc-email-template-title">💪 Encouragement Email (Low Score: Below 60%)</h4>
     <p><strong>Subject:</strong> <code>Your {product_name} results + FREE personalized lesson inside</code></p>
     <p><strong>Body:</strong></p>
-    <pre style="background: white; padding: 10px; overflow-x: auto; font-size: 13px;">Hi {name},
+    <pre class="flosc-email-template-pre">Hi {name},
 
 Thanks for taking the {product_name} quick assessment! You scored {score}%.
 
@@ -589,11 +519,11 @@ The {product_name} Team
 P.S. This free lesson takes just 10 minutes and targets your exact weak points. What do you have to lose?</pre>
 </div>
 
-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #10b981;">
-    <h4 style="margin-top: 0;">🚀 Welcome Email (New User)</h4>
+<div class="flosc-email-template-card flosc-email-template-card--welcome">
+    <h4 class="flosc-email-template-title">🚀 Welcome Email (New User)</h4>
     <p><strong>Subject:</strong> <code>Welcome to {product_name} - Your learning journey starts now! 🚀</code></p>
     <p><strong>Body:</strong></p>
-    <pre style="background: white; padding: 10px; overflow-x: auto; font-size: 13px;">Hi {name},
+    <pre class="flosc-email-template-pre">Hi {name},
 
 Welcome to {product_name}! We're thrilled to have you here.
 
@@ -618,11 +548,11 @@ The {product_name} Team
 P.S. The assessment takes less time than making coffee, but the insights you'll gain are priceless.</pre>
 </div>
 
-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #ec4899;">
-    <h4 style="margin-top: 0;">⏰ Re-engagement Email (Inactive User)</h4>
+<div class="flosc-email-template-card flosc-email-template-card--reengagement">
+    <h4 class="flosc-email-template-title">⏰ Re-engagement Email (Inactive User)</h4>
     <p><strong>Subject:</strong> <code>We miss you, {name}! Your personalized lesson is still waiting</code></p>
     <p><strong>Body:</strong></p>
-    <pre style="background: white; padding: 10px; overflow-x: auto; font-size: 13px;">Hi {name},
+    <pre class="flosc-email-template-pre">Hi {name},
 
 We noticed you haven't visited {product_name} in a while.
 
@@ -645,11 +575,11 @@ The {product_name} Team
 P.S. This personalized lesson expires in 7 days. Don't let your progress go to waste!</pre>
 </div>
 
-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #8b5cf6;">
-    <h4 style="margin-top: 0;">💎 Upgrade Offer Email (Free User)</h4>
+<div class="flosc-email-template-card flosc-email-template-card--upgrade">
+    <h4 class="flosc-email-template-title">💎 Upgrade Offer Email (Free User)</h4>
     <p><strong>Subject:</strong> <code>Ready to unlock your full potential? Premium is 50% off</code></p>
     <p><strong>Body:</strong></p>
-    <pre style="background: white; padding: 10px; overflow-x: auto; font-size: 13px;">Hi {name},
+    <pre class="flosc-email-template-pre">Hi {name},
 
 You've completed your free lesson and scored {score}% on the assessment.
 
@@ -677,11 +607,11 @@ The {product_name} Team
 P.S. Have questions about whether Premium is right for you? Reply to this email and let's chat!</pre>
 </div>
 
-<div style="background: #f9f9f9; padding: 15px; margin: 20px 0; border-left: 4px solid #0ea5e9;">
-    <h4 style="margin-top: 0;">📈 Weekly Progress Summary</h4>
+<div class="flosc-email-template-card flosc-email-template-card--weekly">
+    <h4 class="flosc-email-template-title">📈 Weekly Progress Summary</h4>
     <p><strong>Subject:</strong> <code>Your {product_name} weekly progress - Keep it up!</code></p>
     <p><strong>Body:</strong></p>
-    <pre style="background: white; padding: 10px; overflow-x: auto; font-size: 13px;">Hi {name},
+    <pre class="flosc-email-template-pre">Hi {name},
 
 Here's your weekly progress summary for {product_name}:
 

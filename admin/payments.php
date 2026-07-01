@@ -43,14 +43,14 @@ $flosc_paypal_enabled = $flosc_flow_settings['paypal_enabled'] ?? false;
 $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled'] ?? false;
 ?>
 
-<div style="margin:-8px 0 14px; text-align:right;">
-    <a href="<?php echo esc_url($flosc_payments_docs_url); ?>" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>
+<div class="flosc-payments-docs-wrap">
+    <a href="<?php echo esc_url($flosc_payments_docs_url); ?>" class="flosc-payments-docs-link">Docs</a>
 </div>
 
 <h2>Payment Processing Configuration</h2>
 <p>Configure your payment providers to accept payments for offers. Start with test mode, then switch to live when ready.</p>
 
-<div style="background: #ecfeff; border-left: 4px solid #06b6d4; padding: 15px; margin-bottom: 20px;">
+<div class="flosc-payments-status-banner">
     <strong>Payment status:</strong> FLOSC payment routes are active. Use test/sandbox credentials to validate your full checkout path before switching to live keys.
 </div>
 
@@ -84,7 +84,7 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
     </tr>
     
     <tr>
-        <th scope="row" colspan="2" style="background: #f0f0f1; padding: 10px;"><strong>Test Mode Credentials</strong></th>
+        <th scope="row" colspan="2" class="flosc-payments-subhead"><strong>Test Mode Credentials</strong></th>
     </tr>
     
     <tr>
@@ -108,7 +108,7 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
     </tr>
     
     <tr>
-        <th scope="row" colspan="2" style="background: #f0f0f1; padding: 10px;"><strong>Live Mode Credentials</strong></th>
+        <th scope="row" colspan="2" class="flosc-payments-subhead"><strong>Live Mode Credentials</strong></th>
     </tr>
     
     <tr>
@@ -148,7 +148,7 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
 <!-- ============================================ -->
 <!-- PAYPAL CONFIGURATION -->
 <!-- ============================================ -->
-<hr style="margin: 40px 0;">
+<hr class="flosc-payments-divider">
 <h3>🅿️ PayPal Configuration</h3>
 <p class="description">Accept payments via PayPal.</p>
 
@@ -197,7 +197,7 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
         <th scope="row">Connection Test</th>
         <td>
             <button type="button" id="flosc-paypal-test" class="button button-secondary">Test PayPal Connection</button>
-            <span id="flosc-paypal-test-result" style="margin-left: 12px;"></span>
+            <span id="flosc-paypal-test-result" class="flosc-paypal-test-result"></span>
             <?php ob_start(); ?>
             document.getElementById('flosc-paypal-test').addEventListener('click', function() {
                 var btn = this;
@@ -211,15 +211,15 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
                         btn.disabled = false;
                         btn.textContent = 'Test PayPal Connection';
                         if (data.success) {
-                            result.innerHTML = '<span style="color: #16a34a; font-weight: bold;">\u2705 Connected — ' + data.data.mode + ' mode, ' + data.data.app_name + '</span>';
+                            result.innerHTML = '<span class="flosc-paypal-result-success">\u2705 Connected — ' + data.data.mode + ' mode, ' + data.data.app_name + '</span>';
                         } else {
-                            result.innerHTML = '<span style="color: #dc2626; font-weight: bold;">\u274c ' + (data.data || 'Connection failed') + '</span>';
+                            result.innerHTML = '<span class="flosc-paypal-result-error">\u274c ' + (data.data || 'Connection failed') + '</span>';
                         }
                     })
                     .catch(() => {
                         btn.disabled = false;
                         btn.textContent = 'Test PayPal Connection';
-                        result.innerHTML = '<span style="color: #dc2626;">\u274c Network error</span>';
+                        result.innerHTML = '<span class="flosc-paypal-result-error-lite">\u274c Network error</span>';
                     });
             });
             <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
@@ -230,7 +230,7 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
 <!-- ============================================ -->
 <!-- MANUAL PAYMENTS -->
 <!-- ============================================ -->
-<hr style="margin: 40px 0;">
+<hr class="flosc-payments-divider">
 <h3>💵 Manual Payments</h3>
 <p class="description">Accept payments via bank transfer, check, or other offline methods. Admin manually confirms payment and grants access.</p>
 
@@ -269,15 +269,15 @@ Access will be granted within 24 hours of payment confirmation.');
 <!-- ============================================ -->
 <!-- ORDER MANAGEMENT -->
 <!-- ============================================ -->
-<hr style="margin: 40px 0;">
+<hr class="flosc-payments-divider">
 <h3>📦 Order Management</h3>
 <p class="description">View and manage customer orders, refunds, and access grants.</p>
 
-<div class="card" style="max-width: 100%;">
+<div class="card flosc-payments-orders-card">
     <h4>Recent Orders</h4>
-    <p style="color: #667; font-style: italic;">No orders yet. Order management will appear here once payment processing is implemented.</p>
+    <p class="flosc-payments-empty">No orders yet. Order management will appear here once payment processing is implemented.</p>
     
-    <table class="widefat" style="margin-top: 15px; opacity: 0.5;">
+    <table class="widefat flosc-payments-orders-table">
         <thead>
             <tr>
                 <th>Order ID</th>
@@ -291,7 +291,7 @@ Access will be granted within 24 hours of payment confirmation.');
         </thead>
         <tbody>
             <tr>
-                <td colspan="7" style="text-align: center; padding: 20px; color: #999;">
+                <td colspan="7" class="flosc-payments-orders-empty-row">
                     Order history appears here as transactions are processed.
                 </td>
             </tr>
@@ -302,33 +302,33 @@ Access will be granted within 24 hours of payment confirmation.');
 <!-- ============================================ -->
 <!-- TEST PAYMENT CARDS -->
 <!-- ============================================ -->
-<hr style="margin: 40px 0;">
+<hr class="flosc-payments-divider">
 <h3>🧪 Test Payment Cards (Stripe Test Mode)</h3>
 <p class="description">Use these cards in test mode to simulate different payment scenarios.</p>
 
-<div style="background: #f9f9f9; padding: 15px; border-radius: 4px;">
-    <table style="width: 100%;">
-        <tr style="background: #fff;">
-            <td style="padding: 10px;"><strong>Successful Payment</strong></td>
-            <td style="padding: 10px;"><code>4242 4242 4242 4242</code></td>
-            <td style="padding: 10px;">Any future expiry, any CVC</td>
+<div class="flosc-payments-test-cards-wrap">
+    <table class="flosc-payments-test-cards-table">
+        <tr class="flosc-payments-test-cards-row-alt">
+            <td class="flosc-payments-test-cards-cell"><strong>Successful Payment</strong></td>
+            <td class="flosc-payments-test-cards-cell"><code>4242 4242 4242 4242</code></td>
+            <td class="flosc-payments-test-cards-cell">Any future expiry, any CVC</td>
         </tr>
         <tr>
-            <td style="padding: 10px;"><strong>Declined Card</strong></td>
-            <td style="padding: 10px;"><code>4000 0000 0000 0002</code></td>
-            <td style="padding: 10px;">Simulates declined payment</td>
+            <td class="flosc-payments-test-cards-cell"><strong>Declined Card</strong></td>
+            <td class="flosc-payments-test-cards-cell"><code>4000 0000 0000 0002</code></td>
+            <td class="flosc-payments-test-cards-cell">Simulates declined payment</td>
         </tr>
-        <tr style="background: #fff;">
-            <td style="padding: 10px;"><strong>Insufficient Funds</strong></td>
-            <td style="padding: 10px;"><code>4000 0000 0000 9995</code></td>
-            <td style="padding: 10px;">Simulates insufficient funds error</td>
+        <tr class="flosc-payments-test-cards-row-alt">
+            <td class="flosc-payments-test-cards-cell"><strong>Insufficient Funds</strong></td>
+            <td class="flosc-payments-test-cards-cell"><code>4000 0000 0000 9995</code></td>
+            <td class="flosc-payments-test-cards-cell">Simulates insufficient funds error</td>
         </tr>
         <tr>
-            <td style="padding: 10px;"><strong>3D Secure Required</strong></td>
-            <td style="padding: 10px;"><code>4000 0027 6000 3184</code></td>
-            <td style="padding: 10px;">Requires 3D Secure authentication</td>
+            <td class="flosc-payments-test-cards-cell"><strong>3D Secure Required</strong></td>
+            <td class="flosc-payments-test-cards-cell"><code>4000 0027 6000 3184</code></td>
+            <td class="flosc-payments-test-cards-cell">Requires 3D Secure authentication</td>
         </tr>
     </table>
-    <p style="margin: 10px 0 0 0;"><a href="https://stripe.com/docs/testing" target="_blank">See full list of test cards →</a></p>
+    <p class="flosc-payments-test-cards-link-wrap"><a href="https://stripe.com/docs/testing" target="_blank">See full list of test cards →</a></p>
 </div>
 

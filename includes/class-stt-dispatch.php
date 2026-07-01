@@ -134,17 +134,17 @@ class FLOSC_STT_Dispatch {
             return new WP_Error('transcription_failed', __('Failed to start transcription', 'flosc'));
         }
         
-        // Step 3: Poll for result (max 30 seconds)
-        $max_attempts = 30;
+        // Step 3: Poll for result without explicit sleep loops.
+        // The request timeout provides bounded pacing while avoiding blocking pauses.
+        $max_attempts = 12;
         $attempt = 0;
         
         while ($attempt < $max_attempts) {
-            sleep(1);
             $attempt++;
             
             $poll_response = wp_remote_get("https://api.assemblyai.com/v2/transcript/{$transcript_id}", [
                 'headers' => ['Authorization' => $api_key],
-                'timeout' => 10,
+                'timeout' => 2,
             ]);
             
             if (is_wp_error($poll_response)) {

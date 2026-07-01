@@ -175,7 +175,7 @@ $flosc_categories = get_categories(['hide_empty' => false]);
         </nav>
     <?php endif; ?>
     
-    <div class="card" style="max-width: 800px; margin-top: 20px; padding: 20px;">
+    <div class="card flosc-flow-edit-card">
         
         <?php if ($flosc_current_tab === 'identity' || $flosc_is_new): ?>
             <!-- IDENTITY TAB -->
@@ -194,7 +194,7 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                                    class="regular-text" 
                                    placeholder="myapp"
                                    pattern="[a-z0-9-]+"
-                                   style="width: 150px;">
+                                   >
                             <code>/</code>
                             <p class="description">Lowercase letters, numbers, and hyphens only. Leave empty if using custom domain only.</p>
                         </td>
@@ -223,7 +223,7 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                     </tr>
                 </table>
                 
-                <h2 style="margin-top: 30px;">Branding</h2>
+                <h2 class="flosc-flow-edit-section-title">Branding</h2>
                 
                 <?php $flosc_identity = $flosc_flow['identity'] ?? []; ?>
                 <table class="form-table">
@@ -251,11 +251,12 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                         <td>
                             <input type="color" id="floscflow_color" name="floscflow_color" 
                                    value="<?php echo esc_attr($flosc_identity['primary_color'] ?? '#4f46e5'); ?>" 
-                                   style="width: 60px; height: 40px; padding: 0; border: 1px solid #ccc;">
+                                class="flosc-flow-edit-color-input">
                             <input type="text" id="floscflow_color_hex" 
                                    value="<?php echo esc_attr($flosc_identity['primary_color'] ?? '#4f46e5'); ?>" 
-                                   style="width: 80px; margin-left: 8px;"
-                                   onchange="document.getElementById('floscflow_color').value = this.value;">
+                                class="flosc-flow-edit-color-hex"
+                                              data-flosc-action="sync-color-target"
+                                              data-sync-target="floscflow_color">
                             <p class="description">Lesson highlights, form buttons, focus rings. Sets <code>--flosc-primary</code>.</p>
                             <?php ob_start(); ?>
                                 document.getElementById('floscflow_color').addEventListener('input', function() {
@@ -279,7 +280,7 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                     <tr>
                         <th scope="row"><label for="floscflow_favicon">Favicon</label></th>
                         <td>
-                            <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="flosc-flow-edit-favicon-row">
                                 <input type="url" id="floscflow_favicon" name="floscflow_favicon" 
                                        value="<?php echo esc_attr($flosc_identity['favicon_url'] ?? ''); ?>" 
                                        class="regular-text" 
@@ -288,7 +289,7 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                                 <?php $flosc_favicon_url = $flosc_identity['favicon_url'] ?? ''; ?>
                                 <img src="<?php echo esc_url($flosc_favicon_url); ?>" 
                                      alt="" id="flosc_app_icon_preview"
-                                     style="width: 32px; height: 32px; border-radius: 6px;<?php echo empty($flosc_favicon_url) ? ' display: none;' : ''; ?>">
+                                  class="flosc-flow-edit-favicon-preview <?php echo empty($flosc_favicon_url) ? 'flosc-flow-edit-hidden' : ''; ?>">
                             </div>
                             <p class="description">Browser tab icon. Square PNG recommended (512&times;512+).</p>
                             <?php wp_enqueue_media(); ?>
@@ -331,7 +332,7 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                     </tr>
                 </table>
 
-                <h2 style="margin-top: 30px;">Visitor Profile Bar</h2>
+                <h2 class="flosc-flow-edit-section-title">Visitor Profile Bar</h2>
                 <p class="description">Configure the profile bar shown to non-logged-in visitors (bottom left of sidebar). Full profile bar settings available at <strong>FLOSC → UI &amp; Navigation</strong>.</p>
 
                 <?php $flosc_pb = get_option('flosc_profile_bar', []); ?>
@@ -341,7 +342,7 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                         <td>
                             <input type="text" id="visitor_bar_icon" name="visitor_bar_icon"
                                    value="<?php echo esc_attr($flosc_pb['visitor']['icon'] ?? '👋'); ?>"
-                                   style="width: 60px; font-size: 24px; text-align: center;">
+                                class="flosc-flow-edit-emoji-input">
                             <p class="description">Emoji shown in visitor profile bar.</p>
                         </td>
                     </tr>
@@ -359,7 +360,7 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                     <tr>
                         <th scope="row">Menu Items</th>
                         <td>
-                            <p class="description" style="margin-bottom: 10px;">Configure what appears in the visitor dropdown menu (checked items are shown):</p>
+                            <p class="description flosc-flow-edit-menu-help">Configure what appears in the visitor dropdown menu (checked items are shown):</p>
                             <?php
                             $flosc_visitor_menu = get_option('flosc_visitor_menu_items', [
                                 'signup' => ['label' => 'Sign Up', 'enabled' => true],
@@ -387,13 +388,13 @@ $flosc_categories = get_categories(['hide_empty' => false]);
 
                             foreach ($flosc_visitor_menu as $flosc_key => $flosc_item):
                             ?>
-                            <label style="display: block; margin-bottom: 8px;">
+                            <label class="flosc-flow-edit-menu-row">
                                 <input type="checkbox" name="visitor_menu_items[<?php echo esc_attr($key); ?>][enabled]" value="1"
                                        <?php checked($flosc_item['enabled'] ?? true, true); ?>>
                                 <input type="text" name="visitor_menu_items[<?php echo esc_attr($key); ?>][label]"
                                        value="<?php echo esc_attr($flosc_item['label'] ?? ''); ?>"
-                                       style="width: 200px; margin-left: 8px;">
-                                <code style="margin-left: 8px; background: #f0f0f1; padding: 2px 6px; border-radius: 2px;"><?php echo esc_html($key); ?></code>
+                                    class="flosc-flow-edit-menu-label-input">
+                                <code class="flosc-flow-edit-menu-key"><?php echo esc_html($key); ?></code>
                             </label>
                             <?php endforeach; ?>
                         </td>
@@ -437,7 +438,7 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                     <input type="submit" name="flosc_save_flow" class="button button-primary" value="Save Changes">
                 </p>
                 
-                <hr style="margin: 30px 0;">
+                <hr class="flosc-flow-edit-divider">
                 
                 <h3>Edit IVR Messages</h3>
                 <p>
@@ -514,10 +515,10 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                 <?php if (empty($flosc_team_users)): ?>
                     <p><em>No editors, authors, or contributors found. Only administrators can currently manage flows.</em></p>
                 <?php else: ?>
-                    <table class="widefat" style="max-width: 600px;">
+                    <table class="widefat flosc-flow-edit-team-table">
                         <thead>
                             <tr>
-                                <th style="width: 40px;">Access</th>
+                                <th class="flosc-flow-edit-team-access-col">Access</th>
                                 <th>User</th>
                                 <th>Role</th>
                             </tr>

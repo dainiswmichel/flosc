@@ -7,6 +7,7 @@
 .githooks/
 .gitignore
 .distignore
+build-dist-zip.sh
 .claude/
 .vscode/
 .idea/
@@ -21,8 +22,14 @@ Thumbs.db
 *.log
 *.zip
 
+# Orphaned legacy CSS (not enqueued in runtime build)
+assets/css/flosc-layout.css
+assets/css/flosc-theme.css
+assets/css/flosc-legal.css
+assets/css/ivr-admin.css
+
 # Site/deployment-specific IVR configs — private, not shipped.
-# (Listed by name, NOT a *_ivr.md glob, so the default personas DO ship.)
+# Keep shipped default IVR files in ai_configuration_files/ for fresh installs.
 ai_configuration_files/dainis_net_ivr.md
 ai_configuration_files/lesaep_com_ivr.md
 ai_configuration_files/simplified_solfeggio_ivr.md
@@ -68,6 +75,7 @@ success_planning/
 tmp/
 wordpress_stuff/
 zip-files/
+sample-data/
 
 # Deployment/backup residue
 *.pre-restore-*/

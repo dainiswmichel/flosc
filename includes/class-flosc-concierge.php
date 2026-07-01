@@ -518,7 +518,7 @@ class FLOSC_Concierge {
 		echo '</select></div>';
 		echo '<div class="flosc-cncrg-row"><label>Keyword</label><input type="text" name="flosc_cncrg_keyword" value="' . esc_attr( $c['keyword'] ) . '" placeholder="the word the guest says"></div>';
 		echo '<div class="flosc-cncrg-row"><label>Password (any capitalization — blank = no gate)</label><input type="text" name="flosc_cncrg_password" value="' . esc_attr( $c['password'] ) . '"></div>';
-		echo '<div class="flosc-cncrg-row"><label>Max tries</label><input type="number" name="flosc_cncrg_max_tries" value="' . esc_attr( (string) $c['max_tries'] ) . '" min="1" style="width:80px;"></div>';
+		echo '<div class="flosc-cncrg-row"><label>Max tries</label><input class="flosc-cncrg-max-tries" type="number" name="flosc_cncrg_max_tries" value="' . esc_attr( (string) $c['max_tries'] ) . '" min="1"></div>';
 		echo '<div class="flosc-cncrg-row"><label>Retry messages (one per line; {try}/{max} substituted; last line shows on the final miss)</label><textarea name="flosc_cncrg_retry" rows="3">' . esc_textarea( $c['retry'] ) . '</textarea></div>';
 		echo '<div class="flosc-cncrg-row"><label>Success message (shown just before the content delivers)</label><input type="text" name="flosc_cncrg_success" value="' . esc_attr( $c['success'] ) . '"></div>';
 		echo '<div class="flosc-cncrg-row"><label>Delivery style (how the AI hosts the reveal — tone, language, pacing; blank = a warm, friendly default)</label><textarea name="flosc_cncrg_delivery" rows="3" placeholder="e.g. Warm and professional in English; offer one thing at a time as an easy yes/no question; reveal only what the guest asks for. (Set the persona per guest/purpose here — playful, formal, a specific language, etc.)">' . esc_textarea( $c['delivery'] ) . '</textarea></div>';
@@ -672,11 +672,10 @@ class FLOSC_Concierge {
 			'status     : ' . ( $active ? 'active on ' . $flow_stem : 'NOT active — fix the above' ),
 		);
 
-		$mono = 'ui-monospace,Menlo,Consolas,monospace';
-		$html  = '<div style="margin-top:24px;border:1px dashed #999;background:#fafafa;padding:12px 16px;">';
-		$html .= '<div style="font:600 12px/1.2 ' . $mono . ';color:#444;margin-bottom:6px;">— what FLOSC understands (admin only) —</div>';
-		$html .= '<pre style="font:13px/1.6 ' . $mono . ';color:#222;margin:0;white-space:pre-wrap;">' . esc_html( implode( "\n", $lines ) ) . '</pre>';
-		$html .= '<div style="font:11px/1.4 ' . $mono . ';color:#777;margin-top:8px;">Edit this post to change the setup; saving re-syncs it to the chat.</div>';
+		$html  = '<div class="flosc-cncrg-confirm">';
+		$html .= '<div class="flosc-cncrg-confirm-title">— what FLOSC understands (admin only) —</div>';
+		$html .= '<pre class="flosc-cncrg-confirm-body">' . esc_html( implode( "\n", $lines ) ) . '</pre>';
+		$html .= '<div class="flosc-cncrg-confirm-foot">Edit this post to change the setup; saving re-syncs it to the chat.</div>';
 		$html .= '</div>';
 
 		return $content . $html;

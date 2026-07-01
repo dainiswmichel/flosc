@@ -164,7 +164,7 @@
 <p>The plugin directory has no <code>node_modules</code>, no <code>package.json</code>, no <code>webpack.config.js</code>. Install the ZIP and it runs — a hard requirement for hosting environments that aren't developer machines.</p>
 
 <h3 id="principle-css-layers">CSS in Layers</h3>
-<p>The stylesheets split by responsibility: <code>flosc-layout.css</code> (structure and the chat frame), <code>flosc-theme.css</code> (colors, type, brand), <code>chat-style-*.css</code> (selectable presets), and <code>flosc-offers.css</code> (offer cards and modals). They don't bleed into each other — a theme change won't break layout, and an offer restyle won't touch the chat frame.</p>
+<p>The stylesheets split by responsibility: <code>flosc-chat.css</code> (chat frame and interaction UI), <code>chat-style-*.css</code> (selectable presets), <code>flosc-offers.css</code> (offer cards and checkout surfaces), <code>flosc-frontend.css</code> (non-chat frontend surfaces), and <code>flosc-access.css</code> (access-gate views). They don't bleed into each other — a visual preset change won't break layout, and an offer restyle won't touch access pages.</p>
 
 <h3 id="principle-debug-logging">Debug Output Stays Off in Production</h3>
 <p>Debug output is intended to be gated behind <code>FLOSC_DEBUG</code> (PHP) or <code>this.debug</code> (JS) so production installs stay quiet. Because this is maintained by discipline rather than enforced by a build step or CI check, an occasional ungated call can slip in — a periodic grep for <code>error_log</code> and <code>console.log</code> outside a debug conditional keeps it honest.</p>

@@ -24,24 +24,27 @@ $flosc_style_docs_url = add_query_arg([
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-style';
 
-echo '<div style="margin:-8px 0 14px; text-align:right;">'
-   . '<a href="' . esc_url($flosc_style_docs_url) . '" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>'
-   . '</div>';
+?>
+<div class="flosc-chat-style-docs-wrap">
+    <a href="<?php echo esc_url($flosc_style_docs_url); ?>" class="flosc-chat-style-docs-link">Docs</a>
+</div>
 
-echo '<div style="margin: 0 0 20px; padding: 22px 24px; border: 1px solid #dbe7ff; border-radius: 16px; background: linear-gradient(135deg, #f8fbff 0%, #eef4ff 100%); box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);">'
-    . '<div style="display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:flex-start;">'
-    . '<div style="max-width: 640px;">'
-    . '<div style="font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #4f6baf; margin-bottom: 8px;">Style system</div>'
-    . '<h2 style="margin: 0 0 10px; font-size: 26px; line-height: 1.15; color: #0f172a;">FLOSC Signature Template</h2>'
-    . '<p style="margin: 0; color: #334155; font-size: 14px; line-height: 1.65; max-width: 58ch;">Shape the chat surface with structured controls only. The preview below updates as you adjust the theme, bubble geometry, accent, font, and scale.</p>'
-    . '</div>'
-    . '<div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:flex-end;">'
-    . '<span style="padding:6px 10px; border-radius:999px; background:#ffffff; border:1px solid #dbe7ff; color:#1d4ed8; font-size:12px; font-weight:600;">Structured only</span>'
-    . '<span style="padding:6px 10px; border-radius:999px; background:#ffffff; border:1px solid #dbe7ff; color:#334155; font-size:12px; font-weight:600;">Live preview</span>'
-    . '<span style="padding:6px 10px; border-radius:999px; background:#ffffff; border:1px solid #dbe7ff; color:#334155; font-size:12px; font-weight:600;">CSS variables</span>'
-    . '</div>'
-    . '</div>'
-    . '</div>';
+<div class="flosc-chat-style-hero">
+    <div class="flosc-chat-style-hero-inner">
+        <div class="flosc-chat-style-hero-copy">
+            <div class="flosc-chat-style-eyebrow">Style system</div>
+            <h2 class="flosc-chat-style-hero-title">FLOSC Signature Template</h2>
+            <p class="flosc-chat-style-hero-text">Shape the chat surface with structured controls only. The preview below updates as you adjust the theme, bubble geometry, accent, font, and scale.</p>
+        </div>
+        <div class="flosc-chat-style-chip-row">
+            <span class="flosc-chat-style-chip flosc-chat-style-chip--blue">Structured only</span>
+            <span class="flosc-chat-style-chip">Live preview</span>
+            <span class="flosc-chat-style-chip">CSS variables</span>
+        </div>
+    </div>
+</div>
+
+<?php
 
 // Handle reset action
 if (isset($_POST['flosc_reset_chat_style']) && check_admin_referer('flosc_reset_chat_style_nonce')) {
@@ -99,15 +102,15 @@ $flosc_bubble_styles = [
 ?>
 
 <!-- Reset Button -->
-<form method="post" style="margin-bottom: 24px;">
+<form method="post" class="flosc-chat-style-reset-form">
     <?php wp_nonce_field('flosc_reset_chat_style_nonce'); ?>
-    <button type="submit" name="flosc_reset_chat_style" class="button" style="border-radius: 999px; padding: 0 16px; height: 38px; border-color: #d1d5db; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);" onclick="return confirm('Reset all styling to defaults?');">
+    <button type="submit" name="flosc_reset_chat_style" class="button flosc-chat-style-reset-btn" data-confirm-message="Reset all styling to defaults?">
         ↺ Reset to Default
     </button>
 </form>
 
-<div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:16px; padding:24px 24px 8px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05); margin-bottom: 24px;">
-<table class="form-table" style="margin-top: 0;">
+<div class="flosc-chat-style-panel">
+<table class="form-table flosc-chat-style-form-table">
 
     <!-- Theme Preset -->
     <tr>
@@ -136,23 +139,23 @@ $flosc_bubble_styles = [
             <p class="description">Message bubble geometry. Affects both user and assistant messages.</p>
             
             <!-- Bubble Preview -->
-            <div style="margin-top: 16px; padding: 18px; background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%); border: 1px solid #e5e7eb; border-radius: 14px; max-width: 420px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.75);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 14px; color:#64748b; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700;">
+            <div class="flosc-chat-style-preview-card">
+                <div class="flosc-chat-style-preview-head">
                     <span>Bubble preview</span>
                     <span>Live</span>
                 </div>
-                <div style="display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start;">
-                    <div style="width: 24px; height: 24px; background: #2563eb; border-radius: 50%; flex: 0 0 auto; margin-top: 2px;"></div>
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-                        <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;">Visitor</div>
-                        <div id="bubble-preview-user" style="background: #2563eb; color: white; padding: 10px 16px; border-radius: 18px 18px 4px 18px; font-size: 14px; line-height: 1.45;">User message</div>
+                <div class="flosc-chat-style-preview-row flosc-chat-style-preview-row--top">
+                    <div class="flosc-chat-style-preview-avatar flosc-chat-style-preview-avatar--user"></div>
+                    <div class="flosc-chat-style-preview-col">
+                        <div class="flosc-chat-style-preview-label">Visitor</div>
+                        <div id="bubble-preview-user" class="flosc-chat-style-preview-user-bubble">User message</div>
                     </div>
                 </div>
-                <div style="display: flex; gap: 12px; align-items: flex-start;">
-                    <div style="width: 24px; height: 24px; background: #e5e7eb; border-radius: 50%; flex: 0 0 auto; margin-top: 2px;"></div>
-                    <div style="display:flex; flex-direction:column; gap:6px;">
-                        <div style="font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: .08em;">Guide</div>
-                        <div id="bubble-preview-assistant" style="background: transparent; border: 1px solid rgba(0,0,0,0.08); padding: 10px 16px; border-radius: 4px 18px 18px 18px; font-size: 14px; line-height: 1.45;">Assistant message</div>
+                <div class="flosc-chat-style-preview-row">
+                    <div class="flosc-chat-style-preview-avatar flosc-chat-style-preview-avatar--assistant"></div>
+                    <div class="flosc-chat-style-preview-col">
+                        <div class="flosc-chat-style-preview-label">Guide</div>
+                        <div id="bubble-preview-assistant" class="flosc-chat-style-preview-assistant-bubble">Assistant message</div>
                     </div>
                 </div>
             </div>
@@ -163,18 +166,16 @@ $flosc_bubble_styles = [
     <tr>
         <th scope="row"><label for="flow_chat_style_accent">Accent Color</label></th>
         <td>
-            <input type="color" name="flow_chat_style_accent" id="flow_chat_style_accent" value="<?php echo esc_attr($flosc_current_accent); ?>" style="width: 60px; height: 36px; padding: 0; border: 1px solid #ccc; border-radius: 4px;">
-            <input type="text" id="flow_chat_style_accent_hex" value="<?php echo esc_attr($flosc_current_accent); ?>" style="width: 100px; margin-left: 8px;" readonly>
+            <input type="color" name="flow_chat_style_accent" id="flow_chat_style_accent" value="<?php echo esc_attr($flosc_current_accent); ?>" class="flosc-chat-style-color-input">
+            <input type="text" id="flow_chat_style_accent_hex" value="<?php echo esc_attr($flosc_current_accent); ?>" class="flosc-chat-style-accent-hex" readonly>
             <p class="description">Controls the active accent across user bubbles, the send button, links, hover states, and quiz highlights. Sets <code>--flosc-accent</code>.</p>
             
             <!-- Quick color swatches -->
-            <div style="margin-top: 8px; display: flex; gap: 6px;">
+            <div class="flosc-chat-style-swatches">
                 <?php 
                 $flosc_swatches = ['#2563eb', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#06b6d4', '#ec4899', '#1d4ed8'];
                 foreach ($flosc_swatches as $flosc_color): ?>
-                    <button type="button" class="color-swatch" data-color="<?php echo esc_attr($flosc_color); ?>" 
-                        style="width: 28px; height: 28px; border-radius: 4px; border: 2px solid <?php echo esc_attr(($flosc_color === $flosc_current_accent) ? '#000' : 'transparent'); ?>; 
-                        background: <?php echo esc_attr($flosc_color); ?>; cursor: pointer;" title="<?php echo esc_attr($flosc_color); ?>"></button>
+                    <button type="button" class="color-swatch flosc-chat-style-swatch <?php echo ($flosc_color === $flosc_current_accent) ? 'is-active' : ''; ?>" data-color="<?php echo esc_attr($flosc_color); ?>" title="<?php echo esc_attr($flosc_color); ?>"></button>
                 <?php endforeach; ?>
             </div>
         </td>
@@ -204,8 +205,8 @@ $flosc_bubble_styles = [
             <input type="range" name="flow_chat_style_scale" id="flow_chat_style_scale" 
                 min="100" max="150" step="10" 
                 value="<?php echo esc_attr($flosc_current_scale); ?>" 
-                style="width: 200px; vertical-align: middle;">
-            <span id="scale_value" style="margin-left: 10px; font-weight: 600; min-width: 50px; display: inline-block;"><?php echo esc_html($flosc_current_scale); ?>%</span>
+                class="flosc-chat-style-scale-range">
+            <span id="scale_value" class="flosc-chat-style-scale-value"><?php echo esc_html($flosc_current_scale); ?>%</span>
             <p class="description">Increase text size for better readability. 100% matches the browser default baseline.</p>
         </td>
     </tr>
@@ -214,12 +215,12 @@ $flosc_bubble_styles = [
 </div>
 
 <!-- CSS Variable Reference -->
-<div style="background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%); border: 1px solid #dbe7ff; border-radius: 16px; padding: 22px; margin: 30px 0 0; max-width: 760px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);">
-    <h3 style="margin: 0 0 10px; color: #1e3a8a; font-size: 18px;">CSS Variable Reference</h3>
-    <p style="margin-bottom: 18px; color: #475569; line-height: 1.6;">Use these variables in WordPress Additional CSS or a child theme when you need to fine-tune the structured template outside this admin screen.</p>
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-family: monospace; font-size: 13px;">
+<div class="flosc-chat-style-vars-box">
+    <h3 class="flosc-chat-style-vars-title">CSS Variable Reference</h3>
+    <p class="flosc-chat-style-vars-copy">Use these variables in WordPress Additional CSS or a child theme when you need to fine-tune the structured template outside this admin screen.</p>
+    <div class="flosc-chat-style-vars-grid">
         <div>
-            <strong style="color: #1e40af;">Messages</strong><br>
+            <strong class="flosc-chat-style-vars-heading">Messages</strong><br>
             <code>--flosc-user-message-bg</code><br>
             <code>--flosc-user-message-text</code><br>
             <code>--flosc-user-message-radius</code><br>
@@ -227,7 +228,7 @@ $flosc_bubble_styles = [
             <code>--flosc-assistant-message-text</code>
         </div>
         <div>
-            <strong style="color: #1e40af;">Global</strong><br>
+            <strong class="flosc-chat-style-vars-heading">Global</strong><br>
             <code>--flosc-bg</code><br>
             <code>--flosc-text</code><br>
             <code>--flosc-accent</code><br>

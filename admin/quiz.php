@@ -24,8 +24,8 @@ $flosc_enabled_quizzes = $flosc_flow_settings['enabled_quizzes'] ?? ['flosc_samp
 if ( ! is_array( $flosc_enabled_quizzes ) ) $flosc_enabled_quizzes = ['flosc_sample_data_numbers_quiz'];
 $flosc_all_quiz_types  = FLOSC_Quiz_Registry::get_all_quizzes();
 
-echo '<div style="margin:-8px 0 14px; text-align:right;">'
-   . '<a href="' . esc_url($flosc_quiz_docs_url) . '" style="font-size:12px; text-decoration:none; color:#2271b1;">Docs</a>'
+echo '<div class="flosc-docs-link-wrap">'
+    . '<a href="' . esc_url($flosc_quiz_docs_url) . '" class="flosc-docs-link">Docs</a>'
    . '</div>';
 
 if ( empty( $flosc_all_quiz_types ) ) {
@@ -417,10 +417,10 @@ DEMO,
             'doc'  => 'ref-audio-quiz-flow',
         ], admin_url('admin.php'));
         ?>
-        <a href="<?php echo esc_url($flosc_helplink_url); ?>" style="font-size: 12px; font-weight: normal; margin-left: 8px; text-decoration: none;" title="Full documentation for the Audio Quiz Flow">📖 Help</a>
+        <a href="<?php echo esc_url($flosc_helplink_url); ?>" class="flosc-help-link" title="Full documentation for the Audio Quiz Flow">📖 Help</a>
     </h3>
     <p class="description">These messages appear in the chatbot during and after the audio pronunciation quiz. Placeholders: <code>{current}</code> = phrase number, <code>{total}</code> = total phrases.</p>
-    <table class="form-table" style="margin:0 0 24px;">
+    <table class="form-table flosc-form-table-margin-bottom-24">
         <tr>
             <th scope="row"><label for="flow_audio_conversion_provider">Audio Conversion Provider</label></th>
             <td>
@@ -432,7 +432,7 @@ DEMO,
             </td>
         </tr>
         <tr>
-            <th scope="row" style="width:200px;"><label for="flow_audio_quiz_phrase_complete_message">Phrase Complete</label></th>
+            <th scope="row" class="flosc-width-200"><label for="flow_audio_quiz_phrase_complete_message">Phrase Complete</label></th>
             <td>
                 <input type="text" id="flow_audio_quiz_phrase_complete_message" name="flow_audio_quiz_phrase_complete_message" class="large-text" value="<?php echo esc_attr( $flosc_flow_settings['audio_quiz_phrase_complete_message'] ?? 'Thank you. {current} of {total} recorded.' ); ?>">
                 <p class="description">Shown after each phrase is recorded.</p>
@@ -471,16 +471,16 @@ DEMO,
     <!-- ── Active Quizzes — summary of what is live in the funnel ────────── -->
     <h3>✅ Active Quizzes</h3>
     <?php if ( empty( $flosc_active_quiz_types ) ): ?>
-    <p style="color:#996633;background:#fff8e1;border:1px solid #f0ad4e;border-radius:4px;padding:8px 12px;display:inline-block;">
+    <p class="flosc-quiz-warning">
         No quizzes are currently active. Enable one in the Quiz Deck below.
     </p>
     <?php else: ?>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+    <div class="flosc-quiz-pill-row">
         <?php foreach ( $flosc_active_quiz_types as $flosc_qid ):
             $flosc_qt = $flosc_ready_quizzes[ $flosc_qid ] ?? null;
             if ( ! $flosc_qt ) continue;
         ?>
-        <span style="display:inline-flex;align-items:center;gap:6px;background:#d4edda;border:1px solid #c3e6cb;border-radius:20px;padding:4px 12px;font-size:13px;font-weight:600;color:#155724;">
+        <span class="flosc-quiz-pill">
             ✅ <?php echo esc_html( $flosc_qt->get_icon() . ' ' . $flosc_qt->get_name() ); ?>
         </span>
         <?php endforeach; ?>
@@ -489,7 +489,7 @@ DEMO,
     <?php endif; ?>
 
     <!-- ── Quiz Deck — configure and enable quizzes ───────────────────────── -->
-    <h3 style="margin-top:28px;">🗂 Quiz Deck</h3>
+    <h3 class="flosc-heading-top-28">🗂 Quiz Deck</h3>
     <p>Your library of available quizzes. Enable a quiz to make it Active. Load a demo below to populate the question editor.</p>
 
     <div class="flosc-quiz-grid">
@@ -507,7 +507,7 @@ DEMO,
                 <?php echo esc_html( $flosc_qt->get_name() ); ?>
                 <span class="badge native">NATIVE</span>
                 <?php if ( $flosc_is_enabled ): ?>
-                <span class="badge" style="background:#d4edda;color:#155724;margin-left:4px;">✅ Active</span>
+                <span class="badge flosc-quiz-badge-active">✅ Active</span>
                 <?php endif; ?>
             </h4>
             <p class="desc"><?php echo esc_html( $flosc_qt->get_description() ); ?></p>
@@ -520,22 +520,22 @@ DEMO,
                 <label>Enable (make Active)</label>
             </div>
 
-            <details id="<?php echo esc_attr($flosc_det_id); ?>" style="margin-top:12px;">
-                <summary style="cursor:pointer;color:#0073aa;font-size:12px;font-weight:600;list-style:none;display:flex;align-items:center;gap:4px;">
+            <details id="<?php echo esc_attr($flosc_det_id); ?>" class="flosc-margin-top-12">
+                <summary class="flosc-details-summary flosc-details-summary--blue">
                     ✏️ Edit Quiz
                 </summary>
-                <div style="margin-top:8px;">
+                <div class="flosc-details-content-top-8">
 
-                    <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#50575e;margin:0 0 6px;">Questions, Correct Answers &amp; WordPress Topic Links</p>
+                    <p class="flosc-micro-heading">Questions, Correct Answers &amp; WordPress Topic Links</p>
                     <textarea
                         id="<?php echo esc_attr($flosc_ta_id); ?>"
                         name="flow_quiz_content_<?php echo esc_attr( $flosc_quiz_id ); ?>"
                         rows="14"
                         class="large-text code"
-                        style="font-size:12px;"
+                        class="large-text code flosc-textarea-12"
                         placeholder="<?php echo esc_attr( $flosc_qt->get_default_content() ); ?>"
                     ><?php echo esc_textarea( $flosc_content ); ?></textarea>
-                    <p class="description" style="margin-top:6px;">
+                    <p class="description flosc-description-top-6">
                         <strong>Format:</strong> <?php echo esc_html( $flosc_qt->get_instructions() ); ?>
                     </p>
 
@@ -543,28 +543,27 @@ DEMO,
                     $flosc_templates = $flosc_qt->get_default_response_templates();
                     if ( ! empty( $flosc_templates ) ):
                     ?>
-                    <div style="margin-top:16px;border-top:1px solid #e0e0e0;padding-top:12px;">
-                        <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#50575e;margin:0 0 6px;">Score Feedback Templates</p>
-                        <p class="description" style="margin:0 0 10px;">
+                    <div class="flosc-top-border-panel">
+                        <p class="flosc-micro-heading">Score Feedback Templates</p>
+                        <p class="description flosc-description-margin-0-0-10">
                             Shown to the learner after scoring.
                             Placeholders: <code>{score}</code> <code>{total_correct}</code> <code>{total_possible}</code> <code>{lesson_recommendations}</code>
                         </p>
-                        <table class="form-table" style="margin:0;">
+                        <table class="form-table flosc-form-table-reset flosc-form-table-reset-row">
                         <?php foreach ( $flosc_templates as $flosc_range => $flosc_default ):
                             $flosc_key   = 'quiz_' . $flosc_quiz_id . '_template_' . $flosc_range;
                             $flosc_value = ! empty( $flosc_flow_settings[ $flosc_key ] ) ? $flosc_flow_settings[ $flosc_key ] : $flosc_default;
                         ?>
                         <tr>
-                            <th scope="row" style="width:100px;padding:4px 10px 4px 0;font-size:12px;">
+                            <th scope="row" class="flosc-score-template-col">
                                 <label for="<?php echo esc_attr( 'flow_' . $flosc_key ); ?>"><?php echo esc_html( $flosc_range ); ?>%</label>
                             </th>
-                            <td style="padding:4px 0;">
+                            <td class="flosc-score-template-cell">
                                 <textarea
                                     id="<?php echo esc_attr( 'flow_' . $flosc_key ); ?>"
                                     name="flow_<?php echo esc_attr( $flosc_key ); ?>"
                                     rows="2"
-                                    class="large-text"
-                                    style="font-size:12px;"
+                                    class="large-text flosc-textarea-12"
                                 ><?php echo esc_textarea( $flosc_value ); ?></textarea>
                             </td>
                         </tr>
@@ -584,32 +583,31 @@ DEMO,
         $flosc_ta_id   = 'flosc_quiz_editor_' . esc_attr( $flosc_quiz_id );
         $flosc_det_id  = 'flosc_quiz_details_' . esc_attr( $flosc_quiz_id );
     ?>
-        <div class="flosc-quiz-card" style="opacity:0.7;border-style:dashed;">
+        <div class="flosc-quiz-card flosc-quiz-card-dim">
             <h4>
                 <span class="icon"><?php echo esc_html( $flosc_qt->get_icon() ); ?></span>
                 <?php echo esc_html( $flosc_qt->get_name() ); ?>
                 <span class="badge native">NATIVE</span>
             </h4>
             <p class="desc"><?php echo esc_html( $flosc_qt->get_description() ); ?></p>
-            <p style="font-size:12px;color:#996633;background:#fff8e1;border:1px solid #f0ad4e;border-radius:4px;padding:6px 10px;margin:8px 0 0;">
+            <p class="flosc-quiz-warning flosc-quiz-warning--block">
                 🎤 Requires microphone + speech-to-text — not yet functional.
             </p>
 
-            <details id="<?php echo esc_attr($flosc_det_id); ?>" style="margin-top:12px;">
-                <summary style="cursor:pointer;color:#6c757d;font-size:12px;font-weight:600;list-style:none;display:flex;align-items:center;gap:4px;">
+            <details id="<?php echo esc_attr($flosc_det_id); ?>" class="flosc-margin-top-12">
+                <summary class="flosc-details-summary flosc-details-summary--gray">
                     ✏️ Edit Quiz
                 </summary>
-                <div style="margin-top:8px;">
-                    <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#50575e;margin:0 0 6px;">Questions, Correct Answers &amp; WordPress Topic Links</p>
+                <div class="flosc-details-content-top-8">
+                    <p class="flosc-micro-heading">Questions, Correct Answers &amp; WordPress Topic Links</p>
                     <textarea
                         id="<?php echo esc_attr($flosc_ta_id); ?>"
                         name="flow_quiz_content_<?php echo esc_attr( $flosc_quiz_id ); ?>"
                         rows="8"
-                        class="large-text code"
-                        style="font-size:12px;"
+                        class="large-text code flosc-textarea-12"
                         readonly
                     ><?php echo esc_textarea( $flosc_content ); ?></textarea>
-                    <p class="description" style="margin-top:6px;">
+                    <p class="description flosc-description-top-6">
                         <strong>Format:</strong> <?php echo esc_html( $flosc_qt->get_instructions() ); ?>
                     </p>
                 </div>
@@ -619,12 +617,12 @@ DEMO,
     </div>
 
     <!-- ── Demo library ──────────────────────────────────────────────────── -->
-    <details style="margin-top:28px;" open>
-        <summary style="cursor:pointer;font-size:15px;font-weight:600;padding:10px 0;">
+    <details class="flosc-margin-top-28" open>
+        <summary class="flosc-ai-section-heading">
             🎯 Demo Quiz Sets — load ready-made questions into any editor
         </summary>
-        <div style="margin-top:12px;padding:16px;background:#f9f9f9;border-radius:6px;">
-            <p class="description" style="margin-bottom:16px;">
+        <div class="flosc-demo-panel">
+            <p class="description flosc-demo-description">
                 Click <strong>Load →</strong> to fill that quiz's editor with demo content. Then enable the quiz above, customize as needed, and save.
             </p>
 
@@ -634,19 +632,19 @@ DEMO,
                 $flosc_ta_id  = 'flosc_quiz_editor_' . esc_attr( $flosc_quiz_id );
                 $flosc_det_id = 'flosc_quiz_details_' . esc_attr( $flosc_quiz_id );
             ?>
-            <h4 style="margin:20px 0 10px;font-size:13px;color:#1d2327;border-bottom:1px solid #e0e0e0;padding-bottom:6px;">
+            <h4 class="flosc-demo-section-title">
                 <?php echo esc_html( $flosc_qt->get_icon() . ' ' . $flosc_qt->get_name() ); ?>
             </h4>
-            <div style="display:flex;flex-direction:column;gap:8px;">
+            <div class="flosc-demo-list">
                 <?php foreach ( $flosc_demos as $flosc_i => $flosc_demo ): ?>
-                <div style="background:#fff;border:1px solid #ddd;border-radius:5px;padding:12px 14px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
-                    <div style="flex:1;">
-                        <strong style="font-size:13px;"><?php echo esc_html( $flosc_demo['name'] ); ?></strong>
-                        <span style="display:block;font-size:12px;color:#50575e;margin-top:2px;"><?php echo esc_html( $flosc_demo['desc'] ); ?></span>
+                <div class="flosc-demo-item">
+                    <div class="flosc-demo-item__body">
+                        <strong class="flosc-demo-item__title"><?php echo esc_html( $flosc_demo['name'] ); ?></strong>
+                        <span class="flosc-demo-item__desc"><?php echo esc_html( $flosc_demo['desc'] ); ?></span>
                     </div>
                     <textarea
                         id="flosc_demo_<?php echo esc_attr( $flosc_quiz_id ); ?>_<?php echo esc_attr((string) $flosc_i); ?>"
-                        style="display:none;"
+                        class="flosc-hidden"
                         readonly
                     ><?php echo esc_textarea( $flosc_demo['content'] ); ?></textarea>
                     <button
@@ -655,7 +653,7 @@ DEMO,
                         data-textarea="<?php echo esc_attr( $flosc_ta_id ); ?>"
                         data-details="<?php echo esc_attr( $flosc_det_id ); ?>"
                         data-source="flosc_demo_<?php echo esc_attr( $flosc_quiz_id ); ?>_<?php echo esc_attr((string) $flosc_i); ?>"
-                        style="flex-shrink:0;white-space:nowrap;"
+                        class="button button-small flosc-load-demo flosc-nowrap-shrink"
                     >Load →</button>
                 </div>
                 <?php endforeach; ?>

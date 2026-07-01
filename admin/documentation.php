@@ -66,13 +66,13 @@ foreach ($flosc_doc_topics as $flosc_topic) {
 }
 ?>
 
-<div class="flosc-docs-wrap" style="display: flex; gap: 20px; margin-top: 15px;">
+<div class="flosc-docs-wrap flosc-docs-layout">
 
     <!-- Sidebar TOC -->
-    <nav class="flosc-docs-sidebar" style="min-width: 240px; max-width: 260px; flex-shrink: 0;">
-        <div style="position: sticky; top: 32px;">
-            <h3 style="margin: 0 0 12px; font-size: 14px; color: #1d2327;">📖 Documentation</h3>
-            <p style="font-size: 11px; color: #888; margin: 0 0 12px;">✅ Written &nbsp; 🔲 Coming soon</p>
+    <nav class="flosc-docs-sidebar flosc-docs-sidebar-layout">
+        <div class="flosc-docs-sidebar-sticky">
+            <h3 class="flosc-docs-sidebar-title">📖 Documentation</h3>
+            <p class="flosc-docs-sidebar-legend">✅ Written &nbsp; 🔲 Coming soon</p>
             <?php
             $flosc_current_group = '';
             foreach ($flosc_doc_topics as $flosc_topic):
@@ -92,9 +92,9 @@ foreach ($flosc_doc_topics as $flosc_topic) {
                         }
                     }
                     ?>
-                    <div style="font-size: 11px; font-weight: 600; color: #666; margin: 14px 0 4px; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <div class="flosc-docs-group-title">
                         <?php if (!empty($flosc_group_heading_url)): ?>
-                            <a href="<?php echo esc_url($flosc_group_heading_url); ?>" style="color: #666; text-decoration: none;">
+                            <a href="<?php echo esc_url($flosc_group_heading_url); ?>" class="flosc-docs-group-link">
                                 <?php echo esc_html($flosc_group_labels[$flosc_current_group]); ?>
                             </a>
                         <?php else: ?>
@@ -116,7 +116,7 @@ foreach ($flosc_doc_topics as $flosc_topic) {
                 }
                 ?>
                      <a href="<?php echo esc_url($flosc_link_url); ?>"
-                         style="display: block; padding: 5px 10px; margin: 1px 0; font-size: 13px; text-decoration: none; border-radius: 4px; color: <?php echo esc_attr($flosc_is_active ? '#fff' : '#2271b1'); ?>; background: <?php echo esc_attr($flosc_is_active ? '#2271b1' : 'transparent'); ?>;">
+                         class="flosc-docs-topic-link <?php echo $flosc_is_active ? 'flosc-docs-topic-link--active' : ''; ?>">
                           <?php echo esc_html($flosc_status_icon) . ' ' . esc_html($flosc_topic['title']); ?>
                 </a>
             <?php endforeach; ?>
@@ -124,14 +124,14 @@ foreach ($flosc_doc_topics as $flosc_topic) {
     </nav>
 
     <!-- Content area -->
-    <div class="flosc-docs-content" style="flex: 1; min-width: 0; max-width: 900px;">
+    <div class="flosc-docs-content flosc-docs-content-layout">
         <?php if (empty($flosc_doc_topic)): ?>
             <!-- Landing page -->
-            <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;">
-                <h2 style="margin-top: 0;">FLOSC Documentation</h2>
+            <div class="flosc-doc-card">
+                <h2 class="flosc-doc-card-title">FLOSC Documentation</h2>
                 <p>Reference manual for the FLOSC conversational learning platform. Select a topic from the sidebar, or start here:</p>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px;">
+                <div class="flosc-doc-card-grid">
                     <?php foreach ($flosc_group_labels as $flosc_gid => $flosc_glabel):
                         // Find first topic in this group
                         $flosc_first = isset($flosc_group_first_topic[$flosc_gid]) ? $flosc_group_first_topic[$flosc_gid] : null;
@@ -151,55 +151,55 @@ foreach ($flosc_doc_topics as $flosc_topic) {
                             'doc'  => $flosc_first['id'],
                         ], admin_url('admin.php'));
                     ?>
-                        <a href="<?php echo esc_url($flosc_card_url); ?>" style="display: block; padding: 16px; background: #f6f7f7; border: 1px solid #ddd; border-radius: 6px; text-decoration: none; color: #1d2327;">
-                            <strong style="font-size: 14px;"><?php echo esc_html($flosc_glabel); ?></strong>
-                            <span style="display: block; font-size: 12px; color: #888; margin-top: 4px;"><?php echo esc_html((string) $flosc_ready_count); ?>/<?php echo esc_html((string) $flosc_total_count); ?> sections written</span>
+                        <a href="<?php echo esc_url($flosc_card_url); ?>" class="flosc-doc-card-link">
+                            <strong class="flosc-doc-card-link-title"><?php echo esc_html($flosc_glabel); ?></strong>
+                            <span class="flosc-doc-card-link-meta"><?php echo esc_html((string) $flosc_ready_count); ?>/<?php echo esc_html((string) $flosc_total_count); ?> sections written</span>
                         </a>
                     <?php endforeach; ?>
                 </div>
 
-                <div style="margin-top: 20px; padding: 12px 16px; background: #f0f6fc; border-left: 4px solid #2271b1; border-radius: 0 4px 4px 0; font-size: 13px;">
+                <div class="flosc-doc-help-note">
                     <strong>Help links:</strong> Throughout the FLOSC admin, you'll see expandable reference panels (like the Conditions and Actions references in IVR Messages). Those inline references will link to the full documentation here as sections are completed.
                 </div>
             </div>
 
         <?php elseif ($flosc_doc_topic === 'the-journey'): ?>
-            <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
+            <div class="flosc-doc-article flosc-doc-card">
                 <?php include FLOSC_PLUGIN_DIR . 'admin/docs/part1-journey.php'; ?>
             </div>
 
         <?php elseif ($flosc_doc_topic === 'ref-quiz'): ?>
-            <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
+            <div class="flosc-doc-article flosc-doc-card">
                 <?php include FLOSC_PLUGIN_DIR . 'admin/docs/part3-ref-quiz.php'; ?>
             </div>
 
         <?php elseif ($flosc_doc_topic === 'ref-audio-quiz-flow'): ?>
-            <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
+            <div class="flosc-doc-article flosc-doc-card">
                 <?php include FLOSC_PLUGIN_DIR . 'admin/docs/part3-ref-audio-quiz-flow.php'; ?>
             </div>
 
         <?php elseif ($flosc_doc_topic === 'glossary'): ?>
-            <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
+            <div class="flosc-doc-article flosc-doc-card">
                 <?php include FLOSC_PLUGIN_DIR . 'admin/docs/part5-glossary.php'; ?>
             </div>
 
         <?php elseif (in_array($flosc_doc_topic, ['development-team', 'development-devnotes', 'development-future', 'development-wishlist'], true)): ?>
-            <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
+            <div class="flosc-doc-article flosc-doc-card">
                 <?php include FLOSC_PLUGIN_DIR . 'admin/docs/part6-development.php'; ?>
             </div>
 
         <?php elseif ($flosc_doc_topic === 'ref-core'): ?>
-            <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
+            <div class="flosc-doc-article flosc-doc-card">
                 <?php include FLOSC_PLUGIN_DIR . 'admin/docs/ref_core_skeleton.php'; ?>
             </div>
 
         <?php elseif ($flosc_doc_topic === 'ref-admin'): ?>
-            <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
+            <div class="flosc-doc-article flosc-doc-card">
                 <?php include FLOSC_PLUGIN_DIR . 'admin/docs/ref_admin_skeleton.php'; ?>
             </div>
 
         <?php elseif ($flosc_doc_topic === 'ref-ai-config'): ?>
-            <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;" class="flosc-doc-article">
+            <div class="flosc-doc-article flosc-doc-card">
                 <?php
                 // Suppress the tab header when including guide from documentation
                 $GLOBALS['flosc_suppress_tab_header'] = true;
@@ -216,9 +216,9 @@ foreach ($flosc_doc_topics as $flosc_topic) {
             }
             if ($flosc_current_topic):
             ?>
-            <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;">
-                <h2 style="margin-top: 0;"><?php echo esc_html($flosc_current_topic['title']); ?></h2>
-                <div style="padding: 16px; background: #fff8e5; border: 1px solid #f0c36d; border-radius: 4px; margin-bottom: 20px;">
+            <div class="flosc-doc-card">
+                <h2 class="flosc-doc-card-title"><?php echo esc_html($flosc_current_topic['title']); ?></h2>
+                <div class="flosc-doc-pending-note">
                     <strong>🔲 Content pending</strong> — This section has a heading structure prepared. Content will be written as the corresponding features stabilize.
                 </div>
                 <?php
@@ -230,7 +230,7 @@ foreach ($flosc_doc_topics as $flosc_topic) {
                 ?>
             </div>
             <?php else: ?>
-                <div style="background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 24px;">
+                <div class="flosc-doc-card">
                     <p>Topic not found. Select a topic from the sidebar.</p>
                 </div>
             <?php endif; ?>

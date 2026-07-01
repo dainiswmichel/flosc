@@ -674,8 +674,8 @@ class floscApp {
         const body = this.formatMarkdown(text);
         div.innerHTML =
             '<div class="message-content">'
-                + '<div class="message-text" style="background:#e6f4ea;border:1px solid #cdebd6;border-radius:10px;padding:8px 12px;">'
-                    + '<div style="font-size:12px;color:#2e7d32;font-weight:600;margin-bottom:3px;">'
+                + '<div class="message-text flosc-admin-message-text">'
+                    + '<div class="flosc-admin-message-meta">'
                         + safeName + ' <em>(admin)</em></div>'
                     + body
                 + '</div>'
@@ -687,12 +687,9 @@ class floscApp {
     }
 
     injectIVRStyles() {
-        const stylesCss = this.config.ivrStylesCss || '';
+        const stylesCss = String(this.config.ivrStylesCss || '').trim();
         if (stylesCss) {
-            const style = document.createElement('style');
-            style.id = 'flosc-ivr-styles';
-            style.textContent = stylesCss;
-            document.head.appendChild(style);
+            this.logWarn('[FLOSC] ivrStylesCss injection is disabled in release build. Use sanctioned CSS files and variables.');
         }
 
         // v1.6.2: Offer/checkout/autoprompt CSS moved to flosc-offers.css (enqueued via PHP)
@@ -1169,9 +1166,9 @@ class floscApp {
                 return `<button class="flosc-style-pill flosc-admin-pill" data-message="${this.escapeHtml(p.user_input)}"${offerAttr}${actAttr}>${icon}<span class="flosc-autoprompt-label">${this.escapeHtml(label)}</span></button>`;
             }).join('');
             sectionsHtml += `
-            <div class="flosc-admin-pill-group" style="background:${cfg.bg};border:1px solid ${cfg.border};border-radius:8px;padding:7px 10px;margin-bottom:5px;">
-                <div style="font-size:10px;font-weight:700;color:${cfg.color};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">${cfg.emoji} ${cfg.label} (${pills.length})</div>
-                <div style="display:flex;flex-wrap:wrap;gap:4px;">${pillsHtml}</div>
+            <div class="flosc-admin-pill-group flosc-admin-pill-group-${state}">
+                <div class="flosc-admin-pill-group-title">${cfg.emoji} ${cfg.label} (${pills.length})</div>
+                <div class="flosc-admin-pill-row">${pillsHtml}</div>
             </div>`;
         }
 
@@ -1181,15 +1178,14 @@ class floscApp {
             const btns = testOffers.map(o => {
                 const active = (o.status === 'active') ? '✅' : '📝';
                 const price  = o.display_price || (o.price ? `$${o.price}` : '');
-                return `<button class="flosc-style-pill" data-offer-id="${this.escapeHtml(String(o.id))}"
-                            style="background:#fef3c7;border-color:#f59e0b;color:#92400e;">
+                return `<button class="flosc-style-pill flosc-admin-pill flosc-admin-pill-offer" data-offer-id="${this.escapeHtml(String(o.id))}">
                             💰 ${active} ${this.escapeHtml(o.name || o.id)}${price ? ' · ' + this.escapeHtml(price) : ''}
                         </button>`;
             }).join('');
             offersHtml = `
-            <div class="flosc-admin-pill-group" style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:7px 10px;margin-bottom:5px;">
-                <div style="font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">🧪 ALL OFFERS — click to test</div>
-                <div style="display:flex;flex-wrap:wrap;gap:4px;">${btns}</div>
+            <div class="flosc-admin-pill-group flosc-admin-pill-group-offer">
+                <div class="flosc-admin-pill-group-title">🧪 ALL OFFERS — click to test</div>
+                <div class="flosc-admin-pill-row">${btns}</div>
             </div>`;
         }
 
@@ -1197,19 +1193,19 @@ class floscApp {
         panel.id = 'flosc_input_user_autoprompts_panel';
         panel.className = 'prompt-panel prompt-panel-inline';
         panel.innerHTML = `
-            <div class="prompt-panel-header" style="padding:6px 10px;border-bottom:1px solid #e5e7eb;cursor:pointer;display:flex;align-items:center;justify-content:space-between;" id="flosc-admin-panel-toggle">
+            <div class="prompt-panel-header flosc-admin-panel-header" id="flosc-admin-panel-toggle">
                 <div>
-                    <div class="prompt-panel-eyebrow" style="font-size:10px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.5px;">🧪 Admin Test Mode — all states visible</div>
-                    <div style="font-size:10px;color:#9ca3af;margin-top:2px;">🛒 Purchases: ${this.user?.purchaseCount ?? 0} | 🏷️ Level: ${this.user?.memberLevel || 'none'} | 📊 State: ${this.state || '?'}</div>
+                    <div class="prompt-panel-eyebrow flosc-admin-panel-eyebrow">🧪 Admin Test Mode — all states visible</div>
+                    <div class="flosc-admin-panel-stats">🛒 Purchases: ${this.user?.purchaseCount ?? 0} | 🏷️ Level: ${this.user?.memberLevel || 'none'} | 📊 State: ${this.state || '?'}</div>
                 </div>
-                <span id="flosc-admin-panel-chevron" style="font-size:16px;color:#6b7280;transition:transform 0.2s;">▼</span>
+                <span id="flosc-admin-panel-chevron" class="flosc-admin-panel-chevron">▼</span>
             </div>
-            <div class="prompt-panel-body" id="flosc-admin-panel-body" style="display:flex;flex-direction:column;gap:0;max-height:40vh;overflow-y:auto;padding:5px;">
+            <div class="prompt-panel-body flosc-admin-panel-body" id="flosc-admin-panel-body">
                 ${sectionsHtml}${offersHtml}
-                <div class="flosc-admin-pill-group" style="background:#ede9fe;border:1px solid #a78bfa;border-radius:8px;padding:7px 10px;margin-bottom:5px;">
-                    <div style="font-size:10px;font-weight:700;color:#5b21b6;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">🎤 Quiz Cycle</div>
-                    <div style="display:flex;flex-wrap:wrap;gap:4px;">
-                        <button class="flosc-style-pill" data-action="${this.config.defaultQuizAction || 'open_quiz:pronunciation_ipa_audio_quiz'}" style="background:#ede9fe;border-color:#a78bfa;color:#5b21b6;">🎤 Start Pronunciation Quiz</button>
+                <div class="flosc-admin-pill-group flosc-admin-pill-group-quiz">
+                    <div class="flosc-admin-pill-group-title">🎤 Quiz Cycle</div>
+                    <div class="flosc-admin-pill-row">
+                        <button class="flosc-style-pill flosc-admin-pill flosc-admin-pill-quiz" data-action="${this.config.defaultQuizAction || 'open_quiz:pronunciation_ipa_audio_quiz'}">🎤 Start Pronunciation Quiz</button>
                     </div>
                 </div>
             </div>`;
@@ -1221,8 +1217,8 @@ class floscApp {
                 const body = document.getElementById('flosc-admin-panel-body');
                 const chevron = document.getElementById('flosc-admin-panel-chevron');
                 if (body && chevron) {
-                    const collapsed = body.style.display === 'none';
-                    body.style.display = collapsed ? 'flex' : 'none';
+                    const collapsed = body.classList.contains('flosc-hidden');
+                    body.classList.toggle('flosc-hidden', !collapsed);
                     chevron.textContent = collapsed ? '▼' : '▶';
                 }
             };
@@ -1507,11 +1503,11 @@ class floscApp {
         // Always show arrows if there's more than 1 item
         if (itemCount > 1) {
             carouselEl.classList.add('has-overflow');
-            prevBtn.style.display = 'flex';
-            nextBtn.style.display = 'flex';
+            prevBtn.classList.remove('flosc-hidden');
+            nextBtn.classList.remove('flosc-hidden');
         } else {
-            prevBtn.style.display = 'none';
-            nextBtn.style.display = 'none';
+            prevBtn.classList.add('flosc-hidden');
+            nextBtn.classList.add('flosc-hidden');
             return; // No carousel needed for single item
         }
 
@@ -1534,25 +1530,26 @@ class floscApp {
             isAnimating = true;
             
             const scrollAmount = getScrollAmount();
-            
+
             // v2.0.1: Smooth ease-out for natural swipe-like feel
-            track.style.transition = `transform ${ANIMATION_DURATION}ms cubic-bezier(0.25, 0.1, 0.25, 1)`;
-            track.style.transform = `translateX(-${scrollAmount}px)`;
-            
-            setTimeout(() => {
+            const anim = track.animate(
+                [
+                    { transform: 'translateX(0)' },
+                    { transform: `translateX(-${scrollAmount}px)` }
+                ],
+                {
+                    duration: ANIMATION_DURATION,
+                    easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)'
+                }
+            );
+
+            anim.onfinish = () => {
                 // Move first item to end
                 const firstItem = track.children[0];
                 track.appendChild(firstItem);
-                
-                // Reset transform instantly
-                track.style.transition = 'none';
-                track.style.transform = 'translateX(0)';
-                
-                // Force reflow
-                track.offsetHeight;
-                
+
                 isAnimating = false;
-            }, ANIMATION_DURATION);
+            };
         };
 
         // Move last item to beginning (scroll left / prev)
@@ -1565,21 +1562,22 @@ class floscApp {
             // Move last item to beginning FIRST (no animation)
             const lastItem = track.children[track.children.length - 1];
             track.insertBefore(lastItem, track.children[0]);
-            
-            // Set initial offset
-            track.style.transition = 'none';
-            track.style.transform = `translateX(-${scrollAmount}px)`;
-            
-            // Force reflow
-            track.offsetHeight;
-            
+
             // v2.0.1: Smooth ease-out for natural swipe-like feel
-            track.style.transition = `transform ${ANIMATION_DURATION}ms cubic-bezier(0.25, 0.1, 0.25, 1)`;
-            track.style.transform = 'translateX(0)';
-            
-            setTimeout(() => {
+            const anim = track.animate(
+                [
+                    { transform: `translateX(-${scrollAmount}px)` },
+                    { transform: 'translateX(0)' }
+                ],
+                {
+                    duration: ANIMATION_DURATION,
+                    easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)'
+                }
+            );
+
+            anim.onfinish = () => {
                 isAnimating = false;
-            }, ANIMATION_DURATION);
+            };
         };
 
         // Click handlers
@@ -1705,7 +1703,7 @@ class floscApp {
     async _generateAIWelcome(ivrWelcomeMsg) {
         const productName = this.config.identity?.name || 'FLOSC';
         const badgeUrl = this._getValidBadgeUrl();
-        const badge = badgeUrl ? `<div style="text-align:center;margin:16px 0"><img src="${badgeUrl}" alt="${productName}" style="display:inline-block;max-width:55%;border:3px solid rgba(184,148,68,0.2)"></div>` : '';
+        const badge = badgeUrl ? `<div class="flosc-welcome-badge-wrap"><img src="${badgeUrl}" alt="${productName}" class="flosc-welcome-badge"></div>` : '';
         // Flow-neutral welcome: no "badge" and no learning-specific framing (those
         // fit LeSAEp, not every flow — and naming a badge made the AI invent a badge
         // slug). The frontend still inserts a real badge image below, but only when
@@ -1741,7 +1739,7 @@ class floscApp {
     
     _showFallbackWelcome(ivrMsg, productName) {
         const badgeUrl = this._getValidBadgeUrl();
-        const badge = badgeUrl ? `<div style="text-align:center;margin:16px 0"><img src="${badgeUrl}" alt="${productName}" style="display:inline-block;max-width:55%;border:3px solid rgba(184,148,68,0.2)"></div>` : '';
+        const badge = badgeUrl ? `<div class="flosc-welcome-badge-wrap"><img src="${badgeUrl}" alt="${productName}" class="flosc-welcome-badge"></div>` : '';
         if (ivrMsg) {
             let content = this.replaceVariables(ivrMsg.content);
             content = content.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/~~([^~]+)~~/g, '<del>$1</del>');
@@ -2034,7 +2032,7 @@ class floscApp {
                 </div>
                 ` : ''}
                 <button class="flosc-offer-cta flosc-style-button" data-action="checkout_${msg.offer_id}">
-                    ${ctaText} ${price ? `<span style="opacity:0.9">${price}</span>` : ''}
+                    ${ctaText} ${price ? `<span class="flosc-offer-cta-price">${price}</span>` : ''}
                 </button>
             </div>
         `;
@@ -2226,7 +2224,7 @@ class floscApp {
                 </div>
                 <button class="flosc-checkout-btn" id="flosc-inline-pay-${msg.offer_id}" disabled>
                     <span class="flosc-checkout-btn-text">Pay ${price}</span>
-                    <span class="flosc-checkout-btn-spinner" style="display:none"></span>
+                    <span class="flosc-checkout-btn-spinner flosc-hidden"></span>
                 </button>
                 <div class="flosc-checkout-footer">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2285,9 +2283,9 @@ class floscApp {
                 }
                 if (event.error) {
                     errorEl.textContent = event.error.message;
-                    errorEl.style.display = 'block';
+                    errorEl.classList.add('is-visible');
                 } else {
-                    errorEl.style.display = 'none';
+                    errorEl.classList.remove('is-visible');
                 }
             });
             
@@ -2307,7 +2305,7 @@ class floscApp {
         const btnText = payBtn.querySelector('.flosc-checkout-btn-text');
         const spinner = payBtn.querySelector('.flosc-checkout-btn-spinner');
         btnText.textContent = 'Processing...';
-        spinner.style.display = 'inline-block';
+        if (spinner) spinner.classList.remove('flosc-hidden');
         payBtn.disabled = true;
         
         try {
@@ -2364,9 +2362,9 @@ class floscApp {
         } catch (error) {
             this.logError('[FLOSC-OFFER] Payment error:', error);
             errorEl.textContent = error.message || 'Payment failed. Please try again.';
-            errorEl.style.display = 'block';
+            errorEl.classList.add('is-visible');
             btnText.textContent = `Pay ${price}`;
-            spinner.style.display = 'none';
+            if (spinner) spinner.classList.add('flosc-hidden');
             payBtn.disabled = false;
         }
         
@@ -2423,7 +2421,7 @@ class floscApp {
             // Clickable cards (pill, compact)
             const clickableCards = document.querySelectorAll(`.flosc-offer-pill[data-offer-id="${msg.offer_id}"], .flosc-offer-compact[data-offer-id="${msg.offer_id}"]`);
             clickableCards.forEach(card => {
-                card.style.cursor = 'pointer';
+                card.classList.add('is-clickable');
                 card.addEventListener('click', () => {
                     this.performIVRAction('checkout_' + msg.offer_id);
                 });
@@ -2435,9 +2433,7 @@ class floscApp {
     dismissOffer(msg) {
         const offerEl = document.querySelector(`[data-offer-id="${msg.offer_id}"]`);
         if (offerEl) {
-            offerEl.style.transition = 'all 0.3s ease';
-            offerEl.style.opacity = '0';
-            offerEl.style.transform = 'translateY(-10px)';
+            offerEl.classList.add('is-dismissing');
             setTimeout(() => offerEl.remove(), 300);
         }
         
@@ -3057,15 +3053,6 @@ class floscApp {
         `;
         
         this.addMessage('assistant', resultHtml, true);
-        
-        // Apply score circle styling after render
-        setTimeout(() => {
-            const circle = document.querySelector('.flosc-quiz-score-circle[data-score]');
-            if (circle) {
-                const s = parseInt(circle.dataset.score, 10);
-                circle.style.background = `conic-gradient(#10b981 ${s * 3.6}deg, #e5e7eb ${s * 3.6}deg)`;
-            }
-        }, 50);
     }
     
     // v9.3.4: AUDIO QUIZ - Record and analyze
@@ -3212,7 +3199,7 @@ class floscApp {
         const score = data.score || 0;
         let resultHtml = `
             <div class="flosc-quiz-result">
-                <div class="flosc-quiz-score-circle" style="--score-percent: ${score}%">
+                <div class="flosc-quiz-score-circle" data-score-percent="${score}">
                     <span class="flosc-quiz-score-value">${score}%</span>
                 </div>
                 <div class="flosc-quiz-score-label">
@@ -3676,7 +3663,6 @@ class floscApp {
 
             // Show the waveform area and canvas
             waveformEl.classList.add('active');
-            canvas.style.display = 'block';
 
             const containerRect = waveformEl.getBoundingClientRect();
             const dpr = window.devicePixelRatio || 1;
@@ -3797,12 +3783,30 @@ class floscApp {
             const el = document.createElement('span');
             el.className = 'flosc-ipa-fly-symbol';
             el.textContent = '/' + s + '/';
-            // Start near the record button with slight random spread
-            el.style.left = (rect.left + Math.random() * 40 - 20) + 'px';
-            el.style.top = (rect.top + Math.random() * 20 - 10) + 'px';
-            el.style.animationDelay = (i * 0.08) + 's';
-            el.style.opacity = (0.30 + Math.random() * 0.43).toFixed(2);
             document.body.appendChild(el);
+
+            // Start near the record button with slight random spread
+            const startX = rect.left + Math.random() * 40 - 20;
+            const startY = rect.top + Math.random() * 20 - 10;
+            const endX = startX - (window.innerWidth * 0.45);
+            const endY = startY - (window.innerHeight * 0.45);
+            const midX = startX - 8;
+            const midY = startY - 80;
+            const opacityStart = 0.30 + Math.random() * 0.43;
+
+            el.animate(
+                [
+                    { transform: `translate(${startX}px, ${startY}px) scale(1)`, opacity: opacityStart },
+                    { transform: `translate(${midX}px, ${midY}px) scale(0.97)`, opacity: 0.6 },
+                    { transform: `translate(${endX}px, ${endY}px) scale(0.5)`, opacity: 0 }
+                ],
+                {
+                    duration: 1100,
+                    delay: i * 80,
+                    easing: 'ease-out',
+                    fill: 'forwards'
+                }
+            );
 
             // Clean up after animation completes (1s animation + stagger)
             setTimeout(() => {
@@ -4033,7 +4037,7 @@ class floscApp {
             const ipaData = this.ipaQuiz.wordIpa[key] || {};
 
             h += `<div class="flosc-ipa-word-card">`;
-            h += `<div class="flosc-ipa-word-head"><span class="flosc-ipa-word">${this.escapeHtml(w.word)}</span><span class="flosc-ipa-word-score" style="color:${cc(a)}">${(a * 100).toFixed(0)}%</span></div>`;
+            h += `<div class="flosc-ipa-word-head"><span class="flosc-ipa-word">${this.escapeHtml(w.word)}</span><span class="flosc-ipa-word-score flosc-ipa-c-${cl(a)}">${(a * 100).toFixed(0)}%</span></div>`;
 
             h += `<div class="flosc-ipa-rows">`;
             h += `<div class="flosc-ipa-row"><span class="flosc-ipa-label">espeak-ng</span><span class="flosc-ipa-val flosc-ipa-espeak">[${this.escapeHtml(ipaData.espeak || '')}]</span></div>`;
@@ -4045,7 +4049,7 @@ class floscApp {
             w.phonemes.forEach(p => {
                 const pct = (p.confidence * 100).toFixed(1);
                 const barW = Math.max(1, p.confidence * 100);
-                h += `<div class="flosc-ipa-ph"><span class="flosc-ipa-ph-sym">${this.escapeHtml(p.ipa)}</span><div class="flosc-ipa-ph-track"><div class="flosc-ipa-ph-fill flosc-ipa-ph-${cl(p.confidence)}" style="width:${barW}%"></div></div><span class="flosc-ipa-ph-pct" style="color:${cc(p.confidence)}">${pct}%</span></div>`;
+                h += `<div class="flosc-ipa-ph"><span class="flosc-ipa-ph-sym">${this.escapeHtml(p.ipa)}</span><div class="flosc-ipa-ph-track"><div class="flosc-ipa-ph-fill flosc-ipa-ph-${cl(p.confidence)}" data-bar-width="${barW}"></div></div><span class="flosc-ipa-ph-pct flosc-ipa-c-${cl(p.confidence)}">${pct}%</span></div>`;
             });
 
             h += `</div>`;
@@ -4087,15 +4091,14 @@ class floscApp {
         // Overall summary
         let summary = `<div class="flosc-ipa-final ${scoreClass}">`;
         summary += `<div class="flosc-ipa-final-title">Pronunciation Assessment Results</div>`;
-        summary += `<div class="flosc-quiz-score-circle" style="--score-percent: ${score}%"><span class="flosc-quiz-score-value">${score}%</span></div>`;
+        summary += `<div class="flosc-quiz-score-circle" data-score-percent="${score}"><span class="flosc-quiz-score-value">${score}%</span></div>`;
         summary += `<div class="flosc-ipa-final-stats">${allWords.length} words &middot; ${total} phonemes across ${phraseResults.length} phrases</div>`;
 
         if (weakest.length > 0) {
             summary += `<div class="flosc-ipa-weak-title">Sounds to focus on:</div>`;
             summary += `<div class="flosc-ipa-weak-list">`;
             weakest.forEach(w => {
-                const color = w.avg >= 0.5 ? 'var(--flosc-ipa-high)' : w.avg >= 0.1 ? 'var(--flosc-ipa-med)' : 'var(--flosc-ipa-low)';
-                summary += `<span class="flosc-ipa-weak-item"><span class="flosc-ipa-weak-sym">${this.escapeHtml(w.ipa)}</span> <span style="color:${color}">${(w.avg * 100).toFixed(0)}%</span></span>`;
+                summary += `<span class="flosc-ipa-weak-item"><span class="flosc-ipa-weak-sym">${this.escapeHtml(w.ipa)}</span> <span class="flosc-ipa-score-value flosc-ipa-c-${cl(w.avg)}">${(w.avg * 100).toFixed(0)}%</span></span>`;
             });
             summary += `</div>`;
         }
@@ -4121,7 +4124,7 @@ class floscApp {
                 accordion += `<summary class="flosc-ipa-accordion-header">`;
                 accordion += `<span class="flosc-ipa-accordion-chevron">▶</span>`;
                 accordion += `<span class="flosc-ipa-accordion-phrase">Phrase ${idx + 1}: ${this.escapeHtml(pr.phrase)}</span>`;
-                accordion += `<span class="flosc-ipa-accordion-score" style="color:${cc(phAvg)}">${phScore}%</span>`;
+                accordion += `<span class="flosc-ipa-accordion-score flosc-ipa-c-${cl(phAvg)}">${phScore}%</span>`;
                 accordion += `</summary>`;
                 accordion += `<div class="flosc-ipa-accordion-body">`;
 
@@ -4131,7 +4134,7 @@ class floscApp {
                     const ipaData = wordIpa[key] || {};
 
                     accordion += `<div class="flosc-ipa-word-card">`;
-                    accordion += `<div class="flosc-ipa-word-head"><span class="flosc-ipa-word">${this.escapeHtml(w.word)}</span><span class="flosc-ipa-word-score" style="color:${cc(wAvg)}">${(wAvg * 100).toFixed(0)}%</span></div>`;
+                    accordion += `<div class="flosc-ipa-word-head"><span class="flosc-ipa-word">${this.escapeHtml(w.word)}</span><span class="flosc-ipa-word-score flosc-ipa-c-${cl(wAvg)}">${(wAvg * 100).toFixed(0)}%</span></div>`;
 
                     accordion += `<div class="flosc-ipa-rows">`;
                     accordion += `<div class="flosc-ipa-row"><span class="flosc-ipa-label">espeak-ng</span><span class="flosc-ipa-val flosc-ipa-espeak">[${this.escapeHtml(ipaData.espeak || '')}]</span></div>`;
@@ -4143,7 +4146,7 @@ class floscApp {
                     w.phonemes.forEach(p => {
                         const pct = (p.confidence * 100).toFixed(1);
                         const barW = Math.max(1, p.confidence * 100);
-                        accordion += `<div class="flosc-ipa-ph"><span class="flosc-ipa-ph-sym">${this.escapeHtml(p.ipa)}</span><div class="flosc-ipa-ph-track"><div class="flosc-ipa-ph-fill flosc-ipa-ph-${cl(p.confidence)}" style="width:${barW}%"></div></div><span class="flosc-ipa-ph-pct" style="color:${cc(p.confidence)}">${pct}%</span></div>`;
+                        accordion += `<div class="flosc-ipa-ph"><span class="flosc-ipa-ph-sym">${this.escapeHtml(p.ipa)}</span><div class="flosc-ipa-ph-track"><div class="flosc-ipa-ph-fill flosc-ipa-ph-${cl(p.confidence)}" data-bar-width="${barW}"></div></div><span class="flosc-ipa-ph-pct flosc-ipa-c-${cl(p.confidence)}">${pct}%</span></div>`;
                     });
 
                     accordion += `</div>`;
@@ -4214,15 +4217,14 @@ class floscApp {
 
             let h = `<div class="flosc-ipa-final ${scoreClass}">`;
             h += `<div class="flosc-ipa-final-title">Pronunciation Assessment Complete</div>`;
-            h += `<div class="flosc-quiz-score-circle" style="--score-percent: ${score}%"><span class="flosc-quiz-score-value">${score}%</span></div>`;
+            h += `<div class="flosc-quiz-score-circle" data-score-percent="${score}"><span class="flosc-quiz-score-value">${score}%</span></div>`;
             h += `<div class="flosc-ipa-final-stats">${allWords.length} words &middot; ${total} phonemes across ${results.length} phrases</div>`;
 
             if (weakest.length > 0) {
                 h += `<div class="flosc-ipa-weak-title">Sounds to focus on:</div>`;
                 h += `<div class="flosc-ipa-weak-list">`;
                 weakest.forEach(w => {
-                    const color = w.avg >= 0.5 ? 'var(--flosc-ipa-high)' : w.avg >= 0.1 ? 'var(--flosc-ipa-med)' : 'var(--flosc-ipa-low)';
-                    h += `<span class="flosc-ipa-weak-item"><span class="flosc-ipa-weak-sym">${this.escapeHtml(w.ipa)}</span> <span style="color:${color}">${(w.avg * 100).toFixed(0)}%</span></span>`;
+                    h += `<span class="flosc-ipa-weak-item"><span class="flosc-ipa-weak-sym">${this.escapeHtml(w.ipa)}</span> <span class="flosc-ipa-score-value flosc-ipa-c-${cl(w.avg)}">${(w.avg * 100).toFixed(0)}%</span></span>`;
                 });
                 h += `</div>`;
             }
@@ -4238,16 +4240,14 @@ class floscApp {
                     const phrasePh = phraseWords.flatMap(w => w.phonemes);
                     const phraseAvg = phrasePh.length ? phrasePh.reduce((s, p) => s + p.confidence, 0) / phrasePh.length : 0;
                     const phraseScore = Math.round(phraseAvg * 100);
-                    const phColor = phraseScore >= 70 ? 'var(--flosc-ipa-high)' : phraseScore >= 40 ? 'var(--flosc-ipa-med)' : 'var(--flosc-ipa-low)';
                     d += `<details class="flosc-ipa-accordion-item">`;
-                    d += `<summary class="flosc-ipa-accordion-header"><span class="flosc-ipa-accordion-phrase">${this.escapeHtml(r.phrase)}</span><span class="flosc-ipa-accordion-score" style="color:${phColor}">${phraseScore}%</span></summary>`;
+                    d += `<summary class="flosc-ipa-accordion-header"><span class="flosc-ipa-accordion-phrase">${this.escapeHtml(r.phrase)}</span><span class="flosc-ipa-accordion-score flosc-ipa-c-${cl(phraseAvg)}">${phraseScore}%</span></summary>`;
                     d += `<div class="flosc-ipa-accordion-body">`;
                     phraseWords.forEach(w => {
                         d += `<div class="flosc-ipa-word-row"><strong>${this.escapeHtml(w.word)}</strong>`;
                         d += `<div class="flosc-ipa-phoneme-list">`;
                         (w.phonemes || []).forEach(p => {
-                            const c = p.confidence >= 0.5 ? 'var(--flosc-ipa-high)' : p.confidence >= 0.1 ? 'var(--flosc-ipa-med)' : 'var(--flosc-ipa-low)';
-                            d += `<span class="flosc-ipa-phoneme-chip" style="border-color:${c}"><span class="flosc-ipa-weak-sym">${this.escapeHtml(p.ipa)}</span> <span style="color:${c}">${(p.confidence * 100).toFixed(0)}%</span></span>`;
+                            d += `<span class="flosc-ipa-phoneme-chip flosc-ipa-phoneme-chip-${cl(p.confidence)}"><span class="flosc-ipa-weak-sym">${this.escapeHtml(p.ipa)}</span> <span class="flosc-ipa-score-value flosc-ipa-c-${cl(p.confidence)}">${(p.confidence * 100).toFixed(0)}%</span></span>`;
                         });
                         d += `</div></div>`;
                     });
@@ -4418,7 +4418,7 @@ class floscApp {
                     ${optionsHtml}
                 </div>
                 <div class="flosc-quiz-progress">
-                    <div class="flosc-quiz-progress-bar" style="width: ${progressPercent}%"></div>
+                    <div class="flosc-quiz-progress-bar" data-progress-percent="${progressPercent}"></div>
                 </div>
             </div>
         `;
@@ -4447,14 +4447,11 @@ class floscApp {
         // Disable all options visually
         const allOptions = buttonEl.closest('.flosc-quiz-options').querySelectorAll('.flosc-quiz-option');
         allOptions.forEach(opt => {
-            opt.style.pointerEvents = 'none';
-            opt.style.opacity = '0.6';
+            opt.classList.add('is-disabled');
         });
         
         // Highlight selected
-        buttonEl.style.opacity = '1';
-        buttonEl.style.borderColor = '#0ea5e9';
-        buttonEl.style.background = '#e0f2fe';
+        buttonEl.classList.add('is-selected');
 
         // Store answer
         this.quiz.answers.push({
@@ -4550,22 +4547,29 @@ class floscApp {
         const ctaText = this.state === 'visitor'
             ? 'Create free account to see detailed results'
             : 'View your personalized recommendations';
-
-        const ctaAction = this.state === 'visitor'
-            ? `onclick="window.floscAppInstance.openRegistration()"`
-            : `onclick="window.floscAppInstance.openFreeLesson()"`;
+        const ctaTarget = this.state === 'visitor' ? 'registration' : 'free-lesson';
 
         const resultHtml = `
             <div class="flosc-quiz-result ${scoreClass}">
                 <div class="flosc-quiz-result-score">${scorePercent}%</div>
                 <div class="flosc-quiz-result-label">${scoreMessage}</div>
-                <button class="flosc-quiz-result-cta" ${ctaAction}>
+                <button class="flosc-quiz-result-cta" data-quiz-cta="${ctaTarget}">
                     ${ctaText} →
                 </button>
             </div>
         `;
 
-        this.addMessage('assistant', resultHtml, true);
+        const resultEl = this.addMessage('assistant', resultHtml, true);
+        const ctaBtn = resultEl?.querySelector('[data-quiz-cta]');
+        if (ctaBtn) {
+            ctaBtn.addEventListener('click', () => {
+                if (ctaBtn.dataset.quizCta === 'registration') {
+                    this.openRegistration();
+                } else {
+                    this.openFreeLesson();
+                }
+            });
+        }
 
         // Trigger post-quiz IVR messages after a delay
         setTimeout(() => {
@@ -4645,7 +4649,9 @@ class floscApp {
                         <button type="button" class="flosc-sso-btn flosc-sso-${p.id}" 
                                 data-provider="${p.id}" 
                                 data-auth-url="${p.authUrl}"
-                                style="--sso-bg: ${p.colors.background}; --sso-text: ${p.colors.text}; --sso-border: ${p.colors.border || p.colors.background};">
+                                data-sso-bg="${p.colors.background}"
+                                data-sso-text="${p.colors.text}"
+                                data-sso-border="${p.colors.border || p.colors.background}">
                             <span class="flosc-sso-icon">${p.icon}</span>
                             <span class="flosc-sso-label">${p.name}</span>
                         </button>
@@ -4657,7 +4663,7 @@ class floscApp {
         const modalHtml = `
             <div class="flosc-auth-modal-overlay" id="flosc-auth-modal" data-config-key="${configKey}">
                 <div class="flosc-auth-modal">
-                    <button class="flosc-auth-close" onclick="window.floscAppInstance.hideAuthModal()">
+                    <button class="flosc-auth-close" type="button">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="18" y1="6" x2="6" y2="18"></line>
                             <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -4680,8 +4686,8 @@ class floscApp {
                     <p class="flosc-auth-terms">
                         ${termsText}
                     </p>
-                    <div style="text-align:center;margin-top:14px;">
-                        <a href="#" style="color:#aaa;font-size:12px;text-decoration:none;" class="flosc-access-code-auth-trigger">Access Code</a>
+                    <div class="flosc-access-code-trigger">
+                        <a href="#" class="flosc-access-code-link flosc-access-code-auth-trigger">Access Code</a>
                     </div>
                 </div>
             </div>
@@ -4694,15 +4700,17 @@ class floscApp {
         // Add modal to DOM
         document.body.insertAdjacentHTML('beforeend', modalHtml);
         
-        // Add modal styles inline (one-time)
-        this.addAuthModalStyles();
-        
         // Bind form submission
         document.getElementById('flosc-auth-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const email = document.getElementById('flosc-auth-email').value;
             this.processEmailAuth(email);
         });
+
+        const closeBtn = document.querySelector('#flosc-auth-modal .flosc-auth-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => this.hideAuthModal());
+        }
         
         // Bind SSO button clicks
         document.querySelectorAll('.flosc-sso-btn').forEach(btn => {
@@ -4712,6 +4720,9 @@ class floscApp {
                 this.initiateSSO(provider, authUrl);
             });
         });
+
+        // Apply dynamic CSS variables and data-driven measurements.
+        this.applyDynamicStyleTokens(document.getElementById('flosc-auth-modal'));
 
         // Bind Access Code link in auth modal
         const acTrigger = document.querySelector('.flosc-access-code-auth-trigger');
@@ -4763,176 +4774,6 @@ class floscApp {
         }
 
         this.performIVRAction(action);
-    }
-    
-    addAuthModalStyles() {
-        if (document.getElementById('flosc-auth-modal-styles')) return;
-        
-        const styles = `
-            <style id="flosc-auth-modal-styles">
-                .flosc-auth-modal-overlay {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    background: rgba(0, 0, 0, 0.6);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    z-index: 10000;
-                    backdrop-filter: blur(4px);
-                }
-                .flosc-auth-modal {
-                    background: var(--flosc-surface, #fff);
-                    border-radius: 16px;
-                    padding: 32px;
-                    width: 90%;
-                    max-width: 400px;
-                    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-                    position: relative;
-                    color: var(--flosc-text, #1a1a1a);
-                }
-                .flosc-auth-close {
-                    position: absolute;
-                    top: 16px;
-                    right: 16px;
-                    background: none;
-                    border: none;
-                    color: var(--flosc-text-secondary, #666);
-                    cursor: pointer;
-                    padding: 4px;
-                    border-radius: 4px;
-                }
-                .flosc-auth-close:hover {
-                    background: var(--flosc-surface-hover, #f0f0f0);
-                }
-                .flosc-auth-header {
-                    text-align: center;
-                    margin-bottom: 24px;
-                }
-                .flosc-auth-header h2 {
-                    margin: 0 0 8px 0;
-                    color: #1fad0d;
-                    font-weight: bold;
-                    font-family: 'Atkinson Hyperlegible Next', sans-serif;
-                    font-size: 28px;
-                }
-                .flosc-auth-header p {
-                    margin: 0;
-                    color: var(--flosc-text-secondary, #888);
-                    font-family: 'Atkinson Hyperlegible Next', sans-serif;
-                    font-size: 16px;
-                }
-                .flosc-auth-form {
-                    margin-bottom: 20px;
-                }
-                .flosc-auth-field {
-                    margin-bottom: 16px;
-                }
-                .flosc-auth-field label {
-                    display: block;
-                    margin-bottom: 6px;
-                    font-size: 14px;
-                    font-weight: 500;
-                }
-                .flosc-auth-field input {
-                    width: 100%;
-                    padding: 12px 16px;
-                    border: 1px solid var(--flosc-border, #ddd);
-                    border-radius: 8px;
-                    font-size: 16px;
-                    background: var(--flosc-input-bg, #fff);
-                    color: var(--flosc-text, #1a1a1a);
-                    box-sizing: border-box;
-                }
-                .flosc-auth-field input:focus {
-                    outline: none;
-                    border-color: var(--flosc-primary, #4f46e5);
-                    box-shadow: 0 0 0 3px var(--flosc-primary-light, rgba(79, 70, 229, 0.1));
-                }
-                .flosc-auth-submit {
-                    width: 100%;
-                    padding: 14px 24px;
-                    background: var(--flosc-primary, #4f46e5);
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    font-size: 16px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-                .flosc-auth-submit:hover {
-                    background: var(--flosc-primary-hover, #4338ca);
-                }
-                .flosc-auth-divider {
-                    position: relative;
-                    text-align: center;
-                    margin: 20px 0;
-                }
-                .flosc-auth-divider::before,
-                .flosc-auth-divider::after {
-                    content: "";
-                    position: absolute;
-                    top: 50%;
-                    width: 40%;
-                    height: 1px;
-                    background: var(--flosc-border, #ddd);
-                }
-                .flosc-auth-divider::before { left: 0; }
-                .flosc-auth-divider::after { right: 0; }
-                .flosc-auth-divider span {
-                    background: var(--flosc-surface, #fff);
-                    padding: 0 12px;
-                    color: var(--flosc-text-secondary, #666);
-                    font-size: 13px;
-                }
-                .flosc-sso-buttons {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 10px;
-                }
-                .flosc-sso-btn {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 10px;
-                    width: 100%;
-                    padding: 12px 16px;
-                    border: 1px solid var(--sso-border, #ddd);
-                    border-radius: 8px;
-                    background: var(--sso-bg, #fff);
-                    color: var(--sso-text, #333);
-                    font-size: 14px;
-                    font-weight: 500;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-                .flosc-sso-btn:hover {
-                    opacity: 0.9;
-                    transform: translateY(-1px);
-                }
-                .flosc-sso-icon {
-                    display: flex;
-                    align-items: center;
-                    flex-shrink: 0;
-                }
-                .flosc-sso-icon svg {
-                    width: 20px;
-                    height: 20px;
-                    display: block;
-                }
-                .flosc-auth-terms {
-                    text-align: center;
-                    font-size: 12px;
-                    color: var(--flosc-text-secondary, #888);
-                    margin-top: 16px;
-                    margin-bottom: 0;
-                }
-            </style>
-        `;
-        document.head.insertAdjacentHTML('beforeend', styles);
     }
     
     async processEmailAuth(email) {
@@ -5035,22 +4876,22 @@ class floscApp {
         const suggestedPassword = `${_w1}-${_w2}-${_num}`;
 
         const cardHtml = `
-            <div class="flosc-profile-card" style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;max-width:360px;font-family:inherit;">
-                <p style="margin:0 0 12px;font-size:15px;font-weight:600;color:#111827;">What should I call you?</p>
+            <div class="flosc-profile-card">
+                <p class="flosc-profile-title">What should I call you?</p>
                 <input type="text" class="flosc-profile-name" placeholder="First name or nickname..."
-                    style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;margin-bottom:16px;outline:none;">
-                <p style="margin:0 0 8px;font-size:14px;color:#374151;">Set a password so you can log in directly:</p>
-                <div style="display:flex;gap:8px;margin-bottom:4px;">
+                    >
+                <p class="flosc-profile-label">Set a password so you can log in directly:</p>
+                <div class="flosc-profile-password-row">
                     <input type="text" class="flosc-profile-password" value="${suggestedPassword}"
-                        style="flex:1;box-sizing:border-box;padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:14px;outline:none;font-family:monospace;">
-                    <button class="flosc-profile-copy" title="Copy password" style="padding:9px 12px;border:1px solid #d1d5db;border-radius:8px;background:#f9fafb;font-size:13px;cursor:pointer;white-space:nowrap;">Copy</button>
+                        >
+                    <button class="flosc-profile-copy" title="Copy password">Copy</button>
                 </div>
-                <p style="margin:0 0 16px;font-size:12px;color:#6b7280;">You'll receive this by email too — you can change it anytime.</p>
-                <div style="display:flex;align-items:center;gap:12px;">
-                    <button class="flosc-profile-save" style="background:#2563eb;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:14px;font-weight:600;cursor:pointer;">Save & Continue</button>
-                    <a href="#" class="flosc-profile-skip" style="font-size:13px;color:#6b7280;text-decoration:none;">Skip for now</a>
+                <p class="flosc-profile-help">You'll receive this by email too — you can change it anytime.</p>
+                <div class="flosc-profile-actions">
+                    <button class="flosc-profile-save">Save & Continue</button>
+                    <a href="#" class="flosc-profile-skip">Skip for now</a>
                 </div>
-                <p class="flosc-profile-error" style="display:none;margin:10px 0 0;font-size:13px;color:#dc2626;"></p>
+                <p class="flosc-profile-error"></p>
             </div>`;
         this.addMessage('assistant', cardHtml, true);
 
@@ -5080,7 +4921,7 @@ class floscApp {
             const password = passEl?.value?.trim();
             if (!name) { nameEl?.focus(); return; }
             if (!password || password.length < 6) {
-                if (errEl) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.style.display = 'block'; }
+                if (errEl) { errEl.textContent = 'Password must be at least 6 characters.'; errEl.classList.add('is-visible'); }
                 passEl?.focus();
                 return;
             }
@@ -5108,12 +4949,12 @@ class floscApp {
                     this.addMessage('assistant', `You're all set, ${name}! Loading your account… ✨`);
                     setTimeout(() => window.location.reload(), 2000);
                 } else {
-                    if (errEl) { errEl.textContent = result.message || 'Could not save — please try again.'; errEl.style.display = 'block'; }
+                    if (errEl) { errEl.textContent = result.message || 'Could not save — please try again.'; errEl.classList.add('is-visible'); }
                     saveBtn.disabled    = false;
                     saveBtn.textContent = 'Save →';
                 }
             } catch (e) {
-                if (errEl) { errEl.textContent = 'Could not save — please try again.'; errEl.style.display = 'block'; }
+                if (errEl) { errEl.textContent = 'Could not save — please try again.'; errEl.classList.add('is-visible'); }
                 saveBtn.disabled    = false;
                 saveBtn.textContent = 'Save →';
             }
@@ -5280,7 +5121,7 @@ class floscApp {
                         </div>
                     `).join('')}
                 </div>
-                ${hasMore ? `<button class="flosc-load-more-btn" data-list-id="${listId}" style="display:block;width:100%;padding:10px;margin-top:4px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;font-size:13px;color:#4b5563;">Show more (${sorted.length - PAGE_SIZE} remaining)</button>` : ''}
+                ${hasMore ? `<button class="flosc-load-more-btn flosc-load-more-btn-inline" data-list-id="${listId}">Show more (${sorted.length - PAGE_SIZE} remaining)</button>` : ''}
             </div>
         `;
         this.addMessage('assistant', listHtml, true);
@@ -5371,7 +5212,7 @@ class floscApp {
             <div class="flosc-quiz-library">
                 <p><strong>Available Quizzes</strong></p>
                 <p>Choose a quiz to test your skills:</p>
-                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                <div class="flosc-quiz-library-actions">
                     <button class="flosc-quiz-result-cta" onclick="window.floscAppInstance.startInChatQuiz('default')">
                         🎯 Take the Quiz
                     </button>
@@ -5717,7 +5558,7 @@ class floscApp {
                         <h3>${productIcon} Congratulations!</h3>
                         <p>Your sandbox purchase was successful!</p>
                         <div class="amount">${formattedAmount}</div>
-                        <p style="opacity: 0.9;">You now have <strong>${memberLevel}</strong> membership!</p>
+                        <p class="flosc-sandbox-membership-note">You now have <strong>${memberLevel}</strong> membership!</p>
                         <p class="flosc-success-detail">
                             Full access to: <strong>${productName}</strong>
                         </p>
@@ -6162,11 +6003,6 @@ Purchased: ${ctx.purchased}
                     this.sendMessage();
                 }
             });
-            
-            this.chatInput.addEventListener('input', () => {
-                this.chatInput.style.height = 'auto';
-                this.chatInput.style.height = Math.min(this.chatInput.scrollHeight, 120) + 'px';
-            });
         }
         
         if (this.shareBtn) {
@@ -6177,12 +6013,12 @@ Purchased: ${ctx.purchased}
         const shareModalClose = document.getElementById('shareModalClose');
         if (shareModalClose) {
             shareModalClose.addEventListener('click', () => {
-                if (this.shareModal) this.shareModal.style.display = 'none';
+                this.setDisplayState(this.shareModal, false, 'flex');
             });
         }
         if (this.shareModal) {
             this.shareModal.addEventListener('click', (e) => {
-                if (e.target === this.shareModal) this.shareModal.style.display = 'none';
+                if (e.target === this.shareModal) this.setDisplayState(this.shareModal, false, 'flex');
             });
         }
         // Copy button
@@ -6324,8 +6160,8 @@ Purchased: ${ctx.purchased}
         const textPanel = document.getElementById('floscQuizTextPanel');
         const audioPanel = document.getElementById('floscQuizAudioPanel');
         
-        if (textPanel) textPanel.style.display = tabType === 'text' ? 'block' : 'none';
-        if (audioPanel) audioPanel.style.display = tabType === 'audio' ? 'block' : 'none';
+        this.setDisplayState(textPanel, tabType === 'text', 'block');
+        this.setDisplayState(audioPanel, tabType === 'audio', 'block');
     }
     
     // v9.3.3: Submit text quiz answer
@@ -6413,14 +6249,14 @@ Purchased: ${ctx.purchased}
     // v9.3.3: Display quiz result in modal
     displayQuizResult(result) {
         // Hide input panels
-        document.getElementById('floscQuizTextPanel')?.style.setProperty('display', 'none');
-        document.getElementById('floscQuizAudioPanel')?.style.setProperty('display', 'none');
-        document.querySelector('.quiz-tabs')?.style.setProperty('display', 'none');
+        this.setDisplayState(document.getElementById('floscQuizTextPanel'), false, 'block');
+        this.setDisplayState(document.getElementById('floscQuizAudioPanel'), false, 'block');
+        this.setDisplayState(document.querySelector('.quiz-tabs'), false, 'flex');
         
         // Show result panel
         const resultPanel = document.getElementById('floscQuizResultPanel');
         if (resultPanel) {
-            resultPanel.style.display = 'block';
+            this.setDisplayState(resultPanel, true, 'block');
         }
         
         // Update score display
@@ -6535,10 +6371,10 @@ Purchased: ${ctx.purchased}
     // v9.3.3: Reset quiz modal to initial state
     resetQuizModal() {
         // Show tabs and text panel (default)
-        document.querySelector('.quiz-tabs')?.style.setProperty('display', 'flex');
-        document.getElementById('floscQuizTextPanel')?.style.setProperty('display', 'block');
-        document.getElementById('floscQuizAudioPanel')?.style.setProperty('display', 'none');
-        document.getElementById('floscQuizResultPanel')?.style.setProperty('display', 'none');
+        this.setDisplayState(document.querySelector('.quiz-tabs'), true, 'flex');
+        this.setDisplayState(document.getElementById('floscQuizTextPanel'), true, 'block');
+        this.setDisplayState(document.getElementById('floscQuizAudioPanel'), false, 'block');
+        this.setDisplayState(document.getElementById('floscQuizResultPanel'), false, 'block');
         
         // Reset tab buttons
         document.querySelectorAll('.quiz-tab-btn').forEach(btn => {
@@ -6550,9 +6386,9 @@ Purchased: ${ctx.purchased}
         if (input) input.value = '';
         
         // Reset recording UI
-        document.getElementById('floscQuizRecordButton')?.style.setProperty('display', 'inline-flex');
-        document.getElementById('floscQuizStopButton')?.style.setProperty('display', 'none');
-        document.getElementById('floscQuizSubmitRecordingButton')?.style.setProperty('display', 'none');
+        this.setDisplayState(document.getElementById('floscQuizRecordButton'), true, 'inline-flex');
+        this.setDisplayState(document.getElementById('floscQuizStopButton'), false, 'inline-flex');
+        this.setDisplayState(document.getElementById('floscQuizSubmitRecordingButton'), false, 'inline-flex');
         const status = document.getElementById('floscQuizRecordingStatus');
         if (status) status.textContent = '';
     }
@@ -6574,8 +6410,8 @@ Purchased: ${ctx.purchased}
             this.quizMediaRecorder.start();
             
             // Update UI
-            document.getElementById('floscQuizRecordButton')?.style.setProperty('display', 'none');
-            document.getElementById('floscQuizStopButton')?.style.setProperty('display', 'inline-flex');
+            this.setDisplayState(document.getElementById('floscQuizRecordButton'), false, 'inline-flex');
+            this.setDisplayState(document.getElementById('floscQuizStopButton'), true, 'inline-flex');
             const status = document.getElementById('floscQuizRecordingStatus');
             if (status) {
                 status.textContent = '🔴 Recording...';
@@ -6598,8 +6434,8 @@ Purchased: ${ctx.purchased}
             }
             
             // Update UI
-            document.getElementById('floscQuizStopButton')?.style.setProperty('display', 'none');
-            document.getElementById('floscQuizSubmitRecordingButton')?.style.setProperty('display', 'inline-flex');
+            this.setDisplayState(document.getElementById('floscQuizStopButton'), false, 'inline-flex');
+            this.setDisplayState(document.getElementById('floscQuizSubmitRecordingButton'), true, 'inline-flex');
             const status = document.getElementById('floscQuizRecordingStatus');
             if (status) {
                 status.textContent = '✅ Recording complete - ready to submit';
@@ -6748,7 +6584,7 @@ Purchased: ${ctx.purchased}
 
         // Show bar after 2 second delay
         setTimeout(() => {
-            visitorBar.style.display = 'block';
+            this.setDisplayState(visitorBar, true, 'block');
         }, 2000);
 
         // CTA click - start quiz
@@ -6756,7 +6592,7 @@ Purchased: ${ctx.purchased}
         if (ctaBtn) {
             ctaBtn.addEventListener('click', () => {
                 this.sendMessage('Start quiz');
-                visitorBar.style.display = 'none';
+                this.setDisplayState(visitorBar, false, 'block');
                 sessionStorage.setItem('flosc_visitor_bar_dismissed', 'true');
             });
         }
@@ -6765,7 +6601,7 @@ Purchased: ${ctx.purchased}
         const dismissBtn = document.getElementById('floscVisitorBarDismiss');
         if (dismissBtn) {
             dismissBtn.addEventListener('click', () => {
-                visitorBar.style.display = 'none';
+                this.setDisplayState(visitorBar, false, 'block');
                 sessionStorage.setItem('flosc_visitor_bar_dismissed', 'true');
             });
         }
@@ -6796,7 +6632,6 @@ Purchased: ${ctx.purchased}
         
         // Clear input
         this.chatInput.value = '';
-        this.chatInput.style.height = 'auto';
         
         // Show user message
         this.addMessage('user', message);
@@ -7070,6 +6905,76 @@ Purchased: ${ctx.purchased}
         return null;
     }
     
+    percentBucketClass(value, prefix = 'flosc-w') {
+        const bounded = Math.max(0, Math.min(100, Number(value) || 0));
+        const bucket = Math.round(bounded / 5) * 5;
+        return `${prefix}-${bucket}`;
+    }
+
+    removeClassPrefix(el, prefix) {
+        if (!el?.classList) return;
+        Array.from(el.classList).forEach(className => {
+            if (className.startsWith(prefix)) {
+                el.classList.remove(className);
+            }
+        });
+    }
+
+    setDisplayState(el, visible, mode = 'block') {
+        if (!el) return;
+
+        el.classList.remove('flosc-visible', 'flosc-visible-flex', 'flosc-visible-inline-flex');
+
+        if (visible) {
+            if (mode === 'flex') {
+                el.classList.add('flosc-visible-flex');
+            } else if (mode === 'inline-flex') {
+                el.classList.add('flosc-visible-inline-flex');
+            } else {
+                el.classList.add('flosc-visible');
+            }
+            el.classList.remove('flosc-hidden');
+        } else {
+            el.classList.add('flosc-hidden');
+        }
+    }
+
+    applyDynamicStyleTokens(scope = document) {
+        const root = scope && scope.querySelectorAll ? scope : document;
+
+        root.querySelectorAll('[data-score]').forEach(el => {
+            this.removeClassPrefix(el, 'flosc-ring-');
+            el.classList.remove('flosc-score-ring-theme');
+            el.classList.add('flosc-score-ring-solid');
+            el.classList.add(this.percentBucketClass(el.dataset.score, 'flosc-ring'));
+        });
+
+        root.querySelectorAll('[data-score-percent]').forEach(el => {
+            this.removeClassPrefix(el, 'flosc-ring-');
+            el.classList.remove('flosc-score-ring-solid');
+            el.classList.add('flosc-score-ring-theme');
+            el.classList.add(this.percentBucketClass(el.dataset.scorePercent, 'flosc-ring'));
+        });
+
+        root.querySelectorAll('[data-bar-width]').forEach(el => {
+            this.removeClassPrefix(el, 'flosc-w-');
+            el.classList.add(this.percentBucketClass(el.dataset.barWidth, 'flosc-w'));
+        });
+
+        root.querySelectorAll('[data-progress-percent]').forEach(el => {
+            this.removeClassPrefix(el, 'flosc-w-');
+            el.classList.add(this.percentBucketClass(el.dataset.progressPercent, 'flosc-w'));
+        });
+
+        root.querySelectorAll('.flosc-sso-btn[data-provider]').forEach(el => {
+            this.removeClassPrefix(el, 'flosc-sso-provider-');
+            const provider = String(el.dataset.provider || '').toLowerCase().replace(/[^a-z0-9_-]/g, '');
+            if (provider) {
+                el.classList.add(`flosc-sso-provider-${provider}`);
+            }
+        });
+    }
+
     addMessage(role, content, isHtml = false) {
         this.log('[FLOSC] addMessage() called:', {role, contentLength: content?.length, isHtml});
 
@@ -7103,6 +7008,7 @@ Purchased: ${ctx.purchased}
 
         this.log('[FLOSC] Appending to chatMessages container...');
         this.chatMessages.appendChild(messageDiv);
+        this.applyDynamicStyleTokens(messageDiv);
         
         // v9.3.5: Reliable auto-scroll using double rAF to ensure DOM update completes
         requestAnimationFrame(() => {
@@ -7557,7 +7463,7 @@ Purchased: ${ctx.purchased}
             html += '</div>';
         }
         
-        this.sessionList.innerHTML = html || '<div style="padding: 16px; text-align: center; font-size: 13px; color: #999;">No chats yet</div>';
+        this.sessionList.innerHTML = html || '<div class="flosc-session-empty">No chats yet</div>';
         
         this.sessionList.querySelectorAll('.flosc-session-item').forEach(item => {
             item.addEventListener('click', (e) => {
@@ -7817,7 +7723,7 @@ Purchased: ${ctx.purchased}
     showRecordingModal() {
         const modal = document.getElementById('flosc_modal_recording');
         if (modal) {
-            modal.style.display = 'flex';
+            this.setDisplayState(modal, true, 'flex');
             // v9.3.3: Reset quiz state when opening
             this.resetQuizModal();
         }
@@ -7826,7 +7732,7 @@ Purchased: ${ctx.purchased}
     hideRecordingModal() {
         const modal = document.getElementById('flosc_modal_recording');
         if (modal) {
-            modal.style.display = 'none';
+            this.setDisplayState(modal, false, 'flex');
         }
     }
     
@@ -7954,7 +7860,7 @@ Purchased: ${ctx.purchased}
         const modal = document.getElementById('flosc_modal_payment');
         if (!modal) return;
 
-        modal.style.display = 'flex';
+        this.setDisplayState(modal, true, 'flex');
         modal.dataset.offerId = offerId;
 
         const offer = this.getOfferData(offerId);
@@ -7983,18 +7889,18 @@ Purchased: ${ctx.purchased}
         const hasPayPal = !!this.config.paypalClientId && typeof paypal !== 'undefined';
 
         if (!hasPayPal) {
-            modal.style.display = 'none';
+            this.setDisplayState(modal, false, 'flex');
             this.openSandboxPurchase();
             return;
         }
 
         // Hide Stripe for now (PayPal subscriptions only)
-        if (stripeForm) stripeForm.style.display = 'none';
-        if (payBtn) payBtn.style.display = 'none';
-        if (separator) separator.style.display = 'none';
+        this.setDisplayState(stripeForm, false, 'block');
+        this.setDisplayState(payBtn, false, 'block');
+        this.setDisplayState(separator, false, 'block');
 
         if (hasPayPal && paypalContainer) {
-            paypalContainer.style.display = 'block';
+            this.setDisplayState(paypalContainer, true, 'block');
             paypalContainer.innerHTML = '';
 
             if (isSubscription) {
@@ -8013,7 +7919,7 @@ Purchased: ${ctx.purchased}
         // Close button
         const closeBtn = document.getElementById('paymentModalClose');
         if (closeBtn) {
-            closeBtn.onclick = () => { modal.style.display = 'none'; };
+            closeBtn.onclick = () => { this.setDisplayState(modal, false, 'flex'); };
         }
     }
 
@@ -8025,15 +7931,15 @@ Purchased: ${ctx.purchased}
             const body = modal.querySelector('.flosc-modal-body');
             if (!body) return;
             body.innerHTML = `
-                <div style="text-align:center;padding:20px 0;">
-                    <div style="font-size:15px;font-weight:600;margin-bottom:16px;">Enter Access Code</div>
+                <div class="flosc-access-code-panel">
+                    <div class="flosc-access-code-title">Enter Access Code</div>
                     <input type="text" id="flosc-access-code-input" maxlength="20" autocomplete="off" spellcheck="false"
-                           style="font-size:18px;text-align:center;letter-spacing:3px;padding:10px 16px;border:2px solid #d1d5db;border-radius:8px;width:180px;text-transform:uppercase;"
+                           class="flosc-access-code-input"
                            placeholder="CODE">
-                    <div style="margin-top:14px;">
-                        <button id="flosc-access-code-submit" style="background:#10b981;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">Submit</button>
+                    <div class="flosc-access-code-actions">
+                        <button id="flosc-access-code-submit" class="flosc-access-code-submit">Submit</button>
                     </div>
-                    <div id="flosc-access-code-error" style="color:#dc2626;font-size:13px;margin-top:10px;"></div>
+                    <div id="flosc-access-code-error" class="flosc-access-code-error"></div>
                 </div>
             `;
             document.getElementById('flosc-access-code-input').focus();
@@ -8053,21 +7959,21 @@ Purchased: ${ctx.purchased}
             const inner = modal.querySelector('.flosc-auth-modal');
             if (!inner) return;
             inner.innerHTML = `
-                <button class="flosc-auth-close" onclick="window.floscAppInstance.hideAuthModal()">
+                <button class="flosc-auth-close" type="button">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
                     </svg>
                 </button>
-                <div style="text-align:center;padding:20px 0;">
-                    <div style="font-size:15px;font-weight:600;margin-bottom:16px;">Enter Access Code</div>
+                <div class="flosc-access-code-panel">
+                    <div class="flosc-access-code-title">Enter Access Code</div>
                     <input type="text" id="flosc-access-code-input" maxlength="20" autocomplete="off" spellcheck="false"
-                           style="font-size:18px;text-align:center;letter-spacing:3px;padding:10px 16px;border:2px solid #d1d5db;border-radius:8px;width:180px;text-transform:uppercase;"
+                           class="flosc-access-code-input"
                            placeholder="CODE">
-                    <div style="margin-top:14px;">
-                        <button id="flosc-access-code-submit" style="background:#10b981;color:#fff;border:none;padding:10px 28px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;">Submit</button>
+                    <div class="flosc-access-code-actions">
+                        <button id="flosc-access-code-submit" class="flosc-access-code-submit">Submit</button>
                     </div>
-                    <div id="flosc-access-code-error" style="color:#dc2626;font-size:13px;margin-top:10px;"></div>
+                    <div id="flosc-access-code-error" class="flosc-access-code-error"></div>
                 </div>
             `;
             document.getElementById('flosc-access-code-input').focus();
@@ -8081,6 +7987,10 @@ Purchased: ${ctx.purchased}
                     if (code) this._redeemAccessCode(code, 'auth');
                 }
             });
+            const closeBtn = inner.querySelector('.flosc-auth-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => this.hideAuthModal());
+            }
         }
     }
 
@@ -8101,7 +8011,7 @@ Purchased: ${ctx.purchased}
                 if (context === 'chat') {
                     this.addMessage('assistant', 'Welcome, fam! You\'re in. Refreshing...');
                 } else if (errEl) {
-                    errEl.style.color = '#10b981';
+                    errEl.classList.add('is-success');
                     errEl.textContent = 'Welcome, fam! You\'re in.';
                 }
                 sessionStorage.removeItem('flosc_credential_setup_dismissed');
@@ -8132,25 +8042,25 @@ Purchased: ${ctx.purchased}
     async _renderSubscriptionCheckout(offerId, offer, container) {
         // Plan picker UI
         container.innerHTML = `
-            <div class="flosc-plan-picker" style="margin-bottom:16px;">
-                <div style="font-weight:600;font-size:15px;margin-bottom:10px;text-align:center;">Choose your plan:</div>
-                <div style="display:flex;gap:10px;justify-content:center;">
-                    <label class="flosc-plan-option" data-plan="yearly" style="flex:1;max-width:180px;padding:14px 10px;border:2px solid #10b981;border-radius:10px;text-align:center;cursor:pointer;background:#ecfdf5;position:relative;">
-                        <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;font-size:11px;padding:2px 8px;border-radius:8px;white-space:nowrap;">Best Value</div>
-                        <input type="radio" name="flosc_plan" value="yearly" checked style="display:none;">
-                        <div style="font-size:20px;font-weight:700;">$100</div>
-                        <div style="font-size:13px;color:#065f46;">/year</div>
-                        <div style="font-size:11px;color:#10b981;margin-top:4px;">Save $20!</div>
+            <div class="flosc-plan-picker">
+                <div class="flosc-plan-picker-title">Choose your plan:</div>
+                <div class="flosc-plan-options">
+                    <label class="flosc-plan-option flosc-plan-option-selected" data-plan="yearly">
+                        <div class="flosc-plan-badge">Best Value</div>
+                        <input type="radio" name="flosc_plan" value="yearly" checked class="flosc-plan-option-input">
+                        <div class="flosc-plan-amount">$100</div>
+                        <div class="flosc-plan-interval flosc-plan-interval-yearly">/year</div>
+                        <div class="flosc-plan-savings">Save $20!</div>
                     </label>
-                    <label class="flosc-plan-option" data-plan="monthly" style="flex:1;max-width:180px;padding:14px 10px;border:2px solid #d1d5db;border-radius:10px;text-align:center;cursor:pointer;background:#fff;">
-                        <input type="radio" name="flosc_plan" value="monthly" style="display:none;">
-                        <div style="font-size:20px;font-weight:700;">$10</div>
-                        <div style="font-size:13px;color:#374151;">/month</div>
+                    <label class="flosc-plan-option" data-plan="monthly">
+                        <input type="radio" name="flosc_plan" value="monthly" class="flosc-plan-option-input">
+                        <div class="flosc-plan-amount">$10</div>
+                        <div class="flosc-plan-interval">/month</div>
                     </label>
                 </div>
             </div>
-            <div id="flosc-sub-paypal-btn" style="min-height:55px;"></div>
-            <div id="flosc-sub-status" style="text-align:center;font-size:13px;color:#666;margin-top:8px;"></div>
+            <div id="flosc-sub-paypal-btn" class="flosc-sub-paypal-btn"></div>
+            <div id="flosc-sub-status" class="flosc-sub-status"></div>
         `;
 
         // Plan selection toggle styling
@@ -8158,11 +8068,9 @@ Purchased: ${ctx.purchased}
         planOptions.forEach(opt => {
             opt.addEventListener('click', () => {
                 planOptions.forEach(o => {
-                    o.style.borderColor = '#d1d5db';
-                    o.style.background = '#fff';
+                    o.classList.remove('flosc-plan-option-selected');
                 });
-                opt.style.borderColor = '#10b981';
-                opt.style.background = '#ecfdf5';
+                opt.classList.add('flosc-plan-option-selected');
                 opt.querySelector('input').checked = true;
                 // Re-render PayPal buttons for new plan
                 this._mountSubscriptionButtons(offerId, container);
@@ -8196,7 +8104,7 @@ Purchased: ${ctx.purchased}
             } catch (err) {
                 this.logError('[FLOSC-CHECKOUT] Failed to get PayPal plans:', err);
                 const statusEl2 = container.querySelector('#flosc-sub-status');
-                if (statusEl2) statusEl2.innerHTML = '<span style="color:#dc2626;">Could not set up payment plans. Please try again.</span>';
+                if (statusEl2) statusEl2.innerHTML = '<span class="flosc-status-error">Could not set up payment plans. Please try again.</span>';
                 return;
             }
             if (statusEl) statusEl.textContent = '';
@@ -8227,7 +8135,7 @@ Purchased: ${ctx.purchased}
         const planId = selectedPlan === 'yearly' ? this.config.paypalYearlyPlanId : this.config.paypalMonthlyPlanId;
 
         if (!planId) {
-            btnContainer.innerHTML = '<div style="text-align:center;color:#dc2626;padding:12px;">Plan not configured.</div>';
+            btnContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-error">Plan not configured.</div>';
             return;
         }
 
@@ -8244,7 +8152,7 @@ Purchased: ${ctx.purchased}
                 },
                 onApprove: async (data) => {
                     this.log('[FLOSC-CHECKOUT] Subscription approved: subscriptionID=' + data.subscriptionID);
-                    btnContainer.innerHTML = '<div style="text-align:center;padding:16px;color:#666;">Activating your subscription...</div>';
+                    btnContainer.innerHTML = '<div class="flosc-paypal-status">Activating your subscription...</div>';
 
                     try {
                         await this.refreshNonce();
@@ -8287,7 +8195,7 @@ Purchased: ${ctx.purchased}
 
                         // Close modal
                         const modal = document.getElementById('flosc_modal_payment');
-                        if (modal) modal.style.display = 'none';
+                        this.setDisplayState(modal, false, 'flex');
 
                         // If server created a new account from PayPal (visitor purchase),
                         // store the auth token so subsequent API calls are authenticated.
@@ -8358,13 +8266,13 @@ Purchased: ${ctx.purchased}
                         setTimeout(() => this.checkAutoMessages(), 2000);
                     } catch (err) {
                         this.logError('[FLOSC-CHECKOUT] Subscription activation error:', err);
-                        btnContainer.innerHTML = '<div style="text-align:center;padding:16px;color:#dc2626;">' +
+                        btnContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-error">' +
                             this.escapeHtml(err.message || 'Failed to activate subscription. Please contact support.') + '</div>';
                     }
                 },
                 onError: (err) => {
                     this.logError('[FLOSC-CHECKOUT] PayPal subscription error:', err);
-                    btnContainer.innerHTML = '<div style="text-align:center;padding:16px;color:#dc2626;">PayPal encountered an error. Please try again.</div>';
+                    btnContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-error">PayPal encountered an error. Please try again.</div>';
                 },
                 onCancel: () => {
                     this.log('[FLOSC-CHECKOUT] Subscription cancelled — re-rendering buttons');
@@ -8375,7 +8283,7 @@ Purchased: ${ctx.purchased}
             });
 
             if (!btns.isEligible()) {
-                btnContainer.innerHTML = '<div style="text-align:center;padding:14px;color:#666;font-size:13px;">PayPal is not available right now.</div>';
+                btnContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-muted">PayPal is not available right now.</div>';
                 return;
             }
 
@@ -8383,7 +8291,7 @@ Purchased: ${ctx.purchased}
             btns.render(btnContainer).catch(err => {
                 if (myGen !== this._paypalSubRenderGen) return;
                 this.logError('[FLOSC-CHECKOUT] PayPal subscription render failed:', err);
-                btnContainer.innerHTML = '<div style="text-align:center;padding:14px;color:#dc2626;">PayPal could not load. Please try again.</div>';
+                btnContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-error">PayPal could not load. Please try again.</div>';
             });
         };
 
@@ -8464,7 +8372,7 @@ Purchased: ${ctx.purchased}
                                 const errorEl = document.getElementById('card-errors');
                                 if (errorEl) errorEl.textContent = retryErr.message;
                                 if (paypalContainer) {
-                                    paypalContainer.innerHTML = '<div style="text-align:center;padding:16px;color:#dc2626;font-size:14px;">' +
+                                    paypalContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-error flosc-paypal-status-sm">' +
                                         (retryErr.message || 'Could not create order. Please try again.') + '</div>';
                                 }
                                 throw retryErr;
@@ -8474,7 +8382,7 @@ Purchased: ${ctx.purchased}
                         const errorEl = document.getElementById('card-errors');
                         if (errorEl) errorEl.textContent = err.message;
                         if (paypalContainer) {
-                            paypalContainer.innerHTML = '<div style="text-align:center;padding:16px;color:#dc2626;font-size:14px;">' +
+                            paypalContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-error flosc-paypal-status-sm">' +
                                 (err.message || 'Could not create order. Please try again.') + '</div>';
                         }
                         throw err;
@@ -8484,7 +8392,7 @@ Purchased: ${ctx.purchased}
                     try {
                         // Show processing state
                         this.log('[FLOSC-CHECKOUT] PayPal onApprove: orderID=' + data.orderID);
-                        paypalContainer.innerHTML = '<div style="text-align:center;padding:16px;color:#666;">Processing payment...</div>';
+                        paypalContainer.innerHTML = '<div class="flosc-paypal-status">Processing payment...</div>';
 
                         // v5.0.7: doCapture now checks HTTP status before parsing JSON.
                         // Previous versions blindly called r.json() which swallowed server errors.
@@ -8532,7 +8440,7 @@ Purchased: ${ctx.purchased}
 
                         if (result.success) {
                             const paymentModal = document.getElementById('flosc_modal_payment');
-                            if (paymentModal) paymentModal.style.display = 'none';
+                            this.setDisplayState(paymentModal, false, 'flex');
                             this.addMessage('assistant', '\ud83c\udf89 **Payment successful!** Welcome to full membership! Refreshing your access...');
                             setTimeout(() => window.location.reload(), 2000);
                         } else {
@@ -8540,7 +8448,7 @@ Purchased: ${ctx.purchased}
                         }
                     } catch (err) {
                         this.logError('[FLOSC-CHECKOUT] PayPal capture error:', err);
-                        paypalContainer.innerHTML = '<div style="text-align:center;padding:16px;color:#dc2626;">' + (err.message || 'Payment failed. Please try again.') + '</div>';
+                        paypalContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-error">' + (err.message || 'Payment failed. Please try again.') + '</div>';
                     }
                 },
                 onError: (err) => {
@@ -8549,7 +8457,7 @@ Purchased: ${ctx.purchased}
                     const errorEl = document.getElementById('card-errors');
                     if (errorEl) errorEl.textContent = 'PayPal error. Please try again.';
                     if (paypalContainer) {
-                        paypalContainer.innerHTML = '<div style="text-align:center;padding:16px;color:#dc2626;font-size:14px;">PayPal encountered an error. Please try again.</div>';
+                        paypalContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-error flosc-paypal-status-sm">PayPal encountered an error. Please try again.</div>';
                     }
                 },
                 onCancel: () => {
@@ -8563,17 +8471,17 @@ Purchased: ${ctx.purchased}
             // v3.0.9: isEligible() guards against environments where PayPal can't render
             if (!paypalButtonsInstance.isEligible()) {
                 this.logWarn('[FLOSC-CHECKOUT] PayPal buttons not eligible in this environment');
-                paypalContainer.innerHTML = '<div style="text-align:center;padding:14px;color:#666;font-size:13px;">PayPal is not available right now. Please try again or contact support.</div>';
+                paypalContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-muted">PayPal is not available right now. Please try again or contact support.</div>';
                 return;
             }
 
             paypalButtonsInstance.render(paypalContainer).catch(err => {
                 this.logError('[FLOSC-CHECKOUT] PayPal render failed:', err);
                 paypalContainer.innerHTML =
-                    '<div style="text-align:center;padding:14px;font-size:13px;">' +
-                    '<div style="color:#dc2626;margin-bottom:10px;">PayPal could not load. Please try again.</div>' +
+                    '<div class="flosc-paypal-retry-wrap">' +
+                    '<div class="flosc-paypal-retry-error">PayPal could not load. Please try again.</div>' +
                     '<button onclick="this.closest(\'#flosc_modal_payment\') && window.floscAppInstance && window.floscAppInstance.showPaymentModal(\'' + offerId + '\')" ' +
-                    'style="padding:8px 18px;background:#0070ba;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:13px;">↺ Retry</button>' +
+                    'class="flosc-paypal-retry-btn">↺ Retry</button>' +
                     '</div>';
             });
             }; // end renderPayPalButtons
@@ -8648,7 +8556,7 @@ Purchased: ${ctx.purchased}
 
                 // Close modal
                 const modal = document.getElementById('flosc_modal_payment');
-                if (modal) modal.style.display = 'none';
+                this.setDisplayState(modal, false, 'flex');
 
                 // Show success in chat
                 this.addMessage('assistant', '🎉 **Payment successful!** Welcome to full membership! Refreshing your access...');
@@ -8673,7 +8581,7 @@ Purchased: ${ctx.purchased}
             if (shareLink && !shareLink.value) {
                 shareLink.value = window.location.href.split('?')[0];
             }
-            this.shareModal.style.display = 'flex';
+            this.setDisplayState(this.shareModal, true, 'flex');
         }
     }
     

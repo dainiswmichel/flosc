@@ -533,10 +533,10 @@ Content: [Your full lesson text, images, audio embeds, etc.]
 <!-- ============================================ -->
 <!-- FOOTER: NEXT STEPS -->
 <!-- ============================================ -->
-<div class="flosc-guide-section" style="background: #f0f6fc; border-color: #2271b1;">
+<div class="flosc-guide-section flosc-guide-section--next-steps">
     <h3>🚀 Next Steps</h3>
 
-    <ol style="font-size: 15px; line-height: 1.8;">
+    <ol class="flosc-guide-next-steps-list">
         <li><strong>Configure your WordPress category</strong> — Flow Settings → Content → Select category with your lessons</li>
         <li><strong>Write your system prompt</strong> — Use templates above, customize for your domain</li>
         <li><strong>Set up API keys</strong> — AI Configuration → Provider Connection → Add your OpenAI/Anthropic/xAI key</li>
@@ -545,7 +545,7 @@ Content: [Your full lesson text, images, audio embeds, etc.]
         <li><strong>Monitor and refine</strong> — Check actual conversations, adjust prompts based on user experience</li>
     </ol>
 
-    <p style="margin-top: 20px; font-size: 14px; color: #50575e;">
+    <p class="flosc-guide-next-steps-note">
         <strong>Remember:</strong> FLOSC provides the infrastructure — you provide the expertise.
         The AI is only as good as the content and instructions you give it.
     </p>

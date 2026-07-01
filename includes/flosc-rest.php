@@ -1,0 +1,758 @@
+<?php
+if (!defined('ABSPATH')) {
+    exit;
+}
+
+trait FLOSC_REST_Trait {
+    /**
+     * Permission Callbacks for REST API
+     */
+    public function check_metered_visitor_compute_permission($request) {
+        // Check rate limit first
+        if (!$this->check_rate_limit('metered_compute', 20, 3600)) {
+            return new WP_Error('rate_limit', __('Too many requests. Please try again later.', 'flosc'), ['status' => 429]);
+        }
+
+        // Allow logged-in users with usage tracking
+        if (is_user_logged_in()) {
+            return true;
+        }
+
+        // For visitors: strict rate limit
+        if (!$this->check_rate_limit('visitor_metered_compute', 5, 3600)) {
+            return new WP_Error('rate_limit', __('Free tier limit reached. Please log in.', 'flosc'), ['status' => 429]);
+        }
+
+        return true;
+    }
+
+    /**
+     * Backward-compatible wrapper for legacy callback name.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return true|WP_Error
+     */
+    public function check_paid_endpoint_permission($request) {
+        return $this->check_metered_visitor_compute_permission($request);
+    }
+
+    /**
+     * v9.4.2: Permission callback for public endpoints that need rate limiting
+     *
+     * Unlike check_paid_endpoint_permission(), this is for truly public endpoints
+     * like IVR chat that don't consume expensive AI credits but should still
+     * be protected from abuse.
+     *
+     * Limits: 60 requests/hour for logged-in users, 30/hour for visitors
+     */
+    public function check_public_endpoint_permission($request) {
+        $endpoint = $request->get_route();
+
+        if (is_user_logged_in()) {
+            if (!$this->check_rate_limit('public_auth_' . $endpoint, 60, 3600)) {
+                return new WP_Error('rate_limit', __('Too many requests. Please slow down.', 'flosc'), ['status' => 429]);
+            }
+            return true;
+        }
+
+        // Visitors get stricter limits
+        if (!$this->check_rate_limit('public_visitor_' . $endpoint, 60, 3600)) {
+            return new WP_Error('rate_limit', __('Rate limit reached. Please try again later.', 'flosc'), ['status' => 429]);
+        }
+
+        return true;
+    }
+
+    /**
+     * Permission callback for routes that require a logged-in user.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return true|WP_Error
+     */
+    public function check_authenticated_user_permission($request) {
+        if (!is_user_logged_in()) {
+            return new WP_Error('flosc_login_required', __('Login is required.', 'flosc'), ['status' => 401]);
+        }
+
+        return true;
+    }
+
+    /**
+     * §4: Permission callback for privileged admin-only REST actions.
+     * Grants only to users who can manage_options; everyone else gets 403.
+     */
+    public function check_admin_endpoint_permission($request) {
+        if (!current_user_can('manage_options')) {
+            return new WP_Error('forbidden', __('Administrator privileges required.', 'flosc'), ['status' => 403]);
+        }
+        return true;
+    }
+
+    /**
+     * §4: Permission callback for buyer-scoped checkout/payment REST actions.
+     * Requires a valid checkout-issued wp_rest nonce: X-WP-Nonce header first,
+     * falling back to the _wpnonce request param. Handler then binds to the buyer.
+     */
+    public function check_checkout_endpoint_permission($request) {
+        $nonce = $request->get_header('X-WP-Nonce');
+        if (empty($nonce)) {
+            $nonce = $request->get_param('_wpnonce');
+        }
+        $nonce = sanitize_text_field((string) $nonce);
+        if (!wp_verify_nonce($nonce, 'wp_rest')) {
+            return new WP_Error('forbidden', __('Invalid or missing security token.', 'flosc'), ['status' => 403]);
+        }
+        return true;
+    }
+
+    /**
+     * Intentionally public nonce endpoint permission callback.
+     *
+     * This route only returns a WordPress REST nonce and performs no state mutation.
+     */
+    public function check_public_nonce_endpoint_permission($request) {
+        return true;
+    }
+
+    /**
+     * Intentionally public webhook endpoint permission callback.
+     *
+     * Payment providers cannot present WordPress auth; signature checks happen in
+     * the webhook handler itself.
+     */
+    public function check_webhook_endpoint_permission($request) {
+        return true;
+    }
+
+    /**
+     * Normalize and validate IVR phase from request input.
+     *
+     * Missing phase defaults to freeline for compatibility. Unknown phases are
+     * rejected to keep authorization behavior explicit and auditable.
+     *
+     * @param mixed $raw_phase Raw phase parameter.
+     * @return string|WP_Error
+     */
+    private function normalize_ivr_phase($raw_phase) {
+        $phase = (null === $raw_phase || '' === $raw_phase)
+            ? 'freeline'
+            : sanitize_key((string) $raw_phase);
+
+        $valid_phases = ['freeline', 'login', 'offer', 'sale', 'content'];
+        if (!in_array($phase, $valid_phases, true)) {
+            return new WP_Error('flosc_invalid_phase', __('Invalid FLOSC phase.', 'flosc'), ['status' => 400]);
+        }
+
+        return $phase;
+    }
+
+    /**
+     * §4: Permission callback for /ivr-messages.
+     * Preserves public rate limiting for visitor-safe phases.
+     * Only content phase is entitlement-gated; sale remains part of the public
+     * purchase journey.
+     */
+    public function check_ivr_messages_permission($request) {
+        // Keep the existing public rate-limit behavior for the visitor funnel.
+        $rate = $this->check_public_endpoint_permission($request);
+        if ($rate !== true) {
+            return $rate;
+        }
+
+        $phase = $this->normalize_ivr_phase($request->get_param('phase'));
+        if (is_wp_error($phase)) {
+            return $phase;
+        }
+
+        // Content is the only protected phase.
+        if ($phase === 'content') {
+            $user_id = get_current_user_id();
+            // The meta is stored as the string 'true' / 'false' (see
+            // FLOSC_Member_Access). A (bool) cast would treat the revoked value
+            // 'false' as truthy and let a revoked member through — compare the
+            // string explicitly.
+            $has_member_access = $user_id && 'true' === get_user_meta($user_id, '_flosc_member_access', true);
+            if (!$has_member_access) {
+                return new WP_Error('forbidden', __('Not entitled to this content.', 'flosc'), ['status' => 403]);
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Build transient storage key for one visitor session's poll token hash.
+     *
+     * @param int $session_id Conversation/session ID.
+     * @return string
+     */
+    private function get_admin_poll_token_storage_key($session_id) {
+        return 'flosc_admin_poll_' . md5((string) absint($session_id));
+    }
+
+    /**
+     * Mint poll token for visitor admin-message polling.
+     *
+     * @param int $session_id Conversation/session ID.
+     * @return string
+     */
+    private function issue_admin_poll_token($session_id) {
+        $session_id = absint($session_id);
+        $token = wp_generate_password(43, false, false);
+        $token_hash = hash_hmac('sha256', $token, flosc_token_secret());
+
+        set_transient(
+            $this->get_admin_poll_token_storage_key($session_id),
+            [
+                'session_id' => $session_id,
+                'token_hash' => $token_hash,
+                'issued_at' => time(),
+            ],
+            HOUR_IN_SECONDS
+        );
+
+        return $token;
+    }
+
+    /**
+     * Verify poll token ownership for the provided session.
+     *
+     * @param int    $session_id Session ID.
+     * @param string $poll_token Token provided by visitor.
+     * @return bool
+     */
+    private function verify_admin_poll_token($session_id, $poll_token) {
+        $session_id = absint($session_id);
+        $poll_token = sanitize_text_field((string) $poll_token);
+        if ($session_id <= 0 || $poll_token === '') {
+            return false;
+        }
+
+        $record = get_transient($this->get_admin_poll_token_storage_key($session_id));
+        if (!is_array($record) || empty($record['token_hash'])) {
+            return false;
+        }
+
+        $presented_hash = hash_hmac('sha256', $poll_token, flosc_token_secret());
+        return hash_equals((string) $record['token_hash'], $presented_hash);
+    }
+
+    /**
+     * Verify that the current request can be tied to the provided visitor session.
+     *
+     * @param int $session_id Session ID.
+     * @return bool
+     */
+    private function current_request_owns_chat_session($session_id) {
+        $session_id = absint($session_id);
+        if ($session_id <= 0) {
+            return false;
+        }
+
+        if (!class_exists('FLOSC_Chat_Logger')) {
+            return false;
+        }
+
+        return FLOSC_Chat_Logger::instance()->flosc_current_request_owns_session($session_id);
+    }
+
+    /**
+     * Permission callback for visitor admin-message polling.
+     *
+     * Requires session ownership proof via poll token bound to session_id.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return true|WP_Error
+     */
+    public function check_visitor_session_poll_permission($request) {
+        $session_id = absint($request->get_param('session_id'));
+        $poll_token = sanitize_text_field((string) $request->get_param('poll_token'));
+
+        if ($session_id <= 0 || $poll_token === '') {
+            return new WP_Error('flosc_missing_session_token', __('Missing session token.', 'flosc'), ['status' => 403]);
+        }
+
+        if (!$this->verify_admin_poll_token($session_id, $poll_token)) {
+            return new WP_Error('flosc_invalid_session_token', __('Invalid session token.', 'flosc'), ['status' => 403]);
+        }
+
+        if (!$this->current_request_owns_chat_session($session_id)) {
+            return new WP_Error('flosc_session_ownership_failed', __('Session ownership check failed.', 'flosc'), ['status' => 403]);
+        }
+
+        if (!$this->check_rate_limit('visitor_admin_poll_' . $session_id, 120, HOUR_IN_SECONDS)) {
+            return new WP_Error('flosc_rate_limit', __('Too many requests.', 'flosc'), ['status' => 429]);
+        }
+
+        return true;
+    }
+
+    /**
+     * Permission callback for minting visitor admin-message poll tokens.
+     *
+     * This route is intentionally visitor-facing but now requires ownership proof
+     * of the requested session before a token is minted.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return true|WP_Error
+     */
+    public function check_admin_messages_token_permission($request) {
+        $public_check = $this->check_public_endpoint_permission($request);
+        if (is_wp_error($public_check)) {
+            return $public_check;
+        }
+
+        $session_id = absint($request->get_param('session_id'));
+        if ($session_id <= 0) {
+            return new WP_Error('invalid_session_id', __('Invalid session id.', 'flosc'), ['status' => 400]);
+        }
+
+        if (!$this->current_request_owns_chat_session($session_id)) {
+            return new WP_Error('flosc_session_ownership_failed', __('Session ownership check failed.', 'flosc'), ['status' => 403]);
+        }
+
+        return true;
+    }
+
+    /**
+     * REST API Routes
+     * v9.4.2: Added rate limiting to public endpoints
+     */
+    public function register_rest_routes() {
+        // IVR Chat (primary endpoint)
+        // v9.4.2: Now rate-limited via check_public_endpoint_permission
+        register_rest_route('flosc/v1', '/chat', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_chat'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
+        // RAG Chat (v9.1.6 - AI with search capabilities)
+        // v9.4.2: Now rate-limited via check_public_endpoint_permission
+        register_rest_route('flosc/v1', '/chat-rag', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_chat_with_rag'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
+        // v8.0.0: Admin-join poll — the visitor's widget fetches any human "(admin)"
+        // messages an admin posted into its conversation. Read-only and low-sensitivity
+        // (returns only the admin lines for a given session id), so it's public and
+        // intentionally NOT behind the chat AI rate limit (the widget polls it).
+        // POST (not GET) so the host/LiteSpeed page cache never serves a stale empty
+        // result to the visitor's poll — GET responses to wp-json get cached.
+        register_rest_route('flosc/v1', '/admin-messages', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_admin_messages_poll'],
+            'permission_callback' => [$this, 'check_visitor_session_poll_permission'],
+        ]);
+
+        // Visitor poll token minting for admin-message ownership proof.
+        register_rest_route('flosc/v1', '/admin-messages-token', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_admin_messages_token'],
+            'permission_callback' => [$this, 'check_admin_messages_token_permission'],
+        ]);
+
+        // Quiz Submission (NEW: for collecting quiz answers)
+        // v9.4.2: Now rate-limited via check_public_endpoint_permission
+        // v1.0.5: This endpoint returns bridge data status (reads, not writes)
+        // Actual quiz storage: POST /quiz-result | Processing: POST /process-quiz
+        register_rest_route('flosc/v1', '/quiz', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_quiz_submission'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
+        // v9.3.2: GET quiz questions for in-chat quiz
+        // v9.4.2: Now rate-limited via check_public_endpoint_permission
+        register_rest_route('flosc/v1', '/quiz', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_quiz_questions'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
+        // v9.3.2: Store quiz results
+        // v9.4.2: Now rate-limited via check_public_endpoint_permission
+        register_rest_route('flosc/v1', '/quiz-result', [
+            'methods' => 'POST',
+            'callback' => [$this, 'store_quiz_result'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
+        // AI Query
+        register_rest_route('flosc/v1', '/ai-query', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_ai_query'],
+            'permission_callback' => [$this, 'check_metered_visitor_compute_permission'],
+        ]);
+
+        // Process Audio (for audio-based quiz types)
+        register_rest_route('flosc/v1', '/process-audio', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_process_audio'],
+            'permission_callback' => [$this, 'check_metered_visitor_compute_permission'],
+        ]);
+
+        // v1.7.7: Transcribe alias — JS voice recording and quiz audio both call /transcribe
+        register_rest_route('flosc/v1', '/transcribe', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_process_audio'],
+            'permission_callback' => [$this, 'check_metered_visitor_compute_permission'],
+        ]);
+
+        // Process Quiz (for text-based quiz types)
+        register_rest_route('flosc/v1', '/process-quiz', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_process_quiz'],
+            'permission_callback' => [$this, 'check_metered_visitor_compute_permission'],
+        ]);
+
+        // Sessions
+        register_rest_route('flosc/v1', '/sessions', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_sessions'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        register_rest_route('flosc/v1', '/sessions', [
+            'methods' => 'POST',
+            'callback' => [$this, 'create_session'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        // v1.7.0: Get single session by ID
+        register_rest_route('flosc/v1', '/sessions/(?P<id>\d+)', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_single_session'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        // v8.0.11: Delete a session
+        register_rest_route('flosc/v1', '/sessions/(?P<id>\d+)', [
+            'methods' => 'DELETE',
+            'callback' => [$this, 'delete_session'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        // v8.0.11: Rename a session
+        register_rest_route('flosc/v1', '/sessions/(?P<id>\d+)', [
+            'methods' => 'PUT',
+            'callback' => [$this, 'rename_session'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        // v1.7.1: Nonce refresh endpoint
+        // v4.0.8: Open to visitors — they need a nonce to call payment endpoints before account creation
+        register_rest_route('flosc/v1', '/nonce', [
+            'methods' => 'GET',
+            'callback' => function() {
+                return new WP_REST_Response([
+                    'success' => true,
+                    'nonce' => wp_create_nonce('wp_rest'),
+                ]);
+            },
+            'permission_callback' => [$this, 'check_public_nonce_endpoint_permission'],
+        ]);
+
+        // Offers
+        // v9.4.2: Now rate-limited via check_public_endpoint_permission
+        register_rest_route('flosc/v1', '/offers', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_offers'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
+        // v1.6.2: Offer content source (HtmlFile, WooProduct, PostID)
+        register_rest_route('flosc/v1', '/offer-content', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_offer_content'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
+        // Purchase
+        register_rest_route('flosc/v1', '/purchase', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_purchase'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        // v1.3.1: Sandbox Purchase (fun "pay what you want" testing)
+        register_rest_route('flosc/v1', '/sandbox-purchase', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_sandbox_purchase'],
+            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
+        ]);
+
+        // Free Lesson (v9.1.9) — v1.4.6: Accept both GET and POST (JS sends POST)
+        register_rest_route('flosc/v1', '/free-lesson', [
+            'methods' => ['GET', 'POST'],
+            'callback' => [$this, 'get_free_lesson'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        // Create Payment Intent (for Stripe)
+        // v4.0.8: Open to visitors — Stripe checkout starts before account creation
+        register_rest_route('flosc/v1', '/create-payment-intent', [
+            'methods' => 'POST',
+            'callback' => [$this, 'create_payment_intent'],
+            'permission_callback' => [$this, 'check_checkout_endpoint_permission'],
+        ]);
+
+        // v1.4.1: Complete purchase (verify and grant access after client-side payment)
+        // v4.0.8: Open to visitors — account creation happens inside complete_purchase
+        register_rest_route('flosc/v1', '/complete-purchase', [
+            'methods' => 'POST',
+            'callback' => [$this, 'complete_purchase'],
+            'permission_callback' => [$this, 'check_checkout_endpoint_permission'],
+        ]);
+
+        // PayPal - Create Order
+        register_rest_route('flosc/v1', '/paypal/create-order', [
+            'methods' => 'POST',
+            'callback' => [$this, 'paypal_create_order'],
+            'permission_callback' => [$this, 'check_checkout_endpoint_permission'],
+        ]);
+
+        // PayPal - Capture Order
+        register_rest_route('flosc/v1', '/paypal/capture-order', [
+            'methods' => 'POST',
+            'callback' => [$this, 'paypal_capture_order'],
+            'permission_callback' => [$this, 'check_checkout_endpoint_permission'],
+        ]);
+
+        // PayPal Subscriptions - Get/create plans (auto-setup)
+        register_rest_route('flosc/v1', '/paypal/get-plans', [
+            'methods' => 'POST',
+            'callback' => [$this, 'paypal_get_plans'],
+            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
+        ]);
+
+        // PayPal Subscriptions - Activate after user approves
+        register_rest_route('flosc/v1', '/paypal/activate-subscription', [
+            'methods' => 'POST',
+            'callback' => [$this, 'paypal_activate_subscription'],
+            'permission_callback' => [$this, 'check_checkout_endpoint_permission'],
+        ]);
+
+        // Checkout binding token (provider-neutral). The browser calls this once
+        // when it begins checkout; the server mints a single-use token bound to
+        // this session and returns it. The browser presents it back at payment
+        // completion, which is how a completion handler proves the request is the
+        // buyer's own browser rather than a replayed payment id. Public + rate
+        // limited: minting a token bound to the caller's own session leaks nothing.
+        register_rest_route('flosc/v1', '/checkout/binding', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_checkout_binding'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
+        // Webhooks (from payment providers like Stripe)
+        // Public by design: payment providers cannot pass WordPress auth.
+        // Security is enforced by webhook signature verification in handle_webhook().
+        register_rest_route('flosc/v1', '/webhooks/(?P<provider>[a-z]+)', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_webhook'],
+            'permission_callback' => [$this, 'check_webhook_endpoint_permission'],
+        ]);
+
+        // Access check
+        // v9.4.2: Now rate-limited via check_public_endpoint_permission
+        register_rest_route('flosc/v1', '/access', [
+            'methods' => 'GET',
+            'callback' => [$this, 'check_access'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
+        // Token balance
+        register_rest_route('flosc/v1', '/tokens', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_token_balance'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        // Purchase intents (affiliate system)
+        register_rest_route('flosc/v1', '/intents', [
+            'methods' => 'POST',
+            'callback' => [$this, 'declare_intent'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        register_rest_route('flosc/v1', '/intents/(?P<id>[a-z0-9_]+)/offers', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_intent_offers'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        // Referral
+        register_rest_route('flosc/v1', '/referral', [
+            'methods' => 'GET',
+            'callback' => [$this, 'generate_referral'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        // Lessons
+        // v1.7.8: Lesson list requires login (matches JS access gate)
+        register_rest_route('flosc/v1', '/lessons', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_lessons'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        register_rest_route('flosc/v1', '/lessons/(?P<id>\d+)', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_lesson'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        register_rest_route('flosc/v1', '/lessons/free', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_free_lesson'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        // IVR Messages (v9.2.2)
+        // v9.4.2: Now rate-limited via check_public_endpoint_permission
+        register_rest_route('flosc/v1', '/ivr-messages', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_ivr_messages'],
+            'permission_callback' => [$this, 'check_ivr_messages_permission'],
+        ]);
+
+        // v1.0.4: Bridge Data endpoint (TASK-008) - quiz state between phases
+        register_rest_route('flosc/v1', '/bridge-data', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_bridge_data'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        // v1.0.5: Debug endpoint - full funnel state (TASK-108)
+        // Only available when FLOSC_DEBUG is true
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            register_rest_route('flosc/v1', '/debug/funnel-state', [
+                'methods' => 'GET',
+                'callback' => [$this, 'get_debug_funnel_state'],
+                'permission_callback' => [$this, 'check_admin_endpoint_permission'],
+            ]);
+        }
+
+        // Store pre-login score
+        // v9.4.2: Now rate-limited via check_public_endpoint_permission
+        register_rest_route('flosc/v1', '/store-score', [
+            'methods' => 'POST',
+            'callback' => [$this, 'store_prelogin_score'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
+        // v8.0.0: Store visitor audio for deferred scoring
+        // Visitors upload audio here instead of calling pronunciation API directly.
+        // Audio is scored server-side after login/registration.
+        register_rest_route('flosc/v1', '/store-visitor-audio', [
+            'methods' => 'POST',
+            'callback' => [$this, 'store_visitor_audio'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
+        // Mark funnel completed (v3.0.4)
+        register_rest_route('flosc/v1', '/funnel-complete', [
+            'methods' => 'POST',
+            'callback' => [$this, 'mark_funnel_complete'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        // Test AI connection (v04_05)
+        register_rest_route('flosc/v1', '/test-ai', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_test_ai'],
+            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
+        ]);
+
+        // v07.09: IVR message tracking
+        // v9.4.2: Now rate-limited via check_public_endpoint_permission
+        register_rest_route('flosc/v1', '/ivr/track', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_ivr_track'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
+        // v9.4.2: Now rate-limited via check_public_endpoint_permission
+        // Task 4: Add entitlement gating — phase-level (permission callback) and per-message (handler filtering)
+        register_rest_route('flosc/v1', '/ivr/messages', [
+            'methods' => 'GET',
+            'callback' => [$this, 'handle_ivr_get_messages'],
+            'permission_callback' => [$this, 'check_ivr_messages_permission'],
+        ]);
+
+        // v1.4.0: Email registration (sends guest link — deferred user creation)
+        register_rest_route('flosc/v1', '/register-email', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_email_registration'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
+        // Guest profile setup — save nickname + optional password from in-chat card
+        register_rest_route('flosc/v1', '/update-guest-profile', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_update_guest_profile'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+
+        // v8.0.7: Score pending audio — called by JS after ANY login method (email, FB, Google).
+        // JS sends the temp_id from localStorage. Server scores audio and returns results.
+        // This replaces the unreliable cookie-based approach for SSO paths.
+        register_rest_route('flosc/v1', '/score-pending-audio', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_score_pending_audio'],
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
+        ]);
+
+        // v8.0.8: Store browser-computed quiz data — no server-side re-scoring needed.
+        // The browser already scored each phrase against the flow-configured pronunciation API during the quiz.
+        // This endpoint accepts those results and stores them in user meta + moves audio files.
+        // Used by SSO path (post-reload) when email registration didn't carry quiz_data.
+        register_rest_route('flosc/v1', '/store-quiz-data', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_store_quiz_data'],
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
+        ]);
+
+        // v1.9.0: AI Feedback — admin flags bad AI responses to improve quality
+        register_rest_route('flosc/v1', '/feedback', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_save_feedback'],
+            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
+        ]);
+
+        register_rest_route('flosc/v1', '/feedback', [
+            'methods' => 'GET',
+            'callback' => [$this, 'handle_get_feedback'],
+            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
+        ]);
+
+        register_rest_route('flosc/v1', '/feedback/(?P<feedback_id>[a-z0-9]+)', [
+            'methods' => 'DELETE',
+            'callback' => [$this, 'handle_delete_feedback'],
+            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
+        ]);
+
+        // v1.9.0: AI Praise — admin reinforces good AI responses
+        register_rest_route('flosc/v1', '/praises', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_save_praise'],
+            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
+        ]);
+
+        register_rest_route('flosc/v1', '/praises/(?P<praise_id>[a-z0-9_]+)', [
+            'methods' => 'DELETE',
+            'callback' => [$this, 'handle_delete_praise'],
+            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
+        ]);
+
+        // v8.0.0: Redeem access code — grants role directly, no payment
+        register_rest_route('flosc/v1', '/redeem-access-code', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_redeem_access_code'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
+    }
+}
