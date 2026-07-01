@@ -974,15 +974,19 @@ flosc_tab_header('💬', 'IVR Management');
     </h3>
     
     <p class="description flosc-ivr-panel__intro">
-        Editing IVR messages for this flow. Use the Flow dropdown above to switch to a different IVR file.
+        <?php if ($flosc_ivr_management_view === 'single'): ?>
+            Single Flow view: edit message entries for the currently selected flow.
+        <?php else: ?>
+            All Flows view: manage IVR files and full-text file content across flows.
+        <?php endif; ?>
     </p>
 
     <div class="flosc-ivr-actions-row">
         <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=single')); ?>" class="button <?php echo $flosc_ivr_management_view === 'single' ? 'button-primary' : ''; ?>">
-            Single Flow IVR Management
+            Single Flow: Message Editing
         </a>
         <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=all')); ?>" class="button <?php echo $flosc_ivr_management_view === 'all' ? 'button-primary' : ''; ?>">
-            View All Flows and Access File Management
+            All Flows: File Management
         </a>
     </div>
     
@@ -1162,13 +1166,13 @@ function floscTestAPI() {
 }
 <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
 
-<h2>IVR Management — All Phases</h2>
+<h2><?php echo $flosc_ivr_management_view === 'all' ? 'IVR Management - All Flows File Management' : 'IVR Management - Single Flow Message Editing'; ?></h2>
 
 <!-- File Management + Full Text Editor -->
 <?php if ($flosc_ivr_management_view === 'all'): ?>
 <div class="flosc-info-box flosc-ivr-info-box">
-    <h3 class="flosc-ivr-info-box__title">IVR File Management</h3>
-    <p class="flosc-ivr-info-box__lead">Refresh the file list, delete unwanted IVR files, and edit the full text of the active IVR file.</p>
+    <h3 class="flosc-ivr-info-box__title">All Flows File Management</h3>
+    <p class="flosc-ivr-info-box__lead">Manage files across flows: refresh, upload, duplicate, import, delete, and edit full file text.</p>
 
     <div class="flosc-ivr-file-actions">
         <a href="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" class="button">🔃 Refresh File List</a>

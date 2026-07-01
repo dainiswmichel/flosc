@@ -807,7 +807,7 @@ if ($flosc_selected_flow_name === '') {
             </div>
         <?php else: ?>
             <div class="flosc-ivr-working-row">
-                Working on:
+                Editing flow:
                 <span class="flosc-ivr-working-chip">
                     <?php echo esc_html($flosc_selected_flow_name); ?>
                 </span>
@@ -815,7 +815,7 @@ if ($flosc_selected_flow_name === '') {
         <?php endif; ?>
 
         <div class="flosc-ivr-controls-row">
-            <label class="flosc-ivr-select-label">Select Flow:</label>
+            <label class="flosc-ivr-select-label">Switch Flow:</label>
             <select id="ivr-select" class="flosc-ivr-select-control">
                 <?php foreach ($flosc_ivr_files as $flosc_file): ?>
                     <option value="<?php echo esc_attr($flosc_file); ?>" <?php selected($flosc_selected_ivr, $flosc_file); ?>>
@@ -823,13 +823,6 @@ if ($flosc_selected_flow_name === '') {
                     </option>
                 <?php endforeach; ?>
             </select>
-
-            <form method="post" class="flosc-default-flow-form">
-                <?php wp_nonce_field('flosc_set_default_flow', 'flosc_default_flow_nonce'); ?>
-                <button type="submit" name="flosc_set_default_flow" value="1" class="button button-small" <?php disabled($flosc_user_default_ivr, $flosc_selected_ivr); ?>>
-                    <?php echo $flosc_user_default_ivr === $flosc_selected_ivr ? 'Default Flow' : 'Make Flow Default'; ?>
-                </button>
-            </form>
             
             <?php if ($flosc_flow_settings['status'] === 'active' && !empty($flosc_flow_settings['slug'])): ?>
                 <a href="<?php echo esc_url($flosc_flow_url); ?>" target="_blank" class="button button-small">

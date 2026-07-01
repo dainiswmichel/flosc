@@ -2,7 +2,7 @@
 /**
  * FLOSC Flow Tab — F→L→O→S→C read-only phase overview
  *
- * Shows live counts and edit links for each of the five FLOSC funnel phases.
+ * Shows live counts and edit links for each of the five FLOSC flow phases.
  * Data sourced from $flosc_flow_settings (via $GLOBALS) and flosc() helper objects.
  *
  * v4.0.0: Initial implementation
@@ -157,10 +157,10 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 
     <div class="flosc-flow-overview-header">
         <h2 class="flosc-flow-overview-title">
-            <span>🗺 FLOSC Funnel Overview</span>
+            <span>🗺 FLOSC Flow Overview</span>
             <a href="<?php echo esc_url($flosc_flow_docs_url); ?>" class="flosc-docs-link">Docs</a>
         </h2>
-        <p class="flosc-flow-overview-summary">Read-only snapshot of all five funnel phases for <strong><?php echo esc_html( $flosc_selected_ivr ?: 'this flow' ); ?></strong>. Click any Edit button to jump to that tab.</p>
+        <p class="flosc-flow-overview-summary">Read-only snapshot of all five flow phases for <strong><?php echo esc_html( $flosc_selected_ivr ?: 'this flow' ); ?></strong>. Click any Edit button to jump to that tab.</p>
     </div>
 
     <?php
