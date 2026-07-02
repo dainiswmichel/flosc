@@ -79,6 +79,17 @@ $flosc_feature_links = [
 <p><strong>Tech Ref Level:</strong> IVR management coordinates message files, per-flow overrides, and parser rules that control message behavior.</p>
 <p><strong>Code Level:</strong> admin/ivr-messages.php renders the editor, and the backend loader reads the selected IVR plus saved overrides.</p>
 
+<h4 id="tab-ivr-messages-all-flows-fields">All Flows File Management field guide</h4>
+<p><strong>Flow Label:</strong> The human-readable flow name pulled from the flow settings bundle, usually from the identity name field, and used only for display.</p>
+<p><strong>Flow Key (internal):</strong> The WordPress option key that stores the per-flow settings bundle, typically the <code>flosc_flow_*</code> record used by the admin and runtime loaders.</p>
+<p><strong>AI Provider:</strong> The provider slug stored in the flow settings, resolved from the flow option first and then from the global AI default if the flow has no explicit provider value.</p>
+<p><strong>Messages:</strong> The count of parsed message entries currently available for that IVR file, taken from the parser output after the markdown file is read.</p>
+<p><strong>Phases:</strong> The per-phase message count snapshot for Freeline, Login, Offer, Sale, and Content, built from the parser's phase arrays.</p>
+<p><strong>Modified:</strong> The file modification timestamp from the resolved IVR file path on disk, not a database timestamp.</p>
+<p><strong>Size:</strong> The byte size of the resolved IVR file as reported by the filesystem.</p>
+<p><strong>Parse Status:</strong> The parser result for the row; the code checks that the file exists, can be read, and returns at least one message entry after passing the markdown through <code>FLOSC_IVR_Parser::flosc_instance()-&gt;flosc_parse()</code>.</p>
+<p><strong>Selected IVR File in Settings:</strong> The comparison between the row file name and the flow's stored IVR pointer, using <code>active_ivr_file</code> first and then <code>ivr_file</code> from the flow settings array.</p>
+
 <h3 id="visitor-autoprompts-intropanelshow-panel">⚪ Visitor AutoPrompts — IntroPanelShow panel</h3>
 <p><a href="<?php echo esc_url($flosc_feature_links['autoprompts']); ?>">Open Feature: AutoPrompts tab (Visitor section)</a></p>
 <p><strong>One further step:</strong> Toggle the Visitor panel visibility once and save, then reload the tab to confirm the state persisted for the active flow.</p>

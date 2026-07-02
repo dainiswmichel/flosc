@@ -36,6 +36,35 @@ if (!function_exists('flosc_resolve_ivr_file_path')) {
     }
 }
 
+if (!function_exists('flosc_get_new_ivr_template_content')) {
+    function flosc_get_new_ivr_template_content() {
+        $flosc_template_candidates = [
+            FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_starter_ivr.md',
+            FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_friendly_ivr.md',
+            FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_ai_ivr.md',
+        ];
+
+        foreach ($flosc_template_candidates as $flosc_template_path) {
+            if (file_exists($flosc_template_path) && is_readable($flosc_template_path)) {
+                $flosc_template_content = file_get_contents($flosc_template_path);
+                if ($flosc_template_content !== false && trim($flosc_template_content) !== '') {
+                    return $flosc_template_content;
+                }
+            }
+        }
+
+        return "# FLOSC Starter IVR Configuration\n"
+            . "# Rename, customize, and expand this file for your flow.\n\n"
+            . "---\n\n"
+            . "## Welcome\n"
+            . "MessageName: starter_welcome\n"
+            . "MessageType: auto\n"
+            . "MessageStyle: card\n"
+            . "MessageContent: Welcome. This is your new starter IVR file.\n"
+            . "MessageConditions: is_visitor && first_show_session\n";
+    }
+}
+
 $flosc_get = wp_unslash($_GET);
 $flosc_post = wp_unslash($_POST);
 
@@ -488,6 +517,49 @@ if (isset($flosc_post['flosc_upload_ivr_file']) && isset($_FILES['ivr_file_uploa
     }
 }
 
+// Handle new IVR file creation from starter template
+if (isset($flosc_post['flosc_create_ivr_file']) && isset($flosc_post['new_ivr_file'])) {
+    check_admin_referer('flosc_create_ivr_file');
+
+    $flosc_new_file_input = strtolower(trim((string) $flosc_post['new_ivr_file']));
+    $flosc_new_file_input = sanitize_file_name($flosc_new_file_input);
+    $flosc_new_file_base = preg_replace('/\.md$/', '', $flosc_new_file_input);
+    if ($flosc_new_file_base === null) {
+        $flosc_new_file_base = '';
+    }
+    if ($flosc_new_file_base !== '' && substr($flosc_new_file_base, -4) !== '_ivr') {
+        $flosc_new_file_base .= '_ivr';
+    }
+    $flosc_new_file = $flosc_new_file_base !== '' ? $flosc_new_file_base . '.md' : '';
+
+    if (!preg_match('/^[a-z0-9_-]+_ivr\.md$/', $flosc_new_file)) {
+        add_settings_error(
+            'flosc_settings',
+            'create_invalid_name',
+            'Invalid filename. Use lowercase letters, numbers, underscores, or hyphens. You can enter "lesaep" or "lesaep_ivr.md" and FLOSC will create lesaep_ivr.md.',
+            'error'
+        );
+    } elseif ('' === $flosc_ivr_dir) {
+        add_settings_error('flosc_settings', 'create_uploads_unavailable', 'Cannot create IVR file because uploads storage is unavailable.', 'error');
+    } else {
+        $flosc_new_path = $flosc_ivr_dir . $flosc_new_file;
+        if (file_exists($flosc_new_path)) {
+            add_settings_error('flosc_settings', 'create_exists', 'File already exists: ' . esc_html($flosc_new_file), 'error');
+        } else {
+            $flosc_template_content = flosc_get_new_ivr_template_content();
+            $flosc_create_ok = function_exists('flosc_write_data_file')
+                ? flosc_write_data_file($flosc_new_path, $flosc_template_content)
+                : false;
+
+            if (!$flosc_create_ok) {
+                add_settings_error('flosc_settings', 'create_failed', 'Could not create new IVR file. Check uploads permissions.', 'error');
+            } else {
+                add_settings_error('flosc_settings', 'create_success', 'Created new IVR file from starter template: ' . esc_html($flosc_new_file), 'success');
+            }
+        }
+    }
+}
+
 // Handle explicit file import from IVR File Management (selected file -> FLOSC DB)
 if (isset($flosc_post['flosc_import_selected_ivr_file']) && isset($flosc_post['import_ivr_file'])) {
     check_admin_referer('flosc_import_selected_ivr_file');
@@ -498,10 +570,8 @@ if (isset($flosc_post['flosc_import_selected_ivr_file']) && isset($flosc_post['i
     if (!file_exists($flosc_selected_path)) {
         add_settings_error('flosc_settings', 'import_selected_failed', 'Selected IVR file not found: ' . $flosc_selected_file, 'error');
     } else {
-        $flosc_result = flosc_import_ivr_to_database(false, $flosc_selected_path, $flosc_flow_key, 'merge');
+        $flosc_result = flosc_import_ivr_to_database(false, $flosc_selected_path, $flosc_flow_key, 'replace');
         if ($flosc_result['success']) {
-            // Complete sync cycle so file and DB end in parity after merge.
-            $flosc_export_ok = flosc_auto_export_ivr_to_file($flosc_flow_key, $flosc_selected_path);
             if ($flosc_flow_key) {
                 $flosc_fs = get_option($flosc_flow_key, []);
                 $flosc_fs['active_ivr_file'] = $flosc_selected_file;
@@ -510,11 +580,7 @@ if (isset($flosc_post['flosc_import_selected_ivr_file']) && isset($flosc_post['i
                 $GLOBALS['flosc_current_settings'] = $flosc_fs;
                 $flosc_flow_settings = $flosc_fs;
             }
-            if ($flosc_export_ok) {
-                add_settings_error('flosc_settings', 'import_selected_success', 'Merged selected IVR file and synced FLOSC DB ↔ IVR file: ' . esc_html($flosc_selected_file) . '. No discrepancies remain.', 'success');
-            } else {
-                add_settings_error('flosc_settings', 'import_selected_partial', 'Merged selected IVR file → FLOSC DB, but file sync failed. Use Save DB → IVR File to finish parity for: ' . esc_html($flosc_selected_file), 'error');
-            }
+            add_settings_error('flosc_settings', 'import_selected_success', 'Imported selected IVR file → FLOSC DB: ' . esc_html($flosc_selected_file), 'success');
         } else {
             add_settings_error('flosc_settings', 'import_selected_failed', 'Import failed: ' . esc_html($flosc_result['message']), 'error');
         }
@@ -918,7 +984,7 @@ if (is_dir($flosc_ivr_files_dir)) {
     $flosc_files = array_unique($flosc_files); // Remove duplicates
     sort($flosc_files); // Alphabetical order
     foreach ($flosc_files as $flosc_file) {
-        $flosc_filename = basename($file);
+        $flosc_filename = basename($flosc_file);
         // Skip backup files
         if (strpos($flosc_filename, 'backup') === false) {
             $flosc_available_ivr_files[] = $flosc_filename;
@@ -950,7 +1016,13 @@ $flosc_ivr_docs_url = add_query_arg([
     'ivr'  => $flosc_active_ivr_file,
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
-], esc_url(admin_url('admin.php'))) . '#tab-ivr-messages';
+], esc_url(admin_url('admin.php'))) . '#tab-ivr-messages-all-flows-fields';
+
+$flosc_missing_ivr_default_message = 'Unfortunately, there is a technical issue with the chat engine, which we hope will be resolved quickly. Our system has notified the site admins, and we invite you to return at a later time.';
+$flosc_missing_ivr_message_value = trim((string)($flosc_flow_settings['missing_ivr_message'] ?? ''));
+if ($flosc_missing_ivr_message_value === '') {
+    $flosc_missing_ivr_message_value = $flosc_missing_ivr_default_message;
+}
 
 // v1.2.9: Output tab header after request handlers so download responses can send headers cleanly.
 flosc_tab_header('💬', 'IVR Management');
@@ -988,6 +1060,19 @@ flosc_tab_header('💬', 'IVR Management');
         <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=all')); ?>" class="button <?php echo $flosc_ivr_management_view === 'all' ? 'button-primary' : ''; ?>">
             All Flows: File Management
         </a>
+    </div>
+
+    <div class="flosc-ivr-missing-message-config">
+        <h4>Missing IVR File Visitor Message</h4>
+        <p class="description">Shown to visitors when this flow's IVR file cannot be resolved at runtime.</p>
+        <form method="post" action="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=' . urlencode($flosc_ivr_management_view))); ?>">
+            <?php wp_nonce_field('flosc_save_settings'); ?>
+            <input type="hidden" name="flosc_save" value="1">
+            <textarea name="flow_missing_ivr_message" rows="3" class="large-text"><?php echo esc_textarea($flosc_missing_ivr_message_value); ?></textarea>
+            <p>
+                <button type="submit" class="button button-secondary">Save Missing-IVR Message</button>
+            </p>
+        </form>
     </div>
     
     <!-- Status Indicators -->
@@ -1171,11 +1256,19 @@ function floscTestAPI() {
 <!-- File Management + Full Text Editor -->
 <?php if ($flosc_ivr_management_view === 'all'): ?>
 <div class="flosc-info-box flosc-ivr-info-box">
-    <h3 class="flosc-ivr-info-box__title">All Flows File Management</h3>
+    <div class="flosc-ivr-info-box__title-row">
+        <h3 class="flosc-ivr-info-box__title">All Flows File Management</h3>
+        <a href="<?php echo esc_url($flosc_ivr_docs_url); ?>" class="flosc-ivr-info-box__docs-link">Docs</a>
+    </div>
     <p class="flosc-ivr-info-box__lead">Manage files across flows: refresh, upload, duplicate, import, delete, and edit full file text.</p>
 
     <div class="flosc-ivr-file-actions">
         <a href="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" class="button">🔃 Refresh File List</a>
+        <form method="post" action="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" class="flosc-ivr-inline-form">
+            <?php wp_nonce_field('flosc_create_ivr_file'); ?>
+            <input type="text" name="new_ivr_file" class="regular-text" placeholder="new_flow_ivr.md" required pattern="[a-z0-9_-]+_ivr\.md" title="Use lowercase letters, numbers, underscores or hyphens, ending in _ivr.md">
+            <button type="submit" name="flosc_create_ivr_file" class="button button-secondary">➕ Create New IVR File</button>
+        </form>
         <form method="post" action="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" enctype="multipart/form-data" class="flosc-ivr-upload-form">
             <?php wp_nonce_field('flosc_upload_ivr_file'); ?>
             <input type="file" name="ivr_file_upload" accept=".md,text/markdown" required>
@@ -1187,11 +1280,21 @@ function floscTestAPI() {
         <thead>
             <tr>
                 <th>File</th>
+                <th>Diagnostics</th>
                 <th class="flosc-ivr-col-status">Status</th>
                 <th class="flosc-ivr-col-actions">Actions</th>
             </tr>
         </thead>
         <tbody>
+        <?php if (empty($flosc_available_ivr_files)): ?>
+            <tr>
+                <td colspan="4">No managed IVR files found. Create one with the form above or upload an existing .md file.</td>
+            </tr>
+        <?php endif; ?>
+        <?php
+        require_once FLOSC_PLUGIN_DIR . 'includes/class-ivr-parser.php';
+        $flosc_table_parser = FLOSC_IVR_Parser::flosc_instance();
+        ?>
         <?php foreach ($flosc_available_ivr_files as $flosc_ivr_filename):
             $flosc_is_active_row = ($flosc_ivr_filename === $flosc_active_ivr_file);
             $flosc_edit_url = esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_ivr_filename) . '&view=single'));
@@ -1199,9 +1302,97 @@ function floscTestAPI() {
                 esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=all&flosc_download_ivr=' . urlencode($flosc_ivr_filename))),
                 'flosc_download_ivr_' . $flosc_ivr_filename
             );
+
+            $flosc_file_path_for_row = flosc_resolve_ivr_file_path($flosc_ivr_filename);
+            $flosc_row_file_exists = ($flosc_file_path_for_row !== '' && file_exists($flosc_file_path_for_row));
+            $flosc_row_parse_state = 'error';
+            $flosc_row_parse_note = 'File missing or unreadable';
+            $flosc_row_total_messages = 0;
+            $flosc_row_phase_counts = [
+                'freeline' => 0,
+                'login' => 0,
+                'offer' => 0,
+                'sale' => 0,
+                'content' => 0,
+            ];
+            $flosc_row_modified = 'n/a';
+            $flosc_row_size = 'n/a';
+
+            if ($flosc_row_file_exists) {
+                $flosc_row_modified = gmdate('Y-m-d H:i:s', filemtime($flosc_file_path_for_row));
+                $flosc_row_size = number_format((int)filesize($flosc_file_path_for_row)) . ' bytes';
+                $flosc_row_markdown = file_get_contents($flosc_file_path_for_row);
+                if ($flosc_row_markdown !== false) {
+                    $flosc_row_config = $flosc_table_parser->flosc_parse($flosc_row_markdown);
+                    $flosc_row_total_messages = count($flosc_row_config['messages'] ?? []);
+                    foreach (array_keys($flosc_row_phase_counts) as $flosc_phase_key) {
+                        $flosc_row_phase_counts[$flosc_phase_key] = count($flosc_row_config['phases'][$flosc_phase_key] ?? []);
+                    }
+                    if ($flosc_row_total_messages > 0) {
+                        $flosc_row_parse_state = 'valid';
+                        $flosc_row_parse_note = 'Parsed successfully';
+                    } else {
+                        $flosc_row_parse_state = 'warning';
+                        $flosc_row_parse_note = 'Parsed but no messages found';
+                    }
+                }
+            }
+
+            $flosc_row_file_stem = sanitize_key(pathinfo($flosc_ivr_filename, PATHINFO_FILENAME));
+            $flosc_row_option_key = function_exists('flosc_resolve_flow_option_key_for_ivr')
+                ? flosc_resolve_flow_option_key_for_ivr($flosc_ivr_filename)
+                : ('flosc_flow_' . $flosc_row_file_stem);
+            $flosc_row_flow_settings = get_option($flosc_row_option_key, []);
+
+            $flosc_row_flow_id = str_replace('flosc_flow_', '', (string)$flosc_row_option_key);
+            if ($flosc_row_flow_id === '') {
+                $flosc_row_flow_id = $flosc_row_file_stem;
+            }
+
+            $flosc_row_flow_label = trim((string)($flosc_row_flow_settings['identity']['name'] ?? ''));
+            if ($flosc_row_flow_label === '') {
+                $flosc_row_flow_label = trim((string)($flosc_row_flow_settings['name'] ?? ''));
+            }
+            if ($flosc_row_flow_label === '') {
+                $flosc_row_flow_label = ucwords(str_replace(['_', '-', '.md', 'ivr'], [' ', ' ', '', ''], $flosc_ivr_filename));
+            }
+
+            $flosc_row_assistant = trim((string)($flosc_row_flow_settings['identity']['name'] ?? ''));
+            if ($flosc_row_assistant === '') {
+                $flosc_row_assistant = $flosc_row_flow_label;
+            }
+
+            $flosc_row_ai_provider = trim((string)($flosc_row_flow_settings['ai_provider'] ?? get_option('flosc_ai_provider', 'ivr')));
+            if ($flosc_row_ai_provider === '') {
+                $flosc_row_ai_provider = 'ivr';
+            }
+
+            $flosc_row_selected_file = sanitize_file_name((string)($flosc_row_flow_settings['active_ivr_file'] ?? $flosc_row_flow_settings['ivr_file'] ?? ''));
+            if ($flosc_row_selected_file === '') {
+                $flosc_row_file_setting_status = 'No flow file selected in settings';
+            } else {
+                $flosc_row_file_setting_status = ($flosc_row_selected_file === $flosc_ivr_filename)
+                    ? 'Matches flow file setting'
+                    : ('Flow settings currently select ' . $flosc_row_selected_file);
+            }
         ?>
             <tr>
-                <td><code><?php echo esc_html($flosc_ivr_filename); ?></code></td>
+                <td>
+                    <div class="flosc-ivr-row-file-head"><code><?php echo esc_html($flosc_ivr_filename); ?></code></div>
+                </td>
+                <td>
+                    <div class="flosc-ivr-row-diagnostics">
+                        <span><strong>Flow Label:</strong> <?php echo esc_html($flosc_row_flow_label); ?></span>
+                        <span><strong>Flow Key (internal):</strong> <?php echo esc_html($flosc_row_flow_id); ?></span>
+                        <span><strong>AI Provider:</strong> <?php echo esc_html($flosc_row_ai_provider); ?></span>
+                        <span><strong>Messages:</strong> <?php echo esc_html((string)$flosc_row_total_messages); ?></span>
+                        <span><strong>Phases:</strong> F <?php echo esc_html((string)$flosc_row_phase_counts['freeline']); ?> | L <?php echo esc_html((string)$flosc_row_phase_counts['login']); ?> | O <?php echo esc_html((string)$flosc_row_phase_counts['offer']); ?> | S <?php echo esc_html((string)$flosc_row_phase_counts['sale']); ?> | C <?php echo esc_html((string)$flosc_row_phase_counts['content']); ?></span>
+                        <span><strong>Modified:</strong> <?php echo esc_html($flosc_row_modified); ?></span>
+                        <span><strong>Size:</strong> <?php echo esc_html($flosc_row_size); ?></span>
+                        <span><strong>Parse Status:</strong> <?php echo esc_html(strtoupper($flosc_row_parse_state)); ?> (<?php echo esc_html($flosc_row_parse_note); ?>)</span>
+                        <span><strong>Selected IVR File in Settings:</strong> <?php echo esc_html($flosc_row_file_setting_status); ?></span>
+                    </div>
+                </td>
                 <td><?php echo $flosc_is_active_row ? 'Active' : 'Managed'; ?></td>
                 <td>
                     <div class="flosc-ivr-file-action-group">
@@ -1215,7 +1406,7 @@ function floscTestAPI() {
                         <form method="post" action="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" class="flosc-ivr-inline-form">
                             <?php wp_nonce_field('flosc_import_selected_ivr_file'); ?>
                             <input type="hidden" name="import_ivr_file" value="<?php echo esc_attr($flosc_ivr_filename); ?>">
-                            <button type="submit" name="flosc_import_selected_ivr_file" class="button button-small">Merge And Sync File ↔ DB</button>
+                            <button type="submit" name="flosc_import_selected_ivr_file" class="button button-small flosc-ivr-file-action-wide">Import IVR File → DB</button>
                         </form>
                         <form method="post" action="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" class="flosc-ivr-inline-form flosc-ivr-inline-form--warn" data-confirm-message="Delete IVR file <?php echo esc_attr($flosc_ivr_filename); ?>? This cannot be undone from this panel.">
                             <?php wp_nonce_field('flosc_delete_ivr_file'); ?>

@@ -5070,6 +5070,108 @@ HTML;
         $user_id = get_current_user_id();
         return $this->sale_manager->access()->can_access($user_id, 'full') ? 'paid' : 'free';
     }
+    
+    private function flosc_default_missing_ivr_message() {
+        return 'Unfortunately, there is a technical issue with the chat engine, which we hope will be resolved quickly. Our system has notified the site admins, and we invite you to return at a later time.';
+    }
+    
+    private function flosc_resolve_runtime_flow_key($flow_id = '', $ivr_file = '') {
+        $candidates = [];
+
+        $flow_id = sanitize_key((string)$flow_id);
+        if ($flow_id !== '') {
+            $candidates[] = 'flosc_flow_' . $flow_id;
+        }
+        
+        $ivr_file = sanitize_file_name((string)$ivr_file);
+        if ($ivr_file !== '') {
+            $stem = sanitize_key(pathinfo($ivr_file, PATHINFO_FILENAME));
+            if ($stem !== '') {
+                $candidates[] = 'flosc_flow_' . $stem;
+            }
+        }
+
+        $all_flows = get_option('flosc_flows', []);
+        if (is_array($all_flows) && !empty($all_flows)) {
+            if ($flow_id !== '' && isset($all_flows[$flow_id])) {
+                $candidates[] = 'flosc_flow_' . sanitize_key($flow_id);
+            }
+            if ($ivr_file !== '') {
+                foreach ($all_flows as $registry_flow_id => $registry_flow) {
+                    if (!is_array($registry_flow)) {
+                        continue;
+                    }
+                    $registry_file = sanitize_file_name((string)($registry_flow['ivr_file'] ?? ''));
+                    if ($registry_file !== '' && $registry_file === $ivr_file) {
+                        $candidates[] = 'flosc_flow_' . sanitize_key((string)$registry_flow_id);
+                        break;
+                    }
+                }
+            }
+        }
+
+        $candidates = array_values(array_unique(array_filter($candidates)));
+        foreach ($candidates as $candidate_key) {
+            if (get_option($candidate_key, null) !== null) {
+                return $candidate_key;
+            }
+        }
+
+        if (!empty($candidates)) {
+            return $candidates[0];
+        }
+        
+        return '';
+    }
+    
+    private function flosc_get_missing_ivr_message($flow_id = '', $ivr_file = '') {
+        $flow_key = $this->flosc_resolve_runtime_flow_key($flow_id, $ivr_file);
+        if ($flow_key !== '') {
+            $fs = get_option($flow_key, []);
+            $configured = trim((string)($fs['missing_ivr_message'] ?? ''));
+            if ($configured !== '') {
+                return $configured;
+            }
+        }
+        return $this->flosc_default_missing_ivr_message();
+    }
+    
+    private function flosc_load_runtime_ivr_config($flow_id = '', $ivr_file = '') {
+        $flow_key = $this->flosc_resolve_runtime_flow_key($flow_id, $ivr_file);
+        if ($flow_key === '') {
+            return [];
+        }
+        
+        $fs = get_option($flow_key, []);
+        if (!empty($fs['ivr_messages']) && is_array($fs['ivr_messages'])) {
+            return [
+                'messages' => $fs['ivr_messages'],
+                'phases'   => $fs['ivr_phases'] ?? [],
+                'styles'   => $fs['ivr_styles'] ?? [],
+            ];
+        }
+        
+        $flow_ivr_file = sanitize_file_name((string)($fs['active_ivr_file'] ?? $fs['ivr_file'] ?? ''));
+        if ($flow_ivr_file === '') {
+            $flow_ivr_file = sanitize_file_name((string)$ivr_file);
+        }
+        if ($flow_ivr_file === '') {
+            return [];
+        }
+        
+        $ivr_path = function_exists('flosc_config_file') ? flosc_config_file($flow_ivr_file) : '';
+        if ($ivr_path === '' || !file_exists($ivr_path)) {
+            return [];
+        }
+        
+        $markdown = file_get_contents($ivr_path);
+        if ($markdown === false) {
+            return [];
+        }
+        
+        $parser = FLOSC_IVR_Parser::flosc_instance();
+        return $parser->flosc_parse($markdown);
+    }
 
     /**
      * REST Handlers
@@ -5115,49 +5217,21 @@ HTML;
             }
         }
         
-        // v1.3.7: Load IVR config from flow-specific file
-        $ivr_config = [];
-        
-        if (!empty($ivr_file)) {
-            // DB first: the flow's IVR lives in its option (the live source). The .md is
-            // a portability export kept current by the integrity hook and is NOT read at
-            // runtime unless the DB has nothing for this flow yet — so a normal chat
-            // message does no file read and no markdown parse.
-            $flow_key = 'flosc_flow_' . sanitize_key(pathinfo($ivr_file, PATHINFO_FILENAME));
-            $fs = get_option($flow_key, []);
-            if (!empty($fs['ivr_messages'])) {
-                $ivr_config = [
-                    'messages' => $fs['ivr_messages'],
-                    'phases'   => $fs['ivr_phases'] ?? [],
-                    'styles'   => $fs['ivr_styles'] ?? [],
-                ];
+        // Strict flow-specific IVR resolution: no silent substitution to unrelated defaults.
+        $ivr_config = $this->flosc_load_runtime_ivr_config($flow_id, $ivr_file);
+        if (empty($ivr_config) || empty($ivr_config['messages'])) {
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                flosc_log('FLOSC Chat: Missing IVR configuration for flow_id=' . $flow_id . ' ivr_file=' . $ivr_file);
             }
 
-            // Fallback only: parse the portability .md when the DB has no IVR for this flow.
-            if (empty($ivr_config['messages'])) {
-                $ivr_path = flosc_config_file($ivr_file);
-                if (file_exists($ivr_path)) {
-                    $parser = FLOSC_IVR_Parser::flosc_instance();
-                    $markdown = file_get_contents($ivr_path);
-                    $ivr_config = $parser->flosc_parse($markdown);
-                }
-            }
-        }
-        
-        // Fallback: try global option or default parser
-        if (empty($ivr_config) || empty($ivr_config['messages'])) {
-            $ivr_config = get_option('flosc_ivr_config', []);
-        }
-        
-        if (empty($ivr_config) || empty($ivr_config['messages'])) {
-            $ivr_config = FLOSC_IVR_Parser::flosc_instance()->get_flosc_config();
-        }
-        
-        if (empty($ivr_config)) {
             return new WP_REST_Response([
-                'success' => false,
-                'error' => 'IVR not configured',
-            ], 500);
+                'success' => true,
+                'message' => $this->flosc_get_missing_ivr_message($flow_id, $ivr_file),
+                'action' => null,
+                'user_autoprompts' => [],
+                'phaseChange' => null,
+                'technical_issue' => 'missing_ivr_file',
+            ]);
         }
 
         // Concierge: keyword-triggered messages with an optional password gate.
@@ -9203,29 +9277,37 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] capture_ord
         $user_context['first_message_after_login'] = $request->get_param('after_login') === 'true';
         $user_context['first_message_after_purchase'] = $request->get_param('after_purchase') === 'true';
         
-        // v1.3.8: Load IVR config - prefer explicit ivr_file param, then fall back to detection
-        $config = [];
-        $parser = FLOSC_IVR_Parser::flosc_instance();
-        
-        if (!empty($ivr_file)) {
-            // Explicit IVR file from frontend - load directly
-            $ivr_path = flosc_config_file($ivr_file);
-            if (file_exists($ivr_path)) {
-                $markdown = file_get_contents($ivr_path);
-                $config = $parser->flosc_parse($markdown);
-                $ivr_source = 'explicit:' . $ivr_file;
-            } else {
-                // Log warning but continue to fallback
-                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC v1.3.8] IVR file not found: ' . $ivr_file . ' - falling back');
-                }
-            }
-        }
-        
-        // Fallback: URL-based detection via flosc_load_config()
+        // Strict flow-specific IVR resolution for this endpoint.
+        $config = $this->flosc_load_runtime_ivr_config($flow_id, $ivr_file);
+        $ivr_source = 'strict:flow_option';
         if (empty($config) || empty($config['messages'])) {
-            $config = $parser->flosc_load_config();
-            $ivr_source = 'detection:flosc_load_config';
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                flosc_log('[FLOSC] Missing IVR messages for flow_id=' . $flow_id . ' ivr_file=' . $ivr_file);
+            }
+
+            return new WP_REST_Response([
+                'success' => true,
+                'phase' => $phase,
+                'phases_checked' => [$phase],
+                'messages' => [[
+                    'name' => 'missing_ivr_runtime_notice',
+                    'type' => 'auto',
+                    'style' => 'card',
+                    'content' => $this->flosc_get_missing_ivr_message($flow_id, $ivr_file),
+                    'conditions' => 'always',
+                    'phase' => $phase,
+                ]],
+                'user_context' => [
+                    'access_level' => $user_context['access_level'],
+                    'is_logged_in' => is_user_logged_in(),
+                ],
+                'flow_context' => [
+                    'flow_id' => $flow_id ?: null,
+                    'ivr_file' => $ivr_file ?: null,
+                    'ivr_source' => 'missing:strict_resolution',
+                ],
+                'technical_issue' => 'missing_ivr_file',
+            ]);
         }
         
         $all_messages = $config['messages'] ?? [];
@@ -12446,7 +12528,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         // 3. Preset CSS (variable definitions only)
         $this->enqueue_chat_style();
 
-        wp_enqueue_script('flosc-app', FLOSC_PLUGIN_URL . 'assets/js/flosc-app.js', [], time(), true);
+        wp_enqueue_script('flosc-app', FLOSC_PLUGIN_URL . 'assets/js/flosc-app.js', [], FLOSC_VERSION, true);
 
         // Stripe.js - DISABLED in v1.7.1 (pending Stripe account verification)
         // $stripe = $this->sale_manager->get_provider('stripe');
@@ -12462,7 +12544,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             $pp_client_id = $pp_config['clientId'] ?? '';
             if ($pp_client_id) {
                 $pp_currency = $pp_config['currency'] ?? 'USD';
-                wp_enqueue_script('paypal-js', 'https://www.paypal.com/sdk/js?client-id=' . urlencode($pp_client_id) . '&currency=' . urlencode($pp_currency) . '&intent=subscription&vault=true', [], null, true);
+                wp_enqueue_script('paypal-js', 'https://www.paypal.com/sdk/js?client-id=' . urlencode($pp_client_id) . '&currency=' . urlencode($pp_currency) . '&intent=subscription&vault=true', [], FLOSC_VERSION, true);
             }
         }
     }

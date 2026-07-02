@@ -57,7 +57,7 @@ class FLOSC_User_Session {
                 'flosc_name' => $flosc_flow['name'] ?? 'Unknown',
                 'flosc_slug' => $flosc_flow['slug'] ?? '',
                 'flosc_wp_category_id' => $flosc_flow['wp_category_id'] ?? 0,
-                'flosc_ivr_file' => $flosc_flow['ivr_file'] ?? 'flosc_default_ivr.md',
+                'flosc_ivr_file' => $flosc_flow['ivr_file'] ?? '',
                 'flosc_custom_domain' => $flosc_flow['custom_domain'] ?? '',
             ],
 
@@ -177,20 +177,48 @@ class FLOSC_User_Session {
     private function flosc_get_visible_autoprompts($flosc_context, $flosc_flow) {
         $flosc_autoprompts = [];
 
-        // Parse IVR file if it exists
-        $flosc_ivr_file = $flosc_flow['ivr_file'] ?? 'flosc_default_ivr.md';
-        if (!empty($flosc_ivr_file) && class_exists('FLOSC_IVR_Parser')) {
-            try {
-                $flosc_ivr_parser = new FLOSC_IVR_Parser($flosc_ivr_file);
-                $flosc_phase = $this->flosc_state['flosc_phase'] ?? 'freeline';
+        $flosc_ivr_file = sanitize_file_name((string)($flosc_flow['ivr_file'] ?? ''));
+        if ($flosc_ivr_file === '') {
+            return $flosc_autoprompts;
+        }
 
-                // Get autoprompts for current phase
-                if (method_exists($flosc_ivr_parser, 'get_visible_autoprompts')) {
-                    $flosc_autoprompts = $flosc_ivr_parser->get_visible_autoprompts($flosc_phase, $flosc_context);
-                }
-            } catch (Exception $e) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC User Session: Error parsing IVR autoprompts: ' . $e->getMessage());
+        if (!class_exists('FLOSC_IVR_Parser')) {
+            return $flosc_autoprompts;
+        }
+
+        try {
+            $flosc_ivr_path = function_exists('flosc_config_file') ? flosc_config_file($flosc_ivr_file) : '';
+            if ($flosc_ivr_path === '' || !file_exists($flosc_ivr_path)) {
+                return $flosc_autoprompts;
             }
+
+            $flosc_markdown = file_get_contents($flosc_ivr_path);
+            if ($flosc_markdown === false) {
+                return $flosc_autoprompts;
+            }
+
+            $flosc_ivr_parser = FLOSC_IVR_Parser::flosc_instance();
+            $flosc_config = $flosc_ivr_parser->flosc_parse($flosc_markdown);
+            $flosc_phase = $this->flosc_state['flosc_phase'] ?? 'freeline';
+            $flosc_phase_ids = $flosc_config['phases'][$flosc_phase] ?? [];
+
+            $flosc_evaluator = new FLOSC_Condition_Evaluator($flosc_context);
+            foreach ($flosc_phase_ids as $flosc_message_id) {
+                $flosc_message = $flosc_config['messages'][$flosc_message_id] ?? null;
+                if (!is_array($flosc_message)) {
+                    continue;
+                }
+                if (($flosc_message['type'] ?? '') !== 'suggested_user_autoprompt') {
+                    continue;
+                }
+                $flosc_conditions = (string)($flosc_message['conditions'] ?? 'always');
+                if (!$flosc_evaluator->evaluate($flosc_conditions)) {
+                    continue;
+                }
+                $flosc_autoprompts[] = $flosc_message;
+            }
+        } catch (Exception $e) {
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC User Session: Error parsing IVR autoprompts: ' . $e->getMessage());
         }
 
         return $flosc_autoprompts;

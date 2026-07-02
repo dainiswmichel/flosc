@@ -325,15 +325,6 @@ class FLOSC_Offer_Manager {
             }
         }
 
-        // If flow_id itself includes .md, try it directly.
-        $flow_id_file = sanitize_file_name((string)$flow_id);
-        if (substr($flow_id_file, -3) === '.md') {
-            $candidate_files[] = $flow_id_file;
-        }
-
-        // Default inference from flow_id.
-        $candidate_files[] = sanitize_file_name((string)$flow_id) . '.md';
-
         $candidate_files = array_values(array_unique(array_filter($candidate_files)));
 
         foreach ($candidate_files as $candidate) {
@@ -343,9 +334,7 @@ class FLOSC_Offer_Manager {
             }
         }
 
-        // Return the first candidate path for diagnostics/logging if no file exists.
-        $fallback = $candidate_files[0] ?? ('flosc_default_ivr.md');
-        return flosc_config_file($fallback);
+        return '';
     }
     
     /**

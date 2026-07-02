@@ -351,58 +351,43 @@ class FLOSC_IVR_Parser {
     private function get_ivr_file_path($flow = null, $for_write = false) {
         // Per WordPress.org policy: writable paths must be in uploads only.
         $writable_dir = function_exists('flosc_data_dir') ? flosc_data_dir() : '';
+        $flosc_requested_filename = '';
+
+        if ($flow && !empty($flow['ivr_file'])) {
+            $flosc_requested_filename = sanitize_file_name((string)$flow['ivr_file']);
+        } elseif (function_exists('flosc') && method_exists(flosc(), 'get_current_flow')) {
+            $current_flow = flosc()->get_current_flow();
+            if ($current_flow && !empty($current_flow['ivr_file'])) {
+                $flosc_requested_filename = sanitize_file_name((string)$current_flow['ivr_file']);
+            }
+        }
+
+        if ($flosc_requested_filename === '') {
+            return '';
+        }
 
         // If $for_write is true, return the uploads target (or empty if uploads unavailable).
-        // The target is always in uploads, even when the shipped default is all we have;
-        // the save will create the uploads copy.
+        // The target is always in uploads and is tied to the explicitly selected flow IVR file.
         if ($for_write) {
             if ('' === $writable_dir) {
                 return '';
             }
-            $filename = $flow && !empty($flow['ivr_file']) ? basename($flow['ivr_file']) : 'flosc_default_ivr.md';
-            return $writable_dir . $filename;
+            return $writable_dir . $flosc_requested_filename;
         }
 
-        // For reads: check uploads first (per §2: uploads-first read order),
-        // then fall back to shipped defaults. Both are allowed for reads.
-        if ($flow && !empty($flow['ivr_file'])) {
-            if ('' !== $writable_dir) {
-                $path = $writable_dir . $flow['ivr_file'];
-                if (file_exists($path)) {
-                    return $path;
-                }
-            }
-            $path = FLOSC_PLUGIN_DIR . 'ai_configuration_files/' . $flow['ivr_file'];
+        // For reads: resolve only the explicitly selected file (uploads first, then shipped copy).
+        if ('' !== $writable_dir) {
+            $path = $writable_dir . $flosc_requested_filename;
             if (file_exists($path)) {
                 return $path;
             }
         }
-        
-        // Try to get current flow
-        if (function_exists('flosc') && method_exists(flosc(), 'get_current_flow')) {
-            $current_flow = flosc()->get_current_flow();
-            if ($current_flow && !empty($current_flow['ivr_file'])) {
-                if ('' !== $writable_dir) {
-                    $path = $writable_dir . $current_flow['ivr_file'];
-                    if (file_exists($path)) {
-                        return $path;
-                    }
-                }
-                $path = FLOSC_PLUGIN_DIR . 'ai_configuration_files/' . $current_flow['ivr_file'];
-                if (file_exists($path)) {
-                    return $path;
-                }
-            }
+        $path = FLOSC_PLUGIN_DIR . 'ai_configuration_files/' . $flosc_requested_filename;
+        if (file_exists($path)) {
+            return $path;
         }
-        
-        // Fallback to flosc_default_ivr.md: uploads copy first, then shipped default.
-        if ('' !== $writable_dir) {
-            $writable_default = $writable_dir . 'flosc_default_ivr.md';
-            if (file_exists($writable_default)) {
-                return $writable_default;
-            }
-        }
-        return FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_ivr.md';
+
+        return '';
     }
     
     public function flosc_load_config() {
@@ -410,7 +395,7 @@ class FLOSC_IVR_Parser {
         
         // v1.2.2: Use flow-aware IVR file path
         $ivr_file = $this->get_ivr_file_path();
-        if (file_exists($ivr_file)) {
+        if ($ivr_file !== '' && file_exists($ivr_file)) {
             $markdown = file_get_contents($ivr_file);
             $this->flosc_config = $this->flosc_parse($markdown);
             
@@ -418,6 +403,9 @@ class FLOSC_IVR_Parser {
             // Each flow has its own IVR file, parsed fresh per-request
         } else {
             $this->flosc_config = $this->get_flosc_default_config();
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                flosc_log('FLOSC IVR Parser: No resolvable IVR file for current flow context.');
+            }
         }
         
         return $this->flosc_config;

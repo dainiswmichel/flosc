@@ -4249,6 +4249,20 @@
     margin-top: 0;
 }
 
+.flosc-ivr-info-box__title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.flosc-ivr-info-box__docs-link {
+    font-size: 12px;
+    text-decoration: none;
+    color: #2271b1;
+    flex-shrink: 0;
+}
+
 .flosc-ivr-info-box__lead {
     margin: 6px 0 14px;
 }
@@ -4271,12 +4285,16 @@
     margin-bottom: 14px;
 }
 
+.flosc-ivr-file-table td {
+    vertical-align: top;
+}
+
 .flosc-ivr-col-status {
     width: 110px;
 }
 
 .flosc-ivr-col-actions {
-    width: 160px;
+    width: 260px;
 }
 
 .flosc-ivr-file-action-group {
@@ -4284,6 +4302,27 @@
     gap: 6px;
     flex-wrap: wrap;
     align-items: center;
+}
+
+.flosc-ivr-file-action-group .button {
+    margin: 0;
+}
+
+.flosc-ivr-file-action-wide {
+    width: 100%;
+    text-align: center;
+}
+
+.flosc-ivr-row-file-head {
+    margin-bottom: 6px;
+}
+
+.flosc-ivr-row-diagnostics {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2px 0;
+    font-size: 12px;
+    color: #374151;
 }
 
 .flosc-ivr-inline-form {

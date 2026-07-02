@@ -63,19 +63,17 @@ function flosc_activate() {
         update_option('flosc_paypal_mode', 'sandbox');
     }
 
-    // v1.2.3: Ensure default flosc_default_ivr.md exists in the uploads data
-    // directory. When uploads are unavailable the seed is skipped — readers
-    // fall back to the shipped read-only default via flosc_config_file().
+    // Ensure starter template exists in uploads data directory for new flow creation.
     $seed_dir = flosc_data_dir();
-    $ivr_file = '' !== $seed_dir ? $seed_dir . 'flosc_default_ivr.md' : '';
+    $ivr_file = '' !== $seed_dir ? $seed_dir . 'flosc_starter_ivr.md' : '';
     if ('' !== $ivr_file && !file_exists($ivr_file)) {
 
-        // Copy default from includes/defaults/ if it exists, otherwise create minimal version
-        $default_ivr = FLOSC_PLUGIN_DIR . 'includes/defaults/ivr.md';
+        // Copy starter template from shipped IVR files when available.
+        $default_ivr = FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_starter_ivr.md';
         if (file_exists($default_ivr)) {
             copy($default_ivr, $ivr_file);
         } else {
-            // Create minimal working ivr.md
+            // Create minimal working starter template.
             $minimal_ivr = <<<'MD'
 # FLOSC IVR Configuration
 
@@ -119,7 +117,7 @@ UserInput: Get started
 MessageContent: Great! Let's begin with a quick quiz to see where you stand.
 MessageConditions: !quiz_taken
 MD;
-            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- activation seeding of uploads-rooted IVR default file
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- activation seeding of uploads-rooted IVR starter file
             file_put_contents($ivr_file, $minimal_ivr);
         }
     }

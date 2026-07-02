@@ -9,16 +9,16 @@ if (!defined('ABSPATH')) {
  * v1.6.4: Added $custom_ivr_file and $flow_key params for per-flow storage
  *
  * @param bool $preview_only If true, returns preview without making changes
- * @param string|null $custom_ivr_file Optional path to IVR file (defaults to flosc_default_ivr.md)
+ * @param string|null $custom_ivr_file Optional path to IVR file (defaults to flosc_starter_ivr.md)
  * @param string|null $flow_key Optional per-flow option key (e.g. 'flosc_flow_flosc_default_ivr')
  * @return array Result with success, stats, message, and preview data
  */
 function flosc_import_ivr_to_database($preview_only = false, $custom_ivr_file = null, $flow_key = null, $mode = 'merge') {
-    $ivr_file = $custom_ivr_file ?? flosc_config_file('flosc_default_ivr.md');
+    $ivr_file = $custom_ivr_file ?? flosc_config_file('flosc_starter_ivr.md');
     $mode = ($mode === 'replace') ? 'replace' : 'merge';
 
     if (!file_exists($ivr_file)) {
-        return ['success' => false, 'message' => 'flosc_default_ivr.md file not found'];
+        return ['success' => false, 'message' => 'IVR file not found'];
     }
 
     require_once FLOSC_PLUGIN_DIR . 'includes/class-ivr-parser.php';
@@ -27,7 +27,7 @@ function flosc_import_ivr_to_database($preview_only = false, $custom_ivr_file = 
     $config = $parser->flosc_parse($markdown);
 
     if (empty($config)) {
-        return ['success' => false, 'message' => 'Failed to parse flosc_default_ivr.md'];
+        return ['success' => false, 'message' => 'Failed to parse IVR file'];
     }
 
     // Get current database state (per-flow if flow_key provided, else global)
@@ -551,10 +551,10 @@ function flosc_auto_export_ivr_to_file($flow_key = null, $target_ivr_file = null
         $ivr_file = $target_ivr_file;
     } elseif (!empty($flow_key)) {
         $fs = get_option($flow_key, []);
-        $preferred_file = $fs['ivr_file'] ?? ($fs['active_ivr_file'] ?? 'flosc_default_ivr.md');
+        $preferred_file = $fs['ivr_file'] ?? ($fs['active_ivr_file'] ?? 'flosc_starter_ivr.md');
         $ivr_file = $data_dir . basename($preferred_file);
     } else {
-        $ivr_file = $data_dir . 'flosc_default_ivr.md';
+        $ivr_file = $data_dir . 'flosc_starter_ivr.md';
     }
 
     if (strpos($ivr_file, $data_dir) !== 0) {
@@ -604,7 +604,7 @@ function flosc_sync_flow_option_to_ivr_file($option) {
         return;
     }
     $mirroring = true;
-    flosc_auto_export_ivr_to_file($option, flosc_data_dir() . $stem . '.md');
+    flosc_auto_export_ivr_to_file($option, null);
     $mirroring = false;
 }
 add_action('updated_option', 'flosc_sync_flow_option_to_ivr_file', 20, 1);

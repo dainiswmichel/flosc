@@ -380,6 +380,7 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
     // v1.5.0: Keys that contain multiline content (stored in flow settings via flow_ prefix)
     $flosc_textarea_flow_keys = [
         'sso_apple_private_key',
+        'missing_ivr_message',
         // AI configuration
         'ai_base_prompt', 'ai_prompt_freeline', 'ai_prompt_login', 'ai_prompt_offer', 'ai_prompt_sale', 'ai_prompt_content',
         'phase_outcomes_freeline', 'phase_outcomes_login', 'phase_outcomes_offer', 'phase_outcomes_sale', 'phase_outcomes_content',
