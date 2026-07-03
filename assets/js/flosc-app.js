@@ -7021,6 +7021,25 @@ Purchased: ${ctx.purchased}
     addMessage(role, content, isHtml = false) {
         this.log('[FLOSC] addMessage() called:', {role, contentLength: content?.length, isHtml});
 
+        // Anti-repetition: never render the exact same assistant message twice.
+        // If a duplicate arrives, substitute a rotating variation instead.
+        if (role !== 'user') {
+            this._shownAssistant = this._shownAssistant || {};
+            let repKey = String(content || '').replace(/\s+/g, ' ').trim();
+            if (repKey && this._shownAssistant[repKey]) {
+                this._repeatIdx = (this._repeatIdx || 0) + 1;
+                const repVariants = [
+                    "I've already shared that just above. Would you like the full list, or a different title, style, or mood?",
+                    "Same result as before — tell me a specific title or a style, and I'll find a different match.",
+                    "You've seen that one already. I can pull the complete works list, or search by a different name."
+                ];
+                content = repVariants[(this._repeatIdx - 1) % repVariants.length];
+                isHtml = false;
+                repKey = content.replace(/\s+/g, ' ').trim();
+            }
+            if (repKey) { this._shownAssistant[repKey] = true; }
+        }
+
         if (!this.chatMessages) {
             this.logError('[FLOSC] ERROR: chatMessages container not found!');
             return null;
