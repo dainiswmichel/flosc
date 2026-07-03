@@ -368,6 +368,84 @@ if (isset($flosc_post['flosc_set_default_flow']) && wp_verify_nonce(sanitize_tex
     exit;
 }
 
+// Concierge quick-create: create a private concierge post and sync it to the flow.
+if (isset($flosc_post['flosc_create_concierge_post']) && wp_verify_nonce(sanitize_text_field($flosc_post['flosc_concierge_create_nonce'] ?? ''), 'flosc_create_concierge_post')) {
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to create concierge posts.', 'flosc'));
+    }
+
+    $flosc_cncrg_title = sanitize_text_field($flosc_post['flosc_cncrg_title'] ?? 'Concierge Note');
+    $flosc_cncrg_flow = sanitize_file_name($flosc_post['flosc_cncrg_flow'] ?? $flosc_selected_ivr);
+    $flosc_cncrg_keyword = sanitize_text_field($flosc_post['flosc_cncrg_keyword'] ?? '');
+    $flosc_cncrg_password = sanitize_text_field($flosc_post['flosc_cncrg_password'] ?? '');
+    $flosc_cncrg_success = sanitize_text_field($flosc_post['flosc_cncrg_success'] ?? '');
+    $flosc_cncrg_max_tries = max(1, absint($flosc_post['flosc_cncrg_max_tries'] ?? 3));
+    $flosc_cncrg_retry = sanitize_textarea_field($flosc_post['flosc_cncrg_retry'] ?? '');
+    $flosc_cncrg_delivery = sanitize_textarea_field($flosc_post['flosc_cncrg_delivery'] ?? '');
+    $flosc_cncrg_content = sanitize_textarea_field($flosc_post['flosc_cncrg_content'] ?? '');
+
+    if ($flosc_cncrg_title === '') {
+        $flosc_cncrg_title = 'Concierge Note';
+    }
+
+    if ($flosc_cncrg_keyword === '' || $flosc_cncrg_content === '') {
+        $flosc_redirect_url = add_query_arg([
+            'page' => 'flosc-settings',
+            'ivr'  => $flosc_selected_ivr,
+            'tab'  => 'concierge',
+            'concierge_error' => 'missing_required',
+        ], admin_url('admin.php'));
+        wp_safe_redirect($flosc_redirect_url);
+        exit;
+    }
+
+    $flosc_cncrg_term = term_exists('concierge', 'category');
+    if (!$flosc_cncrg_term) {
+        $flosc_cncrg_term = wp_insert_term('concierge', 'category', ['slug' => 'concierge']);
+    }
+    $flosc_cncrg_term_id = 0;
+    if (is_array($flosc_cncrg_term)) {
+        $flosc_cncrg_term_id = intval($flosc_cncrg_term['term_id'] ?? 0);
+    } elseif (is_object($flosc_cncrg_term)) {
+        $flosc_cncrg_term_id = intval($flosc_cncrg_term->term_id ?? 0);
+    }
+
+    $flosc_new_post_id = wp_insert_post([
+        'post_type' => 'post',
+        'post_status' => 'private',
+        'post_title' => $flosc_cncrg_title,
+        'post_content' => $flosc_cncrg_content,
+        'post_category' => $flosc_cncrg_term_id > 0 ? [$flosc_cncrg_term_id] : [],
+        'meta_input' => [
+            '_flosc_concierge_flow' => $flosc_cncrg_flow,
+            '_flosc_concierge_keyword' => $flosc_cncrg_keyword,
+            '_flosc_concierge_password' => $flosc_cncrg_password,
+            '_flosc_concierge_success' => $flosc_cncrg_success,
+            '_flosc_concierge_max_tries' => (string) $flosc_cncrg_max_tries,
+            '_flosc_concierge_retry' => $flosc_cncrg_retry,
+            '_flosc_concierge_delivery' => $flosc_cncrg_delivery,
+        ],
+    ], true);
+
+    if (!is_wp_error($flosc_new_post_id) && class_exists('FLOSC_Concierge')) {
+        FLOSC_Concierge::sync_post($flosc_new_post_id);
+    }
+
+    $flosc_redirect_args = [
+        'page' => 'flosc-settings',
+        'ivr'  => $flosc_selected_ivr,
+        'tab'  => 'concierge',
+    ];
+    if (is_wp_error($flosc_new_post_id)) {
+        $flosc_redirect_args['concierge_error'] = 'create_failed';
+    } else {
+        $flosc_redirect_args['concierge_created'] = intval($flosc_new_post_id);
+    }
+    $flosc_redirect_url = add_query_arg($flosc_redirect_args, admin_url('admin.php'));
+    wp_safe_redirect($flosc_redirect_url);
+    exit;
+}
+
 // Handle save
 if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flosc_post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
     if (!flosc_flows()->can_access_flow_admin($flosc_selected_flow_id)) {
@@ -867,11 +945,13 @@ if ($flosc_selected_flow_name === '') {
             'ivr-messages': 'IVR Management',
             'autoprompts': 'AutoPrompt Panel',
             'member-levels': 'Member Levels',
+            'trajectories': 'Trajectories',
             'offers': 'Offers',
             'login': 'Register and Login',
             'style': 'Style',
             'ui': 'UI and Nav',
             'ai': 'AI',
+            'concierge': 'Concierge',
             'quiz': 'Quiz',
             'email': 'Email',
             'payments': 'Payments',
@@ -897,11 +977,13 @@ if ($flosc_selected_flow_name === '') {
             'ivr-messages'  => 'IVR Management',
             'autoprompts'   => 'AutoPrompt Panel',
             'member-levels' => 'Member Levels',
+            'trajectories'  => 'Trajectories',
             'offers'        => 'Offers',
             'login'         => 'Register & Login',
             'style'         => 'Style',
             'ui'            => 'UI & Nav',
             'ai'            => 'AI',
+            'concierge'     => 'Concierge',
             'quiz'          => 'Quiz',
             'email'         => 'Email',
             'payments'      => 'Payments',
@@ -929,6 +1011,13 @@ if ($flosc_selected_flow_name === '') {
             </a>
         <?php endforeach; ?>
     </nav>
+
+    <?php if ($flosc_active_tab === 'da1'): ?>
+        <?php include FLOSC_PLUGIN_DIR . 'admin/da1.php'; ?>
+        <?php flosc_tab_footer(); ?>
+</div>
+        <?php return; ?>
+    <?php endif; ?>
     
     <!-- Settings Form -->
     <form method="post" class="flosc-settings-form">
@@ -1636,6 +1725,9 @@ if ($flosc_selected_flow_name === '') {
         <?php elseif ($flosc_active_tab === 'member-levels'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/member-levels.php'; ?>
 
+        <?php elseif ($flosc_active_tab === 'trajectories'): ?>
+            <?php include FLOSC_PLUGIN_DIR . 'admin/trajectories.php'; ?>
+
         <?php elseif ($flosc_active_tab === 'offers'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/offers.php'; ?>
 
@@ -1654,6 +1746,9 @@ if ($flosc_selected_flow_name === '') {
         <?php elseif ($flosc_active_tab === 'ui'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/ui-navigation.php'; ?>
 
+        <?php elseif ($flosc_active_tab === 'concierge'): ?>
+            <?php include FLOSC_PLUGIN_DIR . 'admin/concierge.php'; ?>
+
         <?php elseif ($flosc_active_tab === 'chat-logs'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/chat-logs.php'; ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/ai-feedback.php'; ?>
@@ -1661,15 +1756,9 @@ if ($flosc_selected_flow_name === '') {
         <?php elseif ($flosc_active_tab === 'documentation'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/documentation.php'; ?>
 
-        <?php elseif ($flosc_active_tab === 'da1'): ?>
-            <div class="flosc-da1-launch-row">
-                <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-da1') ); ?>" class="button button-primary">Open DA1 Catalog</a>
-            </div>
-            <p>DA1 catalog is available as a dedicated admin page.</p>
-
         <?php endif; ?>
 
-        <?php if ($flosc_active_tab !== 'documentation' && $flosc_active_tab !== 'autoprompts' && $flosc_active_tab !== 'da1'): ?>
+        <?php if ($flosc_active_tab !== 'documentation' && $flosc_active_tab !== 'autoprompts' && $flosc_active_tab !== 'da1' && $flosc_active_tab !== 'trajectories' && $flosc_active_tab !== 'concierge'): ?>
         <p class="submit flosc-settings-submit-row">
             <button type="submit" name="flosc_save" class="button button-primary button-large">
                 Save Settings for <?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $flosc_selected_ivr); ?>

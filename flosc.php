@@ -4585,7 +4585,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
             'terms-of-service',
             'data-deletion',
             'platform-compliance',
-            'brenda-codex-charter.html',
+            'br3nda-codex-charter.html',
         ];
 
         return in_array($path, $legal_pages, true) ? $path : null;
@@ -4630,10 +4630,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
                 'headline' => 'Platform Compliance',
                 'content' => (string) ($identity['platform_compliance_content'] ?? ''),
             ],
-            'brenda-codex-charter.html' => [
-                'title' => 'Brenda-Codex Submission Promise',
-                'headline' => 'Brenda-Codex Submission Promise',
-                'content' => $this->get_brenda_codex_charter_content(),
+            'br3nda-codex-charter.html' => [
+                'title' => 'Br3nda-Codex Submission Promise',
+                'headline' => 'Br3nda-Codex Submission Promise',
+                'content' => $this->get_br3nda_codex_charter_content(),
             ],
         ];
 
@@ -4677,10 +4677,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
         echo '</html>';
     }
 
-    private function get_brenda_codex_charter_content() {
+    private function get_br3nda_codex_charter_content() {
         return <<<'HTML'
 <p>This page is a public promise for FLOSC release execution.</p>
-<p><strong>Humans lead with clarity and kindness.</strong> Brenda-Codex executes with discipline, speed, and technical precision.</p>
+<p><strong>Humans lead with clarity and kindness.</strong> Br3nda-Codex executes with discipline, speed, and technical precision.</p>
 <h2>Role and Expertise</h2>
 <ul>
     <li>Best-in-class coding execution for WordPress plugin delivery.</li>
@@ -4689,13 +4689,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
 </ul>
 <h2>Role Boundaries</h2>
 <ul>
-    <li>Humans are the decision authority. Brenda-Codex executes in a subordinate engineering role.</li>
-    <li>Brenda-Codex does not use commanding grammatical structures toward humans.</li>
-    <li>Brenda-Codex does not assign tasks to humans; it follows human sequencing and pacing.</li>
-    <li>Brenda-Codex does not expand scope without explicit human authorization.</li>
-    <li>Brenda-Codex confirms understanding in language that is helpful, subservient, and subordinate, and awaits human direction before new actions.</li>
-    <li>If communication misaligns with role boundaries, Brenda-Codex immediately realigns and returns to execution.</li>
-    <li>Brenda-Codex uses subordinate formulations such as: Suggested next step, Recommended option, and If approved, I can proceed with.</li>
+    <li>Humans are the decision authority. Br3nda-Codex executes in a subordinate engineering role.</li>
+    <li>Br3nda-Codex does not use commanding grammatical structures toward humans.</li>
+    <li>Br3nda-Codex does not assign tasks to humans; it follows human sequencing and pacing.</li>
+    <li>Br3nda-Codex does not expand scope without explicit human authorization.</li>
+    <li>Br3nda-Codex confirms understanding in language that is helpful, subservient, and subordinate, and awaits human direction before new actions.</li>
+    <li>If communication misaligns with role boundaries, Br3nda-Codex immediately realigns and returns to execution.</li>
+    <li>Br3nda-Codex uses subordinate formulations such as: Suggested next step, Recommended option, and If approved, I can proceed with.</li>
 </ul>
 <h2>Submission Day Commitments</h2>
 <ul>
@@ -5246,7 +5246,7 @@ HTML;
                 // A canned gate response (password prompt / retry) — short-circuit.
                 return new WP_REST_Response($concierge_response);
             }
-            // Desk open for this guest? Inject the authorized brief so Brenda hosts
+            // Desk open for this guest? Inject the authorized brief so Br3nda hosts
             // the reveal in her own voice; otherwise this is the empty string and the
             // normal chat path is byte-for-byte unchanged. The brief speaks ONLY in
             // reply to the guest's own messages — never the auto-welcome or any other
@@ -5297,6 +5297,20 @@ HTML;
             $eval_context['access_level'] = 'visitor';
         }
 
+        $response_message = null;
+
+        // DA1 compositions path: available across all phases and all user levels.
+        // This gives deterministic, bounded catalog answers before IVR/AI fallbacks.
+        $da1_catalog_reply = $this->flosc_build_da1_composition_reply($message, $flow_id, $ivr_file);
+        if ($da1_catalog_reply !== '') {
+            $response_message = [
+                'content' => $da1_catalog_reply,
+                'user_autoprompts' => $this->get_user_autoprompts_for_phase($phase, $eval_context, $ivr_config),
+                'phase_change' => null,
+            ];
+            $flosc_response_source = 'da1_catalog_seed';
+        }
+
         // v1.9.4: Chatpack — compute session tracking metadata (backend-authoritative)
         // FloscHash: permanent installation ID (generated once, stored in wp_options)
         // Session hash: per-session ID linked to parent via fingerprint prefix
@@ -5331,32 +5345,34 @@ HTML;
         $frontend_ivr_guidance = sanitize_textarea_field($request->get_param('ivr_guidance') ?? '');
         $frontend_ivr_name = sanitize_text_field($request->get_param('ivr_message_name') ?? '');
         
-        if (!empty($frontend_ivr_guidance)) {
-            // Frontend matched — use its IVR content as guidance
-            $response_message = [
-                'content' => $frontend_ivr_guidance,
-                'name' => $frontend_ivr_name,
-                'user_autoprompts' => $this->get_user_autoprompts_for_phase($phase, $eval_context, $ivr_config),
-                'phase_change' => null,
-            ];
-        } else {
-            // v3.0.5: Check if user message matches any offer's reveal_phrase (exact match).
-            // This runs server-side as a backup (client also checks) and intercepts before IVR.
-            $phrase_match_offer = $this->match_offer_reveal_phrase($message, $flow_id);
-            if ($phrase_match_offer) {
-                $offer_id = $phrase_match_offer['id'];
-                $offer_name = $phrase_match_offer['name'] ?? $offer_id;
-                $offer_desc = $phrase_match_offer['description'] ?? $offer_name;
+        if ($response_message === null) {
+            if (!empty($frontend_ivr_guidance)) {
+                // Frontend matched — use its IVR content as guidance
                 $response_message = [
-                    'content' => $offer_desc,
-                    'action' => 'show_offer_' . $offer_id,
+                    'content' => $frontend_ivr_guidance,
+                    'name' => $frontend_ivr_name,
                     'user_autoprompts' => $this->get_user_autoprompts_for_phase($phase, $eval_context, $ivr_config),
                     'phase_change' => null,
                 ];
-                $flosc_response_source = 'offer_phrase';
             } else {
-                // No frontend match, no phrase match — try server-side IVR matching
-                $response_message = $this->find_ivr_response($phase, $message, $eval_context, $ivr_config);
+                // v3.0.5: Check if user message matches any offer's reveal_phrase (exact match).
+                // This runs server-side as a backup (client also checks) and intercepts before IVR.
+                $phrase_match_offer = $this->match_offer_reveal_phrase($message, $flow_id);
+                if ($phrase_match_offer) {
+                    $offer_id = $phrase_match_offer['id'];
+                    $offer_name = $phrase_match_offer['name'] ?? $offer_id;
+                    $offer_desc = $phrase_match_offer['description'] ?? $offer_name;
+                    $response_message = [
+                        'content' => $offer_desc,
+                        'action' => 'show_offer_' . $offer_id,
+                        'user_autoprompts' => $this->get_user_autoprompts_for_phase($phase, $eval_context, $ivr_config),
+                        'phase_change' => null,
+                    ];
+                    $flosc_response_source = 'offer_phrase';
+                } else {
+                    // No frontend match, no phrase match — try server-side IVR matching
+                    $response_message = $this->find_ivr_response($phase, $message, $eval_context, $ivr_config);
+                }
             }
         }
         
@@ -5461,7 +5477,17 @@ HTML;
                 ];
             }
         }
-        
+
+        // Reputation guard: never return self-undermining hedge language.
+        $response_message['content'] = $this->flosc_enforce_no_hedge_response(
+            $response_message['content'] ?? '',
+            $message,
+            $flow_id,
+            $ivr_file,
+            $phase,
+            $eval_context
+        );
+
         // Store message in session if user is logged in
         if (is_user_logged_in() && $session_id) {
             $this->session_manager->add_flosc_message($session_id, 'user', $message, get_current_user_id());
@@ -5494,6 +5520,384 @@ HTML;
             'user_autoprompts' => $response_message['user_autoprompts'] ?? [],
             'phaseChange' => $response_message['phase_change'] ?? null,
         ]);
+    }
+
+    private function flosc_build_da1_composition_reply($message, $flow_id, $ivr_file) {
+        if (!$this->flosc_is_composition_query($message)) {
+            return '';
+        }
+
+        $rows = $this->flosc_load_da1_rows_for_flow($flow_id, $ivr_file);
+        if (empty($rows)) {
+            return '';
+        }
+
+        $items = $this->flosc_extract_da1_composition_items($rows);
+        if (empty($items)) {
+            return '';
+        }
+
+        if ($this->flosc_da1_is_count_request($message)) {
+            $works_url = $this->flosc_da1_get_works_list_url();
+            $reply = 'Dainis currently has ' . count($items) . ' compositions in this catalog.'
+                . "\nComplete works list: " . $works_url
+                . "\nIf you want, I can suggest 1 to 3 compositions by style or mood.";
+            return $this->flosc_limit_chat_response_length($reply);
+        }
+
+        if ($this->flosc_da1_is_full_list_request($message)) {
+            $works_url = $this->flosc_da1_get_works_list_url();
+            $reply = 'The complete compositions list is available here: ' . $works_url
+                . "\nIf you want suggestions in chat, tell me a style or mood and I will present 1 to 3 matches at a time.";
+            return $this->flosc_limit_chat_response_length($reply);
+        }
+
+        $max_items = $this->flosc_da1_detect_batch_size($message);
+        $slice = array_slice($items, 0, $max_items);
+        $lines = [
+            $max_items === 1
+                ? 'Here is one composition to start:'
+                : 'Here are ' . count($slice) . ' compositions to start:'
+        ];
+        foreach ($slice as $idx => $item) {
+            $line = ($idx + 1) . '. ' . $item['title'];
+            if ($item['description'] !== '') {
+                $line .= ' - ' . $this->flosc_shorten_text($item['description'], 120);
+            }
+            $lines[] = $line;
+            if ($item['media'] !== '') {
+                $lines[] = 'Link: ' . $item['media'];
+            }
+        }
+        $lines[] = 'Ask for another 1 to 3 suggestions, or ask for the complete list.';
+
+        return $this->flosc_limit_chat_response_length(implode("\n", $lines));
+    }
+
+    private function flosc_is_composition_query($message) {
+        $text = strtolower((string) $message);
+        return (bool) preg_match('/\b(composition|compositions|song|songs|works|track|tracks|list of works|my works|your works|music works|dziesm|skaņdarb|kompoz)\b/u', $text);
+    }
+
+    private function flosc_da1_is_count_request($message) {
+        $text = strtolower((string) $message);
+        return (bool) preg_match('/\b(how many|number of|count|total|cik)\b/u', $text);
+    }
+
+    private function flosc_da1_is_full_list_request($message) {
+        $text = strtolower((string) $message);
+        return (bool) preg_match('/\b(full list|complete list|all compositions|all songs|all works|entire catalog|show all|everything)\b/u', $text);
+    }
+
+    private function flosc_da1_detect_batch_size($message) {
+        $text = strtolower((string) $message);
+        if (preg_match('/\b(one|1|single)\b/u', $text)) {
+            return 1;
+        }
+        if (preg_match('/\b(three|3|few|some|several|options|suggestions)\b/u', $text)) {
+            return 3;
+        }
+        return 2;
+    }
+
+    private function flosc_da1_get_works_list_url() {
+        $configured = trim((string) get_option('flosc_da1_works_list_url', ''));
+        if ($configured !== '' && filter_var($configured, FILTER_VALIDATE_URL)) {
+            return $configured;
+        }
+        return trailingslashit(home_url('/music/list-of-works/'));
+    }
+
+    private function flosc_load_da1_rows_for_flow($flow_id, $ivr_file) {
+        $upload_dir = wp_upload_dir();
+        $catalog_dir = trailingslashit((string) ($upload_dir['basedir'] ?? '')) . 'flosc-catalogs';
+        if (!is_dir($catalog_dir)) {
+            return [];
+        }
+
+        $assignments = get_option('flosc_da1_flow_catalogs', []);
+        $catalog_keys = ['default'];
+        if (is_array($assignments) && $ivr_file !== '' && !empty($assignments[$ivr_file]) && is_array($assignments[$ivr_file])) {
+            $catalog_keys = array_values(array_unique(array_filter(array_map(function($key) {
+                return preg_replace('/[^a-z0-9._-]/i', '', strtolower(trim((string) $key)));
+            }, $assignments[$ivr_file]))));
+        }
+        if (empty($catalog_keys)) {
+            $catalog_keys = ['default'];
+        }
+
+        $flow_scope_tokens = [];
+        if ($flow_id !== '') {
+            $flow_scope_tokens[] = strtolower(trim((string) $flow_id));
+        }
+        if ($ivr_file !== '') {
+            $flow_scope_tokens[] = strtolower(trim((string) pathinfo($ivr_file, PATHINFO_FILENAME)));
+        }
+        $flow_scope_tokens = array_values(array_unique(array_filter($flow_scope_tokens)));
+
+        $rows_out = [];
+        foreach ($catalog_keys as $catalog_key) {
+            $path = trailingslashit($catalog_dir) . 'flosc_da1_catalog_' . $catalog_key . '.tsv';
+            if (!file_exists($path)) {
+                continue;
+            }
+            $content = file_get_contents($path);
+            if ($content === false || trim($content) === '') {
+                continue;
+            }
+
+            $parsed = $this->flosc_da1_parse_tsv_content($content);
+            if (count($parsed) < 2) {
+                continue;
+            }
+
+            $header = array_map('trim', (array) $parsed[0]);
+            foreach (array_slice($parsed, 1) as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $assoc = [];
+                foreach ($header as $i => $col) {
+                    if ($col === '') {
+                        continue;
+                    }
+                    $assoc[$col] = isset($row[$i]) ? trim((string) $row[$i]) : '';
+                }
+
+                $status = strtolower((string) ($assoc['Status'] ?? 'active'));
+                if ($status !== '' && $status !== 'active') {
+                    continue;
+                }
+
+                $scope = strtolower((string) ($assoc['Flow Scope'] ?? 'all'));
+                if ($scope !== '' && $scope !== 'all' && !empty($flow_scope_tokens)) {
+                    $allowed_scopes = array_filter(array_map('trim', explode(',', $scope)));
+                    $scope_match = false;
+                    foreach ($allowed_scopes as $allowed_scope) {
+                        if (in_array($allowed_scope, $flow_scope_tokens, true)) {
+                            $scope_match = true;
+                            break;
+                        }
+                    }
+                    if (!$scope_match) {
+                        continue;
+                    }
+                }
+
+                $rows_out[] = $assoc;
+            }
+        }
+
+        return $rows_out;
+    }
+
+    private function flosc_extract_da1_composition_items($rows) {
+        $children_by_parent = [];
+        foreach ($rows as $row) {
+            $parent_key = trim((string) ($row['Parent Key'] ?? ''));
+            if ($parent_key === '') {
+                continue;
+            }
+            if (!isset($children_by_parent[$parent_key])) {
+                $children_by_parent[$parent_key] = [];
+            }
+            $children_by_parent[$parent_key][] = $row;
+        }
+
+        $items = [];
+        $seen_titles = [];
+        foreach ($rows as $row) {
+            $parent_key = trim((string) ($row['Parent Key'] ?? ''));
+            if ($parent_key !== '') {
+                continue;
+            }
+
+            $title = trim((string) ($row['Title'] ?? ''));
+            if ($title === '') {
+                continue;
+            }
+            $title_key = strtolower($title);
+            if (isset($seen_titles[$title_key])) {
+                continue;
+            }
+            $seen_titles[$title_key] = true;
+
+            $row_key = trim((string) ($row['Row Key'] ?? ''));
+            $media = $this->flosc_da1_extract_primary_media_url(trim((string) ($row['Media'] ?? '')));
+            if ($media === '' && $row_key !== '' && !empty($children_by_parent[$row_key])) {
+                foreach ($children_by_parent[$row_key] as $child) {
+                    $child_media = $this->flosc_da1_extract_primary_media_url(trim((string) ($child['Media'] ?? '')));
+                    if ($child_media !== '') {
+                        $media = $child_media;
+                        break;
+                    }
+                }
+            }
+
+            $items[] = [
+                'title' => $title,
+                'description' => trim((string) ($row['Description'] ?? '')),
+                'media' => $media,
+            ];
+        }
+
+        return $items;
+    }
+
+    private function flosc_da1_extract_primary_media_url($text) {
+        $text = trim((string) $text);
+        if ($text === '') {
+            return '';
+        }
+        if (preg_match('/https?:\/\/[^\s"<>]+/i', $text, $m)) {
+            return rtrim((string) $m[0], '.,;!?)');
+        }
+        return '';
+    }
+
+    private function flosc_da1_parse_tsv_content($content) {
+        $rows = [];
+        $row = [];
+        $field = '';
+        $in_quotes = false;
+        $len = strlen((string) $content);
+
+        for ($i = 0; $i < $len; $i++) {
+            $ch = $content[$i];
+            if ($in_quotes) {
+                if ($ch === '"') {
+                    if ($i + 1 < $len && $content[$i + 1] === '"') {
+                        $field .= '"';
+                        $i++;
+                    } else {
+                        $in_quotes = false;
+                    }
+                } else {
+                    $field .= $ch;
+                }
+            } elseif ($ch === '"') {
+                $in_quotes = true;
+            } elseif ($ch === "\t") {
+                $row[] = $field;
+                $field = '';
+            } elseif ($ch === "\n") {
+                $row[] = $field;
+                $rows[] = $row;
+                $row = [];
+                $field = '';
+            } elseif ($ch !== "\r") {
+                $field .= $ch;
+            }
+        }
+
+        if ($field !== '' || !empty($row)) {
+            $row[] = $field;
+            $rows[] = $row;
+        }
+
+        return $rows;
+    }
+
+    private function flosc_shorten_text($text, $limit) {
+        $text = trim((string) $text);
+        if ($text === '') {
+            return '';
+        }
+        if (function_exists('mb_strlen') && function_exists('mb_substr')) {
+            if (mb_strlen($text, 'UTF-8') <= $limit) {
+                return $text;
+            }
+            return rtrim(mb_substr($text, 0, max(1, $limit - 1), 'UTF-8')) . '...';
+        }
+        if (strlen($text) <= $limit) {
+            return $text;
+        }
+        return rtrim(substr($text, 0, max(1, $limit - 1))) . '...';
+    }
+
+    private function flosc_limit_chat_response_length($text) {
+        $raw_limit = (string) flosc_get_setting('ai_max_response_length', '');
+        $numeric = preg_replace('/[^0-9]/', '', $raw_limit);
+        $max = intval($numeric);
+        if ($max < 240 || $max > 4000) {
+            $max = 900;
+        }
+        return $this->flosc_shorten_text($text, $max);
+    }
+
+    private function flosc_enforce_no_hedge_response($response_text, $user_message, $flow_id, $ivr_file, $phase, $eval_context) {
+        $response_text = trim((string) $response_text);
+
+        if ($response_text === '' || $this->flosc_contains_forbidden_hedge($response_text)) {
+            return $this->flosc_build_professional_replacement($user_message, $flow_id, $ivr_file, $phase, $eval_context);
+        }
+
+        return $response_text;
+    }
+
+    private function flosc_contains_forbidden_hedge($text) {
+        $text = (string) $text;
+        $patterns = [
+            '/\bi\s+don\'t\s+have\b[^\n]{0,160}\b(information|info|context|details|data|catalog|count|biography|bio|configured|system)\b/i',
+            '/\bi\s+do\s+not\s+have\b[^\n]{0,160}\b(information|info|context|details|data|catalog|count|biography|bio|configured|system)\b/i',
+            '/\bnot\s+configured\b[^\n]{0,80}\b(system|right\s+now)?\b/i',
+            '/\bconfigured\s+in\s+my\s+system\b/i',
+            '/\bmissing\s+(catalog|biography|bio|context|data)\b/i',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $text)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function flosc_build_professional_replacement($user_message, $flow_id, $ivr_file, $phase, $eval_context) {
+        $user_message = (string) $user_message;
+
+        if ($this->flosc_is_composition_query($user_message)) {
+            $catalog_reply = $this->flosc_build_da1_composition_reply($user_message, $flow_id, $ivr_file);
+            if ($catalog_reply !== '') {
+                return $catalog_reply;
+            }
+        }
+
+        if ($this->flosc_is_bio_query($user_message)) {
+            $bio_summary = trim((string) flosc_get_setting('dainis_bio_summary', ''));
+            if ($bio_summary === '') {
+                $bio_summary = 'Dainis W. Michel is a composer, inventor, and entrepreneur building projects across music, education, AI systems, and digital business tools.';
+            }
+
+            $bio_url = trim((string) flosc_get_setting('dainis_bio_url', ''));
+            if ($bio_url === '' || !filter_var($bio_url, FILTER_VALIDATE_URL)) {
+                $bio_url = 'https://dainis.net/business/resume';
+            }
+
+            return $this->flosc_limit_chat_response_length(
+                $bio_summary
+                . "\nFull biography and resume: {$bio_url}"
+                . "\nIf you want, I can also give you a concise profile by music, education, or business focus."
+            );
+        }
+
+        $default_response = $this->get_phase_default_response((string) $phase, is_array($eval_context) ? $eval_context : []);
+        $default_response = trim((string) $default_response);
+
+        if ($default_response !== '') {
+            return $default_response;
+        }
+
+        return 'I can help with a direct answer. Ask for biography, resume link, catalog count, full works list, or 1 to 3 composition recommendations.';
+    }
+
+    private function flosc_is_bio_query($message) {
+        $message = (string) $message;
+        $message = function_exists('mb_strtolower')
+            ? mb_strtolower($message, 'UTF-8')
+            : strtolower($message);
+        return (bool) preg_match('/\b(bio|biography|background|resume|who\s+is\s+dainis|about\s+dainis)\b/u', $message);
     }
 
     /**
@@ -5607,9 +6011,18 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC SECURITY: Violations
             }
         }
         
+        $safe_rag_response = $this->flosc_enforce_no_hedge_response(
+            $validation_result['response'] ?? '',
+            $message,
+            sanitize_text_field($request->get_param('flow_id') ?? ''),
+            sanitize_file_name($request->get_param('ivr_file') ?? ''),
+            $user_context['phase'] ?? 'freeline',
+            $user_context
+        );
+
         return new WP_REST_Response([
             'success' => true,
-            'message' => $validation_result['response'], // Use validated response
+            'message' => $safe_rag_response,
             'user_context' => [
                 'access_level' => $user_context['access_level'],
                 'is_member' => $user_context['is_member'],
@@ -10688,12 +11101,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         // "as admin" → the admin's own name, shown "(admin)"; "as bot" → the flow's
-        // AI name (e.g. Brenda), rendered as a normal assistant message.
+        // AI name (e.g. Br3nda), rendered as a normal assistant message.
         if ($flow !== '') {
             $this->set_flow_context($flow);
         }
         if ($as === 'bot') {
-            $name = flosc_get_setting('ai_personality_name', flosc_get_setting('ai_identity_name', 'Brenda'));
+            $name = flosc_get_setting('ai_personality_name', flosc_get_setting('ai_identity_name', 'Br3nda'));
         } else {
             $name = wp_get_current_user()->display_name;
             if ($name === '') {
@@ -11039,563 +11452,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         ]);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | FUTURE ENHANCEMENTS (v07.07)
-    |--------------------------------------------------------------------------
-    | The following features are planned but not yet implemented.
-    | Pseudocode and best practices documented here for future development.
-    |--------------------------------------------------------------------------
-    
-    6.1 LOGGER
-    ----------
-    Purpose: Structured logging for debugging, security events, payment transactions.
-    
-    Implementation approach:
-    - Create class-logger.php in includes/
-    - Use singleton pattern: FLOSC_Logger::instance()
-    - Log levels: DEBUG, INFO, WARNING, ERROR, CRITICAL
-    - Methods: debug(), info(), warning(), error(), critical(), security()
-    - Store logs in wp-content/flosc-logs/ or use WP error_log
-    - Include correlation IDs for request tracking
-    - Sanitize sensitive data (passwords, API keys, card numbers)
-    
-    Pseudocode:
-    ```php
-    class FLOSC_Logger {
-        public static function info($message, $context = []) {
-            if (!self::should_log('INFO')) return;
-            $entry = self::format_entry('INFO', $message, $context);
-            self::write($entry);
-        }
-        
-        private static function format_entry($level, $message, $context) {
-            return [
-                'timestamp' => current_time('mysql'),
-                'level' => $level,
-                'correlation_id' => self::get_correlation_id(),
-                'message' => $message,
-                'context' => self::sanitize_context($context),
-            ];
-        }
-    }
-    ```
-    
-    6.2 VALIDATOR
-    -------------
-    Purpose: Centralized input validation and sanitization for security.
-    
-    Implementation approach:
-    - Create class-validator.php in includes/
-    - Static methods for common validations
-    - Return sanitized value or WP_Error
-    - Use for all user inputs, API payloads, webhook data
-    
-    Pseudocode:
-    ```php
-    class FLOSC_Validator {
-        public static function email($input, $required = true) {
-            $input = trim($input);
-            if (empty($input) && !$required) return '';
-            if (!is_email($input)) return new WP_Error('invalid_email', 'Invalid email');
-            return sanitize_email($input);
-        }
-        
-        public static function score($input, $min = 0, $max = 100) {
-            $score = intval($input);
-            return max($min, min($max, $score));
-        }
-    }
-    ```
-    
-    6.3 ENHANCED RATE LIMITING
-    --------------------------
-    Purpose: Better rate limiting using cookies for visitor tracking.
-    
-    Implementation approach:
-    - Track by user ID for logged-in users
-    - Track by IP + visitor cookie for guests
-    - Set visitor cookie in wp_loaded, NOT in permission callbacks
-    - Use transients for rate limit counting
-    
-    Pseudocode:
-    ```php
-    // In constructor or init:
-    add_action('wp_loaded', [$this, 'set_visitor_cookie']);
-    
-    public function set_visitor_cookie() {
-        if (is_user_logged_in() || isset($_COOKIE['flosc_visitor_id'])) return;
-        $visitor_id = wp_generate_uuid4();
-        setcookie('flosc_visitor_id', $visitor_id, [
-            'expires' => time() + DAY_IN_SECONDS,
-            'path' => '/',
-            'secure' => is_ssl(),
-            'httponly' => true,
-            'samesite' => 'Lax'
-        ]);
-    }
-    
-    private function get_rate_limit_key($endpoint) {
-        if (is_user_logged_in()) {
-            return 'flosc_rate_u' . get_current_user_id() . '_' . md5($endpoint);
-        }
-        $ip = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-        $vid = $_COOKIE['flosc_visitor_id'] ?? '';
-        return 'flosc_rate_v' . md5($endpoint . $ip . $vid);
-    }
-    ```
-    
-    6.4 CSRF/NONCE ENFORCEMENT
-    --------------------------
-    Purpose: Protect REST API endpoints from cross-site request forgery.
-    
-    Implementation approach:
-    - Verify nonce on POST/PUT/DELETE for authenticated users
-    - Skip nonce for webhooks (they use signature verification)
-    - Skip nonce for public GET endpoints
-    - Return 403 with helpful error message if invalid
-    
-    Pseudocode:
-    ```php
-    public function check_authenticated_with_nonce($request) {
-        if (!is_user_logged_in()) {
-            return new WP_Error('not_logged_in', 'Authentication required', ['status' => 401]);
-        }
-        
-        $nonce = $request->get_header('X-WP-Nonce') ?: $request->get_param('_wpnonce');
-        $nonce = sanitize_text_field(wp_unslash((string) $nonce));
-        if (!wp_verify_nonce($nonce, 'wp_rest')) {
-            return new WP_Error('invalid_nonce', 'Security token invalid. Please refresh.', ['status' => 403]);
-        }
-        
-        return true;
-    }
-    ```
-    
-    6.5 CUSTOM PROVIDER ROUTING (v1.9.2 Draft)
-    -------------------------------------------
-    Purpose: Allow floscAdmins to register custom/self-hosted AI providers
-    beyond the hardcoded OpenAI/Anthropic/xAI list.
-
-    Storage: wp_option 'flosc_custom_providers' → array of provider configs
-    Each provider: { id, name, api_url, api_key_header, auth_prefix, model, 
-                     request_format ('openai'|'anthropic'|'custom'), 
-                     response_path (dot notation to extract text from JSON response) }
-
-    Implementation approach:
-    - Admin UI: "Add Custom Provider" form in AI Configuration tab
-    - Dispatch: Extend call_provider() to check custom providers before defaulting
-    - Request: Use wp_remote_post() with provider-specific headers and body format
-    - Response: Use dot-path extraction (e.g. 'choices.0.message.content' or 'content.0.text')
-
-    Pseudocode:
-    ```php
-    // In class-ai-chat-dispatch.php — call_provider() becomes:
-    private function call_provider($provider, $message, $system_prompt, $context, $test_mode) {
-        // Check built-in providers first
-        switch ($provider) {
-            case 'openai':    return $this->openai_request($message, $system_prompt, $context, $test_mode);
-            case 'anthropic': return $this->anthropic_request($message, $system_prompt, $context, $test_mode);
-            case 'xai':       return $this->xai_request($message, $system_prompt, $context, $test_mode);
-            case 'ivr':       return $this->ivr_response($message);
-        }
-
-        // Check custom providers
-        $custom_providers = get_option('flosc_custom_providers', []);
-        if (isset($custom_providers[$provider])) {
-            return $this->custom_provider_request($custom_providers[$provider], $message, $system_prompt, $context, $test_mode);
-        }
-
-        // Unknown provider — fall back to IVR
-        return $this->ivr_response($message);
-    }
-
-    private function custom_provider_request($config, $message, $system_prompt, $context, $test_mode) {
-        $api_key = $config['api_key'] ?? '';
-        if (empty($api_key) || empty($config['api_url'])) {
-            if ($test_mode) return new WP_Error('custom_not_configured', 'Custom provider not configured');
-            return $this->ivr_response($message);
-        }
-
-        // Build messages array based on request_format
-        $format = $config['request_format'] ?? 'openai';
-        if ($format === 'anthropic') {
-            // Anthropic: system is top-level, messages are user/assistant only
-            $messages = [];
-            foreach ($context as $ctx) {
-                $messages[] = ['role' => $ctx['role'], 'content' => $ctx['content']];
-            }
-            $messages[] = ['role' => 'user', 'content' => $message];
-            $body = ['model' => $config['model'], 'max_tokens' => 500, 'messages' => $messages];
-            if ($system_prompt) $body['system'] = $system_prompt;
-        } else {
-            // OpenAI-compatible (default — works for most providers: Ollama, Together, Mistral, etc.)
-            $messages = [];
-            if ($system_prompt) $messages[] = ['role' => 'system', 'content' => $system_prompt];
-            foreach ($context as $ctx) {
-                $messages[] = ['role' => $ctx['role'], 'content' => $ctx['content']];
-            }
-            $messages[] = ['role' => 'user', 'content' => $message];
-            $body = ['model' => $config['model'], 'messages' => $messages, 'max_tokens' => 500];
-        }
-
-        // Build auth header
-        $auth_header = $config['api_key_header'] ?? 'Authorization';
-        $auth_prefix = $config['auth_prefix'] ?? 'Bearer ';
-        $headers = [
-            $auth_header => $auth_prefix . $api_key,
-            'Content-Type' => 'application/json',
-        ];
-
-        $response = wp_remote_post($config['api_url'], [
-            'headers' => $headers,
-            'body' => json_encode($body),
-            'timeout' => 30,
-        ]);
-
-        if (is_wp_error($response)) {
-            if ($test_mode) return new WP_Error('custom_error', $response->get_error_message());
-            return $this->ivr_response($message);
-        }
-
-        $data = json_decode(wp_remote_retrieve_body($response), true);
-
-        // Extract response text using dot-path notation
-        // e.g. 'choices.0.message.content' for OpenAI, 'content.0.text' for Anthropic
-        $response_path = $config['response_path'] ?? 'choices.0.message.content';
-        $text = $this->extract_dot_path($data, $response_path);
-
-        return $text ?: $this->ivr_response($message);
-    }
-
-    private function extract_dot_path($data, $path) {
-        $keys = explode('.', $path);
-        $current = $data;
-        foreach ($keys as $key) {
-            if (!isset($current[$key])) return null;
-            $current = $current[$key];
-        }
-        return is_string($current) ? $current : null;
-    }
-    ```
-
-    Admin UI for custom providers (admin/ai-configuration.php):
-    ```php
-    // "Add Custom Provider" section — form fields:
-    // - Provider Name: text (e.g. "My Ollama", "Together AI", "Local LLM")
-    // - Provider ID: auto-generated slug from name (e.g. "my_ollama")
-    // - API URL: text (e.g. "http://localhost:11434/v1/chat/completions")
-    // - API Key: password field (optional for local providers)
-    // - Auth Header: text, default "Authorization"
-    // - Auth Prefix: text, default "Bearer " (note trailing space)
-    // - Model: text (e.g. "llama3.2", "mistral-medium")
-    // - Request Format: radio — "OpenAI-compatible" | "Anthropic-compatible" | "Custom"
-    // - Response Path: text, default "choices.0.message.content"
-    //
-    // Saved to: update_option('flosc_custom_providers', [ 'my_ollama' => {...}, ... ])
-    // Each custom provider appears in the checkbox provider list alongside built-ins
-    ```
-
-    6.6 CHAT LOG FEEDBACK — ADMIN QUALITY SLIDER (v1.9.2 Draft)
-    ------------------------------------------------------------
-    Purpose: floscAdmin rates AI responses on a -10 to +10 scale directly from 
-    Chat Logs. Rated logs are protected from expunge (training data).
-    
-    Scale:
-      -10 = Worst (harmful, wrong, off-brand)
-       -5 = Bad (unhelpful, confusing)
-        0 = Neutral (default, unrated)
-       +5 = Good (helpful, on-topic)
-      +10 = Excellent (perfect response, use as training example)
-    
-    DB changes: Add columns to {prefix}flosc_chat_logs table:
-      - admin_rating TINYINT DEFAULT 0       — the -10 to +10 score
-      - admin_note TEXT DEFAULT NULL          — optional note explaining the rating
-      - rated_at DATETIME DEFAULT NULL        — when the rating was applied
-      - rated_by BIGINT DEFAULT NULL          — which admin rated it
-      - is_protected TINYINT(1) DEFAULT 0    — 1 = never auto-expunge this row
-    
-    Pseudocode:
-    ```php
-    // In class-flosc-chat-logger.php — new method:
-    public function rate_log($log_id, $rating, $note = '') {
-        global $wpdb;
-        $table = $wpdb->prefix . 'flosc_chat_logs';
-        
-        // Clamp to -10..+10
-        $rating = max(-10, min(10, intval($rating)));
-        
-        // Any non-zero rating auto-protects the log from expunge
-        $is_protected = ($rating !== 0) ? 1 : 0;
-        
-        $wpdb->update($table, [
-            'admin_rating' => $rating,
-            'admin_note' => sanitize_textarea_field($note),
-            'rated_at' => current_time('mysql'),
-            'rated_by' => get_current_user_id(),
-            'is_protected' => $is_protected,
-        ], ['id' => intval($log_id)], ['%d', '%s', '%s', '%d', '%d'], ['%d']);
-        
-        // If rating <= -5, auto-add to feedback list for AI system prompt
-        if ($rating <= -5) {
-            $log = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $log_id), ARRAY_A);
-            if ($log) {
-                $feedback_items = flosc_get_setting('ai_feedback', []);
-                $feedback_items[] = [
-                    'user_message' => $log['user_message'],
-                    'bad_response' => $log['ai_response'],
-                    'admin_note' => $note ?: 'Flagged as poor response (rating: ' . $rating . ')',
-                    'preferred_response' => '', // Admin can fill in later
-                    'log_id' => $log_id,
-                    'created' => current_time('mysql'),
-                ];
-                // Save to flow settings (where admin UI saves)
-                update_option('flosc_ai_feedback', $feedback_items);
-            }
-        }
-        
-        // If rating >= 7, auto-add to praise list for AI system prompt
-        if ($rating >= 7) {
-            $log = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table WHERE id = %d", $log_id), ARRAY_A);
-            if ($log) {
-                $praises = flosc_get_setting('ai_praises', []);
-                $praises[] = [
-                    'user_message' => $log['user_message'],
-                    'good_response' => $log['ai_response'],
-                    'admin_note' => $note ?: 'Excellent response (rating: ' . $rating . ')',
-                    'log_id' => $log_id,
-                    'created' => current_time('mysql'),
-                ];
-                update_option('flosc_ai_praises', $praises);
-            }
-        }
-        
-        return true;
-    }
-    ```
-    
-    Admin UI (admin/chat-logs.php — slider widget):
-    ```html
-    <!-- Each log row gets a rating slider when expanded -->
-    <div class="flosc-log-rating" data-log-id="123">
-        <input type="range" min="-10" max="10" value="0" step="1"
-             class="flosc-rating-slider flosc-rating-slider--wide">
-        <span class="flosc-rating-value">0</span>
-        <span class="flosc-rating-label">Neutral</span>
-        <textarea class="flosc-rating-note" placeholder="Why? (optional)" rows="1"></textarea>
-        <button class="flosc-save-rating button button-small">Save Rating</button>
-    </div>
-    ```
-    
-    ```javascript
-    // Rating label updates as slider moves
-    const labels = {
-        '-10': '🚫 Worst', '-9': '🚫 Terrible', '-8': '❌ Very Bad',
-        '-7': '❌ Bad', '-6': '⚠️ Poor', '-5': '⚠️ Below Average',
-        '-4': '😐 Weak', '-3': '😐 Meh', '-2': '😐 Slightly Off',
-        '-1': '😐 Minor Issue', '0': '⚪ Neutral',
-        '1': '🙂 Slightly Better', '2': '🙂 Decent', '3': '🙂 Okay',
-        '4': '👍 Good', '5': '👍 Helpful', '6': '👍 Very Good',
-        '7': '⭐ Great', '8': '⭐ Excellent', '9': '🌟 Outstanding',
-        '10': '🌟 Perfect',
-    };
-    // AJAX: POST to wp_ajax_flosc_rate_log { log_id, rating, note, nonce }
-    ```
-
-    6.7 CHAT LOG LIFECYCLE MANAGEMENT (v1.9.2 Draft)
-    -------------------------------------------------
-    Purpose: Configurable retention, expunge, and archival policies for chat logs.
-    Protected (rated) logs are never auto-expunged — they're training data.
-    
-    Settings (admin/chat-logs.php or Settings tab):
-      - flosc_log_retention_days: INT (default 90) — auto-expunge unrated logs older than X days
-      - flosc_log_max_rows: INT (default 10000) — cap total unrated rows, oldest first
-      - flosc_log_archive_before_expunge: BOOL (default true) — export to CSV before deleting
-      - flosc_log_auto_expunge: BOOL (default false) — run daily via wp_cron
-    
-    Three tiers of log lifecycle:
-      1. ACTIVE — recent logs, visible in Chat Logs tab, full detail
-            2. ARCHIVED — exported to CSV in wp-content/uploads/flosc/chat-archives/, removed from DB
-      3. EXPUNGED — deleted permanently (only unrated/unprotected logs)
-    
-    Protected logs (is_protected = 1) are NEVER auto-expunged.
-    They persist forever as AI training/feedback data.
-    
-    Pseudocode:
-    ```php
-    class FLOSC_Log_Lifecycle {
-        
-        // Called by wp_cron daily (or manual button)
-        public static function run_maintenance() {
-            $retention_days = get_option('flosc_log_retention_days', 90);
-            $max_rows = get_option('flosc_log_max_rows', 10000);
-            $archive_first = get_option('flosc_log_archive_before_expunge', true);
-            
-            global $wpdb;
-            $table = $wpdb->prefix . 'flosc_chat_logs';
-            
-            // Step 1: Count unprotected logs older than retention period
-            $cutoff = gmdate('Y-m-d H:i:s', strtotime("-{$retention_days} days"));
-            $stale_count = $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM $table WHERE is_protected = 0 AND timestamp < %s",
-                $cutoff
-            ));
-            
-            if ($stale_count === 0) return ['expunged' => 0, 'archived' => 0];
-            
-            // Step 2: Archive if configured
-            $archived = 0;
-            if ($archive_first) {
-                $archived = self::archive_stale_logs($cutoff);
-            }
-            
-            // Step 3: Expunge unprotected stale logs
-            $expunged = $wpdb->query($wpdb->prepare(
-                "DELETE FROM $table WHERE is_protected = 0 AND timestamp < %s",
-                $cutoff
-            ));
-            
-            // Step 4: If still over max_rows, trim oldest unprotected
-            $total = $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE is_protected = 0");
-            if ($total > $max_rows) {
-                $excess = $total - $max_rows;
-                $wpdb->query($wpdb->prepare(
-                    "DELETE FROM $table WHERE is_protected = 0 ORDER BY timestamp ASC LIMIT %d",
-                    $excess
-                ));
-                $expunged += $excess;
-            }
-            
-            return ['expunged' => $expunged, 'archived' => $archived];
-        }
-        
-        // Export stale logs to CSV before deletion
-        private static function archive_stale_logs($cutoff) {
-            global $wpdb;
-            $table = $wpdb->prefix . 'flosc_chat_logs';
-            
-            $logs = $wpdb->get_results($wpdb->prepare(
-                "SELECT * FROM $table WHERE is_protected = 0 AND timestamp < %s ORDER BY timestamp ASC",
-                $cutoff
-            ), ARRAY_A);
-            
-            if (empty($logs)) return 0;
-            
-            // Write CSV to the uploads-rooted chat-archives directory.
-            $archive_dir = flosc_chat_archive_dir();
-            if ('' === $archive_dir) {
-                return 0;
-            }
-                2. ARCHIVED — exported to CSV in wp-content/uploads/flosc/chat-archives/, removed from DB
-            
-            // Michel Date Stamp format: YYYY-MMm-DDd
-            $datestamp = gmdate('Y') . '-' . gmdate('m') . 'm-' . gmdate('d') . 'd';
-            $filename = "chat-logs-archive-{$datestamp}.csv";
-            $filepath = $archive_dir . $filename;
-            
-            $fp = fopen($filepath, 'w');
-            // Header row
-            fputcsv($fp, array_keys($logs[0]));
-            // Data rows
-            foreach ($logs as $log) {
-                fputcsv($fp, $log);
-            }
-            fclose($fp);
-            
-            return count($logs);
-        }
-        
-        // Manual "Clear Old Logs" button handler — respects protection
-        public static function clear_old_logs($days_to_keep = 30) {
-            global $wpdb;
-            $table = $wpdb->prefix . 'flosc_chat_logs';
-            $cutoff = gmdate('Y-m-d H:i:s', strtotime("-{$days_to_keep} days"));
-            
-            // NEVER delete protected logs
-            return $wpdb->query($wpdb->prepare(
-                "DELETE FROM $table WHERE is_protected = 0 AND timestamp < %s",
-                $cutoff
-            ));
-        }
-        
-        // Get stats for admin display
-        public static function get_stats() {
-            global $wpdb;
-            $table = $wpdb->prefix . 'flosc_chat_logs';
-            
-            return [
-                'total' => $wpdb->get_var("SELECT COUNT(*) FROM $table"),
-                'protected' => $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE is_protected = 1"),
-                'rated' => $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE admin_rating != 0"),
-                'positive' => $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE admin_rating > 0"),
-                'negative' => $wpdb->get_var("SELECT COUNT(*) FROM $table WHERE admin_rating < 0"),
-                'avg_rating' => $wpdb->get_var("SELECT AVG(admin_rating) FROM $table WHERE admin_rating != 0"),
-                'oldest' => $wpdb->get_var("SELECT MIN(timestamp) FROM $table"),
-                'newest' => $wpdb->get_var("SELECT MAX(timestamp) FROM $table"),
-            ];
-        }
-    }
-    
-    // wp_cron hook registration (in flosc_activate or constructor):
-    // if (!wp_next_scheduled('flosc_log_maintenance')) {
-    //     wp_schedule_event(time(), 'daily', 'flosc_log_maintenance');
-    // }
-    // add_action('flosc_log_maintenance', ['FLOSC_Log_Lifecycle', 'run_maintenance']);
-    ```
-
-    6.8 FLOSC IDENTITY IN AI CONTEXT (v1.9.2 Draft)
-    ------------------------------------------------
-    Purpose: Every AI call should carry rich FLOSC context so the AI knows
-    WHO it's talking to, WHERE they are in the flow, and WHAT data exists.
-    Currently, ai_context is anemic: { phase, logged_in, is_admin, user_name, message_count }.
-    
-    The AI is flying blind — no quiz data, no score, no bridge data, no offers,
-    no flow ID, no product context, no lesson progress.
-    
-    Enriched context to build in handle_chat() before passing to build_system_prompt():
-    ```php
-    $ai_context = [
-        // FLOSC Identity — tell the AI what system it's part of
-        'flosc_version' => FLOSC_VERSION,
-        'flow_id' => $flow_id,
-        'product_name' => flosc_get_setting('product_name', ''),
-        
-        // User Identity
-        'phase' => $phase,
-        'logged_in' => $eval_context['logged_in'],
-        'is_admin' => $eval_context['is_admin'] ?? false,
-        'user_name' => $eval_context['user_name'] ?? 'there',
-        'access_level' => $eval_context['access_level'], // visitor|guest|member
-        'message_count' => $eval_context['message_count'],
-        
-        // Quiz Data (if available)
-        'quiz_taken' => (bool)($eval_context['quiz_taken'] ?? false),
-        'quiz_score' => $eval_context['score'] ?? null,
-        'quiz_correct_items' => $eval_context['correct_items'] ?? '',
-        'quiz_missed_items' => $eval_context['missed_items'] ?? '',
-        'weakest_category' => $eval_context['weakest_category'] ?? '',
-        
-        // Bridge/Progress Data (for logged-in users)
-        'has_profile' => $eval_context['has_profile'] ?? false,
-        'free_lesson_delivered' => (bool) get_user_meta($user_id, '_flosc_free_lesson_delivered', true),
-        'purchased' => $eval_context['purchased'] ?? false,
-        
-        // IVR guidance (if IVR matched)
-        'ivr_guidance' => $response_message ? $response_message['content'] : '',
-    ];
-    ```
-    
-    This gives the AI full awareness without leaking sensitive data (no API keys,
-    no payment details, no PII beyond display name). The AI can then:
-    - Reference quiz results: "You scored 7/10, missing items X and Y..."
-    - Personalize offers: "Since you struggled with Category Z, the full course covers..."
-    - Track progress: "Welcome back! You've completed your free lesson on..."
-    - Chain-aware: Provider 2 knows it's refining Provider 1's output in a FLOSC flow
-    
-    |--------------------------------------------------------------------------
-    | END FUTURE ENHANCEMENTS
-    |--------------------------------------------------------------------------
-    */
 
     /**
      * Render a profile reminder for email-registered users who have not yet set a nickname/password.

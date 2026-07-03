@@ -580,7 +580,7 @@ class floscApp {
      * line lands at the bottom of this session. We poll a public read-only endpoint
      * for any such messages newer than what we've shown, and render them in place:
      * "(admin)" lines as a pale-green admin bubble; "bot" injections as a normal
-     * Brenda message. Lightweight, runs while the chat is open.
+     * Br3nda message. Lightweight, runs while the chat is open.
      */
     startAdminPoll() {
         if (this._adminPollTimer) return;
@@ -649,7 +649,7 @@ class floscApp {
                     msgs.forEach(m => {
                         if (parseInt(m.id) > (this._adminSince || 0)) this._adminSince = parseInt(m.id);
                         if (m.source === 'bot') {
-                            this.addMessage('assistant', m.text); // injected Brenda message
+                            this.addMessage('assistant', m.text); // injected Br3nda message
                         } else {
                             this.renderAdminMessage(m.name, m.text); // pale-green "(admin)"
                         }
@@ -5875,9 +5875,52 @@ Purchased: ${ctx.purchased}
         html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
         // Links: [text](url)
         html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+        // Bare URLs: linkify any http(s) URL that is NOT already inside a tag.
+        // The lead group (^|[\s(]) only matches URLs preceded by start-of-string,
+        // whitespace, or "(", so URLs already emitted as href="..." (preceded by
+        // ") or anchor text (preceded by ">") from the markdown-link pass above
+        // are left untouched. Trailing sentence punctuation is kept outside the link.
+        html = html.replace(/(^|[\s(])(https?:\/\/[^\s<]+)/g, function (match, lead, url) {
+            var trail = '';
+            var punct = url.match(/[.,;:!?)\]]+$/);
+            if (punct) { trail = punct[0]; url = url.slice(0, -punct[0].length); }
+            return lead + '<a href="' + url + '" target="_blank" rel="noopener">' + url + '</a>' + trail;
+        });
         // Line breaks
         html = html.replace(/\n/g, '<br>');
         return html;
+    }
+
+    /**
+     * v8.0.1: Inject provider-native players (YouTube, TikTok, Spotify,
+     * SoundCloud, Apple Music, Vimeo) beneath media links in an assistant
+     * message, via the FLOSC oEmbed proxy (WordPress core oEmbed). The clickable
+     * link is kept; the player is added below it. Non-media links and
+     * unsupported providers are left untouched.
+     *
+     * @param {HTMLElement} container The rendered message element.
+     */
+    _embedMedia(container) {
+        if (!container || !this.config || !this.config.apiUrl) return;
+        const providerRe = /(?:youtube\.com|youtu\.be|tiktok\.com|spotify\.com|soundcloud\.com|music\.apple\.com|vimeo\.com)/i;
+        const anchors = container.querySelectorAll('.message-text a[href], .flosc-message-text a[href]');
+        const self = this;
+        anchors.forEach(function (a) {
+            const url = a.href;
+            if (!providerRe.test(url) || a.dataset.floscEmbedded) return;
+            a.dataset.floscEmbedded = '1';
+            fetch(self.config.apiUrl + '/oembed?url=' + encodeURIComponent(url))
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (data) {
+                    if (!data || !data.success || !data.html) return;
+                    const wrap = document.createElement('div');
+                    wrap.className = 'flosc-oembed-wrap';
+                    wrap.innerHTML = data.html;
+                    a.insertAdjacentElement('afterend', wrap);
+                    if (self.chatMessages) self.chatMessages.scrollTop = self.chatMessages.scrollHeight;
+                })
+                .catch(function () {});
+        });
     }
 
     /**
@@ -7009,7 +7052,9 @@ Purchased: ${ctx.purchased}
         this.log('[FLOSC] Appending to chatMessages container...');
         this.chatMessages.appendChild(messageDiv);
         this.applyDynamicStyleTokens(messageDiv);
-        
+        // v8.0.1: For assistant messages, inject native players beneath media links.
+        if (role !== 'user') { this._embedMedia(messageDiv); }
+
         // v9.3.5: Reliable auto-scroll using double rAF to ensure DOM update completes
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {

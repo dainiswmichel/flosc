@@ -243,7 +243,7 @@ Endpoint examples: https://api.lesaep.com/analyze, https://api.lesaep.com/analyz
 Purpose: process LeSAEp pronunciation scoring requests when a flow is configured to use LeSAEp as its external scoring provider; optionally dispatch playback conversion jobs when Audio Conversion Provider is set to lesaep.
 Data sent: quiz audio, phrase/answer payloads, session identifiers, and signed request headers (X-FLOSC-Site, X-FLOSC-MTS, X-FLOSC-Signature).
 Service terms: https://lesaep.com/terms-of-service/
-Privacy policy: https://lesaep.com/privacy-policy/
+Privacy policy: https://lesaep.com/privacy/
 
 = FLOSC Site Policies =
 

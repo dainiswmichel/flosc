@@ -1,5 +1,5 @@
 # dainis.net IVR Configuration
-# Brenda: Virtual AI Assistant for dainis.net/chat
+# Br3nda: Virtual AI Assistant for dainis.net/chat
 
 ---
 
@@ -36,7 +36,7 @@ Description: Intro card style
 MessageName: dainis_net_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: Hi, I'm **Brenda**, Dainis W. Michel's personal AI assistant. I'm trained to help Dainis with inbound requests. What gives me the honor of chatting with you today? How can I help you?
+MessageContent: Hi, I'm **Br3nda**, Dainis W. Michel's personal AI assistant. I'm trained to help Dainis with inbound requests. What gives me the honor of chatting with you today? How can I help you?
 MessageConditions: is_visitor && first_show_session
 
 ---
@@ -57,7 +57,7 @@ MessageName: dainis_net_iepazities
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: Vēlos iepazīties
-MessageContent: Prieks iepazīties. Esmu Brenda. Pastāsti, kas Tevi interesē vairāk: mūzika, projekti, sadarbība vai kontakti?
+MessageContent: Prieks iepazīties. Esmu Br3nda. Pastāsti, kas Tevi interesē vairāk: mūzika, projekti, sadarbība vai kontakti?
 MessageConditions: is_visitor || is_guest || is_member
 Keywords: velos iepazities, vēlos iepazīties, iepazities, iepazīties
 
@@ -123,7 +123,7 @@ MessageName: dainis_net_contact_intro
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: How can I contact Dainis?
-MessageContent: Share your full name in one sentence, for example: My name is Firstname Lastname, and then ask for contact details. Brenda will verify approval before sharing anything.
+MessageContent: Share your full name in one sentence, for example: My name is Firstname Lastname, and then ask for contact details. Br3nda will verify approval before sharing anything.
 MessageConditions: is_visitor || is_guest || is_member
 Keywords: contact, phone, number, email, reach dainis, how contact
 
@@ -146,7 +146,7 @@ MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: Login to continue
 Action: open_registration
-MessageContent: Logging in gives you the full Brenda experience and unlocks admin-only commands for live approvals.
+MessageContent: Logging in gives you the full Br3nda experience and unlocks admin-only commands for live approvals.
 MessageConditions: is_visitor && !logged_in
 Keywords: login, sign in, continue
 
@@ -159,7 +159,7 @@ MessageName: dainis_net_guest_next_steps
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: What should I do next?
-MessageContent: Tell me your goal in one line and I will recommend your best next step. Brenda works fast when you are specific.
+MessageContent: Tell me your goal in one line and I will recommend your best next step. Br3nda works fast when you are specific.
 MessageConditions: is_guest
 Keywords: next step, what next, where should i start
 
@@ -170,7 +170,7 @@ MessageName: dainis_net_guest_fun
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: Give me the short version
-MessageContent: Short version: Brenda is cool, Dainis is building serious things, and you are exactly where useful conversations start.
+MessageContent: Short version: Br3nda is cool, Dainis is building serious things, and you are exactly where useful conversations start.
 MessageConditions: is_guest || is_member
 Keywords: short version, quick summary, tldr, too long
 
@@ -182,7 +182,7 @@ Keywords: short version, quick summary, tldr, too long
 MessageName: dainis_net_member_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: Welcome back. Brenda online and fully caffeinated. Signed-in mode is active.
+MessageContent: Welcome back. Br3nda online and fully caffeinated. Signed-in mode is active.
 MessageConditions: is_member && first_show_session
 
 ---
