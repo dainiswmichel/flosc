@@ -83,6 +83,16 @@ trait FLOSC_Admin_Trait {
             [$this, 'redirect_to_member_levels_tab']
         );
 
+        // Trajectories
+        add_submenu_page(
+            'flosc-settings',
+            'Trajectories',
+            'Trajectories',
+            'manage_options',
+            'flosc-trajectories',
+            [$this, 'redirect_to_trajectories_tab']
+        );
+
         // Offers
         add_submenu_page(
             'flosc-settings',
@@ -131,6 +141,16 @@ trait FLOSC_Admin_Trait {
             'manage_options',
             'flosc-ai-config',
             [$this, 'redirect_to_ai_tab']
+        );
+
+        // Concierge
+        add_submenu_page(
+            'flosc-settings',
+            'Concierge',
+            'Concierge',
+            'manage_options',
+            'flosc-concierge',
+            [$this, 'redirect_to_concierge_tab']
         );
 
         // Quiz
@@ -220,7 +240,7 @@ trait FLOSC_Admin_Trait {
             '<b>DA1</b>',
             'manage_options',
             'flosc-da1',
-            [$this, 'render_da1_page']
+            [$this, 'redirect_to_da1_tab']
         );
     }
 
@@ -788,6 +808,11 @@ trait FLOSC_Admin_Trait {
         exit;
     }
 
+    public function redirect_to_trajectories_tab() {
+        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=trajectories'));
+        exit;
+    }
+
     public function redirect_to_style_tab() {
         wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=style'));
         exit;
@@ -795,6 +820,11 @@ trait FLOSC_Admin_Trait {
 
     public function redirect_to_ai_tab() {
         wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=ai'));
+        exit;
+    }
+
+    public function redirect_to_concierge_tab() {
+        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=concierge'));
         exit;
     }
 
@@ -850,6 +880,11 @@ trait FLOSC_Admin_Trait {
 
     public function redirect_to_docs_tab() {
         wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=documentation'));
+        exit;
+    }
+
+    public function redirect_to_da1_tab() {
+        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=da1'));
         exit;
     }
 

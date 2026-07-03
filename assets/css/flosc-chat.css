@@ -4616,16 +4616,8 @@ img.flosc-profile-avatar {
     color: #5b21b6;
 }
 
-.flosc-welcome-badge-wrap {
-    text-align: center;
-    margin: 16px 0;
-}
-
-.flosc-welcome-badge {
-    display: inline-block;
-    max-width: 55%;
-    border: 3px solid rgba(184, 148, 68, 0.2);
-}
+/* Welcome badge and in-chat oEmbed player styles are defined in
+   flosc-layout.css, the stylesheet loaded on every chat surface. */
 
 .flosc-profile-card {
     background: #fff;

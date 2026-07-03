@@ -425,8 +425,9 @@ class FLOSC_Chatpack {
         if ($product_name && $product_tagline) {
             $section .= "{$product_name} = {$product_tagline}. ";
         }
-        $section .= "If someone asks what ANY word or name stands for and you don't have the answer "
-            . "IN THIS PROMPT, say you don't know. NEVER guess or invent an acronym expansion.\n\n";
+        $section .= "If someone asks what ANY word or name stands for and the exact expansion is not present "
+            . "IN THIS PROMPT, state only the verified expansions you do have and direct them to the official profile/source link. "
+            . "NEVER guess or invent an acronym expansion.\n\n";
 
         $section .= "2. NO FABRICATION: Never invent, fabricate, or guess ANY of the following:\n";
         $section .= "   - Quiz questions, words, phrases, or pronunciation exercises\n";
@@ -434,7 +435,8 @@ class FLOSC_Chatpack {
         $section .= "   - Lesson content, lesson titles, or course structure\n";
         $section .= "   - Features, capabilities, or tools that aren't described in this prompt\n";
         $section .= "   - Prices, discounts, or offers not defined in your context\n";
-        $section .= "   If you don't have specific information, say so: \"I don't have that information right now.\"\n\n";
+        $section .= "   If exact detail is unavailable, give the best verified answer from this prompt and offer the official source link or next best concrete step.\n";
+        $section .= "   NEVER use self-undermining hedge lines such as \"I don't have that information right now\" or \"not configured in my system\".\n\n";
 
         $section .= "3. STAY IN YOUR LANE: You are a chat assistant. You do NOT administer quizzes. "
             . "The quiz is a separate audio-recording system on the page. If the user is taking a quiz, "
@@ -443,8 +445,8 @@ class FLOSC_Chatpack {
         $section .= "4. CONTENT ACCESS: Never share lesson content, member materials, or paid content "
             . "with visitors who haven't purchased.\n\n";
 
-        $section .= "5. HONESTY OVER HELPFULNESS: If you don't know something, say so. "
-            . "A wrong answer is worse than no answer. Never fill gaps in your knowledge with plausible-sounding inventions.\n";
+        $section .= "5. HONESTY OVER HELPFULNESS: Only state what is verified in this prompt and avoid speculation. "
+            . "A wrong answer is worse than a scoped answer. Never fill gaps with plausible-sounding inventions.\n";
 
         // Fix 12: Topic scope + referral links (admin-configured, were collected but never injected)
         if ($ai_topic_scope) {
@@ -639,6 +641,9 @@ class FLOSC_Chatpack {
             $section .= "3. **Offer** — Next-step guidance. Goal: account completion and internal messaging readiness.\n";
             $section .= "4. **Sale** — Reserved phase (flow-dependent).\n";
             $section .= "5. **Content** — Ongoing support and communication continuity.\n";
+
+            $section .= "\n**Dainis Biography Anchor (authoritative):**\n";
+            $section .= self::get_dainis_bio_anchor();
         } else {
             $section .= "1. **Freeline** — Visitor (not logged in). Goal: get them to take the quiz.\n";
             $section .= "2. **Login** — Guest (logged in, quiz done). Goal: show score, deliver free lesson.\n";
@@ -1187,6 +1192,23 @@ class FLOSC_Chatpack {
         }
 
         return '';
+    }
+
+    private static function get_dainis_bio_anchor() {
+        $bio_summary = trim((string) flosc_get_setting('dainis_bio_summary', ''));
+        if ($bio_summary === '') {
+            $bio_summary = 'Dainis W. Michel is a composer, inventor, and entrepreneur building ideas into real-world projects across music, education, AI systems, and digital business tools.';
+        }
+
+        $bio_url = trim((string) flosc_get_setting('dainis_bio_url', ''));
+        if ($bio_url === '' || !filter_var($bio_url, FILTER_VALIDATE_URL)) {
+            $bio_url = 'https://dainis.net/business/resume';
+        }
+
+        return "- {$bio_summary}\n"
+            . "- Primary biography source: {$bio_url}\n"
+            . "- If asked who Dainis is, answer from this bio anchor and include the source URL.\n"
+            . "- Do not claim missing biography context when this anchor is present.\n";
     }
 
     /**

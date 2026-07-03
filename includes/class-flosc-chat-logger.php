@@ -301,7 +301,7 @@ class FLOSC_Chat_Logger {
         }
 
         // 'admin' → renders pale-green "(admin)"; 'bot' → renders as a normal AI
-        // (Brenda) message, but still admin-authored and delivered via the poll.
+        // (Br3nda) message, but still admin-authored and delivered via the poll.
         $response_source = ($source === 'bot') ? 'admin_bot' : 'admin';
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- intentional insert into plugin-owned chat log table
@@ -363,7 +363,7 @@ class FLOSC_Chat_Logger {
                 'id'        => intval($r['id']),
                 'text'      => (string) $r['ai_response'],
                 'name'      => (string) $r['provider'],
-                // 'bot' → render as a normal Brenda message; 'admin' → pale-green "(admin)".
+                // 'bot' → render as a normal Br3nda message; 'admin' → pale-green "(admin)".
                 'source'    => ($r['response_source'] === 'admin_bot') ? 'bot' : 'admin',
                 'timestamp' => (string) $r['timestamp'],
             ];

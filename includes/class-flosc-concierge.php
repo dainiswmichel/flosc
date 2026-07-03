@@ -46,7 +46,7 @@ class FLOSC_Concierge {
 	 * open for them and no one else. Three days suits a personal hand-off: long
 	 * enough to revisit from the same browser, short enough that it isn't forever.
 	 */
-	const OPEN_TTL = 3 * DAY_IN_SECONDS;
+	const OPEN_TTL = 7 * DAY_IN_SECONDS;
 
 	/**
 	 * Handle a chat message against the concierge messages already loaded in the IVR.
@@ -405,6 +405,9 @@ class FLOSC_Concierge {
 		'max_tries' => '_flosc_concierge_max_tries',
 		'retry'     => '_flosc_concierge_retry',
 		'delivery'  => '_flosc_concierge_delivery',
+		'expires'   => '_flosc_concierge_expires_utc_mts',
+		'params'    => '_flosc_concierge_parameters',
+		'instruct'  => '_flosc_concierge_instruction_template',
 	);
 
 	/**
@@ -436,6 +439,9 @@ class FLOSC_Concierge {
 		$success  = $meta( $post->ID, 'success' );
 		$retry    = $meta( $post->ID, 'retry' );
 		$delivery = $meta( $post->ID, 'delivery' );
+		$expires  = $meta( $post->ID, 'expires' );
+		$params   = $meta( $post->ID, 'params' );
+		$instruct = $meta( $post->ID, 'instruct' );
 		$max      = (int) $meta( $post->ID, 'max_tries' );
 
 		$deployment    = self::label( $body, 'Deployment' );
@@ -444,7 +450,7 @@ class FLOSC_Concierge {
 		// OpenClaw fallback: resolve the flow for any field left blank in the meta box.
 		// Tried in order of how a person would name it:
 		//   1. an explicit .md filename in floscFlow ("… (dainis_net_ivr.md)")
-		//   2. the flow's NAME in floscFlow ("Brenda", "LeSAEp")
+		//   2. the flow's NAME in floscFlow ("Br3nda", "LeSAEp")
 		//   3. the human-facing Deployment ("dainis.net/chat", "flosc.ai")
 		if ( '' === $flow ) {
 			$flow = self::flow_file( $floscflow_val );
@@ -465,8 +471,30 @@ class FLOSC_Concierge {
 		if ( '' === $delivery ) {
 			$delivery = self::label( $body, 'Delivery style' );
 		}
+		if ( '' === $expires ) {
+			$expires = self::label( $body, 'Expires UTC MTS' );
+			if ( '' === $expires ) {
+				$expires = self::label( $body, 'Expiry UTC MTS' );
+			}
+			if ( '' === $expires ) {
+				$expires = self::label( $body, 'ExpiresUTCMTS' );
+			}
+		}
+		if ( '' === $params ) {
+			$params = self::content_block( $body, 'Parameters' );
+		}
+		if ( '' === $instruct ) {
+			$instruct = self::content_block( $body, 'Instruction template' );
+			if ( '' === $instruct ) {
+				$instruct = self::content_block( $body, 'Instructions template' );
+			}
+		}
 
+		$parameters = self::parse_parameters_text( $params );
 		$content = self::content_to_deliver( $body );
+		$content = self::apply_template_parameters( $content, $parameters, $expires );
+		$instruct = self::apply_template_parameters( (string) $instruct, $parameters, $expires );
+		$expires = self::normalize_utc_mts( $expires );
 
 		return array(
 			'flow'       => $flow,
@@ -477,6 +505,10 @@ class FLOSC_Concierge {
 			'max_tries'  => $max > 0 ? $max : 3,
 			'retry'      => $retry,
 			'delivery'   => $delivery,
+			'expires_utc_mts' => $expires,
+			'parameters_text' => (string) $params,
+			'parameters' => $parameters,
+			'instruction_template' => (string) $instruct,
 			'content'    => $content,
 		);
 	}
@@ -522,6 +554,9 @@ class FLOSC_Concierge {
 		echo '<div class="flosc-cncrg-row"><label>Retry messages (one per line; {try}/{max} substituted; last line shows on the final miss)</label><textarea name="flosc_cncrg_retry" rows="3">' . esc_textarea( $c['retry'] ) . '</textarea></div>';
 		echo '<div class="flosc-cncrg-row"><label>Success message (shown just before the content delivers)</label><input type="text" name="flosc_cncrg_success" value="' . esc_attr( $c['success'] ) . '"></div>';
 		echo '<div class="flosc-cncrg-row"><label>Delivery style (how the AI hosts the reveal — tone, language, pacing; blank = a warm, friendly default)</label><textarea name="flosc_cncrg_delivery" rows="3" placeholder="e.g. Warm and professional in English; offer one thing at a time as an easy yes/no question; reveal only what the guest asks for. (Set the persona per guest/purpose here — playful, formal, a specific language, etc.)">' . esc_textarea( $c['delivery'] ) . '</textarea></div>';
+		echo '<div class="flosc-cncrg-row"><label>Expires UTC MTS (Michel format)</label><input type="text" name="flosc_cncrg_expires_utc_mts" value="' . esc_attr( (string) ( $c['expires_utc_mts'] ?? '' ) ) . '" placeholder="YYYY-MMm-DDd-THHh:MMm:SSs"></div>';
+		echo '<div class="flosc-cncrg-row"><label>Parameters (one per line: key=value)</label><textarea name="flosc_cncrg_parameters" rows="4" placeholder="guest_name=Frank\npassword_hint=123\nscore_1=Skumja Daina">' . esc_textarea( (string) ( $c['parameters_text'] ?? '' ) ) . '</textarea></div>';
+		echo '<div class="flosc-cncrg-row"><label>Instruction template (optional)</label><textarea name="flosc_cncrg_instruction_template" rows="4" placeholder="Use {guest_name} by name. Mention expiry {expires_utc_mts}. Reveal one item at a time.">' . esc_textarea( (string) ( $c['instruction_template'] ?? '' ) ) . '</textarea></div>';
 		echo '<p class="description">The post body is the AI\'s private brief — it offers it a little at a time, in your chosen voice, only what the guest asks for. Saving syncs this to the chat (DB and .md).</p>';
 	}
 
@@ -547,16 +582,21 @@ class FLOSC_Concierge {
 			'max_tries' => 'flosc_cncrg_max_tries',
 			'retry'     => 'flosc_cncrg_retry',
 			'delivery'  => 'flosc_cncrg_delivery',
+			'expires'   => 'flosc_cncrg_expires_utc_mts',
+			'params'    => 'flosc_cncrg_parameters',
+			'instruct'  => 'flosc_cncrg_instruction_template',
 		);
 		foreach ( $map as $key => $field ) {
 			if ( ! isset( $_POST[ $field ] ) ) {
 				continue;
 			}
 			// Sanitize at the point of access, per field type.
-			if ( 'retry' === $key || 'delivery' === $key ) {
+			if ( 'retry' === $key || 'delivery' === $key || 'params' === $key || 'instruct' === $key ) {
 				$value = sanitize_textarea_field( wp_unslash( $_POST[ $field ] ) );
 			} elseif ( 'max_tries' === $key ) {
 				$value = (string) max( 1, absint( wp_unslash( $_POST[ $field ] ) ) );
+			} elseif ( 'expires' === $key ) {
+				$value = self::normalize_utc_mts( sanitize_text_field( wp_unslash( $_POST[ $field ] ) ) );
 			} else {
 				$value = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
 			}
@@ -610,6 +650,9 @@ class FLOSC_Concierge {
 			'password_max_tries'          => $c['max_tries'],
 			'password_retry_messages'     => $retry_list,
 			'delivery_style'              => $c['delivery'],
+			'expires_utc_mts'             => (string) ( $c['expires_utc_mts'] ?? '' ),
+			'template_parameters'         => (string) ( $c['parameters_text'] ?? '' ),
+			'instruction_template'        => (string) ( $c['instruction_template'] ?? '' ),
 			'content'                     => $c['content'],
 			'source'                      => 'concierge_post',
 			'concierge_post_id'           => (int) $post->ID,
@@ -668,6 +711,8 @@ class FLOSC_Concierge {
 			'flow       : ' . ( '' !== $flow_stem ? $flow_stem . ( $flow_ok ? ' ✓' : ' — not found' ) : '(missing flow)' ),
 			'keyword    : ' . ( '' !== $c['keyword'] ? $c['keyword'] : '(missing — required)' ),
 			'password   : ' . ( '' !== $c['password'] ? 'set (exact)' : '(none — instant)' ),
+			'expires    : ' . ( '' !== (string) ( $c['expires_utc_mts'] ?? '' ) ? (string) $c['expires_utc_mts'] : '(none)' ),
+			'params     : ' . ( '' !== trim( (string) ( $c['parameters_text'] ?? '' ) ) ? 'set' : '(none)' ),
 			'delivers   : ' . ( '' !== $delivers ? mb_strimwidth( $delivers, 0, 90, '…' ) : '(empty)' ),
 			'status     : ' . ( $active ? 'active on ' . $flow_stem : 'NOT active — fix the above' ),
 		);
@@ -701,7 +746,7 @@ class FLOSC_Concierge {
 		return 'flosc_flow_' . sanitize_key( pathinfo( $flow_file, PATHINFO_FILENAME ) );
 	}
 
-	/** Pull a '*.md' flow file out of a floscFlow value ('Brenda (dainis_net_ivr.md)' -> 'dainis_net_ivr.md'). */
+	/** Pull a '*.md' flow file out of a floscFlow value ('Br3nda (dainis_net_ivr.md)' -> 'dainis_net_ivr.md'). */
 	protected static function flow_file( $value ) {
 		if ( preg_match( '/([A-Za-z0-9_\-]+\.md)\b/i', (string) $value, $m ) ) {
 			return $m[1];
@@ -710,7 +755,7 @@ class FLOSC_Concierge {
 	}
 
 	/**
-	 * Resolve a flow file from a flow's NAME ('Brenda' -> 'dainis_net_ivr.md').
+	 * Resolve a flow file from a flow's NAME ('Br3nda' -> 'dainis_net_ivr.md').
 	 *
 	 * Every flow carries a human name (identity.name) — the same name shown in the
 	 * IVR editor and the Flow dropdown. Matching is case-insensitive and ignores
@@ -801,6 +846,102 @@ class FLOSC_Concierge {
 		// removed, so a password is never handed to the guest.
 		$stripped = preg_replace( '/^[ \t>*_\-]*(floscFlow|Deployment|Keyword|Password)[ \t]*:.*$/mi', '', $body );
 		return trim( (string) $stripped );
+	}
+
+	/** Parse parameters text (key=value per line) into an associative array. */
+	protected static function parse_parameters_text( $text ) {
+		$params = array();
+		foreach ( preg_split( '/\r\n|\r|\n/', (string) $text ) as $line ) {
+			$line = trim( (string) $line );
+			if ( '' === $line || false === strpos( $line, '=' ) ) {
+				continue;
+			}
+			list( $key, $value ) = array_map( 'trim', explode( '=', $line, 2 ) );
+			$key = sanitize_key( $key );
+			if ( '' === $key ) {
+				continue;
+			}
+			$params[ $key ] = (string) $value;
+		}
+		return $params;
+	}
+
+	/** Replace {parameter_name} placeholders in a template. */
+	protected static function apply_template_parameters( $text, $params, $expires_utc_mts = '' ) {
+		$text = (string) $text;
+		if ( '' === $text ) {
+			return '';
+		}
+
+		$tokens = is_array( $params ) ? $params : array();
+		$tokens['utc_now_mts'] = self::utc_now_mts();
+		$tokens['expires_utc_mts'] = (string) $expires_utc_mts;
+
+		foreach ( $tokens as $k => $v ) {
+			$text = str_replace( '{' . $k . '}', (string) $v, $text );
+		}
+
+		return $text;
+	}
+
+	/** Current UTC time in Michel timestamp format. */
+	protected static function utc_now_mts() {
+		return gmdate( 'Y' ) . '-' . gmdate( 'm' ) . 'm-' . gmdate( 'd' ) . 'd-T' . gmdate( 'H' ) . 'h:' . gmdate( 'i' ) . 'm:' . gmdate( 's' ) . 's';
+	}
+
+	/** Normalize accepted UTC MTS variants to canonical format; returns '' when invalid. */
+	protected static function normalize_utc_mts( $value ) {
+		$ts = self::utc_mts_to_unix( (string) $value );
+		if ( null === $ts ) {
+			return '';
+		}
+		return gmdate( 'Y', $ts ) . '-' . gmdate( 'm', $ts ) . 'm-' . gmdate( 'd', $ts ) . 'd-T' . gmdate( 'H', $ts ) . 'h:' . gmdate( 'i', $ts ) . 'm:' . gmdate( 's', $ts ) . 's';
+	}
+
+	/** Convert UTC MTS to unix timestamp. Supports date-only and date-time forms. */
+	protected static function utc_mts_to_unix( $value ) {
+		$value = trim( (string) $value );
+		if ( '' === $value ) {
+			return null;
+		}
+
+		if ( preg_match( '/^(\d{4})-(\d{2})m-(\d{2})d-T(\d{2})h:(\d{2})m:(\d{2})s$/', $value, $m ) ) {
+			$y = (int) $m[1];
+			$mo = (int) $m[2];
+			$d = (int) $m[3];
+			$h = (int) $m[4];
+			$mi = (int) $m[5];
+			$s = (int) $m[6];
+			if ( ! checkdate( $mo, $d, $y ) || $h > 23 || $mi > 59 || $s > 59 ) {
+				return null;
+			}
+			return gmmktime( $h, $mi, $s, $mo, $d, $y );
+		}
+
+		if ( preg_match( '/^(\d{4})-(\d{2})m-(\d{2})d$/', $value, $m ) ) {
+			$y = (int) $m[1];
+			$mo = (int) $m[2];
+			$d = (int) $m[3];
+			if ( ! checkdate( $mo, $d, $y ) ) {
+				return null;
+			}
+			return gmmktime( 23, 59, 59, $mo, $d, $y );
+		}
+
+		return null;
+	}
+
+	/** Is this concierge message expired for UTC now? */
+	protected static function is_expired( $msg ) {
+		$expires = trim( (string) ( $msg['expires_utc_mts'] ?? '' ) );
+		if ( '' === $expires ) {
+			return false;
+		}
+		$ts = self::utc_mts_to_unix( $expires );
+		if ( null === $ts ) {
+			return false;
+		}
+		return time() > $ts;
 	}
 
 	/** Read everything from a "Label:" to the end of the body. */

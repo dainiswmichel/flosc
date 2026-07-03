@@ -1054,6 +1054,38 @@ img.flosc-profile-avatar {
     width: 100%;
 }
 
+/* Welcome badge: centered in the full message column. Defined here, in the
+   stylesheet that owns the chat message layout and loads on every chat
+   surface, so centering does not depend on flosc-chat.css being present.
+   Auto side-margins center the block image independently of the parent flex
+   alignment (align-items:flex-start on .flosc-message). */
+.flosc-welcome-badge-wrap {
+    display: block;
+    width: 100%;
+    text-align: center;
+    margin: 16px 0;
+}
+.flosc-welcome-badge {
+    display: block;
+    max-width: 55%;
+    margin: 0 auto;
+    border: 3px solid rgba(184, 148, 68, 0.2);
+}
+
+/* In-chat oEmbed media players (YouTube, TikTok, Spotify, SoundCloud, etc.).
+   Defined here for the same reason as the badge: this stylesheet loads on
+   every chat surface. */
+.flosc-oembed-wrap {
+    margin: 10px 0;
+    max-width: 480px;
+}
+.flosc-oembed-wrap iframe,
+.flosc-oembed-wrap video {
+    max-width: 100%;
+    border: 0;
+    border-radius: 8px;
+}
+
 .flosc-message-user .flosc-message-text,
 .flosc-message-user .message-text,
 .message.user .message-text {

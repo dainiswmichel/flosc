@@ -1553,11 +1553,12 @@
     max-height: 70vh;
     border: 1px solid #c3c4c7;
     border-radius: 2px;
+    background: #fff;
 }
 
 .flosc-da1-table {
     width: 100%;
-    min-width: 1100px;
+    min-width: 1600px;
     border-collapse: collapse;
     font-size: 13px;
     table-layout: auto;
@@ -1574,18 +1575,39 @@
     text-transform: uppercase;
     letter-spacing: 0.04em;
     white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.flosc-da1-head-cell-control {
+    background: #111820;
+}
+
+.flosc-da1-head-cell-payload {
+    background: #1d2327;
 }
 
 .flosc-da1-head-cell-actions {
-    width: 36px;
+    width: 120px;
 }
 
 .flosc-da1-row {
     border-bottom: 1px solid #e0e0e0;
 }
 
+.flosc-da1-row:nth-child(even) {
+    background: #fcfcfd;
+}
+
 .flosc-da1-row:focus-within {
     background: #f0f6fc;
+}
+
+.flosc-da1-row.is-da1-active-row {
+    outline: 2px solid #2271b1;
+    outline-offset: -2px;
+    background: #eaf2fb;
 }
 
 .flosc-da1-cell {
@@ -1593,9 +1615,39 @@
     vertical-align: top;
 }
 
+.flosc-da1-cell-control {
+    background: #f8fafc;
+}
+
+.flosc-da1-cell[data-col="Row Key"],
+.flosc-da1-cell[data-col="Parent Key"],
+.flosc-da1-cell[data-col="Catalog Key"],
+.flosc-da1-cell[data-col="Record Type"],
+.flosc-da1-cell[data-col="Flow Scope"],
+.flosc-da1-cell[data-col="VGM"],
+.flosc-da1-cell[data-col="Status"] {
+    min-width: 120px;
+}
+
+.flosc-da1-cell[data-col="Date"] {
+    min-width: 90px;
+}
+
+.flosc-da1-cell[data-col="Title"] {
+    min-width: 180px;
+}
+
+.flosc-da1-cell[data-col="Description"],
+.flosc-da1-cell[data-col="Lyrics"],
+.flosc-da1-cell[data-col="Media"],
+.flosc-da1-cell[data-col="Notes"] {
+    min-width: 220px;
+}
+
 .flosc-da1-cell-actions {
     vertical-align: middle;
     text-align: right;
+    min-width: 118px;
 }
 
 .flosc-da1-input {
@@ -1623,11 +1675,34 @@
     padding: 2px 8px;
 }
 
+.flosc-da1-cell-actions .button {
+    margin-left: 6px;
+}
+
 .flosc-da1-actions-bottom {
     margin-top: 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.flosc-da1-catalog-tools {
+    margin: 12px 0 18px;
+    display: grid;
+    gap: 12px;
+}
+
+.flosc-da1-tool-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.flosc-da1-flow-catalogs-input {
+    min-width: 320px;
 }
 
 .flosc-da1-modal-overlay {
@@ -1701,6 +1776,23 @@
 .flosc-da1-modal-actions {
     display: flex;
     gap: 8px;
+}
+
+@media (max-width: 960px) {
+    .flosc-da1-wrap {
+        max-width: 100%;
+    }
+
+    .flosc-da1-actions-top,
+    .flosc-da1-tool-form,
+    .flosc-da1-actions-bottom {
+        width: 100%;
+    }
+
+    .flosc-da1-flow-catalogs-input {
+        min-width: 0;
+        width: 100%;
+    }
 }
 
 .flosc-da1-modal-field {
@@ -5746,6 +5838,50 @@
 .flosc-msg-ai .flosc-msg-body { background: #eef6fb; }
 .flosc-msg-user { text-align: right; }
 .flosc-msg-user .flosc-msg-body { background: #f6f7f7; }
+
+/* Concierge tab accordion list (post-backed, synchronized into chat). */
+.flosc-cncrg-accordion-wrap { margin-top: 8px; }
+.flosc-cncrg-accordion {
+    border: 1px solid #dcdcde;
+    border-radius: 6px;
+    margin: 0 0 10px;
+    background: #fff;
+}
+.flosc-cncrg-accordion[open] { box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06); }
+.flosc-cncrg-accordion__head {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 14px;
+}
+.flosc-cncrg-accordion__head::-webkit-details-marker { display: none; }
+.flosc-cncrg-accordion__chevron {
+    color: #2271b1;
+    font-size: 12px;
+    transition: transform 0.2s ease;
+}
+.flosc-cncrg-accordion[open] .flosc-cncrg-accordion__chevron { transform: rotate(90deg); }
+.flosc-cncrg-accordion__title {
+    font-weight: 600;
+    min-width: 180px;
+}
+.flosc-cncrg-accordion__meta {
+    color: #50575e;
+    font-size: 12px;
+}
+.flosc-cncrg-accordion__when {
+    margin-left: auto;
+    color: #646970;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+.flosc-cncrg-accordion__body {
+    border-top: 1px solid #f0f0f1;
+    padding: 12px 14px 14px;
+    background: #fcfcfc;
+}
 
 /* ========================================
    AUTOPROMPTS TAB

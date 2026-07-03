@@ -315,6 +315,36 @@ trait FLOSC_REST_Trait {
     }
 
     /**
+     * Public oEmbed proxy: returns provider-native player HTML for a media URL
+     * via WordPress core oEmbed (YouTube, TikTok, Spotify, SoundCloud, Vimeo,
+     * Apple Music, etc.). Results are cached in a transient. Only oEmbed-
+     * whitelisted providers resolve, so arbitrary URLs cannot be embedded.
+     *
+     * @param WP_REST_Request $request Request object.
+     * @return WP_REST_Response
+     */
+    public function handle_oembed($request) {
+        $url = esc_url_raw((string) $request->get_param('url'));
+        if ($url === '' || !wp_http_validate_url($url)) {
+            return new WP_REST_Response(['success' => false], 400);
+        }
+
+        // Cache per URL; store '' as a short negative-cache marker so unsupported
+        // providers are not re-fetched on every render.
+        $cache_key = 'flosc_oembed_' . md5($url);
+        $cached = get_transient($cache_key);
+        if (is_string($cached)) {
+            return new WP_REST_Response(['success' => $cached !== '', 'html' => $cached]);
+        }
+
+        $html  = wp_oembed_get($url, ['width' => 480]);
+        $store = is_string($html) ? $html : '';
+        set_transient($cache_key, $store, $store !== '' ? DAY_IN_SECONDS : HOUR_IN_SECONDS);
+
+        return new WP_REST_Response(['success' => $store !== '', 'html' => $store]);
+    }
+
+    /**
      * REST API Routes
      * v9.4.2: Added rate limiting to public endpoints
      */
@@ -617,6 +647,13 @@ trait FLOSC_REST_Trait {
             'methods' => 'GET',
             'callback' => [$this, 'get_ivr_messages'],
             'permission_callback' => [$this, 'check_ivr_messages_permission'],
+        ]);
+
+        // In-chat media players via WordPress core oEmbed (v8.0.1).
+        register_rest_route('flosc/v1', '/oembed', [
+            'methods' => 'GET',
+            'callback' => [$this, 'handle_oembed'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
         ]);
 
         // v1.0.4: Bridge Data endpoint (TASK-008) - quiz state between phases

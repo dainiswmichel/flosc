@@ -8,11 +8,13 @@ $flosc_feature_links = [
   'ivr-messages' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'ivr-messages'], admin_url('admin.php')),
   'autoprompts' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'autoprompts'], admin_url('admin.php')),
   'member-levels' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'member-levels'], admin_url('admin.php')),
+  'trajectories' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'trajectories'], admin_url('admin.php')),
   'offers' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'offers'], admin_url('admin.php')),
   'login' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'login'], admin_url('admin.php')),
   'style' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'style'], admin_url('admin.php')),
   'ui' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'ui'], admin_url('admin.php')),
   'ai' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'ai'], admin_url('admin.php')),
+  'concierge' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'concierge'], admin_url('admin.php')),
   'quiz' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'quiz'], admin_url('admin.php')),
   'email' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'email'], admin_url('admin.php')),
   'lessons' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'lessons'], admin_url('admin.php')),
@@ -20,6 +22,7 @@ $flosc_feature_links = [
   'sso' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'sso'], admin_url('admin.php')),
   'chat-logs' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'chat-logs'], admin_url('admin.php')),
   'administration' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'administration'], admin_url('admin.php')),
+  'da1' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'da1'], admin_url('admin.php')),
 ];
 ?>
 
@@ -35,11 +38,13 @@ $flosc_feature_links = [
   <li><code>ivr-messages</code> — IVR parser model, conditions/actions, message lifecycle</li>
   <li><code>autoprompts</code> — PromptPanel behavior by state (visitor/guest/member)</li>
   <li><code>member-levels</code> — Level model and unlock logic</li>
+  <li><code>trajectories</code> — Outcome trajectories and progression configuration</li>
   <li><code>offers</code> — Offer definitions, display modes, trigger mapping</li>
   <li><code>login</code> — Registration/login flows and guest-link behavior</li>
   <li><code>style</code> — Structured theme and chat style controls</li>
   <li><code>ui</code> — Navigation and presentation rules</li>
   <li><code>ai</code> — Provider configuration, knowledge files, feedback/praise</li>
+  <li><code>concierge</code> — Concierge prompt routing and assist behavior controls</li>
   <li><code>quiz</code> — Quiz architecture, scoring model, lesson mapping</li>
   <li><code>email</code> — Email sequence, sender identity, placeholders</li>
   <li><code>lessons</code> — Lesson source model and access filtering</li>
@@ -47,6 +52,7 @@ $flosc_feature_links = [
   <li><code>sso</code> — OAuth provider setup, callback behavior, flow resolution</li>
   <li><code>chat-logs</code> — Logging model, ratings, operational usage</li>
   <li><code>administration</code> — Runtime controls, debug mode, operational tasks</li>
+  <li><code>da1</code> — Catalog datasets, flow assignment, upload/export operations</li>
   <li><code>documentation</code> — Final reconciliation and link validation pass</li>
 </ol>
 
@@ -79,6 +85,30 @@ $flosc_feature_links = [
 <p><strong>Tech Ref Level:</strong> IVR management coordinates message files, per-flow overrides, and parser rules that control message behavior.</p>
 <p><strong>Code Level:</strong> admin/ivr-messages.php renders the editor, and the backend loader reads the selected IVR plus saved overrides.</p>
 
+<h4 id="tab-ivr-messages-all-flows-fields">All Flows File Management field guide</h4>
+<p><strong>Flow Label:</strong> The human-readable flow name pulled from the flow settings bundle, usually from the identity name field, and used only for display.</p>
+<p><strong>Flow Key (internal):</strong> The WordPress option key that stores the per-flow settings bundle, typically the <code>flosc_flow_*</code> record used by the admin and runtime loaders.</p>
+<p><strong>AI Provider:</strong> The provider slug stored in the flow settings, resolved from the flow option first and then from the global AI default if the flow has no explicit provider value.</p>
+<p><strong>Messages:</strong> The count of parsed message entries currently available for that IVR file, taken from the parser output after the markdown file is read.</p>
+<p><strong>Phases:</strong> The per-phase message count snapshot for Freeline, Login, Offer, Sale, and Content, built from the parser's phase arrays.</p>
+<p><strong>Modified:</strong> The file modification timestamp from the resolved IVR file path on disk, not a database timestamp.</p>
+<p><strong>Size:</strong> The byte size of the resolved IVR file as reported by the filesystem.</p>
+<p><strong>Parse Status:</strong> The parser result for the row; the code checks that the file exists, can be read, and returns at least one message entry after passing the markdown through <code>FLOSC_IVR_Parser::flosc_instance()-&gt;flosc_parse()</code>.</p>
+<p><strong>Selected IVR File in Settings:</strong> The comparison between the row file name and the flow's stored IVR pointer, using <code>active_ivr_file</code> first and then <code>ivr_file</code> from the flow settings array.</p>
+
+<h3 id="tab-da1-dataset-template">DA1 Dataset Template (Submission Reference)</h3>
+<p><a href="<?php echo esc_url($flosc_feature_links['da1']); ?>">Open Feature: DA1 tab</a></p>
+<p><strong>Required control columns:</strong> <code>Row Key</code>, <code>Parent Key</code>, <code>Catalog Key</code>, <code>Record Type</code>, <code>Flow Scope</code>, <code>VGM</code>, <code>Delivery Instruction</code>, <code>Delivery Rule</code>, <code>Fallback Order</code>, <code>Status</code>.</p>
+<p><strong>Status values:</strong> Use <code>active</code> or <code>paused</code>. Parent <code>paused</code> means child rows should be treated as paused for serving.</p>
+<p><strong>Row model:</strong> Parent rows use integer keys like <code>85</code>. Child rows use decimal keys like <code>85.1</code>, <code>85.2</code>, and set <code>Parent Key</code> to <code>85</code>.</p>
+<p><strong>Flow Scope:</strong> Required. Use one or more flow keys comma-separated (for example <code>lesaep_ivr,dainis_net_ivr</code>) or <code>all</code>.</p>
+<p><strong>VGM values:</strong> Use <code>visitor</code>, <code>guest</code>, <code>member</code>, or <code>all</code>.</p>
+<p><strong>Payload fields:</strong> Keep catalog content flexible. Recommended payload columns are <code>Date</code>, <code>Title</code>, <code>Description</code>, <code>Lyrics</code>, <code>Media</code>, <code>Media Type</code>, and <code>Notes</code>. Additional columns are allowed and preserved.</p>
+<p><strong>Catalog operations:</strong> DA1 supports create catalog, assign catalogs per flow, upload TSV, and export TSV. One flow can use multiple catalogs ordered by priority.</p>
+<pre><code>Row Key	Parent Key	Catalog Key	Record Type	Flow Scope	VGM	Delivery Instruction	Delivery Rule	Fallback Order	Status	Date	Title	Description	Lyrics	Media	Media Type	Notes
+85		music_core	work	lesaep_ivr	visitor	contextual match	preference	chatplayer &gt; media-link &gt; text	active	1996	Time Flies	Rock collaboration				Primary work row
+85.1	85	music_core	media	lesaep_ivr	visitor	contextual match	preference	chatplayer &gt; media-link &gt; text	active		Time Flies	Live version		https://example.com/youtube-link	youtube	Live performance
+85.2	85	music_core	media	lesaep_ivr	visitor	contextual match	preference	chatplayer &gt; media-link &gt; text	active		Time Flies	Short form clip		https://example.com/tiktok-link	tiktok	Social clip</code></pre>
 <h3 id="visitor-autoprompts-intropanelshow-panel">⚪ Visitor AutoPrompts — IntroPanelShow panel</h3>
 <p><a href="<?php echo esc_url($flosc_feature_links['autoprompts']); ?>">Open Feature: AutoPrompts tab (Visitor section)</a></p>
 <p><strong>One further step:</strong> Toggle the Visitor panel visibility once and save, then reload the tab to confirm the state persisted for the active flow.</p>

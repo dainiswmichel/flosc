@@ -154,7 +154,7 @@ $flosc_flat_url     = add_query_arg('logview', 'flat', $flosc_view_base);
                     var safe = $('<div>').text(res.data.text).html();
                     var who = $('<div>').text(res.data.name).html();
                     if (res.data.as === 'bot') {
-                        // Posted as the bot — render like a normal AI (Brenda) message.
+                        // Posted as the bot — render like a normal AI (Br3nda) message.
                         $thread.append(
                             '<div class="flosc-msg flosc-msg-ai">' +
                             '<div class="flosc-msg-meta"><span class="flosc-msg-who">AI</span></div>' +
@@ -553,7 +553,7 @@ function flosc_render_chat_session($s) {
             continue;
         }
 
-        // Admin posted AS the bot — renders like a normal AI (Brenda) message.
+        // Admin posted AS the bot — renders like a normal AI (Br3nda) message.
         if ($src === 'admin_bot') {
             $b_seq++;
             $thread .= flosc_render_msg_bubbles(
@@ -598,7 +598,7 @@ function flosc_render_chat_session($s) {
         if ($admin_name === '') {
             $admin_name = 'Admin';
         }
-        $bot_name = flosc_get_setting('ai_personality_name', flosc_get_setting('ai_identity_name', 'Brenda'));
+        $bot_name = flosc_get_setting('ai_personality_name', flosc_get_setting('ai_identity_name', 'Br3nda'));
         $composer = '<div class="flosc-admin-join">'
             . '<select class="flosc-admin-join-as" title="Send as">'
                 . '<option value="admin">' . esc_html($admin_name) . ' (admin)</option>'
