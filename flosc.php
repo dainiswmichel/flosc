@@ -5478,6 +5478,31 @@ HTML;
             return $this->flosc_limit_chat_response_length($reply);
         }
 
+        // Title lookup: if the visitor names a specific composition, serve that
+        // exact one (with its real link) instead of the generic opening list.
+        $message_norm = trim((string) preg_replace('/\s+/', ' ', strtolower((string) preg_replace('/[^a-z0-9 ]+/iu', ' ', (string) $message))));
+        $title_matches = [];
+        foreach ($items as $item) {
+            $title_norm = trim((string) preg_replace('/\s+/', ' ', strtolower((string) preg_replace('/[^a-z0-9 ]+/iu', ' ', (string) $item['title']))));
+            if ($title_norm !== '' && strpos($message_norm, $title_norm) !== false) {
+                $title_matches[] = $item;
+            }
+        }
+        if (!empty($title_matches)) {
+            $lines = [count($title_matches) === 1 ? 'Here it is:' : 'Here are the matches:'];
+            foreach (array_slice($title_matches, 0, 3) as $idx => $item) {
+                $line = ($idx + 1) . '. ' . $item['title'];
+                if ($item['description'] !== '') {
+                    $line .= ' - ' . $this->flosc_shorten_text($item['description'], 120);
+                }
+                $lines[] = $line;
+                if ($item['media'] !== '') {
+                    $lines[] = 'Link: ' . $item['media'];
+                }
+            }
+            return $this->flosc_limit_chat_response_length(implode("\n", $lines));
+        }
+
         $max_items = $this->flosc_da1_detect_batch_size($message);
         $slice = array_slice($items, 0, $max_items);
         $lines = [
@@ -5502,7 +5527,7 @@ HTML;
 
     private function flosc_is_composition_query($message) {
         $text = strtolower((string) $message);
-        return (bool) preg_match('/\b(composition|compositions|song|songs|works|track|tracks|list of works|my works|your works|music works|dziesm|skaņdarb|kompoz)\b/u', $text);
+        return (bool) preg_match('/\b(composition|compositions|song|songs|works|track|tracks|list of works|my works|your works|music works|dziesm|daina|dainas|dainu|skaņdarb|kompoz|melodij)\b/u', $text);
     }
 
     private function flosc_da1_is_count_request($message) {
