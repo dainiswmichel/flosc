@@ -22,9 +22,8 @@ Thumbs.db
 *.log
 *.zip
 
-# Orphaned legacy CSS (not enqueued in runtime build)
-assets/css/flosc-layout.css
-assets/css/flosc-theme.css
+# Orphaned legacy CSS (no enqueue/register reference in runtime code)
+# flosc-layout.css and flosc-theme.css ARE enqueued (flosc.php ~12304/12312) and must ship.
 assets/css/flosc-legal.css
 assets/css/ivr-admin.css
 
