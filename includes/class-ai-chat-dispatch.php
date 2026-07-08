@@ -10,6 +10,7 @@ class FLOSC_AI_Chat_Dispatch {
 
     private $provider;
     public $last_chain_detail = [];
+    private $last_billing_meta = [];
 
     public function __construct() {
         // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves),
@@ -350,7 +351,7 @@ class FLOSC_AI_Chat_Dispatch {
 
             // Get positive-rated logs (praise), strongest first, limit 20
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only retrieval from plugin-owned table
-            $positives = $wpdb->get_results(
+            $positives = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
                 $wpdb->prepare(
                     'SELECT user_message, ai_response, admin_rating, admin_note FROM %i
                      WHERE admin_rating > %d ORDER BY admin_rating DESC, rated_at DESC LIMIT %d',
@@ -626,6 +627,8 @@ class FLOSC_AI_Chat_Dispatch {
      * @param bool $test_mode If true, return WP_Error on failure instead of falling back to IVR
      */
     public function get_response($message, $system_prompt = '', $context = [], $test_mode = false) {
+        $this->last_billing_meta = [];
+
         // v5.0.2 FIX: Read provider fresh at call time so flow context (set by handle_chat
         // or ajax_test_ai_connection) is respected. Constructor runs at plugin init before
         // any flow context exists, so $this->provider is always stale/empty.
@@ -693,6 +696,114 @@ class FLOSC_AI_Chat_Dispatch {
         }
 
         return $response;
+    }
+
+    /**
+     * Get billing metadata for the most recent provider call.
+     */
+    public function get_last_billing_meta() {
+        return is_array($this->last_billing_meta) ? $this->last_billing_meta : [];
+    }
+
+    /**
+     * Capture normalized billing metrics from provider responses.
+     */
+    private function capture_billing_meta($provider, $model, $usage = [], $raw = []) {
+        $usage = is_array($usage) ? $usage : [];
+        $raw = is_array($raw) ? $raw : [];
+
+        $input_tokens = intval($usage['prompt_tokens'] ?? $usage['input_tokens'] ?? 0);
+        $output_tokens = intval($usage['completion_tokens'] ?? $usage['output_tokens'] ?? 0);
+        $total_tokens = intval($usage['total_tokens'] ?? ($input_tokens + $output_tokens));
+
+        $real_millicents = 0;
+        $source = 'none';
+
+        // Preferred: provider-reported cost fields when available.
+        $usd_cost = null;
+        if (isset($usage['cost_usd'])) {
+            $usd_cost = floatval($usage['cost_usd']);
+        } elseif (isset($usage['total_cost_usd'])) {
+            $usd_cost = floatval($usage['total_cost_usd']);
+        } elseif (isset($raw['cost_usd'])) {
+            $usd_cost = floatval($raw['cost_usd']);
+        } elseif (isset($raw['total_cost_usd'])) {
+            $usd_cost = floatval($raw['total_cost_usd']);
+        }
+
+        if ($usd_cost !== null && $usd_cost > 0) {
+            $real_millicents = max(1, intval(round($usd_cost * 100000)));
+            $source = 'provider_cost';
+        } else {
+            // Fallback: provider-reported token COUNTS × real price-per-1M. Providers
+            // (Anthropic/OpenAI/xAI) report token usage, not cost — that is the hook.
+            // A per-provider setting override wins; otherwise a seeded per-model real
+            // price is used so real cost is never zero (which was silently forcing flat).
+            $price = $this->resolve_model_price_per_1m($provider, (string) $model);
+            $input_rate = $price['input'];
+            $output_rate = $price['output'];
+
+            if (($input_tokens > 0 || $output_tokens > 0) && ($input_rate > 0 || $output_rate > 0)) {
+                $input_cost = ($input_tokens * $input_rate) / 1000000;
+                $output_cost = ($output_tokens * $output_rate) / 1000000;
+                $real_millicents = max(1, intval(ceil($input_cost + $output_cost)));
+                $source = 'token_rates';
+            }
+        }
+
+        $this->last_billing_meta = [
+            'provider' => (string) $provider,
+            'model' => (string) $model,
+            'usage' => [
+                'input_tokens' => $input_tokens,
+                'output_tokens' => $output_tokens,
+                'total_tokens' => $total_tokens,
+            ],
+            'real_millicents' => $real_millicents,
+            'source' => $source,
+        ];
+    }
+
+    /**
+     * Real price per 1,000,000 tokens, in millicents ($1 = 100,000 millicents), by model.
+     *
+     * A per-provider setting override (ai_billing_{provider}_input/output_millicents_per_1m)
+     * wins when set; otherwise a seeded per-model real price is used so cost never resolves
+     * to zero. Matched by keyword on the model id so id variants (dates/suffixes) resolve.
+     * Overridable via the 'flosc_model_price_millicents_per_1m' filter.
+     *
+     * @param string $provider Provider slug.
+     * @param string $model    Model id.
+     * @return array {input:int, output:int} millicents per 1M tokens.
+     */
+    private function resolve_model_price_per_1m($provider, $model) {
+        $override_in  = max(0, intval(flosc_get_setting('ai_billing_' . $provider . '_input_millicents_per_1m', 0)));
+        $override_out = max(0, intval(flosc_get_setting('ai_billing_' . $provider . '_output_millicents_per_1m', 0)));
+        if ($override_in > 0 || $override_out > 0) {
+            return array('input' => $override_in, 'output' => $override_out);
+        }
+
+        $m = strtolower((string) $model);
+        $seed = array('input' => 300000, 'output' => 1500000); // conservative default (Sonnet-tier)
+        if (strpos($m, 'haiku') !== false) {
+            $seed = array('input' => 100000, 'output' => 500000);    // ~$1 / $5 per 1M
+        } elseif (strpos($m, 'opus') !== false) {
+            $seed = array('input' => 500000, 'output' => 2500000);   // ~$5 / $25 per 1M
+        } elseif (strpos($m, 'sonnet') !== false) {
+            $seed = array('input' => 300000, 'output' => 1500000);   // ~$3 / $15 per 1M
+        } elseif (strpos($m, '4o-mini') !== false) {
+            $seed = array('input' => 15000, 'output' => 60000);      // ~$0.15 / $0.60 per 1M
+        } elseif (strpos($m, 'gpt') !== false || strpos($m, '4o') !== false) {
+            $seed = array('input' => 250000, 'output' => 1000000);   // ~$2.50 / $10 per 1M
+        } elseif (strpos($m, 'grok') !== false) {
+            $seed = array('input' => 300000, 'output' => 1500000);   // ~$3 / $15 per 1M (override in settings)
+        }
+
+        $seed = apply_filters('flosc_model_price_millicents_per_1m', $seed, $model, $provider);
+        return array(
+            'input'  => max(0, intval($seed['input'] ?? 0)),
+            'output' => max(0, intval($seed['output'] ?? 0)),
+        );
     }
 
     /**
@@ -920,6 +1031,8 @@ class FLOSC_AI_Chat_Dispatch {
             return null; // v1.9.3: No silent IVR substitution
         }
 
+        $this->capture_billing_meta('openai', $model, $body['usage'] ?? [], $body);
+
         return $body['choices'][0]['message']['content'] ?? null;
     }
     
@@ -1020,6 +1133,8 @@ class FLOSC_AI_Chat_Dispatch {
             return null; // v1.9.3: No silent IVR substitution
         }
 
+        $this->capture_billing_meta('anthropic', $model, $data['usage'] ?? [], $data);
+
         return $data['content'][0]['text'] ?? null;
     }
     
@@ -1113,6 +1228,8 @@ class FLOSC_AI_Chat_Dispatch {
             }
             return null; // v1.9.3: No silent IVR substitution
         }
+
+        $this->capture_billing_meta('xai', $model, $body['usage'] ?? [], $body);
 
         return $body['choices'][0]['message']['content'] ?? null;
     }
@@ -1231,6 +1348,8 @@ class FLOSC_AI_Chat_Dispatch {
                 }
             }
         }
+
+        $this->capture_billing_meta('openai', $model, $data['usage'] ?? [], $data);
 
         return $text ?: null;
     }

@@ -181,6 +181,44 @@ $flosc_flat_url     = add_query_arg('logview', 'flat', $flosc_view_base);
             if (e.key === 'Enter') { e.preventDefault(); floscSendAdminJoin($(this).closest('.flosc-admin-join').find('.flosc-admin-join-send')); }
         });
 
+        function floscAssignTokens($btn) {
+            var $box = $btn.closest('.flosc-admin-assign-tokens');
+            var $amountInput = $box.find('.flosc-admin-token-amount');
+            var amount = parseInt(($amountInput.val() || '').trim(), 10);
+            if (!Number.isFinite(amount) || amount <= 0) {
+                alert('Enter a positive token amount.');
+                return;
+            }
+
+            $btn.prop('disabled', true).text('Assigning...');
+            $.post(ajaxurl, {
+                action: 'flosc_admin_assign_tokens',
+                nonce: nonce,
+                session_id: String($btn.data('session')),
+                flow_id: $btn.data('flow'),
+                amount: amount
+            }, function(res) {
+                $btn.prop('disabled', false).text('Assign Tokens');
+                if (res && res.success) {
+                    var label = res.data?.formatted || String(res.data?.balance || 0);
+                    alert('Assigned ' + amount + ' tokens. New balance: ' + label);
+                    $amountInput.val('');
+                } else {
+                    alert((res && res.data && res.data.message) || 'Token assignment failed.');
+                }
+            }).fail(function() {
+                $btn.prop('disabled', false).text('Assign Tokens');
+                alert('Token assignment failed.');
+            });
+        }
+        $(document).on('click', '.flosc-admin-assign-send', function() { floscAssignTokens($(this)); });
+        $(document).on('keydown', '.flosc-admin-token-amount', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                floscAssignTokens($(this).closest('.flosc-admin-assign-tokens').find('.flosc-admin-assign-send'));
+            }
+        });
+
         // Clear old logs (shared with the flat view).
         $('#flosc-log-clear-btn').on('click', function() {
             if (!confirm('Clear chat logs older than 30 days?')) return;
@@ -448,7 +486,7 @@ function flosc_chat_session_allowed_html() {
         'br'      => [],
         'p'       => ['class' => true],
         'button'  => ['type' => true, 'class' => true, 'data-by' => true, 'data-value' => true, 'data-flow' => true, 'data-session' => true],
-        'input'   => ['type' => true, 'class' => true, 'placeholder' => true],
+        'input'   => ['type' => true, 'class' => true, 'placeholder' => true, 'value' => true, 'min' => true, 'step' => true],
         'select'  => ['class' => true, 'title' => true],
         'option'  => ['value' => true, 'selected' => true],
     ];
@@ -599,13 +637,59 @@ function flosc_render_chat_session($s) {
             $admin_name = 'Admin';
         }
         $bot_name = flosc_get_setting('ai_personality_name', flosc_get_setting('ai_identity_name', 'Br3nda'));
-        $composer = '<div class="flosc-admin-join">'
+
+        $latest_usage_row = null;
+        $session_rows = is_array($s['rows'] ?? null) ? $s['rows'] : [];
+        for ($i = count($session_rows) - 1; $i >= 0; $i--) {
+            $row = $session_rows[$i];
+            $has_usage = intval($row['billing_total_tokens'] ?? 0) > 0
+                || intval($row['billing_real_millicents'] ?? 0) > 0
+                || ((string) ($row['billing_source'] ?? '') !== '' && (string) ($row['billing_source'] ?? '') !== 'none');
+            if ($has_usage) {
+                $latest_usage_row = $row;
+                break;
+            }
+        }
+
+        if (is_array($latest_usage_row)) {
+            $usage_provider = esc_html((string) ($latest_usage_row['provider'] ?? 'unknown'));
+            $usage_model = esc_html((string) ($latest_usage_row['billing_model'] ?? 'not reported'));
+            $usage_source = esc_html((string) ($latest_usage_row['billing_source'] ?? 'none'));
+            $usage_input = intval($latest_usage_row['billing_input_tokens'] ?? 0);
+            $usage_output = intval($latest_usage_row['billing_output_tokens'] ?? 0);
+            $usage_total = intval($latest_usage_row['billing_total_tokens'] ?? 0);
+            $usage_real_millicents = intval($latest_usage_row['billing_real_millicents'] ?? 0);
+            $usage_real_cents = number_format_i18n($usage_real_millicents / 1000, 4);
+
+            $composer .= '<div class="flosc-admin-usage-report">'
+                . '<p class="description"><strong>Latest AI API Usage Report</strong><br>'
+                . 'Provider: ' . $usage_provider . '<br>'
+                . 'Model: ' . $usage_model . '<br>'
+                . 'API reported tokens (input/output/total): ' . esc_html(number_format_i18n($usage_input)) . ' / ' . esc_html(number_format_i18n($usage_output)) . ' / ' . esc_html(number_format_i18n($usage_total)) . '<br>'
+                . 'API reported actual usage cost: ' . esc_html(number_format_i18n($usage_real_millicents)) . ' millicents (' . esc_html($usage_real_cents) . ' cents)<br>'
+                . 'Cost source: ' . $usage_source
+                . '</p>'
+                . '</div>';
+        } else {
+            $composer .= '<div class="flosc-admin-usage-report">'
+                . '<p class="description"><strong>Latest AI API Usage Report</strong><br>'
+                . 'No provider usage metrics are logged for this session yet.'
+                . '</p>'
+                . '</div>';
+        }
+
+        $composer .= '<div class="flosc-admin-join">'
             . '<select class="flosc-admin-join-as" title="Send as">'
                 . '<option value="admin">' . esc_html($admin_name) . ' (admin)</option>'
                 . '<option value="bot">' . esc_html($bot_name) . '</option>'
             . '</select>'
             . '<input type="text" class="flosc-admin-join-input" placeholder="' . esc_attr('Type a message to join the chat…') . '">'
             . '<button type="button" class="button button-small flosc-admin-join-send" data-session="' . esc_attr($s['value']) . '" data-flow="' . esc_attr($s['flow_id'] ?? '') . '">Send</button>'
+            . '</div>';
+
+        $composer .= '<div class="flosc-admin-assign-tokens">'
+            . '<input type="number" class="flosc-admin-token-amount" min="1" step="1" value="" placeholder="Token amount">'
+            . '<button type="button" class="button button-small flosc-admin-assign-send" data-session="' . esc_attr($s['value']) . '" data-flow="' . esc_attr($s['flow_id'] ?? '') . '">Assign Tokens</button>'
             . '</div>';
     }
 

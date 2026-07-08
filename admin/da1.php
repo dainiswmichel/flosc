@@ -2,6 +2,13 @@
 /**
  * FLOSC Admin — DA1 Catalog Manager
  *
+ * DA1 Catalogs are flow-scoped structured datasets used by FLOSC to deliver
+ * curated records, media references, fallback content, and response material
+ * without hard-coding project-specific data into plugin PHP.
+ *
+ * Catalogs are stored as TSV files under wp-content/uploads/flosc-catalogs
+ * and assigned to flows by the floscAdmin.
+ *
  * v8.0.1 foundation:
  * - Multi-catalog TSV management
  * - Parent/child row model (85, 85.1, 85.2)
@@ -25,8 +32,7 @@ if (!wp_mkdir_p($flosc_catalog_dir)) {
     return;
 }
 
-$flosc_legacy_filename = 'dainis-w-michel-list-of-works.tsv';
-$flosc_legacy_path = $flosc_basedir . $flosc_legacy_filename;
+$flosc_sample_catalog_path = FLOSC_PLUGIN_DIR . 'sample-data/flosc_da1_catalog_default.tsv';
 $flosc_catalog_index_option = 'flosc_da1_catalogs';
 $flosc_catalog_assign_option = 'flosc_da1_flow_catalogs';
 $flosc_default_catalog_key = 'default';
@@ -305,6 +311,64 @@ function flosc_da1_catalog_file($catalog_dir, $catalog_key) {
     return trailingslashit($catalog_dir) . 'flosc_da1_catalog_' . $catalog_key . '.tsv';
 }
 
+function flosc_da1_is_allowed_catalog_path($path, $catalog_dir) {
+    $catalog_dir = wp_normalize_path(trailingslashit((string) $catalog_dir));
+    $path = wp_normalize_path((string) $path);
+
+    return 0 === strpos($path, $catalog_dir) && '.tsv' === strtolower(substr($path, -4));
+}
+
+function flosc_da1_write_catalog_file($path, $content, $catalog_dir) {
+    if (!flosc_da1_is_allowed_catalog_path($path, $catalog_dir)) {
+        return new WP_Error('flosc_da1_invalid_catalog_path', __('Invalid DA1 catalog path.', 'flosc'));
+    }
+
+    $content = (string) $content;
+    if ('' === trim($content)) {
+        return new WP_Error('flosc_da1_empty_catalog', __('DA1 catalog content cannot be empty.', 'flosc'));
+    }
+
+    $tmp = $path . '.tmp';
+    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- uploads-bound atomic write for admin-managed DA1 TSV catalog.
+    if (false === file_put_contents($tmp, $content, LOCK_EX)) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- uploads-bound atomic write for admin-managed DA1 TSV catalog.
+        return new WP_Error('flosc_da1_write_failed', __('Could not write temporary DA1 catalog file.', 'flosc'));
+    }
+
+    if (!function_exists('WP_Filesystem')) {
+        require_once ABSPATH . 'wp-admin/includes/file.php';
+    }
+    WP_Filesystem();
+    global $wp_filesystem;
+    if ($wp_filesystem && is_object($wp_filesystem) && method_exists($wp_filesystem, 'move')) {
+        if (!$wp_filesystem->move($tmp, $path, true)) {
+            wp_delete_file($tmp);
+            return new WP_Error('flosc_da1_rename_failed', __('Could not finalize DA1 catalog file.', 'flosc'));
+        }
+    } else {
+        return new WP_Error('flosc_da1_filesystem_unavailable', __('Filesystem API unavailable while finalizing DA1 catalog file.', 'flosc'));
+    }
+
+    return true;
+}
+
+function flosc_da1_read_catalog_file($path, $catalog_dir) {
+    if (!flosc_da1_is_allowed_catalog_path($path, $catalog_dir)) {
+        return new WP_Error('flosc_da1_invalid_catalog_path', __('Invalid DA1 catalog path.', 'flosc'));
+    }
+
+    if (!file_exists($path)) {
+        return '';
+    }
+
+    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- uploads-bound read for admin-managed DA1 TSV catalog.
+    $content = file_get_contents($path);
+    if (false === $content) {
+        return new WP_Error('flosc_da1_read_failed', __('Could not read DA1 catalog file.', 'flosc'));
+    }
+
+    return $content;
+}
+
 $flosc_da1_catalogs = get_option($flosc_catalog_index_option, []);
 if (!is_array($flosc_da1_catalogs)) {
     $flosc_da1_catalogs = [];
@@ -393,22 +457,34 @@ $flosc_da1_selected_catalog_label = $flosc_da1_catalogs[$flosc_da1_requested_cat
 
 if (isset($_POST['flosc_da1_upload_catalog'])) {
     check_admin_referer('flosc_da1_catalog_manage');
-    if (!empty($_FILES['flosc_da1_upload_file']['tmp_name'])) {
-        $flosc_da1_tmp_name = sanitize_text_field(wp_unslash($_FILES['flosc_da1_upload_file']['tmp_name']));
-        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- reading the admin-uploaded TSV from its temp path.
-        $flosc_da1_content = file_get_contents($flosc_da1_tmp_name);
-        if ($flosc_da1_content === false || trim($flosc_da1_content) === '') {
-            $flosc_da1_notice_error = 'Uploaded file is empty or unreadable.';
+    // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WordPress upload metadata array; each consumed field is validated/sanitized below.
+    $flosc_da1_file = $_FILES['flosc_da1_upload_file'] ?? null;
+    if (empty($flosc_da1_file) || !isset($flosc_da1_file['error']) || UPLOAD_ERR_OK !== (int) $flosc_da1_file['error']) {
+        $flosc_da1_notice_error = 'Choose a valid TSV file to upload.';
+    } else {
+        $flosc_da1_filename = sanitize_file_name((string) ($flosc_da1_file['name'] ?? ''));
+        $flosc_da1_size = isset($flosc_da1_file['size']) ? absint($flosc_da1_file['size']) : 0;
+
+        if ('.tsv' !== strtolower(substr($flosc_da1_filename, -4))) {
+            $flosc_da1_notice_error = 'DA1 uploads must be .tsv files.';
+        } elseif ($flosc_da1_size <= 0 || $flosc_da1_size > 1024 * 1024) {
+            $flosc_da1_notice_error = 'DA1 catalog uploads must be between 1 byte and 1 MB.';
         } else {
-            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- admin-controlled upload target in uploads path
-            if (file_put_contents($flosc_da1_catalog_path, $flosc_da1_content) === false) {
-                $flosc_da1_notice_error = 'Could not write uploaded catalog file.';
+            $flosc_da1_tmp_name = sanitize_text_field(wp_unslash((string) ($flosc_da1_file['tmp_name'] ?? '')));
+            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- reading WordPress-uploaded admin TSV temp file after extension/size checks.
+            $flosc_da1_content = file_get_contents($flosc_da1_tmp_name);
+
+            if ($flosc_da1_content === false || trim((string) $flosc_da1_content) === '') {
+                $flosc_da1_notice_error = 'Uploaded DA1 catalog is empty or unreadable.';
             } else {
-                $flosc_da1_notice_success = 'Catalog uploaded.';
+                $flosc_da1_write_result = flosc_da1_write_catalog_file($flosc_da1_catalog_path, $flosc_da1_content, $flosc_catalog_dir);
+                if (is_wp_error($flosc_da1_write_result)) {
+                    $flosc_da1_notice_error = $flosc_da1_write_result->get_error_message();
+                } else {
+                    $flosc_da1_notice_success = 'Catalog uploaded.';
+                }
             }
         }
-    } else {
-        $flosc_da1_notice_error = 'Choose a TSV file to upload.';
     }
 }
 
@@ -416,12 +492,11 @@ if (isset($_POST['da1_save_catalog'])) {
     check_admin_referer('da1_catalog_save');
 }
 
-if (!file_exists($flosc_da1_catalog_path) && file_exists($flosc_legacy_path) && $flosc_da1_requested_catalog_key === $flosc_default_catalog_key) {
-    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- one-time read of the legacy catalog in uploads.
-    $flosc_da1_legacy_content = file_get_contents($flosc_legacy_path);
-    if ($flosc_da1_legacy_content !== false && trim($flosc_da1_legacy_content) !== '') {
-        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- one-time migration copy into uploads-based catalog file
-        file_put_contents($flosc_da1_catalog_path, $flosc_da1_legacy_content);
+if (!file_exists($flosc_da1_catalog_path) && $flosc_da1_requested_catalog_key === $flosc_default_catalog_key && file_exists($flosc_sample_catalog_path)) {
+    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- read shipped generic sample catalog for first-run seeding.
+    $flosc_da1_sample_content = file_get_contents($flosc_sample_catalog_path);
+    if ($flosc_da1_sample_content !== false && trim($flosc_da1_sample_content) !== '') {
+        flosc_da1_write_catalog_file($flosc_da1_catalog_path, $flosc_da1_sample_content, $flosc_catalog_dir);
     }
 }
 
@@ -429,8 +504,13 @@ $flosc_da1_columns = [];
 $flosc_da1_rows = [];
 
 if (file_exists($flosc_da1_catalog_path)) {
-    // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- reading the uploads-rooted catalog TSV.
-    $flosc_da1_parsed = flosc_da1_parse_tsv((string) file_get_contents($flosc_da1_catalog_path));
+    $flosc_da1_loaded_content = flosc_da1_read_catalog_file($flosc_da1_catalog_path, $flosc_catalog_dir);
+    if (is_wp_error($flosc_da1_loaded_content)) {
+        $flosc_da1_notice_error = $flosc_da1_loaded_content->get_error_message();
+        $flosc_da1_parsed = [];
+    } else {
+        $flosc_da1_parsed = flosc_da1_parse_tsv((string) $flosc_da1_loaded_content);
+    }
     $flosc_da1_columns = flosc_da1_normalize_columns($flosc_da1_parsed[0] ?? [], $flosc_required_columns, $flosc_base_payload_columns);
     $flosc_da1_rows = array_slice($flosc_da1_parsed, 1);
 } else {
@@ -613,9 +693,9 @@ if (isset($_POST['da1_save_catalog'])) {
 
         if ($flosc_da1_notice_error === '') {
             $flosc_da1_content = implode("\n", $flosc_da1_lines) . "\n";
-            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- admin-authenticated save to uploads-rooted DA1 catalog path
-            if (file_put_contents($flosc_da1_catalog_path, $flosc_da1_content) === false) {
-                $flosc_da1_notice_error = 'Could not write catalog file.';
+            $flosc_da1_write_result = flosc_da1_write_catalog_file($flosc_da1_catalog_path, $flosc_da1_content, $flosc_catalog_dir);
+            if (is_wp_error($flosc_da1_write_result)) {
+                $flosc_da1_notice_error = $flosc_da1_write_result->get_error_message();
             } else {
                 $flosc_da1_notice_success = 'Catalog saved.';
                 $flosc_da1_parsed = flosc_da1_parse_tsv($flosc_da1_content);

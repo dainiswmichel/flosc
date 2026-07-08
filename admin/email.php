@@ -436,9 +436,9 @@ if (!$flosc_has_levels):
         <th scope="row"><label for="flow_support_email">Reply-To Support Email</label></th>
         <td>
             <input type="email" id="flow_support_email" name="flow_support_email"
-                   value="<?php echo esc_attr($flosc_flow_settings['support_email'] ?? 'dainiswmichel@gmail.com'); ?>"
+                   value="<?php echo esc_attr($flosc_flow_settings['support_email'] ?? get_option('admin_email')); ?>"
                    class="regular-text">
-            <p class="description">Replies from FLOSC emails will go to this address. Default: dainiswmichel@gmail.com</p>
+            <p class="description">Replies from FLOSC emails will go to this address. Default: your site admin email.</p>
         </td>
     </tr>
 </table>

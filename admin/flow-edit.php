@@ -83,7 +83,7 @@ if (isset($_POST['flosc_save_flow']) && wp_verify_nonce(sanitize_text_field(wp_u
             'primary_color' => sanitize_hex_color(wp_unslash($_POST['floscflow_color'] ?? '#4f46e5')),
             'share_text' => sanitize_text_field(wp_unslash($_POST['floscflow_share_text'] ?? '')),
         ],
-        'ivr_file' => sanitize_file_name(wp_unslash($_POST['ivr_file'] ?? 'flosc_default_ivr.md')),
+        'ivr_file' => sanitize_file_name(wp_unslash($_POST['ivr_file'] ?? 'flosc_default_technical_ivr.md')),
         'wp_category_id' => intval(wp_unslash($_POST['wp_category'] ?? 0)),
         'quiz_type' => sanitize_key(wp_unslash($_POST['quiz_type'] ?? '')),
     ];
@@ -421,7 +421,7 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                         <td>
                             <select id="ivr_file" name="ivr_file" class="regular-text">
                                 <?php foreach ($flosc_ivr_files as $flosc_file): ?>
-                                    <option value="<?php echo esc_attr($flosc_file); ?>" <?php selected($flosc_flow['ivr_file'] ?? 'flosc_default_ivr.md', $flosc_file); ?>>
+                                    <option value="<?php echo esc_attr($flosc_file); ?>" <?php selected($flosc_flow['ivr_file'] ?? 'flosc_default_technical_ivr.md', $flosc_file); ?>>
                                         <?php echo esc_html($flosc_file); ?>
                                     </option>
                                 <?php endforeach; ?>

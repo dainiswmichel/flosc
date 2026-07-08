@@ -43,7 +43,7 @@ $flosc_post = wp_unslash($_POST);
 $flosc_requested_ivr_file = sanitize_file_name((string)($flosc_get['ivr'] ?? ''));
 $flosc_active_ivr_file = $flosc_requested_ivr_file !== ''
     ? $flosc_requested_ivr_file
-    : (($GLOBALS['flosc_current_ivr'] ?? '') !== '' ? sanitize_file_name((string)$GLOBALS['flosc_current_ivr']) : 'flosc_default_ivr.md');
+    : (($GLOBALS['flosc_current_ivr'] ?? '') !== '' ? sanitize_file_name((string)$GLOBALS['flosc_current_ivr']) : 'flosc_default_technical_ivr.md');
 $GLOBALS['flosc_current_ivr'] = $flosc_active_ivr_file;
 // Per WordPress.org policy: writable paths must be in uploads only.
 $flosc_ivr_dir = function_exists('flosc_data_dir') ? flosc_data_dir() : '';
@@ -63,7 +63,7 @@ if (!in_array($flosc_ivr_management_view, ['single', 'all'], true)) {
  */
 function flosc_run_ivr_diagnostics() {
     // v1.2.8: Use current IVR file from context
-    $active_ivr = $GLOBALS['flosc_current_ivr'] ?? 'flosc_default_ivr.md';
+    $active_ivr = $GLOBALS['flosc_current_ivr'] ?? 'flosc_default_technical_ivr.md';
     $ivr_file = function_exists('flosc_resolve_ivr_file_path')
         ? flosc_resolve_ivr_file_path($active_ivr)
         : (function_exists('flosc_config_file') ? flosc_config_file($active_ivr) : '');
@@ -470,7 +470,7 @@ if (isset($flosc_post['flosc_upload_ivr_file']) && isset($_FILES['ivr_file_uploa
             if (isset($flosc_handled_upload['error'])) {
                 add_settings_error('flosc_settings', 'upload_failed', 'Upload failed: ' . $flosc_handled_upload['error'], 'error');
             // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- copy uploaded temp file into managed IVR directory
-            } elseif (!empty($flosc_handled_upload['file']) && @copy($flosc_handled_upload['file'], $flosc_target_path)) {
+            } elseif (!empty($flosc_handled_upload['file']) && @copy($flosc_handled_upload['file'], $flosc_target_path)) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- controlled file copy in FLOSC-managed path
                 wp_delete_file($flosc_handled_upload['file']);
                 if ($flosc_flow_key) {
                     $flosc_fs = get_option($flosc_flow_key, []);
@@ -618,7 +618,7 @@ if (isset($flosc_post['flosc_duplicate_ivr_file']) && isset($flosc_post['duplica
         }
 
         // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- duplicate operation constrained to managed IVR files
-        if (!copy($flosc_source_path, $flosc_duplicate_path)) {
+        if (!copy($flosc_source_path, $flosc_duplicate_path)) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- controlled file copy in FLOSC-managed path
             add_settings_error('flosc_settings', 'duplicate_failed', 'Could not duplicate IVR file. Check file permissions.', 'error');
         } else {
             add_settings_error('flosc_settings', 'duplicate_success', 'Duplicated IVR file: ' . $flosc_duplicate_file, 'success');
@@ -910,7 +910,7 @@ $flosc_editing_flow_data = $GLOBALS['flosc_editing_flow_data'] ?? null;
 $flosc_ivr_files_dir = $flosc_ivr_dir;
 $flosc_available_ivr_files = [];
 if (is_dir($flosc_ivr_files_dir)) {
-    // Match both patterns: *_ivr.md (flosc_default_ivr.md) and ivr*.md (ivr.md)
+    // Match both patterns: *_ivr.md (flosc_default_technical_ivr.md) and ivr*.md (ivr.md)
     $flosc_files = array_merge(
         glob($flosc_ivr_files_dir . '*_ivr.md'),
         glob($flosc_ivr_files_dir . 'ivr*.md')
@@ -935,7 +935,7 @@ if ($flosc_requested_ivr_file !== '') {
 } elseif (!empty($GLOBALS['flosc_current_ivr'])) {
     $flosc_active_ivr_file = $GLOBALS['flosc_current_ivr'];
 } else {
-    $flosc_active_ivr_file = $flosc_flow_settings['active_ivr_file'] ?? 'flosc_default_ivr.md';
+    $flosc_active_ivr_file = $flosc_flow_settings['active_ivr_file'] ?? 'flosc_default_technical_ivr.md';
 }
 
 $GLOBALS['flosc_current_ivr'] = $flosc_active_ivr_file;

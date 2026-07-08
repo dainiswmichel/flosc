@@ -682,6 +682,15 @@ jQuery(document).ready(function($) {
         </td>
     </tr>
     <tr>
+        <th scope="row"><label for="flow_fallback_phrase">Fallback Phrase</label></th>
+        <td>
+            <textarea id="flow_fallback_phrase" name="flow_fallback_phrase" rows="2" class="large-text"><?php
+                echo esc_textarea($flosc_flow_settings['fallback_phrase'] ?? '');
+            ?></textarea>
+            <p class="description">Shown &mdash; repeated &mdash; when this flow has no IVR configured in the database. No AI, no persona; its appearance tells you the flow isn't set up yet. Leave blank to use the built-in default.</p>
+        </td>
+    </tr>
+    <tr>
         <th scope="row"><label for="flow_ai_off_topic_links">Referral Links</label></th>
         <td>
             <textarea id="flow_ai_off_topic_links" name="flow_ai_off_topic_links" rows="3" class="large-text"><?php

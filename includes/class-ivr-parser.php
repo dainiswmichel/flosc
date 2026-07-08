@@ -359,7 +359,7 @@ class FLOSC_IVR_Parser {
             if ('' === $writable_dir) {
                 return '';
             }
-            $filename = $flow && !empty($flow['ivr_file']) ? basename($flow['ivr_file']) : 'flosc_default_ivr.md';
+            $filename = $flow && !empty($flow['ivr_file']) ? basename($flow['ivr_file']) : 'flosc_default_technical_ivr.md';
             return $writable_dir . $filename;
         }
 
@@ -395,14 +395,14 @@ class FLOSC_IVR_Parser {
             }
         }
         
-        // Fallback to flosc_default_ivr.md: uploads copy first, then shipped default.
+        // Fallback to flosc_default_technical_ivr.md: uploads copy first, then shipped default.
         if ('' !== $writable_dir) {
-            $writable_default = $writable_dir . 'flosc_default_ivr.md';
+            $writable_default = $writable_dir . 'flosc_default_technical_ivr.md';
             if (file_exists($writable_default)) {
                 return $writable_default;
             }
         }
-        return FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_ivr.md';
+        return FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_technical_ivr.md';
     }
     
     public function flosc_load_config() {

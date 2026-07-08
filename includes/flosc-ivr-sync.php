@@ -9,16 +9,16 @@ if (!defined('ABSPATH')) {
  * v1.6.4: Added $custom_ivr_file and $flow_key params for per-flow storage
  *
  * @param bool $preview_only If true, returns preview without making changes
- * @param string|null $custom_ivr_file Optional path to IVR file (defaults to flosc_default_ivr.md)
+ * @param string|null $custom_ivr_file Optional path to IVR file (defaults to flosc_default_technical_ivr.md)
  * @param string|null $flow_key Optional per-flow option key (e.g. 'flosc_flow_flosc_default_ivr')
  * @return array Result with success, stats, message, and preview data
  */
 function flosc_import_ivr_to_database($preview_only = false, $custom_ivr_file = null, $flow_key = null, $mode = 'merge') {
-    $ivr_file = $custom_ivr_file ?? flosc_config_file('flosc_default_ivr.md');
+    $ivr_file = $custom_ivr_file ?? flosc_config_file('flosc_default_technical_ivr.md');
     $mode = ($mode === 'replace') ? 'replace' : 'merge';
 
     if (!file_exists($ivr_file)) {
-        return ['success' => false, 'message' => 'flosc_default_ivr.md file not found'];
+        return ['success' => false, 'message' => 'flosc_default_technical_ivr.md file not found'];
     }
 
     require_once FLOSC_PLUGIN_DIR . 'includes/class-ivr-parser.php';
@@ -27,7 +27,7 @@ function flosc_import_ivr_to_database($preview_only = false, $custom_ivr_file = 
     $config = $parser->flosc_parse($markdown);
 
     if (empty($config)) {
-        return ['success' => false, 'message' => 'Failed to parse flosc_default_ivr.md'];
+        return ['success' => false, 'message' => 'Failed to parse flosc_default_technical_ivr.md'];
     }
 
     // Get current database state (per-flow if flow_key provided, else global)
@@ -551,10 +551,10 @@ function flosc_auto_export_ivr_to_file($flow_key = null, $target_ivr_file = null
         $ivr_file = $target_ivr_file;
     } elseif (!empty($flow_key)) {
         $fs = get_option($flow_key, []);
-        $preferred_file = $fs['ivr_file'] ?? ($fs['active_ivr_file'] ?? 'flosc_default_ivr.md');
+        $preferred_file = $fs['ivr_file'] ?? ($fs['active_ivr_file'] ?? 'flosc_default_technical_ivr.md');
         $ivr_file = $data_dir . basename($preferred_file);
     } else {
-        $ivr_file = $data_dir . 'flosc_default_ivr.md';
+        $ivr_file = $data_dir . 'flosc_default_technical_ivr.md';
     }
 
     if (strpos($ivr_file, $data_dir) !== 0) {
@@ -618,6 +618,9 @@ add_action('add_meta_boxes_post', function ($post) {
     if (class_exists('FLOSC_Concierge') && FLOSC_Concierge::is_concierge_post($post)) {
         add_meta_box('flosc_concierge', 'FLOSC Concierge', array('FLOSC_Concierge', 'render_meta_box'), 'post', 'normal', 'high');
     }
+    if (class_exists('FLOSC_Trajectory') && FLOSC_Trajectory::is_trajectory_post($post)) {
+        add_meta_box('flosc_trajectory', 'FLOSC Trajectory', array('FLOSC_Trajectory', 'render_meta_box'), 'post', 'normal', 'high');
+    }
 });
 add_action('save_post', function ($post_id, $post) {
     if (wp_is_post_revision($post_id) || (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE)) {
@@ -625,12 +628,40 @@ add_action('save_post', function ($post_id, $post) {
     }
     if (class_exists('FLOSC_Concierge')) {
         FLOSC_Concierge::save_meta_box($post_id);
-        FLOSC_Concierge::sync_post($post);
+
+        $post_status = is_object($post) ? (string) ($post->post_status ?? '') : '';
+        if (in_array($post_status, array('publish', 'private'), true)) {
+            FLOSC_Concierge::sync_post($post);
+        } else {
+            FLOSC_Concierge::unsync_post($post);
+        }
+    }
+
+    if (class_exists('FLOSC_Trajectory')) {
+        FLOSC_Trajectory::save_meta_box($post_id);
+
+        $post_status = is_object($post) ? (string) ($post->post_status ?? '') : '';
+        if (in_array($post_status, array('publish', 'private'), true)) {
+            FLOSC_Trajectory::sync_post($post);
+        } else {
+            FLOSC_Trajectory::unsync_post($post);
+        }
     }
 }, 20, 2);
 add_action('trashed_post', function ($post_id) {
     if (class_exists('FLOSC_Concierge')) {
         FLOSC_Concierge::unsync_post($post_id);
+    }
+    if (class_exists('FLOSC_Trajectory')) {
+        FLOSC_Trajectory::unsync_post($post_id);
+    }
+}, 20, 1);
+add_action('before_delete_post', function ($post_id) {
+    if (class_exists('FLOSC_Concierge')) {
+        FLOSC_Concierge::unsync_post($post_id);
+    }
+    if (class_exists('FLOSC_Trajectory')) {
+        FLOSC_Trajectory::unsync_post($post_id);
     }
 }, 20, 1);
 add_filter('the_content', function ($content) {

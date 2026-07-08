@@ -344,7 +344,7 @@ class FLOSC_Offer_Manager {
         }
 
         // Return the first candidate path for diagnostics/logging if no file exists.
-        $fallback = $candidate_files[0] ?? ('flosc_default_ivr.md');
+        $fallback = $candidate_files[0] ?? ('flosc_default_technical_ivr.md');
         return flosc_config_file($fallback);
     }
     
@@ -802,7 +802,7 @@ class FLOSC_Offer_Manager {
                 'name' => 'FLOSC WordPress Plugin',
                 'tagline' => 'AI-Powered Quiz Funnels for WordPress',
                 'icon' => '🔌',
-                'ivr_file' => 'flosc_default_ivr.md',
+                'ivr_file' => 'flosc_default_technical_ivr.md',
                 'member_level' => 'flosc_plugin_member',
                 'offer_id' => 'flosc_plugin_full',
             ],

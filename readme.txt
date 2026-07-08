@@ -24,6 +24,7 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * **Quiz-Based Engagement** - Create interactive quizzes that personalize visitor experience
 * **Content Gating** - Unlock premium content only after quiz completion or specific actions
 * **Offer Sequencing** - Show payment offers at the ideal moment in the visitor journey
+* **DA1 Catalogs** - Attach structured TSV catalogs to flows so floscAdmins can serve curated, flow-scoped datasets without hard-coding project-specific content
 * **Locally Stored** - All visitor data stays in your WordPress database by default
 * **AI-Ready** - Integration with your own AI provider (OpenAI, Anthropic, Grok, etc.) for conversational responses via Bring-Your-Own-Key
 * **WordPress Native** - Built as a standard WordPress plugin; no external platform required
@@ -112,6 +113,10 @@ Yes. FLOSC is theme-agnostic and works with any WordPress theme. Flows are embed
 = How many flows can I create? =
 
 As many as you like. FLOSC has no flow limit — the full plugin is free and runs unlimited FloscFlows (FLOSC chatbots), and a single FLOSC install can serve those chatbots across multiple domains. Install FLOSC on as many WordPress sites as you wish. Paid options cover services like human support, installation, profitability consulting, and managed AI credits — not the number of flows.
+
+= What are DA1 Catalogs? =
+
+DA1 Catalogs are structured TSV datasets managed by the floscAdmin. They let a FLOSC flow answer from curated rows of content, media, links, records, or fallback responses without hard-coding that data into plugin PHP. Catalogs are stored in the WordPress uploads directory and can be assigned to specific flows.
 
 = Where does visitor data get stored? =
 
@@ -265,21 +270,11 @@ Production-ready 8.x release with guided IVR flows, offer gating, BYOK AI suppor
 * Initial stable 8.0.0 release for WordPress 7.0+ and PHP 7.4+
 * Guided flow architecture with IVR routes, quiz branching, and offer/content gating
 * Optional integrations for AI providers (BYOK), payment providers (including Stripe, PayPal, and ClickBank), and social sign-in providers
-* Included admin documentation updates and required WordPress.org submission assets
-
-== Screenshots ==
-
-1. screenshot-1.png - SSO Settings: Configure single sign-on options and authentication behavior.
-2. screenshot-2.png - Offers Settings: Manage offer configuration and sale-stage settings.
-3. screenshot-3.png - Member Levels Settings: Configure membership-level access and progression settings.
-4. screenshot-4.png - AutoPrompt Panel Settings: Configure quick prompts and response shortcuts.
-5. screenshot-5.png - IVR Management Settings: Manage IVR message routes and conversational structure.
-6. screenshot-6.png - Identity Settings: Set plugin name, title, and brand identity values.
-7. screenshot-7.png - Flow Settings: Configure the core flow sequence and behavior.
+* Included admin documentation updates for WordPress.org submission
 
 == Code standard ==
 
-FLOSC is written to exceed the WordPress plugin guidelines. Inputs are sanitized at the read site using the narrowest type-appropriate sanitizer; output is escaped at the point where FLOSC constructs markup. All file writes go to the uploads directory only, never to the plugin folder, because the plugin folder is replaced on upgrade and is publicly accessible. Every admin request that mutates state verifies a nonce and a capability before reading its parameters. REST endpoint access is entitlement-based: the permission_callback expresses login state or a named capability, not just a rate limit. The codebase is sectioned and commented to be readable as teaching material.
+FLOSC follows WordPress coding and security practices. Inputs are sanitized at read points using type-appropriate sanitizers, and output is escaped at render points. Runtime file writes are designed for uploads-based storage rather than the plugin directory. State-changing admin actions use nonce and capability checks. REST endpoints use explicit permission callbacks aligned to login state, capability, or metered public access. The codebase is sectioned and commented for maintainability.
 
 == Support & Contribution ==
 

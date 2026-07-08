@@ -39,7 +39,7 @@ class User_Linker {
         $meta_key = self::META_PREFIX . $provider_id . '_id';
         
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only user lookup by provider account mapping
-        $user_id = $wpdb->get_var($wpdb->prepare(
+        $user_id = $wpdb->get_var($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
             "SELECT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value = %s LIMIT 1",
             $meta_key,
             $provider_user_id

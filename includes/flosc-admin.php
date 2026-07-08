@@ -173,6 +173,16 @@ trait FLOSC_Admin_Trait {
             [$this, 'redirect_to_email_tab']
         );
 
+        // Contact Form
+        add_submenu_page(
+            'flosc-settings',
+            'Contact Form',
+            'Contact Form',
+            'manage_options',
+            'flosc-contact-form',
+            [$this, 'redirect_to_contact_form_tab']
+        );
+
         // Payments
         add_submenu_page(
             'flosc-settings',
@@ -338,6 +348,12 @@ trait FLOSC_Admin_Trait {
             'flosc_ai_context_awareness' => 'textarea',
             'flosc_ai_freeline_restrictions' => 'textarea',
             'flosc_ai_member_access' => 'textarea',
+            // Global communication-token economics (integer/rational, saved by Payments tab)
+            'flosc_tokens_communication_tokens_per_message' => 'text',
+            'flosc_tokens_nominal_millicents_per_token_numerator' => 'text',
+            'flosc_tokens_nominal_millicents_per_token_denominator' => 'text',
+            'flosc_tokens_real_millicents_per_token_numerator' => 'text',
+            'flosc_tokens_real_millicents_per_token_denominator' => 'text',
         ));
 
         // User Profile Bar (v1.8.0: unified 3-state bar replaces v1.7.8 visitor-only settings)
@@ -838,6 +854,11 @@ trait FLOSC_Admin_Trait {
         exit;
     }
 
+    public function redirect_to_contact_form_tab() {
+        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=contact-form'));
+        exit;
+    }
+
     public function redirect_to_ai_knowledge_tab() {
         wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=ai-knowledge'));
         exit;
@@ -943,6 +964,262 @@ trait FLOSC_Admin_Trait {
         
         // Not a member - show fallback if provided
         return $atts['fallback'] ? wp_kses_post('<div class="flosc-member-only-fallback">' . esc_html($atts['fallback']) . '</div>') : '';
+    }
+
+    /**
+     * Shortcode: [flosc_contact_form_01] and [flosc-contact-form-01]
+     */
+    public function shortcode_contact_form_01($atts = []) {
+        $atts = shortcode_atts([
+            'flow' => '',
+        ], $atts);
+
+        $settings = $this->get_contact_form_settings((string) $atts['flow']);
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display state for post-redirect UI messaging.
+        $status = sanitize_key((string) wp_unslash($_GET['flosc_contact_status'] ?? ''));
+
+        wp_enqueue_style(
+            'flosc-contact-form',
+            FLOSC_PLUGIN_URL . 'assets/css/flosc-contact-form.css',
+            [],
+            filemtime(FLOSC_PLUGIN_DIR . 'assets/css/flosc-contact-form.css')
+        );
+
+        $css_vars = sprintf(
+            '.flosc-contact-form-wrap{--flosc-contact-bg:%s;--flosc-contact-accent:%s;--flosc-contact-button-bg:%s;--flosc-contact-button-text:%s;--flosc-contact-msg-font:%s;--flosc-contact-msg-size:%dpx;}',
+            esc_html($settings['card_background']),
+            esc_html($settings['accent_color']),
+            esc_html($settings['button_bg_color']),
+            esc_html($settings['button_text_color']),
+            esc_html($settings['message_font_family']),
+            max(14, intval($settings['message_font_size']))
+        );
+        wp_add_inline_style('flosc-contact-form', $css_vars);
+
+        $current_url = home_url(add_query_arg([], $GLOBALS['wp']->request ?? ''));
+        $rendered_at = time();
+        $honeypot_name = 'flosc_contact_company';
+        $show_form = ($status !== 'success');
+
+        ob_start();
+        ?>
+        <section class="flosc-contact-form-wrap" aria-label="Contact Form">
+            <div class="flosc-contact-form-card">
+                <h2 class="flosc-contact-form-title"><?php echo esc_html($settings['form_title']); ?></h2>
+                <?php if ($settings['form_intro'] !== ''): ?>
+                    <p class="flosc-contact-form-intro"><?php echo esc_html($settings['form_intro']); ?></p>
+                <?php endif; ?>
+
+                <?php if ($status === 'success'): ?>
+                    <p class="flosc-contact-notice flosc-contact-notice-success"><?php echo esc_html($settings['success_message']); ?></p>
+                <?php elseif ($status === 'error'): ?>
+                    <p class="flosc-contact-notice flosc-contact-notice-error"><?php esc_html_e('Please review the form and try again.', 'flosc'); ?></p>
+                <?php endif; ?>
+
+                <?php if ($show_form): ?>
+                <form class="flosc-contact-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" novalidate>
+                    <input type="hidden" name="action" value="flosc_contact_submit">
+                    <input type="hidden" name="flosc_contact_return" value="<?php echo esc_url($current_url); ?>">
+                    <input type="hidden" name="flosc_contact_flow" value="<?php echo esc_attr($settings['flow_id']); ?>">
+                    <input type="hidden" name="flosc_contact_rendered_at" value="<?php echo esc_attr($rendered_at); ?>">
+                    <?php wp_nonce_field('flosc_contact_submit', 'flosc_contact_nonce'); ?>
+
+                    <label class="flosc-contact-hp" for="<?php echo esc_attr($honeypot_name); ?>">Leave this empty</label>
+                    <input class="flosc-contact-hp" type="text" id="<?php echo esc_attr($honeypot_name); ?>" name="<?php echo esc_attr($honeypot_name); ?>" value="" autocomplete="off" tabindex="-1">
+
+                    <div class="flosc-contact-grid">
+                        <div class="flosc-contact-field">
+                            <label for="flosc_contact_first_name"><?php esc_html_e('First Name', 'flosc'); ?></label>
+                            <input type="text" id="flosc_contact_first_name" name="flosc_contact_first_name" required maxlength="80" autocomplete="given-name">
+                        </div>
+                        <div class="flosc-contact-field">
+                            <label for="flosc_contact_last_name"><?php esc_html_e('Last Name', 'flosc'); ?></label>
+                            <input type="text" id="flosc_contact_last_name" name="flosc_contact_last_name" required maxlength="80" autocomplete="family-name">
+                        </div>
+                        <div class="flosc-contact-field">
+                            <label for="flosc_contact_email"><?php esc_html_e('Email Address', 'flosc'); ?></label>
+                            <input type="text" id="flosc_contact_email" name="flosc_contact_email" required maxlength="190" inputmode="email" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                        </div>
+                        <div class="flosc-contact-field">
+                            <label for="flosc_contact_phone"><?php esc_html_e('Phone Number', 'flosc'); ?></label>
+                            <input type="text" id="flosc_contact_phone" name="flosc_contact_phone" required maxlength="40" autocomplete="tel">
+                        </div>
+                    </div>
+
+                    <div class="flosc-contact-field flosc-contact-field-message">
+                        <label for="flosc_contact_message"><?php esc_html_e('Message', 'flosc'); ?></label>
+                        <textarea id="flosc_contact_message" name="flosc_contact_message" required rows="8" maxlength="4000"></textarea>
+                    </div>
+
+                    <button type="submit" class="flosc-contact-submit"><?php echo esc_html($settings['submit_button_text']); ?></button>
+                </form>
+                <?php endif; ?>
+            </div>
+        </section>
+        <?php
+        return ob_get_clean();
+    }
+
+    public function handle_contact_form_submit() {
+        $return_url = esc_url_raw((string) wp_unslash($_POST['flosc_contact_return'] ?? home_url('/')));
+        $nonce = sanitize_text_field((string) wp_unslash($_POST['flosc_contact_nonce'] ?? ''));
+        if (!wp_verify_nonce($nonce, 'flosc_contact_submit')) {
+            $this->redirect_contact_form_result($return_url, 'error');
+        }
+
+        $flow_id = sanitize_key((string) wp_unslash($_POST['flosc_contact_flow'] ?? ''));
+        $result = $this->process_contact_form_submission([
+            'first_name' => sanitize_text_field((string) wp_unslash($_POST['flosc_contact_first_name'] ?? '')),
+            'last_name' => sanitize_text_field((string) wp_unslash($_POST['flosc_contact_last_name'] ?? '')),
+            'email' => sanitize_text_field((string) wp_unslash($_POST['flosc_contact_email'] ?? '')),
+            'phone' => sanitize_text_field((string) wp_unslash($_POST['flosc_contact_phone'] ?? '')),
+            'message' => sanitize_textarea_field((string) wp_unslash($_POST['flosc_contact_message'] ?? '')),
+            'honeypot' => sanitize_text_field((string) wp_unslash($_POST['flosc_contact_company'] ?? '')),
+            'rendered_at' => intval(wp_unslash($_POST['flosc_contact_rendered_at'] ?? 0)),
+        ], $flow_id, [
+            'source' => 'page_form',
+            'enforce_timing' => true,
+        ]);
+
+        if (empty($result['success'])) {
+            $this->redirect_contact_form_result($return_url, 'error');
+        }
+
+        $this->redirect_contact_form_result($return_url, 'success');
+    }
+
+    public function process_contact_form_submission($data, $flow_id = '', $options = []) {
+        $flow_id = sanitize_key((string) $flow_id);
+        $settings = $this->get_contact_form_settings($flow_id);
+
+        $first_name = sanitize_text_field((string) ($data['first_name'] ?? ''));
+        $last_name = sanitize_text_field((string) ($data['last_name'] ?? ''));
+        $email = sanitize_email((string) ($data['email'] ?? ''));
+        $phone = sanitize_text_field((string) ($data['phone'] ?? ''));
+        $message = sanitize_textarea_field((string) ($data['message'] ?? ''));
+        $honeypot = sanitize_text_field((string) ($data['honeypot'] ?? ''));
+        $rendered_at = intval($data['rendered_at'] ?? 0);
+        $enforce_timing = !empty($options['enforce_timing']);
+        $source = sanitize_key((string) ($options['source'] ?? 'contact_form'));
+
+        if ($honeypot !== '') {
+            return ['success' => false, 'error' => 'spam_honeypot'];
+        }
+
+        if ($enforce_timing) {
+            if ($rendered_at <= 0 || (time() - $rendered_at) < intval($settings['min_submit_seconds'])) {
+                return ['success' => false, 'error' => 'timing'];
+            }
+        }
+
+        if ($first_name === '' || $last_name === '' || $email === '' || $phone === '' || $message === '' || !is_email($email)) {
+            return ['success' => false, 'error' => 'validation'];
+        }
+
+        $ip = sanitize_text_field((string) wp_unslash($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'));
+        $ip_hash = md5($ip);
+        $hourly_key = 'flosc_contact_rate_' . $ip_hash;
+        $hourly_count = intval(get_transient($hourly_key));
+        if ($hourly_count >= intval($settings['max_submissions_per_hour'])) {
+            return ['success' => false, 'error' => 'rate_limit'];
+        }
+        set_transient($hourly_key, $hourly_count + 1, HOUR_IN_SECONDS);
+
+        $dedupe_window = max(1, intval($settings['duplicate_window_minutes'])) * MINUTE_IN_SECONDS;
+        $dedupe_hash = md5(strtolower(trim($email)) . '|' . preg_replace('/\s+/', ' ', trim($message)));
+        $dedupe_key = 'flosc_contact_dupe_' . $dedupe_hash;
+        if (get_transient($dedupe_key)) {
+            return ['success' => false, 'error' => 'duplicate'];
+        }
+        set_transient($dedupe_key, 1, $dedupe_window);
+
+        $recipient = sanitize_email($settings['forward_to_email']);
+        if (!is_email($recipient)) {
+            $recipient = get_option('admin_email');
+        }
+
+        $subject = trim((string) $settings['email_subject']);
+        if ($subject === '') {
+            $subject = 'New Contact Form Message';
+        }
+
+        $body = "Contact Form Submission\n\n"
+            . "Source: {$source}\n"
+            . "First Name: {$first_name}\n"
+            . "Last Name: {$last_name}\n"
+            . "Email: {$email}\n"
+            . "Phone: {$phone}\n"
+            . "Flow: " . ($flow_id !== '' ? $flow_id : 'default') . "\n"
+            . "IP Hash: {$ip_hash}\n"
+            . "\nMessage:\n{$message}\n";
+
+        $headers = [
+            'Content-Type: text/plain; charset=UTF-8',
+            'Reply-To: ' . $first_name . ' ' . $last_name . ' <' . $email . '>',
+        ];
+
+        $sent = wp_mail($recipient, $subject, $body, $headers);
+        if (!$sent) {
+            return ['success' => false, 'error' => 'mail_failed'];
+        }
+
+        return [
+            'success' => true,
+            'message' => $settings['success_message'],
+        ];
+    }
+
+    private function redirect_contact_form_result($return_url, $status) {
+        $target = $return_url ?: home_url('/');
+        $target = add_query_arg('flosc_contact_status', sanitize_key($status), $target);
+        wp_safe_redirect($target);
+        exit;
+    }
+
+    private function get_contact_form_settings($flow_id = '') {
+        $flow_id = sanitize_key((string) $flow_id);
+        $settings = [];
+
+        if ($flow_id !== '') {
+            $flow_settings = get_option('flosc_flow_' . $flow_id, []);
+            if (is_array($flow_settings)) {
+                $settings = $flow_settings;
+            }
+        } elseif (method_exists($this, 'get_current_flow')) {
+            $flow = $this->get_current_flow();
+            if (!empty($flow['ivr_file'])) {
+                $resolved_flow = sanitize_key(pathinfo(basename((string) $flow['ivr_file']), PATHINFO_FILENAME));
+                $flow_settings = get_option('flosc_flow_' . $resolved_flow, []);
+                if (is_array($flow_settings)) {
+                    $settings = $flow_settings;
+                    $flow_id = $resolved_flow;
+                }
+            }
+        }
+
+        return [
+            'flow_id' => $flow_id,
+            'form_title' => trim((string) ($settings['contact_form_title'] ?? 'Contact Dainis')),
+            'form_intro' => trim((string) ($settings['contact_form_intro'] ?? 'Please fill out the form below to get in touch with Dainis. If he does not get back to you, try contacting him another way.')),
+            'submit_button_text' => trim((string) ($settings['contact_form_submit_text'] ?? 'Send Message')),
+            'success_message' => trim((string) ($settings['contact_form_success_message'] ?? 'We\'ve forwarded your message to Dainis, thank you!')),
+            'forward_to_email' => trim((string) ($settings['contact_form_forward_to_email'] ?? get_option('admin_email'))),
+            'email_subject' => trim((string) ($settings['contact_form_email_subject'] ?? 'FLOSC Contact Form Message')),
+            'min_submit_seconds' => max(2, intval($settings['contact_form_min_submit_seconds'] ?? 4)),
+            'max_submissions_per_hour' => max(1, intval($settings['contact_form_max_submissions_per_hour'] ?? 3)),
+            'duplicate_window_minutes' => max(1, intval($settings['contact_form_duplicate_window_minutes'] ?? 30)),
+            'button_bg_color' => $this->sanitize_contact_color((string) ($settings['contact_form_button_bg_color'] ?? '#1f6feb'), '#1f6feb'),
+            'button_text_color' => $this->sanitize_contact_color((string) ($settings['contact_form_button_text_color'] ?? '#ffffff'), '#ffffff'),
+            'card_background' => $this->sanitize_contact_color((string) ($settings['contact_form_card_background'] ?? '#ffffff'), '#ffffff'),
+            'accent_color' => $this->sanitize_contact_color((string) ($settings['contact_form_accent_color'] ?? '#2e8b57'), '#2e8b57'),
+            'message_font_family' => trim((string) ($settings['contact_form_message_font_family'] ?? "'Courier New', Courier, monospace")),
+            'message_font_size' => max(16, intval($settings['contact_form_message_font_size'] ?? 20)),
+        ];
+    }
+
+    private function sanitize_contact_color($color, $fallback) {
+        $clean = sanitize_hex_color($color);
+        return $clean ? $clean : $fallback;
     }
 
     /**

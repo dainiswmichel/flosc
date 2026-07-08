@@ -216,6 +216,34 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
         $flosc_pb_member = wp_parse_args($flosc_profile_bar['member'] ?? [], [
             'badge' => 'Member',
         ]);
+
+        // Render visitor label with token-unit visibility at first paint.
+        // JS also normalizes this on init, but server-side output guarantees
+        // correctness on refresh even before any client logic runs.
+        $flosc_tokens_per_message = max(1, intval(get_option('flosc_tokens_communication_tokens_per_message', 5000)));
+        $flosc_real_millicents_per_message = 2500;
+        if (class_exists('FLOSC_Sale_Manager')) {
+            $flosc_token_provider = FLOSC_Sale_Manager::instance()->get_provider('tokens');
+            if ($flosc_token_provider && method_exists($flosc_token_provider, 'get_communication_economics')) {
+                $flosc_economics = (array) $flosc_token_provider->get_communication_economics();
+                $flosc_tokens_per_message = max(1, intval($flosc_economics['tokens_per_message'] ?? $flosc_tokens_per_message));
+                $flosc_real_millicents_per_message = max(0, intval($flosc_economics['real_millicents_per_message'] ?? $flosc_real_millicents_per_message));
+            }
+        }
+        $flosc_visitor_label_base = trim((string) ($flosc_pb_visitor['name'] ?? 'Visitor'));
+        $flosc_visitor_label_base = preg_replace('/\s*\(?\d+[kmb]?\)?$/i', '', $flosc_visitor_label_base);
+        $flosc_visitor_label_base = trim($flosc_visitor_label_base);
+        if ($flosc_visitor_label_base === '') {
+            $flosc_visitor_label_base = 'Visitor';
+        }
+
+        $flosc_tokens_per_message_display = number_format_i18n($flosc_tokens_per_message);
+        $flosc_visitor_token_grant = isset($flosc_current_flow['guest_token_grant'])
+            ? max(0, intval($flosc_current_flow['guest_token_grant']))
+            : $flosc_tokens_per_message;
+        $flosc_visitor_token_grant_display = number_format_i18n($flosc_visitor_token_grant);
+        $flosc_millicents_per_message_display = number_format_i18n($flosc_real_millicents_per_message) . ' mc';
+
         // v1.8.2: Dynamic visitor menu — indexed array of [label, action] pairs
         $flosc_visitor_menu_raw = get_option('flosc_visitor_menu_items', []);
         $flosc_visitor_menu = [];
@@ -255,7 +283,10 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
                 <!-- Guest/Member state: user avatar -->
                 <img src="" alt="" class="flosc-profile-avatar profile-avatar" id="flosc_profile_avatar" data-show="logged-in">
                 <div class="profile-info">
-                    <div class="profile-name" data-show="visitor"><?php echo esc_html($flosc_pb_visitor['name']); ?></div>
+                    <div class="profile-name" data-show="visitor">
+                        <span class="flosc-visitor-label-text"><?php echo esc_html($flosc_visitor_label_base); ?></span>
+                        <span class="flosc-visitor-token-count" id="flosc_visitor_token_count">(<?php echo esc_html($flosc_visitor_token_grant_display); ?> / <?php echo esc_html($flosc_millicents_per_message_display); ?>)</span>
+                    </div>
                     <div class="profile-name" id="flosc_profile_name" data-show="logged-in"></div>
                     <div class="profile-badge" data-show="visitor"><?php echo esc_html($flosc_pb_visitor['badge']); ?></div>
                     <div class="profile-badge" id="flosc_profile_badge" data-show="logged-in"></div>
@@ -663,7 +694,7 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
         $flosc_current_flow = flosc()->get_current_flow();
         $flosc_ivr_filename = ($flosc_current_flow && !empty($flosc_current_flow['ivr_file'])) 
             ? $flosc_current_flow['ivr_file'] 
-            : 'flosc_default_ivr.md';
+            : 'flosc_default_technical_ivr.md';
         $flosc_ivr_file = flosc_config_file($flosc_ivr_filename);
         $flosc_ivr_version = file_exists($flosc_ivr_file) ? filemtime($flosc_ivr_file) : time();
 
@@ -804,6 +835,30 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'lessonsCategory' => $flosc_current_flow['lessons_category'] ?? get_option('flosc_lessons_category', ''),
             'otoOfferId' => $flosc_current_flow['oto_offer_id'] ?? get_option('flosc_oto_offer_id', ''),
             'tokenName' => get_option('flosc_token_name', 'tokens'),
+            'communicationTokenEconomics' => (function() {
+                $token_provider = FLOSC_Sale_Manager::instance()->get_provider('tokens');
+                if ($token_provider && method_exists($token_provider, 'get_communication_economics')) {
+                    return $token_provider->get_communication_economics();
+                }
+                return [
+                    'tokens_per_message' => 5000,
+                    'nominal_millicents_per_message' => 5000,
+                    'real_millicents_per_message' => 2500,
+                ];
+            })(),
+            'visitorTokenDisplay' => [
+                'value' => $flosc_visitor_token_grant,
+                'formatted' => $flosc_visitor_token_grant_display,
+                'realMillicents' => $flosc_real_millicents_per_message,
+                'lowThreshold' => max(0, intval($flosc_current_flow['visitor_low_token_threshold'] ?? 0)),
+                'depletedContactMode' => $this->flosc_get_visitor_depleted_contact_mode($flow_id),
+                'depletedContactLabels' => [
+                    'title' => trim((string) ($flow_settings['contact_form_title'] ?? 'Contact')),
+                    'intro' => trim((string) ($flow_settings['contact_form_intro'] ?? 'Please fill out this form to continue.')),
+                    'submitText' => trim((string) ($flow_settings['contact_form_submit_text'] ?? 'Send')),
+                ],
+                'label' => $flosc_visitor_label_base,
+            ],
             // v1.3.7: Flow context for API calls
             'flowId' => $flosc_current_flow ? ($flosc_current_flow['id'] ?? null) : null,
             'ivrFile' => $flosc_ivr_filename,

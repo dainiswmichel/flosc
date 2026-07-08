@@ -73,7 +73,68 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
         return [
             'name' => $this->get_setting('token_name', 'Credits'),
             'symbol' => $this->get_setting('token_symbol', '🪙'),
+            'communication' => $this->get_communication_economics(),
         ];
+    }
+
+    /**
+     * Read a positive integer token-economics setting.
+     */
+    private function get_positive_setting_int($key, $default) {
+        if (function_exists('flosc_get_setting')) {
+            $value = intval(flosc_get_setting('tokens_' . $key, $this->get_setting($key, $default)));
+        } else {
+            $value = intval($this->get_setting($key, $default));
+        }
+        return $value > 0 ? $value : intval($default);
+    }
+
+    /**
+     * Communication economics model.
+     * Defaults: 5000 tokens = 5 nominal cents = 2.5 real cents.
+     */
+    public function get_communication_economics() {
+        $tokens_per_message = $this->get_positive_setting_int('communication_tokens_per_message', 5000);
+
+        $nom_num = $this->get_positive_setting_int('nominal_millicents_per_token_numerator', 1);
+        $nom_den = $this->get_positive_setting_int('nominal_millicents_per_token_denominator', 1);
+        $real_num = $this->get_positive_setting_int('real_millicents_per_token_numerator', 1);
+        $real_den = $this->get_positive_setting_int('real_millicents_per_token_denominator', 2);
+
+        $nominal_millicents = intval(round(($tokens_per_message * $nom_num) / $nom_den));
+        $real_millicents = intval(round(($tokens_per_message * $real_num) / $real_den));
+
+        return [
+            'tokens_per_message' => $tokens_per_message,
+            'nominal_millicents_per_token' => [
+                'numerator' => $nom_num,
+                'denominator' => $nom_den,
+            ],
+            'real_millicents_per_token' => [
+                'numerator' => $real_num,
+                'denominator' => $real_den,
+            ],
+            'nominal_millicents_per_message' => $nominal_millicents,
+            'real_millicents_per_message' => $real_millicents,
+            'nominal_cents_per_message' => $nominal_millicents / 1000,
+            'real_cents_per_message' => $real_millicents / 1000,
+        ];
+    }
+
+    /**
+     * Convert real millicents to tokens using configured real-millicents ratio.
+     */
+    public function convert_real_millicents_to_tokens($real_millicents) {
+        $real_millicents = max(0, intval($real_millicents));
+        if ($real_millicents <= 0) {
+            return 0;
+        }
+
+        $economics = $this->get_communication_economics();
+        $num = max(1, intval($economics['real_millicents_per_token']['numerator'] ?? 1));
+        $den = max(1, intval($economics['real_millicents_per_token']['denominator'] ?? 2));
+
+        return max(1, intval(ceil(($real_millicents * $den) / $num)));
     }
     
     /**
@@ -281,8 +342,12 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
      * Token costs for actions (configurable)
      */
     public function get_action_costs() {
+        $communication = $this->get_communication_economics();
+        $default_ai_cost = intval($communication['tokens_per_message'] ?? 5000);
         return apply_filters('flosc_token_costs', [
-            'ai_query' => intval($this->get_setting('cost_ai_query', 1)),
+            // Use parameterized communication-token model unless a legacy per-action
+            // override is explicitly set.
+            'ai_query' => intval($this->get_setting('cost_ai_query', $default_ai_cost)),
             'stt_minute' => intval($this->get_setting('cost_stt_minute', 2)),
             'quiz_attempt' => intval($this->get_setting('cost_quiz', 0)),
             'lesson_view' => intval($this->get_setting('cost_lesson', 5)),
@@ -310,6 +375,14 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
     public function charge_for_action($user_id, $action, $meta = []) {
         $costs = $this->get_action_costs();
         $cost = $costs[$action] ?? 0;
+
+        // If upstream provides real spend in millicents, derive tokens deterministically.
+        if ($action === 'ai_query' && isset($meta['real_millicents'])) {
+            $derived_cost = $this->convert_real_millicents_to_tokens($meta['real_millicents']);
+            if ($derived_cost > 0) {
+                $cost = $derived_cost;
+            }
+        }
         
         if ($cost === 0) {
             return true;

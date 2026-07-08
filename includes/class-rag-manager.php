@@ -168,7 +168,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Input - " . jso
         // Get knowledge base path
         $kb_path = trailingslashit(wp_upload_dir()['basedir']) . 'flosc-knowledge/';
         
-        // PSEUDOCODE: For now, check if directory exists
+        // Check if knowledge-base directory exists
         // In future, admin will upload files here via interface
         if (!is_dir($kb_path)) {
             if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Knowledge base directory not found at {$kb_path}");

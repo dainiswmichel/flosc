@@ -30,6 +30,89 @@
     justify-content: flex-start;
 }
 
+.message.assistant .flosc-depleted-form-wrap {
+    width: min(100%, 620px);
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    border-radius: 14px;
+    padding: 1rem;
+    background: #fff;
+}
+
+.message.assistant .flosc-depleted-form-wrap h4 {
+    margin: 0 0 0.4rem;
+    font-size: 1.1rem;
+}
+
+.message.assistant .flosc-depleted-form-intro {
+    margin: 0 0 0.8rem;
+    font-size: 0.94rem;
+    color: #334155;
+}
+
+.message.assistant .flosc-depleted-contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.message.assistant .flosc-depleted-contact-form input,
+.message.assistant .flosc-depleted-contact-form textarea {
+    width: 100%;
+    border: 1px solid rgba(15, 23, 42, 0.2) !important;
+    border-radius: 10px;
+    padding: 0.7rem 0.75rem;
+    background: #fff !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+    font-size: 1rem;
+}
+
+.message.assistant .flosc-depleted-contact-form textarea {
+    min-height: 165px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.06rem;
+}
+
+.message.assistant .flosc-depleted-submit {
+    border: 0;
+    border-radius: 999px;
+    padding: 0.72rem 1.2rem;
+    font-weight: 700;
+    font-size: 0.98rem;
+    color: #fff;
+    background: #1f6feb;
+    cursor: pointer;
+    align-self: flex-start;
+}
+
+.message.assistant .flosc-depleted-form-status {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #1f2937;
+}
+
+.message.assistant .flosc-depleted-success-notice {
+    width: min(100%, 620px);
+    margin: 0;
+    padding: 1.05rem 1.1rem;
+    border-radius: 12px;
+    border: 1px solid #86efac;
+    background: linear-gradient(180deg, #f2fff7 0%, #e6f9ef 100%);
+    color: #065f46;
+    font-size: 1.08rem;
+    font-weight: 650;
+    line-height: 1.45;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+}
+
+.message.assistant .flosc-depleted-hp {
+    position: absolute !important;
+    left: -9999px !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+}
+
 /* ========================================
    LEGACY CHAT RENDER BRIDGE (INLINE FOLD-IN)
    Flattened from flosc-layout.css and flosc-theme.css
@@ -590,6 +673,17 @@ img.flosc-profile-avatar {
 .profile-name {
     font-weight: 500;
     font-size: 14px;
+}
+
+.profile-name .flosc-visitor-label-text {
+    color: inherit;
+    font-weight: 600;
+}
+
+.flosc-visitor-token-count {
+    color: var(--flosc-sidebar-text-muted, #7b828d);
+    font-size: 11px;
+    font-weight: 500;
 }
 
 .flosc-user-email,
@@ -4494,16 +4588,20 @@ img.flosc-profile-avatar {
    ============================================ */
 
 .flosc-admin-message-text {
-    background: #e6f4ea;
-    border: 1px solid #cdebd6;
+    background: var(--flosc-admin-message-bg, linear-gradient(135deg, #c7edd5 0%, #e7f7ee 100%));
+    border: 1px solid var(--flosc-admin-message-border, #6fbe8f);
     border-radius: 10px;
     padding: 8px 12px;
+    box-shadow: 0 1px 0 rgba(23, 97, 58, 0.08), 0 8px 18px rgba(23, 97, 58, 0.08);
+    color: var(--flosc-admin-message-color, #0f4f2e);
+    font-style: italic; /* the admin's message body reads as an italic aside */
 }
 
 .flosc-admin-message-meta {
     font-size: 12px;
-    color: #2e7d32;
-    font-weight: 600;
+    color: var(--flosc-admin-message-meta, #13683b);
+    font-weight: 700; /* profile name in bold */
+    font-style: normal; /* name stays upright; only the (admin) tag is italic via <em> */
     margin-bottom: 3px;
 }
 

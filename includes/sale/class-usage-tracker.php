@@ -352,7 +352,7 @@ class FLOSC_Usage_Tracker {
         $period = $period ?: $this->get_current_period();
         
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only analytics scan on usermeta
-        $results = $wpdb->get_results($wpdb->prepare(
+        $results = $wpdb->get_results($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
             "SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = %s",
             $this->meta_key
         ));

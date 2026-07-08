@@ -74,7 +74,7 @@ class FLOSC_User_Access_Manager {
         // The old check broke the entire funnel: quiz takers were instantly "members"
         // and all is_guest conditions (offers, free lesson prompts, etc.) failed.
         
-        // PSEUDOCODE: Future payment integration
+        // Future payment integration hook point
         // if (has_active_subscription($user_id)) {
         //     return true;
         // }

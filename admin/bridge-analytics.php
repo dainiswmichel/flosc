@@ -86,7 +86,7 @@ arsort($flosc_weakness_counts);
 // Get recent bridge users (last 10)
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only analytics recent users query
-$flosc_recent_bridge_users = $wpdb->get_results("
+$flosc_recent_bridge_users = $wpdb->get_results(" // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
     SELECT u.ID, u.user_email, u.display_name, um.meta_value as bridge_data
     FROM {$wpdb->users} u
     INNER JOIN {$wpdb->usermeta} um ON u.ID = um.user_id

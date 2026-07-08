@@ -120,6 +120,11 @@
     margin-right: 6px;
 }
 
+.flosc-admin-inline-action-form {
+    display: inline-block;
+    margin-right: 8px;
+}
+
 .flosc-status-dot--green {
     background: #28a745;
 }
@@ -2105,6 +2110,16 @@
     justify-content: center;
     font-size: 22px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.flosc-companion-validation-hints {
+    display: none;
+    margin: 8px 0 0;
+    padding: 8px 12px;
+}
+
+.flosc-companion-validation-hints-text {
+    margin: 0;
 }
 
 /* ========================================

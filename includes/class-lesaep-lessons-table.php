@@ -89,7 +89,7 @@ class FLOSC_Lesaep_Lessons_Table {
     public function table_exists() {
         global $wpdb;
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only existence check
-        $result = $wpdb->get_var(
+        $result = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
             $wpdb->prepare(
                 'SHOW TABLES LIKE %s',
                 $this->table_name
@@ -105,7 +105,7 @@ class FLOSC_Lesaep_Lessons_Table {
         global $wpdb;
         if (!$this->table_exists()) return 0;
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only count on plugin-owned table
-        return (int) $wpdb->get_var(
+        return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
             $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $this->table_name )
         );
     }
@@ -152,7 +152,7 @@ class FLOSC_Lesaep_Lessons_Table {
         if (!$this->table_exists()) return [];
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only query on plugin-owned table
-        return $wpdb->get_results(
+        return $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
             $wpdb->prepare(
                 'SELECT * FROM %i ORDER BY sort_order ASC',
                 $this->table_name
@@ -173,7 +173,7 @@ class FLOSC_Lesaep_Lessons_Table {
         if (!$this->table_exists()) return null;
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only query on plugin-owned table
-        return $wpdb->get_row(
+        return $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
             $wpdb->prepare(
                 'SELECT * FROM %i WHERE lesson_number = %s',
                 $this->table_name,
@@ -195,7 +195,7 @@ class FLOSC_Lesaep_Lessons_Table {
         if (!$this->table_exists()) return null;
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only query on plugin-owned table
-        return $wpdb->get_row(
+        return $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
             $wpdb->prepare(
                 'SELECT * FROM %i WHERE id = %d',
                 $this->table_name,
@@ -217,7 +217,7 @@ class FLOSC_Lesaep_Lessons_Table {
         if (!$this->table_exists()) return [];
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only query on plugin-owned table
-        return $wpdb->get_results(
+        return $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
             $wpdb->prepare(
                 'SELECT * FROM %i WHERE sound_category = %s ORDER BY sort_order ASC',
                 $this->table_name,
@@ -238,7 +238,7 @@ class FLOSC_Lesaep_Lessons_Table {
         if (!$this->table_exists()) return [];
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only lesson metadata query
-        return $wpdb->get_results(
+        return $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
             $wpdb->prepare(
                 'SELECT id, lesson_number, sort_order, session_title, session_short_description,
                         ipa_symbol, sound_category, video_url
@@ -258,7 +258,7 @@ class FLOSC_Lesaep_Lessons_Table {
     public function truncate() {
         global $wpdb;
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- admin-triggered reset of plugin-owned lessons table
-        return $wpdb->query(
+        return $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
             $wpdb->prepare( 'TRUNCATE TABLE %i', $this->table_name )
         );
     }

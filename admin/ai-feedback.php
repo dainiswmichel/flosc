@@ -20,11 +20,11 @@ $flosc_logs_table = $wpdb->prefix . 'flosc_chat_logs';
 $flosc_rated_logs = [];
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- explicit coverage for Plugin Check entries on this query line
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only schema probe on plugin-owned table
-$flosc_col_check = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM %i LIKE %s", $flosc_logs_table, 'admin_rating'));
+$flosc_col_check = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM %i LIKE %s", $flosc_logs_table, 'admin_rating')); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
 if (!empty($flosc_col_check)) {
     // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- explicit coverage for Plugin Check entries on this query line
     // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only admin listing from plugin-owned table
-    $flosc_rated_logs = $wpdb->get_results($wpdb->prepare("SELECT id, timestamp, user_message, ai_response, admin_rating, admin_note, rated_at FROM %i WHERE admin_rating != 0 ORDER BY admin_rating ASC, rated_at DESC LIMIT 50", $flosc_logs_table), ARRAY_A);
+    $flosc_rated_logs = $wpdb->get_results($wpdb->prepare("SELECT id, timestamp, user_message, ai_response, admin_rating, admin_note, rated_at FROM %i WHERE admin_rating != 0 ORDER BY admin_rating ASC, rated_at DESC LIMIT 50", $flosc_logs_table), ARRAY_A); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
 }
 $flosc_rated_count = count($flosc_rated_logs);
 ?>

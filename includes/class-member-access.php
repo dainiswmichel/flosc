@@ -256,7 +256,7 @@ class FLOSC_Member_Access {
         global $wpdb;
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only retrieval of user membership-level meta keys
-        $meta_keys = $wpdb->get_col($wpdb->prepare(
+        $meta_keys = $wpdb->get_col($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
             "SELECT meta_key FROM {$wpdb->usermeta} 
              WHERE user_id = %d 
              AND meta_key LIKE %s 
@@ -404,7 +404,7 @@ class FLOSC_Member_Access {
         global $wpdb;
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only retrieval of guest-access meta keys
-        $meta_keys = $wpdb->get_col($wpdb->prepare(
+        $meta_keys = $wpdb->get_col($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
             "SELECT meta_key FROM {$wpdb->usermeta} 
              WHERE user_id = %d 
              AND meta_key LIKE %s 

@@ -27,19 +27,9 @@ trait FLOSC_REST_Trait {
     }
 
     /**
-     * Backward-compatible wrapper for legacy callback name.
-     *
-     * @param WP_REST_Request $request Request object.
-     * @return true|WP_Error
-     */
-    public function check_paid_endpoint_permission($request) {
-        return $this->check_metered_visitor_compute_permission($request);
-    }
-
-    /**
      * v9.4.2: Permission callback for public endpoints that need rate limiting
      *
-     * Unlike check_paid_endpoint_permission(), this is for truly public endpoints
+     * Unlike check_metered_visitor_compute_permission(), this is for truly public endpoints
      * like IVR chat that don't consume expensive AI credits but should still
      * be protected from abuse.
      *
@@ -106,6 +96,66 @@ trait FLOSC_REST_Trait {
     }
 
     /**
+     * Permission callback for checkout finalization endpoints.
+     *
+     * Requires the same REST nonce gate as checkout-start endpoints, plus a
+     * server-issued checkout binding token that matches the browser session and,
+     * when present, route/provider/flow/offer context.
+     */
+    public function check_checkout_finalization_permission($request) {
+        $nonce_result = $this->check_checkout_endpoint_permission($request);
+        if ($nonce_result !== true) {
+            return $nonce_result;
+        }
+
+        $binding_token = sanitize_text_field((string) $request->get_param('binding_token'));
+        $session_id = sanitize_text_field((string) $request->get_param('session_id'));
+
+        if ($binding_token === '' || $session_id === '') {
+            return new WP_Error('flosc_checkout_binding_required', __('Checkout binding token and session_id are required.', 'flosc'), ['status' => 403]);
+        }
+
+        $binding_hash = hash_hmac('sha256', $binding_token, flosc_token_secret());
+        $binding_record = get_transient('flosc_checkout_binding_' . $binding_hash);
+        if (!is_array($binding_record)) {
+            return new WP_Error('flosc_invalid_checkout_binding', __('Invalid checkout binding token.', 'flosc'), ['status' => 403]);
+        }
+
+        $bound_session_id = sanitize_text_field((string) ($binding_record['session_id'] ?? ''));
+        if ($bound_session_id === '' || !hash_equals($bound_session_id, $session_id)) {
+            return new WP_Error('flosc_checkout_session_mismatch', __('Checkout session mismatch.', 'flosc'), ['status' => 403]);
+        }
+
+        $request_provider = sanitize_key((string) $request->get_param('provider'));
+        $route = (string) $request->get_route();
+        if ($request_provider === '') {
+            if (strpos($route, '/paypal/') !== false) {
+                $request_provider = 'paypal';
+            } elseif (strpos($route, '/complete-purchase') !== false) {
+                $request_provider = 'stripe';
+            }
+        }
+        $bound_provider = sanitize_key((string) ($binding_record['provider'] ?? ''));
+        if ($request_provider !== '' && $bound_provider !== '' && !hash_equals($bound_provider, $request_provider)) {
+            return new WP_Error('flosc_checkout_provider_mismatch', __('Checkout provider mismatch.', 'flosc'), ['status' => 403]);
+        }
+
+        $request_flow_id = sanitize_text_field((string) $request->get_param('flow_id'));
+        $bound_flow_id = sanitize_text_field((string) ($binding_record['flow_id'] ?? ''));
+        if ($request_flow_id !== '' && $bound_flow_id !== '' && !hash_equals($bound_flow_id, $request_flow_id)) {
+            return new WP_Error('flosc_checkout_flow_mismatch', __('Checkout flow mismatch.', 'flosc'), ['status' => 403]);
+        }
+
+        $request_offer_id = sanitize_text_field((string) $request->get_param('offer_id'));
+        $bound_offer_id = sanitize_text_field((string) ($binding_record['offer_id'] ?? ''));
+        if ($request_offer_id !== '' && $bound_offer_id !== '' && !hash_equals($bound_offer_id, $request_offer_id)) {
+            return new WP_Error('flosc_checkout_offer_mismatch', __('Checkout offer mismatch.', 'flosc'), ['status' => 403]);
+        }
+
+        return true;
+    }
+
+    /**
      * Intentionally public nonce endpoint permission callback.
      *
      * This route only returns a WordPress REST nonce and performs no state mutation.
@@ -121,6 +171,10 @@ trait FLOSC_REST_Trait {
      * the webhook handler itself.
      */
     public function check_webhook_endpoint_permission($request) {
+        $provider = sanitize_key((string) $request->get_param('provider'));
+        if (!in_array($provider, ['stripe', 'paypal', 'clickbank'], true)) {
+            return new WP_Error('flosc_invalid_webhook_provider', __('Invalid webhook provider.', 'flosc'), ['status' => 400]);
+        }
         return true;
     }
 
@@ -534,7 +588,7 @@ trait FLOSC_REST_Trait {
         register_rest_route('flosc/v1', '/complete-purchase', [
             'methods' => 'POST',
             'callback' => [$this, 'complete_purchase'],
-            'permission_callback' => [$this, 'check_checkout_endpoint_permission'],
+            'permission_callback' => [$this, 'check_checkout_finalization_permission'],
         ]);
 
         // PayPal - Create Order
@@ -548,7 +602,7 @@ trait FLOSC_REST_Trait {
         register_rest_route('flosc/v1', '/paypal/capture-order', [
             'methods' => 'POST',
             'callback' => [$this, 'paypal_capture_order'],
-            'permission_callback' => [$this, 'check_checkout_endpoint_permission'],
+            'permission_callback' => [$this, 'check_checkout_finalization_permission'],
         ]);
 
         // PayPal Subscriptions - Get/create plans (auto-setup)
@@ -562,7 +616,7 @@ trait FLOSC_REST_Trait {
         register_rest_route('flosc/v1', '/paypal/activate-subscription', [
             'methods' => 'POST',
             'callback' => [$this, 'paypal_activate_subscription'],
-            'permission_callback' => [$this, 'check_checkout_endpoint_permission'],
+            'permission_callback' => [$this, 'check_checkout_finalization_permission'],
         ]);
 
         // Checkout binding token (provider-neutral). The browser calls this once

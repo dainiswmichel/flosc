@@ -57,7 +57,7 @@ class FLOSC_User_Session {
                 'flosc_name' => $flosc_flow['name'] ?? 'Unknown',
                 'flosc_slug' => $flosc_flow['slug'] ?? '',
                 'flosc_wp_category_id' => $flosc_flow['wp_category_id'] ?? 0,
-                'flosc_ivr_file' => $flosc_flow['ivr_file'] ?? 'flosc_default_ivr.md',
+                'flosc_ivr_file' => $flosc_flow['ivr_file'] ?? 'flosc_default_technical_ivr.md',
                 'flosc_custom_domain' => $flosc_flow['custom_domain'] ?? '',
             ],
 
@@ -178,7 +178,7 @@ class FLOSC_User_Session {
         $flosc_autoprompts = [];
 
         // Parse IVR file if it exists
-        $flosc_ivr_file = $flosc_flow['ivr_file'] ?? 'flosc_default_ivr.md';
+        $flosc_ivr_file = $flosc_flow['ivr_file'] ?? 'flosc_default_technical_ivr.md';
         if (!empty($flosc_ivr_file) && class_exists('FLOSC_IVR_Parser')) {
             try {
                 $flosc_ivr_parser = new FLOSC_IVR_Parser($flosc_ivr_file);

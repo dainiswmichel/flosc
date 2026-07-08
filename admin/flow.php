@@ -112,6 +112,112 @@ $flosc_lessons_label = $flosc_lesson_count ? $flosc_lesson_count . ' lesson grou
 
 $flosc_member_pills  = count( $flosc_flow_settings['autoprompts']['member'] ?? [] ) + $flosc_ivr_pill_counts['content'];
 
+$flosc_companion_mode = sanitize_text_field((string) ($flosc_flow_settings['companion_content_display_mode'] ?? 'in_chat'));
+$flosc_companion_enabled = !empty($flosc_flow_settings['companion_enabled']);
+$flosc_companion_mode_labels = [
+    'in_chat' => 'In-Chat Only',
+    'companion' => 'Companion',
+    'both' => 'Both',
+];
+$flosc_companion_mode_label = $flosc_companion_mode_labels[$flosc_companion_mode] ?? 'In-Chat Only';
+$flosc_companion_status = ($flosc_companion_mode === 'companion' || $flosc_companion_mode === 'both')
+    ? ($flosc_companion_enabled ? 'Widget enabled' : 'Widget disabled')
+    : 'Widget not used in this mode';
+$flosc_companion_auto = !empty($flosc_flow_settings['companion_auto_open_enabled']) ? 'Auto open' : 'Manual open';
+$flosc_companion_exit = !empty($flosc_flow_settings['companion_launch_on_exit_intent']) ? 'Exit trigger on' : 'Exit trigger off';
+$flosc_companion_scroll = !empty($flosc_flow_settings['companion_launch_on_scroll_threshold'])
+    ? ('Scroll trigger ' . max(0, min(100, intval($flosc_flow_settings['companion_launch_on_scroll_percent'] ?? 0))) . '%')
+    : 'Scroll trigger off';
+$flosc_companion_cooldown_ms = max(0, intval($flosc_flow_settings['companion_trigger_cooldown_ms'] ?? 0));
+$flosc_companion_cooldown_label = $flosc_companion_cooldown_ms > 0
+    ? ('Cooldown ' . round($flosc_companion_cooldown_ms / 1000) . 's')
+    : 'No cooldown';
+$flosc_companion_remember_state = !empty($flosc_flow_settings['companion_remember_open_state']);
+$flosc_companion_state_storage = sanitize_text_field((string) ($flosc_flow_settings['companion_state_storage'] ?? 'session'));
+$flosc_companion_storage_label = ucfirst($flosc_companion_state_storage);
+$flosc_companion_effective_parts = [];
+
+if (!$flosc_companion_enabled || ($flosc_companion_mode !== 'companion' && $flosc_companion_mode !== 'both')) {
+    $flosc_companion_effective_parts[] = 'Companion widget inactive in current mode';
+} else {
+    $flosc_companion_effective_parts[] = 'Companion widget active';
+
+    if (!empty($flosc_flow_settings['companion_auto_open_enabled'])) {
+        $flosc_companion_effective_parts[] = 'Auto open enabled';
+    }
+
+    if (!empty($flosc_flow_settings['companion_launch_on_exit_intent']) || !empty($flosc_flow_settings['companion_launch_on_scroll_threshold'])) {
+        $flosc_companion_effective_parts[] = 'Behavior triggers enabled';
+    } else {
+        $flosc_companion_effective_parts[] = 'Behavior triggers disabled';
+    }
+
+    if ($flosc_companion_remember_state) {
+        $flosc_companion_effective_parts[] = 'Open state remembered (' . $flosc_companion_storage_label . ')';
+    } else {
+        $flosc_companion_effective_parts[] = 'Open state not remembered';
+    }
+
+    if ($flosc_companion_cooldown_ms > 0 && (!empty($flosc_flow_settings['companion_launch_on_exit_intent']) || !empty($flosc_flow_settings['companion_launch_on_scroll_threshold']))) {
+        $flosc_companion_effective_parts[] = 'Trigger cooldown active';
+    } elseif ($flosc_companion_cooldown_ms > 0) {
+        $flosc_companion_effective_parts[] = 'Trigger cooldown set but triggers are off';
+    }
+}
+
+$flosc_companion_effective_label = implode(' · ', $flosc_companion_effective_parts);
+$flosc_companion_numeric_limits = [
+    'panel_width_min' => 280,
+    'panel_width_max' => 900,
+    'panel_height_min' => 320,
+    'panel_height_max' => 1200,
+    'auto_open_delay_min_ms' => 0,
+    'auto_open_delay_max_ms' => 60000,
+    'trigger_cooldown_min_ms' => 0,
+    'trigger_cooldown_max_ms' => 86400000,
+];
+$flosc_companion_numeric_limits = wp_parse_args(
+    apply_filters('flosc_companion_numeric_limits', $flosc_companion_numeric_limits),
+    $flosc_companion_numeric_limits
+);
+foreach ($flosc_companion_numeric_limits as $flosc_limit_key => $flosc_limit_value) {
+    $flosc_companion_numeric_limits[$flosc_limit_key] = absint($flosc_limit_value);
+}
+if ($flosc_companion_numeric_limits['panel_width_max'] < $flosc_companion_numeric_limits['panel_width_min']) {
+    $flosc_companion_numeric_limits['panel_width_max'] = $flosc_companion_numeric_limits['panel_width_min'];
+}
+if ($flosc_companion_numeric_limits['panel_height_max'] < $flosc_companion_numeric_limits['panel_height_min']) {
+    $flosc_companion_numeric_limits['panel_height_max'] = $flosc_companion_numeric_limits['panel_height_min'];
+}
+if ($flosc_companion_numeric_limits['auto_open_delay_max_ms'] < $flosc_companion_numeric_limits['auto_open_delay_min_ms']) {
+    $flosc_companion_numeric_limits['auto_open_delay_max_ms'] = $flosc_companion_numeric_limits['auto_open_delay_min_ms'];
+}
+if ($flosc_companion_numeric_limits['trigger_cooldown_max_ms'] < $flosc_companion_numeric_limits['trigger_cooldown_min_ms']) {
+    $flosc_companion_numeric_limits['trigger_cooldown_max_ms'] = $flosc_companion_numeric_limits['trigger_cooldown_min_ms'];
+}
+$flosc_companion_limits_label = sprintf(
+    'Panel %d-%dpx W · %d-%dpx H · Auto delay %d-%dms · Cooldown %d-%dms',
+    $flosc_companion_numeric_limits['panel_width_min'],
+    $flosc_companion_numeric_limits['panel_width_max'],
+    $flosc_companion_numeric_limits['panel_height_min'],
+    $flosc_companion_numeric_limits['panel_height_max'],
+    $flosc_companion_numeric_limits['auto_open_delay_min_ms'],
+    $flosc_companion_numeric_limits['auto_open_delay_max_ms'],
+    $flosc_companion_numeric_limits['trigger_cooldown_min_ms'],
+    $flosc_companion_numeric_limits['trigger_cooldown_max_ms']
+);
+
+$flosc_diagnostics_stem = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_selected_ivr, PATHINFO_FILENAME)) : 'global';
+$flosc_diagnostics_start = 'start_' . $flosc_diagnostics_stem;
+$flosc_diagnostics_end = 'end_' . $flosc_diagnostics_stem;
+$flosc_prompt_panel_counts = [
+    'visitor' => $visitor_pills,
+    'guest' => $guest_pills,
+    'member' => $member_pills,
+];
+$flosc_diagnostics_flow_name = trim((string) ($flosc_flow_settings['identity']['name'] ?? ''));
+$flosc_diagnostics_flow_label = $flosc_diagnostics_flow_name !== '' ? $flosc_diagnostics_flow_name : ($flosc_selected_ivr ?: 'this flow');
+
 $flosc_ai_provider   = $flosc_flow_settings['ai_provider'] ?? 'ivr';
 $flosc_ai_labels     = [
     'ivr'       => 'IVR / Scripted only',
@@ -241,6 +347,26 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
     // ── C — Content ───────────────────────────────────────────────────────────
     flosc_flow_card( 'C', 'Content', 'What learners see after purchase', [
         [
+            'label'      => 'Companion: ' . esc_html($flosc_companion_mode_label . ' · ' . $flosc_companion_status),
+            'edit_url'   => $flosc_base_url . 'style',
+            'edit_label' => 'Edit Style →',
+        ],
+        [
+            'label'      => 'Launch policy: ' . esc_html($flosc_companion_auto . ' · ' . $flosc_companion_exit . ' · ' . $flosc_companion_scroll . ' · ' . $flosc_companion_cooldown_label),
+            'edit_url'   => $flosc_base_url . 'style',
+            'edit_label' => 'Edit Style →',
+        ],
+        [
+            'label'      => 'Effective behavior: ' . esc_html($flosc_companion_effective_label),
+            'edit_url'   => $flosc_base_url . 'style',
+            'edit_label' => 'Edit Style →',
+        ],
+        [
+            'label'      => 'Active limits: ' . esc_html($flosc_companion_limits_label),
+            'edit_url'   => $flosc_base_url . 'style',
+            'edit_label' => 'Edit Style →',
+        ],
+        [
             'label'      => 'Lessons: ' . esc_html( $flosc_lessons_label ),
             'edit_url'   => $flosc_base_url . 'lessons',
             'edit_label' => 'Edit Lessons →',
@@ -256,6 +382,19 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
             'edit_label' => 'Edit AI →',
         ],
     ] );
+
+    echo '<div class="flosc-flow-diagnostics">';
+    echo '<div id="' . esc_attr( $flosc_diagnostics_start ) . '" class="flosc-flow-diagnostics__anchor"></div>';
+    echo '<h3 class="flosc-flow-diagnostics__title">Diagnostics</h3>';
+    echo '<p class="flosc-flow-diagnostics__hashes">Open <code>#' . esc_html( $flosc_diagnostics_start ) . '</code> to jump here, and <code>#' . esc_html( $flosc_diagnostics_end ) . '</code> to jump past the diagnostics block.</p>';
+    echo '<ul class="flosc-flow-diagnostics__list">';
+    echo '<li><strong>Flow:</strong> ' . esc_html( $flosc_diagnostics_flow_label ) . ' <code>' . esc_html( $flosc_selected_ivr ?: '(no IVR selected)' ) . '</code></li>';
+    echo '<li><strong>Prompt panels:</strong> Visitor ' . esc_html( (string) $flosc_prompt_panel_counts['visitor'] ) . ', Guest ' . esc_html( (string) $flosc_prompt_panel_counts['guest'] ) . ', Member ' . esc_html( (string) $flosc_prompt_panel_counts['member'] ) . '</li>';
+    echo '<li><strong>AI:</strong> ' . esc_html( $flosc_ai_label ) . '</li>';
+    echo '<li><strong>Companion:</strong> ' . esc_html( $flosc_companion_mode_label . ' · ' . $flosc_companion_status . ' · ' . $flosc_companion_effective_label ) . '</li>';
+    echo '</ul>';
+    echo '<div id="' . esc_attr( $flosc_diagnostics_end ) . '" class="flosc-flow-diagnostics__anchor"></div>';
+    echo '</div>';
     ?>
 
 </div>

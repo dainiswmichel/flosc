@@ -40,6 +40,13 @@ function flosc_activate() {
         'flosc_primary_color' => '#4f46e5',
         'flosc_ai_provider' => 'ivr',
         'flosc_stt_provider' => 'assemblyai',
+        // Communication economics model (defaults: 5000 tokens = 5 nominal cents = 2.5 real cents)
+        // 1 token is priced in millicents via rational numerators/denominators.
+        'flosc_tokens_communication_tokens_per_message' => 5000,
+        'flosc_tokens_nominal_millicents_per_token_numerator' => 1,
+        'flosc_tokens_nominal_millicents_per_token_denominator' => 1,
+        'flosc_tokens_real_millicents_per_token_numerator' => 1,
+        'flosc_tokens_real_millicents_per_token_denominator' => 2,
     ];
 
     foreach ($defaults as $key => $value) {
@@ -63,17 +70,17 @@ function flosc_activate() {
         update_option('flosc_paypal_mode', 'sandbox');
     }
 
-    // v1.2.3: Ensure default flosc_default_ivr.md exists in the uploads data
+    // v1.2.3: Ensure default flosc_default_technical_ivr.md exists in the uploads data
     // directory. When uploads are unavailable the seed is skipped — readers
     // fall back to the shipped read-only default via flosc_config_file().
     $seed_dir = flosc_data_dir();
-    $ivr_file = '' !== $seed_dir ? $seed_dir . 'flosc_default_ivr.md' : '';
+    $ivr_file = '' !== $seed_dir ? $seed_dir . 'flosc_default_technical_ivr.md' : '';
     if ('' !== $ivr_file && !file_exists($ivr_file)) {
 
-        // Copy default from includes/defaults/ if it exists, otherwise create minimal version
-        $default_ivr = FLOSC_PLUGIN_DIR . 'includes/defaults/ivr.md';
+        // Copy the shipped canonical default if present, otherwise create minimal version
+        $default_ivr = FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_technical_ivr.md';
         if (file_exists($default_ivr)) {
-            copy($default_ivr, $ivr_file);
+            copy($default_ivr, $ivr_file); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- controlled file copy in FLOSC-managed path
         } else {
             // Create minimal working ivr.md
             $minimal_ivr = <<<'MD'
@@ -120,7 +127,7 @@ MessageContent: Great! Let's begin with a quick quiz to see where you stand.
 MessageConditions: !quiz_taken
 MD;
             // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- activation seeding of uploads-rooted IVR default file
-            file_put_contents($ivr_file, $minimal_ivr);
+            file_put_contents($ivr_file, $minimal_ivr); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- controlled write in FLOSC-managed path
         }
     }
 

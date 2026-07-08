@@ -109,6 +109,13 @@ class floscApp {
             completedAt: null
         };
 
+        this.visitorDepletedState = {
+            awaitingContactDetails: false,
+            inputLocked: false,
+            formRenderedAt: 0,
+            formSubmitted: false,
+        };
+
         // Offer timers — v1.7.7: Use Map to prevent memory leaks with multiple offers
         this.offerTimers = new Map();
         this.offerStartTime = null;
@@ -553,7 +560,7 @@ class floscApp {
      * failure; the caller then proceeds without instant login and the buyer
      * receives the emailed sign-in link instead.
      */
-    async _mintCheckoutBinding(sessionId, provider) {
+    async _mintCheckoutBinding(sessionId, provider, offerId = '') {
         try {
             const res = await this.authFetch(this.config.apiUrl + '/checkout/binding', {
                 method: 'POST',
@@ -563,6 +570,7 @@ class floscApp {
                     session_id: sessionId || '',
                     flow_id: this.config.flowId || '',
                     provider: provider || '',
+                    offer_id: offerId || '',
                 }),
             });
             const data = await res.json();
@@ -650,10 +658,18 @@ class floscApp {
                         if (parseInt(m.id) > (this._adminSince || 0)) this._adminSince = parseInt(m.id);
                         if (m.source === 'bot') {
                             this.addMessage('assistant', m.text); // injected Br3nda message
+                            if (this.state === 'visitor') {
+                                this.saveVisitorMessage('assistant', m.text);
+                            }
                         } else {
                             this.renderAdminMessage(m.name, m.text); // pale-green "(admin)"
+                            if (this.state === 'visitor') {
+                                this.saveVisitorMessage('assistant', m.text, {
+                                    source: 'admin',
+                                    name: m.name || 'Admin'
+                                });
+                            }
                         }
-                        if (this.state === 'visitor') this.saveVisitorMessage('assistant', m.text);
                     });
                 })
                 .catch(() => {});
@@ -664,7 +680,7 @@ class floscApp {
 
     /**
      * Render a human admin message: bot-side, pale-green, "Name (admin)".
-     * Inline-styled so it needs no theme-CSS change.
+        * Styled via sanctioned frontend stylesheet classes.
      */
     renderAdminMessage(name, text) {
         if (!this.chatMessages) return;
@@ -2309,6 +2325,9 @@ class floscApp {
         payBtn.disabled = true;
         
         try {
+            const bindingSessionId = (this.currentSession && this.currentSession.id) || this.getVisitorSessionId() || String(Date.now());
+            const bindingToken = await this._mintCheckoutBinding(bindingSessionId, 'stripe', offerId);
+
             // Create payment intent
             const intentResponse = await this.authFetch(this.config.apiUrl + '/create-payment-intent', {
                 method: 'POST',
@@ -2348,7 +2367,11 @@ class floscApp {
                         },
                         body: JSON.stringify({
                             payment_intent_id: paymentIntent.id,
-                            offer_id: offerId
+                            offer_id: offerId,
+                            provider: 'stripe',
+                            flow_id: this.config.flowId || '',
+                            binding_token: bindingToken || '',
+                            session_id: bindingSessionId,
                         })
                     });
                 } catch (e) {
@@ -5849,7 +5872,9 @@ Purchased: ${ctx.purchased}
      * Replaces raw console.log throughout the codebase to prevent info disclosure
      */
     log(...args) {
-        if (this._debug) console.log('[FLOSC]', ...args);
+        if (this._debug) {
+            this.logWarn(...args);
+        }
     }
 
     logWarn(...args) {
@@ -6559,6 +6584,23 @@ Purchased: ${ctx.purchased}
         if (this.state === 'visitor') {
             localStorage.removeItem('flosc_visitor_messages');
             try { localStorage.setItem('flosc_visitor_session', String(Date.now())); } catch (e) {}
+
+            this.visitorDepletedState.awaitingContactDetails = false;
+            this.visitorDepletedState.inputLocked = false;
+            this.visitorDepletedState.formRenderedAt = 0;
+            this.visitorDepletedState.formSubmitted = false;
+            if (this.chatInput) this.chatInput.disabled = false;
+            if (this.sendBtn) this.sendBtn.disabled = false;
+
+            // Circle restart is a new visitor conversation, so reset profile
+            // token display to this flow's configured baseline immediately.
+            const configuredValue = parseInt(this.config?.visitorTokenDisplay?.value, 10);
+            const economicsValue = parseInt(this.config?.communicationTokenEconomics?.tokens_per_message, 10);
+            const baseline = Number.isFinite(configuredValue) && configuredValue >= 0
+                ? configuredValue
+                : (Number.isFinite(economicsValue) ? economicsValue : 5000);
+            this.updateVisitorTokenLabel(baseline);
+            this.persistVisitorTokenBalance(baseline);
         }
 
         // Rebuild context
@@ -6580,6 +6622,18 @@ Purchased: ${ctx.purchased}
         }
 
         // v1.8.0: Populate profile bar — same bar for all states, content toggled via data-show
+        if (this.state === 'visitor') {
+            const configuredValue = parseInt(this.config?.visitorTokenDisplay?.value, 10);
+            const economicsValue = parseInt(this.config?.communicationTokenEconomics?.tokens_per_message, 10);
+            const persistedValue = this.getPersistedVisitorTokenBalance();
+            const displayValue = Number.isFinite(persistedValue) && persistedValue >= 0
+                ? persistedValue
+                : (Number.isFinite(configuredValue) && configuredValue >= 0
+                ? configuredValue
+                : (Number.isFinite(economicsValue) ? economicsValue : 5000));
+            this.updateVisitorTokenLabel(displayValue);
+        }
+
         if (this.user && this.state !== 'visitor') {
             const profileAvatar = document.getElementById('flosc_profile_avatar');
             const profileName = document.getElementById('flosc_profile_name');
@@ -6613,6 +6667,108 @@ Purchased: ${ctx.purchased}
             if (dropdownEmail && this.user.email) {
                 dropdownEmail.textContent = this.user.email;
             }
+        }
+    }
+
+    formatProfileTokenDisplay(value) {
+        const n = Math.max(0, parseInt(value, 10) || 0);
+        return n.toLocaleString();
+    }
+
+    getVisitorRealMillicents(tokenValue) {
+        const tokens = Math.max(0, parseInt(tokenValue, 10) || 0);
+        const econ = this.config?.communicationTokenEconomics || {};
+        const realCfg = econ.real_millicents_per_token || {};
+        let num = parseInt(realCfg.numerator, 10);
+        let den = parseInt(realCfg.denominator, 10);
+
+        // Fallback: infer ratio from the configured first-paint pair when ratio
+        // object is unavailable so dynamic updates remain aligned with server UI.
+        if (!Number.isFinite(num) || !Number.isFinite(den) || num <= 0 || den <= 0) {
+            const baseTokens = parseInt(this.config?.visitorTokenDisplay?.value, 10);
+            const baseMillicents = parseInt(this.config?.visitorTokenDisplay?.realMillicents, 10);
+            if (Number.isFinite(baseTokens) && Number.isFinite(baseMillicents) && baseTokens > 0 && baseMillicents >= 0) {
+                num = baseMillicents;
+                den = baseTokens;
+            }
+        }
+
+        num = Math.max(1, parseInt(num, 10) || 1);
+        den = Math.max(1, parseInt(den, 10) || 2);
+        return Math.max(0, Math.round((tokens * num) / den));
+    }
+
+    formatProfileMillicentDisplay(value) {
+        const mc = Math.max(0, parseInt(value, 10) || 0);
+        return `${mc.toLocaleString()} mc`;
+    }
+
+    getVisitorTokenStorageKey() {
+        const flowId = String(this.config?.flowId || 'default');
+        const sessionId = String(this.getVisitorSessionId() || 'no_session');
+        return `flosc_visitor_token_balance_${flowId}_${sessionId}`;
+    }
+
+    getPersistedVisitorTokenBalance() {
+        try {
+            const raw = localStorage.getItem(this.getVisitorTokenStorageKey());
+            const parsed = parseInt(raw, 10);
+            return Number.isFinite(parsed) ? Math.max(0, parsed) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    persistVisitorTokenBalance(tokenValue) {
+        try {
+            const n = Math.max(0, parseInt(tokenValue, 10) || 0);
+            localStorage.setItem(this.getVisitorTokenStorageKey(), String(n));
+        } catch (e) {
+            // no-op: localStorage may be unavailable in strict private mode
+        }
+    }
+
+    updateVisitorTokenLabel(tokenValue) {
+        const visitorName = document.querySelector('.profile-name[data-show="visitor"]');
+        if (!visitorName) return;
+
+        let baseLabel = (this.config?.visitorTokenDisplay?.label || '').trim();
+        if (!baseLabel) {
+            const existingLabel = visitorName.querySelector('.flosc-visitor-label-text')?.textContent || visitorName.textContent || 'Visitor';
+            baseLabel = existingLabel.trim().replace(/\s*\([^)]*\)\s*$/i, '') || 'Visitor';
+        }
+
+        const formattedTokens = this.formatProfileTokenDisplay(tokenValue);
+        // Show only the token count to users; real millicents stay internal (admin-only).
+        visitorName.innerHTML = `<span class="flosc-visitor-label-text">${this.escapeHtml(baseLabel)}</span> <span class="flosc-visitor-token-count" id="flosc_visitor_token_count">(${this.escapeHtml(formattedTokens)})</span>`;
+    }
+
+    getLowTokenWarningStorageKey(thresholdValue) {
+        const flowId = String(this.config?.flowId || 'default');
+        const sessionId = String(this.getVisitorSessionId() || 'no_session');
+        const threshold = Math.max(0, parseInt(thresholdValue, 10) || 0);
+        return `flosc_low_token_warning_${flowId}_${sessionId}_${threshold}`;
+    }
+
+    showLowTokenMessageIfNeeded(tokenBalance) {
+        if (this.state !== 'visitor' || !tokenBalance) return;
+
+        const isLow = !!tokenBalance.is_low;
+        const lowMessage = String(tokenBalance.low_message || '').trim();
+        if (!isLow || !lowMessage) return;
+
+        const warningKey = this.getLowTokenWarningStorageKey(tokenBalance.low_threshold);
+        try {
+            if (sessionStorage.getItem(warningKey) === '1') {
+                return;
+            }
+
+            this.addMessage('assistant', this.formatMarkdown(lowMessage), true);
+            this.saveVisitorMessage('assistant', lowMessage);
+            sessionStorage.setItem(warningKey, '1');
+        } catch (e) {
+            this.addMessage('assistant', this.formatMarkdown(lowMessage), true);
+            this.saveVisitorMessage('assistant', lowMessage);
         }
     }
 
@@ -6672,7 +6828,11 @@ Purchased: ${ctx.purchased}
     async sendMessage(directMessage = null, { executeActions = true } = {}) {
         const message = directMessage?.trim() || this.chatInput?.value?.trim();
         if (!message) return;
-        
+
+        if (this.state === 'visitor' && this.visitorDepletedState?.inputLocked) {
+            return;
+        }
+
         // Clear input
         this.chatInput.value = '';
         
@@ -6753,6 +6913,9 @@ Purchased: ${ctx.purchased}
             try {
                 response = await this.callAPI(message, ivrGuidance);
             } catch (firstErr) {
+                if (firstErr?.floscCode === 'visitor_tokens_depleted') {
+                    throw firstErr;
+                }
                 // v8.0.0 FIX: Retry once with fresh nonce — handles stale-nonce after
                 // registration page reload or long idle sessions.
                 this.log('[FLOSC] Chat failed, refreshing nonce and retrying:', firstErr.message);
@@ -6814,6 +6977,12 @@ Purchased: ${ctx.purchased}
         } catch (error) {
             this.logError('FLOSC: API error:', error);
             this.hideTyping();
+
+            if (this.state === 'visitor' && error?.floscCode === 'visitor_tokens_depleted') {
+                this.handleVisitorTokensDepleted(error.message || 'This session has run out of chat tokens.');
+                return;
+            }
+
             // On error, fall back to raw IVR if we had a match
             const fallback = ivrGuidance || ivrMatch;
             if (fallback) {
@@ -6823,6 +6992,147 @@ Purchased: ${ctx.purchased}
             } else {
                 this.addMessage('assistant', "I'm having trouble responding right now. Please try again.");
             }
+        }
+    }
+
+    handleVisitorTokensDepleted(depletedMessage) {
+        const content = String(depletedMessage || '').trim();
+        if (content) {
+            this.addMessage('assistant', this.formatMarkdown(content), true);
+            this.saveVisitorMessage('assistant', content);
+        }
+
+        const depletedMode = String(this.config?.visitorTokenDisplay?.depletedContactMode || 'message');
+        if (depletedMode !== 'in_chat_form') {
+            this.visitorDepletedState.awaitingContactDetails = true;
+            this.visitorDepletedState.inputLocked = false;
+            return;
+        }
+
+        this.visitorDepletedState.awaitingContactDetails = false;
+        this.visitorDepletedState.inputLocked = true;
+        this.visitorDepletedState.formRenderedAt = Math.floor(Date.now() / 1000);
+        this.visitorDepletedState.formSubmitted = false;
+
+        if (this.chatInput) {
+            this.chatInput.value = '';
+            this.chatInput.disabled = true;
+            this.chatInput.blur();
+        }
+        if (this.sendBtn) {
+            this.sendBtn.disabled = true;
+        }
+
+        this.renderVisitorDepletedContactForm();
+    }
+
+    renderVisitorDepletedContactForm() {
+        if (document.getElementById('flosc_depleted_contact_form')) {
+            return;
+        }
+
+        const labels = this.config?.visitorTokenDisplay?.depletedContactLabels || {};
+        const title = this.escapeHtml(String(labels.title || 'Contact').trim());
+        const intro = this.escapeHtml(String(labels.intro || 'Please fill out this form to continue.').trim());
+        const submitText = this.escapeHtml(String(labels.submitText || 'Send').trim());
+
+        const formHtml = `
+            <div class="flosc-depleted-form-wrap">
+                <h4>${title}</h4>
+                <p class="flosc-depleted-form-intro">${intro}</p>
+                <form id="flosc_depleted_contact_form" class="flosc-depleted-contact-form" novalidate>
+                    <input type="text" name="first_name" placeholder="First Name" required maxlength="80">
+                    <input type="text" name="last_name" placeholder="Last Name" required maxlength="80">
+                    <input type="text" name="email" placeholder="Email Address" required maxlength="190" inputmode="email" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                    <input type="text" name="phone" placeholder="Phone Number" required maxlength="40">
+                    <textarea name="message" placeholder="Message" required rows="7" maxlength="4000"></textarea>
+                    <input type="text" name="company" class="flosc-depleted-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+                    <button type="submit" class="flosc-depleted-submit">${submitText}</button>
+                    <p class="flosc-depleted-form-status" id="flosc_depleted_form_status"></p>
+                </form>
+            </div>
+        `;
+
+        this.addMessage('assistant', formHtml, true);
+        this.saveVisitorMessage('assistant', '[CONTACT_FORM_RENDERED]');
+
+        const form = document.getElementById('flosc_depleted_contact_form');
+        if (!form) return;
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            if (this.visitorDepletedState.formSubmitted) {
+                return;
+            }
+
+            const statusEl = document.getElementById('flosc_depleted_form_status');
+            const payload = {
+                first_name: String(form.elements.first_name?.value || '').trim(),
+                last_name: String(form.elements.last_name?.value || '').trim(),
+                email: String(form.elements.email?.value || '').trim(),
+                phone: String(form.elements.phone?.value || '').trim(),
+                message: String(form.elements.message?.value || '').trim(),
+                company: String(form.elements.company?.value || '').trim(),
+                rendered_at: this.visitorDepletedState.formRenderedAt || Math.floor(Date.now() / 1000),
+            };
+
+            if (!payload.first_name || !payload.last_name || !payload.email || !payload.phone || !payload.message) {
+                if (statusEl) statusEl.textContent = 'Please complete all fields.';
+                return;
+            }
+
+            if (statusEl) statusEl.textContent = 'Sending...';
+            this.showTyping();
+
+            try {
+                const result = await this.callAPI('[CONTACT FORM SUBMIT]', null, {
+                    sessionEndContactFormSubmit: true,
+                    contactFormPayload: payload,
+                    returnPayload: true,
+                });
+
+                const thanksMessage = String(result?.message || "We've forwarded your message to Dainis, thank you!").trim();
+                const successHtml = `<div class="flosc-depleted-success-notice">${this.escapeHtml(thanksMessage)}</div>`;
+                this.addMessage('assistant', successHtml, true);
+                this.saveVisitorMessage('assistant', thanksMessage);
+
+                this.visitorDepletedState.formSubmitted = true;
+                Array.from(form.elements).forEach((el) => {
+                    if (el && typeof el.disabled !== 'undefined') {
+                        el.disabled = true;
+                    }
+                });
+
+                const redirectUrl = String(result?.session_end?.redirect_url || '').trim();
+                this.lockVisitorChatInputAfterDepletion(redirectUrl);
+                if (statusEl) statusEl.textContent = '';
+            } catch (err) {
+                this.logWarn('[FLOSC] Depleted contact form submit failed:', err);
+                if (statusEl) statusEl.textContent = 'Please check your details and try again.';
+            } finally {
+                this.hideTyping();
+            }
+        });
+    }
+
+    lockVisitorChatInputAfterDepletion(redirectUrl = '') {
+        this.visitorDepletedState.awaitingContactDetails = false;
+        this.visitorDepletedState.inputLocked = true;
+
+        if (this.chatInput) {
+            this.chatInput.value = '';
+            this.chatInput.disabled = true;
+            this.chatInput.blur();
+        }
+        if (this.sendBtn) {
+            this.sendBtn.disabled = true;
+        }
+
+        const safeRedirect = String(redirectUrl || '').trim();
+        if (safeRedirect) {
+            setTimeout(() => {
+                window.location.href = safeRedirect;
+            }, 1200);
         }
     }
     
@@ -7048,6 +7358,7 @@ Purchased: ${ctx.purchased}
         this.log('[FLOSC] Creating message element...');
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${role}`;
+        messageDiv.classList.add(role === 'user' ? 'flosc-message--user' : 'flosc-message--bot');
 
         const userInitial = this.user?.name?.charAt(0).toUpperCase() || 'U';
 
@@ -7345,7 +7656,7 @@ Purchased: ${ctx.purchased}
         }
     }
     
-    async callAPI(message, ivrMatch = null) {
+    async callAPI(message, ivrMatch = null, options = {}) {
         // v1.7.0: Auto-create session on first message for logged-in users
         if (this.state !== 'visitor' && !this.currentSession) {
             try {
@@ -7384,6 +7695,14 @@ Purchased: ${ctx.purchased}
             flow_id: this.config.flowId,
             ivr_file: this.config.ivrFile
         };
+
+        if (options && options.sessionEndContactCapture) {
+            payload.session_end_contact_capture = true;
+        }
+        if (options && options.sessionEndContactFormSubmit) {
+            payload.session_end_contact_form_submit = true;
+            payload.contact_form = options.contactFormPayload || {};
+        }
         
         // v2.0.7: Send visitor conversation history so AI has memory across messages.
         // Visitors have no server-side session, so we send localStorage history.
@@ -7429,21 +7748,41 @@ Purchased: ${ctx.purchased}
 
         if (!response.ok) {
             const errorMsg = data.error || `Server error (${response.status})`;
-            throw new Error(errorMsg);
+            const err = new Error(errorMsg);
+            err.floscCode = String(data.error_code || '');
+            err.floscPayload = data;
+            throw err;
         }
 
         if (!data.success) {
             const errorMsg = data.error || 'Unknown API error';
-            throw new Error(errorMsg);
+            const err = new Error(errorMsg);
+            err.floscCode = String(data.error_code || '');
+            err.floscPayload = data;
+            throw err;
         }
 
-        return data.message;
+        if (this.state === 'visitor' && data.token_balance && Number.isFinite(parseInt(data.token_balance.value, 10))) {
+            const value = parseInt(data.token_balance.value, 10);
+            this.updateVisitorTokenLabel(value);
+            this.persistVisitorTokenBalance(value);
+            this.showLowTokenMessageIfNeeded(data.token_balance);
+        }
+
+        return options && options.returnPayload ? data : data.message;
     }
     
-    saveVisitorMessage(role, content) {
+    saveVisitorMessage(role, content, meta = null) {
         try {
             const messages = JSON.parse(localStorage.getItem('flosc_visitor_messages') || '[]');
-            messages.push({ role, content, timestamp: Date.now() });
+            const entry = { role, content, timestamp: Date.now() };
+            if (meta && typeof meta === 'object') {
+                entry.meta = {
+                    source: meta.source || '',
+                    name: meta.name || '',
+                };
+            }
+            messages.push(entry);
             if (messages.length > 50) messages.shift();
             localStorage.setItem('flosc_visitor_messages', JSON.stringify(messages));
         } catch (e) {
@@ -7455,6 +7794,13 @@ Purchased: ${ctx.purchased}
         try {
             const messages = JSON.parse(localStorage.getItem('flosc_visitor_messages') || '[]');
             messages.forEach(msg => {
+                const meta = msg && msg.meta && typeof msg.meta === 'object' ? msg.meta : null;
+
+                if (msg.role === 'assistant' && meta && meta.source === 'admin') {
+                    this.renderAdminMessage(meta.name || 'Admin', msg.content || '');
+                    return;
+                }
+
                 if (msg.role === 'assistant') {
                     // Saved content may already contain HTML (badge images, <strong>, etc.)
                     // Check for HTML tags — if present, pass through as-is; otherwise format markdown
@@ -8229,7 +8575,7 @@ Purchased: ${ctx.purchased}
                         // activation still proceeds — the buyer simply receives the
                         // emailed sign-in link instead of an instant session.
                         const bindingSessionId = this.getVisitorSessionId() || '';
-                        const bindingToken = await this._mintCheckoutBinding(bindingSessionId, 'paypal');
+                        const bindingToken = await this._mintCheckoutBinding(bindingSessionId, 'paypal', offerId);
 
                         const res = await this.authFetch(this.config.apiUrl + '/paypal/activate-subscription', {
                             method: 'POST',
@@ -8471,7 +8817,10 @@ Purchased: ${ctx.purchased}
                                 body: JSON.stringify({
                                     order_id: data.orderID,
                                     offer_id: offerId,
+                                    provider: 'paypal',
                                     flow_id: this.config.flowId || '',
+                                    binding_token: bindingToken || '',
+                                    session_id: bindingSessionId,
                                 }),
                             });
                             const body = await r.json().catch(() => ({ success: false, message: 'Server returned non-JSON (HTTP ' + r.status + ')' }));
@@ -8573,6 +8922,9 @@ Purchased: ${ctx.purchased}
         payBtn.disabled = true;
 
         try {
+            const bindingSessionId = (this.currentSession && this.currentSession.id) || this.getVisitorSessionId() || String(Date.now());
+            const bindingToken = await this._mintCheckoutBinding(bindingSessionId, 'stripe', offerId);
+
             // Create PaymentIntent on the server
             const intentRes = await this.authFetch(this.config.apiUrl + '/create-payment-intent', {
                 method: 'POST',
@@ -8615,6 +8967,10 @@ Purchased: ${ctx.purchased}
                     body: JSON.stringify({
                         payment_intent_id: paymentIntent.id,
                         offer_id: offerId,
+                        provider: 'stripe',
+                        flow_id: this.config.flowId || '',
+                        binding_token: bindingToken || '',
+                        session_id: bindingSessionId,
                     }),
                 });
 

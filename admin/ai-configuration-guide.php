@@ -27,7 +27,7 @@ if (empty($GLOBALS['flosc_suppress_tab_header'])) {
 </p>
 
 <!-- ============================================ -->
-<!-- SECTION 1: THE AI TO AGI BRIDGE CONCEPT -->
+<!-- SECTION 1: HOW FLOSC WORKS WITH AI -->
 <!-- ============================================ -->
 <div class="flosc-guide-section">
     <h3>How FLOSC Works with AI</h3>
