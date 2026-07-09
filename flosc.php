@@ -13553,9 +13553,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             return;
         }
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display hint query flag
-        $handoff_request = isset($_GET['flosc_companion_handoff'])
-            && sanitize_text_field(wp_unslash((string) $_GET['flosc_companion_handoff'])) === '1';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display hint query flag, no state change
+        $handoff_request = isset($_GET['flosc_companion_handoff']) && '1' === sanitize_text_field(wp_unslash((string) $_GET['flosc_companion_handoff']));
 
         $defaults = $this->get_companion_defaults();
         $numeric_limits = $this->get_companion_numeric_limits();

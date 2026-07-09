@@ -47,7 +47,7 @@ $flosc_style_docs_url = add_query_arg([
 <?php
 
 // Handle reset action (runs inside the parent settings form)
-$flosc_reset_nonce = sanitize_text_field((string) ($_POST['flosc_reset_chat_style_nonce'] ?? ''));
+$flosc_reset_nonce = isset($_POST['flosc_reset_chat_style_nonce']) ? sanitize_text_field(wp_unslash((string) $_POST['flosc_reset_chat_style_nonce'])) : '';
 if (isset($_POST['flosc_reset_chat_style']) && wp_verify_nonce($flosc_reset_nonce, 'flosc_reset_chat_style_nonce')) {
     $flosc_reset_key = $GLOBALS['flosc_settings_key'] ?? '';
     if ($flosc_reset_key) {
