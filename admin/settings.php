@@ -802,6 +802,9 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         if (isset($flosc_new_settings['guest_token_grant'])) {
             $flosc_new_settings['guest_token_grant'] = max(0, intval($flosc_new_settings['guest_token_grant']));
         }
+        if (isset($flosc_new_settings['member_token_grant'])) {
+            $flosc_new_settings['member_token_grant'] = max(0, intval($flosc_new_settings['member_token_grant']));
+        }
         if (isset($flosc_new_settings['visitor_low_token_threshold'])) {
             $flosc_new_settings['visitor_low_token_threshold'] = max(0, intval($flosc_new_settings['visitor_low_token_threshold']));
         }
@@ -974,6 +977,23 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
             $flosc_motion_mode = $flosc_companion_defaults['motion_mode'];
         }
 
+        // Sitewide master switch: enforce a predictable companion test profile
+        // even when client-side JS handlers are unavailable.
+        $flosc_companion_sitewide_master = !empty($flosc_post['flow_companion_sitewide_master']);
+        if ($flosc_companion_sitewide_master) {
+            $flosc_mode = 'both';
+            $flosc_new_settings['companion_enabled'] = '1';
+            $flosc_new_settings['companion_show_for_visitors'] = '1';
+            $flosc_new_settings['companion_allow_fullscreen'] = '1';
+            $flosc_new_settings['companion_default_fullscreen'] = '1';
+            $flosc_mobile_behavior = 'fullscreen';
+            $flosc_new_settings['companion_auto_open_enabled'] = '1';
+            $flosc_new_settings['companion_auto_open_once_per_session'] = '1';
+            if (!isset($flosc_new_settings['companion_auto_open_delay_ms']) || intval($flosc_new_settings['companion_auto_open_delay_ms']) < 600) {
+                $flosc_new_settings['companion_auto_open_delay_ms'] = 800;
+            }
+        }
+
         $flosc_auto_open_delay_ms = absint($flosc_post['flow_companion_auto_open_delay_ms'] ?? $flosc_companion_defaults['auto_open_delay_ms']);
         $flosc_auto_open_delay_ms = max($flosc_companion_numeric_limits['auto_open_delay_min_ms'], min($flosc_companion_numeric_limits['auto_open_delay_max_ms'], $flosc_auto_open_delay_ms));
         $flosc_launch_on_scroll_percent = absint($flosc_post['flow_companion_launch_on_scroll_percent'] ?? $flosc_companion_defaults['launch_on_scroll_percent']);
@@ -1078,6 +1098,12 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
 
         $flosc_new_settings['companion_target_include'] = $flosc_collect_companion_rules('include', $flosc_post, $flosc_parse_companion_custom_rules);
         $flosc_new_settings['companion_target_exclude'] = $flosc_collect_companion_rules('exclude', $flosc_post, $flosc_parse_companion_custom_rules);
+
+        if ($flosc_companion_sitewide_master) {
+            // Sitewide mode: include rules are intentionally empty.
+            // Excludes remain available for parameterized carve-outs.
+            $flosc_new_settings['companion_target_include'] = '';
+        }
     }
 
     // v8.1.0: Member Levels tab — parse level registry + content protection repeaters
@@ -1323,9 +1349,18 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
 
     // Save flow settings (ALL tabs now per-flow)
     update_option($flosc_settings_key, $flosc_new_settings);
-    $flosc_flow_settings = $flosc_new_settings;
-    
-    $flosc_saved = true;
+
+    // Post/Redirect/Get so save feedback is deterministic and browser back/refresh
+    // does not resubmit the form.
+    $flosc_redirect_url = add_query_arg([
+        'page' => 'flosc-settings',
+        'ivr' => $flosc_selected_ivr,
+        'tab' => $flosc_active_tab,
+        'view' => $flosc_identity_view,
+        'saved' => '1',
+    ], admin_url('admin.php'));
+    wp_safe_redirect($flosc_redirect_url);
+    exit;
 }
 
 // Build flow URL
@@ -1370,7 +1405,7 @@ if ($flosc_selected_flow_name === '') {
         <span class="flosc-settings-version">v<?php echo esc_html(FLOSC_VERSION); ?></span>
     </h1>
     
-    <?php if (isset($flosc_saved)): ?>
+    <?php if (isset($flosc_saved) || isset($flosc_get['saved'])): ?>
         <div class="notice notice-success is-dismissible">
             <p>✓ Settings saved for <strong><?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $flosc_selected_ivr); ?></strong></p>
         </div>
@@ -2280,6 +2315,11 @@ if ($flosc_selected_flow_name === '') {
         <?php endif; ?>
 
         <?php if ($flosc_active_tab !== 'documentation' && $flosc_active_tab !== 'autoprompts' && $flosc_active_tab !== 'da1' && $flosc_active_tab !== 'trajectories' && $flosc_active_tab !== 'concierge'): ?>
+        <?php if (isset($flosc_get['saved'])): ?>
+        <div id="flosc-save-feedback" class="notice notice-success inline is-dismissible">
+            <p>✓ Saved. Settings for <strong><?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $flosc_selected_ivr); ?></strong> are updated.</p>
+        </div>
+        <?php endif; ?>
         <p class="submit flosc-settings-submit-row">
             <button type="submit" name="flosc_save" class="button button-primary button-large">
                 Save Settings for <?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $flosc_selected_ivr); ?>

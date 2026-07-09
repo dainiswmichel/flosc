@@ -28,6 +28,23 @@ $flosc_login_docs_url = add_query_arg([
 </div>
 
 <?php
+$flosc_guest_request_notice = sanitize_key((string) ($_GET['flosc_guest_request_notice'] ?? '')); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- admin notice rendering only
+$flosc_guest_request_messages = [
+    'approved' => ['type' => 'success', 'text' => 'Guest account request approved.'],
+    'approve_sent' => ['type' => 'success', 'text' => 'Guest account request approved and MagicLink sent.'],
+    'approve_send_failed' => ['type' => 'error', 'text' => 'Approved, but MagicLink email send failed.'],
+    'denied_blocked' => ['type' => 'success', 'text' => 'Guest account request denied and email blocked.'],
+    'deleted' => ['type' => 'success', 'text' => 'Guest account request deleted.'],
+    'invalid_email' => ['type' => 'error', 'text' => 'Invalid email for guest account request action.'],
+];
+if (isset($flosc_guest_request_messages[$flosc_guest_request_notice])) {
+    $flosc_notice = $flosc_guest_request_messages[$flosc_guest_request_notice];
+    $flosc_notice_class = ($flosc_notice['type'] === 'error') ? 'notice notice-error' : 'notice notice-success';
+    echo '<div class="' . esc_attr($flosc_notice_class) . '"><p>' . esc_html($flosc_notice['text']) . '</p></div>';
+}
+?>
+
+<?php
 $flosc_header_actions = [
     'open_login_modal'     => 'Open General Auth Modal',
     'open_registration'    => 'Open Post-Quiz Auth Modal',
@@ -389,6 +406,81 @@ $flosc_signup_action = $flosc_flow_settings['header_signup_action'] ?? 'open_log
     });
 })();
 <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
+
+<hr class="flosc-login-divider">
+<h2>Guest Account Requests</h2>
+<p>Review requests captured in depleted chat sessions. Actions are performed here after reviewing context in Chat Logs.</p>
+<?php
+$flosc_request_queue = get_option('flosc_guest_account_request_queue', []);
+$flosc_request_queue = is_array($flosc_request_queue) ? $flosc_request_queue : [];
+$flosc_request_denylist = get_option('flosc_guest_account_request_denylist', []);
+$flosc_request_denylist = is_array($flosc_request_denylist) ? $flosc_request_denylist : [];
+$flosc_action_url = admin_url('admin-post.php');
+$flosc_queue_rows = array_values($flosc_request_queue);
+
+usort($flosc_queue_rows, static function ($a, $b) {
+    $a_time = intval($a['last_requested_at'] ?? ($a['requested_at'] ?? 0));
+    $b_time = intval($b['last_requested_at'] ?? ($b['requested_at'] ?? 0));
+    return $b_time <=> $a_time;
+});
+
+if (empty($flosc_queue_rows)) {
+    echo '<p class="flosc-login-empty-log">No guest account requests queued yet.</p>';
+} else {
+    echo '<table class="widefat striped flosc-login-activity-table">';
+    echo '<thead><tr><th>Email</th><th>Flow</th><th>Requested</th><th>Status</th><th>Request Note</th><th>Actions</th></tr></thead>';
+    echo '<tbody>';
+
+    foreach ($flosc_queue_rows as $flosc_request_row) {
+        $flosc_email = sanitize_email((string) ($flosc_request_row['email'] ?? ''));
+        if ($flosc_email === '') {
+            continue;
+        }
+        $flosc_status = sanitize_key((string) ($flosc_request_row['status'] ?? 'pending'));
+        if (!in_array($flosc_status, ['pending', 'approved', 'denied'], true)) {
+            $flosc_status = 'pending';
+        }
+        $flosc_flow_id = sanitize_key((string) ($flosc_request_row['flow_id'] ?? ''));
+        $flosc_requested_at = intval($flosc_request_row['last_requested_at'] ?? ($flosc_request_row['requested_at'] ?? 0));
+        $flosc_requested_text = $flosc_requested_at > 0 ? wp_date('Y-m-d H:i', $flosc_requested_at) : '—';
+        $flosc_note = sanitize_textarea_field((string) ($flosc_request_row['last_message_excerpt'] ?? ''));
+        $flosc_note = $flosc_note !== '' ? wp_html_excerpt($flosc_note, 120, '...') : '—';
+        $flosc_blocked = isset($flosc_request_denylist[md5(strtolower($flosc_email))]);
+        $flosc_status_display = ucfirst($flosc_status) . ($flosc_blocked ? ' (blocked)' : '');
+
+        echo '<tr>';
+        echo '<td>' . esc_html($flosc_email) . '</td>';
+        echo '<td>' . esc_html($flosc_flow_id !== '' ? $flosc_flow_id : '—') . '</td>';
+        echo '<td>' . esc_html($flosc_requested_text) . '</td>';
+        echo '<td>' . esc_html($flosc_status_display) . '</td>';
+        echo '<td>' . esc_html($flosc_note) . '</td>';
+        echo '<td>';
+
+        $flosc_actions = [
+            'flosc_guest_request_approve' => 'Approve',
+            'flosc_guest_request_approve_send' => 'Approve + Send MagicLink',
+            'flosc_guest_request_deny_block' => 'Deny + Block',
+            'flosc_guest_request_delete' => 'Delete',
+        ];
+
+        foreach ($flosc_actions as $flosc_action => $flosc_label) {
+            echo '<form method="post" action="' . esc_url($flosc_action_url) . '" style="display:inline-block;margin:0 6px 6px 0;">';
+            echo '<input type="hidden" name="action" value="' . esc_attr($flosc_action) . '">';
+            echo '<input type="hidden" name="email" value="' . esc_attr($flosc_email) . '">';
+            echo '<input type="hidden" name="flow_id" value="' . esc_attr($flosc_flow_id) . '">';
+            echo '<input type="hidden" name="ivr" value="' . esc_attr($flosc_current_ivr) . '">';
+            wp_nonce_field('flosc_guest_request_action', 'flosc_guest_request_nonce');
+            echo '<button type="submit" class="button button-small">' . esc_html($flosc_label) . '</button>';
+            echo '</form>';
+        }
+
+        echo '</td>';
+        echo '</tr>';
+    }
+
+    echo '</tbody></table>';
+}
+?>
 
 <hr class="flosc-login-divider">
 <h2>Guest Link Activity Log</h2>

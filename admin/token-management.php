@@ -46,13 +46,14 @@ $flosc_chat_token_enforcement = array_key_exists('chat_token_enforcement', $flos
     ? !empty($flosc_flow_settings['chat_token_enforcement'])
     : true;
 $flosc_guest_token_grant = max(0, intval($flosc_flow_settings['guest_token_grant'] ?? $flosc_tokens_per_message));
+$flosc_member_token_grant = max(0, intval($flosc_flow_settings['member_token_grant'] ?? $flosc_guest_token_grant));
 $flosc_low_token_threshold = max(0, intval($flosc_flow_settings['visitor_low_token_threshold'] ?? 0));
 $flosc_default_low_message = 'You\'re running low on chat tokens. Pretty soon, you\'ll be invited to register or log in to receive {token_grant} more tokens.';
 $flosc_low_message = trim((string)($flosc_flow_settings['visitor_low_tokens_message'] ?? $flosc_default_low_message));
 if ($flosc_low_message === '') {
     $flosc_low_message = $flosc_default_low_message;
 }
-$flosc_default_depleted_message = 'This session has run out of chat tokens. You can log in, and Dainis will give you {token_grant} tokens to use this chat. You can also contact Dainis personally or input your phone number or email address and preferred contact method and time for Dainis to get back to you.';
+$flosc_default_depleted_message = 'Dear guest, your chat tokens are used up for now. Please get in touch with Dainis personally, communicate with him in one of your shared groups, or make sure your purchases have been registered to your account so you have more chat tokens. I\'ll be shutting down this chat for now. Thanks for stopping by! Sincerely, Br3nda, Dainis\' virtual AI assistant.';
 $flosc_depleted_message = trim((string)($flosc_flow_settings['visitor_tokens_depleted_message'] ?? $flosc_default_depleted_message));
 if ($flosc_depleted_message === '') {
     $flosc_depleted_message = $flosc_default_depleted_message;
@@ -69,11 +70,11 @@ if (!in_array($flosc_depleted_contact_mode, ['message', 'in_chat_form'], true)) 
 </div>
 
 <h2>Token Management</h2>
-<p>Configure the visitor wallet amount, the conversion factors, low token message behavior, and depleted token mode for this flow.</p>
-<p class="description">Model: Actual AI API usage (provider-reported real cost) -> conversion factor -> FLOSC tokens spent and displayed.</p>
+<p>Configure wallet size, how real API cost converts to floscTokens, low-token warnings, and depleted-token behavior for this flow.</p>
+<p class="description">Debit rule: each chargeable AI chat turn debits the <strong>real API cost</strong> for that turn, converted to floscTokens via the Real Billing Factor below. If the AI API reports no cost (broken or misconfigured), the turn debits <strong>1 floscToken</strong> as a visible signal. Chat Logs record the real per-turn millicents so you can tune the factor from actual numbers.</p>
 
 <div class="flosc-payments-status-banner">
-    <strong>Flow:</strong> Provider reports actual AI API usage -> FLOSC converts that usage with the Real Billing Factor -> FLOSC token balance updates in the interface.
+    <strong>Flow:</strong> floscTokens are the runtime currency. A balance starts at the Wallet Initial Amount (or Guest/Member grant), then debits the real API cost of each chargeable turn, converted to floscTokens. The Real Billing Factor is how you set that conversion from your actual expenses.
 </div>
 
 <table class="form-table">
@@ -92,15 +93,15 @@ if (!in_array($flosc_depleted_contact_mode, ['message', 'in_chat_form'], true)) 
         <th scope="row"><label for="flow_tokens_communication_tokens_per_message">Visitor Wallet Initial Amount</label></th>
         <td>
             <input type="number" id="flow_tokens_communication_tokens_per_message" name="flow_tokens_communication_tokens_per_message" value="<?php echo esc_attr($flosc_tokens_per_message); ?>" min="1" step="1" class="regular-text">
-            <p class="description">Starting FLOSC token balance shown to visitors for this flow.</p>
+            <p class="description">Visitor starting balance, in floscTokens. Turns per visitor = this amount / floscTokens debited per turn (see Real Billing Factor below).</p>
         </td>
     </tr>
 
     <tr>
-        <th scope="row">FLOSC Display Factor (Millicents per Token)</th>
+        <th scope="row">Nominal Display Factor (Millicents per Token)</th>
         <td>
             <input type="number" name="flow_tokens_nominal_millicents_per_token_decimal" value="<?php echo esc_attr($flosc_nominal_rate_display); ?>" min="0.001" step="0.001" class="small-text">
-            <p class="description">Display/reference factor for FLOSC token valuation in the interface. Supports thousandths (for example 1.375).</p>
+            <p class="description">Token valuation factor for the nominal side of your business model. Use it to reflect your intended token economics in the FLOSC ecosystem. Supports thousandths (for example 1.375).</p>
         </td>
     </tr>
 
@@ -108,7 +109,7 @@ if (!in_array($flosc_depleted_contact_mode, ['message', 'in_chat_form'], true)) 
         <th scope="row">Real Billing Factor (Millicents per Token)</th>
         <td>
             <input type="number" name="flow_tokens_real_millicents_per_token_decimal" value="<?php echo esc_attr($flosc_real_rate_display); ?>" min="0.001" step="0.001" class="small-text">
-            <p class="description">Primary conversion factor: converts provider-reported actual AI API usage into FLOSC tokens spent. Supports thousandths (for example 1.375).</p>
+            <p class="description">How many <strong>real API millicents equal 1 floscToken</strong> ($1 = 100,000 millicents). This converts the provider's real per-turn cost into the floscTokens debited from the wallet. Example: at <code>10</code>, a turn costing ~1,265 real millicents debits ~127 floscTokens, so a 1,000 wallet lasts ~8 turns. Raise this for fewer floscTokens per turn (more turns); lower it for more. Check Chat Logs for your actual per-turn millicents.</p>
         </td>
     </tr>
 
@@ -116,20 +117,29 @@ if (!in_array($flosc_depleted_contact_mode, ['message', 'in_chat_form'], true)) 
         <th scope="row">Conversion Summary</th>
         <td>
             <p class="description">
-                FLOSC display reference value (using FLOSC Display Factor): <strong><?php echo esc_html(number_format_i18n($flosc_nominal_millicents_per_message / 1000, 4)); ?> cents</strong>
+                Nominal display reference (using Nominal Display Factor): <strong><?php echo esc_html(number_format_i18n($flosc_nominal_millicents_per_message / 1000, 4)); ?> cents</strong>
                 (<?php echo esc_html(number_format_i18n($flosc_nominal_millicents_per_message)); ?> millicents)<br>
-                Real usage reference value (using Real Billing Factor): <strong><?php echo esc_html(number_format_i18n($flosc_real_millicents_per_message / 1000, 4)); ?> cents</strong>
+                Real-cost reference (using Real Billing Factor): <strong><?php echo esc_html(number_format_i18n($flosc_real_millicents_per_message / 1000, 4)); ?> cents</strong>
                 (<?php echo esc_html(number_format_i18n($flosc_real_millicents_per_message)); ?> millicents)<br>
-                Runtime spend rule: provider-reported actual usage -> Real Billing Factor conversion -> FLOSC tokens debited from wallet balance.
+                Runtime debit rule: chargeable AI turn -> real API millicents / Real Billing Factor -> floscTokens debited from wallet (or 1 floscToken if the API reports no cost).<br>
+                Reporting rule: chat logs still record provider token usage and actual real millicent cost for each exchange.
             </p>
         </td>
     </tr>
 
     <tr>
-        <th scope="row"><label for="flow_guest_token_grant">Become A Guest Token Grant</label></th>
+        <th scope="row"><label for="flow_guest_token_grant">Guest Wallet Initial Amount</label></th>
         <td>
             <input type="number" id="flow_guest_token_grant" name="flow_guest_token_grant" value="<?php echo esc_attr($flosc_guest_token_grant); ?>" min="0" step="1" class="regular-text">
-            <p class="description">Per-flow token grant for guests on registration/login.</p>
+            <p class="description">Per-flow starting balance for logged-in guest users on registration/login.</p>
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row"><label for="flow_member_token_grant">Member Wallet Initial Amount</label></th>
+        <td>
+            <input type="number" id="flow_member_token_grant" name="flow_member_token_grant" value="<?php echo esc_attr($flosc_member_token_grant); ?>" min="0" step="1" class="regular-text">
+            <p class="description">Per-flow starting balance for users who already have member access.</p>
         </td>
     </tr>
 
@@ -161,7 +171,7 @@ if (!in_array($flosc_depleted_contact_mode, ['message', 'in_chat_form'], true)) 
         <th scope="row"><label for="flow_visitor_session_end_redirect_url">Redirect After Session End</label></th>
         <td>
             <input type="url" id="flow_visitor_session_end_redirect_url" name="flow_visitor_session_end_redirect_url" value="<?php echo esc_attr($flosc_session_end_redirect_url); ?>" class="large-text" placeholder="https://www.yoursite.tld/your-contact-form/">
-            <p class="description">Optional URL. After visitor tokens are depleted, one contact message is captured, a thank-you appears, input is disabled, and the chat redirects to this URL.</p>
+            <p class="description">Optional URL. After visitor tokens are depleted, one Guest Account Request is captured, a confirmation appears, input is disabled, and the chat redirects to this URL.</p>
         </td>
     </tr>
 

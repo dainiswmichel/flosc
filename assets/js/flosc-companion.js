@@ -69,7 +69,8 @@
                 stateStorage: 'session',
                 triggerCooldownMs: 0,
                 stateKey: 'flosc_companion_state',
-                cooldownKey: 'flosc_companion_cooldown'
+                cooldownKey: 'flosc_companion_cooldown',
+                skipBehaviorTriggers: false
             }, config);
 
             this.pageStartMs = Date.now();
@@ -77,6 +78,13 @@
             if (!this.config.appUrl) {
                 console.warn('[FLOSC Companion] appUrl is required');
                 return;
+            }
+
+            this.handoffRequested = this.detectHandoffRequest();
+            if (this.handoffRequested) {
+                this.config.skipBehaviorTriggers = true;
+                this.forceMinimizedStateForHandoff();
+                this.consumeHandoffRequest();
             }
 
             this.render();
@@ -168,6 +176,10 @@
             var fullscreenBtn = this.container.querySelector('.flosc-companion-fullscreen');
 
             fab.addEventListener('click', function() {
+                if (self.shouldExpandToFullChat()) {
+                    self.expandToFullChat();
+                    return;
+                }
                 self.toggle();
             });
 
@@ -259,6 +271,9 @@
 
         scheduleAutoOpen: function() {
             var self = this;
+            if (this.config.skipBehaviorTriggers) {
+                return;
+            }
             if (!this.config.autoOpenEnabled) {
                 return;
             }
@@ -280,6 +295,10 @@
 
         bindBehaviorTriggers: function() {
             var self = this;
+
+            if (this.config.skipBehaviorTriggers) {
+                return;
+            }
 
             if (this.config.launchOnExitIntent) {
                 document.addEventListener('mouseout', function(event) {
@@ -510,6 +529,63 @@
         setFullscreen: function(enabled) {
             this.isFullscreen = !!enabled;
             this.container.classList.toggle('is-fullscreen', this.isFullscreen);
+        },
+
+        detectHandoffRequest: function() {
+            try {
+                if (this.config.skipBehaviorTriggers) {
+                    return true;
+                }
+                var params = new URLSearchParams(window.location.search || '');
+                return params.get('flosc_companion_handoff') === '1';
+            } catch (e) {
+                return false;
+            }
+        },
+
+        consumeHandoffRequest: function() {
+            try {
+                var url = new URL(window.location.href);
+                if (!url.searchParams.has('flosc_companion_handoff')) {
+                    return;
+                }
+                url.searchParams.delete('flosc_companion_handoff');
+                window.history.replaceState({}, document.title, url.toString());
+            } catch (e) {
+                // Ignore URL update failures.
+            }
+        },
+
+        forceMinimizedStateForHandoff: function() {
+            var storage = this.getStorageBackend();
+            if (!storage) {
+                return;
+            }
+            try {
+                storage.setItem(this.config.stateKey, 'closed');
+            } catch (e) {
+                // Ignore storage failures.
+            }
+        },
+
+        shouldExpandToFullChat: function() {
+            try {
+                var params = new URLSearchParams(window.location.search || '');
+                var mode = String(params.get('flosc_companion_expand_target') || '').toLowerCase();
+                return mode === 'full_chat';
+            } catch (e) {
+                return false;
+            }
+        },
+
+        expandToFullChat: function() {
+            try {
+                var target = new URL(this.config.appUrl, window.location.origin);
+                target.searchParams.delete('flosc_companion');
+                window.location.assign(target.toString());
+            } catch (e) {
+                window.location.assign(this.config.appUrl);
+            }
         },
 
         escapeHtml: function(str) {

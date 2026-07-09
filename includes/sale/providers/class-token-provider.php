@@ -342,11 +342,14 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
      * Token costs for actions (configurable)
      */
     public function get_action_costs() {
+        // Default per-turn AI cost = the configured per-message budget. Real cost
+        // is applied separately when provider billing is available; this default
+        // is only the fallback when no billing metadata exists. A hardcoded "1"
+        // silently caps every turn at one token — the budget default is sensible
+        // and admin-overridable via the cost_ai_query setting.
         $communication = $this->get_communication_economics();
-        $default_ai_cost = intval($communication['tokens_per_message'] ?? 5000);
+        $default_ai_cost = max(1, intval($communication['tokens_per_message'] ?? 5000));
         return apply_filters('flosc_token_costs', [
-            // Use parameterized communication-token model unless a legacy per-action
-            // override is explicitly set.
             'ai_query' => intval($this->get_setting('cost_ai_query', $default_ai_cost)),
             'stt_minute' => intval($this->get_setting('cost_stt_minute', 2)),
             'quiz_attempt' => intval($this->get_setting('cost_quiz', 0)),
@@ -375,14 +378,6 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
     public function charge_for_action($user_id, $action, $meta = []) {
         $costs = $this->get_action_costs();
         $cost = $costs[$action] ?? 0;
-
-        // If upstream provides real spend in millicents, derive tokens deterministically.
-        if ($action === 'ai_query' && isset($meta['real_millicents'])) {
-            $derived_cost = $this->convert_real_millicents_to_tokens($meta['real_millicents']);
-            if ($derived_cost > 0) {
-                $cost = $derived_cost;
-            }
-        }
         
         if ($cost === 0) {
             return true;

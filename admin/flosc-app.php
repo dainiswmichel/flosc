@@ -126,7 +126,7 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
 // Determine if funnel is completed (for conditional rendering)
 $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id(), '_flosc_funnel_completed', true);
 ?>
-<body class="flosc-app<?php echo is_admin_bar_showing() ? ' admin-bar' : ''; ?>"
+<body class="flosc-app<?php echo is_admin_bar_showing() ? ' admin-bar' : ''; ?><?php echo isset($_GET['flosc_companion']) ? ' flosc-companion-embed' : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presence-only display flag, no value used ?>"
       data-user-state="<?php echo esc_attr($user_state); ?>"
       data-flosc-font="<?php echo esc_attr($flosc_chat_font); ?>"
     data-flosc-theme="<?php echo esc_attr($flosc_chat_theme); ?>"
@@ -217,17 +217,15 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
             'badge' => 'Member',
         ]);
 
-        // Render visitor label with token-unit visibility at first paint.
+        // Render visitor label with token count only at first paint.
         // JS also normalizes this on init, but server-side output guarantees
         // correctness on refresh even before any client logic runs.
         $flosc_tokens_per_message = max(1, intval(get_option('flosc_tokens_communication_tokens_per_message', 5000)));
-        $flosc_real_millicents_per_message = 2500;
         if (class_exists('FLOSC_Sale_Manager')) {
             $flosc_token_provider = FLOSC_Sale_Manager::instance()->get_provider('tokens');
             if ($flosc_token_provider && method_exists($flosc_token_provider, 'get_communication_economics')) {
                 $flosc_economics = (array) $flosc_token_provider->get_communication_economics();
                 $flosc_tokens_per_message = max(1, intval($flosc_economics['tokens_per_message'] ?? $flosc_tokens_per_message));
-                $flosc_real_millicents_per_message = max(0, intval($flosc_economics['real_millicents_per_message'] ?? $flosc_real_millicents_per_message));
             }
         }
         $flosc_visitor_label_base = trim((string) ($flosc_pb_visitor['name'] ?? 'Visitor'));
@@ -238,11 +236,10 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
         }
 
         $flosc_tokens_per_message_display = number_format_i18n($flosc_tokens_per_message);
-        $flosc_visitor_token_grant = isset($flosc_current_flow['guest_token_grant'])
-            ? max(0, intval($flosc_current_flow['guest_token_grant']))
+        $flosc_visitor_wallet_initial = isset($flosc_current_flow['tokens_communication_tokens_per_message'])
+            ? max(1, intval($flosc_current_flow['tokens_communication_tokens_per_message']))
             : $flosc_tokens_per_message;
-        $flosc_visitor_token_grant_display = number_format_i18n($flosc_visitor_token_grant);
-        $flosc_millicents_per_message_display = number_format_i18n($flosc_real_millicents_per_message) . ' mc';
+        $flosc_visitor_wallet_initial_display = number_format_i18n($flosc_visitor_wallet_initial);
 
         // v1.8.2: Dynamic visitor menu — indexed array of [label, action] pairs
         $flosc_visitor_menu_raw = get_option('flosc_visitor_menu_items', []);
@@ -253,7 +250,7 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
                 $flosc_action_map = ['signup' => 'open_registration', 'login' => 'login', 'quiz' => 'open_quiz'];
                 foreach ($flosc_visitor_menu_raw as $flosc_key => $flosc_item) {
                     if (!empty($flosc_item['enabled'])) {
-                        $flosc_visitor_menu[] = ['label' => $flosc_item['label'] ?? ucfirst($key), 'action' => $flosc_action_map[$key] ?? $key];
+                        $flosc_visitor_menu[] = ['label' => $flosc_item['label'] ?? ucfirst($flosc_key), 'action' => $flosc_action_map[$flosc_key] ?? $flosc_key];
                     }
                 }
             } else {
@@ -285,7 +282,7 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
                 <div class="profile-info">
                     <div class="profile-name" data-show="visitor">
                         <span class="flosc-visitor-label-text"><?php echo esc_html($flosc_visitor_label_base); ?></span>
-                        <span class="flosc-visitor-token-count" id="flosc_visitor_token_count">(<?php echo esc_html($flosc_visitor_token_grant_display); ?> / <?php echo esc_html($flosc_millicents_per_message_display); ?>)</span>
+                        <span class="flosc-visitor-token-count" id="flosc_visitor_token_count">(<?php echo esc_html($flosc_visitor_wallet_initial_display); ?>)</span>
                     </div>
                     <div class="profile-name" id="flosc_profile_name" data-show="logged-in"></div>
                     <div class="profile-badge" data-show="visitor"><?php echo esc_html($flosc_pb_visitor['badge']); ?></div>
@@ -789,6 +786,16 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 $flosc_rest_prefix = rest_get_url_prefix(); // usually "wp-json"
                 $flosc_rest_base = $flosc_scheme . $flosc_current_host . '/' . $flosc_rest_prefix . '/flosc/v1';
             }
+
+            $flosc_companion_mode = sanitize_text_field((string) ($flow_settings['companion_content_display_mode'] ?? 'in_chat'));
+            $flosc_companion_enabled = !empty($flow_settings['companion_enabled']);
+            $flosc_companion_handoff_enabled = $flosc_companion_enabled && in_array($flosc_companion_mode, ['companion', 'both'], true);
+            $flosc_companion_state_storage = sanitize_text_field((string) ($flow_settings['companion_state_storage'] ?? 'session'));
+            if (!in_array($flosc_companion_state_storage, ['session', 'local'], true)) {
+                $flosc_companion_state_storage = 'session';
+            }
+            $flosc_companion_state_key = 'flosc_companion_state_' . md5((string) $flosc_app_url);
+            $flosc_companion_collapse_url = esc_url_raw(home_url('/'));
             
             echo wp_json_encode([
             'restUrl' => $flosc_rest_base . '/',
@@ -823,6 +830,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'identity' => $identity,
             'offers' => array_values($offers),
             'appUrl' => $flosc_app_url,
+            'companionHandoffEnabled' => $flosc_companion_handoff_enabled,
+            'companionCollapseUrl' => $flosc_companion_collapse_url,
+            'companionStateKey' => $flosc_companion_state_key,
+            'companionStateStorage' => $flosc_companion_state_storage,
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'profileUrl' => ($current_user && function_exists('bp_core_get_user_domain')) ? bp_core_get_user_domain($current_user->ID) : admin_url('profile.php'),
             'dashboardUrl' => admin_url(),
@@ -847,15 +858,15 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 ];
             })(),
             'visitorTokenDisplay' => [
-                'value' => $flosc_visitor_token_grant,
-                'formatted' => $flosc_visitor_token_grant_display,
+                'value' => $flosc_visitor_wallet_initial,
+                'formatted' => $flosc_visitor_wallet_initial_display,
                 'realMillicents' => $flosc_real_millicents_per_message,
                 'lowThreshold' => max(0, intval($flosc_current_flow['visitor_low_token_threshold'] ?? 0)),
                 'depletedContactMode' => $this->flosc_get_visitor_depleted_contact_mode($flow_id),
                 'depletedContactLabels' => [
-                    'title' => trim((string) ($flow_settings['contact_form_title'] ?? 'Contact')),
-                    'intro' => trim((string) ($flow_settings['contact_form_intro'] ?? 'Please fill out this form to continue.')),
-                    'submitText' => trim((string) ($flow_settings['contact_form_submit_text'] ?? 'Send')),
+                    'title' => trim((string) ($flow_settings['contact_form_title'] ?? 'Request Guest Account')),
+                    'intro' => trim((string) ($flow_settings['contact_form_intro'] ?? 'Dear visitor, your chat tokens are used up for now. You can request a Guest account and Dainis will email you a link to keep chatting — or reach him directly. Share your details below and let him know what you are interested in.')),
+                    'submitText' => trim((string) ($flow_settings['contact_form_submit_text'] ?? 'Request Guest Account')),
                 ],
                 'label' => $flosc_visitor_label_base,
             ],

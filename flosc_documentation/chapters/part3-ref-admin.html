@@ -154,6 +154,36 @@
 <h2 id="admin-commerce">Commerce Pages</h2>
 <p class="skeleton-marker">Content pending.</p>
 
+<h3 id="tab-payments">Token Management (admin/token-management.php)</h3>
+<p>Token Management controls visitor/guest/member chat wallet behavior for the selected flow. This section is the practical map for what each field does in runtime.</p>
+<p>Design principle: FLOSC runs as a token-native economy. A floscAdmin can model total delivery economics here, not only raw AI API cost.</p>
+
+<h4 id="tab-payments-runtime-rule">Runtime Debit Rule (Current Behavior)</h4>
+<p>Each chargeable AI chat turn debits the configured AI chat token cost from the active wallet.</p>
+<p>Default behavior in this build: AI chat cost defaults to the flow value <strong>tokens_communication_tokens_per_message</strong> unless explicitly overridden by token-provider settings.</p>
+<p>Real-cost metadata (provider billing usage and real millicents) is logged and returned in payloads for observability, while runtime control remains FLOSC-token based in this path.</p>
+
+<h4 id="tab-payments-fields">Field-by-Field Meaning</h4>
+<p><strong>Enforce Chat Token Charging</strong>: Per-flow on/off switch for charging chat turns.</p>
+<p><strong>Visitor Wallet Initial Amount</strong> (<code>tokens_communication_tokens_per_message</code>): Flow baseline wallet amount and default per-turn debit baseline.</p>
+<p><strong>Nominal Display Factor</strong> (<code>tokens_nominal_millicents_per_token_*</code>): Nominal valuation ratio for your FLOSC token economy (for example, including margin for lesson delivery and support).</p>
+<p><strong>Real Billing Factor</strong> (<code>tokens_real_millicents_per_token_*</code>): Real-cost valuation ratio used to interpret provider spend inside the FLOSC token model and reports.</p>
+<p><strong>Become A Guest Token Grant</strong> (<code>guest_token_grant</code>): Tokens granted to guest/login flow when assigned. Used in low/depleted copy placeholder math.</p>
+<p><strong>Low Tokens Threshold</strong> (<code>visitor_low_token_threshold</code>): Value at or below which low-token message can appear.</p>
+<p><strong>Low Tokens Message</strong> and <strong>Depleted Token Message</strong>: Per-flow copy, supports <code>{token_grant}</code> placeholder.</p>
+<p><strong>Redirect After Session End</strong> and <strong>Depleted Token Mode</strong>: Defines post-depletion capture UX and optional redirect destination.</p>
+
+<h4 id="tab-payments-formulas">Practical Formulas</h4>
+<p><strong>Nominal reference millicents per message</strong> = <code>tokens_communication_tokens_per_message × nominal_factor</code>.</p>
+<p><strong>Real reference millicents per message</strong> = <code>tokens_communication_tokens_per_message × real_factor</code>.</p>
+<p><strong>Runtime token debit per chargeable turn</strong> = <code>AI Query Cost</code> (default baseline is <code>tokens_communication_tokens_per_message</code>).</p>
+<p><strong>Chat log telemetry per exchange</strong> = provider input/output/total tokens + actual real millicents.</p>
+
+<h4 id="tab-payments-troubleshooting">Troubleshooting Quick Checks</h4>
+<p>If tokens drain too fast: verify chat charging is enabled intentionally, confirm the flow baseline value, and verify AI Query Cost has not been set higher than expected.</p>
+<p>If low/depleted messages look wrong: confirm <code>guest_token_grant</code> and the <code>{token_grant}</code> placeholder copy.</p>
+<p>If UI numbers look inconsistent: compare runtime wallet value with server payload <code>token_balance.value</code> for the same session.</p>
+
 <h3 id="admin-offers">offers.php — Offer Configuration</h3>
 <p class="skeleton-marker">Content pending.</p>
 

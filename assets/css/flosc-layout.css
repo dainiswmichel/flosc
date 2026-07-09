@@ -3006,6 +3006,26 @@ img.flosc-profile-avatar {
     position: relative;
 }
 
+/* Admin-inserted assistant message treatment for standalone chat surfaces. */
+.message.assistant .message-text.flosc-admin-message-text,
+.message.assistant .flosc-admin-message-text {
+    background: var(--flosc-admin-message-bg, linear-gradient(135deg, #c7edd5 0%, #e7f7ee 100%));
+    border: 1px solid var(--flosc-admin-message-border, #6fbe8f);
+    border-radius: 10px;
+    padding: 8px 12px;
+    box-shadow: 0 1px 0 rgba(23, 97, 58, 0.08), 0 8px 18px rgba(23, 97, 58, 0.08);
+    color: var(--flosc-admin-message-color, #0f4f2e);
+    font-style: italic;
+}
+
+.message.assistant .flosc-admin-message-meta {
+    font-size: 12px;
+    color: var(--flosc-admin-message-meta, #13683b);
+    font-weight: 700;
+    font-style: normal;
+    margin-bottom: 3px;
+}
+
 /* Admin feedback wrapper — holds praise + flag buttons */
 .flosc-admin-feedback {
     position: absolute;
@@ -3270,3 +3290,111 @@ img.flosc-profile-avatar {
 
 .flosc-free-lesson-card-icon { font-size: 20px; flex-shrink: 0; }
 .flosc-free-lesson-card-title { flex: 1; }
+
+/* ============================================
+   ADMIN TEST PANEL — scroll cap + colored group boxes
+   Lives here because the /chat app surface loads flosc-layout.css (not
+   flosc-chat.css). Keep in sync if the admin panel markup changes.
+   ============================================ */
+#flosc_input_user_autoprompts_panel.flosc-admin-test-panel {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+}
+
+.flosc-admin-panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 5px;
+}
+
+#flosc_input_user_autoprompts_panel.flosc-admin-test-panel .flosc-admin-panel-body {
+    max-height: 50vh;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+
+.flosc-admin-panel-body.flosc-hidden {
+    display: none;
+}
+
+.flosc-admin-pill-group {
+    border-radius: 8px;
+    padding: 7px 10px;
+    margin-bottom: 5px;
+}
+
+.flosc-admin-pill-group-visitor {
+    background: #f0f0f1;
+    border: 1px solid #c3c4c7;
+}
+
+.flosc-admin-pill-group-guest,
+.flosc-admin-pill-group-offer {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+}
+
+.flosc-admin-pill-group-member {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+}
+
+.flosc-admin-pill-group-quiz {
+    background: #ede9fe;
+    border: 1px solid #a78bfa;
+}
+
+.flosc-admin-pill-group-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.flosc-admin-pill-group-visitor .flosc-admin-pill-group-title {
+    color: #3c434a;
+}
+
+.flosc-admin-pill-group-guest .flosc-admin-pill-group-title,
+.flosc-admin-pill-group-offer .flosc-admin-pill-group-title {
+    color: #92400e;
+}
+
+.flosc-admin-pill-group-member .flosc-admin-pill-group-title {
+    color: #166534;
+}
+
+.flosc-admin-pill-group-quiz .flosc-admin-pill-group-title {
+    color: #5b21b6;
+}
+
+.flosc-admin-pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* ============================================
+   COMPANION EMBED — docked /chat via ?flosc_companion=1
+   Same session/content as the full page; only the display differs. Hide the
+   sidebar so the docked panel shows just the conversation + input; the full
+   page (no flag) keeps its sidebar.
+   ============================================ */
+body.flosc-companion-embed .flosc-sidebar,
+body.flosc-companion-embed .flosc-sidebar-overlay,
+body.flosc-companion-embed #flosc_app_sidebar_toggle {
+    display: none !important;
+}
+
+body.flosc-companion-embed .flosc-main {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+}

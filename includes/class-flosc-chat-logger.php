@@ -26,6 +26,89 @@ class FLOSC_Chat_Logger {
         $this->table_name = $wpdb->prefix . 'flosc_chat_logs';
     }
 
+    private function flosc_archived_sessions_option_name() {
+        return 'flosc_archived_chat_sessions';
+    }
+
+    private function flosc_archive_bucket_key($flow_id = '') {
+        $flow_id = sanitize_text_field((string) $flow_id);
+        return $flow_id !== '' ? $flow_id : '__all';
+    }
+
+    public static function flosc_session_key_from_descriptor($by, $value) {
+        $by = in_array($by, ['session', 'user', 'ip'], true) ? $by : '';
+        if ($by === '') {
+            return '';
+        }
+
+        if ($by === 'session') {
+            $session_id = intval($value);
+            return $session_id > 0 ? 's' . $session_id : '';
+        }
+
+        if ($by === 'user') {
+            $user_id = intval($value);
+            return $user_id > 0 ? 'u' . $user_id : '';
+        }
+
+        $ip = sanitize_text_field((string) $value);
+        return $ip !== '' ? 'ip' . $ip : '';
+    }
+
+    public function flosc_get_archived_session_keys($flow_id = '') {
+        $bucket = $this->flosc_archive_bucket_key($flow_id);
+        $all = get_option($this->flosc_archived_sessions_option_name(), []);
+        if (!is_array($all)) {
+            return [];
+        }
+
+        $keys = $all[$bucket] ?? [];
+        if (!is_array($keys)) {
+            return [];
+        }
+
+        $keys = array_values(array_filter(array_map('sanitize_text_field', $keys)));
+        return array_values(array_unique($keys));
+    }
+
+    public function flosc_set_session_archived($by, $value, $flow_id = '', $archived = true) {
+        $key = self::flosc_session_key_from_descriptor($by, $value);
+        if ($key === '') {
+            return false;
+        }
+
+        $bucket = $this->flosc_archive_bucket_key($flow_id);
+        $all = get_option($this->flosc_archived_sessions_option_name(), []);
+        if (!is_array($all)) {
+            $all = [];
+        }
+
+        $keys = $all[$bucket] ?? [];
+        if (!is_array($keys)) {
+            $keys = [];
+        }
+
+        $keys = array_values(array_unique(array_filter(array_map('sanitize_text_field', $keys))));
+
+        if ($archived) {
+            if (!in_array($key, $keys, true)) {
+                $keys[] = $key;
+            }
+        } else {
+            $keys = array_values(array_filter($keys, static function ($existing_key) use ($key) {
+                return $existing_key !== $key;
+            }));
+        }
+
+        if (empty($keys)) {
+            unset($all[$bucket]);
+        } else {
+            $all[$bucket] = $keys;
+        }
+
+        return update_option($this->flosc_archived_sessions_option_name(), $all, false);
+    }
+
     /**
      * Create the chat logs table if it doesn't exist.
      * Called on plugin activation and on first use.
@@ -492,12 +575,14 @@ class FLOSC_Chat_Logger {
      * @param int    $max_rows Safety cap on rows scanned (default 800).
      * @return array List of session arrays.
      */
-    public function flosc_get_sessions($flow_id = '', $max_rows = 800) {
+    public function flosc_get_sessions($flow_id = '', $max_rows = 800, $archive_status = 'active') {
         global $wpdb;
         $this->flosc_ensure_table();
 
         $flow_id  = sanitize_text_field((string) $flow_id);
         $max_rows = max(1, min(5000, intval($max_rows)));
+        $archive_status = in_array($archive_status, ['active', 'archived', 'all'], true) ? $archive_status : 'active';
+        $archived_lookup = array_fill_keys($this->flosc_get_archived_session_keys($flow_id), true);
 
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only grouped log listing on plugin-owned table
         $rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
@@ -518,6 +603,13 @@ class FLOSC_Chat_Logger {
         foreach ($rows as $r) {
             $d = self::flosc_session_descriptor($r);
             $k = $d['key'];
+            $is_archived = isset($archived_lookup[$k]);
+            if ($archive_status === 'active' && $is_archived) {
+                continue;
+            }
+            if ($archive_status === 'archived' && !$is_archived) {
+                continue;
+            }
             if (!isset($sessions[$k])) {
                 // Rows arrive newest-first, so the first one seen carries last activity.
                 $sessions[$k] = [
@@ -529,6 +621,7 @@ class FLOSC_Chat_Logger {
                     'flow_id'  => (string) $r['flow_id'],
                     'first_ts' => (string) $r['timestamp'],
                     'last_ts'  => (string) $r['timestamp'],
+                    'is_archived' => $is_archived,
                     'turns'    => 0,
                     'rows'     => [],
                 ];
@@ -579,6 +672,7 @@ class FLOSC_Chat_Logger {
             if ($sid <= 0) {
                 return 0;
             }
+            $this->flosc_set_session_archived($by, (string) $sid, $flow_id, false);
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit admin session delete on plugin-owned table
             return (int) $wpdb->query($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
                 "DELETE FROM %i WHERE session_id = %d AND ( %s = '' OR flow_id = %s )",
@@ -591,6 +685,7 @@ class FLOSC_Chat_Logger {
             if ($uid <= 0) {
                 return 0;
             }
+            $this->flosc_set_session_archived($by, (string) $uid, $flow_id, false);
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit admin session delete on plugin-owned table
             return (int) $wpdb->query($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
                 "DELETE FROM %i WHERE user_id = %d AND session_id = 0 AND ( %s = '' OR flow_id = %s )",
@@ -602,11 +697,75 @@ class FLOSC_Chat_Logger {
         if ($ip === '') {
             return 0;
         }
+        $this->flosc_set_session_archived($by, $ip, $flow_id, false);
         // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit admin session delete on plugin-owned table
         return (int) $wpdb->query($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
             "DELETE FROM %i WHERE visitor_ip = %s AND user_id = 0 AND session_id = 0 AND ( %s = '' OR flow_id = %s )",
             $this->table_name, $ip, $flow_id, $flow_id
         ));
+    }
+
+    public function flosc_get_session_rows($by, $value, $flow_id = '') {
+        global $wpdb;
+        $this->flosc_ensure_table();
+
+        $by = in_array($by, ['session', 'user', 'ip'], true) ? $by : '';
+        $flow_id = sanitize_text_field((string) $flow_id);
+        if ($by === '') {
+            return [];
+        }
+
+        if ($by === 'session') {
+            $sid = intval($value);
+            if ($sid <= 0) {
+                return [];
+            }
+
+            return $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only session export query on plugin-owned table
+                $wpdb->prepare(
+                    "SELECT * FROM %i WHERE session_id = %d AND ( %s = '' OR flow_id = %s ) ORDER BY id ASC",
+                    $this->table_name,
+                    $sid,
+                    $flow_id,
+                    $flow_id
+                ),
+                ARRAY_A
+            ) ?: [];
+        }
+
+        if ($by === 'user') {
+            $uid = intval($value);
+            if ($uid <= 0) {
+                return [];
+            }
+
+            return $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only session export query on plugin-owned table
+                $wpdb->prepare(
+                    "SELECT * FROM %i WHERE user_id = %d AND session_id = 0 AND ( %s = '' OR flow_id = %s ) ORDER BY id ASC",
+                    $this->table_name,
+                    $uid,
+                    $flow_id,
+                    $flow_id
+                ),
+                ARRAY_A
+            ) ?: [];
+        }
+
+        $ip = sanitize_text_field((string) $value);
+        if ($ip === '') {
+            return [];
+        }
+
+        return $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only session export query on plugin-owned table
+            $wpdb->prepare(
+                "SELECT * FROM %i WHERE visitor_ip = %s AND user_id = 0 AND session_id = 0 AND ( %s = '' OR flow_id = %s ) ORDER BY id ASC",
+                $this->table_name,
+                $ip,
+                $flow_id,
+                $flow_id
+            ),
+            ARRAY_A
+        ) ?: [];
     }
 
     /**

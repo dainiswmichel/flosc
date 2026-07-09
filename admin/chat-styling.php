@@ -46,8 +46,9 @@ $flosc_style_docs_url = add_query_arg([
 
 <?php
 
-// Handle reset action
-if (isset($_POST['flosc_reset_chat_style']) && check_admin_referer('flosc_reset_chat_style_nonce')) {
+// Handle reset action (runs inside the parent settings form)
+$flosc_reset_nonce = sanitize_text_field((string) ($_POST['flosc_reset_chat_style_nonce'] ?? ''));
+if (isset($_POST['flosc_reset_chat_style']) && wp_verify_nonce($flosc_reset_nonce, 'flosc_reset_chat_style_nonce')) {
     $flosc_reset_key = $GLOBALS['flosc_settings_key'] ?? '';
     if ($flosc_reset_key) {
         $flosc_fs = get_option($flosc_reset_key, []);
@@ -101,13 +102,13 @@ $flosc_bubble_styles = [
 ];
 ?>
 
-<!-- Reset Button -->
-<form method="post" class="flosc-chat-style-reset-form">
-    <?php wp_nonce_field('flosc_reset_chat_style_nonce'); ?>
+<!-- Reset Button (uses parent settings form) -->
+<div class="flosc-chat-style-reset-form">
+    <?php wp_nonce_field('flosc_reset_chat_style_nonce', 'flosc_reset_chat_style_nonce'); ?>
     <button type="submit" name="flosc_reset_chat_style" class="button flosc-chat-style-reset-btn" data-confirm-message="Reset all styling to defaults?">
         ↺ Reset to Default
     </button>
-</form>
+</div>
 
 <div class="flosc-chat-style-panel">
 <table class="form-table flosc-chat-style-form-table">

@@ -173,6 +173,23 @@ $flosc_target_exclude_categories = array_values(array_unique(array_map('intval',
 $flosc_target_exclude_tags = array_values(array_unique(array_map('intval', $flosc_target_exclude_tags)));
 $flosc_target_exclude_custom = array_values(array_unique(array_filter(array_map('trim', $flosc_target_exclude_custom))));
 
+$flosc_target_include_has_rules = !empty($flosc_target_include_pages)
+    || !empty($flosc_target_include_posts)
+    || !empty($flosc_target_include_categories)
+    || !empty($flosc_target_include_tags)
+    || !empty($flosc_target_include_custom);
+$flosc_target_exclude_has_rules = !empty($flosc_target_exclude_pages)
+    || !empty($flosc_target_exclude_posts)
+    || !empty($flosc_target_exclude_categories)
+    || !empty($flosc_target_exclude_tags)
+    || !empty($flosc_target_exclude_custom);
+$flosc_target_has_any_rules = $flosc_target_include_has_rules || $flosc_target_exclude_has_rules;
+$flosc_target_mode = $flosc_target_include_has_rules ? 'selected' : 'sitewide';
+$flosc_companion_quick_enabled = (
+    $flosc_enabled === '1'
+    && ($flosc_content_display_mode === 'companion' || $flosc_content_display_mode === 'both')
+);
+
 $flosc_target_pages = get_pages([
     'sort_column' => 'post_title',
     'sort_order' => 'ASC',
@@ -351,6 +368,19 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
 
 <table class="form-table">
     <tr>
+        <th scope="row"><label for="flosc_companion_quick_toggle">Companion Quick Toggle</label></th>
+        <td>
+            <label>
+                <input type="checkbox" id="flosc_companion_quick_toggle" name="flow_companion_sitewide_master" value="1" <?php checked($flosc_companion_quick_enabled); ?>>
+                Sitewide ON/OFF for everyone
+            </label>
+            <p class="description">ON enables companion for visitors, guests, and members sitewide (except the full-page chatbot URL), with fullscreen behavior on open. Exclusions can still be added in Target Parameters.</p>
+        </td>
+    </tr>
+</table>
+
+<table class="form-table">
+    <tr>
         <th scope="row"><label for="flow_companion_content_display_mode">Display Mode</label></th>
         <td>
             <fieldset>
@@ -406,7 +436,26 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
             <th scope="row">Target Parameters</th>
             <td>
                 <p class="description">Select exactly where companion mode runs. These parameters write targeting rules automatically.</p>
-                <div class="flosc-companion-target-grid">
+                <fieldset class="flosc-companion-target-mode" id="flosc-companion-target-mode">
+                    <label>
+                        <input type="radio" name="flow_companion_target_mode" value="sitewide" <?php checked($flosc_target_mode, 'sitewide'); ?>>
+                        Sitewide (recommended): show on all pages, then use Exclude rules where needed.
+                    </label>
+                    <br>
+                    <label>
+                        <input type="radio" name="flow_companion_target_mode" value="selected" <?php checked($flosc_target_mode, 'selected'); ?>>
+                        Selected pages only: define explicit Include rules below.
+                    </label>
+                </fieldset>
+                <div class="flosc-companion-target-advanced-toggle">
+                    <label>
+                        <input type="checkbox" id="flow_companion_targeting_customize" <?php checked($flosc_target_has_any_rules); ?>>
+                        Customize targeting (advanced)
+                    </label>
+                </div>
+                <p id="flosc-companion-targets-disabled-note" class="flosc-companion-targets-disabled-note">Companion will run everywhere except chatbot page while advanced targeting is off.</p>
+                <div id="flosc-companion-target-groups">
+                <div class="flosc-companion-target-grid flosc-companion-target-include">
                     <div class="flosc-companion-target-column">
                         <strong>Include: Pages</strong>
                         <select name="flow_companion_include_pages[]" id="flow_companion_include_pages" multiple size="6" class="widefat">
@@ -431,7 +480,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
                     </div>
                 </div>
 
-                <div class="flosc-companion-target-grid">
+                <div class="flosc-companion-target-grid flosc-companion-target-include">
                     <div class="flosc-companion-target-column">
                         <strong>Include: Categories</strong>
                         <select name="flow_companion_include_categories[]" id="flow_companion_include_categories" multiple size="6" class="widefat">
@@ -461,7 +510,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
                     </div>
                 </div>
 
-                <div class="flosc-companion-target-grid flosc-companion-target-grid-spaced">
+                <div class="flosc-companion-target-grid flosc-companion-target-grid-spaced flosc-companion-target-exclude">
                     <div class="flosc-companion-target-column">
                         <strong>Exclude: Pages</strong>
                         <select name="flow_companion_exclude_pages[]" id="flow_companion_exclude_pages" multiple size="6" class="widefat">
@@ -486,7 +535,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
                     </div>
                 </div>
 
-                <div class="flosc-companion-target-grid">
+                <div class="flosc-companion-target-grid flosc-companion-target-exclude">
                     <div class="flosc-companion-target-column">
                         <strong>Exclude: Categories</strong>
                         <select name="flow_companion_exclude_categories[]" id="flow_companion_exclude_categories" multiple size="6" class="widefat">
@@ -514,6 +563,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
                             <?php endif; ?>
                         </select>
                     </div>
+                </div>
                 </div>
 
                 <p class="description">Hold Cmd/Ctrl to multi-select. Include rules define where widget may run; exclude rules always override include rules.</p>
@@ -874,7 +924,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
             </td>
         </tr>
 
-        <tr>
+        <tr id="flosc-companion-target-include-custom-row">
             <th scope="row"><label for="flow_companion_target_include_custom">Additional Include Rules</label></th>
             <td>
                 <textarea name="flow_companion_target_include_custom" id="flow_companion_target_include_custom" rows="4" class="large-text code"><?php echo esc_textarea(implode("\n", $flosc_target_include_custom)); ?></textarea>
@@ -882,7 +932,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
             </td>
         </tr>
 
-        <tr>
+        <tr id="flosc-companion-target-exclude-custom-row">
             <th scope="row"><label for="flow_companion_target_exclude_custom">Additional Exclude Rules</label></th>
             <td>
                 <textarea name="flow_companion_target_exclude_custom" id="flow_companion_target_exclude_custom" rows="4" class="large-text code"><?php echo esc_textarea(implode("\n", $flosc_target_exclude_custom)); ?></textarea>
@@ -947,6 +997,30 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
 
 <?php ob_start(); ?>
 jQuery(document).ready(function($) {
+    function applyCompanionQuickToggle() {
+        var quickEnabled = $('#flosc_companion_quick_toggle').is(':checked');
+        if (quickEnabled) {
+            $('input[name="flow_companion_content_display_mode"][value="both"]').prop('checked', true);
+            $('#flow_companion_enabled').prop('checked', true);
+            $('#flow_companion_show_for_visitors').prop('checked', true);
+            $('#flow_companion_allow_fullscreen').prop('checked', true);
+            $('#flow_companion_default_fullscreen').prop('checked', true);
+            $('#flow_companion_auto_open_enabled').prop('checked', true);
+            $('#flow_companion_auto_open_once_per_session').prop('checked', true);
+            if ((parseInt($('#flow_companion_auto_open_delay_ms').val(), 10) || 0) < 600) {
+                $('#flow_companion_auto_open_delay_ms').val('800');
+            }
+            $('#flow_companion_mobile_behavior').val('fullscreen');
+            $('input[name="flow_companion_target_mode"][value="sitewide"]').prop('checked', true);
+            updateCompanionTargetMode();
+        } else {
+            $('input[name="flow_companion_content_display_mode"][value="in_chat"]').prop('checked', true);
+            $('#flow_companion_enabled').prop('checked', false);
+        }
+
+        toggleCompanionSettings();
+    }
+
     // Toggle widget settings visibility based on display mode
     function toggleCompanionSettings() {
         var mode = $('input[name="flow_companion_content_display_mode"]:checked').val();
@@ -961,9 +1035,15 @@ jQuery(document).ready(function($) {
         // Highlight selected radio card
         $('.flosc-companion-mode-card').removeClass('is-active');
         $('input[name="flow_companion_content_display_mode"]:checked').closest('.flosc-companion-mode-card').addClass('is-active');
+
+        // Companion and Both modes require the widget shell; auto-enable to avoid hidden misconfiguration.
+        if ((mode === 'companion' || mode === 'both') && !$('#flow_companion_enabled').is(':checked')) {
+            $('#flow_companion_enabled').prop('checked', true);
+        }
     }
     
     $('input[name="flow_companion_content_display_mode"]').on('change', toggleCompanionSettings);
+    $('#flosc_companion_quick_toggle').on('change', applyCompanionQuickToggle);
     
     // Sync color picker with hex display
     $('#flow_companion_accent_color').on('input', function() {
@@ -1033,7 +1113,50 @@ jQuery(document).ready(function($) {
     $('#flow_companion_auto_open_enabled, #flow_companion_auto_open_delay_ms, #flow_companion_auto_open_once_per_session, #flow_companion_launch_on_exit_intent, #flow_companion_launch_on_scroll_threshold, #flow_companion_launch_on_scroll_percent, #flow_companion_trigger_cooldown_ms, #flow_companion_allow_fullscreen, #flow_companion_default_fullscreen, #flow_companion_remember_open_state, #flow_companion_state_storage')
         .on('change input', updateCompanionValidationHints);
 
+    function updateCompanionTargetMode() {
+        var mode = $('input[name="flow_companion_target_mode"]:checked').val() || 'sitewide';
+        var advancedEnabled = $('#flow_companion_targeting_customize').is(':checked');
+        var disableIncludes = (mode === 'sitewide') || !advancedEnabled;
+        var disableExcludes = !advancedEnabled;
+
+        $('#flosc-companion-target-groups').toggleClass('flosc-companion-targets-disabled', !advancedEnabled);
+        $('#flosc-companion-targets-disabled-note').toggle(!advancedEnabled);
+        $('#flosc-companion-target-include-custom-row').toggle(advancedEnabled && mode !== 'sitewide');
+        $('#flosc-companion-target-exclude-custom-row').toggle(advancedEnabled);
+
+        $('#flow_companion_include_pages, #flow_companion_include_posts, #flow_companion_include_categories, #flow_companion_include_tags, #flow_companion_target_include_custom')
+            .prop('disabled', disableIncludes);
+        $('#flow_companion_exclude_pages, #flow_companion_exclude_posts, #flow_companion_exclude_categories, #flow_companion_exclude_tags, #flow_companion_target_exclude_custom')
+            .prop('disabled', disableExcludes);
+    }
+
+    $('input[name="flow_companion_target_mode"]').on('change', updateCompanionTargetMode);
+    $('#flow_companion_targeting_customize').on('change', updateCompanionTargetMode);
+
+    $('.flosc-settings-form').on('submit', function() {
+        var mode = $('input[name="flow_companion_target_mode"]:checked').val() || 'sitewide';
+        var advancedEnabled = $('#flow_companion_targeting_customize').is(':checked');
+
+        if (!advancedEnabled) {
+            $('#flow_companion_include_pages option, #flow_companion_include_posts option, #flow_companion_include_categories option, #flow_companion_include_tags option').prop('selected', false);
+            $('#flow_companion_exclude_pages option, #flow_companion_exclude_posts option, #flow_companion_exclude_categories option, #flow_companion_exclude_tags option').prop('selected', false);
+            $('#flow_companion_target_include_custom').val('');
+            $('#flow_companion_target_exclude_custom').val('');
+            return;
+        }
+
+        if (mode !== 'sitewide') {
+            return;
+        }
+
+        $('#flow_companion_include_pages option, #flow_companion_include_posts option, #flow_companion_include_categories option, #flow_companion_include_tags option')
+            .prop('selected', false);
+        $('#flow_companion_target_include_custom').val('');
+    });
+
     $('#flow_companion_accent_color').trigger('input');
+    applyCompanionQuickToggle();
     updateCompanionValidationHints();
+    updateCompanionTargetMode();
 });
 <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>

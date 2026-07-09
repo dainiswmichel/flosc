@@ -11,6 +11,132 @@ if (!defined('ABSPATH')) {
 
 trait FLOSC_Visitor_Token_Trait {
     /**
+     * Flow-scoped visitor wallet initial amount.
+     *
+     * This is the runtime baseline for anonymous visitor sessions and should
+     * match the Token Management "Visitor Wallet Initial Amount" setting.
+     */
+    private function flosc_get_visitor_wallet_initial_amount($flow_id = '', $token_provider = null) {
+        $flow_stem = $this->flosc_normalize_flow_stem((string) $flow_id);
+        $settings = get_option('flosc_flow_' . $flow_stem, []);
+        if (is_array($settings) && isset($settings['tokens_communication_tokens_per_message'])) {
+            $configured = intval($settings['tokens_communication_tokens_per_message']);
+            if ($configured > 0) {
+                return $configured;
+            }
+        }
+
+        $global_default = intval(get_option('flosc_tokens_communication_tokens_per_message', 5000));
+        if ($global_default <= 0) {
+            $global_default = 5000;
+        }
+
+        if ($token_provider && method_exists($token_provider, 'get_communication_economics')) {
+            $economics = (array) $token_provider->get_communication_economics();
+            $provider_default = intval($economics['tokens_per_message'] ?? 0);
+            if ($provider_default > 0) {
+                return $provider_default;
+            }
+        }
+
+        return $global_default;
+    }
+
+    /**
+     * Resolve per-chat AI token charge for this flow.
+     *
+     * Priority:
+     * 1) Flow override: cost_ai_query
+     * 2) Global override option: flosc_cost_ai_query
+     * 3) Visitor wallet baseline: tokens_communication_tokens_per_message
+     */
+    private function flosc_get_ai_query_token_cost($flow_id = '', $token_provider = null) {
+        $flow_stem = $this->flosc_normalize_flow_stem((string) $flow_id);
+        $settings = get_option('flosc_flow_' . $flow_stem, []);
+        if (is_array($settings) && isset($settings['cost_ai_query'])) {
+            $flow_override = intval($settings['cost_ai_query']);
+            if ($flow_override > 0) {
+                return $flow_override;
+            }
+        }
+
+        $global_override = intval(get_option('flosc_cost_ai_query', 0));
+        if ($global_override > 0) {
+            return $global_override;
+        }
+
+        return max(1, intval($this->flosc_get_visitor_wallet_initial_amount((string) $flow_id, $token_provider)));
+    }
+
+    /**
+     * Resolve the actual token debit for a chat turn.
+     *
+     * When provider billing data is available, convert the reported real
+     * millicent cost into tokens using the configured real factor. Otherwise,
+     * fall back to the configured/default AI query token cost.
+     */
+    private function flosc_resolve_chat_charge_tokens($flow_id, $token_provider, $billing_meta = []) {
+        // Primary: debit the REAL provider cost, converted to floscTokens via the
+        // configured ratio (Token Management -> Real Millicents per Token).
+        $real_millicents = max(0, intval($billing_meta['real_millicents'] ?? 0));
+        if ($real_millicents > 0 && $token_provider && method_exists($token_provider, 'convert_real_millicents_to_tokens')) {
+            $converted = intval($token_provider->convert_real_millicents_to_tokens($real_millicents));
+            if ($converted > 0) {
+                return $converted;
+            }
+        }
+
+        // No billing metadata (the AI API reported no usage/cost). If an admin set an
+        // explicit flat per-turn cost, use it; otherwise debit 1 as a deliberate
+        // "billing unavailable" signal -- a wallet ticking down by 1/turn tells the
+        // floscAdmin the provider isn't reporting cost (a broken/misconfigured API).
+        $flow_stem = $this->flosc_normalize_flow_stem((string) $flow_id);
+        $settings = get_option('flosc_flow_' . $flow_stem, []);
+        $flat = (is_array($settings) && isset($settings['cost_ai_query'])) ? intval($settings['cost_ai_query']) : 0;
+        if ($flat <= 0) {
+            $flat = intval(get_option('flosc_cost_ai_query', 0));
+        }
+        return $flat > 0 ? $flat : 1;
+    }
+
+    /**
+     * Flow-scoped member wallet initial amount.
+     *
+     * Falls back to guest grant for backward compatibility until a dedicated
+     * member amount is configured for the flow.
+     */
+    private function flosc_get_member_token_grant_amount($flow_id = '', $user_id = 0) {
+        $flow_id = sanitize_key((string) $flow_id);
+        $user_id = absint($user_id);
+
+        $context = $this->get_guest_email_context($flow_id, $user_id);
+        $settings = (array) ($context['settings'] ?? []);
+
+        if (isset($settings['member_token_grant'])) {
+            return max(0, intval($settings['member_token_grant']));
+        }
+
+        return $this->flosc_get_guest_token_grant_amount($flow_id, $user_id);
+    }
+
+    /**
+     * Initial logged-in wallet amount for this flow.
+     */
+    private function flosc_get_user_flow_initial_amount($user_id, $flow_id = '') {
+        $user_id = absint($user_id);
+        if ($user_id <= 0) {
+            return 0;
+        }
+
+        $has_member_access = ('true' === get_user_meta($user_id, '_flosc_member_access', true));
+        if ($has_member_access) {
+            return max(0, intval($this->flosc_get_member_token_grant_amount((string) $flow_id, $user_id)));
+        }
+
+        return max(0, intval($this->flosc_get_guest_token_grant_amount((string) $flow_id, $user_id)));
+    }
+
+    /**
      * Whether chat token charging is enforced for the given flow.
      * Default is enabled unless the flow explicitly disables it.
      */
@@ -30,20 +156,10 @@ trait FLOSC_Visitor_Token_Trait {
 
     /**
      * Initial visitor token balance for a flow.
-     * Uses the flow grant so chat reset/new visitor behavior is configurable.
+     * Uses visitor wallet initial amount configured in Token Management.
      */
     private function flosc_get_initial_visitor_token_balance($flow_id = '', $token_provider = null) {
-        $from_grant = max(0, intval($this->flosc_get_guest_token_grant_amount((string) $flow_id, 0)));
-        if ($from_grant > 0) {
-            return $from_grant;
-        }
-
-        if ($token_provider && method_exists($token_provider, 'get_communication_economics')) {
-            $economics = (array) $token_provider->get_communication_economics();
-            return max(0, intval($economics['tokens_per_message'] ?? 5000));
-        }
-
-        return 5000;
+        return max(0, intval($this->flosc_get_visitor_wallet_initial_amount((string) $flow_id, $token_provider)));
     }
 
     /**
@@ -80,7 +196,7 @@ trait FLOSC_Visitor_Token_Trait {
             return max(0, intval($stored));
         }
 
-        $baseline = max(0, intval($this->flosc_get_guest_token_grant_amount((string) $flow_id, $user_id)));
+        $baseline = max(0, intval($this->flosc_get_user_flow_initial_amount($user_id, (string) $flow_id)));
         update_user_meta($user_id, $meta_key, $baseline);
         return $baseline;
     }
@@ -108,7 +224,7 @@ trait FLOSC_Visitor_Token_Trait {
             return 0;
         }
 
-        $baseline = max(0, intval($this->flosc_get_guest_token_grant_amount((string) $flow_id, $user_id)));
+        $baseline = max(0, intval($this->flosc_get_user_flow_initial_amount($user_id, (string) $flow_id)));
         $current = $this->flosc_get_user_flow_token_balance($user_id, $flow_id);
         if ($current >= $baseline) {
             return $current;
@@ -131,15 +247,7 @@ trait FLOSC_Visitor_Token_Trait {
             ];
         }
 
-        $action_costs = method_exists($token_provider, 'get_action_costs')
-            ? (array) $token_provider->get_action_costs()
-            : [];
-        $charge_tokens = max(0, intval($action_costs['ai_query'] ?? 0));
-
-        $real_millicents = intval($billing_meta['real_millicents'] ?? 0);
-        if ($real_millicents > 0 && method_exists($token_provider, 'convert_real_millicents_to_tokens')) {
-            $charge_tokens = max(1, intval($token_provider->convert_real_millicents_to_tokens($real_millicents)));
-        }
+        $charge_tokens = max(0, intval($this->flosc_resolve_chat_charge_tokens($flow_id, $token_provider, $billing_meta)));
 
         $balance_before = $this->flosc_get_user_flow_token_balance($user_id, $flow_id);
         if ($charge_tokens <= 0 || $balance_before < $charge_tokens) {

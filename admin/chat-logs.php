@@ -41,6 +41,15 @@ $flosc_view_base = add_query_arg([
 ], admin_url('admin.php'));
 $flosc_sessions_url = add_query_arg('logview', 'sessions', $flosc_view_base);
 $flosc_flat_url     = add_query_arg('logview', 'flat', $flosc_view_base);
+$flosc_session_scope = (isset($flosc_get['session_scope']) && $flosc_get['session_scope'] === 'archived') ? 'archived' : 'active';
+$flosc_sessions_active_url = add_query_arg([
+    'logview' => 'sessions',
+    'session_scope' => 'active',
+], $flosc_view_base);
+$flosc_sessions_archived_url = add_query_arg([
+    'logview' => 'sessions',
+    'session_scope' => 'archived',
+], $flosc_view_base);
 ?>
 
 <div class="flosc-chat-logs-wrap">
@@ -61,6 +70,14 @@ $flosc_flat_url     = add_query_arg('logview', 'flat', $flosc_view_base);
             <a href="<?php echo esc_url($flosc_sessions_url); ?>" class="<?php echo $flosc_logview === 'sessions' ? 'button button-primary button-small' : 'button button-small'; ?>">Sessions</a>
             <a href="<?php echo esc_url($flosc_flat_url); ?>" class="<?php echo $flosc_logview === 'flat' ? 'button button-primary button-small' : 'button button-small'; ?>">All entries</a>
         </span>
+
+        <?php if ($flosc_logview === 'sessions'): ?>
+            <span class="flosc-log-viewswitch flosc-log-viewswitch-spaced">
+                Scope:
+                <a href="<?php echo esc_url($flosc_sessions_active_url); ?>" class="<?php echo $flosc_session_scope === 'active' ? 'button button-primary button-small' : 'button button-small'; ?>">Active</a>
+                <a href="<?php echo esc_url($flosc_sessions_archived_url); ?>" class="<?php echo $flosc_session_scope === 'archived' ? 'button button-primary button-small' : 'button button-small'; ?>">Archived</a>
+            </span>
+        <?php endif; ?>
 
         <?php if ($flosc_logview === 'flat'): ?>
             <label for="flosc-log-filter-phase">Phase:</label>
@@ -86,11 +103,29 @@ $flosc_flat_url     = add_query_arg('logview', 'flat', $flosc_view_base);
     </div>
 
 <?php if ($flosc_logview === 'sessions'): ?>
-    <?php $flosc_sessions = $flosc_logger->flosc_get_sessions($flosc_current_flow_id, 800); ?>
+    <?php $flosc_sessions = $flosc_logger->flosc_get_sessions($flosc_current_flow_id, 800, $flosc_session_scope); ?>
     <?php // Chat Logs styles (.flosc-session*, .flosc-msg*) live in assets/css/flosc-admin.css, enqueued on FLOSC admin pages. ?>
+    <div class="flosc-session-bulk-toolbar">
+        <label class="flosc-session-bulk-checkall">
+            <input type="checkbox" id="flosc-session-select-all">
+            <span>Select all</span>
+        </label>
+        <button type="button" class="button" id="flosc-session-download-selected">Download Selected TSV</button>
+        <button type="button" class="button" id="flosc-session-archive-selected"><?php echo $flosc_session_scope === 'archived' ? 'Restore Selected' : 'Archive Selected'; ?></button>
+        <button type="button" class="button button-link-delete" id="flosc-session-delete-selected">Delete Selected</button>
+        <span class="flosc-session-selection-status" id="flosc-session-selection-status">0 selected</span>
+    </div>
+
+    <form id="flosc-session-download-form" method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
+        <input type="hidden" name="action" value="flosc_download_chat_tsv">
+        <input type="hidden" name="flow_id" value="<?php echo esc_attr($flosc_current_flow_id); ?>">
+        <input type="hidden" name="sessions" id="flosc-session-download-payload" value="">
+        <?php wp_nonce_field('flosc_download_chat_tsv'); ?>
+    </form>
+
     <div id="flosc-sessions">
         <?php if (empty($flosc_sessions)): ?>
-            <p class="description">No conversations yet. They'll appear here as people chat.</p>
+            <p class="description"><?php echo $flosc_session_scope === 'archived' ? 'No archived conversations for this flow yet.' : 'No conversations yet. They\'ll appear here as people chat.'; ?></p>
         <?php else: ?>
             <?php foreach ($flosc_sessions as $flosc_session): ?>
                 <?php echo wp_kses(flosc_render_chat_session($flosc_session), flosc_chat_session_allowed_html()); ?>
@@ -101,6 +136,92 @@ $flosc_flat_url     = add_query_arg('logview', 'flat', $flosc_view_base);
     <?php ob_start(); ?>
     jQuery(function($) {
         var nonce = '<?php echo esc_js($flosc_chat_logs_nonce); ?>';
+        var archiveOperation = '<?php echo esc_js($flosc_session_scope === 'archived' ? 'restore' : 'archive'); ?>';
+
+        function getSelectedSessions() {
+            return $('.flosc-session-select:checked').map(function() {
+                var $checkbox = $(this);
+                return {
+                    by: String($checkbox.data('by') || ''),
+                    value: String($checkbox.data('value') || '')
+                };
+            }).get().filter(function(item) {
+                return item.by !== '' && item.value !== '';
+            });
+        }
+
+        function updateSelectionStatus() {
+            var count = getSelectedSessions().length;
+            $('#flosc-session-selection-status').text(count + ' selected');
+            var total = $('.flosc-session-select').length;
+            $('#flosc-session-select-all').prop('checked', total > 0 && count === total);
+        }
+
+        function submitDownload(sessions) {
+            if (!sessions.length) {
+                alert('Select at least one conversation to download.');
+                return;
+            }
+
+            $('#flosc-session-download-payload').val(JSON.stringify(sessions));
+            $('#flosc-session-download-form').trigger('submit');
+        }
+
+        function manageSessions(operation, sessions) {
+            if (!sessions.length) {
+                alert('Select at least one conversation first.');
+                return;
+            }
+
+            var message = 'archive';
+            if (operation === 'restore') {
+                message = 'restore';
+            } else if (operation === 'delete') {
+                message = 'delete';
+            }
+
+            if (!confirm('Are you sure you want to ' + message + ' the selected conversation' + (sessions.length === 1 ? '' : 's') + '?')) {
+                return;
+            }
+
+            $.post(ajaxurl, {
+                action: 'flosc_manage_chat_sessions',
+                nonce: nonce,
+                flow_id: '<?php echo esc_js($flosc_current_flow_id); ?>',
+                operation: operation,
+                sessions: JSON.stringify(sessions)
+            }, function(res) {
+                if (res && res.success) {
+                    location.reload();
+                } else {
+                    alert((res && res.data && res.data.message) || 'Chat log action failed.');
+                }
+            }).fail(function() {
+                alert('Chat log action failed.');
+            });
+        }
+
+        $(document).on('click', '.flosc-session-control, .flosc-session-bulk-checkall input', function(e) {
+            e.stopPropagation();
+        });
+
+        $(document).on('change', '.flosc-session-select', updateSelectionStatus);
+        $('#flosc-session-select-all').on('change', function() {
+            $('.flosc-session-select').prop('checked', this.checked);
+            updateSelectionStatus();
+        });
+
+        $('#flosc-session-download-selected').on('click', function() {
+            submitDownload(getSelectedSessions());
+        });
+
+        $('#flosc-session-archive-selected').on('click', function() {
+            manageSessions(archiveOperation, getSelectedSessions());
+        });
+
+        $('#flosc-session-delete-selected').on('click', function() {
+            manageSessions('delete', getSelectedSessions());
+        });
 
         // Delete an entire conversation. stopPropagation so the click doesn't also
         // toggle the <details> it lives inside.
@@ -128,6 +249,20 @@ $flosc_flat_url     = add_query_arg('logview', 'flat', $flosc_view_base);
                 $btn.prop('disabled', false).text('Delete');
                 alert('Delete failed.');
             });
+        });
+
+        $(document).on('click', '.flosc-session-archive', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var $btn = $(this);
+            manageSessions(String($btn.data('operation') || archiveOperation), [{
+                by: String($btn.data('by') || ''),
+                value: String($btn.data('value') || '')
+            }]);
+        });
+
+        $(document).on('click', '.flosc-session-download', function(e) {
+            e.stopPropagation();
         });
 
         $('#flosc-sessions-refresh').on('click', function() { location.reload(); });
@@ -229,6 +364,8 @@ $flosc_flat_url     = add_query_arg('logview', 'flat', $flosc_view_base);
                 }
             });
         });
+
+        updateSelectionStatus();
     });
     <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
 
@@ -479,16 +616,17 @@ function flosc_chat_session_allowed_html() {
     return [
         'details' => ['class' => true, 'data-key' => true],
         'summary' => ['class' => true],
-        'span'    => ['class' => true],
+        'span'    => ['class' => true, 'aria-hidden' => true],
         'div'     => ['class' => true, 'data-msg-id' => true, 'title' => true],
         'em'      => [],
         'strong'  => [],
         'br'      => [],
         'p'       => ['class' => true],
-        'button'  => ['type' => true, 'class' => true, 'data-by' => true, 'data-value' => true, 'data-flow' => true, 'data-session' => true],
-        'input'   => ['type' => true, 'class' => true, 'placeholder' => true, 'value' => true, 'min' => true, 'step' => true],
+        'button'  => ['type' => true, 'class' => true, 'data-by' => true, 'data-value' => true, 'data-flow' => true, 'data-session' => true, 'data-operation' => true],
+        'input'   => ['type' => true, 'class' => true, 'placeholder' => true, 'value' => true, 'min' => true, 'step' => true, 'data-by' => true, 'data-value' => true, 'checked' => true],
         'select'  => ['class' => true, 'title' => true],
         'option'  => ['value' => true, 'selected' => true],
+        'a'       => ['href' => true, 'class' => true],
     ];
 }
 
@@ -521,9 +659,26 @@ function flosc_render_msg_bubbles($code, $letter, $n, $content, $who, $time, $ri
     }
     $meta .= '<span class="flosc-msg-id">' . esc_html($id) . '</span> '
         . '<span class="flosc-msg-who">' . esc_html($who) . '</span></div>';
+
+    $hint = '';
+    $trimmed_content = trim((string) $content);
+    if (
+        strncmp($trimmed_content, '[GUEST ACCOUNT REQUEST SUBMITTED]', 33) === 0
+        || strncmp($trimmed_content, '[CONTACT FORM SUBMITTED]', 24) === 0
+    ) {
+        $current_ivr = sanitize_file_name((string) ($GLOBALS['flosc_current_ivr'] ?? ''));
+        $register_login_url = add_query_arg([
+            'page' => 'flosc-settings',
+            'tab'  => 'login_registration',
+            'ivr'  => $current_ivr,
+        ], admin_url('admin.php'));
+        $hint = '<p class="description">Moderation actions are in <a href="' . esc_url($register_login_url) . '">Register &amp; Login</a>: Approve, Approve + Send MagicLink, Deny + Block, or Delete.</p>';
+    }
+
     return '<div class="flosc-msg ' . esc_attr($css) . '" data-msg-id="' . esc_attr($id) . '" title="row ' . intval($rid) . '">'
         . $meta
         . '<div class="flosc-msg-body">' . esc_html(trim((string) $content)) . '</div>'
+        . $hint
         . '</div>';
 }
 
@@ -537,6 +692,7 @@ function flosc_render_chat_session($s) {
     $when  = esc_html(substr((string) ($s['last_ts'] ?? ''), 0, 16)); // Y-m-d H:i
     $turns = intval($s['turns'] ?? 0);
     $label = esc_html($s['label'] ?? '');
+    $is_archived = !empty($s['is_archived']);
 
     // First real visitor message → preview line in the header.
     $preview = '';
@@ -551,12 +707,25 @@ function flosc_render_chat_session($s) {
     $by   = esc_attr($s['by'] ?? '');
     $val  = esc_attr($s['value'] ?? '');
     $flow = esc_attr($s['flow_id'] ?? '');
+    $download_url = wp_nonce_url(
+        add_query_arg([
+            'action' => 'flosc_download_chat_tsv',
+            'flow_id' => $flow,
+            'by' => $by,
+            'value' => $val,
+        ], admin_url('admin-post.php')),
+        'flosc_download_chat_tsv'
+    );
 
     $head = '<summary class="flosc-session-head">'
+        . '<span class="flosc-session-caret" aria-hidden="true">&rsaquo;</span>'
+        . '<input type="checkbox" class="flosc-session-select flosc-session-control" data-by="' . $by . '" data-value="' . $val . '">'
         . '<span class="flosc-session-when">' . $when . '</span>'
         . '<span class="flosc-session-label">' . $label . '</span>'
         . '<span class="flosc-session-turns">' . $turns . ' msg</span>'
         . '<span class="flosc-session-preview">' . ($preview !== '' ? esc_html($preview) : '<em>opened — no messages</em>') . '</span>'
+        . '<a href="' . esc_url($download_url) . '" class="button button-small flosc-session-download flosc-session-control">Download TSV</a>'
+        . '<button type="button" class="button button-small flosc-session-archive flosc-session-control" data-operation="' . ($is_archived ? 'restore' : 'archive') . '" data-by="' . $by . '" data-value="' . $val . '" data-flow="' . $flow . '">' . ($is_archived ? 'Restore' : 'Archive') . '</button>'
         . '<button type="button" class="button button-small flosc-session-delete" data-by="' . $by . '" data-value="' . $val . '" data-flow="' . $flow . '">Delete</button>'
         . '</summary>';
 

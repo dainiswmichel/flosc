@@ -1060,6 +1060,10 @@ class FLOSC_Framework {
 
         // Admin: send Complimentary LeSAEp Learners Guest Access Link to any email
         add_action('wp_ajax_flosc_send_guest_link', [$this, 'ajax_send_guest_link']);
+        add_action('admin_post_flosc_guest_request_approve', [$this, 'handle_guest_request_approve']);
+        add_action('admin_post_flosc_guest_request_approve_send', [$this, 'handle_guest_request_approve_send']);
+        add_action('admin_post_flosc_guest_request_deny_block', [$this, 'handle_guest_request_deny_block']);
+        add_action('admin_post_flosc_guest_request_delete', [$this, 'handle_guest_request_delete']);
 
         // v1.9.0: Chat logs AJAX (real-time polling)
         add_action('wp_ajax_flosc_get_chat_logs', [$this, 'ajax_flosc_get_chat_logs']);
@@ -1068,9 +1072,11 @@ class FLOSC_Framework {
         // v1.9.5: Rate a chat log entry (-10 to +10)
         add_action('wp_ajax_flosc_rate_log', [$this, 'ajax_flosc_rate_log']);
         add_action('wp_ajax_flosc_delete_chat_session', [$this, 'ajax_flosc_delete_chat_session']);
+        add_action('wp_ajax_flosc_manage_chat_sessions', [$this, 'ajax_flosc_manage_chat_sessions']);
         // v8.0.0: Admin joins a conversation (posts a human, pale-green "(admin)" message)
         add_action('wp_ajax_flosc_admin_join', [$this, 'ajax_flosc_admin_join']);
         add_action('wp_ajax_flosc_admin_assign_tokens', [$this, 'ajax_flosc_admin_assign_tokens']);
+        add_action('admin_post_flosc_download_chat_tsv', [$this, 'handle_download_chat_tsv']);
 
         // v8.0.0: PayPal connection test AJAX
         add_action('wp_ajax_flosc_test_paypal', [$this, 'ajax_test_paypal']);
@@ -5248,6 +5254,7 @@ HTML;
         // Operates on the IVR already loaded above (no extra query) and intercepts
         // before the normal IVR/AI path so a primed guest is recognised immediately.
         $concierge_session  = '';
+        $concierge_seed_response = null;
         $concierge_guidance = '';
         $trajectory_guidance = '';
         if (class_exists('FLOSC_Trajectory')) {
@@ -5268,6 +5275,11 @@ HTML;
                 if (in_array($concierge_state, ['awaiting_password', 'retry'], true)) {
                     // A canned gate response (password prompt / retry) — short-circuit.
                     return new WP_REST_Response($concierge_response);
+                }
+                if ($concierge_state === 'revealing') {
+                    $concierge_seed_response = [
+                        'content' => (string) ($concierge_response['content'] ?? ''),
+                    ];
                 }
             }
             // Desk open for this guest? Inject the authorized brief so Br3nda hosts
@@ -5327,9 +5339,52 @@ HTML;
             if (!is_array($contact_form)) {
                 return new WP_REST_Response([
                     'success' => false,
-                    'error' => __('Invalid contact form payload.', 'flosc'),
+                    'error' => __('Invalid guest account request payload.', 'flosc'),
                     'error_code' => 'contact_form_invalid',
                 ], 400);
+            }
+
+            $contact_email = sanitize_email((string) ($contact_form['email'] ?? ''));
+            if ($contact_email !== '' && is_email($contact_email) && $this->is_guest_request_email_blocked($contact_email)) {
+                $thank_you_message = __('Thanks, dear guest. Br3nda has recorded your request and Dainis will respond by email.', 'flosc');
+                $redirect_url = $this->flosc_get_visitor_session_end_redirect_url($flow_id);
+                $contact_log_message = implode("\n", [
+                    '[GUEST ACCOUNT REQUEST BLOCKED]',
+                    'First Name: ' . sanitize_text_field((string) ($contact_form['first_name'] ?? '')),
+                    'Last Name: ' . sanitize_text_field((string) ($contact_form['last_name'] ?? '')),
+                    'Email: ' . $contact_email,
+                    'Phone: ' . sanitize_text_field((string) ($contact_form['phone'] ?? '')),
+                    'Message: ' . sanitize_textarea_field((string) ($contact_form['message'] ?? '')),
+                ]);
+
+                FLOSC_Chat_Logger::instance()->flosc_log_chat([
+                    'flow_id'         => $flow_id,
+                    'phase'           => $phase,
+                    'user_id'         => 0,
+                    'session_id'      => $session_id,
+                    'user_message'    => $contact_log_message,
+                    'ai_response'     => $thank_you_message,
+                    'provider'        => 'ivr',
+                    'chain_detail'    => [],
+                    'response_source' => 'visitor_session_end_contact_form_blocked',
+                    'response_time_ms'=> 0,
+                    'billing_source'  => 'none',
+                    'billing_model'   => '',
+                    'billing_input_tokens' => 0,
+                    'billing_output_tokens'=> 0,
+                    'billing_total_tokens' => 0,
+                    'billing_real_millicents' => 0,
+                ]);
+
+                return new WP_REST_Response([
+                    'success' => true,
+                    'message' => $thank_you_message,
+                    'session_end' => [
+                        'contact_saved' => true,
+                        'input_locked' => true,
+                        'redirect_url' => $redirect_url,
+                    ],
+                ]);
             }
 
             $result = $this->process_contact_form_submission([
@@ -5348,15 +5403,21 @@ HTML;
             if (empty($result['success'])) {
                 return new WP_REST_Response([
                     'success' => false,
-                    'error' => __('Please check the form fields and try again.', 'flosc'),
+                    'error' => __('Please check the request fields and try again.', 'flosc'),
                     'error_code' => 'contact_form_rejected',
                 ], 400);
             }
 
-            $thank_you_message = (string) ($result['message'] ?? __('We\'ve forwarded your message to Dainis, thank you!', 'flosc'));
+            // Two intents share this path (both email Dainis via the submission above):
+            // "Request Guest Account" (guest=1) also queues a guest-account request
+            // for admin approval; "Submit Contact Request" (guest=0) is message-only.
+            $request_guest_account = !empty($request->get_param('request_guest_account'));
+            $thank_you_message = $request_guest_account
+                ? __('Your guest account request has been sent — Dainis will review it and email you a link.', 'flosc')
+                : __('Your message has been sent to Dainis, thank you!', 'flosc');
             $redirect_url = $this->flosc_get_visitor_session_end_redirect_url($flow_id);
             $contact_log_message = implode("\n", [
-                '[CONTACT FORM SUBMITTED]',
+                $request_guest_account ? '[GUEST ACCOUNT REQUEST SUBMITTED]' : '[CONTACT REQUEST SUBMITTED]',
                 'First Name: ' . sanitize_text_field((string) ($contact_form['first_name'] ?? '')),
                 'Last Name: ' . sanitize_text_field((string) ($contact_form['last_name'] ?? '')),
                 'Email: ' . sanitize_email((string) ($contact_form['email'] ?? '')),
@@ -5382,6 +5443,17 @@ HTML;
                 'billing_total_tokens' => 0,
                 'billing_real_millicents' => 0,
             ]);
+
+            // Only queue a guest-account request (for the moderation panel) when the
+            // visitor chose "Request Guest Account". Message-only contact submissions
+            // are forwarded to Dainis but do not enter the guest-account queue.
+            if ($request_guest_account) {
+                $this->upsert_guest_account_request(
+                    (string) ($contact_form['email'] ?? ''),
+                    $flow_id,
+                    (string) ($contact_form['message'] ?? '')
+                );
+            }
 
             return new WP_REST_Response([
                 'success' => true,
@@ -5431,6 +5503,15 @@ HTML;
         }
 
         $response_message = null;
+
+        if (is_array($concierge_seed_response) && trim((string) ($concierge_seed_response['content'] ?? '')) !== '') {
+            $response_message = [
+                'content' => (string) ($concierge_seed_response['content'] ?? ''),
+                'user_autoprompts' => $this->get_user_autoprompts_for_phase($phase, $eval_context, $ivr_config),
+                'phase_change' => null,
+            ];
+            $flosc_response_source = 'concierge';
+        }
 
         // DA1 compositions path: available across all phases and all user levels.
         // This gives deterministic, bounded catalog answers before IVR/AI fallbacks.
@@ -5517,7 +5598,13 @@ HTML;
         $token_provider = $this->sale_manager->get_provider('tokens');
         $is_system_generated = (strncmp((string) $message, '[SYSTEM:', 8) === 0);
         $flow_token_enforced = $this->flosc_is_flow_chat_token_enforced($flow_id);
+        // Charge only AI-backed turns. IVR/default scripted responses should not
+        // debit wallets unless a separate explicit model is added for them.
         $charge_applies = ($ai_available && $token_provider && !$is_system_generated && $flow_token_enforced);
+        $concierge_desk_active = (trim((string) $concierge_guidance) !== '');
+        if ($concierge_desk_active) {
+            $charge_applies = false;
+        }
         $visitor_balance_before = null;
         $visitor_charge_result = null;
         $user_charge_result = null;
@@ -5528,8 +5615,7 @@ HTML;
             if (is_user_logged_in()) {
                 $charge_user_id = get_current_user_id();
                 $user_balance_before = $this->flosc_get_user_flow_token_balance($charge_user_id, $flow_id);
-                $action_costs = (array) $token_provider->get_action_costs();
-                $min_cost = max(0, intval($action_costs['ai_query'] ?? 0));
+                $min_cost = max(0, intval($this->flosc_get_ai_query_token_cost($flow_id, $token_provider)));
                 if ($min_cost > 0 && $user_balance_before < $min_cost) {
                     return new WP_REST_Response([
                         'success' => false,
@@ -5538,9 +5624,11 @@ HTML;
                 }
             } elseif ($session_id > 0) {
                 $visitor_balance_before = $this->flosc_get_visitor_session_token_balance($flow_id, $session_id, $token_provider);
-                $action_costs = (array) $token_provider->get_action_costs();
-                $min_cost = max(0, intval($action_costs['ai_query'] ?? 0));
-                if ($min_cost > 0 && $visitor_balance_before < $min_cost) {
+                $min_cost = max(0, intval($this->flosc_get_ai_query_token_cost($flow_id, $token_provider)));
+                // Visitor behavior: allow one final turn while balance is still
+                // positive, then deplete to zero on charge. Block only once
+                // balance has reached zero.
+                if ($min_cost > 0 && $visitor_balance_before <= 0) {
                     return new WP_REST_Response([
                         'success' => false,
                         'error' => $this->flosc_get_visitor_token_depleted_message($flow_id),
@@ -6209,22 +6297,21 @@ HTML;
             return 0;
         }
 
-        if (ctype_digit($raw)) {
-            return max(0, intval($raw));
+        // Preserve compatibility for small integer ids while avoiding overflow on
+        // hosts where PHP integers are 32-bit.
+        if (ctype_digit($raw) && strlen($raw) <= 9) {
+            return max(1, intval($raw));
         }
 
-        // Preserve compatibility with historical hex ids seen in production logs.
-        if (ctype_xdigit($raw)) {
-            $raw = strtolower($raw);
-            $tail = substr($raw, -12); // fits safely in signed 64-bit int
-            $value = hexdec($tail);
-            return max(1, intval($value));
+        // Deterministic hash to a positive 31-bit integer so ids remain stable
+        // across requests without architecture-specific integer overflow.
+        $hash = intval(sprintf('%u', crc32($raw)));
+        $max_session = 2147483647; // signed 31-bit max
+        $value = $hash % $max_session;
+        if ($value <= 0) {
+            $value = 1;
         }
-
-        // Opaque fallback: deterministic hash to positive 31-bit integer.
-        $hash = sprintf('%u', crc32($raw));
-        $value = intval($hash);
-        return max(1, $value);
+        return $value;
     }
 
     /**
@@ -6235,7 +6322,12 @@ HTML;
         if ($flow_id === '') {
             $flow_id = 'default';
         }
-        return 'flosc_vtok_' . $flow_id . '_' . absint($session_id);
+        // v8.0.0+: Versioned + wallet-scoped keyspace so stale balances from
+        // older token-economy cycles and prior guest-grant regimes never
+        // override the current visitor wallet baseline.
+        $namespace = 'v3';
+        $wallet_initial = max(0, intval($this->flosc_get_visitor_wallet_initial_amount((string) $flow_id, null)));
+        return 'flosc_vtok_' . $namespace . '_' . $flow_id . '_w' . $wallet_initial . '_' . absint($session_id);
     }
 
     /**
@@ -6287,18 +6379,19 @@ HTML;
             ];
         }
 
-        $action_costs = method_exists($token_provider, 'get_action_costs')
-            ? (array) $token_provider->get_action_costs()
-            : [];
-        $charge_tokens = max(0, intval($action_costs['ai_query'] ?? 0));
-
-        $real_millicents = intval($billing_meta['real_millicents'] ?? 0);
-        if ($real_millicents > 0 && method_exists($token_provider, 'convert_real_millicents_to_tokens')) {
-            $charge_tokens = max(1, intval($token_provider->convert_real_millicents_to_tokens($real_millicents)));
-        }
+        $charge_tokens = max(0, intval($this->flosc_resolve_chat_charge_tokens($flow_id, $token_provider, $billing_meta)));
 
         $balance_before = $this->flosc_get_visitor_session_token_balance($flow_id, $session_id, $token_provider);
-        if ($charge_tokens <= 0 || $balance_before < $charge_tokens) {
+        if ($charge_tokens <= 0) {
+            return [
+                'charged' => true,
+                'charge_tokens' => 0,
+                'balance_before' => $balance_before,
+                'balance_after' => $balance_before,
+            ];
+        }
+
+        if ($balance_before <= 0) {
             return [
                 'charged' => false,
                 'charge_tokens' => $charge_tokens,
@@ -6307,11 +6400,12 @@ HTML;
             ];
         }
 
-        $balance_after = $this->flosc_set_visitor_session_token_balance($flow_id, $session_id, $balance_before - $charge_tokens);
+        $applied_charge = min($charge_tokens, $balance_before);
+        $balance_after = $this->flosc_set_visitor_session_token_balance($flow_id, $session_id, $balance_before - $applied_charge);
 
         return [
             'charged' => true,
-            'charge_tokens' => $charge_tokens,
+            'charge_tokens' => $applied_charge,
             'balance_before' => $balance_before,
             'balance_after' => $balance_after,
         ];
@@ -8165,8 +8259,7 @@ Example good response:
                     $needs_token_charge = false;
                 }
                 $user_balance = $this->flosc_get_user_flow_token_balance($user_id, $flow_id);
-                $action_costs = $token_provider ? (array) $token_provider->get_action_costs() : [];
-                $min_cost = max(0, intval($action_costs['ai_query'] ?? 0));
+                $min_cost = max(0, intval($this->flosc_get_ai_query_token_cost($flow_id, $token_provider)));
                 if (!$token_provider || ($min_cost > 0 && $user_balance < $min_cost)) {
                     return new WP_Error('limit_reached', __('AI query limit reached. Upgrade for more!', 'flosc'), ['status' => 403]);
                 }
@@ -8910,6 +9003,15 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("[FLOSC v8.0.7] score_visit
             ], 400);
         }
 
+        if ($this->is_guest_request_email_blocked($email)) {
+            return new WP_REST_Response([
+                'success' => true,
+                'magic_link_sent' => false,
+                'message' => 'Guest account request received. Dainis will respond by email.',
+                'nonce' => wp_create_nonce('wp_rest'),
+            ]);
+        }
+
         $body_temp_id      = sanitize_text_field($request->get_param('temp_id') ?? '');
         $has_temp_id       = ($body_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $body_temp_id));
         $browser_quiz_data = $request->get_param('quiz_data');
@@ -8938,27 +9040,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("[FLOSC v8.0.7] score_visit
             ], 500);
         }
 
-        // Track send count in persistent log (admin-visible, 90-day window)
-        $log  = get_option('flosc_guest_link_log', []);
-        $hash = md5(strtolower($email));
-        $now  = time();
-        if (isset($log[$hash])) {
-            $log[$hash]['count']++;
-            $log[$hash]['last_sent'] = $now;
-        } else {
-            $log[$hash] = ['email' => $email, 'count' => 1, 'first_sent' => $now, 'last_sent' => $now];
-        }
-        // Prune entries older than 90 days
-        $cutoff = $now - (90 * DAY_IN_SECONDS);
-        foreach ($log as $k => $entry) {
-            if ($entry['last_sent'] < $cutoff) unset($log[$k]);
-        }
-        update_option('flosc_guest_link_log', $log, false);
-
-        // Send warning email on 6th request (once only)
-        if ($log[$hash]['count'] === 6) {
-            $this->send_guest_link_warning_email($email, 6);
-        }
+        $this->record_guest_link_send($email);
 
         return new WP_REST_Response([
             'success'          => true,
@@ -8971,6 +9053,220 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("[FLOSC v8.0.7] score_visit
     /**
      * Send the Complimentary LeSAEp Learners Guest Access Link email.
      */
+    private function normalize_guest_request_email($email) {
+        return strtolower(trim((string) $email));
+    }
+
+    private function get_guest_request_key($email) {
+        return md5($this->normalize_guest_request_email($email));
+    }
+
+    private function get_guest_account_request_queue() {
+        $queue = get_option('flosc_guest_account_request_queue', []);
+        return is_array($queue) ? $queue : [];
+    }
+
+    private function save_guest_account_request_queue(array $queue) {
+        update_option('flosc_guest_account_request_queue', $queue, false);
+    }
+
+    private function get_guest_account_request_denylist() {
+        $denylist = get_option('flosc_guest_account_request_denylist', []);
+        return is_array($denylist) ? $denylist : [];
+    }
+
+    private function save_guest_account_request_denylist(array $denylist) {
+        update_option('flosc_guest_account_request_denylist', $denylist, false);
+    }
+
+    private function is_guest_request_email_blocked($email) {
+        $email = $this->normalize_guest_request_email($email);
+        if ($email === '') {
+            return false;
+        }
+        $denylist = $this->get_guest_account_request_denylist();
+        return isset($denylist[$this->get_guest_request_key($email)]);
+    }
+
+    private function upsert_guest_account_request($email, $flow_id = '', $message = '') {
+        $email = sanitize_email($email);
+        if (empty($email) || !is_email($email)) {
+            return;
+        }
+
+        $flow_id = sanitize_key((string) $flow_id);
+        $queue = $this->get_guest_account_request_queue();
+        $key = $this->get_guest_request_key($email);
+        $now = time();
+        $excerpt = sanitize_textarea_field((string) $message);
+
+        if (!isset($queue[$key]) || !is_array($queue[$key])) {
+            $queue[$key] = [
+                'email' => $email,
+                'flow_id' => $flow_id,
+                'status' => 'pending',
+                'requested_at' => $now,
+                'last_requested_at' => $now,
+                'last_message_excerpt' => $excerpt,
+                'decision_at' => 0,
+                'decided_by' => 0,
+            ];
+        } else {
+            $queue[$key]['email'] = $email;
+            $queue[$key]['flow_id'] = $flow_id !== '' ? $flow_id : sanitize_key((string) ($queue[$key]['flow_id'] ?? ''));
+            $queue[$key]['status'] = 'pending';
+            $queue[$key]['last_requested_at'] = $now;
+            if ($excerpt !== '') {
+                $queue[$key]['last_message_excerpt'] = $excerpt;
+            }
+            if (empty($queue[$key]['requested_at'])) {
+                $queue[$key]['requested_at'] = $now;
+            }
+            $queue[$key]['decision_at'] = 0;
+            $queue[$key]['decided_by'] = 0;
+        }
+
+        $this->save_guest_account_request_queue($queue);
+    }
+
+    private function set_guest_account_request_status($email, $status, $actor_id = 0) {
+        $email = sanitize_email($email);
+        if (empty($email) || !is_email($email)) {
+            return false;
+        }
+
+        $status = sanitize_key((string) $status);
+        if (!in_array($status, ['pending', 'approved', 'denied'], true)) {
+            return false;
+        }
+
+        $queue = $this->get_guest_account_request_queue();
+        $key = $this->get_guest_request_key($email);
+        if (!isset($queue[$key]) || !is_array($queue[$key])) {
+            $queue[$key] = [
+                'email' => $email,
+                'flow_id' => '',
+                'status' => $status,
+                'requested_at' => time(),
+                'last_requested_at' => time(),
+                'last_message_excerpt' => '',
+                'decision_at' => 0,
+                'decided_by' => 0,
+            ];
+        }
+
+        $queue[$key]['status'] = $status;
+        $queue[$key]['decision_at'] = time();
+        $queue[$key]['decided_by'] = intval($actor_id);
+        $this->save_guest_account_request_queue($queue);
+
+        return true;
+    }
+
+    private function delete_guest_account_request($email) {
+        $email = sanitize_email($email);
+        if (empty($email) || !is_email($email)) {
+            return false;
+        }
+
+        $queue = $this->get_guest_account_request_queue();
+        $key = $this->get_guest_request_key($email);
+        if (isset($queue[$key])) {
+            unset($queue[$key]);
+            $this->save_guest_account_request_queue($queue);
+        }
+        return true;
+    }
+
+    private function deny_and_block_guest_account_request($email, $actor_id = 0) {
+        $email = sanitize_email($email);
+        if (empty($email) || !is_email($email)) {
+            return false;
+        }
+
+        $this->set_guest_account_request_status($email, 'denied', $actor_id);
+        $denylist = $this->get_guest_account_request_denylist();
+        $denylist[$this->get_guest_request_key($email)] = [
+            'email' => $email,
+            'blocked_at' => time(),
+            'blocked_by' => intval($actor_id),
+        ];
+        $this->save_guest_account_request_denylist($denylist);
+
+        return true;
+    }
+
+    private function unblock_guest_account_request_email($email) {
+        $email = sanitize_email($email);
+        if (empty($email) || !is_email($email)) {
+            return false;
+        }
+
+        $denylist = $this->get_guest_account_request_denylist();
+        $key = $this->get_guest_request_key($email);
+        if (isset($denylist[$key])) {
+            unset($denylist[$key]);
+            $this->save_guest_account_request_denylist($denylist);
+        }
+
+        return true;
+    }
+
+    private function record_guest_link_send($email) {
+        $email = sanitize_email($email);
+        if (empty($email) || !is_email($email)) {
+            return;
+        }
+
+        $log = get_option('flosc_guest_link_log', []);
+        if (!is_array($log)) {
+            $log = [];
+        }
+        $hash = $this->get_guest_request_key($email);
+        $now = time();
+        if (isset($log[$hash]) && is_array($log[$hash])) {
+            $log[$hash]['count'] = max(0, intval($log[$hash]['count'] ?? 0)) + 1;
+            $log[$hash]['last_sent'] = $now;
+            $log[$hash]['email'] = $email;
+        } else {
+            $log[$hash] = [
+                'email' => $email,
+                'count' => 1,
+                'first_sent' => $now,
+                'last_sent' => $now,
+            ];
+        }
+
+        $cutoff = $now - (90 * DAY_IN_SECONDS);
+        foreach ($log as $key => $entry) {
+            if (!is_array($entry)) {
+                unset($log[$key]);
+                continue;
+            }
+            if (intval($entry['last_sent'] ?? 0) < $cutoff) {
+                unset($log[$key]);
+            }
+        }
+        update_option('flosc_guest_link_log', $log, false);
+
+        if (intval($log[$hash]['count'] ?? 0) === 6) {
+            $this->send_guest_link_warning_email($email, 6);
+        }
+    }
+
+    private function build_guest_request_admin_redirect($notice_key) {
+        $notice_key = sanitize_key((string) $notice_key);
+        $request = wp_unslash($_REQUEST); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only admin redirect context
+        $base_url = add_query_arg([
+            'page' => 'flosc-settings',
+            'tab' => 'login_registration',
+            'ivr' => sanitize_file_name((string) ($request['ivr'] ?? '')),
+            'flosc_guest_request_notice' => $notice_key,
+        ], admin_url('admin.php'));
+
+        return $base_url;
+    }
+
     private function send_guest_link_email($email, $token, $flow_id = '') {
         $context = $this->get_guest_email_context($flow_id);
         $magic_url  = add_query_arg('flosc_magic', rawurlencode($token), $context['chat_url']);
@@ -11460,10 +11756,120 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             wp_send_json_error(['message' => 'Email could not be sent. Check your mail configuration.']);
         }
 
+        $this->record_guest_link_send($email);
+
         $link_name = flosc_get_setting('guest_link_name', 'Complimentary LeSAEp Learners Guest Access Link');
         wp_send_json_success([
             'message' => sprintf('%s sent to %s', esc_html($link_name), esc_html($email)),
         ]);
+    }
+
+    public function handle_guest_request_approve() {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('Unauthorized', 'flosc'), '', ['response' => 403]);
+        }
+
+        check_admin_referer('flosc_guest_request_action', 'flosc_guest_request_nonce');
+
+        $post = wp_unslash($_POST);
+        $email = sanitize_email((string) ($post['email'] ?? ''));
+        $actor = get_current_user_id();
+        if (empty($email) || !is_email($email)) {
+            wp_safe_redirect($this->build_guest_request_admin_redirect('invalid_email'));
+            exit;
+        }
+
+        $this->unblock_guest_account_request_email($email);
+        $this->set_guest_account_request_status($email, 'approved', $actor);
+
+        wp_safe_redirect($this->build_guest_request_admin_redirect('approved'));
+        exit;
+    }
+
+    public function handle_guest_request_approve_send() {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('Unauthorized', 'flosc'), '', ['response' => 403]);
+        }
+
+        check_admin_referer('flosc_guest_request_action', 'flosc_guest_request_nonce');
+
+        $post = wp_unslash($_POST);
+        $email = sanitize_email((string) ($post['email'] ?? ''));
+        $flow_id = sanitize_key((string) ($post['flow_id'] ?? ''));
+        $actor = get_current_user_id();
+        if (empty($email) || !is_email($email)) {
+            wp_safe_redirect($this->build_guest_request_admin_redirect('invalid_email'));
+            exit;
+        }
+
+        $this->unblock_guest_account_request_email($email);
+        $this->set_guest_account_request_status($email, 'approved', $actor);
+
+        $token = wp_generate_password(32, false, false);
+        $transient_key = 'flosc_magic_' . $token;
+        set_transient($transient_key, [
+            'status' => 'pending',
+            'email' => $email,
+            'temp_id' => '',
+            'quiz_data' => null,
+            'session_id' => '',
+            'flow_id' => $flow_id,
+            'redirect_to' => '',
+            'created_at' => time(),
+        ], 7 * DAY_IN_SECONDS);
+
+        $sent = $this->send_guest_link_email($email, $token, $flow_id);
+        if (!$sent) {
+            delete_transient($transient_key);
+            wp_safe_redirect($this->build_guest_request_admin_redirect('approve_send_failed'));
+            exit;
+        }
+
+        $this->record_guest_link_send($email);
+
+        wp_safe_redirect($this->build_guest_request_admin_redirect('approve_sent'));
+        exit;
+    }
+
+    public function handle_guest_request_deny_block() {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('Unauthorized', 'flosc'), '', ['response' => 403]);
+        }
+
+        check_admin_referer('flosc_guest_request_action', 'flosc_guest_request_nonce');
+
+        $post = wp_unslash($_POST);
+        $email = sanitize_email((string) ($post['email'] ?? ''));
+        $actor = get_current_user_id();
+        if (empty($email) || !is_email($email)) {
+            wp_safe_redirect($this->build_guest_request_admin_redirect('invalid_email'));
+            exit;
+        }
+
+        $this->deny_and_block_guest_account_request($email, $actor);
+
+        wp_safe_redirect($this->build_guest_request_admin_redirect('denied_blocked'));
+        exit;
+    }
+
+    public function handle_guest_request_delete() {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('Unauthorized', 'flosc'), '', ['response' => 403]);
+        }
+
+        check_admin_referer('flosc_guest_request_action', 'flosc_guest_request_nonce');
+
+        $post = wp_unslash($_POST);
+        $email = sanitize_email((string) ($post['email'] ?? ''));
+        if (empty($email) || !is_email($email)) {
+            wp_safe_redirect($this->build_guest_request_admin_redirect('invalid_email'));
+            exit;
+        }
+
+        $this->delete_guest_account_request($email);
+
+        wp_safe_redirect($this->build_guest_request_admin_redirect('deleted'));
+        exit;
     }
 
     /**
@@ -11572,6 +11978,158 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
 
         $deleted = FLOSC_Chat_Logger::instance()->flosc_delete_session($by, $value, $flow);
         wp_send_json_success(['deleted' => $deleted]);
+    }
+
+    /**
+     * Bulk session management for chat logs: archive, restore, or delete.
+     */
+    public function ajax_flosc_manage_chat_sessions() {
+        $post = wp_unslash($_POST);
+        $flow = sanitize_key((string) ($post['flow_id'] ?? ''));
+        if (!$this->can_manage_flow_chat_logs($flow)) {
+            wp_send_json_error(['message' => 'Unauthorized'], 403);
+        }
+
+        check_ajax_referer('flosc_chat_logs', 'nonce');
+
+        $operation = sanitize_key((string) ($post['operation'] ?? ''));
+        if (!in_array($operation, ['archive', 'restore', 'delete'], true)) {
+            wp_send_json_error(['message' => 'Invalid operation']);
+        }
+
+        $sessions_json = (string) ($post['sessions'] ?? '[]');
+        $sessions = json_decode($sessions_json, true);
+        if (!is_array($sessions) || empty($sessions)) {
+            wp_send_json_error(['message' => 'No sessions selected.']);
+        }
+
+        $logger = FLOSC_Chat_Logger::instance();
+        $processed = 0;
+        $affected_rows = 0;
+
+        foreach ($sessions as $session) {
+            if (!is_array($session)) {
+                continue;
+            }
+
+            $by = sanitize_text_field((string) ($session['by'] ?? ''));
+            $value = sanitize_text_field((string) ($session['value'] ?? ''));
+            if ($by === '' || $value === '') {
+                continue;
+            }
+
+            if ($operation === 'delete') {
+                $affected_rows += max(0, intval($logger->flosc_delete_session($by, $value, $flow)));
+                $processed++;
+                continue;
+            }
+
+            $result = $logger->flosc_set_session_archived($by, $value, $flow, $operation === 'archive');
+            if ($result !== false) {
+                $processed++;
+            }
+        }
+
+        wp_send_json_success([
+            'processed' => $processed,
+            'affected_rows' => $affected_rows,
+            'operation' => $operation,
+        ]);
+    }
+
+    /**
+     * Download one or more chat conversations as a TSV file.
+     */
+    public function handle_download_chat_tsv() {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('Unauthorized', 'flosc'), 403);
+        }
+
+        $request = wp_unslash($_REQUEST);
+        check_admin_referer('flosc_download_chat_tsv');
+
+        $flow = sanitize_key((string) ($request['flow_id'] ?? ''));
+        if (!$this->can_manage_flow_chat_logs($flow)) {
+            wp_die(esc_html__('Unauthorized', 'flosc'), 403);
+        }
+
+        $sessions = [];
+        if (!empty($request['sessions'])) {
+            $decoded = json_decode((string) $request['sessions'], true);
+            if (is_array($decoded)) {
+                $sessions = $decoded;
+            }
+        } elseif (!empty($request['by']) && isset($request['value'])) {
+            $sessions[] = [
+                'by' => sanitize_text_field((string) $request['by']),
+                'value' => sanitize_text_field((string) $request['value']),
+            ];
+        }
+
+        if (empty($sessions)) {
+            wp_die(esc_html__('No chat sessions selected.', 'flosc'));
+        }
+
+        $logger = FLOSC_Chat_Logger::instance();
+        $rows = [];
+        foreach ($sessions as $session) {
+            if (!is_array($session)) {
+                continue;
+            }
+
+            $by = sanitize_text_field((string) ($session['by'] ?? ''));
+            $value = sanitize_text_field((string) ($session['value'] ?? ''));
+            if ($by === '' || $value === '') {
+                continue;
+            }
+
+            $session_rows = $logger->flosc_get_session_rows($by, $value, $flow);
+            if (empty($session_rows)) {
+                continue;
+            }
+
+            $descriptor = FLOSC_Chat_Logger::flosc_session_key_from_descriptor($by, $value);
+            foreach ($session_rows as $session_row) {
+                $row_descriptor = FLOSC_Chat_Logger::flosc_session_descriptor($session_row);
+                $session_row['chat_session_key'] = $descriptor;
+                $session_row['chat_session_label'] = (string) ($row_descriptor['label'] ?? '');
+                $rows[] = $session_row;
+            }
+        }
+
+        if (empty($rows)) {
+            wp_die(esc_html__('No chat rows found for the selected sessions.', 'flosc'));
+        }
+
+        nocache_headers();
+        header('Content-Type: text/tab-separated-values; charset=utf-8');
+        $datestamp = gmdate('Y') . '-' . gmdate('m') . 'm-' . gmdate('d') . 'd';
+        header('Content-Disposition: attachment; filename="flosc-chat-logs-' . $datestamp . '.tsv"');
+
+        $headers = array_keys($rows[0]);
+        $to_tsv_line = static function (array $columns) {
+            $encoded = array_map(static function ($value) {
+                $value = (string) $value;
+                $value = str_replace(["\r\n", "\r", "\n"], "\\n", $value);
+                if (strpos($value, "\t") !== false || strpos($value, '"') !== false) {
+                    $value = '"' . str_replace('"', '""', $value) . '"';
+                }
+                return $value;
+            }, $columns);
+
+            return implode("\t", $encoded) . "\n";
+        };
+
+        echo $to_tsv_line($headers); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw TSV stream response
+        foreach ($rows as $row) {
+            $ordered_row = [];
+            foreach ($headers as $header_key) {
+                $value = $row[$header_key] ?? '';
+                $ordered_row[] = is_scalar($value) ? (string) $value : wp_json_encode($value);
+            }
+            echo $to_tsv_line($ordered_row); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw TSV stream response
+        }
+        exit;
     }
 
     /**
@@ -11708,8 +12266,33 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         if ($session_id <= 0) {
             return new WP_REST_Response(['messages' => []]);
         }
+
+        $flow_id = sanitize_key((string) ($request->get_param('flow_id') ?? ''));
         $messages = FLOSC_Chat_Logger::instance()->flosc_get_admin_messages_since($session_id, $since_id);
-        return new WP_REST_Response(['messages' => $messages]);
+
+        $token_balance_payload = null;
+        if ($flow_id !== '') {
+            $token_provider = $this->sale_manager->get_provider('tokens');
+            if ($token_provider) {
+                $value = intval($this->flosc_get_visitor_session_token_balance($flow_id, $session_id, $token_provider));
+                $flow_settings = get_option('flosc_flow_' . $flow_id, []);
+                $low_token_threshold = max(0, intval($flow_settings['visitor_low_token_threshold'] ?? 0));
+                $is_low_balance = ($low_token_threshold > 0 && $value <= $low_token_threshold);
+                $token_balance_payload = [
+                    'scope' => 'visitor_session',
+                    'value' => $value,
+                    'formatted' => $this->flosc_format_token_display($value),
+                    'low_threshold' => $low_token_threshold,
+                    'is_low' => $is_low_balance,
+                    'low_message' => $is_low_balance ? $this->flosc_get_visitor_low_tokens_message($flow_id) : '',
+                ];
+            }
+        }
+
+        return new WP_REST_Response([
+            'messages' => $messages,
+            'token_balance' => $token_balance_payload,
+        ]);
     }
 
     /**
@@ -12970,6 +13553,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             return;
         }
 
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display hint query flag
+        $handoff_request = isset($_GET['flosc_companion_handoff'])
+            && sanitize_text_field(wp_unslash((string) $_GET['flosc_companion_handoff'])) === '1';
+
         $defaults = $this->get_companion_defaults();
         $numeric_limits = $this->get_companion_numeric_limits();
 
@@ -12996,11 +13583,17 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         // Optional route targeting: exclude rules override include rules.
-        if (!$this->should_show_companion_for_current_request()) {
+        if (!$handoff_request && !$this->should_show_companion_for_current_request()) {
             return;
         }
 
-        $app_url = $this->get_app_url();
+        // Companion serves a specific chat flow: a docked view of the SAME /chat
+        // app and session (same origin -> shared localStorage/sessionID, so the
+        // companion and the full page are one conversation, differing only in
+        // display). On non-chat pages there is no "current flow", so build the app
+        // URL directly from the configured companion slug (e.g. home_url('/chat/')).
+        $companion_slug = sanitize_title((string) $this->get_setting('companion_flow_slug', ''));
+        $app_url = $companion_slug !== '' ? home_url('/' . $companion_slug . '/') : $this->get_app_url();
         if (empty($app_url)) {
             return;
         }
@@ -13201,6 +13794,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'triggerCooldownMs' => $trigger_cooldown_ms,
             'stateKey' => 'flosc_companion_state_' . md5((string) $app_url),
             'cooldownKey' => 'flosc_companion_cooldown_' . md5((string) $app_url),
+            'skipBehaviorTriggers' => $handoff_request,
         ];
 
         $filtered_companion_config = apply_filters('flosc_companion_frontend_config', $companion_config, $this);

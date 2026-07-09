@@ -143,6 +143,16 @@ trait FLOSC_Admin_Trait {
             [$this, 'redirect_to_ai_tab']
         );
 
+        // Token Management
+        add_submenu_page(
+            'flosc-settings',
+            'Token Management',
+            'Token Management',
+            'manage_options',
+            'flosc-token-management',
+            [$this, 'redirect_to_token_management_tab']
+        );
+
         // Concierge
         add_submenu_page(
             'flosc-settings',
@@ -836,6 +846,11 @@ trait FLOSC_Admin_Trait {
 
     public function redirect_to_ai_tab() {
         wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=ai'));
+        exit;
+    }
+
+    public function redirect_to_token_management_tab() {
+        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=token-management'));
         exit;
     }
 

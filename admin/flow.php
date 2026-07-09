@@ -211,9 +211,9 @@ $flosc_diagnostics_stem = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sel
 $flosc_diagnostics_start = 'start_' . $flosc_diagnostics_stem;
 $flosc_diagnostics_end = 'end_' . $flosc_diagnostics_stem;
 $flosc_prompt_panel_counts = [
-    'visitor' => $visitor_pills,
-    'guest' => $guest_pills,
-    'member' => $member_pills,
+    'visitor' => $flosc_visitor_pills,
+    'guest' => $flosc_guest_pills,
+    'member' => $flosc_member_pills,
 ];
 $flosc_diagnostics_flow_name = trim((string) ($flosc_flow_settings['identity']['name'] ?? ''));
 $flosc_diagnostics_flow_label = $flosc_diagnostics_flow_name !== '' ? $flosc_diagnostics_flow_name : ($flosc_selected_ivr ?: 'this flow');
