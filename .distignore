@@ -1,0 +1,76 @@
+# FLOSC distribution exclusions
+# Keep release archives focused on runtime plugin code only.
+
+# VCS and local editor state
+.git/
+.github/
+.githooks/
+.gitignore
+.distignore
+build-dist-zip.sh
+.claude/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# Python/local env
+.venv/
+
+# Logs and archives
+*.log
+*.zip
+
+# Orphaned legacy CSS (no enqueue/register reference in runtime code)
+# flosc-layout.css and flosc-theme.css ARE enqueued (flosc.php ~12304/12312) and must ship.
+assets/css/flosc-legal.css
+assets/css/ivr-admin.css
+
+# Site/deployment-specific IVR configs — private, not shipped.
+# Keep shipped default IVR files in ai_configuration_files/ for fresh installs.
+ai_configuration_files/dainis_net_ivr.md
+ai_configuration_files/lesaep_com_ivr.md
+ai_configuration_files/simplified_solfeggio_ivr.md
+ai_configuration_files/flosc_ai_ivr.md
+
+# Workspace-only docs, plans, and scratch
+dev_notes.md
+claude.md
+tech_summary.md
+check_tina.php
+debug-bp-search.php
+flosc_ai_integration_plan.md
+flosc_vocab_draft_01.txt
+font-comparison-quickscan.html
+font-comparison-round1.html
+font-comparison-round2.html
+font-comparison.html
+wxr-reader.html
+plan-buddyBossSessionRenderingRepair.prompt.md
+
+# Non-plugin working directories accidentally present in repo root
+brenda_personality_profile_deployables_and_reference/
+da1ni5_personal_profitability/
+dev_cool/
+flosc_development_archives/
+flosc_development_worknotes/
+flosc_styling_development/
+flosc-users/
+image_assets/
+latvijas_kori/
+lesaep/
+login_development/
+logo_marketing_assets/
+mvp_sprint/
+openclaw-for-profits-roadmap/
+potential_development/
+quiz_development/
+success_planning/
+tmp/
+wordpress_stuff/
+zip-files/
+
+# Deployment/backup residue
+*.pre-restore-*/
+pre-restore-*/

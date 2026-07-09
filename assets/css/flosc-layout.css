@@ -1286,6 +1286,109 @@ img.flosc-profile-avatar {
     margin: 0 auto;
 }
 
+/* Admin Test panel: header on top, body below, body is a fixed-height
+   scroll container. The generic autoprompts panel above is a wrapping flex
+   row; the admin panel needs a plain vertical column instead. */
+#flosc_input_user_autoprompts_panel.flosc-admin-test-panel {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+}
+
+#flosc_input_user_autoprompts_panel.flosc-admin-test-panel .flosc-admin-panel-body {
+    max-height: 50vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+#flosc_input_user_autoprompts_panel .flosc-admin-panel-body.flosc-hidden {
+    display: none;
+}
+
+/* Admin Test panel — colored group boxes (visitor / guest / member / offer /
+   quiz). One box per state so the grouping reads at a glance. */
+.flosc-admin-pill-group {
+    border-radius: 8px;
+    padding: 7px 10px;
+    margin-bottom: 5px;
+}
+
+.flosc-admin-pill-group-visitor {
+    background: #f0f0f1;
+    border: 1px solid #c3c4c7;
+}
+
+.flosc-admin-pill-group-guest,
+.flosc-admin-pill-group-offer {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+}
+
+.flosc-admin-pill-group-member {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+}
+
+.flosc-admin-pill-group-quiz {
+    background: #ede9fe;
+    border: 1px solid #a78bfa;
+}
+
+.flosc-admin-pill-group-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.flosc-admin-pill-group-visitor .flosc-admin-pill-group-title {
+    color: #3c434a;
+}
+
+.flosc-admin-pill-group-guest .flosc-admin-pill-group-title,
+.flosc-admin-pill-group-offer .flosc-admin-pill-group-title {
+    color: #92400e;
+}
+
+.flosc-admin-pill-group-member .flosc-admin-pill-group-title {
+    color: #166534;
+}
+
+.flosc-admin-pill-group-quiz .flosc-admin-pill-group-title {
+    color: #5b21b6;
+}
+
+.flosc-admin-pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* Depleted-tokens contact form — status line and the green submission
+   confirmation. Unscoped (not tied to .message.assistant) so the green notice
+   renders on every surface, including /chat/, which loads this stylesheet. */
+.flosc-depleted-form-status {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #1f2937;
+}
+
+.flosc-depleted-success-notice {
+    width: min(100%, 620px);
+    margin: 0;
+    padding: 1.05rem 1.1rem;
+    border-radius: 12px;
+    border: 1px solid #86efac;
+    background: linear-gradient(180deg, #f2fff7 0%, #e6f9ef 100%);
+    color: #065f46;
+    font-size: 1.08rem;
+    font-weight: 650;
+    line-height: 1.45;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+}
+
 /* v1.7.0: Ensure carousel container respects parent width */
 .prompt-panel .flosc-carousel-container {
     max-width: 100%;

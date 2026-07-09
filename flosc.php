@@ -5321,8 +5321,12 @@ HTML;
             $eval_context['access_level'] = 'visitor';
         }
 
+        // The depleted-tokens contact form only renders for visitors and for the
+        // admin test panel, so this submit path is not gated on login state: an
+        // admin testing it gets the exact same behavior a visitor gets, including
+        // the real email forward. Anti-spam traps run identically in either case.
         $session_end_contact_form_submit = !empty($request->get_param('session_end_contact_form_submit'));
-        if ($session_end_contact_form_submit && !is_user_logged_in() && $session_id > 0) {
+        if ($session_end_contact_form_submit && $session_id > 0) {
             $contact_form = $request->get_param('contact_form');
             if (!is_array($contact_form)) {
                 return new WP_REST_Response([
@@ -5528,24 +5532,32 @@ HTML;
             if (is_user_logged_in()) {
                 $charge_user_id = get_current_user_id();
                 $user_balance_before = $this->flosc_get_user_flow_token_balance($charge_user_id, $flow_id);
-                $action_costs = (array) $token_provider->get_action_costs();
-                $min_cost = max(0, intval($action_costs['ai_query'] ?? 0));
-                if ($min_cost > 0 && $user_balance_before < $min_cost) {
+                if ($user_balance_before <= 0) {
                     return new WP_REST_Response([
                         'success' => false,
                         'error' => __('Token limit reached. Add more tokens to continue.', 'flosc'),
+                        'error_code' => 'visitor_tokens_depleted',
+                        'visitor_tokens_depleted' => true,
+                        'token_balance' => [
+                            'scope' => 'user_flow',
+                            'value' => 0,
+                            'formatted' => $this->flosc_format_token_display(0),
+                        ],
                     ], 403);
                 }
             } elseif ($session_id > 0) {
                 $visitor_balance_before = $this->flosc_get_visitor_session_token_balance($flow_id, $session_id, $token_provider);
-                $action_costs = (array) $token_provider->get_action_costs();
-                $min_cost = max(0, intval($action_costs['ai_query'] ?? 0));
-                if ($min_cost > 0 && $visitor_balance_before < $min_cost) {
+                if ($visitor_balance_before <= 0) {
                     return new WP_REST_Response([
                         'success' => false,
                         'error' => $this->flosc_get_visitor_token_depleted_message($flow_id),
                         'error_code' => 'visitor_tokens_depleted',
                         'visitor_tokens_depleted' => true,
+                        'token_balance' => [
+                            'scope' => 'visitor_session',
+                            'value' => 0,
+                            'formatted' => $this->flosc_format_token_display(0),
+                        ],
                     ], 403);
                 }
             }
@@ -5711,17 +5723,30 @@ HTML;
                     return new WP_REST_Response([
                         'success' => false,
                         'error' => __('Token limit reached. Add more tokens to continue.', 'flosc'),
+                        'error_code' => 'visitor_tokens_depleted',
+                        'visitor_tokens_depleted' => true,
+                        'token_balance' => [
+                            'scope' => 'user_flow',
+                            'value' => 0,
+                            'formatted' => $this->flosc_format_token_display(0),
+                        ],
                     ], 403);
                 }
                 $user_balance_after_charge = intval($user_charge_result['balance_after'] ?? 0);
             } elseif ($session_id > 0) {
                 $visitor_charge_result = $this->flosc_charge_visitor_session_tokens($flow_id, $session_id, $token_provider, $billing_meta);
                 if (!$visitor_charge_result['charged']) {
+                    $visitor_balance_after_fail = max(0, intval($visitor_charge_result['balance_after'] ?? 0));
                     return new WP_REST_Response([
                         'success' => false,
                         'error' => $this->flosc_get_visitor_token_depleted_message($flow_id),
                         'error_code' => 'visitor_tokens_depleted',
                         'visitor_tokens_depleted' => true,
+                        'token_balance' => [
+                            'scope' => 'visitor_session',
+                            'value' => $visitor_balance_after_fail,
+                            'formatted' => $this->flosc_format_token_display($visitor_balance_after_fail),
+                        ],
                     ], 403);
                 }
             }
@@ -6298,12 +6323,24 @@ HTML;
         }
 
         $balance_before = $this->flosc_get_visitor_session_token_balance($flow_id, $session_id, $token_provider);
-        if ($charge_tokens <= 0 || $balance_before < $charge_tokens) {
+        if ($charge_tokens <= 0) {
             return [
                 'charged' => false,
                 'charge_tokens' => $charge_tokens,
                 'balance_before' => $balance_before,
                 'balance_after' => $balance_before,
+            ];
+        }
+
+        // If the next AI request costs more than the remaining visitor balance,
+        // settle to zero so UI depletion state and stored balance are consistent.
+        if ($balance_before < $charge_tokens) {
+            $balance_after = $this->flosc_set_visitor_session_token_balance($flow_id, $session_id, 0);
+            return [
+                'charged' => false,
+                'charge_tokens' => $charge_tokens,
+                'balance_before' => $balance_before,
+                'balance_after' => $balance_after,
             ];
         }
 

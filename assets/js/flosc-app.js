@@ -1207,7 +1207,7 @@ class floscApp {
 
         const panel = document.createElement('div');
         panel.id = 'flosc_input_user_autoprompts_panel';
-        panel.className = 'prompt-panel prompt-panel-inline';
+        panel.className = 'prompt-panel prompt-panel-inline flosc-admin-test-panel';
         panel.innerHTML = `
             <div class="prompt-panel-header flosc-admin-panel-header" id="flosc-admin-panel-toggle">
                 <div>
@@ -1222,6 +1222,12 @@ class floscApp {
                     <div class="flosc-admin-pill-group-title">🎤 Quiz Cycle</div>
                     <div class="flosc-admin-pill-row">
                         <button class="flosc-style-pill flosc-admin-pill flosc-admin-pill-quiz" data-action="${this.config.defaultQuizAction || 'open_quiz:pronunciation_ipa_audio_quiz'}">🎤 Start Pronunciation Quiz</button>
+                    </div>
+                </div>
+                <div class="flosc-admin-pill-group flosc-admin-pill-group-runtime">
+                    <div class="flosc-admin-pill-group-title">🧪 Runtime Tests</div>
+                    <div class="flosc-admin-pill-row">
+                        <button class="flosc-style-pill flosc-admin-pill" data-action="trigger_depleted_tokens_form_preview">🧾 Trigger Depleted Tokens Form</button>
                     </div>
                 </div>
             </div>`;
@@ -1261,6 +1267,10 @@ class floscApp {
                 // Action pill — fire the IVR action
                 const action = btn.dataset.action;
                 if (action) {
+                    if (action === 'trigger_depleted_tokens_form_preview') {
+                        this.triggerDepletedTokensFormPreview();
+                        return;
+                    }
                     this.log('[FLOSC-ADMIN] Action pill clicked:', action);
                     this.performIVRAction(action);
                     return;
@@ -1276,6 +1286,21 @@ class floscApp {
             btn.addEventListener('click', handler);
             this.activeEventListeners.set(btn, handler);
         });
+
+        // Resilience fallback: delegated click handling keeps admin action pills
+        // functional even if individual listeners are lost after DOM reshuffles.
+        const delegatedPanelHandler = (event) => {
+            const targetBtn = event.target && event.target.closest ? event.target.closest('button.flosc-style-pill') : null;
+            if (!targetBtn || !panel.contains(targetBtn)) return;
+
+            const action = targetBtn.dataset.action || '';
+            if (action === 'trigger_depleted_tokens_form_preview') {
+                this.triggerDepletedTokensFormPreview();
+                return;
+            }
+        };
+        panel.addEventListener('click', delegatedPanelHandler);
+        this.activeEventListeners.set(panel, delegatedPanelHandler);
 
         // Insert before the composer (same pattern as floscRenderUserAutoPrompts)
         const composer = document.getElementById('flosc_input_composer');
@@ -5762,6 +5787,11 @@ class floscApp {
             return true;
         }
 
+        if (this.user?.isAdmin && (lowerMessage === 'trigger depleted tokens form' || lowerMessage === 'trigger depleted tokens form preview')) {
+            this.triggerDepletedTokensFormPreview();
+            return true;
+        }
+
         // v8.0.0: Access code chat flow
         if (lowerMessage === 'access code') {
             this.addMessage('assistant', 'Hey, Fam! Enter your access code:');
@@ -6740,7 +6770,7 @@ Purchased: ${ctx.purchased}
 
         const formattedTokens = this.formatProfileTokenDisplay(tokenValue);
         // Show only the token count to users; real millicents stay internal (admin-only).
-        visitorName.innerHTML = `<span class="flosc-visitor-label-text">${this.escapeHtml(baseLabel)}</span> <span class="flosc-visitor-token-count" id="flosc_visitor_token_count">(${this.escapeHtml(formattedTokens)})</span>`;
+        visitorName.innerHTML = `<span class="flosc-visitor-label-text">${this.escapeHtml(baseLabel)}</span> <span class="flosc-visitor-token-count" id="flosc_visitor_token_count" style="color:#7b828d;font-size:11px;font-weight:500;opacity:.9;">(${this.escapeHtml(formattedTokens)})</span>`;
     }
 
     getLowTokenWarningStorageKey(thresholdValue) {
@@ -6979,6 +7009,25 @@ Purchased: ${ctx.purchased}
             this.hideTyping();
 
             if (this.state === 'visitor' && error?.floscCode === 'visitor_tokens_depleted') {
+                const depletedBalance = parseInt(error?.floscPayload?.token_balance?.value, 10);
+                if (Number.isFinite(depletedBalance)) {
+                    const safeBalance = Math.max(0, depletedBalance);
+                    this.updateVisitorTokenLabel(safeBalance);
+                    this.persistVisitorTokenBalance(safeBalance);
+                    if (safeBalance > 0) {
+                        const fallbackMsg = String(error?.message || '').trim() || 'Your balance is low for this request. Please try a shorter message or log in for additional tokens.';
+                        this.addMessage('assistant', this.formatMarkdown(fallbackMsg), true);
+                        this.saveVisitorMessage('assistant', fallbackMsg);
+                        return;
+                    }
+                }
+                const knownBalance = this.getPersistedVisitorTokenBalance();
+                if (Number.isFinite(knownBalance) && knownBalance > 0) {
+                    const fallbackMsg = String(error?.message || '').trim() || 'Your balance is low for this request. Please try a shorter message or log in for additional tokens.';
+                    this.addMessage('assistant', this.formatMarkdown(fallbackMsg), true);
+                    this.saveVisitorMessage('assistant', fallbackMsg);
+                    return;
+                }
                 this.handleVisitorTokensDepleted(error.message || 'This session has run out of chat tokens.');
                 return;
             }
@@ -7026,7 +7075,8 @@ Purchased: ${ctx.purchased}
         this.renderVisitorDepletedContactForm();
     }
 
-    renderVisitorDepletedContactForm() {
+    renderVisitorDepletedContactForm(options = {}) {
+        const persistMarker = options.persistMarker !== false;
         if (document.getElementById('flosc_depleted_contact_form')) {
             return;
         }
@@ -7036,25 +7086,28 @@ Purchased: ${ctx.purchased}
         const intro = this.escapeHtml(String(labels.intro || 'Please fill out this form to continue.').trim());
         const submitText = this.escapeHtml(String(labels.submitText || 'Send').trim());
 
+        const sharedInputStyle = 'display:block;width:100%;max-width:100%;box-sizing:border-box;margin:0;border:1px solid #d0d7de;border-radius:10px;background:#ffffff;color:#0f172a;box-shadow:none;outline:none;font-size:15px;line-height:1.35;padding:12px 14px;min-height:46px;';
         const formHtml = `
-            <div class="flosc-depleted-form-wrap">
-                <h4>${title}</h4>
-                <p class="flosc-depleted-form-intro">${intro}</p>
-                <form id="flosc_depleted_contact_form" class="flosc-depleted-contact-form" novalidate>
-                    <input type="text" name="first_name" placeholder="First Name" required maxlength="80">
-                    <input type="text" name="last_name" placeholder="Last Name" required maxlength="80">
-                    <input type="text" name="email" placeholder="Email Address" required maxlength="190" inputmode="email" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-                    <input type="text" name="phone" placeholder="Phone Number" required maxlength="40">
-                    <textarea name="message" placeholder="Message" required rows="7" maxlength="4000"></textarea>
-                    <input type="text" name="company" class="flosc-depleted-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
-                    <button type="submit" class="flosc-depleted-submit">${submitText}</button>
-                    <p class="flosc-depleted-form-status" id="flosc_depleted_form_status"></p>
+            <div class="flosc-depleted-form-wrap" style="width:min(100%,680px);padding:18px 18px 16px;border:1px solid #e2e8f0;border-radius:14px;background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);box-shadow:0 6px 20px rgba(15,23,42,.05);">
+                <h4 style="margin:0 0 6px;font-size:20px;line-height:1.25;font-weight:700;color:#0f172a;">${title}</h4>
+                <p class="flosc-depleted-form-intro" style="margin:0 0 14px;font-size:14px;line-height:1.45;color:#334155;">${intro}</p>
+                <form id="flosc_depleted_contact_form" class="flosc-depleted-contact-form" novalidate style="display:flex;flex-direction:column;align-items:stretch;gap:10px;margin:0;">
+                    <input type="text" name="first_name" placeholder="First Name" required maxlength="80" autocomplete="given-name" autocapitalize="words" autocorrect="off" spellcheck="false" style="${sharedInputStyle}">
+                    <input type="text" name="last_name" placeholder="Last Name" required maxlength="80" autocomplete="family-name" autocapitalize="words" autocorrect="off" spellcheck="false" style="${sharedInputStyle}">
+                    <input type="email" name="email" placeholder="Email Address" required maxlength="190" inputmode="email" autocomplete="email" autocapitalize="off" autocorrect="off" spellcheck="false" style="${sharedInputStyle}">
+                    <input type="tel" name="phone" placeholder="Phone Number" required maxlength="40" inputmode="tel" autocomplete="tel" autocapitalize="off" autocorrect="off" spellcheck="false" style="${sharedInputStyle}">
+                    <textarea name="message" placeholder="Message" required rows="7" maxlength="4000" autocomplete="off" autocapitalize="sentences" autocorrect="off" spellcheck="true" style="${sharedInputStyle}min-height:150px;resize:vertical;padding:12px 14px;"></textarea>
+                    <input type="text" name="company" class="flosc-depleted-hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;">
+                    <button type="submit" class="flosc-depleted-submit" style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border:0;border-radius:999px;background:#2563eb;color:#ffffff;font-size:15px;font-weight:700;line-height:1;cursor:pointer;align-self:flex-start;">${submitText}</button>
+                    <p class="flosc-depleted-form-status" id="flosc_depleted_form_status" style="margin:2px 0 0;font-size:13px;line-height:1.35;color:#334155;"></p>
                 </form>
             </div>
         `;
 
         this.addMessage('assistant', formHtml, true);
-        this.saveVisitorMessage('assistant', '[CONTACT_FORM_RENDERED]');
+        if (persistMarker) {
+            this.saveVisitorMessage('assistant', '[CONTACT_FORM_RENDERED]');
+        }
 
         const form = document.getElementById('flosc_depleted_contact_form');
         if (!form) return;
@@ -7080,6 +7133,10 @@ Purchased: ${ctx.purchased}
                 if (statusEl) statusEl.textContent = 'Please complete all fields.';
                 return;
             }
+
+            // No preview or admin-only path: the admin test trigger renders and
+            // submits the identical form as a real user and runs the real
+            // submission below, which forwards the email and shows the same notice.
 
             if (statusEl) statusEl.textContent = 'Sending...';
             this.showTyping();
@@ -7113,6 +7170,14 @@ Purchased: ${ctx.purchased}
                 this.hideTyping();
             }
         });
+    }
+
+    triggerDepletedTokensFormPreview() {
+        this.visitorDepletedState.awaitingContactDetails = false;
+        this.visitorDepletedState.inputLocked = false;
+        this.visitorDepletedState.formRenderedAt = Math.floor(Date.now() / 1000);
+        this.visitorDepletedState.formSubmitted = false;
+        this.renderVisitorDepletedContactForm({ persistMarker: false });
     }
 
     lockVisitorChatInputAfterDepletion(redirectUrl = '') {
@@ -7795,6 +7860,14 @@ Purchased: ${ctx.purchased}
             const messages = JSON.parse(localStorage.getItem('flosc_visitor_messages') || '[]');
             messages.forEach(msg => {
                 const meta = msg && msg.meta && typeof msg.meta === 'object' ? msg.meta : null;
+
+                if (msg.role === 'assistant' && String(msg.content || '').trim() === '[CONTACT_FORM_RENDERED]') {
+                    const depletedMode = String(this.config?.visitorTokenDisplay?.depletedContactMode || 'message');
+                    if (depletedMode === 'in_chat_form') {
+                        this.renderVisitorDepletedContactForm({ persistMarker: false });
+                    }
+                    return;
+                }
 
                 if (msg.role === 'assistant' && meta && meta.source === 'admin') {
                     this.renderAdminMessage(meta.name || 'Admin', msg.content || '');

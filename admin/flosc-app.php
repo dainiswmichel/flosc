@@ -242,7 +242,6 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
             ? max(0, intval($flosc_current_flow['guest_token_grant']))
             : $flosc_tokens_per_message;
         $flosc_visitor_token_grant_display = number_format_i18n($flosc_visitor_token_grant);
-        $flosc_millicents_per_message_display = number_format_i18n($flosc_real_millicents_per_message) . ' mc';
 
         // v1.8.2: Dynamic visitor menu — indexed array of [label, action] pairs
         $flosc_visitor_menu_raw = get_option('flosc_visitor_menu_items', []);
@@ -285,7 +284,7 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
                 <div class="profile-info">
                     <div class="profile-name" data-show="visitor">
                         <span class="flosc-visitor-label-text"><?php echo esc_html($flosc_visitor_label_base); ?></span>
-                        <span class="flosc-visitor-token-count" id="flosc_visitor_token_count">(<?php echo esc_html($flosc_visitor_token_grant_display); ?> / <?php echo esc_html($flosc_millicents_per_message_display); ?>)</span>
+                        <span class="flosc-visitor-token-count" id="flosc_visitor_token_count" style="color:#7b828d;font-size:11px;font-weight:500;opacity:.9;">(<?php echo esc_html($flosc_visitor_token_grant_display); ?>)</span>
                     </div>
                     <div class="profile-name" id="flosc_profile_name" data-show="logged-in"></div>
                     <div class="profile-badge" data-show="visitor"><?php echo esc_html($flosc_pb_visitor['badge']); ?></div>
