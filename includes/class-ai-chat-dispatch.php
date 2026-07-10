@@ -599,19 +599,66 @@ class FLOSC_AI_Chat_Dispatch {
 
         foreach ($context as $key => $value) {
             if (in_array($key, $skip_keys)) continue;
-            if (is_bool($value)) {
-                $value = $value ? 'Yes' : 'No';
-            } elseif (is_array($value)) {
-                $value = implode(', ', array_map('strval', $value));
-            } elseif (is_null($value)) {
+            $formatted_value = $this->format_context_value($value);
+            if ($formatted_value === null || $formatted_value === '') {
                 continue; // Skip null values
             }
             // Format key: flosc_version → Flosc Version, quiz_score → Quiz Score
             $label = ucwords(str_replace('_', ' ', $key));
-            $lines[] = "- **{$label}:** {$value}";
+            $lines[] = "- **{$label}:** {$formatted_value}";
         }
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * Format nested context values into readable strings for prompts.
+     * Prevents nested arrays from collapsing into literal "Array" strings.
+     *
+     * @param mixed $value
+     * @param int $depth
+     * @return string|null
+     */
+    private function format_context_value($value, $depth = 0) {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'Yes' : 'No';
+        }
+
+        if (is_scalar($value)) {
+            return trim((string) $value);
+        }
+
+        if (is_object($value)) {
+            $value = (array) $value;
+        }
+
+        if (!is_array($value)) {
+            return trim((string) $value);
+        }
+
+        if ($depth >= 2) {
+            return wp_json_encode($value);
+        }
+
+        $parts = [];
+        foreach (array_slice($value, 0, 10, true) as $item_key => $item_value) {
+            $item = $this->format_context_value($item_value, $depth + 1);
+            if ($item === null || $item === '') {
+                continue;
+            }
+
+            if (is_string($item_key)) {
+                $parts[] = $item_key . ': ' . $item;
+            } else {
+                $parts[] = $item;
+            }
+        }
+
+        return implode(' | ', $parts);
     }
 
     /**

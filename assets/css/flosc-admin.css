@@ -5934,6 +5934,14 @@
 .flosc-admin-usage-report .description {
     margin: 0;
 }
+.flosc-admin-session-context {
+    padding: 10px 16px;
+    border-top: 1px solid #f0f0f1;
+    background: #fcfdfc;
+}
+.flosc-admin-session-context .description {
+    margin: 0;
+}
 .flosc-admin-join { display: flex; gap: 8px; align-items: center; padding: 10px 16px; border-top: 1px solid #f0f0f1; background: #fcfdfc; }
 .flosc-admin-join-input { flex: 1; }
 .flosc-admin-assign-tokens { display: flex; gap: 8px; align-items: center; padding: 10px 16px; border-top: 1px solid #f0f0f1; background: #fcfdfc; }

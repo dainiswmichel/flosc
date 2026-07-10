@@ -371,6 +371,15 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
             </div>
 
             <div class="header-right" id="flosc_app_header_right">
+                <?php if (!isset($_GET['flosc_companion'])): // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presence-only display flag, no value used ?>
+                <button class="flosc-dock-btn flosc-dock-btn--icon" id="flosc_app_dock_companion_button" aria-label="<?php echo esc_attr__('Minimize to companion', 'flosc'); ?>" title="<?php echo esc_attr__('Minimize to companion', 'flosc'); ?>">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <line x1="7" y1="7" x2="17" y2="17"></line>
+                        <polyline points="11 17 17 17 17 11"></polyline>
+                    </svg>
+                </button>
+                <?php endif; ?>
+
                 <!-- Visitor: auth buttons -->
                 <div class="auth-buttons" id="flosc_app_auth_buttons">
                     <?php
@@ -790,12 +799,20 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             $flosc_companion_mode = sanitize_text_field((string) ($flow_settings['companion_content_display_mode'] ?? 'in_chat'));
             $flosc_companion_enabled = !empty($flow_settings['companion_enabled']);
             $flosc_companion_handoff_enabled = $flosc_companion_enabled && in_array($flosc_companion_mode, ['companion', 'both'], true);
+            $flosc_companion_show_for_visitors = filter_var(
+                $flow_settings['companion_show_for_visitors'] ?? false,
+                FILTER_VALIDATE_BOOLEAN
+            );
+            // Full-page chat always exposes companion collapse/return action.
+            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presence-only display flag, no value used
+            $flosc_companion_return_available = !isset($_GET['flosc_companion']);
             $flosc_companion_state_storage = sanitize_text_field((string) ($flow_settings['companion_state_storage'] ?? 'session'));
             if (!in_array($flosc_companion_state_storage, ['session', 'local'], true)) {
                 $flosc_companion_state_storage = 'session';
             }
             $flosc_companion_state_key = 'flosc_companion_state_' . md5((string) $flosc_app_url);
             $flosc_companion_collapse_url = esc_url_raw(home_url('/'));
+            $flosc_companion_contextual_prompt = sanitize_text_field((string) ($flow_settings['companion_contextual_prompt'] ?? 'What do you want to explore together?'));
             
             echo wp_json_encode([
             'restUrl' => $flosc_rest_base . '/',
@@ -830,8 +847,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'identity' => $identity,
             'offers' => array_values($offers),
             'appUrl' => $flosc_app_url,
-            'companionHandoffEnabled' => $flosc_companion_handoff_enabled,
+            'companionHandoffEnabled' => $flosc_companion_return_available,
             'companionCollapseUrl' => $flosc_companion_collapse_url,
+            'companionContextualPrompt' => $flosc_companion_contextual_prompt,
             'companionStateKey' => $flosc_companion_state_key,
             'companionStateStorage' => $flosc_companion_state_storage,
             'ajaxUrl' => admin_url('admin-ajax.php'),
@@ -952,6 +970,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 'guest'   => (bool)($flow_settings['autoprompt_panel_enabled']['guest']   ?? true),
                 'member'  => (bool)($flow_settings['autoprompt_panel_enabled']['member']  ?? true),
             ],
+            // Companion widget panel should be parameterized separately from
+            // full-page behavior. Default is disabled for ship readiness.
+            'autopromptCompanionEnabled' => (bool)($flow_settings['autoprompt_companion_enabled'] ?? false),
             // v4.0.0: Admin test mode — all offers (incl. drafts) for in-chat testing
             'adminTestOffers' => $admin_test_offers ?? [],
             // Audio quiz configurable messages

@@ -117,9 +117,19 @@ $flosc_companion_enabled = !empty($flosc_flow_settings['companion_enabled']);
 $flosc_companion_mode_labels = [
     'in_chat' => 'In-Chat Only',
     'companion' => 'Companion',
-    'both' => 'Both',
+    'both' => 'Hybrid',
 ];
+$flosc_companion_sitewide_profile_active = (
+    $flosc_companion_enabled
+    && ($flosc_companion_mode === 'companion' || $flosc_companion_mode === 'both')
+    && !empty($flosc_flow_settings['companion_show_for_visitors'])
+    && !empty($flosc_flow_settings['companion_allow_fullscreen'])
+    && !empty($flosc_flow_settings['companion_default_fullscreen'])
+);
 $flosc_companion_mode_label = $flosc_companion_mode_labels[$flosc_companion_mode] ?? 'In-Chat Only';
+if ($flosc_companion_sitewide_profile_active) {
+    $flosc_companion_mode_label = 'Sitewide ON Profile (' . $flosc_companion_mode_label . ')';
+}
 $flosc_companion_status = ($flosc_companion_mode === 'companion' || $flosc_companion_mode === 'both')
     ? ($flosc_companion_enabled ? 'Widget enabled' : 'Widget disabled')
     : 'Widget not used in this mode';

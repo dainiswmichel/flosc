@@ -87,6 +87,9 @@ function flosc_handle_autoprompts_save() {
         $flosc_panel_enabled[$state] = isset($post['panel_enabled_' . $state]) ? 1 : 0;
     }
 
+    // Companion Mode panel visibility (ship default: off)
+    $flosc_companion_panel_enabled = isset($post['panel_enabled_companion']) ? 1 : 0;
+
     foreach ($states as $state) {
         $icons          = $post[$state . '_pill_icon']           ?? [];
         $labels         = $post[$state . '_pill_label']          ?? [];
@@ -136,6 +139,7 @@ function flosc_handle_autoprompts_save() {
     $flosc_fs['autoprompts']              = $autoprompts;
     $flosc_fs['autoprompt_headers']       = $flosc_panel_headers;
     $flosc_fs['autoprompt_panel_enabled'] = $flosc_panel_enabled;
+    $flosc_fs['autoprompt_companion_enabled'] = $flosc_companion_panel_enabled;
     update_option($fk, $flosc_fs);
 
     $ivr = sanitize_file_name($post['flosc_ivr'] ?? '');
@@ -183,6 +187,7 @@ $flosc_panel_enabled = [
     'guest'   => $flosc_saved_panel_enabled['guest']   ?? 1,
     'member'  => $flosc_saved_panel_enabled['member']  ?? 1,
 ];
+$flosc_companion_panel_enabled = !empty($flosc_fs['autoprompt_companion_enabled']);
 
 $flosc_prompts = [
     'visitor' => is_array($flosc_saved_prompts['visitor'] ?? null) ? $flosc_saved_prompts['visitor'] : [],
@@ -299,6 +304,17 @@ if (!function_exists('flosc_autoprompt_expected_behavior_text')) {
 <?php endif; ?>
 
 <p>Configure the quick-reply pills shown in FLOSC chat per user state. Pills send a chat message to the AI, trigger an offer to display, or fire an in-chat action (quiz, lesson, checkout, etc.).</p>
+
+<div class="flosc-autoprompt-section flosc-autoprompt-section--companion">
+    <h3 class="flosc-autoprompt-section__title">
+        <span>🤝 Companion Mode AutoPrompt Panel</span>
+    </h3>
+    <p class="description flosc-ap-desc-flush">Controls whether AutoPrompt panels render inside the Companion widget panel. Default is off for cleaner companion shipping behavior.</p>
+    <label class="flosc-autoprompt-section__panel-toggle">
+        <input type="checkbox" name="panel_enabled_companion" value="1" <?php checked($flosc_companion_panel_enabled, true); ?>>
+        Show AutoPrompt panel in Companion Mode
+    </label>
+</div>
 
 <?php wp_nonce_field('flosc_save_autoprompts', 'flosc_autoprompts_nonce'); ?>
     <input type="hidden" name="flosc_flow_key" value="<?php echo esc_attr($flosc_flow_key); ?>">

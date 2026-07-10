@@ -9,8 +9,8 @@
  * 
  * Content Display Modes:
  * - In-Chat:    FLOSC content and interactions run inside the chatbot app (default)
- * - Companion:  Floating widget on WP pages while content is browsed on-site
- * - Both:       Both modes available — in-chat plus companion on WP pages
+ * - Companion:  Floating widget on WP pages (except flow URL) while content is browsed on-site
+ * - Hybrid:     Full-page chat at flow URL + companion widget with include/exclude targeting
  * 
  * Settings (per-flow via companion override group):
  * - content_display_mode:  'in_chat' | 'companion' | 'both'
@@ -37,12 +37,17 @@ $flosc_enabled              = $flosc_flow_settings['companion_enabled'] ?? '';
 $flosc_position             = $flosc_flow_settings['companion_position'] ?? 'bottom-right';
 $flosc_greeting             = $flosc_flow_settings['companion_greeting'] ?? 'Hi! I\'m your learning companion. Need help with this lesson?';
 $flosc_subtitle             = $flosc_flow_settings['companion_subtitle'] ?? 'We reply instantly';
+$flosc_contextual_prompt    = $flosc_flow_settings['companion_contextual_prompt'] ?? 'What do you want to explore together?';
+// Explicit visibility toggles so header title/subtitle are never silent "dead" fields.
+// Default true (show) preserves prior behavior; a saved 0 hides the element.
+$flosc_show_header_title    = array_key_exists('companion_show_header_title', $flosc_flow_settings) ? !empty($flosc_flow_settings['companion_show_header_title']) : true;
+$flosc_show_header_subtitle = array_key_exists('companion_show_header_subtitle', $flosc_flow_settings) ? !empty($flosc_flow_settings['companion_show_header_subtitle']) : true;
+// Some floscAdmins won't want to offer the standalone full chat page; default true (show).
+$flosc_show_open_fullpage   = array_key_exists('companion_show_open_fullpage', $flosc_flow_settings) ? !empty($flosc_flow_settings['companion_show_open_fullpage']) : true;
 $flosc_accent_color         = $flosc_flow_settings['companion_accent_color'] ?? '';
 $flosc_show_for_visitors    = $flosc_flow_settings['companion_show_for_visitors'] ?? '';
 $flosc_target_include       = $flosc_flow_settings['companion_target_include'] ?? '';
 $flosc_target_exclude       = $flosc_flow_settings['companion_target_exclude'] ?? '';
-$flosc_allow_fullscreen     = $flosc_flow_settings['companion_allow_fullscreen'] ?? '';
-$flosc_default_fullscreen   = $flosc_flow_settings['companion_default_fullscreen'] ?? '';
 $flosc_panel_width          = intval($flosc_flow_settings['companion_panel_width'] ?? 380);
 $flosc_panel_height         = intval($flosc_flow_settings['companion_panel_height'] ?? 560);
 $flosc_mobile_behavior      = $flosc_flow_settings['companion_mobile_behavior'] ?? 'fullscreen';
@@ -185,10 +190,15 @@ $flosc_target_exclude_has_rules = !empty($flosc_target_exclude_pages)
     || !empty($flosc_target_exclude_custom);
 $flosc_target_has_any_rules = $flosc_target_include_has_rules || $flosc_target_exclude_has_rules;
 $flosc_target_mode = $flosc_target_include_has_rules ? 'selected' : 'sitewide';
-$flosc_companion_quick_enabled = (
-    $flosc_enabled === '1'
-    && ($flosc_content_display_mode === 'companion' || $flosc_content_display_mode === 'both')
-);
+
+$flosc_companion_effective_summary = '';
+if ($flosc_content_display_mode === 'in_chat' || $flosc_enabled !== '1') {
+    $flosc_companion_effective_summary = 'Companion widget is currently OFF. Full-page chat runs at the flow URL.';
+} elseif ($flosc_target_mode === 'selected') {
+    $flosc_companion_effective_summary = 'Companion widget is ON for selected targets only (Include/Exclude rules).';
+} else {
+    $flosc_companion_effective_summary = 'Companion widget is ON sitewide (except full-page chatbot route).';
+}
 
 $flosc_target_pages = get_pages([
     'sort_column' => 'post_title',
@@ -368,19 +378,6 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
 
 <table class="form-table">
     <tr>
-        <th scope="row"><label for="flosc_companion_quick_toggle">Companion Quick Toggle</label></th>
-        <td>
-            <label>
-                <input type="checkbox" id="flosc_companion_quick_toggle" name="flow_companion_sitewide_master" value="1" <?php checked($flosc_companion_quick_enabled); ?>>
-                Sitewide ON/OFF for everyone
-            </label>
-            <p class="description">ON enables companion for visitors, guests, and members sitewide (except the full-page chatbot URL), with fullscreen behavior on open. Exclusions can still be added in Target Parameters.</p>
-        </td>
-    </tr>
-</table>
-
-<table class="form-table">
-    <tr>
         <th scope="row"><label for="flow_companion_content_display_mode">Display Mode</label></th>
         <td>
             <fieldset>
@@ -396,16 +393,16 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
                     <input type="radio" name="flow_companion_content_display_mode" value="companion" <?php checked($flosc_content_display_mode, 'companion'); ?>>
                     <strong>🤝 Companion Mode</strong>
                     <br><span class="flosc-companion-mode-copy">
-                        The companion widget appears on selected WordPress targets (posts, pages, categories, or tags)
+                        The companion widget appears sitewide on WordPress pages (except the full-page chatbot URL)
                         and provides contextual chat support while users stay on-site.
                     </span>
                 </label>
                 
                 <label class="flosc-companion-mode-card <?php echo $flosc_content_display_mode === 'both' ? 'is-active' : ''; ?>">
                     <input type="radio" name="flow_companion_content_display_mode" value="both" <?php checked($flosc_content_display_mode, 'both'); ?>>
-                    <strong>✨ Both</strong>
+                    <strong>✨ Hybrid</strong>
                     <br><span class="flosc-companion-mode-copy">
-                        Enable both: full-page chat at the flow URL and companion widget on selected WordPress targets.
+                        Full-page chat stays at the flow URL, and companion targeting is controlled with Include/Exclude parameters.
                     </span>
                 </label>
             </fieldset>
@@ -627,7 +624,8 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
             <th scope="row"><label for="flow_companion_greeting">Greeting Message</label></th>
             <td>
                 <textarea name="flow_companion_greeting" id="flow_companion_greeting" rows="3" class="large-text"><?php echo esc_textarea($flosc_greeting); ?></textarea>
-                <p class="description">The first message the companion shows when opened. Use warm, encouraging language.</p>
+                <p class="description">Title shown in the companion header.</p>
+                <label><input type="checkbox" name="flow_companion_show_header_title" value="1" <?php checked($flosc_show_header_title); ?>> Show this title in the companion header</label>
             </td>
         </tr>
 
@@ -636,9 +634,26 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
             <td>
                 <input type="text" name="flow_companion_subtitle" id="flow_companion_subtitle" class="regular-text" value="<?php echo esc_attr($flosc_subtitle); ?>">
                 <p class="description">Short helper line shown in the companion header under the title.</p>
+                <label><input type="checkbox" name="flow_companion_show_header_subtitle" value="1" <?php checked($flosc_show_header_subtitle); ?>> Show this subtitle in the companion header</label>
             </td>
         </tr>
-        
+
+        <tr>
+            <th scope="row"><label for="flow_companion_contextual_prompt">Companion Contextual Prompt</label></th>
+            <td>
+                <input type="text" name="flow_companion_contextual_prompt" id="flow_companion_contextual_prompt" class="regular-text" value="<?php echo esc_attr($flosc_contextual_prompt); ?>">
+                <p class="description">Shown as the first companion context line in embedded chat mode.</p>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row"><label for="flow_companion_show_open_fullpage">Full Chat Page Button</label></th>
+            <td>
+                <label><input type="checkbox" name="flow_companion_show_open_fullpage" id="flow_companion_show_open_fullpage" value="1" <?php checked($flosc_show_open_fullpage); ?>> Show the "open full chat page" button in the companion header</label>
+                <p class="description">Uncheck to keep the conversation in the docked companion only (no link out to the standalone chat page).</p>
+            </td>
+        </tr>
+
         <tr>
             <th scope="row"><label for="flow_companion_accent_color">Accent Color</label></th>
             <td>
@@ -660,27 +675,6 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
             </td>
         </tr>
 
-        <tr>
-            <th scope="row"><label for="flow_companion_allow_fullscreen">Fullscreen Option</label></th>
-            <td>
-                <label>
-                    <input type="checkbox" name="flow_companion_allow_fullscreen" id="flow_companion_allow_fullscreen" value="1" <?php checked($flosc_allow_fullscreen, '1'); ?>>
-                    Show a fullscreen toggle in the companion header
-                </label>
-                <p class="description">When enabled, users can expand the companion to fullscreen.</p>
-            </td>
-        </tr>
-
-        <tr>
-            <th scope="row"><label for="flow_companion_default_fullscreen">Default Fullscreen</label></th>
-            <td>
-                <label>
-                    <input type="checkbox" name="flow_companion_default_fullscreen" id="flow_companion_default_fullscreen" value="1" <?php checked($flosc_default_fullscreen, '1'); ?>>
-                    Open in fullscreen by default (when fullscreen option is enabled)
-                </label>
-                <p class="description">Use this for immersive companion-first experiences.</p>
-            </td>
-        </tr>
 
         <tr>
             <th scope="row"><label for="flow_companion_mobile_behavior">Mobile Behavior</label></th>
@@ -978,9 +972,13 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
 <h2>Preview</h2>
 <div class="flosc-companion-preview">
     <p class="flosc-companion-preview-copy">
-        📱 A floating <strong class="flosc-companion-preview-dot" data-accent="<?php echo esc_attr($flosc_accent_color ?: '#6366f1'); ?>">●</strong> companion button will appear in the
-        <strong><?php echo $flosc_position === 'bottom-left' ? 'bottom-left' : 'bottom-right'; ?></strong> 
-        corner of every WordPress page (except the chatbot app).
+        📱 <strong>Current behavior:</strong>
+        <?php echo esc_html($flosc_companion_effective_summary); ?>
+    </p>
+    <p class="flosc-companion-preview-copy flosc-companion-preview-copy-spaced">
+        The floating <strong class="flosc-companion-preview-dot" data-accent="<?php echo esc_attr($flosc_accent_color ?: '#6366f1'); ?>">●</strong> launcher is positioned in the
+        <strong><?php echo $flosc_position === 'bottom-left' ? 'bottom-left' : 'bottom-right'; ?></strong>
+        corner when companion is active.
     </p>
     <p class="flosc-companion-preview-copy flosc-companion-preview-copy-spaced">
         When a member clicks it, the companion opens with: "<em><?php echo esc_html(wp_trim_words($flosc_greeting, 15)); ?></em>"
@@ -997,29 +995,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
 
 <?php ob_start(); ?>
 jQuery(document).ready(function($) {
-    function applyCompanionQuickToggle() {
-        var quickEnabled = $('#flosc_companion_quick_toggle').is(':checked');
-        if (quickEnabled) {
-            $('input[name="flow_companion_content_display_mode"][value="both"]').prop('checked', true);
-            $('#flow_companion_enabled').prop('checked', true);
-            $('#flow_companion_show_for_visitors').prop('checked', true);
-            $('#flow_companion_allow_fullscreen').prop('checked', true);
-            $('#flow_companion_default_fullscreen').prop('checked', true);
-            $('#flow_companion_auto_open_enabled').prop('checked', true);
-            $('#flow_companion_auto_open_once_per_session').prop('checked', true);
-            if ((parseInt($('#flow_companion_auto_open_delay_ms').val(), 10) || 0) < 600) {
-                $('#flow_companion_auto_open_delay_ms').val('800');
-            }
-            $('#flow_companion_mobile_behavior').val('fullscreen');
-            $('input[name="flow_companion_target_mode"][value="sitewide"]').prop('checked', true);
-            updateCompanionTargetMode();
-        } else {
-            $('input[name="flow_companion_content_display_mode"][value="in_chat"]').prop('checked', true);
-            $('#flow_companion_enabled').prop('checked', false);
-        }
-
-        toggleCompanionSettings();
-    }
+    var $modeRadios = $('input[name="flow_companion_content_display_mode"]');
 
     // Toggle widget settings visibility based on display mode
     function toggleCompanionSettings() {
@@ -1043,7 +1019,6 @@ jQuery(document).ready(function($) {
     }
     
     $('input[name="flow_companion_content_display_mode"]').on('change', toggleCompanionSettings);
-    $('#flosc_companion_quick_toggle').on('change', applyCompanionQuickToggle);
     
     // Sync color picker with hex display
     $('#flow_companion_accent_color').on('input', function() {
@@ -1066,8 +1041,6 @@ jQuery(document).ready(function($) {
         var launchOnScroll = $('#flow_companion_launch_on_scroll_threshold').is(':checked');
         var launchScrollPercent = parseInt($('#flow_companion_launch_on_scroll_percent').val(), 10) || 0;
         var cooldownMs = parseInt($('#flow_companion_trigger_cooldown_ms').val(), 10) || 0;
-        var allowFullscreen = $('#flow_companion_allow_fullscreen').is(':checked');
-        var defaultFullscreen = $('#flow_companion_default_fullscreen').is(':checked');
         var rememberOpen = $('#flow_companion_remember_open_state').is(':checked');
         var stateStorage = String($('#flow_companion_state_storage').val() || 'session');
 
@@ -1085,10 +1058,6 @@ jQuery(document).ready(function($) {
 
         if (launchOnScroll && launchScrollPercent === 0) {
             hints.push('Scroll Trigger threshold is set to 0%. Companion can open as soon as scrolling starts.');
-        }
-
-        if (!allowFullscreen && defaultFullscreen) {
-            hints.push('Default Fullscreen is enabled while Fullscreen Option is off. Default fullscreen will not apply until Fullscreen Option is enabled.');
         }
 
         if (!rememberOpen && stateStorage === 'local' && cooldownMs > 0) {
@@ -1110,7 +1079,7 @@ jQuery(document).ready(function($) {
         }
     }
 
-    $('#flow_companion_auto_open_enabled, #flow_companion_auto_open_delay_ms, #flow_companion_auto_open_once_per_session, #flow_companion_launch_on_exit_intent, #flow_companion_launch_on_scroll_threshold, #flow_companion_launch_on_scroll_percent, #flow_companion_trigger_cooldown_ms, #flow_companion_allow_fullscreen, #flow_companion_default_fullscreen, #flow_companion_remember_open_state, #flow_companion_state_storage')
+    $('#flow_companion_auto_open_enabled, #flow_companion_auto_open_delay_ms, #flow_companion_auto_open_once_per_session, #flow_companion_launch_on_exit_intent, #flow_companion_launch_on_scroll_threshold, #flow_companion_launch_on_scroll_percent, #flow_companion_trigger_cooldown_ms, #flow_companion_remember_open_state, #flow_companion_state_storage')
         .on('change input', updateCompanionValidationHints);
 
     function updateCompanionTargetMode() {
@@ -1155,7 +1124,7 @@ jQuery(document).ready(function($) {
     });
 
     $('#flow_companion_accent_color').trigger('input');
-    applyCompanionQuickToggle();
+    $modeRadios.prop('disabled', false);
     updateCompanionValidationHints();
     updateCompanionTargetMode();
 });

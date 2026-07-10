@@ -464,7 +464,7 @@ if (empty($flosc_queue_rows)) {
         ];
 
         foreach ($flosc_actions as $flosc_action => $flosc_label) {
-            echo '<form method="post" action="' . esc_url($flosc_action_url) . '" style="display:inline-block;margin:0 6px 6px 0;">';
+            echo '<form method="post" action="' . esc_url($flosc_action_url) . '" class="flosc-admin-inline-action-form">';
             echo '<input type="hidden" name="action" value="' . esc_attr($flosc_action) . '">';
             echo '<input type="hidden" name="email" value="' . esc_attr($flosc_email) . '">';
             echo '<input type="hidden" name="flow_id" value="' . esc_attr($flosc_flow_id) . '">';

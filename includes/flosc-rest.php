@@ -379,6 +379,7 @@ trait FLOSC_REST_Trait {
      */
     public function handle_oembed($request) {
         $url = esc_url_raw((string) $request->get_param('url'));
+        $retry = '1' === sanitize_text_field((string) $request->get_param('retry'));
         if ($url === '' || !wp_http_validate_url($url)) {
             return new WP_REST_Response(['success' => false], 400);
         }
@@ -388,12 +389,18 @@ trait FLOSC_REST_Trait {
         $cache_key = 'flosc_oembed_' . md5($url);
         $cached = get_transient($cache_key);
         if (is_string($cached)) {
+            if ($cached === '' && $retry) {
+                // Retry path bypasses short-lived negative cache in case a provider
+                // had a transient miss on first resolution.
+            } else {
             return new WP_REST_Response(['success' => $cached !== '', 'html' => $cached]);
+            }
         }
 
         $html  = wp_oembed_get($url, ['width' => 480]);
         $store = is_string($html) ? $html : '';
-        set_transient($cache_key, $store, $store !== '' ? DAY_IN_SECONDS : HOUR_IN_SECONDS);
+        $ttl = $store !== '' ? DAY_IN_SECONDS : (5 * MINUTE_IN_SECONDS);
+        set_transient($cache_key, $store, $ttl);
 
         return new WP_REST_Response(['success' => $store !== '', 'html' => $store]);
     }

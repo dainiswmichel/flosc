@@ -174,12 +174,12 @@ if (!function_exists('flosc_resolve_flow_option_key_for_ivr')) {
         }
 
         foreach ($flosc_rows as $flosc_row) {
-            $option_name = (string) ($row->option_name ?? '');
+            $option_name = (string) ($flosc_row->option_name ?? '');
             if ($option_name === '') {
                 continue;
             }
 
-            $flosc_settings = maybe_unserialize($row->option_value ?? null);
+            $flosc_settings = maybe_unserialize($flosc_row->option_value ?? null);
             if (!is_array($flosc_settings)) {
                 continue;
             }
@@ -200,14 +200,16 @@ if (!function_exists('flosc_resolve_flow_option_key_for_ivr')) {
             }
 
             $score = 0;
-            if ($option_name === $default_key) {
-                $score += 1000;
-            }
+            // Prefer rows explicitly bound to this IVR file over a plain default
+            // key, because legacy duplicate rows can leave default keys stale.
             if ($matches_primary) {
-                $score += 500;
+                $score += 2000;
             }
             if ($matches_active) {
-                $score += 300;
+                $score += 1800;
+            }
+            if ($option_name === $default_key) {
+                $score += 200;
             }
             $score += min($message_count, 200);
 
@@ -851,7 +853,7 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         }
     }
     if ($flosc_active_tab === 'style') {
-        foreach (['companion_enabled', 'companion_show_for_visitors', 'companion_allow_fullscreen', 'companion_default_fullscreen', 'companion_pass_page_context', 'companion_auto_open_enabled', 'companion_auto_open_once_per_session', 'companion_launch_on_exit_intent', 'companion_launch_on_scroll_threshold', 'companion_trigger_desktop_only', 'companion_trigger_suppress_on_auth_checkout', 'companion_focus_on_open', 'companion_allow_escape_close', 'companion_enable_keyboard_shortcut', 'companion_remember_open_state'] as $flosc_cb) {
+        foreach (['companion_enabled', 'companion_show_for_visitors', 'companion_pass_page_context', 'companion_auto_open_enabled', 'companion_auto_open_once_per_session', 'companion_launch_on_exit_intent', 'companion_launch_on_scroll_threshold', 'companion_trigger_desktop_only', 'companion_trigger_suppress_on_auth_checkout', 'companion_focus_on_open', 'companion_allow_escape_close', 'companion_enable_keyboard_shortcut', 'companion_remember_open_state'] as $flosc_cb) {
             if (!isset($flosc_post["flow_{$flosc_cb}"])) {
                 $flosc_new_settings[$flosc_cb] = '';
             }
@@ -977,23 +979,6 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
             $flosc_motion_mode = $flosc_companion_defaults['motion_mode'];
         }
 
-        // Sitewide master switch: enforce a predictable companion test profile
-        // even when client-side JS handlers are unavailable.
-        $flosc_companion_sitewide_master = !empty($flosc_post['flow_companion_sitewide_master']);
-        if ($flosc_companion_sitewide_master) {
-            $flosc_mode = 'both';
-            $flosc_new_settings['companion_enabled'] = '1';
-            $flosc_new_settings['companion_show_for_visitors'] = '1';
-            $flosc_new_settings['companion_allow_fullscreen'] = '1';
-            $flosc_new_settings['companion_default_fullscreen'] = '1';
-            $flosc_mobile_behavior = 'fullscreen';
-            $flosc_new_settings['companion_auto_open_enabled'] = '1';
-            $flosc_new_settings['companion_auto_open_once_per_session'] = '1';
-            if (!isset($flosc_new_settings['companion_auto_open_delay_ms']) || intval($flosc_new_settings['companion_auto_open_delay_ms']) < 600) {
-                $flosc_new_settings['companion_auto_open_delay_ms'] = 800;
-            }
-        }
-
         $flosc_auto_open_delay_ms = absint($flosc_post['flow_companion_auto_open_delay_ms'] ?? $flosc_companion_defaults['auto_open_delay_ms']);
         $flosc_auto_open_delay_ms = max($flosc_companion_numeric_limits['auto_open_delay_min_ms'], min($flosc_companion_numeric_limits['auto_open_delay_max_ms'], $flosc_auto_open_delay_ms));
         $flosc_launch_on_scroll_percent = absint($flosc_post['flow_companion_launch_on_scroll_percent'] ?? $flosc_companion_defaults['launch_on_scroll_percent']);
@@ -1024,6 +1009,11 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         $flosc_new_settings['companion_position'] = $flosc_position;
         $flosc_new_settings['companion_greeting'] = sanitize_textarea_field((string) ($flosc_post['flow_companion_greeting'] ?? $flosc_companion_defaults['greeting']));
         $flosc_new_settings['companion_subtitle'] = sanitize_text_field((string) ($flosc_post['flow_companion_subtitle'] ?? $flosc_companion_defaults['subtitle']));
+        $flosc_new_settings['companion_contextual_prompt'] = sanitize_text_field((string) ($flosc_post['flow_companion_contextual_prompt'] ?? $flosc_companion_defaults['contextual_prompt']));
+        // Explicit header visibility toggles (checkbox: present = show, absent = hide).
+        $flosc_new_settings['companion_show_header_title'] = isset($flosc_post['flow_companion_show_header_title']) ? 1 : 0;
+        $flosc_new_settings['companion_show_header_subtitle'] = isset($flosc_post['flow_companion_show_header_subtitle']) ? 1 : 0;
+        $flosc_new_settings['companion_show_open_fullpage'] = isset($flosc_post['flow_companion_show_open_fullpage']) ? 1 : 0;
         $flosc_new_settings['companion_accent_color'] = $flosc_accent;
         $flosc_new_settings['companion_panel_width'] = $flosc_panel_width;
         $flosc_new_settings['companion_panel_height'] = $flosc_panel_height;
@@ -1099,11 +1089,6 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         $flosc_new_settings['companion_target_include'] = $flosc_collect_companion_rules('include', $flosc_post, $flosc_parse_companion_custom_rules);
         $flosc_new_settings['companion_target_exclude'] = $flosc_collect_companion_rules('exclude', $flosc_post, $flosc_parse_companion_custom_rules);
 
-        if ($flosc_companion_sitewide_master) {
-            // Sitewide mode: include rules are intentionally empty.
-            // Excludes remain available for parameterized carve-outs.
-            $flosc_new_settings['companion_target_include'] = '';
-        }
     }
 
     // v8.1.0: Member Levels tab — parse level registry + content protection repeaters

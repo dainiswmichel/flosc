@@ -82,6 +82,8 @@ html, body {
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    --flosc-sidebar-width: 280px;
+    --flosc-sidebar-collapsed-width: 64px;
 }
 
 /* v1.7.6: Chat scale via admin setting (--flosc-scale set as a root CSS custom property)
@@ -146,7 +148,7 @@ html, body {
    ============================================ */
 
 .flosc-sidebar {
-    width: 280px;
+    width: var(--flosc-sidebar-width);
     height: 100%;
     display: flex;
     flex-direction: column;
@@ -157,28 +159,36 @@ html, body {
     padding-bottom: max(1px, env(safe-area-inset-bottom, 1px));
 }
 
-/* v1.9.5: Desktop sidebar collapse — full hide (Grok pattern).
-   Sidebar transitions to 0px width; overflow: hidden clips all content.
-   Header's mobile-menu-btn becomes visible to reopen sidebar. */
+/* Desktop sidebar collapse — icon-width rail mode. */
 .flosc-sidebar.collapsed {
-    width: 0;
-    padding-bottom: 0;
-    border: none;
+    width: var(--flosc-sidebar-collapsed-width);
+    padding-bottom: max(1px, env(safe-area-inset-bottom, 1px));
+    overflow: visible;
 }
 
-/* Header: hide logo text, keep only toggle button centered */
+/* Header: keep logo image + toggle visible in collapsed rail */
 .flosc-sidebar.collapsed .sidebar-header {
     padding: 12px 8px;
-    justify-content: center;
 }
 
 .flosc-sidebar.collapsed .logo {
-    display: none;
+    justify-content: center;
+    width: 28px;
+    min-width: 28px;
 }
 
 .flosc-sidebar.collapsed .sidebar-header-actions {
-    width: 100%;
-    justify-content: center;
+    gap: 0;
+}
+
+.flosc-sidebar.collapsed .logo-text {
+    display: none;
+}
+
+.flosc-sidebar.collapsed .logo-img {
+    height: 28px;
+    width: 28px;
+    object-fit: contain;
 }
 
 /* Hide restart button when collapsed — only toggle visible */
@@ -202,19 +212,24 @@ html, body {
     padding: 4px;
 }
 
+.flosc-sidebar.collapsed .flosc-session-group-title,
 .flosc-sidebar.collapsed .session-group-title {
     display: none;
 }
 
+.flosc-sidebar.collapsed .flosc-session-item,
 .flosc-sidebar.collapsed .session-item {
     padding: 10px 0;
     justify-content: center;
 }
 
+.flosc-sidebar.collapsed .flosc-session-item-title,
 .flosc-sidebar.collapsed .session-item-title {
     display: none;
 }
 
+.flosc-sidebar.collapsed .flosc-session-actions,
+.flosc-sidebar.collapsed .flosc-session-item-actions,
 .flosc-sidebar.collapsed .session-item-actions {
     display: none !important;
 }
@@ -222,6 +237,7 @@ html, body {
 /* Profile bar: avatar-only, centered */
 .flosc-sidebar.collapsed .user-profile-bar {
     padding: 4px;
+    overflow: visible;
 }
 
 .flosc-sidebar.collapsed .profile-button {
@@ -237,9 +253,16 @@ html, body {
     display: none;
 }
 
-/* v1.9.5: When sidebar is 0px, dropdown is unreachable — user reopens sidebar first */
 .flosc-sidebar.collapsed .profile-dropdown {
-    display: none;
+    left: calc(100% + 8px);
+    right: auto;
+    bottom: 0;
+    width: 220px;
+    margin-bottom: 0;
+}
+
+.flosc-sidebar.collapsed .profile-dropdown.open {
+    display: block;
 }
 
 /* Sidebar Header */
@@ -695,13 +718,15 @@ img.flosc-profile-avatar {
     }
 }
 
-/* v1.9.5: When sidebar is collapsed to 0px (Grok pattern), show hamburger + mobile logo
-   in the header so user can reopen sidebar from the main content area. */
-.flosc-sidebar.collapsed ~ .flosc-main .mobile-menu-btn {
-    display: flex;
-}
-.flosc-sidebar.collapsed ~ .flosc-main .logo-mobile {
-    display: flex;
+/* On mobile only, collapsed/hidden sidebar should expose header affordances. */
+@media (max-width: 768px) {
+    .flosc-sidebar.collapsed ~ .flosc-main .mobile-menu-btn {
+        display: flex;
+    }
+
+    .flosc-sidebar.collapsed ~ .flosc-main .logo-mobile {
+        display: flex;
+    }
 }
 
 /* v1.8.0: Hide mobile logo on desktop (sidebar already shows branding) */
@@ -722,6 +747,12 @@ img.flosc-profile-avatar {
     gap: 8px;
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .flosc-share-btn {
     display: flex;
     align-items: center;
@@ -731,6 +762,31 @@ img.flosc-profile-avatar {
     border: none;
     cursor: pointer;
     font-size: 14px;
+}
+
+.flosc-dock-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--flosc-border, #d1d5db);
+    background: var(--flosc-surface, #ffffff);
+    color: var(--flosc-text-primary, #374151);
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.flosc-dock-btn svg {
+    stroke: currentColor;
+}
+
+.flosc-dock-btn--icon {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+    border-radius: 10px;
 }
 
 /* ============================================
@@ -1171,9 +1227,10 @@ img.flosc-profile-avatar {
     border: none;
     outline: none;
     font-size: 15px;
-    line-height: 1.5;
+    line-height: 24px;
     max-height: 150px;
-    min-height: 24px;
+    min-height: 36px;
+    padding: 6px 0;
     font-family: inherit;
     letter-spacing: -0.006em;
 }
@@ -3393,8 +3450,18 @@ body.flosc-companion-embed #flosc_app_sidebar_toggle {
     display: none !important;
 }
 
+body.flosc-companion-embed .flosc-header,
+body.flosc-companion-embed .mobile-menu-btn,
+body.flosc-companion-embed .logo-mobile {
+    display: none !important;
+}
+
 body.flosc-companion-embed .flosc-main {
     width: 100% !important;
     max-width: 100% !important;
     margin-left: 0 !important;
+}
+
+body.flosc-companion-embed .landing-state {
+    display: none !important;
 }

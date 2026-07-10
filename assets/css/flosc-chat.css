@@ -85,6 +85,28 @@
     align-self: flex-start;
 }
 
+.message.assistant .flosc-depleted-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.message.assistant .flosc-depleted-submit-contact {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    border: 1px solid #1f6feb;
+    border-radius: 999px;
+    padding: 0 1.2rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #1f6feb;
+    background: #fff;
+    cursor: pointer;
+}
+
 .message.assistant .flosc-depleted-form-status {
     margin: 0;
     font-size: 0.9rem;
@@ -1286,9 +1308,10 @@ img.flosc-profile-avatar {
     border: none;
     outline: none;
     font-size: 15px;
-    line-height: 1.5;
+    line-height: 24px;
     max-height: 150px;
-    min-height: 24px;
+    min-height: 36px;
+    padding: 6px 0;
     font-family: inherit;
     letter-spacing: -0.006em;
 }

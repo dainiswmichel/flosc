@@ -31,14 +31,34 @@ class FLOSC_RAG_Chat_Handler {
      * @param string|null $flosc_chatpack_prompt v1.9.2: Optional chatpack system prompt (overrides internal builder)
      * @return array Response with content and autoprompts
      */
-    public function flosc_handle_with_state($flosc_message, $flosc_user_session, $flosc_session_id = null, $flosc_chatpack_prompt = null) {
+    public function flosc_handle_with_state($flosc_message, $flosc_user_session, $flosc_session_id = null, $flosc_chatpack_prompt = null, $flosc_conv_history = null) {
 
         // Set user session and create access controller
         $this->flosc_user_session = $flosc_user_session;
         $this->flosc_access_controller = new FLOSC_RAG_Access_Controller($flosc_user_session);
 
-        // Load conversation history
+        // Load conversation history (server-side; populated for logged-in users).
         $flosc_history = $this->flosc_load_conversation_history($flosc_user_session, $flosc_session_id);
+
+        // Visitors have no server-side history, so the caller reconstructs it from the
+        // client's localStorage transcript and passes it in. Without this, the session
+        // continuity prompt ("continue the conversation, don't re-greet") has no history
+        // to act on and the model re-greets/repeats on every visitor follow-up.
+        if (empty($flosc_history) && is_array($flosc_conv_history) && !empty($flosc_conv_history)) {
+            $flosc_normalized = array_map(function ($flosc_msg) {
+                return [
+                    'role'    => in_array(($flosc_msg['role'] ?? ''), ['user', 'assistant'], true) ? $flosc_msg['role'] : 'user',
+                    'content' => (string) ($flosc_msg['content'] ?? ''),
+                ];
+            }, $flosc_conv_history);
+            $flosc_normalized = array_slice($flosc_normalized, -10);
+            // Anthropic requires the messages array to begin with a user turn, so drop
+            // any leading assistant messages (e.g. the opening greeting).
+            while (!empty($flosc_normalized) && $flosc_normalized[0]['role'] !== 'user') {
+                array_shift($flosc_normalized);
+            }
+            $flosc_history = $flosc_normalized;
+        }
 
         // v1.9.2: Use chatpack prompt if provided (includes feedback, praise, KB, WP info)
         // Falls back to internal builder for backward compatibility

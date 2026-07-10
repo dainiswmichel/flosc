@@ -28,12 +28,18 @@
         panelMode: 'panel',
         container: null,
         iframe: null,
+        browsingContext: null,
+        lastIframeContextSignature: '',
+        lastTokenUpdateTs: 0,
 
         init: function(config) {
             this.config = Object.assign({
                 appUrl: '',
                 title: l10n.chatWithUs || 'Chat with us',
                 subtitle: l10n.weReplyInstantly || 'We reply instantly',
+                showHeaderTitle: true,
+                showHeaderSubtitle: true,
+                showOpenFullpage: true,
                 avatar: '💬',
                 accentColor: '#2563eb',
                 position: 'bottom-right',
@@ -88,10 +94,18 @@
                 this.config.skipBehaviorTriggers = true;
             }
 
+            this.captureCurrentSiteContext();
+
+            var initialTokenText = this.getInitialHeaderTokenText();
+            if (initialTokenText) {
+                this.config.headerTokenText = initialTokenText;
+            }
+
             this.render();
             this.applyMotionMode();
             this.bindEvents();
             this.applyHandoffRequest();
+            this.restoreNavigationStateIfNeeded();
             this.restoreOpenStateIfNeeded();
             this.scheduleAutoOpen();
             this.bindBehaviorTriggers();
@@ -129,18 +143,27 @@
             // Header
             var header = document.createElement('div');
             header.className = 'flosc-companion-header';
+            // Token allotment (wallet) always shows when present; otherwise the subtitle
+            // text renders only when its visibility toggle is on.
+            var subtitleHtml = this.config.headerTokenText
+                ? '<div class="flosc-companion-token-allotment">' + this.escapeHtml(this.config.headerTokenText) + '</div>'
+                : ((this.config.showHeaderSubtitle === false)
+                    ? ''
+                    : '<div class="flosc-companion-subtitle">' + this.escapeHtml(this.config.subtitle) + '</div>');
+            var titleHtml = (this.config.showHeaderTitle === false)
+                ? ''
+                : '<div class="flosc-companion-title">' + this.escapeHtml(this.config.title) + '</div>';
             header.innerHTML =
                 '<div class="flosc-companion-header-info">' +
                     '<div class="flosc-companion-avatar">' + this.config.avatar + '</div>' +
                     '<div>' +
-                        '<div class="flosc-companion-title">' + this.escapeHtml(this.config.title) + '</div>' +
-                        '<div class="flosc-companion-subtitle">' + this.escapeHtml(this.config.subtitle) + '</div>' +
+                        titleHtml +
+                        subtitleHtml +
                     '</div>' +
                 '</div>' +
                 '<div class="flosc-companion-header-actions">' +
-                    '<button class="flosc-companion-expand" aria-label="Expand chat" title="Expand chat">↕</button>' +
-                    (this.config.allowFullscreen ? '<button class="flosc-companion-fullscreen" aria-label="' + this.escapeHtml(this.config.fullscreenLabel) + '" title="' + this.escapeHtml(this.config.fullscreenLabel) + '">⤢</button>' : '') +
-                    '<button class="flosc-companion-open-fullpage" aria-label="Open full chat page" title="Open full chat page">↗</button>' +
+                    // The full-chat-page link is admin-optional; some flows keep chat docked-only.
+                    ((this.config.showOpenFullpage === false) ? '' : '<button class="flosc-companion-open-fullpage" aria-label="Open full chat page" title="Open full chat page"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" d="M8 16L16 8M10 8h6v6"/></svg></button>') +
                     '<button class="flosc-companion-close" aria-label="' + this.escapeHtml(this.config.closeAriaLabel) + '"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg></button>' +
                 '</div>';
 
@@ -177,8 +200,6 @@
             var self = this;
             var fab = this.container.querySelector('.flosc-companion-fab');
             var closeBtn = this.container.querySelector('.flosc-companion-close');
-            var fullscreenBtn = this.container.querySelector('.flosc-companion-fullscreen');
-            var expandBtn = this.container.querySelector('.flosc-companion-expand');
             var fullPageBtn = this.container.querySelector('.flosc-companion-open-fullpage');
 
             fab.addEventListener('click', function() {
@@ -189,26 +210,15 @@
                 self.close();
             });
 
-            if (fullscreenBtn) {
-                fullscreenBtn.addEventListener('click', function() {
-                    self.toggleFullscreen();
-                });
-            }
-
-            if (expandBtn) {
-                expandBtn.addEventListener('click', function() {
-                    if (self.container.classList.contains('is-expanded')) {
-                        self.setPanelMode('panel');
-                    } else {
-                        self.open();
-                        self.setPanelMode('expanded');
-                    }
-                });
-            }
-
             if (fullPageBtn) {
                 fullPageBtn.addEventListener('click', function() {
                     self.openFullPage();
+                });
+            }
+
+            if (this.iframe) {
+                this.iframe.addEventListener('load', function() {
+                    self.deliverBrowsingContextToIframe();
                 });
             }
 
@@ -227,6 +237,190 @@
                     }
                 }
             });
+
+            window.addEventListener('popstate', function() {
+                self.captureCurrentSiteContext();
+                self.refreshIframeContextIfNeeded();
+            });
+
+            window.addEventListener('hashchange', function() {
+                self.captureCurrentSiteContext();
+                self.refreshIframeContextIfNeeded();
+            });
+
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible') {
+                    self.captureCurrentSiteContext();
+                    self.refreshIframeContextIfNeeded();
+                } else if (document.visibilityState === 'hidden') {
+                    self.saveNavigationState();
+                }
+            });
+
+            window.addEventListener('pagehide', function() {
+                self.saveNavigationState();
+            });
+
+            window.addEventListener('message', function(event) {
+                if (!self.iframe || event.source !== self.iframe.contentWindow) {
+                    return;
+                }
+
+                try {
+                    var appOrigin = new URL(self.config.appUrl, window.location.origin).origin;
+                    if (String(event.origin || '') !== appOrigin) {
+                        return;
+                    }
+                } catch (e) {
+                    return;
+                }
+
+                var data = event.data || {};
+                if (data.type === 'flosc_companion_token_update') {
+                    self.updateHeaderTokenText(data.payload);
+                    return;
+                }
+                if (data.type === 'flosc_companion_context_request') {
+                    self.deliverBrowsingContextToIframe();
+                }
+            });
+        },
+
+        getTokenCacheKey: function() {
+            var flowId = String(this.config.flowId || 'default');
+            var appScope = '';
+            try {
+                appScope = new URL(this.config.appUrl, window.location.origin).pathname || '';
+            } catch (e) {
+                appScope = String(this.config.appUrl || '');
+            }
+            appScope = appScope.replace(/[^a-z0-9]+/gi, '_').toLowerCase() || 'app';
+            return 'flosc_companion_token_cache_' + flowId + '_' + appScope;
+        },
+
+        readTokenCache: function() {
+            try {
+                var raw = window.sessionStorage.getItem(this.getTokenCacheKey());
+                if (!raw) {
+                    return null;
+                }
+                var parsed = JSON.parse(raw);
+                return parsed && typeof parsed === 'object' ? parsed : null;
+            } catch (e) {
+                return null;
+            }
+        },
+
+        persistTokenCache: function(payload) {
+            if (!payload || typeof payload !== 'object') {
+                return;
+            }
+
+            var formatted = String(payload.formatted || '').trim();
+            if (!formatted) {
+                return;
+            }
+
+            var ts = Math.max(0, parseInt(payload.ts, 10) || 0);
+            if (!ts) {
+                ts = Date.now();
+            }
+
+            try {
+                window.sessionStorage.setItem(this.getTokenCacheKey(), JSON.stringify({
+                    formatted: formatted,
+                    value: Math.max(0, parseInt(payload.value, 10) || 0),
+                    ts: ts
+                }));
+            } catch (e) {
+                // Ignore storage failures.
+            }
+        },
+
+        getPersistedTokenFromSharedStorage: function() {
+            try {
+                var flowId = String(this.config.flowId || 'default');
+                var grantValue = Math.max(0, parseInt(this.config.visitorTokenGrant, 10) || 0);
+                var sessionId = String(window.localStorage.getItem('flosc_visitor_session') || 'no_session');
+                var key = 'flosc_visitor_token_balance_v3_' + flowId + '_g' + grantValue + '_' + sessionId;
+                var raw = window.localStorage.getItem(key);
+                var parsed = parseInt(raw, 10);
+                return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+            } catch (e) {
+                return null;
+            }
+        },
+
+        formatTokenCountForHeader: function(tokenValue) {
+            var n = Math.max(0, parseInt(tokenValue, 10) || 0);
+            try {
+                return n.toLocaleString();
+            } catch (e) {
+                return String(n);
+            }
+        },
+
+        getInitialHeaderTokenText: function() {
+            var cached = this.readTokenCache();
+            if (cached && cached.formatted) {
+                this.lastTokenUpdateTs = Math.max(0, parseInt(cached.ts, 10) || 0);
+                return String(cached.formatted).trim();
+            }
+
+            var persisted = this.getPersistedTokenFromSharedStorage();
+            if (persisted !== null) {
+                return this.formatTokenCountForHeader(persisted);
+            }
+
+            return String(this.config.headerTokenText || '').trim();
+        },
+
+        updateHeaderTokenText: function(payload) {
+            if (!payload || typeof payload !== 'object') {
+                return;
+            }
+
+            var formatted = String(payload.formatted || '').trim();
+            if (!formatted) {
+                return;
+            }
+
+            var ts = Math.max(0, parseInt(payload.ts, 10) || 0);
+            if (!ts) {
+                ts = Date.now();
+                payload = Object.assign({}, payload, { ts: ts });
+            }
+            if (this.lastTokenUpdateTs > 0 && ts < this.lastTokenUpdateTs) {
+                return;
+            }
+
+            this.lastTokenUpdateTs = ts;
+            this.persistTokenCache(payload);
+            this.config.headerTokenText = formatted;
+
+            if (!this.container) {
+                return;
+            }
+
+            var headerInfo = this.container.querySelector('.flosc-companion-header-info');
+            if (!headerInfo) {
+                return;
+            }
+
+            var tokenEl = this.container.querySelector('.flosc-companion-token-allotment');
+            if (!tokenEl) {
+                var subtitleEl = this.container.querySelector('.flosc-companion-subtitle');
+                if (subtitleEl) {
+                    var replacement = document.createElement('div');
+                    replacement.className = 'flosc-companion-token-allotment';
+                    subtitleEl.parentNode.replaceChild(replacement, subtitleEl);
+                    tokenEl = replacement;
+                }
+            }
+
+            if (tokenEl) {
+                tokenEl.textContent = formatted;
+            }
         },
 
         toggle: function() {
@@ -240,14 +434,25 @@
         open: function() {
             var shouldOpenFullscreen = !!(this.config.allowFullscreen && this.config.defaultFullscreen);
 
+            this.captureCurrentSiteContext();
+
             this.setPanelMode(shouldOpenFullscreen ? 'fullscreen' : 'panel');
             this.isOpen = true;
             this.container.classList.add('is-open');
             this.updateLauncherA11y();
 
-            // Lazy-load iframe on first open
+            var payload = this.getBrowsingContextPayload();
+            var signature = this.getContextSignature(payload);
+
+            // Lazy-load iframe on first open; reload src when parent page context changes.
             if (!this.iframe.src) {
+                this.lastIframeContextSignature = signature;
                 this.iframe.src = this.buildIframeUrl();
+            } else if (signature !== this.lastIframeContextSignature) {
+                this.lastIframeContextSignature = signature;
+                this.iframe.src = this.buildIframeUrl();
+            } else {
+                this.deliverBrowsingContextToIframe();
             }
 
             if (this.config.focusOnOpen) {
@@ -255,6 +460,7 @@
             }
 
             this.saveOpenState(true);
+            this.saveNavigationState();
         },
 
         close: function() {
@@ -262,6 +468,69 @@
             this.container.classList.remove('is-open');
             this.updateLauncherA11y();
             this.saveOpenState(false);
+            this.saveNavigationState();
+        },
+
+        getNavigationStateKey: function() {
+            var originScope = '';
+            try {
+                originScope = String(window.location.origin || '').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+            } catch (e) {
+                originScope = 'site';
+            }
+            if (!originScope) {
+                originScope = 'site';
+            }
+            return 'flosc_companion_nav_state_' + originScope;
+        },
+
+        getLegacyNavigationStateKey: function() {
+            return String(this.config.stateKey || 'flosc_companion_state') + '_nav';
+        },
+
+        saveNavigationState: function() {
+            var payload = {
+                isOpen: !!this.isOpen,
+                panelMode: String(this.panelMode || 'panel'),
+                ts: Date.now()
+            };
+            try {
+                window.sessionStorage.setItem(this.getNavigationStateKey(), JSON.stringify(payload));
+                // Backward-compatible write to previous key shape.
+                window.sessionStorage.setItem(this.getLegacyNavigationStateKey(), JSON.stringify(payload));
+            } catch (e) {
+                // Ignore storage failures.
+            }
+        },
+
+        restoreNavigationStateIfNeeded: function() {
+            if (this.handoffRequested) {
+                return;
+            }
+
+            try {
+                var raw = window.sessionStorage.getItem(this.getNavigationStateKey());
+                if (!raw) {
+                    raw = window.sessionStorage.getItem(this.getLegacyNavigationStateKey());
+                }
+                if (!raw) {
+                    return;
+                }
+
+                var state = JSON.parse(raw);
+                if (!state || !state.isOpen) {
+                    return;
+                }
+
+                this.open();
+
+                var mode = String(state.panelMode || 'panel').toLowerCase();
+                if (mode === 'expanded' || mode === 'fullscreen') {
+                    this.setPanelMode(mode);
+                }
+            } catch (e) {
+                // Ignore malformed nav state.
+            }
         },
 
         buildIframeUrl: function() {
@@ -284,10 +553,240 @@
                     }, this);
                 }
 
+                var payload = this.getBrowsingContextPayload();
+                if (payload.page_url) {
+                    url.searchParams.set('flosc_context_url', payload.page_url);
+                }
+                if (payload.page_title) {
+                    url.searchParams.set('flosc_context_title', payload.page_title);
+                }
+                if (payload.page_path) {
+                    url.searchParams.set('flosc_context_path', payload.page_path);
+                }
+                if (payload.page_referrer) {
+                    url.searchParams.set('flosc_context_referrer', payload.page_referrer);
+                }
+                if (payload.surface) {
+                    url.searchParams.set('flosc_context_surface', payload.surface);
+                }
+                if (payload.page_post_id) {
+                    url.searchParams.set('flosc_context_post_id', String(payload.page_post_id));
+                } else if (this.config.currentPagePostId) {
+                    url.searchParams.set('flosc_context_post_id', String(this.config.currentPagePostId));
+                } else if (this.config.contextParams && this.config.contextParams.flosc_context_post_id) {
+                    url.searchParams.set('flosc_context_post_id', String(this.config.contextParams.flosc_context_post_id));
+                }
+
                 return url.toString();
             } catch (e) {
                 return this.config.appUrl;
             }
+        },
+
+        normalizeUrl: function(value) {
+            var raw = String(value || '').trim();
+            if (!raw) {
+                return '';
+            }
+            try {
+                var parsed = new URL(raw, window.location.origin);
+                if (!/^https?:$/.test(parsed.protocol)) {
+                    return '';
+                }
+                return parsed.toString();
+            } catch (e) {
+                return '';
+            }
+        },
+
+        resolvePostIdFromPage: function() {
+            var configured = parseInt(this.config.currentPagePostId, 10);
+            if (Number.isFinite(configured) && configured > 0) {
+                return configured;
+            }
+
+            var body = document.body;
+            if (body) {
+                var dataId = parseInt(body.getAttribute('data-flosc-post-id') || body.dataset.floscPostId || '', 10);
+                if (Number.isFinite(dataId) && dataId > 0) {
+                    return dataId;
+                }
+            }
+
+            var className = String((body && body.className) || '');
+            // Support common WP/body class variants across themes:
+            // postid-123, postid123, page-id-456, pageid456.
+            var match = className.match(/\bpostid-?(\d+)\b/);
+            if (match) {
+                return parseInt(match[1], 10) || 0;
+            }
+            match = className.match(/\bpage-id-?(\d+)\b/);
+            if (match) {
+                return parseInt(match[1], 10) || 0;
+            }
+            match = className.match(/\bsingle-post-(\d+)\b/);
+            if (match) {
+                return parseInt(match[1], 10) || 0;
+            }
+            return 0;
+        },
+
+        readTrail: function() {
+            try {
+                var raw = window.sessionStorage.getItem('flosc_companion_surf_trail') || '[]';
+                var parsed = JSON.parse(raw);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (e) {
+                return [];
+            }
+        },
+
+        writeTrail: function(trail) {
+            try {
+                window.sessionStorage.setItem('flosc_companion_surf_trail', JSON.stringify(trail || []));
+            } catch (e) {
+                // Ignore storage failures.
+            }
+        },
+
+        upsertTrailEntry: function(entry) {
+            var next = this.readTrail();
+            var url = this.normalizeUrl(entry && entry.url ? entry.url : '');
+            if (!url) {
+                return next;
+            }
+
+            next = next.filter(function(item) {
+                return item && String(item.url || '') !== url;
+            });
+
+            next.push({
+                url: url,
+                title: String((entry && entry.title) || '').slice(0, 180),
+                path: String((entry && entry.path) || '').slice(0, 240)
+            });
+
+            if (next.length > 10) {
+                next = next.slice(next.length - 10);
+            }
+
+            this.writeTrail(next);
+            return next;
+        },
+
+        isAppUrl: function(url) {
+            try {
+                var current = new URL(url, window.location.origin);
+                var app = new URL(this.config.appUrl, window.location.origin);
+                var clean = function(pathname) {
+                    return String(pathname || '/').replace(/\/+$/, '') || '/';
+                };
+                return clean(current.pathname) === clean(app.pathname);
+            } catch (e) {
+                return false;
+            }
+        },
+
+        captureCurrentSiteContext: function() {
+            var pageUrl = this.normalizeUrl(window.location.href);
+            var title = String(document.title || '').trim().slice(0, 180);
+            var path = String(window.location.pathname || '/').trim().slice(0, 240);
+            var referrer = this.normalizeUrl(document.referrer || '');
+            var postId = this.resolvePostIdFromPage();
+            if (!postId && this.config.contextParams && this.config.contextParams.flosc_context_post_id) {
+                postId = parseInt(this.config.contextParams.flosc_context_post_id, 10) || 0;
+            }
+            if (!postId && this.config.currentPagePostId) {
+                postId = parseInt(this.config.currentPagePostId, 10) || 0;
+            }
+
+            var trail = this.upsertTrailEntry({
+                url: pageUrl,
+                title: title,
+                path: path
+            });
+
+            if (pageUrl && !this.isAppUrl(pageUrl)) {
+                try {
+                    window.sessionStorage.setItem('flosc_last_site_page', pageUrl);
+                } catch (e) {
+                    // Ignore storage failures.
+                }
+            }
+
+            this.browsingContext = {
+                page_url: pageUrl,
+                page_title: title,
+                page_path: path,
+                page_referrer: referrer,
+                page_post_id: postId,
+                surface: 'companion',
+                trail: trail
+            };
+        },
+
+        getBrowsingContextPayload: function() {
+            return this.browsingContext || {
+                page_url: '',
+                page_title: '',
+                page_path: '',
+                page_referrer: '',
+                page_post_id: 0,
+                surface: 'companion',
+                trail: []
+            };
+        },
+
+        getContextSignature: function(payload) {
+            try {
+                return JSON.stringify(payload || {});
+            } catch (e) {
+                return '';
+            }
+        },
+
+        postBrowsingContextToIframe: function() {
+            if (!this.iframe || !this.iframe.contentWindow) {
+                return;
+            }
+
+            var payload = this.getBrowsingContextPayload();
+            try {
+                var targetOrigin = new URL(this.iframe.src || this.config.appUrl, window.location.origin).origin;
+                this.iframe.contentWindow.postMessage({
+                    type: 'flosc_companion_context',
+                    payload: payload
+                }, targetOrigin);
+            } catch (e) {
+                // Ignore cross-window messaging failures.
+            }
+        },
+
+        deliverBrowsingContextToIframe: function() {
+            var self = this;
+            var delays = [0, 120, 500, 1200];
+            delays.forEach(function(delayMs) {
+                window.setTimeout(function() {
+                    self.captureCurrentSiteContext();
+                    self.postBrowsingContextToIframe();
+                }, delayMs);
+            });
+        },
+
+        refreshIframeContextIfNeeded: function() {
+            if (!this.iframe || !this.iframe.src) {
+                return;
+            }
+
+            var payload = this.getBrowsingContextPayload();
+            var signature = this.getContextSignature(payload);
+            if (signature === this.lastIframeContextSignature) {
+                this.postBrowsingContextToIframe();
+                return;
+            }
+
+            this.lastIframeContextSignature = signature;
+            this.postBrowsingContextToIframe();
         },
 
         updateLauncherA11y: function() {
@@ -486,7 +985,7 @@
         },
 
         restoreOpenStateIfNeeded: function() {
-            if (!this.config.rememberOpenState) {
+            if (!this.config.rememberOpenState || this.isOpen) {
                 return;
             }
             var storage = this.getStorageBackend();
@@ -571,6 +1070,8 @@
                 this.isFullscreen = true;
                 this.panelMode = 'fullscreen';
                 this.container.classList.add('is-fullscreen');
+                this.updateExpandA11y();
+                this.saveNavigationState();
                 return;
             }
 
@@ -578,11 +1079,26 @@
             if (mode === 'expanded') {
                 this.panelMode = 'expanded';
                 this.container.classList.add('is-expanded');
+                this.updateExpandA11y();
+                this.saveNavigationState();
                 return;
             }
 
             this.panelMode = 'panel';
             this.container.classList.add('is-panel');
+            this.updateExpandA11y();
+            this.saveNavigationState();
+        },
+
+        updateExpandA11y: function() {
+            var expandBtn = this.container ? this.container.querySelector('.flosc-companion-expand') : null;
+            if (!expandBtn) {
+                return;
+            }
+            var expanded = this.container.classList.contains('is-expanded');
+            var label = expanded ? 'Collapse chat' : 'Expand chat';
+            expandBtn.setAttribute('aria-label', label);
+            expandBtn.setAttribute('title', label);
         },
 
         detectHandoffRequest: function() {

@@ -631,6 +631,46 @@ function flosc_chat_session_allowed_html() {
 }
 
 /**
+ * Format a MySQL timestamp into Michel Date Stamp (UTC).
+ * Example: 2026-07m-10d-UTC08h:26m13s
+ */
+function flosc_format_mts_utc($timestamp) {
+    $raw = trim((string) $timestamp);
+    if ($raw === '') {
+        return '';
+    }
+
+    try {
+        $site_tz = function_exists('wp_timezone') ? wp_timezone() : new DateTimeZone('UTC');
+        $dt_local = new DateTimeImmutable($raw, $site_tz);
+        $dt_utc = $dt_local->setTimezone(new DateTimeZone('UTC'));
+        return $dt_utc->format('Y-m-d\\d-\\U\\T\\CH\\h:i\\m') . $dt_utc->format('s') . 's';
+    } catch (Exception $e) {
+        return esc_html($raw);
+    }
+}
+
+/**
+ * Extract one context token from chain_detail.
+ */
+function flosc_get_chain_context_value($chain_detail, $key) {
+    $chain_detail = (string) $chain_detail;
+    $needle = $key . ':';
+    if ($chain_detail === '' || strpos($chain_detail, $needle) === false) {
+        return '';
+    }
+
+    $parts = array_map('trim', explode('→', $chain_detail));
+    foreach ($parts as $part) {
+        if (strpos($part, $needle) === 0) {
+            return trim(substr($part, strlen($needle)));
+        }
+    }
+
+    return '';
+}
+
+/**
  * Render one speaker's turn as one or more message bubbles with stable ids.
  *
  * The turn is split on blank lines into the bubbles the chat would show. A single
@@ -646,9 +686,10 @@ function flosc_chat_session_allowed_html() {
  * @param string $time    HH:MM, shown on the first bubble only ('' to omit).
  * @param int    $rid     Source row id (hover title).
  * @param string $css     Bubble CSS class.
+ * @param string $context_url Optional visitor page URL context.
  * @return string
  */
-function flosc_render_msg_bubbles($code, $letter, $n, $content, $who, $time, $rid, $css) {
+function flosc_render_msg_bubbles($code, $letter, $n, $content, $who, $time, $rid, $css, $context_url = '') {
     // One stored field = ONE message = ONE bubble, shown verbatim. We do NOT split
     // it into sub-bubbles — the chat shows each response as a single message (internal
     // line breaks and all), so the log must mirror that, not fragment it.
@@ -675,6 +716,13 @@ function flosc_render_msg_bubbles($code, $letter, $n, $content, $who, $time, $ri
         $hint = '<p class="description">Moderation actions are in <a href="' . esc_url($register_login_url) . '">Register &amp; Login</a>: Approve, Approve + Send MagicLink, Deny + Block, or Delete.</p>';
     }
 
+    if ($letter === 'u') {
+        $safe_context_url = esc_url((string) $context_url);
+        if ($safe_context_url !== '') {
+            $hint .= '<p class="description">Visitor URL: <a href="' . $safe_context_url . '" target="_blank" rel="noopener noreferrer">' . esc_html((string) $context_url) . '</a></p>';
+        }
+    }
+
     return '<div class="flosc-msg ' . esc_attr($css) . '" data-msg-id="' . esc_attr($id) . '" title="row ' . intval($rid) . '">'
         . $meta
         . '<div class="flosc-msg-body">' . esc_html(trim((string) $content)) . '</div>'
@@ -689,7 +737,7 @@ function flosc_render_msg_bubbles($code, $letter, $n, $content, $who, $time, $ri
  * shows. The header carries a Delete control that removes the whole conversation.
  */
 function flosc_render_chat_session($s) {
-    $when  = esc_html(substr((string) ($s['last_ts'] ?? ''), 0, 16)); // Y-m-d H:i
+    $when  = esc_html(flosc_format_mts_utc((string) ($s['last_ts'] ?? '')));
     $turns = intval($s['turns'] ?? 0);
     $label = esc_html($s['label'] ?? '');
     $is_archived = !empty($s['is_archived']);
@@ -742,7 +790,7 @@ function flosc_render_chat_session($s) {
         $um  = (string) ($r['user_message'] ?? '');
         $ar  = (string) ($r['ai_response'] ?? '');
         $rid = intval($r['id'] ?? 0);
-        $t   = substr((string) ($r['timestamp'] ?? ''), 11, 5);
+        $t   = flosc_format_mts_utc((string) ($r['timestamp'] ?? ''));
         $src = (string) ($r['response_source'] ?? '');
 
         // Admin-joined human message — pale green, "Name (admin)" (italic), letter 'a'.
@@ -776,9 +824,10 @@ function flosc_render_chat_session($s) {
         // The visitor's message — hidden only for the auto-welcome's "[SYSTEM:…]" prompt.
         if (!$is_system) {
             $u_seq++;
+            $visitor_context_url = flosc_get_chain_context_value((string) ($r['chain_detail'] ?? ''), 'ctx_url');
             $thread .= flosc_render_msg_bubbles(
                 $code, 'u', str_pad((string) $u_seq, 3, '0', STR_PAD_LEFT),
-                $um, $label_raw, $t, $rid, 'flosc-msg-user'
+                $um, $label_raw, $t, $rid, 'flosc-msg-user', $visitor_context_url
             );
         }
 
@@ -808,15 +857,78 @@ function flosc_render_chat_session($s) {
         $bot_name = flosc_get_setting('ai_personality_name', flosc_get_setting('ai_identity_name', 'Br3nda'));
 
         $latest_usage_row = null;
+        $latest_row = null;
+        $latest_context_row = null;
         $session_rows = is_array($s['rows'] ?? null) ? $s['rows'] : [];
         for ($i = count($session_rows) - 1; $i >= 0; $i--) {
             $row = $session_rows[$i];
+            if (!is_array($latest_row)) {
+                $latest_row = $row;
+            }
             $has_usage = intval($row['billing_total_tokens'] ?? 0) > 0
                 || intval($row['billing_real_millicents'] ?? 0) > 0
                 || ((string) ($row['billing_source'] ?? '') !== '' && (string) ($row['billing_source'] ?? '') !== 'none');
             if ($has_usage) {
                 $latest_usage_row = $row;
+            }
+
+            $chain_detail = (string) ($row['chain_detail'] ?? '');
+            if (!is_array($latest_context_row) && strpos($chain_detail, 'ctx_') !== false) {
+                $latest_context_row = $row;
+            }
+
+            if (is_array($latest_usage_row) && is_array($latest_context_row) && is_array($latest_row)) {
                 break;
+            }
+        }
+
+        if (is_array($latest_context_row)) {
+            $chain_detail = (string) ($latest_context_row['chain_detail'] ?? '');
+            $ctx_parts = array_map('trim', explode('→', $chain_detail));
+            $ctx = [
+                'surface' => '',
+                'url' => '',
+                'path' => '',
+                'title' => '',
+                'ref' => '',
+            ];
+            foreach ($ctx_parts as $part) {
+                if (strpos($part, 'ctx_surface:') === 0) {
+                    $ctx['surface'] = trim(substr($part, strlen('ctx_surface:')));
+                } elseif (strpos($part, 'ctx_url:') === 0) {
+                    $ctx['url'] = trim(substr($part, strlen('ctx_url:')));
+                } elseif (strpos($part, 'ctx_path:') === 0) {
+                    $ctx['path'] = trim(substr($part, strlen('ctx_path:')));
+                } elseif (strpos($part, 'ctx_title:') === 0) {
+                    $ctx['title'] = trim(substr($part, strlen('ctx_title:')));
+                } elseif (strpos($part, 'ctx_ref:') === 0) {
+                    $ctx['ref'] = trim(substr($part, strlen('ctx_ref:')));
+                }
+            }
+
+            $ctx_lines = [];
+            if ($ctx['surface'] !== '') {
+                $ctx_lines[] = 'Surface: ' . esc_html($ctx['surface']);
+            }
+            if ($ctx['url'] !== '') {
+                $ctx_lines[] = 'Page URL: ' . esc_html($ctx['url']);
+            }
+            if ($ctx['path'] !== '') {
+                $ctx_lines[] = 'Path: ' . esc_html($ctx['path']);
+            }
+            if ($ctx['title'] !== '') {
+                $ctx_lines[] = 'Title: ' . esc_html($ctx['title']);
+            }
+            if ($ctx['ref'] !== '') {
+                $ctx_lines[] = 'Referrer: ' . esc_html($ctx['ref']);
+            }
+
+            if (!empty($ctx_lines)) {
+                $composer .= '<div class="flosc-admin-session-context">'
+                    . '<p class="description"><strong>Session Source Context</strong><br>'
+                    . implode('<br>', $ctx_lines)
+                    . '</p>'
+                    . '</div>';
             }
         }
 
@@ -840,9 +952,15 @@ function flosc_render_chat_session($s) {
                 . '</p>'
                 . '</div>';
         } else {
+            $latest_provider = is_array($latest_row) ? esc_html((string) ($latest_row['provider'] ?? 'ivr')) : 'ivr';
+            $latest_response_source = is_array($latest_row) ? esc_html((string) ($latest_row['response_source'] ?? 'ivr')) : 'ivr';
+            $latest_billing_source = is_array($latest_row) ? esc_html((string) ($latest_row['billing_source'] ?? 'none')) : 'none';
             $composer .= '<div class="flosc-admin-usage-report">'
                 . '<p class="description"><strong>Latest AI API Usage Report</strong><br>'
-                . 'No provider usage metrics are logged for this session yet.'
+                . 'No provider usage metrics are logged for this session yet.<br>'
+                . 'Latest row state: response source = ' . $latest_response_source
+                . ', provider = ' . $latest_provider
+                . ', billing source = ' . $latest_billing_source
                 . '</p>'
                 . '</div>';
         }

@@ -847,6 +847,7 @@ class FLOSC_Framework {
         require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-concierge.php'; // v8.0.0 - concierge primers
         require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-trajectory.php'; // v8.0.0 - trajectory guidance (same AI engine)
         require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-chatpack.php'; // v1.9.2 - unified AI context builder
+        require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-page-context.php';
 
         // v1.9.0 - Unified AI architecture with enforceable structure
         require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-user-session.php';
@@ -5166,6 +5167,48 @@ HTML;
         $session_id_raw = sanitize_text_field((string) ($request->get_param('session_id') ?? ''));
         $session_id = $this->flosc_normalize_session_id($session_id_raw);
         $context = $request->get_param('context') ?? [];
+        if (is_array($context)) {
+            if (isset($context['browsing_page_url'])) {
+                $context['browsing_page_url'] = esc_url_raw((string) $context['browsing_page_url']);
+            }
+            if (isset($context['browsing_page_title'])) {
+                $context['browsing_page_title'] = sanitize_text_field((string) $context['browsing_page_title']);
+            }
+            if (isset($context['browsing_page_path'])) {
+                $context['browsing_page_path'] = sanitize_text_field((string) $context['browsing_page_path']);
+            }
+            if (isset($context['browsing_page_referrer'])) {
+                $context['browsing_page_referrer'] = esc_url_raw((string) $context['browsing_page_referrer']);
+            }
+            if (isset($context['browsing_surface'])) {
+                $context['browsing_surface'] = sanitize_key((string) $context['browsing_surface']);
+            }
+            if (isset($context['browsing_page_post_id'])) {
+                $context['browsing_page_post_id'] = absint($context['browsing_page_post_id']);
+            }
+            if (isset($context['browsing_tab_index'])) {
+                $context['browsing_tab_index'] = absint($context['browsing_tab_index']);
+            }
+            if (isset($context['browsing_surf_trail'])) {
+                $trail = is_array($context['browsing_surf_trail']) ? $context['browsing_surf_trail'] : [];
+                $safe_trail = [];
+                foreach (array_slice($trail, 0, 10) as $trail_item) {
+                    if (!is_array($trail_item)) {
+                        continue;
+                    }
+                    $safe_url = esc_url_raw((string) ($trail_item['url'] ?? ''));
+                    if ('' === $safe_url) {
+                        continue;
+                    }
+                    $safe_trail[] = [
+                        'url' => $safe_url,
+                        'title' => sanitize_text_field((string) ($trail_item['title'] ?? '')),
+                        'path' => sanitize_text_field((string) ($trail_item['path'] ?? '')),
+                    ];
+                }
+                $context['browsing_surf_trail'] = $safe_trail;
+            }
+        }
         
         // v1.3.7: Get flow context from request
         $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
@@ -5331,6 +5374,47 @@ HTML;
             }
         } else {
             $eval_context['access_level'] = 'visitor';
+        }
+
+        // v8.0.0: Track page/post ID for chat logs; inject body only on page-intent messages.
+        $page_context_session_key = $session_id > 0
+            ? (string) $session_id
+            : $session_id_raw;
+        // Page awareness is an optional enhancement layer: it enriches the AI prompt with
+        // the post/page/product the visitor is viewing. It must never break the core chat
+        // response, so each stage is guarded independently and any failure is recorded in
+        // $flosc_page_ctx_note (surfaced into chain_detail / Chat Logs) instead of 500-ing
+        // the whole /chat request.
+        //   Stage 1 (metadata): gives every visitor/guest/member "what page am I on?" awareness.
+        //   Stage 2 (body):     ingests the page content only when the message asks about it.
+        $flosc_page_ctx_note = '';
+        try {
+            $page_context = FLOSC_Page_Context::instance();
+
+            try {
+                $page_context->normalize_browsing_post_id($eval_context);
+            } catch (\Throwable $flosc_meta_error) {
+                $flosc_page_ctx_note = 'meta_err:' . $flosc_meta_error->getMessage();
+                flosc_log('[FLOSC] Page context metadata failed: ' . $flosc_meta_error->getMessage()
+                    . ' @ ' . $flosc_meta_error->getFile() . ':' . $flosc_meta_error->getLine());
+            }
+
+            try {
+                $page_context->maybe_attach_to_context(
+                    $eval_context,
+                    $message,
+                    $page_context_session_key
+                );
+            } catch (\Throwable $flosc_body_error) {
+                $flosc_page_ctx_note = ($flosc_page_ctx_note !== '' ? $flosc_page_ctx_note . ';' : '')
+                    . 'body_err:' . $flosc_body_error->getMessage();
+                flosc_log('[FLOSC] Page context body failed: ' . $flosc_body_error->getMessage()
+                    . ' @ ' . $flosc_body_error->getFile() . ':' . $flosc_body_error->getLine());
+            }
+        } catch (\Throwable $flosc_page_context_error) {
+            $flosc_page_ctx_note = 'init_err:' . $flosc_page_context_error->getMessage();
+            flosc_log('[FLOSC] Page context init failed: ' . $flosc_page_context_error->getMessage()
+                . ' @ ' . $flosc_page_context_error->getFile() . ':' . $flosc_page_context_error->getLine());
         }
 
         $session_end_contact_form_submit = !empty($request->get_param('session_end_contact_form_submit'));
@@ -5550,6 +5634,24 @@ HTML;
                 // Update pair number based on visitor history
                 $chatpack_pair_number = (int) floor(count($chatpack_conv_history) / 2) + 1;
                 $chatpack_is_first = ($chatpack_pair_number <= 1);
+
+                // The client saves the just-sent message before posting, so it arrives as the
+                // LAST entry of visitor_history. Pair-number counting above needs it, but the
+                // provider layer (RAG loop / dispatch) appends the current message itself — so
+                // drop that trailing user turn to avoid two consecutive user turns, and strip
+                // any leading assistant turns (e.g. the persisted opening greeting) so the
+                // history begins with a user turn. Both are required for a valid Anthropic
+                // messages array (alternating roles, user-first); otherwise the API returns 400.
+                if (!empty($chatpack_conv_history)) {
+                    $flosc_tail = end($chatpack_conv_history);
+                    if (is_array($flosc_tail) && ($flosc_tail['role'] ?? '') === 'user') {
+                        array_pop($chatpack_conv_history);
+                    }
+                    while (!empty($chatpack_conv_history) && (($chatpack_conv_history[0]['role'] ?? '') !== 'user')) {
+                        array_shift($chatpack_conv_history);
+                    }
+                    $chatpack_conv_history = array_values($chatpack_conv_history);
+                }
             }
         }
         
@@ -5680,7 +5782,7 @@ HTML;
                         : FLOSC_Chatpack::build_followup_chatpack($phase, $eval_context, $chatpack_session_hash, $chatpack_pair_number);
                     if ($trajectory_guidance !== '') { $chatpack_prompt .= $trajectory_guidance; }
                     if ($concierge_guidance !== '') { $chatpack_prompt .= $concierge_guidance; }
-                    $flosc_rag_response = $flosc_rag_handler->flosc_handle_with_state($message, $flosc_user_session, $session_id, $chatpack_prompt);
+                    $flosc_rag_response = $flosc_rag_handler->flosc_handle_with_state($message, $flosc_user_session, $session_id, $chatpack_prompt, $chatpack_conv_history);
 
                     if ($flosc_rag_response && !is_wp_error($flosc_rag_response)) {
                         $response_message = [
@@ -5759,6 +5861,41 @@ HTML;
         $flosc_provider_used = $ai_available ? flosc_get_setting('ai_provider', 'ivr') : 'ivr';
         $flosc_chain_detail = ($this->ai_chat_dispatch && !empty($this->ai_chat_dispatch->last_chain_detail))
             ? $this->ai_chat_dispatch->last_chain_detail : [];
+        // Persist browsing context markers in the same row so Chat Logs can
+        // show where a visitor session message originated.
+        $flosc_ctx_url = isset($eval_context['browsing_page_url']) ? esc_url_raw((string) $eval_context['browsing_page_url']) : '';
+        $flosc_ctx_path = isset($eval_context['browsing_page_path']) ? sanitize_text_field((string) $eval_context['browsing_page_path']) : '';
+        $flosc_ctx_title = isset($eval_context['browsing_page_title']) ? sanitize_text_field((string) $eval_context['browsing_page_title']) : '';
+        $flosc_ctx_ref = isset($eval_context['browsing_page_referrer']) ? esc_url_raw((string) $eval_context['browsing_page_referrer']) : '';
+        $flosc_ctx_surface = isset($eval_context['browsing_surface']) ? sanitize_key((string) $eval_context['browsing_surface']) : '';
+        $flosc_ctx_post_id = absint($eval_context['browsing_page_post_id'] ?? 0);
+        if (!is_array($flosc_chain_detail)) {
+            $flosc_chain_detail = [];
+        }
+        if ($flosc_ctx_surface !== '') {
+            $flosc_chain_detail[] = 'ctx_surface:' . $flosc_ctx_surface;
+        }
+        if ($flosc_ctx_post_id > 0) {
+            $flosc_chain_detail[] = 'ctx_post_id:' . $flosc_ctx_post_id;
+        }
+        if (!empty($eval_context['page_content_injected'])) {
+            $flosc_chain_detail[] = 'page_content:injected';
+        }
+        if (!empty($flosc_page_ctx_note)) {
+            $flosc_chain_detail[] = 'page_ctx_note:' . sanitize_text_field((string) $flosc_page_ctx_note);
+        }
+        if ($flosc_ctx_url !== '') {
+            $flosc_chain_detail[] = 'ctx_url:' . $flosc_ctx_url;
+        }
+        if ($flosc_ctx_path !== '') {
+            $flosc_chain_detail[] = 'ctx_path:' . $flosc_ctx_path;
+        }
+        if ($flosc_ctx_title !== '') {
+            $flosc_chain_detail[] = 'ctx_title:' . $flosc_ctx_title;
+        }
+        if ($flosc_ctx_ref !== '') {
+            $flosc_chain_detail[] = 'ctx_ref:' . $flosc_ctx_ref;
+        }
         $billing_meta = method_exists($this->ai_chat_dispatch, 'get_last_billing_meta')
             ? (array) $this->ai_chat_dispatch->get_last_billing_meta()
             : [];
@@ -5783,6 +5920,9 @@ HTML;
             'billing_real_millicents' => intval($billing_meta['real_millicents'] ?? 0),
         ]);
 
+        // When AI is configured, debit attempted turns even if the provider failed
+        // (response_source=fallback or raw IVR text). The header token tick-down is
+        // an intentional admin signal that live chat lost the AI connection.
         if ($charge_applies) {
             $charge_meta = [
                 'billing' => $billing_meta,
@@ -6442,6 +6582,46 @@ HTML;
      */
     public function handle_chat_with_rag($request) {
         $message = sanitize_text_field($request->get_param('message'));
+        $context = $request->get_param('context') ?? [];
+        if (is_array($context)) {
+            if (isset($context['browsing_page_url'])) {
+                $context['browsing_page_url'] = esc_url_raw((string) $context['browsing_page_url']);
+            }
+            if (isset($context['browsing_page_title'])) {
+                $context['browsing_page_title'] = sanitize_text_field((string) $context['browsing_page_title']);
+            }
+            if (isset($context['browsing_page_path'])) {
+                $context['browsing_page_path'] = sanitize_text_field((string) $context['browsing_page_path']);
+            }
+            if (isset($context['browsing_page_referrer'])) {
+                $context['browsing_page_referrer'] = esc_url_raw((string) $context['browsing_page_referrer']);
+            }
+            if (isset($context['browsing_surface'])) {
+                $context['browsing_surface'] = sanitize_key((string) $context['browsing_surface']);
+            }
+            if (isset($context['browsing_tab_index'])) {
+                $context['browsing_tab_index'] = absint($context['browsing_tab_index']);
+            }
+            if (isset($context['browsing_surf_trail'])) {
+                $trail = is_array($context['browsing_surf_trail']) ? $context['browsing_surf_trail'] : [];
+                $safe_trail = [];
+                foreach (array_slice($trail, 0, 10) as $trail_item) {
+                    if (!is_array($trail_item)) {
+                        continue;
+                    }
+                    $safe_url = esc_url_raw((string) ($trail_item['url'] ?? ''));
+                    if ('' === $safe_url) {
+                        continue;
+                    }
+                    $safe_trail[] = [
+                        'url' => $safe_url,
+                        'title' => sanitize_text_field((string) ($trail_item['title'] ?? '')),
+                        'path' => sanitize_text_field((string) ($trail_item['path'] ?? '')),
+                    ];
+                }
+                $context['browsing_surf_trail'] = $safe_trail;
+            }
+        }
         
         if (empty($message)) {
             return new WP_REST_Response([
@@ -13598,14 +13778,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         $accent = sanitize_hex_color((string) $this->get_setting('companion_accent_color', $defaults['accent_color']));
         $title  = sanitize_text_field((string) $this->get_setting('companion_greeting', $defaults['greeting']));
         $subtitle = sanitize_text_field((string) $this->get_setting('companion_subtitle', $defaults['subtitle']));
+        $show_header_title = filter_var($this->get_setting('companion_show_header_title', $defaults['show_header_title']), FILTER_VALIDATE_BOOLEAN);
+        $show_header_subtitle = filter_var($this->get_setting('companion_show_header_subtitle', $defaults['show_header_subtitle']), FILTER_VALIDATE_BOOLEAN);
+        $show_open_fullpage = filter_var($this->get_setting('companion_show_open_fullpage', $defaults['show_open_fullpage']), FILTER_VALIDATE_BOOLEAN);
         $position = (string) $this->get_setting('companion_position', $defaults['position']);
         if (!in_array($position, $this->get_companion_allowed_positions(), true)) {
             $position = $defaults['position'];
-        }
-        $allow_fullscreen = filter_var($this->get_setting('companion_allow_fullscreen', $defaults['allow_fullscreen']), FILTER_VALIDATE_BOOLEAN);
-        $default_fullscreen = filter_var($this->get_setting('companion_default_fullscreen', $defaults['default_fullscreen']), FILTER_VALIDATE_BOOLEAN);
-        if (!$allow_fullscreen) {
-            $default_fullscreen = false;
         }
 
         $panel_width = absint($this->get_setting('companion_panel_width', $defaults['panel_width']));
@@ -13705,6 +13883,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
 
         $context_params = $pass_page_context ? $this->build_companion_context_params($context_scope) : [];
 
+        $flow = $this->get_current_flow();
+        $flow_id = is_array($flow) ? sanitize_text_field((string) ($flow['id'] ?? '')) : '';
+        $token_provider = $this->sale_manager ? $this->sale_manager->get_provider('tokens') : null;
+        $visitor_wallet_initial = max(0, intval($this->flosc_get_visitor_wallet_initial_amount($flow_id, $token_provider)));
+        $visitor_wallet_initial_display = number_format_i18n($visitor_wallet_initial);
+
         wp_enqueue_style(
             'flosc-companion',
             FLOSC_PLUGIN_URL . 'assets/css/flosc-companion.css',
@@ -13753,17 +13937,22 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'appUrl' => $app_url,
             'fullPageUrl' => $app_url,
             'returnUrl' => $current_url,
+            'flowId' => $flow_id,
+            'visitorTokenGrant' => $visitor_wallet_initial,
             'title' => $title,
             'subtitle' => $subtitle,
+            'showHeaderTitle' => $show_header_title,
+            'showHeaderSubtitle' => $show_header_subtitle,
+            'showOpenFullpage' => $show_open_fullpage,
+            'headerTokenText' => $visitor_wallet_initial_display,
             'accentColor' => $accent ?: $defaults['accent_color'],
             'position' => $position,
             'mode' => $mode,
-            'allowFullscreen' => $allow_fullscreen,
-            'defaultFullscreen' => $default_fullscreen,
             'width' => $panel_width . 'px',
             'height' => $panel_height . 'px',
             'mobileBehavior' => $mobile_behavior,
             'contextParams' => $context_params,
+            'currentPagePostId' => (int) get_queried_object_id(),
             'autoOpenEnabled' => $auto_open_enabled,
             'autoOpenDelayMs' => $auto_open_delay_ms,
             'autoOpenOncePerSession' => $auto_open_once_per_session,
@@ -13816,6 +14005,18 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             $companion_config['triggerSuppressPathPatterns'] = [];
         }
 
+        $queried_post_id = (int) get_queried_object_id();
+        if ($queried_post_id > 0) {
+            wp_add_inline_script(
+                'flosc-companion',
+                sprintf(
+                    '(function(){var id=%1$d;if(id>0&&document.body){document.body.setAttribute("data-flosc-post-id",String(id));}})();',
+                    $queried_post_id
+                ),
+                'before'
+            );
+        }
+
         wp_add_inline_script('flosc-companion', sprintf(
             'FloscCompanion.init(%s);',
             wp_json_encode($companion_config)
@@ -13832,6 +14033,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             if (is_array($flow) && !empty($flow['slug'])) {
                 return esc_url_raw(home_url('/' . sanitize_title((string) $flow['slug']) . '/'));
             }
+        }
+
+        // Companion expand-out should route to the canonical full chat page.
+        $chat_url = home_url('/chat/');
+        if (!empty($chat_url)) {
+            return esc_url_raw($chat_url);
         }
 
         return esc_url_raw($this->get_app_url());
@@ -13873,7 +14080,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * Build current frontend URL for companion handoff context.
      */
     private function get_current_frontend_url() {
-        $request_uri = (string) wp_unslash($_SERVER['REQUEST_URI'] ?? '/');
+        $request_uri = sanitize_text_field((string) wp_unslash($_SERVER['REQUEST_URI'] ?? '/'));
         $path = (string) wp_parse_url($request_uri, PHP_URL_PATH);
         $query = (string) wp_parse_url($request_uri, PHP_URL_QUERY);
 
@@ -13899,10 +14106,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'position' => 'bottom-right',
             'greeting' => 'Chat with us',
             'subtitle' => 'We reply instantly',
+            'show_header_title' => true,
+            'show_header_subtitle' => true,
+            'show_open_fullpage' => true,
+            'contextual_prompt' => 'What do you want to explore together?',
             'accent_color' => '#6366f1',
             'show_for_visitors' => false,
-            'allow_fullscreen' => true,
-            'default_fullscreen' => false,
             'panel_width' => 380,
             'panel_height' => 560,
             'launcher_size' => 60,
@@ -14069,20 +14278,35 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * Build context parameters passed into companion iframe URL.
      */
     private function build_companion_context_params($scope) {
-        $params = [
-            'flosc_context_url' => esc_url_raw(home_url(add_query_arg([], $GLOBALS['wp']->request ?? ''))),
-        ];
+        global $wp;
 
         $object_id = (int) get_queried_object_id();
+        $page_url  = '';
+        if ($object_id > 0 && is_numeric($object_id)) {
+            $permalink = get_permalink($object_id);
+            if (is_string($permalink) && $permalink !== '') {
+                $page_url = $permalink;
+            }
+        }
+        if ($page_url === '') {
+            $request_path = is_object($wp) ? trim((string) ($wp->request ?? ''), '/') : '';
+            $page_url     = $request_path !== '' ? home_url('/' . $request_path . '/') : home_url('/');
+        }
+
+        $params = [
+            'flosc_context_url'     => esc_url_raw($page_url),
+            'flosc_context_surface' => 'companion',
+        ];
+
         if ($object_id > 0) {
             $params['flosc_context_post_id'] = $object_id;
+            $params['flosc_context_title']   = sanitize_text_field((string) get_the_title($object_id));
         }
 
         if ($scope === 'extended' && is_singular()) {
             $post = get_post($object_id);
             if ($post) {
                 $params['flosc_context_post_type'] = sanitize_key((string) $post->post_type);
-                $params['flosc_context_post_title'] = sanitize_text_field((string) get_the_title($post));
             }
         }
 

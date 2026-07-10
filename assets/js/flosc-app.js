@@ -115,6 +115,7 @@ class floscApp {
             formRenderedAt: 0,
             formSubmitted: false,
         };
+        this.browsingContext = this.parseBrowsingContextFromUrl();
 
         // Offer timers — v1.7.7: Use Map to prevent memory leaks with multiple offers
         this.offerTimers = new Map();
@@ -293,6 +294,7 @@ class floscApp {
             // v07.08: Build context and start IVR
             this.log('[FLOSC] Building IVR context...');
             this.buildIVRContext();
+            this.requestCompanionBrowsingContext();
 
             // v8.0.5: checkPendingQuizResults MUST run AFTER buildIVRContext so the
             // context flags it sets (quiz_results_shown, first_message_after_quiz)
@@ -304,12 +306,26 @@ class floscApp {
             this.log('[FLOSC] IVR context built:', this.ivr.context);
 
             if (this.state === 'visitor') {
-                if (this.ivr.context.first_show_session) {
-                    this.log('[FLOSC] First session - clearing old visitor messages');
+                // Keep the session intact: an existing conversation is NEVER discarded.
+                // The session id + history persist in localStorage across every page and
+                // the companion iframe (same origin), so navigating around is one continuous
+                // session. Only a genuine first-show with NO stored history starts fresh;
+                // any stored messages mean this is a continuing session, so we restore them
+                // (which also suppresses the opening greeting, since the chat won't be empty).
+                let hasStoredVisitorHistory = false;
+                try {
+                    const stored = JSON.parse(localStorage.getItem('flosc_visitor_messages') || '[]');
+                    hasStoredVisitorHistory = Array.isArray(stored) && stored.length > 0;
+                } catch (e) {
+                    hasStoredVisitorHistory = false;
+                }
+
+                if (this.ivr.context.first_show_session && !hasStoredVisitorHistory) {
+                    this.log('[FLOSC] First session - no stored history, starting fresh');
                     try { localStorage.removeItem('flosc_visitor_messages'); } catch(e) { this.logWarn('FLOSC: Could not clear visitor messages', e); }
                     this._restoredVisitorMessages = false;
                 } else {
-                    this.log('[FLOSC] Restoring visitor messages from previous session...');
+                    this.log('[FLOSC] Continuing session - restoring visitor messages');
                     this.restoreVisitorMessages();
                 }
             }
@@ -424,18 +440,13 @@ class floscApp {
             const grantKey = `flosc_visitor_grant_${flowId}`;
             const previousGrant = parseInt(localStorage.getItem(grantKey), 10);
             const persistedValue = this.getPersistedVisitorTokenBalance();
-            const rotateLegacySession = Number.isFinite(persistedValue)
-                && persistedValue > grantValue;
 
-            if ((Number.isFinite(previousGrant) && previousGrant !== grantValue) || rotateLegacySession) {
-                // New visitor desk/session for changed token economics.
-                localStorage.setItem('flosc_visitor_session', String(Date.now()));
-                localStorage.removeItem('flosc_visitor_messages');
-
-                const sessionKey = 'flosc_session_' + this.getSessionKey();
-                localStorage.removeItem(sessionKey);
-
-                this.log('[FLOSC] Visitor grant changed; started a fresh visitor session.', {
+            // Preserve a continuous visitor conversation across companion/full-page
+            // mode changes. If admin grant shrinks, clamp balance without rotating
+            // the visitor session id or clearing message history.
+            if (Number.isFinite(persistedValue) && persistedValue > grantValue) {
+                this.persistVisitorTokenBalance(grantValue);
+                this.log('[FLOSC] Visitor grant changed; clamped token balance without rotating session.', {
                     flowId,
                     previousGrant,
                     persistedValue,
@@ -475,6 +486,199 @@ class floscApp {
             const age = Date.now() - (result.timestamp || 0);
             return age < 3600000;
         } catch (e) { return false; }
+    }
+
+    parseBrowsingContextFromUrl() {
+        try {
+            const params = new URLSearchParams(window.location.search || '');
+            const toText = (value, maxLen = 300) => String(value || '').trim().slice(0, maxLen);
+            const toUrl = (value) => {
+                const raw = String(value || '').trim();
+                if (!raw) {
+                    return '';
+                }
+                try {
+                    const parsed = new URL(raw, window.location.origin);
+                    if (!/^https?:$/.test(parsed.protocol)) {
+                        return '';
+                    }
+                    return parsed.toString();
+                } catch (e) {
+                    return '';
+                }
+            };
+            const toTrail = (value) => {
+                try {
+                    const parsed = JSON.parse(String(value || '[]'));
+                    if (!Array.isArray(parsed)) {
+                        return [];
+                    }
+                    return parsed.slice(0, 10).map((item) => {
+                        if (!item || typeof item !== 'object') {
+                            return null;
+                        }
+                        const url = toUrl(item.url || item.page_url || '');
+                        if (!url) {
+                            return null;
+                        }
+                        return {
+                            url,
+                            title: toText(item.title || item.page_title || '', 180),
+                            path: toText(item.path || item.page_path || '', 240)
+                        };
+                    }).filter(Boolean);
+                } catch (e) {
+                    return [];
+                }
+            };
+            const toPostId = (value) => {
+                const parsed = parseInt(String(value || '').trim(), 10);
+                return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+            };
+
+            return {
+                page_url: toUrl(params.get('flosc_context_url') || ''),
+                page_title: toText(params.get('flosc_context_title') || '', 180),
+                page_path: toText(params.get('flosc_context_path') || '', 240),
+                page_referrer: toUrl(params.get('flosc_context_referrer') || ''),
+                page_post_id: toPostId(params.get('flosc_context_post_id') || ''),
+                page_post_type: toText(params.get('flosc_context_post_type') || '', 40),
+                surface: toText(params.get('flosc_context_surface') || '', 40),
+                trail: toTrail(params.get('flosc_context_trail') || '')
+            };
+        } catch (e) {
+            return {
+                page_url: '',
+                page_title: '',
+                page_path: '',
+                page_referrer: '',
+                page_post_id: 0,
+                page_post_type: '',
+                surface: '',
+                trail: []
+            };
+        }
+    }
+
+    consumeBrowsingContextQueryParams() {
+        try {
+            const url = new URL(window.location.href);
+            const keys = [
+                'flosc_surface',
+                'flosc_context_url',
+                'flosc_context_title',
+                'flosc_context_path',
+                'flosc_context_referrer',
+                'flosc_context_post_id',
+                'flosc_context_post_type',
+                'flosc_context_post_title',
+                'flosc_context_surface',
+                'flosc_context_trail',
+                'flosc_companion_expand_target'
+            ];
+
+            let changed = false;
+            keys.forEach((key) => {
+                if (url.searchParams.has(key)) {
+                    url.searchParams.delete(key);
+                    changed = true;
+                }
+            });
+
+            if (!changed) {
+                return;
+            }
+
+            const search = url.searchParams.toString();
+            const cleaned = url.pathname + (search ? ('?' + search) : '') + (url.hash || '');
+            window.history.replaceState({}, '', cleaned);
+        } catch (e) {
+            // Ignore URL cleanup failures.
+        }
+    }
+
+    applyBrowsingContext(nextContext = {}) {
+        if (!nextContext || typeof nextContext !== 'object') {
+            return;
+        }
+
+        const normalizeUrl = (value) => {
+            const raw = String(value || '').trim();
+            if (!raw) {
+                return '';
+            }
+            try {
+                const parsed = new URL(raw, window.location.origin);
+                if (!/^https?:$/.test(parsed.protocol)) {
+                    return '';
+                }
+                return parsed.toString();
+            } catch (e) {
+                return '';
+            }
+        };
+
+        const normalizeTrail = (value) => {
+            if (!Array.isArray(value)) {
+                return [];
+            }
+            return value.slice(0, 10).map((item) => {
+                if (!item || typeof item !== 'object') {
+                    return null;
+                }
+                const url = normalizeUrl(item.url || item.page_url || '');
+                if (!url) {
+                    return null;
+                }
+                return {
+                    url,
+                    title: String(item.title || item.page_title || '').trim().slice(0, 180),
+                    path: String(item.path || item.page_path || '').trim().slice(0, 240)
+                };
+            }).filter(Boolean);
+        };
+
+        const current = this.browsingContext || {};
+        const nextPostId = parseInt(nextContext.page_post_id || 0, 10) || 0;
+        const currentPostId = parseInt(current.page_post_id || 0, 10) || 0;
+        const merged = {
+            page_url: normalizeUrl(nextContext.page_url || current.page_url || ''),
+            page_title: String(nextContext.page_title || current.page_title || '').trim().slice(0, 180),
+            page_path: String(nextContext.page_path || current.page_path || '').trim().slice(0, 240),
+            page_referrer: normalizeUrl(nextContext.page_referrer || current.page_referrer || ''),
+            page_post_id: nextPostId > 0 ? nextPostId : currentPostId,
+            page_post_type: String(nextContext.page_post_type || current.page_post_type || '').trim().slice(0, 40),
+            surface: String(nextContext.surface || current.surface || '').trim().slice(0, 40),
+            trail: normalizeTrail(Array.isArray(nextContext.trail) ? nextContext.trail : current.trail)
+        };
+
+        this.browsingContext = merged;
+    }
+
+    getContextualGreetingLine() {
+        // Contextual "continue from page" greeting is only for truly fresh chats.
+        // If a visitor conversation already exists, sizing/navigation changes must
+        // preserve continuity and avoid restart-like greetings.
+        if (this.state === 'visitor') {
+            try {
+                const messages = JSON.parse(localStorage.getItem('flosc_visitor_messages') || '[]');
+                if (Array.isArray(messages) && messages.length > 0) {
+                    return '';
+                }
+            } catch (e) {
+                // Ignore storage parse errors; fallback to existing behavior.
+            }
+        }
+
+        const isCompanionEmbed = document.body.classList.contains('flosc-companion-embed');
+        if (isCompanionEmbed) {
+            const companionPrompt = String(this.config?.companionContextualPrompt || '').trim();
+            return companionPrompt || 'What do you want to explore together?';
+        }
+
+        // Full-page chat uses its standard Br3nda welcome. Page context still reaches the
+        // AI through the prompt, so there is no forced "continue from the page" opening line.
+        return '';
     }
 
     buildIVRContext() {
@@ -562,6 +766,26 @@ class floscApp {
             customer_count: this.config.identity?.customer_count || '',
             timer_remaining: '60:00'
         };
+
+        const bc = this.browsingContext || {};
+        let browsingPostId = parseInt(bc.page_post_id || 0, 10) || 0;
+        if (!browsingPostId) {
+            try {
+                const params = new URLSearchParams(window.location.search || '');
+                browsingPostId = parseInt(params.get('flosc_context_post_id') || 0, 10) || 0;
+            } catch (e) {
+                browsingPostId = 0;
+            }
+        }
+        this.ivr.context.browsing_page_url = String(bc.page_url || '').slice(0, 1000);
+        this.ivr.context.browsing_page_title = String(bc.page_title || '').slice(0, 180);
+        this.ivr.context.browsing_page_path = String(bc.page_path || '').slice(0, 300);
+        this.ivr.context.browsing_page_referrer = String(bc.page_referrer || '').slice(0, 1000);
+        this.ivr.context.browsing_page_post_id = browsingPostId;
+        this.ivr.context.browsing_surface = String(bc.surface || bc.page_surface || '').slice(0, 40) || (
+            document.body.classList.contains('flosc-companion-embed') ? 'companion' : ''
+        );
+        this.ivr.context.browsing_surf_trail = Array.isArray(bc.trail) ? bc.trail.slice(0, 10) : [];
         
         // Mark session as started
         if (!hasSession) {
@@ -588,15 +812,23 @@ class floscApp {
      * the server already keys the desk by session_id when one is sent.
      */
     getVisitorSessionId() {
+        if (this._visitorSessionId) {
+            return this._visitorSessionId;
+        }
+
         try {
             let id = localStorage.getItem('flosc_visitor_session');
             if (!id) {
                 id = String(Date.now());
                 localStorage.setItem('flosc_visitor_session', id);
             }
+            this._visitorSessionId = id;
             return id;
         } catch (e) {
-            return undefined; // private browsing — desk safely falls back to IP keying
+            // Storage may be unavailable. Keep a stable in-memory id for this
+            // page lifetime so chat/logging does not split mid-conversation.
+            this._visitorSessionId = String(Date.now());
+            return this._visitorSessionId;
         }
     }
 
@@ -829,6 +1061,21 @@ class floscApp {
                 return;
             }
 
+            const contextualGreeting = this.getContextualGreetingLine();
+            if (contextualGreeting) {
+                this.addMessage('assistant', contextualGreeting);
+                // Persist the opening greeting so the session, once started, carries across
+                // surfaces (companion <-> full page) and navigation instead of re-greeting.
+                if (this.state === 'visitor') {
+                    this.saveVisitorMessage('assistant', contextualGreeting);
+                }
+                this.hideTyping();
+                this.floscShowUserAutoPrompts();
+                this.startInactivityTimer();
+                this.consumeBrowsingContextQueryParams();
+                return;
+            }
+
             // Try to find a welcome message from IVR config
             let welcomeShown = false;
             // The AI welcome is fetched asynchronously; track it so we don't hide
@@ -882,6 +1129,10 @@ class floscApp {
                     ? `Hi! Welcome to ${productName}. How can I help you today?`
                     : `Welcome back, ${this.ivr.context.name}! How can I help you today?`;
                 this.addMessage('assistant', fallbackWelcome);
+                // Persist the opening so the session, once started, carries across surfaces.
+                if (this.state === 'visitor') {
+                    this.saveVisitorMessage('assistant', fallbackWelcome);
+                }
             }
 
             // Hide the typing indicator now ONLY for the synchronous welcome paths
@@ -1135,6 +1386,13 @@ class floscApp {
     }
 
     floscShowUserAutoPrompts() {
+        // Companion mode has an explicit panel toggle separate from full-page.
+        const isCompanionEmbed = document.body.classList.contains('flosc-companion-embed');
+        if (isCompanionEmbed && !this.config?.autopromptCompanionEnabled) {
+            this.log('FLOSC: AutoPromptPanel disabled for companion mode');
+            return;
+        }
+
         // v1.9.1: Don't re-show panel if user dismissed it this session
         if (this._panelDismissed) {
             this.log('FLOSC: Panel dismissed by user this session, skipping render');
@@ -5965,6 +6223,22 @@ Purchased: ${ctx.purchased}
         return html;
     }
 
+    isCompanionSurface() {
+        if (document.body.classList.contains('flosc-companion-embed')) {
+            return true;
+        }
+        const surface = String(this.browsingContext?.surface || '').toLowerCase();
+        if (surface === 'companion') {
+            return true;
+        }
+        try {
+            const params = new URLSearchParams(window.location.search || '');
+            return String(params.get('flosc_surface') || '').toLowerCase() === 'companion';
+        } catch (e) {
+            return false;
+        }
+    }
+
     /**
      * v8.0.1: Inject provider-native players (YouTube, TikTok, Spotify,
      * SoundCloud, Apple Music, Vimeo) beneath media links in an assistant
@@ -5979,21 +6253,113 @@ Purchased: ${ctx.purchased}
         const providerRe = /(?:youtube\.com|youtu\.be|tiktok\.com|spotify\.com|soundcloud\.com|music\.apple\.com|vimeo\.com)/i;
         const anchors = container.querySelectorAll('.message-text a[href], .flosc-message-text a[href]');
         const self = this;
+
+        if (!this._oembedCache) this._oembedCache = new Map();
+        if (!this._oembedPending) this._oembedPending = new Map();
+
+        const normalizeMediaUrl = function(rawUrl) {
+            try {
+                const parsed = new URL(String(rawUrl || ''), window.location.origin);
+                if (!/^https?:$/.test(parsed.protocol)) return '';
+
+                // Strip tracking-only params to improve cache hit consistency.
+                ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'si'].forEach(function(param) {
+                    parsed.searchParams.delete(param);
+                });
+                parsed.hash = '';
+                return parsed.toString();
+            } catch (e) {
+                return '';
+            }
+        };
+
+        const fetchOembedHtml = async function(mediaUrl) {
+            const cachedHtml = self._oembedCache.get(mediaUrl);
+            if (typeof cachedHtml === 'string') {
+                return cachedHtml;
+            }
+
+            if (self._oembedPending.has(mediaUrl)) {
+                return self._oembedPending.get(mediaUrl);
+            }
+
+            const loader = (async function() {
+                const endpoint = self.config.apiUrl + '/oembed?url=' + encodeURIComponent(mediaUrl);
+
+                // First request uses normal cache behavior; retry=1 asks server to
+                // bypass short negative cache for transient provider misses.
+                const attempts = [endpoint, endpoint + '&retry=1'];
+                for (let i = 0; i < attempts.length; i++) {
+                    try {
+                        const res = await self.authFetch(attempts[i], { method: 'GET' });
+                        if (!res.ok) {
+                            continue;
+                        }
+                        const data = await res.json();
+                        if (data && data.success && data.html) {
+                            self._oembedCache.set(mediaUrl, data.html);
+                            return data.html;
+                        }
+                    } catch (e) {
+                        // Try next attempt.
+                    }
+
+                    if (i === 0) {
+                        await new Promise(function(resolve) { setTimeout(resolve, 250); });
+                    }
+                }
+
+                self._oembedCache.set(mediaUrl, '');
+                return '';
+            })();
+
+            self._oembedPending.set(mediaUrl, loader);
+            try {
+                return await loader;
+            } finally {
+                self._oembedPending.delete(mediaUrl);
+            }
+        };
+
         anchors.forEach(function (a) {
-            const url = a.href;
-            if (!providerRe.test(url) || a.dataset.floscEmbedded) return;
-            a.dataset.floscEmbedded = '1';
-            fetch(self.config.apiUrl + '/oembed?url=' + encodeURIComponent(url))
-                .then(function (r) { return r.ok ? r.json() : null; })
-                .then(function (data) {
-                    if (!data || !data.success || !data.html) return;
+            const normalizedUrl = normalizeMediaUrl(a.href) || a.href;
+            if (!providerRe.test(normalizedUrl) || a.dataset.floscEmbedded) return;
+            a.dataset.floscEmbedded = 'pending';
+
+            fetchOembedHtml(normalizedUrl)
+                .then(function (html) {
+                    if (!html) {
+                        // Keep links retryable if the message is re-rendered later.
+                        delete a.dataset.floscEmbedded;
+                        return;
+                    }
+
+                    if (!a.isConnected) {
+                        return;
+                    }
+
+                    // Prevent duplicate wrappers when a message is re-rendered.
+                    const existingWrap = a.parentElement
+                        ? Array.from(a.parentElement.querySelectorAll('.flosc-oembed-wrap')).find(function(node) {
+                            return String(node.dataset.oembedUrl || '') === normalizedUrl;
+                        })
+                        : null;
+                    if (existingWrap) {
+                        a.dataset.floscEmbedded = 'done';
+                        return;
+                    }
+
                     const wrap = document.createElement('div');
                     wrap.className = 'flosc-oembed-wrap';
-                    wrap.innerHTML = data.html;
+                    wrap.dataset.oembedUrl = normalizedUrl;
+                    wrap.innerHTML = html;
                     a.insertAdjacentElement('afterend', wrap);
+                    a.dataset.floscEmbedded = 'done';
                     if (self.chatMessages) self.chatMessages.scrollTop = self.chatMessages.scrollHeight;
                 })
-                .catch(function () {});
+                .catch(function () {
+                    delete a.dataset.floscEmbedded;
+                });
         });
     }
 
@@ -6060,6 +6426,7 @@ Purchased: ${ctx.purchased}
         this.log('[FLOSC] bindElements() called');
         this.sidebar = document.getElementById('flosc_app_sidebar');
         this.sidebarToggle = document.getElementById('flosc_app_sidebar_toggle');
+        this.dockCompanionBtn = document.getElementById('flosc_app_dock_companion_button');
         this.sessionList = document.getElementById('flosc_app_session_list');
         this.newSessionBtn = document.getElementById('flosc_app_new_session_button');
         this.chatMessages = document.getElementById('flosc_output_chat_responses');
@@ -6079,12 +6446,38 @@ Purchased: ${ctx.purchased}
     bindEvents() {
         if (this.sidebarToggle) {
             this.sidebarToggle.addEventListener('click', () => {
-                if (this.handoffToCompanion()) {
-                    return;
-                }
                 this.toggleSidebar();
             });
         }
+
+        if (this.dockCompanionBtn) {
+            this.dockCompanionBtn.addEventListener('click', () => {
+                this.handoffToCompanion();
+            });
+        }
+
+        window.addEventListener('message', (event) => {
+            try {
+                if (window.self === window.top) {
+                    return;
+                }
+                const allowedOrigins = this.getAllowedCompanionOrigins();
+                if (!allowedOrigins.has(String(event.origin || ''))) {
+                    return;
+                }
+                if (event.source !== window.parent) {
+                    return;
+                }
+                const data = event.data;
+                if (!data || data.type !== 'flosc_companion_context' || typeof data.payload !== 'object') {
+                    return;
+                }
+                this.applyBrowsingContext(data.payload);
+                this.buildIVRContext();
+            } catch (e) {
+                this.logWarn('[FLOSC] Companion context message parse failed:', e);
+            }
+        });
         
         // v1.7.0: Mobile menu button also toggles sidebar (works on desktop too)
         const mobileMenuBtn = document.getElementById('flosc_app_mobile_menu_button');
@@ -6103,10 +6496,19 @@ Purchased: ${ctx.purchased}
         
         // v2.0.5: Clean up mobile sidebar state on viewport resize (e.g. iPad rotation)
         window.addEventListener('resize', () => {
-            if (window.innerWidth > 768) {
-                const overlay = document.getElementById('flosc_app_sidebar_overlay');
+            const overlay = document.getElementById('flosc_app_sidebar_overlay');
+            const isMobile = window.innerWidth <= 768;
+
+            if (isMobile) {
+                if (overlay) overlay.classList.remove('show');
+                if (this.sidebar) {
+                    this.sidebar.classList.remove('open');
+                    this.sidebar.classList.remove('collapsed');
+                }
+            } else {
                 if (overlay) overlay.classList.remove('show');
                 if (this.sidebar) this.sidebar.classList.remove('open');
+                this.restoreSidebarCollapsedState();
             }
         });
         
@@ -6637,7 +7039,9 @@ Purchased: ${ctx.purchased}
         // NOT restart keeps their id — and their progressive, continuous experience.
         if (this.state === 'visitor') {
             localStorage.removeItem('flosc_visitor_messages');
-            try { localStorage.setItem('flosc_visitor_session', String(Date.now())); } catch (e) {}
+            const freshVisitorSessionId = String(Date.now());
+            this._visitorSessionId = freshVisitorSessionId;
+            try { localStorage.setItem('flosc_visitor_session', freshVisitorSessionId); } catch (e) {}
 
             this.visitorDepletedState.awaitingContactDetails = false;
             this.visitorDepletedState.inputLocked = false;
@@ -6660,6 +7064,19 @@ Purchased: ${ctx.purchased}
         // Rebuild context
         this.buildIVRContext();
 
+        // A manual Br3nda refresh is an explicit new conversation request.
+        // Clear companion carry-over context so restart always lands on a
+        // fresh intro path instead of "continue from page" greeting.
+        this.consumeBrowsingContextQueryParams();
+        this.browsingContext = {
+            page_url: '',
+            page_title: '',
+            page_path: '',
+            page_referrer: '',
+            surface: '',
+            trail: []
+        };
+
         // Restart IVR
         this.startIVR();
 
@@ -6667,13 +7084,7 @@ Purchased: ${ctx.purchased}
     }
     
     setupUI() {
-        // v1.7.0: Restore sidebar collapsed state on desktop
-        if (this.sidebar && window.innerWidth > 768) {
-            const wasCollapsed = localStorage.getItem('flosc_sidebar_collapsed') === 'true';
-            if (wasCollapsed) {
-                this.sidebar.classList.add('collapsed');
-            }
-        }
+        this.restoreSidebarCollapsedState();
 
         // v1.8.0: Populate profile bar — same bar for all states, content toggled via data-show
         if (this.state === 'visitor') {
@@ -6849,6 +7260,30 @@ Purchased: ${ctx.purchased}
         const formattedTokens = this.formatProfileTokenDisplay(tokenValue);
         // Show only the token count to users; real millicents stay internal (admin-only).
         visitorName.innerHTML = `<span class="flosc-visitor-label-text">${this.escapeHtml(baseLabel)}</span> <span class="flosc-visitor-token-count" id="flosc_visitor_token_count">(${this.escapeHtml(formattedTokens)})</span>`;
+
+        // When running inside companion iframe, sync live token count to the
+        // companion header on the parent page.
+        if (window.self !== window.top) {
+            try {
+                let targetOrigin = '*';
+                if (document.referrer) {
+                    const ref = new URL(document.referrer, window.location.origin);
+                    if (/^https?:$/.test(ref.protocol)) {
+                        targetOrigin = ref.origin;
+                    }
+                }
+                window.parent.postMessage({
+                    type: 'flosc_companion_token_update',
+                    payload: {
+                        formatted: formattedTokens,
+                        value: Math.max(0, parseInt(tokenValue, 10) || 0),
+                        ts: Date.now()
+                    }
+                }, targetOrigin);
+            } catch (e) {
+                // Ignore cross-window messaging failures.
+            }
+        }
     }
 
     getLowTokenWarningStorageKey(thresholdValue) {
@@ -6918,8 +7353,55 @@ Purchased: ${ctx.purchased}
         return !!this.config?.companionHandoffEnabled;
     }
 
+    getAllowedCompanionOrigins() {
+        const allowed = new Set([window.location.origin]);
+        try {
+            const collapse = new URL(String(this.config?.companionCollapseUrl || ''), window.location.origin);
+            if (/^https?:$/.test(collapse.protocol)) {
+                allowed.add(collapse.origin);
+            }
+        } catch (e) {
+            // Ignore invalid fallback URL.
+        }
+        try {
+            const ref = new URL(String(document.referrer || ''), window.location.origin);
+            if (/^https?:$/.test(ref.protocol)) {
+                allowed.add(ref.origin);
+            }
+        } catch (e) {
+            // Ignore invalid referrer URL.
+        }
+        return allowed;
+    }
+
+    requestCompanionBrowsingContext() {
+        if (window.self === window.top || !document.body.classList.contains('flosc-companion-embed')) {
+            return;
+        }
+
+        const postRequest = () => {
+            try {
+                let targetOrigin = '*';
+                if (document.referrer) {
+                    const ref = new URL(document.referrer, window.location.origin);
+                    if (/^https?:$/.test(ref.protocol)) {
+                        targetOrigin = ref.origin;
+                    }
+                }
+                window.parent.postMessage({ type: 'flosc_companion_context_request' }, targetOrigin);
+            } catch (e) {
+                // Ignore cross-window messaging failures.
+            }
+        };
+
+        postRequest();
+        window.setTimeout(postRequest, 250);
+        window.setTimeout(postRequest, 1000);
+    }
+
     getCompanionContextUrl() {
         try {
+            const allowedOrigins = this.getAllowedCompanionOrigins();
             const params = new URLSearchParams(window.location.search || '');
             const raw = String(params.get('flosc_context_url') || '').trim();
             if (!raw) {
@@ -6929,6 +7411,9 @@ Purchased: ${ctx.purchased}
             if (!/^https?:$/.test(parsed.protocol)) {
                 return '';
             }
+            if (!allowedOrigins.has(parsed.origin)) {
+                return '';
+            }
             return parsed.toString();
         } catch (e) {
             return '';
@@ -6936,13 +7421,37 @@ Purchased: ${ctx.purchased}
     }
 
     resolveCompanionHandoffUrl() {
+        const allowedOrigins = this.getAllowedCompanionOrigins();
         const contextUrl = this.getCompanionContextUrl();
+        let lastSitePage = '';
+        try {
+            lastSitePage = String(sessionStorage.getItem('flosc_last_site_page') || '').trim();
+        } catch (e) {
+            lastSitePage = '';
+        }
+
+        const sameOriginReferrer = (() => {
+            try {
+                const ref = String(document.referrer || '').trim();
+                if (!ref) {
+                    return '';
+                }
+                const parsed = new URL(ref, window.location.origin);
+                return parsed.origin === window.location.origin ? parsed.toString() : '';
+            } catch (e) {
+                return '';
+            }
+        })();
+
         const rawFallback = String(this.config?.companionCollapseUrl || '/');
 
         const normalizeUrl = (input) => {
             try {
                 const parsed = new URL(String(input || ''), window.location.origin);
                 if (!/^https?:$/.test(parsed.protocol)) {
+                    return null;
+                }
+                if (!allowedOrigins.has(parsed.origin)) {
                     return null;
                 }
                 return parsed;
@@ -6952,8 +7461,10 @@ Purchased: ${ctx.purchased}
         };
 
         const contextParsed = normalizeUrl(contextUrl);
+        const lastSiteParsed = normalizeUrl(lastSitePage);
+        const referrerParsed = normalizeUrl(sameOriginReferrer);
         const fallbackParsed = normalizeUrl(rawFallback);
-        const chosen = contextParsed || fallbackParsed;
+        const chosen = contextParsed || lastSiteParsed || referrerParsed || fallbackParsed;
         if (!chosen) {
             return '';
         }
@@ -7000,21 +7511,45 @@ Purchased: ${ctx.purchased}
         return true;
     }
 
+    restoreSidebarCollapsedState() {
+        if (!this.sidebar || window.innerWidth <= 768) {
+            return;
+        }
+
+        try {
+            if (localStorage.getItem('flosc_sidebar_collapsed') === 'true') {
+                this.sidebar.classList.add('collapsed');
+            } else {
+                this.sidebar.classList.remove('collapsed');
+            }
+        } catch (e) {
+            this.sidebar.classList.remove('collapsed');
+        }
+    }
+
     toggleSidebar() {
         if (this.sidebar) {
             const isMobile = window.innerWidth <= 768;
             const overlay = document.getElementById('flosc_app_sidebar_overlay');
             if (isMobile) {
+                this.sidebar.classList.remove('collapsed');
                 this.sidebar.classList.toggle('open');
                 if (overlay) {
                     overlay.classList.toggle('show', this.sidebar.classList.contains('open'));
                 }
             } else {
-                // v2.0.5: Clean up mobile overlay state when toggling in desktop mode
                 if (overlay) overlay.classList.remove('show');
                 this.sidebar.classList.remove('open');
-                this.sidebar.classList.toggle('collapsed');
-                localStorage.setItem('flosc_sidebar_collapsed', this.sidebar.classList.contains('collapsed'));
+                const isCollapsed = this.sidebar.classList.toggle('collapsed');
+                try {
+                    if (isCollapsed) {
+                        localStorage.setItem('flosc_sidebar_collapsed', 'true');
+                    } else {
+                        localStorage.removeItem('flosc_sidebar_collapsed');
+                    }
+                } catch (e) {
+                    // localStorage may be unavailable in strict private mode
+                }
             }
         }
     }
@@ -7165,7 +7700,7 @@ Purchased: ${ctx.purchased}
                     this.addMessage('assistant', content);
                     if (fallback.action && executeActions) this.performIVRAction(fallback.action);
                 } else {
-                    this.addMessage('assistant', "I'm having trouble responding right now. Please try again.");
+                    this.addMessage('assistant', this.formatChatFailureMessage(null));
                 }
             }
         } catch (error) {
@@ -7185,9 +7720,17 @@ Purchased: ${ctx.purchased}
                 this.addMessage('assistant', content);
                 if (fallback.action && executeActions) this.performIVRAction(fallback.action);
             } else {
-                this.addMessage('assistant', "I'm having trouble responding right now. Please try again.");
+                this.addMessage('assistant', this.formatChatFailureMessage(error));
             }
         }
+    }
+
+    formatChatFailureMessage(error) {
+        const raw = String(error?.message || '').trim();
+        if (raw && raw !== 'Failed to fetch') {
+            return raw;
+        }
+        return "I'm having trouble responding right now. Please try again.";
     }
 
     handleVisitorTokensDepleted(depletedMessage) {
@@ -7238,26 +7781,22 @@ Purchased: ${ctx.purchased}
         this.visitorDepletedState.formRenderedAt = Math.floor(Date.now() / 1000);
         this.visitorDepletedState.formSubmitted = false;
 
-        // Inline styles are deliberate: this form renders inside the chat app
-        // surface (/chat), which does NOT load flosc-chat.css. Class-based styling
-        // there silently disappears, so the form is styled self-containedly here.
-        const dfInput = 'display:block;width:100%;box-sizing:border-box;margin:0;border:1px solid rgba(15,23,42,0.2);border-radius:10px;padding:0.7rem 0.75rem;background:#fff;color:#0f172a;box-shadow:none;font-size:1rem;line-height:1.35;';
         const formHtml = `
-            <div class="flosc-depleted-form-wrap" style="width:min(100%,620px);border:1px solid rgba(15,23,42,0.12);border-radius:14px;padding:1rem 1.1rem 1.1rem;background:#fff;box-shadow:0 6px 20px rgba(15,23,42,.05);">
-                <h4 style="margin:0 0 0.4rem;font-size:1.15rem;line-height:1.25;color:#0f172a;">${title}</h4>
-                <p class="flosc-depleted-form-intro" style="margin:0 0 0.85rem;font-size:0.94rem;line-height:1.45;color:#334155;">${intro}</p>
-                <form id="flosc_depleted_contact_form" class="flosc-depleted-contact-form" novalidate style="display:flex;flex-direction:column;align-items:stretch;gap:0.65rem;margin:0;">
-                    <input type="text" name="first_name" placeholder="First Name" required maxlength="80" autocomplete="given-name" style="${dfInput}">
-                    <input type="text" name="last_name" placeholder="Last Name" required maxlength="80" autocomplete="family-name" style="${dfInput}">
-                    <input type="text" name="email" placeholder="Email Address" required maxlength="190" inputmode="email" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" style="${dfInput}">
-                    <input type="text" name="phone" placeholder="Phone Number" required maxlength="40" inputmode="tel" autocomplete="tel" style="${dfInput}">
-                    <textarea name="message" placeholder="Message" required rows="7" maxlength="4000" style="${dfInput}min-height:150px;resize:vertical;"></textarea>
-                    <input type="text" name="company" class="flosc-depleted-hp" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none;">
-                    <div style="display:flex;flex-wrap:wrap;gap:0.6rem;align-items:center;">
-                        <button type="submit" data-flosc-guest="0" class="flosc-depleted-submit-contact" style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;border:1px solid #1f6feb;border-radius:999px;padding:0 1.2rem;font-weight:700;font-size:0.95rem;color:#1f6feb;background:#fff;cursor:pointer;">Submit Contact Request</button>
-                        <button type="submit" data-flosc-guest="1" class="flosc-depleted-submit" style="display:inline-flex;align-items:center;justify-content:center;min-height:44px;border:0;border-radius:999px;padding:0 1.3rem;font-weight:700;font-size:0.98rem;color:#fff;background:#1f6feb;cursor:pointer;">${submitText}</button>
+            <div class="flosc-depleted-form-wrap">
+                <h4>${title}</h4>
+                <p class="flosc-depleted-form-intro">${intro}</p>
+                <form id="flosc_depleted_contact_form" class="flosc-depleted-contact-form" novalidate>
+                    <input type="text" name="first_name" placeholder="First Name" required maxlength="80" autocomplete="given-name">
+                    <input type="text" name="last_name" placeholder="Last Name" required maxlength="80" autocomplete="family-name">
+                    <input type="text" name="email" placeholder="Email Address" required maxlength="190" inputmode="email" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+                    <input type="text" name="phone" placeholder="Phone Number" required maxlength="40" inputmode="tel" autocomplete="tel">
+                    <textarea name="message" placeholder="Message" required rows="7" maxlength="4000"></textarea>
+                    <input type="text" name="company" class="flosc-depleted-hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+                    <div class="flosc-depleted-form-actions">
+                        <button type="submit" data-flosc-guest="0" class="flosc-depleted-submit-contact">Submit Contact Request</button>
+                        <button type="submit" data-flosc-guest="1" class="flosc-depleted-submit">${submitText}</button>
                     </div>
-                    <p class="flosc-depleted-form-status" id="flosc_depleted_form_status" style="margin:2px 0 0;font-size:0.9rem;line-height:1.35;color:#334155;"></p>
+                    <p class="flosc-depleted-form-status" id="flosc_depleted_form_status"></p>
                 </form>
             </div>
         `;
@@ -7314,7 +7853,7 @@ Purchased: ${ctx.purchased}
                     ? 'Your guest account request has been sent — Dainis will review it and email you a link.'
                     : 'Your message has been sent to Dainis, thank you!';
                 const thanksMessage = String(result?.message || fallbackThanks).trim();
-                const successHtml = `<div class="flosc-depleted-success-notice" style="width:min(100%,620px);margin:0;padding:1.05rem 1.1rem;border-radius:12px;border:1px solid #86efac;background:linear-gradient(180deg,#f2fff7 0%,#e6f9ef 100%);color:#065f46;font-size:1.05rem;font-weight:650;line-height:1.45;">${this.escapeHtml(thanksMessage)}</div>`;
+                const successHtml = `<div class="flosc-depleted-success-notice">${this.escapeHtml(thanksMessage)}</div>`;
                 this.addMessage('assistant', successHtml, true);
                 this.saveVisitorMessage('assistant', thanksMessage);
 
@@ -7969,21 +8508,29 @@ Purchased: ${ctx.purchased}
             body: JSON.stringify(payload)
         });
 
-        const data = await response.json();
+        let data = {};
+        try {
+            data = await response.json();
+        } catch (parseErr) {
+            const err = new Error(`Server error (${response.status})`);
+            err.floscCode = 'invalid_json';
+            err.floscPayload = null;
+            throw err;
+        }
 
         // Keep the visitor token label in sync even when the API returns an error payload.
         this.syncVisitorTokenBalanceFromPayload(data);
 
         if (!response.ok) {
-            const errorMsg = data.error || `Server error (${response.status})`;
+            const errorMsg = data.error || data.message || `Server error (${response.status})`;
             const err = new Error(errorMsg);
-            err.floscCode = String(data.error_code || '');
+            err.floscCode = String(data.error_code || data.code || '');
             err.floscPayload = data;
             throw err;
         }
 
         if (!data.success) {
-            const errorMsg = data.error || 'Unknown API error';
+            const errorMsg = data.error || data.message || 'Unknown API error';
             const err = new Error(errorMsg);
             err.floscCode = String(data.error_code || '');
             err.floscPayload = data;

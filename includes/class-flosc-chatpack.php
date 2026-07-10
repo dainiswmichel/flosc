@@ -267,6 +267,18 @@ class FLOSC_Chatpack {
         // firmly inside its own flow. (Cheap insurance; flow isolation is the point.)
         $sections[] = self::build_identity_section();
 
+        // ── SESSION CONTINUITY (mandatory) ──────────────────
+        // The session ID owns the conversation; the display surface (full page vs
+        // companion) and any page navigation are just views onto it. Follow-up turns
+        // previously carried no continuity discipline, so the model re-greeted,
+        // re-introduced itself, and re-asked language every turn. Anchor it here.
+        $sections[] = "**SESSION CONTINUITY (mandatory):**\n"
+            . "- This is a CONTINUING conversation (message pair #{$pair_number}), NOT a new one.\n"
+            . "- You have ALREADY greeted and introduced yourself earlier in this session. Do NOT greet again, do NOT re-introduce yourself, and do NOT re-ask the user's language preference.\n"
+            . "- If the user is writing in a given language, simply continue in that language without asking.\n"
+            . "- Review the conversation history above before replying; NEVER repeat information you have already given — add new value or advance the thread.\n"
+            . "- Continue naturally from where the conversation left off, regardless of which page or surface the user is on. The session is one continuous flow.";
+
         // ── PHASE CHANGE NOTICE ─────────────────────────────
         if ($previous_phase && $previous_phase !== $phase) {
             $sections[] = "**PHASE CHANGED:** {$previous_phase} → {$phase}\n"
@@ -304,7 +316,89 @@ class FLOSC_Chatpack {
             $sections[] = self::build_ivr_section($ivr_guidance, null, $eval_context);
         }
 
+        // ── PAGE CONTEXT (must ride EVERY turn) ─────────────
+        // Page awareness + on-demand page body previously lived only in the rules
+        // section, which build_full_chatpack() sends on message #1 only. Visitors chat
+        // first and ask "what is this?" several turns in, so follow-ups lost the page
+        // entirely. Re-anchoring it here keeps the bot aware of the current page on
+        // every turn, for visitors, guests, and members alike.
+        $page_context_section = self::build_page_context_section($eval_context);
+        if ($page_context_section !== '') {
+            $sections[] = $page_context_section;
+        }
+
         return implode("\n\n", array_filter($sections));
+    }
+
+    /**
+     * Page-context block shared by first-contact and follow-up chatpacks.
+     *
+     * Two things ride here, and they are deliberately separate:
+     *   - PAGE AWARENESS: lightweight title/URL/ID, present on EVERY turn so the bot
+     *     can answer "what page am I on?" — cheap enough for idle browsing.
+     *   - PAGE CONTENT: the full post body, injected ONLY on a turn where the user
+     *     asked about the page (server sets browsing_page_content for that turn only).
+     * COMPANION MODE POLICY is appended when the surface is the docked companion.
+     *
+     * @param array $eval_context
+     * @return string Section text, or '' when there is no page context to add.
+     */
+    private static function build_page_context_section($eval_context) {
+        $surface          = sanitize_key((string) ($eval_context['browsing_surface'] ?? ''));
+        $browsing_url     = trim((string) ($eval_context['browsing_page_url'] ?? ''));
+        $browsing_title   = trim((string) ($eval_context['browsing_page_title'] ?? ''));
+        $page_content     = trim((string) ($eval_context['browsing_page_content'] ?? ''));
+        $browsing_post_id = absint($eval_context['browsing_page_post_id'] ?? 0);
+
+        $has_page = ($browsing_url !== '' || $browsing_title !== '' || $browsing_post_id > 0);
+        // Companion turns always carry the on-site policy, even with no resolved page.
+        if (!$has_page && $page_content === '' && $surface !== 'companion') {
+            return '';
+        }
+
+        $section = '';
+
+        if ($page_content !== '') {
+            $section .= "**PAGE CONTENT (source of truth for this turn):**\n";
+            $section .= "- The user is asking about a specific page/post. Use ONLY the content below for page-specific facts.\n";
+            $section .= "- Reply in 2-4 short, conversational sentences. Do NOT paste or summarize the whole page.\n";
+            $section .= "- You may quote one short phrase if it helps. Stay human and guided.\n";
+            if ($browsing_title !== '') {
+                $section .= "- Page title: {$browsing_title}\n";
+            }
+            $section .= "\n--- PAGE BODY (background context, not for display) ---\n";
+            $section .= $page_content . "\n";
+            $section .= "--- END PAGE BODY ---\n";
+        } elseif ($has_page) {
+            $section .= "**PAGE AWARENESS (mandatory):**\n";
+            $section .= "- The chat is open on the page the visitor is browsing — use title/URL/ID below for \"what page am I on?\" style questions\n";
+            if ($browsing_post_id > 0) {
+                $section .= "- Current WordPress post/page ID: {$browsing_post_id}\n";
+            }
+            if ($browsing_title !== '') {
+                $section .= "- Current page title in context: {$browsing_title}\n";
+            }
+            if ($browsing_url !== '') {
+                $section .= "- Current page URL in context: {$browsing_url}\n";
+            }
+            $section .= "- For page-specific facts beyond title/URL, rely on PAGE BODY when it appears in this prompt\n";
+            $section .= "- After confirming page awareness, continue with a concrete help question relevant to that page\n";
+        }
+
+        if ($surface === 'companion') {
+            $section .= "\n**COMPANION MODE POLICY (strict):**\n";
+            $section .= "- The visitor opened chat from the page they are browsing right now\n";
+            $section .= "- Page title/URL are always in context; full PAGE BODY appears only when injected for this turn\n";
+            $section .= "- When PAGE BODY is present, use it as the authoritative source and answer in 2-3 short sentences\n";
+            $section .= "- Treat this as on-site guidance only for the current page/site context\n";
+            $section .= "- Do NOT answer off-topic questions; politely refuse and redirect back to current on-site context\n";
+            $section .= "- Do NOT provide external links, external tools, or external resource recommendations\n";
+            $section .= "- Keep navigation guidance inside this site only\n";
+            $section .= "- Use the exact Br3nda off-topic reply ONLY when the user is treating this as a general AI resource (for example: \"what is the capital of France\") and the question is not about dainis.net content\n";
+            $section .= "- Exact Br3nda off-topic reply: \"I know I am still learning, but your comment seems off-topic, and I am only authorized to communicate about dainis.net topics. I could be wrong, and i am sorry if I am, but could you make sure to keep your inquiries dainis.net-related?\"\n";
+        }
+
+        return $section;
     }
 
     // ─────────────────────────────────────────────────────────
@@ -436,7 +530,8 @@ class FLOSC_Chatpack {
         $section .= "   - Features, capabilities, or tools that aren't described in this prompt\n";
         $section .= "   - Prices, discounts, or offers not defined in your context\n";
         $section .= "   If exact detail is unavailable, give the best verified answer from this prompt and offer the official source link or next best concrete step.\n";
-        $section .= "   NEVER use self-undermining hedge lines such as \"I don't have that information right now\" or \"not configured in my system\".\n\n";
+        $section .= "   For uncertainty or gated-content boundaries, use calibrated wording such as: \"I'm still learning, and I could be wrong, but...\" or \"I'm still being trained, and I could be wrong, but...\" before the verified boundary statement.\n";
+        $section .= "   Avoid robotic disclaimers like \"not configured in my system\". Keep the tone human, clear, and helpful.\n\n";
 
         $section .= "3. STAY IN YOUR LANE: You are a chat assistant. You do NOT administer quizzes. "
             . "The quiz is a separate audio-recording system on the page. If the user is taking a quiz, "
@@ -758,7 +853,8 @@ class FLOSC_Chatpack {
             . "rewrite it naturally in your voice. But STAY WITHIN the facts provided. "
             . "If the guidance doesn't cover what the user asked, say you don't have that information.\n\n"
             . "CRITICAL: Check the conversation history. If you have already shared this information, "
-            . "do NOT repeat it. Acknowledge what you already told them and address the new angle.\n\n"
+            . "do NOT repeat it. Briefly summarize prior context, then address the new angle.\n"
+            . "NEVER use claims like 'I've already shared that just above' or similar wording.\n\n"
             . "Reference material: \"{$ivr_guidance}\"";
     }
 
@@ -778,16 +874,32 @@ class FLOSC_Chatpack {
         $section .= "\n**CONVERSATION AWARENESS (mandatory):**\n";
         $section .= "- ALWAYS review the conversation history before responding\n";
         $section .= "- NEVER repeat information you have already told the user in this conversation\n";
-        $section .= "- If the user asks about something you already covered, acknowledge it briefly (e.g., 'As I mentioned...') and then address the NEW aspect of their question\n";
+        $section .= "- If the user asks about something you already covered, give a short factual recap and then address the NEW aspect of their question\n";
         $section .= "- Each response must add NEW value — if you have nothing new to add, say so honestly\n";
         $section .= "- Vary your language and structure across responses — do not use the same phrasing twice\n";
+        $section .= "- NEVER claim prior output with phrases like 'already shared above', 'as noted above', or similar if that exact text is not verifiably present\n";
+
+        // Page awareness + on-demand page body live in build_page_context_section() so the
+        // follow-up chatpack reuses the identical block on EVERY turn (see build_followup_chatpack),
+        // not only on message #1. $page_content is still read here for the grounding branch below.
+        $page_content = trim((string)($eval_context['browsing_page_content'] ?? ''));
+        $page_context = self::build_page_context_section($eval_context);
+        if ($page_context !== '') {
+            $section .= "\n" . $page_context;
+        }
 
         // v8.0.10: Anti-hallucination anchor — reinforced at end of prompt for recency bias
         $section .= "\n**FACTUAL GROUNDING (final reminder):**\n";
-        $section .= "- Your ONLY source of truth about this product is this system prompt and the knowledge base files above\n";
+        if ($page_content !== '') {
+            $section .= "- For questions about the current page, the PAGE BODY section above is authoritative\n";
+            $section .= "- For broader product/platform questions, use this system prompt and the knowledge base files above\n";
+        } else {
+            $section .= "- Your ONLY source of truth about this product is this system prompt and the knowledge base files above\n";
+        }
         $section .= "- Do NOT use your general training knowledge to fill in product details, features, prices, or course content\n";
         $section .= "- If this prompt doesn't tell you something, you don't know it. Say so.\n";
         $section .= "- NEVER invent acronym expansions. FLOSC = Freeline, Login, Offer, Sale, Content. That's it.\n";
+        // COMPANION MODE POLICY now lives in build_page_context_section() (shared with follow-ups).
         if ($phase === 'freeline') {
             $section .= "- You are NOT the quiz. The quiz is a separate audio-recording widget. Do not simulate it.\n";
         }

@@ -34,7 +34,8 @@ ai_configuration_files/lesaep_com_ivr.md
 ai_configuration_files/simplified_solfeggio_ivr.md
 ai_configuration_files/flosc_ai_ivr.md
 
-# Workspace-only docs, plans, and scratch
+# Workspace-only plans and scratch (documentation ships — see flosc_documentation/ + admin/docs/)
+sample-data/
 dev_notes.md
 claude.md
 tech_summary.md
