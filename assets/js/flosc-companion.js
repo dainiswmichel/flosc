@@ -25,6 +25,7 @@
     var FloscCompanion = {
         isOpen: false,
         isFullscreen: false,
+        panelMode: 'panel',
         container: null,
         iframe: null,
 
@@ -70,7 +71,9 @@
                 triggerCooldownMs: 0,
                 stateKey: 'flosc_companion_state',
                 cooldownKey: 'flosc_companion_cooldown',
-                skipBehaviorTriggers: false
+                skipBehaviorTriggers: false,
+                fullPageUrl: '',
+                returnUrl: ''
             }, config);
 
             this.pageStartMs = Date.now();
@@ -83,13 +86,12 @@
             this.handoffRequested = this.detectHandoffRequest();
             if (this.handoffRequested) {
                 this.config.skipBehaviorTriggers = true;
-                this.forceMinimizedStateForHandoff();
-                this.consumeHandoffRequest();
             }
 
             this.render();
             this.applyMotionMode();
             this.bindEvents();
+            this.applyHandoffRequest();
             this.restoreOpenStateIfNeeded();
             this.scheduleAutoOpen();
             this.bindBehaviorTriggers();
@@ -136,7 +138,9 @@
                     '</div>' +
                 '</div>' +
                 '<div class="flosc-companion-header-actions">' +
+                    '<button class="flosc-companion-expand" aria-label="Expand chat" title="Expand chat">↕</button>' +
                     (this.config.allowFullscreen ? '<button class="flosc-companion-fullscreen" aria-label="' + this.escapeHtml(this.config.fullscreenLabel) + '" title="' + this.escapeHtml(this.config.fullscreenLabel) + '">⤢</button>' : '') +
+                    '<button class="flosc-companion-open-fullpage" aria-label="Open full chat page" title="Open full chat page">↗</button>' +
                     '<button class="flosc-companion-close" aria-label="' + this.escapeHtml(this.config.closeAriaLabel) + '"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg></button>' +
                 '</div>';
 
@@ -174,12 +178,10 @@
             var fab = this.container.querySelector('.flosc-companion-fab');
             var closeBtn = this.container.querySelector('.flosc-companion-close');
             var fullscreenBtn = this.container.querySelector('.flosc-companion-fullscreen');
+            var expandBtn = this.container.querySelector('.flosc-companion-expand');
+            var fullPageBtn = this.container.querySelector('.flosc-companion-open-fullpage');
 
             fab.addEventListener('click', function() {
-                if (self.shouldExpandToFullChat()) {
-                    self.expandToFullChat();
-                    return;
-                }
                 self.toggle();
             });
 
@@ -190,6 +192,23 @@
             if (fullscreenBtn) {
                 fullscreenBtn.addEventListener('click', function() {
                     self.toggleFullscreen();
+                });
+            }
+
+            if (expandBtn) {
+                expandBtn.addEventListener('click', function() {
+                    if (self.container.classList.contains('is-expanded')) {
+                        self.setPanelMode('panel');
+                    } else {
+                        self.open();
+                        self.setPanelMode('expanded');
+                    }
+                });
+            }
+
+            if (fullPageBtn) {
+                fullPageBtn.addEventListener('click', function() {
+                    self.openFullPage();
                 });
             }
 
@@ -221,27 +240,14 @@
         open: function() {
             var shouldOpenFullscreen = !!(this.config.allowFullscreen && this.config.defaultFullscreen);
 
-            this.setFullscreen(shouldOpenFullscreen);
+            this.setPanelMode(shouldOpenFullscreen ? 'fullscreen' : 'panel');
             this.isOpen = true;
             this.container.classList.add('is-open');
             this.updateLauncherA11y();
 
             // Lazy-load iframe on first open
             if (!this.iframe.src) {
-                var separator = this.config.appUrl.indexOf('?') !== -1 ? '&' : '?';
-                var query = ['flosc_companion=1'];
-
-                if (this.config.contextParams && typeof this.config.contextParams === 'object') {
-                    Object.keys(this.config.contextParams).forEach(function(key) {
-                        var value = this.config.contextParams[key];
-                        if (value === null || typeof value === 'undefined' || value === '') {
-                            return;
-                        }
-                        query.push(encodeURIComponent(key) + '=' + encodeURIComponent(String(value)));
-                    }, this);
-                }
-
-                this.iframe.src = this.config.appUrl + separator + query.join('&');
+                this.iframe.src = this.buildIframeUrl();
             }
 
             if (this.config.focusOnOpen) {
@@ -256,6 +262,32 @@
             this.container.classList.remove('is-open');
             this.updateLauncherA11y();
             this.saveOpenState(false);
+        },
+
+        buildIframeUrl: function() {
+            try {
+                var url = new URL(this.config.appUrl, window.location.origin);
+                url.searchParams.set('flosc_surface', 'companion');
+                url.searchParams.set('flosc_companion', '1');
+
+                if (this.config.returnUrl) {
+                    url.searchParams.set('flosc_context_url', String(this.config.returnUrl));
+                }
+
+                if (this.config.contextParams && typeof this.config.contextParams === 'object') {
+                    Object.keys(this.config.contextParams).forEach(function(key) {
+                        var value = this.config.contextParams[key];
+                        if (value === null || typeof value === 'undefined' || value === '') {
+                            return;
+                        }
+                        url.searchParams.set(key, String(value));
+                    }, this);
+                }
+
+                return url.toString();
+            } catch (e) {
+                return this.config.appUrl;
+            }
         },
 
         updateLauncherA11y: function() {
@@ -527,8 +559,30 @@
         },
 
         setFullscreen: function(enabled) {
-            this.isFullscreen = !!enabled;
-            this.container.classList.toggle('is-fullscreen', this.isFullscreen);
+            this.setPanelMode(enabled ? 'fullscreen' : 'panel');
+        },
+
+        setPanelMode: function(mode) {
+            mode = String(mode || 'panel').toLowerCase();
+
+            this.container.classList.remove('is-panel', 'is-expanded', 'is-fullscreen');
+
+            if (mode === 'fullscreen') {
+                this.isFullscreen = true;
+                this.panelMode = 'fullscreen';
+                this.container.classList.add('is-fullscreen');
+                return;
+            }
+
+            this.isFullscreen = false;
+            if (mode === 'expanded') {
+                this.panelMode = 'expanded';
+                this.container.classList.add('is-expanded');
+                return;
+            }
+
+            this.panelMode = 'panel';
+            this.container.classList.add('is-panel');
         },
 
         detectHandoffRequest: function() {
@@ -550,6 +604,9 @@
                     return;
                 }
                 url.searchParams.delete('flosc_companion_handoff');
+                url.searchParams.delete('flosc_companion_open');
+                url.searchParams.delete('flosc_companion_mode');
+                url.searchParams.delete('flosc_companion_expand_target');
                 window.history.replaceState({}, document.title, url.toString());
             } catch (e) {
                 // Ignore URL update failures.
@@ -568,23 +625,41 @@
             }
         },
 
-        shouldExpandToFullChat: function() {
+        applyHandoffRequest: function() {
             try {
                 var params = new URLSearchParams(window.location.search || '');
-                var mode = String(params.get('flosc_companion_expand_target') || '').toLowerCase();
-                return mode === 'full_chat';
+                if (params.get('flosc_companion_handoff') !== '1') {
+                    return;
+                }
+
+                var mode = String(params.get('flosc_companion_mode') || 'panel').toLowerCase();
+                this.open();
+
+                if (mode === 'expanded') {
+                    this.setPanelMode('expanded');
+                } else if (mode === 'fullscreen') {
+                    this.setPanelMode('fullscreen');
+                } else {
+                    this.setPanelMode('panel');
+                }
+
+                this.consumeHandoffRequest();
             } catch (e) {
-                return false;
+                // Ignore malformed query params.
             }
         },
 
-        expandToFullChat: function() {
+        openFullPage: function() {
             try {
-                var target = new URL(this.config.appUrl, window.location.origin);
+                var target = new URL(this.config.fullPageUrl || this.config.appUrl, window.location.origin);
                 target.searchParams.delete('flosc_companion');
+                target.searchParams.set('flosc_surface', 'full');
+                if (window.location.href) {
+                    target.searchParams.set('flosc_context_url', window.location.href);
+                }
                 window.location.assign(target.toString());
             } catch (e) {
-                window.location.assign(this.config.appUrl);
+                window.location.assign(this.config.fullPageUrl || this.config.appUrl);
             }
         },
 

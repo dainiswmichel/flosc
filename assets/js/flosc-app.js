@@ -6959,7 +6959,9 @@ Purchased: ${ctx.purchased}
         }
 
         chosen.searchParams.set('flosc_companion_handoff', '1');
-        chosen.searchParams.set('flosc_companion_expand_target', 'full_chat');
+        chosen.searchParams.set('flosc_companion_open', '1');
+        chosen.searchParams.set('flosc_companion_mode', 'panel');
+        chosen.searchParams.delete('flosc_companion_expand_target');
         return chosen.toString();
     }
 

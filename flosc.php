@@ -13586,16 +13586,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             return;
         }
 
-        // Companion serves a specific chat flow: a docked view of the SAME /chat
-        // app and session (same origin -> shared localStorage/sessionID, so the
-        // companion and the full page are one conversation, differing only in
-        // display). On non-chat pages there is no "current flow", so build the app
-        // URL directly from the configured companion slug (e.g. home_url('/chat/')).
-        $companion_slug = sanitize_title((string) $this->get_setting('companion_flow_slug', ''));
-        $app_url = $companion_slug !== '' ? home_url('/' . $companion_slug . '/') : $this->get_app_url();
+        // Companion must always point to a valid FLOSC app route.
+        $app_url = $this->get_companion_chat_app_url();
         if (empty($app_url)) {
             return;
         }
+
+        $current_url = $this->get_current_frontend_url();
 
         // Keep defaults aligned with companion admin UI and filterable for extensions.
         $accent = sanitize_hex_color((string) $this->get_setting('companion_accent_color', $defaults['accent_color']));
@@ -13754,6 +13751,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
 
         $companion_config = [
             'appUrl' => $app_url,
+            'fullPageUrl' => $app_url,
+            'returnUrl' => $current_url,
             'title' => $title,
             'subtitle' => $subtitle,
             'accentColor' => $accent ?: $defaults['accent_color'],
@@ -13821,6 +13820,73 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'FloscCompanion.init(%s);',
             wp_json_encode($companion_config)
         ));
+    }
+
+    /**
+     * Resolve companion iframe app URL to a guaranteed active FLOSC flow route.
+     */
+    private function get_companion_chat_app_url() {
+        $configured_slug = sanitize_title((string) $this->get_setting('companion_flow_slug', ''));
+        if ($configured_slug !== '') {
+            $flow = $this->get_flow_by_slug_for_companion($configured_slug);
+            if (is_array($flow) && !empty($flow['slug'])) {
+                return esc_url_raw(home_url('/' . sanitize_title((string) $flow['slug']) . '/'));
+            }
+        }
+
+        return esc_url_raw($this->get_app_url());
+    }
+
+    /**
+     * Find active flow by slug for companion URL hardening.
+     */
+    private function get_flow_by_slug_for_companion($slug) {
+        $slug = sanitize_title((string) $slug);
+        if ($slug === '') {
+            return null;
+        }
+
+        $ivr_files = array_unique(array_map('basename', flosc_config_glob(['*_ivr.md', 'ivr*.md'])));
+        foreach ($ivr_files as $filename) {
+            if (strpos($filename, 'backup') !== false) {
+                continue;
+            }
+
+            $flow = $this->build_flow_from_ivr_file($filename);
+            if (!is_array($flow)) {
+                continue;
+            }
+
+            if (($flow['status'] ?? 'active') !== 'active') {
+                continue;
+            }
+
+            if (sanitize_title((string) ($flow['slug'] ?? '')) === $slug) {
+                return $flow;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Build current frontend URL for companion handoff context.
+     */
+    private function get_current_frontend_url() {
+        $request_uri = (string) wp_unslash($_SERVER['REQUEST_URI'] ?? '/');
+        $path = (string) wp_parse_url($request_uri, PHP_URL_PATH);
+        $query = (string) wp_parse_url($request_uri, PHP_URL_QUERY);
+
+        if ($path === '') {
+            $path = '/';
+        }
+
+        $url = home_url($path);
+        if ($query !== '') {
+            $url = $url . '?' . $query;
+        }
+
+        return esc_url_raw($url);
     }
 
     /**
