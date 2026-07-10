@@ -1021,6 +1021,7 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         $flosc_new_settings['companion_launcher_icon'] = $flosc_launcher_icon;
         $flosc_new_settings['companion_mobile_behavior'] = $flosc_mobile_behavior;
         $flosc_new_settings['companion_context_scope'] = $flosc_context_scope;
+        $flosc_new_settings['companion_page_intent_phrases'] = sanitize_textarea_field((string) ($flosc_post['flow_companion_page_intent_phrases'] ?? ''));
         $flosc_new_settings['companion_motion_mode'] = $flosc_motion_mode;
         $flosc_new_settings['companion_keyboard_shortcut_key'] = $flosc_keyboard_shortcut_key;
         $flosc_new_settings['companion_launcher_aria_label'] = $flosc_launcher_aria_label;

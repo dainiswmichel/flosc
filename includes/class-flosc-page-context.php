@@ -219,19 +219,8 @@ class FLOSC_Page_Context {
     private function message_targets_current_page($message, $title) {
         $msg = strtolower(trim($message));
 
-        $phrases = [
-            'this page', 'this post', 'this product', 'this course',
-            'this song', 'this article', 'this item', 'this listing',
-            'more about this', 'about this', 'about the song', 'about the page',
-            'about the post', 'about the product', 'about the article',
-            'what i\'m looking at', 'what i am looking at', 'on this page',
-            'tell me about this', 'what is this', 'explain this', 'describe this',
-            'summarize this', 'summary of this', 'read this', 'page content',
-            'product description', 'post content',
-            'looking at this',
-        ];
-        foreach ($phrases as $phrase) {
-            if (strpos($msg, $phrase) !== false) {
+        foreach ($this->get_page_intent_phrases() as $phrase) {
+            if ($phrase !== '' && strpos($msg, $phrase) !== false) {
                 return true;
             }
         }
@@ -253,6 +242,57 @@ class FLOSC_Page_Context {
         }
 
         return false;
+    }
+
+    /**
+     * Page-intent phrases the AI treats as "the user is asking about the current page,"
+     * which triggers on-demand page-content injection. Ships with the FLOSC defaults;
+     * floscAdmins append their own via the per-flow "Page Intent Phrases" setting (one per
+     * line or comma-separated), and extensions can adjust the final list via the filter.
+     * Matching is lowercase substring.
+     *
+     * @return string[]
+     */
+    private function get_page_intent_phrases() {
+        $defaults = [
+            'this page', 'this post', 'this product', 'this course',
+            'this song', 'this article', 'this item', 'this listing', 'this lesson',
+            'more about this', 'about this', 'about the song', 'about the page',
+            'about the post', 'about the product', 'about the article',
+            'about the lesson', 'about the course', 'about the item',
+            'what i\'m looking at', 'what i am looking at', 'on this page',
+            'tell me about this', 'what is this', 'explain this', 'describe this',
+            'summarize this', 'summary of this', 'read this', 'page content',
+            'product description', 'post content', 'looking at this',
+            'what\'s this', 'whats this', 'what is this page', 'what\'s this page',
+            'what is this about', 'what\'s this about', 'what\'s on this page',
+            'what is this product', 'what\'s this product', 'what is this lesson',
+            'what\'s this lesson',
+            'tell me about this page', 'tell me about this product', 'tell me about this lesson',
+        ];
+
+        // floscAdmin additions — per-flow setting, one phrase per line (or comma-separated).
+        $custom = [];
+        $raw = (string) flosc_get_setting('companion_page_intent_phrases', '');
+        if ($raw !== '') {
+            foreach (preg_split('/[\r\n,]+/', $raw) as $line) {
+                $line = strtolower(trim((string) $line));
+                if ($line !== '') {
+                    $custom[] = $line;
+                }
+            }
+        }
+
+        $phrases = array_values(array_unique(array_merge($defaults, $custom)));
+
+        /**
+         * Filter the page-intent phrase list (shipped defaults + admin additions).
+         *
+         * @param string[] $phrases Lowercase substrings that mark a page-content question.
+         */
+        $phrases = apply_filters('flosc_companion_page_intent_phrases', $phrases);
+
+        return is_array($phrases) ? $phrases : $defaults;
     }
 
     private function message_is_short_followup($message) {

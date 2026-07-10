@@ -53,6 +53,7 @@ $flosc_panel_height         = intval($flosc_flow_settings['companion_panel_heigh
 $flosc_mobile_behavior      = $flosc_flow_settings['companion_mobile_behavior'] ?? 'fullscreen';
 $flosc_pass_page_context    = $flosc_flow_settings['companion_pass_page_context'] ?? '1';
 $flosc_context_scope        = $flosc_flow_settings['companion_context_scope'] ?? 'basic';
+$flosc_page_intent_phrases  = $flosc_flow_settings['companion_page_intent_phrases'] ?? '';
 $flosc_auto_open_enabled    = $flosc_flow_settings['companion_auto_open_enabled'] ?? '';
 $flosc_auto_open_delay_ms   = intval($flosc_flow_settings['companion_auto_open_delay_ms'] ?? 1500);
 $flosc_auto_open_once       = $flosc_flow_settings['companion_auto_open_once_per_session'] ?? '1';
@@ -710,6 +711,14 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
                     <?php endforeach; ?>
                 </select>
                 <p class="description">Select how much page metadata is passed to the companion.</p>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row"><label for="flow_companion_page_intent_phrases">Page Intent Phrases</label></th>
+            <td>
+                <textarea name="flow_companion_page_intent_phrases" id="flow_companion_page_intent_phrases" rows="4" class="large-text" placeholder="one phrase per line"><?php echo esc_textarea($flosc_page_intent_phrases); ?></textarea>
+                <p class="description">Extra phrases (one per line) that signal a visitor is asking about the current page, so the AI ingests that page's content. FLOSC's built-in phrases (e.g. "what is this", "tell me about this page") always apply — anything here is added on top.</p>
             </td>
         </tr>
 
