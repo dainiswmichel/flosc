@@ -1514,7 +1514,7 @@ class floscApp {
 
         const panel = document.createElement('div');
         panel.id = 'flosc_input_user_autoprompts_panel';
-        panel.className = 'prompt-panel prompt-panel-inline';
+        panel.className = 'prompt-panel prompt-panel-inline flosc-admin-test-panel';
         panel.innerHTML = `
             <div class="prompt-panel-header flosc-admin-panel-header" id="flosc-admin-panel-toggle">
                 <div>
