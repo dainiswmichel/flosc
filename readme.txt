@@ -142,6 +142,16 @@ In Settings → FLOSC → AI Provider:
 3. Test the connection
 4. FLOSC will route conversational responses through your provider
 
+== Screenshots ==
+
+1. screenshot-1.png - SSO Settings: Configure single sign-on options and authentication behavior.
+2. screenshot-2.png - Offers Settings: Manage offer configuration and sale-stage settings.
+3. screenshot-3.png - Member Levels Settings: Configure membership-level access and progression settings.
+4. screenshot-4.png - AutoPrompt Panel Settings: Configure quick prompts and response shortcuts.
+5. screenshot-5.png - IVR Management Settings: Manage IVR message routes and conversational structure.
+6. screenshot-6.png - Identity Settings: Set plugin name, title, and brand identity values.
+7. screenshot-7.png - Flow Settings: Configure the core flow sequence and behavior.
+
 == External Services ==
 
 FLOSC core flow logic runs locally in WordPress. The services below power specific FLOSC features. When those features are enabled, calling these services is intentional and required for full functionality.
