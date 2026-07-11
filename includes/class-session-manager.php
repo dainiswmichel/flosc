@@ -113,7 +113,7 @@ class FLOSC_Session_Manager {
     /**
      * Add message to session
      */
-    public function add_flosc_message($session_id, $role, $content, $user_id = null) {
+    public function add_flosc_message($session_id, $role, $content, $user_id = null, $meta = null) {
         if (!$user_id) {
             $user_id = get_current_user_id();
         }
@@ -126,11 +126,24 @@ class FLOSC_Session_Manager {
         
         foreach ($sessions as &$session) {
             if ($session['id'] == $session_id) {
-                $session['messages'][] = [
+                $message = [
                     'role' => $role,
                     'content' => $content,
                     'timestamp' => current_time('mysql'),
                 ];
+
+                if (is_array($meta)) {
+                    $source = sanitize_text_field((string) ($meta['source'] ?? ''));
+                    $name = sanitize_text_field((string) ($meta['name'] ?? ''));
+                    if ($source !== '' || $name !== '') {
+                        $message['meta'] = [
+                            'source' => $source,
+                            'name' => $name,
+                        ];
+                    }
+                }
+
+                $session['messages'][] = $message;
                 $session['updated_at'] = current_time('mysql');
                 
                 // Update title from first user message if still "New Chat"

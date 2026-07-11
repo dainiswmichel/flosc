@@ -684,8 +684,12 @@ class FLOSC_AI_Chat_Dispatch {
 
         // v1.9.2: Never cache for admin users — admin is testing/debugging and needs fresh responses.
         // Also skip cache in test mode.
+        // v8.0.0 token integrity: disable cache for visitors so each visitor turn
+        // captures fresh billing metadata; shared visitor cache hits (user_id=0)
+        // can otherwise bypass billing capture and force 1-token fallback charges.
         $is_admin = is_user_logged_in() && current_user_can('manage_options');
-        $use_cache = !$test_mode && !$is_admin;
+        $is_visitor = !is_user_logged_in();
+        $use_cache = !$test_mode && !$is_admin && !$is_visitor;
 
         if ($use_cache) {
             // Include user_id in cache key so different users never share cached responses

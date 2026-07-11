@@ -9,16 +9,24 @@
 
 /* ─── Container ──────────────────────────────── */
 .flosc-companion {
+    --flosc-companion-viewport-height: 100dvh;
+    --flosc-companion-viewport-width: 100vw;
+    --flosc-companion-edge-gap: 16px;
+    --flosc-companion-safe-bottom: calc(env(safe-area-inset-bottom, 0px) + var(--flosc-companion-edge-gap));
+    --flosc-companion-safe-top: calc(env(safe-area-inset-top, 0px) + var(--flosc-companion-edge-gap));
+    --flosc-companion-safe-side: calc(env(safe-area-inset-right, 0px) + var(--flosc-companion-edge-gap));
+    --flosc-companion-window-offset: calc(var(--flosc-companion-launcher-size, 60px) + 16px);
+    --flosc-companion-max-window-height: calc(var(--flosc-companion-viewport-height) - var(--flosc-companion-safe-top) - var(--flosc-companion-safe-bottom) - var(--flosc-companion-window-offset));
     position: fixed;
-    bottom: 24px;
-    right: 24px;
+    bottom: var(--flosc-companion-safe-bottom);
+    right: var(--flosc-companion-safe-side);
     z-index: 9999;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .flosc-companion.flosc-companion--left {
     right: auto;
-    left: 24px;
+    left: calc(env(safe-area-inset-left, 0px) + var(--flosc-companion-edge-gap));
 }
 
 /* ─── FAB Trigger ────────────────────────────── */
@@ -82,10 +90,12 @@
 /* ─── Chat Window (soft-glass surface) ───────── */
 .flosc-companion-window {
     position: absolute;
-    bottom: 76px;
+    bottom: var(--flosc-companion-window-offset);
     right: 0;
     width: var(--flosc-companion-width, 380px);
-    height: var(--flosc-companion-height, 560px);
+    max-width: calc(var(--flosc-companion-viewport-width) - (var(--flosc-companion-edge-gap) * 2));
+    max-height: var(--flosc-companion-max-window-height);
+    height: min(var(--flosc-companion-height, 560px), var(--flosc-companion-max-window-height));
     display: flex;
     flex-direction: column;
     border-radius: 18px;
@@ -119,8 +129,9 @@
 }
 
 .flosc-companion.is-expanded .flosc-companion-window {
-    width: min(520px, calc(100vw - 32px));
-    height: min(82vh, 820px);
+    width: min(520px, calc(var(--flosc-companion-viewport-width) - (var(--flosc-companion-edge-gap) * 2)));
+    max-height: calc(var(--flosc-companion-viewport-height) - var(--flosc-companion-safe-top) - var(--flosc-companion-safe-bottom));
+    height: min(820px, calc(var(--flosc-companion-viewport-height) - var(--flosc-companion-safe-top) - var(--flosc-companion-safe-bottom)));
 }
 
 /* ─── Header (accent gradient with hairline) ─── */
@@ -254,7 +265,7 @@
 
 .flosc-companion.is-fullscreen .flosc-companion-window {
     position: fixed;
-    inset: 20px;
+    inset: max(10px, env(safe-area-inset-top, 0px)) max(10px, env(safe-area-inset-right, 0px)) max(10px, env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px));
     width: auto;
     height: auto;
     max-width: none;
@@ -292,10 +303,14 @@
 /* ─── Mobile Responsive ──────────────────────── */
 @media (max-width: 640px) {
     .flosc-companion:not(.flosc-companion--mobile-panel) .flosc-companion-window {
-        width: 100vw;
-        height: 100vh;
-        bottom: 0;
-        right: 0;
+        width: calc(var(--flosc-companion-viewport-width) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+        height: calc(var(--flosc-companion-viewport-height) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+        max-width: none;
+        max-height: none;
+        bottom: env(safe-area-inset-bottom, 0px);
+        right: env(safe-area-inset-right, 0px);
+        left: env(safe-area-inset-left, 0px);
+        top: env(safe-area-inset-top, 0px);
         border-radius: 0;
         position: fixed;
     }
@@ -305,8 +320,9 @@
     }
 
     .flosc-companion.flosc-companion--mobile-panel .flosc-companion-window {
-        width: min(var(--flosc-companion-width, 380px), calc(100vw - 24px));
-        height: min(var(--flosc-companion-height, 560px), 80vh);
+        width: min(var(--flosc-companion-width, 380px), calc(var(--flosc-companion-viewport-width) - 24px));
+        max-height: calc(var(--flosc-companion-viewport-height) - var(--flosc-companion-safe-top) - var(--flosc-companion-safe-bottom) - var(--flosc-companion-window-offset));
+        height: min(var(--flosc-companion-height, 560px), calc(var(--flosc-companion-viewport-height) - var(--flosc-companion-safe-top) - var(--flosc-companion-safe-bottom) - var(--flosc-companion-window-offset)));
     }
 
     .flosc-companion.is-expanded .flosc-companion-window,

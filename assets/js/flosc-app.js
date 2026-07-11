@@ -265,6 +265,10 @@ class floscApp {
             this.setupUI();
             this.log('[FLOSC] UI setup complete');
 
+            if (this.state === 'visitor') {
+                await this.fetchVisitorSessionBalanceOnInit();
+            }
+
             // v1.8.0: Old visitor engagement bar removed. The unified profile bar
             // (always visible, 3 states) replaces it. No initVisitorBar() needed.
 
@@ -442,24 +446,54 @@ class floscApp {
 
             const grantKey = `flosc_visitor_grant_${flowId}`;
             const previousGrant = parseInt(localStorage.getItem(grantKey), 10);
-            const persistedValue = this.getPersistedVisitorTokenBalance();
-
-            // Preserve a continuous visitor conversation across companion/full-page
-            // mode changes. If admin grant shrinks, clamp balance without rotating
-            // the visitor session id or clearing message history.
-            if (Number.isFinite(persistedValue) && persistedValue > grantValue) {
-                this.persistVisitorTokenBalance(grantValue);
-                this.log('[FLOSC] Visitor grant changed; clamped token balance without rotating session.', {
-                    flowId,
-                    previousGrant,
-                    persistedValue,
-                    grantValue,
-                });
-            }
+            // Session transient on the server owns the runtime balance. Keep this
+            // check limited to grant metadata tracking; never rewrite token count
+            // from client storage during init.
+            this.log('[FLOSC] Visitor grant tracked for current flow.', {
+                flowId,
+                previousGrant,
+                grantValue,
+            });
 
             localStorage.setItem(grantKey, String(grantValue));
         } catch (e) {
             this.logWarn('[FLOSC] Could not evaluate visitor grant/session alignment', e);
+        }
+    }
+
+    async fetchVisitorSessionBalanceOnInit() {
+        if (this.state !== 'visitor') {
+            return;
+        }
+
+        const sessionId = String(this.getVisitorSessionId() || '').trim();
+        const flowId = String(this.config?.flowId || '').trim();
+        if (!sessionId || !flowId) {
+            return;
+        }
+
+        try {
+            const response = await this.authFetch(this.config.apiUrl + '/visitor-session-balance', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': this.config.nonce
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    flow_id: flowId
+                })
+            });
+
+            if (!response.ok) {
+                return;
+            }
+
+            const data = await response.json();
+            this.syncVisitorTokenBalanceFromPayload(data);
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not fetch visitor session balance on init:', e);
         }
     }
 
@@ -632,8 +666,7 @@ class floscApp {
 
         const payload = {
             sessionId: String(this.getVisitorSessionId() || '').slice(0, 80),
-            messages: [],
-            tokenBalance: null
+            messages: []
         };
 
         try {
@@ -656,11 +689,6 @@ class floscApp {
             }
         } catch (e) {
             payload.messages = [];
-        }
-
-        const tokenValue = this.getPersistedVisitorTokenBalance();
-        if (Number.isFinite(tokenValue) && tokenValue >= 0) {
-            payload.tokenBalance = tokenValue;
         }
 
         return payload;
@@ -761,10 +789,6 @@ class floscApp {
                         }
                     }
 
-                    const tokenBalance = parseInt(payload.tokenBalance, 10);
-                    if (Number.isFinite(tokenBalance) && tokenBalance >= 0) {
-                        this.persistVisitorTokenBalance(tokenBalance);
-                    }
                 }
             } else if (sid) {
                 this._visitorSessionId = sid.slice(0, 80);
@@ -1056,63 +1080,28 @@ class floscApp {
     startAdminPoll() {
         if (this._adminPollTimer) return;
         this._adminSince = this._adminSince || 0;
-        this._adminPollSessionId = this._adminPollSessionId || null;
-        this._adminPollToken = this._adminPollToken || '';
-
-        const ensureAdminPollToken = async (sessionId) => {
-            if (!sessionId) return '';
-
-            if (this._adminPollSessionId !== sessionId) {
-                this._adminPollSessionId = sessionId;
-                this._adminPollToken = '';
-            }
-
-            if (this._adminPollToken) {
-                return this._adminPollToken;
-            }
-
-            try {
-                const res = await fetch(this.config.apiUrl + '/admin-messages-token', {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ session_id: sessionId }),
-                });
-                const data = await res.json();
-                this._adminPollToken = (data && data.poll_token) ? data.poll_token : '';
-            } catch (_) {
-                this._adminPollToken = '';
-            }
-
-            return this._adminPollToken;
-        };
 
         const poll = () => {
-            const sid = (this.currentSession && this.currentSession.id) || this.getVisitorSessionId();
+            const sid = (this.state === 'visitor')
+                ? this.getVisitorSessionId()
+                : (this.currentSession && this.currentSession.id);
             if (!sid) return;
 
-            ensureAdminPollToken(sid)
-                .then((pollToken) => {
-                    if (!pollToken) return null;
-
-                    // POST (not GET) so the host page cache never serves a stale empty result.
-                    return fetch(this.config.apiUrl + '/admin-messages', {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            session_id: sid,
-                            since_id: this._adminSince || 0,
-                            flow_id: this.config?.flowId || '',
-                            poll_token: pollToken,
-                        })
-                    });
+            // Restore the original direct poll path for admin message delivery.
+            // The open chat only needs its own session id + cursor to receive the
+            // injected admin row and render the green bubble instantly.
+            fetch(this.config.apiUrl + '/admin-messages', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: sid,
+                    since_id: this._adminSince || 0,
+                    flow_id: this.config?.flowId || '',
                 })
+            })
                 .then((r) => {
                     if (!r) return null;
-                    if (!r.ok && (r.status === 403 || r.status === 400)) {
-                        this._adminPollToken = '';
-                    }
                     return r.json();
                 })
                 .then(d => {
@@ -1268,7 +1257,10 @@ class floscApp {
             
             // v1.9.5: When AI is active, route the welcome through AI.
             // AI uses the IVR welcome as guidance and crafts a natural greeting.
-            const aiActive = this.config.aiProvider && this.config.aiProvider !== 'ivr';
+            // Token integrity guard: visitor startup welcome must not hit the
+            // chat API implicitly. Visitors should only consume tokens after a
+            // deliberate user message, never during first-paint greeting.
+            const aiActive = this.state !== 'visitor' && this.config.aiProvider && this.config.aiProvider !== 'ivr';
             
             const messages = Object.values(this.ivr.messages);
             const welcomeMessages = messages.filter(m => 
@@ -7255,6 +7247,17 @@ Purchased: ${ctx.purchased}
         this.ivr.sessionStart = Date.now();
         this.ivr.lastInteraction = Date.now();
 
+        // Reset anti-repetition memory so a total refresh starts clean.
+        this._shownAssistant = {};
+        this._repeatIdx = 0;
+
+        // Total refresh means "new chat" across states.
+        // Logged-in users get a fresh server session on next send.
+        this.currentSession = null;
+        this._adminPollSessionId = null;
+        this._adminPollToken = '';
+        this._adminSince = 0;
+
         // Clear session tracking (use same pattern as buildIVRContext)
         const sessionKey = 'flosc_session_' + this.getSessionKey();
         localStorage.removeItem(sessionKey);
@@ -7277,14 +7280,13 @@ Purchased: ${ctx.purchased}
             if (this.sendBtn) this.sendBtn.disabled = false;
 
             // Circle restart is a new visitor conversation, so reset profile
-            // token display to this flow's configured baseline immediately.
-            const configuredValue = parseInt(this.config?.visitorTokenDisplay?.value, 10);
-            const economicsValue = parseInt(this.config?.communicationTokenEconomics?.tokens_per_message, 10);
-            const baseline = Number.isFinite(configuredValue) && configuredValue >= 0
-                ? configuredValue
-                : (Number.isFinite(economicsValue) ? economicsValue : 5000);
-            this.updateVisitorTokenLabel(baseline);
-            this.persistVisitorTokenBalance(baseline);
+            // token display into a pending state. Server session balance remains
+            // authoritative and will repaint via poll/chat payload.
+            this.updateVisitorTokenLabelPending();
+
+            // Hydrate the brand-new visitor session balance immediately so the
+            // restarted chat does not wait for poll/chat traffic to show count.
+            this.fetchVisitorSessionBalanceOnInit();
         }
 
         // Rebuild context
@@ -7333,15 +7335,7 @@ Purchased: ${ctx.purchased}
 
         // v1.8.0: Populate profile bar — same bar for all states, content toggled via data-show
         if (this.state === 'visitor') {
-            const configuredValue = parseInt(this.config?.visitorTokenDisplay?.value, 10);
-            const economicsValue = parseInt(this.config?.communicationTokenEconomics?.tokens_per_message, 10);
-            const persistedValue = this.getPersistedVisitorTokenBalance();
-            const displayValue = Number.isFinite(persistedValue) && persistedValue >= 0
-                ? persistedValue
-                : (Number.isFinite(configuredValue) && configuredValue >= 0
-                ? configuredValue
-                : (Number.isFinite(economicsValue) ? economicsValue : 5000));
-            this.updateVisitorTokenLabel(displayValue);
+            this.updateVisitorTokenLabelPending();
         }
 
         if (this.user && this.state !== 'visitor') {
@@ -7574,6 +7568,19 @@ Purchased: ${ctx.purchased}
                 // Ignore cross-window messaging failures.
             }
         }
+    }
+
+    updateVisitorTokenLabelPending() {
+        const visitorName = document.querySelector('.profile-name[data-show="visitor"]');
+        if (!visitorName) return;
+
+        let baseLabel = (this.config?.visitorTokenDisplay?.label || '').trim();
+        if (!baseLabel) {
+            const existingLabel = visitorName.querySelector('.flosc-visitor-label-text')?.textContent || visitorName.textContent || 'Visitor';
+            baseLabel = existingLabel.trim().replace(/\s*\([^)]*\)\s*$/i, '') || 'Visitor';
+        }
+
+        visitorName.innerHTML = `<span class="flosc-visitor-label-text">${this.escapeHtml(baseLabel)}</span> <span class="flosc-visitor-token-count" id="flosc_visitor_token_count">(...)</span>`;
     }
 
     getLowTokenWarningStorageKey(thresholdValue) {
@@ -8400,9 +8407,9 @@ Purchased: ${ctx.purchased}
             if (repKey && this._shownAssistant[repKey]) {
                 this._repeatIdx = (this._repeatIdx || 0) + 1;
                 const repVariants = [
-                    "I've already shared that just above. Would you like the full list, or a different title, style, or mood?",
-                    "Same result as before — tell me a specific title or a style, and I'll find a different match.",
-                    "You've seen that one already. I can pull the complete works list, or search by a different name."
+                    "Let me give you a different result. Tell me a title, style, or mood ...waiting for your comments below.",
+                    "I can pull a different match right now. Share a title, style, or mood and I will refine it.",
+                    "Want the full list instead, or should I search by a different title, style, or mood?"
                 ];
                 content = repVariants[(this._repeatIdx - 1) % repVariants.length];
                 isHtml = false;
@@ -9015,6 +9022,13 @@ Purchased: ${ctx.purchased}
                 else if (this.chatMessages) this.chatMessages.innerHTML = '';
                 
                 data.session.messages.forEach(msg => {
+                    const meta = msg && msg.meta && typeof msg.meta === 'object' ? msg.meta : null;
+
+                    if (msg.role === 'assistant' && meta && meta.source === 'admin') {
+                        this.renderAdminMessage(meta.name || 'Admin', msg.content || '');
+                        return;
+                    }
+
                     this.addMessage(msg.role, msg.content);
                 });
                 

@@ -5770,6 +5770,12 @@ HTML;
                 // v1.9.1: RAG handler only supports Anthropic's tool-calling API.
                 // For other providers (OpenAI, xAI), use the dispatch class which
                 // already knows how to call each provider's API correctly.
+                //
+                // Declared here (not only inside the RAG branch below) so the
+                // billing read further down can safely test it on every path:
+                // the RAG handler owns the real-cost metadata for rag turns, and
+                // the decrement must read from whichever path produced the reply.
+                $flosc_rag_handler = null;
                 $flosc_use_rag = ($ai_provider === 'anthropic') && class_exists('FLOSC_RAG_Chat_Handler');
 
                 if ($flosc_use_rag) {
@@ -5897,9 +5903,19 @@ HTML;
         if ($flosc_ctx_ref !== '') {
             $flosc_chain_detail[] = 'ctx_ref:' . $flosc_ctx_ref;
         }
-        $billing_meta = method_exists($this->ai_chat_dispatch, 'get_last_billing_meta')
-            ? (array) $this->ai_chat_dispatch->get_last_billing_meta()
-            : [];
+        // Read billing metadata from whichever code path actually produced this
+        // reply. Anthropic replies come from the RAG handler, which accumulates
+        // real provider cost during its tool loop; every other provider is
+        // served by the dispatch class. Reading the wrong source leaves
+        // real_millicents at 0, which silently collapses the decrement to the
+        // 1-token "billing unavailable" fallback.
+        if ($flosc_response_source === 'rag' && $flosc_rag_handler && method_exists($flosc_rag_handler, 'get_last_billing_meta')) {
+            $billing_meta = (array) $flosc_rag_handler->get_last_billing_meta();
+        } else {
+            $billing_meta = method_exists($this->ai_chat_dispatch, 'get_last_billing_meta')
+                ? (array) $this->ai_chat_dispatch->get_last_billing_meta()
+                : [];
+        }
         $billing_usage = is_array($billing_meta['usage'] ?? null) ? $billing_meta['usage'] : [];
 
         FLOSC_Chat_Logger::instance()->flosc_log_chat([
@@ -12477,6 +12493,57 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
     }
 
     /**
+     * v8.0.0: REST handler — resolve a visitor's token count at page load.
+     *
+     * The header needs the real balance before the first chat turn or admin
+     * poll writes it; without this the label sits at its pending placeholder.
+     * This is a read-only mirror of the visitor branch of the chat response and
+     * the admin poll payload: the server transient stays the sole owner, and the
+     * client only renders the returned token_balance shape. Unlike the admin
+     * message poll, no chat-log ownership row is required — a visitor may ask for
+     * their own count on any surface. Route registered in FLOSC_REST_Trait with
+     * check_public_endpoint_permission (rate-limited, public).
+     *
+     * @param WP_REST_Request $request Expects session_id and flow_id.
+     * @return WP_REST_Response { success, token_balance|null }
+     */
+    public function handle_visitor_session_balance($request) {
+        nocache_headers(); // belt-and-suspenders against any caching layer
+
+        $session_id = $this->flosc_normalize_session_id((string) ($request->get_param('session_id') ?? ''));
+        $flow_id    = sanitize_key((string) ($request->get_param('flow_id') ?? ''));
+
+        if ($session_id <= 0 || $flow_id === '') {
+            return new WP_REST_Response(['success' => false, 'token_balance' => null]);
+        }
+
+        $token_provider = $this->sale_manager->get_provider('tokens');
+        if (!$token_provider) {
+            return new WP_REST_Response(['success' => false, 'token_balance' => null]);
+        }
+
+        $value = intval($this->flosc_get_visitor_session_token_balance($flow_id, $session_id, $token_provider));
+
+        // Same low-balance resolution the chat response uses, so the header can
+        // show the low-tokens nudge consistently across surfaces.
+        $low_token_threshold = $this->flosc_get_low_token_threshold($flow_id);
+        $low_tokens_message  = $this->flosc_get_visitor_low_tokens_message($flow_id);
+        $is_low_balance      = ($low_token_threshold > 0 && $value <= $low_token_threshold);
+
+        return new WP_REST_Response([
+            'success' => true,
+            'token_balance' => [
+                'scope'         => 'visitor_session',
+                'value'         => $value,
+                'formatted'     => $this->flosc_format_token_display($value),
+                'low_threshold' => $low_token_threshold,
+                'is_low'        => $is_low_balance,
+                'low_message'   => $is_low_balance ? $low_tokens_message : '',
+            ],
+        ]);
+    }
+
+    /**
      * v1.9.0: REST handler — save an AI feedback (admin flags a bad response)
      * Stores feedback in flow settings under 'ai_feedback' key.
      */
@@ -13888,7 +13955,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         $flow_id = is_array($flow) ? sanitize_text_field((string) ($flow['id'] ?? '')) : '';
         $token_provider = $this->sale_manager ? $this->sale_manager->get_provider('tokens') : null;
         $visitor_wallet_initial = max(0, intval($this->flosc_get_visitor_wallet_initial_amount($flow_id, $token_provider)));
-        $visitor_wallet_initial_display = number_format_i18n($visitor_wallet_initial);
 
         wp_enqueue_style(
             'flosc-companion',
@@ -13945,7 +14011,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'showHeaderTitle' => $show_header_title,
             'showHeaderSubtitle' => $show_header_subtitle,
             'showOpenFullpage' => $show_open_fullpage,
-            'headerTokenText' => $visitor_wallet_initial_display,
+            // Neutral first paint: the header count is owned by the server and
+            // arrives via the iframe's flosc_companion_token_update message, so
+            // the PHP config must not seed a grant baseline that could flash
+            // before the real balance loads.
+            'headerTokenText' => '',
             'accentColor' => $accent ?: $defaults['accent_color'],
             'position' => $position,
             'mode' => $mode,

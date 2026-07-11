@@ -319,7 +319,13 @@ trait FLOSC_REST_Trait {
      * @return true|WP_Error
      */
     public function check_visitor_session_poll_permission($request) {
-        $session_id = absint($request->get_param('session_id'));
+        // Canonicalize to the same crc32 id the chat logger and admin-inject
+        // handlers store under; absint() on the raw Date.now() string would key
+        // a different session and fail the ownership check (403), so the widget
+        // would never receive admin messages.
+        $session_id = $this->flosc_normalize_session_id(
+            sanitize_text_field((string) ($request->get_param('session_id') ?? ''))
+        );
         $poll_token = sanitize_text_field((string) $request->get_param('poll_token'));
 
         if ($session_id <= 0 || $poll_token === '') {
@@ -356,7 +362,13 @@ trait FLOSC_REST_Trait {
             return $public_check;
         }
 
-        $session_id = absint($request->get_param('session_id'));
+        // Canonicalize to the same crc32 id the chat logger and admin-inject
+        // handlers store under; absint() on the raw Date.now() string would key
+        // a different session and fail the ownership check (403), so the widget
+        // would never receive admin messages.
+        $session_id = $this->flosc_normalize_session_id(
+            sanitize_text_field((string) ($request->get_param('session_id') ?? ''))
+        );
         if ($session_id <= 0) {
             return new WP_Error('invalid_session_id', __('Invalid session id.', 'flosc'), ['status' => 400]);
         }
@@ -435,7 +447,7 @@ trait FLOSC_REST_Trait {
         register_rest_route('flosc/v1', '/admin-messages', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_admin_messages_poll'],
-            'permission_callback' => [$this, 'check_visitor_session_poll_permission'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
         ]);
 
         // Visitor poll token minting for admin-message ownership proof.
@@ -443,6 +455,15 @@ trait FLOSC_REST_Trait {
             'methods' => 'POST',
             'callback' => [$this, 'handle_admin_messages_token'],
             'permission_callback' => [$this, 'check_admin_messages_token_permission'],
+        ]);
+
+        // Visitor session token count bootstrap for page-load display.
+        // Purpose: resolve visitor token count on init without waiting for first
+        // chat turn or admin-message poll ownership row.
+        register_rest_route('flosc/v1', '/visitor-session-balance', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_visitor_session_balance'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
         ]);
 
         // Quiz Submission (NEW: for collecting quiz answers)

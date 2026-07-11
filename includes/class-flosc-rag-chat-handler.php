@@ -16,6 +16,7 @@ class FLOSC_RAG_Chat_Handler {
     private $flosc_rag_manager;
     private $flosc_access_controller;
     private $flosc_user_session;
+    private $flosc_last_billing_meta = [];
 
     public function __construct() {
         $this->flosc_rag_manager = FLOSC_RAG_Manager::instance();
@@ -32,6 +33,7 @@ class FLOSC_RAG_Chat_Handler {
      * @return array Response with content and autoprompts
      */
     public function flosc_handle_with_state($flosc_message, $flosc_user_session, $flosc_session_id = null, $flosc_chatpack_prompt = null, $flosc_conv_history = null) {
+        $this->flosc_last_billing_meta = [];
 
         // Set user session and create access controller
         $this->flosc_user_session = $flosc_user_session;
@@ -94,6 +96,14 @@ class FLOSC_RAG_Chat_Handler {
             'user_autoprompts' => $flosc_autoprompts,
             'phase_change' => null,
         ];
+    }
+
+    /**
+     * Get billing metadata for the most recent RAG response.
+     * Shape mirrors ai-chat-dispatch get_last_billing_meta().
+     */
+    public function get_last_billing_meta() {
+        return is_array($this->flosc_last_billing_meta) ? $this->flosc_last_billing_meta : [];
     }
 
     /**
@@ -244,6 +254,9 @@ class FLOSC_RAG_Chat_Handler {
         ];
 
         $flosc_max_iterations = 5;
+        $flosc_total_input_tokens = 0;
+        $flosc_total_output_tokens = 0;
+        $flosc_total_real_millicents = 0;
 
         for ($i = 0; $i < $flosc_max_iterations; $i++) {
 
@@ -269,6 +282,32 @@ class FLOSC_RAG_Chat_Handler {
 
             $flosc_raw_body = wp_remote_retrieve_body($flosc_response);
             $flosc_body = json_decode($flosc_raw_body, true);
+
+            // Capture billing on every Anthropic round-trip (tool-use loops can
+            // involve multiple calls). This keeps debit math aligned with real usage.
+            $flosc_usage = is_array($flosc_body['usage'] ?? null) ? $flosc_body['usage'] : [];
+            $flosc_input_tokens = max(0, intval($flosc_usage['input_tokens'] ?? 0));
+            $flosc_output_tokens = max(0, intval($flosc_usage['output_tokens'] ?? 0));
+            $flosc_total_input_tokens += $flosc_input_tokens;
+            $flosc_total_output_tokens += $flosc_output_tokens;
+
+            $flosc_rates = $this->flosc_resolve_anthropic_price_per_1m((string) $flosc_model);
+            $flosc_input_cost = ($flosc_input_tokens * $flosc_rates['input']) / 1000000;
+            $flosc_output_cost = ($flosc_output_tokens * $flosc_rates['output']) / 1000000;
+            $flosc_round_real_millicents = max(0, intval(ceil($flosc_input_cost + $flosc_output_cost)));
+            $flosc_total_real_millicents += $flosc_round_real_millicents;
+
+            $this->flosc_last_billing_meta = [
+                'provider' => 'anthropic',
+                'model' => (string) $flosc_model,
+                'usage' => [
+                    'input_tokens' => $flosc_total_input_tokens,
+                    'output_tokens' => $flosc_total_output_tokens,
+                    'total_tokens' => ($flosc_total_input_tokens + $flosc_total_output_tokens),
+                ],
+                'real_millicents' => max(0, intval($flosc_total_real_millicents)),
+                'source' => ($flosc_total_real_millicents > 0) ? 'token_rates' : 'none',
+            ];
 
             if (!isset($flosc_body['content'])) {
                 // v1.9.6: Log the actual API error instead of silently swallowing it
@@ -314,6 +353,36 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Response body (
         }
 
         return "I encountered an issue processing your request. Please try again.";
+    }
+
+    /**
+     * Resolve Anthropics pricing (real millicents per 1M tokens) for billing math.
+     * Flow-level overrides win when configured.
+     */
+    private function flosc_resolve_anthropic_price_per_1m($flosc_model) {
+        $override_in = max(0, intval(flosc_get_setting('ai_billing_anthropic_input_millicents_per_1m', 0)));
+        $override_out = max(0, intval(flosc_get_setting('ai_billing_anthropic_output_millicents_per_1m', 0)));
+        if ($override_in > 0 || $override_out > 0) {
+            return [
+                'input' => $override_in,
+                'output' => $override_out,
+            ];
+        }
+
+        $m = strtolower((string) $flosc_model);
+        $seed = ['input' => 300000, 'output' => 1500000];
+        if (strpos($m, 'haiku') !== false) {
+            $seed = ['input' => 100000, 'output' => 500000];
+        } elseif (strpos($m, 'opus') !== false) {
+            $seed = ['input' => 500000, 'output' => 2500000];
+        } elseif (strpos($m, 'sonnet') !== false) {
+            $seed = ['input' => 300000, 'output' => 1500000];
+        }
+
+        return [
+            'input' => max(0, intval($seed['input'] ?? 0)),
+            'output' => max(0, intval($seed['output'] ?? 0)),
+        ];
     }
 
     /**

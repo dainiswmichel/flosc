@@ -88,8 +88,7 @@ trait FLOSC_Visitor_Token_Trait {
 
         // No billing metadata (the AI API reported no usage/cost). If an admin set an
         // explicit flat per-turn cost, use it; otherwise debit 1 as a deliberate
-        // "billing unavailable" signal -- a wallet ticking down by 1/turn tells the
-        // floscAdmin the provider isn't reporting cost (a broken/misconfigured API).
+        // "billing unavailable" signal.
         $flow_stem = $this->flosc_normalize_flow_stem((string) $flow_id);
         $settings = get_option('flosc_flow_' . $flow_stem, []);
         $flat = (is_array($settings) && isset($settings['cost_ai_query'])) ? intval($settings['cost_ai_query']) : 0;

@@ -82,6 +82,10 @@
                 returnUrl: ''
             }, config);
 
+            // Session/server is authoritative for token count; never first-paint
+            // a configured baseline in the companion header.
+            this.config.headerTokenText = '';
+
             this.pageStartMs = Date.now();
 
             if (!this.config.appUrl) {
@@ -103,6 +107,7 @@
 
             this.render();
             this.applyMotionMode();
+            this.syncViewportCssVars();
             this.bindEvents();
             this.applyHandoffRequest();
             this.restoreNavigationStateIfNeeded();
@@ -261,6 +266,19 @@
                 self.saveNavigationState();
             });
 
+            var syncViewport = function() {
+                self.syncViewportCssVars();
+                self.scheduleViewportClamp();
+            };
+
+            window.addEventListener('resize', syncViewport, { passive: true });
+            window.addEventListener('orientationchange', syncViewport, { passive: true });
+
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', syncViewport, { passive: true });
+                window.visualViewport.addEventListener('scroll', syncViewport, { passive: true });
+            }
+
             window.addEventListener('message', function(event) {
                 if (!self.iframe || event.source !== self.iframe.contentWindow) {
                     return;
@@ -337,20 +355,6 @@
             }
         },
 
-        getPersistedTokenFromSharedStorage: function() {
-            try {
-                var flowId = String(this.config.flowId || 'default');
-                var grantValue = Math.max(0, parseInt(this.config.visitorTokenGrant, 10) || 0);
-                var sessionId = String(window.localStorage.getItem('flosc_visitor_session') || 'no_session');
-                var key = 'flosc_visitor_token_balance_v3_' + flowId + '_g' + grantValue + '_' + sessionId;
-                var raw = window.localStorage.getItem(key);
-                var parsed = parseInt(raw, 10);
-                return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
-            } catch (e) {
-                return null;
-            }
-        },
-
         formatTokenCountForHeader: function(tokenValue) {
             var n = Math.max(0, parseInt(tokenValue, 10) || 0);
             try {
@@ -361,18 +365,9 @@
         },
 
         getInitialHeaderTokenText: function() {
-            var cached = this.readTokenCache();
-            if (cached && cached.formatted) {
-                this.lastTokenUpdateTs = Math.max(0, parseInt(cached.ts, 10) || 0);
-                return String(cached.formatted).trim();
-            }
-
-            var persisted = this.getPersistedTokenFromSharedStorage();
-            if (persisted !== null) {
-                return this.formatTokenCountForHeader(persisted);
-            }
-
-            return String(this.config.headerTokenText || '').trim();
+            // Companion header starts neutral and waits for iframe postMessage,
+            // which carries server-confirmed token balance for the active session.
+            return '';
         },
 
         updateHeaderTokenText: function(payload) {
@@ -435,11 +430,13 @@
             var shouldOpenFullscreen = !!(this.config.allowFullscreen && this.config.defaultFullscreen);
 
             this.captureCurrentSiteContext();
+            this.syncViewportCssVars();
 
             this.setPanelMode(shouldOpenFullscreen ? 'fullscreen' : 'panel');
             this.isOpen = true;
             this.container.classList.add('is-open');
             this.updateLauncherA11y();
+            this.scheduleViewportClamp();
 
             var payload = this.getBrowsingContextPayload();
             var signature = this.getContextSignature(payload);
@@ -862,6 +859,97 @@
             fab.setAttribute('aria-expanded', this.isOpen ? 'true' : 'false');
         },
 
+        syncViewportCssVars: function() {
+            if (!this.container) {
+                return;
+            }
+
+            var viewport = window.visualViewport;
+            var vh = viewport && viewport.height ? viewport.height : window.innerHeight;
+            var vw = viewport && viewport.width ? viewport.width : window.innerWidth;
+
+            if (!vh || !vw) {
+                return;
+            }
+
+            this.container.style.setProperty('--flosc-companion-viewport-height', Math.max(1, Math.round(vh)) + 'px');
+            this.container.style.setProperty('--flosc-companion-viewport-width', Math.max(1, Math.round(vw)) + 'px');
+
+            this.clampWindowToViewport(vh, vw);
+        },
+
+        scheduleViewportClamp: function() {
+            if (!this.container) {
+                return;
+            }
+
+            var self = this;
+            if (this._viewportClampTimer) {
+                window.clearTimeout(this._viewportClampTimer);
+                this._viewportClampTimer = null;
+            }
+
+            var delays = [0, 120, 300, 650];
+            delays.forEach(function(delay) {
+                window.setTimeout(function() {
+                    self.syncViewportCssVars();
+                }, delay);
+            });
+
+            this._viewportClampTimer = window.setTimeout(function() {
+                self._viewportClampTimer = null;
+            }, 700);
+        },
+
+        clampWindowToViewport: function(viewportHeight, viewportWidth) {
+            if (!this.container || !this.isOpen || this.isFullscreen) {
+                return;
+            }
+
+            var windowEl = this.container.querySelector('.flosc-companion-window');
+            if (!windowEl) {
+                return;
+            }
+
+            var panelMode = String(this.panelMode || 'panel').toLowerCase();
+            var configuredHeight = parseInt(this.config && this.config.height, 10);
+            if (!Number.isFinite(configuredHeight) || configuredHeight <= 0) {
+                configuredHeight = 560;
+            }
+
+            var desiredHeight = panelMode === 'expanded' ? 820 : configuredHeight;
+            var edgeGap = 16;
+            var launcherSize = parseInt(this.config && this.config.launcherSize, 10);
+            if (!Number.isFinite(launcherSize) || launcherSize <= 0) {
+                launcherSize = 60;
+            }
+
+            var visual = window.visualViewport;
+            var offsetTop = visual && Number.isFinite(visual.offsetTop) ? Math.max(0, visual.offsetTop) : 0;
+            var availableHeight = Math.max(260, viewportHeight - edgeGap - (launcherSize + 16));
+            var targetHeight = Math.min(desiredHeight, Math.floor(availableHeight));
+
+            windowEl.style.maxHeight = targetHeight + 'px';
+            windowEl.style.height = targetHeight + 'px';
+
+            var self = this;
+            window.requestAnimationFrame(function() {
+                var rect = windowEl.getBoundingClientRect();
+                var minTop = Math.max(0, Math.floor(offsetTop + edgeGap));
+                if (rect.top >= minTop) {
+                    return;
+                }
+
+                // Final guard: if browser chrome/toolbar animation changed after
+                // resize, shrink just enough so header always remains visible.
+                var overflow = Math.ceil(minTop - rect.top);
+                var corrected = Math.max(260, Math.floor(targetHeight - overflow));
+                windowEl.style.maxHeight = corrected + 'px';
+                windowEl.style.height = corrected + 'px';
+                self.container.style.setProperty('--flosc-companion-viewport-width', Math.max(1, Math.round(viewportWidth)) + 'px');
+            });
+        },
+
         scheduleAutoOpen: function() {
             var self = this;
             if (this.config.skipBehaviorTriggers) {
@@ -1247,10 +1335,7 @@
 
                         var handoffObj = {
                             sessionId: sid.slice(0, 80),
-                            messages: Array.isArray(handoffPayload.messages) ? handoffPayload.messages.slice(-50) : [],
-                            tokenBalance: (typeof handoffPayload.tokenBalance === 'number' || /^\d+$/.test(String(handoffPayload.tokenBalance || '')))
-                                ? parseInt(handoffPayload.tokenBalance, 10)
-                                : null
+                            messages: Array.isArray(handoffPayload.messages) ? handoffPayload.messages.slice(-50) : []
                         };
 
                         try {

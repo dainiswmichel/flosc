@@ -61,8 +61,34 @@ class FLOSC_Companion_Widget {
     private function __construct() {
         // Only hook on frontend, not admin
         if (!is_admin()) {
+            add_action('template_redirect', [$this, 'apply_companion_cache_policy'], 0);
             add_action('wp_enqueue_scripts', [$this, 'maybe_enqueue_assets']);
             add_action('wp_footer',          [$this, 'maybe_render_widget']);
+        }
+    }
+
+    /**
+     * Apply no-cache policy for companion pages.
+     *
+     * Why: page/edge caches can hold stale HTML that references old asset
+     * versions, forcing users to append query parameters to get fresh layout
+     * behavior. For companion-enabled pages, always emit no-cache signals and
+     * common cache-plugin bypass constants so normal URLs stay current.
+     */
+    public function apply_companion_cache_policy() {
+        if (!$this->should_load()) {
+            return;
+        }
+
+        if (!defined('DONOTCACHEPAGE')) {
+            define('DONOTCACHEPAGE', true);
+        }
+
+        nocache_headers();
+        if (!headers_sent()) {
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0, private');
+            header('Pragma: no-cache');
+            header('Expires: Wed, 11 Jan 1984 05:00:00 GMT');
         }
     }
 
@@ -193,7 +219,7 @@ class FLOSC_Companion_Widget {
                 'flosc-companion',
                 FLOSC_PLUGIN_URL . 'assets/css/flosc-companion.css',
                 [],
-                filemtime($css_path)
+                defined('FLOSC_VERSION') ? FLOSC_VERSION : '8.0.0'
             );
         }
 
@@ -203,7 +229,7 @@ class FLOSC_Companion_Widget {
                 'flosc-companion',
                 FLOSC_PLUGIN_URL . 'assets/js/flosc-companion.js',
                 [],
-                filemtime($js_path),
+                defined('FLOSC_VERSION') ? FLOSC_VERSION : '8.0.0',
                 true // footer
             );
         }
