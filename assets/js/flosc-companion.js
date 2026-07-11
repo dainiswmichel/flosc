@@ -773,6 +773,68 @@
             });
         },
 
+        requestHandoffPayloadFromIframe: function() {
+            var self = this;
+            return new Promise(function(resolve) {
+                if (!self.iframe || !self.iframe.contentWindow) {
+                    resolve({});
+                    return;
+                }
+
+                var settled = false;
+                var done = function(payload) {
+                    if (settled) {
+                        return;
+                    }
+                    settled = true;
+                    window.removeEventListener('message', onMessage);
+                    resolve(payload && typeof payload === 'object' ? payload : {});
+                };
+
+                var onMessage = function(event) {
+                    if (!self.iframe || event.source !== self.iframe.contentWindow) {
+                        return;
+                    }
+
+                    try {
+                        var appOrigin = new URL(self.config.appUrl, window.location.origin).origin;
+                        if (String(event.origin || '') !== appOrigin) {
+                            return;
+                        }
+                    } catch (e) {
+                        return;
+                    }
+
+                    var data = event.data || {};
+                    if (data.type !== 'flosc_companion_session_handoff' || !data.payload || typeof data.payload !== 'object') {
+                        return;
+                    }
+
+                    done(data.payload);
+                };
+
+                window.addEventListener('message', onMessage);
+
+                var targetOrigin = '*';
+                try {
+                    targetOrigin = new URL(self.iframe.src || self.config.appUrl, window.location.origin).origin;
+                } catch (e) {
+                    targetOrigin = '*';
+                }
+
+                try {
+                    self.iframe.contentWindow.postMessage({ type: 'flosc_companion_request_session_handoff' }, targetOrigin);
+                } catch (e) {
+                    done({});
+                    return;
+                }
+
+                window.setTimeout(function() {
+                    done({});
+                }, 450);
+            });
+        },
+
         refreshIframeContextIfNeeded: function() {
             if (!this.iframe || !this.iframe.src) {
                 return;
@@ -1166,17 +1228,50 @@
         },
 
         openFullPage: function() {
-            try {
-                var target = new URL(this.config.fullPageUrl || this.config.appUrl, window.location.origin);
-                target.searchParams.delete('flosc_companion');
-                target.searchParams.set('flosc_surface', 'full');
-                if (window.location.href) {
-                    target.searchParams.set('flosc_context_url', window.location.href);
+            var self = this;
+
+            var navigate = function(handoffPayload) {
+                try {
+                    var target = new URL(self.config.fullPageUrl || self.config.appUrl, window.location.origin);
+                    target.searchParams.delete('flosc_companion');
+                    target.searchParams.set('flosc_surface', 'full');
+                    if (window.location.href) {
+                        target.searchParams.set('flosc_context_url', window.location.href);
+                    }
+
+                    if (handoffPayload && typeof handoffPayload === 'object') {
+                        var sid = String(handoffPayload.sessionId || handoffPayload.session_id || '').trim();
+                        if (sid) {
+                            target.searchParams.set('flosc_visitor_session', sid.slice(0, 80));
+                        }
+
+                        var handoffObj = {
+                            sessionId: sid.slice(0, 80),
+                            messages: Array.isArray(handoffPayload.messages) ? handoffPayload.messages.slice(-50) : [],
+                            tokenBalance: (typeof handoffPayload.tokenBalance === 'number' || /^\d+$/.test(String(handoffPayload.tokenBalance || '')))
+                                ? parseInt(handoffPayload.tokenBalance, 10)
+                                : null
+                        };
+
+                        try {
+                            var packed = btoa(unescape(encodeURIComponent(JSON.stringify(handoffObj))));
+                            if (packed && packed.length <= 6000) {
+                                target.searchParams.set('flosc_handoff', packed);
+                            }
+                        } catch (e) {
+                            // If encoding fails, continue with session id only.
+                        }
+                    }
+
+                    window.location.assign(target.toString());
+                } catch (e) {
+                    window.location.assign(self.config.fullPageUrl || self.config.appUrl);
                 }
-                window.location.assign(target.toString());
-            } catch (e) {
-                window.location.assign(this.config.fullPageUrl || this.config.appUrl);
-            }
+            };
+
+            this.requestHandoffPayloadFromIframe()
+                .then(navigate)
+                .catch(function() { navigate({}); });
         },
 
         escapeHtml: function(str) {

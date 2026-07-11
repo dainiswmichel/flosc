@@ -236,6 +236,9 @@ class floscApp {
     async init() {
         this.log('[FLOSC] Initializing app...');
 
+        // Apply companion expand handoff before any visitor restore/session logic.
+        this.applyVisitorSessionHandoffFromUrl();
+
         // Keep visitor runtime wallet aligned with flow-level grant changes.
         // When floscAdmin changes the visitor grant, start a fresh visitor session
         // so server-side transient balance is re-seeded from the new baseline.
@@ -594,6 +597,187 @@ class floscApp {
             window.history.replaceState({}, '', cleaned);
         } catch (e) {
             // Ignore URL cleanup failures.
+        }
+    }
+
+    encodeSessionHandoffPayload(payload) {
+        if (this.state !== 'visitor') {
+            return '';
+        }
+
+        try {
+            return window.btoa(unescape(encodeURIComponent(JSON.stringify(payload || {}))));
+        } catch (e) {
+            return '';
+        }
+    }
+
+    decodeSessionHandoffPayload(encoded) {
+        try {
+            if (!encoded) {
+                return null;
+            }
+            const decoded = decodeURIComponent(escape(window.atob(String(encoded))));
+            const parsed = JSON.parse(decoded);
+            return (parsed && typeof parsed === 'object') ? parsed : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    buildVisitorSessionHandoffPayload() {
+        if (this.state !== 'visitor') {
+            return null;
+        }
+
+        const payload = {
+            sessionId: String(this.getVisitorSessionId() || '').slice(0, 80),
+            messages: [],
+            tokenBalance: null
+        };
+
+        try {
+            const messages = JSON.parse(localStorage.getItem('flosc_visitor_messages') || '[]');
+            if (Array.isArray(messages) && messages.length > 0) {
+                payload.messages = messages.slice(-50).map((msg) => {
+                    if (!msg || typeof msg !== 'object') {
+                        return null;
+                    }
+                    const role = String(msg.role || '').trim();
+                    if (role !== 'assistant' && role !== 'user') {
+                        return null;
+                    }
+                    return {
+                        role,
+                        content: String(msg.content || '').slice(0, 1200),
+                        timestamp: Math.max(0, parseInt(msg.timestamp, 10) || Date.now())
+                    };
+                }).filter(Boolean);
+            }
+        } catch (e) {
+            payload.messages = [];
+        }
+
+        const tokenValue = this.getPersistedVisitorTokenBalance();
+        if (Number.isFinite(tokenValue) && tokenValue >= 0) {
+            payload.tokenBalance = tokenValue;
+        }
+
+        return payload;
+    }
+
+    postVisitorSessionHandoffToParent() {
+        if (this.state !== 'visitor' || window.self === window.top) {
+            return;
+        }
+
+        const payload = this.buildVisitorSessionHandoffPayload() || {};
+
+        let targetOrigin = '*';
+        try {
+            if (document.referrer) {
+                const ref = new URL(document.referrer, window.location.origin);
+                if (/^https?:$/.test(ref.protocol)) {
+                    targetOrigin = ref.origin;
+                }
+            }
+        } catch (e) {
+            targetOrigin = '*';
+        }
+
+        window.parent.postMessage({
+            type: 'flosc_companion_session_handoff',
+            payload
+        }, targetOrigin);
+    }
+
+    consumeSessionHandoffQueryParams() {
+        try {
+            const url = new URL(window.location.href);
+            let changed = false;
+            ['flosc_visitor_session', 'flosc_handoff'].forEach((key) => {
+                if (url.searchParams.has(key)) {
+                    url.searchParams.delete(key);
+                    changed = true;
+                }
+            });
+            if (!changed) {
+                return;
+            }
+            const search = url.searchParams.toString();
+            const cleaned = url.pathname + (search ? ('?' + search) : '') + (url.hash || '');
+            window.history.replaceState({}, '', cleaned);
+        } catch (e) {
+            // Ignore URL cleanup failures.
+        }
+    }
+
+    applyVisitorSessionHandoffFromUrl() {
+        if (this.state !== 'visitor') {
+            return;
+        }
+
+        try {
+            const params = new URLSearchParams(window.location.search || '');
+            const sid = String(params.get('flosc_visitor_session') || '').trim();
+            const encoded = String(params.get('flosc_handoff') || '').trim();
+
+            if (encoded) {
+                const payload = this.decodeSessionHandoffPayload(encoded);
+                if (payload && typeof payload === 'object') {
+                    const payloadSid = String(payload.sessionId || '').trim();
+                    const effectiveSid = payloadSid || sid;
+                    if (effectiveSid) {
+                        this._visitorSessionId = effectiveSid.slice(0, 80);
+                        try {
+                            localStorage.setItem('flosc_visitor_session', this._visitorSessionId);
+                        } catch (e) {
+                            // Ignore storage failures.
+                        }
+                    }
+
+                    const msgs = Array.isArray(payload.messages) ? payload.messages : [];
+                    if (msgs.length > 0) {
+                        const compact = msgs.slice(-50).map((msg) => {
+                            if (!msg || typeof msg !== 'object') {
+                                return null;
+                            }
+                            const role = String(msg.role || '').trim();
+                            if (role !== 'assistant' && role !== 'user') {
+                                return null;
+                            }
+                            return {
+                                role,
+                                content: String(msg.content || '').slice(0, 1200),
+                                timestamp: Math.max(0, parseInt(msg.timestamp, 10) || Date.now())
+                            };
+                        }).filter(Boolean);
+                        if (compact.length > 0) {
+                            try {
+                                localStorage.setItem('flosc_visitor_messages', JSON.stringify(compact));
+                            } catch (e) {
+                                // Ignore storage failures.
+                            }
+                        }
+                    }
+
+                    const tokenBalance = parseInt(payload.tokenBalance, 10);
+                    if (Number.isFinite(tokenBalance) && tokenBalance >= 0) {
+                        this.persistVisitorTokenBalance(tokenBalance);
+                    }
+                }
+            } else if (sid) {
+                this._visitorSessionId = sid.slice(0, 80);
+                try {
+                    localStorage.setItem('flosc_visitor_session', this._visitorSessionId);
+                } catch (e) {
+                    // Ignore storage failures.
+                }
+            }
+
+            this.consumeSessionHandoffQueryParams();
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not apply visitor session handoff:', e);
         }
     }
 
@@ -6502,7 +6686,16 @@ Purchased: ${ctx.purchased}
                     return;
                 }
                 const data = event.data;
-                if (!data || data.type !== 'flosc_companion_context' || typeof data.payload !== 'object') {
+                if (!data || typeof data !== 'object') {
+                    return;
+                }
+
+                if (data.type === 'flosc_companion_request_session_handoff') {
+                    this.postVisitorSessionHandoffToParent();
+                    return;
+                }
+
+                if (data.type !== 'flosc_companion_context' || typeof data.payload !== 'object') {
                     return;
                 }
                 this.applyBrowsingContext(data.payload);
@@ -7119,6 +7312,25 @@ Purchased: ${ctx.purchased}
     setupUI() {
         this.restoreSidebarCollapsedState();
 
+        const profileBar = document.getElementById('flosc_user_profile_bar');
+        const getStateRadius = (state) => {
+            if (!profileBar) {
+                return '8px';
+            }
+            if (state === 'member') {
+                return profileBar.dataset.memberAvatarRadius || '8px';
+            }
+            if (state === 'guest') {
+                return profileBar.dataset.guestAvatarRadius || '8px';
+            }
+            return profileBar.dataset.visitorAvatarRadius || '8px';
+        };
+        const setAvatarRadius = (state) => {
+            const radius = getStateRadius(state);
+            document.documentElement.style.setProperty('--flosc-avatar-radius', radius);
+        };
+        setAvatarRadius(this.state);
+
         // v1.8.0: Populate profile bar — same bar for all states, content toggled via data-show
         if (this.state === 'visitor') {
             const configuredValue = parseInt(this.config?.visitorTokenDisplay?.value, 10);
@@ -7134,23 +7346,54 @@ Purchased: ${ctx.purchased}
 
         if (this.user && this.state !== 'visitor') {
             const profileAvatar = document.getElementById('flosc_profile_avatar');
+            const profileAvatarIcon = document.getElementById('flosc_profile_avatar_icon');
             const profileName = document.getElementById('flosc_profile_name');
             const profileBadge = document.getElementById('flosc_profile_badge');
             const dropdownName = document.getElementById('flosc_dropdown_name');
             const dropdownEmail = document.getElementById('flosc_dropdown_email');
+            const upgradeContainer = document.getElementById('flosc_upgrade_container');
+            const upgradeBtn = document.getElementById('flosc_upgrade_button');
+            const upgradeBtnLabel = document.getElementById('flosc_upgrade_button_label');
 
-            if (profileAvatar && this.user.avatar) {
-                profileAvatar.src = this.user.avatar;
-                profileAvatar.alt = this.user.name || 'User avatar';
+            const bar = document.getElementById('flosc_user_profile_bar');
+            const isMember = this.state === 'member';
+            const configuredImageUrl = isMember
+                ? String(bar?.dataset.memberIconUrl || '').trim()
+                : String(bar?.dataset.guestIconUrl || '').trim();
+            const configuredIcon = isMember
+                ? String(bar?.dataset.memberIcon || '').trim()
+                : String(bar?.dataset.guestIcon || '').trim();
+            const configuredName = isMember
+                ? String(bar?.dataset.memberName || '').trim()
+                : String(bar?.dataset.guestName || '').trim();
+            const effectiveName = configuredName || this.user.name || '';
+
+            if (profileAvatar && profileAvatarIcon) {
+                if (configuredImageUrl) {
+                    profileAvatar.src = configuredImageUrl;
+                    profileAvatar.alt = effectiveName || 'User avatar';
+                    this.setDisplayState(profileAvatar, true, 'block');
+                    this.setDisplayState(profileAvatarIcon, false, 'flex');
+                } else if (configuredIcon) {
+                    profileAvatarIcon.textContent = configuredIcon;
+                    this.setDisplayState(profileAvatarIcon, true, 'flex');
+                    this.setDisplayState(profileAvatar, false, 'block');
+                } else {
+                    if (this.user.avatar) {
+                        profileAvatar.src = this.user.avatar;
+                        profileAvatar.alt = this.user.name || 'User avatar';
+                    }
+                    this.setDisplayState(profileAvatar, true, 'block');
+                    this.setDisplayState(profileAvatarIcon, false, 'flex');
+                }
             }
 
-            if (profileName && this.user.name) {
-                profileName.textContent = this.user.name;
+            if (profileName && effectiveName) {
+                profileName.textContent = effectiveName;
             }
 
             if (profileBadge) {
                 // Read badge text from admin-configured data attributes on the profile bar
-                const bar = document.getElementById('flosc_user_profile_bar');
                 if (this.state === 'member') {
                     profileBadge.textContent = bar?.dataset.memberBadge || 'Member';
                 } else {
@@ -7158,12 +7401,26 @@ Purchased: ${ctx.purchased}
                 }
             }
 
-            if (dropdownName && this.user.name) {
-                dropdownName.textContent = this.user.name;
+            if (dropdownName && effectiveName) {
+                dropdownName.textContent = effectiveName;
             }
 
             if (dropdownEmail && this.user.email) {
                 dropdownEmail.textContent = this.user.email;
+            }
+
+            if (upgradeContainer && upgradeBtnLabel && bar) {
+                if (isMember) {
+                    const showMemberUpgrade = String(bar.dataset.memberUpgradeShow || '0') === '1';
+                    const memberUpgradeLabel = String(bar.dataset.memberUpgradeLabel || 'Upgrade').trim() || 'Upgrade';
+                    this.setDisplayState(upgradeContainer, showMemberUpgrade, 'block');
+                    upgradeBtnLabel.textContent = memberUpgradeLabel;
+                } else {
+                    const showGuestUpgrade = String(bar.dataset.guestUpgradeShow || '1') === '1';
+                    const guestUpgradeLabel = String(bar.dataset.guestUpgradeLabel || 'Upgrade to Pro').trim() || 'Upgrade to Pro';
+                    this.setDisplayState(upgradeContainer, showGuestUpgrade, 'block');
+                    upgradeBtnLabel.textContent = guestUpgradeLabel;
+                }
             }
         }
     }
@@ -7497,7 +7754,15 @@ Purchased: ${ctx.purchased}
         const lastSiteParsed = normalizeUrl(lastSitePage);
         const referrerParsed = normalizeUrl(sameOriginReferrer);
         const fallbackParsed = normalizeUrl(rawFallback);
-        const chosen = contextParsed || lastSiteParsed || referrerParsed || fallbackParsed;
+
+        // Canonical behavior: dock/collapse returns to the configured companion
+        // collapse URL first (usually the floscAdmin's home companion host).
+        // Optional override for origin-first behavior can be supplied by config
+        // or filter: companionCollapseTargetPolicy = 'origin'.
+        const targetPolicy = String(this.config?.companionCollapseTargetPolicy || '').toLowerCase();
+        const chosen = (targetPolicy === 'origin')
+            ? (contextParsed || lastSiteParsed || referrerParsed || fallbackParsed)
+            : (fallbackParsed || contextParsed || lastSiteParsed || referrerParsed);
         if (!chosen) {
             return '';
         }
@@ -8769,6 +9034,14 @@ Purchased: ${ctx.purchased}
     }
     
     newSession() {
+        // Visitor conversations are persisted in localStorage and shared across
+        // companion/full-page surfaces. Route visitor "New chat" through the
+        // restart path so history + visitor session id are rotated consistently.
+        if (this.state === 'visitor') {
+            this.restartChat();
+            return;
+        }
+
         // v1.7.0: Reset to a fresh chat (session will be auto-created on first message)
         this.currentSession = null;
         const inner = this.chatMessages?.querySelector('.messages-inner');
@@ -9488,11 +9761,37 @@ Purchased: ${ctx.purchased}
                         const profileBadge = document.getElementById('flosc_profile_badge');
                         const dropdownName = document.getElementById('flosc_dropdown_name');
                         const dropdownEmail = document.getElementById('flosc_dropdown_email');
+                        const profileAvatar = document.getElementById('flosc_profile_avatar');
+                        const profileAvatarIcon = document.getElementById('flosc_profile_avatar_icon');
+                        const upgradeContainer = document.getElementById('flosc_upgrade_container');
+                        const upgradeBtnLabel = document.getElementById('flosc_upgrade_button_label');
                         const bar = document.getElementById('flosc_user_profile_bar');
-                        if (profileName) profileName.textContent = this.user.name;
+                        document.documentElement.style.setProperty('--flosc-avatar-radius', bar?.dataset.memberAvatarRadius || '8px');
+                        const memberName = String(bar?.dataset.memberName || '').trim() || this.user.name;
+                        if (profileName) profileName.textContent = memberName;
                         if (profileBadge) profileBadge.textContent = bar?.dataset.memberBadge || 'Member';
-                        if (dropdownName) dropdownName.textContent = this.user.name;
+                        if (dropdownName) dropdownName.textContent = memberName;
                         if (dropdownEmail) dropdownEmail.textContent = this.user.email || '';
+                        if (upgradeContainer && upgradeBtnLabel) {
+                            const showMemberUpgrade = String(bar?.dataset.memberUpgradeShow || '0') === '1';
+                            const memberUpgradeLabel = String(bar?.dataset.memberUpgradeLabel || 'Upgrade').trim() || 'Upgrade';
+                            this.setDisplayState(upgradeContainer, showMemberUpgrade, 'block');
+                            upgradeBtnLabel.textContent = memberUpgradeLabel;
+                        }
+                        if (profileAvatar && profileAvatarIcon) {
+                            const memberImageUrl = String(bar?.dataset.memberIconUrl || '').trim();
+                            const memberIcon = String(bar?.dataset.memberIcon || '').trim();
+                            if (memberImageUrl) {
+                                profileAvatar.src = memberImageUrl;
+                                profileAvatar.alt = memberName || 'Member avatar';
+                                this.setDisplayState(profileAvatar, true, 'block');
+                                this.setDisplayState(profileAvatarIcon, false, 'flex');
+                            } else if (memberIcon) {
+                                profileAvatarIcon.textContent = memberIcon;
+                                this.setDisplayState(profileAvatarIcon, true, 'flex');
+                                this.setDisplayState(profileAvatar, false, 'block');
+                            }
+                        }
 
                         // Welcome message — shown immediately after activation.
                         // When the server routes authentication through the emailed

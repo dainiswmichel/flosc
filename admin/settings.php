@@ -859,6 +859,32 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
             }
         }
 
+        $flosc_routing_mode = sanitize_key((string) ($flosc_new_settings['companion_routing_mode'] ?? 'hub'));
+        if (!in_array($flosc_routing_mode, ['hub', 'domain_persistence'], true)) {
+            $flosc_routing_mode = 'hub';
+        }
+        $flosc_new_settings['companion_routing_mode'] = $flosc_routing_mode;
+
+        $flosc_hub_fullscreen_url = trim((string) ($flosc_new_settings['companion_hub_fullscreen_url'] ?? 'https://dainis.net/chat'));
+        if ($flosc_hub_fullscreen_url === '') {
+            $flosc_hub_fullscreen_url = 'https://dainis.net/chat';
+        }
+        $flosc_hub_fullscreen_url = esc_url_raw($flosc_hub_fullscreen_url, ['http', 'https']);
+        if ($flosc_hub_fullscreen_url === '') {
+            $flosc_hub_fullscreen_url = 'https://dainis.net/chat';
+        }
+        $flosc_new_settings['companion_hub_fullscreen_url'] = $flosc_hub_fullscreen_url;
+
+        $flosc_hub_companion_url = trim((string) ($flosc_new_settings['companion_hub_companion_url'] ?? home_url('/')));
+        if ($flosc_hub_companion_url === '') {
+            $flosc_hub_companion_url = home_url('/');
+        }
+        $flosc_hub_companion_url = esc_url_raw($flosc_hub_companion_url, ['http', 'https']);
+        if ($flosc_hub_companion_url === '') {
+            $flosc_hub_companion_url = esc_url_raw(home_url('/'));
+        }
+        $flosc_new_settings['companion_hub_companion_url'] = $flosc_hub_companion_url;
+
         // Normalize companion settings to filterable enums/defaults for forward compatibility.
         $flosc_companion_defaults = [
             'mode' => 'in_chat',
@@ -1187,7 +1213,7 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         }
     }
 
-    // v1.8.2: UI & Nav tab uses WordPress options (global, not per-flow)
+    // Chat navigation settings are managed from the Profile Bar tab.
     if ($flosc_active_tab === 'ui') {
         // Visitor menu — dynamic items from repeater
         $flosc_menu_labels  = $flosc_post['visitor_menu_label']  ?? [];
@@ -1231,6 +1257,24 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         // Login destination — v1.9.8: now a URL, not a key
         $flosc_login_dest = trim($flosc_post['flosc_login_destination'] ?? '');
         update_option('flosc_login_destination', $flosc_login_dest !== '' ? esc_url_raw($flosc_login_dest) : '');
+    }
+
+    // v8.0.1: Profile Bar tab now manages profile-bar state labels and badges only.
+    if ($flosc_active_tab === 'ui') {
+
+        $flosc_allowed_avatar_radii = ['8px', '50%', '4px', '0'];
+        $flosc_visitor_avatar_radius = sanitize_text_field((string) ($flosc_post['profile_bar_visitor_avatar_radius'] ?? ($flosc_post['flow_avatar_radius'] ?? '8px')));
+        if (!in_array($flosc_visitor_avatar_radius, $flosc_allowed_avatar_radii, true)) {
+            $flosc_visitor_avatar_radius = '8px';
+        }
+        $flosc_guest_avatar_radius = sanitize_text_field((string) ($flosc_post['profile_bar_guest_avatar_radius'] ?? '8px'));
+        if (!in_array($flosc_guest_avatar_radius, $flosc_allowed_avatar_radii, true)) {
+            $flosc_guest_avatar_radius = '8px';
+        }
+        $flosc_member_avatar_radius = sanitize_text_field((string) ($flosc_post['profile_bar_member_avatar_radius'] ?? '8px'));
+        if (!in_array($flosc_member_avatar_radius, $flosc_allowed_avatar_radii, true)) {
+            $flosc_member_avatar_radius = '8px';
+        }
 
         // Profile bar per-state settings
         $flosc_profile_bar = [
@@ -1238,16 +1282,34 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
                 'name'  => sanitize_text_field($flosc_post['profile_bar_visitor_name'] ?? 'Visitor'),
                 'badge' => sanitize_text_field($flosc_post['profile_bar_visitor_badge'] ?? 'Hope you enjoy our chat :-)'),
                 'icon'  => sanitize_text_field($flosc_post['profile_bar_visitor_icon'] ?? '👋'),
+                'icon_url' => esc_url_raw($flosc_post['profile_bar_visitor_icon_url'] ?? ''),
+                'avatar_radius' => $flosc_visitor_avatar_radius,
+                'show_upgrade' => isset($flosc_post['profile_bar_visitor_show_upgrade']) && $flosc_post['profile_bar_visitor_show_upgrade'] === '1',
+                'upgrade_label' => sanitize_text_field($flosc_post['profile_bar_visitor_upgrade_label'] ?? 'Upgrade'),
             ],
             'guest' => [
+                'name' => sanitize_text_field($flosc_post['profile_bar_guest_name'] ?? ''),
                 'badge' => sanitize_text_field($flosc_post['profile_bar_guest_badge'] ?? 'Guest'),
+                'icon' => sanitize_text_field($flosc_post['profile_bar_guest_icon'] ?? ''),
+                'icon_url' => esc_url_raw($flosc_post['profile_bar_guest_icon_url'] ?? ''),
+                'avatar_radius' => $flosc_guest_avatar_radius,
+                'show_upgrade' => isset($flosc_post['profile_bar_guest_show_upgrade']) && $flosc_post['profile_bar_guest_show_upgrade'] === '1',
                 'upgrade_label' => sanitize_text_field($flosc_post['profile_bar_guest_upgrade'] ?? 'Upgrade to Pro'),
             ],
             'member' => [
+                'name' => sanitize_text_field($flosc_post['profile_bar_member_name'] ?? ''),
                 'badge' => sanitize_text_field($flosc_post['profile_bar_member_badge'] ?? 'Member'),
+                'icon' => sanitize_text_field($flosc_post['profile_bar_member_icon'] ?? ''),
+                'icon_url' => esc_url_raw($flosc_post['profile_bar_member_icon_url'] ?? ''),
+                'avatar_radius' => $flosc_member_avatar_radius,
+                'show_upgrade' => isset($flosc_post['profile_bar_member_show_upgrade']) && $flosc_post['profile_bar_member_show_upgrade'] === '1',
+                'upgrade_label' => sanitize_text_field($flosc_post['profile_bar_member_upgrade_label'] ?? 'Upgrade'),
             ],
         ];
         update_option('flosc_profile_bar', $flosc_profile_bar);
+
+        // Legacy compatibility path for any runtime still reading flow-level avatar radius.
+        $flosc_new_settings['avatar_radius'] = $flosc_visitor_avatar_radius;
     }
 
     if ($flosc_active_tab === 'administration') {
@@ -1480,8 +1542,8 @@ if ($flosc_selected_flow_name === '') {
             'trajectories': 'Trajectories',
             'offers': 'Offers',
             'login': 'Register and Login',
-            'style': 'Style',
-            'ui': 'UI and Nav',
+            'style': 'Style and Nav',
+            'ui': 'Profile Bar',
             'ai': 'AI',
             'token-management': 'Token Management',
             'concierge': 'Concierge',
@@ -1514,8 +1576,8 @@ if ($flosc_selected_flow_name === '') {
             'trajectories'  => 'Trajectories',
             'offers'        => 'Offers',
             'login'         => 'Register & Login',
-            'style'         => 'Style',
-            'ui'            => 'UI & Nav',
+            'style'         => 'Style & Nav',
+            'ui'            => 'Profile Bar',
             'ai'            => 'AI',
             'token-management' => 'Token Management',
             'concierge'     => 'Concierge',
@@ -2287,6 +2349,7 @@ if ($flosc_selected_flow_name === '') {
 
         <?php elseif ($flosc_active_tab === 'ui'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/ui-navigation.php'; ?>
+            <?php include FLOSC_PLUGIN_DIR . 'admin/chat-navigation.php'; ?>
 
         <?php elseif ($flosc_active_tab === 'concierge'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/concierge.php'; ?>

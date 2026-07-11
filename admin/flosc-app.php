@@ -93,17 +93,12 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
             --flosc-primary-hover: <?php echo esc_attr(flosc_adjust_brightness($identity['primary_color'], -20)); ?>;
             --flosc-primary-light: <?php echo esc_attr($identity['primary_color']); ?>15;
             --flosc-scale: <?php echo esc_attr($flosc_chat_scale); ?>%;
-            /* v1.8.3: Avatar shape — 8px = rounded rectangle, 50% = circle. Configurable by floscAdmin. */
+            // v1.8.3+: Avatar shape defaults from profile-bar visitor state.
             <?php
-            // Read avatar_radius from flow settings (available to all users, not just admins)
-            $flosc_avatar_radius = '8px';
-            if (function_exists('flosc')) {
-                $flosc_flow = flosc()->get_current_flow();
-                if ($flosc_flow && !empty($flosc_flow['ivr_file'])) {
-                    $flosc_fkey = 'flosc_flow_' . sanitize_key(pathinfo(basename($flosc_flow['ivr_file']), PATHINFO_FILENAME));
-                    $flosc_fs = get_option($flosc_fkey, []);
-                    if (!empty($flosc_fs['avatar_radius'])) $flosc_avatar_radius = $flosc_fs['avatar_radius'];
-                }
+            $flosc_profile_bar_for_avatar = get_option('flosc_profile_bar', []);
+            $flosc_avatar_radius = sanitize_text_field((string) ($flosc_profile_bar_for_avatar['visitor']['avatar_radius'] ?? '8px'));
+            if (!in_array($flosc_avatar_radius, ['8px', '50%', '4px', '0'], true)) {
+                $flosc_avatar_radius = '8px';
             }
             ?>
             --flosc-avatar-radius: <?php echo esc_attr($flosc_avatar_radius); ?>;
@@ -208,14 +203,42 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
             'name'  => 'Visitor',
             'badge' => 'Hope you enjoy our chat :-)',
             'icon'  => '👋',
+            'icon_url' => '',
+            'show_upgrade' => true,
+            'upgrade_label' => 'Upgrade',
         ]);
         $flosc_pb_guest = wp_parse_args($flosc_profile_bar['guest'] ?? [], [
+            'name'          => '',
             'badge'         => 'Guest',
+            'icon'          => '',
+            'icon_url'      => '',
+            'avatar_radius' => '8px',
+            'show_upgrade'  => true,
             'upgrade_label' => 'Upgrade to Pro',
         ]);
         $flosc_pb_member = wp_parse_args($flosc_profile_bar['member'] ?? [], [
-            'badge' => 'Member',
+            'name'          => '',
+            'badge'         => 'Member',
+            'icon'          => '',
+            'icon_url'      => '',
+            'avatar_radius' => '8px',
+            'show_upgrade'  => false,
+            'upgrade_label' => 'Upgrade',
         ]);
+
+        foreach (['visitor', 'guest', 'member'] as $flosc_pb_state) {
+            if (!isset($flosc_profile_bar[$flosc_pb_state]['avatar_radius']) || !in_array((string) $flosc_profile_bar[$flosc_pb_state]['avatar_radius'], ['8px', '50%', '4px', '0'], true)) {
+                if ($flosc_pb_state === 'visitor') {
+                    $flosc_pb_visitor['avatar_radius'] = '8px';
+                }
+                if ($flosc_pb_state === 'guest') {
+                    $flosc_pb_guest['avatar_radius'] = '8px';
+                }
+                if ($flosc_pb_state === 'member') {
+                    $flosc_pb_member['avatar_radius'] = '8px';
+                }
+            }
+        }
 
         // Render visitor label with token count only at first paint.
         // JS also normalizes this on init, but server-side output guarantees
@@ -269,14 +292,35 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
             : admin_url('profile.php');
         ?>
         <div class="user-profile-bar" id="flosc_user_profile_bar"
+             data-visitor-avatar-radius="<?php echo esc_attr($flosc_pb_visitor['avatar_radius'] ?? '8px'); ?>"
+             data-visitor-icon-url="<?php echo esc_attr($flosc_pb_visitor['icon_url'] ?? ''); ?>"
+             data-visitor-upgrade-show="<?php echo !empty($flosc_pb_visitor['show_upgrade']) ? '1' : '0'; ?>"
+             data-visitor-upgrade-label="<?php echo esc_attr($flosc_pb_visitor['upgrade_label'] ?? 'Upgrade'); ?>"
              data-guest-badge="<?php echo esc_attr($flosc_pb_guest['badge']); ?>"
+             data-guest-name="<?php echo esc_attr($flosc_pb_guest['name']); ?>"
+             data-guest-icon="<?php echo esc_attr($flosc_pb_guest['icon']); ?>"
+             data-guest-icon-url="<?php echo esc_attr($flosc_pb_guest['icon_url']); ?>"
+             data-guest-avatar-radius="<?php echo esc_attr($flosc_pb_guest['avatar_radius'] ?? '8px'); ?>"
+             data-guest-upgrade-show="<?php echo !empty($flosc_pb_guest['show_upgrade']) ? '1' : '0'; ?>"
+             data-guest-upgrade-label="<?php echo esc_attr($flosc_pb_guest['upgrade_label'] ?? 'Upgrade to Pro'); ?>"
              data-member-badge="<?php echo esc_attr($flosc_pb_member['badge']); ?>"
+             data-member-name="<?php echo esc_attr($flosc_pb_member['name']); ?>"
+             data-member-icon="<?php echo esc_attr($flosc_pb_member['icon']); ?>"
+             data-member-icon-url="<?php echo esc_attr($flosc_pb_member['icon_url']); ?>"
+             data-member-avatar-radius="<?php echo esc_attr($flosc_pb_member['avatar_radius'] ?? '8px'); ?>"
+             data-member-upgrade-show="<?php echo !empty($flosc_pb_member['show_upgrade']) ? '1' : '0'; ?>"
+             data-member-upgrade-label="<?php echo esc_attr($flosc_pb_member['upgrade_label'] ?? 'Upgrade'); ?>"
              data-upgrade-label="<?php echo esc_attr($flosc_pb_guest['upgrade_label']); ?>">
             <button class="profile-button" id="flosc_profile_button">
                 <!-- Visitor state: profile bar icon -->
                 <div class="flosc-profile-avatar profile-avatar visitor-avatar" data-show="visitor">
-                    <?php echo esc_html($flosc_pb_visitor['icon']); ?>
+                    <?php if (!empty($flosc_pb_visitor['icon_url'])): ?>
+                        <img src="<?php echo esc_url($flosc_pb_visitor['icon_url']); ?>" alt="" class="flosc-profile-avatar profile-avatar">
+                    <?php else: ?>
+                        <?php echo esc_html($flosc_pb_visitor['icon']); ?>
+                    <?php endif; ?>
                 </div>
+                <div class="flosc-profile-avatar profile-avatar flosc-profile-avatar-icon" id="flosc_profile_avatar_icon" data-show="logged-in"></div>
                 <!-- Guest/Member state: user avatar -->
                 <img src="" alt="" class="flosc-profile-avatar profile-avatar" id="flosc_profile_avatar" data-show="logged-in">
                 <div class="profile-info">
@@ -300,14 +344,16 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
                         $flosc_is_offer = (strpos($flosc_item['action'], 'show_offer') === 0 || $flosc_item['action'] === 'open_sandbox_purchase');
                     ?>
                     <?php if ($flosc_is_offer): ?>
+                    <?php if (!empty($flosc_pb_visitor['show_upgrade'])): ?>
                     <div class="upgrade-container">
                         <button class="upgrade-btn" data-action="<?php echo esc_attr($flosc_item['action']); ?>">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                             </svg>
-                            <?php echo esc_html($flosc_item['label']); ?>
+                            <?php echo esc_html($flosc_pb_visitor['upgrade_label'] ?: $flosc_item['label']); ?>
                         </button>
                     </div>
+                    <?php endif; ?>
                     <?php else: ?>
                     <a href="#" class="profile-dropdown-item" data-action="<?php echo esc_attr($flosc_item['action']); ?>">
                         <?php echo esc_html($flosc_item['label']); ?>
@@ -328,7 +374,7 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                             </svg>
-                            <?php echo esc_html($flosc_pb_guest['upgrade_label']); ?>
+                            <span id="flosc_upgrade_button_label"><?php echo esc_html($flosc_pb_guest['upgrade_label']); ?></span>
                         </button>
                     </div>
                     <?php
@@ -811,7 +857,24 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 $flosc_companion_state_storage = 'session';
             }
             $flosc_companion_state_key = 'flosc_companion_state_' . md5((string) $flosc_app_url);
-            $flosc_companion_collapse_url = esc_url_raw(home_url('/'));
+            $flosc_companion_routing_mode = sanitize_key((string) ($flow_settings['companion_routing_mode'] ?? 'hub'));
+            if (!in_array($flosc_companion_routing_mode, ['hub', 'domain_persistence'], true)) {
+                $flosc_companion_routing_mode = 'hub';
+            }
+            $flosc_hub_fullscreen_url = esc_url_raw((string) ($flow_settings['companion_hub_fullscreen_url'] ?? 'https://dainis.net/chat'));
+            if ($flosc_hub_fullscreen_url === '') {
+                $flosc_hub_fullscreen_url = 'https://dainis.net/chat';
+            }
+            $flosc_hub_companion_url = esc_url_raw((string) ($flow_settings['companion_hub_companion_url'] ?? home_url('/')));
+            if ($flosc_hub_companion_url === '') {
+                $flosc_hub_companion_url = esc_url_raw(home_url('/'));
+            }
+            $flosc_companion_collapse_url = ($flosc_companion_routing_mode === 'hub')
+                ? $flosc_hub_companion_url
+                : esc_url_raw(home_url('/'));
+            $flosc_companion_collapse_target_policy = ($flosc_companion_routing_mode === 'domain_persistence')
+                ? 'origin'
+                : 'fallback';
             $flosc_companion_contextual_prompt = sanitize_text_field((string) ($flow_settings['companion_contextual_prompt'] ?? 'What do you want to explore together?'));
             
             echo wp_json_encode([
@@ -849,6 +912,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'appUrl' => $flosc_app_url,
             'companionHandoffEnabled' => $flosc_companion_return_available,
             'companionCollapseUrl' => $flosc_companion_collapse_url,
+            'companionCollapseTargetPolicy' => $flosc_companion_collapse_target_policy,
+            'companionRoutingMode' => $flosc_companion_routing_mode,
+            'companionHubFullScreenUrl' => $flosc_hub_fullscreen_url,
+            'companionHubCompanionUrl' => $flosc_hub_companion_url,
             'companionContextualPrompt' => $flosc_companion_contextual_prompt,
             'companionStateKey' => $flosc_companion_state_key,
             'companionStateStorage' => $flosc_companion_state_storage,

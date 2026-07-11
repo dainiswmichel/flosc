@@ -13,8 +13,8 @@
 
 if (!defined('ABSPATH')) exit;
 
-// v1.2.9: Output tab header
-flosc_tab_header('🎨', 'Style');
+// v8.0.1: Output tab header
+flosc_tab_header('🎨', 'Style & Nav');
 
 $flosc_current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
 $flosc_style_docs_url = add_query_arg([

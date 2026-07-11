@@ -76,6 +76,18 @@ $flosc_close_aria_label    = $flosc_flow_settings['companion_close_aria_label'] 
 $flosc_remember_open_state = $flosc_flow_settings['companion_remember_open_state'] ?? '';
 $flosc_state_storage       = $flosc_flow_settings['companion_state_storage'] ?? 'session';
 $flosc_trigger_cooldown_ms = intval($flosc_flow_settings['companion_trigger_cooldown_ms'] ?? 0);
+$flosc_routing_mode        = sanitize_key((string) ($flosc_flow_settings['companion_routing_mode'] ?? 'hub'));
+if (!in_array($flosc_routing_mode, ['hub', 'domain_persistence'], true)) {
+    $flosc_routing_mode = 'hub';
+}
+$flosc_hub_fullscreen_url  = esc_url((string) ($flosc_flow_settings['companion_hub_fullscreen_url'] ?? 'https://dainis.net/chat'));
+if ($flosc_hub_fullscreen_url === '') {
+    $flosc_hub_fullscreen_url = 'https://dainis.net/chat';
+}
+$flosc_hub_companion_url   = esc_url((string) ($flosc_flow_settings['companion_hub_companion_url'] ?? home_url('/')));
+if ($flosc_hub_companion_url === '') {
+    $flosc_hub_companion_url = home_url('/');
+}
 
 $flosc_parse_target_rules = static function ($raw_rules) {
     $rules = [];
@@ -427,6 +439,36 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
                     Show the companion widget on WordPress pages
                 </label>
                 <p class="description">When enabled, a floating chat widget appears on all non-chatbot pages of your site.</p>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row"><label for="flow_companion_routing_mode">Companion Routing Mode</label></th>
+            <td>
+                <select name="flow_companion_routing_mode" id="flow_companion_routing_mode">
+                    <option value="hub" <?php selected($flosc_routing_mode, 'hub'); ?>>Hub Mode</option>
+                    <option value="domain_persistence" <?php selected($flosc_routing_mode, 'domain_persistence'); ?>>Domain Persistence Mode</option>
+                </select>
+                <p class="description">
+                    Hub Mode: entry domain -> expand to hub chat URL -> collapse to hub companion URL.<br>
+                    Domain Persistence Mode: expand/collapse stays on the current domain.
+                </p>
+            </td>
+        </tr>
+
+        <tr class="flosc-hub-routing-row">
+            <th scope="row"><label for="flow_companion_hub_fullscreen_url">Hub Full-Screen URL</label></th>
+            <td>
+                <input type="url" name="flow_companion_hub_fullscreen_url" id="flow_companion_hub_fullscreen_url" class="large-text" value="<?php echo esc_attr($flosc_hub_fullscreen_url); ?>" placeholder="https://dainis.net/chat">
+                <p class="description">Used by Hub Mode as the expand destination.</p>
+            </td>
+        </tr>
+
+        <tr class="flosc-hub-routing-row">
+            <th scope="row"><label for="flow_companion_hub_companion_url">Hub Companion URL</label></th>
+            <td>
+                <input type="url" name="flow_companion_hub_companion_url" id="flow_companion_hub_companion_url" class="large-text" value="<?php echo esc_attr($flosc_hub_companion_url); ?>" placeholder="https://dainis.net/">
+                <p class="description">Used by Hub Mode as the collapse destination.</p>
             </td>
         </tr>
 
@@ -1108,8 +1150,14 @@ jQuery(document).ready(function($) {
             .prop('disabled', disableExcludes);
     }
 
+    function updateCompanionRoutingMode() {
+        var mode = String($('#flow_companion_routing_mode').val() || 'hub');
+        $('.flosc-hub-routing-row').toggle(mode === 'hub');
+    }
+
     $('input[name="flow_companion_target_mode"]').on('change', updateCompanionTargetMode);
     $('#flow_companion_targeting_customize').on('change', updateCompanionTargetMode);
+    $('#flow_companion_routing_mode').on('change', updateCompanionRoutingMode);
 
     $('.flosc-settings-form').on('submit', function() {
         var mode = $('input[name="flow_companion_target_mode"]:checked').val() || 'sitewide';
@@ -1136,5 +1184,6 @@ jQuery(document).ready(function($) {
     $modeRadios.prop('disabled', false);
     updateCompanionValidationHints();
     updateCompanionTargetMode();
+    updateCompanionRoutingMode();
 });
 <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
