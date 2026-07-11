@@ -926,7 +926,6 @@ class FLOSC_Framework {
 
         // v8.0.0: Instant logout via AJAX — bypasses wp-login.php confirmation screen
         add_action('wp_ajax_flosc_logout',        [$this, 'ajax_logout']);
-        add_action('wp_ajax_nopriv_flosc_logout', [$this, 'ajax_logout']);
         add_action('admin_post_flosc_contact_submit', [$this, 'handle_contact_form_submit']);
         add_action('admin_post_nopriv_flosc_contact_submit', [$this, 'handle_contact_form_submit']);
 
@@ -4295,6 +4294,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
      * AJAX: Instant logout — logs out and returns redirect URL to JS.
      */
     public function ajax_logout() {
+        check_ajax_referer('flosc_logout', 'nonce');
+
         wp_logout();
         $redirect = flosc_get_setting('logout_redirect_url', home_url());
         wp_send_json_success(['redirect' => $redirect]);

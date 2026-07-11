@@ -525,8 +525,11 @@ class FLOSC_Condition_Evaluator {
                 $context['free_lessons_count'] = $context['free_lesson_number'] ? 1 : 0;
             }
             
-            // v1.6.2: Set access_level for is_guest/is_visitor/is_member condition evaluation
-            $has_member_access = (bool) get_user_meta($user_id, '_flosc_member_access', true);
+            // v1.6.2: Set access_level for is_guest/is_visitor/is_member condition evaluation.
+            // Meta is stored as the string 'true'/'false'; compare explicitly so a
+            // revoked member (stored 'false') is not treated as a member — (bool) 'false'
+            // would be true. Mirrors flosc.php determine phase / IVR permission checks.
+            $has_member_access = ('true' === get_user_meta($user_id, '_flosc_member_access', true));
             $context['access_level'] = $has_member_access ? 'member' : 'guest';
             
             // v1.0.4: Populate bridge data context (TASK-009)

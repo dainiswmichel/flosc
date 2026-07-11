@@ -2980,15 +2980,48 @@ class floscApp {
                 break;
             case 'logout':
                 this.addMessage('assistant', 'See you later LeSAEp Fam! 👋');
-                fetch((this.config.ajaxUrl || '/wp-admin/admin-ajax.php') + '?action=flosc_logout', { method: 'POST' })
-                    .then(r => r.json())
-                    .then(data => {
-                        setTimeout(() => {
-                            window.location.href = (data.data && data.data.redirect) ? data.data.redirect : (this.config.appUrl || '/');
-                        }, 2000);
+                const ajaxLogoutUrl = this.config.ajaxUrl || '/wp-admin/admin-ajax.php';
+                const serverLogoutUrl = this.config.logoutUrl || (this.config.appUrl || '/');
+                const logoutBody = new URLSearchParams({
+                    action: 'flosc_logout',
+                    nonce: this.config.logoutNonce || '',
+                });
+
+                const redirectAfterLogout = (targetUrl) => {
+                    setTimeout(() => {
+                        window.location.href = targetUrl || (this.config.appUrl || '/');
+                    }, 2000);
+                };
+
+                fetch(ajaxLogoutUrl, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' },
+                    body: logoutBody.toString(),
+                })
+                    .then(async (response) => {
+                        let payload = null;
+                        try {
+                            payload = await response.json();
+                        } catch (e) {
+                            payload = null;
+                        }
+
+                        if (!response.ok || !payload || payload.success !== true) {
+                            throw new Error('logout_failed');
+                        }
+
+                        const target = (payload.data && payload.data.redirect)
+                            ? payload.data.redirect
+                            : (this.config.appUrl || '/');
+                        redirectAfterLogout(target);
                     })
                     .catch(() => {
-                        setTimeout(() => { window.location.href = this.config.appUrl || '/'; }, 2000);
+                        this.addMessage(
+                            'assistant',
+                            'I could not confirm logout through chat. Redirecting you to secure logout now...'
+                        );
+                        redirectAfterLogout(serverLogoutUrl);
                     });
                 break;
             // v1.4.0: Sandbox purchase actions

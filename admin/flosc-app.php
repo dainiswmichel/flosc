@@ -853,10 +853,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'companionStateKey' => $flosc_companion_state_key,
             'companionStateStorage' => $flosc_companion_state_storage,
             'ajaxUrl' => admin_url('admin-ajax.php'),
+            'logoutNonce' => wp_create_nonce('flosc_logout'),
             'profileUrl' => ($current_user && function_exists('bp_core_get_user_domain')) ? bp_core_get_user_domain($current_user->ID) : admin_url('profile.php'),
             'dashboardUrl' => admin_url(),
             'loginUrl' => wp_login_url($flosc_app_url),
-            'logoutUrl' => add_query_arg('flosc_logout', '1', home_url()),
+            'logoutUrl' => wp_logout_url(
+                flosc_get_setting('logout_redirect_url', $flosc_app_url)
+            ),
             'registerUrl' => wp_registration_url(),
             'registrationUrl' => wp_registration_url(),
             'lessonsUrl' => home_url('/lessons/'),
