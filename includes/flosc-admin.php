@@ -324,6 +324,8 @@ trait FLOSC_Admin_Trait {
             'flosc_login_destination' => 'url',
             'flosc_profile_bar' => 'array',
             'flosc_visitor_menu_items' => 'array',
+            'flosc_guest_menu_items' => 'array',
+            'flosc_member_menu_items' => 'array',
             'flosc_debug_mode' => 'bool',
             'flosc_enabled_quizzes' => 'array',
             'flosc_wpq_integration' => 'bool',
@@ -386,7 +388,22 @@ trait FLOSC_Admin_Trait {
 
             $settings_fields = $quiz_type->get_settings_fields();
             foreach ($settings_fields as $field_key => $field_config) {
-                $this->register_setting_value('flosc_quiz_' . $quiz_id . '_' . $field_key, $field_config['type'] ?? 'text');
+                $option_name = 'flosc_quiz_' . $quiz_id . '_' . $field_key;
+                $field_type  = $field_config['type'] ?? 'text';
+
+                if ($field_type === 'select') {
+                    $this->register_select_setting_value(
+                        $option_name,
+                        array_keys($field_config['options'] ?? array())
+                    );
+                    continue;
+                }
+
+                if ($field_type === 'checkbox') {
+                    $field_type = 'bool';
+                }
+
+                $this->register_setting_value($option_name, $field_type);
             }
 
             $templates = $quiz_type->get_default_response_templates();
@@ -418,7 +435,8 @@ trait FLOSC_Admin_Trait {
      * Register a single setting with the appropriate sanitizer.
      *
      * @param string $option_name Setting name.
-     * @param string $sanitize_type text, textarea, url, hex, bool, or array.
+     * @param string $sanitize_type text, textarea, url, hex, bool, checkbox (alias), or array.
+     *                              Select fields should use register_select_setting_value().
      */
     private function register_setting_value($option_name, $sanitize_type = 'text') {
         switch ($sanitize_type) {
@@ -432,6 +450,7 @@ trait FLOSC_Admin_Trait {
                 $sanitize_callback = array($this, 'sanitize_hex_setting');
                 break;
             case 'bool':
+            case 'checkbox':
                 $sanitize_callback = array($this, 'sanitize_bool_setting');
                 break;
             case 'array':
@@ -452,6 +471,38 @@ trait FLOSC_Admin_Trait {
             'flosc_settings',
             $option_name,
             $setting_args
+        );
+    }
+
+    /**
+     * Register a select setting with whitelist validation.
+     *
+     * @param string $option_name Setting name.
+     * @param array  $allowed_keys Allowed option keys from get_settings_fields()['options'].
+     */
+    private function register_select_setting_value($option_name, $allowed_keys) {
+        $allowed_keys = array_values(array_filter(array_map('sanitize_key', (array) $allowed_keys)));
+        $default_value = $allowed_keys[0] ?? '';
+
+        register_setting(
+            'flosc_settings',
+            $option_name,
+            array(
+                'type'              => 'string',
+                'sanitize_callback' => function ($value) use ($allowed_keys, $default_value) {
+                    if (empty($allowed_keys)) {
+                        return '';
+                    }
+
+                    $sanitized = sanitize_key(wp_unslash((string) $value));
+                    if ($sanitized !== '' && in_array($sanitized, $allowed_keys, true)) {
+                        return $sanitized;
+                    }
+
+                    return $default_value;
+                },
+                'default'           => $default_value,
+            )
         );
     }
 

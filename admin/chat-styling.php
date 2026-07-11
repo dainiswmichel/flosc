@@ -241,7 +241,7 @@ $flosc_bubble_styles = [
 <?php ob_start(); ?>
 jQuery(document).ready(function($) {
     // Bubble style data
-    var bubbleStyles = <?php echo json_encode($flosc_bubble_styles); ?>;
+    var bubbleStyles = <?php echo wp_json_encode($flosc_bubble_styles); ?>;
     
     // Update bubble preview
     function updateBubblePreview() {

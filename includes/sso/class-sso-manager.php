@@ -420,13 +420,27 @@ class SSO_Manager {
             $fields = $provider->get_settings_fields();
             
             foreach ($fields as $field) {
-                $setting_args = array(
-                    'type'              => ($field['type'] ?? '') === 'checkbox' ? 'integer' : 'string',
-                    'sanitize_callback' => ($field['type'] ?? '') === 'checkbox'
-                        ? array($this, 'sanitize_checkbox_setting')
-                        : array($this, 'sanitize_text_setting'),
-                    'default'           => $field['default'] ?? (($field['type'] ?? '') === 'checkbox' ? 0 : ''),
-                );
+                $field_type = $field['type'] ?? '';
+
+                if ($field_type === 'checkbox') {
+                    $setting_args = array(
+                        'type'              => 'integer',
+                        'sanitize_callback' => array($this, 'sanitize_checkbox_setting'),
+                        'default'           => $field['default'] ?? 0,
+                    );
+                } elseif ($field_type === 'textarea') {
+                    $setting_args = array(
+                        'type'              => 'string',
+                        'sanitize_callback' => array($this, 'sanitize_textarea_setting'),
+                        'default'           => $field['default'] ?? '',
+                    );
+                } else {
+                    $setting_args = array(
+                        'type'              => 'string',
+                        'sanitize_callback' => array($this, 'sanitize_text_setting'),
+                        'default'           => $field['default'] ?? '',
+                    );
+                }
 
                 register_setting('flosc_sso_settings', $field['id'], $setting_args);
                 
@@ -450,6 +464,16 @@ class SSO_Manager {
      */
     public function sanitize_text_setting($value) {
         return sanitize_text_field(wp_unslash((string) $value));
+    }
+
+    /**
+     * Sanitize textarea SSO settings (preserves PEM newlines).
+     *
+     * @param mixed $value Raw submitted value.
+     * @return string
+     */
+    public function sanitize_textarea_setting($value) {
+        return sanitize_textarea_field(wp_unslash((string) $value));
     }
 
     /**
@@ -484,6 +508,15 @@ class SSO_Manager {
                     esc_attr($field['id']),
                     esc_attr($field['id']),
                     checked($value, 1, false)
+                );
+                break;
+
+            case 'textarea':
+                printf(
+                    '<textarea id="%s" name="%s" rows="6" class="large-text code">%s</textarea>',
+                    esc_attr($field['id']),
+                    esc_attr($field['id']),
+                    esc_textarea((string) $value)
                 );
                 break;
                 
