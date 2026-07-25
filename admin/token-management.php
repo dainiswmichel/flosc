@@ -215,8 +215,8 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
 
 <div class="flosc-token-mgmt">
     <p class="flosc-token-mgmt__lead">
-        floscTokens power chat billing on this flow. Set <strong>flow defaults</strong>, then open each
-        <strong>product</strong> accordion to inherit those defaults or customize grant / cap per product.
+        <strong>Home</strong> for floscToken settings on this flow: wallets, billing conversion, and product grants.
+        You can also set product tokens when creating/editing an offer; this tab is where you see all products and flow defaults together.
     </p>
 
     <!-- ========== PRODUCTS ========== -->

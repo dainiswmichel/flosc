@@ -153,6 +153,54 @@ function flosc_handle_offer_save() {
         'pill_phrase'     => sanitize_text_field($post['fmt_pill_phrase'] ?? ''),
     ]);
 
+    // Product token grants (also editable on Token Management home).
+    // Only apply when the offer editor posted token fields (skip demo one-click forms).
+    if (array_key_exists('offer_token_source', $post)) {
+        $token_source = sanitize_key((string) ($post['offer_token_source'] ?? 'flow'));
+        if (!in_array($token_source, ['flow', 'custom', 'none'], true)) {
+            $token_source = 'flow';
+        }
+        $token_mode = sanitize_key((string) ($post['offer_token_mode'] ?? 'onetime'));
+        if (!in_array($token_mode, ['onetime', 'recurring', 'recurring_yearly'], true)) {
+            $token_mode = 'onetime';
+        }
+        $token_cap_mode = sanitize_key((string) ($post['offer_token_cap_mode'] ?? 'flow'));
+        if (!in_array($token_cap_mode, ['flow', 'none', 'custom'], true)) {
+            $token_cap_mode = 'flow';
+        }
+
+        $tokens = is_array($existing_offer['tokens'] ?? null) ? $existing_offer['tokens'] : [];
+        $tokens['source'] = $token_source;
+        $tokens['mode'] = $token_mode;
+        $tokens['cap_mode'] = $token_cap_mode;
+
+        if ($token_source === 'none') {
+            $tokens['amount'] = 0;
+            $tokens['cap'] = 0;
+        } elseif ($token_source === 'custom') {
+            if (isset($post['offer_token_amount']) && $post['offer_token_amount'] !== '') {
+                $tokens['amount'] = max(0, intval($post['offer_token_amount']));
+            } else {
+                unset($tokens['amount']);
+            }
+            if ($token_cap_mode === 'none') {
+                $tokens['cap'] = 0;
+            } elseif ($token_cap_mode === 'custom' && isset($post['offer_token_cap']) && $post['offer_token_cap'] !== '') {
+                $tokens['cap'] = max(0, intval($post['offer_token_cap']));
+            } else {
+                unset($tokens['cap']);
+            }
+        } else {
+            unset($tokens['amount'], $tokens['cap'], $tokens['bonus']);
+            $tokens['cap_mode'] = 'flow';
+        }
+
+        $offer_data['tokens'] = $tokens;
+    } elseif (is_array($existing_offer) && isset($existing_offer['tokens'])) {
+        // Preserve existing token config when this save path did not include the fields.
+        $offer_data['tokens'] = $existing_offer['tokens'];
+    }
+
     $all_offers[$flosc_offer_id] = $offer_data;
     $flosc_fs['offers'] = $all_offers;
     update_option($fk, $flosc_fs);
@@ -750,12 +798,16 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                     <select name="offer_processor" id="offer-processor-<?php echo esc_attr( $flosc_safe_id ); ?>"
                             data-flosc-action="toggle-processor-fields"
                             data-offer-id="<?php echo esc_attr($flosc_safe_id); ?>">
-                        <option value="paypal"   <?php selected($proc, 'paypal'); ?>>PayPal</option>
-                        <option value="stripe"   <?php selected($proc, 'stripe'); ?>>Stripe</option>
+                        <option value="paypal"   <?php selected($proc, 'paypal'); ?>>PayPal (native)</option>
+                        <option value="stripe"   <?php selected($proc, 'stripe'); ?>>Stripe (native)</option>
                         <option value="free"     <?php selected($proc, 'free'); ?>>Free (no payment)</option>
-                        <option value="redirect" <?php selected($proc, 'redirect'); ?>>External / Redirect URL</option>
+                        <option value="redirect" <?php selected($proc, 'redirect'); ?>>External / Redirect (Woo, Shopify, member sites…)</option>
                     </select>
-                    <p class="description">Choose how this offer is purchased. PayPal and Stripe require payment credentials in FLOSC Settings.</p>
+                    <p class="description">
+                        <strong>Native:</strong> PayPal or Stripe — configure keys on the <em>Payments</em> tab for this flow, then pick the processor here.
+                        <strong>External:</strong> WooCommerce, Shopify, ThriveCart, member platforms, or any cart — set processor to External / Redirect and paste the checkout URL.
+                        FLOSC is not a full PSP; after external payment, grant access via Access Code, webhook, or manual member level.
+                    </p>
 
                     <!-- PayPal fields (shown when processor = paypal) -->
                     <div id="proc-paypal-<?php echo esc_attr( $flosc_safe_id ); ?>" class="flosc-proc-fields flosc-offer-proc-fields<?php echo $proc !== 'paypal' ? ' is-hidden' : ''; ?>">
@@ -806,7 +858,10 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                                     <input type="url" name="offer_redirect_url"
                                            value="<?php echo esc_attr($flosc_offer['pricing']['redirect_url'] ?? ''); ?>"
                                            class="flosc-offer-width-100" placeholder="https://checkout.example.com/buy">
-                                    <p class="description">User will be redirected to this URL when they click the CTA.</p>
+                                    <p class="description">
+                                        Full checkout URL for WooCommerce cart/checkout, Shopify buy link, membership join page, or any external cart.
+                                        On click, the learner leaves FLOSC for that URL. Return them with an Access Code or grant member level after payment.
+                                    </p>
                                 </td>
                             </tr>
                         </table>
@@ -863,8 +918,12 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                 <td>
                     <?php
                     // v8.1.0: Dropdown from Member Levels registry (single source of truth)
-                    $ml_registry = $flosc_flow_settings['member_levels'] ?? [];
-                    $current_level = $flosc_offer['grants_level'] ?? '';
+                    $flosc_fs_for_editor = get_option($flosc_flow_key, []);
+                    if (!is_array($flosc_fs_for_editor)) {
+                        $flosc_fs_for_editor = [];
+                    }
+                    $ml_registry = $flosc_fs_for_editor['member_levels'] ?? [];
+                    $current_level = $flosc_offer['grants_level'] ?? ($flosc_offer['grants']['level'] ?? '');
                     ?>
                     <select name="offer_grants_level" class="regular-text">
                         <option value="">— None —</option>
@@ -879,6 +938,142 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                         <?php endforeach; ?>
                     </select>
                     <p class="description">Select a level from the <a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_current_ivr, 'tab' => 'member-levels' ), admin_url( 'admin.php' ) ) ); ?>">Member Levels</a> tab.</p>
+                </td>
+            </tr>
+        </table>
+
+        <?php
+        // Product token grants — same schema as Token Management home.
+        $tok = is_array($flosc_offer['tokens'] ?? null) ? $flosc_offer['tokens'] : [];
+        $tok_source = sanitize_key((string) ($tok['source'] ?? 'flow'));
+        if (!in_array($tok_source, ['flow', 'custom', 'none'], true)) {
+            $tok_source = (isset($tok['amount']) && $tok['amount'] !== '' && $tok['amount'] !== null) ? 'custom' : 'flow';
+        }
+        $tok_mode = sanitize_key((string) ($tok['mode'] ?? ''));
+        $offer_type_raw = strtolower((string) ($flosc_offer['type'] ?? 'one_time'));
+        if ($tok_mode === '') {
+            $tok_mode = (strpos($offer_type_raw, 'sub') !== false) ? 'recurring' : 'onetime';
+        }
+        if (!in_array($tok_mode, ['onetime', 'recurring', 'recurring_yearly'], true)) {
+            $tok_mode = 'onetime';
+        }
+        $tok_cap_mode = sanitize_key((string) ($tok['cap_mode'] ?? 'flow'));
+        if (!in_array($tok_cap_mode, ['flow', 'none', 'custom'], true)) {
+            $tok_cap_mode = 'flow';
+        }
+        $tok_amount = (isset($tok['amount']) && $tok['amount'] !== '' && $tok['amount'] !== null)
+            ? max(0, intval($tok['amount']))
+            : '';
+        $tok_cap = (isset($tok['cap']) && $tok['cap'] !== '' && $tok['cap'] !== null)
+            ? max(0, intval($tok['cap']))
+            : '';
+
+        $flow_recurring = max(0, intval(
+            $flosc_fs_for_editor['product_token_grant_recurring']
+            ?? $flosc_fs_for_editor['subscription_monthly_token_grant']
+            ?? 10000
+        ));
+        $flow_cap = max(0, intval(
+            $flosc_fs_for_editor['product_token_cap']
+            ?? $flosc_fs_for_editor['subscription_token_cap']
+            ?? 35000
+        ));
+        $flow_yearly = max(0, intval(
+            $flosc_fs_for_editor['product_token_grant_recurring_yearly']
+            ?? $flosc_fs_for_editor['subscription_yearly_token_grant']
+            ?? $flow_cap
+        ));
+        $flow_onetime = max(0, intval(
+            $flosc_fs_for_editor['product_token_grant_onetime']
+            ?? $flow_recurring
+        ));
+        $token_home_url = add_query_arg([
+            'page' => 'flosc-settings',
+            'ivr'  => $flosc_current_ivr,
+            'tab'  => 'token-management',
+            'view' => 'single',
+        ], admin_url('admin.php'));
+        $tok_custom_disabled = ($tok_source !== 'custom') ? ' is-disabled' : '';
+        $tok_cap_disabled = ($tok_cap_mode !== 'custom') ? ' is-disabled' : '';
+        ?>
+
+        <!-- PRODUCT TOKENS -->
+        <div class="flosc-offer-section-label">🪙 Product Tokens</div>
+        <p class="description flosc-offer-token-home-note">
+            Set how this product credits floscTokens on purchase or each billing cycle.
+            Flow-wide defaults and a product overview live on
+            <a href="<?php echo esc_url($token_home_url); ?>">Token Management</a> (home for these settings).
+        </p>
+        <table class="form-table flosc-offer-form-table flosc-offer-token-table">
+            <tr>
+                <th><label for="offer_token_source_<?php echo esc_attr($flosc_safe_id); ?>">Token source</label></th>
+                <td>
+                    <select
+                        name="offer_token_source"
+                        id="offer_token_source_<?php echo esc_attr($flosc_safe_id); ?>"
+                        class="regular-text"
+                        data-flosc-offer-token-source
+                        data-offer="<?php echo esc_attr($flosc_safe_id); ?>"
+                    >
+                        <option value="flow" <?php selected($tok_source, 'flow'); ?>>Use flow defaults</option>
+                        <option value="custom" <?php selected($tok_source, 'custom'); ?>>Custom for this product</option>
+                        <option value="none" <?php selected($tok_source, 'none'); ?>>No product token grant</option>
+                    </select>
+                    <p class="description">
+                        Flow defaults:
+                        one-time <strong><?php echo esc_html(number_format_i18n($flow_onetime)); ?></strong>,
+                        recurring <strong><?php echo esc_html(number_format_i18n($flow_recurring)); ?></strong>,
+                        yearly <strong><?php echo esc_html(number_format_i18n($flow_yearly)); ?></strong>,
+                        cap <strong><?php echo $flow_cap > 0 ? esc_html(number_format_i18n($flow_cap)) : 'none'; ?></strong>.
+                    </p>
+                </td>
+            </tr>
+            <tr class="flosc-offer-token-custom<?php echo esc_attr($tok_custom_disabled); ?>" data-flosc-offer-token-custom="<?php echo esc_attr($flosc_safe_id); ?>">
+                <th><label>Custom grant</label></th>
+                <td>
+                    <div class="flosc-offer-token-custom-grid">
+                        <label>
+                            Mode
+                            <select name="offer_token_mode">
+                                <option value="onetime" <?php selected($tok_mode, 'onetime'); ?>>One-time (each purchase)</option>
+                                <option value="recurring" <?php selected($tok_mode, 'recurring'); ?>>Recurring cycle (e.g. monthly)</option>
+                                <option value="recurring_yearly" <?php selected($tok_mode, 'recurring_yearly'); ?>>Recurring yearly cycle</option>
+                            </select>
+                        </label>
+                        <label>
+                            Amount
+                            <input
+                                type="number"
+                                name="offer_token_amount"
+                                value="<?php echo esc_attr($tok_amount === '' ? '' : (string) $tok_amount); ?>"
+                                min="0"
+                                step="1"
+                                class="small-text"
+                                placeholder="<?php echo esc_attr((string) $flow_onetime); ?>"
+                            >
+                        </label>
+                        <label>
+                            Cap
+                            <select name="offer_token_cap_mode" data-flosc-offer-token-cap-mode data-offer="<?php echo esc_attr($flosc_safe_id); ?>">
+                                <option value="flow" <?php selected($tok_cap_mode, 'flow'); ?>>Flow cap (<?php echo esc_html($flow_cap > 0 ? number_format_i18n($flow_cap) : 'none'); ?>)</option>
+                                <option value="none" <?php selected($tok_cap_mode, 'none'); ?>>No cap</option>
+                                <option value="custom" <?php selected($tok_cap_mode, 'custom'); ?>>Custom cap</option>
+                            </select>
+                        </label>
+                        <label class="flosc-offer-token-cap-input<?php echo esc_attr($tok_cap_disabled); ?>" data-flosc-offer-token-cap-input="<?php echo esc_attr($flosc_safe_id); ?>">
+                            Custom cap
+                            <input
+                                type="number"
+                                name="offer_token_cap"
+                                value="<?php echo esc_attr($tok_cap === '' ? '' : (string) $tok_cap); ?>"
+                                min="0"
+                                step="1"
+                                class="small-text"
+                                placeholder="<?php echo esc_attr((string) $flow_cap); ?>"
+                            >
+                        </label>
+                    </div>
+                    <p class="description">Leave amount blank to inherit the flow default for the selected mode. At cap, payment still succeeds; credit is 0 until the wallet is spent down.</p>
                 </td>
             </tr>
         </table>
@@ -1155,8 +1350,36 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                     Delete Offer
                 </a>
             <?php endif; ?>
+            <a class="button" href="<?php echo esc_url($token_home_url); ?>">Token Management</a>
         </div>
     </form>
+    <script>
+    (function () {
+        var root = document.currentScript && document.currentScript.previousElementSibling;
+        // Bind within this editor form only.
+        var form = document.currentScript ? document.currentScript.previousElementSibling : null;
+        if (!form || form.tagName !== 'FORM') {
+            form = document.querySelector('.flosc-offer-card.is-open form') || document.querySelector('#offer-<?php echo esc_js($flosc_safe_id); ?> form');
+        }
+        if (!form) return;
+        var src = form.querySelector('[data-flosc-offer-token-source]');
+        if (!src) return;
+        var offer = src.getAttribute('data-offer');
+        var custom = form.querySelector('[data-flosc-offer-token-custom="' + offer + '"]');
+        var capMode = form.querySelector('[data-flosc-offer-token-cap-mode]');
+        var capInput = form.querySelector('[data-flosc-offer-token-cap-input="' + offer + '"]');
+        function syncSource() {
+            if (custom) custom.classList.toggle('is-disabled', src.value !== 'custom');
+        }
+        function syncCap() {
+            if (capInput) capInput.classList.toggle('is-disabled', !capMode || capMode.value !== 'custom');
+        }
+        src.addEventListener('change', syncSource);
+        if (capMode) capMode.addEventListener('change', syncCap);
+        syncSource();
+        syncCap();
+    })();
+    </script>
 <?php } ?>
 
 <form method="post" action="options.php">

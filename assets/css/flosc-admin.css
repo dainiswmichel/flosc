@@ -2746,6 +2746,34 @@
 .flosc-offer-editor { display: none; padding: 20px; border-top: 1px solid #eee; background: #fafbfc; }
 .flosc-offer-card.is-open .flosc-offer-editor { display: block; }
 
+/* Product tokens block inside offer editor (mirrors Token Management fields). */
+.flosc-offer-token-home-note {
+    margin: 0 0 10px;
+    max-width: 720px;
+}
+.flosc-offer-token-custom-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px 14px;
+    align-items: end;
+}
+.flosc-offer-token-custom-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-weight: 600;
+    font-size: 12px;
+}
+.flosc-offer-token-custom-grid select,
+.flosc-offer-token-custom-grid input {
+    font-weight: 400;
+}
+.flosc-offer-token-custom.is-disabled,
+.flosc-offer-token-cap-input.is-disabled {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
 .flosc-fmt-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); gap: 12px; margin: 12px 0;
 }
