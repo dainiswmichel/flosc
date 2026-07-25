@@ -2768,8 +2768,8 @@
 .flosc-offer-token-custom-grid input {
     font-weight: 400;
 }
-.flosc-offer-token-custom.is-disabled,
-.flosc-offer-token-cap-input.is-disabled {
+.flosc-offer-token-custom.flosc-is-disabled,
+.flosc-offer-token-cap-input.flosc-is-disabled {
     opacity: 0.45;
     pointer-events: none;
 }
@@ -6016,7 +6016,7 @@
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
-.flosc-token-product.is-inactive {
+.flosc-token-product.flosc-is-inactive {
     opacity: 0.88;
 }
 
@@ -6074,12 +6074,17 @@
     white-space: nowrap;
 }
 
-.flosc-token-product__chip.is-custom {
+.flosc-token-product__chip.flosc-is-flow {
+    background: #f0f6fc;
+    color: #135e96;
+}
+
+.flosc-token-product__chip.flosc-is-custom {
     background: #fef8e7;
     color: #996800;
 }
 
-.flosc-token-product__chip.is-muted {
+.flosc-token-product__chip.flosc-is-muted {
     background: #f0f0f1;
     color: #646970;
 }
@@ -6091,11 +6096,11 @@
     text-align: right;
 }
 
-.flosc-token-product__status.is-active {
+.flosc-token-product__status.flosc-is-active {
     color: #0a7a3e;
 }
 
-.flosc-token-product__status.is-inactive {
+.flosc-token-product__status.flosc-is-inactive {
     color: #8c8f94;
 }
 
@@ -6121,8 +6126,8 @@
     transition: opacity 0.15s ease;
 }
 
-.flosc-token-product__custom.is-disabled,
-.flosc-token-field.is-disabled {
+.flosc-token-product__custom.flosc-is-disabled,
+.flosc-token-field.flosc-is-disabled {
     opacity: 0.45;
     pointer-events: none;
 }

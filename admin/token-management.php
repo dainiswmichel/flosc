@@ -200,7 +200,7 @@ usort($flosc_product_rows, static function ($a, $b) {
 $flosc_active_count = count(array_filter($flosc_product_rows, static function ($r) {
     return !empty($r['active']);
 }));
-$flosc_filter = sanitize_key((string) (wp_unslash($_GET['product_filter'] ?? 'active')));
+$flosc_filter = sanitize_key((string) (wp_unslash($_GET['flosc_product_filter'] ?? 'active')));
 if (!in_array($flosc_filter, ['active', 'all'], true)) {
     $flosc_filter = 'active';
 }
@@ -226,10 +226,10 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
             <div class="flosc-token-section__tools">
                 <label class="screen-reader-text" for="flosc-token-product-filter">Filter products</label>
                 <select id="flosc-token-product-filter" class="flosc-token-filter" data-flosc-action="redirect-on-change">
-                    <option value="<?php echo esc_url(add_query_arg('product_filter', 'active')); ?>" <?php selected($flosc_filter, 'active'); ?>>
+                    <option value="<?php echo esc_url(add_query_arg('flosc_product_filter', 'active')); ?>" <?php selected($flosc_filter, 'active'); ?>>
                         Active only (<?php echo (int) $flosc_active_count; ?>)
                     </option>
-                    <option value="<?php echo esc_url(add_query_arg('product_filter', 'all')); ?>" <?php selected($flosc_filter, 'all'); ?>>
+                    <option value="<?php echo esc_url(add_query_arg('flosc_product_filter', 'all')); ?>" <?php selected($flosc_filter, 'all'); ?>>
                         All products (<?php echo count($flosc_product_rows); ?>)
                     </option>
                 </select>
@@ -250,7 +250,7 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
                     $safe = esc_attr($pid);
                     $is_custom = ($p['source'] === 'custom');
                     $is_none = ($p['source'] === 'none');
-                    $status_class = $p['active'] ? 'is-active' : 'is-inactive';
+                    $status_class = $p['active'] ? 'flosc-is-active' : 'flosc-is-inactive';
                     $price_label = $p['display_price'] !== ''
                         ? $p['display_price']
                         : ('$' . number_format((float) $p['price'], 2));
@@ -259,13 +259,13 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
                         ? 'No product tokens'
                         : ('+' . number_format_i18n((int) $p['eff_grant']) . ' · ' . $p['eff_cap_label']);
                     ?>
-                    <details class="flosc-token-product <?php echo esc_attr($status_class); ?>" data-product-id="<?php echo $safe; ?>">
+                    <details class="flosc-token-product <?php echo esc_attr($status_class); ?>" data-flosc-product-id="<?php echo $safe; ?>">
                         <summary class="flosc-token-product__head">
                             <span class="flosc-token-product__caret" aria-hidden="true">&rsaquo;</span>
                             <span class="flosc-token-product__name"><?php echo esc_html($p['name']); ?></span>
                             <span class="flosc-token-product__meta"><?php echo esc_html($type_label); ?> · <?php echo esc_html($p['processor']); ?></span>
                             <span class="flosc-token-product__price"><?php echo esc_html($price_label); ?></span>
-                            <span class="flosc-token-product__chip <?php echo $is_none ? 'is-muted' : ($is_custom ? 'is-custom' : 'is-flow'); ?>">
+                            <span class="flosc-token-product__chip <?php echo $is_none ? 'flosc-is-muted' : ($is_custom ? 'flosc-is-custom' : 'flosc-is-flow'); ?>">
                                 <?php echo esc_html($summary_tokens); ?>
                             </span>
                             <span class="flosc-token-product__status <?php echo esc_attr($status_class); ?>">
@@ -282,7 +282,7 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
                                         name="flosc_product_tokens[<?php echo $safe; ?>][source]"
                                         class="flosc-token-source-select"
                                         data-flosc-token-source
-                                        data-product="<?php echo $safe; ?>"
+                                        data-flosc-product="<?php echo $safe; ?>"
                                     >
                                         <option value="flow" <?php selected($p['source'], 'flow'); ?>>Use flow defaults</option>
                                         <option value="custom" <?php selected($p['source'], 'custom'); ?>>Custom for this product</option>
@@ -291,7 +291,7 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
                                     <span class="description">Flow defaults live in the section below. Custom lets this product add more or less, once or on a schedule.</span>
                                 </label>
 
-                                <div class="flosc-token-product__custom <?php echo $is_custom ? '' : 'is-disabled'; ?>" data-flosc-token-custom="<?php echo $safe; ?>">
+                                <div class="flosc-token-product__custom <?php echo $is_custom ? '' : 'flosc-is-disabled'; ?>" data-flosc-token-custom="<?php echo $safe; ?>">
                                     <label class="flosc-token-field">
                                         <span class="flosc-token-field__label">Grant mode</span>
                                         <select name="flosc_product_tokens[<?php echo $safe; ?>][mode]">
@@ -320,7 +320,7 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
                                         <select
                                             name="flosc_product_tokens[<?php echo $safe; ?>][cap_mode]"
                                             data-flosc-token-cap-mode
-                                            data-product="<?php echo $safe; ?>"
+                                            data-flosc-product="<?php echo $safe; ?>"
                                         >
                                             <option value="flow" <?php selected($p['cap_mode'], 'flow'); ?>>Use flow product cap (<?php echo esc_html($flosc_product_token_cap > 0 ? number_format_i18n($flosc_product_token_cap) : 'none'); ?>)</option>
                                             <option value="none" <?php selected($p['cap_mode'], 'none'); ?>>No cap</option>
@@ -328,7 +328,7 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
                                         </select>
                                     </label>
 
-                                    <label class="flosc-token-field flosc-token-cap-custom <?php echo $p['cap_mode'] === 'custom' ? '' : 'is-disabled'; ?>" data-flosc-token-cap-input="<?php echo $safe; ?>">
+                                    <label class="flosc-token-field flosc-token-cap-custom <?php echo $p['cap_mode'] === 'custom' ? '' : 'flosc-is-disabled'; ?>" data-flosc-token-cap-input="<?php echo $safe; ?>">
                                         <span class="flosc-token-field__label">Custom cap value</span>
                                         <input
                                             type="number"
@@ -541,7 +541,7 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
 (function () {
     function setDisabled(el, off) {
         if (!el) return;
-        el.classList.toggle('is-disabled', !!off);
+        el.classList.toggle('flosc-is-disabled', !!off);
         el.querySelectorAll('input, select, textarea').forEach(function (field) {
             // Keep fields enabled for POST; only dim UI. Cap input still posts when custom.
             field.disabled = false;
@@ -549,7 +549,7 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
     }
 
     document.querySelectorAll('[data-flosc-token-source]').forEach(function (sel) {
-        var pid = sel.getAttribute('data-product');
+        var pid = sel.getAttribute('data-flosc-product');
         var custom = document.querySelector('[data-flosc-token-custom="' + pid + '"]');
         function sync() {
             setDisabled(custom, sel.value !== 'custom');
@@ -559,7 +559,7 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
     });
 
     document.querySelectorAll('[data-flosc-token-cap-mode]').forEach(function (sel) {
-        var pid = sel.getAttribute('data-product');
+        var pid = sel.getAttribute('data-flosc-product');
         var wrap = document.querySelector('[data-flosc-token-cap-input="' + pid + '"]');
         function sync() {
             setDisabled(wrap, sel.value !== 'custom');

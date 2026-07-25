@@ -155,16 +155,16 @@ function flosc_handle_offer_save() {
 
     // Product token grants (also editable on Token Management home).
     // Only apply when the offer editor posted token fields (skip demo one-click forms).
-    if (array_key_exists('offer_token_source', $post)) {
-        $token_source = sanitize_key((string) ($post['offer_token_source'] ?? 'flow'));
+    if (array_key_exists('flosc_offer_token_source', $post)) {
+        $token_source = sanitize_key((string) ($post['flosc_offer_token_source'] ?? 'flow'));
         if (!in_array($token_source, ['flow', 'custom', 'none'], true)) {
             $token_source = 'flow';
         }
-        $token_mode = sanitize_key((string) ($post['offer_token_mode'] ?? 'onetime'));
+        $token_mode = sanitize_key((string) ($post['flosc_offer_token_mode'] ?? 'onetime'));
         if (!in_array($token_mode, ['onetime', 'recurring', 'recurring_yearly'], true)) {
             $token_mode = 'onetime';
         }
-        $token_cap_mode = sanitize_key((string) ($post['offer_token_cap_mode'] ?? 'flow'));
+        $token_cap_mode = sanitize_key((string) ($post['flosc_offer_token_cap_mode'] ?? 'flow'));
         if (!in_array($token_cap_mode, ['flow', 'none', 'custom'], true)) {
             $token_cap_mode = 'flow';
         }
@@ -178,15 +178,15 @@ function flosc_handle_offer_save() {
             $tokens['amount'] = 0;
             $tokens['cap'] = 0;
         } elseif ($token_source === 'custom') {
-            if (isset($post['offer_token_amount']) && $post['offer_token_amount'] !== '') {
-                $tokens['amount'] = max(0, intval($post['offer_token_amount']));
+            if (isset($post['flosc_offer_token_amount']) && $post['flosc_offer_token_amount'] !== '') {
+                $tokens['amount'] = max(0, intval($post['flosc_offer_token_amount']));
             } else {
                 unset($tokens['amount']);
             }
             if ($token_cap_mode === 'none') {
                 $tokens['cap'] = 0;
-            } elseif ($token_cap_mode === 'custom' && isset($post['offer_token_cap']) && $post['offer_token_cap'] !== '') {
-                $tokens['cap'] = max(0, intval($post['offer_token_cap']));
+            } elseif ($token_cap_mode === 'custom' && isset($post['flosc_offer_token_cap']) && $post['flosc_offer_token_cap'] !== '') {
+                $tokens['cap'] = max(0, intval($post['flosc_offer_token_cap']));
             } else {
                 unset($tokens['cap']);
             }
@@ -993,8 +993,8 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
             'tab'  => 'token-management',
             'view' => 'single',
         ], admin_url('admin.php'));
-        $tok_custom_disabled = ($tok_source !== 'custom') ? ' is-disabled' : '';
-        $tok_cap_disabled = ($tok_cap_mode !== 'custom') ? ' is-disabled' : '';
+        $tok_custom_disabled = ($tok_source !== 'custom') ? ' flosc-is-disabled' : '';
+        $tok_cap_disabled = ($tok_cap_mode !== 'custom') ? ' flosc-is-disabled' : '';
         ?>
 
         <!-- PRODUCT TOKENS -->
@@ -1006,14 +1006,14 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
         </p>
         <table class="form-table flosc-offer-form-table flosc-offer-token-table">
             <tr>
-                <th><label for="offer_token_source_<?php echo esc_attr($flosc_safe_id); ?>">Token source</label></th>
+                <th><label for="flosc_offer_token_source_<?php echo esc_attr($flosc_safe_id); ?>">Token source</label></th>
                 <td>
                     <select
-                        name="offer_token_source"
-                        id="offer_token_source_<?php echo esc_attr($flosc_safe_id); ?>"
+                        name="flosc_offer_token_source"
+                        id="flosc_offer_token_source_<?php echo esc_attr($flosc_safe_id); ?>"
                         class="regular-text"
                         data-flosc-offer-token-source
-                        data-offer="<?php echo esc_attr($flosc_safe_id); ?>"
+                        data-flosc-offer="<?php echo esc_attr($flosc_safe_id); ?>"
                     >
                         <option value="flow" <?php selected($tok_source, 'flow'); ?>>Use flow defaults</option>
                         <option value="custom" <?php selected($tok_source, 'custom'); ?>>Custom for this product</option>
@@ -1034,7 +1034,7 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                     <div class="flosc-offer-token-custom-grid">
                         <label>
                             Mode
-                            <select name="offer_token_mode">
+                            <select name="flosc_offer_token_mode">
                                 <option value="onetime" <?php selected($tok_mode, 'onetime'); ?>>One-time (each purchase)</option>
                                 <option value="recurring" <?php selected($tok_mode, 'recurring'); ?>>Recurring cycle (e.g. monthly)</option>
                                 <option value="recurring_yearly" <?php selected($tok_mode, 'recurring_yearly'); ?>>Recurring yearly cycle</option>
@@ -1044,7 +1044,7 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                             Amount
                             <input
                                 type="number"
-                                name="offer_token_amount"
+                                name="flosc_offer_token_amount"
                                 value="<?php echo esc_attr($tok_amount === '' ? '' : (string) $tok_amount); ?>"
                                 min="0"
                                 step="1"
@@ -1054,7 +1054,7 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                         </label>
                         <label>
                             Cap
-                            <select name="offer_token_cap_mode" data-flosc-offer-token-cap-mode data-offer="<?php echo esc_attr($flosc_safe_id); ?>">
+                            <select name="flosc_offer_token_cap_mode" data-flosc-offer-token-cap-mode data-flosc-offer="<?php echo esc_attr($flosc_safe_id); ?>">
                                 <option value="flow" <?php selected($tok_cap_mode, 'flow'); ?>>Flow cap (<?php echo esc_html($flow_cap > 0 ? number_format_i18n($flow_cap) : 'none'); ?>)</option>
                                 <option value="none" <?php selected($tok_cap_mode, 'none'); ?>>No cap</option>
                                 <option value="custom" <?php selected($tok_cap_mode, 'custom'); ?>>Custom cap</option>
@@ -1064,7 +1064,7 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                             Custom cap
                             <input
                                 type="number"
-                                name="offer_token_cap"
+                                name="flosc_offer_token_cap"
                                 value="<?php echo esc_attr($tok_cap === '' ? '' : (string) $tok_cap); ?>"
                                 min="0"
                                 step="1"
@@ -1364,15 +1364,15 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
         if (!form) return;
         var src = form.querySelector('[data-flosc-offer-token-source]');
         if (!src) return;
-        var offer = src.getAttribute('data-offer');
+        var offer = src.getAttribute('data-flosc-offer');
         var custom = form.querySelector('[data-flosc-offer-token-custom="' + offer + '"]');
         var capMode = form.querySelector('[data-flosc-offer-token-cap-mode]');
         var capInput = form.querySelector('[data-flosc-offer-token-cap-input="' + offer + '"]');
         function syncSource() {
-            if (custom) custom.classList.toggle('is-disabled', src.value !== 'custom');
+            if (custom) custom.classList.toggle('flosc-is-disabled', src.value !== 'custom');
         }
         function syncCap() {
-            if (capInput) capInput.classList.toggle('is-disabled', !capMode || capMode.value !== 'custom');
+            if (capInput) capInput.classList.toggle('flosc-is-disabled', !capMode || capMode.value !== 'custom');
         }
         src.addEventListener('change', syncSource);
         if (capMode) capMode.addEventListener('change', syncCap);
