@@ -95,16 +95,21 @@
 <p class="skeleton-marker">Content pending.</p>
 
 <h2 id="stripe-provider">class-stripe-provider.php — Stripe Integration</h2>
-<p class="skeleton-marker">Content pending.</p>
+<p>First-class native card checkout. Publishable key is exposed to the frontend via <code>FLOSC_CONFIG.stripeKey</code>; secret key stays server-side. Stripe.js is enqueued when a publishable key is present on the flow’s Payments settings.</p>
 
 <h3 id="stripe-purpose">What It Does</h3>
-<p class="skeleton-marker">Content pending.</p>
+<p>Creates Payment Intents from offer price or Stripe Price ID, confirms with Stripe.js Elements, then grants access via <code>complete-purchase</code> and/or webhooks. Configure keys under Payments; set offer processor to <code>stripe</code> on Offers.</p>
 
-<h3 id="stripe-guard">The v1.7.7 Guard — Why Stripe Is Disabled</h3>
-<p class="skeleton-marker">Content pending.</p>
+<h3 id="stripe-status">Status — First-Class (Not Experimental)</h3>
+<p>Stripe is a first-class processor alongside PayPal. Older “disabled pending verification” notes are obsolete: if keys are set and the offer processor is Stripe, checkout uses native Stripe.</p>
+
+<h2 id="checkout-paths">Checkout Paths — Native vs External</h2>
+<p><strong>Native:</strong> PayPal (JS SDK, intent <code>capture</code> for one-time or <code>subscription</code> when an active offer is subscription) and Stripe (Payment Intents). Credentials live in per-flow WPDB Payments settings.</p>
+<p><strong>External / Redirect:</strong> WooCommerce, Shopify, ThriveCart, membership platforms, or any cart URL. Offer processor = <code>redirect</code> + Checkout URL. FLOSC is not a full PSP for those carts; grant access after payment via Access Code, webhook integration, or manual member level.</p>
+<p><strong>Free:</strong> processor <code>free</code> or zero price without a paid processor — grant without payment.</p>
 
 <h2 id="other-providers">Other Payment Providers</h2>
-<p class="skeleton-marker">Content pending.</p>
+<p>ClickBank and affiliate providers remain available for specialized funnels. Token provider is virtual currency inside FLOSC, not a card network.</p>
 
 <h3 id="clickbank-provider">class-clickbank-provider.php</h3>
 <p class="skeleton-marker">Content pending.</p>

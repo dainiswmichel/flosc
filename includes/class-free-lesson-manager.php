@@ -106,40 +106,37 @@ class FLOSC_Free_Lesson_Manager {
             ksort($tiers);
             $tiers = array_values($tiers);
 
-            // Walk tiers: pick from first tier that has >1 phoneme, or 3rd tier at latest
-            $pick_from = null;
-            for ($i = 0; $i < min(3, count($tiers)); $i++) {
-                if (count($tiers[$i]) > 1 || $i === 2) {
-                    $pick_from = $tiers[$i];
-                    break;
+            // Walk tiers: prefer multi-phoneme tiers; only pool-category lessons.
+            $selected_lessons = $this->pick_eligible_lesson_from_tiers($tiers, $quiz_id);
+        } else {
+            // Non-IPA quiz: shuffle missed lessons, pick admin-configured count from pool
+            shuffle($missed);
+            $selected_lessons = [];
+            foreach ($missed as $lesson_num) {
+                if ($this->lesson_number_is_free_eligible(intval($lesson_num), $quiz_id)) {
+                    $selected_lessons[] = intval($lesson_num);
+                    if (count($selected_lessons) >= $count) {
+                        break;
+                    }
                 }
             }
-            // Fallback: if fewer than 3 tiers exist, pick from the last available tier
-            if ($pick_from === null) {
-                $pick_from = end($tiers);
-            }
-
-            // Pick one phoneme at random from the chosen tier, take its primary lesson
-            $chosen = $pick_from[array_rand($pick_from)];
-            $all_lessons = array_map('intval', (array) ($chosen['lessons'] ?? []));
-            $selected_lessons = !empty($all_lessons) ? [$all_lessons[0]] : [];
-        } else {
-            // Non-IPA quiz: original behavior — shuffle missed lessons, pick admin-configured count
-            shuffle($missed);
-            $selected_lessons = array_slice($missed, 0, $count);
         }
 
-        // LeSAEp and other flows keep the guaranteed lesson plus the admin-
-        // configured calculated lesson count.
+        // Bonus free lesson (admin: free_lesson_guaranteed) — must be in the pool category
         $guaranteed = intval(function_exists('flosc_get_setting')
             ? flosc_get_setting('free_lesson_guaranteed', 35)
             : 35);
-        if ($guaranteed > 0 && !in_array($guaranteed, $selected_lessons)) {
+        if ($guaranteed > 0
+            && !in_array($guaranteed, $selected_lessons, true)
+            && $this->lesson_number_is_free_eligible($guaranteed, $quiz_id)
+        ) {
             array_unshift($selected_lessons, $guaranteed);
         }
 
         if (empty($selected_lessons)) {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: No lessons selected for user {$user_id} — tier-walk and guaranteed both empty");
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                flosc_log("FLOSC: No free-lesson candidates for user {$user_id} (quiz: {$quiz_id})");
+            }
             return;
         }
 
@@ -148,23 +145,161 @@ class FLOSC_Free_Lesson_Manager {
         update_user_meta($user_id, '_flosc_free_lesson_quiz_id', $quiz_id);
         update_user_meta($user_id, '_flosc_free_lesson_offered', time());
 
-        // Find and grant guest access to each selected lesson
         $granted_posts = [];
+        $granted_nums  = [];
         foreach ($selected_lessons as $lesson_num) {
-            $post = $this->find_lesson_post($lesson_num, $quiz_id);
+            $post = $this->find_free_eligible_lesson_post($lesson_num, $quiz_id);
             if ($post) {
                 $member_access->grant_guest_access($user_id, $post->ID);
                 $granted_posts[] = $post->ID;
-                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: Granted guest access to post {$post->ID} (lesson #{$lesson_num}, quiz: {$quiz_id}) for user {$user_id}");
+                $granted_nums[]  = intval($lesson_num);
+                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                    flosc_log("FLOSC: Granted guest access to post {$post->ID} (lesson #{$lesson_num}, quiz: {$quiz_id}) for user {$user_id}");
+                }
             }
         }
 
-        // Store granted post IDs for retrieval
+        if (empty($granted_posts)) {
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                flosc_log("FLOSC: Free lesson numbers selected but none found in pool for user {$user_id}");
+            }
+            return;
+        }
+
+        update_user_meta($user_id, '_flosc_free_lesson_number', $granted_nums[0]);
+        update_user_meta($user_id, '_flosc_free_lesson_numbers', $granted_nums);
         update_user_meta($user_id, '_flosc_free_lesson_post_ids', $granted_posts);
 
-        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: User {$user_id} offered " . count($selected_lessons) . " free lesson(s) (scored {$score}%, quiz: {$quiz_id})");
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            flosc_log("FLOSC: User {$user_id} offered " . count($granted_nums) . " free lesson(s) (scored {$score}%, quiz: {$quiz_id})");
+        }
 
-        return $selected_lessons;
+        return $granted_nums;
+    }
+
+    /**
+     * Per-flow free-sample pool category slug (Lessons → free_lesson_pool_category).
+     * Empty = use the normal lesson-group category (all mapped lessons).
+     *
+     * @return string
+     */
+    private function get_free_lesson_pool_category() {
+        if (!function_exists('flosc_get_setting')) {
+            return '';
+        }
+        return sanitize_title((string) flosc_get_setting('free_lesson_pool_category', ''));
+    }
+
+    /**
+     * Find a published lesson post by number inside a specific category slug.
+     *
+     * @param int    $lesson_num
+     * @param string $category_slug
+     * @return WP_Post|null
+     */
+    private function find_lesson_post_in_category($lesson_num, $category_slug) {
+        $lesson_num = intval($lesson_num);
+        $category_slug = sanitize_title((string) $category_slug);
+        if ($lesson_num <= 0 || $category_slug === '') {
+            return null;
+        }
+
+        $posts = get_posts([
+            'meta_key'       => '_flosc_lesson_number', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
+            'meta_value'     => $lesson_num, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+            'posts_per_page' => 1,
+            'post_status'    => 'publish',
+            'category_name'  => $category_slug,
+        ]);
+        if (!empty($posts)) {
+            return $posts[0];
+        }
+
+        // Title fallback within category (same as main finder)
+        $cat_posts = get_posts([
+            'category_name'          => $category_slug,
+            'posts_per_page'         => -1,
+            'post_status'            => 'publish',
+            'no_found_rows'          => true,
+            'update_post_meta_cache' => false,
+            'update_post_term_cache' => false,
+        ]);
+        $pattern = '/^Lesson\s+' . preg_quote((string) $lesson_num, '/') . '\b/i';
+        foreach ($cat_posts as $p) {
+            if (preg_match($pattern, $p->post_title)) {
+                update_post_meta($p->ID, '_flosc_lesson_number', $lesson_num);
+                return $p;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Resolve free-sample post: only from free_lesson_pool_category when set.
+     *
+     * @param int    $lesson_num
+     * @param string $quiz_id
+     * @return WP_Post|null
+     */
+    private function find_free_eligible_lesson_post($lesson_num, $quiz_id = '') {
+        $pool = $this->get_free_lesson_pool_category();
+        if ($pool !== '') {
+            return $this->find_lesson_post_in_category($lesson_num, $pool);
+        }
+        // No pool configured: any published post in the quiz's lesson group category
+        return $this->find_lesson_post($lesson_num, $quiz_id);
+    }
+
+    /**
+     * @param int    $lesson_num
+     * @param string $quiz_id
+     * @return bool
+     */
+    private function lesson_number_is_free_eligible($lesson_num, $quiz_id = '') {
+        return (bool) $this->find_free_eligible_lesson_post($lesson_num, $quiz_id);
+    }
+
+    /**
+     * Tier-walk free-lesson pick limited to the free lesson pool category.
+     *
+     * @param array  $tiers
+     * @param string $quiz_id
+     * @return int[]
+     */
+    private function pick_eligible_lesson_from_tiers(array $tiers, $quiz_id = '') {
+        if (empty($tiers)) {
+            return [];
+        }
+
+        $try_tier = function (array $tier_entries) use ($quiz_id) {
+            $order = $tier_entries;
+            shuffle($order);
+            foreach ($order as $entry) {
+                $lesson_nums = array_map('intval', (array) ($entry['lessons'] ?? []));
+                foreach ($lesson_nums as $n) {
+                    if ($n > 0 && $this->lesson_number_is_free_eligible($n, $quiz_id)) {
+                        return [$n];
+                    }
+                }
+            }
+            return [];
+        };
+
+        for ($i = 0; $i < min(3, count($tiers)); $i++) {
+            if (count($tiers[$i]) > 1 || $i === 2) {
+                $picked = $try_tier($tiers[$i]);
+                if (!empty($picked)) {
+                    return $picked;
+                }
+            }
+        }
+        foreach ($tiers as $tier) {
+            $picked = $try_tier($tier);
+            if (!empty($picked)) {
+                return $picked;
+            }
+        }
+        return [];
     }
     
     /**
@@ -398,7 +533,8 @@ class FLOSC_Free_Lesson_Manager {
 
         $lessons = [];
         foreach ($lesson_nums as $lesson_num) {
-            $post = $this->find_lesson_post($lesson_num, $quiz_id);
+            // Delivery guard: honor free_lesson_require_video (and publish) for guests.
+            $post = $this->find_free_eligible_lesson_post($lesson_num, $quiz_id);
             if ($post) {
                 // v1.8.3: Run content through the_content filters so WordPress
                 // renders shortcodes, wpautop, embeds, etc.

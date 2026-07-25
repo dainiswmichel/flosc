@@ -144,6 +144,7 @@ $flosc_feature_links = [
 <p><strong>Code Level:</strong> admin/member-levels.php edits the level data, and the access-control routines read the same slug values for permissions.</p>
 
 <h3 id="tab-offers">Offers Tab</h3>
+<p><strong>Payment processors (JIT):</strong> Each offer picks <code>paypal</code> or <code>stripe</code> (native — keys on Payments tab), <code>free</code>, or <code>redirect</code> (WooCommerce, Shopify, member sites, any checkout URL). FLOSC is not a full PSP; external carts redirect out, then you grant access via Access Code or member level.</p>
 <p><a href="<?php echo esc_url($flosc_feature_links['offers']); ?>">Open Feature: Offers tab</a></p>
 <p><strong>One further step:</strong> Save one offer with a single enabled display format and confirm status plus pricing fields persist after reload.</p>
 <p><strong>Procedure Level:</strong> Save one offer, keep one display format active, and verify the price and status stay intact after reload.</p>
@@ -219,10 +220,10 @@ $flosc_feature_links = [
 
 <h3 id="tab-payments">Payments Tab</h3>
 <p><a href="<?php echo esc_url($flosc_feature_links['payments']); ?>">Open Feature: Payments tab</a></p>
-<p><strong>One further step:</strong> Verify one provider setting in test mode, then confirm the tab clearly shows which payment providers are configured for the flow.</p>
-<p><strong>Procedure Level:</strong> Open one payment provider section, confirm test-mode settings, and verify the configured providers shown on the page.</p>
-<p><strong>Tech Ref Level:</strong> Payment settings store per-flow Stripe or PayPal values that are later used by offer checkout and webhook handling.</p>
-<p><strong>Code Level:</strong> admin/payments.php renders the configuration form, while the checkout and webhook logic live in the plugin backend.</p>
+<p><strong>One further step:</strong> Enable PayPal and/or Stripe in test/sandbox, save keys, then open an offer with that processor and confirm the checkout script loads (PayPal buttons or Stripe card field).</p>
+<p><strong>Procedure Level:</strong> Add Client ID + Secret (PayPal) and/or publishable + secret keys (Stripe). Leave External carts to Offers → Redirect URL — they do not need keys on this tab.</p>
+<p><strong>Tech Ref Level:</strong> Per-flow WPDB stores Stripe and PayPal credentials. Frontend gets <code>stripeKey</code>, <code>paypalClientId</code>, and <code>paypalSdkIntent</code> (<code>capture</code> vs <code>subscription</code> from active offers). External Woo/Shopify paths use offer <code>redirect_url</code> only.</p>
+<p><strong>Code Level:</strong> admin/payments.php is the form; providers in includes/sale/providers/; enqueue in flosc.php; checkout multipath in flosc-app.js <code>openCheckout</code>.</p>
 
 <h3 id="tab-sso">SSO Tab</h3>
 <p><a href="<?php echo esc_url($flosc_feature_links['sso']); ?>">Open Feature: SSO tab</a></p>

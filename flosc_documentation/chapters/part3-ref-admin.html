@@ -200,13 +200,13 @@
 <p class="skeleton-marker">Content pending.</p>
 
 <h3 id="admin-payments">payments.php — Payment Provider Setup</h3>
-<p class="skeleton-marker">Content pending.</p>
+<p>Per-flow credentials for <strong>native</strong> PayPal and Stripe only. WooCommerce, Shopify, and member-site carts are configured on Offers as External / Redirect (checkout URL), not here.</p>
 
 <h4 id="admin-payments-stripe">Stripe Configuration — Test/Live Keys, Webhook Secret</h4>
-<p class="skeleton-marker">Content pending.</p>
+<p>First-class processor. Enable Stripe, set test or live mode, publishable + secret keys, optional webhook secret. Publishable key is passed to the app as <code>stripeKey</code>; Stripe.js loads when the key is present. Pair with offer processor = Stripe and optional Price ID.</p>
 
 <h4 id="admin-payments-paypal">PayPal Configuration — Client ID, Secret, Sandbox/Live Mode</h4>
-<p class="skeleton-marker">Content pending.</p>
+<p>First-class processor. Client ID + Secret + sandbox/live. SDK intent is <code>capture</code> for one-time active offers, or <code>subscription</code> (with vault) when an active offer is subscription type. Pair with offer processor = PayPal.</p>
 
 <h4 id="admin-payments-manual">Manual Payment Mode</h4>
 <p class="skeleton-marker">Content pending.</p>

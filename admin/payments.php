@@ -1,27 +1,17 @@
 <?php
 /**
  * FLOSC Payments Configuration Tab
- * 
- * Configure payment providers for processing purchases:
- * - Stripe (credit cards, one-time and subscriptions)
- * - PayPal (alternative payment method)
- * - Manual payments (bank transfer, check, etc.)
- * - Payment webhooks and order management
- * 
- * Integrates with:
- * - Offers tab (processes purchases for configured offers)
- * - User accounts (grants access after successful payment)
- * - Email automation (sends receipts, confirmations)
- * 
- * BACKEND STATUS v8.0.0:
- * - Settings UI: COMPLETE
- * - Stripe payment intents: COMPLETE
- * - Webhook handling: COMPLETE
- * - Signature verification: IMPLEMENTED
- * - PayPal integration: AVAILABLE
- * - Manual payment instructions: AVAILABLE
- * 
- * v1.2.9: Added tab header for flow context
+ *
+ * Native processors (keys live here, per-flow WPDB):
+ * - Stripe — cards, Apple Pay / Google Pay when enabled in Stripe, one-time + subscriptions
+ * - PayPal — one-time capture and subscription plans via PayPal JS SDK
+ *
+ * External carts (WooCommerce, Shopify, member sites, etc.) are NOT configured here.
+ * On the Offers tab set Payment Processor → External / Redirect and paste the cart URL.
+ *
+ * Also: manual payment instructions; webhooks for Stripe/PayPal grant after pay.
+ *
+ * Offers tab chooses which path each offer uses (paypal | stripe | free | redirect).
  */
 
 if (!defined('ABSPATH')) exit;
@@ -48,17 +38,27 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
 </div>
 
 <h2>Payment Processing Configuration</h2>
-<p>Configure your payment providers to accept payments for offers. Start with test mode, then switch to live when ready.</p>
+<p>
+    <strong>Two layers:</strong>
+    (1) This tab = native PayPal and Stripe credentials for this flow.
+    (2) Offers tab = which processor each offer uses, including External / Redirect for WooCommerce, Shopify, or any member cart.
+</p>
+<p>Start with test/sandbox keys, complete one full checkout, then switch to live.</p>
 
 <div class="flosc-payments-status-banner">
-    <strong>Payment status:</strong> FLOSC payment routes are active. Use test/sandbox credentials to validate your full checkout path before switching to live keys.
+    <strong>How checkout works:</strong>
+    Offer processor <code>paypal</code> or <code>stripe</code> uses the keys below (first-class native).
+    Processor <code>redirect</code> opens your external cart URL — no keys needed here.
+    Processor <code>free</code> grants access with no payment.
 </div>
 
 <!-- ============================================ -->
 <!-- STRIPE PAYMENT CONFIGURATION -->
 <!-- ============================================ -->
 <h3>💳 Stripe Configuration</h3>
-<p class="description">Stripe handles credit cards, debit cards, and subscriptions. Most popular payment provider for online courses.</p>
+<p class="description">
+    First-class native cards via Stripe.js + Payment Intents. Enable Stripe, add the publishable and secret keys for test or live mode, then set the offer’s Payment Processor to <strong>Stripe</strong> and optional Stripe Price ID on the Offers tab.
+</p>
 
 <table class="form-table">
     <tr>
@@ -150,7 +150,10 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
 <!-- ============================================ -->
 <hr class="flosc-payments-divider">
 <h3>🅿️ PayPal Configuration</h3>
-<p class="description">Accept payments via PayPal.</p>
+<p class="description">
+    First-class native PayPal (Orders capture for one-time offers; subscription vault when an active offer is type subscription).
+    Add Client ID + Secret, set Sandbox or Live, then set the offer’s Payment Processor to <strong>PayPal</strong> on the Offers tab.
+</p>
 
 <table class="form-table">
     <tr>
