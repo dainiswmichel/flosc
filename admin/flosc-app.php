@@ -881,8 +881,20 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'restUrl' => $flosc_rest_base . '/',
             'apiUrl' => $flosc_rest_base,
             'nonce' => wp_create_nonce('wp_rest'),
-            'stripeKey' => '', // v1.7.1: Stripe disabled pending account verification
-            // v5.0.7: PayPal config from provider — includes currency for SDK/order alignment
+            // Stripe publishable key from Payments tab (WPDB per-flow) — first-class, not disabled.
+            'stripeKey' => (static function () {
+                $stripe = FLOSC_Sale_Manager::instance()->get_provider('stripe');
+                if (!$stripe || !method_exists($stripe, 'get_client_config')) {
+                    return '';
+                }
+                // Only expose when Stripe is enabled for this flow (or legacy configured).
+                if (method_exists($stripe, 'is_enabled') && !$stripe->is_enabled()) {
+                    // Still allow if publishable key present (admin may enable per-offer only).
+                }
+                $cfg = $stripe->get_client_config();
+                return (string) ($cfg['publishableKey'] ?? '');
+            })(),
+            // PayPal from Payments tab (WPDB) — includes currency for SDK/order alignment.
             'paypalClientId' => (function() {
                 $pp = FLOSC_Sale_Manager::instance()->get_provider('paypal');
                 if ($pp && $pp->has_client_id()) {
@@ -906,6 +918,41 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                     return $cfg['currency'] ?? 'USD';
                 }
                 return 'USD';
+            })(),
+            // Which PayPal JS SDK intent was enqueued (capture = one-time; subscription = plans).
+            'paypalSdkIntent' => (static function () {
+                $paypal = FLOSC_Sale_Manager::instance()->get_provider('paypal');
+                if (!$paypal || !$paypal->has_client_id()) {
+                    return '';
+                }
+                $flow = function_exists('flosc') ? flosc()->get_current_flow() : null;
+                $stem = '';
+                if (is_array($flow)) {
+                    $ivr = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '');
+                    $stem = sanitize_key(pathinfo(basename($ivr), PATHINFO_FILENAME));
+                    if ($stem === '' && !empty($flow['id'])) {
+                        $stem = sanitize_key((string) $flow['id']);
+                    }
+                }
+                $offers = [];
+                if ($stem !== '') {
+                    $fs = get_option('flosc_flow_' . $stem, []);
+                    $offers = is_array($fs['offers'] ?? null) ? $fs['offers'] : [];
+                }
+                foreach ($offers as $o) {
+                    if (!is_array($o)) {
+                        continue;
+                    }
+                    $active = !empty($o['active']) || (($o['status'] ?? '') === 'active');
+                    if (!$active) {
+                        continue;
+                    }
+                    $type = strtolower((string) ($o['type'] ?? 'one_time'));
+                    if ($type === 'subscription' || !empty($o['subscription']['plans'])) {
+                        return 'subscription';
+                    }
+                }
+                return 'capture';
             })(),
             'identity' => $identity,
             'offers' => array_values($offers),
@@ -1079,8 +1126,23 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'authLoginModalTermsText' => flosc_get_setting('auth_login_modal_terms_text', 'By continuing, you agree to our Terms of Service and Privacy Policy.'),
             'authLoginModalSuccessMessage' => flosc_get_setting('auth_login_modal_success_message', 'Welcome! You\'re now logged in as {email}. Let\'s continue!'),
             'consentButtonText' => flosc_get_setting('consent_button_text', 'I Agree — Let\'s Go!'),
-            'paypalMonthlyPlanId' => get_option('flosc_paypal_plans', [])['monthly_plan_id'] ?? '',
-            'paypalYearlyPlanId'  => get_option('flosc_paypal_plans', [])['yearly_plan_id'] ?? '',
+            // Plan IDs from active flow credentials only (never mix sandbox plans into live).
+            'paypalMonthlyPlanId' => (static function () {
+                $pp = FLOSC_Sale_Manager::instance()->get_provider('paypal');
+                if ($pp && method_exists($pp, 'get_client_config')) {
+                    $cfg = $pp->get_client_config();
+                    return (string) ($cfg['monthlyPlanId'] ?? '');
+                }
+                return '';
+            })(),
+            'paypalYearlyPlanId' => (static function () {
+                $pp = FLOSC_Sale_Manager::instance()->get_provider('paypal');
+                if ($pp && method_exists($pp, 'get_client_config')) {
+                    $cfg = $pp->get_client_config();
+                    return (string) ($cfg['yearlyPlanId'] ?? '');
+                }
+                return '';
+            })(),
             // Guest link config
             // Strip all accumulated backslash layers from stored strings (same idiom as autoprompts)
             'guestLinkName'              => (function() { $v = flosc_get_setting('guest_link_name', 'Complimentary LeSAEp Learners Guest Access Link'); $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v; })(),

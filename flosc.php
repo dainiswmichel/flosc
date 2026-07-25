@@ -10214,7 +10214,17 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
      * @return string|WP_Error
      */
     private function resolve_paypal_subscription_plan_type(array $sub, $requested_plan_type = '') {
-        $plans = get_option('flosc_paypal_plans', []);
+        $plans = [];
+        $paypal = $this->sale_manager->get_provider('paypal');
+        if ($paypal && method_exists($paypal, 'get_stored_plans')) {
+            $plans = $paypal->get_stored_plans();
+        }
+        if (empty($plans)) {
+            $plans = get_option('flosc_paypal_plans', []);
+        }
+        if (!is_array($plans)) {
+            $plans = [];
+        }
         $subscription_plan_id = sanitize_text_field($sub['plan_id'] ?? ($sub['plan']['id'] ?? ''));
 
         if (empty($subscription_plan_id)) {

@@ -538,43 +538,117 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
     }
 
     /**
-     * Ensure PayPal product + plans exist. Creates them on first call.
+     * Option key for subscription plan IDs — scoped to mode + client so sandbox
+     * plan IDs never get served under live credentials (or vice versa).
+     */
+    private function get_plans_option_key() {
+        $mode = sanitize_key((string) $this->get_mode());
+        if ($mode === '') {
+            $mode = 'sandbox';
+        }
+        $client = (string) $this->get_client_id();
+        $fp = $client !== '' ? substr(md5($client), 0, 12) : 'none';
+        return 'flosc_paypal_plans_' . $mode . '_' . $fp;
+    }
+
+    /**
+     * Fingerprint of the active credentials (mode + client id).
+     */
+    private function get_credentials_fingerprint() {
+        return sanitize_key((string) $this->get_mode()) . ':' . md5((string) $this->get_client_id());
+    }
+
+    /**
+     * Stored product/plan IDs for the active PayPal credentials only.
+     * Returns [] when nothing valid is stored for this mode/client.
+     */
+    public function get_stored_plans() {
+        $key = $this->get_plans_option_key();
+        $plans = get_option($key, []);
+        if (!is_array($plans)) {
+            $plans = [];
+        }
+
+        // Legacy unscoped option — only accept if fingerprint matches current credentials.
+        if (empty($plans['monthly_plan_id']) || empty($plans['yearly_plan_id'])) {
+            $legacy = get_option('flosc_paypal_plans', []);
+            if (is_array($legacy)
+                && !empty($legacy['monthly_plan_id'])
+                && !empty($legacy['yearly_plan_id'])
+                && !empty($legacy['credentials_fingerprint'])
+                && hash_equals((string) $legacy['credentials_fingerprint'], $this->get_credentials_fingerprint())
+            ) {
+                $plans = $legacy;
+                update_option($key, $plans, false);
+            }
+        }
+
+        if (empty($plans['monthly_plan_id']) || empty($plans['yearly_plan_id'])) {
+            return [];
+        }
+
+        // Reject plans saved under different credentials (even if option key collides).
+        if (!empty($plans['credentials_fingerprint'])
+            && !hash_equals((string) $plans['credentials_fingerprint'], $this->get_credentials_fingerprint())
+        ) {
+            return [];
+        }
+
+        return $plans;
+    }
+
+    /**
+     * Ensure PayPal product + plans exist for the *current* mode/credentials.
+     * Creates them on first call for that credential set.
      * Returns [ 'product_id' => ..., 'monthly_plan_id' => ..., 'yearly_plan_id' => ... ]
      */
     public function ensure_plans_exist() {
-        $plans = get_option('flosc_paypal_plans', []);
+        $plans = $this->get_stored_plans();
 
         if (!empty($plans['monthly_plan_id']) && !empty($plans['yearly_plan_id'])) {
             return $plans;
         }
 
-        // Create product if needed
-        $product_id = $plans['product_id'] ?? '';
-        if (empty($product_id)) {
-            $product = $this->create_product(
-                'LeSAEp Pronunciation Course',
-                'Learn Excellent Standard American English Pronunciation'
-            );
-            if (is_wp_error($product)) return $product;
-            $product_id = $product['id'];
+        $plans = [];
+
+        // Create product for this credential set
+        $product = $this->create_product(
+            'LeSAEp Pronunciation Course',
+            'Learn Excellent Standard American English Pronunciation'
+        );
+        if (is_wp_error($product)) {
+            return $product;
+        }
+        $product_id = $product['id'];
+
+        $monthly = $this->create_plan($product_id, 'LeSAEp Monthly — $10/month', 10.00, 'MONTH');
+        if (is_wp_error($monthly)) {
+            return $monthly;
         }
 
-        // Create monthly plan ($10/month)
-        if (empty($plans['monthly_plan_id'])) {
-            $monthly = $this->create_plan($product_id, 'LeSAEp Monthly — $10/month', 10.00, 'MONTH');
-            if (is_wp_error($monthly)) return $monthly;
-            $plans['monthly_plan_id'] = $monthly['id'];
+        $yearly = $this->create_plan($product_id, 'LeSAEp Yearly — $100/year', 100.00, 'YEAR');
+        if (is_wp_error($yearly)) {
+            return $yearly;
         }
 
-        // Create yearly plan ($100/year)
-        if (empty($plans['yearly_plan_id'])) {
-            $yearly = $this->create_plan($product_id, 'LeSAEp Yearly — $100/year', 100.00, 'YEAR');
-            if (is_wp_error($yearly)) return $yearly;
-            $plans['yearly_plan_id'] = $yearly['id'];
+        $plans = [
+            'product_id' => $product_id,
+            'monthly_plan_id' => $monthly['id'],
+            'yearly_plan_id' => $yearly['id'],
+            'mode' => $this->get_mode(),
+            'credentials_fingerprint' => $this->get_credentials_fingerprint(),
+            'created_at' => current_time('mysql'),
+        ];
+
+        update_option($this->get_plans_option_key(), $plans, false);
+        // Keep legacy key in sync for older readers, but only for matching credentials.
+        update_option('flosc_paypal_plans', $plans, false);
+
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            flosc_log('[FLOSC-PAYPAL] ensure_plans_exist created plans for mode=' . $this->get_mode()
+                . ' monthly=' . $plans['monthly_plan_id'] . ' yearly=' . $plans['yearly_plan_id']);
         }
 
-        $plans['product_id'] = $product_id;
-        update_option('flosc_paypal_plans', $plans);
         return $plans;
     }
 
@@ -587,8 +661,8 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
             'mode'     => $this->get_mode(),
             'currency' => $this->get_currency(),
         ];
-        // Include plan IDs if they exist (for subscription buttons)
-        $plans = get_option('flosc_paypal_plans', []);
+        // Plan IDs only for the active credential set (never mix sandbox plans into live).
+        $plans = $this->get_stored_plans();
         if (!empty($plans['monthly_plan_id'])) {
             $config['monthlyPlanId'] = $plans['monthly_plan_id'];
         }
