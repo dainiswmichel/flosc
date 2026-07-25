@@ -82,9 +82,25 @@
     opacity: 1;
 }
 
+.flosc-offer-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 10px;
+    line-height: 1.3;
+    color: #fff;
+}
+
 .flosc-offer-content {
     margin-bottom: 16px;
     line-height: 1.6;
+}
+
+.flosc-offer-guarantee {
+    margin-top: 12px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    opacity: 0.92;
+    text-align: center;
 }
 
 .flosc-offer-timer {

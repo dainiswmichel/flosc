@@ -2487,7 +2487,7 @@ class floscApp {
     // Supports multiple formats: card, pill, compact, banner, featured, text, inline-checkout
     showOfferMessage(msg) {
         const offer = this.getOfferData(msg.offer_id);
-        const displayFormat = msg.display_format || offer?.display_format || 'card';
+        const displayFormat = this.resolveOfferDisplayFormat(msg, offer);
         
         this.log('[FLOSC-OFFER] Showing offer:', msg.offer_id, 'format:', displayFormat);
         
@@ -2697,22 +2697,148 @@ class floscApp {
         }
         return this.humanizeOfferLabel(id || 'Special Offer');
     }
+
+    /**
+     * Prefer an enabled format from Offers registry display_formats;
+     * fall back to offer.display_format / msg / card.
+     */
+    resolveOfferDisplayFormat(msg, offer) {
+        const formats = (offer && offer.display_formats && typeof offer.display_formats === 'object')
+            ? offer.display_formats
+            : {};
+        const enabled = Object.keys(formats).filter((k) => {
+            const f = formats[k];
+            return f && (f.enabled === true || f.enabled === 1 || f.enabled === '1');
+        });
+        const preferred = String(msg?.display_format || offer?.display_format || 'card').trim() || 'card';
+        if (enabled.length === 0) {
+            return preferred;
+        }
+        if (enabled.includes(preferred)) {
+            return preferred;
+        }
+        const rank = ['featured', 'card', 'banner', 'compact', 'pill', 'text', 'inline-checkout'];
+        for (const f of rank) {
+            if (enabled.includes(f)) {
+                return f;
+            }
+        }
+        return enabled[0];
+    }
+
+    /** Money for strikethrough / secondary price (450 → $450). */
+    formatOfferMoney(value) {
+        if (value === undefined || value === null || value === '') {
+            return '';
+        }
+        if (typeof value === 'number' && Number.isFinite(value)) {
+            if (value <= 0) {
+                return '';
+            }
+            return `$${Number(value).toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+        }
+        const s = String(value).trim();
+        if (!s) {
+            return '';
+        }
+        if (/^\$/.test(s) || /yr|mo|month|year|free/i.test(s)) {
+            return s;
+        }
+        const n = parseFloat(s.replace(/[^0-9.]/g, ''));
+        if (Number.isFinite(n) && n > 0 && String(n) === s.replace(/[^0-9.]/g, '')) {
+            return `$${n.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+        }
+        return s;
+    }
+
+    /** Registry description (and optional ** markdown) for offer body. */
+    formatOfferRichText(text) {
+        let t = this.escapeHtml(String(text || ''));
+        t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        t = t.replace(/\n/g, '<br>');
+        return t;
+    }
+
+    /**
+     * Features from Offers registry: features string, features[], or grants.features.
+     */
+    normalizeOfferFeatures(offer, msg) {
+        const sources = [
+            offer?.features,
+            offer?.grants?.features,
+            msg?.features,
+        ];
+        let list = [];
+        for (const src of sources) {
+            if (src === undefined || src === null || src === '') {
+                continue;
+            }
+            if (Array.isArray(src)) {
+                list = src.map((x) => (typeof x === 'string' ? x : (x?.name || String(x || '')))).filter(Boolean);
+            } else if (typeof src === 'string') {
+                list = src.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+            }
+            if (list.length) {
+                break;
+            }
+        }
+        const humanize = (s) => String(s).replace(/[_-]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).trim();
+        return list.slice(0, 8).map(humanize);
+    }
+
+    /** Countdown seconds from registry; 0 = no timer (never invent 3600). */
+    resolveOfferTimerSeconds(msg, offer) {
+        const fromMsg = parseInt(msg?.timer, 10);
+        if (Number.isFinite(fromMsg) && fromMsg > 0) {
+            return fromMsg;
+        }
+        const sec = parseInt(offer?.timer_seconds, 10);
+        if (Number.isFinite(sec) && sec > 0) {
+            return sec;
+        }
+        const min = parseInt(offer?.timer_minutes, 10);
+        if (Number.isFinite(min) && min > 0) {
+            return min * 60;
+        }
+        return 0;
+    }
+
+    /** Badge text; empty registry badge means no badge (no forced "Limited Time"). */
+    resolveOfferBadge(offer, msg) {
+        if (offer?.meta && Object.prototype.hasOwnProperty.call(offer.meta, 'badge')) {
+            return String(offer.meta.badge || '').trim();
+        }
+        if (msg?.badge !== undefined && msg?.badge !== null) {
+            return String(msg.badge || '').trim();
+        }
+        return '';
+    }
     
-    // Format: CARD (default, rich display)
+    // Format: CARD (default, rich display) — body from Offers registry when available
     showOfferCard(msg, offer) {
-        let content = this.replaceVariables(msg.content);
-        content = content.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-        content = content.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+        const registryBody = String(offer?.description || offer?.headline || '').trim();
+        let content;
+        if (registryBody) {
+            content = this.formatOfferRichText(this.replaceVariables(registryBody));
+        } else {
+            content = this.replaceVariables(msg.content || '');
+            content = this.escapeHtml(content);
+            content = content.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            content = content.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+            content = content.replace(/\n/g, '<br>');
+        }
 
         this.offerStartTime = Date.now();
-        const timerSeconds = msg.timer || offer?.timer_seconds || 3600;
-        const ctaText = msg.cta || offer?.cta || '🔓 Get Full Access Now';
-        const price = offer?.display_price || msg.price || '';
+        const timerSeconds = this.resolveOfferTimerSeconds(msg, offer);
+        const ctaText = offer?.cta || msg.cta || 'Get Access Now';
+        const price = offer?.display_price || this.formatOfferMoney(offer?.price) || msg.price || '';
+        const guarantee = String(offer?.guarantee || msg.guarantee || '').trim();
 
         const offerHtml = `
             <div class="flosc-offer-card" data-offer-id="${msg.offer_id}">
                 <button class="flosc-offer-close" aria-label="Dismiss">×</button>
-                <div class="flosc-offer-content">${content.replace(/\n/g, '<br>')}</div>
+                <div class="flosc-offer-title">${this.escapeHtml(this.resolveOfferDisplayTitle(offer, msg, msg.offer_id))}</div>
+                <div class="flosc-offer-content">${content}</div>
                 ${timerSeconds > 0 ? `
                 <div class="flosc-offer-timer" id="flosc-offer-timer-${msg.offer_id}">
                     <span class="flosc-timer-icon">⏱️</span>
@@ -2720,8 +2846,9 @@ class floscApp {
                 </div>
                 ` : ''}
                 <button class="flosc-offer-cta flosc-style-button" data-action="checkout_${msg.offer_id}">
-                    ${ctaText} ${price ? `<span class="flosc-offer-cta-price">${price}</span>` : ''}
+                    ${this.escapeHtml(String(ctaText))}${price ? ` <span class="flosc-offer-cta-price">${this.escapeHtml(String(price))}</span>` : ''}
                 </button>
+                ${guarantee ? `<div class="flosc-offer-guarantee">${this.escapeHtml(guarantee)}</div>` : ''}
             </div>
         `;
 
@@ -2810,61 +2937,58 @@ class floscApp {
         this.bindOfferEvents(msg);
     }
     
-    // Format: FEATURED (large prominent card)
+    // Format: FEATURED (large prominent card) — fully driven by Offers registry (WPDB)
     showOfferFeatured(msg, offer) {
-        const badge = offer?.meta?.badge || msg.badge || 'Limited Time';
-        // Offers registry name/headline — never raw offer_id (e.g. lesaep_offer)
+        const badge = this.resolveOfferBadge(offer, msg);
         const title = this.escapeHtml(this.resolveOfferDisplayTitle(offer, msg, msg.offer_id));
-        // Prefer registry description; optional longer body may still come from msg.content
+
+        // Body: Offers description first (avoids conflicting script/msg copy e.g. save $20 vs $350)
+        const registryDesc = String(offer?.description || '').trim();
         let description = '';
-        if (msg.content && String(msg.content).trim() && String(msg.content).trim() !== String(msg.offer_id || '')) {
-            description = this.replaceVariables(msg.content);
-            description = description.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-            description = description.replace(/\n/g, '<br>');
-        } else {
-            description = offer?.description || msg.description || '';
-            if (description) {
-                description = this.escapeHtml(String(description)).replace(/\n/g, '<br>');
-            }
+        if (registryDesc) {
+            description = this.formatOfferRichText(this.replaceVariables(registryDesc));
+        } else if (msg.content && String(msg.content).trim() && String(msg.content).trim() !== String(msg.offer_id || '')) {
+            description = this.formatOfferRichText(this.replaceVariables(String(msg.content)));
         }
-        const features = offer?.grants?.features || msg.features || [];
-        const price = offer?.display_price || msg.price || '';
-        const originalPrice = offer?.original_price || msg.original_price || '';
-        const savings = offer?.meta?.savings || msg.savings || '';
-        const ctaText = msg.cta || offer?.cta || '🔓 Get Full Access Now';
-        const guarantee = msg.guarantee || offer?.guarantee || '';
-        
-        // Humanize feature identifiers (snake_case → Title Case)
-        const humanize = (s) => typeof s === 'string' ? s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : (s.name || s);
-        const featuresHtml = features.length > 0 ? `
+
+        const featureList = this.normalizeOfferFeatures(offer, msg);
+        const price = offer?.display_price || this.formatOfferMoney(offer?.price) || msg.price || '';
+        const originalPrice = this.formatOfferMoney(offer?.original_price ?? msg.original_price);
+        const savings = (offer?.meta?.savings !== undefined && offer?.meta?.savings !== null)
+            ? String(offer.meta.savings).trim()
+            : String(msg.savings || '').trim();
+        const ctaText = offer?.cta || msg.cta || 'Get Access Now';
+        const guarantee = String(offer?.guarantee || msg.guarantee || '').trim();
+
+        const featuresHtml = featureList.length > 0 ? `
             <div class="flosc-offer-featured-features">
-                ${features.slice(0, 5).map(f => `
+                ${featureList.map((f) => `
                     <div class="flosc-offer-featured-feature">
-                        <span>✓</span> ${this.escapeHtml(String(humanize(f)))}
+                        <span>✓</span> ${this.escapeHtml(f)}
                     </div>
                 `).join('')}
             </div>
         ` : '';
-        
+
         const featuredHtml = `
-            <div class="flosc-offer-featured" data-offer-id="${msg.offer_id}">
+            <div class="flosc-offer-featured" data-offer-id="${this.escapeHtml(String(msg.offer_id || offer?.id || ''))}">
                 <button class="flosc-offer-close" aria-label="Dismiss">×</button>
-                ${badge ? `<div class="flosc-offer-featured-badge">${this.escapeHtml(String(badge))}</div>` : ''}
+                ${badge ? `<div class="flosc-offer-featured-badge">${this.escapeHtml(badge)}</div>` : ''}
                 <div class="flosc-offer-featured-title">${title}</div>
                 ${description ? `<div class="flosc-offer-featured-description">${description}</div>` : ''}
                 ${featuresHtml}
                 <div class="flosc-offer-featured-pricing">
-                    <span class="flosc-offer-featured-price">${this.escapeHtml(String(price))}</span>
-                    ${originalPrice ? `<span class="flosc-offer-featured-original">${this.escapeHtml(String(originalPrice))}</span>` : ''}
-                    ${savings ? `<span class="flosc-offer-featured-savings">${this.escapeHtml(String(savings))}</span>` : ''}
+                    ${price ? `<span class="flosc-offer-featured-price">${this.escapeHtml(String(price))}</span>` : ''}
+                    ${originalPrice ? `<span class="flosc-offer-featured-original">${this.escapeHtml(originalPrice)}</span>` : ''}
+                    ${savings ? `<span class="flosc-offer-featured-savings">${this.escapeHtml(savings)}</span>` : ''}
                 </div>
-                <button class="flosc-offer-featured-cta" data-action="checkout_${msg.offer_id}">
+                <button class="flosc-offer-featured-cta" data-action="checkout_${this.escapeHtml(String(msg.offer_id || offer?.id || ''))}">
                     ${this.escapeHtml(String(ctaText))}
                 </button>
-                ${guarantee ? `<div class="flosc-offer-featured-guarantee">${this.escapeHtml(String(guarantee))}</div>` : ''}
+                ${guarantee ? `<div class="flosc-offer-featured-guarantee">${this.escapeHtml(guarantee)}</div>` : ''}
             </div>
         `;
-        
+
         this.addMessage('assistant', featuredHtml, true);
         this.bindOfferEvents(msg);
     }
