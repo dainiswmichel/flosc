@@ -552,12 +552,11 @@ class floscApp {
             const data = await response.json();
             if (data?.success && typeof data.token_balance === 'number' && this.user) {
                 this.user.tokenBalance = data.token_balance;
-                this.user.tokensFormatted = data.formatted || String(data.token_balance);
-                // Refresh profile bar if present
-                const el = document.querySelector('[data-flosc-token-balance], .flosc-token-balance, #flosc_token_balance');
-                if (el && data.formatted) {
-                    el.textContent = data.formatted;
-                }
+                this.user.tokens = data.token_balance;
+                this.user.flowTokens = data.token_balance;
+                this.user.tokensFormatted = data.formatted || this.formatProfileTokenDisplay(data.token_balance);
+                // Paint guest/member profile wallet (same place as visitor count).
+                this.updateLoggedInTokenLabel(data.token_balance);
                 this.log('[FLOSC] Guest token grant applied:', data.token_balance);
             }
         } catch (e) {
@@ -7624,8 +7623,15 @@ Purchased: ${ctx.purchased}
             }
 
             if (profileName && effectiveName) {
+                profileName.dataset.baseName = effectiveName;
+                // Token count is filled by updateLoggedInTokenLabel (visitor parity).
                 profileName.textContent = effectiveName;
             }
+
+            // Guest/Member wallet in the profile bar (V→G grant may still be pending;
+            // applyGuestTokenGrantOnInit refreshes this again after the REST call).
+            const initialTokens = this.resolveLoggedInTokenBalance();
+            this.updateLoggedInTokenLabel(initialTokens);
 
             if (profileBadge) {
                 // Read badge text from admin-configured data attributes on the profile bar
@@ -7730,7 +7736,21 @@ Purchased: ${ctx.purchased}
     }
 
     syncVisitorTokenBalanceFromPayload(payload) {
-        if (this.state !== 'visitor' || !payload || !payload.token_balance) {
+        if (!payload || !payload.token_balance) {
+            return;
+        }
+
+        // Logged-in chat charges return scope=user_flow — keep guest/member bar in sync.
+        const scope = String(payload.token_balance.scope || '');
+        if (this.state !== 'visitor' && (scope === 'user_flow' || scope === '')) {
+            const value = this.parseVisitorTokenValue(payload.token_balance.value);
+            if (Number.isFinite(value)) {
+                this.updateLoggedInTokenLabel(value);
+            }
+            return;
+        }
+
+        if (this.state !== 'visitor') {
             return;
         }
 
@@ -7786,28 +7806,88 @@ Purchased: ${ctx.purchased}
         // Show only the token count to users; real millicents stay internal (admin-only).
         visitorName.innerHTML = `<span class="flosc-visitor-label-text">${this.escapeHtml(baseLabel)}</span> <span class="flosc-visitor-token-count" id="flosc_visitor_token_count">(${this.escapeHtml(formattedTokens)})</span>`;
 
-        // When running inside companion iframe, sync live token count to the
-        // companion header on the parent page.
-        if (window.self !== window.top) {
-            try {
-                let targetOrigin = '*';
-                if (document.referrer) {
-                    const ref = new URL(document.referrer, window.location.origin);
-                    if (/^https?:$/.test(ref.protocol)) {
-                        targetOrigin = ref.origin;
-                    }
-                }
-                window.parent.postMessage({
-                    type: 'flosc_companion_token_update',
-                    payload: {
-                        formatted: formattedTokens,
-                        value: Math.max(0, parseInt(tokenValue, 10) || 0),
-                        ts: Date.now()
-                    }
-                }, targetOrigin);
-            } catch (e) {
-                // Ignore cross-window messaging failures.
+        this.postCompanionTokenUpdate(tokenValue, formattedTokens);
+    }
+
+    /**
+     * Guest/Member: show wallet beside the display name, same (N) pattern as visitors.
+     * Uses #flosc_profile_name — there is no separate token DOM node for logged-in users.
+     */
+    resolveLoggedInTokenBalance() {
+        if (!this.user) {
+            return 0;
+        }
+        const candidates = [
+            this.user.tokenBalance,
+            this.user.tokens,
+            this.user.flowTokens,
+        ];
+        for (const c of candidates) {
+            const n = parseInt(c, 10);
+            if (Number.isFinite(n) && n >= 0) {
+                return n;
             }
+        }
+        return 0;
+    }
+
+    updateLoggedInTokenLabel(tokenValue) {
+        if (this.state === 'visitor') {
+            return;
+        }
+
+        const profileName = document.getElementById('flosc_profile_name');
+        if (!profileName) {
+            return;
+        }
+
+        let baseName = String(profileName.dataset.baseName || '').trim();
+        if (!baseName) {
+            const existing = profileName.querySelector('.flosc-user-label-text')?.textContent
+                || String(profileName.textContent || '').replace(/\s*\([^)]*\)\s*$/i, '').trim();
+            baseName = existing
+                || String(this.user?.name || '').trim()
+                || (this.state === 'member' ? 'Member' : 'Guest');
+            profileName.dataset.baseName = baseName;
+        }
+
+        const n = Math.max(0, parseInt(tokenValue, 10) || 0);
+        const formattedTokens = this.formatProfileTokenDisplay(n);
+        if (this.user) {
+            this.user.tokenBalance = n;
+            this.user.tokens = n;
+            this.user.tokensFormatted = formattedTokens;
+        }
+
+        profileName.innerHTML =
+            `<span class="flosc-user-label-text">${this.escapeHtml(baseName)}</span> ` +
+            `<span class="flosc-user-token-count" id="flosc_user_token_count" data-flosc-token-balance="1">(${this.escapeHtml(formattedTokens)})</span>`;
+
+        this.postCompanionTokenUpdate(n, formattedTokens);
+    }
+
+    postCompanionTokenUpdate(tokenValue, formattedTokens) {
+        if (window.self === window.top) {
+            return;
+        }
+        try {
+            let targetOrigin = '*';
+            if (document.referrer) {
+                const ref = new URL(document.referrer, window.location.origin);
+                if (/^https?:$/.test(ref.protocol)) {
+                    targetOrigin = ref.origin;
+                }
+            }
+            window.parent.postMessage({
+                type: 'flosc_companion_token_update',
+                payload: {
+                    formatted: formattedTokens,
+                    value: Math.max(0, parseInt(tokenValue, 10) || 0),
+                    ts: Date.now()
+                }
+            }, targetOrigin);
+        } catch (e) {
+            // Ignore cross-window messaging failures.
         }
     }
 

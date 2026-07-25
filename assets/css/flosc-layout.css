@@ -578,6 +578,18 @@ img.flosc-profile-avatar {
     display: none !important;
 }
 
+/*
+ * Double-icon flash fix (SSO/login paint): both logged-in avatar nodes have
+ * data-show="logged-in", so the generic data-show rule would display BOTH until
+ * setupUI() picks one. Hide them until JS adds flosc-visible / flosc-visible-flex.
+ */
+[data-user-state="guest"] .user-profile-bar #flosc_profile_avatar:not(.flosc-visible),
+[data-user-state="member"] .user-profile-bar #flosc_profile_avatar:not(.flosc-visible),
+[data-user-state="guest"] .user-profile-bar #flosc_profile_avatar_icon:not(.flosc-visible):not(.flosc-visible-flex),
+[data-user-state="member"] .user-profile-bar #flosc_profile_avatar_icon:not(.flosc-visible):not(.flosc-visible-flex) {
+    display: none !important;
+}
+
 .flosc-profile-avatar-icon {
     font-size: 20px;
     line-height: 1;
