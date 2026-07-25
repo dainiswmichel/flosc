@@ -10263,11 +10263,35 @@ Purchased: ${ctx.purchased}
      * Plan IDs come from config (pre-loaded) or fetched on-the-fly via /paypal/get-plans.
      */
     async _renderSubscriptionCheckout(offerId, offer, container) {
-        // Plan picker UI
-        const monthlyTokens = Number(this.config.subscriptionMonthlyTokenGrant || 10000);
-        const yearlyTokens = Number(this.config.subscriptionYearlyTokenGrant || 35000);
-        const tokenCap = Number(this.config.subscriptionTokenCap || 35000);
-        const fmtTok = (n) => (Number.isFinite(n) ? n.toLocaleString() : String(n));
+        // Plan picker from offer + flow token config — never brand-hardcoded prices.
+        const plans = (offer && offer.subscription && offer.subscription.plans) ? offer.subscription.plans : {};
+        const monthlyPrice = Number(plans.monthly?.price ?? offer?.pricing?.price ?? offer?.price ?? 0) || 0;
+        const yearlyPrice = Number(plans.yearly?.price ?? 0) || (monthlyPrice > 0 ? monthlyPrice * 10 : 0);
+        const monthlyLabel = plans.monthly?.label || (monthlyPrice > 0 ? `$${monthlyPrice}/month` : 'Monthly');
+        const yearlyLabel = plans.yearly?.label || (yearlyPrice > 0 ? `$${yearlyPrice}/year` : 'Yearly');
+        const currencySym = (this.config.identity && this.config.identity.currency_symbol) || '$';
+        const fmtMoney = (n) => (Number.isFinite(n) && n > 0 ? `${currencySym}${Number(n).toFixed(n % 1 ? 2 : 0)}` : '—');
+        const monthlyTokens = Number(this.config.subscriptionMonthlyTokenGrant || this.config.productTokenGrantRecurring || 0);
+        const yearlyTokens = Number(this.config.subscriptionYearlyTokenGrant || this.config.productTokenGrantRecurringYearly || 0);
+        const tokenCap = Number(this.config.subscriptionTokenCap || this.config.productTokenCap || 0);
+        const fmtTok = (n) => (Number.isFinite(n) && n > 0 ? n.toLocaleString() : '');
+        const yearlySavings = (monthlyPrice > 0 && yearlyPrice > 0 && monthlyPrice * 12 > yearlyPrice)
+            ? (monthlyPrice * 12 - yearlyPrice)
+            : 0;
+        const yearlyTokenLine = fmtTok(yearlyTokens)
+            ? (tokenCap > 0
+                ? `up to ${fmtTok(yearlyTokens)} tokens (cap ${fmtTok(tokenCap)})`
+                : `up to ${fmtTok(yearlyTokens)} tokens`)
+            : '';
+        const monthlyTokenLine = fmtTok(monthlyTokens)
+            ? (tokenCap > 0
+                ? `+${fmtTok(monthlyTokens)} tokens / cycle (cap ${fmtTok(tokenCap)})`
+                : `+${fmtTok(monthlyTokens)} tokens / cycle`)
+            : '';
+        const yearlyExtra = [
+            yearlySavings > 0 ? `Save ${fmtMoney(yearlySavings)}` : '',
+            yearlyTokenLine,
+        ].filter(Boolean).join(' · ');
         container.innerHTML = `
             <div class="flosc-plan-picker">
                 <div class="flosc-plan-picker-title">Choose your plan:</div>
@@ -10275,21 +10299,26 @@ Purchased: ${ctx.purchased}
                     <label class="flosc-plan-option flosc-plan-option-selected" data-plan="yearly">
                         <div class="flosc-plan-badge">Best Value</div>
                         <input type="radio" name="flosc_plan" value="yearly" checked class="flosc-plan-option-input">
-                        <div class="flosc-plan-amount">$100</div>
+                        <div class="flosc-plan-amount">${this.escapeHtml(fmtMoney(yearlyPrice))}</div>
                         <div class="flosc-plan-interval flosc-plan-interval-yearly">/year</div>
-                        <div class="flosc-plan-savings">Save $20 · up to ${fmtTok(yearlyTokens)} tokens (cap ${fmtTok(tokenCap)})</div>
+                        ${yearlyExtra ? `<div class="flosc-plan-savings">${this.escapeHtml(yearlyExtra)}</div>` : ''}
                     </label>
                     <label class="flosc-plan-option" data-plan="monthly">
                         <input type="radio" name="flosc_plan" value="monthly" class="flosc-plan-option-input">
-                        <div class="flosc-plan-amount">$10</div>
+                        <div class="flosc-plan-amount">${this.escapeHtml(fmtMoney(monthlyPrice))}</div>
                         <div class="flosc-plan-interval">/month</div>
-                        <div class="flosc-plan-savings">+${fmtTok(monthlyTokens)} tokens / mo (cap ${fmtTok(tokenCap)})</div>
+                        ${monthlyTokenLine ? `<div class="flosc-plan-savings">${this.escapeHtml(monthlyTokenLine)}</div>` : ''}
                     </label>
                 </div>
             </div>
             <div id="flosc-sub-paypal-btn" class="flosc-sub-paypal-btn"></div>
             <div id="flosc-sub-status" class="flosc-sub-status"></div>
         `;
+        // Stash for welcome copy after activate
+        container.dataset.floscMonthlyPrice = String(monthlyPrice);
+        container.dataset.floscYearlyPrice = String(yearlyPrice);
+        container.dataset.floscMonthlyLabel = monthlyLabel;
+        container.dataset.floscYearlyLabel = yearlyLabel;
 
         // Plan selection toggle styling
         const planOptions = container.querySelectorAll('.flosc-plan-option');
@@ -10436,7 +10465,7 @@ Purchased: ${ctx.purchased}
 
                         // Update local user state so IVR conditions reflect purchase
                         const displayName = result.user_display_name || result.user_email || 'Member';
-                        const defaultMemberLevel = this.config.defaultMemberLevel || 'pronunciation_learners';
+                        const defaultMemberLevel = this.config.defaultMemberLevel || 'member';
                         if (this.user) {
                             this.user.justPurchased = true;
                             this.user.purchased = true;
@@ -10501,18 +10530,21 @@ Purchased: ${ctx.purchased}
                             }
                         }
 
-                        // Welcome message — shown immediately after activation.
-                        // When the server routes authentication through the emailed
-                        // single-use link rather than issuing cookies directly, the
-                        // message tells the buyer where their sign-in link is going.
-                        const planLabel = selectedPlan === 'yearly' ? '$100/year' : '$10/month';
+                        // Welcome message from flow identity + plan pricing (not brand hardcodes).
+                        const productName = (result.product_name
+                            || this.config.identity?.name
+                            || this.config.productName
+                            || 'your membership').trim();
+                        const planLabel = selectedPlan === 'yearly'
+                            ? (container.dataset.floscYearlyLabel || result.amount || 'yearly')
+                            : (container.dataset.floscMonthlyLabel || result.amount || 'monthly');
                         const welcomeMsg = (result.login_handoff === 'email_link_sent')
                             ? `🎉 **Your ${planLabel} subscription is active!**\n\n` +
                               `Your account has been created and access is now active. ` +
                               `A sign-in link has been sent to your purchase email — click it to continue from any device.\n\n` +
                               `**What would you like to do first?**`
-                            : `🎉 **Welcome to LeSAEp!** Your ${planLabel} subscription is active.\n\n` +
-                              `You now have full access to all pronunciation lessons, IPA training, audio recordings, and AI coaching.\n\n` +
+                            : `🎉 **Welcome to ${productName}!** Your ${planLabel} subscription is active.\n\n` +
+                              `You now have full member access.\n\n` +
                               `**What would you like to do first?**`;
                         this.addMessage('assistant', welcomeMsg);
 
@@ -10711,7 +10743,7 @@ Purchased: ${ctx.purchased}
                             }
 
                             const displayName = result.user_display_name || result.user_email || 'Member';
-                            const defaultMemberLevel = this.config.defaultMemberLevel || 'pronunciation_learners';
+                            const defaultMemberLevel = this.config.defaultMemberLevel || 'member';
                             const memberLevel = result.member_level || defaultMemberLevel;
                             if (this.user) {
                                 this.user.justPurchased = true;

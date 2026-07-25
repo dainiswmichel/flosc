@@ -611,22 +611,79 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
         $plans = [];
 
-        // Create product for this credential set
-        $product = $this->create_product(
-            'LeSAEp Pronunciation Course',
-            'Learn Excellent Standard American English Pronunciation'
-        );
+        // Product catalog names/prices come from the active FLOSC flow — never a brand hardcode.
+        $product_name = 'FLOSC Subscription';
+        $product_desc = 'Recurring access subscription';
+        $monthly_price = 10.00;
+        $yearly_price = 100.00;
+        $monthly_label = '';
+        $yearly_label = '';
+
+        if (function_exists('flosc')) {
+            $flow = flosc()->get_current_flow();
+            if (is_array($flow)) {
+                $identity_name = trim((string) ($flow['identity']['name'] ?? $flow['product']['name'] ?? ''));
+                if ($identity_name !== '') {
+                    $product_name = $identity_name . ' Subscription';
+                    $product_desc = trim((string) ($flow['identity']['tagline'] ?? $flow['product']['tagline'] ?? ''));
+                    if ($product_desc === '') {
+                        $product_desc = $identity_name . ' membership';
+                    }
+                }
+                // Prefer offer subscription.plans pricing when present on the flow.
+                $offers = is_array($flow['offers'] ?? null) ? $flow['offers'] : [];
+                if (empty($offers)) {
+                    $stem = sanitize_key((string) ($flow['id'] ?? pathinfo((string) ($flow['ivr_file'] ?? ''), PATHINFO_FILENAME)));
+                    if ($stem !== '') {
+                        $fs = get_option('flosc_flow_' . $stem, []);
+                        $offers = is_array($fs['offers'] ?? null) ? $fs['offers'] : [];
+                    }
+                }
+                foreach ($offers as $offer) {
+                    if (!is_array($offer)) {
+                        continue;
+                    }
+                    $active = !empty($offer['active']) || (($offer['status'] ?? '') === 'active');
+                    if (!$active) {
+                        continue;
+                    }
+                    $sub_plans = is_array($offer['subscription']['plans'] ?? null) ? $offer['subscription']['plans'] : [];
+                    if (!empty($sub_plans['monthly']['price'])) {
+                        $monthly_price = floatval($sub_plans['monthly']['price']);
+                        $monthly_label = (string) ($sub_plans['monthly']['label'] ?? '');
+                    }
+                    if (!empty($sub_plans['yearly']['price'])) {
+                        $yearly_price = floatval($sub_plans['yearly']['price']);
+                        $yearly_label = (string) ($sub_plans['yearly']['label'] ?? '');
+                    }
+                    if ($monthly_price > 0 || $yearly_price > 0) {
+                        break;
+                    }
+                }
+            }
+        }
+
+        $monthly_price = $monthly_price > 0 ? $monthly_price : 10.00;
+        $yearly_price = $yearly_price > 0 ? $yearly_price : 100.00;
+        if ($monthly_label === '') {
+            $monthly_label = sprintf('%s Monthly — $%s/month', $product_name, number_format($monthly_price, 2, '.', ''));
+        }
+        if ($yearly_label === '') {
+            $yearly_label = sprintf('%s Yearly — $%s/year', $product_name, number_format($yearly_price, 2, '.', ''));
+        }
+
+        $product = $this->create_product($product_name, $product_desc);
         if (is_wp_error($product)) {
             return $product;
         }
         $product_id = $product['id'];
 
-        $monthly = $this->create_plan($product_id, 'LeSAEp Monthly — $10/month', 10.00, 'MONTH');
+        $monthly = $this->create_plan($product_id, $monthly_label, $monthly_price, 'MONTH');
         if (is_wp_error($monthly)) {
             return $monthly;
         }
 
-        $yearly = $this->create_plan($product_id, 'LeSAEp Yearly — $100/year', 100.00, 'YEAR');
+        $yearly = $this->create_plan($product_id, $yearly_label, $yearly_price, 'YEAR');
         if (is_wp_error($yearly)) {
             return $yearly;
         }

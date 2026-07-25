@@ -10417,17 +10417,24 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             }
         }
 
-        // Build offer for access grant
-        $default_offer_id = flosc_get_setting('default_offer_id', 'pronunciation_full', $flow_id ?: null);
-        $default_member_level = flosc_get_setting('default_member_level', 'pronunciation_learners', $flow_id ?: null);
+        // Build offer for access grant from flow settings / offer registry (product-agnostic).
+        $default_offer_id = flosc_get_setting('default_offer_id', 'full_access', $flow_id ?: null);
+        $default_member_level = flosc_get_setting('default_member_level', 'member', $flow_id ?: null);
         $offer = $this->sale_manager->offers()->get_offer($default_offer_id, $flow_id ?: null);
         if (!$offer) {
+            // Try any active offer on this flow before a minimal generic shell.
+            $all_flow_offers = $this->sale_manager->offers()->get_active_offers($flow_id ?: null);
+            if (!empty($all_flow_offers) && is_array($all_flow_offers)) {
+                $offer = reset($all_flow_offers);
+            }
+        }
+        if (!$offer) {
             $offer = [
-                'id'   => $default_offer_id,
-                'name' => 'Pronunciation Full Access',
+                'id'   => $default_offer_id ?: 'full_access',
+                'name' => __('Full Access', 'flosc'),
                 'type' => 'subscription',
                 'grants' => [
-                    'features'      => ['lesaep_lessons', 'pronunciation_exercises', 'audio_recordings', 'ipa_training', 'ai_coach'],
+                    'features'      => ['full_access'],
                     'level'         => $default_member_level,
                     'duration_days' => $plan_type === 'yearly' ? 365 : 30,
                 ],
@@ -10436,14 +10443,23 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
         // Override duration based on plan type
         $offer['grants']['duration_days'] = $plan_type === 'yearly' ? 365 : 30;
 
-        $amount = $plan_type === 'yearly' ? '100.00' : '10.00';
+        // Amount from offer plan pricing (flow product config), not a brand hardcode.
+        $monthly_amt = floatval($offer['subscription']['plans']['monthly']['price'] ?? 0);
+        $yearly_amt = floatval($offer['subscription']['plans']['yearly']['price'] ?? 0);
+        if ($monthly_amt <= 0) {
+            $monthly_amt = floatval($offer['pricing']['price'] ?? $offer['price'] ?? 10);
+        }
+        if ($yearly_amt <= 0) {
+            $yearly_amt = $monthly_amt > 0 ? ($monthly_amt * 10) : 100;
+        }
+        $amount = number_format($plan_type === 'yearly' ? $yearly_amt : $monthly_amt, 2, '.', '');
 
         $transaction = [
             'transaction_id'  => $subscription_id,
             'subscription_id' => $subscription_id,
             'provider'        => 'paypal',
             'amount'          => $amount,
-            'currency'        => 'USD',
+            'currency'        => strtoupper((string) ($offer['pricing']['currency'] ?? 'USD')) ?: 'USD',
         ];
 
         // Grant access
@@ -10533,12 +10549,24 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
 
         $user_data = get_userdata($user_id);
 
+        $product_name = '';
+        $current_flow_welcome = $this->get_current_flow();
+        if (is_array($current_flow_welcome)) {
+            $product_name = trim((string) ($current_flow_welcome['identity']['name'] ?? $current_flow_welcome['product']['name'] ?? ''));
+        }
+        if ($product_name === '') {
+            $product_name = 'membership';
+        }
+
         return new WP_REST_Response([
             'success'            => true,
-            'message'            => 'Welcome to LeSAEp!',
+            'message'            => sprintf(/* translators: %s: product / flow name */ __('Welcome to %s!', 'flosc'), $product_name),
+            'product_name'       => $product_name,
             'access'             => $access_manager->get_user_access($user_id),
             'member_level'       => $default_member_level,
             'plan_type'          => $plan_type,
+            'amount'             => $amount,
+            'currency'           => $transaction['currency'],
             'purchase_count'     => (int) get_user_meta($user_id, '_flosc_purchase_count', true),
             'user_id'            => $user_id,
             'user_email'         => $user_data->user_email ?? '',
