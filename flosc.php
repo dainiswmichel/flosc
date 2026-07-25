@@ -1591,16 +1591,23 @@ The Team',
     }
 
     /**
-     * Public entry for subscription token top-ups (PayPal webhook renewals).
+     * Public entry for product token credits (one-time, recurring, renewals).
      *
      * @param int    $user_id
      * @param string $flow_id
-     * @param string $plan_type monthly|yearly
+     * @param string $mode    onetime|recurring|recurring_yearly|monthly|yearly
      * @param array  $context
      * @return array
      */
+    public function flosc_apply_product_token_credit_public($user_id, $flow_id = '', $mode = 'onetime', $context = []) {
+        return $this->flosc_apply_product_token_credit($user_id, $flow_id, $mode, $context);
+    }
+
+    /**
+     * @deprecated Use flosc_apply_product_token_credit_public.
+     */
     public function flosc_apply_subscription_token_topup_public($user_id, $flow_id = '', $plan_type = 'monthly', $context = []) {
-        return $this->flosc_apply_subscription_token_topup($user_id, $flow_id, $plan_type, $context);
+        return $this->flosc_apply_product_token_credit($user_id, $flow_id, $plan_type, $context);
     }
 
     /**
@@ -10461,15 +10468,16 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             update_user_meta($user_id, '_flosc_subscription_flow_id', $capture_flow_id);
         }
 
-        // Monthly: +10k tokens toward 35k cap (flow settings). Yearly: larger fill toward same cap.
+        // Product token credit from Token Management (recurring monthly/yearly toward optional cap).
         // Payment always succeeds; tokens stop accruing once at the cap.
-        $token_topup = $this->flosc_apply_subscription_token_topup(
+        $token_topup = $this->flosc_apply_product_token_credit(
             $user_id,
             $capture_flow_id,
-            $plan_type,
+            $plan_type === 'yearly' ? 'recurring_yearly' : 'recurring',
             [
                 'idempotency_key' => 'activate_' . $subscription_id,
                 'subscription_id' => $subscription_id,
+                'offer' => $offer,
                 'reason' => 'PayPal subscription activate (' . $plan_type . ')',
             ]
         );
@@ -10764,12 +10772,28 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
 
         $current_flow = $this->get_current_flow();
         $capture_flow_id = $current_flow ? ($current_flow['id'] ?? '') : '';
+        if ($capture_flow_id === '' && !empty($flow_id)) {
+            $capture_flow_id = sanitize_key($flow_id);
+        }
         if ($capture_flow_id) {
             update_user_meta($user_id, '_flosc_purchased_flow_id', $capture_flow_id);
         }
 
-        $member_level = $offer['grants']['level'] ?? $offer['grants_level'] ?? 'member';
+        // One-time product token credit (Token Management defaults; offer.tokens can override).
         $txn_id = (string) ($capture_result['transaction_id'] ?? $order_id);
+        $token_topup = $this->flosc_apply_product_token_credit(
+            $user_id,
+            $capture_flow_id,
+            'onetime',
+            [
+                'idempotency_key' => 'onetime_' . $txn_id,
+                'offer' => $offer,
+                'offer_id' => $offer_id,
+                'reason' => 'PayPal one-time product token credit',
+            ]
+        );
+
+        $member_level = $offer['grants']['level'] ?? $offer['grants_level'] ?? 'member';
         $already_logged_in = is_user_logged_in() && (int) get_current_user_id() === (int) $user_id;
         $login_handoff = 'email_link_sent';
         $claim_key = 'flosc_order_session_claim_' . md5($txn_id);
@@ -10817,6 +10841,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             'is_new_user' => $is_new_user,
             'auth_token' => $auth_token ?: null,
             'login_handoff' => $login_handoff,
+            'token_topup' => $token_topup,
         ]);
     }
     

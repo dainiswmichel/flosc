@@ -807,14 +807,29 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         if (isset($flosc_new_settings['member_token_grant'])) {
             $flosc_new_settings['member_token_grant'] = max(0, intval($flosc_new_settings['member_token_grant']));
         }
-        if (isset($flosc_new_settings['subscription_monthly_token_grant'])) {
-            $flosc_new_settings['subscription_monthly_token_grant'] = max(0, intval($flosc_new_settings['subscription_monthly_token_grant']));
+        // Product token parameters (Token Management). Also keep legacy subscription_* in sync when present.
+        foreach ([
+            'product_token_grant_onetime',
+            'product_token_grant_recurring',
+            'product_token_grant_recurring_yearly',
+            'product_token_cap',
+            'subscription_monthly_token_grant',
+            'subscription_yearly_token_grant',
+            'subscription_token_cap',
+        ] as $flosc_product_token_field) {
+            if (isset($flosc_new_settings[$flosc_product_token_field])) {
+                $flosc_new_settings[$flosc_product_token_field] = max(0, intval($flosc_new_settings[$flosc_product_token_field]));
+            }
         }
-        if (isset($flosc_new_settings['subscription_yearly_token_grant'])) {
-            $flosc_new_settings['subscription_yearly_token_grant'] = max(0, intval($flosc_new_settings['subscription_yearly_token_grant']));
+        // Mirror new product_* into legacy keys so older readers keep working.
+        if (isset($flosc_new_settings['product_token_grant_recurring'])) {
+            $flosc_new_settings['subscription_monthly_token_grant'] = $flosc_new_settings['product_token_grant_recurring'];
         }
-        if (isset($flosc_new_settings['subscription_token_cap'])) {
-            $flosc_new_settings['subscription_token_cap'] = max(0, intval($flosc_new_settings['subscription_token_cap']));
+        if (isset($flosc_new_settings['product_token_grant_recurring_yearly'])) {
+            $flosc_new_settings['subscription_yearly_token_grant'] = $flosc_new_settings['product_token_grant_recurring_yearly'];
+        }
+        if (isset($flosc_new_settings['product_token_cap'])) {
+            $flosc_new_settings['subscription_token_cap'] = $flosc_new_settings['product_token_cap'];
         }
         if (isset($flosc_new_settings['visitor_low_token_threshold'])) {
             $flosc_new_settings['visitor_low_token_threshold'] = max(0, intval($flosc_new_settings['visitor_low_token_threshold']));

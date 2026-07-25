@@ -47,9 +47,26 @@ $flosc_chat_token_enforcement = array_key_exists('chat_token_enforcement', $flos
     : true;
 $flosc_guest_token_grant = max(0, intval($flosc_flow_settings['guest_token_grant'] ?? $flosc_tokens_per_message));
 $flosc_member_token_grant = max(0, intval($flosc_flow_settings['member_token_grant'] ?? $flosc_guest_token_grant));
-$flosc_subscription_monthly_token_grant = max(0, intval($flosc_flow_settings['subscription_monthly_token_grant'] ?? 10000));
-$flosc_subscription_yearly_token_grant = max(0, intval($flosc_flow_settings['subscription_yearly_token_grant'] ?? 35000));
-$flosc_subscription_token_cap = max(0, intval($flosc_flow_settings['subscription_token_cap'] ?? 35000));
+// Product token parameters (flow defaults). Legacy subscription_* keys still read.
+$flosc_product_token_grant_recurring = max(0, intval(
+    $flosc_flow_settings['product_token_grant_recurring']
+    ?? $flosc_flow_settings['subscription_monthly_token_grant']
+    ?? 10000
+));
+$flosc_product_token_cap = max(0, intval(
+    $flosc_flow_settings['product_token_cap']
+    ?? $flosc_flow_settings['subscription_token_cap']
+    ?? 35000
+));
+$flosc_product_token_grant_recurring_yearly = max(0, intval(
+    $flosc_flow_settings['product_token_grant_recurring_yearly']
+    ?? $flosc_flow_settings['subscription_yearly_token_grant']
+    ?? $flosc_product_token_cap
+));
+$flosc_product_token_grant_onetime = max(0, intval(
+    $flosc_flow_settings['product_token_grant_onetime']
+    ?? $flosc_product_token_grant_recurring
+));
 $flosc_low_token_threshold = max(0, intval($flosc_flow_settings['visitor_low_token_threshold'] ?? 0));
 $flosc_default_low_message = 'You\'re running low on chat tokens. Pretty soon, you\'ll be invited to register or log in to receive {token_grant} more tokens.';
 $flosc_low_message = trim((string)($flosc_flow_settings['visitor_low_tokens_message'] ?? $flosc_default_low_message));
@@ -83,13 +100,13 @@ if (!in_array($flosc_depleted_contact_mode, ['message', 'in_chat_form'], true)) 
 <div class="flosc-payments-status-banner">
     <strong>Allocation rules (predict / avoid “tokens not working”):</strong>
     <ul class="flosc-token-predict-list">
-        <li><strong>V→G once:</strong> guest_balance = visitor_remaining + Guest grant (idempotent per flow). Cookie or localStorage session must match the visitor who chatted.</li>
-        <li><strong>G→M once:</strong> member_balance = guest_remaining + Member grant (fires on Access Code / PayPal / purchase grant).</li>
-        <li><strong>Subscription monthly:</strong> each paid month adds Monthly Subscription Grant (default 10,000) toward the Token Cap (default 35,000). Payment always processes; once at the cap, further months credit 0 tokens.</li>
-        <li><strong>Subscription yearly:</strong> each paid year adds Yearly Subscription Grant (default 35,000) toward the same cap.</li>
-        <li><strong>Admin accounts skip guest grant</strong> — test V→G with a normal guest user, not an administrator.</li>
-        <li><strong>Guest grant = 0</strong> in this form locks new guests at visitor remaining only (often 0 if session was lost). Keep a positive Guest grant for demos.</li>
-        <li><strong>First paint + REST:</strong> server applies grant when the visitor session cookie is present; the app re-applies after SSO with the localStorage session id if login ran without the cookie.</li>
+        <li><strong>V→G once:</strong> guest_balance = visitor_remaining + Guest grant (idempotent per flow).</li>
+        <li><strong>G→M once:</strong> member_balance = guest_remaining + Member grant (Access Code / first membership grant).</li>
+        <li><strong>Product one-time:</strong> paid one-time products add One-time Product Token Grant (offer may override with more/less).</li>
+        <li><strong>Product recurring:</strong> each paid cycle adds Recurring grant (monthly) or Recurring yearly grant — consistently, every cycle.</li>
+        <li><strong>Product token cap:</strong> optional ceiling for product credits. <code>0</code> = no cap. At cap, payment still processes; credit is 0 until balance is spent down.</li>
+        <li><strong>Admin accounts skip guest grant</strong> — test V→G with a normal guest user.</li>
+        <li><strong>Guest grant = 0</strong> locks new guests at visitor remaining only. Keep a positive Guest grant for demos.</li>
     </ul>
 </div>
 
@@ -155,34 +172,58 @@ if (!in_array($flosc_depleted_contact_mode, ['message', 'in_chat_form'], true)) 
         <th scope="row"><label for="flow_member_token_grant">Member Wallet Additional Token Grant Amount</label></th>
         <td>
             <input type="number" id="flow_member_token_grant" name="flow_member_token_grant" value="<?php echo esc_attr($flosc_member_token_grant); ?>" min="0" step="1" class="regular-text">
-            <p class="description">Per-flow amount <strong>added</strong> when a Guest becomes a Member (PayPal, Access Code, etc.): member_balance = guest_remaining + this grant (once per flow). Example: guest has 4,000 left and this is 10,000 → Member has 14,000.</p>
+            <p class="description">Per-flow amount <strong>added</strong> when a Guest becomes a Member (Access Code / first membership): member_balance = guest_remaining + this grant (once per flow).</p>
+        </td>
+    </tr>
+</table>
+
+<h2>Product token grants</h2>
+<p class="description">
+    Flow defaults for paid products. Different products can grant more or less: set defaults here,
+    and override per offer with <code>tokens.amount</code> / <code>tokens.cap</code> when needed.
+    Works for one-time purchases and recurring cycles, with or without a cap.
+</p>
+
+<table class="form-table">
+    <tr>
+        <th scope="row"><label for="flow_product_token_grant_onetime">One-time Product Token Grant</label></th>
+        <td>
+            <input type="number" id="flow_product_token_grant_onetime" name="flow_product_token_grant_onetime" value="<?php echo esc_attr($flosc_product_token_grant_onetime); ?>" min="0" step="1" class="regular-text">
+            <p class="description">Tokens added on a <strong>one-time</strong> paid purchase (PayPal capture, Stripe one-time, token pack, etc.). A cheaper product can use a smaller offer override; a premium pack can use a larger one. Default matches recurring if unset.</p>
         </td>
     </tr>
 
     <tr>
-        <th scope="row"><label for="flow_subscription_monthly_token_grant">Monthly Subscription Token Grant</label></th>
+        <th scope="row"><label for="flow_product_token_grant_recurring">Recurring Product Token Grant</label></th>
         <td>
-            <input type="number" id="flow_subscription_monthly_token_grant" name="flow_subscription_monthly_token_grant" value="<?php echo esc_attr($flosc_subscription_monthly_token_grant); ?>" min="0" step="1" class="regular-text">
-            <p class="description">Tokens added on each paid <strong>monthly</strong> subscription cycle (first activation and each renewal). Default 10,000. Applied toward the Token Cap below — never exceeds the cap.</p>
+            <input type="number" id="flow_product_token_grant_recurring" name="flow_product_token_grant_recurring" value="<?php echo esc_attr($flosc_product_token_grant_recurring); ?>" min="0" step="1" class="regular-text">
+            <p class="description">Tokens added on <strong>each paid recurring cycle</strong> (e.g. monthly subscription). Applied consistently every cycle — first activation and each renewal. Default 10,000.</p>
         </td>
     </tr>
 
     <tr>
-        <th scope="row"><label for="flow_subscription_yearly_token_grant">Yearly Subscription Token Grant</label></th>
+        <th scope="row"><label for="flow_product_token_grant_recurring_yearly">Recurring Yearly Product Token Grant</label></th>
         <td>
-            <input type="number" id="flow_subscription_yearly_token_grant" name="flow_subscription_yearly_token_grant" value="<?php echo esc_attr($flosc_subscription_yearly_token_grant); ?>" min="0" step="1" class="regular-text">
-            <p class="description">Tokens added on each paid <strong>yearly</strong> subscription cycle. Default 35,000 (fills the typical cap in one payment). Still respects the Token Cap.</p>
+            <input type="number" id="flow_product_token_grant_recurring_yearly" name="flow_product_token_grant_recurring_yearly" value="<?php echo esc_attr($flosc_product_token_grant_recurring_yearly); ?>" min="0" step="1" class="regular-text">
+            <p class="description">Tokens added on each paid <strong>yearly</strong> cycle. Default 35,000. Use a different number if a yearly product should fill more or less than monthly × 12.</p>
         </td>
     </tr>
 
     <tr>
-        <th scope="row"><label for="flow_subscription_token_cap">Subscription Token Cap</label></th>
+        <th scope="row"><label for="flow_product_token_cap">Product Token Cap</label></th>
         <td>
-            <input type="number" id="flow_subscription_token_cap" name="flow_subscription_token_cap" value="<?php echo esc_attr($flosc_subscription_token_cap); ?>" min="0" step="1" class="regular-text">
-            <p class="description">Maximum flow wallet size from subscription top-ups (default 35,000). If the member is already at or above this, monthly/yearly payments still process but credit <strong>0</strong> tokens until balance is spent below the cap. Use 0 for no cap.</p>
+            <input type="number" id="flow_product_token_cap" name="flow_product_token_cap" value="<?php echo esc_attr($flosc_product_token_cap); ?>" min="0" step="1" class="regular-text">
+            <p class="description">
+                Optional ceiling for product credits on this flow. Default 35,000.
+                <strong>0 = no cap</strong> (always add the full grant).
+                When at or above the cap, payment still processes and credits <strong>0</strong> until the wallet is spent below the cap.
+                Partial room under the cap is filled only up to the cap.
+            </p>
         </td>
     </tr>
+</table>
 
+<table class="form-table">
     <tr>
         <th scope="row"><label for="flow_visitor_low_token_threshold">Low Tokens Threshold</label></th>
         <td>

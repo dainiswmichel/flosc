@@ -723,12 +723,21 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
             $idem = $sale_id !== '' ? ('sale_' . $sale_id) : ('sub_cycle_' . $subscription_id . '_' . gmdate('Y-m'));
 
             $topup = ['skipped' => true];
-            if (function_exists('flosc') && method_exists(flosc(), 'flosc_apply_subscription_token_topup_public')) {
-                $topup = flosc()->flosc_apply_subscription_token_topup_public($user_id, $flow_id, $plan_type, [
-                    'idempotency_key' => $idem,
-                    'subscription_id' => $subscription_id,
-                    'reason' => 'PayPal subscription renewal (' . $plan_type . ')',
-                ]);
+            if (function_exists('flosc')) {
+                $mode = ($plan_type === 'yearly') ? 'recurring_yearly' : 'recurring';
+                if (method_exists(flosc(), 'flosc_apply_product_token_credit_public')) {
+                    $topup = flosc()->flosc_apply_product_token_credit_public($user_id, $flow_id, $mode, [
+                        'idempotency_key' => $idem,
+                        'subscription_id' => $subscription_id,
+                        'reason' => 'PayPal subscription renewal (' . $plan_type . ')',
+                    ]);
+                } elseif (method_exists(flosc(), 'flosc_apply_subscription_token_topup_public')) {
+                    $topup = flosc()->flosc_apply_subscription_token_topup_public($user_id, $flow_id, $plan_type, [
+                        'idempotency_key' => $idem,
+                        'subscription_id' => $subscription_id,
+                        'reason' => 'PayPal subscription renewal (' . $plan_type . ')',
+                    ]);
+                }
             }
 
             update_user_meta($user_id, '_flosc_subscription_status', 'active');

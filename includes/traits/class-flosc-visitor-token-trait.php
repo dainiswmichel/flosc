@@ -354,20 +354,76 @@ trait FLOSC_Visitor_Token_Trait {
     }
 
     /**
-     * Subscription monthly/yearly token economics (flow-scoped wallet).
+     * Resolve product-token parameters for this flow (Token Management tab).
      *
-     * Monthly: add subscription_monthly_token_grant (default 10_000) each paid cycle.
-     * Cap: subscription_token_cap (default 35_000). When at/above cap, payment still
-     * succeeds but no additional tokens are credited (balance stays at cap).
-     * Yearly: credits subscription_yearly_token_grant (default = cap) toward the same cap.
+     * Flow defaults (any product can use more/less via offer.tokens or context):
+     * - product_token_grant_onetime     — one-time purchase add
+     * - product_token_grant_recurring   — each recurring cycle (e.g. monthly)
+     * - product_token_grant_recurring_yearly — yearly cycle add
+     * - product_token_cap               — wallet ceiling for product credits (0 = no cap)
+     *
+     * Legacy keys subscription_* still read for backward compatibility.
+     *
+     * @return array{onetime:int,recurring:int,recurring_yearly:int,cap:int}
+     */
+    private function flosc_get_product_token_params($flow_id = '') {
+        $flow_stem = $this->flosc_normalize_flow_stem($flow_id);
+        $settings = get_option('flosc_flow_' . $flow_stem, []);
+        if (!is_array($settings)) {
+            $settings = [];
+        }
+
+        $cap_default = 35000;
+        $recurring_default = 10000;
+
+        $cap = array_key_exists('product_token_cap', $settings)
+            ? max(0, intval($settings['product_token_cap']))
+            : (array_key_exists('subscription_token_cap', $settings)
+                ? max(0, intval($settings['subscription_token_cap']))
+                : $cap_default);
+
+        $recurring = array_key_exists('product_token_grant_recurring', $settings)
+            ? max(0, intval($settings['product_token_grant_recurring']))
+            : (array_key_exists('subscription_monthly_token_grant', $settings)
+                ? max(0, intval($settings['subscription_monthly_token_grant']))
+                : $recurring_default);
+
+        $recurring_yearly = array_key_exists('product_token_grant_recurring_yearly', $settings)
+            ? max(0, intval($settings['product_token_grant_recurring_yearly']))
+            : (array_key_exists('subscription_yearly_token_grant', $settings)
+                ? max(0, intval($settings['subscription_yearly_token_grant']))
+                : $cap);
+
+        $onetime = array_key_exists('product_token_grant_onetime', $settings)
+            ? max(0, intval($settings['product_token_grant_onetime']))
+            : $recurring; // sensible default: same as one recurring pack
+
+        return [
+            'onetime' => $onetime,
+            'recurring' => $recurring,
+            'recurring_yearly' => $recurring_yearly,
+            'cap' => $cap,
+        ];
+    }
+
+    /**
+     * Credit product tokens to the flow-scoped wallet (with optional cap).
+     *
+     * Modes (Token Management parameters):
+     * - onetime           — single purchase (PayPal capture, Stripe, etc.)
+     * - recurring         — each paid recurring cycle (monthly plan default)
+     * - recurring_yearly  — each paid yearly cycle
+     *
+     * Payment success is independent of credit amount: if already at cap, credit 0.
+     * Context overrides: grant (int), cap (int|null), offer tokens.amount / tokens.cap.
      *
      * @param int    $user_id
      * @param string $flow_id
-     * @param string $plan_type monthly|yearly
-     * @param array  $context   Optional: idempotency_key, reason, subscription_id
-     * @return array{credited:int,balance:int,cap:int,grant:int,capped:bool,skipped:bool}
+     * @param string $mode    onetime|recurring|recurring_yearly|monthly|yearly
+     * @param array  $context idempotency_key, reason, grant, cap, offer, subscription_id
+     * @return array{credited:int,balance:int,cap:int,grant:int,capped:bool,skipped:bool,mode:string}
      */
-    private function flosc_apply_subscription_token_topup($user_id, $flow_id = '', $plan_type = 'monthly', $context = []) {
+    private function flosc_apply_product_token_credit($user_id, $flow_id = '', $mode = 'onetime', $context = []) {
         $user_id = absint($user_id);
         $result = [
             'credited' => 0,
@@ -376,43 +432,64 @@ trait FLOSC_Visitor_Token_Trait {
             'grant' => 0,
             'capped' => false,
             'skipped' => true,
+            'mode' => 'onetime',
         ];
         if ($user_id <= 0) {
             return $result;
         }
 
         $flow_stem = $this->flosc_normalize_flow_stem($flow_id);
-        $plan_type = strtolower(sanitize_key((string) $plan_type));
-        if (!in_array($plan_type, ['monthly', 'yearly'], true)) {
-            $plan_type = 'monthly';
+        $mode = strtolower(sanitize_key((string) $mode));
+        // Aliases used by subscription plan types.
+        if ($mode === 'monthly') {
+            $mode = 'recurring';
+        } elseif ($mode === 'yearly') {
+            $mode = 'recurring_yearly';
         }
+        if (!in_array($mode, ['onetime', 'recurring', 'recurring_yearly'], true)) {
+            $mode = 'onetime';
+        }
+        $result['mode'] = $mode;
 
         $idem = sanitize_key((string) ($context['idempotency_key'] ?? ''));
         if ($idem !== '') {
-            $done = get_user_meta($user_id, '_flosc_sub_token_topups', true);
+            $done = get_user_meta($user_id, '_flosc_product_token_credits', true);
             if (!is_array($done)) {
-                $done = [];
+                // Legacy store from first subscription-only implementation.
+                $legacy = get_user_meta($user_id, '_flosc_sub_token_topups', true);
+                $done = is_array($legacy) ? $legacy : [];
             }
             if (!empty($done[$idem]) && is_array($done[$idem])) {
-                return array_merge($result, $done[$idem], ['skipped' => true]);
+                return array_merge($result, $done[$idem], ['skipped' => true, 'mode' => $mode]);
             }
         }
 
-        $settings = get_option('flosc_flow_' . $flow_stem, []);
-        if (!is_array($settings)) {
-            $settings = [];
+        $params = $this->flosc_get_product_token_params($flow_stem);
+        if ($mode === 'recurring_yearly') {
+            $grant = $params['recurring_yearly'];
+        } elseif ($mode === 'recurring') {
+            $grant = $params['recurring'];
+        } else {
+            $grant = $params['onetime'];
         }
+        $cap = $params['cap'];
 
-        $cap = isset($settings['subscription_token_cap'])
-            ? max(0, intval($settings['subscription_token_cap']))
-            : 35000;
-        $monthly_grant = isset($settings['subscription_monthly_token_grant'])
-            ? max(0, intval($settings['subscription_monthly_token_grant']))
-            : 10000;
-        $yearly_grant = isset($settings['subscription_yearly_token_grant'])
-            ? max(0, intval($settings['subscription_yearly_token_grant']))
-            : $cap;
-        $grant = ($plan_type === 'yearly') ? $yearly_grant : $monthly_grant;
+        // Offer-level overrides (any product can ship more/less tokens, with or without cap).
+        $offer = is_array($context['offer'] ?? null) ? $context['offer'] : [];
+        $offer_tokens = is_array($offer['tokens'] ?? null) ? $offer['tokens'] : [];
+        if (isset($offer_tokens['amount']) && $offer_tokens['amount'] !== '') {
+            $grant = max(0, intval($offer_tokens['amount'])) + max(0, intval($offer_tokens['bonus'] ?? 0));
+        }
+        if (array_key_exists('cap', $offer_tokens) && $offer_tokens['cap'] !== '') {
+            $cap = max(0, intval($offer_tokens['cap']));
+        }
+        // Explicit context overrides win last.
+        if (isset($context['grant']) && $context['grant'] !== '') {
+            $grant = max(0, intval($context['grant']));
+        }
+        if (array_key_exists('cap', $context) && $context['cap'] !== '' && $context['cap'] !== null) {
+            $cap = max(0, intval($context['cap']));
+        }
 
         $current = $this->flosc_get_user_flow_token_balance($user_id, $flow_stem);
         $result['balance'] = $current;
@@ -424,7 +501,7 @@ trait FLOSC_Visitor_Token_Trait {
             return $result;
         }
 
-        // Cap reached: still a successful paid cycle — credit zero.
+        // Cap reached: paid product still succeeds — credit zero until spent below cap.
         if ($cap > 0 && $current >= $cap) {
             $result['capped'] = true;
             $result['skipped'] = false;
@@ -436,7 +513,6 @@ trait FLOSC_Visitor_Token_Trait {
             $new_balance = $current + $credit;
             $this->flosc_set_user_flow_token_balance($user_id, $flow_stem, $new_balance);
 
-            // Keep legacy global sale wallet loosely in sync for admin/token ledger views.
             $token_provider = null;
             if (function_exists('flosc_sale')) {
                 $token_provider = flosc_sale()->get_provider('tokens');
@@ -445,12 +521,13 @@ trait FLOSC_Visitor_Token_Trait {
                 $token_provider->credit(
                     $user_id,
                     $credit,
-                    (string) ($context['reason'] ?? ('Subscription ' . $plan_type . ' token top-up')),
+                    (string) ($context['reason'] ?? ('Product token credit (' . $mode . ')')),
                     [
                         'flow_id' => $flow_stem,
-                        'plan_type' => $plan_type,
+                        'mode' => $mode,
                         'cap' => $cap,
                         'subscription_id' => $context['subscription_id'] ?? '',
+                        'offer_id' => $offer['id'] ?? ($context['offer_id'] ?? ''),
                     ]
                 );
             }
@@ -462,11 +539,10 @@ trait FLOSC_Visitor_Token_Trait {
         }
 
         if ($idem !== '') {
-            $done = get_user_meta($user_id, '_flosc_sub_token_topups', true);
+            $done = get_user_meta($user_id, '_flosc_product_token_credits', true);
             if (!is_array($done)) {
                 $done = [];
             }
-            // Keep last ~50 keys so the meta map does not grow unbounded.
             if (count($done) > 50) {
                 $done = array_slice($done, -40, null, true);
             }
@@ -476,17 +552,18 @@ trait FLOSC_Visitor_Token_Trait {
                 'cap' => $result['cap'],
                 'grant' => $result['grant'],
                 'capped' => $result['capped'],
+                'mode' => $mode,
                 'at' => current_time('mysql'),
             ];
-            update_user_meta($user_id, '_flosc_sub_token_topups', $done);
+            update_user_meta($user_id, '_flosc_product_token_credits', $done);
         }
 
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
             flosc_log(sprintf(
-                'FLOSC subscription token top-up: user=%d flow=%s plan=%s grant=%d credited=%d balance=%d cap=%d capped=%s',
+                'FLOSC product token credit: user=%d flow=%s mode=%s grant=%d credited=%d balance=%d cap=%d capped=%s',
                 $user_id,
                 $flow_stem,
-                $plan_type,
+                $mode,
                 $grant,
                 $result['credited'],
                 $result['balance'],
@@ -496,6 +573,13 @@ trait FLOSC_Visitor_Token_Trait {
         }
 
         return $result;
+    }
+
+    /**
+     * @deprecated Prefer flosc_apply_product_token_credit — kept as alias for subscription call sites.
+     */
+    private function flosc_apply_subscription_token_topup($user_id, $flow_id = '', $plan_type = 'monthly', $context = []) {
+        return $this->flosc_apply_product_token_credit($user_id, $flow_id, $plan_type, $context);
     }
 
     /**
