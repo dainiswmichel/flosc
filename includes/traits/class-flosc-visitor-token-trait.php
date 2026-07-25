@@ -465,6 +465,31 @@ trait FLOSC_Visitor_Token_Trait {
         }
 
         $params = $this->flosc_get_product_token_params($flow_stem);
+
+        // Offer-level product token config (Token Management accordion).
+        $offer = is_array($context['offer'] ?? null) ? $context['offer'] : [];
+        $offer_tokens = is_array($offer['tokens'] ?? null) ? $offer['tokens'] : [];
+        $source = sanitize_key((string) ($offer_tokens['source'] ?? ''));
+        if ($source === 'none') {
+            $result['skipped'] = true;
+            $result['grant'] = 0;
+            $result['balance'] = $this->flosc_get_user_flow_token_balance($user_id, $flow_stem);
+            return $result;
+        }
+
+        // Prefer offer.tokens.mode when source is custom (or mode explicitly set).
+        $offer_mode = sanitize_key((string) ($offer_tokens['mode'] ?? ''));
+        if (in_array($offer_mode, ['onetime', 'recurring', 'recurring_yearly'], true)
+            && ($source === 'custom' || $source === '')
+        ) {
+            // Only force offer mode when custom; for flow source, keep caller mode
+            // (subscription activate already passes recurring / yearly).
+            if ($source === 'custom') {
+                $mode = $offer_mode;
+                $result['mode'] = $mode;
+            }
+        }
+
         if ($mode === 'recurring_yearly') {
             $grant = $params['recurring_yearly'];
         } elseif ($mode === 'recurring') {
@@ -474,14 +499,18 @@ trait FLOSC_Visitor_Token_Trait {
         }
         $cap = $params['cap'];
 
-        // Offer-level overrides (any product can ship more/less tokens, with or without cap).
-        $offer = is_array($context['offer'] ?? null) ? $context['offer'] : [];
-        $offer_tokens = is_array($offer['tokens'] ?? null) ? $offer['tokens'] : [];
-        if (isset($offer_tokens['amount']) && $offer_tokens['amount'] !== '') {
-            $grant = max(0, intval($offer_tokens['amount'])) + max(0, intval($offer_tokens['bonus'] ?? 0));
-        }
-        if (array_key_exists('cap', $offer_tokens) && $offer_tokens['cap'] !== '') {
-            $cap = max(0, intval($offer_tokens['cap']));
+        $cap_mode = sanitize_key((string) ($offer_tokens['cap_mode'] ?? 'flow'));
+        if ($source === 'custom' || $source === '') {
+            if (isset($offer_tokens['amount']) && $offer_tokens['amount'] !== '') {
+                $grant = max(0, intval($offer_tokens['amount'])) + max(0, intval($offer_tokens['bonus'] ?? 0));
+            }
+            if ($cap_mode === 'none') {
+                $cap = 0;
+            } elseif ($cap_mode === 'custom' && array_key_exists('cap', $offer_tokens) && $offer_tokens['cap'] !== '') {
+                $cap = max(0, intval($offer_tokens['cap']));
+            } elseif (array_key_exists('cap', $offer_tokens) && $offer_tokens['cap'] !== '' && $cap_mode !== 'flow') {
+                $cap = max(0, intval($offer_tokens['cap']));
+            }
         }
         // Explicit context overrides win last.
         if (isset($context['grant']) && $context['grant'] !== '') {

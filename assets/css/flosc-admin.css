@@ -5921,6 +5921,273 @@
 .flosc-session-delete { flex: none; }
 .flosc-session-download { margin-left: auto; }
 .flosc-session-thread { padding: 6px 16px 16px; border-top: 1px solid #f0f0f1; }
+
+/* ========================================
+   TOKEN MANAGEMENT — product accordion UI
+   (mirrors chat-log session <details> pattern)
+   ======================================== */
+
+.flosc-token-mgmt {
+    max-width: 980px;
+}
+
+.flosc-token-mgmt__lead {
+    color: #50575e;
+    margin: 0 0 18px;
+    line-height: 1.5;
+}
+
+.flosc-token-section {
+    margin-bottom: 20px;
+}
+
+.flosc-token-section__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+.flosc-token-section__title {
+    margin: 0;
+    font-size: 1.15em;
+}
+
+.flosc-token-section__tools {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.flosc-token-empty {
+    border: 1px dashed #c3c4c7;
+    border-radius: 8px;
+    padding: 20px 18px;
+    background: #fafafa;
+}
+
+.flosc-token-empty p {
+    margin: 8px 0 12px;
+    color: #646970;
+}
+
+.flosc-token-product-list {
+    border-radius: 8px;
+}
+
+.flosc-token-product {
+    border: 1px solid #dcdcde;
+    border-radius: 6px;
+    margin: 0 0 8px;
+    background: #fff;
+}
+
+.flosc-token-product[open] {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.flosc-token-product.is-inactive {
+    opacity: 0.88;
+}
+
+.flosc-token-product__head {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    list-style: none;
+}
+
+.flosc-token-product__head::-webkit-details-marker {
+    display: none;
+}
+
+.flosc-token-product__caret {
+    color: #646970;
+    font-size: 18px;
+    line-height: 1;
+    transition: transform 0.2s ease;
+    flex: none;
+}
+
+.flosc-token-product[open] > .flosc-token-product__head .flosc-token-product__caret,
+.flosc-token-accordion[open] > .flosc-token-accordion__head .flosc-token-product__caret {
+    transform: rotate(90deg);
+}
+
+.flosc-token-product__name {
+    font-weight: 600;
+    min-width: 140px;
+}
+
+.flosc-token-product__meta {
+    color: #646970;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.flosc-token-product__price {
+    color: #0a7a3e;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.flosc-token-product__chip {
+    margin-left: auto;
+    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #f0f6fc;
+    color: #135e96;
+    white-space: nowrap;
+}
+
+.flosc-token-product__chip.is-custom {
+    background: #fef8e7;
+    color: #996800;
+}
+
+.flosc-token-product__chip.is-muted {
+    background: #f0f0f1;
+    color: #646970;
+}
+
+.flosc-token-product__status {
+    font-size: 11px;
+    white-space: nowrap;
+    min-width: 72px;
+    text-align: right;
+}
+
+.flosc-token-product__status.is-active {
+    color: #0a7a3e;
+}
+
+.flosc-token-product__status.is-inactive {
+    color: #8c8f94;
+}
+
+.flosc-token-product__body {
+    padding: 12px 16px 16px;
+    border-top: 1px solid #f0f0f1;
+    background: #fcfcfc;
+}
+
+.flosc-token-product__grid {
+    display: grid;
+    gap: 14px;
+}
+
+.flosc-token-product__custom {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px 16px;
+    padding: 12px;
+    border: 1px solid #e2e4e7;
+    border-radius: 6px;
+    background: #fff;
+    transition: opacity 0.15s ease;
+}
+
+.flosc-token-product__custom.is-disabled,
+.flosc-token-field.is-disabled {
+    opacity: 0.45;
+    pointer-events: none;
+}
+
+.flosc-token-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 0;
+}
+
+.flosc-token-field__label {
+    font-weight: 600;
+    font-size: 12px;
+    color: #1d2327;
+}
+
+.flosc-token-field .description {
+    margin: 0;
+    font-size: 12px;
+}
+
+.flosc-token-product__hint {
+    margin: 12px 0 0;
+    font-size: 12px;
+    color: #646970;
+}
+
+.flosc-token-accordion {
+    border: 1px solid #dcdcde;
+    border-radius: 6px;
+    margin: 0 0 10px;
+    background: #fff;
+}
+
+.flosc-token-accordion[open] {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.flosc-token-accordion__head {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    list-style: none;
+    background: linear-gradient(to bottom, #fafafa, #f6f7f7);
+}
+
+.flosc-token-accordion__head::-webkit-details-marker {
+    display: none;
+}
+
+.flosc-token-accordion__head:hover {
+    background: #f0f6fc;
+}
+
+.flosc-token-accordion__title {
+    font-weight: 600;
+}
+
+.flosc-token-accordion__preview {
+    margin-left: auto;
+    font-size: 12px;
+    color: #646970;
+    text-align: right;
+}
+
+.flosc-token-accordion__body {
+    padding: 8px 14px 16px;
+    border-top: 1px solid #f0f0f1;
+}
+
+.flosc-token-accordion__body .form-table {
+    margin-top: 0;
+}
+
+@media (max-width: 782px) {
+    .flosc-token-product__head {
+        flex-wrap: wrap;
+        gap: 6px 10px;
+    }
+
+    .flosc-token-product__chip {
+        margin-left: 0;
+    }
+
+    .flosc-token-accordion__preview {
+        width: 100%;
+        margin-left: 28px;
+        text-align: left;
+    }
+}
 .flosc-msg { margin: 10px 0; }
 .flosc-msg-meta { font-size: 11px; color: #999; margin-bottom: 2px; }
 .flosc-msg-id { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px; color: #9a9a9a; }

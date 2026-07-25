@@ -831,6 +831,81 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         if (isset($flosc_new_settings['product_token_cap'])) {
             $flosc_new_settings['subscription_token_cap'] = $flosc_new_settings['product_token_cap'];
         }
+
+        // Per-product token grants from the Token Management accordion UI.
+        // Stored on each offer as offers[id].tokens { source, mode, amount, cap, cap_mode }.
+        if (isset($flosc_post['flosc_product_tokens']) && is_array($flosc_post['flosc_product_tokens'])) {
+            $flosc_offers = is_array($flosc_new_settings['offers'] ?? null) ? $flosc_new_settings['offers'] : [];
+            foreach ($flosc_post['flosc_product_tokens'] as $flosc_pt_id => $flosc_pt_row) {
+                $flosc_pt_id = sanitize_key((string) $flosc_pt_id);
+                if ($flosc_pt_id === '' || !is_array($flosc_pt_row)) {
+                    continue;
+                }
+                if (!isset($flosc_offers[$flosc_pt_id]) || !is_array($flosc_offers[$flosc_pt_id])) {
+                    // Offer may be keyed by original id inside the array.
+                    $flosc_found = false;
+                    foreach ($flosc_offers as $flosc_ok => $flosc_ov) {
+                        if (!is_array($flosc_ov)) {
+                            continue;
+                        }
+                        $flosc_inner_id = sanitize_key((string) ($flosc_ov['id'] ?? $flosc_ok));
+                        if ($flosc_inner_id === $flosc_pt_id) {
+                            $flosc_pt_id = is_string($flosc_ok) ? $flosc_ok : $flosc_pt_id;
+                            $flosc_found = true;
+                            break;
+                        }
+                    }
+                    if (!$flosc_found) {
+                        continue;
+                    }
+                }
+
+                $flosc_source = sanitize_key((string) ($flosc_pt_row['source'] ?? 'flow'));
+                if (!in_array($flosc_source, ['flow', 'custom', 'none'], true)) {
+                    $flosc_source = 'flow';
+                }
+                $flosc_mode = sanitize_key((string) ($flosc_pt_row['mode'] ?? 'onetime'));
+                if (!in_array($flosc_mode, ['onetime', 'recurring', 'recurring_yearly'], true)) {
+                    $flosc_mode = 'onetime';
+                }
+                $flosc_cap_mode = sanitize_key((string) ($flosc_pt_row['cap_mode'] ?? 'flow'));
+                if (!in_array($flosc_cap_mode, ['flow', 'none', 'custom'], true)) {
+                    $flosc_cap_mode = 'flow';
+                }
+
+                $flosc_tokens = is_array($flosc_offers[$flosc_pt_id]['tokens'] ?? null)
+                    ? $flosc_offers[$flosc_pt_id]['tokens']
+                    : [];
+                $flosc_tokens['source'] = $flosc_source;
+                $flosc_tokens['mode'] = $flosc_mode;
+                $flosc_tokens['cap_mode'] = $flosc_cap_mode;
+
+                if ($flosc_source === 'none') {
+                    $flosc_tokens['amount'] = 0;
+                    $flosc_tokens['cap'] = 0;
+                } elseif ($flosc_source === 'custom') {
+                    if (isset($flosc_pt_row['amount']) && $flosc_pt_row['amount'] !== '') {
+                        $flosc_tokens['amount'] = max(0, intval($flosc_pt_row['amount']));
+                    } else {
+                        unset($flosc_tokens['amount']); // inherit flow default for mode
+                    }
+                    if ($flosc_cap_mode === 'none') {
+                        $flosc_tokens['cap'] = 0;
+                    } elseif ($flosc_cap_mode === 'custom' && isset($flosc_pt_row['cap']) && $flosc_pt_row['cap'] !== '') {
+                        $flosc_tokens['cap'] = max(0, intval($flosc_pt_row['cap']));
+                    } else {
+                        unset($flosc_tokens['cap']); // flow cap
+                    }
+                } else {
+                    // flow defaults — clear overrides so runtime uses flow params
+                    unset($flosc_tokens['amount'], $flosc_tokens['cap'], $flosc_tokens['bonus']);
+                    $flosc_tokens['cap_mode'] = 'flow';
+                }
+
+                $flosc_offers[$flosc_pt_id]['tokens'] = $flosc_tokens;
+            }
+            $flosc_new_settings['offers'] = $flosc_offers;
+        }
         if (isset($flosc_new_settings['visitor_low_token_threshold'])) {
             $flosc_new_settings['visitor_low_token_threshold'] = max(0, intval($flosc_new_settings['visitor_low_token_threshold']));
         }
