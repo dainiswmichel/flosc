@@ -6002,7 +6002,7 @@
    ======================================== */
 
 .flosc-hidden {
-    display: none !important;
+    display: none;
 }
 
 .flosc-autoprompt-section {

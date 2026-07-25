@@ -8903,22 +8903,25 @@ Purchased: ${ctx.purchased}
         });
     }
 
+    /**
+     * Show/hide without inline styles or !important.
+     * - Hidden: class flosc-hidden (CSS: display:none)
+     * - Shown: remove flosc-hidden; set data-flosc-display so layout CSS can
+     *   apply block/flex/inline-flex with normal cascade specificity.
+     */
     setDisplayState(el, visible, mode = 'block') {
         if (!el) return;
 
-        el.classList.remove('flosc-visible', 'flosc-visible-flex', 'flosc-visible-inline-flex');
+        // Drop legacy force-show classes (pre data-flosc-display).
+        el.classList.remove('flosc-visible', 'flosc-visible-flex', 'flosc-visible-inline-flex', 'show');
 
         if (visible) {
-            if (mode === 'flex') {
-                el.classList.add('flosc-visible-flex');
-            } else if (mode === 'inline-flex') {
-                el.classList.add('flosc-visible-inline-flex');
-            } else {
-                el.classList.add('flosc-visible');
-            }
             el.classList.remove('flosc-hidden');
+            const layout = (mode === 'flex' || mode === 'inline-flex' || mode === 'block') ? mode : 'block';
+            el.setAttribute('data-flosc-display', layout);
         } else {
             el.classList.add('flosc-hidden');
+            el.removeAttribute('data-flosc-display');
         }
     }
 

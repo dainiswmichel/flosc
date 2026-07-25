@@ -242,23 +242,39 @@ html, body {
 }
 
 /* ============================================
-   UTILITY CLASSES
+   UTILITY CLASSES — display state (no !important)
+   Hidden: .flosc-hidden
+   Shown:  data-flosc-display="block|flex|inline-flex" (set by setDisplayState)
+   Attribute + :not(.flosc-hidden) beats single-class defaults via cascade.
    ============================================ */
 
 .flosc-hidden {
-    display: none !important;
+    display: none;
 }
 
+/* Legacy class aliases (prefer data-flosc-display via setDisplayState). */
 .flosc-visible {
-    display: block !important;
+    display: block;
 }
 
 .flosc-visible-flex {
-    display: flex !important;
+    display: flex;
 }
 
 .flosc-visible-inline-flex {
-    display: inline-flex !important;
+    display: inline-flex;
+}
+
+[data-flosc-display="block"]:not(.flosc-hidden) {
+    display: block;
+}
+
+[data-flosc-display="flex"]:not(.flosc-hidden) {
+    display: flex;
+}
+
+[data-flosc-display="inline-flex"]:not(.flosc-hidden) {
+    display: inline-flex;
 }
 
 /* ============================================
@@ -368,7 +384,7 @@ html, body {
 }
 
 .flosc-sidebar.collapsed .session-item-actions {
-    display: none !important;
+    display: none;
 }
 
 /* Profile bar: avatar-only, centered */
@@ -602,16 +618,14 @@ html, body {
     min-height: 70px;
 }
 
-/* data-show visibility: visitor content vs logged-in content */
+/* data-show visibility: visitor content vs logged-in content (cascade, no !important) */
 [data-user-state="visitor"] [data-show="logged-in"],
 [data-user-state="guest"] [data-show="visitor"],
 [data-user-state="member"] [data-show="visitor"] {
-    display: none !important;
+    display: none;
 }
 
-/* v1.8.4: Use display:block (not display:initial) so <img> elements
-   render as block instead of inline. display:initial resolves to
-   inline for <img>, which breaks flex sizing of the avatar. */
+/* Shown branch: block so <img> avatars size correctly (not inline). */
 [data-user-state="visitor"] [data-show="visitor"],
 [data-user-state="guest"] [data-show="logged-in"],
 [data-user-state="member"] [data-show="logged-in"] {
@@ -619,8 +633,9 @@ html, body {
 }
 
 /* Upgrade container: guest only */
-[data-user-state="member"] .upgrade-container {
-    display: none !important;
+[data-user-state="member"] .upgrade-container,
+[data-user-state="visitor"] .upgrade-container {
+    display: none;
 }
 
 .user-profile-bar .profile-button {
@@ -657,26 +672,39 @@ html, body {
     flex-shrink: 0;
 }
 
-/* v1.8.4: Bulletproof avatar sizing — !important beats any WordPress
-   theme rule (e.g. img{max-width:100%;height:auto}). The flosc-app
-   prefix scopes this to FLOSC only; won't leak to other page images. */
-.flosc-app .flosc-profile-avatar {
-    width: var(--flosc-avatar-width, 36px) !important;
-    height: var(--flosc-avatar-height, 36px) !important;
-    min-width: var(--flosc-avatar-width, 36px) !important;
-    min-height: var(--flosc-avatar-height, 36px) !important;
-    max-width: var(--flosc-avatar-width, 36px) !important;
-    max-height: var(--flosc-avatar-height, 36px) !important;
-    border-radius: var(--flosc-avatar-radius, 50%) !important;
-    object-fit: cover !important;
+/* Avatar sizing: scoped under .flosc-app .user-profile-bar (no !important). */
+.flosc-app .user-profile-bar .flosc-profile-avatar,
+.flosc-app .user-profile-bar img.flosc-profile-avatar {
+    width: var(--flosc-avatar-width, 36px);
+    height: var(--flosc-avatar-height, 36px);
+    min-width: var(--flosc-avatar-width, 36px);
+    min-height: var(--flosc-avatar-height, 36px);
+    max-width: var(--flosc-avatar-width, 36px);
+    max-height: var(--flosc-avatar-height, 36px);
+    border-radius: var(--flosc-avatar-radius, 50%);
+    object-fit: cover;
     flex-shrink: 0;
 }
 
-/* v1.8.4: img avatars must be display:block (not flex — img is replaced
-   content). !important needed to beat the data-show display:block rule
-   which could be overridden by theme specificity chains. */
-img.flosc-profile-avatar {
-    display: block !important;
+.flosc-app .user-profile-bar img.flosc-profile-avatar {
+    display: block;
+}
+
+/* Logged-in avatar: show icon OR image, never both */
+.user-profile-bar #flosc_profile_avatar_icon[data-flosc-display]:not(.flosc-hidden) ~ #flosc_profile_avatar,
+.user-profile-bar #flosc_profile_avatar_icon.flosc-visible-flex ~ #flosc_profile_avatar,
+.user-profile-bar #flosc_profile_avatar_icon.flosc-visible ~ #flosc_profile_avatar {
+    display: none;
+}
+
+/*
+ * Double-icon flash fix: hide both avatar nodes until setDisplayState marks one.
+ */
+[data-user-state="guest"] .user-profile-bar #flosc_profile_avatar:not([data-flosc-display]):not(.flosc-visible),
+[data-user-state="member"] .user-profile-bar #flosc_profile_avatar:not([data-flosc-display]):not(.flosc-visible),
+[data-user-state="guest"] .user-profile-bar #flosc_profile_avatar_icon:not([data-flosc-display]):not(.flosc-visible):not(.flosc-visible-flex),
+[data-user-state="member"] .user-profile-bar #flosc_profile_avatar_icon:not([data-flosc-display]):not(.flosc-visible):not(.flosc-visible-flex) {
+    display: none;
 }
 
 .flosc-profile-avatar.visitor-avatar,
@@ -1748,6 +1776,7 @@ img.flosc-profile-avatar {
    MODAL SYSTEM
    ============================================ */
 
+/* Closed by default; open via setDisplayState(..., true, 'flex') → data-flosc-display. */
 .flosc-modal-overlay {
     display: none;
     position: fixed;
@@ -1764,7 +1793,8 @@ img.flosc-profile-avatar {
     -webkit-backdrop-filter: blur(4px);
 }
 
-.flosc-modal-overlay.show {
+.flosc-modal-overlay.show,
+.flosc-modal-overlay[data-flosc-display="flex"]:not(.flosc-hidden) {
     display: flex;
 }
 
@@ -2640,43 +2670,26 @@ img.flosc-profile-avatar {
 }
 
 /* ============================================
-   USER STATE VISIBILITY
-   Profile bar is always visible (content toggled via data-show above).
-   These rules control OTHER sidebar elements by state.
+   USER STATE VISIBILITY (cascade, no !important)
+   Profile bar is always visible (content toggled via data-show).
+   Hide rules only — shown state comes from component base styles.
    ============================================ */
 
 [data-user-state="visitor"] .session-history,
 [data-user-state="visitor"] .flosc-share-btn,
 [data-user-state="visitor"] .flosc_app_session_list,
 [data-user-state="visitor"] .new-chat-btn {
-    display: none !important;
-}
-
-[data-user-state="visitor"] .auth-buttons {
-    display: flex !important;
+    display: none;
 }
 
 [data-user-state="guest"] .auth-buttons,
 [data-user-state="member"] .auth-buttons {
-    display: none !important;
+    display: none;
 }
 
-[data-user-state="guest"] .flosc-share-btn,
-[data-user-state="member"] .flosc-share-btn {
-    display: flex !important;
-}
-
-[data-user-state="guest"] .flosc_app_session_list,
-[data-user-state="member"] .flosc_app_session_list {
-    display: block !important;
-}
-
-[data-user-state="member"] .upgrade-banner {
-    display: none !important;
-}
-
-[data-user-state="guest"] .upgrade-banner {
-    display: flex !important;
+[data-user-state="member"] .upgrade-banner,
+[data-user-state="visitor"] .upgrade-banner {
+    display: none;
 }
 
 /* ============================================
@@ -5673,3 +5686,25 @@ img.flosc-profile-avatar {
 
 
 /* ===== END FLOSC LEGACY: flosc-theme.css ===== */
+
+/* ============================================
+   DISPLAY UTILITIES — cascade last (no !important)
+   Re-declared at file end so equal-specificity
+   component rules above cannot resurrect a hidden node.
+   ============================================ */
+
+.flosc-hidden {
+    display: none;
+}
+
+[data-flosc-display="block"]:not(.flosc-hidden) {
+    display: block;
+}
+
+[data-flosc-display="flex"]:not(.flosc-hidden) {
+    display: flex;
+}
+
+[data-flosc-display="inline-flex"]:not(.flosc-hidden) {
+    display: inline-flex;
+}
