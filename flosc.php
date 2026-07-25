@@ -1018,6 +1018,8 @@ class FLOSC_Framework {
         add_action('flosc_purchase_completed', [$this, 'handle_purchase_completed'], 10, 2);
         // Member welcome — fires for every purchase path (grant_member_access → flosc_member_access_granted)
         add_action('flosc_member_access_granted', [$this, 'dispatch_member_welcome_email'], 10, 2);
+        // G→M additive token grant (remaining + member_token_grant), once per flow
+        add_action('flosc_member_access_granted', [$this, 'apply_member_token_grant_on_access'], 15, 2);
         // Newsletter opt-in profile checkbox (optional lead-gen)
         add_action('show_user_profile', [$this, 'render_newsletter_profile_field']);
         add_action('edit_user_profile', [$this, 'render_newsletter_profile_field']);
@@ -1485,13 +1487,20 @@ The Team',
             $flow_id = sanitize_key((string) get_user_meta($user->ID, '_flosc_registration_flow', true));
             if ($flow_id === '') {
                 $current_flow = $this->get_current_flow();
-                $flow_id = sanitize_key((string) ($current_flow['ivr'] ?? ''));
+                $ivr_file = (string) ($current_flow['ivr_file'] ?? $current_flow['ivr'] ?? '');
+                $flow_id = sanitize_key(pathinfo(basename($ivr_file), PATHINFO_FILENAME));
+                if ($flow_id === '') {
+                    $flow_id = sanitize_key((string) ($current_flow['ivr'] ?? ''));
+                }
             }
             $this->flosc_ensure_guest_token_baseline($user->ID, $token_provider, $flow_id, 'Guest login baseline');
         }
 
         // v07.09: Set justLoggedIn flag for IVR
         set_transient('flosc_just_logged_in_' . $user->ID, true, MINUTE_IN_SECONDS * 5);
+
+        // Restore browser-computed quiz data stashed before SSO redirect.
+        $this->consume_stashed_visitor_quiz($user->ID);
 
         // v2.0.2: Track login count for IVR condition evaluation (login_count)
         $current_count = (int) get_user_meta($user->ID, '_flosc_login_count', true);
@@ -1568,7 +1577,7 @@ The Team',
     }
 
     /**
-     * Ensure guest users have at least the configured flow token baseline.
+     * V→G: apply guest_token_grant once per flow (visitor remaining + grant).
      */
     private function flosc_ensure_guest_token_baseline($user_id, $token_provider, $flow_id = '', $reason = '') {
         $user_id = absint($user_id);
@@ -1576,9 +1585,38 @@ The Team',
             return 0;
         }
 
-        // v8.0.0+ hardening: chat spend control is per-flow to prevent one
-        // flow from draining another flow's budget.
-        return $this->flosc_ensure_user_flow_token_baseline($user_id, $flow_id);
+        // Per-flow additive grant; $token_provider unused (wallet is flow meta).
+        unset($token_provider, $reason);
+        return $this->flosc_apply_guest_token_grant_once($user_id, $flow_id);
+    }
+
+    /**
+     * G→M: apply member_token_grant once per flow (guest remaining + grant).
+     * Hooked to flosc_member_access_granted (Access Code, PayPal, sandbox, etc.).
+     *
+     * @param int   $user_id
+     * @param array $purchase_data
+     */
+    public function apply_member_token_grant_on_access($user_id, $purchase_data = []) {
+        $user_id = absint($user_id);
+        if ($user_id <= 0) {
+            return 0;
+        }
+
+        $flow_id = '';
+        if (is_array($purchase_data) && !empty($purchase_data['flow_id'])) {
+            $flow_id = sanitize_key((string) $purchase_data['flow_id']);
+        }
+        if ($flow_id === '') {
+            $flow_id = sanitize_key((string) get_user_meta($user_id, '_flosc_registration_flow', true));
+        }
+        if ($flow_id === '') {
+            $current_flow = $this->get_current_flow();
+            $ivr_file = (string) ($current_flow['ivr_file'] ?? $current_flow['ivr'] ?? '');
+            $flow_id = sanitize_key(pathinfo(basename($ivr_file), PATHINFO_FILENAME));
+        }
+
+        return $this->flosc_apply_member_token_grant_once($user_id, $flow_id);
     }
 
     /**
@@ -3850,20 +3888,32 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: New user created vi
                 }
             }
 
-            // First click only: copy DO session/quiz data to WP, then delete DO temp dir
-            if ($is_first_click) {
-                $session_id      = sanitize_text_field($payload['session_id'] ?? '');
-                $body_temp_id    = sanitize_text_field($payload['temp_id'] ?? '');
-                $has_temp_id     = ($body_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $body_temp_id));
-                $browser_quiz_data = isset($payload['quiz_data']) && is_array($payload['quiz_data']) ? $payload['quiz_data'] : null;
-                if ($session_id) {
-                    $pulled = $this->pull_session_from_do($user_id, $session_id);
-                    if ($pulled) {
+            // Persist quiz/session data on first click, or on later clicks when user
+            // meta still lacks scored IPA results (email-scanner prefetch, DO race).
+            $session_id        = sanitize_text_field($payload['session_id'] ?? '');
+            $body_temp_id      = sanitize_text_field($payload['temp_id'] ?? '');
+            $browser_quiz_data = isset($payload['quiz_data']) && is_array($payload['quiz_data']) ? $payload['quiz_data'] : null;
+            if (!$body_temp_id && is_array($browser_quiz_data) && !empty($browser_quiz_data['tempId'])) {
+                $body_temp_id = sanitize_text_field($browser_quiz_data['tempId']);
+            }
+            $has_temp_id       = ($body_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $body_temp_id));
+            $existing_quiz     = get_user_meta($user_id, '_flosc_last_quiz_data', true);
+            $quiz_data_missing = !is_array($existing_quiz) || empty($existing_quiz['phrase_results']);
+
+            if ($is_first_click || ($quiz_data_missing && ($browser_quiz_data || $session_id || $has_temp_id))) {
+                $quiz_stored = false;
+
+                // v8.0.8: Browser-computed quiz data is authoritative; DO pull is fallback.
+                if ($browser_quiz_data) {
+                    $quiz_stored = (bool) $this->store_browser_quiz_data($user_id, $browser_quiz_data, $body_temp_id);
+                } elseif ($session_id) {
+                    $quiz_stored = $this->pull_session_from_do($user_id, $session_id);
+                    if ($quiz_stored) {
                         $this->delete_session_from_do($session_id);
                     }
-                } elseif ($browser_quiz_data) {
-                    $this->store_browser_quiz_data($user_id, $browser_quiz_data, $body_temp_id);
-                } elseif ($has_temp_id) {
+                }
+
+                if (!$quiz_stored && $has_temp_id) {
                     update_user_meta($user_id, '_flosc_audio_temp_id', $body_temp_id);
                 }
             }
@@ -3983,6 +4033,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: New user created vi
      * (from the cookie). Pull now, no client help needed.
      */
     private function pull_pending_session_from_do($user_id) {
+        $existing = get_user_meta($user_id, '_flosc_last_quiz_data', true);
+        if (is_array($existing) && !empty($existing['phrase_results'])) {
+            return;
+        }
+
         $cookie = wp_unslash($_COOKIE);
         // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- cookie array is unslashed above and sanitized on session_id extraction below
         if (empty($cookie['flosc_pending_session'])) {
@@ -4613,7 +4668,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
         // callbacks at priority > 1, which fires after do_action('wp_enqueue_scripts')).
         // These hooks fire inside wp_print_styles()/wp_print_head_scripts()
         // just before the actual output, catching anything that slipped through.
-        $flosc_style_whitelist = ['flosc-frontend', 'flosc-chat', 'flosc-offers', 'flosc-access', 'flosc-preset'];
+        $flosc_style_whitelist = ['flosc-layout', 'flosc-theme', 'flosc-offers', 'flosc-preset'];
         add_action('wp_print_styles', function() use ($flosc_style_whitelist) {
             global $wp_styles;
             foreach ($wp_styles->queue as $handle) {
@@ -4843,6 +4898,23 @@ HTML;
             // so it doesn't show fake "Congratulations on your purchase!" to admins.
             $actually_purchased = (bool) get_user_meta($user->ID, '_flosc_purchased', true);
 
+            // Per-flow chat wallet (additive V→G / G→M grants write here). Prefer this for
+            // UI so Guest/Member token counts match Token Management, not the legacy sale ledger.
+            $flow_id_for_tokens = sanitize_key((string) get_user_meta($user->ID, '_flosc_registration_flow', true));
+            if ($flow_id_for_tokens === '') {
+                $current_flow_for_tokens = $this->get_current_flow();
+                $ivr_for_tokens = (string) ($current_flow_for_tokens['ivr_file'] ?? $current_flow_for_tokens['ivr'] ?? '');
+                $flow_id_for_tokens = sanitize_key(pathinfo(basename($ivr_for_tokens), PATHINFO_FILENAME));
+            }
+            $flow_token_balance = $this->flosc_get_user_flow_token_balance($user->ID, $flow_id_for_tokens);
+            $sale_token_balance = 0;
+            $token_provider_for_user = $this->sale_manager->get_provider('tokens');
+            if ($token_provider_for_user && method_exists($token_provider_for_user, 'get_balance')) {
+                $sale_token_balance = (int) $token_provider_for_user->get_balance($user->ID);
+            }
+            // If flow grant has run (or been charged), flow meta is the source of truth.
+            $display_tokens = $flow_token_balance > 0 ? $flow_token_balance : $sale_token_balance;
+
             $user_data = [
                 'id' => $user->ID,
                 'name' => $user->display_name,
@@ -4855,7 +4927,9 @@ HTML;
                     ? $this->member_access->get_user_levels($user->ID)
                     : [],  // MTS-2026-02-02: [MEMBER-LEVELS] List of membership levels for status response
                 'access' => $this->sale_manager->access()->get_user_access($user->ID),
-                'tokens' => $this->sale_manager->get_provider('tokens')->get_balance($user->ID),
+                'tokens' => $display_tokens,
+                'flowTokens' => $flow_token_balance,
+                'flowId' => $flow_id_for_tokens,
                 'freeLessonDelivered' => (bool) get_user_meta($user->ID, '_flosc_free_lesson_delivered', true),
                 'freeLessonsCount' => count(get_user_meta($user->ID, '_flosc_free_lesson_numbers', true) ?: []),
                 // v8.0.1: Embed free lesson data in config so JS never needs a cross-domain REST call.
@@ -5707,6 +5781,16 @@ HTML;
         $concierge_desk_active = (trim((string) $concierge_guidance) !== '');
         if ($concierge_desk_active) {
             $charge_applies = false;
+        }
+        // v8.0.13: Don't burn the guest wallet on the first post-login scripted turns.
+        if ($charge_applies && is_user_logged_in()) {
+            $login_user_id = get_current_user_id();
+            if ($login_user_id > 0 && get_transient('flosc_just_logged_in_' . $login_user_id)) {
+                $post_login_turn = intval($eval_context['message_count'] ?? 0);
+                if ($post_login_turn <= 2) {
+                    $charge_applies = false;
+                }
+            }
         }
         $visitor_balance_before = null;
         $visitor_charge_result = null;
@@ -8955,6 +9039,7 @@ Example good response:
             'provider' => 'access_code',
             'transaction_id' => 'access_code_' . $user_id . '_' . time(),
             'amount' => 0,
+            'flow_id' => $flow_id,
         ]);
 
         set_transient('flosc_just_purchased_' . $user_id, true, 300);
@@ -9186,6 +9271,61 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("[FLOSC v8.0.7] score_visit
      * Learners Guest Access Link. The user is created (or found) when the link
      * is clicked (handle_login_token Case 0 above).
      */
+    public function handle_stash_visitor_quiz($request) {
+        $quiz_data = $request->get_param('quiz_data');
+        if (!is_array($quiz_data) || empty($quiz_data['phraseResults']) || !is_array($quiz_data['phraseResults'])) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'Missing quiz_data.phraseResults',
+            ], 400);
+        }
+
+        $token = wp_generate_password(32, false, false);
+        set_transient('flosc_quiz_stash_' . $token, $quiz_data, HOUR_IN_SECONDS);
+
+        return new WP_REST_Response([
+            'success' => true,
+            'token'   => $token,
+        ]);
+    }
+
+    /**
+     * Consume quiz data stashed via /stash-visitor-quiz before an SSO redirect.
+     */
+    private function consume_stashed_visitor_quiz($user_id) {
+        $existing = get_user_meta($user_id, '_flosc_last_quiz_data', true);
+        if (is_array($existing) && !empty($existing['phrase_results'])) {
+            return false;
+        }
+
+        $cookie = wp_unslash($_COOKIE);
+        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- cookie array is unslashed above and sanitized on token extraction below
+        if (empty($cookie['flosc_quiz_stash'])) {
+            return false;
+        }
+
+        $token = sanitize_text_field(urldecode((string) $cookie['flosc_quiz_stash']));
+        setcookie('flosc_quiz_stash', '', time() - 3600, '/');
+
+        if ($token === '') {
+            return false;
+        }
+
+        $quiz_data = get_transient('flosc_quiz_stash_' . $token);
+        delete_transient('flosc_quiz_stash_' . $token);
+
+        if (!is_array($quiz_data) || empty($quiz_data['phraseResults'])) {
+            return false;
+        }
+
+        $temp_id = '';
+        if (!empty($quiz_data['tempId']) && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $quiz_data['tempId'])) {
+            $temp_id = sanitize_text_field($quiz_data['tempId']);
+        }
+
+        return (bool) $this->store_browser_quiz_data($user_id, $quiz_data, $temp_id);
+    }
+
     public function handle_email_registration($request) {
         $email = sanitize_email($request->get_param('email'));
         $flow_id = sanitize_key((string) $request->get_param('flow_id'));
@@ -11501,8 +11641,27 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             ]);
         }
 
-        // v8.0.0: Prefer pulling from DO session when session_id is available.
-        // The DO server has the authoritative audio files + scores.
+        $quiz_data = $request->get_param('quiz_data');
+        $temp_id   = sanitize_text_field($request->get_param('temp_id') ?? '');
+        if (!$temp_id && is_array($quiz_data) && !empty($quiz_data['tempId'])) {
+            $temp_id = sanitize_text_field($quiz_data['tempId']);
+        }
+        if (!$temp_id) {
+            $temp_id = get_user_meta($user_id, '_flosc_audio_temp_id', true) ?: '';
+        }
+
+        // v8.0.8: Browser-computed quiz data is authoritative; DO pull is fallback.
+        if (is_array($quiz_data) && !empty($quiz_data['phraseResults'])) {
+            $stored = $this->store_browser_quiz_data($user_id, $quiz_data, $temp_id);
+            if ($stored) {
+                delete_user_meta($user_id, '_flosc_audio_temp_id');
+                return new WP_REST_Response([
+                    'success' => true,
+                    'quiz_data' => get_user_meta($user_id, '_flosc_last_quiz_data', true),
+                ]);
+            }
+        }
+
         if ($session_id && $this->pull_session_from_do($user_id, $session_id)) {
             return new WP_REST_Response([
                 'success' => true,
@@ -11510,16 +11669,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             ]);
         }
 
-        // Fallback: store browser-computed quiz data directly
-        $quiz_data = $request->get_param('quiz_data');
         if (!$quiz_data || !is_array($quiz_data)) {
             return new WP_REST_Response(['success' => false, 'message' => 'Missing quiz_data'], 400);
-        }
-
-        // Get temp_id from request or from user meta (stored during registration)
-        $temp_id = sanitize_text_field($request->get_param('temp_id') ?? '');
-        if (!$temp_id) {
-            $temp_id = get_user_meta($user_id, '_flosc_audio_temp_id', true) ?: '';
         }
 
         $stored = $this->store_browser_quiz_data($user_id, $quiz_data, $temp_id);
@@ -12540,6 +12691,54 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 'is_low'        => $is_low_balance,
                 'low_message'   => $is_low_balance ? $low_tokens_message : '',
             ],
+        ]);
+    }
+
+    /**
+     * V→G additive token grant for the logged-in guest.
+     * Client sends visitor_session_id so visitor remaining can be carried after SSO
+     * (when the grant on wp_login ran without the lesaep.com visitor cookie).
+     *
+     * @param WP_REST_Request $request flow_id, visitor_session_id
+     * @return WP_REST_Response
+     */
+    public function handle_apply_guest_token_grant($request) {
+        nocache_headers();
+
+        $user_id = get_current_user_id();
+        if ($user_id <= 0) {
+            return new WP_REST_Response(['success' => false, 'message' => 'Not logged in'], 401);
+        }
+
+        if (!$this->flosc_user_should_receive_guest_tokens($user_id)) {
+            // Members already granted; return current flow balance if any.
+            $flow_id = sanitize_key((string) ($request->get_param('flow_id') ?? ''));
+            $balance = $this->flosc_get_user_flow_token_balance($user_id, $flow_id);
+            return new WP_REST_Response([
+                'success' => true,
+                'skipped' => true,
+                'reason' => 'not_guest',
+                'token_balance' => $balance,
+            ]);
+        }
+
+        $flow_id = sanitize_key((string) ($request->get_param('flow_id') ?? ''));
+        if ($flow_id === '') {
+            $flow_id = sanitize_key((string) get_user_meta($user_id, '_flosc_registration_flow', true));
+        }
+        $session_raw = sanitize_text_field((string) ($request->get_param('visitor_session_id') ?? ''));
+        if ($session_raw === '') {
+            $session_raw = $this->flosc_resolve_visitor_session_id_for_grant();
+        }
+
+        // Client always sends visitor_session_id when available; allow 0 remaining + grant
+        // even if session id is missing (first load without localStorage).
+        $balance = $this->flosc_apply_guest_token_grant_once($user_id, $flow_id, $session_raw, true);
+
+        return new WP_REST_Response([
+            'success' => true,
+            'token_balance' => $balance,
+            'formatted' => $this->flosc_format_token_display($balance),
         ]);
     }
 

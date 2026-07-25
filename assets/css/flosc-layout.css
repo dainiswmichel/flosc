@@ -111,6 +111,14 @@ html, body {
     display: block !important;
 }
 
+.flosc-visible-flex {
+    display: flex !important;
+}
+
+.flosc-visible-inline-flex {
+    display: inline-flex !important;
+}
+
 /* ============================================
    APP CONTAINER
    ============================================ */
@@ -562,6 +570,17 @@ html, body {
    which could be overridden by theme specificity chains. */
 img.flosc-profile-avatar {
     display: block !important;
+}
+
+/* Logged-in avatar: show icon OR image, never both */
+.user-profile-bar #flosc_profile_avatar_icon.flosc-visible-flex ~ #flosc_profile_avatar,
+.user-profile-bar #flosc_profile_avatar_icon.flosc-visible ~ #flosc_profile_avatar {
+    display: none !important;
+}
+
+.flosc-profile-avatar-icon {
+    font-size: 20px;
+    line-height: 1;
 }
 
 .flosc-profile-avatar.visitor-avatar,
@@ -3476,6 +3495,302 @@ body.flosc-companion-embed .flosc-sidebar,
 body.flosc-companion-embed .flosc-sidebar-overlay,
 body.flosc-companion-embed #flosc_app_sidebar_toggle {
     display: none !important;
+}
+
+/* ============================================
+   AUTH MODAL + ACCESS CODE (app surface)
+   Lives here because /chat loads flosc-layout.css (not flosc-chat.css).
+   Keep in sync with flosc-chat.css if auth modal markup changes.
+   ============================================ */
+
+.flosc-access-code-trigger {
+    text-align: center;
+    margin-top: 14px;
+}
+
+.flosc-access-code-link {
+    color: var(--flosc-text-muted, #71717a);
+    font-size: 12px;
+    text-decoration: none;
+}
+
+.flosc-access-code-panel {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.flosc-access-code-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--flosc-text, #18181b);
+}
+
+.flosc-access-code-input {
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: 3px;
+    padding: 10px 16px;
+    border: 2px solid var(--flosc-input-field-border, #e4e4e7);
+    border-radius: 8px;
+    width: 180px;
+    text-transform: uppercase;
+    background: var(--flosc-input-field-bg, #ffffff);
+    color: var(--flosc-input-field-text, #18181b);
+}
+
+.flosc-access-code-actions {
+    margin-top: 14px;
+}
+
+.flosc-access-code-submit {
+    background: #10b981;
+    color: #fff;
+    border: none;
+    padding: 10px 28px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.flosc-access-code-error {
+    color: #dc2626;
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+.flosc-access-code-error.is-success {
+    color: #10b981;
+}
+
+.flosc-auth-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(24, 24, 27, 0.38);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(8px);
+    padding: 20px;
+}
+
+.flosc-auth-modal {
+    background: var(--flosc-card-bg, #ffffff);
+    border: 1px solid var(--flosc-card-border, #e4e4e7);
+    border-radius: 20px;
+    padding: 32px;
+    width: 90%;
+    max-width: 480px;
+    max-height: calc(100vh - 40px);
+    overflow: auto;
+    box-shadow: var(--flosc-card-hover-shadow, 0 8px 25px rgba(0, 0, 0, 0.08));
+    position: relative;
+    color: var(--flosc-text, #18181b);
+}
+
+.flosc-auth-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: var(--flosc-panel-close-bg, rgba(255, 255, 255, 0.9));
+    border: 1px solid var(--flosc-panel-close-border, rgba(0, 0, 0, 0.06));
+    color: var(--flosc-panel-close-text, #71717a);
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 999px;
+    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.flosc-auth-close:hover {
+    background: var(--flosc-panel-close-hover-bg, #ffffff);
+    border-color: var(--flosc-panel-close-hover-border, rgba(0, 0, 0, 0.12));
+    transform: scale(1.04);
+}
+
+.flosc-auth-header {
+    text-align: center;
+    margin-bottom: 26px;
+}
+
+.flosc-auth-header h2 {
+    margin: 0 0 10px;
+    color: var(--flosc-text, #18181b);
+    font-weight: 800;
+    font-family: 'Atkinson Hyperlegible Next', sans-serif;
+    font-size: 28px;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+}
+
+.flosc-auth-header p {
+    margin: 0;
+    color: var(--flosc-text-muted, #71717a);
+    font-family: 'Atkinson Hyperlegible Next', sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+}
+
+.flosc-auth-form {
+    margin-bottom: 22px;
+}
+
+.flosc-auth-field {
+    margin-bottom: 14px;
+}
+
+.flosc-auth-field label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--flosc-text, #18181b);
+}
+
+.flosc-auth-field input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid var(--flosc-input-field-border, #e4e4e7);
+    border-radius: 12px;
+    font-size: 16px;
+    background: var(--flosc-input-field-bg, #ffffff);
+    color: var(--flosc-input-field-text, #18181b);
+    box-sizing: border-box;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.flosc-auth-field input:focus {
+    outline: none;
+    border-color: var(--flosc-accent, #2563eb);
+    background: var(--flosc-input-field-bg, #ffffff);
+    box-shadow: 0 0 0 4px var(--flosc-accent-subtle, rgba(37, 99, 235, 0.06));
+}
+
+.flosc-auth-submit {
+    width: 100%;
+    padding: 15px 24px;
+    background: var(--flosc-accent, #2563eb);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+}
+
+.flosc-auth-submit:hover {
+    background: var(--flosc-accent-hover, #1d4ed8);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.3);
+}
+
+.flosc-auth-divider {
+    position: relative;
+    text-align: center;
+    margin: 22px 0;
+}
+
+.flosc-auth-divider::before,
+.flosc-auth-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: calc(50% - 70px);
+    height: 1px;
+    background: var(--flosc-border, #e4e4e7);
+}
+
+.flosc-auth-divider::before { left: 0; }
+.flosc-auth-divider::after { right: 0; }
+
+.flosc-auth-divider span {
+    background: var(--flosc-card-bg, #ffffff);
+    padding: 0 12px;
+    color: var(--flosc-text-muted, #71717a);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+}
+
+.flosc-sso-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.flosc-sso-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 13px 16px;
+    border: 1px solid var(--flosc-border, #e4e4e7);
+    border-radius: 12px;
+    background: var(--flosc-pill-bg, #ffffff);
+    color: var(--flosc-text, #18181b);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.flosc-sso-btn:hover {
+    background: var(--flosc-pill-hover-bg, #eff6ff);
+    border-color: var(--flosc-pill-hover-border, #93c5fd);
+    transform: translateY(-1px);
+}
+
+.flosc-sso-icon {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.flosc-sso-icon svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+
+.flosc-auth-terms {
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--flosc-text-muted, #71717a);
+    margin-top: 16px;
+    margin-bottom: 0;
+}
+
+@media (max-width: 560px) {
+    .flosc-auth-modal-overlay {
+        padding: 12px;
+    }
+
+    .flosc-auth-modal {
+        width: 100%;
+        max-height: calc(100vh - 24px);
+        padding: 28px 20px 22px;
+        border-radius: 20px;
+    }
+
+    .flosc-auth-header h2 {
+        font-size: 24px;
+    }
+
+    .flosc-auth-field input {
+        padding: 13px 14px;
+    }
 }
 
 body.flosc-companion-embed .flosc-header,

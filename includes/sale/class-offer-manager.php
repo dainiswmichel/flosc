@@ -273,14 +273,38 @@ class FLOSC_Offer_Manager {
             }
         }
 
+        // Preserve admin status/active. Previously this always forced status=active,
+        // which re-enabled sandbox offers after floscAdmin turned them off.
+        if (!empty($existing) && is_array($existing)) {
+            $status = strtolower((string) ($existing['status'] ?? 'active'));
+            if (!in_array($status, ['active', 'inactive', 'draft'], true)) {
+                $status = 'active';
+            }
+            if (array_key_exists('active', $existing)) {
+                $is_active = !empty($existing['active']);
+            } else {
+                $is_active = ($status === 'active');
+            }
+            // Keep status/active consistent with each other.
+            if ($status === 'active' && !$is_active) {
+                $status = 'inactive';
+            }
+            if ($is_active && $status !== 'active') {
+                $is_active = false;
+            }
+        } else {
+            $status = 'active';
+            $is_active = true;
+        }
+
         $normalized = array_merge($existing, [
             'id'             => $offer_id,
             'name'           => $name,
             'description'    => $description,
             'headline'       => $name,
             'type'           => $existing['type'] ?? self::TYPE_ONE_TIME,
-            'status'         => 'active',
-            'active'         => true,
+            'status'         => $status,
+            'active'         => $is_active,
             'display_format' => $display_format,
             'display_price'  => $existing['display_price'] ?? '',
             'cta'            => $existing['cta'] ?? '',

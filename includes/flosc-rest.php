@@ -466,6 +466,15 @@ trait FLOSC_REST_Trait {
             'permission_callback' => [$this, 'check_public_endpoint_permission'],
         ]);
 
+        // V→G additive grant with visitor session remaining (cross-domain SSO safe).
+        register_rest_route('flosc/v1', '/apply-guest-token-grant', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_apply_guest_token_grant'],
+            'permission_callback' => function () {
+                return is_user_logged_in();
+            },
+        ]);
+
         // Quiz Submission (NEW: for collecting quiz answers)
         // v9.4.2: Now rate-limited via check_public_endpoint_permission
         // v1.0.5: This endpoint returns bridge data status (reads, not writes)
@@ -806,6 +815,13 @@ trait FLOSC_REST_Trait {
         register_rest_route('flosc/v1', '/register-email', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_email_registration'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
+        // Pre-SSO quiz stash — browser posts scored quiz data before OAuth redirect.
+        register_rest_route('flosc/v1', '/stash-visitor-quiz', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_stash_visitor_quiz'],
             'permission_callback' => [$this, 'check_public_endpoint_permission'],
         ]);
 

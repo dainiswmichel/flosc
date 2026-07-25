@@ -269,6 +269,12 @@ class floscApp {
                 await this.fetchVisitorSessionBalanceOnInit();
             }
 
+            // V→G additive grant (visitor remaining + guest grant), once per flow.
+            // Safe after SSO when wp_login ran without the visitor session cookie.
+            if (this.state === 'guest') {
+                await this.applyGuestTokenGrantOnInit();
+            }
+
             // v1.8.0: Old visitor engagement bar removed. The unified profile bar
             // (always visible, 3 states) replaces it. No initVisitorBar() needed.
 
@@ -350,6 +356,19 @@ class floscApp {
             this.log('[FLOSC] Starting IVR...');
             // v1.6.2: initOfferMessages() REMOVED — offers ARE IVR entries, no bridge needed
             this.startIVR();
+            // Post-login quiz display fallback — startIVR only auto-renders when chat is empty.
+            const shouldShowPostLoginQuiz = !this.ivr.context.quiz_results_shown
+                && this._hasIpaPhraseResults(this.user?.lastQuizData)
+                && (this._pendingQuizResultsWelcome || this.user?.justLoggedIn);
+            if (shouldShowPostLoginQuiz) {
+                this.log('[FLOSC] Post-login quiz results welcome (fallback)');
+                setTimeout(() => {
+                    if (!this.ivr.context.quiz_results_shown && this._hasIpaPhraseResults(this.user?.lastQuizData)) {
+                        this.openQuizResults();
+                    }
+                }, 1200);
+                this._pendingQuizResultsWelcome = false;
+            }
             // v8.0.0: Poll for admin-joined messages (admin dropping into this chat).
             this.startAdminPoll();
             this.log('[FLOSC] Initialization complete!');
@@ -494,6 +513,55 @@ class floscApp {
             this.syncVisitorTokenBalanceFromPayload(data);
         } catch (e) {
             this.logWarn('[FLOSC] Could not fetch visitor session balance on init:', e);
+        }
+    }
+
+    /**
+     * V→G: remaining visitor tokens + guest_token_grant (once per flow).
+     * Called for guests on app init so SSO return still carries visitor remaining.
+     */
+    async applyGuestTokenGrantOnInit() {
+        if (this.state !== 'guest') {
+            return;
+        }
+
+        const sessionId = String(this.getVisitorSessionId() || '').trim();
+        const flowId = String(this.config?.flowId || '').trim();
+        if (!flowId) {
+            return;
+        }
+
+        this._persistVisitorSessionCookie(sessionId);
+
+        try {
+            const response = await this.authFetch(this.config.apiUrl + '/apply-guest-token-grant', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': this.config.nonce
+                },
+                body: JSON.stringify({
+                    flow_id: flowId,
+                    visitor_session_id: sessionId
+                })
+            });
+            if (!response.ok) {
+                return;
+            }
+            const data = await response.json();
+            if (data?.success && typeof data.token_balance === 'number' && this.user) {
+                this.user.tokenBalance = data.token_balance;
+                this.user.tokensFormatted = data.formatted || String(data.token_balance);
+                // Refresh profile bar if present
+                const el = document.querySelector('[data-flosc-token-balance], .flosc-token-balance, #flosc_token_balance');
+                if (el && data.formatted) {
+                    el.textContent = data.formatted;
+                }
+                this.log('[FLOSC] Guest token grant applied:', data.token_balance);
+            }
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not apply guest token grant on init:', e);
         }
     }
 
@@ -932,12 +1000,12 @@ class floscApp {
             quiz_id: this.user?.lastQuizId || this.quiz?.id || 'unknown',
             initial_score: parseInt(this.user?.initialScore) || 0,
             initial_quiz_id: this.user?.initialQuizId || 'unknown',
-            quiz_taken: !!(this.user?.lastQuizScore || this.user?.quizCompletedAt || this.quiz?.completedAt),
+            quiz_taken: this._userHasQuizTaken(),
             // v5.0.3 FIX: Include actual quiz items so AI knows what was missed/correct
             correct_items: this.quiz?.correctItems || [],
             incorrect_items: this.quiz?.missedItems || [],
             // v8.0.0: Track quiz completion and results display state
-            quiz_completed: !!(this.user?.lastQuizScore || this.quiz?.completedAt),
+            quiz_completed: this._userHasQuizTaken(),
             quiz_results_shown: false,  // Set true by checkPendingQuizResults after display
             // v8.0.10: Signal that user is currently in the middle of taking the IPA quiz
             quiz_in_progress: !!(this.ipaQuiz && this.ipaQuiz.phrases && this.ipaQuiz.currentIndex < this.ipaQuiz.phrases.length),
@@ -1021,6 +1089,7 @@ class floscApp {
      */
     getVisitorSessionId() {
         if (this._visitorSessionId) {
+            this._persistVisitorSessionCookie(this._visitorSessionId);
             return this._visitorSessionId;
         }
 
@@ -1031,12 +1100,28 @@ class floscApp {
                 localStorage.setItem('flosc_visitor_session', id);
             }
             this._visitorSessionId = id;
+            this._persistVisitorSessionCookie(id);
             return id;
         } catch (e) {
             // Storage may be unavailable. Keep a stable in-memory id for this
             // page lifetime so chat/logging does not split mid-conversation.
             this._visitorSessionId = String(Date.now());
+            this._persistVisitorSessionCookie(this._visitorSessionId);
             return this._visitorSessionId;
+        }
+    }
+
+    /**
+     * Cookie so PHP can read visitor remaining tokens on V→G (additive grant).
+     * Same id as localStorage flosc_visitor_session.
+     */
+    _persistVisitorSessionCookie(sessionId) {
+        const id = String(sessionId || '').trim();
+        if (!id) return;
+        try {
+            document.cookie = `flosc_visitor_session=${encodeURIComponent(id)};path=/;max-age=2592000;SameSite=Lax`;
+        } catch (e) {
+            /* ignore */
         }
     }
 
@@ -1279,7 +1364,7 @@ class floscApp {
             }
             
             // v8.0.0: User has quiz data — show results as welcome (any state)
-            if (this.user?.lastQuizData?.quiz_type === 'ipa_audio' && this.user.lastQuizData.phrase_results) {
+            if (this._hasIpaPhraseResults(this.user?.lastQuizData)) {
                 this.log('FLOSC: Quiz data present — showing results as welcome');
                 this.openQuizResults();
                 welcomeShown = true;
@@ -2193,6 +2278,21 @@ class floscApp {
         }
     }
 
+    _appendWelcomeBadge(content, productName = '') {
+        const baseContent = String(content || '').trim();
+        if (baseContent === '' || /flosc-welcome-badge/i.test(baseContent)) {
+            return baseContent;
+        }
+
+        const badgeUrl = this._getValidBadgeUrl();
+        if (!badgeUrl) {
+            return baseContent;
+        }
+
+        const safeProductName = productName || this.config.identity?.name || 'FLOSC';
+        return `${baseContent}\n<div class="flosc-welcome-badge-wrap"><img src="${badgeUrl}" alt="${safeProductName}" class="flosc-welcome-badge"></div>`;
+    }
+
     /**
      * v1.9.5: Generate an AI-powered welcome greeting.
      * Uses the IVR welcome message as guidance so AI crafts a natural,
@@ -2267,6 +2367,15 @@ class floscApp {
         content = content.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
         content = content.replace(/~~([^~]+)~~/g, '<del>$1</del>');
 
+        const isWelcomeMessage = !!(msg && msg.name && String(msg.name).includes('welcome'));
+        if (this.state === 'visitor' && isWelcomeMessage && !/flosc-welcome-badge/i.test(content)) {
+            const productName = this.config.identity?.name || 'FLOSC';
+            const badgeUrl = this._getValidBadgeUrl();
+            if (badgeUrl) {
+                content += `\n<div class="flosc-welcome-badge-wrap"><img src="${badgeUrl}" alt="${productName}" class="flosc-welcome-badge"></div>`;
+            }
+        }
+
         // v8.0.9: Add message to DOM with data attribute for idempotency checking
         // v1.9.7: Pass isHtml=true — content already has HTML from markdown conversion above
         const messageDiv = this.addMessage('assistant', content, true);
@@ -2282,6 +2391,10 @@ class floscApp {
 
         if (msg.offer_id) {
             this.ivr.shownThisSession['offer_' + msg.offer_id] = true;
+        }
+
+        if (this.state === 'visitor' && isWelcomeMessage) {
+            this.saveVisitorMessage('assistant', content);
         }
 
         // v07.09: Track message shown persistently
@@ -3209,7 +3322,9 @@ class floscApp {
                 break;
             case 'open_sandbox_purchase':
             case 'sandbox_purchase':
-                this.openSandboxPurchase();
+                if (this._sandboxPurchaseAllowed()) {
+                    this.openSandboxPurchase();
+                }
                 break;
             case 'show_offer':
                 if (actionParam) {
@@ -3243,7 +3358,9 @@ class floscApp {
                 // v1.4.0: Product-specific sandbox purchase
                 } else if (action.startsWith('sandbox_purchase_')) {
                     const productId = action.replace('sandbox_purchase_', '');
-                    this.openSandboxPurchaseForProduct(productId);
+                    if (this._sandboxPurchaseAllowed()) {
+                        this.openSandboxPurchaseForProduct(productId);
+                    }
                 } else if (action.startsWith('show_offer_')) {
                     const offerId = action.replace('show_offer_', '');
                     this.showOffer(offerId);
@@ -3252,8 +3369,30 @@ class floscApp {
         }
     }
     
+    _sandboxPurchaseAllowed() {
+        if (this.user?.isAdmin) {
+            return true;
+        }
+        this.addMessage(
+            'assistant',
+            'Sandbox purchases are for admin testing only. Use the upgrade offer to check out with PayPal.'
+        );
+        return false;
+    }
+
+    _showCheckoutUnavailable(offerId, processor = '') {
+        this.logError('[FLOSC-CHECKOUT] No processor available', { offerId, processor });
+        this.addMessage(
+            'assistant',
+            'Payment is not configured for this flow yet. Please contact support or try again later.'
+        );
+    }
+
     // v1.4.0: Open sandbox purchase for current flow's product
     openSandboxPurchase() {
+        if (!this._sandboxPurchaseAllowed()) {
+            return;
+        }
         const productId = this.config.productId || this.detectProductFromFlow();
         const offerId = this.getOfferIdForProduct(productId);
         this.showSandboxPayment(offerId, productId);
@@ -3261,6 +3400,9 @@ class floscApp {
     
     // v1.4.0: Open sandbox purchase for specific product
     openSandboxPurchaseForProduct(productId) {
+        if (!this._sandboxPurchaseAllowed()) {
+            return;
+        }
         const offerId = this.getOfferIdForProduct(productId);
         this.showSandboxPayment(offerId, productId);
     }
@@ -3555,6 +3697,7 @@ class floscApp {
                 </div>
             `;
             this.addMessage('assistant', gateHtml, true);
+            this.saveVisitorMessage('assistant', gateHtml);
             
             // v1.8.1: Bind ALL gate signup buttons (class-based, not id-based)
             setTimeout(() => {
@@ -5315,8 +5458,56 @@ class floscApp {
         this.performIVRAction(action);
     }
     
+    _buildRegistrationQuizPayload(parsed) {
+        if (!parsed) {
+            return null;
+        }
+
+        const tempId = parsed.tempId || this.ipaQuiz?.tempId || null;
+
+        if (parsed.phraseResults) {
+            return {
+                score: parsed.score,
+                phraseResults: parsed.phraseResults,
+                wordIpa: parsed.wordIpa || null,
+                rankedPhonemes: parsed.rankedPhonemes || null,
+                quizType: parsed.quizType || 'ipa_audio',
+                quizId: parsed.quizId || null,
+                tempId
+            };
+        }
+
+        if (parsed.answers || parsed.correct !== undefined || parsed.total !== undefined) {
+            return {
+                score: parsed.score,
+                answers: parsed.answers || null,
+                correct: parsed.correct,
+                incorrect: parsed.incorrect,
+                total: parsed.total,
+                passed: parsed.passed,
+                quizType: parsed.quizType || 'sequence',
+                quizId: parsed.quizId || null,
+                tempId
+            };
+        }
+
+        if (parsed.score !== undefined) {
+            return {
+                score: parsed.score,
+                quizType: parsed.quizType || 'sequence',
+                quizId: parsed.quizId || null,
+                tempId
+            };
+        }
+
+        return null;
+    }
+
     async processEmailAuth(email) {
         this.log('[FLOSC Auth] Processing email auth:', email);
+
+        // Ensure PHP can carry visitor token remaining on V→G.
+        this._persistVisitorSessionCookie(this.getVisitorSessionId());
         
         // Read config from the active modal
         const modal = document.getElementById('flosc-auth-modal');
@@ -5340,7 +5531,8 @@ class floscApp {
             // v8.0.8: Send browser-computed quiz data so PHP stores instantly (no re-scoring)
             const regBody = {
                 email,
-                flow_id: this.config.flowId || ''
+                flow_id: this.config.flowId || '',
+                visitor_session_id: this.getVisitorSessionId() || ''
             };
 
             // Preserve exact page context for post-login return.
@@ -5357,15 +5549,9 @@ class floscApp {
                 const stored = localStorage.getItem('flosc_quiz_result');
                 if (stored) {
                     const parsed = JSON.parse(stored);
-                    if (parsed && parsed.phraseResults) {
-                        regBody.quiz_data = {
-                            score: parsed.score,
-                            phraseResults: parsed.phraseResults,
-                            wordIpa: parsed.wordIpa || null,
-                            rankedPhonemes: parsed.rankedPhonemes || null,
-                            quizType: parsed.quizType || 'ipa_audio',
-                            tempId: parsed.tempId || this.ipaQuiz?.tempId || null
-                        };
+                    const quizPayload = this._buildRegistrationQuizPayload(parsed);
+                    if (quizPayload) {
+                        regBody.quiz_data = quizPayload;
                         // v8.0.0: Send DO session_id so WP can pull audio + scores from DO
                         if (parsed.sessionId) {
                             regBody.session_id = parsed.sessionId;
@@ -5500,34 +5686,41 @@ class floscApp {
         });
     }
 
-    initiateSSO(provider, authUrl) {
+    async initiateSSO(provider, authUrl) {
         this.log('[FLOSC SSO] Initiating SSO with:', provider);
-        
-        // v8.0.0: Store pending DO session_id in a cookie before leaving for OAuth.
-        // When the user returns via handle_login_token(), PHP reads this cookie and
-        // calls pull_session_from_do() immediately — no fragile client-side POST needed.
-        // The cookie is on the current domain (lesaep.com), survives the OAuth round-trip,
-        // and is available when we land back on lesaep.com with the login token.
+
+        // Visitor token wallet id for V→G additive grant after OAuth return.
+        this._persistVisitorSessionCookie(this.getVisitorSessionId());
+
         try {
             const stored = localStorage.getItem('flosc_quiz_result');
             if (stored) {
                 const result = JSON.parse(stored);
+                const quizPayload = this._buildRegistrationQuizPayload(result);
+                if (quizPayload?.phraseResults?.length) {
+                    const stashResp = await fetch(`${this.config.restUrl}stash-visitor-quiz`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ quiz_data: quizPayload })
+                    });
+                    const stashData = await stashResp.json();
+                    if (stashData?.success && stashData.token) {
+                        document.cookie = `flosc_quiz_stash=${encodeURIComponent(stashData.token)};path=/;max-age=3600;SameSite=Lax`;
+                        this.log('[FLOSC SSO] Stashed quiz data for post-login restore');
+                    }
+                }
                 if (result.sessionId) {
                     document.cookie = `flosc_pending_session=${encodeURIComponent(result.sessionId)};path=/;max-age=3600;SameSite=Lax`;
                     this.log('[FLOSC SSO] Set flosc_pending_session cookie:', result.sessionId);
                 }
             }
         } catch (e) {
-            // Non-critical — server-side pull won't fire, client POST is fallback
+            this.logWarn('[FLOSC SSO] Could not stash quiz data before redirect:', e);
         }
 
-        // Add redirect_to parameter so user comes back here
-        // v1.4.6: Use & if URL already has query params (e.g. non-pretty permalinks)
         const redirectTo = window.location.href;
         const separator = authUrl.includes('?') ? '&' : '?';
         const fullAuthUrl = `${authUrl}${separator}redirect_to=${encodeURIComponent(redirectTo)}`;
-        
-        // Redirect to SSO provider
         window.location.href = fullAuthUrl;
     }
 
@@ -5769,16 +5962,43 @@ class floscApp {
 
     // v3.0.8: Show stored quiz results for current member or guest.
     // v8.0.8: Now handles IPA audio quiz data from this.user.lastQuizData.
+    _getPendingLocalQuizResult() {
+        try {
+            const stored = localStorage.getItem('flosc_quiz_result');
+            if (!stored) return null;
+            const result = JSON.parse(stored);
+            const age = Date.now() - (result.timestamp || 0);
+            if (age >= 86400000 || !result.phraseResults?.length) return null;
+            return result;
+        } catch (e) {
+            return null;
+        }
+    }
+
     openQuizResults() {
         // v8.0.8: Check for IPA audio quiz data (from server scoring via user meta)
         const serverData = this.user?.lastQuizData;
-        if (serverData && serverData.quiz_type === 'ipa_audio' && serverData.phrase_results) {
+        if (this._hasIpaPhraseResults(serverData)) {
             // Render full IPA phrase results using the existing renderer
             this.showIpaPhraseResultsAfterLogin({
                 score: serverData.score,
                 phraseResults: serverData.phrase_results,
                 wordIpa: serverData.word_ipa || {},
                 rankedPhonemes: serverData.ranked_phonemes || [],
+                quizType: 'ipa_audio'
+            });
+            this.ivr.context.quiz_results_shown = true;
+            setTimeout(() => this.floscShowUserAutoPrompts(), 500);
+            return;
+        }
+
+        const localResult = this._getPendingLocalQuizResult();
+        if (localResult) {
+            this.showIpaPhraseResultsAfterLogin({
+                score: localResult.score,
+                phraseResults: localResult.phraseResults,
+                wordIpa: localResult.wordIpa || {},
+                rankedPhonemes: localResult.rankedPhonemes || [],
                 quizType: 'ipa_audio'
             });
             this.ivr.context.quiz_results_shown = true;
@@ -6201,8 +6421,7 @@ class floscApp {
             }
             this.showPaymentModal(offerId);
         } else {
-            // v1.7.0: Fallback to sandbox purchase instead of external checkout page
-            this.openSandboxPurchase();
+            this._showCheckoutUnavailable(offerId, processor);
         }
     }
     
@@ -7225,7 +7444,7 @@ Purchased: ${ctx.purchased}
         }
     }
 
-    restartChat() {
+    async restartChat() {
         // v9.5.9: Add spinning animation to button
         const restartBtn = document.getElementById('flosc_app_restart_chat');
         if (restartBtn) {
@@ -7262,12 +7481,14 @@ Purchased: ${ctx.purchased}
         const sessionKey = 'flosc_session_' + this.getSessionKey();
         localStorage.removeItem(sessionKey);
 
-        // Clear visitor messages AND mint a brand-new visitor session id, so the
-        // restart begins a genuinely new conversation with its own concierge desk
-        // (the previous desk is simply left to expire). A returning visitor who does
-        // NOT restart keeps their id — and their progressive, continuous experience.
+        // Clear visitor messages, visitor quiz state, and the current visitor
+        // balance key before minting a brand-new visitor session id, so the
+        // restart begins a genuinely new conversation with its own concierge desk.
         if (this.state === 'visitor') {
+            const previousTokenKey = this.getVisitorTokenStorageKey();
             localStorage.removeItem('flosc_visitor_messages');
+            localStorage.removeItem('flosc_quiz_result');
+            localStorage.removeItem(previousTokenKey);
             const freshVisitorSessionId = String(Date.now());
             this._visitorSessionId = freshVisitorSessionId;
             try { localStorage.setItem('flosc_visitor_session', freshVisitorSessionId); } catch (e) {}
@@ -7286,7 +7507,12 @@ Purchased: ${ctx.purchased}
 
             // Hydrate the brand-new visitor session balance immediately so the
             // restarted chat does not wait for poll/chat traffic to show count.
-            this.fetchVisitorSessionBalanceOnInit();
+            await this.fetchVisitorSessionBalanceOnInit();
+
+            // A hard reload guarantees the old chat DOM and transient runtime
+            // state are gone, so the next init starts from the new visitor session.
+            window.location.reload();
+            return;
         }
 
         // Rebuild context
@@ -7364,18 +7590,33 @@ Purchased: ${ctx.purchased}
 
             if (profileAvatar && profileAvatarIcon) {
                 if (configuredImageUrl) {
+                    profileAvatarIcon.textContent = '';
+                    profileAvatar.onerror = () => {
+                        profileAvatar.removeAttribute('src');
+                        profileAvatar.onerror = null;
+                        if (configuredIcon) {
+                            profileAvatarIcon.textContent = configuredIcon;
+                            this.setDisplayState(profileAvatarIcon, true, 'flex');
+                            this.setDisplayState(profileAvatar, false, 'block');
+                        }
+                    };
                     profileAvatar.src = configuredImageUrl;
                     profileAvatar.alt = effectiveName || 'User avatar';
                     this.setDisplayState(profileAvatar, true, 'block');
                     this.setDisplayState(profileAvatarIcon, false, 'flex');
                 } else if (configuredIcon) {
+                    profileAvatar.removeAttribute('src');
+                    profileAvatar.onerror = null;
                     profileAvatarIcon.textContent = configuredIcon;
                     this.setDisplayState(profileAvatarIcon, true, 'flex');
                     this.setDisplayState(profileAvatar, false, 'block');
                 } else {
+                    profileAvatarIcon.textContent = '';
                     if (this.user.avatar) {
                         profileAvatar.src = this.user.avatar;
                         profileAvatar.alt = this.user.name || 'User avatar';
+                    } else {
+                        profileAvatar.removeAttribute('src');
                     }
                     this.setDisplayState(profileAvatar, true, 'block');
                     this.setDisplayState(profileAvatarIcon, false, 'flex');
@@ -8401,7 +8642,13 @@ Purchased: ${ctx.purchased}
 
         // Anti-repetition: never render the exact same assistant message twice.
         // If a duplicate arrives, substitute a rotating variation instead.
-        if (role !== 'user') {
+        if (role !== 'user' && !isHtml) {
+            const contentStr = String(content || '');
+            if (contentStr.includes('flosc-sandbox-payment') || contentStr.includes('flosc-offer-')) {
+                isHtml = true;
+            }
+        }
+        if (role !== 'user' && !isHtml) {
             this._shownAssistant = this._shownAssistant || {};
             let repKey = String(content || '').replace(/\s+/g, ' ').trim();
             if (repKey && this._shownAssistant[repKey]) {
@@ -9159,6 +9406,46 @@ Purchased: ${ctx.purchased}
         }
     }
     
+    _hasIpaPhraseResults(quizData) {
+        return !!(quizData
+            && quizData.quiz_type === 'ipa_audio'
+            && Array.isArray(quizData.phrase_results)
+            && quizData.phrase_results.length > 0);
+    }
+
+    // v8.0.13: Score 0 and phrase-only meta must still count as quiz_taken for IVR pills/offers.
+    _userHasQuizTaken() {
+        if (this._hasIpaPhraseResults(this.user?.lastQuizData)) {
+            return true;
+        }
+        if (this._hasPendingQuizResult()) {
+            return true;
+        }
+        if (this.quiz?.completedAt) {
+            return true;
+        }
+        if (this.user?.quizCompletedAt) {
+            return true;
+        }
+        const scoreRaw = this.user?.lastQuizScore;
+        if (scoreRaw !== undefined && scoreRaw !== null && scoreRaw !== '') {
+            const scoreNum = Number(scoreRaw);
+            if (!Number.isNaN(scoreNum)) {
+                return true;
+            }
+        }
+        if (this.quiz?.score !== undefined && this.quiz?.score !== null && !Number.isNaN(Number(this.quiz.score))) {
+            return true;
+        }
+        return false;
+    }
+
+    _markPendingQuizResultsWelcome() {
+        if (this.user?.justLoggedIn && this._hasIpaPhraseResults(this.user?.lastQuizData)) {
+            this._pendingQuizResultsWelcome = true;
+        }
+    }
+
     async checkPendingQuizResults() {
         // v8.0.8: This method sets IVR context flags ONLY. It does NOT render results.
         // Results are presented through the IVR message flow:
@@ -9179,23 +9466,25 @@ Purchased: ${ctx.purchased}
                     this.ivr.context.quiz_completed = true;
                     this.ivr.context.quiz_taken = true;
                     this.ivr.context.first_message_after_quiz = true;
-                    if (result.score) this.ivr.context.score = result.score;
+                    if (result.score != null && !isNaN(result.score)) {
+                        this.ivr.context.score = result.score;
+                    }
                     if (result.quizId) this.ivr.context.quiz_id = result.quizId;
 
                     // Check if server already scored (email reg path scores during registration)
                     const serverData = this.user?.lastQuizData;
-                    if (serverData && serverData.quiz_type === 'ipa_audio' && serverData.phrase_results) {
+                    if (this._hasIpaPhraseResults(serverData)) {
                         this.log('[FLOSC] Server already has scored IPA data — storing wordIpa for openQuizResults()');
                         // Merge wordIpa from localStorage into server data so openQuizResults() has it
                         if (result.wordIpa && !serverData.word_ipa) {
                             serverData.word_ipa = result.wordIpa;
                         }
                         this.ivr.context.score = serverData.score;
+                        this._markPendingQuizResultsWelcome();
                         localStorage.removeItem('flosc_quiz_result');
-                    } else if (result.pendingServerScore && result.phraseResults) {
-                        // SSO path: data is in localStorage. Populate this.user.lastQuizData
-                        // immediately so openQuizResults() can render without waiting for server.
-                        this.log('[FLOSC] SSO path: loading quiz data from localStorage');
+                    } else if (result.phraseResults?.length && !(serverData?.phrase_results?.length)) {
+                        // Email/SSO recovery: server meta empty but browser still has scored IPA data.
+                        this.log('[FLOSC] Recovering quiz data from localStorage');
                         if (!this.user) this.user = {};
                         this.user.lastQuizData = {
                             quiz_type: 'ipa_audio',
@@ -9207,22 +9496,29 @@ Purchased: ${ctx.purchased}
                         };
                         this.user.lastQuizScore = result.score;
                         this.ivr.context.score = result.score;
+                        this._markPendingQuizResultsWelcome();
 
                         // Persist to server in background (non-blocking). If it fails,
                         // results still display from this.user.lastQuizData above.
+                        const storeQuizBody = {
+                            quiz_data: {
+                                score: result.score,
+                                phraseResults: result.phraseResults,
+                                wordIpa: result.wordIpa || null,
+                                rankedPhonemes: result.rankedPhonemes || null,
+                                quizType: 'ipa_audio',
+                                tempId: result.tempId || null
+                            },
+                            temp_id: result.tempId || null
+                        };
+                        // Browser already scored each phrase — skip DO pull (avoids API/SSL dependency).
+                        if (!result.phraseResults?.length) {
+                            storeQuizBody.session_id = result.sessionId || null;
+                        }
                         this.authFetch(`${this.config.restUrl}store-quiz-data`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                quiz_data: {
-                                    score: result.score,
-                                    phraseResults: result.phraseResults,
-                                    wordIpa: result.wordIpa || null,
-                                    rankedPhonemes: result.rankedPhonemes || null,
-                                    quizType: 'ipa_audio'
-                                },
-                                session_id: result.sessionId || null
-                            })
+                            body: JSON.stringify(storeQuizBody)
                         }).then(r => {
                             if (!r.ok) {
                                 this.logError('[FLOSC] store-quiz-data HTTP ' + r.status);
@@ -9235,8 +9531,8 @@ Purchased: ${ctx.purchased}
                                 localStorage.removeItem('flosc_quiz_result');
                             }
                         }).catch(err => this.logError('[FLOSC] store-quiz-data failed', err));
-                    } else if (this.user?.lastQuizScore) {
-                        // Server has a score but no full phrase data
+                    } else if (this.user?.lastQuizScore && serverData?.phrase_results?.length) {
+                        // Server has full IPA phrase data — safe to trust score and clear local backup
                         const score = parseInt(this.user.lastQuizScore) || 0;
                         this.ivr.context.score = score;
                         localStorage.removeItem('flosc_quiz_result');
@@ -9245,6 +9541,19 @@ Purchased: ${ctx.purchased}
                         localStorage.removeItem('flosc_quiz_result');
                     }
                 }
+            } else if (this._hasIpaPhraseResults(this.user?.lastQuizData)) {
+                // SSO wiped localStorage but server meta has scored IPA data.
+                this.log('[FLOSC] checkPendingQuizResults: server IPA data only — setting context flags');
+                this.ivr.context.quiz_completed = true;
+                this.ivr.context.quiz_taken = true;
+                this.ivr.context.first_message_after_quiz = true;
+                const serverScore = Number(this.user?.lastQuizScore);
+                if (!Number.isNaN(serverScore)) {
+                    this.ivr.context.score = serverScore;
+                } else if (this.user.lastQuizData?.score != null) {
+                    this.ivr.context.score = this.user.lastQuizData.score;
+                }
+                this._markPendingQuizResultsWelcome();
             }
         } catch (e) {
             this.logError('[FLOSC] Could not check pending quiz results', e);
@@ -9424,7 +9733,8 @@ Purchased: ${ctx.purchased}
 
         if (!hasPayPal) {
             this.setDisplayState(modal, false, 'flex');
-            this.openSandboxPurchase();
+            const processor = offer?.pricing?.processor || '';
+            this._showCheckoutUnavailable(offerId, processor || 'paypal');
             return;
         }
 

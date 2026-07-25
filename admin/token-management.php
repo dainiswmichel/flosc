@@ -128,18 +128,18 @@ if (!in_array($flosc_depleted_contact_mode, ['message', 'in_chat_form'], true)) 
     </tr>
 
     <tr>
-        <th scope="row"><label for="flow_guest_token_grant">Guest Wallet Initial Amount</label></th>
+        <th scope="row"><label for="flow_guest_token_grant">Guest Wallet Additional Token Grant Amount</label></th>
         <td>
             <input type="number" id="flow_guest_token_grant" name="flow_guest_token_grant" value="<?php echo esc_attr($flosc_guest_token_grant); ?>" min="0" step="1" class="regular-text">
-            <p class="description">Per-flow starting balance for logged-in guest users on registration/login.</p>
+            <p class="description">Per-flow amount <strong>added</strong> when a Visitor becomes a Guest: guest_balance = visitor_remaining + this grant (once per flow). Example: visitor has 2,000 left and this is 5,000 → Guest starts at 7,000.</p>
         </td>
     </tr>
 
     <tr>
-        <th scope="row"><label for="flow_member_token_grant">Member Wallet Initial Amount</label></th>
+        <th scope="row"><label for="flow_member_token_grant">Member Wallet Additional Token Grant Amount</label></th>
         <td>
             <input type="number" id="flow_member_token_grant" name="flow_member_token_grant" value="<?php echo esc_attr($flosc_member_token_grant); ?>" min="0" step="1" class="regular-text">
-            <p class="description">Per-flow starting balance for users who already have member access.</p>
+            <p class="description">Per-flow amount <strong>added</strong> when a Guest becomes a Member (PayPal, Access Code, etc.): member_balance = guest_remaining + this grant (once per flow). Example: guest has 4,000 left and this is 10,000 → Member has 14,000.</p>
         </td>
     </tr>
 

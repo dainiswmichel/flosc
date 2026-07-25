@@ -181,7 +181,8 @@ trait FLOSC_Visitor_Token_Trait {
     }
 
     /**
-     * Read or initialize logged-in user's per-flow token balance.
+     * Read logged-in user's per-flow token balance (0 if not yet granted).
+     * Does not invent a floor baseline — grants are additive (remaining + grant).
      */
     private function flosc_get_user_flow_token_balance($user_id, $flow_id = '') {
         $user_id = absint($user_id);
@@ -195,9 +196,7 @@ trait FLOSC_Visitor_Token_Trait {
             return max(0, intval($stored));
         }
 
-        $baseline = max(0, intval($this->flosc_get_user_flow_initial_amount($user_id, (string) $flow_id)));
-        update_user_meta($user_id, $meta_key, $baseline);
-        return $baseline;
+        return 0;
     }
 
     /**
@@ -215,21 +214,159 @@ trait FLOSC_Visitor_Token_Trait {
     }
 
     /**
-     * Ensure logged-in user has at least the configured per-flow baseline.
+     * Meta flag: guest additive grant already applied for this flow.
      */
-    private function flosc_ensure_user_flow_token_baseline($user_id, $flow_id = '') {
+    private function flosc_guest_token_grant_flag_key($flow_id = '') {
+        return '_flosc_guest_token_grant_applied_' . $this->flosc_normalize_flow_stem($flow_id);
+    }
+
+    /**
+     * Meta flag: member additive grant already applied for this flow.
+     */
+    private function flosc_member_token_grant_flag_key($flow_id = '') {
+        return '_flosc_member_token_grant_applied_' . $this->flosc_normalize_flow_stem($flow_id);
+    }
+
+    /**
+     * Read visitor remaining tokens for a browser session (same flow).
+     * $session_id_raw is the client session id (localStorage flosc_visitor_session).
+     */
+    private function flosc_get_visitor_remaining_for_session($flow_id, $session_id_raw) {
+        $session_id_raw = trim((string) $session_id_raw);
+        if ($session_id_raw === '') {
+            return 0;
+        }
+
+        // Prefer the same normalize path used when charging visitor sessions.
+        if (method_exists($this, 'flosc_normalize_session_id')) {
+            $session_id = $this->flosc_normalize_session_id($session_id_raw);
+        } else {
+            $session_id = absint($session_id_raw);
+        }
+        if ($session_id <= 0) {
+            return 0;
+        }
+
+        $transient_key = $this->flosc_visitor_token_transient_key($flow_id, $session_id);
+        $stored = get_transient($transient_key);
+        if (!is_numeric($stored)) {
+            return 0;
+        }
+
+        return max(0, intval($stored));
+    }
+
+    /**
+     * Resolve visitor session id for token carry (cookie set by JS before auth).
+     */
+    private function flosc_resolve_visitor_session_id_for_grant() {
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only cookie for wallet carry
+        $cookies = wp_unslash($_COOKIE);
+        foreach (['flosc_visitor_session', 'flosc_vtok_session'] as $cookie_name) {
+            if (!empty($cookies[$cookie_name])) {
+                return sanitize_text_field(rawurldecode((string) $cookies[$cookie_name]));
+            }
+        }
+        return '';
+    }
+
+    /**
+     * V→G once per flow: guest_balance = visitor_remaining + guest_token_grant.
+     * Idempotent via per-flow user meta flag (safe on every login / init).
+     *
+     * If $session_id_raw is empty and no cookie, defers (does not set flag) so the
+     * guest app can call again with visitor_session_id after SSO return.
+     * Pass $allow_without_session true only when a client explicitly confirms.
+     */
+    private function flosc_apply_guest_token_grant_once($user_id, $flow_id = '', $session_id_raw = '', $allow_without_session = false) {
         $user_id = absint($user_id);
         if ($user_id <= 0) {
             return 0;
         }
 
-        $baseline = max(0, intval($this->flosc_get_user_flow_initial_amount($user_id, (string) $flow_id)));
-        $current = $this->flosc_get_user_flow_token_balance($user_id, $flow_id);
-        if ($current >= $baseline) {
-            return $current;
+        $flow_stem = $this->flosc_normalize_flow_stem($flow_id);
+        $flag_key = $this->flosc_guest_token_grant_flag_key($flow_stem);
+        if (get_user_meta($user_id, $flag_key, true)) {
+            return $this->flosc_get_user_flow_token_balance($user_id, $flow_stem);
         }
 
-        return $this->flosc_set_user_flow_token_balance($user_id, $flow_id, $baseline);
+        if ($session_id_raw === '') {
+            $session_id_raw = $this->flosc_resolve_visitor_session_id_for_grant();
+        }
+
+        $session_id_raw = trim((string) $session_id_raw);
+        if ($session_id_raw === '' && !$allow_without_session) {
+            // Defer until client provides visitor_session_id (common after cross-domain SSO).
+            return $this->flosc_get_user_flow_token_balance($user_id, $flow_stem);
+        }
+
+        // Remaining = visitor session wallet for this flow (0 if none / not found).
+        $remaining = $session_id_raw !== ''
+            ? $this->flosc_get_visitor_remaining_for_session($flow_stem, $session_id_raw)
+            : 0;
+        $grant = max(0, intval($this->flosc_get_guest_token_grant_amount($flow_stem, $user_id)));
+        $new_balance = $remaining + $grant;
+
+        $this->flosc_set_user_flow_token_balance($user_id, $flow_stem, $new_balance);
+        update_user_meta($user_id, $flag_key, 1);
+
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            flosc_log(sprintf(
+                'FLOSC tokens V→G additive: user=%d flow=%s remaining=%d grant=%d total=%d',
+                $user_id,
+                $flow_stem,
+                $remaining,
+                $grant,
+                $new_balance
+            ));
+        }
+
+        return $new_balance;
+    }
+
+    /**
+     * G→M once per flow: member_balance = guest_remaining + member_token_grant.
+     * Idempotent via per-flow user meta flag.
+     */
+    private function flosc_apply_member_token_grant_once($user_id, $flow_id = '') {
+        $user_id = absint($user_id);
+        if ($user_id <= 0) {
+            return 0;
+        }
+
+        $flow_stem = $this->flosc_normalize_flow_stem($flow_id);
+        $flag_key = $this->flosc_member_token_grant_flag_key($flow_stem);
+        if (get_user_meta($user_id, $flag_key, true)) {
+            return $this->flosc_get_user_flow_token_balance($user_id, $flow_stem);
+        }
+
+        $remaining = $this->flosc_get_user_flow_token_balance($user_id, $flow_stem);
+        $grant = max(0, intval($this->flosc_get_member_token_grant_amount($flow_stem, $user_id)));
+        $new_balance = $remaining + $grant;
+
+        $this->flosc_set_user_flow_token_balance($user_id, $flow_stem, $new_balance);
+        update_user_meta($user_id, $flag_key, 1);
+
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            flosc_log(sprintf(
+                'FLOSC tokens G→M additive: user=%d flow=%s remaining=%d grant=%d total=%d',
+                $user_id,
+                $flow_stem,
+                $remaining,
+                $grant,
+                $new_balance
+            ));
+        }
+
+        return $new_balance;
+    }
+
+    /**
+     * @deprecated Use flosc_apply_guest_token_grant_once — kept as alias for call sites.
+     * Ensure logged-in guest has received the per-flow additive guest grant (once).
+     */
+    private function flosc_ensure_user_flow_token_baseline($user_id, $flow_id = '') {
+        return $this->flosc_apply_guest_token_grant_once($user_id, $flow_id);
     }
 
     /**

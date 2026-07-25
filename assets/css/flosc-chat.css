@@ -1058,6 +1058,26 @@ img.flosc-profile-avatar {
     line-height: 1.6;
 }
 
+.flosc-welcome-badge-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 16px 0 18px;
+}
+
+.flosc-welcome-badge {
+    display: block;
+    width: min(320px, 72vw);
+    max-width: 100%;
+    height: auto;
+    border: 3px solid rgba(184, 148, 68, 0.82);
+    border-radius: 14px;
+    box-shadow:
+        0 0 0 1px rgba(255, 223, 135, 0.34),
+        0 10px 26px rgba(14, 16, 22, 0.28);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 6px;
+}
+
 /* v1.9.5: Landing state — compact centered identity block.
    Vertically centered when no messages. Hidden when user sends first message.
    Layout: [icon] FLOSC  tagline  (one line)
@@ -5426,114 +5446,137 @@ img.flosc-profile-avatar {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(12, 18, 28, 0.72);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 10000;
-    backdrop-filter: blur(4px);
+    backdrop-filter: blur(10px);
+    padding: 20px;
 }
 
 .flosc-auth-modal {
-    background: var(--flosc-surface, #fff);
-    border-radius: 16px;
-    padding: 32px;
+    background:
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.08), transparent 35%),
+        linear-gradient(180deg, rgba(18, 26, 41, 0.98) 0%, rgba(12, 18, 28, 0.98) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 36px;
     width: 90%;
-    max-width: 400px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    max-width: 480px;
+    max-height: calc(100vh - 40px);
+    overflow: auto;
+    box-shadow: 0 28px 90px rgba(0, 0, 0, 0.45);
     position: relative;
-    color: var(--flosc-text, #1a1a1a);
+    color: var(--flosc-surface-text, #f4f7fb);
 }
 
 .flosc-auth-close {
     position: absolute;
     top: 16px;
     right: 16px;
-    background: none;
-    border: none;
-    color: var(--flosc-text-secondary, #666);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.82);
     cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 999px;
+    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
 }
 
 .flosc-auth-close:hover {
-    background: var(--flosc-surface-hover, #f0f0f0);
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.18);
+    transform: scale(1.04);
 }
 
 .flosc-auth-header {
     text-align: center;
-    margin-bottom: 24px;
+    margin-bottom: 26px;
 }
 
 .flosc-auth-header h2 {
-    margin: 0 0 8px;
-    color: #1fad0d;
-    font-weight: 700;
+    margin: 0 0 10px;
+    color: #f7fbff;
+    font-weight: 800;
     font-family: 'Atkinson Hyperlegible Next', sans-serif;
-    font-size: 28px;
+    font-size: 30px;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
 }
 
 .flosc-auth-header p {
     margin: 0;
-    color: var(--flosc-text-secondary, #888);
+    color: rgba(244, 247, 251, 0.78);
     font-family: 'Atkinson Hyperlegible Next', sans-serif;
     font-size: 16px;
+    line-height: 1.55;
 }
 
 .flosc-auth-form {
-    margin-bottom: 20px;
+    margin-bottom: 22px;
 }
 
 .flosc-auth-field {
-    margin-bottom: 16px;
+    margin-bottom: 14px;
 }
 
 .flosc-auth-field label {
     display: block;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
+    color: rgba(244, 247, 251, 0.92);
 }
 
 .flosc-auth-field input {
     width: 100%;
-    padding: 12px 16px;
-    border: 1px solid var(--flosc-border, #ddd);
-    border-radius: 8px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
     font-size: 16px;
-    background: var(--flosc-input-bg, #fff);
-    color: var(--flosc-text, #1a1a1a);
+    background: rgba(255, 255, 255, 0.06);
+    color: #f7fbff;
     box-sizing: border-box;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
 .flosc-auth-field input:focus {
     outline: none;
-    border-color: var(--flosc-primary, #4f46e5);
-    box-shadow: 0 0 0 3px var(--flosc-primary-light, rgba(79, 70, 229, 0.1));
+    border-color: rgba(112, 193, 255, 0.85);
+    background: rgba(255, 255, 255, 0.09);
+    box-shadow: 0 0 0 4px rgba(64, 156, 255, 0.18);
 }
 
 .flosc-auth-submit {
     width: 100%;
-    padding: 14px 24px;
-    background: var(--flosc-primary, #4f46e5);
+    padding: 15px 24px;
+    background: linear-gradient(135deg, var(--flosc-primary, #4f46e5) 0%, var(--flosc-primary-hover, #4338ca) 100%);
     color: #fff;
     border: none;
-    border-radius: 8px;
+    border-radius: 14px;
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+    box-shadow: 0 14px 34px rgba(79, 70, 229, 0.28);
 }
 
 .flosc-auth-submit:hover {
-    background: var(--flosc-primary-hover, #4338ca);
+    filter: brightness(1.04);
+    transform: translateY(-1px);
+    box-shadow: 0 18px 38px rgba(79, 70, 229, 0.34);
 }
 
 .flosc-auth-divider {
     position: relative;
     text-align: center;
-    margin: 20px 0;
+    margin: 22px 0;
 }
 
 .flosc-auth-divider::before,
@@ -5541,19 +5584,20 @@ img.flosc-profile-avatar {
     content: '';
     position: absolute;
     top: 50%;
-    width: 40%;
+    width: calc(50% - 70px);
     height: 1px;
-    background: var(--flosc-border, #ddd);
+    background: rgba(255, 255, 255, 0.12);
 }
 
 .flosc-auth-divider::before { left: 0; }
 .flosc-auth-divider::after { right: 0; }
 
 .flosc-auth-divider span {
-    background: var(--flosc-surface, #fff);
+    background: rgba(12, 18, 28, 0.98);
     padding: 0 12px;
-    color: var(--flosc-text-secondary, #666);
+    color: rgba(244, 247, 251, 0.72);
     font-size: 13px;
+    letter-spacing: 0.02em;
 }
 
 .flosc-sso-buttons {
@@ -5566,21 +5610,22 @@ img.flosc-profile-avatar {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
     width: 100%;
-    padding: 12px 16px;
-    border: 1px solid var(--sso-border, #ddd);
-    border-radius: 8px;
-    background: var(--sso-bg, #fff);
-    color: var(--sso-text, #333);
+    padding: 13px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.07);
+    color: #f7fbff;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
 }
 
 .flosc-sso-btn:hover {
-    opacity: 0.9;
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.18);
     transform: translateY(-1px);
 }
 
@@ -5599,9 +5644,31 @@ img.flosc-profile-avatar {
 .flosc-auth-terms {
     text-align: center;
     font-size: 12px;
-    color: var(--flosc-text-secondary, #888);
+    line-height: 1.5;
+    color: rgba(244, 247, 251, 0.66);
     margin-top: 16px;
     margin-bottom: 0;
+}
+
+@media (max-width: 560px) {
+    .flosc-auth-modal-overlay {
+        padding: 12px;
+    }
+
+    .flosc-auth-modal {
+        width: 100%;
+        max-height: calc(100vh - 24px);
+        padding: 28px 20px 22px;
+        border-radius: 20px;
+    }
+
+    .flosc-auth-header h2 {
+        font-size: 24px;
+    }
+
+    .flosc-auth-field input {
+        padding: 13px 14px;
+    }
 }
 
 

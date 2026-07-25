@@ -503,7 +503,14 @@ class FLOSC_Condition_Evaluator {
         
         if ($user_id) {
             $context['score'] = intval(get_user_meta($user_id, '_flosc_last_quiz_score', true));
-            $context['quiz_taken'] = !empty($context['score']) || get_user_meta($user_id, '_flosc_quiz_completed_at', true);
+            $quiz_data = get_user_meta($user_id, '_flosc_last_quiz_data', true);
+            $has_phrase_results = is_array($quiz_data)
+                && !empty($quiz_data['phrase_results'])
+                && is_array($quiz_data['phrase_results'])
+                && count($quiz_data['phrase_results']) > 0;
+            $context['quiz_taken'] = $has_phrase_results
+                || get_user_meta($user_id, '_flosc_quiz_completed_at', true)
+                || get_user_meta($user_id, '_flosc_last_quiz_score', true) !== '';
             $context['purchased'] = (bool) get_user_meta($user_id, '_flosc_purchased', true);
             $context['lesson_viewed'] = (bool) get_user_meta($user_id, '_flosc_free_lesson_delivered', true);
             $context['onboarded'] = (bool) get_user_meta($user_id, '_flosc_funnel_completed', true);
