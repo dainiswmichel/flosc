@@ -10264,6 +10264,10 @@ Purchased: ${ctx.purchased}
      */
     async _renderSubscriptionCheckout(offerId, offer, container) {
         // Plan picker UI
+        const monthlyTokens = Number(this.config.subscriptionMonthlyTokenGrant || 10000);
+        const yearlyTokens = Number(this.config.subscriptionYearlyTokenGrant || 35000);
+        const tokenCap = Number(this.config.subscriptionTokenCap || 35000);
+        const fmtTok = (n) => (Number.isFinite(n) ? n.toLocaleString() : String(n));
         container.innerHTML = `
             <div class="flosc-plan-picker">
                 <div class="flosc-plan-picker-title">Choose your plan:</div>
@@ -10273,12 +10277,13 @@ Purchased: ${ctx.purchased}
                         <input type="radio" name="flosc_plan" value="yearly" checked class="flosc-plan-option-input">
                         <div class="flosc-plan-amount">$100</div>
                         <div class="flosc-plan-interval flosc-plan-interval-yearly">/year</div>
-                        <div class="flosc-plan-savings">Save $20!</div>
+                        <div class="flosc-plan-savings">Save $20 · up to ${fmtTok(yearlyTokens)} tokens (cap ${fmtTok(tokenCap)})</div>
                     </label>
                     <label class="flosc-plan-option" data-plan="monthly">
                         <input type="radio" name="flosc_plan" value="monthly" class="flosc-plan-option-input">
                         <div class="flosc-plan-amount">$10</div>
                         <div class="flosc-plan-interval">/month</div>
+                        <div class="flosc-plan-savings">+${fmtTok(monthlyTokens)} tokens / mo (cap ${fmtTok(tokenCap)})</div>
                     </label>
                 </div>
             </div>

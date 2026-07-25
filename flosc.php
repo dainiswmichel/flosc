@@ -1591,6 +1591,19 @@ The Team',
     }
 
     /**
+     * Public entry for subscription token top-ups (PayPal webhook renewals).
+     *
+     * @param int    $user_id
+     * @param string $flow_id
+     * @param string $plan_type monthly|yearly
+     * @param array  $context
+     * @return array
+     */
+    public function flosc_apply_subscription_token_topup_public($user_id, $flow_id = '', $plan_type = 'monthly', $context = []) {
+        return $this->flosc_apply_subscription_token_topup($user_id, $flow_id, $plan_type, $context);
+    }
+
+    /**
      * G→M: apply member_token_grant once per flow (guest remaining + grant).
      * Hooked to flosc_member_access_granted (Access Code, PayPal, sandbox, etc.).
      *
@@ -10440,9 +10453,26 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
         // Store flow
         $current_flow = $this->get_current_flow();
         $capture_flow_id = $current_flow ? ($current_flow['id'] ?? '') : '';
+        if ($capture_flow_id === '' && !empty($flow_id)) {
+            $capture_flow_id = sanitize_key($flow_id);
+        }
         if ($capture_flow_id) {
             update_user_meta($user_id, '_flosc_purchased_flow_id', $capture_flow_id);
+            update_user_meta($user_id, '_flosc_subscription_flow_id', $capture_flow_id);
         }
+
+        // Monthly: +10k tokens toward 35k cap (flow settings). Yearly: larger fill toward same cap.
+        // Payment always succeeds; tokens stop accruing once at the cap.
+        $token_topup = $this->flosc_apply_subscription_token_topup(
+            $user_id,
+            $capture_flow_id,
+            $plan_type,
+            [
+                'idempotency_key' => 'activate_' . $subscription_id,
+                'subscription_id' => $subscription_id,
+                'reason' => 'PayPal subscription activate (' . $plan_type . ')',
+            ]
+        );
 
         // Post-purchase login. The subscription has been verified against PayPal's
         // live API above, so payment is real and access is granted unconditionally.
@@ -10508,6 +10538,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             'is_new_user'        => $is_new_user,
             'auth_token'         => $auth_token ?: null,
             'login_handoff'      => $login_handoff,
+            'token_topup'        => $token_topup,
         ]);
     }
 

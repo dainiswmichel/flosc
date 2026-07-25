@@ -673,9 +673,104 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
     }
 
     /**
-     * Handle PayPal webhooks (optional — capture already confirms payment)
+     * Handle PayPal webhooks.
+     *
+     * Subscription renewals: PAYMENT.SALE.COMPLETED with a billing_agreement_id
+     * (subscription id) → monthly/yearly token top-up toward the flow cap.
+     * First activation is handled by activate-subscription; this covers later cycles.
      */
     public function handle_webhook($payload, $headers = []) {
-        return ['received' => true];
+        $data = is_array($payload) ? $payload : json_decode((string) $payload, true);
+        if (!is_array($data)) {
+            return ['received' => true, 'processed' => false, 'reason' => 'invalid_payload'];
+        }
+
+        $event_type = (string) ($data['event_type'] ?? $data['eventType'] ?? '');
+        $resource = is_array($data['resource'] ?? null) ? $data['resource'] : [];
+
+        // Renewal sale against a subscription (billing agreement).
+        if ($event_type === 'PAYMENT.SALE.COMPLETED' || $event_type === 'PAYMENT.CAPTURE.COMPLETED') {
+            $subscription_id = sanitize_text_field((string) (
+                $resource['billing_agreement_id']
+                ?? ($resource['supplementary_data']['related_ids']['subscription_id'] ?? '')
+            ));
+            $sale_id = sanitize_text_field((string) ($resource['id'] ?? ''));
+
+            if ($subscription_id === '') {
+                return ['received' => true, 'processed' => false, 'reason' => 'not_subscription_sale'];
+            }
+
+            $users = get_users([
+                'meta_key' => '_flosc_subscription_id',
+                'meta_value' => $subscription_id,
+                'number' => 1,
+                'fields' => 'ID',
+            ]);
+            $user_id = !empty($users[0]) ? (int) $users[0] : 0;
+            if ($user_id <= 0) {
+                return ['received' => true, 'processed' => false, 'reason' => 'unknown_subscription', 'subscription_id' => $subscription_id];
+            }
+
+            $plan_type = sanitize_key((string) get_user_meta($user_id, '_flosc_subscription_plan', true));
+            if ($plan_type === '') {
+                $plan_type = 'monthly';
+            }
+            $flow_id = sanitize_key((string) get_user_meta($user_id, '_flosc_subscription_flow_id', true));
+            if ($flow_id === '') {
+                $flow_id = sanitize_key((string) get_user_meta($user_id, '_flosc_purchased_flow_id', true));
+            }
+
+            $idem = $sale_id !== '' ? ('sale_' . $sale_id) : ('sub_cycle_' . $subscription_id . '_' . gmdate('Y-m'));
+
+            $topup = ['skipped' => true];
+            if (function_exists('flosc') && method_exists(flosc(), 'flosc_apply_subscription_token_topup_public')) {
+                $topup = flosc()->flosc_apply_subscription_token_topup_public($user_id, $flow_id, $plan_type, [
+                    'idempotency_key' => $idem,
+                    'subscription_id' => $subscription_id,
+                    'reason' => 'PayPal subscription renewal (' . $plan_type . ')',
+                ]);
+            }
+
+            update_user_meta($user_id, '_flosc_subscription_status', 'active');
+            update_user_meta($user_id, '_flosc_subscription_last_sale_id', $sale_id);
+            update_user_meta($user_id, '_flosc_subscription_last_payment_at', current_time('mysql'));
+
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                flosc_log('[FLOSC-PAYPAL] webhook renewal top-up user=' . $user_id . ' sub=' . $subscription_id . ' sale=' . $sale_id . ' result=' . wp_json_encode($topup));
+            }
+
+            return [
+                'received' => true,
+                'processed' => true,
+                'event_type' => $event_type,
+                'user_id' => $user_id,
+                'subscription_id' => $subscription_id,
+                'token_topup' => $topup,
+            ];
+        }
+
+        // Cancel / suspend — mark status only (access expiry is separate).
+        if (in_array($event_type, [
+            'BILLING.SUBSCRIPTION.CANCELLED',
+            'BILLING.SUBSCRIPTION.SUSPENDED',
+            'BILLING.SUBSCRIPTION.EXPIRED',
+        ], true)) {
+            $subscription_id = sanitize_text_field((string) ($resource['id'] ?? ''));
+            if ($subscription_id !== '') {
+                $users = get_users([
+                    'meta_key' => '_flosc_subscription_id',
+                    'meta_value' => $subscription_id,
+                    'number' => 1,
+                    'fields' => 'ID',
+                ]);
+                if (!empty($users[0])) {
+                    $status = strtolower(str_replace('BILLING.SUBSCRIPTION.', '', $event_type));
+                    update_user_meta((int) $users[0], '_flosc_subscription_status', $status);
+                }
+            }
+            return ['received' => true, 'processed' => true, 'event_type' => $event_type];
+        }
+
+        return ['received' => true, 'processed' => false, 'event_type' => $event_type];
     }
 }

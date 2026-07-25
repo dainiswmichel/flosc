@@ -47,6 +47,9 @@ $flosc_chat_token_enforcement = array_key_exists('chat_token_enforcement', $flos
     : true;
 $flosc_guest_token_grant = max(0, intval($flosc_flow_settings['guest_token_grant'] ?? $flosc_tokens_per_message));
 $flosc_member_token_grant = max(0, intval($flosc_flow_settings['member_token_grant'] ?? $flosc_guest_token_grant));
+$flosc_subscription_monthly_token_grant = max(0, intval($flosc_flow_settings['subscription_monthly_token_grant'] ?? 10000));
+$flosc_subscription_yearly_token_grant = max(0, intval($flosc_flow_settings['subscription_yearly_token_grant'] ?? 35000));
+$flosc_subscription_token_cap = max(0, intval($flosc_flow_settings['subscription_token_cap'] ?? 35000));
 $flosc_low_token_threshold = max(0, intval($flosc_flow_settings['visitor_low_token_threshold'] ?? 0));
 $flosc_default_low_message = 'You\'re running low on chat tokens. Pretty soon, you\'ll be invited to register or log in to receive {token_grant} more tokens.';
 $flosc_low_message = trim((string)($flosc_flow_settings['visitor_low_tokens_message'] ?? $flosc_default_low_message));
@@ -75,6 +78,19 @@ if (!in_array($flosc_depleted_contact_mode, ['message', 'in_chat_form'], true)) 
 
 <div class="flosc-payments-status-banner">
     <strong>Flow:</strong> floscTokens are the runtime currency. A balance starts at the Wallet Initial Amount (or Guest/Member grant), then debits the real API cost of each chargeable turn, converted to floscTokens. The Real Billing Factor is how you set that conversion from your actual expenses.
+</div>
+
+<div class="flosc-payments-status-banner">
+    <strong>Allocation rules (predict / avoid “tokens not working”):</strong>
+    <ul class="flosc-token-predict-list">
+        <li><strong>V→G once:</strong> guest_balance = visitor_remaining + Guest grant (idempotent per flow). Cookie or localStorage session must match the visitor who chatted.</li>
+        <li><strong>G→M once:</strong> member_balance = guest_remaining + Member grant (fires on Access Code / PayPal / purchase grant).</li>
+        <li><strong>Subscription monthly:</strong> each paid month adds Monthly Subscription Grant (default 10,000) toward the Token Cap (default 35,000). Payment always processes; once at the cap, further months credit 0 tokens.</li>
+        <li><strong>Subscription yearly:</strong> each paid year adds Yearly Subscription Grant (default 35,000) toward the same cap.</li>
+        <li><strong>Admin accounts skip guest grant</strong> — test V→G with a normal guest user, not an administrator.</li>
+        <li><strong>Guest grant = 0</strong> in this form locks new guests at visitor remaining only (often 0 if session was lost). Keep a positive Guest grant for demos.</li>
+        <li><strong>First paint + REST:</strong> server applies grant when the visitor session cookie is present; the app re-applies after SSO with the localStorage session id if login ran without the cookie.</li>
+    </ul>
 </div>
 
 <table class="form-table">
@@ -140,6 +156,30 @@ if (!in_array($flosc_depleted_contact_mode, ['message', 'in_chat_form'], true)) 
         <td>
             <input type="number" id="flow_member_token_grant" name="flow_member_token_grant" value="<?php echo esc_attr($flosc_member_token_grant); ?>" min="0" step="1" class="regular-text">
             <p class="description">Per-flow amount <strong>added</strong> when a Guest becomes a Member (PayPal, Access Code, etc.): member_balance = guest_remaining + this grant (once per flow). Example: guest has 4,000 left and this is 10,000 → Member has 14,000.</p>
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row"><label for="flow_subscription_monthly_token_grant">Monthly Subscription Token Grant</label></th>
+        <td>
+            <input type="number" id="flow_subscription_monthly_token_grant" name="flow_subscription_monthly_token_grant" value="<?php echo esc_attr($flosc_subscription_monthly_token_grant); ?>" min="0" step="1" class="regular-text">
+            <p class="description">Tokens added on each paid <strong>monthly</strong> subscription cycle (first activation and each renewal). Default 10,000. Applied toward the Token Cap below — never exceeds the cap.</p>
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row"><label for="flow_subscription_yearly_token_grant">Yearly Subscription Token Grant</label></th>
+        <td>
+            <input type="number" id="flow_subscription_yearly_token_grant" name="flow_subscription_yearly_token_grant" value="<?php echo esc_attr($flosc_subscription_yearly_token_grant); ?>" min="0" step="1" class="regular-text">
+            <p class="description">Tokens added on each paid <strong>yearly</strong> subscription cycle. Default 35,000 (fills the typical cap in one payment). Still respects the Token Cap.</p>
+        </td>
+    </tr>
+
+    <tr>
+        <th scope="row"><label for="flow_subscription_token_cap">Subscription Token Cap</label></th>
+        <td>
+            <input type="number" id="flow_subscription_token_cap" name="flow_subscription_token_cap" value="<?php echo esc_attr($flosc_subscription_token_cap); ?>" min="0" step="1" class="regular-text">
+            <p class="description">Maximum flow wallet size from subscription top-ups (default 35,000). If the member is already at or above this, monthly/yearly payments still process but credit <strong>0</strong> tokens until balance is spent below the cap. Use 0 for no cap.</p>
         </td>
     </tr>
 

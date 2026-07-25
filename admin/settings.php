@@ -807,6 +807,15 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         if (isset($flosc_new_settings['member_token_grant'])) {
             $flosc_new_settings['member_token_grant'] = max(0, intval($flosc_new_settings['member_token_grant']));
         }
+        if (isset($flosc_new_settings['subscription_monthly_token_grant'])) {
+            $flosc_new_settings['subscription_monthly_token_grant'] = max(0, intval($flosc_new_settings['subscription_monthly_token_grant']));
+        }
+        if (isset($flosc_new_settings['subscription_yearly_token_grant'])) {
+            $flosc_new_settings['subscription_yearly_token_grant'] = max(0, intval($flosc_new_settings['subscription_yearly_token_grant']));
+        }
+        if (isset($flosc_new_settings['subscription_token_cap'])) {
+            $flosc_new_settings['subscription_token_cap'] = max(0, intval($flosc_new_settings['subscription_token_cap']));
+        }
         if (isset($flosc_new_settings['visitor_low_token_threshold'])) {
             $flosc_new_settings['visitor_low_token_threshold'] = max(0, intval($flosc_new_settings['visitor_low_token_threshold']));
         }
@@ -1210,6 +1219,21 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         if (!empty($flosc_lesson_groups)) {
             $flosc_new_settings['lesson_groups']    = $flosc_lesson_groups;
             $flosc_new_settings['lessons_category'] = $flosc_lesson_groups[0]['category'];
+        }
+        // Free-sample pool = WP category (often a child of the main lessons category)
+        if (isset($flosc_new_settings['free_lesson_pool_category'])) {
+            $flosc_new_settings['free_lesson_pool_category'] = sanitize_title(
+                (string) $flosc_new_settings['free_lesson_pool_category']
+            );
+        }
+        if (isset($flosc_new_settings['free_lesson_guaranteed'])) {
+            $flosc_new_settings['free_lesson_guaranteed'] = max(0, intval($flosc_new_settings['free_lesson_guaranteed']));
+        }
+        if (isset($flosc_new_settings['free_lesson_count'])) {
+            $flosc_new_settings['free_lesson_count'] = max(1, min(50, intval($flosc_new_settings['free_lesson_count'])));
+        }
+        if (isset($flosc_new_settings['guest_access_days'])) {
+            $flosc_new_settings['guest_access_days'] = max(0, min(365, intval($flosc_new_settings['guest_access_days'])));
         }
     }
 

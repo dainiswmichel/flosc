@@ -1143,6 +1143,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 }
                 return '';
             })(),
+            // Subscription token economics (monthly top-up toward cap).
+            'subscriptionMonthlyTokenGrant' => max(0, intval($flosc_current_flow['subscription_monthly_token_grant'] ?? 10000)),
+            'subscriptionYearlyTokenGrant' => max(0, intval($flosc_current_flow['subscription_yearly_token_grant'] ?? 35000)),
+            'subscriptionTokenCap' => max(0, intval($flosc_current_flow['subscription_token_cap'] ?? 35000)),
             // Guest link config
             // Strip all accumulated backslash layers from stored strings (same idiom as autoprompts)
             'guestLinkName'              => (function() { $v = flosc_get_setting('guest_link_name', 'Complimentary LeSAEp Learners Guest Access Link'); $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v; })(),

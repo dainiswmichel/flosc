@@ -230,6 +230,9 @@ trait FLOSC_Visitor_Token_Trait {
     /**
      * Read visitor remaining tokens for a browser session (same flow).
      * $session_id_raw is the client session id (localStorage flosc_visitor_session).
+     *
+     * Tries the normalized flow stem first, then the raw sanitized id, so V→G
+     * carry still works if chat charged under a slightly different flow_id form.
      */
     private function flosc_get_visitor_remaining_for_session($flow_id, $session_id_raw) {
         $session_id_raw = trim((string) $session_id_raw);
@@ -247,13 +250,28 @@ trait FLOSC_Visitor_Token_Trait {
             return 0;
         }
 
-        $transient_key = $this->flosc_visitor_token_transient_key($flow_id, $session_id);
-        $stored = get_transient($transient_key);
-        if (!is_numeric($stored)) {
-            return 0;
+        $candidates = [];
+        $stem = $this->flosc_normalize_flow_stem($flow_id);
+        if ($stem !== '') {
+            $candidates[] = $stem;
+        }
+        $raw = sanitize_key((string) $flow_id);
+        if ($raw !== '' && $raw !== $stem) {
+            $candidates[] = $raw;
+        }
+        if (empty($candidates)) {
+            $candidates[] = 'default';
         }
 
-        return max(0, intval($stored));
+        foreach ($candidates as $candidate_flow) {
+            $transient_key = $this->flosc_visitor_token_transient_key($candidate_flow, $session_id);
+            $stored = get_transient($transient_key);
+            if (is_numeric($stored)) {
+                return max(0, intval($stored));
+            }
+        }
+
+        return 0;
     }
 
     /**
@@ -307,21 +325,177 @@ trait FLOSC_Visitor_Token_Trait {
         $grant = max(0, intval($this->flosc_get_guest_token_grant_amount($flow_stem, $user_id)));
         $new_balance = $remaining + $grant;
 
+        // Safety: never lock a guest at 0 when Token Management configured a positive
+        // guest grant (mis-resolved flow / missing settings would otherwise brick the wallet).
+        if ($new_balance <= 0 && $grant <= 0) {
+            $fallback = max(0, intval($this->flosc_get_visitor_wallet_initial_amount($flow_stem, null)));
+            if ($fallback > 0) {
+                $grant = $fallback;
+                $new_balance = $remaining + $grant;
+            }
+        }
+
         $this->flosc_set_user_flow_token_balance($user_id, $flow_stem, $new_balance);
         update_user_meta($user_id, $flag_key, 1);
 
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
             flosc_log(sprintf(
-                'FLOSC tokens V→G additive: user=%d flow=%s remaining=%d grant=%d total=%d',
+                'FLOSC tokens V→G additive: user=%d flow=%s remaining=%d grant=%d total=%d session=%s',
                 $user_id,
                 $flow_stem,
                 $remaining,
                 $grant,
-                $new_balance
+                $new_balance,
+                $session_id_raw !== '' ? 'yes' : 'no'
             ));
         }
 
         return $new_balance;
+    }
+
+    /**
+     * Subscription monthly/yearly token economics (flow-scoped wallet).
+     *
+     * Monthly: add subscription_monthly_token_grant (default 10_000) each paid cycle.
+     * Cap: subscription_token_cap (default 35_000). When at/above cap, payment still
+     * succeeds but no additional tokens are credited (balance stays at cap).
+     * Yearly: credits subscription_yearly_token_grant (default = cap) toward the same cap.
+     *
+     * @param int    $user_id
+     * @param string $flow_id
+     * @param string $plan_type monthly|yearly
+     * @param array  $context   Optional: idempotency_key, reason, subscription_id
+     * @return array{credited:int,balance:int,cap:int,grant:int,capped:bool,skipped:bool}
+     */
+    private function flosc_apply_subscription_token_topup($user_id, $flow_id = '', $plan_type = 'monthly', $context = []) {
+        $user_id = absint($user_id);
+        $result = [
+            'credited' => 0,
+            'balance' => 0,
+            'cap' => 0,
+            'grant' => 0,
+            'capped' => false,
+            'skipped' => true,
+        ];
+        if ($user_id <= 0) {
+            return $result;
+        }
+
+        $flow_stem = $this->flosc_normalize_flow_stem($flow_id);
+        $plan_type = strtolower(sanitize_key((string) $plan_type));
+        if (!in_array($plan_type, ['monthly', 'yearly'], true)) {
+            $plan_type = 'monthly';
+        }
+
+        $idem = sanitize_key((string) ($context['idempotency_key'] ?? ''));
+        if ($idem !== '') {
+            $done = get_user_meta($user_id, '_flosc_sub_token_topups', true);
+            if (!is_array($done)) {
+                $done = [];
+            }
+            if (!empty($done[$idem]) && is_array($done[$idem])) {
+                return array_merge($result, $done[$idem], ['skipped' => true]);
+            }
+        }
+
+        $settings = get_option('flosc_flow_' . $flow_stem, []);
+        if (!is_array($settings)) {
+            $settings = [];
+        }
+
+        $cap = isset($settings['subscription_token_cap'])
+            ? max(0, intval($settings['subscription_token_cap']))
+            : 35000;
+        $monthly_grant = isset($settings['subscription_monthly_token_grant'])
+            ? max(0, intval($settings['subscription_monthly_token_grant']))
+            : 10000;
+        $yearly_grant = isset($settings['subscription_yearly_token_grant'])
+            ? max(0, intval($settings['subscription_yearly_token_grant']))
+            : $cap;
+        $grant = ($plan_type === 'yearly') ? $yearly_grant : $monthly_grant;
+
+        $current = $this->flosc_get_user_flow_token_balance($user_id, $flow_stem);
+        $result['balance'] = $current;
+        $result['cap'] = $cap;
+        $result['grant'] = $grant;
+
+        if ($grant <= 0) {
+            $result['skipped'] = true;
+            return $result;
+        }
+
+        // Cap reached: still a successful paid cycle — credit zero.
+        if ($cap > 0 && $current >= $cap) {
+            $result['capped'] = true;
+            $result['skipped'] = false;
+            $result['credited'] = 0;
+            $result['balance'] = $current;
+        } else {
+            $room = ($cap > 0) ? max(0, $cap - $current) : $grant;
+            $credit = min($grant, $room);
+            $new_balance = $current + $credit;
+            $this->flosc_set_user_flow_token_balance($user_id, $flow_stem, $new_balance);
+
+            // Keep legacy global sale wallet loosely in sync for admin/token ledger views.
+            $token_provider = null;
+            if (function_exists('flosc_sale')) {
+                $token_provider = flosc_sale()->get_provider('tokens');
+            }
+            if ($token_provider && method_exists($token_provider, 'credit') && $credit > 0) {
+                $token_provider->credit(
+                    $user_id,
+                    $credit,
+                    (string) ($context['reason'] ?? ('Subscription ' . $plan_type . ' token top-up')),
+                    [
+                        'flow_id' => $flow_stem,
+                        'plan_type' => $plan_type,
+                        'cap' => $cap,
+                        'subscription_id' => $context['subscription_id'] ?? '',
+                    ]
+                );
+            }
+
+            $result['credited'] = $credit;
+            $result['balance'] = $new_balance;
+            $result['capped'] = ($cap > 0 && $new_balance >= $cap);
+            $result['skipped'] = false;
+        }
+
+        if ($idem !== '') {
+            $done = get_user_meta($user_id, '_flosc_sub_token_topups', true);
+            if (!is_array($done)) {
+                $done = [];
+            }
+            // Keep last ~50 keys so the meta map does not grow unbounded.
+            if (count($done) > 50) {
+                $done = array_slice($done, -40, null, true);
+            }
+            $done[$idem] = [
+                'credited' => $result['credited'],
+                'balance' => $result['balance'],
+                'cap' => $result['cap'],
+                'grant' => $result['grant'],
+                'capped' => $result['capped'],
+                'at' => current_time('mysql'),
+            ];
+            update_user_meta($user_id, '_flosc_sub_token_topups', $done);
+        }
+
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            flosc_log(sprintf(
+                'FLOSC subscription token top-up: user=%d flow=%s plan=%s grant=%d credited=%d balance=%d cap=%d capped=%s',
+                $user_id,
+                $flow_stem,
+                $plan_type,
+                $grant,
+                $result['credited'],
+                $result['balance'],
+                $cap,
+                $result['capped'] ? 'yes' : 'no'
+            ));
+        }
+
+        return $result;
     }
 
     /**
