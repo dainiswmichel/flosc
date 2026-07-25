@@ -1431,11 +1431,9 @@ class floscApp {
         this.ivr.context.inactive_seconds = Math.floor((Date.now() - this.ivr.lastInteraction) / 1000);
     }
 
-    // v1.6.2: initOfferMessages() DELETED
-    // Offers ARE IVR entries — no synthetic bridging needed.
-    // The IVR file defines offer entries (type: offer), the parser reads them,
-    // the condition evaluator returns them, and they arrive in this.ivr.messages.
-    // The admin Offers tab data (config.offers) provides supplementary display fields.
+    // Offers product data: FLOSC_CONFIG.offers (WPDB Offers registry).
+    // Script rows may reference offer_id for when to show; display name/price/badge
+    // come from the Offers tab via getOfferData() (registry wins over message slug).
 
     evaluateCondition(conditionString) {
         this.log('FLOSC: Evaluating condition:', conditionString);
@@ -2594,31 +2592,110 @@ class floscApp {
         }
     }
     
-    // v1.6.2: Get offer data — IVR messages are the primary source
+    /**
+     * Resolve offer product data for display/checkout.
+     * Product identity (name, headline, price, badge, CTA, etc.) comes from the
+     * Offers registry in WPDB → FLOSC_CONFIG.offers. Message/script rows may supply
+     * offer_id and optional body copy, but must never clobber registry name with a
+     * message slug (e.g. title "lesaep_offer" instead of "LeSAEp Prelaunch Offer").
+     */
     getOfferData(offerId) {
+        const wantId = String(offerId || '').trim();
+        if (!wantId) {
+            return null;
+        }
+
         // Check cache first
-        if (this.offers.loaded[offerId]) {
-            return this.offers.loaded[offerId];
+        if (this.offers.loaded[wantId]) {
+            return this.offers.loaded[wantId];
         }
-        
-        // Primary: find in IVR messages (offers ARE IVR entries)
+
         const ivrMsg = Object.values(this.ivr.messages || {}).find(
-            m => m.offer_id === offerId || m.name === offerId
+            m => String(m.offer_id || '') === wantId || String(m.name || '') === wantId
         );
-        
-        // Secondary: check admin offers for supplementary display fields
-        const configOffer = (this.config.offers || []).find(o => o.id === offerId);
-        
-        // Merge: IVR entry is base, admin offer adds rich display fields
-        if (ivrMsg || configOffer) {
-            const merged = Object.assign({}, configOffer || {}, ivrMsg || {});
-            // Normalize: ensure 'id' is set for downstream code
-            merged.id = merged.id || merged.offer_id || offerId;
-            this.offers.loaded[offerId] = merged;
-            return merged;
+
+        const configOffer = (this.config.offers || []).find(o => String(o.id || '') === wantId)
+            || (this.config.adminTestOffers || []).find(o => String(o.id || '') === wantId);
+
+        if (!ivrMsg && !configOffer) {
+            return null;
         }
-        
-        return null;
+
+        // Start from script row (timing/id), then apply registry product fields on top.
+        const merged = Object.assign({}, ivrMsg || {}, configOffer || {});
+
+        // Explicit registry wins for commercial identity (product model: Offers tab = WPDB).
+        if (configOffer) {
+            const productKeys = [
+                'name', 'headline', 'description', 'cta', 'display_price', 'original_price',
+                'guarantee', 'status', 'active', 'type', 'pricing', 'grants', 'features',
+                'display_format', 'display_formats', 'processor', 'currency',
+            ];
+            for (const key of productKeys) {
+                if (configOffer[key] !== undefined && configOffer[key] !== null && configOffer[key] !== '') {
+                    merged[key] = configOffer[key];
+                }
+            }
+            if (configOffer.meta && typeof configOffer.meta === 'object') {
+                merged.meta = Object.assign({}, (ivrMsg && ivrMsg.meta) || {}, configOffer.meta);
+            }
+        }
+
+        merged.id = (configOffer && configOffer.id) || merged.id || merged.offer_id || wantId;
+        merged.offer_id = merged.offer_id || merged.id;
+
+        // Never show a bare offer id / message slug as the product title.
+        const rawName = String(merged.name || '').trim();
+        if (!rawName || rawName === wantId || rawName === merged.id || rawName === merged.offer_id
+            || /^[a-z0-9]+(?:_[a-z0-9]+)+$/i.test(rawName)) {
+            const headline = String(merged.headline || configOffer?.headline || '').trim();
+            if (headline && headline !== wantId && headline !== merged.id) {
+                merged.name = headline;
+            } else if (configOffer?.name && String(configOffer.name).trim()) {
+                merged.name = String(configOffer.name).trim();
+            } else {
+                merged.name = this.humanizeOfferLabel(wantId);
+            }
+        }
+
+        this.offers.loaded[wantId] = merged;
+        return merged;
+    }
+
+    /** Turn offer_id slugs into a last-resort display label (registry name preferred). */
+    humanizeOfferLabel(raw) {
+        const s = String(raw || '').trim();
+        if (!s) {
+            return 'Special Offer';
+        }
+        return s
+            .replace(/[_-]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .replace(/\b\w/g, (c) => c.toUpperCase())
+            .trim();
+    }
+
+    /**
+     * Title for in-chat offer surfaces: Offers registry name/headline only;
+     * never the raw offer_id (e.g. lesaep_offer).
+     */
+    resolveOfferDisplayTitle(offer, msg, offerId) {
+        const id = String(offerId || offer?.id || msg?.offer_id || msg?.name || '').trim();
+        const candidates = [
+            offer?.name,
+            offer?.headline,
+            msg?.headline,
+            // msg.name only if it is not the id/slug
+            (msg?.name && String(msg.name) !== id) ? msg.name : '',
+        ];
+        for (const c of candidates) {
+            const t = String(c || '').trim();
+            if (!t) continue;
+            if (id && (t === id || t === offer?.id || t === msg?.offer_id)) continue;
+            if (/^[a-z0-9]+(?:_[a-z0-9]+)+$/i.test(t)) continue;
+            return t;
+        }
+        return this.humanizeOfferLabel(id || 'Special Offer');
     }
     
     // Format: CARD (default, rich display)
@@ -2658,7 +2735,7 @@ class floscApp {
     // Format: PILL (compact inline)
     showOfferPill(msg, offer) {
         const icon = offer?.meta?.icon || msg.icon || '⭐';
-        const name = offer?.name || msg.name || 'Special Offer';
+        const name = this.escapeHtml(this.resolveOfferDisplayTitle(offer, msg, msg.offer_id));
         const price = offer?.display_price || msg.price || '';
         const badge = offer?.meta?.badge || msg.badge || '';
         
@@ -2666,8 +2743,8 @@ class floscApp {
             <div class="flosc-offer-pill" data-offer-id="${msg.offer_id}" data-action="checkout_${msg.offer_id}">
                 <span class="flosc-offer-pill-icon">${icon}</span>
                 <span>${name}</span>
-                ${price ? `<span class="flosc-offer-pill-price">${price}</span>` : ''}
-                ${badge ? `<span class="flosc-offer-pill-badge">${badge}</span>` : ''}
+                ${price ? `<span class="flosc-offer-pill-price">${this.escapeHtml(String(price))}</span>` : ''}
+                ${badge ? `<span class="flosc-offer-pill-badge">${this.escapeHtml(String(badge))}</span>` : ''}
             </div>
         `;
         
@@ -2678,7 +2755,7 @@ class floscApp {
     // Format: COMPACT (small card for panels)
     showOfferCompact(msg, offer) {
         const icon = offer?.meta?.icon || msg.icon || '⭐';
-        const name = offer?.name || msg.name || 'Special Offer';
+        const name = this.escapeHtml(this.resolveOfferDisplayTitle(offer, msg, msg.offer_id));
         const description = offer?.description || msg.description || '';
         const price = offer?.display_price || msg.price || '';
         const originalPrice = offer?.original_price || msg.original_price || '';
@@ -2688,11 +2765,11 @@ class floscApp {
                 <span class="flosc-offer-compact-icon">${icon}</span>
                 <div class="flosc-offer-compact-content">
                     <div class="flosc-offer-compact-title">${name}</div>
-                    ${description ? `<div class="flosc-offer-compact-subtitle">${description}</div>` : ''}
+                    ${description ? `<div class="flosc-offer-compact-subtitle">${this.escapeHtml(String(description))}</div>` : ''}
                 </div>
                 <div>
-                    ${originalPrice ? `<span class="flosc-offer-compact-original">${originalPrice}</span>` : ''}
-                    <span class="flosc-offer-compact-price">${price}</span>
+                    ${originalPrice ? `<span class="flosc-offer-compact-original">${this.escapeHtml(String(originalPrice))}</span>` : ''}
+                    <span class="flosc-offer-compact-price">${this.escapeHtml(String(price))}</span>
                 </div>
             </div>
         `;
@@ -2703,7 +2780,7 @@ class floscApp {
     
     // Format: BANNER (full-width promotional)
     showOfferBanner(msg, offer) {
-        const title = offer?.name || msg.name || 'Special Offer';
+        const title = this.escapeHtml(this.resolveOfferDisplayTitle(offer, msg, msg.offer_id));
         const subtitle = offer?.description || msg.description || '';
         const ctaText = msg.cta || offer?.cta || 'Claim Offer';
         const timerSeconds = msg.timer || offer?.timer_seconds || 0;
@@ -2713,7 +2790,7 @@ class floscApp {
                 <button class="flosc-offer-banner-close" aria-label="Dismiss">×</button>
                 <div class="flosc-offer-banner-content">
                     <div class="flosc-offer-banner-title">${title}</div>
-                    ${subtitle ? `<div class="flosc-offer-banner-subtitle">${subtitle}</div>` : ''}
+                    ${subtitle ? `<div class="flosc-offer-banner-subtitle">${this.escapeHtml(String(subtitle))}</div>` : ''}
                     ${timerSeconds > 0 ? `
                         <div class="flosc-offer-banner-timer" id="flosc-offer-timer-${msg.offer_id}">
                             ⏱️ <span class="flosc-timer-value">${this.formatTime(timerSeconds)}</span>
@@ -2721,7 +2798,7 @@ class floscApp {
                     ` : ''}
                 </div>
                 <button class="flosc-offer-banner-cta" data-action="checkout_${msg.offer_id}">
-                    ${ctaText}
+                    ${this.escapeHtml(String(ctaText))}
                 </button>
             </div>
         `;
@@ -2736,15 +2813,19 @@ class floscApp {
     // Format: FEATURED (large prominent card)
     showOfferFeatured(msg, offer) {
         const badge = offer?.meta?.badge || msg.badge || 'Limited Time';
-        const title = offer?.name || msg.name || 'Full Access';
-        // Use IVR MessageContent (msg.content) if provided — it's the floscAdmin's custom copy
+        // Offers registry name/headline — never raw offer_id (e.g. lesaep_offer)
+        const title = this.escapeHtml(this.resolveOfferDisplayTitle(offer, msg, msg.offer_id));
+        // Prefer registry description; optional longer body may still come from msg.content
         let description = '';
-        if (msg.content) {
+        if (msg.content && String(msg.content).trim() && String(msg.content).trim() !== String(msg.offer_id || '')) {
             description = this.replaceVariables(msg.content);
             description = description.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
             description = description.replace(/\n/g, '<br>');
         } else {
             description = offer?.description || msg.description || '';
+            if (description) {
+                description = this.escapeHtml(String(description)).replace(/\n/g, '<br>');
+            }
         }
         const features = offer?.grants?.features || msg.features || [];
         const price = offer?.display_price || msg.price || '';
@@ -2759,7 +2840,7 @@ class floscApp {
             <div class="flosc-offer-featured-features">
                 ${features.slice(0, 5).map(f => `
                     <div class="flosc-offer-featured-feature">
-                        <span>✓</span> ${humanize(f)}
+                        <span>✓</span> ${this.escapeHtml(String(humanize(f)))}
                     </div>
                 `).join('')}
             </div>
@@ -2768,19 +2849,19 @@ class floscApp {
         const featuredHtml = `
             <div class="flosc-offer-featured" data-offer-id="${msg.offer_id}">
                 <button class="flosc-offer-close" aria-label="Dismiss">×</button>
-                ${badge ? `<div class="flosc-offer-featured-badge">${badge}</div>` : ''}
+                ${badge ? `<div class="flosc-offer-featured-badge">${this.escapeHtml(String(badge))}</div>` : ''}
                 <div class="flosc-offer-featured-title">${title}</div>
                 ${description ? `<div class="flosc-offer-featured-description">${description}</div>` : ''}
                 ${featuresHtml}
                 <div class="flosc-offer-featured-pricing">
-                    <span class="flosc-offer-featured-price">${price}</span>
-                    ${originalPrice ? `<span class="flosc-offer-featured-original">${originalPrice}</span>` : ''}
-                    ${savings ? `<span class="flosc-offer-featured-savings">${savings}</span>` : ''}
+                    <span class="flosc-offer-featured-price">${this.escapeHtml(String(price))}</span>
+                    ${originalPrice ? `<span class="flosc-offer-featured-original">${this.escapeHtml(String(originalPrice))}</span>` : ''}
+                    ${savings ? `<span class="flosc-offer-featured-savings">${this.escapeHtml(String(savings))}</span>` : ''}
                 </div>
                 <button class="flosc-offer-featured-cta" data-action="checkout_${msg.offer_id}">
-                    ${ctaText}
+                    ${this.escapeHtml(String(ctaText))}
                 </button>
-                ${guarantee ? `<div class="flosc-offer-featured-guarantee">${guarantee}</div>` : ''}
+                ${guarantee ? `<div class="flosc-offer-featured-guarantee">${this.escapeHtml(String(guarantee))}</div>` : ''}
             </div>
         `;
         
@@ -2810,8 +2891,8 @@ class floscApp {
     // Format: INLINE-CHECKOUT (Stripe card form in chat)
     showInlineCheckout(msg, offer) {
         const icon = offer?.meta?.icon || this.config.identity?.emoji || '⭐';
-        const name = offer?.name || msg.name || 'Full Access';
-        const description = offer?.description || msg.description || 'Lifetime access to all content';
+        const name = this.resolveOfferDisplayTitle(offer, msg, msg.offer_id);
+        const description = offer?.description || msg.description || 'Premium access to all content';
         const price = offer?.display_price || (offer?.price ? `$${offer.price}` : '') || msg.price || '';
         
         const checkoutHtml = `
