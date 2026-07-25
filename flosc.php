@@ -4898,22 +4898,54 @@ HTML;
             // so it doesn't show fake "Congratulations on your purchase!" to admins.
             $actually_purchased = (bool) get_user_meta($user->ID, '_flosc_purchased', true);
 
-            // Per-flow chat wallet (additive V→G / G→M grants write here). Prefer this for
-            // UI so Guest/Member token counts match Token Management, not the legacy sale ledger.
-            $flow_id_for_tokens = sanitize_key((string) get_user_meta($user->ID, '_flosc_registration_flow', true));
-            if ($flow_id_for_tokens === '') {
-                $current_flow_for_tokens = $this->get_current_flow();
-                $ivr_for_tokens = (string) ($current_flow_for_tokens['ivr_file'] ?? $current_flow_for_tokens['ivr'] ?? '');
-                $flow_id_for_tokens = sanitize_key(pathinfo(basename($ivr_for_tokens), PATHINFO_FILENAME));
+            // Per-flow chat wallet (additive V→G / G→M). Prefer the *current page* flow
+            // so charge keys, visitor remaining, and grants stay aligned.
+            $current_flow_for_tokens = $this->get_current_flow();
+            $ivr_for_tokens = (string) ($current_flow_for_tokens['ivr_file'] ?? $current_flow_for_tokens['ivr'] ?? $current_flow_for_tokens['id'] ?? '');
+            $page_flow_stem = $this->flosc_normalize_flow_stem($ivr_for_tokens);
+            $reg_flow_stem = $this->flosc_normalize_flow_stem(
+                (string) get_user_meta($user->ID, '_flosc_registration_flow', true)
+            );
+            $flow_id_for_tokens = ($page_flow_stem !== '' && $page_flow_stem !== 'default')
+                ? $page_flow_stem
+                : $reg_flow_stem;
+
+            // Apply pending grants on first paint so FLOSC_USER is not stuck at 0
+            // when the JS REST grant call is blocked (adblock, nonce race, etc.).
+            $session_for_grant = $this->flosc_resolve_visitor_session_id_for_grant();
+            if ($this->flosc_user_should_receive_guest_tokens($user->ID)) {
+                // Cookie present → apply now. No cookie → defer (JS has localStorage session).
+                $flow_token_balance = $this->flosc_apply_guest_token_grant_once(
+                    $user->ID,
+                    $flow_id_for_tokens,
+                    $session_for_grant,
+                    false
+                );
+            } elseif ($actually_purchased || ('true' === get_user_meta($user->ID, '_flosc_member_access', true))) {
+                $flow_token_balance = $this->flosc_apply_member_token_grant_once($user->ID, $flow_id_for_tokens);
+            } else {
+                $flow_token_balance = $this->flosc_get_user_flow_token_balance($user->ID, $flow_id_for_tokens);
             }
-            $flow_token_balance = $this->flosc_get_user_flow_token_balance($user->ID, $flow_id_for_tokens);
+
             $sale_token_balance = 0;
             $token_provider_for_user = $this->sale_manager->get_provider('tokens');
             if ($token_provider_for_user && method_exists($token_provider_for_user, 'get_balance')) {
                 $sale_token_balance = (int) $token_provider_for_user->get_balance($user->ID);
             }
-            // If flow grant has run (or been charged), flow meta is the source of truth.
-            $display_tokens = $flow_token_balance > 0 ? $flow_token_balance : $sale_token_balance;
+            // Once a V→G / G→M flag exists, flow meta is authoritative even at 0 spent-down.
+            $guest_grant_done = (bool) get_user_meta(
+                $user->ID,
+                $this->flosc_guest_token_grant_flag_key($flow_id_for_tokens),
+                true
+            );
+            $member_grant_done = (bool) get_user_meta(
+                $user->ID,
+                $this->flosc_member_token_grant_flag_key($flow_id_for_tokens),
+                true
+            );
+            $display_tokens = ($guest_grant_done || $member_grant_done || $flow_token_balance > 0)
+                ? $flow_token_balance
+                : $sale_token_balance;
 
             $user_data = [
                 'id' => $user->ID,
@@ -4933,22 +4965,23 @@ HTML;
                 'freeLessonDelivered' => (bool) get_user_meta($user->ID, '_flosc_free_lesson_delivered', true),
                 'freeLessonsCount' => count(get_user_meta($user->ID, '_flosc_free_lesson_numbers', true) ?: []),
                 // v8.0.1: Embed free lesson data in config so JS never needs a cross-domain REST call.
-                // Reads stored post IDs from user meta (populated at quiz-scoring time),
-                // fetches title + content via get_post(), passes to frontend in same-origin page load.
+                // Video-only: Free Lesson Manager skips shell posts (no <video>/mp4) so guests
+                // never open catalog stubs (e.g. lessons 54–71) or text-only shells.
                 'freeLessons' => (function() use ($user) {
-                    $post_ids = get_user_meta($user->ID, '_flosc_free_lesson_post_ids', true);
-                    $lesson_numbers = get_user_meta($user->ID, '_flosc_free_lesson_numbers', true) ?: [];
-                    if (empty($post_ids) || !is_array($post_ids)) return [];
+                    if (!class_exists('FLOSC_Free_Lesson_Manager')) {
+                        return [];
+                    }
+                    $raw = FLOSC_Free_Lesson_Manager::instance()->get_free_lessons($user->ID);
+                    if (empty($raw) || !is_array($raw)) {
+                        return [];
+                    }
                     $lessons = [];
-                    foreach ($post_ids as $i => $post_id) {
-                        $post = get_post((int) $post_id);
-                        if (!$post || $post->post_status !== 'publish') continue;
+                    foreach ($raw as $row) {
                         $lessons[] = [
-                            'title' => $post->post_title,
-                            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core WordPress content filter.
-                            'content' => apply_filters('the_content', $post->post_content),
-                            'url' => get_permalink($post_id),
-                            'lesson_number' => isset($lesson_numbers[$i]) ? $lesson_numbers[$i] : null,
+                            'title' => $row['title'] ?? '',
+                            'content' => $row['content'] ?? '',
+                            'url' => $row['url'] ?? '',
+                            'lesson_number' => $row['lesson_number'] ?? null,
                         ];
                     }
                     return $lessons;
@@ -5288,6 +5321,10 @@ HTML;
         // v1.3.7: Get flow context from request
         $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
         $ivr_file = sanitize_file_name($request->get_param('ivr_file') ?? '');
+        // Normalize stem so visitor charge keys match V→G remaining lookup.
+        if ($flow_id !== '') {
+            $flow_id = $this->flosc_normalize_flow_stem($flow_id);
+        }
         
         // v1.8.9 FIX: Set flow context so flosc_get_setting() can find API keys
         // REST calls from flosc.ai go to dainis.net/wp-json — HTTP_HOST is dainis.net,
@@ -9951,10 +9988,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
     }
     
     public function create_payment_intent($request) {
-        // v1.7.7: Guard — Stripe is currently disabled pending account verification
+        // Stripe is first-class: requires publishable + secret keys on Payments (per-flow WPDB).
         $stripe = $this->sale_manager->get_provider('stripe');
         if (!$stripe || !$stripe->is_configured()) {
-            return new WP_Error('stripe_not_configured', __('Stripe payments are not currently available', 'flosc'), ['status' => 503]);
+            return new WP_Error('stripe_not_configured', __('Stripe is not configured. Add keys under Payments for this flow.', 'flosc'), ['status' => 503]);
         }
         
         $offer_id = sanitize_text_field($request->get_param('offer_id'));
@@ -10145,13 +10182,20 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
      * Creates the PayPal product + plans on first call.
      */
     public function paypal_get_plans($request) {
+        $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
+        if (!empty($flow_id)) {
+            $this->set_flow_context($flow_id);
+        }
+
         $paypal = $this->sale_manager->get_provider('paypal');
         if (!$paypal || !$paypal->is_configured()) {
             return new WP_Error('paypal_not_configured', __('PayPal is not configured', 'flosc'), ['status' => 500]);
         }
 
         $plans = $paypal->ensure_plans_exist();
-        if (is_wp_error($plans)) return $plans;
+        if (is_wp_error($plans)) {
+            return $plans;
+        }
 
         return new WP_REST_Response([
             'monthly_plan_id' => $plans['monthly_plan_id'],
@@ -10458,12 +10502,14 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
     }
 
     /**
-     * PayPal - Create Order
-     * Creates a PayPal order for the given offer. User must be logged in.
+     * PayPal - Create Order (one-time Orders API).
+     * Creates a PayPal order for the given offer. Works for guests and logged-in buyers
+     * (guest capture provisions the account from the PayPal payer email).
      */
     public function paypal_create_order($request) {
-        // Diagnostic: unconditional log
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] create_order ENDPOINT REACHED at ' . gmdate('Y-m-d H:i:s') . ' user=' . get_current_user_id());
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            flosc_log('[FLOSC-PAYPAL] create_order ENDPOINT REACHED at ' . gmdate('Y-m-d H:i:s') . ' user=' . get_current_user_id());
+        }
 
         $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
         if (!empty($flow_id)) {
@@ -10473,7 +10519,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] create_orde
         $offer_id = sanitize_text_field($request->get_param('offer_id'));
 
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] === create_order START === offer=' . $offer_id . ', flow=' . ($flow_id ?: 'none') . ', user=' . get_current_user_id());
+            flosc_log('[FLOSC-PAYPAL] === create_order START === offer=' . $offer_id . ', flow=' . ($flow_id ?: 'none') . ', user=' . get_current_user_id());
         }
 
         $offer = $this->sale_manager->offers()->get_offer($offer_id, $flow_id ?: null);
@@ -10530,13 +10576,15 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] create_orde
     }
     
     /**
-     * PayPal - Capture Order
-     * Called after buyer approves in PayPal popup. Captures payment and grants access.
-     * Requires logged-in user (permission_callback = is_user_logged_in).
+     * PayPal - Capture Order (one-time Orders API).
+     * After buyer approves in PayPal popup: capture funds, provision buyer account
+     * if needed, grant membership from the offer. Works for logged-in buyers and
+     * visitors (account created from PayPal payer email) — same model as subscriptions.
      */
     public function paypal_capture_order($request) {
-        // Diagnostic: unconditional file log to verify endpoint is reached
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] capture_order ENDPOINT REACHED at ' . gmdate('Y-m-d H:i:s') . ' user=' . get_current_user_id());
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            flosc_log('[FLOSC-PAYPAL] capture_order ENDPOINT REACHED at ' . gmdate('Y-m-d H:i:s') . ' user=' . get_current_user_id());
+        }
 
         $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
         if (!empty($flow_id)) {
@@ -10545,9 +10593,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] capture_ord
 
         $order_id = sanitize_text_field($request->get_param('order_id'));
         $offer_id = sanitize_text_field($request->get_param('offer_id'));
+        $binding_token = sanitize_text_field((string) $request->get_param('binding_token'));
+        $binding_session = sanitize_text_field((string) $request->get_param('session_id'));
 
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] === capture_order START === order=' . $order_id . ', offer=' . $offer_id . ', flow=' . ($flow_id ?: 'none') . ', user=' . get_current_user_id());
+            flosc_log('[FLOSC-PAYPAL] === capture_order START === order=' . $order_id . ', offer=' . $offer_id . ', flow=' . ($flow_id ?: 'none') . ', user=' . get_current_user_id());
         }
 
         if (empty($order_id) || empty($offer_id)) {
@@ -10555,24 +10605,36 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] capture_ord
         }
 
         $user_id = get_current_user_id();
+        $is_new_user = false;
+        $auth_token = '';
+        $binding_record = null;
+
+        // Visitors must present a checkout binding token before account creation / grant.
+        // Logged-in buyers already have an authenticated WordPress session.
+        if (!$user_id) {
+            $binding_record = flosc_checkout_binding_verify($binding_token, $binding_session);
+            if (!$binding_record) {
+                return new WP_Error('invalid_checkout_binding', __('Missing or invalid checkout binding token.', 'flosc'), ['status' => 403]);
+            }
+        }
 
         // v8.0.1: Never block re-purchases. Always capture real PayPal payments.
-        // Reasons: token top-ups, repeat purchases, admin testing, upgrade paths.
         // grant_from_offer() is idempotent for features/level and additive for tokens.
-        // Skipping capture after PayPal approved = taking money without recording it.
         $access_manager = $this->sale_manager->access();
 
-        // Get offer
         $offer = $this->sale_manager->offers()->get_offer($offer_id, $flow_id ?: null);
         if (!$offer) {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] capture_order FAIL: offer not found');
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                flosc_log('[FLOSC-PAYPAL] capture_order FAIL: offer not found');
+            }
             return new WP_Error('invalid_offer', __('Offer not found', 'flosc'), ['status' => 404]);
         }
 
-        // Get PayPal provider and capture
         $paypal = $this->sale_manager->get_provider('paypal');
         if (!$paypal || !$paypal->is_configured()) {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] capture_order FAIL: PayPal not configured');
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                flosc_log('[FLOSC-PAYPAL] capture_order FAIL: PayPal not configured');
+            }
             return new WP_Error('paypal_not_configured', __('PayPal is not configured', 'flosc'), ['status' => 500]);
         }
 
@@ -10583,18 +10645,67 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] capture_ord
 
         // Forward PayPal error details (e.g. INSTRUMENT_DECLINED) to frontend
         if (isset($capture_result['success']) && $capture_result['success'] === false) {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] capture_order: PayPal error forwarded — ' . ($capture_result['issue'] ?? $capture_result['message'] ?? 'unknown'));
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                flosc_log('[FLOSC-PAYPAL] capture_order: PayPal error forwarded — ' . ($capture_result['issue'] ?? $capture_result['message'] ?? 'unknown'));
+            }
             return new WP_REST_Response($capture_result, 422);
         }
 
-        // v5.0.7: Only check user mismatch for logged-in users (user_id > 0)
+        // Only check user mismatch for logged-in users (user_id > 0)
         $captured_user_id = $capture_result['user_id'] ?? null;
         if ($user_id > 0 && $captured_user_id && intval($captured_user_id) > 0 && intval($captured_user_id) !== $user_id) {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] capture_order FAIL: user mismatch (captured=' . $captured_user_id . ', current=' . $user_id . ')');
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                flosc_log('[FLOSC-PAYPAL] capture_order FAIL: user mismatch (captured=' . $captured_user_id . ', current=' . $user_id . ')');
+            }
             return new WP_Error('user_mismatch', __('Payment does not belong to this user', 'flosc'), ['status' => 403]);
         }
-        
-        // Grant access
+
+        // Visitor purchase: create or link WP account from PayPal payer email.
+        if (!$user_id) {
+            $payer_email = sanitize_email((string) ($capture_result['payer_email'] ?? ''));
+            $payer_name = sanitize_text_field((string) ($capture_result['payer_name'] ?? ''));
+            if ($payer_email === '') {
+                return new WP_Error('no_email', __('Could not retrieve email from PayPal payment.', 'flosc'), ['status' => 400]);
+            }
+
+            $existing_user = get_user_by('email', $payer_email);
+            if ($existing_user) {
+                $user_id = (int) $existing_user->ID;
+            } else {
+                $username = $this->generate_username_from_email($payer_email);
+                $password = wp_generate_password(16, true, true);
+                $created_id = wp_create_user($username, $password, $payer_email);
+                if (is_wp_error($created_id)) {
+                    return new WP_Error('user_creation_failed', 'Could not create account: ' . $created_id->get_error_message(), ['status' => 500]);
+                }
+                $user_id = (int) $created_id;
+                $user = get_user_by('id', $user_id);
+                if ($user) {
+                    $user->set_role(apply_filters('flosc_default_user_role', 'subscriber'));
+                }
+                if ($payer_name !== '') {
+                    $name_parts = explode(' ', $payer_name, 2);
+                    wp_update_user([
+                        'ID' => $user_id,
+                        'first_name' => $name_parts[0],
+                        'last_name' => $name_parts[1] ?? '',
+                        'display_name' => $payer_name,
+                    ]);
+                }
+                update_user_meta($user_id, '_flosc_registration_method', 'paypal_purchase');
+                update_user_meta($user_id, '_flosc_registered_at', current_time('mysql'));
+                do_action('flosc_user_registered', $user_id, 'paypal_purchase', ['flow_id' => $flow_id]);
+                $is_new_user = true;
+                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                    flosc_log('[FLOSC-PAYPAL] Created new user from one-time PayPal capture: ' . $payer_email . ' (ID: ' . $user_id . ')');
+                }
+            }
+        }
+
+        if ($user_id <= 0) {
+            return new WP_Error('no_buyer', __('Could not resolve buyer account for this payment.', 'flosc'), ['status' => 500]);
+        }
+
         $transaction = [
             'transaction_id' => $capture_result['transaction_id'],
             'provider' => 'paypal',
@@ -10603,42 +10714,68 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] capture_ord
         ];
 
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] capture_order: granting access for user=' . $user_id . ', txn=' . $capture_result['transaction_id']);
+            flosc_log('[FLOSC-PAYPAL] capture_order: granting access for user=' . $user_id . ', txn=' . $capture_result['transaction_id']);
         }
 
         $access_manager->grant_from_offer($user_id, $offer, $transaction);
 
-        // Set transient for post-purchase greeting
         set_transient('flosc_just_purchased_' . $user_id, true, 300);
 
-        // Store which flow this purchase belongs to
         $current_flow = $this->get_current_flow();
         $capture_flow_id = $current_flow ? ($current_flow['id'] ?? '') : '';
         if ($capture_flow_id) {
             update_user_meta($user_id, '_flosc_purchased_flow_id', $capture_flow_id);
         }
 
-        // Fire purchase_completed for any listeners
+        $member_level = $offer['grants']['level'] ?? $offer['grants_level'] ?? 'member';
+        $txn_id = (string) ($capture_result['transaction_id'] ?? $order_id);
+        $already_logged_in = is_user_logged_in() && (int) get_current_user_id() === (int) $user_id;
+        $login_handoff = 'email_link_sent';
+        $claim_key = 'flosc_order_session_claim_' . md5($txn_id);
+
+        // Instant session only for a brand-new account created in this request,
+        // once per transaction, with a valid binding token (same rules as subscriptions).
+        if (!$already_logged_in
+            && $is_new_user
+            && false === get_transient($claim_key)
+            && !empty($binding_record)) {
+            if (flosc_issue_post_purchase_session($user_id)) {
+                set_transient($claim_key, time(), WEEK_IN_SECONDS);
+                $auth_token = $this->generate_flosc_auth_token($user_id);
+                $login_handoff = 'session_issued';
+            }
+        } elseif ($already_logged_in) {
+            $login_handoff = 'already_authenticated';
+        }
+
         do_action('flosc_purchase_completed', $user_id, [
             'offer_id' => $offer_id,
-            'grants_level' => $offer['grants']['level'] ?? 'member',
+            'grants_level' => $member_level,
             'provider' => 'paypal',
-            'transaction_id' => $capture_result['transaction_id'],
+            'transaction_id' => $txn_id,
             'amount' => $capture_result['amount'],
             'flow_id' => $capture_flow_id,
             'timestamp' => time(),
         ]);
 
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] === capture_order SUCCESS === txn=' . $capture_result['transaction_id'] . ', user=' . $user_id);
+            flosc_log('[FLOSC-PAYPAL] === capture_order SUCCESS === txn=' . $txn_id . ', user=' . $user_id . ', handoff=' . $login_handoff);
         }
+
+        $user_data = get_userdata($user_id);
 
         return new WP_REST_Response([
             'success' => true,
             'message' => 'Access granted',
             'access' => $access_manager->get_user_access($user_id),
             'purchase_count' => (int) get_user_meta($user_id, '_flosc_purchase_count', true),
-            'member_level' => get_user_meta($user_id, '_flosc_member_level', true) ?: '',
+            'member_level' => get_user_meta($user_id, '_flosc_member_level', true) ?: $member_level,
+            'user_id' => $user_id,
+            'user_email' => $user_data->user_email ?? '',
+            'user_display_name' => $user_data->display_name ?? '',
+            'is_new_user' => $is_new_user,
+            'auth_token' => $auth_token ?: null,
+            'login_handoff' => $login_handoff,
         ]);
     }
     
@@ -12662,7 +12799,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         nocache_headers(); // belt-and-suspenders against any caching layer
 
         $session_id = $this->flosc_normalize_session_id((string) ($request->get_param('session_id') ?? ''));
-        $flow_id    = sanitize_key((string) ($request->get_param('flow_id') ?? ''));
+        $flow_id    = $this->flosc_normalize_flow_stem((string) ($request->get_param('flow_id') ?? ''));
 
         if ($session_id <= 0 || $flow_id === '') {
             return new WP_REST_Response(['success' => false, 'token_balance' => null]);
@@ -12710,26 +12847,43 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             return new WP_REST_Response(['success' => false, 'message' => 'Not logged in'], 401);
         }
 
+        $flow_id = $this->flosc_normalize_flow_stem((string) ($request->get_param('flow_id') ?? ''));
+        if ($flow_id === '' || $flow_id === 'default') {
+            $flow_id = $this->flosc_normalize_flow_stem(
+                (string) get_user_meta($user_id, '_flosc_registration_flow', true)
+            );
+        }
+
         if (!$this->flosc_user_should_receive_guest_tokens($user_id)) {
-            // Members already granted; return current flow balance if any.
-            $flow_id = sanitize_key((string) ($request->get_param('flow_id') ?? ''));
+            // Admins / members: return current flow balance (no V→G).
             $balance = $this->flosc_get_user_flow_token_balance($user_id, $flow_id);
+            if ($balance <= 0 && (
+                ('true' === get_user_meta($user_id, '_flosc_member_access', true))
+                || (bool) get_user_meta($user_id, '_flosc_purchased', true)
+            )) {
+                $balance = $this->flosc_apply_member_token_grant_once($user_id, $flow_id);
+            }
             return new WP_REST_Response([
                 'success' => true,
                 'skipped' => true,
                 'reason' => 'not_guest',
+                'flow_id' => $flow_id,
                 'token_balance' => $balance,
+                'formatted' => $this->flosc_format_token_display($balance),
             ]);
         }
 
-        $flow_id = sanitize_key((string) ($request->get_param('flow_id') ?? ''));
-        if ($flow_id === '') {
-            $flow_id = sanitize_key((string) get_user_meta($user_id, '_flosc_registration_flow', true));
-        }
         $session_raw = sanitize_text_field((string) ($request->get_param('visitor_session_id') ?? ''));
         if ($session_raw === '') {
             $session_raw = $this->flosc_resolve_visitor_session_id_for_grant();
         }
+
+        $flag_key = $this->flosc_guest_token_grant_flag_key($flow_id);
+        $already = (bool) get_user_meta($user_id, $flag_key, true);
+        $remaining_before = $session_raw !== ''
+            ? $this->flosc_get_visitor_remaining_for_session($flow_id, $session_raw)
+            : 0;
+        $grant_amount = max(0, intval($this->flosc_get_guest_token_grant_amount($flow_id, $user_id)));
 
         // Client always sends visitor_session_id when available; allow 0 remaining + grant
         // even if session id is missing (first load without localStorage).
@@ -12739,6 +12893,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'success' => true,
             'token_balance' => $balance,
             'formatted' => $this->flosc_format_token_display($balance),
+            'flow_id' => $flow_id,
+            'applied_new' => !$already,
+            'visitor_remaining' => $remaining_before,
+            'grant' => $grant_amount,
+            'had_session' => ($session_raw !== ''),
         ]);
     }
 
@@ -13968,25 +14127,77 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         // 3. Preset CSS (variable definitions only)
         $this->enqueue_chat_style();
 
-        wp_enqueue_script('flosc-app', FLOSC_PLUGIN_URL . 'assets/js/flosc-app.js', [], time(), true);
+        // Payment SDKs first (false = no ?ver= query — PayPal rejects unknown params).
+        $flosc_app_deps = [];
 
-        // Stripe.js - DISABLED in v1.7.1 (pending Stripe account verification)
-        // $stripe = $this->sale_manager->get_provider('stripe');
-        // if ($stripe && $stripe->is_configured()) {
-        //     wp_enqueue_script('stripe-js', 'https://js.stripe.com/v3/', [], null, false);
-        // }
+        // Stripe.js — first-class when publishable key is set on Payments (WPDB).
+        $stripe = $this->sale_manager->get_provider('stripe');
+        if ($stripe && method_exists($stripe, 'get_client_config')) {
+            $stripe_cfg = $stripe->get_client_config();
+            $stripe_pk = (string) ($stripe_cfg['publishableKey'] ?? '');
+            if ($stripe_pk !== '') {
+                wp_enqueue_script('stripe-js', 'https://js.stripe.com/v3/', [], false, true);
+                $flosc_app_deps[] = 'stripe-js';
+            }
+        }
 
-        // v5.0.7: PayPal JS SDK - use provider's centralized currency to guarantee
-        // SDK currency matches the order currency (mismatch = silent failure).
+        // PayPal JS SDK — currency from provider; intent from active offer *type*
+        // (capture for one_time; subscription only when type is subscription or
+        // subscription.plans is set — not when a leftover subscription{} bag exists).
         $paypal = $this->sale_manager->get_provider('paypal');
         if ($paypal && $paypal->has_client_id()) {
             $pp_config = $paypal->get_client_config();
             $pp_client_id = $pp_config['clientId'] ?? '';
             if ($pp_client_id) {
                 $pp_currency = $pp_config['currency'] ?? 'USD';
-                wp_enqueue_script('paypal-js', 'https://www.paypal.com/sdk/js?client-id=' . urlencode($pp_client_id) . '&currency=' . urlencode($pp_currency) . '&intent=subscription&vault=true', [], FLOSC_VERSION, true);
+                $pp_intent = 'capture';
+                $flow = $this->get_current_flow();
+                $stem = '';
+                if (is_array($flow)) {
+                    $ivr = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '');
+                    $stem = sanitize_key(pathinfo(basename($ivr), PATHINFO_FILENAME));
+                    if ($stem === '' && !empty($flow['id'])) {
+                        $stem = sanitize_key((string) $flow['id']);
+                    }
+                }
+                if ($stem !== '') {
+                    $fs = get_option('flosc_flow_' . $stem, []);
+                    $flow_offers = is_array($fs['offers'] ?? null) ? $fs['offers'] : [];
+                    foreach ($flow_offers as $o) {
+                        if (!is_array($o)) {
+                            continue;
+                        }
+                        $active = !empty($o['active']) || (($o['status'] ?? '') === 'active');
+                        if (!$active) {
+                            continue;
+                        }
+                        $type = strtolower((string) ($o['type'] ?? 'one_time'));
+                        $has_plans = !empty($o['subscription']['plans']) && is_array($o['subscription']['plans']);
+                        if ($type === 'subscription' || $has_plans) {
+                            $pp_intent = 'subscription';
+                            break;
+                        }
+                    }
+                }
+                $pp_sdk = 'https://www.paypal.com/sdk/js?client-id=' . rawurlencode($pp_client_id)
+                    . '&currency=' . rawurlencode($pp_currency)
+                    . '&intent=' . rawurlencode($pp_intent);
+                if ($pp_intent === 'subscription') {
+                    $pp_sdk .= '&vault=true';
+                }
+                // false version is required: FLOSC_VERSION became &ver=8.0.0 and broke the SDK.
+                wp_enqueue_script('paypal-js', $pp_sdk, [], false, true);
+                $flosc_app_deps[] = 'paypal-js';
             }
         }
+
+        wp_enqueue_script(
+            'flosc-app',
+            FLOSC_PLUGIN_URL . 'assets/js/flosc-app.js',
+            $flosc_app_deps,
+            time(),
+            true
+        );
     }
 
     /**

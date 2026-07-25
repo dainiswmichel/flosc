@@ -519,21 +519,24 @@ class floscApp {
     /**
      * V→G: remaining visitor tokens + guest_token_grant (once per flow).
      * Called for guests on app init so SSO return still carries visitor remaining.
+     * Retries once — silent REST failure was the main "tokens not allocated" symptom.
      */
     async applyGuestTokenGrantOnInit() {
-        if (this.state !== 'guest') {
+        if (this.state !== 'guest' && this.state !== 'member') {
             return;
         }
 
         const sessionId = String(this.getVisitorSessionId() || '').trim();
-        const flowId = String(this.config?.flowId || '').trim();
+        const flowId = String(this.config?.flowId || this.user?.flowId || '').trim();
         if (!flowId) {
+            this.logWarn('[FLOSC] Token grant skipped: missing flowId');
             return;
         }
 
         this._persistVisitorSessionCookie(sessionId);
+        this.user = this.user || {};
 
-        try {
+        const attempt = async () => {
             const response = await this.authFetch(this.config.apiUrl + '/apply-guest-token-grant', {
                 method: 'POST',
                 credentials: 'same-origin',
@@ -547,20 +550,48 @@ class floscApp {
                 })
             });
             if (!response.ok) {
-                return;
+                const errText = await response.text().catch(() => '');
+                throw new Error(`grant HTTP ${response.status} ${errText}`.slice(0, 200));
             }
-            const data = await response.json();
-            if (data?.success && typeof data.token_balance === 'number' && this.user) {
+            return response.json();
+        };
+
+        try {
+            let data;
+            try {
+                data = await attempt();
+            } catch (firstErr) {
+                this.logWarn('[FLOSC] Guest token grant attempt 1 failed, retrying:', firstErr);
+                await new Promise((r) => setTimeout(r, 450));
+                data = await attempt();
+            }
+
+            if (data?.success && typeof data.token_balance === 'number') {
                 this.user.tokenBalance = data.token_balance;
                 this.user.tokens = data.token_balance;
                 this.user.flowTokens = data.token_balance;
                 this.user.tokensFormatted = data.formatted || this.formatProfileTokenDisplay(data.token_balance);
-                // Paint guest/member profile wallet (same place as visitor count).
                 this.updateLoggedInTokenLabel(data.token_balance);
-                this.log('[FLOSC] Guest token grant applied:', data.token_balance);
+                this.log('[FLOSC] Token grant ok:', {
+                    balance: data.token_balance,
+                    applied_new: data.applied_new,
+                    remaining: data.visitor_remaining,
+                    grant: data.grant,
+                    had_session: data.had_session,
+                    skipped: data.skipped,
+                    reason: data.reason,
+                });
+                if (data.token_balance === 0 && !data.skipped) {
+                    this.logWarn('[FLOSC] Token balance is 0 after grant — check Token Management guest/member grant for this flow.');
+                }
+            } else {
+                this.logWarn('[FLOSC] Token grant response missing balance:', data);
+                this.updateLoggedInTokenLabel(this.resolveLoggedInTokenBalance());
             }
         } catch (e) {
             this.logWarn('[FLOSC] Could not apply guest token grant on init:', e);
+            // Still paint whatever we have so the profile bar is not blank.
+            this.updateLoggedInTokenLabel(this.resolveLoggedInTokenBalance());
         }
     }
 
@@ -3584,12 +3615,24 @@ class floscApp {
         return false;
     }
 
-    _showCheckoutUnavailable(offerId, processor = '') {
-        this.logError('[FLOSC-CHECKOUT] No processor available', { offerId, processor });
-        this.addMessage(
-            'assistant',
-            'Payment is not configured for this flow yet. Please contact support or try again later.'
-        );
+    _showCheckoutUnavailable(offerId, processor = '', reason = '') {
+        this.logError('[FLOSC-CHECKOUT] Checkout unavailable', { offerId, processor, reason });
+        const proc = String(processor || '').toLowerCase();
+        let msg = '';
+        if (reason === 'paypal_sdk') {
+            msg = 'PayPal is configured for this flow, but the PayPal checkout script did not load. Check your network, ad blockers, and that Payments → PayPal credentials match the offer type (one-time vs subscription). You can also use Access Code if your host provided one.';
+        } else if (reason === 'stripe_sdk') {
+            msg = 'Stripe is selected for this offer, but Stripe.js did not load. Confirm Payments → Stripe publishable key is set, then hard-refresh.';
+        } else if (proc === 'redirect') {
+            msg = 'This offer uses an external checkout URL, but no Checkout URL is set. In Offers, set Payment Processor to External / Redirect and paste your WooCommerce, Shopify, or other cart URL.';
+        } else if (proc === 'stripe') {
+            msg = 'Stripe is selected for this offer, but Stripe is not ready on this page (enable Stripe and add keys under Payments, and a Stripe Price ID on the offer).';
+        } else if (proc === 'paypal') {
+            msg = 'PayPal is selected for this offer, but PayPal is not ready (Payments → enable PayPal and add Client ID + Secret, then hard-refresh).';
+        } else {
+            msg = 'No checkout path is ready for this offer. In Offers pick PayPal, Stripe, Free, or External / Redirect (WooCommerce, Shopify, etc.), and complete Payments credentials when using PayPal or Stripe.';
+        }
+        this.addMessage('assistant', msg);
     }
 
     // v1.4.0: Open sandbox purchase for current flow's product
@@ -6570,22 +6613,26 @@ class floscApp {
         }
     }
 
-    // MTS-2026-02-03: [CHECKOUT] Enhanced checkout with multiple payment methods
+    // Checkout: native PayPal/Stripe, free, or external cart (Woo/Shopify/etc.)
     openCheckout(offerId) {
         const offer = this.getOfferData(offerId);
         this.log('[FLOSC-CHECKOUT] Opening checkout for offer:', offerId, offer);
-        
-        // Track checkout initiated
+
         this.trackEvent('checkout_initiated', { offer_id: offerId });
-        
-        // Determine payment method
-        const pricing = offer?.pricing || {};
-        // v3.0.7: Read processor from offer config; fall back to capability detection
-        const processor = pricing.processor || '';
+
+        if (!offer) {
+            this.addMessage('assistant', 'That offer could not be loaded. Confirm it is Active under Offers for this flow.');
+            return;
+        }
+
+        const pricing = offer.pricing || {};
+        // Registry may store processor on pricing.processor or top-level processor
+        const processor = String(pricing.processor || offer.processor || '').toLowerCase();
+        const priceNum = Number(pricing.price ?? offer.price ?? 0);
 
         // Free offer — grant access without payment
-        if (processor === 'free' || (Number(pricing.price) === 0 && processor !== 'paypal' && processor !== 'stripe')) {
-            this.addMessage('assistant', '🎁 Granting free access — no payment needed!');
+        if (processor === 'free' || (priceNum === 0 && processor !== 'paypal' && processor !== 'stripe' && processor !== 'redirect')) {
+            this.addMessage('assistant', 'Granting free access — no payment needed.');
             this.authFetch(this.config.apiUrl + '/purchase', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -6597,36 +6644,25 @@ class floscApp {
             return;
         }
 
-        // External redirect checkout
-        if (processor === 'redirect' || pricing.redirect_url || offer?.checkout_url) {
-            const redirectUrl = pricing.redirect_url || offer.checkout_url;
-            this.addMessage('assistant', `Redirecting you to checkout... You'll be brought back here after payment.`);
+        // External cart: WooCommerce, Shopify, ThriveCart, member platforms, etc.
+        if (processor === 'redirect' || pricing.redirect_url || offer.checkout_url) {
+            const redirectUrl = String(pricing.redirect_url || offer.checkout_url || '').trim();
+            if (!redirectUrl) {
+                this._showCheckoutUnavailable(offerId, 'redirect');
+                return;
+            }
+            this.addMessage('assistant', 'Taking you to secure checkout. You will return here after payment when your host has set that up.');
             localStorage.setItem('flosc_pending_purchase', JSON.stringify({
                 offer_id: offerId,
                 timestamp: Date.now(),
                 return_url: window.location.href
             }));
-            setTimeout(() => { window.location.href = redirectUrl; }, 1500);
+            setTimeout(() => { window.location.href = redirectUrl; }, 800);
             return;
         }
 
-        // v3.0.7: PayPal or Stripe — show payment modal.
-        // Check both the offer's explicit processor setting and global availability.
-        const wantsPayPal = processor === 'paypal' || (!processor && this.config.paypalClientId);
-        const wantsStripe = processor === 'stripe' || (!processor && this.config.stripeKey);
-
-        if (wantsPayPal || wantsStripe) {
-            // Check if we should use inline checkout (already in chat)
-            const inlineCheckout = document.querySelector(`.flosc-checkout-inline[data-offer-id="${offerId}"]`);
-            if (inlineCheckout) {
-                const cardEl = document.getElementById(`flosc-inline-card-${offerId}`);
-                if (cardEl) cardEl.focus();
-                return;
-            }
-            this.showPaymentModal(offerId);
-        } else {
-            this._showCheckoutUnavailable(offerId, processor);
-        }
+        // Paid product surface: pay (PayPal/Stripe) + Access Code for this offer.
+        this.showPaymentModal(offerId);
     }
     
     // Check for returning from external checkout
@@ -9992,7 +10028,11 @@ Purchased: ${ctx.purchased}
         modal.dataset.offerId = offerId;
 
         const offer = this.getOfferData(offerId);
-        const isSubscription = (offer?.type === 'subscription') || (offer?.subscription?.plans);
+        // Subscription path only when the offer is typed/configured as subscription.
+        // SDK intent (capture vs subscription) is enqueued from the same offer type —
+        // do not guess from display copy alone or Buttons will fail against the wrong intent.
+        const hasSubPlans = !!(offer?.subscription?.plans && Object.keys(offer.subscription.plans).length);
+        const isSubscription = (offer?.type === 'subscription') || hasSubPlans;
         
         // Update modal header from offer data
         const priceEl = document.getElementById('paymentPrice');
@@ -10013,42 +10053,93 @@ Purchased: ${ctx.purchased}
         const separator = document.getElementById('payment-separator');
         const stripeForm = document.getElementById('stripe-payment-form');
         const payBtn = document.getElementById('payBtn');
-        
-        const hasPayPal = !!this.config.paypalClientId && typeof paypal !== 'undefined';
 
-        if (!hasPayPal) {
-            this.setDisplayState(modal, false, 'flex');
-            const processor = offer?.pricing?.processor || '';
-            this._showCheckoutUnavailable(offerId, processor || 'paypal');
+        const processor = String(offer?.pricing?.processor || offer?.processor || 'paypal').toLowerCase();
+        const useStripe = processor === 'stripe' && !!this.config.stripeKey;
+
+        // Access Code is a first-class unlock path for this product (not a failure fallback).
+        const accessTrigger = document.getElementById('flosc-access-code-trigger');
+        this.setDisplayState(accessTrigger, true, 'block');
+
+        if (useStripe) {
+            if (!this.stripe && window.Stripe) {
+                this.initStripe();
+            }
+            if (!this.stripe) {
+                this.logError('[FLOSC-CHECKOUT] Stripe selected but Stripe.js is not available');
+                this._bindPaymentModalChrome(modal);
+                return;
+            }
+            this.setDisplayState(paypalContainer, false, 'block');
+            this.setDisplayState(stripeForm, true, 'block');
+            this.setDisplayState(payBtn, true, 'block');
+            this.setDisplayState(separator, false, 'block');
+            const errorEl = document.getElementById('card-errors');
+            const mountPoint = document.getElementById('card-element');
+            if (mountPoint) {
+                mountPoint.innerHTML = '';
+                if (this.cardElement) {
+                    try { this.cardElement.unmount(); } catch (e) { /* remount */ }
+                    this.cardElement = null;
+                }
+                const elements = this.stripe.elements();
+                this.cardElement = elements.create('card', {
+                    style: {
+                        base: {
+                            fontSize: '16px',
+                            color: '#1f2937',
+                            '::placeholder': { color: '#9ca3af' }
+                        }
+                    }
+                });
+                this.cardElement.mount(mountPoint);
+                if (payBtn) payBtn.disabled = true;
+                this.cardElement.on('change', (event) => {
+                    if (errorEl) {
+                        errorEl.textContent = event.error ? event.error.message : '';
+                    }
+                    if (payBtn) payBtn.disabled = !event.complete;
+                });
+            }
+            if (payBtn) {
+                payBtn.onclick = () => this.processModalPayment(offerId, payBtn, errorEl || document.getElementById('card-errors'));
+            }
+            this._bindPaymentModalChrome(modal);
             return;
         }
 
-        // Hide Stripe for now (PayPal subscriptions only)
+        // PayPal path (default for this product). SDK is enqueued correctly — no soft-fail UI.
         this.setDisplayState(stripeForm, false, 'block');
         this.setDisplayState(payBtn, false, 'block');
         this.setDisplayState(separator, false, 'block');
-
-        if (hasPayPal && paypalContainer) {
+        if (paypalContainer) {
             this.setDisplayState(paypalContainer, true, 'block');
             paypalContainer.innerHTML = '';
-
-            if (isSubscription) {
-                // ====================================================
-                // SUBSCRIPTION FLOW — plan picker + PayPal sub buttons
-                // ====================================================
+            if (typeof paypal === 'undefined' || typeof paypal.Buttons !== 'function') {
+                this.logError('[FLOSC-CHECKOUT] PayPal SDK missing (enqueue must load paypal-js without ?ver=)');
+            } else if (isSubscription) {
                 this._renderSubscriptionCheckout(offerId, offer, paypalContainer);
             } else {
-                // ====================================================
-                // ONE-TIME FLOW — existing createOrder / capture flow
-                // ====================================================
                 this._renderOneTimePayPal(offerId, paypalContainer);
             }
         }
 
-        // Close button
+        this._bindPaymentModalChrome(modal);
+    }
+
+    _bindPaymentModalChrome(modal) {
         const closeBtn = document.getElementById('paymentModalClose');
         if (closeBtn) {
             closeBtn.onclick = () => { this.setDisplayState(modal, false, 'flex'); };
+        }
+        const acLink = modal?.querySelector?.('[data-flosc-action="open-access-code-payment"]')
+            || document.querySelector('#flosc-access-code-trigger .flosc-access-code-link');
+        if (acLink && !acLink.dataset.floscBound) {
+            acLink.dataset.floscBound = '1';
+            acLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                this._showAccessCodeInput('payment');
+            });
         }
     }
 
@@ -10437,11 +10528,7 @@ Purchased: ${ctx.purchased}
                 },
             });
 
-            if (!btns.isEligible()) {
-                btnContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-muted">PayPal is not available right now.</div>';
-                return;
-            }
-
+            // Always render — PayPal is a first-class FLOSC payment path (no soft-fail eligibility gate).
             this._paypalSubButtons = btns;
             btns.render(btnContainer).catch(err => {
                 if (myGen !== this._paypalSubRenderGen) return;
@@ -10466,10 +10553,14 @@ Purchased: ${ctx.purchased}
     }
 
     /**
-     * One-time PayPal payment (existing Orders API flow, kept for non-subscription offers)
+     * One-time PayPal payment (Orders API capture).
      */
     _renderOneTimePayPal(offerId, paypalContainer) {
             const renderPayPalButtons = () => {
+            if (typeof paypal === 'undefined' || typeof paypal.Buttons !== 'function') {
+                this.logError('[FLOSC-CHECKOUT] PayPal.Buttons unavailable — SDK must be enqueued without ?ver=');
+                return;
+            }
             const paypalButtonsInstance = paypal.Buttons({
                 style: {
                     layout: 'vertical',
@@ -10545,12 +10636,15 @@ Purchased: ${ctx.purchased}
                 },
                 onApprove: async (data, actions) => {
                     try {
-                        // Show processing state
                         this.log('[FLOSC-CHECKOUT] PayPal onApprove: orderID=' + data.orderID);
                         paypalContainer.innerHTML = '<div class="flosc-paypal-status">Processing payment...</div>';
 
-                        // v5.0.7: doCapture now checks HTTP status before parsing JSON.
-                        // Previous versions blindly called r.json() which swallowed server errors.
+                        // Binding is minted here (not outer scope) — required for capture handoff + visitor account grant.
+                        const bindingSessionId = (this.currentSession && this.currentSession.id)
+                            || this.getVisitorSessionId()
+                            || String(Date.now());
+                        const bindingToken = await this._mintCheckoutBinding(bindingSessionId, 'paypal', offerId);
+
                         const doCapture = async () => {
                             const r = await this.authFetch(this.config.apiUrl + '/paypal/capture-order', {
                                 method: 'POST',
@@ -10568,30 +10662,32 @@ Purchased: ${ctx.purchased}
                                     session_id: bindingSessionId,
                                 }),
                             });
-                            const body = await r.json().catch(() => ({ success: false, message: 'Server returned non-JSON (HTTP ' + r.status + ')' }));
-                            // v5.0.7: Attach HTTP status so callers can distinguish server errors
+                            const body = await r.json().catch(() => ({
+                                success: false,
+                                message: 'Server returned non-JSON (HTTP ' + r.status + ')',
+                            }));
                             body._httpStatus = r.status;
                             body._httpOk = r.ok;
                             return body;
                         };
 
-                        // Pre-flight nonce refresh for capture
                         await this.refreshNonce();
-
                         let result = await doCapture();
-                        this.log('[FLOSC-CHECKOUT] PayPal capture result:', JSON.stringify({ success: result.success, message: result.message, issue: result.issue, http: result._httpStatus }));
+                        this.log('[FLOSC-CHECKOUT] PayPal capture result:', JSON.stringify({
+                            success: result.success,
+                            message: result.message,
+                            issue: result.issue,
+                            http: result._httpStatus,
+                            handoff: result.login_handoff,
+                        }));
 
-                        // Nonce retry for capture
                         if (!result._httpOk && ((result.message || '').match(/cookie|not allowed/i) || result.code === 'rest_cookie_invalid_nonce')) {
-                            this.log('[FLOSC-CHECKOUT] PayPal capture nonce issue, retrying...');
                             await this.refreshNonce();
                             result = await doCapture();
                         }
 
-                        // Handle INSTRUMENT_DECLINED (per PayPal official pattern)
                         const errorDetail = result?.details?.[0];
                         if (errorDetail?.issue === 'INSTRUMENT_DECLINED' || result?.issue === 'INSTRUMENT_DECLINED') {
-                            this.log('[FLOSC-CHECKOUT] INSTRUMENT_DECLINED — restarting PayPal');
                             paypalContainer.innerHTML = '';
                             return actions.restart();
                         }
@@ -10599,51 +10695,79 @@ Purchased: ${ctx.purchased}
                         if (result.success) {
                             const paymentModal = document.getElementById('flosc_modal_payment');
                             this.setDisplayState(paymentModal, false, 'flex');
-                            this.addMessage('assistant', '\ud83c\udf89 **Payment successful!** Welcome to full membership! Refreshing your access...');
-                            setTimeout(() => window.location.reload(), 2000);
+
+                            if (result.auth_token) {
+                                this.config.authToken = result.auth_token;
+                                localStorage.setItem('flosc_auth_token', result.auth_token);
+                                localStorage.removeItem('flosc_visitor_messages');
+                            }
+
+                            const displayName = result.user_display_name || result.user_email || 'Member';
+                            const defaultMemberLevel = this.config.defaultMemberLevel || 'pronunciation_learners';
+                            const memberLevel = result.member_level || defaultMemberLevel;
+                            if (this.user) {
+                                this.user.justPurchased = true;
+                                this.user.purchased = true;
+                                this.user.memberLevel = memberLevel;
+                                this.user.isMember = true;
+                                if (result.user_email) this.user.email = result.user_email;
+                                if (!this.user.name) this.user.name = displayName;
+                            } else {
+                                this.user = {
+                                    id: result.user_id,
+                                    name: displayName,
+                                    email: result.user_email || '',
+                                    justPurchased: true,
+                                    purchased: true,
+                                    memberLevel: memberLevel,
+                                    isMember: true,
+                                };
+                            }
+                            this.state = 'member';
+                            if (this.ivr && this.ivr.context) {
+                                this.ivr.context.is_member = true;
+                                this.ivr.context.is_guest = false;
+                                this.ivr.context.purchased = true;
+                                this.ivr.context.first_message_after_purchase = true;
+                            }
+                            document.body.dataset.userState = 'member';
+
+                            const welcomeMsg = (result.login_handoff === 'email_link_sent')
+                                ? '🎉 **Payment successful!** Your membership is active.\n\nA sign-in link has been sent to your purchase email — click it to continue from any device.'
+                                : '🎉 **Payment successful!** Welcome to full membership — you now have access.';
+                            this.addMessage('assistant', welcomeMsg);
+                            setTimeout(() => this.checkAutoMessages(), 2000);
                         } else {
                             throw new Error(result.message || 'Payment capture failed (HTTP ' + (result._httpStatus || '?') + ')');
                         }
                     } catch (err) {
                         this.logError('[FLOSC-CHECKOUT] PayPal capture error:', err);
-                        paypalContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-error">' + (err.message || 'Payment failed. Please try again.') + '</div>';
+                        paypalContainer.innerHTML = '';
+                        requestAnimationFrame(() => renderPayPalButtons());
+                        const errorEl = document.getElementById('card-errors');
+                        if (errorEl) errorEl.textContent = err.message || 'Payment failed. Please try again.';
                     }
                 },
                 onError: (err) => {
                     this.logError('[FLOSC-CHECKOUT] PayPal error:', err);
-                    // v1.7.6: Show error in both places for visibility
-                    const errorEl = document.getElementById('card-errors');
-                    if (errorEl) errorEl.textContent = 'PayPal error. Please try again.';
-                    if (paypalContainer) {
-                        paypalContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-error flosc-paypal-status-sm">PayPal encountered an error. Please try again.</div>';
-                    }
+                    paypalContainer.innerHTML = '';
+                    requestAnimationFrame(() => renderPayPalButtons());
                 },
                 onCancel: () => {
                     this.log('[FLOSC-CHECKOUT] PayPal cancelled by user — re-rendering buttons');
-                    // v5.0.7: Actually re-render PayPal buttons after cancel so user can retry
                     paypalContainer.innerHTML = '';
                     requestAnimationFrame(() => renderPayPalButtons());
                 },
             });
 
-            // v3.0.9: isEligible() guards against environments where PayPal can't render
-            if (!paypalButtonsInstance.isEligible()) {
-                this.logWarn('[FLOSC-CHECKOUT] PayPal buttons not eligible in this environment');
-                paypalContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-muted">PayPal is not available right now. Please try again or contact support.</div>';
-                return;
-            }
-
+            // Always render. PayPal is required for this product path — no soft-fail UI.
             paypalButtonsInstance.render(paypalContainer).catch(err => {
                 this.logError('[FLOSC-CHECKOUT] PayPal render failed:', err);
-                paypalContainer.innerHTML =
-                    '<div class="flosc-paypal-retry-wrap">' +
-                    '<div class="flosc-paypal-retry-error">PayPal could not load. Please try again.</div>' +
-                    '<button onclick="this.closest(\'#flosc_modal_payment\') && window.floscAppInstance && window.floscAppInstance.showPaymentModal(\'' + offerId + '\')" ' +
-                    'class="flosc-paypal-retry-btn">↺ Retry</button>' +
-                    '</div>';
             });
             }; // end renderPayPalButtons
 
+            // Ensure container has layout before render (modal may open with 0 size briefly).
+            paypalContainer.style.minHeight = '48px';
             const pollAndRender = (attempt = 0) => {
                 const rect = paypalContainer.getBoundingClientRect();
                 if (rect.width > 0 && rect.height > 0) {

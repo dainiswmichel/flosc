@@ -642,11 +642,12 @@ trait FLOSC_REST_Trait {
             'permission_callback' => [$this, 'check_checkout_finalization_permission'],
         ]);
 
-        // PayPal Subscriptions - Get/create plans (auto-setup)
+        // PayPal Subscriptions - Get/create plans (auto-setup).
+        // Checkout nonce: buyers may need plan IDs when config is empty; ensure_plans_exist is idempotent.
         register_rest_route('flosc/v1', '/paypal/get-plans', [
             'methods' => 'POST',
             'callback' => [$this, 'paypal_get_plans'],
-            'permission_callback' => [$this, 'check_admin_endpoint_permission'],
+            'permission_callback' => [$this, 'check_checkout_endpoint_permission'],
         ]);
 
         // PayPal Subscriptions - Activate after user approves

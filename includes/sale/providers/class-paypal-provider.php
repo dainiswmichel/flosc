@@ -392,12 +392,22 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
             ];
         }
 
-        // Extract transaction details
+        // Extract transaction details + payer identity (required for visitor checkout).
         $capture = $body['purchase_units'][0]['payments']['captures'][0] ?? [];
-        $custom_id = json_decode($capture['custom_id'] ?? '{}', true);
+        $custom_id = json_decode($capture['custom_id'] ?? ($body['purchase_units'][0]['custom_id'] ?? '{}'), true);
+        if (!is_array($custom_id)) {
+            $custom_id = [];
+        }
+
+        $payer = is_array($body['payer'] ?? null) ? $body['payer'] : [];
+        $payment_source_paypal = is_array($body['payment_source']['paypal'] ?? null) ? $body['payment_source']['paypal'] : [];
+        $payer_email = sanitize_email((string) ($payer['email_address'] ?? $payment_source_paypal['email_address'] ?? ''));
+        $given = (string) ($payer['name']['given_name'] ?? $payment_source_paypal['name']['given_name'] ?? '');
+        $surname = (string) ($payer['name']['surname'] ?? $payment_source_paypal['name']['surname'] ?? '');
+        $payer_name = trim($given . ' ' . $surname);
 
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-            flosc_log('[FLOSC-PAYPAL] capture_order SUCCESS: transaction_id=' . ($capture['id'] ?? 'NONE') . ', amount=' . ($capture['amount']['value'] ?? '?'));
+            flosc_log('[FLOSC-PAYPAL] capture_order SUCCESS: transaction_id=' . ($capture['id'] ?? 'NONE') . ', amount=' . ($capture['amount']['value'] ?? '?') . ', payer=' . ($payer_email ?: 'none'));
         }
 
         return [
@@ -408,6 +418,8 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
             'currency' => $capture['amount']['currency_code'] ?? 'USD',
             'user_id' => $custom_id['user_id'] ?? null,
             'offer_id' => $custom_id['offer_id'] ?? null,
+            'payer_email' => $payer_email,
+            'payer_name' => $payer_name,
         ];
     }
 
