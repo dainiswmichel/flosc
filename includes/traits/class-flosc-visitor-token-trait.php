@@ -500,15 +500,15 @@ trait FLOSC_Visitor_Token_Trait {
         $cap = $params['cap'];
 
         $cap_mode = sanitize_key((string) ($offer_tokens['cap_mode'] ?? 'flow'));
-        if ($source === 'custom' || $source === '') {
+        // Only apply amount/cap overrides for explicit custom products.
+        // source=flow (or unset) always uses flow defaults for the caller's mode.
+        if ($source === 'custom') {
             if (isset($offer_tokens['amount']) && $offer_tokens['amount'] !== '') {
                 $grant = max(0, intval($offer_tokens['amount'])) + max(0, intval($offer_tokens['bonus'] ?? 0));
             }
             if ($cap_mode === 'none') {
                 $cap = 0;
             } elseif ($cap_mode === 'custom' && array_key_exists('cap', $offer_tokens) && $offer_tokens['cap'] !== '') {
-                $cap = max(0, intval($offer_tokens['cap']));
-            } elseif (array_key_exists('cap', $offer_tokens) && $offer_tokens['cap'] !== '' && $cap_mode !== 'flow') {
                 $cap = max(0, intval($offer_tokens['cap']));
             }
         }
