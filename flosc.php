@@ -9157,24 +9157,259 @@ Example good response:
     }
     
     /**
-     * v8.0.0: Redeem Access Code — grants lesaep_learners role directly.
-     * No fake transaction, no offer, no payment. Just adds the WP role.
-     * Code is stored in the flow option (e.g. flosc_flow_lesaep_ivr → access_code).
+     * Parse UTC timestamp string (ISO or FLOSC MTS) to Unix time.
+     * Empty string → null (no bound). Invalid → false.
+     *
+     * @param string $raw UTC stamp.
+     * @return int|null|false
+     */
+    private function flosc_parse_utc_mts_timestamp($raw) {
+        $raw = trim((string) $raw);
+        if ($raw === '') {
+            return null;
+        }
+        // MTS: 2026-07m-27d-UTC08h:26m13s
+        if (preg_match('/^(\d{4})-(\d{2})m-(\d{2})d-UTC(\d{2})h:(\d{2})m(\d{2})s$/i', $raw, $m)) {
+            return gmmktime((int) $m[4], (int) $m[5], (int) $m[6], (int) $m[2], (int) $m[3], (int) $m[1]);
+        }
+        try {
+            $dt = new DateTimeImmutable($raw, new DateTimeZone('UTC'));
+            return $dt->getTimestamp();
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * List price for an offer (dollars).
+     *
+     * @param array $offer Offer row.
+     * @return float
+     */
+    private function flosc_offer_list_price($offer) {
+        $amount = 0.0;
+        if (!empty($offer['pricing']['price'])) {
+            $amount = floatval($offer['pricing']['price']);
+        }
+        if ($amount <= 0 && !empty($offer['price'])) {
+            $amount = floatval($offer['price']);
+        }
+        return max(0.0, $amount);
+    }
+
+    /**
+     * Apply a native price coupon to an offer. Server is source of truth.
+     * fixed_price = final amount charged; percent = % off list. Windows = UTC.
+     *
+     * @param array  $offer Offer.
+     * @param string $code  Coupon code.
+     * @return array|WP_Error { payable, list_price, code, type, value }
+     */
+    private function flosc_apply_offer_price_coupon(array $offer, $code) {
+        $code = strtoupper(trim((string) $code));
+        if ($code === '') {
+            return new WP_Error('missing_code', __('No coupon code provided', 'flosc'), ['status' => 400]);
+        }
+        $coupons = $offer['coupons'] ?? [];
+        if (!is_array($coupons) || empty($coupons)) {
+            return new WP_Error('invalid_coupon', __('Invalid or expired coupon', 'flosc'), ['status' => 403]);
+        }
+        $now = time(); // UTC unix
+        $list = $this->flosc_offer_list_price($offer);
+
+        foreach ($coupons as $c) {
+            if (!is_array($c)) {
+                continue;
+            }
+            if (isset($c['active']) && empty($c['active'])) {
+                continue;
+            }
+            if (strtoupper((string) ($c['code'] ?? '')) !== $code) {
+                continue;
+            }
+            $from = $this->flosc_parse_utc_mts_timestamp((string) ($c['valid_from_utc'] ?? ''));
+            $until = $this->flosc_parse_utc_mts_timestamp((string) ($c['valid_until_utc'] ?? ''));
+            if ($from === false || $until === false) {
+                continue;
+            }
+            if ($from !== null && $now < $from) {
+                continue;
+            }
+            if ($until !== null && $now > $until) {
+                continue;
+            }
+            $type = sanitize_key((string) ($c['type'] ?? 'fixed_price'));
+            $value = floatval($c['value'] ?? 0);
+            if ($type === 'percent') {
+                $payable = max(0.0, round($list * (1.0 - (max(0.0, min(100.0, $value)) / 100.0)), 2));
+            } else {
+                // fixed_price = final charge (admin does not reverse-% from list).
+                $payable = max(0.0, round($value, 2));
+            }
+            return [
+                'payable'    => $payable,
+                'list_price' => $list,
+                'code'       => $code,
+                'type'       => $type === 'percent' ? 'percent' : 'fixed_price',
+                'value'      => $value,
+            ];
+        }
+        return new WP_Error('invalid_coupon', __('Invalid or expired coupon', 'flosc'), ['status' => 403]);
+    }
+
+    /**
+     * Resolve payable amount for native checkout (list price or coupon).
+     *
+     * @param array  $offer Offer.
+     * @param string $coupon_code Optional.
+     * @return array|WP_Error { amount, list_price, coupon_code, currency_hint }
+     */
+    private function flosc_resolve_native_payable_amount(array $offer, $coupon_code = '') {
+        $list = $this->flosc_offer_list_price($offer);
+        $coupon_code = trim((string) $coupon_code);
+        if ($coupon_code === '') {
+            if ($list <= 0) {
+                return new WP_Error('no_price', __('No price configured for this offer.', 'flosc'), ['status' => 400]);
+            }
+            return [
+                'amount'      => $list,
+                'list_price'  => $list,
+                'coupon_code' => '',
+            ];
+        }
+        $applied = $this->flosc_apply_offer_price_coupon($offer, $coupon_code);
+        if (is_wp_error($applied)) {
+            return $applied;
+        }
+        if ($applied['payable'] <= 0) {
+            return new WP_Error(
+                'coupon_is_access',
+                __('This code unlocks access for free. Use Access Code instead of payment.', 'flosc'),
+                ['status' => 400]
+            );
+        }
+        return [
+            'amount'      => $applied['payable'],
+            'list_price'  => $applied['list_price'],
+            'coupon_code' => $applied['code'],
+            'coupon_type' => $applied['type'],
+        ];
+    }
+
+    /**
+     * Preview coupon for payment modal (native only). Does not charge.
+     */
+    public function handle_apply_offer_coupon($request) {
+        $offer_id = sanitize_text_field($request->get_param('offer_id') ?? '');
+        $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
+        $code = sanitize_text_field($request->get_param('code') ?? '');
+        if ($flow_id !== '') {
+            $this->set_flow_context($flow_id);
+        }
+        $offer = $this->sale_manager->offers()->get_offer($offer_id, $flow_id ?: null);
+        if (!$offer) {
+            return new WP_Error('invalid_offer', __('Offer not found', 'flosc'), ['status' => 404]);
+        }
+        $proc = strtolower((string) ($offer['pricing']['processor'] ?? $offer['processor'] ?? 'paypal'));
+        if ($proc === 'redirect') {
+            return new WP_Error(
+                'external_shop',
+                __('Coupons for external checkout are handled by the shop (Woo/Shopify/etc.).', 'flosc'),
+                ['status' => 400]
+            );
+        }
+        // Access code on this offer?
+        $access_codes = $offer['access_codes'] ?? [];
+        if (is_array($access_codes)) {
+            $up = strtoupper(trim($code));
+            foreach ($access_codes as $ac) {
+                if (strtoupper((string) $ac) === $up) {
+                    return new WP_REST_Response([
+                        'success' => true,
+                        'kind'    => 'access_code',
+                        'message' => 'Access code — use Access Code to unlock (no charge).',
+                    ]);
+                }
+            }
+        }
+        $resolved = $this->flosc_resolve_native_payable_amount($offer, $code);
+        if (is_wp_error($resolved)) {
+            return $resolved;
+        }
+        $currency = strtoupper((string) ($offer['pricing']['currency'] ?? 'USD')) ?: 'USD';
+        return new WP_REST_Response([
+            'success'     => true,
+            'kind'        => 'coupon',
+            'amount'      => $resolved['amount'],
+            'list_price'  => $resolved['list_price'],
+            'currency'    => $currency,
+            'coupon_code' => $resolved['coupon_code'],
+            'display'     => '$' . number_format((float) $resolved['amount'], 2),
+            'list_display'=> '$' . number_format((float) $resolved['list_price'], 2),
+        ]);
+    }
+
+    /**
+     * Redeem Access Code — flow-level and/or per-offer access_codes.
+     * Full unlock: grant member for this flow (offer grants when code is on an offer).
      */
     public function handle_redeem_access_code($request) {
         $code = $request->get_param('code');
         $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
+        $offer_id_param = sanitize_text_field($request->get_param('offer_id') ?? '');
 
         if (empty($code)) {
             return new WP_Error('missing_code', __('No access code provided', 'flosc'), ['status' => 400]);
         }
 
-        // Look up the stored access code from the flow option
+        $code_norm = strtoupper(trim((string) $code));
         $option_key = 'flosc_flow_' . sanitize_key($flow_id);
         $flow_option = get_option($option_key, []);
-        $stored_code = $flow_option['access_code'] ?? '';
+        if (!is_array($flow_option)) {
+            $flow_option = [];
+        }
 
-        if (empty($stored_code) || $code !== $stored_code) {
+        $matched_offer_id = '';
+        $grants_level = '';
+
+        // 1) Flow-level access code (legacy).
+        $stored_code = strtoupper(trim((string) ($flow_option['access_code'] ?? '')));
+        if ($stored_code !== '' && $code_norm === $stored_code) {
+            $grants_level = $flow_option['access_code_role']
+                ?? flosc_get_setting('default_member_level', 'pronunciation_learners');
+            $matched_offer_id = 'access_code';
+        }
+
+        // 2) Per-offer access_codes (prefer offer_id when provided).
+        if ($matched_offer_id === '') {
+            $offers = $flow_option['offers'] ?? [];
+            if (!is_array($offers)) {
+                $offers = [];
+            }
+            $scan = $offers;
+            if ($offer_id_param !== '' && isset($offers[$offer_id_param])) {
+                $scan = [$offer_id_param => $offers[$offer_id_param]];
+            }
+            foreach ($scan as $oid => $off) {
+                if (!is_array($off)) {
+                    continue;
+                }
+                $acs = $off['access_codes'] ?? [];
+                if (!is_array($acs)) {
+                    continue;
+                }
+                foreach ($acs as $ac) {
+                    if (strtoupper(trim((string) $ac)) === $code_norm) {
+                        $matched_offer_id = (string) ($off['id'] ?? $oid);
+                        $grants_level = $off['grants_level']
+                            ?? ($off['grants']['level'] ?? '');
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        if ($matched_offer_id === '') {
             return new WP_Error('invalid_code', __('Invalid access code', 'flosc'), ['status' => 403]);
         }
 
@@ -9186,20 +9421,18 @@ Example good response:
         if (!empty($flow_id)) {
             update_user_meta($user_id, '_flosc_registration_flow', sanitize_key($flow_id));
         }
-        $guest_email_context = $this->get_guest_email_context($flow_id, $user_id);
 
-        // Grant the role via FLOSC_Member_Access (handles WP role + guest role removal atomically)
-        $grants_level = $flow_option['access_code_role'] ?? flosc_get_setting('default_member_level', 'pronunciation_learners');
+        if ($grants_level === '') {
+            $grants_level = flosc_get_setting('default_member_level', 'pronunciation_learners');
+        }
 
-        // Set member meta so content protection and state detection work
         update_user_meta($user_id, '_flosc_member_level', $grants_level);
         update_user_meta($user_id, '_flosc_purchased', true);
         update_user_meta($user_id, '_flosc_purchased_at', current_time('mysql'));
 
-        // grant_member_access → grant_level adds the WP role AND removes guest_lesaep_learner
         $member_access = FLOSC_Member_Access::instance();
         $member_access->grant_member_access($user_id, [
-            'offer_id' => 'access_code',
+            'offer_id' => $matched_offer_id,
             'grants_level' => $grants_level,
             'provider' => 'access_code',
             'transaction_id' => 'access_code_' . $user_id . '_' . time(),
@@ -9207,19 +9440,27 @@ Example good response:
             'flow_id' => $flow_id,
         ]);
 
+        // Also grant offer tokens/features when we matched a real offer.
+        if ($matched_offer_id !== 'access_code' && $this->sale_manager) {
+            $offer = $this->sale_manager->offers()->get_offer($matched_offer_id, $flow_id ?: null);
+            if ($offer && method_exists($this->sale_manager->access(), 'grant_from_offer')) {
+                $this->sale_manager->access()->grant_from_offer($user_id, $offer, [
+                    'transaction_id' => 'access_code_' . $user_id . '_' . time(),
+                    'provider' => 'access_code',
+                ]);
+            }
+        }
+
         set_transient('flosc_just_purchased_' . $user_id, true, 300);
 
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Access Code: User {$user_id} granted {$grants_level} via access code");
+            flosc_log("FLOSC Access Code: User {$user_id} granted {$grants_level} via access code offer={$matched_offer_id}");
         }
-
-        // Member welcome email (magic-link card) is sent by dispatch_member_welcome_email(),
-        // hooked to flosc_member_access_granted — fired above by grant_member_access(). That single
-        // dispatcher covers the access-code path and every other purchase path, with per-flow+level dedup.
 
         return new WP_REST_Response([
             'success' => true,
             'message' => 'Access granted',
+            'offer_id' => $matched_offer_id,
         ]);
     }
 
@@ -10123,7 +10364,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
         }
         
         $offer_id = sanitize_text_field($request->get_param('offer_id'));
-        $offer = $this->sale_manager->offers()->get_offer($offer_id);
+        $coupon_code = sanitize_text_field($request->get_param('coupon_code') ?? '');
+        $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
+        if ($flow_id !== '') {
+            $this->set_flow_context($flow_id);
+        }
+        $offer = $this->sale_manager->offers()->get_offer($offer_id, $flow_id ?: null);
         
         if (!$offer) {
             return new WP_Error('invalid_offer', __('Offer not found', 'flosc'), ['status' => 404]);
@@ -10135,22 +10381,26 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
         }
         
         $price_id = $offer['pricing']['stripe']['price_id'] ?? '';
-        
-        // v3.0.5: Price comes from the offer, not identity
-        $price_or_amount = $price_id;
-        $currency = 'usd';
-        if (!$price_or_amount) {
-            $raw_price = 0;
-            if (!empty($offer['pricing']['price'])) {
-                $raw_price = floatval($offer['pricing']['price']);
+        $currency = strtolower((string) ($offer['pricing']['currency'] ?? 'usd')) ?: 'usd';
+
+        // With a coupon, always charge dynamic amount (cents) — Stripe Price ID is full list price.
+        if ($coupon_code !== '') {
+            $payable = $this->flosc_resolve_native_payable_amount($offer, $coupon_code);
+            if (is_wp_error($payable)) {
+                return $payable;
             }
-            if ($raw_price <= 0 && !empty($offer['price'])) {
-                $raw_price = floatval($offer['price']);
+            $price_or_amount = intval(round(floatval($payable['amount']) * 100));
+        } elseif ($price_id) {
+            $price_or_amount = $price_id;
+        } else {
+            $payable = $this->flosc_resolve_native_payable_amount($offer, '');
+            if (is_wp_error($payable)) {
+                return $payable;
             }
-            if ($raw_price <= 0) {
-                return new WP_Error('no_price', 'No price configured for offer "' . $offer_id . '". Set a Stripe Price ID or a price in FLOSC → Offers tab.', ['status' => 400]);
-            }
-            $price_or_amount = intval($raw_price * 100); // Convert to cents for Stripe
+            $price_or_amount = intval(round(floatval($payable['amount']) * 100));
+        }
+        if (is_numeric($price_or_amount) && (int) $price_or_amount <= 0) {
+            return new WP_Error('no_price', 'No price configured for offer "' . $offer_id . '". Set a Stripe Price ID or a price in FLOSC → Offers tab.', ['status' => 400]);
         }
         
         $user = wp_get_current_user();
@@ -10702,6 +10952,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
         }
 
         $offer_id = sanitize_text_field($request->get_param('offer_id'));
+        $coupon_code = sanitize_text_field($request->get_param('coupon_code') ?? '');
 
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
             flosc_log('[FLOSC-PAYPAL] === create_order START === offer=' . $offer_id . ', flow=' . ($flow_id ?: 'none') . ', user=' . get_current_user_id());
@@ -10721,16 +10972,14 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             return new WP_Error('paypal_not_configured', 'PayPal is not configured (client_id: ' . $has_id . ', flow: ' . ($flow_id ?: 'none') . ')', ['status' => 500]);
         }
 
-        // v5.0.7: Price extraction with explicit logging
-        $amount = 0;
-        if (!empty($offer['pricing']['price'])) {
-            $amount = floatval($offer['pricing']['price']);
+        // List price or native coupon (fixed final $ / percent). Server validates coupon.
+        $payable = $this->flosc_resolve_native_payable_amount($offer, $coupon_code);
+        if (is_wp_error($payable)) {
+            return $payable;
         }
-        if ($amount <= 0 && !empty($offer['price'])) {
-            $amount = floatval($offer['price']);
-        }
+        $amount = floatval($payable['amount']);
         if ($amount <= 0) {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] create_order FAIL: no price for offer "' . $offer_id . '" — pricing: ' . wp_json_encode($offer['pricing'] ?? 'NONE') . ', price: ' . ($offer['price'] ?? 'NONE'));
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] create_order FAIL: no price for offer "' . $offer_id . '"');
             return new WP_Error('no_price', 'No price configured for offer "' . $offer_id . '". Set the price in FLOSC Offers tab.', ['status' => 400]);
         }
 

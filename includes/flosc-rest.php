@@ -890,5 +890,12 @@ trait FLOSC_REST_Trait {
             'callback' => [$this, 'handle_redeem_access_code'],
             'permission_callback' => 'is_user_logged_in',
         ]);
+
+        // Preview native offer coupon (fixed final $ / percent). Server validates UTC window.
+        register_rest_route('flosc/v1', '/apply-offer-coupon', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_apply_offer_coupon'],
+            'permission_callback' => 'is_user_logged_in',
+        ]);
     }
 }

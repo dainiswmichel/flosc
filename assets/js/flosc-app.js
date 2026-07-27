@@ -3624,7 +3624,7 @@ class floscApp {
             const bindingSessionId = (this.currentSession && this.currentSession.id) || this.getVisitorSessionId() || String(Date.now());
             const bindingToken = await this._mintCheckoutBinding(bindingSessionId, 'stripe', offerId);
 
-            // Create payment intent
+            // Create payment intent (server applies coupon_code if set)
             const intentResponse = await this.authFetch(this.config.apiUrl + '/create-payment-intent', {
                 method: 'POST',
                 credentials: 'same-origin',
@@ -3632,7 +3632,11 @@ class floscApp {
                     'Content-Type': 'application/json',
                     'X-WP-Nonce': this.config.nonce
                 },
-                body: JSON.stringify({ offer_id: offerId })
+                body: JSON.stringify({
+                    offer_id: offerId,
+                    flow_id: this.config.flowId || '',
+                    coupon_code: this._checkoutCouponCode || '',
+                })
             });
             
             const intentData = await intentResponse.json();
@@ -10748,6 +10752,10 @@ Purchased: ${ctx.purchased}
             if (desc.length > 160) desc = desc.slice(0, 157) + '…';
             descEl.textContent = desc || (isSubscription ? 'Choose a plan below' : 'Complete purchase below');
         }
+        // Coupon state for this modal open (native one-time only).
+        this._checkoutCouponCode = '';
+        this._checkoutCouponAmount = null;
+
         const priceEl = document.getElementById('paymentPrice');
         if (priceEl) {
             if (isSubscription) {
@@ -10761,6 +10769,34 @@ Purchased: ${ctx.purchased}
                     || (offer?.pricing?.price ? `$${offer.pricing.price}` : '');
                 priceEl.textContent = price || '';
             }
+        }
+
+        // Coupon UI: native PayPal/Stripe one-time only (not redirect, not subscription plans).
+        const couponRow = document.getElementById('flosc-coupon-row');
+        const couponInput = document.getElementById('flosc-coupon-input');
+        const couponApply = document.getElementById('flosc-coupon-apply');
+        const couponStatus = document.getElementById('flosc-coupon-status');
+        const processorForCoupon = String(offer?.pricing?.processor || offer?.processor || 'paypal').toLowerCase();
+        const showCoupon = !isSubscription
+            && (processorForCoupon === 'paypal' || processorForCoupon === 'stripe');
+        if (couponRow) {
+            this.setDisplayState(couponRow, showCoupon, 'block');
+        }
+        if (couponInput) couponInput.value = '';
+        if (couponStatus) {
+            couponStatus.textContent = '';
+            couponStatus.classList.remove('is-success', 'is-error');
+        }
+        if (showCoupon && couponApply) {
+            couponApply.onclick = () => this.applyCheckoutCoupon(offerId);
+        }
+        if (showCoupon && couponInput) {
+            couponInput.onkeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.applyCheckoutCoupon(offerId);
+                }
+            };
         }
         // Cap identity logo used as product icon (CSS + runtime attribute).
         const iconImg = modal.querySelector('.flosc-product-icon--image');
@@ -10939,6 +10975,90 @@ Purchased: ${ctx.purchased}
         }
     }
 
+    /**
+     * Apply native offer coupon in payment modal (preview + store code for create-order).
+     */
+    async applyCheckoutCoupon(offerId) {
+        const input = document.getElementById('flosc-coupon-input');
+        const status = document.getElementById('flosc-coupon-status');
+        const priceEl = document.getElementById('paymentPrice');
+        const code = (input?.value || '').trim();
+        if (!code) {
+            this._checkoutCouponCode = '';
+            this._checkoutCouponAmount = null;
+            if (status) {
+                status.textContent = 'Enter a coupon code.';
+                status.classList.remove('is-success');
+                status.classList.add('is-error');
+            }
+            return;
+        }
+        if (status) {
+            status.textContent = 'Checking…';
+            status.classList.remove('is-success', 'is-error');
+        }
+        try {
+            await this.refreshNonce();
+            const res = await this.authFetch(this.config.apiUrl + '/apply-offer-coupon', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': this.config.nonce,
+                },
+                body: JSON.stringify({
+                    offer_id: offerId,
+                    flow_id: this.config.flowId || '',
+                    code,
+                }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok || !data.success) {
+                this._checkoutCouponCode = '';
+                this._checkoutCouponAmount = null;
+                if (status) {
+                    status.textContent = data.message || data.code || 'Invalid or expired coupon.';
+                    status.classList.add('is-error');
+                    status.classList.remove('is-success');
+                }
+                return;
+            }
+            if (data.kind === 'access_code') {
+                this._checkoutCouponCode = '';
+                if (status) {
+                    status.textContent = 'That is an access code — use Access Code (full unlock, no charge).';
+                    status.classList.add('is-error');
+                    status.classList.remove('is-success');
+                }
+                return;
+            }
+            this._checkoutCouponCode = data.coupon_code || code;
+            this._checkoutCouponAmount = data.amount;
+            if (priceEl && data.display) {
+                priceEl.classList.remove('flosc-hidden');
+                const list = data.list_display ? `<span class="flosc-price-was">${this.escapeHtml(data.list_display)}</span> ` : '';
+                priceEl.innerHTML = list + this.escapeHtml(data.display);
+            }
+            if (status) {
+                status.textContent = 'Coupon applied. You will be charged ' + (data.display || '') + '.';
+                status.classList.add('is-success');
+                status.classList.remove('is-error');
+            }
+            // Re-render PayPal buttons so createOrder uses the new coupon.
+            const paypalContainer = document.getElementById('paypal-button-container');
+            if (paypalContainer && typeof paypal !== 'undefined' && typeof paypal.Buttons === 'function') {
+                paypalContainer.innerHTML = '';
+                this._renderOneTimePayPal(offerId, paypalContainer);
+            }
+        } catch (e) {
+            this.logError('[FLOSC] applyCheckoutCoupon', e);
+            if (status) {
+                status.textContent = 'Could not apply coupon. Try again.';
+                status.classList.add('is-error');
+            }
+        }
+    }
+
     // v8.0.0: Redeem access code via REST — grants role, reloads on success
     async _redeemAccessCode(code, context) {
         const errEl = document.getElementById('flosc-access-code-error');
@@ -10946,10 +11066,15 @@ Purchased: ${ctx.purchased}
         if (btn) { btn.disabled = true; btn.textContent = 'Checking...'; }
         try {
             await this.refreshNonce();
+            const modalOfferId = document.getElementById('floscPaymentModal')?.dataset?.offerId || '';
             const res = await this.authFetch(this.config.apiUrl + '/redeem-access-code', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.config.nonce },
-                body: JSON.stringify({ code: code, flow_id: this.config.flowId || '' }),
+                body: JSON.stringify({
+                    code: code,
+                    flow_id: this.config.flowId || '',
+                    offer_id: modalOfferId || '',
+                }),
             });
             const data = await res.json();
             if (data.success) {
@@ -11341,7 +11466,11 @@ Purchased: ${ctx.purchased}
                                 'Content-Type': 'application/json',
                                 'X-WP-Nonce': this.config.nonce,
                             },
-                            body: JSON.stringify({ offer_id: offerId, flow_id: this.config.flowId || '' }),
+                            body: JSON.stringify({
+                                offer_id: offerId,
+                                flow_id: this.config.flowId || '',
+                                coupon_code: this._checkoutCouponCode || '',
+                            }),
                         });
                         if (!res.ok) {
                             const errBody = await res.json().catch(() => ({}));
@@ -11564,7 +11693,11 @@ Purchased: ${ctx.purchased}
                     'Content-Type': 'application/json',
                     'X-WP-Nonce': this.config.nonce,
                 },
-                body: JSON.stringify({ offer_id: offerId }),
+                body: JSON.stringify({
+                    offer_id: offerId,
+                    flow_id: this.config.flowId || '',
+                    coupon_code: this._checkoutCouponCode || '',
+                }),
             });
 
             const intentData = await intentRes.json();

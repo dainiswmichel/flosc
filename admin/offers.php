@@ -37,6 +37,79 @@ echo '<div class="flosc-docs-link-wrap">'
    . '</div>';
 
 // ============================================
+// Coupon / access-code helpers (offer params; native checkout only for coupons)
+// ============================================
+
+/**
+ * Parse offer coupon rows from POST (fixed_price preferred; percent optional).
+ * Validity windows are UTC (ISO or MTS). Empty bounds = no start/end limit.
+ *
+ * @param array $post Unslashed POST.
+ * @return array<int, array<string, mixed>>
+ */
+function flosc_parse_offer_coupons_from_post(array $post) {
+    $codes = $post['offer_coupon_code'] ?? [];
+    if (!is_array($codes)) {
+        return [];
+    }
+    $types   = is_array($post['offer_coupon_type'] ?? null) ? $post['offer_coupon_type'] : [];
+    $values  = is_array($post['offer_coupon_value'] ?? null) ? $post['offer_coupon_value'] : [];
+    $froms   = is_array($post['offer_coupon_valid_from'] ?? null) ? $post['offer_coupon_valid_from'] : [];
+    $untils  = is_array($post['offer_coupon_valid_until'] ?? null) ? $post['offer_coupon_valid_until'] : [];
+    $actives = is_array($post['offer_coupon_active'] ?? null) ? $post['offer_coupon_active'] : [];
+
+    $out = [];
+    $n = count($codes);
+    for ($i = 0; $i < $n; $i++) {
+        $code = strtoupper(sanitize_text_field((string) ($codes[$i] ?? '')));
+        if ($code === '') {
+            continue;
+        }
+        $type = sanitize_key((string) ($types[$i] ?? 'fixed_price'));
+        if (!in_array($type, ['fixed_price', 'percent'], true)) {
+            $type = 'fixed_price';
+        }
+        $value = floatval($values[$i] ?? 0);
+        if ($type === 'percent') {
+            $value = max(0, min(100, $value));
+        } else {
+            $value = max(0, $value);
+        }
+        $out[] = [
+            'code'            => $code,
+            'type'            => $type,
+            'value'           => $value,
+            'valid_from_utc'  => sanitize_text_field((string) ($froms[$i] ?? '')),
+            'valid_until_utc' => sanitize_text_field((string) ($untils[$i] ?? '')),
+            'active'          => !empty($actives[$i]),
+        ];
+    }
+    return $out;
+}
+
+/**
+ * Parse comma/newline separated access codes for full unlock of this offer.
+ *
+ * @param array $post Unslashed POST.
+ * @return string[]
+ */
+function flosc_parse_offer_access_codes_from_post(array $post) {
+    $raw = (string) ($post['offer_access_codes'] ?? '');
+    if ($raw === '') {
+        return [];
+    }
+    $parts = preg_split('/[\s,;]+/', $raw) ?: [];
+    $out = [];
+    foreach ($parts as $p) {
+        $c = strtoupper(sanitize_text_field($p));
+        if ($c !== '') {
+            $out[] = $c;
+        }
+    }
+    return array_values(array_unique($out));
+}
+
+// ============================================
 // SAVE HANDLER — runs at include time (same as delete/toggle handlers below)
 // v1.6.5: Removed dead add_action('init',...) — file loads after init fires
 // ============================================
@@ -137,6 +210,12 @@ function flosc_handle_offer_save() {
             'badge'   => sanitize_text_field($post['offer_badge'] ?? ''),
             'savings' => sanitize_text_field($post['offer_savings'] ?? ''),
         ],
+        // Native PayPal/Stripe coupons (fixed final price preferred; percent optional). Windows = UTC MTC/ISO.
+        'coupons'         => flosc_parse_offer_coupons_from_post($post),
+        // 100% unlock codes for this offer (in addition to flow-level access_code).
+        'access_codes'    => flosc_parse_offer_access_codes_from_post($post),
+        // Display-only note for redirect processor (shop owns real coupons).
+        'external_sale_note' => sanitize_text_field($post['offer_external_sale_note'] ?? ''),
         'status'          => isset($post['offer_active']) ? 'active' : 'draft',
         'active'          => isset($post['offer_active']),
         'updated'         => current_time('mysql'),
@@ -873,8 +952,91 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                                     </p>
                                 </td>
                             </tr>
+                            <tr>
+                                <td class="flosc-offer-proc-label-cell"><label>External sale note</label></td>
+                                <td>
+                                    <input type="text" name="offer_external_sale_note"
+                                           value="<?php echo esc_attr($flosc_offer['external_sale_note'] ?? ''); ?>"
+                                           class="flosc-offer-width-100" placeholder="e.g. $15 with code at checkout (shop handles coupon)">
+                                    <p class="description">Display-only. Woo/Shopify own real coupons; FLOSC does not apply codes on redirect offers.</p>
+                                </td>
+                            </tr>
                         </table>
                     </div>
+                </td>
+            </tr>
+            <tr>
+                <th><label>Access codes (100% unlock)</label></th>
+                <td>
+                    <?php
+                    $flosc_offer_acs = $flosc_offer['access_codes'] ?? [];
+                    if (!is_array($flosc_offer_acs)) {
+                        $flosc_offer_acs = [];
+                    }
+                    $flosc_offer_acs_str = implode(', ', $flosc_offer_acs);
+                    ?>
+                    <input type="text" name="offer_access_codes" value="<?php echo esc_attr($flosc_offer_acs_str); ?>"
+                           class="large-text" placeholder="4ZUHFAM, FAM2026">
+                    <p class="description">Comma-separated. Redeem → grant this offer’s member level (full unlock, $0). Flow-level access code still works if set elsewhere.</p>
+                </td>
+            </tr>
+            <tr>
+                <th><label>Price coupons (native only)</label></th>
+                <td>
+                    <p class="description" style="margin-top:0;">
+                        PayPal/Stripe only. Prefer <strong>fixed final price</strong> (e.g. list $49.50 → charge $15). Optional %. Validity = <strong>UTC</strong> (ISO <code>2026-07-27T00:00:00Z</code> or MTS). Empty window = always valid while active.
+                    </p>
+                    <?php
+                    $flosc_coupons = $flosc_offer['coupons'] ?? [];
+                    if (!is_array($flosc_coupons)) {
+                        $flosc_coupons = [];
+                    }
+                    // Always show 3 rows (existing + blanks).
+                    while (count($flosc_coupons) < 3) {
+                        $flosc_coupons[] = [
+                            'code' => '',
+                            'type' => 'fixed_price',
+                            'value' => '',
+                            'valid_from_utc' => '',
+                            'valid_until_utc' => '',
+                            'active' => true,
+                        ];
+                    }
+                    ?>
+                    <table class="widefat striped" style="max-width:960px;">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Type</th>
+                                <th>Value</th>
+                                <th>Valid from (UTC)</th>
+                                <th>Valid until (UTC)</th>
+                                <th>On</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($flosc_coupons as $ci => $fc) :
+                            if (!is_array($fc)) {
+                                continue;
+                            }
+                            ?>
+                            <tr>
+                                <td><input type="text" name="offer_coupon_code[]" value="<?php echo esc_attr($fc['code'] ?? ''); ?>" class="regular-text" placeholder="75SEP"></td>
+                                <td>
+                                    <?php $flosc_ctype = $fc['type'] ?? 'fixed_price'; ?>
+                                    <select name="offer_coupon_type[]">
+                                        <option value="fixed_price" <?php selected($flosc_ctype, 'fixed_price'); ?>>Fixed final $</option>
+                                        <option value="percent" <?php selected($flosc_ctype, 'percent'); ?>>Percent off</option>
+                                    </select>
+                                </td>
+                                <td><input type="number" step="0.01" min="0" name="offer_coupon_value[]" value="<?php echo esc_attr($fc['value'] ?? ''); ?>" class="small-text" placeholder="15"></td>
+                                <td><input type="text" name="offer_coupon_valid_from[]" value="<?php echo esc_attr($fc['valid_from_utc'] ?? ''); ?>" class="regular-text" placeholder="2026-07-27T00:00:00Z"></td>
+                                <td><input type="text" name="offer_coupon_valid_until[]" value="<?php echo esc_attr($fc['valid_until_utc'] ?? ''); ?>" class="regular-text" placeholder="2026-07-30T23:59:59Z"></td>
+                                <td style="text-align:center;"><input type="checkbox" name="offer_coupon_active[<?php echo (int) $ci; ?>]" value="1" <?php checked(!isset($fc['active']) || !empty($fc['active'])); ?>></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
                 </td>
             </tr>
             <tr>

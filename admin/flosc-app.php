@@ -710,8 +710,17 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
                     </svg>
                     <span>Secure payment</span>
                 </div>
+                <div id="flosc-coupon-row" class="flosc-coupon-row">
+                    <label class="flosc-coupon-label" for="flosc-coupon-input">Coupon code</label>
+                    <div class="flosc-coupon-fields">
+                        <input type="text" id="flosc-coupon-input" class="flosc-coupon-input" maxlength="40" autocomplete="off" spellcheck="false" placeholder="e.g. 75SEP">
+                        <button type="button" id="flosc-coupon-apply" class="flosc-coupon-apply">Apply</button>
+                    </div>
+                    <div id="flosc-coupon-status" class="flosc-coupon-status" aria-live="polite"></div>
+                </div>
                 <div id="flosc-access-code-trigger" class="flosc-access-code-trigger">
                     <a href="#" class="flosc-access-code-link" data-flosc-action="open-access-code-payment">Access Code</a>
+                    <span class="flosc-access-code-hint"> — full unlock (no charge)</span>
                 </div>
             </div>
         </div>

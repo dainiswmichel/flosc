@@ -3530,6 +3530,63 @@ body.flosc-companion-embed #flosc_app_sidebar_toggle {
    Keep in sync with flosc-chat.css if auth modal markup changes.
    ============================================ */
 
+.flosc-coupon-row {
+    margin-top: 14px;
+    text-align: left;
+}
+.flosc-coupon-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--flosc-text-muted, #71717a);
+    margin-bottom: 6px;
+}
+.flosc-coupon-fields {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.flosc-coupon-input {
+    flex: 1;
+    min-width: 0;
+    font-size: 14px;
+    padding: 8px 10px;
+    border: 1px solid var(--flosc-input-field-border, #e4e4e7);
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: var(--flosc-input-field-bg, #fff);
+    color: var(--flosc-input-field-text, #18181b);
+}
+.flosc-coupon-apply {
+    flex-shrink: 0;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #c3d6ef;
+    background: #eaf2fb;
+    color: #0d4a7a;
+    cursor: pointer;
+}
+.flosc-coupon-status {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--flosc-text-muted, #71717a);
+}
+.flosc-coupon-status.is-success { color: #176b3a; }
+.flosc-coupon-status.is-error { color: #9b1c1c; }
+.flosc-price-was {
+    text-decoration: line-through;
+    opacity: 0.65;
+    margin-right: 6px;
+    font-weight: 500;
+}
+.flosc-access-code-hint {
+    font-size: 11px;
+    color: var(--flosc-text-muted, #71717a);
+}
+
 .flosc-access-code-trigger {
     text-align: center;
     margin-top: 14px;
