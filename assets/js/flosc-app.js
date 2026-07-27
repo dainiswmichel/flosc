@@ -2932,7 +2932,7 @@ class floscApp {
         const intro = introText || 'Here are the offers available for you:';
         this.addMessage('assistant', intro, false);
 
-        let html = '<div class="flosc-offer-title-list" role="list">';
+        let html = '<div class="flosc-offer-title-list-wrap"><div class="flosc-offer-title-list" role="list">';
         list.forEach((offer) => {
             const id = String(offer.id || '').trim();
             if (!id) return;
@@ -2945,24 +2945,19 @@ class floscApp {
                 + (price ? `<span class="flosc-offer-title-item-price">${this.escapeHtml(String(price))}</span>` : '')
                 + `</button>`;
         });
-        html += '</div>';
+        html += '</div></div>';
 
-        const wrap = document.createElement('div');
-        wrap.className = 'flosc-message assistant flosc-offer-title-list-wrap';
-        wrap.innerHTML = html;
-        const inner = this.chatMessages?.querySelector('.messages-inner') || this.chatMessages;
-        if (inner) {
-            inner.appendChild(wrap);
-            wrap.querySelectorAll('.flosc-offer-title-item').forEach((btn) => {
+        // Same message pipeline as offer cards so layout/scroll match the chat.
+        this.addMessage('assistant', html, true);
+        const root = this.chatMessages;
+        if (root) {
+            root.querySelectorAll('.flosc-offer-title-item').forEach((btn) => {
+                if (btn.dataset.floscBound === '1') return;
+                btn.dataset.floscBound = '1';
                 btn.addEventListener('click', () => {
                     const oid = btn.getAttribute('data-offer-id');
                     if (oid) this.showOffer(oid, { source: 'user' });
                 });
-            });
-            requestAnimationFrame(() => {
-                if (this.chatMessages) {
-                    this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
-                }
             });
         }
     }
