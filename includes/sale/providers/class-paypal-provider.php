@@ -895,21 +895,35 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
             $idem = $sale_id !== '' ? ('sale_' . $sale_id) : ('sub_cycle_' . $subscription_id . '_' . gmdate('Y-m'));
 
+            // Prefer the offer that was sold at activate (custom token packs); else flow defaults.
+            $sold_offer_id = sanitize_text_field((string) get_user_meta($user_id, '_flosc_subscription_offer_id', true));
+            if ($sold_offer_id === '') {
+                $sold_offer_id = sanitize_text_field((string) get_user_meta($user_id, '_flosc_purchased_offer_id', true));
+            }
+            $renewal_offer = null;
+            if ($sold_offer_id !== '' && function_exists('flosc_sale')) {
+                $om = flosc_sale()->offers();
+                if ($om && method_exists($om, 'get_offer')) {
+                    $renewal_offer = $om->get_offer($sold_offer_id, $flow_id ?: null);
+                }
+            }
+
             $topup = ['skipped' => true];
             if (function_exists('flosc')) {
                 $mode = ($plan_type === 'yearly') ? 'recurring_yearly' : 'recurring';
+                $credit_ctx = [
+                    'idempotency_key' => $idem,
+                    'subscription_id' => $subscription_id,
+                    'offer_id' => $sold_offer_id,
+                    'reason' => 'PayPal subscription renewal (' . $plan_type . ')',
+                ];
+                if (is_array($renewal_offer)) {
+                    $credit_ctx['offer'] = $renewal_offer;
+                }
                 if (method_exists(flosc(), 'flosc_apply_product_token_credit_public')) {
-                    $topup = flosc()->flosc_apply_product_token_credit_public($user_id, $flow_id, $mode, [
-                        'idempotency_key' => $idem,
-                        'subscription_id' => $subscription_id,
-                        'reason' => 'PayPal subscription renewal (' . $plan_type . ')',
-                    ]);
+                    $topup = flosc()->flosc_apply_product_token_credit_public($user_id, $flow_id, $mode, $credit_ctx);
                 } elseif (method_exists(flosc(), 'flosc_apply_subscription_token_topup_public')) {
-                    $topup = flosc()->flosc_apply_subscription_token_topup_public($user_id, $flow_id, $plan_type, [
-                        'idempotency_key' => $idem,
-                        'subscription_id' => $subscription_id,
-                        'reason' => 'PayPal subscription renewal (' . $plan_type . ')',
-                    ]);
+                    $topup = flosc()->flosc_apply_subscription_token_topup_public($user_id, $flow_id, $plan_type, $credit_ctx);
                 }
             }
 

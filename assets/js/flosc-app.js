@@ -11381,6 +11381,7 @@ Purchased: ${ctx.purchased}
                                 subscription_id: data.subscriptionID,
                                 plan_type: selectedPlan,
                                 flow_id: this.config.flowId || '',
+                                offer_id: offerId || '',
                                 binding_token: bindingToken || '',
                                 session_id: bindingSessionId,
                             }),

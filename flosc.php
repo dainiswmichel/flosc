@@ -10838,8 +10838,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] X-WP-Nonce 
         }
 
         $subscription_id = sanitize_text_field($request->get_param('subscription_id'));
-    $requested_plan_type = sanitize_text_field($request->get_param('plan_type')); // Browser hint only; verified PayPal plan is authoritative.
+        $requested_plan_type = sanitize_text_field($request->get_param('plan_type')); // Browser hint only; verified PayPal plan is authoritative.
         $flow_id         = sanitize_text_field($request->get_param('flow_id') ?? '');
+        $sold_offer_id   = sanitize_text_field($request->get_param('offer_id') ?? '');
         $binding_token   = sanitize_text_field((string) $request->get_param('binding_token'));
         $binding_session = sanitize_text_field((string) $request->get_param('session_id'));
 
@@ -10853,11 +10854,17 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] X-WP-Nonce 
         // Enforce buyer-browser proof before any account creation or access grant
         // in visitor purchase flows. Logged-in buyers already have an authenticated
         // browser session from WordPress auth.
+        // Also accept binding for logged-in buyers when present (carries sold offer_id).
         if (!$user_id) {
             $binding_record = flosc_checkout_binding_verify($binding_token, $binding_session);
             if (!$binding_record) {
                 return new WP_Error('invalid_checkout_binding', __('Missing or invalid checkout binding token.', 'flosc'), ['status' => 403]);
             }
+        } elseif ($binding_token !== '') {
+            $binding_record = flosc_checkout_binding_verify($binding_token, $binding_session);
+        }
+        if ($sold_offer_id === '' && is_array($binding_record) && !empty($binding_record['offer_id'])) {
+            $sold_offer_id = sanitize_text_field((string) $binding_record['offer_id']);
         }
 
         // Visitor purchasing: no WP account yet — we'll create one from PayPal subscriber data
@@ -10946,10 +10953,16 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             }
         }
 
-        // Build offer for access grant from flow settings / offer registry (product-agnostic).
+        // Sold offer first (checkout offer_id / binding), then flow defaults — token grants follow the product sold.
         $default_offer_id = flosc_get_setting('default_offer_id', 'full_access', $flow_id ?: null);
         $default_member_level = flosc_get_setting('default_member_level', 'member', $flow_id ?: null);
-        $offer = $this->sale_manager->offers()->get_offer($default_offer_id, $flow_id ?: null);
+        $offer = null;
+        if ($sold_offer_id !== '') {
+            $offer = $this->sale_manager->offers()->get_offer($sold_offer_id, $flow_id ?: null);
+        }
+        if (!$offer && $default_offer_id !== '') {
+            $offer = $this->sale_manager->offers()->get_offer($default_offer_id, $flow_id ?: null);
+        }
         if (!$offer) {
             // Try any active offer on this flow before a minimal generic shell.
             $all_flow_offers = $this->sale_manager->offers()->get_active_offers($flow_id ?: null);
@@ -10970,7 +10983,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             ];
         }
         // Override duration based on plan type
+        if (!isset($offer['grants']) || !is_array($offer['grants'])) {
+            $offer['grants'] = [];
+        }
         $offer['grants']['duration_days'] = $plan_type === 'yearly' ? 365 : 30;
+        $resolved_offer_id = sanitize_text_field((string) ($offer['id'] ?? $sold_offer_id));
 
         // Amount from offer plan pricing (flow product config), not a brand hardcode.
         $monthly_amt = floatval($offer['subscription']['plans']['monthly']['price'] ?? 0);
@@ -10995,10 +11012,14 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
         $access_manager = $this->sale_manager->access();
         $access_manager->grant_from_offer($user_id, $offer, $transaction);
 
-        // Store subscription metadata
+        // Store subscription metadata (incl. sold offer for renewals / token grants)
         update_user_meta($user_id, '_flosc_subscription_id', $subscription_id);
         update_user_meta($user_id, '_flosc_subscription_plan', $plan_type);
         update_user_meta($user_id, '_flosc_subscription_status', 'active');
+        if ($resolved_offer_id !== '') {
+            update_user_meta($user_id, '_flosc_purchased_offer_id', $resolved_offer_id);
+            update_user_meta($user_id, '_flosc_subscription_offer_id', $resolved_offer_id);
+        }
 
         set_transient('flosc_just_purchased_' . $user_id, true, 300);
 
@@ -11013,7 +11034,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             update_user_meta($user_id, '_flosc_subscription_flow_id', $capture_flow_id);
         }
 
-        // Product token credit from Token Management (recurring monthly/yearly toward optional cap).
+        // Product token credit from the sold offer (custom) or flow Token Management defaults.
         // Payment always succeeds; tokens stop accruing once at the cap.
         $token_topup = $this->flosc_apply_product_token_credit(
             $user_id,
@@ -11023,6 +11044,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
                 'idempotency_key' => 'activate_' . $subscription_id,
                 'subscription_id' => $subscription_id,
                 'offer' => $offer,
+                'offer_id' => $resolved_offer_id,
                 'reason' => 'PayPal subscription activate (' . $plan_type . ')',
             ]
         );
@@ -11334,8 +11356,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
         if ($capture_flow_id) {
             update_user_meta($user_id, '_flosc_purchased_flow_id', $capture_flow_id);
         }
+        if (!empty($offer_id)) {
+            update_user_meta($user_id, '_flosc_purchased_offer_id', sanitize_text_field((string) $offer_id));
+        } elseif (!empty($offer['id'])) {
+            update_user_meta($user_id, '_flosc_purchased_offer_id', sanitize_text_field((string) $offer['id']));
+        }
 
-        // One-time product token credit (Token Management defaults; offer.tokens can override).
+        // One-time product token credit (sold offer.tokens or flow Token Management defaults).
         $txn_id = (string) ($capture_result['transaction_id'] ?? $order_id);
         $token_topup = $this->flosc_apply_product_token_credit(
             $user_id,
@@ -11344,7 +11371,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             [
                 'idempotency_key' => 'onetime_' . $txn_id,
                 'offer' => $offer,
-                'offer_id' => $offer_id,
+                'offer_id' => $offer_id ?: ($offer['id'] ?? ''),
                 'reason' => 'PayPal one-time product token credit',
             ]
         );
