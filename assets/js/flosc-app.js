@@ -2769,7 +2769,7 @@ class floscApp {
     isAllOffersRequest(message) {
         const t = this._normalizeAskText(message);
         if (!t) return false;
-        if (/\b(all|every|entire|full)\b/.test(t) && /\b(offers?|packages?|pricing|plans?)\b/.test(t)) {
+        if (/\b(all|every|entire|full)\b/.test(t) && /\b(offers?|packages?|pricing|plans?|specials?)\b/.test(t)) {
             return true;
         }
         const phrases = [
@@ -2784,6 +2784,11 @@ class floscApp {
             'list every offer',
             'all packages available',
             'all pricing options',
+            'all specials',
+            'all specials available',
+            'show me all specials',
+            'what specials are available',
+            'what specials are available to me',
         ];
         return phrases.some((p) => t === p || t.includes(p));
     }
@@ -2830,8 +2835,19 @@ class floscApp {
             'what do you offer',
             'special offer',
             'special offers',
+            'what specials',
+            'which specials',
+            'specials available',
+            'available specials',
+            'show me specials',
+            'show specials',
+            'my specials',
+            'the specials',
         ];
         if (phrases.some((p) => t === p || t.includes(p))) return true;
+        if (/\bspecials?\b/.test(t) && /\b(what|which|show|see|list|available|have|get|want|like)\b/.test(t)) {
+            return true;
+        }
         if (/\boffers?\b/.test(t) && /\b(what|which|show|see|list|available|have|get|want|like)\b/.test(t)) {
             return true;
         }
@@ -3635,7 +3651,7 @@ class floscApp {
                 body: JSON.stringify({
                     offer_id: offerId,
                     flow_id: this.config.flowId || '',
-                    coupon_code: this._checkoutCouponCode || '',
+                    coupon_code: this._getCheckoutCouponCodeForCharge(),
                 })
             });
             
@@ -10975,6 +10991,15 @@ Purchased: ${ctx.purchased}
         }
     }
 
+    /** Coupon code for native charge: applied code, else current modal input. */
+    _getCheckoutCouponCodeForCharge() {
+        if (this._checkoutCouponCode) {
+            return String(this._checkoutCouponCode).trim();
+        }
+        const input = document.getElementById('flosc-coupon-input');
+        return (input?.value || '').trim();
+    }
+
     /**
      * Apply native offer coupon in payment modal (preview + store code for create-order).
      */
@@ -11066,7 +11091,7 @@ Purchased: ${ctx.purchased}
         if (btn) { btn.disabled = true; btn.textContent = 'Checking...'; }
         try {
             await this.refreshNonce();
-            const modalOfferId = document.getElementById('floscPaymentModal')?.dataset?.offerId || '';
+            const modalOfferId = document.getElementById('flosc_modal_payment')?.dataset?.offerId || '';
             const res = await this.authFetch(this.config.apiUrl + '/redeem-access-code', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.config.nonce },
@@ -11469,7 +11494,8 @@ Purchased: ${ctx.purchased}
                             body: JSON.stringify({
                                 offer_id: offerId,
                                 flow_id: this.config.flowId || '',
-                                coupon_code: this._checkoutCouponCode || '',
+                                // Prefer applied code; else live input if user skipped Apply.
+                                coupon_code: this._getCheckoutCouponCodeForCharge(),
                             }),
                         });
                         if (!res.ok) {
@@ -11696,7 +11722,7 @@ Purchased: ${ctx.purchased}
                 body: JSON.stringify({
                     offer_id: offerId,
                     flow_id: this.config.flowId || '',
-                    coupon_code: this._checkoutCouponCode || '',
+                    coupon_code: this._getCheckoutCouponCodeForCharge(),
                 }),
             });
 
