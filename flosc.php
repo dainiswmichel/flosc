@@ -9258,7 +9258,7 @@ Example good response:
     }
 
     /**
-     * Resolve payable amount for native checkout (list price or coupon).
+     * Resolve payable amount for native one-time checkout (list price or coupon).
      *
      * @param array  $offer Offer.
      * @param string $coupon_code Optional.
@@ -9297,6 +9297,109 @@ Example good response:
     }
 
     /**
+     * List monthly/yearly subscription prices from offer (dollars).
+     *
+     * @param array $offer Offer.
+     * @return array{monthly:float,yearly:float}
+     */
+    private function flosc_offer_subscription_list_prices(array $offer) {
+        $plans = is_array($offer['subscription']['plans'] ?? null) ? $offer['subscription']['plans'] : [];
+        $monthly = floatval($plans['monthly']['price'] ?? 0);
+        if ($monthly <= 0) {
+            $monthly = $this->flosc_offer_list_price($offer);
+        }
+        $yearly = floatval($plans['yearly']['price'] ?? 0);
+        if ($yearly <= 0 && $monthly > 0) {
+            $yearly = round($monthly * 10, 2);
+        }
+        return [
+            'monthly' => max(0.0, $monthly),
+            'yearly'  => max(0.0, $yearly),
+        ];
+    }
+
+    /**
+     * Apply coupon to subscription plan amounts.
+     * fixed_price = final monthly amount; yearly scales by same ratio as monthly discount.
+     * percent = both intervals reduced by %.
+     *
+     * @param array  $offer Offer.
+     * @param string $coupon_code Code.
+     * @return array|WP_Error
+     */
+    private function flosc_resolve_subscription_coupon_prices(array $offer, $coupon_code = '') {
+        $list = $this->flosc_offer_subscription_list_prices($offer);
+        $coupon_code = trim((string) $coupon_code);
+        if ($coupon_code === '') {
+            if ($list['monthly'] <= 0 && $list['yearly'] <= 0) {
+                return new WP_Error('no_price', __('No subscription prices on this offer.', 'flosc'), ['status' => 400]);
+            }
+            return [
+                'monthly'     => $list['monthly'],
+                'yearly'      => $list['yearly'],
+                'list_monthly'=> $list['monthly'],
+                'list_yearly' => $list['yearly'],
+                'coupon_code' => '',
+            ];
+        }
+        // Reuse coupon validation (window/type) against monthly list as the base amount.
+        $probe = $offer;
+        if (empty($probe['pricing']) || !is_array($probe['pricing'])) {
+            $probe['pricing'] = [];
+        }
+        $probe['pricing']['price'] = $list['monthly'] > 0 ? $list['monthly'] : $list['yearly'];
+        $probe['price'] = $probe['pricing']['price'];
+        $applied = $this->flosc_apply_offer_price_coupon($probe, $coupon_code);
+        if (is_wp_error($applied)) {
+            return $applied;
+        }
+        if ($applied['payable'] <= 0) {
+            return new WP_Error(
+                'coupon_is_access',
+                __('This code unlocks access for free. Use Access Code instead of payment.', 'flosc'),
+                ['status' => 400]
+            );
+        }
+        $type = $applied['type'] ?? 'fixed_price';
+        $value = floatval($applied['value'] ?? 0);
+        if ($type === 'percent') {
+            $factor = 1.0 - (max(0.0, min(100.0, $value)) / 100.0);
+            $monthly = max(0.0, round($list['monthly'] * $factor, 2));
+            $yearly  = max(0.0, round($list['yearly'] * $factor, 2));
+        } else {
+            // fixed_price = final monthly; yearly keeps same discount ratio as monthly.
+            $monthly = max(0.0, round($value, 2));
+            if ($list['monthly'] > 0 && $list['yearly'] > 0) {
+                $yearly = max(0.0, round($list['yearly'] * ($monthly / $list['monthly']), 2));
+            } else {
+                $yearly = $monthly > 0 ? round($monthly * 10, 2) : 0.0;
+            }
+        }
+        if ($monthly <= 0 && $yearly <= 0) {
+            return new WP_Error('no_price', __('Coupon reduced subscription to zero. Use Access Code for free unlock.', 'flosc'), ['status' => 400]);
+        }
+        return [
+            'monthly'      => $monthly,
+            'yearly'       => $yearly,
+            'list_monthly' => $list['monthly'],
+            'list_yearly'  => $list['yearly'],
+            'coupon_code'  => $applied['code'],
+            'coupon_type'  => $type,
+        ];
+    }
+
+    /**
+     * Whether offer is treated as subscription for checkout coupons.
+     */
+    private function flosc_offer_is_subscription(array $offer) {
+        if (($offer['type'] ?? '') === 'subscription') {
+            return true;
+        }
+        $plans = $offer['subscription']['plans'] ?? null;
+        return is_array($plans) && !empty($plans);
+    }
+
+    /**
      * Preview coupon for payment modal (native only). Does not charge.
      */
     public function handle_apply_offer_coupon($request) {
@@ -9332,14 +9435,39 @@ Example good response:
                 }
             }
         }
+        $currency = strtoupper((string) ($offer['pricing']['currency'] ?? 'USD')) ?: 'USD';
+
+        // Subscription: return monthly/yearly payable (for plan UI + PayPal plan create).
+        if ($this->flosc_offer_is_subscription($offer)) {
+            $sub = $this->flosc_resolve_subscription_coupon_prices($offer, $code);
+            if (is_wp_error($sub)) {
+                return $sub;
+            }
+            return new WP_REST_Response([
+                'success'           => true,
+                'kind'              => 'coupon',
+                'billing'           => 'subscription',
+                'monthly'           => $sub['monthly'],
+                'yearly'            => $sub['yearly'],
+                'list_monthly'      => $sub['list_monthly'],
+                'list_yearly'       => $sub['list_yearly'],
+                'currency'          => $currency,
+                'coupon_code'       => $sub['coupon_code'],
+                'display'           => '$' . number_format((float) $sub['monthly'], 2) . '/mo',
+                'list_display'      => '$' . number_format((float) $sub['list_monthly'], 2) . '/mo',
+                'yearly_display'    => '$' . number_format((float) $sub['yearly'], 2) . '/yr',
+                'list_yearly_display' => '$' . number_format((float) $sub['list_yearly'], 2) . '/yr',
+            ]);
+        }
+
         $resolved = $this->flosc_resolve_native_payable_amount($offer, $code);
         if (is_wp_error($resolved)) {
             return $resolved;
         }
-        $currency = strtoupper((string) ($offer['pricing']['currency'] ?? 'USD')) ?: 'USD';
         return new WP_REST_Response([
             'success'     => true,
             'kind'        => 'coupon',
+            'billing'     => 'one_time',
             'amount'      => $resolved['amount'],
             'list_price'  => $resolved['list_price'],
             'currency'    => $currency,
@@ -10570,6 +10698,41 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
             return new WP_Error('paypal_not_configured', __('PayPal is not configured', 'flosc'), ['status' => 500]);
         }
 
+        $offer_id = sanitize_text_field($request->get_param('offer_id') ?? '');
+        $coupon_code = sanitize_text_field($request->get_param('coupon_code') ?? '');
+
+        // Coupon path: create/cache PayPal plans at discounted recurring amounts.
+        if ($offer_id !== '' && $coupon_code !== '') {
+            $offer = $this->sale_manager->offers()->get_offer($offer_id, $flow_id ?: null);
+            if (!$offer) {
+                return new WP_Error('invalid_offer', __('Offer not found', 'flosc'), ['status' => 404]);
+            }
+            $sub = $this->flosc_resolve_subscription_coupon_prices($offer, $coupon_code);
+            if (is_wp_error($sub)) {
+                return $sub;
+            }
+            $product_name = trim((string) ($offer['name'] ?? $offer['headline'] ?? 'Subscription'));
+            if ($product_name === '') {
+                $product_name = 'Subscription';
+            }
+            if (!method_exists($paypal, 'ensure_plans_for_prices')) {
+                return new WP_Error('paypal_plans', __('PayPal provider cannot create promo plans.', 'flosc'), ['status' => 500]);
+            }
+            $plans = $paypal->ensure_plans_for_prices($sub['monthly'], $sub['yearly'], $product_name);
+            if (is_wp_error($plans)) {
+                return $plans;
+            }
+            return new WP_REST_Response([
+                'monthly_plan_id' => $plans['monthly_plan_id'],
+                'yearly_plan_id'  => $plans['yearly_plan_id'],
+                'monthly_price'   => $sub['monthly'],
+                'yearly_price'    => $sub['yearly'],
+                'list_monthly'    => $sub['list_monthly'],
+                'list_yearly'     => $sub['list_yearly'],
+                'coupon_code'     => $sub['coupon_code'],
+            ]);
+        }
+
         $plans = $paypal->ensure_plans_exist();
         if (is_wp_error($plans)) {
             return $plans;
@@ -10607,6 +10770,14 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
 
         if (empty($subscription_plan_id)) {
             return new WP_Error('missing_plan_id', __('PayPal subscription is missing a plan_id.', 'flosc'), ['status' => 400]);
+        }
+
+        // Promo / coupon plan IDs (monthly/yearly at discounted amounts).
+        if ($paypal && method_exists($paypal, 'resolve_plan_type_for_id')) {
+            $promo_type = $paypal->resolve_plan_type_for_id($subscription_plan_id);
+            if ($promo_type === 'monthly' || $promo_type === 'yearly') {
+                return $promo_type;
+            }
         }
 
         $resolved_plan_type = '';

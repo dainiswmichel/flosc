@@ -10768,9 +10768,12 @@ Purchased: ${ctx.purchased}
             if (desc.length > 160) desc = desc.slice(0, 157) + '…';
             descEl.textContent = desc || (isSubscription ? 'Choose a plan below' : 'Complete purchase below');
         }
-        // Coupon state for this modal open (native one-time only).
+        // Coupon state for this modal open (one-time amount and/or subscription promo).
         this._checkoutCouponCode = '';
         this._checkoutCouponAmount = null;
+        this._checkoutCouponSub = null;
+        this._paypalPromoMonthlyPlanId = '';
+        this._paypalPromoYearlyPlanId = '';
 
         const priceEl = document.getElementById('paymentPrice');
         if (priceEl) {
@@ -10787,14 +10790,15 @@ Purchased: ${ctx.purchased}
             }
         }
 
-        // Coupon UI: native PayPal/Stripe one-time only (not redirect, not subscription plans).
+        // Coupon UI: native PayPal/Stripe — one-time and subscription (monthly/yearly amounts).
+        // Redirect shops keep their own coupons; FLOSC does not apply codes there.
         const couponRow = document.getElementById('flosc-coupon-row');
         const couponInput = document.getElementById('flosc-coupon-input');
         const couponApply = document.getElementById('flosc-coupon-apply');
         const couponStatus = document.getElementById('flosc-coupon-status');
         const processorForCoupon = String(offer?.pricing?.processor || offer?.processor || 'paypal').toLowerCase();
-        const showCoupon = !isSubscription
-            && (processorForCoupon === 'paypal' || processorForCoupon === 'stripe');
+        const showCoupon = (processorForCoupon === 'paypal' || processorForCoupon === 'stripe');
+        this._checkoutIsSubscription = !!isSubscription;
         if (couponRow) {
             this.setDisplayState(couponRow, showCoupon, 'block');
         }
@@ -11059,21 +11063,57 @@ Purchased: ${ctx.purchased}
             }
             this._checkoutCouponCode = data.coupon_code || code;
             this._checkoutCouponAmount = data.amount;
-            if (priceEl && data.display) {
-                priceEl.classList.remove('flosc-hidden');
-                const list = data.list_display ? `<span class="flosc-price-was">${this.escapeHtml(data.list_display)}</span> ` : '';
-                priceEl.innerHTML = list + this.escapeHtml(data.display);
-            }
-            if (status) {
-                status.textContent = 'Coupon applied. You will be charged ' + (data.display || '') + '.';
-                status.classList.add('is-success');
-                status.classList.remove('is-error');
-            }
-            // Re-render PayPal buttons so createOrder uses the new coupon.
-            const paypalContainer = document.getElementById('paypal-button-container');
-            if (paypalContainer && typeof paypal !== 'undefined' && typeof paypal.Buttons === 'function') {
-                paypalContainer.innerHTML = '';
-                this._renderOneTimePayPal(offerId, paypalContainer);
+            this._checkoutCouponSub = (data.billing === 'subscription')
+                ? {
+                    monthly: data.monthly,
+                    yearly: data.yearly,
+                    list_monthly: data.list_monthly,
+                    list_yearly: data.list_yearly,
+                }
+                : null;
+
+            if (data.billing === 'subscription') {
+                if (priceEl) {
+                    priceEl.classList.remove('flosc-hidden');
+                    const list = data.list_display
+                        ? `<span class="flosc-price-was">${this.escapeHtml(data.list_display)}</span> `
+                        : '';
+                    priceEl.innerHTML = list + this.escapeHtml(data.display || '');
+                }
+                if (status) {
+                    status.textContent = 'Coupon applied: '
+                        + (data.display || '')
+                        + (data.yearly_display ? ' · ' + data.yearly_display : '')
+                        + '. Choose a plan below.';
+                    status.classList.add('is-success');
+                    status.classList.remove('is-error');
+                }
+                // Re-render plan picker + PayPal subscription plans at promo amounts.
+                const paypalContainer = document.getElementById('paypal-button-container');
+                const offer = this.getOfferData(offerId);
+                if (paypalContainer && offer) {
+                    paypalContainer.innerHTML = '';
+                    await this._renderSubscriptionCheckout(offerId, offer, paypalContainer, this._checkoutCouponSub);
+                }
+            } else {
+                if (priceEl && data.display) {
+                    priceEl.classList.remove('flosc-hidden');
+                    const list = data.list_display
+                        ? `<span class="flosc-price-was">${this.escapeHtml(data.list_display)}</span> `
+                        : '';
+                    priceEl.innerHTML = list + this.escapeHtml(data.display);
+                }
+                if (status) {
+                    status.textContent = 'Coupon applied. You will be charged ' + (data.display || '') + '.';
+                    status.classList.add('is-success');
+                    status.classList.remove('is-error');
+                }
+                // Re-render PayPal one-time buttons so createOrder uses the new coupon.
+                const paypalContainer = document.getElementById('paypal-button-container');
+                if (paypalContainer && typeof paypal !== 'undefined' && typeof paypal.Buttons === 'function') {
+                    paypalContainer.innerHTML = '';
+                    this._renderOneTimePayPal(offerId, paypalContainer);
+                }
             }
         } catch (e) {
             this.logError('[FLOSC] applyCheckoutCoupon', e);
@@ -11133,12 +11173,24 @@ Purchased: ${ctx.purchased}
     /**
      * Subscription checkout: plan picker (monthly/yearly) + PayPal subscription buttons.
      * Plan IDs come from config (pre-loaded) or fetched on-the-fly via /paypal/get-plans.
+     * @param {object|null} promoPrices Optional coupon amounts { monthly, yearly, list_monthly, list_yearly }.
      */
-    async _renderSubscriptionCheckout(offerId, offer, container) {
+    async _renderSubscriptionCheckout(offerId, offer, container, promoPrices = null) {
         // Plan picker from offer + flow token config — never brand-hardcoded prices.
         const plans = (offer && offer.subscription && offer.subscription.plans) ? offer.subscription.plans : {};
-        const monthlyPrice = Number(plans.monthly?.price ?? offer?.pricing?.price ?? offer?.price ?? 0) || 0;
-        const yearlyPrice = Number(plans.yearly?.price ?? 0) || (monthlyPrice > 0 ? monthlyPrice * 10 : 0);
+        let monthlyPrice = Number(plans.monthly?.price ?? offer?.pricing?.price ?? offer?.price ?? 0) || 0;
+        let yearlyPrice = Number(plans.yearly?.price ?? 0) || (monthlyPrice > 0 ? monthlyPrice * 10 : 0);
+        const listMonthly = monthlyPrice;
+        const listYearly = yearlyPrice;
+        // Applied coupon: final monthly/yearly recurring amounts (e.g. $25/mo → $10/mo).
+        if (promoPrices && (promoPrices.monthly > 0 || promoPrices.yearly > 0)) {
+            if (Number(promoPrices.monthly) > 0) monthlyPrice = Number(promoPrices.monthly);
+            if (Number(promoPrices.yearly) > 0) yearlyPrice = Number(promoPrices.yearly);
+        } else if (this._checkoutCouponSub) {
+            const p = this._checkoutCouponSub;
+            if (Number(p.monthly) > 0) monthlyPrice = Number(p.monthly);
+            if (Number(p.yearly) > 0) yearlyPrice = Number(p.yearly);
+        }
         const monthlyLabel = plans.monthly?.label || (monthlyPrice > 0 ? `$${monthlyPrice}/month` : 'Monthly');
         const yearlyLabel = plans.yearly?.label || (yearlyPrice > 0 ? `$${yearlyPrice}/year` : 'Yearly');
         const currencySym = (this.config.identity && this.config.identity.currency_symbol) || '$';
@@ -11171,13 +11223,17 @@ Purchased: ${ctx.purchased}
                     <label class="flosc-plan-option flosc-plan-option-selected" data-plan="yearly">
                         <div class="flosc-plan-badge">Best Value</div>
                         <input type="radio" name="flosc_plan" value="yearly" checked class="flosc-plan-option-input">
-                        <div class="flosc-plan-amount">${this.escapeHtml(fmtMoney(yearlyPrice))}</div>
+                        <div class="flosc-plan-amount">${listYearly > yearlyPrice && listYearly > 0
+                            ? `<span class="flosc-price-was">${this.escapeHtml(fmtMoney(listYearly))}</span> `
+                            : ''}${this.escapeHtml(fmtMoney(yearlyPrice))}</div>
                         <div class="flosc-plan-interval flosc-plan-interval-yearly">/year</div>
                         ${yearlyExtra ? `<div class="flosc-plan-savings">${this.escapeHtml(yearlyExtra)}</div>` : ''}
                     </label>
                     <label class="flosc-plan-option" data-plan="monthly">
                         <input type="radio" name="flosc_plan" value="monthly" class="flosc-plan-option-input">
-                        <div class="flosc-plan-amount">${this.escapeHtml(fmtMoney(monthlyPrice))}</div>
+                        <div class="flosc-plan-amount">${listMonthly > monthlyPrice && listMonthly > 0
+                            ? `<span class="flosc-price-was">${this.escapeHtml(fmtMoney(listMonthly))}</span> `
+                            : ''}${this.escapeHtml(fmtMoney(monthlyPrice))}</div>
                         <div class="flosc-plan-interval">/month</div>
                         ${monthlyTokenLine ? `<div class="flosc-plan-savings">${this.escapeHtml(monthlyTokenLine)}</div>` : ''}
                     </label>
@@ -11191,6 +11247,7 @@ Purchased: ${ctx.purchased}
         container.dataset.floscYearlyPrice = String(yearlyPrice);
         container.dataset.floscMonthlyLabel = monthlyLabel;
         container.dataset.floscYearlyLabel = yearlyLabel;
+        container.dataset.floscPromoCoupon = this._getCheckoutCouponCodeForCharge() || '';
 
         // Plan selection toggle styling
         const planOptions = container.querySelectorAll('.flosc-plan-option');
@@ -11206,27 +11263,44 @@ Purchased: ${ctx.purchased}
             });
         });
 
-        // Get plan IDs (from config or fetch)
-        let monthlyPlanId = this.config.paypalMonthlyPlanId || '';
-        let yearlyPlanId = this.config.paypalYearlyPlanId || '';
+        // Plan IDs: list-price plans from config, or promo plans when coupon applied.
+        const couponCode = this._getCheckoutCouponCodeForCharge();
+        let monthlyPlanId = '';
+        let yearlyPlanId = '';
+        if (!couponCode) {
+            monthlyPlanId = this.config.paypalMonthlyPlanId || '';
+            yearlyPlanId = this.config.paypalYearlyPlanId || '';
+        }
 
-        if (!monthlyPlanId || !yearlyPlanId) {
+        if (!monthlyPlanId || !yearlyPlanId || couponCode) {
             const statusEl = container.querySelector('#flosc-sub-status');
-            if (statusEl) statusEl.textContent = 'Setting up payment plans...';
+            if (statusEl) statusEl.textContent = couponCode
+                ? 'Setting up promo subscription plans...'
+                : 'Setting up payment plans...';
             try {
                 await this.refreshNonce();
                 const res = await this.authFetch(this.config.apiUrl + '/paypal/get-plans', {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.config.nonce },
-                    body: JSON.stringify({ flow_id: this.config.flowId || '' }),
+                    body: JSON.stringify({
+                        flow_id: this.config.flowId || '',
+                        offer_id: offerId || '',
+                        coupon_code: couponCode || '',
+                    }),
                 });
                 const data = await res.json();
                 if (data.monthly_plan_id && data.yearly_plan_id) {
                     monthlyPlanId = data.monthly_plan_id;
                     yearlyPlanId = data.yearly_plan_id;
-                    this.config.paypalMonthlyPlanId = monthlyPlanId;
-                    this.config.paypalYearlyPlanId = yearlyPlanId;
+                    if (couponCode) {
+                        // Do not overwrite default list-price plan IDs in config.
+                        this._paypalPromoMonthlyPlanId = monthlyPlanId;
+                        this._paypalPromoYearlyPlanId = yearlyPlanId;
+                    } else {
+                        this.config.paypalMonthlyPlanId = monthlyPlanId;
+                        this.config.paypalYearlyPlanId = yearlyPlanId;
+                    }
                 } else {
                     throw new Error(data.message || 'Could not get plan IDs');
                 }
@@ -11261,7 +11335,10 @@ Purchased: ${ctx.purchased}
         btnContainer.innerHTML = '';
 
         const selectedPlan = container.querySelector('input[name="flosc_plan"]:checked')?.value || 'yearly';
-        const planId = selectedPlan === 'yearly' ? this.config.paypalYearlyPlanId : this.config.paypalMonthlyPlanId;
+        const usePromo = !!(this._getCheckoutCouponCodeForCharge());
+        const planId = selectedPlan === 'yearly'
+            ? (usePromo ? (this._paypalPromoYearlyPlanId || this.config.paypalYearlyPlanId) : this.config.paypalYearlyPlanId)
+            : (usePromo ? (this._paypalPromoMonthlyPlanId || this.config.paypalMonthlyPlanId) : this.config.paypalMonthlyPlanId);
 
         if (!planId) {
             btnContainer.innerHTML = '<div class="flosc-paypal-status flosc-paypal-status-error">Plan not configured.</div>';

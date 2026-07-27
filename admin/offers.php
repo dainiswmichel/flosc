@@ -984,7 +984,10 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                 <th><label>Price coupons (native only)</label></th>
                 <td>
                     <p class="description" style="margin-top:0;">
-                        PayPal/Stripe only. Prefer <strong>fixed final price</strong> (e.g. list $49.50 → charge $15). Optional %. Validity = <strong>UTC</strong> (ISO <code>2026-07-27T00:00:00Z</code> or MTS). Empty window = always valid while active.
+                        PayPal/Stripe only (one-time <strong>and</strong> subscription). Prefer <strong>fixed final price</strong>:
+                        e.g. list <code>$25/mo</code> → coupon value <code>10</code> → charge <strong>$10/month</strong>
+                        (yearly scales by the same ratio). Optional % off both intervals.
+                        Validity = <strong>UTC</strong> (ISO <code>2026-07-27T00:00:00Z</code> or MTS). Empty window = always valid while active.
                     </p>
                     <?php
                     $flosc_coupons = $flosc_offer['coupons'] ?? [];

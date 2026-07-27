@@ -710,6 +710,122 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
     }
 
     /**
+     * Ensure PayPal product + plans exist for explicit monthly/yearly amounts (dollars).
+     * Used when a native coupon changes recurring price (e.g. $25/mo → $10/mo).
+     * Cached per credentials + amount pair so we do not recreate plans every checkout.
+     *
+     * @param float  $monthly_price Recurring monthly amount.
+     * @param float  $yearly_price  Recurring yearly amount.
+     * @param string $product_name  Catalog label.
+     * @return array|WP_Error
+     */
+    public function ensure_plans_for_prices($monthly_price, $yearly_price, $product_name = '') {
+        $monthly_price = round(max(0.0, floatval($monthly_price)), 2);
+        $yearly_price  = round(max(0.0, floatval($yearly_price)), 2);
+        if ($monthly_price <= 0 && $yearly_price <= 0) {
+            return new WP_Error('no_price', __('Subscription amounts must be greater than zero.', 'flosc'), ['status' => 400]);
+        }
+        if ($monthly_price <= 0) {
+            $monthly_price = $yearly_price > 0 ? round($yearly_price / 10, 2) : 1.0;
+        }
+        if ($yearly_price <= 0) {
+            $yearly_price = round($monthly_price * 10, 2);
+        }
+
+        $amt_key = number_format($monthly_price, 2, '.', '') . '_' . number_format($yearly_price, 2, '.', '');
+        $cache_key = $this->get_plans_option_key() . '_amt_' . md5($amt_key);
+        $cached = get_option($cache_key, []);
+        if (is_array($cached)
+            && !empty($cached['monthly_plan_id'])
+            && !empty($cached['yearly_plan_id'])
+            && !empty($cached['credentials_fingerprint'])
+            && hash_equals((string) $cached['credentials_fingerprint'], $this->get_credentials_fingerprint())
+        ) {
+            return $cached;
+        }
+
+        $product_name = trim((string) $product_name);
+        if ($product_name === '') {
+            $product_name = 'FLOSC Subscription';
+        }
+        $product_desc = $product_name . ' (promo ' . $amt_key . ')';
+
+        $product = $this->create_product($product_name . ' Promo', $product_desc);
+        if (is_wp_error($product)) {
+            return $product;
+        }
+        $product_id = $product['id'];
+
+        $monthly_label = sprintf('%s Monthly — $%s/month', $product_name, number_format($monthly_price, 2, '.', ''));
+        $yearly_label  = sprintf('%s Yearly — $%s/year', $product_name, number_format($yearly_price, 2, '.', ''));
+
+        $monthly = $this->create_plan($product_id, $monthly_label, $monthly_price, 'MONTH');
+        if (is_wp_error($monthly)) {
+            return $monthly;
+        }
+        $yearly = $this->create_plan($product_id, $yearly_label, $yearly_price, 'YEAR');
+        if (is_wp_error($yearly)) {
+            return $yearly;
+        }
+
+        $plans = [
+            'product_id'              => $product_id,
+            'monthly_plan_id'         => $monthly['id'],
+            'yearly_plan_id'          => $yearly['id'],
+            'monthly_price'           => $monthly_price,
+            'yearly_price'            => $yearly_price,
+            'mode'                    => $this->get_mode(),
+            'credentials_fingerprint' => $this->get_credentials_fingerprint(),
+            'created_at'              => current_time('mysql'),
+            'amount_key'              => $amt_key,
+        ];
+        update_option($cache_key, $plans, false);
+
+        // Index for activate-subscription plan type resolution.
+        $index_key = $this->get_plans_option_key() . '_index';
+        $index = get_option($index_key, []);
+        if (!is_array($index)) {
+            $index = [];
+        }
+        $index[$plans['monthly_plan_id']] = 'monthly';
+        $index[$plans['yearly_plan_id']]  = 'yearly';
+        update_option($index_key, $index, false);
+
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            flosc_log('[FLOSC-PAYPAL] ensure_plans_for_prices amt=' . $amt_key
+                . ' monthly=' . $plans['monthly_plan_id'] . ' yearly=' . $plans['yearly_plan_id']);
+        }
+
+        return $plans;
+    }
+
+    /**
+     * Resolve plan_id to monthly|yearly including promo plan caches.
+     *
+     * @param string $plan_id PayPal plan id.
+     * @return string '' if unknown.
+     */
+    public function resolve_plan_type_for_id($plan_id) {
+        $plan_id = sanitize_text_field((string) $plan_id);
+        if ($plan_id === '') {
+            return '';
+        }
+        $stored = $this->get_stored_plans();
+        if (!empty($stored['monthly_plan_id']) && hash_equals((string) $stored['monthly_plan_id'], $plan_id)) {
+            return 'monthly';
+        }
+        if (!empty($stored['yearly_plan_id']) && hash_equals((string) $stored['yearly_plan_id'], $plan_id)) {
+            return 'yearly';
+        }
+        $index = get_option($this->get_plans_option_key() . '_index', []);
+        if (is_array($index) && !empty($index[$plan_id])) {
+            $t = sanitize_key((string) $index[$plan_id]);
+            return in_array($t, ['monthly', 'yearly'], true) ? $t : '';
+        }
+        return '';
+    }
+
+    /**
      * Client-side config passed to JS
      */
     public function get_client_config() {
