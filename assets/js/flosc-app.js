@@ -8775,6 +8775,10 @@ Purchased: ${ctx.purchased}
                 }
                 
                 this.floscShowUserAutoPrompts();
+                // Server may have set session.title from first user message (placeholder "New Chat").
+                if (this.state !== 'visitor' && this.currentSession) {
+                    this.loadSessions();
+                }
             } else {
                 // AI returned nothing — fall back to raw IVR if available
                 // v8.0.0: Try ivrGuidance first, then ivrMatch (even if conditions didn't pass)
@@ -9519,10 +9523,8 @@ Purchased: ${ctx.purchased}
                         'Content-Type': 'application/json',
                         'X-WP-Nonce': this.config.nonce
                     },
-                    body: JSON.stringify({
-                        title: String(message || '').substring(0, 40) || 'New Chat',
-                        first_chat: true,
-                    })
+                    // New session title is always "New Chat"; server renames on first user message.
+                    body: JSON.stringify({})
                 });
                 const sessionData = await sessionRes.json();
                 if (sessionData.success && sessionData.session) {
@@ -9928,7 +9930,8 @@ Purchased: ${ctx.purchased}
             }
         }
 
-        // Create a real server session so the sidebar updates immediately.
+        // Create a real server session first. Do not clear the open pane until create succeeds.
+        // New chat = new session; title always "New Chat" until first user message / rename.
         try {
             await this.refreshNonce();
             const res = await this.authFetch(this.config.apiUrl + '/sessions', {
@@ -9938,10 +9941,7 @@ Purchased: ${ctx.purchased}
                     'Content-Type': 'application/json',
                     'X-WP-Nonce': this.config.nonce,
                 },
-                body: JSON.stringify({
-                    title: this.config.firstChatTitle || 'New Chat',
-                    first_chat: true,
-                }),
+                body: JSON.stringify({}),
             });
             const data = await res.json();
             if (!data.success || !data.session) {
@@ -9964,7 +9964,7 @@ Purchased: ${ctx.purchased}
             return;
         }
 
-        // Clear pane — do not restore visitor intro / prior quiz thread.
+        // Clear pane only after a new session exists — do not restore visitor intro / prior quiz thread.
         const inner = this.chatMessages?.querySelector('.messages-inner');
         if (inner) inner.innerHTML = '';
         else if (this.chatMessages) this.chatMessages.innerHTML = '';

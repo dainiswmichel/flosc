@@ -8837,7 +8837,9 @@ Example good response:
     }
 
     public function create_session($request) {
-        $title = sanitize_text_field($request->get_param('title') ?? 'New Chat');
+        // New chat = new session. Title is always the placeholder; first user message
+        // (or rename) updates session.title. No first_chat_title special case.
+        $title = 'New Chat';
         $user_id = get_current_user_id();
         if (!$user_id) {
             return new WP_REST_Response(['success' => false, 'error' => 'not_logged_in', 'code' => 'not_logged_in'], 401);
@@ -8872,15 +8874,6 @@ Example good response:
                     'max' => $max_chats,
                     'count' => $count,
                 ], 403);
-            }
-        }
-
-        // First-ever session title from flow param (not brand hardcode).
-        $first_chat = $request->get_param('first_chat');
-        if ($first_chat && $this->session_manager->get_flosc_session_count($user_id) === 0) {
-            $title = sanitize_text_field((string) flosc_get_setting('first_chat_title', 'Our first chat :-)'));
-            if ($title === '') {
-                $title = 'Our first chat :-)';
             }
         }
 

@@ -1355,11 +1355,7 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
                 wp_unslash((string) $flosc_post['flow_new_chat_button_label'])
             );
         }
-        if (isset($flosc_post['flow_first_chat_title'])) {
-            $flosc_new_settings['first_chat_title'] = sanitize_text_field(
-                wp_unslash((string) $flosc_post['flow_first_chat_title'])
-            );
-        }
+        // first_chat_title removed: session title is always "New Chat" on create, then auto/rename.
         if (isset($flosc_post['flow_empty_chat_list_message'])) {
             $flosc_new_settings['empty_chat_list_message'] = sanitize_text_field(
                 wp_unslash((string) $flosc_post['flow_empty_chat_list_message'])

@@ -1268,15 +1268,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 }
                 return $v !== '' ? $v : 'New chat';
             })(),
-            'firstChatTitle' => (function () {
-                $v = flosc_get_setting('first_chat_title', 'Our first chat :-)');
-                $p = null;
-                while ($p !== $v) {
-                    $p = $v;
-                    $v = stripslashes_deep($v);
-                }
-                return $v !== '' ? $v : 'Our first chat :-)';
-            })(),
             'emptyChatListMessage' => (function () {
                 $v = flosc_get_setting('empty_chat_list_message', 'No chats yet');
                 $p = null;
