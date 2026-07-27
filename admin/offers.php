@@ -129,6 +129,8 @@ function flosc_handle_offer_save() {
         'after_offer_id'          => sanitize_key($post['offer_after_offer_id'] ?? ''),
         'frequency_max_shows'     => max(0, intval($post['offer_frequency_max_shows'] ?? 1)),
         'frequency_scope'         => sanitize_key($post['offer_frequency_scope'] ?? 'browser'),
+        // Lower number = higher priority when user is asking for next/all offers.
+        'presentation_priority'   => max(0, intval($post['offer_presentation_priority'] ?? 100)),
         'guarantee'       => sanitize_text_field($post['offer_guarantee'] ?? ''),
         'preview'         => [
             'icon'    => sanitize_text_field($post['offer_icon'] ?? '⭐'),
@@ -983,6 +985,13 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                 <td>
                     <input type="number" name="offer_frequency_max_shows" value="<?php echo esc_attr($flosc_offer['frequency_max_shows'] ?? 1); ?>" min="0" class="small-text">
                     <span class="description flosc-offer-hint-inline">Auto presentations only. <strong>1</strong> = once (default). <strong>0</strong> = unlimited. Explicit user clicks (pill / upgrade) still work.</span>
+                </td>
+            </tr>
+            <tr>
+                <th><label>Presentation priority</label></th>
+                <td>
+                    <input type="number" name="offer_presentation_priority" value="<?php echo esc_attr($flosc_offer['presentation_priority'] ?? 100); ?>" min="0" class="small-text" placeholder="100">
+                    <span class="description flosc-offer-hint-inline">When the user <strong>asks for offers</strong> in chat: lower number first (e.g. 10 before 20). Used for “next offer” and ordering the “all offers” title list. Conditional auto-show still uses reveal/condition/frequency.</span>
                 </td>
             </tr>
             <tr>

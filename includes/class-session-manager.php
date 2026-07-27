@@ -146,8 +146,9 @@ class FLOSC_Session_Manager {
                 $session['messages'][] = $message;
                 $session['updated_at'] = current_time('mysql');
                 
-                // Update title from first user message if still "New Chat"
-                if ($session['title'] === 'New Chat' && $role === 'user') {
+                // Update title from first user message while still the create placeholder.
+                $current_title = trim((string) ($session['title'] ?? ''));
+                if ($role === 'user' && ($current_title === '' || $current_title === 'New Chat')) {
                     $session['title'] = $this->generate_flosc_session_title($content);
                 }
                 
@@ -185,17 +186,23 @@ class FLOSC_Session_Manager {
      * Generate session title from first message
      */
     private function generate_flosc_session_title($content) {
-        // Take first 40 chars
-        $title = substr($content, 0, 40);
-        
-        // Clean up
-        $title = trim(preg_replace('/\s+/', ' ', $title));
-        
-        if (strlen($content) > 40) {
+        $plain = wp_strip_all_tags((string) $content);
+        $plain = trim(preg_replace('/\s+/u', ' ', $plain) ?? '');
+        if ($plain === '') {
+            return 'New Chat';
+        }
+        // Prefer multibyte-safe truncate when available.
+        if (function_exists('mb_substr')) {
+            $title = mb_substr($plain, 0, 40, 'UTF-8');
+            $longer = mb_strlen($plain, 'UTF-8') > 40;
+        } else {
+            $title = substr($plain, 0, 40);
+            $longer = strlen($plain) > 40;
+        }
+        if ($longer) {
             $title .= '...';
         }
-        
-        return $title ?: 'New Chat';
+        return $title !== '' ? $title : 'New Chat';
     }
     
     /**

@@ -2736,13 +2736,275 @@ class floscApp {
             'unlock my free lesson',
             'open free lesson',
             'open my free lesson',
+            'what free lessons',
+            'which free lessons',
+            'lessons available to me',
+            'what lessons do i have',
+            'show me my lessons',
+            'my lessons',
         ];
         if (phrases.some((p) => t === p || t.includes(p))) return true;
         // free + lesson(s) with see/show/view/get/open
         if (/\bfree\s+lessons?\b/.test(t) && /\b(see|show|view|get|open|want|like|access)\b/.test(t)) {
             return true;
         }
+        // "lessons available" without free — still free-lesson path for guests (access-gated loader).
+        if (/\blessons?\b/.test(t) && /\b(available|access|show|see|view|list)\b/.test(t)
+            && !/\b(offer|price|pricing|package|buy|subscribe|upgrade)\b/.test(t)) {
+            return true;
+        }
         return false;
+    }
+
+    /**
+     * Normalize user text for "user is asking for…" matching.
+     */
+    _normalizeAskText(message) {
+        return String(message || '').toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
+
+    /**
+     * User is asking for all offers available (full list).
+     */
+    isAllOffersRequest(message) {
+        const t = this._normalizeAskText(message);
+        if (!t) return false;
+        if (/\b(all|every|entire|full)\b/.test(t) && /\b(offers?|packages?|pricing|plans?)\b/.test(t)) {
+            return true;
+        }
+        const phrases = [
+            'show me all offers',
+            'show all offers',
+            'list all offers',
+            'all offers available',
+            'all offers available to me',
+            'every offer available',
+            'what are all the offers',
+            'show me every offer',
+            'list every offer',
+            'all packages available',
+            'all pricing options',
+        ];
+        return phrases.some((p) => t === p || t.includes(p));
+    }
+
+    /**
+     * User is asking for offers (next / catalog) — not free lessons.
+     */
+    isOfferRequest(message) {
+        const t = this._normalizeAskText(message);
+        if (!t) return false;
+        if (this.isFreeLessonRequest(message) && !/\b(offer|price|pricing|package|buy|subscribe|upgrade|plan)\b/.test(t)) {
+            return false;
+        }
+        const phrases = [
+            'what are the offers',
+            'what offers',
+            'which offers',
+            'offers available',
+            'offer available',
+            'available offers',
+            'available offer',
+            'show me the offer',
+            'show me the offers',
+            'show me offers',
+            'show offers',
+            'see the offers',
+            'see offers',
+            'my offers',
+            'the offers',
+            'what can i buy',
+            'what can i purchase',
+            'pricing',
+            'what is the price',
+            'what are the prices',
+            'packages',
+            'package options',
+            'upgrade options',
+            'upgrade offer',
+            'how much does it cost',
+            'how much is it',
+            'subscribe options',
+            'membership offer',
+            'membership options',
+            'what do you offer',
+            'special offer',
+            'special offers',
+        ];
+        if (phrases.some((p) => t === p || t.includes(p))) return true;
+        if (/\boffers?\b/.test(t) && /\b(what|which|show|see|list|available|have|get|want|like)\b/.test(t)) {
+            return true;
+        }
+        if (/\b(pricing|packages?|subscribe|upgrade)\b/.test(t)
+            && /\b(what|which|show|see|list|available|options?|how much|cost)\b/.test(t)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Active offers from flow config (array or map).
+     */
+    _listFlowOffers() {
+        const raw = this.config.offers;
+        if (!raw) return [];
+        const list = Array.isArray(raw) ? raw : Object.values(raw);
+        return list.filter((o) => o && (o.id || o.offer_id));
+    }
+
+    /**
+     * Offer eligible when user is asking for offers (access + condition; not auto frequency).
+     */
+    isOfferEligibleForUserAsk(offerId) {
+        const id = String(offerId || '').trim();
+        if (!id) return false;
+        const offer = this.getOfferData(id);
+        if (!offer) return false;
+
+        const active = offer.active === true || offer.active === 1 || offer.active === '1'
+            || String(offer.status || '').toLowerCase() === 'active';
+        if (!active) return false;
+
+        if (this.offers.purchasedOffers?.has(id) || this.user?.purchased) {
+            return false;
+        }
+        if (this.offers.dismissedOffers?.has(id)
+            || this.ivr.shownThisSession?.['offer_dismissed_' + id]) {
+            return false;
+        }
+
+        const cond = String(offer.condition || '').trim();
+        if (cond && cond !== 'always' && typeof this.evaluateCondition === 'function') {
+            try {
+                if (!this.evaluateCondition(cond)) return false;
+            } catch (e) {
+                this.logWarn('[FLOSC-OFFER] user-ask condition error', id, e);
+                return false;
+            }
+        }
+        return true;
+    }
+
+    _offerPresentationPriority(offer) {
+        const n = parseInt(offer?.presentation_priority ?? offer?.priority ?? 100, 10);
+        return Number.isFinite(n) ? n : 100;
+    }
+
+    /**
+     * Eligible offers for this user, sorted by presentation_priority (asc), then name.
+     */
+    getEligibleOffersForUserAsk() {
+        const out = [];
+        for (const raw of this._listFlowOffers()) {
+            const id = String(raw.id || raw.offer_id || '').trim();
+            if (!id || !this.isOfferEligibleForUserAsk(id)) continue;
+            const offer = this.getOfferData(id) || raw;
+            out.push(offer);
+        }
+        out.sort((a, b) => {
+            const pa = this._offerPresentationPriority(a);
+            const pb = this._offerPresentationPriority(b);
+            if (pa !== pb) return pa - pb;
+            const na = String(a.name || a.id || '');
+            const nb = String(b.name || b.id || '');
+            return na.localeCompare(nb);
+        });
+        return out;
+    }
+
+    /**
+     * Next offer by priority: prefer not-yet-shown; else first eligible.
+     */
+    getNextOfferForUserAsk() {
+        const eligible = this.getEligibleOffersForUserAsk();
+        if (!eligible.length) return null;
+        const unshown = eligible.find((o) => !this._wasOfferShown(o.id));
+        return unshown || eligible[0];
+    }
+
+    /**
+     * Clickable title list when user asks for all offers (or many cards would not fit).
+     */
+    renderOfferTitleList(offers, introText) {
+        const list = Array.isArray(offers) ? offers : [];
+        if (!list.length) return;
+
+        const intro = introText || 'Here are the offers available for you:';
+        this.addMessage('assistant', intro, false);
+
+        let html = '<div class="flosc-offer-title-list" role="list">';
+        list.forEach((offer) => {
+            const id = String(offer.id || '').trim();
+            if (!id) return;
+            const title = this.resolveOfferDisplayTitle(offer, null, id);
+            const price = offer.display_price
+                || (offer.price > 0 ? this.formatOfferMoney(offer.price) : '')
+                || '';
+            html += `<button type="button" class="flosc-offer-title-item" data-offer-id="${this.escapeHtml(id)}" role="listitem">`
+                + `<span class="flosc-offer-title-item-name">${this.escapeHtml(title)}</span>`
+                + (price ? `<span class="flosc-offer-title-item-price">${this.escapeHtml(String(price))}</span>` : '')
+                + `</button>`;
+        });
+        html += '</div>';
+
+        const wrap = document.createElement('div');
+        wrap.className = 'flosc-message assistant flosc-offer-title-list-wrap';
+        wrap.innerHTML = html;
+        const inner = this.chatMessages?.querySelector('.messages-inner') || this.chatMessages;
+        if (inner) {
+            inner.appendChild(wrap);
+            wrap.querySelectorAll('.flosc-offer-title-item').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const oid = btn.getAttribute('data-offer-id');
+                    if (oid) this.showOffer(oid, { source: 'user' });
+                });
+            });
+            requestAnimationFrame(() => {
+                if (this.chatMessages) {
+                    this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+                }
+            });
+        }
+    }
+
+    /**
+     * Handle "user is asking for offers" / "all offers". Returns true if handled (no AI).
+     */
+    handleUserOfferAsk(message) {
+        const wantAll = this.isAllOffersRequest(message);
+        const wantOffer = wantAll || this.isOfferRequest(message);
+        if (!wantOffer) return false;
+
+        const eligible = this.getEligibleOffersForUserAsk();
+        if (!eligible.length) {
+            this.addMessage(
+                'assistant',
+                this.config.noOffersAvailableMessage
+                    || 'No offers are available for your account right now.',
+                false
+            );
+            return true;
+        }
+
+        // "Show me all offers" → clickable titles for every eligible offer (priority order).
+        if (wantAll) {
+            this.renderOfferTitleList(eligible);
+            return true;
+        }
+
+        // Next-offer ask → one full presentation by presentation_priority (skip already shown).
+        const next = this.getNextOfferForUserAsk();
+        if (!next) {
+            this.addMessage(
+                'assistant',
+                this.config.noOffersAvailableMessage
+                    || 'No offers are available for your account right now.',
+                false
+            );
+            return true;
+        }
+        this.showOffer(next.id, { source: 'user' });
+        return true;
     }
     
     /**
@@ -8664,7 +8926,14 @@ Purchased: ${ctx.purchased}
                 this.addMessage('assistant', 'To access your free lessons, please log in or create a free account first.', false);
                 return;
             }
+            await this.syncSessionTitleFromFirstUserMessage(message);
             this.requestFreeLesson();
+            return;
+        }
+
+        // User is asking for offers / all offers: real flow offers only (no AI catalog).
+        if (this.handleUserOfferAsk(message)) {
+            await this.syncSessionTitleFromFirstUserMessage(message);
             return;
         }
         
@@ -9765,7 +10034,8 @@ Purchased: ${ctx.purchased}
             html += `<div class="flosc-session-group">
                 <div class="flosc-session-group-title">${groupLabels[group] || group}</div>`;
             items.forEach(s => {
-                html += `<div class="flosc-session-item ${s.id === this.currentSession?.id ? 'active' : ''}" 
+                const isActive = String(s.id) === String(this.currentSession?.id ?? '');
+                html += `<div class="flosc-session-item ${isActive ? 'active' : ''}" 
                      data-session-id="${s.id}">
                     <span class="flosc-session-item-icon">💬</span>
                     <span class="flosc-session-item-title">${this.escapeHtml(s.title || 'New Chat')}</span>`;
@@ -9996,6 +10266,81 @@ Purchased: ${ctx.purchased}
 
         if (window.innerWidth <= 768 && this.sidebar) {
             this.sidebar.classList.remove('open');
+        }
+    }
+
+    /**
+     * Ensure guest/member has a server session (new chat = new session).
+     * Used when free-lesson / offer-ask bypass /chat auto-create.
+     */
+    async ensureServerSession() {
+        if (this.state === 'visitor' || this.currentSession?.id) {
+            return !!this.currentSession?.id;
+        }
+        try {
+            await this.refreshNonce();
+            const res = await this.authFetch(this.config.apiUrl + '/sessions', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': this.config.nonce,
+                },
+                body: JSON.stringify({}),
+            });
+            const data = await res.json();
+            if (data.success && data.session) {
+                this.currentSession = data.session;
+                await this.loadSessions();
+                return true;
+            }
+            if (data.code === 'guest_chat_limit' || data.error === 'guest_chat_limit') {
+                const msg = data.message || this.formatChatListMessage(
+                    this.config.guestNewChatLimitMessage || '',
+                    { max: data.max, count: data.count }
+                );
+                if (msg) this.addMessage('assistant', msg, false);
+            }
+        } catch (e) {
+            this.logWarn('FLOSC: ensureServerSession failed', e);
+        }
+        return false;
+    }
+
+    /**
+     * When the user message never hits /chat (free-lesson / offer-ask), still set
+     * session.title from the first user message if it is still "New Chat".
+     */
+    async syncSessionTitleFromFirstUserMessage(message) {
+        if (this.state === 'visitor') return;
+        await this.ensureServerSession();
+        if (!this.currentSession?.id) return;
+
+        const cur = String(this.currentSession.title || '').trim();
+        if (cur && cur !== 'New Chat') return;
+
+        const plain = String(message || '').replace(/\s+/g, ' ').trim();
+        if (!plain) return;
+        const title = plain.length > 40 ? plain.substring(0, 40) + '...' : plain;
+
+        try {
+            await this.refreshNonce();
+            const res = await this.authFetch(this.config.apiUrl + '/sessions/' + this.currentSession.id, {
+                method: 'PUT',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': this.config.nonce,
+                },
+                body: JSON.stringify({ title }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.currentSession.title = title;
+                await this.loadSessions();
+            }
+        } catch (e) {
+            this.logWarn('FLOSC: Could not auto-title session', e);
         }
     }
 

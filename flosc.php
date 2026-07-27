@@ -8963,10 +8963,6 @@ Example good response:
         if (!$user_id) {
             return new WP_REST_Response(['success' => false, 'error' => 'not_logged_in'], 401);
         }
-        $state = $this->get_user_state_for_session_limits($user_id);
-        if ($state === 'guest' && !$this->flosc_guest_chat_flag_enabled('guest_can_rename_chats')) {
-            return new WP_REST_Response(['success' => false, 'error' => 'forbidden', 'code' => 'guest_rename_disabled'], 403);
-        }
         if (empty($title)) {
             return new WP_REST_Response(['success' => false, 'error' => 'Title is required'], 400);
         }
@@ -8975,8 +8971,23 @@ Example good response:
             return new WP_REST_Response(['success' => false, 'error' => 'No sessions'], 404);
         }
         $found = false;
+        $state = $this->get_user_state_for_session_limits($user_id);
         foreach ($sessions as &$s) {
             if ($s['id'] == $session_id) {
+                $old = trim((string) ($s['title'] ?? ''));
+                $is_placeholder = ($old === '' || $old === 'New Chat');
+                // Manual rename: guests need guest_can_rename_chats.
+                // Auto-title from first user message while still "New Chat": always allowed.
+                if ($state === 'guest'
+                    && !$is_placeholder
+                    && !$this->flosc_guest_chat_flag_enabled('guest_can_rename_chats')
+                ) {
+                    return new WP_REST_Response([
+                        'success' => false,
+                        'error' => 'forbidden',
+                        'code' => 'guest_rename_disabled',
+                    ], 403);
+                }
                 $s['title'] = $title;
                 $found = true;
                 break;

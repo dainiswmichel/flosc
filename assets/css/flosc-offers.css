@@ -131,6 +131,54 @@
    OFFER PILL — Compact inline offer pill
    MTS-2026-02-03
    ============================================ */
+/* ============================================
+   OFFER TITLE LIST — "show me all offers" clickable titles
+   ============================================ */
+.flosc-offer-title-list-wrap {
+    margin: 8px 0 12px;
+    max-width: 100%;
+}
+.flosc-offer-title-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+}
+.flosc-offer-title-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    width: 100%;
+    text-align: left;
+    padding: 12px 14px;
+    border: 1px solid #d5dceb;
+    border-radius: 10px;
+    background: #fff;
+    color: #152033;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.flosc-offer-title-item:hover {
+    border-color: #7aa7e0;
+    box-shadow: 0 2px 8px rgba(13, 74, 122, 0.08);
+}
+.flosc-offer-title-item-name {
+    flex: 1;
+    min-width: 0;
+}
+.flosc-offer-title-item-price {
+    flex-shrink: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #0d4a7a;
+    background: #eaf2fb;
+    padding: 2px 10px;
+    border-radius: 999px;
+}
+
 .flosc-offer-pill {
     display: inline-flex;
     align-items: center;
