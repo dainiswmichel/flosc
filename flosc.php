@@ -11082,20 +11082,23 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             $login_handoff = 'already_authenticated';
         }
 
+        $sold_grants_level = $offer['grants']['level']
+            ?? $offer['grants_level']
+            ?? $default_member_level;
         do_action('flosc_purchase_completed', $user_id, [
-            'offer_id'     => $default_offer_id,
-            'grants_level' => $default_member_level,
-            'provider'     => 'paypal',
+            'offer_id'       => $resolved_offer_id ?: $default_offer_id,
+            'grants_level'   => $sold_grants_level,
+            'provider'       => 'paypal',
             'transaction_id' => $subscription_id,
-            'amount'       => $amount,
-            'flow_id'      => $capture_flow_id,
-            'subscription' => true,
-            'plan_type'    => $plan_type,
-            'timestamp'    => time(),
+            'amount'         => $amount,
+            'flow_id'        => $capture_flow_id,
+            'subscription'   => true,
+            'plan_type'      => $plan_type,
+            'timestamp'      => time(),
         ]);
 
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] === activate-subscription SUCCESS === sub=' . $subscription_id . ', plan=' . $plan_type . ', user=' . $user_id . ', handoff=' . $login_handoff);
+            flosc_log('[FLOSC-PAYPAL] === activate-subscription SUCCESS === sub=' . $subscription_id . ', plan=' . $plan_type . ', offer=' . ($resolved_offer_id ?: 'none') . ', user=' . $user_id . ', handoff=' . $login_handoff);
         }
 
         $user_data = get_userdata($user_id);
