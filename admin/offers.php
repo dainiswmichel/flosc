@@ -122,6 +122,13 @@ function flosc_handle_offer_save() {
         ],
         'timer_minutes'   => intval($post['offer_timer'] ?? 0),
         'timer_seconds'   => intval($post['offer_timer'] ?? 0) * 60,
+        // Urgency = countdown only. Reveal = when to first show. Frequency = how often.
+        // after_offer: start delay when another offer in this flow was shown.
+        'reveal_event'            => sanitize_key($post['offer_reveal_event'] ?? 'manual'),
+        'reveal_delay_seconds'    => max(0, intval($post['offer_reveal_delay_seconds'] ?? 0)),
+        'after_offer_id'          => sanitize_key($post['offer_after_offer_id'] ?? ''),
+        'frequency_max_shows'     => max(0, intval($post['offer_frequency_max_shows'] ?? 1)),
+        'frequency_scope'         => sanitize_key($post['offer_frequency_scope'] ?? 'browser'),
         'guarantee'       => sanitize_text_field($post['offer_guarantee'] ?? ''),
         'preview'         => [
             'icon'    => sanitize_text_field($post['offer_icon'] ?? '⭐'),
@@ -907,10 +914,85 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                 </td>
             </tr>
             <tr>
-                <th><label>Timer (min)</label></th>
+                <th><label>Countdown timer (min)</label></th>
                 <td>
                     <input type="number" name="offer_timer" value="<?php echo esc_attr($flosc_offer['timer_minutes'] ?? ''); ?>" min="0" class="small-text" placeholder="15">
-                    <span class="description flosc-offer-hint-inline">Global default. Per-format timers can override.</span>
+                    <span class="description flosc-offer-hint-inline"><strong>Urgency only</strong> — on-card countdown after the offer is shown. Not “delay before show”. 0 = no countdown.</span>
+                </td>
+            </tr>
+            <tr>
+                <th><label>Reveal event</label></th>
+                <td>
+                    <?php
+                    $flosc_reveal_event = $flosc_offer['reveal_event'] ?? 'manual';
+                    $flosc_fs_for_editor = get_option( $flosc_flow_key, [] );
+                    if ( ! is_array( $flosc_fs_for_editor ) ) {
+                        $flosc_fs_for_editor = [];
+                    }
+                    ?>
+                    <select name="offer_reveal_event" id="offer-reveal-event-<?php echo esc_attr( $flosc_safe_id ); ?>" class="regular-text" data-flosc-action="toggle-after-offer-row" data-offer-safe-id="<?php echo esc_attr( $flosc_safe_id ); ?>">
+                        <option value="manual" <?php selected($flosc_reveal_event, 'manual'); ?>>Manual only (no auto schedule)</option>
+                        <option value="chat_start" <?php selected($flosc_reveal_event, 'chat_start'); ?>>Chat start</option>
+                        <option value="lesson_open" <?php selected($flosc_reveal_event, 'lesson_open'); ?>>Free lesson / lesson open</option>
+                        <option value="quiz" <?php selected($flosc_reveal_event, 'quiz'); ?>>After quiz</option>
+                        <option value="login" <?php selected($flosc_reveal_event, 'login'); ?>>After login</option>
+                        <option value="after_offer" <?php selected($flosc_reveal_event, 'after_offer'); ?>>After another offer was shown</option>
+                    </select>
+                    <p class="description">When auto-presentation may first run (still subject to condition + frequency). Use <strong>After another offer</strong> for chains (e.g. Offer 2 = 420s after Offer 1).</p>
+                </td>
+            </tr>
+            <tr id="offer-after-offer-row-<?php echo esc_attr( $flosc_safe_id ); ?>" class="<?php echo ( $flosc_reveal_event === 'after_offer' ) ? '' : 'flosc-hidden'; ?>">
+                <th><label for="offer_after_offer_id_<?php echo esc_attr( $flosc_safe_id ); ?>">After this offer was shown</label></th>
+                <td>
+                    <?php
+                    $flosc_after_offer_id = $flosc_offer['after_offer_id'] ?? '';
+                    $flosc_all_for_parent = $flosc_fs_for_editor['offers'] ?? [];
+                    if ( ! is_array( $flosc_all_for_parent ) ) {
+                        $flosc_all_for_parent = [];
+                    }
+                    ?>
+                    <select name="offer_after_offer_id" id="offer_after_offer_id_<?php echo esc_attr( $flosc_safe_id ); ?>" class="regular-text">
+                        <option value="">— Select parent offer —</option>
+                        <?php foreach ( $flosc_all_for_parent as $flosc_pid => $flosc_poff ) :
+                            if ( ! is_array( $flosc_poff ) ) {
+                                continue;
+                            }
+                            $flosc_pid = (string) ( $flosc_poff['id'] ?? $flosc_pid );
+                            if ( $flosc_pid === '' || $flosc_pid === (string) ( $flosc_offer['id'] ?? '' ) ) {
+                                continue;
+                            }
+                            $flosc_plabel = (string) ( $flosc_poff['name'] ?? $flosc_pid );
+                            ?>
+                            <option value="<?php echo esc_attr( $flosc_pid ); ?>" <?php selected( $flosc_after_offer_id, $flosc_pid ); ?>>
+                                <?php echo esc_html( $flosc_plabel . ' (' . $flosc_pid . ')' ); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <p class="description">Parent offer must already have been shown. Then <strong>Reveal delay</strong> starts (e.g. 420). Optional condition can still use <code>offer_shown_{parent_id}</code>.</p>
+                </td>
+            </tr>
+            <tr>
+                <th><label>Reveal delay (seconds)</label></th>
+                <td>
+                    <input type="number" name="offer_reveal_delay_seconds" value="<?php echo esc_attr($flosc_offer['reveal_delay_seconds'] ?? 0); ?>" min="0" class="small-text" placeholder="420">
+                    <span class="description flosc-offer-hint-inline">Seconds after the reveal event (or after the parent offer was shown) before auto-show.</span>
+                </td>
+            </tr>
+            <tr>
+                <th><label>Max auto shows</label></th>
+                <td>
+                    <input type="number" name="offer_frequency_max_shows" value="<?php echo esc_attr($flosc_offer['frequency_max_shows'] ?? 1); ?>" min="0" class="small-text">
+                    <span class="description flosc-offer-hint-inline">Auto presentations only. <strong>1</strong> = once (default). <strong>0</strong> = unlimited. Explicit user clicks (pill / upgrade) still work.</span>
+                </td>
+            </tr>
+            <tr>
+                <th><label>Frequency scope</label></th>
+                <td>
+                    <?php $flosc_freq_scope = $flosc_offer['frequency_scope'] ?? 'browser'; ?>
+                    <select name="offer_frequency_scope" class="regular-text">
+                        <option value="browser" <?php selected($flosc_freq_scope, 'browser'); ?>>Browser (localStorage)</option>
+                        <option value="session" <?php selected($flosc_freq_scope, 'session'); ?>>Browser session only</option>
+                    </select>
                 </td>
             </tr>
             <tr>
@@ -918,9 +1000,11 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                 <td>
                     <?php
                     // v8.1.0: Dropdown from Member Levels registry (single source of truth)
-                    $flosc_fs_for_editor = get_option($flosc_flow_key, []);
-                    if (!is_array($flosc_fs_for_editor)) {
-                        $flosc_fs_for_editor = [];
+                    if ( ! isset( $flosc_fs_for_editor ) || ! is_array( $flosc_fs_for_editor ) ) {
+                        $flosc_fs_for_editor = get_option( $flosc_flow_key, [] );
+                        if ( ! is_array( $flosc_fs_for_editor ) ) {
+                            $flosc_fs_for_editor = [];
+                        }
                     }
                     $ml_registry = $flosc_fs_for_editor['member_levels'] ?? [];
                     $current_level = $flosc_offer['grants_level'] ?? ($flosc_offer['grants']['level'] ?? '');

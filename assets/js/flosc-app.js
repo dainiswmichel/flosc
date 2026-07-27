@@ -395,7 +395,7 @@ class floscApp {
                 const cleanUrl = new URL(window.location.href);
                 cleanUrl.searchParams.delete('flosc_open_upgrade');
                 window.history.replaceState({}, '', cleanUrl.toString());
-                setTimeout(() => this.showOffer(_upgradeOfferId), 600);
+                setTimeout(() => this.showOffer(_upgradeOfferId, { source: 'user' }), 600);
             }
 
             // Guest link: show welcome message after redirect-back login, with days remaining appended
@@ -1436,6 +1436,11 @@ class floscApp {
 
             // Show user autoprompts
             this.floscShowUserAutoPrompts();
+
+            this._scheduleOffersForEvent('chat_start');
+            if (this.state === 'guest' || this.state === 'member') {
+                this._scheduleOffersForEvent('login');
+            }
             
             // Start inactivity timer
             this.startInactivityTimer();
@@ -1565,7 +1570,7 @@ class floscApp {
         // Handle offer states
         if (expr.startsWith('offer_shown_')) {
             const offerId = expr.replace('offer_shown_', '');
-            return !!this.ivr.shownThisSession['offer_' + offerId];
+            return this._wasOfferShown(offerId);
         }
         if (expr.startsWith('offer_dismissed_')) {
             const offerId = expr.replace('offer_dismissed_', '');
@@ -1850,7 +1855,7 @@ class floscApp {
                     this.ivr.messageCount++;
                     this.ivr.lastInteraction = Date.now();
                     this.log('[FLOSC-ADMIN] Offer pill clicked:', offerId);
-                    setTimeout(() => this.showOffer(offerId), 300);
+                    setTimeout(() => this.showOffer(offerId, { source: 'user' }), 300);
                     return;
                 }
 
@@ -1987,7 +1992,7 @@ class floscApp {
                     this.ivr.messageCount++;
                     this.ivr.lastInteraction = Date.now();
                     this.log('[FLOSC-OFFER] Offer pill clicked:', offerId);
-                    setTimeout(() => this.showOffer(offerId), 300);
+                    setTimeout(() => this.showOffer(offerId, { source: 'user' }), 300);
                     return;
                 }
 
@@ -2000,7 +2005,7 @@ class floscApp {
                         this.ivr.messageCount++;
                         this.ivr.lastInteraction = Date.now();
                         this.log('[FLOSC-ADMIN-PILL] Offer trigger:', triggerValue);
-                        setTimeout(() => this.showOffer(triggerValue), 300);
+                        setTimeout(() => this.showOffer(triggerValue, { source: 'user' }), 300);
                         return;
                     }
                     if (triggerType === 'action') {
@@ -2493,8 +2498,169 @@ class floscApp {
         return { cleanText, actions };
     }
 
+    /** True if this offer was auto- or user-shown (session flags or show count). */
+    _wasOfferShown(offerId) {
+        if (!offerId) return false;
+        if (this.offers.shownOffers?.has(offerId)) return true;
+        if (this.ivr.shownThisSession?.['offer_' + offerId]) return true;
+        if (this.ivr.shownThisSession?.['offer_shown_' + offerId]) return true;
+        if (this._getOfferShowCount(offerId) > 0) return true;
+        return false;
+    }
+
+    /**
+     * Whether an offer may be auto-presented (IVR, timer, after-offer chain).
+     * source 'user' always allows (explicit CTA / reveal phrase / pill click).
+     */
+    canPresentOffer(offerId, { source = 'auto' } = {}) {
+        if (!offerId) return false;
+        if (source === 'user') return true;
+
+        const offer = this.getOfferData(offerId);
+        if (!offer) return false;
+
+        if (this.offers.dismissedOffers?.has(offerId)
+            || this.ivr.shownThisSession?.['offer_dismissed_' + offerId]) {
+            return false;
+        }
+        if (this.offers.purchasedOffers?.has(offerId)
+            || this.user?.purchased) {
+            return false;
+        }
+        if (this.state === 'member' || this.state === 'admin') {
+            return false;
+        }
+
+        // Chain: only after parent offer was shown.
+        const revealEvent = String(offer.reveal_event || offer.reveal?.event || 'manual').toLowerCase();
+        const parentId = String(offer.after_offer_id || offer.afterOfferId || '').trim();
+        if (revealEvent === 'after_offer') {
+            if (!parentId || !this._wasOfferShown(parentId)) {
+                return false;
+            }
+        }
+
+        // Offer condition (e.g. offer_shown_parent && !is_member). Fail closed on error.
+        const cond = String(offer.condition || '').trim();
+        if (cond && cond !== 'always' && typeof this.evaluateCondition === 'function') {
+            try {
+                if (!this.evaluateCondition(cond)) {
+                    return false;
+                }
+            } catch (e) {
+                this.logWarn('[FLOSC-OFFER] condition error', offerId, e);
+                return false;
+            }
+        }
+
+        const maxShows = Math.max(0, parseInt(
+            offer.frequency_max_shows ?? offer.frequency?.max_shows ?? 1,
+            10
+        ));
+        // maxShows 0 = unlimited auto shows
+        if (maxShows > 0) {
+            const shownCount = this._getOfferShowCount(offerId);
+            if (shownCount >= maxShows) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    _offerCountStorage(offerId) {
+        const offer = this.getOfferData(offerId);
+        const scope = String(offer?.frequency_scope || offer?.frequency?.scope || 'browser').toLowerCase();
+        return scope === 'session' ? sessionStorage : localStorage;
+    }
+
+    _getOfferShowCount(offerId) {
+        try {
+            const raw = this._offerCountStorage(offerId).getItem('flosc_offer_show_counts');
+            const map = raw ? JSON.parse(raw) : {};
+            return parseInt(map[offerId] || 0, 10) || 0;
+        } catch (e) {
+            return 0;
+        }
+    }
+
+    _incrementOfferShowCount(offerId) {
+        try {
+            const store = this._offerCountStorage(offerId);
+            const raw = store.getItem('flosc_offer_show_counts');
+            const map = raw ? JSON.parse(raw) : {};
+            map[offerId] = (parseInt(map[offerId] || 0, 10) || 0) + 1;
+            store.setItem('flosc_offer_show_counts', JSON.stringify(map));
+        } catch (e) { /* ignore */ }
+    }
+
+    /**
+     * Schedule offer presentation after reveal.delay_seconds when event matches.
+     * Events: chat_start | lesson_open | quiz | login | after_offer | manual
+     * For after_offer, eventName is "after_offer:" + parentOfferId.
+     */
+    scheduleOfferReveal(offerId, eventName) {
+        const offer = this.getOfferData(offerId);
+        if (!offer) return;
+        const revealEvent = String(offer.reveal_event || offer.reveal?.event || 'manual').toLowerCase();
+        if (revealEvent === 'manual' || revealEvent === '') return;
+
+        const eventStr = String(eventName || '');
+        if (revealEvent === 'after_offer') {
+            const parentId = String(offer.after_offer_id || offer.afterOfferId || '').trim();
+            if (!parentId) return;
+            if (eventStr !== 'after_offer:' + parentId && eventStr !== 'after_offer') return;
+            if (!this._wasOfferShown(parentId)) return;
+        } else if (revealEvent !== eventStr.toLowerCase()) {
+            return;
+        }
+
+        if (!this.canPresentOffer(offerId, { source: 'auto' })) return;
+
+        const delaySec = Math.max(0, parseInt(
+            offer.reveal_delay_seconds ?? offer.reveal?.delay_seconds ?? 0,
+            10
+        ) || 0);
+        const key = 'flosc_reveal_sched_' + offerId;
+        if (this._offerRevealTimers?.[key]) {
+            clearTimeout(this._offerRevealTimers[key]);
+        }
+        this._offerRevealTimers = this._offerRevealTimers || {};
+        this.log('[FLOSC-OFFER] schedule', offerId, 'event=', eventStr, 'delaySec=', delaySec);
+        this._offerRevealTimers[key] = setTimeout(() => {
+            if (this.canPresentOffer(offerId, { source: 'auto' })) {
+                this.showOffer(offerId, { source: 'auto' });
+            }
+        }, delaySec * 1000);
+    }
+
+    /** Schedule all active offers whose reveal_event matches eventName. */
+    _scheduleOffersForEvent(eventName) {
+        const offers = this.config.offers || [];
+        const list = Array.isArray(offers) ? offers : Object.values(offers || {});
+        list.forEach((o) => {
+            if (!o || !o.id) return;
+            const active = o.active === true || o.active === 1 || o.active === '1'
+                || String(o.status || '').toLowerCase() === 'active';
+            if (!active) return;
+            this.scheduleOfferReveal(o.id, eventName);
+        });
+    }
+
+    /**
+     * When offer parentId is shown, schedule every active child with
+     * reveal_event=after_offer and after_offer_id=parentId (delay from each child).
+     */
+    _scheduleOffersAfterOfferShown(parentOfferId) {
+        if (!parentOfferId) return;
+        this._scheduleOffersForEvent('after_offer:' + parentOfferId);
+    }
+
     // v1.6.2: Bridge from handleAction('show_offer_*') to showOfferMessage()
-    showOffer(offerId) {
+    showOffer(offerId, { source = 'auto' } = {}) {
+        if (!this.canPresentOffer(offerId, { source })) {
+            this.log('[FLOSC-OFFER] canPresentOffer blocked:', offerId, source);
+            return;
+        }
         const offer = this.getOfferData(offerId);
         // v1.7.1: Build human-readable content — never show raw IDs
         let offerContent = offer?.description || offer?.content || '';
@@ -2509,7 +2675,8 @@ class floscApp {
             display_format: offer?.display_format || 'card',
             cta: offer?.cta || '🔓 Get Full Access Now',
             price: offer?.display_price || (offer?.price ? `$${offer.price}` : ''),
-            type: 'offer'
+            type: 'offer',
+            _presentSource: source,
         };
         this.showOfferMessage(msg);
     }
@@ -2518,6 +2685,11 @@ class floscApp {
     // Supports multiple formats: card, pill, compact, banner, featured, text, inline-checkout
     showOfferMessage(msg) {
         const offer = this.getOfferData(msg.offer_id);
+        const source = msg._presentSource || 'auto';
+        if (!this.canPresentOffer(msg.offer_id, { source })) {
+            this.log('[FLOSC-OFFER] showOfferMessage blocked:', msg.offer_id);
+            return;
+        }
         const displayFormat = this.resolveOfferDisplayFormat(msg, offer);
         
         this.log('[FLOSC-OFFER] Showing offer:', msg.offer_id, 'format:', displayFormat);
@@ -2525,19 +2697,52 @@ class floscApp {
         // Track offer shown
         this.offers.shownOffers.add(msg.offer_id);
         this.ivr.shownThisSession['offer_' + msg.offer_id] = true;
+        this.ivr.shownThisSession['offer_shown_' + msg.offer_id] = true;
+        this._incrementOfferShowCount(msg.offer_id);
         this._saveOfferStates(); // v1.6.2: Persist across refresh
+
+        // Chain: start timers for offers that wait on this offer.
+        this._scheduleOffersAfterOfferShown(msg.offer_id);
         
         // v1.6.2: If offer has a content source (HtmlFile/WooProduct/PostID),
         // load it and inject into the offer content before rendering.
-        const source = msg.html_file || offer?.html_file 
+        const sourceContent = msg.html_file || offer?.html_file 
                      || msg.woo_product || offer?.woo_product
                      || msg.post_id || offer?.post_id;
-        if (source) {
+        if (sourceContent) {
             this.loadOfferContentSource(msg, offer, displayFormat);
             return;
         }
         
         this.renderOfferByFormat(msg, offer, displayFormat);
+    }
+
+    /** True if user text is a free-lesson request (phrase list; flow may extend later). */
+    isFreeLessonRequest(message) {
+        const t = String(message || '').toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
+        if (!t) return false;
+        const phrases = [
+            'id like to see my free lessons',
+            'i would like to see my free lessons',
+            'show me my free lessons',
+            'show my free lessons',
+            'see my free lessons',
+            'view my free lessons',
+            'view my free lesson',
+            'my free lessons',
+            'my free lesson',
+            'free lessons',
+            'free lesson',
+            'unlock my free lesson',
+            'open free lesson',
+            'open my free lesson',
+        ];
+        if (phrases.some((p) => t === p || t.includes(p))) return true;
+        // free + lesson(s) with see/show/view/get/open
+        if (/\bfree\s+lessons?\b/.test(t) && /\b(see|show|view|get|open|want|like|access)\b/.test(t)) {
+            return true;
+        }
+        return false;
     }
     
     /**
@@ -2661,6 +2866,9 @@ class floscApp {
                 'name', 'headline', 'description', 'cta', 'display_price', 'original_price',
                 'guarantee', 'status', 'active', 'type', 'pricing', 'grants', 'features',
                 'display_format', 'display_formats', 'processor', 'currency',
+                // Scheduling (Offers tab) — must win over IVR script rows
+                'reveal_event', 'reveal_delay_seconds', 'after_offer_id',
+                'frequency_max_shows', 'frequency_scope', 'condition', 'timer_minutes', 'timer_seconds',
             ];
             for (const key of productKeys) {
                 if (configOffer[key] !== undefined && configOffer[key] !== null && configOffer[key] !== '') {
@@ -3563,7 +3771,7 @@ class floscApp {
                 break;
             case 'show_offer':
                 if (actionParam) {
-                    this.showOffer(actionParam);
+                    this.showOffer(actionParam, { source: 'auto' });
                 } else {
                     this.log('FLOSC: show_offer action missing offer ID parameter');
                 }
@@ -3598,7 +3806,7 @@ class floscApp {
                     }
                 } else if (action.startsWith('show_offer_')) {
                     const offerId = action.replace('show_offer_', '');
-                    this.showOffer(offerId);
+                    this.showOffer(offerId, { source: 'auto' });
                 }
                 break;
         }
@@ -5466,6 +5674,7 @@ class floscApp {
         this.ivr.context.quiz_taken = true;
         this.ivr.context.score = scorePercent;
         this.ivr.context.first_message_after_quiz = true;
+        this._scheduleOffersForEvent('quiz');
         
         // v5.0.3 FIX: Also set on this.user so buildIVRContext() picks it up
         this.user = this.user || {};
@@ -7294,7 +7503,7 @@ Purchased: ${ctx.purchased}
         const upgradeBtn = document.getElementById('flosc_upgrade_button');
         if (upgradeBtn) {
             const upgradeOfferId = this.getOfferIdForProduct();
-            upgradeBtn.addEventListener('click', () => this.showOffer(upgradeOfferId));
+            upgradeBtn.addEventListener('click', () => this.showOffer(upgradeOfferId, { source: 'user' }));
         }
         
         // v9.3.3: Quiz modal event bindings
@@ -8448,6 +8657,16 @@ Purchased: ${ctx.purchased}
         if (this.onUserMessage(message)) {
             return;
         }
+
+        // Free-lesson request: route to loader before IVR/AI (guest/member only).
+        if (this.isFreeLessonRequest(message)) {
+            if (this.state === 'visitor') {
+                this.addMessage('assistant', 'To access your free lessons, please log in or create a free account first.', false);
+                return;
+            }
+            this.requestFreeLesson();
+            return;
+        }
         
         // v3.0.5: Check if user message matches any offer's reveal_phrase (exact match).
         // Exact match happens client-side — no API call needed. AI interpretation
@@ -8455,7 +8674,7 @@ Purchased: ${ctx.purchased}
         const phraseMatchOffer = this._matchOfferRevealPhrase(message);
         if (phraseMatchOffer) {
             this.log('[FLOSC-OFFER] Reveal phrase matched offer:', phraseMatchOffer.id);
-            setTimeout(() => this.showOffer(phraseMatchOffer.id), 300);
+            setTimeout(() => this.showOffer(phraseMatchOffer.id, { source: 'user' }), 300);
             return;
         }
         
@@ -8964,8 +9183,7 @@ Purchased: ${ctx.purchased}
     addMessage(role, content, isHtml = false) {
         this.log('[FLOSC] addMessage() called:', {role, contentLength: content?.length, isHtml});
 
-        // Anti-repetition: never render the exact same assistant message twice.
-        // If a duplicate arrives, substitute a rotating variation instead.
+        // Duplicate plain-text assistant lines: skip re-render (do not substitute unrelated copy).
         if (role !== 'user' && !isHtml) {
             const contentStr = String(content || '');
             if (contentStr.includes('flosc-sandbox-payment') || contentStr.includes('flosc-offer-')) {
@@ -8974,19 +9192,14 @@ Purchased: ${ctx.purchased}
         }
         if (role !== 'user' && !isHtml) {
             this._shownAssistant = this._shownAssistant || {};
-            let repKey = String(content || '').replace(/\s+/g, ' ').trim();
+            const repKey = String(content || '').replace(/\s+/g, ' ').trim();
             if (repKey && this._shownAssistant[repKey]) {
-                this._repeatIdx = (this._repeatIdx || 0) + 1;
-                const repVariants = [
-                    "Let me give you a different result. Tell me a title, style, or mood ...waiting for your comments below.",
-                    "I can pull a different match right now. Share a title, style, or mood and I will refine it.",
-                    "Want the full list instead, or should I search by a different title, style, or mood?"
-                ];
-                content = repVariants[(this._repeatIdx - 1) % repVariants.length];
-                isHtml = false;
-                repKey = content.replace(/\s+/g, ' ').trim();
+                this.log('[FLOSC] Skipping duplicate assistant message');
+                return null;
             }
-            if (repKey) { this._shownAssistant[repKey] = true; }
+            if (repKey) {
+                this._shownAssistant[repKey] = true;
+            }
         }
 
         if (!this.chatMessages) {
@@ -9296,7 +9509,7 @@ Purchased: ${ctx.purchased}
     }
     
     async callAPI(message, ivrMatch = null, options = {}) {
-        // v1.7.0: Auto-create session on first message for logged-in users
+        // Auto-create session on first message for logged-in users (server enforces guest max).
         if (this.state !== 'visitor' && !this.currentSession) {
             try {
                 const sessionRes = await this.authFetch(this.config.apiUrl + '/sessions', {
@@ -9306,14 +9519,24 @@ Purchased: ${ctx.purchased}
                         'Content-Type': 'application/json',
                         'X-WP-Nonce': this.config.nonce
                     },
-                    body: JSON.stringify({ title: message.substring(0, 40), first_chat: true })
+                    body: JSON.stringify({
+                        title: String(message || '').substring(0, 40) || 'New Chat',
+                        first_chat: true,
+                    })
                 });
                 const sessionData = await sessionRes.json();
                 if (sessionData.success && sessionData.session) {
                     this.currentSession = sessionData.session;
                     this.log('[FLOSC] Auto-created session:', this.currentSession.id, this.currentSession.title);
-                    // Refresh sidebar session list
                     this.loadSessions();
+                } else if (sessionData.code === 'guest_chat_limit' || sessionData.error === 'guest_chat_limit') {
+                    const msg = sessionData.message || this.formatChatListMessage(
+                        this.config.guestNewChatLimitMessage || '',
+                        { max: sessionData.max, count: sessionData.count }
+                    );
+                    if (msg) {
+                        this.addMessage('assistant', msg, false);
+                    }
                 }
             } catch (e) {
                 this.logWarn('[FLOSC] Could not auto-create session:', e);
@@ -9518,11 +9741,13 @@ Purchased: ${ctx.purchased}
     renderSessions(sessions) {
         if (!this.sessionList) return;
         
-        // v8.0.11: Session management by access level
         // Visitors: never see sidebar sessions (loadSessions not called)
-        // Guests: see their chat list, read-only (no rename/delete)
-        // Members/Admins: full ChatGPT-style management — rename, delete
-        const canManage = (this.state === 'member' || this.state === 'admin');
+        // Guests: list + rename/delete from flow params (defaults true)
+        // Members/Admins: full manage
+        const canRename = this.state === 'member' || this.state === 'admin'
+            || (this.state === 'guest' && this.config.guestCanRenameChats !== false);
+        const canDelete = this.state === 'member' || this.state === 'admin'
+            || (this.state === 'guest' && this.config.guestCanDeleteChats !== false);
         
         // v1.7.0: sessions is a grouped object {today:[], yesterday:[], last_7_days:[], older:[]}
         const groupLabels = {
@@ -9542,18 +9767,23 @@ Purchased: ${ctx.purchased}
                      data-session-id="${s.id}">
                     <span class="flosc-session-item-icon">💬</span>
                     <span class="flosc-session-item-title">${this.escapeHtml(s.title || 'New Chat')}</span>`;
-                if (canManage) {
-                    html += `<span class="flosc-session-actions">
-                        <button class="flosc-session-action flosc-session-rename" data-session-id="${s.id}" title="Rename">✏️</button>
-                        <button class="flosc-session-action flosc-session-delete" data-session-id="${s.id}" title="Delete">🗑️</button>
-                    </span>`;
+                if (canRename || canDelete) {
+                    html += `<span class="flosc-session-actions">`;
+                    if (canRename) {
+                        html += `<button class="flosc-session-action flosc-session-rename" data-session-id="${s.id}" title="Rename">✏️</button>`;
+                    }
+                    if (canDelete) {
+                        html += `<button class="flosc-session-action flosc-session-delete" data-session-id="${s.id}" title="Delete">🗑️</button>`;
+                    }
+                    html += `</span>`;
                 }
                 html += `</div>`;
             });
             html += '</div>';
         }
         
-        this.sessionList.innerHTML = html || '<div class="flosc-session-empty">No chats yet</div>';
+        const emptyMsg = this.config.emptyChatListMessage || 'No chats yet';
+        this.sessionList.innerHTML = html || `<div class="flosc-session-empty">${this.escapeHtml(emptyMsg)}</div>`;
         
         this.sessionList.querySelectorAll('.flosc-session-item').forEach(item => {
             item.addEventListener('click', (e) => {
@@ -9591,6 +9821,10 @@ Purchased: ${ctx.purchased}
                 const inner = this.chatMessages?.querySelector('.messages-inner');
                 if (inner) inner.innerHTML = '';
                 else if (this.chatMessages) this.chatMessages.innerHTML = '';
+
+                // History replay must not hit anti-repetition substitutes.
+                this._shownAssistant = {};
+                this._repeatIdx = 0;
                 
                 data.session.messages.forEach(msg => {
                     const meta = msg && msg.meta && typeof msg.meta === 'object' ? msg.meta : null;
@@ -9618,32 +9852,151 @@ Purchased: ${ctx.purchased}
         }
     }
     
-    newSession() {
+    /**
+     * Substitute placeholders in flow-param chat strings.
+     * Supports {NickName}, {name}, {email}, {flow_name}, {max}, {count}.
+     */
+    formatChatListMessage(template, extra = {}) {
+        const raw = String(template || '');
+        const nick = String(
+            this.user?.displayName
+            || this.user?.name
+            || this.user?.firstName
+            || this.config.userName
+            || 'there'
+        ).trim() || 'there';
+        const email = String(this.user?.email || this.config.userEmail || '');
+        const flowName = String(this.config.flowDisplayName || this.config.productName || 'FLOSC');
+        const map = {
+            '{NickName}': nick,
+            '{name}': nick,
+            '{email}': email,
+            '{flow_name}': flowName,
+            '{max}': String(extra.max ?? this.config.guestMaxChats ?? ''),
+            '{count}': String(extra.count ?? ''),
+        };
+        let out = raw;
+        Object.keys(map).forEach((key) => {
+            out = out.split(key).join(map[key]);
+        });
+        return out;
+    }
+
+    countSessionsFromGrouped(sessions) {
+        if (!sessions || typeof sessions !== 'object') return 0;
+        let n = 0;
+        Object.values(sessions).forEach((items) => {
+            if (Array.isArray(items)) n += items.length;
+        });
+        return n;
+    }
+
+    async newSession() {
         // Visitor conversations are persisted in localStorage and shared across
         // companion/full-page surfaces. Route visitor "New chat" through the
         // restart path so history + visitor session id are rotated consistently.
+        // Visitors never get multi-chat management.
         if (this.state === 'visitor') {
             this.restartChat();
             return;
         }
 
-        // v1.7.0: Reset to a fresh chat (session will be auto-created on first message)
-        this.currentSession = null;
+        // Guest: enforce max chats (0 = unlimited) before creating.
+        if (this.state === 'guest') {
+            const max = Math.max(0, parseInt(this.config.guestMaxChats, 10) || 0);
+            if (max > 0) {
+                let count = 0;
+                try {
+                    const res = await this.authFetch(this.config.apiUrl + '/sessions', {
+                        credentials: 'same-origin',
+                        headers: { 'X-WP-Nonce': this.config.nonce },
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        count = this.countSessionsFromGrouped(data.sessions);
+                    }
+                } catch (e) {
+                    this.logWarn('FLOSC: Could not count sessions before new chat', e);
+                }
+                if (count >= max) {
+                    const limitTpl = this.config.guestNewChatLimitMessage
+                        || 'Your guest account allows {max} chats listed below. If you would like to start a new chat, you can delete one below.';
+                    const msg = this.formatChatListMessage(limitTpl, { max, count });
+                    this.addMessage('assistant', msg, false);
+                    return;
+                }
+            }
+        }
+
+        // Create a real server session so the sidebar updates immediately.
+        try {
+            await this.refreshNonce();
+            const res = await this.authFetch(this.config.apiUrl + '/sessions', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': this.config.nonce,
+                },
+                body: JSON.stringify({
+                    title: this.config.firstChatTitle || 'New Chat',
+                    first_chat: true,
+                }),
+            });
+            const data = await res.json();
+            if (!data.success || !data.session) {
+                if (data.code === 'guest_chat_limit' || data.error === 'guest_chat_limit') {
+                    const msg = data.message || this.formatChatListMessage(
+                        this.config.guestNewChatLimitMessage || '',
+                        { max: data.max, count: data.count }
+                    );
+                    this.addMessage('assistant', msg, false);
+                    return;
+                }
+                this.logWarn('FLOSC: create session failed', data);
+                this.addMessage('assistant', 'Could not start a new chat right now. Please try again.', false);
+                return;
+            }
+            this.currentSession = data.session;
+        } catch (e) {
+            this.logWarn('FLOSC: create session error', e);
+            this.addMessage('assistant', 'Could not start a new chat right now. Please try again.', false);
+            return;
+        }
+
+        // Clear pane — do not restore visitor intro / prior quiz thread.
         const inner = this.chatMessages?.querySelector('.messages-inner');
         if (inner) inner.innerHTML = '';
         else if (this.chatMessages) this.chatMessages.innerHTML = '';
-        
+
+        this._shownAssistant = {};
+        this._repeatIdx = 0;
         this.ivr.messageCount = 0;
         this.ivr.shownThisSession = {};
-        this.ivr.context.first_show_session = true;
+        // Guests/members: not visitor first-run
+        this.ivr.context.first_show_session = false;
         this.buildIVRContext();
-        this.checkAutoMessages();
+
+        const welcomeTpl = (this.state === 'member' || this.state === 'admin')
+            ? (this.config.memberNewChatWelcomeMessage
+                || 'Hi {NickName}, glad to be chatting with you! What would you like to work on in this session?')
+            : (this.config.guestNewChatWelcomeMessage
+                || 'Welcome back, what would you like to work on?');
+        const welcome = this.formatChatListMessage(welcomeTpl);
+        if (welcome) {
+            this.addMessage('assistant', welcome, false);
+        }
+
         this.floscShowUserAutoPrompts();
-        
-        // Deselect all sessions in sidebar
+        await this.loadSessions();
+
         this.sessionList?.querySelectorAll('.flosc-session-item').forEach(item => {
-            item.classList.remove('active');
+            item.classList.toggle('active', String(item.dataset.sessionId) === String(this.currentSession?.id));
         });
+
+        if (window.innerWidth <= 768 && this.sidebar) {
+            this.sidebar.classList.remove('open');
+        }
     }
 
     async renameSession(sessionId) {
@@ -9942,10 +10295,12 @@ Purchased: ${ctx.purchased}
             this._renderFreeLessonCards(configLessons);
             this.ivr.phase = 'offer';
             this._freeLessonInFlight = false;
+            this._scheduleOffersForEvent('lesson_open');
             setTimeout(() => this.checkAutoMessages(), 2000);
             return;
         }
 
+        // Config present but empty (no posts assigned / pool miss) — still try REST, then fail clearly.
         // Fallback: REST call (works on same-domain installs like flosc.ai)
         try {
             const response = await this.authFetch(this.config.apiUrl + '/free-lesson', {
@@ -9974,15 +10329,20 @@ Purchased: ${ctx.purchased}
                 this._cachedFreeLessons = lessons;
                 this._renderFreeLessonCards(lessons);
                 this.ivr.phase = 'offer';
+                this._scheduleOffersForEvent('lesson_open');
                 setTimeout(() => this.checkAutoMessages(), 2000);
             } else {
                 this.log('FLOSC: Free lesson request unsuccessful — no lessons returned');
-                this.addMessage('assistant', 'I wasn\'t able to load your free lessons right now. Please try again in a moment.', false);
+                this.addMessage(
+                    'assistant',
+                    'No free lessons are assigned to your account yet. Complete the quiz if you have not, then refresh and try again. If you already completed the quiz, ask your host to check free-lesson pool settings.',
+                    false
+                );
             }
         } catch (e) {
             this.hideTyping();
             this.logError('FLOSC: Free lesson request failed', e);
-            this.addMessage('assistant', 'Something went wrong loading your free lessons. Please try again.', false);
+            this.addMessage('assistant', 'Could not load free lessons (network or server error). Please try again.', false);
         } finally {
             this._freeLessonInFlight = false;
         }
@@ -10037,19 +10397,41 @@ Purchased: ${ctx.purchased}
         const hasSubPlans = !!(offer?.subscription?.plans && Object.keys(offer.subscription.plans).length);
         const isSubscription = (offer?.type === 'subscription') || hasSubPlans;
         
-        // Update modal header from offer data
-        const priceEl = document.getElementById('paymentPrice');
-        if (priceEl && offer) {
-            const price = offer.display_price || (offer.price ? `$${offer.price}` : '') || (offer.pricing?.price ? `$${offer.pricing.price}` : '');
-            if (price) priceEl.textContent = price;
-        }
+        // Update modal header from offer registry (not static PHP defaults).
         const nameEl = modal.querySelector('.flosc-product-name');
-        if (nameEl && offer?.name) {
-            nameEl.textContent = offer.name;
+        if (nameEl) {
+            nameEl.textContent = (offer?.name || offer?.headline || 'Membership').trim() || 'Membership';
         }
         const descEl = modal.querySelector('.flosc-product-desc');
-        if (descEl && offer?.description) {
-            descEl.textContent = offer.description;
+        if (descEl) {
+            let desc = String(offer?.headline || offer?.description || '').trim();
+            if (desc.length > 160) desc = desc.slice(0, 157) + '…';
+            descEl.textContent = desc || (isSubscription ? 'Choose a plan below' : 'Complete purchase below');
+        }
+        const priceEl = document.getElementById('paymentPrice');
+        if (priceEl) {
+            if (isSubscription) {
+                // Plan prices live in the plan picker; keep header price empty.
+                priceEl.textContent = '';
+                priceEl.classList.add('flosc-hidden');
+            } else {
+                priceEl.classList.remove('flosc-hidden');
+                const price = offer?.display_price
+                    || (offer?.price ? `$${offer.price}` : '')
+                    || (offer?.pricing?.price ? `$${offer.pricing.price}` : '');
+                priceEl.textContent = price || '';
+            }
+        }
+        // Cap identity logo used as product icon (CSS + runtime attribute).
+        const iconImg = modal.querySelector('.flosc-product-icon--image');
+        if (iconImg) {
+            iconImg.setAttribute('width', '40');
+            iconImg.setAttribute('height', '40');
+            iconImg.style.maxWidth = '40px';
+            iconImg.style.maxHeight = '40px';
+            iconImg.style.width = '40px';
+            iconImg.style.height = '40px';
+            iconImg.style.objectFit = 'contain';
         }
         
         const paypalContainer = document.getElementById('paypal-button-container');

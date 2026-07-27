@@ -2342,9 +2342,28 @@ html, body {
 }
 
 .flosc-product-icon--image {
-    width: 40px;
-    height: 40px;
-    object-fit: contain;
+    display: block;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    object-fit: contain !important;
+    flex-shrink: 0;
+}
+
+/* Payment modal summary: keep product row compact even if theme img rules fight us */
+.flosc-payment-modal .flosc-payment-summary,
+.flosc-payment-modal .flosc-payment-product {
+    max-width: 100%;
+    overflow: hidden;
+}
+.flosc-payment-modal .flosc-product-icon--image {
+    width: 40px !important;
+    height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
 }
 
 .flosc-product-name {

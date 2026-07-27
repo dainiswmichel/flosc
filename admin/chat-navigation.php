@@ -81,8 +81,70 @@ $flosc_available_actions = [
 ];
 ?>
 
+<?php
+// Chat list chrome — flow-scoped labels / opening messages (not entitlements).
+$flosc_flow_for_chat_list = $GLOBALS['flosc_current_settings'] ?? [];
+$flosc_new_chat_button_label = (string) ( $flosc_flow_for_chat_list['new_chat_button_label'] ?? 'New chat' );
+$flosc_first_chat_title = (string) ( $flosc_flow_for_chat_list['first_chat_title'] ?? 'Our first chat :-)' );
+$flosc_empty_chat_list_message = (string) ( $flosc_flow_for_chat_list['empty_chat_list_message'] ?? 'No chats yet' );
+$flosc_guest_new_chat_welcome = (string) ( $flosc_flow_for_chat_list['guest_new_chat_welcome_message']
+	?? 'Welcome back, what would you like to work on?' );
+$flosc_member_new_chat_welcome = (string) ( $flosc_flow_for_chat_list['member_new_chat_welcome_message']
+	?? 'Hi {NickName}, glad to be chatting with you! What would you like to work on in this session?' );
+$flosc_member_levels_chat_url = add_query_arg(
+	[
+		'page' => 'flosc-settings',
+		'ivr'  => $GLOBALS['flosc_current_ivr'] ?? '',
+		'tab'  => 'member-levels',
+		'view' => 'single',
+	],
+	admin_url( 'admin.php' )
+);
+?>
+
 <h2 class="title">Chat Navigation</h2>
 <p class="description">Configure visitor, guest, and member dropdown menus and login redirect behavior.</p>
+
+<h3 class="flosc-ui-section-title">Chat list (sidebar)</h3>
+<p class="description">Labels and opening messages for the guest/member chat list. Visitors never see multi-chat management. Guest max chats and limit message: <a href="<?php echo esc_url( $flosc_member_levels_chat_url ); ?>">Member Levels → Guest Access</a>.</p>
+<table class="form-table">
+	<tr>
+		<th scope="row"><label for="flow_new_chat_button_label">New chat button label</label></th>
+		<td>
+			<input type="text" class="regular-text" id="flow_new_chat_button_label" name="flow_new_chat_button_label"
+				   value="<?php echo esc_attr( $flosc_new_chat_button_label ); ?>">
+		</td>
+	</tr>
+	<tr>
+		<th scope="row"><label for="flow_first_chat_title">First chat title</label></th>
+		<td>
+			<input type="text" class="regular-text" id="flow_first_chat_title" name="flow_first_chat_title"
+				   value="<?php echo esc_attr( $flosc_first_chat_title ); ?>">
+			<p class="description">Title for a user’s first saved session (sidebar list).</p>
+		</td>
+	</tr>
+	<tr>
+		<th scope="row"><label for="flow_empty_chat_list_message">Empty list message</label></th>
+		<td>
+			<input type="text" class="regular-text" id="flow_empty_chat_list_message" name="flow_empty_chat_list_message"
+				   value="<?php echo esc_attr( $flosc_empty_chat_list_message ); ?>">
+		</td>
+	</tr>
+	<tr>
+		<th scope="row"><label for="flow_guest_new_chat_welcome_message">Guest New chat opening message</label></th>
+		<td>
+			<textarea class="large-text" rows="2" id="flow_guest_new_chat_welcome_message" name="flow_guest_new_chat_welcome_message"><?php echo esc_textarea( $flosc_guest_new_chat_welcome ); ?></textarea>
+			<p class="description">Shown when a guest starts a new chat (not the visitor intro). Placeholders: <code>{NickName}</code>, <code>{name}</code>, <code>{email}</code>, <code>{flow_name}</code>.</p>
+		</td>
+	</tr>
+	<tr>
+		<th scope="row"><label for="flow_member_new_chat_welcome_message">Member New chat opening message</label></th>
+		<td>
+			<textarea class="large-text" rows="2" id="flow_member_new_chat_welcome_message" name="flow_member_new_chat_welcome_message"><?php echo esc_textarea( $flosc_member_new_chat_welcome ); ?></textarea>
+			<p class="description">Shown when a member starts a new chat. Same placeholders as guest.</p>
+		</td>
+	</tr>
+</table>
 
 <h3 class="flosc-ui-section-title">Visitor Dropdown Menu</h3>
 <p class="description">Configure the menu items visitors see when they click the profile bar. All actions happen in-chat.</p>

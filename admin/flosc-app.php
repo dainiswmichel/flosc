@@ -183,12 +183,20 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
         </div>
 
         <?php if (is_user_logged_in()): ?>
+        <?php
+        $flosc_new_chat_btn_label = function_exists('flosc_get_setting')
+            ? (string) flosc_get_setting('new_chat_button_label', 'New chat')
+            : 'New chat';
+        if ($flosc_new_chat_btn_label === '') {
+            $flosc_new_chat_btn_label = 'New chat';
+        }
+        ?>
         <button class="new-chat-btn" id="flosc_app_new_session_button">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
-            <span>New chat</span>
+            <span><?php echo esc_html($flosc_new_chat_btn_label); ?></span>
         </button>
 
         <!-- Session history -->
@@ -1208,6 +1216,100 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                     return max(0, 30 - $days_elapsed);
                 })()
                 : null,
+            // Guest/member chat list (flow params — not brand hardcodes)
+            'guestMaxChats' => max(0, intval(flosc_get_setting('guest_max_chats', 0))),
+            // Default true when never saved; explicit '' / '0' = off (must not treat '' as true).
+            'guestCanDeleteChats' => (function () {
+                $flow = function_exists('flosc') ? flosc()->get_current_flow() : null;
+                $stem = '';
+                if (is_array($flow)) {
+                    $ivr = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '');
+                    $stem = sanitize_key(pathinfo(basename($ivr), PATHINFO_FILENAME));
+                }
+                $fs = $stem !== '' ? get_option('flosc_flow_' . $stem, []) : [];
+                if (!is_array($fs) || !array_key_exists('guest_can_delete_chats', $fs)) {
+                    return true;
+                }
+                $v = $fs['guest_can_delete_chats'];
+                return !($v === '' || $v === '0' || $v === 0 || $v === false || $v === null);
+            })(),
+            'guestCanRenameChats' => (function () {
+                $flow = function_exists('flosc') ? flosc()->get_current_flow() : null;
+                $stem = '';
+                if (is_array($flow)) {
+                    $ivr = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '');
+                    $stem = sanitize_key(pathinfo(basename($ivr), PATHINFO_FILENAME));
+                }
+                $fs = $stem !== '' ? get_option('flosc_flow_' . $stem, []) : [];
+                if (!is_array($fs) || !array_key_exists('guest_can_rename_chats', $fs)) {
+                    return true;
+                }
+                $v = $fs['guest_can_rename_chats'];
+                return !($v === '' || $v === '0' || $v === 0 || $v === false || $v === null);
+            })(),
+            'guestNewChatLimitMessage' => (function () {
+                $v = flosc_get_setting(
+                    'guest_new_chat_limit_message',
+                    'Your guest account allows {max} chats listed below. If you would like to start a new chat, you can delete one below.'
+                );
+                $p = null;
+                while ($p !== $v) {
+                    $p = $v;
+                    $v = stripslashes_deep($v);
+                }
+                return $v;
+            })(),
+            'newChatButtonLabel' => (function () {
+                $v = flosc_get_setting('new_chat_button_label', 'New chat');
+                $p = null;
+                while ($p !== $v) {
+                    $p = $v;
+                    $v = stripslashes_deep($v);
+                }
+                return $v !== '' ? $v : 'New chat';
+            })(),
+            'firstChatTitle' => (function () {
+                $v = flosc_get_setting('first_chat_title', 'Our first chat :-)');
+                $p = null;
+                while ($p !== $v) {
+                    $p = $v;
+                    $v = stripslashes_deep($v);
+                }
+                return $v !== '' ? $v : 'Our first chat :-)';
+            })(),
+            'emptyChatListMessage' => (function () {
+                $v = flosc_get_setting('empty_chat_list_message', 'No chats yet');
+                $p = null;
+                while ($p !== $v) {
+                    $p = $v;
+                    $v = stripslashes_deep($v);
+                }
+                return $v !== '' ? $v : 'No chats yet';
+            })(),
+            'guestNewChatWelcomeMessage' => (function () {
+                $v = flosc_get_setting('guest_new_chat_welcome_message', 'Welcome back, what would you like to work on?');
+                $p = null;
+                while ($p !== $v) {
+                    $p = $v;
+                    $v = stripslashes_deep($v);
+                }
+                return $v;
+            })(),
+            'memberNewChatWelcomeMessage' => (function () {
+                $v = flosc_get_setting(
+                    'member_new_chat_welcome_message',
+                    'Hi {NickName}, glad to be chatting with you! What would you like to work on in this session?'
+                );
+                $p = null;
+                while ($p !== $v) {
+                    $p = $v;
+                    $v = stripslashes_deep($v);
+                }
+                return $v;
+            })(),
+            'flowDisplayName' => (function () use ($identity) {
+                return (string) ($identity['name'] ?? 'FLOSC');
+            })(),
         ]); ?>;
         window.FLOSC_USER = <?php echo wp_json_encode($user_data); ?>;
     <?php wp_add_inline_script('flosc-app', ob_get_clean(), 'before'); ?>

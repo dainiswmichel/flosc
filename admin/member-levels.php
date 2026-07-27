@@ -8,7 +8,7 @@
  * Sections:
  * 1. Level Registry — admin defines level slugs + display names
  * 2. Content Protection — assign categories, tags, posts, pages to levels
- * 3. Guest Access Rules — free lesson count/proportion, access duration
+ * 3. Guest Access — free lessons, access duration, max chats / management
  *
  * Extracted from Lessons tab (v8.0.0 → v8.1.0) where content protection
  * and guest access were previously mixed with lesson group configuration.
@@ -199,17 +199,35 @@ $flosc_protected_items = $flosc_flow_settings['protected_content'] ?? [];
 </p>
 
 <?php
-// ─── 3. Guest Access & Free Lessons ─────────────────────────────────────────
+// ─── 3. Guest Access, Free Lessons & Chats ──────────────────────────────────
 
 $flosc_free_lesson_mode       = $flosc_flow_settings['free_lesson_mode']       ?? 'fixed';
 $flosc_free_lesson_count      = $flosc_flow_settings['free_lesson_count']      ?? 1;
 $flosc_free_lesson_proportion = $flosc_flow_settings['free_lesson_proportion'] ?? '1/3';
 $flosc_guest_access_days      = $flosc_flow_settings['guest_access_days']      ?? 0;
+$flosc_guest_max_chats        = isset( $flosc_flow_settings['guest_max_chats'] )
+	? max( 0, intval( $flosc_flow_settings['guest_max_chats'] ) )
+	: 0;
+$flosc_guest_can_delete_chats = ! isset( $flosc_flow_settings['guest_can_delete_chats'] )
+	|| ! empty( $flosc_flow_settings['guest_can_delete_chats'] );
+$flosc_guest_can_rename_chats = ! isset( $flosc_flow_settings['guest_can_rename_chats'] )
+	|| ! empty( $flosc_flow_settings['guest_can_rename_chats'] );
+$flosc_guest_new_chat_limit_message = (string) ( $flosc_flow_settings['guest_new_chat_limit_message']
+	?? 'Your guest account allows {max} chats listed below. If you would like to start a new chat, you can delete one below.' );
+$flosc_chat_list_settings_url = add_query_arg(
+	[
+		'page' => 'flosc-settings',
+		'ivr'  => $flosc_current_ivr,
+		'tab'  => 'ui',
+		'view' => 'single',
+	],
+	admin_url( 'admin.php' )
+);
 ?>
 
 <hr class="flosc-member-levels-divider">
-<h2>Guest Access & Free Lessons</h2>
-<p>Configure how many free lessons guests receive after completing the quiz, and how long they have access before they must purchase.</p>
+<h2>Guest Access, Free Lessons &amp; Chats</h2>
+<p>Configure free lessons, access duration, and how many saved chats guests may keep (a taste of membership). Visitors never get multi-chat management — only guests and members do.</p>
 
 <table class="form-table">
     <tr>
@@ -248,6 +266,37 @@ $flosc_guest_access_days      = $flosc_flow_settings['guest_access_days']      ?
             <input type="number" id="flow_guest_access_days" name="flow_guest_access_days" 
                    value="<?php echo esc_attr( $flosc_guest_access_days ); ?>" min="0" max="365" class="small-text"> days
             <p class="description">How long guests can access their free lessons. Set to 0 for unlimited access.</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_guest_max_chats">Guest max chats</label></th>
+        <td>
+            <input type="number" id="flow_guest_max_chats" name="flow_guest_max_chats"
+                   value="<?php echo esc_attr( (string) $flosc_guest_max_chats ); ?>" min="0" max="9999" class="small-text">
+            <p class="description">Maximum saved chats for guests. <strong>0 = unlimited</strong>. Example: set <code>3</code> for a flagship taste-of-membership cap.</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row">Guest chat management</th>
+        <td>
+            <label for="flow_guest_can_delete_chats">
+                <input type="checkbox" id="flow_guest_can_delete_chats" name="flow_guest_can_delete_chats" value="1" <?php checked( $flosc_guest_can_delete_chats ); ?>>
+                Guest may delete chats
+            </label>
+            <br>
+            <label for="flow_guest_can_rename_chats">
+                <input type="checkbox" id="flow_guest_can_rename_chats" name="flow_guest_can_rename_chats" value="1" <?php checked( $flosc_guest_can_rename_chats ); ?>>
+                Guest may rename chats
+            </label>
+            <p class="description">Rename/delete help guests manage a capped list and feel ownership. Members keep full manage regardless.</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_guest_new_chat_limit_message">Guest New chat limit message</label></th>
+        <td>
+            <textarea id="flow_guest_new_chat_limit_message" name="flow_guest_new_chat_limit_message" class="large-text" rows="3"><?php echo esc_textarea( $flosc_guest_new_chat_limit_message ); ?></textarea>
+            <p class="description">Shown when a guest hits the chat cap. Placeholders: <code>{max}</code>, <code>{count}</code>, <code>{flow_name}</code>, <code>{name}</code>.</p>
+            <p class="description">New-chat welcome copy and button labels: <a href="<?php echo esc_url( $flosc_chat_list_settings_url ); ?>">Profile Bar / Chat Navigation</a>.</p>
         </td>
     </tr>
 </table>

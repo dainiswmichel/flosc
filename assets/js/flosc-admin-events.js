@@ -61,6 +61,19 @@
             return;
         }
 
+        if (action === 'toggle-after-offer-row') {
+            const safeId = target.getAttribute('data-offer-safe-id') || '';
+            const row = document.getElementById('offer-after-offer-row-' + safeId);
+            if (row) {
+                if (target.value === 'after_offer') {
+                    row.classList.remove('flosc-hidden');
+                } else {
+                    row.classList.add('flosc-hidden');
+                }
+            }
+            return;
+        }
+
         if (action === 'toggle-format-card') {
             callGlobalFn('floscToggleFmt', [target]);
         }

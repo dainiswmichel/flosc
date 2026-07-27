@@ -8839,15 +8839,105 @@ Example good response:
     public function create_session($request) {
         $title = sanitize_text_field($request->get_param('title') ?? 'New Chat');
         $user_id = get_current_user_id();
-        
-        // v1.7.0: First-ever session gets a cute title :-)
+        if (!$user_id) {
+            return new WP_REST_Response(['success' => false, 'error' => 'not_logged_in', 'code' => 'not_logged_in'], 401);
+        }
+
+        // Guest chat cap (0 = unlimited). Members are not capped by guest_max_chats.
+        $user_state = $this->get_user_state_for_session_limits($user_id);
+        if ($user_state === 'guest') {
+            $max_chats = max(0, intval(flosc_get_setting('guest_max_chats', 0)));
+            $count = $this->session_manager->get_flosc_session_count($user_id);
+            if ($max_chats > 0 && $count >= $max_chats) {
+                $limit_msg = flosc_get_setting(
+                    'guest_new_chat_limit_message',
+                    'Your guest account allows {max} chats listed below. If you would like to start a new chat, you can delete one below.'
+                );
+                $user = get_userdata($user_id);
+                $identity = method_exists($this, 'get_floscflow_identity')
+                    ? $this->get_floscflow_identity()
+                    : [];
+                $name = $user ? (string) ($user->display_name ?: $user->user_login) : '';
+                $flow_name = is_array($identity) ? (string) ($identity['name'] ?? 'FLOSC') : 'FLOSC';
+                $limit_msg = str_replace(
+                    ['{max}', '{count}', '{flow_name}', '{name}', '{NickName}'],
+                    [(string) $max_chats, (string) $count, $flow_name, $name, $name],
+                    (string) $limit_msg
+                );
+                return new WP_REST_Response([
+                    'success' => false,
+                    'error' => 'guest_chat_limit',
+                    'code' => 'guest_chat_limit',
+                    'message' => $limit_msg,
+                    'max' => $max_chats,
+                    'count' => $count,
+                ], 403);
+            }
+        }
+
+        // First-ever session title from flow param (not brand hardcode).
         $first_chat = $request->get_param('first_chat');
         if ($first_chat && $this->session_manager->get_flosc_session_count($user_id) === 0) {
-            $title = 'Our first chat :-)';
+            $title = sanitize_text_field((string) flosc_get_setting('first_chat_title', 'Our first chat :-)'));
+            if ($title === '') {
+                $title = 'Our first chat :-)';
+            }
         }
-        
+
         $session = $this->session_manager->flosc_create_session($user_id, $title);
         return new WP_REST_Response(['success' => true, 'session' => $session]);
+    }
+
+    /**
+     * Map current user to visitor|guest|member for chat-session limits.
+     *
+     * @param int $user_id User ID.
+     * @return string
+     */
+    private function get_user_state_for_session_limits($user_id) {
+        $user_id = (int) $user_id;
+        if ($user_id <= 0) {
+            return 'visitor';
+        }
+        if (user_can($user_id, 'manage_options')) {
+            return 'member';
+        }
+        if (isset($this->member_access) && is_object($this->member_access)
+            && method_exists($this->member_access, 'is_member')
+            && $this->member_access->is_member($user_id)) {
+            return 'member';
+        }
+        // Logged-in non-member = guest for chat-list purposes.
+        return 'guest';
+    }
+
+    /**
+     * Guest chat sidebar flags: default true if key never saved; ''/'0' = false.
+     *
+     * @param string $key Flow setting key (guest_can_delete_chats | guest_can_rename_chats).
+     * @return bool
+     */
+    private function flosc_guest_chat_flag_enabled($key) {
+        $key = sanitize_key((string) $key);
+        $val = flosc_get_setting($key, null);
+        // flosc_get_setting may not distinguish missing vs empty; probe flow option.
+        $flow = $this->get_current_flow();
+        $stem = '';
+        if (is_array($flow)) {
+            $ivr = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '');
+            $stem = sanitize_key(pathinfo(basename($ivr), PATHINFO_FILENAME));
+        }
+        if ($stem !== '') {
+            $fs = get_option('flosc_flow_' . $stem, []);
+            if (is_array($fs) && array_key_exists($key, $fs)) {
+                $v = $fs[$key];
+                return !($v === '' || $v === '0' || $v === 0 || $v === false || $v === null);
+            }
+        }
+        if ($val === null || $val === false) {
+            return true;
+        }
+        return !($val === '' || $val === '0' || $val === 0);
     }
 
     /**
@@ -8856,6 +8946,13 @@ Example good response:
     public function delete_session($request) {
         $session_id = (int) $request->get_param('id');
         $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_REST_Response(['success' => false, 'error' => 'not_logged_in'], 401);
+        }
+        $state = $this->get_user_state_for_session_limits($user_id);
+        if ($state === 'guest' && !$this->flosc_guest_chat_flag_enabled('guest_can_delete_chats')) {
+            return new WP_REST_Response(['success' => false, 'error' => 'forbidden', 'code' => 'guest_delete_disabled'], 403);
+        }
         $deleted = $this->session_manager->flosc_delete_session($session_id, $user_id);
         if (!$deleted) {
             return new WP_REST_Response(['success' => false, 'error' => 'Session not found'], 404);
@@ -8869,10 +8966,17 @@ Example good response:
     public function rename_session($request) {
         $session_id = (int) $request->get_param('id');
         $title = sanitize_text_field($request->get_param('title') ?? '');
+        $user_id = get_current_user_id();
+        if (!$user_id) {
+            return new WP_REST_Response(['success' => false, 'error' => 'not_logged_in'], 401);
+        }
+        $state = $this->get_user_state_for_session_limits($user_id);
+        if ($state === 'guest' && !$this->flosc_guest_chat_flag_enabled('guest_can_rename_chats')) {
+            return new WP_REST_Response(['success' => false, 'error' => 'forbidden', 'code' => 'guest_rename_disabled'], 403);
+        }
         if (empty($title)) {
             return new WP_REST_Response(['success' => false, 'error' => 'Title is required'], 400);
         }
-        $user_id = get_current_user_id();
         $sessions = get_user_meta($user_id, '_flosc_sessions', true);
         if (!is_array($sessions)) {
             return new WP_REST_Response(['success' => false, 'error' => 'No sessions'], 404);

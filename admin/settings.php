@@ -642,6 +642,10 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         'terms_of_service_content',
         'data_deletion_content',
         'platform_compliance_content',
+        // Guest / chat list copy
+        'guest_new_chat_limit_message',
+        'guest_new_chat_welcome_message',
+        'member_new_chat_welcome_message',
     ];
     $flosc_identity_html_keys = ['privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content'];
     
@@ -1267,6 +1271,22 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         }
         $flosc_new_settings['protected_content'] = $flosc_protected_content;
 
+        // Guest chat entitlements (checkboxes need explicit empty when unchecked).
+        $flosc_new_settings['guest_max_chats'] = max(0, min(9999, intval($flosc_new_settings['guest_max_chats'] ?? 0)));
+        $flosc_new_settings['guest_can_delete_chats'] = !empty($flosc_post['flow_guest_can_delete_chats']) ? '1' : '';
+        $flosc_new_settings['guest_can_rename_chats'] = !empty($flosc_post['flow_guest_can_rename_chats']) ? '1' : '';
+        if (isset($flosc_post['flow_guest_new_chat_limit_message'])) {
+            $flosc_new_settings['guest_new_chat_limit_message'] = sanitize_textarea_field(
+                wp_unslash((string) $flosc_post['flow_guest_new_chat_limit_message'])
+            );
+        }
+        if (isset($flosc_new_settings['guest_access_days'])) {
+            $flosc_new_settings['guest_access_days'] = max(0, min(365, intval($flosc_new_settings['guest_access_days'])));
+        }
+        if (isset($flosc_new_settings['free_lesson_count'])) {
+            $flosc_new_settings['free_lesson_count'] = max(1, min(50, intval($flosc_new_settings['free_lesson_count'])));
+        }
+
         // Sync to term_meta while class-content-protection.php still reads term_meta.
         // Follow-up: move class-content-protection.php to flow_settings['protected_content']
         // and then remove this compatibility sync.
@@ -1329,6 +1349,33 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
 
     // Chat navigation settings are managed from the Profile Bar tab.
     if ($flosc_active_tab === 'ui') {
+        // Chat list chrome (flow-scoped labels / new-chat welcome copy).
+        if (isset($flosc_post['flow_new_chat_button_label'])) {
+            $flosc_new_settings['new_chat_button_label'] = sanitize_text_field(
+                wp_unslash((string) $flosc_post['flow_new_chat_button_label'])
+            );
+        }
+        if (isset($flosc_post['flow_first_chat_title'])) {
+            $flosc_new_settings['first_chat_title'] = sanitize_text_field(
+                wp_unslash((string) $flosc_post['flow_first_chat_title'])
+            );
+        }
+        if (isset($flosc_post['flow_empty_chat_list_message'])) {
+            $flosc_new_settings['empty_chat_list_message'] = sanitize_text_field(
+                wp_unslash((string) $flosc_post['flow_empty_chat_list_message'])
+            );
+        }
+        if (isset($flosc_post['flow_guest_new_chat_welcome_message'])) {
+            $flosc_new_settings['guest_new_chat_welcome_message'] = sanitize_textarea_field(
+                wp_unslash((string) $flosc_post['flow_guest_new_chat_welcome_message'])
+            );
+        }
+        if (isset($flosc_post['flow_member_new_chat_welcome_message'])) {
+            $flosc_new_settings['member_new_chat_welcome_message'] = sanitize_textarea_field(
+                wp_unslash((string) $flosc_post['flow_member_new_chat_welcome_message'])
+            );
+        }
+
         // Visitor menu — dynamic items from repeater
         $flosc_menu_labels  = $flosc_post['visitor_menu_label']  ?? [];
         $flosc_menu_actions = $flosc_post['visitor_menu_action'] ?? [];

@@ -2279,6 +2279,24 @@ html, body {
     font-size: 32px;
 }
 
+.flosc-product-icon--image {
+    display: block;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    object-fit: contain !important;
+    flex-shrink: 0;
+}
+
+.flosc-payment-modal .flosc-payment-summary,
+.flosc-payment-modal .flosc-payment-product {
+    max-width: 100%;
+    overflow: hidden;
+}
+
 .flosc-product-name {
     font-weight: 600;
     color: var(--flosc-text, #111827);
