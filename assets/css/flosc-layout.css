@@ -3648,6 +3648,23 @@ body.flosc-companion-embed #flosc_app_sidebar_toggle {
     color: #10b981;
 }
 
+.flosc-access-code-back {
+    display: block;
+    margin: 0 auto 14px;
+    background: none;
+    border: none;
+    color: var(--flosc-text-muted, #71717a);
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: none;
+    padding: 0;
+}
+.flosc-access-code-back:hover {
+    color: var(--flosc-text, #18181b);
+    text-decoration: underline;
+}
+
+
 .flosc-auth-modal-overlay {
     position: fixed;
     top: 0;

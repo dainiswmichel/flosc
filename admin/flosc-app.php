@@ -669,58 +669,71 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
                 </button>
             </div>
             <div class="flosc-modal-body">
-                <div class="flosc-payment-summary">
-                    <div class="flosc-payment-product">
-                        <?php if (!empty($identity['chatlogo_url'])): ?>
-                            <img src="<?php echo esc_url($identity['chatlogo_url']); ?>" alt="" class="flosc-product-icon flosc-product-icon--image">
-                        <?php endif; ?>
-                        <div class="flosc-product-info">
-                            <div class="flosc-product-name">Full Access</div>
-                            <div class="flosc-product-desc">Lifetime access to all content</div>
+                <!-- Pay UI: never destroyed by Access Code (toggle with #flosc-access-code-panel) -->
+                <div id="flosc-payment-main">
+                    <div class="flosc-payment-summary">
+                        <div class="flosc-payment-product">
+                            <?php if (!empty($identity['chatlogo_url'])): ?>
+                                <img src="<?php echo esc_url($identity['chatlogo_url']); ?>" alt="" class="flosc-product-icon flosc-product-icon--image">
+                            <?php endif; ?>
+                            <div class="flosc-product-info">
+                                <div class="flosc-product-name">Full Access</div>
+                                <div class="flosc-product-desc">Unlimited access to all content</div>
+                            </div>
                         </div>
+                        <div class="flosc-payment-price" id="paymentPrice"></div>
                     </div>
-                    <div class="flosc-payment-price" id="paymentPrice"></div>
-                </div>
-                
-                <!-- v1.6.9: PayPal Button Container (rendered by PayPal JS SDK) -->
-                <div id="paypal-button-container" class="flosc-paypal-buttons flosc-paypal-buttons--spaced flosc-hidden"></div>
-                
-                <!-- Separator between PayPal and Card (shown when both are available) -->
-                <div id="payment-separator" class="flosc-payment-separator flosc-hidden">
-                    <span>or pay with card</span>
-                </div>
-                
-                <div class="flosc-payment-form" id="stripe-payment-form">
-                    <label for="card-element">Card details</label>
-                    <div id="card-element" class="flosc-stripe-card-element">
-                        <!-- Stripe Elements will mount here -->
+
+                    <!-- v1.6.9: PayPal Button Container (rendered by PayPal JS SDK) -->
+                    <div id="paypal-button-container" class="flosc-paypal-buttons flosc-paypal-buttons--spaced flosc-hidden"></div>
+
+                    <!-- Separator between PayPal and Card (shown when both are available) -->
+                    <div id="payment-separator" class="flosc-payment-separator flosc-hidden">
+                        <span>or pay with card</span>
                     </div>
-                    <div id="card-errors" class="flosc-stripe-errors" role="alert"></div>
-                </div>
-                
-                <button class="flosc-pay-btn" id="payBtn" disabled>
-                    <span class="flosc-pay-btn-text">Pay</span>
-                    <span class="flosc-pay-btn-spinner"></span>
-                </button>
-                
-                <div class="flosc-payment-footer">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                    </svg>
-                    <span>Secure payment</span>
-                </div>
-                <div id="flosc-coupon-row" class="flosc-coupon-row">
-                    <label class="flosc-coupon-label" for="flosc-coupon-input">Coupon code</label>
-                    <div class="flosc-coupon-fields">
-                        <input type="text" id="flosc-coupon-input" class="flosc-coupon-input" maxlength="40" autocomplete="off" spellcheck="false" placeholder="e.g. 75SEP">
-                        <button type="button" id="flosc-coupon-apply" class="flosc-coupon-apply">Apply</button>
+
+                    <div class="flosc-payment-form" id="stripe-payment-form">
+                        <label for="card-element">Card details</label>
+                        <div id="card-element" class="flosc-stripe-card-element">
+                            <!-- Stripe Elements will mount here -->
+                        </div>
+                        <div id="card-errors" class="flosc-stripe-errors" role="alert"></div>
                     </div>
-                    <div id="flosc-coupon-status" class="flosc-coupon-status" aria-live="polite"></div>
+
+                    <button class="flosc-pay-btn" id="payBtn" disabled>
+                        <span class="flosc-pay-btn-text">Pay</span>
+                        <span class="flosc-pay-btn-spinner"></span>
+                    </button>
+
+                    <div class="flosc-payment-footer">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        <span>Secure payment</span>
+                    </div>
+                    <div id="flosc-coupon-row" class="flosc-coupon-row">
+                        <label class="flosc-coupon-label" for="flosc-coupon-input">Coupon code</label>
+                        <div class="flosc-coupon-fields">
+                            <input type="text" id="flosc-coupon-input" class="flosc-coupon-input" maxlength="40" autocomplete="off" spellcheck="false" placeholder="e.g. 75SEP">
+                            <button type="button" id="flosc-coupon-apply" class="flosc-coupon-apply">Apply</button>
+                        </div>
+                        <div id="flosc-coupon-status" class="flosc-coupon-status" aria-live="polite"></div>
+                    </div>
+                    <div id="flosc-access-code-trigger" class="flosc-access-code-trigger">
+                        <a href="#" class="flosc-access-code-link" data-flosc-action="open-access-code-payment">Access Code</a>
+                    </div>
                 </div>
-                <div id="flosc-access-code-trigger" class="flosc-access-code-trigger">
-                    <a href="#" class="flosc-access-code-link" data-flosc-action="open-access-code-payment">Access Code</a>
-                    <span class="flosc-access-code-hint"> — full unlock (no charge)</span>
+                <!-- Access Code step: same modal, does not replace pay DOM -->
+                <div id="flosc-access-code-panel" class="flosc-access-code-panel flosc-hidden">
+                    <button type="button" id="flosc-access-code-back" class="flosc-access-code-back">&larr; Back to payment</button>
+                    <div class="flosc-access-code-title">Enter Access Code</div>
+                    <input type="text" id="flosc-access-code-input" maxlength="20" autocomplete="off" spellcheck="false"
+                           class="flosc-access-code-input" placeholder="">
+                    <div class="flosc-access-code-actions">
+                        <button type="button" id="flosc-access-code-submit" class="flosc-access-code-submit">Submit</button>
+                    </div>
+                    <div id="flosc-access-code-error" class="flosc-access-code-error"></div>
                 </div>
             </div>
         </div>
@@ -878,9 +891,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             if (!in_array($flosc_companion_routing_mode, ['hub', 'domain_persistence'], true)) {
                 $flosc_companion_routing_mode = 'hub';
             }
-            $flosc_hub_fullscreen_url = esc_url_raw((string) ($flow_settings['companion_hub_fullscreen_url'] ?? 'https://dainis.net/chat'));
+            // Default hub fullscreen = this site's FLOSC app URL (no third-party hardcode).
+            $flosc_hub_fullscreen_url = esc_url_raw((string) ($flow_settings['companion_hub_fullscreen_url'] ?? $flosc_app_url));
             if ($flosc_hub_fullscreen_url === '') {
-                $flosc_hub_fullscreen_url = 'https://dainis.net/chat';
+                $flosc_hub_fullscreen_url = esc_url_raw((string) $flosc_app_url);
             }
             $flosc_hub_companion_url = esc_url_raw((string) ($flow_settings['companion_hub_companion_url'] ?? home_url('/')));
             if ($flosc_hub_companion_url === '') {

@@ -983,7 +983,7 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
             <tr>
                 <th><label>Price coupons (native only)</label></th>
                 <td>
-                    <p class="description" style="margin-top:0;">
+                    <p class="description flosc-description-margin-top-0">
                         PayPal/Stripe only (one-time <strong>and</strong> subscription). Prefer <strong>fixed final price</strong>:
                         e.g. list <code>$25/mo</code> → coupon value <code>10</code> → charge <strong>$10/month</strong>
                         (yearly scales by the same ratio). Optional % off both intervals.
@@ -1006,7 +1006,7 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                         ];
                     }
                     ?>
-                    <table class="widefat striped" style="max-width:960px;">
+                    <table class="widefat striped flosc-table-max-960">
                         <thead>
                             <tr>
                                 <th>Code</th>
@@ -1035,7 +1035,7 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                                 <td><input type="number" step="0.01" min="0" name="offer_coupon_value[]" value="<?php echo esc_attr($fc['value'] ?? ''); ?>" class="small-text" placeholder="15"></td>
                                 <td><input type="text" name="offer_coupon_valid_from[]" value="<?php echo esc_attr($fc['valid_from_utc'] ?? ''); ?>" class="regular-text" placeholder="2026-07-27T00:00:00Z"></td>
                                 <td><input type="text" name="offer_coupon_valid_until[]" value="<?php echo esc_attr($fc['valid_until_utc'] ?? ''); ?>" class="regular-text" placeholder="2026-07-30T23:59:59Z"></td>
-                                <td style="text-align:center;"><input type="checkbox" name="offer_coupon_active[<?php echo (int) $ci; ?>]" value="1" <?php checked(!isset($fc['active']) || !empty($fc['active'])); ?>></td>
+                                <td class="flosc-text-center"><input type="checkbox" name="offer_coupon_active[<?php echo (int) $ci; ?>]" value="1" <?php checked(!isset($fc['active']) || !empty($fc['active'])); ?>></td>
                             </tr>
                         <?php endforeach; ?>
                         </tbody>

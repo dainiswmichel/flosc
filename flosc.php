@@ -6524,21 +6524,37 @@ HTML;
         }
 
         if ($this->flosc_is_bio_query($user_message)) {
-            $bio_summary = trim((string) flosc_get_setting('dainis_bio_summary', ''));
+            // Flow identity settings only — no hard-coded personal brand defaults (WP.org).
+            $bio_summary = trim((string) flosc_get_setting('identity_bio_summary', ''));
             if ($bio_summary === '') {
-                $bio_summary = 'Dainis W. Michel is a composer, inventor, and entrepreneur building projects across music, education, AI systems, and digital business tools.';
+                $bio_summary = trim((string) flosc_get_setting('dainis_bio_summary', '')); // legacy key
+            }
+            if ($bio_summary === '') {
+                $identity_name = trim((string) flosc_get_setting('name', ''));
+                if ($identity_name === '') {
+                    $identity_name = 'this host';
+                }
+                $bio_summary = sprintf(
+                    /* translators: %s: flow identity display name */
+                    __('%s — ask about background, work, or how to get started with this flow.', 'flosc'),
+                    $identity_name
+                );
             }
 
-            $bio_url = trim((string) flosc_get_setting('dainis_bio_url', ''));
-            if ($bio_url === '' || !filter_var($bio_url, FILTER_VALIDATE_URL)) {
-                $bio_url = 'https://dainis.net/business/resume';
+            $bio_url = trim((string) flosc_get_setting('identity_bio_url', ''));
+            if ($bio_url === '') {
+                $bio_url = trim((string) flosc_get_setting('dainis_bio_url', '')); // legacy key
+            }
+            $reply = $bio_summary;
+            if ($bio_url !== '' && filter_var($bio_url, FILTER_VALIDATE_URL)) {
+                $reply .= "\n" . sprintf(
+                    /* translators: %s: biography URL */
+                    __('More info: %s', 'flosc'),
+                    $bio_url
+                );
             }
 
-            return $this->flosc_limit_chat_response_length(
-                $bio_summary
-                . "\nFull biography and resume: {$bio_url}"
-                . "\nIf you want, I can also give you a concise profile by music, education, or business focus."
-            );
+            return $this->flosc_limit_chat_response_length($reply);
         }
 
         $default_response = $this->get_phase_default_response((string) $phase, is_array($eval_context) ? $eval_context : []);
@@ -6556,7 +6572,8 @@ HTML;
         $message = function_exists('mb_strtolower')
             ? mb_strtolower($message, 'UTF-8')
             : strtolower($message);
-        return (bool) preg_match('/\b(bio|biography|background|resume|who\s+is\s+dainis|about\s+dainis)\b/u', $message);
+        return (bool) preg_match('/\b(bio|biography|background|resume|who\s+are\s+you|about\s+you|about\s+the\s+(host|author|founder))\b/u', $message)
+            || (bool) preg_match('/\b(who\s+is\s+dainis|about\s+dainis)\b/u', $message); // legacy phrases still match
     }
 
     /**
@@ -9284,7 +9301,7 @@ Example good response:
         if ($applied['payable'] <= 0) {
             return new WP_Error(
                 'coupon_is_access',
-                __('This code unlocks access for free. Use Access Code instead of payment.', 'flosc'),
+                __('This code is an access code. Use Access Code instead of payment.', 'flosc'),
                 ['status' => 400]
             );
         }
@@ -9356,7 +9373,7 @@ Example good response:
         if ($applied['payable'] <= 0) {
             return new WP_Error(
                 'coupon_is_access',
-                __('This code unlocks access for free. Use Access Code instead of payment.', 'flosc'),
+                __('This code is an access code. Use Access Code instead of payment.', 'flosc'),
                 ['status' => 400]
             );
         }
@@ -9376,7 +9393,7 @@ Example good response:
             }
         }
         if ($monthly <= 0 && $yearly <= 0) {
-            return new WP_Error('no_price', __('Coupon reduced subscription to zero. Use Access Code for free unlock.', 'flosc'), ['status' => 400]);
+            return new WP_Error('no_price', __('Coupon reduced subscription to zero. Use Access Code to unlock.', 'flosc'), ['status' => 400]);
         }
         return [
             'monthly'      => $monthly,
@@ -9499,7 +9516,7 @@ Example good response:
                     return new WP_REST_Response([
                         'success' => true,
                         'kind'    => 'access_code',
-                        'message' => 'Access code — use Access Code to unlock (no charge).',
+                        'message' => 'Access code — use Access Code to unlock.',
                     ]);
                 }
             }

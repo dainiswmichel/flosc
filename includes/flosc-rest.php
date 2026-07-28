@@ -156,11 +156,27 @@ trait FLOSC_REST_Trait {
     }
 
     /**
-     * Intentionally public nonce endpoint permission callback.
+     * Public nonce endpoint permission callback.
      *
-     * This route only returns a WordPress REST nonce and performs no state mutation.
+     * Route only returns a WordPress REST nonce (no state mutation). Still
+     * rate-limited so directory review does not treat it as an unbounded open surface.
+     *
+     * @param WP_REST_Request $request Request.
+     * @return true|WP_Error
      */
     public function check_public_nonce_endpoint_permission($request) {
+        $endpoint = $request->get_route();
+        $bucket   = is_user_logged_in()
+            ? 'public_nonce_auth_' . $endpoint
+            : 'public_nonce_visitor_' . $endpoint;
+        // Align with public endpoint visitor/auth ceilings.
+        if (!$this->check_rate_limit($bucket, 60, 3600)) {
+            return new WP_Error(
+                'rate_limit',
+                __('Too many requests. Please slow down.', 'flosc'),
+                ['status' => 429]
+            );
+        }
         return true;
     }
 

@@ -10807,6 +10807,9 @@ Purchased: ${ctx.purchased}
         const modal = document.getElementById('flosc_modal_payment');
         if (!modal) return;
 
+        // Always show pay chrome; Access Code step must not leave a wiped body.
+        this._showPaymentMainView();
+
         this.setDisplayState(modal, true, 'flex');
         modal.dataset.offerId = offerId;
 
@@ -10878,16 +10881,11 @@ Purchased: ${ctx.purchased}
                 }
             };
         }
-        // Cap identity logo used as product icon (CSS + runtime attribute).
+        // Product icon size is CSS-only (.flosc-product-icon--image).
         const iconImg = modal.querySelector('.flosc-product-icon--image');
         if (iconImg) {
             iconImg.setAttribute('width', '40');
             iconImg.setAttribute('height', '40');
-            iconImg.style.maxWidth = '40px';
-            iconImg.style.maxHeight = '40px';
-            iconImg.style.width = '40px';
-            iconImg.style.height = '40px';
-            iconImg.style.objectFit = 'contain';
         }
         
         const paypalContainer = document.getElementById('paypal-button-container');
@@ -10971,7 +10969,10 @@ Purchased: ${ctx.purchased}
     _bindPaymentModalChrome(modal) {
         const closeBtn = document.getElementById('paymentModalClose');
         if (closeBtn) {
-            closeBtn.onclick = () => { this.setDisplayState(modal, false, 'flex'); };
+            closeBtn.onclick = () => {
+                this._showPaymentMainView();
+                this.setDisplayState(modal, false, 'flex');
+            };
         }
         const acLink = modal?.querySelector?.('[data-flosc-action="open-access-code-payment"]')
             || document.querySelector('#flosc-access-code-trigger .flosc-access-code-link');
@@ -10982,38 +10983,87 @@ Purchased: ${ctx.purchased}
                 this._showAccessCodeInput('payment');
             });
         }
+        const backBtn = document.getElementById('flosc-access-code-back');
+        if (backBtn && !backBtn.dataset.floscBound) {
+            backBtn.dataset.floscBound = '1';
+            backBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                this._showPaymentMainView();
+            });
+        }
+        const acSubmit = document.getElementById('flosc-access-code-submit');
+        if (acSubmit && !acSubmit.dataset.floscBound) {
+            acSubmit.dataset.floscBound = '1';
+            acSubmit.addEventListener('click', () => {
+                const code = (document.getElementById('flosc-access-code-input')?.value || '').trim();
+                if (code) this._redeemAccessCode(code, 'payment');
+            });
+        }
+        const acInput = document.getElementById('flosc-access-code-input');
+        if (acInput && !acInput.dataset.floscBound) {
+            acInput.dataset.floscBound = '1';
+            acInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    const code = (e.target.value || '').trim();
+                    if (code) this._redeemAccessCode(code, 'payment');
+                }
+            });
+        }
     }
 
-    // v8.0.0: Show access code input — replaces modal content with a code entry field
+    /** Payment modal: show pay UI (PayPal/Stripe/coupon). Does not rebuild DOM. */
+    _showPaymentMainView() {
+        const main = document.getElementById('flosc-payment-main');
+        const panel = document.getElementById('flosc-access-code-panel');
+        if (main) this.setDisplayState(main, true, 'block');
+        if (panel) this.setDisplayState(panel, false, 'block');
+        const errEl = document.getElementById('flosc-access-code-error');
+        if (errEl) {
+            errEl.textContent = '';
+            errEl.classList.remove('is-success');
+        }
+        const input = document.getElementById('flosc-access-code-input');
+        if (input) input.value = '';
+        const btn = document.getElementById('flosc-access-code-submit');
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Submit';
+        }
+    }
+
+    /** Payment modal: Access Code step only — never replaces pay DOM with innerHTML. */
+    _showPaymentAccessCodeView() {
+        const main = document.getElementById('flosc-payment-main');
+        const panel = document.getElementById('flosc-access-code-panel');
+        if (main) this.setDisplayState(main, false, 'block');
+        if (panel) this.setDisplayState(panel, true, 'block');
+        const errEl = document.getElementById('flosc-access-code-error');
+        if (errEl) {
+            errEl.textContent = '';
+            errEl.classList.remove('is-success');
+        }
+        const input = document.getElementById('flosc-access-code-input');
+        if (input) {
+            input.value = '';
+            input.focus();
+        }
+        const btn = document.getElementById('flosc-access-code-submit');
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Submit';
+        }
+    }
+
+    // Access Code UI: payment = toggle panels; auth = separate modal fill (not checkout).
     _showAccessCodeInput(context) {
         if (context === 'payment') {
             const modal = document.getElementById('flosc_modal_payment');
             if (!modal) return;
-            const body = modal.querySelector('.flosc-modal-body');
-            if (!body) return;
-            body.innerHTML = `
-                <div class="flosc-access-code-panel">
-                    <div class="flosc-access-code-title">Enter Access Code</div>
-                    <input type="text" id="flosc-access-code-input" maxlength="20" autocomplete="off" spellcheck="false"
-                           class="flosc-access-code-input"
-                           placeholder="CODE">
-                    <div class="flosc-access-code-actions">
-                        <button id="flosc-access-code-submit" class="flosc-access-code-submit">Submit</button>
-                    </div>
-                    <div id="flosc-access-code-error" class="flosc-access-code-error"></div>
-                </div>
-            `;
-            document.getElementById('flosc-access-code-input').focus();
-            document.getElementById('flosc-access-code-submit').addEventListener('click', () => {
-                const code = document.getElementById('flosc-access-code-input').value.trim();
-                if (code) this._redeemAccessCode(code, 'payment');
-            });
-            document.getElementById('flosc-access-code-input').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    const code = e.target.value.trim();
-                    if (code) this._redeemAccessCode(code, 'payment');
-                }
-            });
+            // Ensure modal is open and pay DOM still exists under #flosc-payment-main.
+            this.setDisplayState(modal, true, 'flex');
+            this._bindPaymentModalChrome(modal);
+            this._showPaymentAccessCodeView();
+            return;
         } else if (context === 'auth') {
             const modal = document.getElementById('flosc-auth-modal');
             if (!modal) return;
@@ -11115,7 +11165,7 @@ Purchased: ${ctx.purchased}
             if (data.kind === 'access_code') {
                 this._checkoutCouponCode = '';
                 if (status) {
-                    status.textContent = 'That is an access code — use Access Code (full unlock, no charge).';
+                    status.textContent = 'That is an access code — use Access Code.';
                     status.classList.add('is-error');
                     status.classList.remove('is-success');
                 }

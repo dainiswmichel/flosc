@@ -6523,3 +6523,11 @@
 .flosc-ap-legend__intro {
     margin-bottom: 12px;
 }
+
+/* WP.org: no inline style attributes in admin markup */
+.flosc-description-margin-top-0 {
+    margin-top: 0;
+}
+.flosc-table-max-960 {
+    max-width: 960px;
+}

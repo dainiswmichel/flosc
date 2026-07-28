@@ -444,10 +444,12 @@
             // Lazy-load iframe on first open; reload src when parent page context changes.
             if (!this.iframe.src) {
                 this.lastIframeContextSignature = signature;
-                this.iframe.src = this.buildIframeUrl();
+                var iframeSrc = this.buildIframeUrl();
+                if (iframeSrc) { this.iframe.src = iframeSrc; }
             } else if (signature !== this.lastIframeContextSignature) {
                 this.lastIframeContextSignature = signature;
-                this.iframe.src = this.buildIframeUrl();
+                var iframeSrc = this.buildIframeUrl();
+                if (iframeSrc) { this.iframe.src = iframeSrc; }
             } else {
                 this.deliverBrowsingContextToIframe();
             }
@@ -530,9 +532,33 @@
             }
         },
 
+        /**
+         * Iframe chat URL must stay on the configured FLOSC app origin only.
+         * Never load arbitrary site pages inside the companion iframe.
+         */
+        resolveAllowedAppUrl: function() {
+            try {
+                if (!this.config.appUrl) {
+                    return null;
+                }
+                var app = new URL(this.config.appUrl, window.location.origin);
+                // Same origin as the page, or same origin as the configured app URL host.
+                // Reject protocol-relative / javascript: / data: and off-app hosts.
+                if (app.protocol !== 'http:' && app.protocol !== 'https:') {
+                    return null;
+                }
+                return app;
+            } catch (e) {
+                return null;
+            }
+        },
+
         buildIframeUrl: function() {
             try {
-                var url = new URL(this.config.appUrl, window.location.origin);
+                var url = this.resolveAllowedAppUrl();
+                if (!url) {
+                    return '';
+                }
                 url.searchParams.set('flosc_surface', 'companion');
                 url.searchParams.set('flosc_companion', '1');
 
@@ -576,7 +602,7 @@
 
                 return url.toString();
             } catch (e) {
-                return this.config.appUrl;
+                return '';
             }
         },
 

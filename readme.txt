@@ -59,7 +59,7 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 
 = Technical Details =
 
-* Requires WordPress 6.4+
+* Requires WordPress 7.0+ (see header Requires at least)
 * No external services required for core functionality (flows run locally)
 * BYOK AI integration (bring your own provider key, including OpenAI, Anthropic, and xAI)
 * Payment integration
@@ -277,7 +277,7 @@ Production-ready 8.x release with guided IVR flows, offer gating, BYOK AI suppor
 == Changelog ==
 
 = 8.0.0 =
-* Initial stable 8.0.0 release for WordPress 6.4+ and PHP 7.4+
+* Initial stable 8.0.0 release for WordPress 7.0+ and PHP 7.4+
 * Guided flow architecture with IVR routes, quiz branching, and offer/content gating
 * Optional integrations for AI providers (BYOK), payment providers (including Stripe, PayPal, and ClickBank), and social sign-in providers
 * Included admin documentation updates for WordPress.org submission

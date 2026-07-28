@@ -403,7 +403,7 @@ $flosc_free_lesson_never_free = (string) ($flosc_flow_settings['free_lesson_neve
     <tr>
         <th scope="row">Complimentary content (guests)</th>
         <td>
-            <p class="description" style="margin-top:0;">
+            <p class="description flosc-description-margin-top-0">
                 Per <strong>floscFlow</strong>: pick up to <em>N</em> complimentary items from a <strong>pool</strong>
                 (category of posts / lessons / recipes / topics). Exclude numbers that must <strong>never</strong> be free.
                 Video is <strong>not</strong> required — put only guest-ready posts in the pool if you want a shortlist.

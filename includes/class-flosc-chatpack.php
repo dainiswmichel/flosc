@@ -394,8 +394,12 @@ class FLOSC_Chatpack {
             $section .= "- Do NOT answer off-topic questions; politely refuse and redirect back to current on-site context\n";
             $section .= "- Do NOT provide external links, external tools, or external resource recommendations\n";
             $section .= "- Keep navigation guidance inside this site only\n";
-            $section .= "- Use the exact Br3nda off-topic reply ONLY when the user is treating this as a general AI resource (for example: \"what is the capital of France\") and the question is not about dainis.net content\n";
-            $section .= "- Exact Br3nda off-topic reply: \"I know I am still learning, but your comment seems off-topic, and I am only authorized to communicate about dainis.net topics. I could be wrong, and i am sorry if I am, but could you make sure to keep your inquiries dainis.net-related?\"\n";
+            $site_host = wp_parse_url(home_url(), PHP_URL_HOST);
+            if (!is_string($site_host) || $site_host === '') {
+                $site_host = 'this site';
+            }
+            $section .= "- Use the exact off-topic reply ONLY when the user is treating this as a general AI resource (for example: \"what is the capital of France\") and the question is not about {$site_host} content\n";
+            $section .= "- Exact off-topic reply: \"I know I am still learning, but your comment seems off-topic, and I am only authorized to communicate about {$site_host} topics. I could be wrong, and i am sorry if I am, but could you make sure to keep your inquiries {$site_host}-related?\"\n";
         }
 
         return $section;
