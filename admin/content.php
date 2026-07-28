@@ -5,7 +5,7 @@
  * Merges former Member Levels + Lessons admin into one Content tab (C of FLOSC).
  *
  * Sections:
- * 1. Content labels (optional singular/plural: Lesson, Recipe, …)
+ * 1. Content types (repeater: singular / plural — Lesson/Lessons, Recipe/Recipes, …)
  * 2. Member levels (registry)
  * 3. Content groups (quiz → WP category)
  * 4. Content protection
@@ -38,10 +38,39 @@ $flosc_content_docs_url = add_query_arg(
 	admin_url( 'admin.php' )
 ) . '#tab-content';
 
-$flosc_item_singular = (string) ( $flosc_flow_settings['content_item_label_singular'] ?? '' );
-$flosc_item_plural   = (string) ( $flosc_flow_settings['content_item_label_plural'] ?? '' );
-$flosc_item_s_disp   = $flosc_item_singular !== '' ? $flosc_item_singular : __( 'content item', 'flosc' );
-$flosc_item_p_disp   = $flosc_item_plural !== '' ? $flosc_item_plural : __( 'content items', 'flosc' );
+// Content types: list of { singular, plural }. Migrate legacy single-label fields.
+$flosc_content_types = $flosc_flow_settings['content_types'] ?? [];
+if ( ! is_array( $flosc_content_types ) ) {
+	$flosc_content_types = [];
+}
+if ( empty( $flosc_content_types ) ) {
+	$flosc_legacy_s = trim( (string) ( $flosc_flow_settings['content_item_label_singular'] ?? '' ) );
+	$flosc_legacy_p = trim( (string) ( $flosc_flow_settings['content_item_label_plural'] ?? '' ) );
+	if ( $flosc_legacy_s !== '' || $flosc_legacy_p !== '' ) {
+		$flosc_content_types[] = [
+			'singular' => $flosc_legacy_s,
+			'plural'   => $flosc_legacy_p !== '' ? $flosc_legacy_p : $flosc_legacy_s,
+		];
+	}
+}
+if ( empty( $flosc_content_types ) ) {
+	$flosc_content_types[] = [ 'singular' => '', 'plural' => '' ];
+}
+$flosc_item_s_disp = '';
+$flosc_item_p_disp = '';
+foreach ( $flosc_content_types as $flosc_ct ) {
+	$flosc_s = trim( (string) ( $flosc_ct['singular'] ?? '' ) );
+	$flosc_p = trim( (string) ( $flosc_ct['plural'] ?? '' ) );
+	if ( $flosc_s !== '' ) {
+		$flosc_item_s_disp = $flosc_s;
+		$flosc_item_p_disp = $flosc_p !== '' ? $flosc_p : $flosc_s;
+		break;
+	}
+}
+if ( $flosc_item_s_disp === '' ) {
+	$flosc_item_s_disp = __( 'content item', 'flosc' );
+	$flosc_item_p_disp = __( 'content items', 'flosc' );
+}
 
 $flosc_member_levels = $flosc_flow_settings['member_levels'] ?? [];
 if ( empty( $flosc_member_levels ) ) {
@@ -115,27 +144,40 @@ $flosc_chat_list_settings_url = add_query_arg(
 	<?php echo esc_html__( 'Content is the C of FLOSC for this flow: items in WordPress, which member levels unlock them, and the guest complimentary pool/selection. Offers grant levels (Offers tab). Sale checkout is separate. DA1 catalogs are separate (DA1 tab).', 'flosc' ); ?>
 </p>
 
-<!-- 1. Labels -->
-<h2><?php echo esc_html__( 'What you call content', 'flosc' ); ?></h2>
-<p><?php echo esc_html__( 'Optional display labels for this flow (Lesson, Recipe, Module, …). Empty = “content item(s)” in FLOSC chrome.', 'flosc' ); ?></p>
-<table class="form-table">
-	<tr>
-		<th scope="row"><label for="flow_content_item_label_singular"><?php echo esc_html__( 'Singular label', 'flosc' ); ?></label></th>
-		<td>
-			<input type="text" class="regular-text" id="flow_content_item_label_singular" name="flow_content_item_label_singular"
-				value="<?php echo esc_attr( $flosc_item_singular ); ?>"
-				placeholder="<?php echo esc_attr__( 'e.g. Lesson or Recipe', 'flosc' ); ?>">
-		</td>
-	</tr>
-	<tr>
-		<th scope="row"><label for="flow_content_item_label_plural"><?php echo esc_html__( 'Plural label', 'flosc' ); ?></label></th>
-		<td>
-			<input type="text" class="regular-text" id="flow_content_item_label_plural" name="flow_content_item_label_plural"
-				value="<?php echo esc_attr( $flosc_item_plural ); ?>"
-				placeholder="<?php echo esc_attr__( 'e.g. Lessons or Recipes', 'flosc' ); ?>">
-		</td>
-	</tr>
+<!-- 1. Content types -->
+<h2><?php echo esc_html__( 'Content Types', 'flosc' ); ?></h2>
+<p><?php echo esc_html__( 'Add any number of content type names for this flow. Examples: Lesson / Lessons, Recipe / Recipes. Empty rows are ignored. Default chrome uses “content item(s)” when none are set.', 'flosc' ); ?></p>
+<table class="widefat flosc-content-types-table flosc-table-max-860">
+	<thead>
+		<tr>
+			<th><?php echo esc_html__( 'Singular', 'flosc' ); ?></th>
+			<th><?php echo esc_html__( 'Plural', 'flosc' ); ?></th>
+			<th class="flosc-col-actions"><?php echo esc_html__( 'Actions', 'flosc' ); ?></th>
+		</tr>
+	</thead>
+	<tbody id="flosc-content-types-body">
+		<?php foreach ( $flosc_content_types as $flosc_ct ) : ?>
+		<tr class="flosc-content-type-row">
+			<td>
+				<input type="text" name="content_type_singular[]" class="regular-text"
+					value="<?php echo esc_attr( (string) ( $flosc_ct['singular'] ?? '' ) ); ?>"
+					placeholder="<?php echo esc_attr__( 'Lesson', 'flosc' ); ?>">
+			</td>
+			<td>
+				<input type="text" name="content_type_plural[]" class="regular-text"
+					value="<?php echo esc_attr( (string) ( $flosc_ct['plural'] ?? '' ) ); ?>"
+					placeholder="<?php echo esc_attr__( 'Lessons', 'flosc' ); ?>">
+			</td>
+			<td class="flosc-text-center">
+				<button type="button" class="button flosc-remove-content-type" title="<?php echo esc_attr__( 'Remove', 'flosc' ); ?>">&times;</button>
+			</td>
+		</tr>
+		<?php endforeach; ?>
+	</tbody>
 </table>
+<p class="flosc-margin-top-10">
+	<button type="button" class="button" id="flosc-add-content-type"><?php echo esc_html__( '+ Add Content Type', 'flosc' ); ?></button>
+</p>
 
 <!-- 2. Levels -->
 <hr class="flosc-member-levels-divider">
@@ -482,6 +524,22 @@ $flosc_chat_list_settings_url = add_query_arg(
 ob_start();
 ?>
 jQuery(document).ready(function($) {
+	$('#flosc-add-content-type').on('click', function() {
+		var row = '<tr class="flosc-content-type-row">'
+			+ '<td><input type="text" name="content_type_singular[]" class="regular-text" placeholder="Lesson"></td>'
+			+ '<td><input type="text" name="content_type_plural[]" class="regular-text" placeholder="Lessons"></td>'
+			+ '<td class="flosc-text-center"><button type="button" class="button flosc-remove-content-type" title="Remove">&times;</button></td>'
+			+ '</tr>';
+		$('#flosc-content-types-body').append(row);
+	});
+	$(document).on('click', '.flosc-remove-content-type', function() {
+		if ($('.flosc-content-type-row').length > 1) {
+			$(this).closest('tr').remove();
+		} else {
+			$(this).closest('tr').find('input').val('');
+		}
+	});
+
 	$('#flosc-add-level').on('click', function() {
 		var row = '<tr class="flosc-level-row">'
 			+ '<td><input type="text" name="level_slug[]" class="regular-text flosc-level-slug" placeholder="full_access" pattern="[a-z0-9_]+"></td>'

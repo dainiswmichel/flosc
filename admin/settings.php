@@ -1357,15 +1357,37 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         if (isset($flosc_new_settings['guest_access_days'])) {
             $flosc_new_settings['guest_access_days'] = max(0, min(365, intval($flosc_new_settings['guest_access_days'])));
         }
-        if (isset($flosc_post['flow_content_item_label_singular'])) {
-            $flosc_new_settings['content_item_label_singular'] = sanitize_text_field(
-                wp_unslash((string) $flosc_post['flow_content_item_label_singular'])
-            );
-        }
-        if (isset($flosc_post['flow_content_item_label_plural'])) {
-            $flosc_new_settings['content_item_label_plural'] = sanitize_text_field(
-                wp_unslash((string) $flosc_post['flow_content_item_label_plural'])
-            );
+        // Content Types repeater (singular / plural columns).
+        $flosc_ct_singular = $flosc_post['content_type_singular'] ?? [];
+        $flosc_ct_plural   = $flosc_post['content_type_plural'] ?? [];
+        if (is_array($flosc_ct_singular)) {
+            $flosc_content_types = [];
+            foreach ($flosc_ct_singular as $flosc_i => $flosc_s) {
+                $flosc_s = sanitize_text_field(wp_unslash((string) $flosc_s));
+                $flosc_p = sanitize_text_field(wp_unslash((string) ($flosc_ct_plural[$flosc_i] ?? '')));
+                if ($flosc_s === '' && $flosc_p === '') {
+                    continue;
+                }
+                if ($flosc_s === '' && $flosc_p !== '') {
+                    $flosc_s = $flosc_p;
+                }
+                if ($flosc_p === '') {
+                    $flosc_p = $flosc_s;
+                }
+                $flosc_content_types[] = [
+                    'singular' => $flosc_s,
+                    'plural'   => $flosc_p,
+                ];
+            }
+            $flosc_new_settings['content_types'] = $flosc_content_types;
+            // Keep first row as legacy single-label keys for older readers.
+            if (!empty($flosc_content_types[0])) {
+                $flosc_new_settings['content_item_label_singular'] = $flosc_content_types[0]['singular'];
+                $flosc_new_settings['content_item_label_plural']   = $flosc_content_types[0]['plural'];
+            } else {
+                $flosc_new_settings['content_item_label_singular'] = '';
+                $flosc_new_settings['content_item_label_plural']   = '';
+            }
         }
     }
 
