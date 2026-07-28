@@ -73,14 +73,23 @@ trait FLOSC_Admin_Trait {
             [$this, 'redirect_to_autoprompts_tab']
         );
 
-        // Member Levels
+        // Content (levels + groups + pool; replaces Member Levels + Lessons)
         add_submenu_page(
             'flosc-settings',
+            'Content',
+            'Content',
+            'manage_options',
+            'flosc-content',
+            [$this, 'redirect_to_content_tab']
+        );
+        // Legacy submenu slugs → Content
+        add_submenu_page(
+            null,
             'Member Levels',
             'Member Levels',
             'manage_options',
             'flosc-member-levels',
-            [$this, 'redirect_to_member_levels_tab']
+            [$this, 'redirect_to_content_tab']
         );
 
         // Trajectories
@@ -203,14 +212,14 @@ trait FLOSC_Admin_Trait {
             [$this, 'redirect_to_payments_tab']
         );
 
-        // Lessons
+        // Legacy Lessons slug → Content (hidden from menu)
         add_submenu_page(
-            'flosc-settings',
+            null,
             'Lessons',
             'Lessons',
             'manage_options',
             'flosc-lessons',
-            [$this, 'redirect_to_lessons_tab']
+            [$this, 'redirect_to_content_tab']
         );
 
         // SSO / Social Login (v1.4.0)
@@ -880,9 +889,13 @@ trait FLOSC_Admin_Trait {
         exit;
     }
 
-    public function redirect_to_member_levels_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=member-levels'));
+    public function redirect_to_content_tab() {
+        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=content'));
         exit;
+    }
+
+    public function redirect_to_member_levels_tab() {
+        $this->redirect_to_content_tab();
     }
 
     public function redirect_to_trajectories_tab() {
@@ -946,8 +959,7 @@ trait FLOSC_Admin_Trait {
     }
 
     public function redirect_to_lessons_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=lessons'));
-        exit;
+        $this->redirect_to_content_tab();
     }
 
     public function redirect_to_sso_tab() {
