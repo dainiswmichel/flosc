@@ -8938,10 +8938,13 @@ Purchased: ${ctx.purchased}
         // Free-lesson request: route to loader before IVR/AI (guest/member only).
         if (this.isFreeLessonRequest(message)) {
             if (this.state === 'visitor') {
-                this.addMessage('assistant', 'To access your free lessons, please log in or create a free account first.', false);
+                const deny = 'To access your free lessons, please log in or create a free account first.';
+                this.addMessage('assistant', deny, false);
+                this.logClientChatTurn(message, deny, { source: 'free_lesson_guest_gate' });
                 return;
             }
             await this.syncSessionTitleFromFirstUserMessage(message);
+            this._pendingFreeLessonUserMessage = message;
             this.requestFreeLesson();
             return;
         }
@@ -8949,6 +8952,11 @@ Purchased: ${ctx.purchased}
         // User is asking for offers / all offers: real flow offers only (no AI catalog).
         if (this.handleUserOfferAsk(message)) {
             await this.syncSessionTitleFromFirstUserMessage(message);
+            // Offer UI is rendered by handleUserOfferAsk; log the user ask + short summary.
+            this.logClientChatTurn(message, '(Offer presentation — see chat UI)', {
+                source: 'offer_ask',
+                provider: 'client',
+            });
             return;
         }
         
@@ -10677,7 +10685,10 @@ Purchased: ${ctx.purchased}
 
             if (response.status === 403 || data.code === 'rest_forbidden') {
                 this.log('FLOSC: Free lesson 403 — permission denied');
-                this.addMessage('assistant', 'It looks like your account doesn\'t have access to free lessons yet. If you just completed the quiz, please try refreshing the page and asking again.', false);
+                const msg403 = 'It looks like your account doesn\'t have access to free lessons yet. If you just completed the quiz, please try refreshing the page and asking again.';
+                this.addMessage('assistant', msg403, false);
+                this.logClientChatTurn(this._pendingFreeLessonUserMessage || '', msg403, { source: 'free_lesson_error' });
+                this._pendingFreeLessonUserMessage = '';
                 return;
             }
 
@@ -10693,18 +10704,52 @@ Purchased: ${ctx.purchased}
                 setTimeout(() => this.checkAutoMessages(), 2000);
             } else {
                 this.log('FLOSC: Free lesson request unsuccessful — no lessons returned');
-                this.addMessage(
-                    'assistant',
-                    'No free lessons are assigned to your account yet. Complete the quiz if you have not, then refresh and try again. If you already completed the quiz, ask your host to check free-lesson pool settings.',
-                    false
-                );
+                const noneMsg = 'No free lessons are assigned to your account yet. Complete the quiz if you have not, then refresh and try again. If you already completed the quiz, ask your host to check free-lesson pool settings.';
+                this.addMessage('assistant', noneMsg, false);
+                this.logClientChatTurn(this._pendingFreeLessonUserMessage || '', noneMsg, { source: 'free_lesson_empty' });
+                this._pendingFreeLessonUserMessage = '';
             }
         } catch (e) {
             this.hideTyping();
             this.logError('FLOSC: Free lesson request failed', e);
-            this.addMessage('assistant', 'Could not load free lessons (network or server error). Please try again.', false);
+            const errMsg = 'Could not load free lessons (network or server error). Please try again.';
+            this.addMessage('assistant', errMsg, false);
+            this.logClientChatTurn(this._pendingFreeLessonUserMessage || '', errMsg, { source: 'free_lesson_error' });
+            this._pendingFreeLessonUserMessage = '';
         } finally {
             this._freeLessonInFlight = false;
+        }
+    }
+
+    /**
+     * Write client-only turns into Chat Logs (and session history when possible).
+     * Used when free-lesson / offer UI skips /chat.
+     */
+    async logClientChatTurn(userMessage, aiResponse, meta = {}) {
+        try {
+            await this.refreshNonce?.();
+            const res = await this.authFetch(this.config.apiUrl + '/chat-log', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': this.config.nonce,
+                },
+                body: JSON.stringify({
+                    user_message: userMessage || '',
+                    ai_response: aiResponse || '',
+                    session_id: this.currentSession?.id || 0,
+                    flow_id: this.config.flowId || '',
+                    phase: this.ivr?.phase || meta.phase || 'content',
+                    provider: meta.provider || 'client',
+                    response_source: meta.source || 'client_ui',
+                }),
+            });
+            if (!res.ok) {
+                this.logWarn('[FLOSC] chat-log HTTP', res.status);
+            }
+        } catch (e) {
+            this.logWarn('[FLOSC] chat-log failed', e);
         }
     }
 
@@ -10712,7 +10757,9 @@ Purchased: ${ctx.purchased}
     _renderFreeLessonCards(lessons) {
         let cardHtml = `<div class="flosc-free-lesson-list">`;
         cardHtml += `<p class="flosc-free-lesson-intro">Here are your free lessons. Click on them to view.</p>`;
+        const titles = [];
         lessons.forEach((lesson, i) => {
+            titles.push(lesson.title || ('Lesson ' + (i + 1)));
             cardHtml += `<button class="flosc-free-lesson-card" onclick="window.floscAppInstance.showFreeLessonContent(${i})">`
                 + `<span class="flosc-free-lesson-card-icon">\ud83c\udf93</span>`
                 + `<span class="flosc-free-lesson-card-title">${this.escapeHtml(lesson.title)}</span>`
@@ -10720,6 +10767,11 @@ Purchased: ${ctx.purchased}
         });
         cardHtml += `</div>`;
         this.addMessage('assistant', cardHtml, true);
+        const userMsg = this._pendingFreeLessonUserMessage || 'I\'d like to see my free lessons';
+        this._pendingFreeLessonUserMessage = '';
+        const logText = 'Here are your free lessons. Click on them to view.\n'
+            + titles.map((t, i) => (i + 1) + '. ' + t).join('\n');
+        this.logClientChatTurn(userMsg, logText, { source: 'free_lesson_list', provider: 'client' });
     }
 
     // v8.0.0: Render full lesson content when user clicks a title card
@@ -10727,6 +10779,9 @@ Purchased: ${ctx.purchased}
         const lessons = this._cachedFreeLessons;
         if (!lessons || !lessons[index]) {
             this.addMessage('assistant', 'Sorry, that lesson isn\'t available right now.', false);
+            this.logClientChatTurn('(open free lesson)', 'Sorry, that lesson isn\'t available right now.', {
+                source: 'free_lesson_open',
+            });
             return;
         }
         const lesson = lessons[index];
@@ -10735,6 +10790,11 @@ Purchased: ${ctx.purchased}
             + `<div class="flosc-free-lesson-content">${lesson.content}</div>`
             + `</div>`;
         this.addMessage('assistant', lessonHtml, true);
+        this.logClientChatTurn(
+            'Open free lesson: ' + (lesson.title || index),
+            lessonHtml,
+            { source: 'free_lesson_open', provider: 'client' }
+        );
     }
     
     initStripe() {

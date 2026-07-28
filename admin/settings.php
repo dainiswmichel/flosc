@@ -1336,6 +1336,18 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
                 (string) $flosc_new_settings['free_lesson_pool_category']
             );
         }
+        if (isset($flosc_new_settings['free_lesson_never_free'])) {
+            $raw_nf = (string) $flosc_new_settings['free_lesson_never_free'];
+            $parts = preg_split('/[\s,;]+/', $raw_nf) ?: [];
+            $nums = [];
+            foreach ($parts as $p) {
+                $n = intval($p);
+                if ($n > 0) {
+                    $nums[] = $n;
+                }
+            }
+            $flosc_new_settings['free_lesson_never_free'] = implode(', ', array_values(array_unique($nums)));
+        }
         if (isset($flosc_new_settings['free_lesson_guaranteed'])) {
             $flosc_new_settings['free_lesson_guaranteed'] = max(0, intval($flosc_new_settings['free_lesson_guaranteed']));
         }

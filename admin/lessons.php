@@ -394,25 +394,25 @@ $flosc_guest_access_days       = $flosc_flow_settings['guest_access_days']      
 $flosc_free_lesson_guaranteed  = $flosc_flow_settings['free_lesson_guaranteed']  ?? 35;
 // Pool of free-sample posts = a WP category (often a child of the main lessons category).
 $flosc_free_lesson_pool_category = sanitize_title((string) ($flosc_flow_settings['free_lesson_pool_category'] ?? ''));
+// Lesson numbers that must never be complimentary (upsell-only).
+$flosc_free_lesson_never_free = (string) ($flosc_flow_settings['free_lesson_never_free'] ?? '');
 // Categories for the pool dropdown (reuse $flosc_categories loaded above)
 ?>
 
 <table class="form-table">
     <tr>
-        <th scope="row">Free Lesson Selection</th>
+        <th scope="row">Complimentary content (guests)</th>
         <td>
-            <p class="flosc-lessons-tierwalk-title"><strong>Tier-walk</strong> — IPA audio quiz</p>
-            <p class="description flosc-lessons-tierwalk-description">
-                Walk worst-to-best phoneme tiers. Skip a tier if only one phoneme sits there (protect it as upsell hook).<br>
-                Give a random lesson from the first tier that has multiple phonemes.<br>
-                If no such tier exists in the first two, give a random from Tier 3 regardless.<br>
-                Non-IPA quizzes fall back to Fixed Number mode below.<br>
-                Candidates are limited to the <strong>Free lesson pool category</strong> below.
+            <p class="description" style="margin-top:0;">
+                Per <strong>floscFlow</strong>: pick up to <em>N</em> complimentary items from a <strong>pool</strong>
+                (category of posts / lessons / recipes / topics). Exclude numbers that must <strong>never</strong> be free.
+                Video is <strong>not</strong> required — put only guest-ready posts in the pool if you want a shortlist.
+                IPA quizzes still prefer multi-phoneme tiers when choosing which pool lessons to grant.
             </p>
         </td>
     </tr>
     <tr>
-        <th scope="row"><label for="flow_free_lesson_pool_category">Free lesson pool category</label></th>
+        <th scope="row"><label for="flow_free_lesson_pool_category">Complimentary pool category</label></th>
         <td>
             <select name="flow_free_lesson_pool_category" id="flow_free_lesson_pool_category" class="regular-text">
                 <option value="">— Same as lesson group category (all mapped lessons) —</option>
@@ -432,31 +432,42 @@ $flosc_free_lesson_pool_category = sanitize_title((string) ($flosc_flow_settings
             </select>
             <p class="description">
                 <strong>Saved as <code>free_lesson_pool_category</code>.</strong>
-                Only published posts in this category (with matching <code>_flosc_lesson_number</code>) can be free samples.
-                Tip: create a child category under your main lessons category (e.g. <code>lesaep</code> → <code>4guests</code>),
-                put guest-ready lessons in it, and select it here. Guests may eventually browse this category publicly — name it for that use.
+                Only published posts in this category (matching <code>_flosc_lesson_number</code>) can be free samples.
+                Tip: child category under main lessons (e.g. <code>lesaep</code> → <code>4guests</code>).
             </p>
         </td>
     </tr>
     <tr>
-        <th scope="row"><label for="flow_free_lesson_mode">Free Lesson Mode <span class="flosc-note-optional">(non-IPA)</span></label></th>
+        <th scope="row"><label for="flow_free_lesson_never_free">Never free (lesson numbers)</label></th>
+        <td>
+            <input type="text" id="flow_free_lesson_never_free" name="flow_free_lesson_never_free"
+                   value="<?php echo esc_attr($flosc_free_lesson_never_free); ?>"
+                   class="large-text" placeholder="e.g. 1, 2, 7, 12">
+            <p class="description">
+                Comma-separated lesson <em>numbers</em> that must <strong>never</strong> be given as complimentary guest content
+                (upsell-only). Saved as <code>free_lesson_never_free</code>.
+            </p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_free_lesson_mode">How many complimentary items</label></th>
         <td>
             <select name="flow_free_lesson_mode" id="flow_free_lesson_mode">
-                <option value="fixed" <?php selected($flosc_free_lesson_mode, 'fixed'); ?>>Fixed Number</option>
-                <option value="proportion" <?php selected($flosc_free_lesson_mode, 'proportion'); ?>>Proportion of Missed</option>
+                <option value="fixed" <?php selected($flosc_free_lesson_mode, 'fixed'); ?>>Fixed number</option>
+                <option value="proportion" <?php selected($flosc_free_lesson_mode, 'proportion'); ?>>Proportion of missed (non-IPA)</option>
             </select>
-            <p class="description">Non-IPA quizzes only. IPA audio quizzes always use the tier-walk above. Saved as <code>free_lesson_mode</code>.</p>
+            <p class="description">Saved as <code>free_lesson_mode</code>. Fixed count applies to IPA tier-walk and non-IPA quizzes.</p>
         </td>
     </tr>
     <tr id="flow_free_lesson_count_row">
-        <th scope="row"><label for="flow_free_lesson_count">Free Lesson Count <span class="flosc-note-optional">(non-IPA)</span></label></th>
+        <th scope="row"><label for="flow_free_lesson_count">Complimentary count (x)</label></th>
         <td>
             <input type="number" id="flow_free_lesson_count" name="flow_free_lesson_count" value="<?php echo esc_attr($flosc_free_lesson_count); ?>" min="1" max="50" class="small-text">
-            <p class="description">Non-IPA quizzes only, Fixed Number mode. Saved as <code>free_lesson_count</code>.</p>
+            <p class="description">How many pool items to grant guests (e.g. <strong>2</strong>). Plus optional bonus below. Saved as <code>free_lesson_count</code>.</p>
         </td>
     </tr>
     <tr id="flow_free_lesson_proportion_row">
-        <th scope="row"><label for="flow_free_lesson_proportion">Free Lesson Proportion <span class="flosc-note-optional">(non-IPA)</span></label></th>
+        <th scope="row"><label for="flow_free_lesson_proportion">Proportion of missed</label></th>
         <td>
             <select name="flow_free_lesson_proportion" id="flow_free_lesson_proportion">
                 <option value="1/5" <?php selected($flosc_free_lesson_proportion, '1/5'); ?>>1/5 of missed lessons</option>
@@ -464,16 +475,16 @@ $flosc_free_lesson_pool_category = sanitize_title((string) ($flosc_flow_settings
                 <option value="1/3" <?php selected($flosc_free_lesson_proportion, '1/3'); ?>>1/3 of missed lessons</option>
                 <option value="1/2" <?php selected($flosc_free_lesson_proportion, '1/2'); ?>>1/2 of missed lessons</option>
             </select>
-            <p class="description">Non-IPA quizzes only, Proportion mode. Saved as <code>free_lesson_proportion</code>.</p>
+            <p class="description">Non-IPA quizzes only when mode is Proportion. Saved as <code>free_lesson_proportion</code>.</p>
         </td>
     </tr>
     <tr>
-        <th scope="row"><label for="flow_free_lesson_guaranteed">Bonus Free Lesson</label></th>
+        <th scope="row"><label for="flow_free_lesson_guaranteed">Bonus complimentary number</label></th>
         <td>
             <input type="number" id="flow_free_lesson_guaranteed" name="flow_free_lesson_guaranteed" value="<?php echo esc_attr($flosc_free_lesson_guaranteed); ?>" min="0" max="9999" class="small-text">
             <p class="description">
-                Lesson <em>number</em> given to every guest in addition to their quiz pick (e.g. <strong>35</strong>).
-                Set to <code>0</code> to disable. Must exist in the free lesson pool category. Saved as <code>free_lesson_guaranteed</code>.
+                Extra lesson number for every guest (e.g. <strong>35</strong>), in addition to the count above.
+                Must be in the pool and not on the never-free list. <code>0</code> = off. Saved as <code>free_lesson_guaranteed</code>.
             </p>
         </td>
     </tr>
@@ -481,7 +492,7 @@ $flosc_free_lesson_pool_category = sanitize_title((string) ($flosc_flow_settings
         <th scope="row"><label for="flow_guest_access_days">Guest Access Duration</label></th>
         <td>
             <input type="number" id="flow_guest_access_days" name="flow_guest_access_days" value="<?php echo esc_attr($flosc_guest_access_days); ?>" min="0" max="365" class="small-text"> days
-            <p class="description">How long guests can access their free lessons. Set to 0 for unlimited access. Saved as <code>guest_access_days</code>.</p>
+            <p class="description">How long guests can access free samples. <code>0</code> = unlimited. Saved as <code>guest_access_days</code>.</p>
         </td>
     </tr>
 </table>

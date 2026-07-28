@@ -71,50 +71,39 @@ class FLOSC_Free_Lesson_Manager {
             return;
         }
 
-        // v1.5.4: Use admin-configured count instead of hardcoded 1
+        // Admin-configured complimentary count (flow free_lesson_count / proportion).
         require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
         $member_access = FLOSC_Member_Access::instance();
-        $count = $member_access->calculate_free_lesson_count(count($missed));
-
-        // LeSAEp rule: exactly one sample lesson before offer.
-        $category_for_quiz = strtolower((string) $this->resolve_category_for_quiz($quiz_id));
-        $is_lesaep_quiz = (
-            strpos(strtolower((string) $quiz_id), 'lesaep') !== false ||
-            $category_for_quiz === 'lesaep'
-        );
+        $count = max(1, intval($member_access->calculate_free_lesson_count(count($missed))));
 
         // v8.0.0: IPA audio quiz free lesson selection.
         // ranked_worst is sorted worst→best (lowest score = index 0).
-        // Each entry has 'score' and 'lessons' (array of lesson numbers; [0] = primary).
-        //
-        // Logic — walk down score tiers, never give away a unique worst phoneme:
-        //   Tier 1 (worst score): if >1 phoneme ties here → pick one at random → done
-        //   Tier 1 is single → Tier 2 (2nd worst): if >1 ties here → pick one at random → done
-        //   Tier 2 is single → Tier 3 (3rd worst): pick one at random → done
-        // The single worst phoneme is the upsell hook — we don't give it away free.
+        // Walk tiers (prefer multi-phoneme tiers) and pick up to $count eligible pool lessons.
+        // never_free list is excluded. Video is NOT required (pool membership is enough).
 
         $ranked_worst = $quiz_result['ranked_worst_lessons'] ?? [];
 
         if (!empty($ranked_worst) && is_array($ranked_worst)) {
-            // Group phonemes into tiers by score
             $tiers = [];
             foreach ($ranked_worst as $entry) {
                 $score = $entry['score'] ?? 0;
                 $tiers[$score][] = $entry;
             }
-            // Sort tiers by score ascending (worst scores first)
             ksort($tiers);
             $tiers = array_values($tiers);
 
-            // Walk tiers: prefer multi-phoneme tiers; only pool-category lessons.
-            $selected_lessons = $this->pick_eligible_lesson_from_tiers($tiers, $quiz_id);
+            $selected_lessons = $this->pick_eligible_lessons_from_tiers($tiers, $quiz_id, $count);
         } else {
             // Non-IPA quiz: shuffle missed lessons, pick admin-configured count from pool
             shuffle($missed);
             $selected_lessons = [];
             foreach ($missed as $lesson_num) {
-                if ($this->lesson_number_is_free_eligible(intval($lesson_num), $quiz_id)) {
-                    $selected_lessons[] = intval($lesson_num);
+                $n = intval($lesson_num);
+                if ($this->is_never_free_lesson($n)) {
+                    continue;
+                }
+                if ($this->lesson_number_is_free_eligible($n, $quiz_id)) {
+                    $selected_lessons[] = $n;
                     if (count($selected_lessons) >= $count) {
                         break;
                     }
@@ -122,11 +111,12 @@ class FLOSC_Free_Lesson_Manager {
             }
         }
 
-        // Bonus free lesson (admin: free_lesson_guaranteed) — must be in the pool category
+        // Bonus free lesson (admin: free_lesson_guaranteed) — in pool, not never-free
         $guaranteed = intval(function_exists('flosc_get_setting')
             ? flosc_get_setting('free_lesson_guaranteed', 35)
             : 35);
         if ($guaranteed > 0
+            && !$this->is_never_free_lesson($guaranteed)
             && !in_array($guaranteed, $selected_lessons, true)
             && $this->lesson_number_is_free_eligible($guaranteed, $quiz_id)
         ) {
@@ -188,6 +178,40 @@ class FLOSC_Free_Lesson_Manager {
             return '';
         }
         return sanitize_title((string) flosc_get_setting('free_lesson_pool_category', ''));
+    }
+
+    /**
+     * Lesson numbers that must never be given as complimentary guest content.
+     * Admin: free_lesson_never_free (comma/space-separated numbers).
+     *
+     * @return int[]
+     */
+    private function get_never_free_lesson_numbers() {
+        if (!function_exists('flosc_get_setting')) {
+            return [];
+        }
+        $raw = (string) flosc_get_setting('free_lesson_never_free', '');
+        if ($raw === '') {
+            return [];
+        }
+        $parts = preg_split('/[\s,;]+/', $raw) ?: [];
+        $out = [];
+        foreach ($parts as $p) {
+            $n = intval($p);
+            if ($n > 0) {
+                $out[] = $n;
+            }
+        }
+        return array_values(array_unique($out));
+    }
+
+    /**
+     * @param int $lesson_num Lesson number.
+     * @return bool
+     */
+    private function is_never_free_lesson($lesson_num) {
+        $n = intval($lesson_num);
+        return $n > 0 && in_array($n, $this->get_never_free_lesson_numbers(), true);
     }
 
     /**
@@ -256,50 +280,96 @@ class FLOSC_Free_Lesson_Manager {
      * @return bool
      */
     private function lesson_number_is_free_eligible($lesson_num, $quiz_id = '') {
-        return (bool) $this->find_free_eligible_lesson_post($lesson_num, $quiz_id);
+        $n = intval($lesson_num);
+        if ($n <= 0 || $this->is_never_free_lesson($n)) {
+            return false;
+        }
+        // Published post in free-lesson pool (or lesson group if no pool). Video not required.
+        return (bool) $this->find_free_eligible_lesson_post($n, $quiz_id);
     }
 
     /**
-     * Tier-walk free-lesson pick limited to the free lesson pool category.
+     * Collect eligible lesson numbers from a score tier (shuffled).
+     *
+     * @param array  $tier_entries
+     * @param string $quiz_id
+     * @param int[]  $exclude Already selected numbers.
+     * @return int[]
+     */
+    private function collect_eligible_from_tier(array $tier_entries, $quiz_id, array $exclude = []) {
+        $candidates = [];
+        foreach ($tier_entries as $entry) {
+            $lesson_nums = array_map('intval', (array) ($entry['lessons'] ?? []));
+            foreach ($lesson_nums as $n) {
+                if ($n <= 0 || in_array($n, $exclude, true) || in_array($n, $candidates, true)) {
+                    continue;
+                }
+                if ($this->lesson_number_is_free_eligible($n, $quiz_id)) {
+                    $candidates[] = $n;
+                }
+            }
+        }
+        shuffle($candidates);
+        return $candidates;
+    }
+
+    /**
+     * Tier-walk free-lesson pick limited to the free lesson pool + never-free rules.
+     * Returns up to $count lesson numbers (admin free_lesson_count).
+     *
+     * @param array  $tiers
+     * @param string $quiz_id
+     * @param int    $count
+     * @return int[]
+     */
+    private function pick_eligible_lessons_from_tiers(array $tiers, $quiz_id = '', $count = 1) {
+        $count = max(1, intval($count));
+        if (empty($tiers)) {
+            return [];
+        }
+
+        $selected = [];
+
+        // Prefer multi-phoneme tiers first (protect unique worst as upsell when possible).
+        for ($i = 0; $i < count($tiers) && count($selected) < $count; $i++) {
+            $prefer = (count($tiers[$i]) > 1) || ($i >= 2);
+            if (!$prefer) {
+                continue;
+            }
+            $candidates = $this->collect_eligible_from_tier($tiers[$i], $quiz_id, $selected);
+            foreach ($candidates as $n) {
+                $selected[] = $n;
+                if (count($selected) >= $count) {
+                    break;
+                }
+            }
+        }
+
+        // Fill from any remaining tiers (including single-phoneme worst if still short).
+        if (count($selected) < $count) {
+            foreach ($tiers as $tier) {
+                $candidates = $this->collect_eligible_from_tier($tier, $quiz_id, $selected);
+                foreach ($candidates as $n) {
+                    $selected[] = $n;
+                    if (count($selected) >= $count) {
+                        break 2;
+                    }
+                }
+            }
+        }
+
+        return $selected;
+    }
+
+    /**
+     * @deprecated Use pick_eligible_lessons_from_tiers — kept for any external callers.
      *
      * @param array  $tiers
      * @param string $quiz_id
      * @return int[]
      */
     private function pick_eligible_lesson_from_tiers(array $tiers, $quiz_id = '') {
-        if (empty($tiers)) {
-            return [];
-        }
-
-        $try_tier = function (array $tier_entries) use ($quiz_id) {
-            $order = $tier_entries;
-            shuffle($order);
-            foreach ($order as $entry) {
-                $lesson_nums = array_map('intval', (array) ($entry['lessons'] ?? []));
-                foreach ($lesson_nums as $n) {
-                    if ($n > 0 && $this->lesson_number_is_free_eligible($n, $quiz_id)) {
-                        return [$n];
-                    }
-                }
-            }
-            return [];
-        };
-
-        for ($i = 0; $i < min(3, count($tiers)); $i++) {
-            if (count($tiers[$i]) > 1 || $i === 2) {
-                $picked = $try_tier($tiers[$i]);
-                if (!empty($picked)) {
-                    return $picked;
-                }
-            }
-        }
-        foreach ($tiers as $tier) {
-            $picked = $try_tier($tier);
-            if (!empty($picked)) {
-                return $picked;
-            }
-        }
-        return [];
+        return $this->pick_eligible_lessons_from_tiers($tiers, $quiz_id, 1);
     }
     
     /**
@@ -533,7 +603,11 @@ class FLOSC_Free_Lesson_Manager {
 
         $lessons = [];
         foreach ($lesson_nums as $lesson_num) {
-            // Delivery guard: honor free_lesson_require_video (and publish) for guests.
+            // Published pool post only (never-free already filtered at grant time).
+            // Video is not required — admins control the pool category + never-free list.
+            if ($this->is_never_free_lesson(intval($lesson_num))) {
+                continue;
+            }
             $post = $this->find_free_eligible_lesson_post($lesson_num, $quiz_id);
             if ($post) {
                 // v1.8.3: Run content through the_content filters so WordPress

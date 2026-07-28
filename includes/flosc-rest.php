@@ -897,5 +897,12 @@ trait FLOSC_REST_Trait {
             'callback' => [$this, 'handle_apply_offer_coupon'],
             'permission_callback' => 'is_user_logged_in',
         ]);
+
+        // Client UI turns (free lesson, offer list, etc.) that skip /chat — still write Chat Logs.
+        register_rest_route('flosc/v1', '/chat-log', [
+            'methods' => 'POST',
+            'callback' => [$this, 'handle_client_chat_log'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
     }
 }

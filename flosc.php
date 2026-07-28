@@ -9400,6 +9400,75 @@ Example good response:
     }
 
     /**
+     * Log a client-side chat turn into Chat Logs (free-lesson UI, offer cards, etc.).
+     * Does not call AI. Used so admin Chat Logs show the full conversation.
+     *
+     * @param WP_REST_Request $request Request.
+     * @return WP_REST_Response|WP_Error
+     */
+    public function handle_client_chat_log($request) {
+        if (!class_exists('FLOSC_Chat_Logger')) {
+            return new WP_Error('no_logger', __('Chat logger unavailable', 'flosc'), ['status' => 500]);
+        }
+
+        $user_message = sanitize_textarea_field((string) $request->get_param('user_message'));
+        $ai_response  = wp_kses_post((string) $request->get_param('ai_response'));
+        // Cap huge lesson HTML so logs stay usable.
+        if (strlen($ai_response) > 80000) {
+            $ai_response = substr($ai_response, 0, 80000) . "\n<!-- truncated -->";
+        }
+
+        if ($user_message === '' && $ai_response === '') {
+            return new WP_Error('empty', __('Nothing to log', 'flosc'), ['status' => 400]);
+        }
+
+        $flow_id = sanitize_text_field((string) ($request->get_param('flow_id') ?? ''));
+        if ($flow_id === '' && method_exists($this, 'get_current_flow')) {
+            $flow = $this->get_current_flow();
+            if (is_array($flow)) {
+                $ivr = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? '');
+                $flow_id = sanitize_key(pathinfo(basename($ivr), PATHINFO_FILENAME));
+            }
+        }
+
+        $session_id = absint($request->get_param('session_id'));
+        $phase = sanitize_text_field((string) ($request->get_param('phase') ?? 'content'));
+        $provider = sanitize_text_field((string) ($request->get_param('provider') ?? 'client'));
+        $source = sanitize_text_field((string) ($request->get_param('response_source') ?? 'client_ui'));
+
+        $user_id = is_user_logged_in() ? get_current_user_id() : 0;
+
+        // Persist into guest/member session history when possible (sidebar replay).
+        if ($user_id > 0 && $session_id > 0 && $this->session_manager) {
+            if ($user_message !== '') {
+                $this->session_manager->add_flosc_message($session_id, 'user', $user_message, $user_id);
+            }
+            if ($ai_response !== '') {
+                $this->session_manager->add_flosc_message($session_id, 'assistant', wp_strip_all_tags($ai_response), $user_id);
+            }
+        }
+
+        $insert_id = FLOSC_Chat_Logger::instance()->flosc_log_chat([
+            'flow_id'          => $flow_id,
+            'phase'            => $phase !== '' ? $phase : 'content',
+            'user_id'          => $user_id,
+            'session_id'       => $session_id,
+            'user_message'     => $user_message,
+            'ai_response'      => $ai_response,
+            'provider'         => $provider !== '' ? $provider : 'client',
+            'chain_detail'     => ['client_ui'],
+            'response_source'  => $source !== '' ? $source : 'client_ui',
+            'response_time_ms' => 0,
+            'billing_source'   => 'none',
+        ]);
+
+        return new WP_REST_Response([
+            'success' => (bool) $insert_id,
+            'log_id'  => $insert_id ? (int) $insert_id : 0,
+        ]);
+    }
+
+    /**
      * Preview coupon for payment modal (native only). Does not charge.
      */
     public function handle_apply_offer_coupon($request) {
