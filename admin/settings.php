@@ -1222,7 +1222,7 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
     }
 
     // v8.1.0: Member Levels tab — parse level registry + content protection repeaters
-    if ($flosc_active_tab === 'member-levels') {
+    if (in_array($flosc_active_tab, ['member-levels', 'content'], true)) {
         // Level registry repeater
         $flosc_level_slugs        = $flosc_post['level_slug']        ?? [];
         $flosc_level_names        = $flosc_post['level_name']        ?? [];
@@ -1311,7 +1311,7 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
 
     // v3.0.0: Lessons tab — parse lesson_groups repeater
     // Repeater fields are NOT flow_-prefixed (lesson_group_quiz[], lesson_group_category[])
-    if ($flosc_active_tab === 'lessons') {
+    if (in_array($flosc_active_tab, ['lessons', 'content'], true)) {
         $flosc_group_quizzes    = $flosc_post['lesson_group_quiz']     ?? [];
         $flosc_group_categories = $flosc_post['lesson_group_category'] ?? [];
         $flosc_lesson_groups = [];
@@ -1356,6 +1356,16 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         }
         if (isset($flosc_new_settings['guest_access_days'])) {
             $flosc_new_settings['guest_access_days'] = max(0, min(365, intval($flosc_new_settings['guest_access_days'])));
+        }
+        if (isset($flosc_post['flow_content_item_label_singular'])) {
+            $flosc_new_settings['content_item_label_singular'] = sanitize_text_field(
+                wp_unslash((string) $flosc_post['flow_content_item_label_singular'])
+            );
+        }
+        if (isset($flosc_post['flow_content_item_label_plural'])) {
+            $flosc_new_settings['content_item_label_plural'] = sanitize_text_field(
+                wp_unslash((string) $flosc_post['flow_content_item_label_plural'])
+            );
         }
     }
 
@@ -1707,7 +1717,9 @@ if ($flosc_selected_flow_name === '') {
             'identity': 'Identity',
             'ivr-messages': 'IVR Management',
             'autoprompts': 'AutoPrompt Panel',
-            'member-levels': 'Member Levels',
+            'content': 'Content',
+            'member-levels': 'Content',
+            'lessons': 'Content',
             'trajectories': 'Trajectories',
             'offers': 'Offers',
             'login': 'Register and Login',
@@ -1720,7 +1732,7 @@ if ($flosc_selected_flow_name === '') {
             'email': 'Email',
             'contact-form': 'Contact Form',
             'payments': 'Payments',
-            'lessons': 'Lessons',
+            
             'sso': 'SSO',
             'chat-logs': 'Chat Logs',
             'administration': 'Administration',
@@ -1741,7 +1753,7 @@ if ($flosc_selected_flow_name === '') {
             'identity'      => 'Identity',
             'ivr-messages'  => 'IVR Management',
             'autoprompts'   => 'AutoPrompt Panel',
-            'member-levels' => 'Member Levels',
+            'content'       => 'Content',
             'trajectories'  => 'Trajectories',
             'offers'        => 'Offers',
             'login'         => 'Register & Login',
@@ -1754,7 +1766,6 @@ if ($flosc_selected_flow_name === '') {
             'email'         => 'Email',
             'contact-form'  => 'Contact Form',
             'payments'      => 'Payments',
-            'lessons'       => 'Lessons',
             'sso'           => 'SSO',
             'chat-logs'     => 'Chat Logs',
             'administration'=> 'Administration',
@@ -1773,7 +1784,11 @@ if ($flosc_selected_flow_name === '') {
             ], admin_url('admin.php'));
         ?>
             <a href="<?php echo esc_url($flosc_tab_url); ?>" 
-               class="nav-tab <?php echo esc_attr( $flosc_active_tab === $flosc_tab_id ? 'nav-tab-active' : '' ); ?>">
+               class="nav-tab <?php
+               $flosc_tab_is_active = ( $flosc_active_tab === $flosc_tab_id )
+                   || ( $flosc_tab_id === 'content' && in_array( $flosc_active_tab, [ 'member-levels', 'lessons' ], true ) );
+               echo esc_attr( $flosc_tab_is_active ? 'nav-tab-active' : '' );
+           ?>">
                 <?php echo esc_html( $flosc_tab_label ); ?>
             </a>
         <?php endforeach; ?>
@@ -2489,14 +2504,11 @@ if ($flosc_selected_flow_name === '') {
         <?php elseif ($flosc_active_tab === 'contact-form'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/contact-form.php'; ?>
             
-        <?php elseif ($flosc_active_tab === 'lessons'): ?>
-            <?php include FLOSC_PLUGIN_DIR . 'admin/lessons.php'; ?>
+        <?php elseif (in_array($flosc_active_tab, ['content', 'member-levels', 'lessons'], true)): ?>
+            <?php include FLOSC_PLUGIN_DIR . 'admin/content.php'; ?>
             
         <?php elseif ($flosc_active_tab === 'autoprompts'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/autoprompts.php'; ?>
-
-        <?php elseif ($flosc_active_tab === 'member-levels'): ?>
-            <?php include FLOSC_PLUGIN_DIR . 'admin/member-levels.php'; ?>
 
         <?php elseif ($flosc_active_tab === 'trajectories'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/trajectories.php'; ?>

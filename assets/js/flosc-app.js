@@ -4154,23 +4154,20 @@ class floscApp {
         return ''; // Default/generic sandbox
     }
     
-    // v1.4.0: Get offer ID for product
-    // v3.0.5: Reads from config offers instead of hardcoded map
+    // Offer ID for Upgrade / checkout entry — flow offers registry only (no brand hardcodes).
     getOfferIdForProduct(productId) {
-        // Find the first active offer from admin config
         const offers = this.config.offers || [];
         const active = offers.find(o => (o.status === 'active' || o.active) && o.id !== 'free_trial');
-        if (active) return active.id;
-        const defaultOfferId = this.config.defaultOfferId || 'pronunciation_full';
-        
-        // Legacy hardcoded fallback
-        const productOfferMap = {
-            'flosc_plugin': 'flosc_plugin_full',
-            'simplified_solfeggio': 'simplified_solfeggio_full',
-            'lesaep': defaultOfferId,
-        };
-        
-        return productOfferMap[productId] || defaultOfferId;
+        if (active && active.id) {
+            return active.id;
+        }
+        if (this.config.defaultOfferId) {
+            return this.config.defaultOfferId;
+        }
+        if (offers[0] && offers[0].id) {
+            return offers[0].id;
+        }
+        return '';
     }
 
     openQuiz() {

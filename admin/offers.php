@@ -1195,7 +1195,7 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                             </option>
                         <?php endforeach; ?>
                     </select>
-                    <p class="description">Select a level from the <a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_current_ivr, 'tab' => 'member-levels' ), admin_url( 'admin.php' ) ) ); ?>">Member Levels</a> tab.</p>
+                    <p class="description">Select a level from the <a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_current_ivr, 'tab' => 'content' ), admin_url( 'admin.php' ) ) ); ?>">Content</a> tab.</p>
                 </td>
             </tr>
         </table>

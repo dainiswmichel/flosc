@@ -94,7 +94,7 @@ $flosc_member_levels_chat_url = add_query_arg(
 	[
 		'page' => 'flosc-settings',
 		'ivr'  => $GLOBALS['flosc_current_ivr'] ?? '',
-		'tab'  => 'member-levels',
+		'tab'  => 'content',
 		'view' => 'single',
 	],
 	admin_url( 'admin.php' )
