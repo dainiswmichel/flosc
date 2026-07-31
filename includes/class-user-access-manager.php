@@ -50,35 +50,66 @@ class FLOSC_User_Access_Manager {
     }
     
     /**
-     * Check if user is a member
-     * 
+     * Check if user is a member (full entitlement / LeSAEp Learner).
+     *
+     * Bridges legacy keys plus FLOSC_Member_Access and sale-side access so RAG
+     * and AI userState match content gates (sandbox grants, roles, offers).
+     *
      * @param int $user_id
      * @return bool
      */
     public function is_member($user_id) {
-        
-        // Check user role
-        $user = get_user_by('id', $user_id);
-        if ($user && in_array('flosc_member', (array) $user->roles)) {
+        if ( ! $user_id ) {
+            return false;
+        }
+
+        // Admins always member for testing (matches sale/member-access managers).
+        if ( user_can( $user_id, 'manage_options' ) ) {
             return true;
         }
-        
-        // Check meta flag
-        $member_status = get_user_meta($user_id, 'flosc_member_status', true);
-        if ($member_status === 'active') {
+
+        // Canonical content-protection membership.
+        if ( class_exists( 'FLOSC_Member_Access' ) ) {
+            $ma = FLOSC_Member_Access::instance();
+            if ( $ma && method_exists( $ma, 'is_member' ) && $ma->is_member( $user_id ) ) {
+                return true;
+            }
+        }
+
+        // Sale ledger / offers / roles (pronunciation_learners, lesaep_learners).
+        if ( function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'sale' ) ) {
+            $sale = flosc()->sale();
+            if ( $sale && method_exists( $sale, 'access' ) ) {
+                $access = $sale->access();
+                if ( $access && method_exists( $access, 'get_simple_state' )
+                    && $access->get_simple_state( $user_id ) === 'member' ) {
+                    return true;
+                }
+                if ( $access && method_exists( $access, 'is_member' ) && $access->is_member( $user_id ) ) {
+                    return true;
+                }
+            }
+        }
+
+        // Legacy role / meta (older installs).
+        $user = get_user_by( 'id', $user_id );
+        if ( $user && in_array( 'flosc_member', (array) $user->roles, true ) ) {
             return true;
         }
-        
-        // v1.6.5: Removed quiz_completed check — quiz completion makes you a GUEST, not a member.
-        // Member access is granted only by purchase/payment or admin grant.
-        // The old check broke the entire funnel: quiz takers were instantly "members"
-        // and all is_guest conditions (offers, free lesson prompts, etc.) failed.
-        
-        // Future payment integration hook point
-        // if (has_active_subscription($user_id)) {
-        //     return true;
-        // }
-        
+
+        $member_status = get_user_meta( $user_id, 'flosc_member_status', true );
+        if ( $member_status === 'active' ) {
+            return true;
+        }
+
+        // Explicit member meta used by purchase + grant paths.
+        $member_access = get_user_meta( $user_id, '_flosc_member_access', true );
+        if ( $member_access === 'true' || $member_access === true || $member_access === '1' ) {
+            return true;
+        }
+
+        // v1.6.5: quiz completion is guest, not member — do not treat quiz as membership.
+
         return false;
     }
     

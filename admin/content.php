@@ -389,16 +389,16 @@ $flosc_chat_list_settings_url = add_query_arg(
 			<select name="flow_free_lesson_pool_category" id="flow_free_lesson_pool_category" class="regular-text">
 				<option value=""><?php echo esc_html__( '— Same as content group category —', 'flosc' ); ?></option>
 				<?php foreach ( $flosc_categories as $cat ) :
-					$label = $cat->name;
+					$flosc_cat_label = $cat->name;
 					if ( ! empty( $cat->parent ) ) {
-						$parent = get_category( (int) $cat->parent );
-						if ( $parent && ! is_wp_error( $parent ) ) {
-							$label = $parent->name . ' → ' . $cat->name;
+						$flosc_cat_parent = get_category( (int) $cat->parent );
+						if ( $flosc_cat_parent && ! is_wp_error( $flosc_cat_parent ) ) {
+							$flosc_cat_label = $flosc_cat_parent->name . ' → ' . $cat->name;
 						}
 					}
 					?>
 					<option value="<?php echo esc_attr( $cat->slug ); ?>" <?php selected( $flosc_free_lesson_pool_category, $cat->slug ); ?>>
-						<?php echo esc_html( $label ); ?> (<?php echo esc_html( (string) $cat->count ); ?> posts)
+						<?php echo esc_html( $flosc_cat_label ); ?> (<?php echo esc_html( (string) $cat->count ); ?> posts)
 					</option>
 				<?php endforeach; ?>
 			</select>

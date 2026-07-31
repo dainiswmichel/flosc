@@ -873,13 +873,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
                 return ['received' => true, 'processed' => false, 'reason' => 'not_subscription_sale'];
             }
 
-            $users = get_users([
-                'meta_key' => '_flosc_subscription_id',
-                'meta_value' => $subscription_id,
-                'number' => 1,
-                'fields' => 'ID',
-            ]);
-            $user_id = !empty($users[0]) ? (int) $users[0] : 0;
+            $user_id = self::get_user_id_for_subscription($subscription_id);
             if ($user_id <= 0) {
                 return ['received' => true, 'processed' => false, 'reason' => 'unknown_subscription', 'subscription_id' => $subscription_id];
             }
@@ -953,20 +947,95 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
         ], true)) {
             $subscription_id = sanitize_text_field((string) ($resource['id'] ?? ''));
             if ($subscription_id !== '') {
-                $users = get_users([
-                    'meta_key' => '_flosc_subscription_id',
-                    'meta_value' => $subscription_id,
-                    'number' => 1,
-                    'fields' => 'ID',
-                ]);
-                if (!empty($users[0])) {
+                $user_id = self::get_user_id_for_subscription($subscription_id);
+                if ($user_id > 0) {
                     $status = strtolower(str_replace('BILLING.SUBSCRIPTION.', '', $event_type));
-                    update_user_meta((int) $users[0], '_flosc_subscription_status', $status);
+                    update_user_meta($user_id, '_flosc_subscription_status', $status);
                 }
             }
             return ['received' => true, 'processed' => true, 'event_type' => $event_type];
         }
 
         return ['received' => true, 'processed' => false, 'event_type' => $event_type];
+    }
+
+    /**
+     * Option key: map PayPal subscription id → WP user id (O(1) webhook lookup).
+     */
+    const SUBSCRIPTION_INDEX_OPTION = 'flosc_paypal_subscription_index';
+
+    /**
+     * Record subscription ownership when a subscription is created/activated.
+     *
+     * @param int    $user_id
+     * @param string $subscription_id
+     */
+    public static function index_subscription($user_id, $subscription_id) {
+        $user_id = absint($user_id);
+        $subscription_id = sanitize_text_field((string) $subscription_id);
+        if ($user_id <= 0 || $subscription_id === '') {
+            return;
+        }
+
+        $index = get_option(self::SUBSCRIPTION_INDEX_OPTION, null);
+        if (!is_array($index)) {
+            $index = self::build_subscription_index();
+        }
+        $index[$subscription_id] = $user_id;
+        update_option(self::SUBSCRIPTION_INDEX_OPTION, $index, false);
+    }
+
+    /**
+     * Resolve WP user id for a PayPal subscription id.
+     * Uses the reverse index (built at activation / on first need), not meta_key queries.
+     *
+     * @param string $subscription_id
+     * @return int
+     */
+    public static function get_user_id_for_subscription($subscription_id) {
+        $subscription_id = sanitize_text_field((string) $subscription_id);
+        if ($subscription_id === '') {
+            return 0;
+        }
+
+        $index = get_option(self::SUBSCRIPTION_INDEX_OPTION, null);
+        if (!is_array($index)) {
+            $index = self::build_subscription_index();
+        }
+
+        return isset($index[$subscription_id]) ? absint($index[$subscription_id]) : 0;
+    }
+
+    /**
+     * Build subscription id → user id map via user meta reads (WP APIs only).
+     * Runs once when the index option is missing; subsequent lookups are option reads.
+     *
+     * @return array<string,int>
+     */
+    private static function build_subscription_index() {
+        $index = [];
+        $page = 1;
+
+        do {
+            $batch = get_users([
+                'fields' => 'ID',
+                'number' => 100,
+                'paged'  => $page,
+            ]);
+            if (empty($batch)) {
+                break;
+            }
+            foreach ($batch as $user_id) {
+                $user_id = absint($user_id);
+                $sid = sanitize_text_field((string) get_user_meta($user_id, '_flosc_subscription_id', true));
+                if ($sid !== '') {
+                    $index[$sid] = $user_id;
+                }
+            }
+            $page++;
+        } while (count($batch) === 100);
+
+        update_option(self::SUBSCRIPTION_INDEX_OPTION, $index, false);
+        return $index;
     }
 }

@@ -76,6 +76,19 @@ class FLOSC_Content_Protection {
         
         // Collect all protected category IDs
         $protected_cat_ids = $this->get_protected_category_ids();
+
+        // Entitled members must still see their flow lessons on category archives
+        // (knowledge hub). Without this, only _flosc_public_post / mode=full posts
+        // appear and paid members get an empty-looking hub.
+        if (is_user_logged_in() && !empty($protected_cat_ids)) {
+            $user_id = get_current_user_id();
+            $protected_cat_ids = array_values(array_filter(
+                $protected_cat_ids,
+                function ($cat_id) use ($user_id) {
+                    return !$this->user_can_access_category((int) $cat_id, $user_id);
+                }
+            ));
+        }
         
         if (empty($protected_cat_ids)) {
             return;
@@ -285,6 +298,140 @@ class FLOSC_Content_Protection {
     }
     
     /**
+     * Whether a user may browse posts in a protected category (archives / hubs).
+     *
+     * @param int      $category_id Category term ID.
+     * @param int|null $user_id     User ID (default: current user).
+     * @return bool
+     */
+    public function user_can_access_category($category_id, $user_id = null) {
+        $category_id = absint($category_id);
+        if ($category_id <= 0) {
+            return true;
+        }
+
+        if ($user_id === null) {
+            $user_id = get_current_user_id();
+        }
+        $user_id = absint($user_id);
+
+        if (user_can($user_id, 'manage_options')) {
+            return true;
+        }
+
+        if (!$this->is_category_protected($category_id)) {
+            return true;
+        }
+
+        if (!$user_id) {
+            return false;
+        }
+
+        require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
+        $member_access = FLOSC_Member_Access::instance();
+
+        $required_level = $this->get_category_required_level($category_id);
+        if ($required_level && $member_access->has_level($user_id, $required_level)) {
+            return true;
+        }
+
+        // Flow default / declared member levels for this lessons category.
+        if ($this->user_has_flow_member_level_for_category($user_id, $category_id, $member_access)) {
+            return true;
+        }
+
+        // No specific level on the category: any paid member.
+        if (!$required_level) {
+            return $member_access->is_member($user_id);
+        }
+
+        return false;
+    }
+
+    /**
+     * True when the user holds a non-guest member level for a flow that owns this category.
+     *
+     * @param int                  $user_id
+     * @param int                  $category_id
+     * @param FLOSC_Member_Access  $member_access
+     * @return bool
+     */
+    private function user_has_flow_member_level_for_category($user_id, $category_id, $member_access) {
+        $cat = get_term($category_id, 'category');
+        if (!$cat || is_wp_error($cat) || empty($cat->slug)) {
+            return false;
+        }
+        $cat_slug = sanitize_title((string) $cat->slug);
+
+        $flows = $this->get_flows_owning_lessons_category($cat_slug);
+        foreach ($flows as $flow) {
+            if (!is_array($flow)) {
+                continue;
+            }
+            $default_member = sanitize_key((string) ($flow['default_member_level'] ?? ''));
+            if ($default_member !== '' && $member_access->has_level($user_id, $default_member)) {
+                return true;
+            }
+            $levels = $flow['member_levels'] ?? [];
+            if (is_array($levels)) {
+                foreach (array_keys($levels) as $level_key) {
+                    $level_key = sanitize_key((string) $level_key);
+                    if ($level_key === '' || strpos($level_key, 'guest') !== false) {
+                        continue;
+                    }
+                    if ($member_access->has_level($user_id, $level_key)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Find flow option payloads whose lessons_category / lesson_groups use this category slug.
+     *
+     * @param string $category_slug
+     * @return array[]
+     */
+    private function get_flows_owning_lessons_category($category_slug) {
+        $category_slug = sanitize_title((string) $category_slug);
+        if ($category_slug === '' || !function_exists('flosc_config_glob')) {
+            return [];
+        }
+
+        $found = [];
+        $ivr_files = array_unique(array_map('basename', flosc_config_glob(['*_ivr.md', 'ivr*.md'])));
+        foreach ($ivr_files as $filename) {
+            if (strpos($filename, 'backup') !== false) {
+                continue;
+            }
+            $base = pathinfo($filename, PATHINFO_FILENAME);
+            $settings = get_option('flosc_flow_' . sanitize_key($base), []);
+            if (!is_array($settings) || empty($settings)) {
+                continue;
+            }
+            $flow_cats = [];
+            if (!empty($settings['lessons_category'])) {
+                $flow_cats[] = sanitize_title((string) $settings['lessons_category']);
+            }
+            if (!empty($settings['lesson_groups']) && is_array($settings['lesson_groups'])) {
+                foreach ($settings['lesson_groups'] as $group) {
+                    if (!empty($group['category'])) {
+                        $flow_cats[] = sanitize_title((string) $group['category']);
+                    }
+                }
+            }
+            if (in_array($category_slug, array_filter(array_unique($flow_cats)), true)) {
+                $found[] = $settings;
+            }
+        }
+
+        return $found;
+    }
+
+    /**
      * Check if current user can access a post
      * v1.8.2: Check _flosc_protection_mode for granular access
      * 
@@ -329,12 +476,10 @@ class FLOSC_Content_Protection {
         if ($member_access->has_guest_access($user_id, $post_id)) {
             return true;
         }
-        
-        // Check if user has required level for THIS category
-        if ($protection['required_level']) {
-            if ($member_access->has_level($user_id, $protection['required_level'])) {
-                return true;
-            }
+
+        // Category-level entitlement (required level + aliases + owning flow member levels).
+        if (!empty($protection['category_id']) && $this->user_can_access_category((int) $protection['category_id'], $user_id)) {
+            return true;
         }
         
         // v3.0.1: Flow-wide member access — if this post's category is in ANY
@@ -368,12 +513,20 @@ class FLOSC_Content_Protection {
                             }
                         }
                     }
+                    $default_member = sanitize_key((string) ($flow['default_member_level'] ?? ''));
+                    if ($default_member !== '' && $member_access->has_level($user_id, $default_member)) {
+                        return true;
+                    }
                 }
             }
         }
         
-        // Protected but no specific level required - check general member status
-        return $member_access->is_member($user_id);
+        // Protected with no specific level required — any paid member.
+        if (empty($protection['required_level'])) {
+            return $member_access->is_member($user_id);
+        }
+
+        return false;
     }
     
     /**

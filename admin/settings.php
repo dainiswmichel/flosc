@@ -968,25 +968,61 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         }
         $flosc_new_settings['companion_routing_mode'] = $flosc_routing_mode;
 
-        $flosc_hub_fullscreen_url = trim((string) ($flosc_new_settings['companion_hub_fullscreen_url'] ?? 'https://dainis.net/chat'));
+        // Hub URLs + iframe slug: resolve defaults from this flow's own parameters only.
+        $flosc_hub_source = array_merge(
+            is_array($flosc_flow_settings) ? $flosc_flow_settings : [],
+            is_array($flosc_new_settings) ? $flosc_new_settings : []
+        );
+        $flosc_hub_defaults = function_exists('flosc_companion_hub_defaults_from_flow')
+            ? flosc_companion_hub_defaults_from_flow($flosc_hub_source)
+            : [
+                'fullscreen' => home_url('/'),
+                'companion'  => home_url('/'),
+                'chat_app'   => home_url('/'),
+                'flow_slug'  => sanitize_title((string) ($flosc_hub_source['slug'] ?? '')),
+            ];
+
+        $flosc_hub_fullscreen_url = trim((string) ($flosc_new_settings['companion_hub_fullscreen_url'] ?? ''));
         if ($flosc_hub_fullscreen_url === '') {
-            $flosc_hub_fullscreen_url = 'https://dainis.net/chat';
+            $flosc_hub_fullscreen_url = (string) ($flosc_hub_defaults['fullscreen'] ?? home_url('/'));
         }
         $flosc_hub_fullscreen_url = esc_url_raw($flosc_hub_fullscreen_url, ['http', 'https']);
         if ($flosc_hub_fullscreen_url === '') {
-            $flosc_hub_fullscreen_url = 'https://dainis.net/chat';
+            $flosc_hub_fullscreen_url = esc_url_raw((string) ($flosc_hub_defaults['fullscreen'] ?? home_url('/')), ['http', 'https']);
         }
         $flosc_new_settings['companion_hub_fullscreen_url'] = $flosc_hub_fullscreen_url;
 
-        $flosc_hub_companion_url = trim((string) ($flosc_new_settings['companion_hub_companion_url'] ?? home_url('/')));
+        $flosc_hub_companion_url = trim((string) ($flosc_new_settings['companion_hub_companion_url'] ?? ''));
         if ($flosc_hub_companion_url === '') {
-            $flosc_hub_companion_url = home_url('/');
+            $flosc_hub_companion_url = (string) ($flosc_hub_defaults['companion'] ?? home_url('/'));
         }
         $flosc_hub_companion_url = esc_url_raw($flosc_hub_companion_url, ['http', 'https']);
         if ($flosc_hub_companion_url === '') {
-            $flosc_hub_companion_url = esc_url_raw(home_url('/'));
+            $flosc_hub_companion_url = esc_url_raw((string) ($flosc_hub_defaults['companion'] ?? home_url('/')), ['http', 'https']);
         }
         $flosc_new_settings['companion_hub_companion_url'] = $flosc_hub_companion_url;
+
+        $flosc_companion_flow_slug = sanitize_title((string) ($flosc_new_settings['companion_flow_slug'] ?? ''));
+        if ($flosc_companion_flow_slug === '') {
+            $flosc_companion_flow_slug = sanitize_title((string) ($flosc_hub_defaults['flow_slug'] ?? ''));
+        }
+        $flosc_new_settings['companion_flow_slug'] = $flosc_companion_flow_slug;
+
+        // Recompute chat_app default after slug is finalized.
+        $flosc_hub_source['companion_flow_slug'] = $flosc_companion_flow_slug;
+        $flosc_hub_defaults = function_exists('flosc_companion_hub_defaults_from_flow')
+            ? flosc_companion_hub_defaults_from_flow($flosc_hub_source)
+            : $flosc_hub_defaults;
+
+        $flosc_chat_app_url = trim((string) ($flosc_new_settings['companion_chat_app_url'] ?? ''));
+        if ($flosc_chat_app_url === '') {
+            $flosc_chat_app_url = (string) ($flosc_hub_defaults['chat_app'] ?? home_url('/'));
+        }
+        $flosc_chat_app_url = esc_url_raw($flosc_chat_app_url, ['http', 'https']);
+        if ($flosc_chat_app_url === '') {
+            $flosc_chat_app_url = esc_url_raw((string) ($flosc_hub_defaults['chat_app'] ?? home_url('/')), ['http', 'https']);
+        }
+        $flosc_new_settings['companion_chat_app_url'] = $flosc_chat_app_url;
 
         // Normalize companion settings to filterable enums/defaults for forward compatibility.
         $flosc_companion_defaults = [
@@ -1010,6 +1046,13 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
             'close_aria_label' => 'Collapse Chat',
             'state_storage' => 'session',
             'trigger_cooldown_ms' => 0,
+            'profile_tier_visitor' => 'V',
+            'profile_tier_guest' => 'G',
+            'profile_tier_member' => 'M',
+            'profile_tier_visitor_label' => 'Visitor',
+            'profile_tier_guest_label' => 'Guest',
+            'profile_tier_member_label' => 'Member',
+            'contextual_prompt' => 'What do you want to explore together?',
         ];
         $flosc_companion_defaults = wp_parse_args(
             apply_filters('flosc_companion_defaults', $flosc_companion_defaults),
@@ -1063,7 +1106,12 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         $flosc_companion_positions = apply_filters('flosc_companion_allowed_positions', ['bottom-right', 'bottom-left']);
         $flosc_companion_mobile_behaviors = apply_filters('flosc_companion_mobile_behaviors', ['fullscreen', 'panel']);
         $flosc_companion_context_scopes = apply_filters('flosc_companion_context_scopes', ['basic', 'extended']);
-        $flosc_companion_launcher_icons = array_keys((array) apply_filters('flosc_companion_launcher_icon_choices', ['chat' => 'Chat Bubble', 'help' => 'Help Circle', 'spark' => 'Spark']));
+        $flosc_companion_launcher_icons = array_keys((array) apply_filters('flosc_companion_launcher_icon_choices', [
+            'product_logo' => 'Product Logo (Chat Logo)',
+            'chat' => 'Chat Bubble',
+            'help' => 'Help Circle',
+            'spark' => 'Spark',
+        ]));
         $flosc_companion_motion_modes = apply_filters('flosc_companion_motion_modes', ['system', 'reduce', 'full']);
         $flosc_companion_state_storages = apply_filters('flosc_companion_state_storages', ['session', 'local']);
 
@@ -1138,7 +1186,36 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         $flosc_new_settings['companion_position'] = $flosc_position;
         $flosc_new_settings['companion_greeting'] = sanitize_textarea_field((string) ($flosc_post['flow_companion_greeting'] ?? $flosc_companion_defaults['greeting']));
         $flosc_new_settings['companion_subtitle'] = sanitize_text_field((string) ($flosc_post['flow_companion_subtitle'] ?? $flosc_companion_defaults['subtitle']));
+        $flosc_new_settings['companion_header_icon_url'] = esc_url_raw((string) ($flosc_post['flow_companion_header_icon_url'] ?? ''));
         $flosc_new_settings['companion_contextual_prompt'] = sanitize_text_field((string) ($flosc_post['flow_companion_contextual_prompt'] ?? $flosc_companion_defaults['contextual_prompt']));
+        // Companion profile-row tier codes (defaults V/G/M) and accessible labels.
+        $flosc_sanitize_tier_code = static function ( $raw, $fallback ) {
+            $code = strtoupper( sanitize_text_field( (string) $raw ) );
+            $code = preg_replace( '/[^A-Z0-9]/', '', $code );
+            $code = substr( (string) $code, 0, 3 );
+            return $code !== '' ? $code : $fallback;
+        };
+        $flosc_new_settings['companion_profile_tier_visitor'] = $flosc_sanitize_tier_code(
+            $flosc_post['flow_companion_profile_tier_visitor'] ?? ( $flosc_companion_defaults['profile_tier_visitor'] ?? 'V' ),
+            'V'
+        );
+        $flosc_new_settings['companion_profile_tier_guest'] = $flosc_sanitize_tier_code(
+            $flosc_post['flow_companion_profile_tier_guest'] ?? ( $flosc_companion_defaults['profile_tier_guest'] ?? 'G' ),
+            'G'
+        );
+        $flosc_new_settings['companion_profile_tier_member'] = $flosc_sanitize_tier_code(
+            $flosc_post['flow_companion_profile_tier_member'] ?? ( $flosc_companion_defaults['profile_tier_member'] ?? 'M' ),
+            'M'
+        );
+        $flosc_new_settings['companion_profile_tier_visitor_label'] = sanitize_text_field(
+            (string) ( $flosc_post['flow_companion_profile_tier_visitor_label'] ?? ( $flosc_companion_defaults['profile_tier_visitor_label'] ?? 'Visitor' ) )
+        );
+        $flosc_new_settings['companion_profile_tier_guest_label'] = sanitize_text_field(
+            (string) ( $flosc_post['flow_companion_profile_tier_guest_label'] ?? ( $flosc_companion_defaults['profile_tier_guest_label'] ?? 'Guest' ) )
+        );
+        $flosc_new_settings['companion_profile_tier_member_label'] = sanitize_text_field(
+            (string) ( $flosc_post['flow_companion_profile_tier_member_label'] ?? ( $flosc_companion_defaults['profile_tier_member_label'] ?? 'Member' ) )
+        );
         // Explicit header visibility toggles (checkbox: present = show, absent = hide).
         $flosc_new_settings['companion_show_header_title'] = isset($flosc_post['flow_companion_show_header_title']) ? 1 : 0;
         $flosc_new_settings['companion_show_header_subtitle'] = isset($flosc_post['flow_companion_show_header_subtitle']) ? 1 : 0;
@@ -1337,16 +1414,16 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
             );
         }
         if (isset($flosc_new_settings['free_lesson_never_free'])) {
-            $raw_nf = (string) $flosc_new_settings['free_lesson_never_free'];
-            $parts = preg_split('/[\s,;]+/', $raw_nf) ?: [];
-            $nums = [];
-            foreach ($parts as $p) {
-                $n = intval($p);
-                if ($n > 0) {
-                    $nums[] = $n;
+            $flosc_raw_nf = (string) $flosc_new_settings['free_lesson_never_free'];
+            $flosc_parts = preg_split('/[\s,;]+/', $flosc_raw_nf) ?: [];
+            $flosc_nums = [];
+            foreach ($flosc_parts as $flosc_part) {
+                $flosc_n = intval($flosc_part);
+                if ($flosc_n > 0) {
+                    $flosc_nums[] = $flosc_n;
                 }
             }
-            $flosc_new_settings['free_lesson_never_free'] = implode(', ', array_values(array_unique($nums)));
+            $flosc_new_settings['free_lesson_never_free'] = implode(', ', array_values(array_unique($flosc_nums)));
         }
         if (isset($flosc_new_settings['free_lesson_guaranteed'])) {
             $flosc_new_settings['free_lesson_guaranteed'] = max(0, intval($flosc_new_settings['free_lesson_guaranteed']));
@@ -1430,15 +1507,20 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         update_option('flosc_visitor_menu_items', $flosc_new_menu);
 
         // v1.9.8: Guest menu — dynamic items from repeater
+        // Purchase/offer actions are the profile-bar Upgrade button, not plain menu rows.
         $flosc_guest_labels  = $flosc_post['guest_menu_label']  ?? [];
         $flosc_guest_actions = $flosc_post['guest_menu_action'] ?? [];
         $flosc_new_guest_menu = [];
         foreach ($flosc_guest_labels as $flosc_i => $flosc_label) {
             $flosc_label  = sanitize_text_field($flosc_label);
             $action = sanitize_text_field($flosc_guest_actions[$flosc_i] ?? '');
-            if ($flosc_label !== '' && $action !== '') {
-                $flosc_new_guest_menu[] = ['label' => $flosc_label, 'action' => $action];
+            if ($flosc_label === '' || $action === '') {
+                continue;
             }
+            if ($action === 'open_sandbox_purchase' || strpos($action, 'show_offer') === 0) {
+                continue;
+            }
+            $flosc_new_guest_menu[] = ['label' => $flosc_label, 'action' => $action];
         }
         update_option('flosc_guest_menu_items', $flosc_new_guest_menu);
 
@@ -1449,9 +1531,13 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         foreach ($flosc_member_labels as $flosc_i => $flosc_label) {
             $flosc_label  = sanitize_text_field($flosc_label);
             $action = sanitize_text_field($flosc_member_actions[$flosc_i] ?? '');
-            if ($flosc_label !== '' && $action !== '') {
-                $flosc_new_member_menu[] = ['label' => $flosc_label, 'action' => $action];
+            if ($flosc_label === '' || $action === '') {
+                continue;
             }
+            if ($action === 'open_sandbox_purchase' || strpos($action, 'show_offer') === 0) {
+                continue;
+            }
+            $flosc_new_member_menu[] = ['label' => $flosc_label, 'action' => $action];
         }
         update_option('flosc_member_menu_items', $flosc_new_member_menu);
 
@@ -1647,6 +1733,16 @@ if ($flosc_selected_flow_name === '') {
     $flosc_selected_flow_name = $flosc_selected_ivr;
 }
 
+// Flow chrome accent (Identity brand color) — used by flow-selector theme "flow-primary".
+$flosc_flow_primary_color = sanitize_hex_color(
+    (string) ($flosc_flow_settings['identity']['primary_color']
+        ?? $flosc_flow_settings['primary_color']
+        ?? '#4f46e5')
+);
+if (!$flosc_flow_primary_color) {
+    $flosc_flow_primary_color = '#4f46e5';
+}
+
 ?>
 <div class="wrap flosc-admin">
     <h1 class="flosc-settings-title">
@@ -1666,55 +1762,70 @@ if ($flosc_selected_flow_name === '') {
         </div>
     <?php endif; ?>
     
-    <!-- IVR File Selector = Flow Selector -->
-    <div class="flosc-ivr-selector">
+    <?php // Flow switcher chrome: single-line header + details accordion (ops/secondary). ?>
+    <div class="flosc-flow-selector"
+         id="flosc-flow-selector"
+         data-theme="glass"
+         style="--flosc-flow-primary: <?php echo esc_attr($flosc_flow_primary_color); ?>;">
 
-        <?php // Flow-context row above the selector: single-flow view highlights the active flow; all-flows view lists every flow with the active one highlighted + bold. ?>
-        <?php if ($flosc_identity_view === 'all'): ?>
-            <div class="flosc-ivr-context-row">
-                <span class="flosc-ivr-context-label">All flows:</span>
-                <?php foreach ($flosc_ivr_files as $flosc_file): $flosc_is_current_flow = ($flosc_file === $flosc_selected_ivr); ?>
-                    <span class="flosc-ivr-chip <?php echo $flosc_is_current_flow ? 'is-current' : ''; ?>">
-                        <?php echo esc_html($flosc_file); ?>
-                    </span>
-                <?php endforeach; ?>
-            </div>
-        <?php else: ?>
-            <div class="flosc-ivr-working-row">
-                Editing flow:
-                <span class="flosc-ivr-working-chip">
-                    <?php echo esc_html($flosc_selected_flow_name); ?>
-                </span>
-            </div>
-        <?php endif; ?>
-
-        <div class="flosc-ivr-controls-row">
-            <label class="flosc-ivr-select-label">Switch Flow:</label>
-            <select id="ivr-select" class="flosc-ivr-select-control">
-                <?php foreach ($flosc_ivr_files as $flosc_file): ?>
+        <div class="flosc-flow-selector__main-row">
+            <label class="flosc-flow-selector__select-label" for="ivr-select">Switch Flow:</label>
+            <select id="ivr-select" class="flosc-flow-selector__select-control" aria-label="Switch Flow">
+                <?php
+                // Always-work cue only: append " (default)" to the label. No option CSS
+                // (font-weight/color on <option> is OS-dependent and often ignored).
+                foreach ($flosc_ivr_files as $flosc_file):
+                    $flosc_opt_label = (string) ($flosc_flow_selector_labels[$flosc_file] ?? $flosc_file);
+                    if ($flosc_user_default_ivr !== '' && $flosc_user_default_ivr === $flosc_file) {
+                        $flosc_opt_label .= ' (default)';
+                    }
+                    ?>
                     <option value="<?php echo esc_attr($flosc_file); ?>" <?php selected($flosc_selected_ivr, $flosc_file); ?>>
-                        <?php echo esc_html($flosc_flow_selector_labels[$flosc_file] ?? $flosc_file); ?>
+                        <?php echo esc_html($flosc_opt_label); ?>
                     </option>
                 <?php endforeach; ?>
             </select>
-            
-            <?php if ($flosc_flow_settings['status'] === 'active' && !empty($flosc_flow_settings['slug'])): ?>
-                <a href="<?php echo esc_url($flosc_flow_url); ?>" target="_blank" class="button button-small">
+
+            <?php if (($flosc_flow_settings['status'] ?? '') === 'active' && !empty($flosc_flow_settings['slug'])): ?>
+                <a href="<?php echo esc_url($flosc_flow_url); ?>" target="_blank" rel="noopener noreferrer" class="button button-small">
                     View App &#8599;
                 </a>
             <?php endif; ?>
+
+            <?php if ($flosc_user_default_ivr === $flosc_selected_ivr && $flosc_user_default_ivr !== ''): ?>
+                <span class="flosc-flow-selector__default-btn"
+                      title="<?php echo esc_attr__('Opens this flow when you enter FLOSC Settings without a flow URL', 'flosc'); ?>">
+                    <?php echo esc_html__('Default', 'flosc'); ?>
+                </span>
+            <?php else: ?>
+                <form method="post" action="" class="flosc-default-flow-form">
+                    <?php wp_nonce_field('flosc_set_default_flow', 'flosc_default_flow_nonce'); ?>
+                    <button type="submit" name="flosc_set_default_flow" value="1" class="button button-small">
+                        <?php echo esc_html__('Set as default', 'flosc'); ?>
+                    </button>
+                </form>
+            <?php endif; ?>
+
+            <button type="button"
+                    class="button button-small flosc-flow-selector__details-toggle"
+                    id="flosc-flow-selector-details-toggle"
+                    aria-expanded="false"
+                    aria-controls="flosc-flow-selector-details-panel">
+                <?php echo esc_html__('Details', 'flosc'); ?>
+                <span class="flosc-flow-selector__details-caret" aria-hidden="true">▾</span>
+            </button>
         </div>
 
-        <div class="flosc-ivr-meta-row">
-            floscFlowFileName: <span class="flosc-ivr-meta-filename"><?php echo esc_html($flosc_selected_ivr); ?></span>
-            <?php if ($flosc_user_default_ivr === $flosc_selected_ivr): ?>
-                <span class="flosc-ivr-default-note">(default)</span>
-            <?php endif; ?>
-        </div>
-        
-        <!-- Permalink Status Row -->
-        <div class="flosc-ivr-permalink-row">
-            <?php flosc_permalink_status_indicator($flosc_flow_settings['slug'] ?? ''); ?>
+        <div id="flosc-flow-selector-details-panel"
+             class="flosc-flow-selector__details-panel"
+             hidden>
+            <div class="flosc-flow-selector__details-row">
+                <span class="flosc-flow-selector__details-label"><?php echo esc_html__('Flow file', 'flosc'); ?></span>
+                <code class="flosc-flow-selector__meta-filename"><?php echo esc_html($flosc_selected_ivr); ?></code>
+            </div>
+            <div class="flosc-flow-selector__details-row flosc-flow-selector__details-row--status">
+                <?php flosc_permalink_status_indicator($flosc_flow_settings['slug'] ?? ''); ?>
+            </div>
         </div>
     </div>
     
@@ -1730,6 +1841,22 @@ if ($flosc_selected_flow_name === '') {
         if (ivrSelect) {
             ivrSelect.addEventListener('change', function () {
                 switchIVR(this.value);
+            });
+        }
+
+        const detailsToggle = document.getElementById('flosc-flow-selector-details-toggle');
+        const detailsPanel = document.getElementById('flosc-flow-selector-details-panel');
+        if (detailsToggle && detailsPanel) {
+            detailsToggle.addEventListener('click', function () {
+                const isOpen = detailsToggle.getAttribute('aria-expanded') === 'true';
+                const nextOpen = !isOpen;
+                detailsToggle.setAttribute('aria-expanded', nextOpen ? 'true' : 'false');
+                detailsToggle.classList.toggle('is-open', nextOpen);
+                if (nextOpen) {
+                    detailsPanel.removeAttribute('hidden');
+                } else {
+                    detailsPanel.setAttribute('hidden', '');
+                }
             });
         }
 

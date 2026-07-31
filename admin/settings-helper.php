@@ -151,3 +151,105 @@ function flosc_admin_select($key, $options, $default = '') {
     
     echo '</select>';
 }
+
+/**
+ * Derive companion hub defaults from a flow settings array (parameterized — no brand hardcodes).
+ *
+ * Uses only this flow's own Identity/Content fields:
+ * - domain / custom_domain + slug → full-screen chat URL
+ * - lessons_category or first lesson_groups[].category → knowledge-hub category archive
+ * - companion_flow_slug or slug on WordPress site URL → companion iframe chat route
+ *   (same origin as the knowledge hub so WP login cookies apply for guests/members)
+ *
+ * @param array $flow_settings Per-flow option payload (flosc_flow_*).
+ * @return array{
+ *   fullscreen: string,
+ *   companion: string,
+ *   chat_app: string,
+ *   flow_slug: string,
+ *   lessons_category: string,
+ *   include_rules: string
+ * }
+ */
+function flosc_companion_hub_defaults_from_flow(array $flow_settings) {
+    $slug = sanitize_title((string) ($flow_settings['slug'] ?? ''));
+    $domain = trim((string) ($flow_settings['domain'] ?? $flow_settings['custom_domain'] ?? ''));
+    $domain = preg_replace('#^https?://#i', '', $domain);
+    $domain = rtrim((string) $domain, '/');
+
+    $lessons_cat = sanitize_title((string) ($flow_settings['lessons_category'] ?? ''));
+    if ($lessons_cat === '' && !empty($flow_settings['lesson_groups']) && is_array($flow_settings['lesson_groups'])) {
+        foreach ($flow_settings['lesson_groups'] as $group) {
+            if (!empty($group['category'])) {
+                $lessons_cat = sanitize_title((string) $group['category']);
+                break;
+            }
+        }
+    }
+
+    $flow_for_app = $flow_settings;
+    if (empty($flow_for_app['custom_domain']) && $domain !== '') {
+        $flow_for_app['custom_domain'] = $domain;
+    }
+    if (empty($flow_for_app['slug']) && $slug !== '') {
+        $flow_for_app['slug'] = $slug;
+    }
+
+    $fullscreen = '';
+    if (function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'get_app_url')) {
+        $fullscreen = (string) flosc()->get_app_url($flow_for_app);
+    }
+    if ($fullscreen === '') {
+        $fullscreen = $slug !== '' ? home_url('/' . $slug . '/') : home_url('/');
+    }
+    $fullscreen = esc_url_raw($fullscreen, ['http', 'https']);
+    if ($fullscreen === '') {
+        $fullscreen = home_url('/');
+    }
+
+    $companion = $lessons_cat !== ''
+        ? home_url('/category/' . $lessons_cat . '/')
+        : home_url('/');
+    $companion = esc_url_raw($companion, ['http', 'https']);
+    if ($companion === '') {
+        $companion = home_url('/');
+    }
+
+    $flow_slug = sanitize_title((string) ($flow_settings['companion_flow_slug'] ?? $slug));
+
+    // Iframe chat route: WordPress site + flow slug (parameterized).
+    // Knowledge hubs usually live on the WP host; a same-origin iframe keeps
+    // guest/member WP sessions. Override anytime with companion_chat_app_url.
+    $chat_app = $flow_slug !== ''
+        ? home_url('/' . $flow_slug . '/')
+        : home_url('/');
+    $chat_app = esc_url_raw($chat_app, ['http', 'https']);
+    if ($chat_app === '') {
+        $chat_app = home_url('/');
+    }
+
+    // Suggested include rules from Content → lessons category (still editable in admin).
+    $include = [];
+    if ($lessons_cat !== '') {
+        if (function_exists('get_term_by')) {
+            $term = get_term_by('slug', $lessons_cat, 'category');
+            if ($term && !is_wp_error($term) && !empty($term->term_id)) {
+                $include[] = 'category:' . (int) $term->term_id;
+            } else {
+                $include[] = 'category:' . $lessons_cat;
+            }
+        } else {
+            $include[] = 'category:' . $lessons_cat;
+        }
+        $include[] = 'path:/category/' . $lessons_cat;
+    }
+
+    return [
+        'fullscreen'       => $fullscreen,
+        'companion'        => $companion,
+        'chat_app'         => $chat_app,
+        'flow_slug'        => $flow_slug,
+        'lessons_category' => $lessons_cat,
+        'include_rules'    => implode("\n", $include),
+    ];
+}

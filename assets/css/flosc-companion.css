@@ -134,56 +134,104 @@
     height: min(820px, calc(var(--flosc-companion-viewport-height) - var(--flosc-companion-safe-top) - var(--flosc-companion-safe-bottom)));
 }
 
-/* ─── Header (accent gradient with hairline) ─── */
+/* ─── Header (accent gradient with hairline) ───
+   Product chrome only — wallet/username live under the chat input
+   inside the iframe (companion-embed session strip). */
 .flosc-companion-header {
     background: var(--flosc-accent, #2563eb);
     background: linear-gradient(135deg, var(--flosc-accent, #2563eb),
                 color-mix(in srgb, var(--flosc-accent, #2563eb) 80%, #000));
     color: #ffffff;
-    padding: 16px;
+    padding: 12px 14px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+    flex-shrink: 0;
 }
 
 .flosc-companion-header-actions {
     display: flex;
     align-items: center;
     gap: 4px;
+    flex-shrink: 0;
 }
 
 .flosc-companion-header-info {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+.flosc-companion-header-text {
+    min-width: 0;
+    flex: 1 1 auto;
 }
 
 .flosc-companion-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.18);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 18px;
+    font-size: 16px;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.flosc-companion-avatar--image {
+    background: #ffffff;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
+.flosc-companion-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    padding: 3px;
+    box-sizing: border-box;
+}
+
+.flosc-companion-fab-logo {
+    width: 62%;
+    height: 62%;
+    object-fit: contain;
+    display: block;
+    border-radius: 6px;
+    background: #fff;
+    padding: 2px;
+    box-sizing: border-box;
 }
 
 .flosc-companion-title {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 600;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
 }
 
 .flosc-companion-subtitle {
-    font-size: 12px;
+    font-size: 11px;
     opacity: 0.8;
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
+/* Legacy class kept for older cached shells; no longer used for wallet. */
 .flosc-companion-token-allotment {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.75);
-    line-height: 1.2;
+    display: none;
 }
 
 .flosc-companion-close {

@@ -3524,6 +3524,12 @@ body.flosc-companion-embed #flosc_app_sidebar_toggle {
     display: none;
 }
 
+/* Sidebar profile-bar badge still hidden in companion; tier is a quiet text label in the row. */
+body.flosc-companion-embed .profile-badge,
+body.flosc-companion-embed #flosc_profile_badge {
+    display: none;
+}
+
 /* ============================================
    AUTH MODAL + ACCESS CODE (app surface)
    Lives here because /chat loads flosc-layout.css (not flosc-chat.css).
@@ -3908,6 +3914,195 @@ body.flosc-companion-embed .flosc-main {
 
 body.flosc-companion-embed .landing-state {
     display: none;
+}
+
+/* Full page / non-embed: never show companion session strip (base). */
+.flosc-companion-session-status {
+    display: none;
+}
+
+/* Tighter composer so the profile row sits cleanly under the input */
+body.flosc-companion-embed .flosc_input_composer,
+body.flosc-companion-embed .flosc-input-composer {
+    padding: 6px 12px 4px;
+    flex-shrink: 0;
+}
+
+/* Companion-embed: Name (V|G|M) · TokenCount · ExpandSubMenuCaret under the composer */
+body.flosc-companion-embed .flosc-companion-session-status:not([hidden]),
+body.flosc-companion-embed .flosc-companion-profile-row:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    flex-shrink: 0;
+    order: 99;
+    position: relative;
+    padding: 0 0 calc(8px + env(safe-area-inset-bottom, 0px));
+    background: var(--flosc-bg, #fff);
+    border-top: 1px solid color-mix(in srgb, var(--flosc-text-muted, #71717a) 16%, transparent);
+    z-index: 5;
+}
+
+body.flosc-companion-embed .flosc-main {
+    display: flex;
+    flex-direction: column;
+}
+
+body.flosc-companion-embed .chat-container,
+body.flosc-companion-embed #flosc_chat_container {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+body.flosc-companion-embed .flosc-companion-profile-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    margin: 0;
+    padding: 8px 14px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    min-height: 40px;
+}
+
+body.flosc-companion-embed .flosc-companion-profile-toggle:hover,
+body.flosc-companion-embed .flosc-companion-profile-toggle:focus-visible {
+    background: color-mix(in srgb, var(--flosc-text-muted, #71717a) 8%, transparent);
+    outline: none;
+}
+
+/* Name + (V|G|M) as one group; ellipsis on name only. */
+body.flosc-companion-embed .flosc-companion-session-identity {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    min-width: 0;
+    flex: 1 1 auto;
+    line-height: 1.25;
+}
+
+/* Compact tier code after name: (V) (G) (M) — plain text, no pill. */
+body.flosc-companion-embed .flosc-companion-session-tier {
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0;
+    color: var(--flosc-text-muted, #71717a);
+    white-space: nowrap;
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    border-radius: 0;
+    text-transform: none;
+    line-height: 1.25;
+    opacity: 0.85;
+    /* Kill native/browser tooltip chrome that looked like a badge */
+    pointer-events: none;
+}
+
+body.flosc-companion-embed .flosc-companion-session-tier:empty {
+    display: none;
+}
+
+body.flosc-companion-embed .flosc-companion-session-user {
+    min-width: 0;
+    flex: 0 1 auto;
+    max-width: calc(100% - 2.5em);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--flosc-text, #18181b);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+body.flosc-companion-embed .flosc-companion-session-tokens {
+    flex: 0 0 auto;
+    font-size: 12px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--flosc-text-muted, #52525b);
+    white-space: nowrap;
+    line-height: 1.25;
+}
+
+body.flosc-companion-embed .flosc-companion-profile-caret {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    color: var(--flosc-text-muted, #71717a);
+    transition: transform 0.2s ease;
+}
+
+body.flosc-companion-embed .flosc-companion-profile-toggle[aria-expanded="true"] .flosc-companion-profile-caret {
+    transform: rotate(180deg);
+}
+
+/* Submenu opens upward above the row (over the input edge) */
+body.flosc-companion-embed .flosc-companion-profile-menu {
+    display: none;
+    flex-direction: column;
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: calc(100% - 2px);
+    margin: 0;
+    padding: 6px 0;
+    border-radius: 12px;
+    background: var(--flosc-bg, #fff);
+    border: 1px solid color-mix(in srgb, var(--flosc-text-muted, #71717a) 18%, transparent);
+    box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0.22);
+    max-height: min(240px, 45vh);
+    overflow-y: auto;
+}
+
+body.flosc-companion-embed .flosc-companion-profile-menu:not([hidden]) {
+    display: flex;
+}
+
+body.flosc-companion-embed .flosc-companion-profile-menu-header {
+    padding: 8px 14px 6px;
+    border-bottom: 1px solid color-mix(in srgb, var(--flosc-text-muted, #71717a) 12%, transparent);
+    margin-bottom: 4px;
+}
+
+body.flosc-companion-embed .flosc-companion-profile-menu-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--flosc-text, #18181b);
+}
+
+body.flosc-companion-embed .flosc-companion-profile-menu-email {
+    font-size: 11px;
+    color: var(--flosc-text-muted, #71717a);
+    margin-top: 2px;
+    word-break: break-all;
+}
+
+body.flosc-companion-embed .flosc-companion-profile-menu-item {
+    display: block;
+    width: 100%;
+    padding: 10px 14px;
+    border: none;
+    background: transparent;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--flosc-text, #18181b);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+body.flosc-companion-embed .flosc-companion-profile-menu-item:hover,
+body.flosc-companion-embed .flosc-companion-profile-menu-item:focus-visible {
+    background: color-mix(in srgb, var(--flosc-accent, #2563eb) 10%, transparent);
+    outline: none;
 }
 
 /* ============================================

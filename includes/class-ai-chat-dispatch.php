@@ -160,14 +160,21 @@ class FLOSC_AI_Chat_Dispatch {
                     }
                 }
 
-                $is_member = ( ( $context['purchased'] ?? 'No' ) === 'Yes' );
+                // Membership for AI: trust access_level / is_member first, then purchased (bool or Yes).
+                // Never require purchased === 'Yes' alone — that mis-labels LeSAEp Learners as guests.
+                $is_member = $this->flosc_context_user_is_member( $context );
                 if ( $is_member ) {
-                    // LeSAEp Learner — full access: discuss specific lessons, sounds, personalized path
-                    $quiz_results_section .= "\n**Context:** This user is a LeSAEp Learner (paid member). You CAN discuss their missed sounds in detail, reference specific lesson numbers, and guide them through their personalized learning path.\n";
+                    $quiz_results_section .= "\n**Context:** This user is a **LeSAEp Learner** (full member access). "
+                        . "You CAN and SHOULD discuss their missed sounds in detail, reference specific lesson numbers "
+                        . "(e.g. Lesson 45 for [w]), guide them to real WordPress lessons, and help them practice. "
+                        . "Do NOT claim they are a guest. Do NOT push upgrades or free-lesson funnels. "
+                        . "Do NOT say you already answered, refuse, or make excuses — find the lesson and help.\n";
                 } else {
-                    // Guest — has an account and quiz results, but hasn't purchased yet
-                    // Share their score and missed sounds to motivate purchase; do NOT deliver lesson content
-                    $quiz_results_section .= "\n**Context:** This user has an account but has not yet purchased full access. You MAY share their quiz score and which sounds they missed — this helps motivate the purchase. Do NOT deliver lesson content (videos, exercises, detailed how-to). Encourage them to unlock their full personalized learning path.\n";
+                    // Guest — logged in, not full member
+                    $quiz_results_section .= "\n**Context:** This user is a **Guest** (logged in, not a LeSAEp Learner yet). "
+                        . "You MAY share their quiz score and which sounds they missed. "
+                        . "Do NOT deliver full lesson content (videos, exercises, detailed how-to). "
+                        . "You may invite them to unlock full LeSAEp Learner access.\n";
                 }
             }
         }
@@ -585,6 +592,74 @@ class FLOSC_AI_Chat_Dispatch {
     }
 
     /**
+     * Whether AI context represents a full member (LeSAEp Learner), not a guest.
+     *
+     * Prefer access_level / is_member. Treat purchased as truthy for bool and
+     * common string forms ('Yes', 'true', '1') — never require purchased === 'Yes'
+     * alone (that mis-labeled sandbox / meta-granted LeSAEp Learners as guests).
+     *
+     * @param array $context AI / session context
+     * @return bool
+     */
+    private function flosc_context_user_is_member( $context ) {
+        if ( ! is_array( $context ) ) {
+            $context = [];
+        }
+
+        $level = strtolower( (string) ( $context['access_level'] ?? '' ) );
+        if ( $level === 'member' ) {
+            return true;
+        }
+
+        if ( ! empty( $context['is_member'] ) ) {
+            return true;
+        }
+
+        // purchased may be bool true, 1, or strings Yes/true/1 from various builders.
+        if ( array_key_exists( 'purchased', $context ) ) {
+            $purchased = $context['purchased'];
+            if ( $purchased === true || $purchased === 1 || $purchased === '1' ) {
+                return true;
+            }
+            if ( is_string( $purchased ) ) {
+                $norm = strtolower( trim( $purchased ) );
+                if ( in_array( $norm, [ 'yes', 'true', '1', 'member' ], true ) ) {
+                    return true;
+                }
+            }
+        }
+
+        // Backend authority when session is authenticated (covers role/meta grants).
+        $user_id = (int) ( $context['user_id'] ?? $context['wp_user_id'] ?? 0 );
+        if ( ! $user_id && function_exists( 'is_user_logged_in' ) && is_user_logged_in() ) {
+            $user_id = (int) get_current_user_id();
+        }
+        if ( $user_id > 0 ) {
+            if ( class_exists( 'FLOSC_Member_Access' ) ) {
+                $ma = FLOSC_Member_Access::instance();
+                if ( $ma && method_exists( $ma, 'is_member' ) && $ma->is_member( $user_id ) ) {
+                    return true;
+                }
+            }
+            if ( function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'sale' ) ) {
+                $sale = flosc()->sale();
+                if ( $sale && method_exists( $sale, 'access' ) ) {
+                    $access = $sale->access();
+                    if ( $access && method_exists( $access, 'is_member' ) && $access->is_member( $user_id ) ) {
+                        return true;
+                    }
+                    if ( $access && method_exists( $access, 'get_simple_state' )
+                        && $access->get_simple_state( $user_id ) === 'member' ) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Build context string from context array
      * v1.9.2: Handle arrays and nested values gracefully
      */
@@ -593,12 +668,47 @@ class FLOSC_AI_Chat_Dispatch {
             return '';
         }
 
+        // Re-assert membership so the model never trusts a stale guest label.
+        $is_member = $this->flosc_context_user_is_member( $context );
+        if ( $is_member ) {
+            $context['access_level'] = 'member';
+            $context['is_member']    = true;
+            // Display-friendly; keep separate from actual-purchase meta when present.
+            if ( ! array_key_exists( 'purchased', $context )
+                || $context['purchased'] === false
+                || $context['purchased'] === 'No'
+                || $context['purchased'] === ''
+            ) {
+                // Has full access even if _flosc_purchased is empty (admin/sandbox grant).
+                $context['member_entitlement'] = 'LeSAEp Learner (full member access)';
+            }
+        }
+
         $lines = [];
         // v1.9.0: Skip keys handled separately in build_system_prompt()
         $skip_keys = ['ivr_guidance'];
 
+        // Put identity fields first so the model sees them before long KB/quiz blocks.
+        $priority_keys = [ 'access_level', 'is_member', 'purchased', 'member_entitlement', 'user_name', 'phase', 'logged_in' ];
+        foreach ( $priority_keys as $pkey ) {
+            if ( ! array_key_exists( $pkey, $context ) ) {
+                continue;
+            }
+            $formatted_value = $this->format_context_value( $context[ $pkey ] );
+            if ( $formatted_value === null || $formatted_value === '' ) {
+                continue;
+            }
+            $label   = ucwords( str_replace( '_', ' ', $pkey ) );
+            $lines[] = "- **{$label}:** {$formatted_value}";
+        }
+        if ( $is_member ) {
+            $lines[] = '- **User tier for content:** LeSAEp Learner — full lesson access. Do NOT treat as guest. Do NOT refuse lesson requests or invent upgrade funnels.';
+        }
+
         foreach ($context as $key => $value) {
-            if (in_array($key, $skip_keys)) continue;
+            if (in_array($key, $skip_keys, true) || in_array($key, $priority_keys, true)) {
+                continue;
+            }
             $formatted_value = $this->format_context_value($value);
             if ($formatted_value === null || $formatted_value === '') {
                 continue; // Skip null values

@@ -120,7 +120,7 @@ class FLOSC_Companion_Widget {
             'content_display_mode' => 'in_chat',
             'enabled'              => false,
             'position'             => 'bottom-right',
-            'greeting'             => 'Hi! I\'m your learning companion. Need help with this lesson?',
+            'greeting'             => 'Chat with us',
             'accent_color'         => '',
             'show_for_visitors'    => false,
         ];

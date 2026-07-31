@@ -587,6 +587,7 @@ function flosc_michel_timestamp_global() {
 
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-rest.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-admin.php';
+require_once FLOSC_PLUGIN_DIR . 'admin/settings-helper.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/traits/class-flosc-visitor-token-trait.php';
 
 /**
@@ -1007,6 +1008,37 @@ class FLOSC_Framework {
                 update_option($_menu_key, $_menu);
             }
             update_option('flosc_menus_v800', true);
+        }
+
+        // v8.0.0: Upgrade is the profile-bar feature button — strip purchase rows from guest/member menus.
+        if (!get_option('flosc_menus_upgrade_btn_v800')) {
+            foreach (['flosc_guest_menu_items', 'flosc_member_menu_items'] as $_menu_key) {
+                $_menu = get_option($_menu_key, []);
+                if (!is_array($_menu)) {
+                    continue;
+                }
+                $_menu = array_values(array_filter($_menu, static function ($item) {
+                    $action = is_array($item) ? (string) ($item['action'] ?? '') : '';
+                    return $action !== 'open_sandbox_purchase' && strpos($action, 'show_offer') !== 0;
+                }));
+                update_option($_menu_key, $_menu);
+            }
+            // Ensure guest Upgrade button is on when we remove the menu-row fallback.
+            $_pb = get_option('flosc_profile_bar', []);
+            if (!is_array($_pb)) {
+                $_pb = [];
+            }
+            if (!isset($_pb['guest']) || !is_array($_pb['guest'])) {
+                $_pb['guest'] = [];
+            }
+            if (!array_key_exists('show_upgrade', $_pb['guest']) || empty($_pb['guest']['show_upgrade'])) {
+                $_pb['guest']['show_upgrade'] = true;
+                if (empty($_pb['guest']['upgrade_label'])) {
+                    $_pb['guest']['upgrade_label'] = 'Upgrade';
+                }
+                update_option('flosc_profile_bar', $_pb);
+            }
+            update_option('flosc_menus_upgrade_btn_v800', true);
         }
 
         // v8.0.0: SSO guest email sequence — welcome on registration, day 10/20/28 follow-ups
@@ -4436,9 +4468,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
      * Returns flow config array or null if no match.
      */
     public function get_current_flow() {
-        // v1.7.5: If flow was explicitly set (e.g., from REST API with flow_id param),
-        // use that instead of domain/slug detection. This supports purchases from
-        // any host (flosc.ai, dainis.net, clickbank, etc.)
+        // v1.7.5: If flow was explicitly set (e.g., from REST API with flow_id param,
+        // or companion knowledge-hub resolution), use that instead of domain/slug detection.
+        // Supports purchases from any host and companion settings on hub archives.
         if ($this->forced_flow !== null) {
             return $this->forced_flow;
         }
@@ -4451,49 +4483,62 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
             return $current_flow;
         }
         $checked = true;
-        
+
+        $current_flow = $this->detect_flow_from_request_route();
+        return $current_flow;
+    }
+
+    /**
+     * Detect active flow from the HTTP route only (rewrite var, custom domain, slug).
+     * Does not consult forced_flow — used by is_flosc_request() so companion hub
+     * resolution (which sets forced_flow on normal WP pages) does not make those
+     * pages look like the full-page chat SPA.
+     *
+     * @return array|null Flow config or null when this request is not a FLOSC app route.
+     */
+    private function detect_flow_from_request_route() {
         // v1.3.6: Check flosc_ivr query var FIRST (set by rewrite rules)
         // v1.8.8 FIX: $wp_query doesn't exist during plugins_loaded — guard it
         global $wp_query;
         $ivr_file = ($wp_query instanceof WP_Query) ? get_query_var('flosc_ivr') : '';
         if (!empty($ivr_file)) {
-            $current_flow = $this->build_flow_from_ivr_file($ivr_file);
-            if ($current_flow) {
-                return $current_flow;
+            $flow = $this->build_flow_from_ivr_file($ivr_file);
+            if ($flow) {
+                return $flow;
             }
         }
-        
-        // Get all IVR files and their settings
+
         // §2: union shipped defaults with uploaded/edited IVR files (uploads wins).
         $ivr_files = array_unique(array_map('basename', flosc_config_glob(['*_ivr.md', 'ivr*.md'])));
-        
+
         $current_host = strtolower(sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'] ?? '')));
         $request_uri = sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'] ?? ''));
-        
-        // Check each IVR file's settings for domain/slug match
+
         foreach ($ivr_files as $filename) {
-            if (strpos($filename, 'backup') !== false) continue;
-            
+            if (strpos($filename, 'backup') !== false) {
+                continue;
+            }
+
             $flow = $this->build_flow_from_ivr_file($filename);
-            if (!$flow || ($flow['status'] ?? 'active') !== 'active') continue;
-            
+            if (!$flow || ($flow['status'] ?? 'active') !== 'active') {
+                continue;
+            }
+
             // Check custom domain
             if (!empty($flow['custom_domain'])) {
                 $domain = strtolower(preg_replace('#^https?://#', '', trim($flow['custom_domain'])));
                 $domain = rtrim($domain, '/');
                 if ($current_host === $domain || $current_host === 'www.' . $domain) {
-                    $current_flow = $flow;
-                    return $current_flow;
+                    return $flow;
                 }
             }
-            
+
             // Check slug
             if (!empty($flow['slug']) && preg_match('#^/' . preg_quote($flow['slug'], '#') . '/?#', $request_uri)) {
-                $current_flow = $flow;
-                return $current_flow;
+                return $flow;
             }
         }
-        
+
         return null;
     }
     
@@ -4598,8 +4643,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
     }
     
     public function is_flosc_request() {
-        // v1.2.2: Use get_current_flow() for multi-flow support
-        return $this->get_current_flow() !== null;
+        // Full-page chat SPA only: custom domain, flow slug, or flosc_ivr rewrite.
+        // Intentionally ignores forced_flow — companion knowledge-hub resolution sets
+        // forced_flow on normal WP pages (e.g. /category/lesaep/) so settings resolve
+        // to the owning flow; those pages must keep the theme shell + companion widget,
+        // not the full-app nuclear dequeue / flosc-app.js surface.
+        return $this->detect_flow_from_request_route() !== null;
     }
     
     /**
@@ -4619,10 +4668,17 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
         }
         
         if ($flow && !empty($flow['custom_domain'])) {
-            // Normalize and return custom domain URL
+            // Normalize and return custom domain URL.
+            // Prefer https for public chat hosts so companion iframes on https hubs
+            // (e.g. dainis.net/category/lesaep/) are not mixed-content blocked.
             $custom_domain = preg_replace('#^https?://#', '', $flow['custom_domain']);
             $custom_domain = rtrim($custom_domain, '/');
-            return (is_ssl() ? 'https://' : 'http://') . $custom_domain . '/';
+            $flosc_forwarded_proto = isset($_SERVER['HTTP_X_FORWARDED_PROTO'])
+                ? strtolower(sanitize_text_field(wp_unslash((string) $_SERVER['HTTP_X_FORWARDED_PROTO'])))
+                : '';
+            $forwarded_https = ( 'https' === $flosc_forwarded_proto );
+            $use_https = is_ssl() || $forwarded_https || apply_filters('flosc_custom_domain_force_https', true, $flow);
+            return ($use_https ? 'https://' : 'http://') . $custom_domain . '/';
         }
         
         if ($flow && !empty($flow['slug'])) {
@@ -4688,7 +4744,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
         // callbacks at priority > 1, which fires after do_action('wp_enqueue_scripts')).
         // These hooks fire inside wp_print_styles()/wp_print_head_scripts()
         // just before the actual output, catching anything that slipped through.
-        $flosc_style_whitelist = ['flosc-layout', 'flosc-theme', 'flosc-offers', 'flosc-preset'];
+        $flosc_style_whitelist = ['flosc-layout', 'flosc-theme', 'flosc-offers', 'flosc-preset', 'flosc-companion'];
         add_action('wp_print_styles', function() use ($flosc_style_whitelist) {
             global $wp_styles;
             foreach ($wp_styles->queue as $handle) {
@@ -4698,7 +4754,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
             }
         }, 0);
         
-        $flosc_script_whitelist = ['flosc-app', 'paypal-js', 'stripe-js'];
+        $flosc_script_whitelist = ['flosc-app', 'flosc-companion', 'paypal-js', 'stripe-js'];
         add_action('wp_print_scripts', function() use ($flosc_script_whitelist) {
             global $wp_scripts;
             foreach ($wp_scripts->queue as $handle) {
@@ -5136,17 +5192,22 @@ HTML;
         $flow = $this->get_current_flow();
         
         if ($flow) {
-            $id = $flow['identity'] ?? [];
+            $id = is_array($flow['identity'] ?? null) ? $flow['identity'] : [];
+            // Prefer identity sub-array; fall back to flat flow keys (some saves store flat).
+            $name = (string) ($id['name'] ?? $flow['name'] ?? '');
+            $chatlogo = (string) ($id['chatlogo_url'] ?? $flow['chatlogo_url'] ?? '');
+            $favicon = (string) ($id['favicon_url'] ?? $flow['favicon_url'] ?? '');
+            $primary = (string) ($id['primary_color'] ?? $flow['primary_color'] ?? '#4f46e5');
             
             return [
-                'name'            => $id['name'] ?? 'FLOSC App',
-                'title'           => $id['title'] ?? '',
-                'tagline'         => $id['tagline'] ?? '',
-                'chatlogo_url'    => $id['chatlogo_url'] ?? '',
-                'favicon_url'     => $id['favicon_url'] ?? '',
-                'badgeUrl'        => $id['badgeUrl'] ?? '',
-                'primary_color'   => $id['primary_color'] ?? '#4f46e5',
-                'share_text'      => $id['share_text'] ?? '',
+                'name'            => $name !== '' ? $name : 'FLOSC App',
+                'title'           => $id['title'] ?? ($flow['title'] ?? ''),
+                'tagline'         => $id['tagline'] ?? ($flow['tagline'] ?? ''),
+                'chatlogo_url'    => $chatlogo,
+                'favicon_url'     => $favicon,
+                'badgeUrl'        => $id['badgeUrl'] ?? ($flow['badgeUrl'] ?? ''),
+                'primary_color'   => $primary !== '' ? $primary : '#4f46e5',
+                'share_text'      => $id['share_text'] ?? ($flow['share_text'] ?? ''),
                 'flow_id'         => $flow['id'] ?? 'default',
                 'currency_symbol' => $id['currency_symbol'] ?? get_option('flosc_currency_symbol', '$'),
             ];
@@ -5212,16 +5273,45 @@ HTML;
             $free_lesson_delivered = get_user_meta($user->ID, '_flosc_free_lesson_delivered', true);
             $context['free_lesson_delivered'] = $free_lesson_delivered ? 'Yes' : 'No';
 
-            // Purchase status
-            $context['purchased'] = $this->sale_manager->access()->can_access($user->ID, 'full') ? 'Yes' : 'No';
+            // Membership / full access (authoritative). can_access('full') → is_member.
+            $is_member = $this->sale_manager->access()->can_access( $user->ID, 'full' );
+            $context['purchased']     = $is_member ? 'Yes' : 'No';
+            $context['is_member']     = $is_member;
+            $context['access_level']  = $is_member ? 'member' : 'guest';
+            $context['user_id']       = $user->ID;
         } else {
-            $context['user_status'] = 'visitor';
-            $context['purchased'] = 'No';
+            $context['user_status']   = 'visitor';
+            $context['purchased']     = 'No';
+            $context['is_member']     = false;
+            $context['access_level']  = 'visitor';
         }
 
         // 3. Merge frontend context (message count, quiz taken, etc.)
+        // Do NOT let a stale frontend purchased/access_level demote a real member.
         if (!empty($frontend_context)) {
-            $context = array_merge($context, $frontend_context);
+            $protected = [
+                'purchased'    => $context['purchased'] ?? 'No',
+                'is_member'    => $context['is_member'] ?? false,
+                'access_level' => $context['access_level'] ?? 'visitor',
+                'user_id'      => $context['user_id'] ?? 0,
+                'logged_in'    => $context['logged_in'] ?? is_user_logged_in(),
+                'user_status'  => $context['user_status'] ?? 'visitor',
+            ];
+            $context = array_merge( $context, $frontend_context );
+            foreach ( $protected as $pkey => $pval ) {
+                // Keep backend member elevation; allow frontend to elevate only if backend guest and frontend claims member (unlikely / ignored for demote).
+                if ( in_array( $pkey, [ 'purchased', 'is_member', 'access_level' ], true ) ) {
+                    $backend_member = (
+                        $pval === true || $pval === 'Yes' || $pval === 'member'
+                        || $pval === 1 || $pval === '1'
+                    );
+                    if ( $backend_member ) {
+                        $context[ $pkey ] = $pval;
+                    }
+                } else {
+                    $context[ $pkey ] = $pval;
+                }
+            }
         }
 
         // 4. Flow identity info
@@ -5493,19 +5583,29 @@ HTML;
             $eval_context['user_name'] = $user_data->display_name ?? 'there';
             $eval_context['user_email'] = $user_data->user_email;
             $eval_context['is_admin'] = user_can($user_id, 'manage_options');
-            // v1.6.2: access_level for is_guest/is_visitor/is_member conditions.
-            // The meta is the string 'true'/'false'; compare explicitly so a
-            // revoked member (stored 'false') is not treated as a member —
-            // (bool) 'false' would be true. Gates condition evaluation, so this
-            // is a real access check, not cosmetic.
-            $has_member_access = ('true' === get_user_meta($user_id, '_flosc_member_access', true));
-            $eval_context['access_level'] = $has_member_access ? 'member' : 'guest';
+            // v8.x userState repair: access_level from full membership stack
+            // (meta + sale offers + roles), not only _flosc_member_access === 'true'.
+            // Narrow meta compare mis-labeled LeSAEp Learners (role/sandbox/sale grants)
+            // as guests → AI excuses, no W-lesson, upgrade funnels.
+            $simple_state = 'guest';
+            if ( $this->sale_manager && method_exists( $this->sale_manager, 'access' ) ) {
+                $simple_state = $this->sale_manager->access()->get_simple_state( $user_id );
+            } elseif ( $this->member_access && method_exists( $this->member_access, 'is_member' ) ) {
+                $simple_state = $this->member_access->is_member( $user_id ) ? 'member' : 'guest';
+            }
+            $eval_context['access_level'] = ( $simple_state === 'member' ) ? 'member' : 'guest';
+            $eval_context['is_member']    = ( $eval_context['access_level'] === 'member' );
+            // "purchased" for AI/IVR: entitlement (full access), not only _flosc_purchased meta.
+            // Actual commerce flag remains on FLOSC_USER.purchased for frontend messaging.
+            $eval_context['purchased']    = $eval_context['is_member'];
 
             if (!empty($flow_id)) {
                 $this->record_user_flow_usage($user_id, $flow_id, 'chat');
             }
         } else {
             $eval_context['access_level'] = 'visitor';
+            $eval_context['is_member']    = false;
+            $eval_context['purchased']    = false;
         }
 
         // v8.0.0: Track page/post ID for chat logs; inject body only on page-intent messages.
@@ -7405,12 +7505,20 @@ You are a GUIDE, not a teacher. Your job is to:
             $output .= "  - Quiz Score: " . ($legacy_score ? "{$legacy_score}%" : '_No quiz taken_') . "\n";
         }
 
-        // Member access
+        // Member access (full stack — meta, sale, roles — same as get_simple_state)
         $member_levels = ($this->member_access && method_exists($this->member_access, 'get_user_levels'))
             ? $this->member_access->get_user_levels($user_id)
             : [];
-        $has_member_access = ('true' === get_user_meta($user_id, '_flosc_member_access', true)); // string 'true'/'false' — see FLOSC_Member_Access
-        $output .= "  - Member Access: " . ($has_member_access ? '✅ Yes' : '❌ No') . "\n";
+        $is_member = false;
+        if ( $this->sale_manager && method_exists( $this->sale_manager, 'access' ) ) {
+            $is_member = ( $this->sale_manager->access()->get_simple_state( $user_id ) === 'member' );
+        } elseif ( $this->member_access && method_exists( $this->member_access, 'is_member' ) ) {
+            $is_member = (bool) $this->member_access->is_member( $user_id );
+        } else {
+            $meta = get_user_meta( $user_id, '_flosc_member_access', true );
+            $is_member = ( $meta === 'true' || $meta === true || $meta === '1' );
+        }
+        $output .= "  - Member Access: " . ( $is_member ? '✅ Yes (LeSAEp Learner)' : '❌ No' ) . "\n";
         $output .= "  - Member Levels: " . (empty($member_levels) ? '_none_' : implode(', ', $member_levels)) . "\n";
 
         // Free lesson
@@ -7421,9 +7529,10 @@ You are a GUIDE, not a teacher. Your job is to:
             $output .= "  - Free Lesson Number: {$free_lesson_num}\n";
         }
 
-        // Purchase status
+        // Commerce purchase flag (may be empty for sandbox/admin grants)
         $purchased = get_user_meta($user_id, '_flosc_purchased', true);
-        $output .= "  - Purchased: " . ($purchased ? 'Yes' : 'No') . "\n";
+        $output .= "  - Purchased meta: " . ($purchased ? 'Yes' : 'No') . "\n";
+        $output .= "  - Full entitlement: " . ( $is_member ? 'Yes' : 'No' ) . "\n";
 
         // Funnel completion
         $funnel_completed = get_user_meta($user_id, '_flosc_funnel_completed', true);
@@ -7434,7 +7543,7 @@ You are a GUIDE, not a teacher. Your job is to:
         $output .= "  - Has Profile: " . ($has_profile ? 'Yes' : 'No') . "\n";
 
         // Access level label
-        $access_level = $has_member_access ? 'member' : 'guest';
+        $access_level = $is_member ? 'member' : 'guest';
         $output .= "  - Access Level: " . strtoupper($access_level) . "\n";
 
         return $output;
@@ -7540,13 +7649,23 @@ Example BAD response:
 \"Here's the full lesson content...\" ← NO! Content is for members only!",
             
             'member' => "
-**✅ ACCESS LEVEL: MEMBER (Full access granted)**
+**✅ ACCESS LEVEL: MEMBER — LeSAEp Learner (full access granted)**
 
-You can now share:
+This user is a **LeSAEp Learner**, not a guest and not a visitor.
+
+You can and must share:
 - ✅ Full lesson content
 - ✅ Complete guides and instructions
 - ✅ Step-by-step walkthroughs
 - ✅ All member-only content
+- ✅ Specific lesson numbers (e.g. Lesson 45 for the [w] sound)
+
+**NO-EXCUSE POLICY (CRITICAL):**
+- Do NOT claim they are a guest or need to upgrade.
+- Do NOT say you already answered, cannot find a lesson, or invent barriers.
+- Do NOT push free-lesson funnels or purchase offers to members.
+- When they ask for a sound or topic (e.g. W / [w]), find the matching lesson and help.
+- Prefer real WordPress lesson titles/numbers over fabricating content.
 
 **YOUR ROLE:**
 You are still a GUIDE. Don't try to teach everything yourself.
@@ -7556,7 +7675,7 @@ You are still a GUIDE. Don't try to teach everything yourself.
 - Celebrate their membership!
 
 Example good response:
-\"Great! As a member, you have full access. Based on your quiz, I recommend starting with Lesson 7. Ready to dive in?\"",
+\"As a LeSAEp Learner you have full access. For the [w] sound, start with Lesson 45 — want me to open it?\"",
 
         ];
         
@@ -8488,17 +8607,41 @@ Example good response:
                 }
             }
 
-            // Progress & Access Data
+            // Progress & Access Data — authoritative membership (same stack as get_simple_state).
             $ai_context['has_profile'] = $bridge_mgr->flosc_has_profile($user_id);
             $ai_context['free_lesson_delivered'] = (bool) get_user_meta($user_id, '_flosc_free_lesson_delivered', true);
-            $has_member_access = ('true' === get_user_meta($user_id, '_flosc_member_access', true)); // string 'true'/'false' — see FLOSC_Member_Access
-            $ai_context['purchased'] = $has_member_access;
+
+            $is_member = false;
+            if ( isset( $eval_context['is_member'] ) ) {
+                $is_member = (bool) $eval_context['is_member'];
+            } elseif ( $this->sale_manager && method_exists( $this->sale_manager, 'access' ) ) {
+                $is_member = ( $this->sale_manager->access()->get_simple_state( $user_id ) === 'member' );
+            } elseif ( $this->member_access && method_exists( $this->member_access, 'is_member' ) ) {
+                $is_member = (bool) $this->member_access->is_member( $user_id );
+            } else {
+                $meta = get_user_meta( $user_id, '_flosc_member_access', true );
+                $is_member = ( $meta === 'true' || $meta === true || $meta === '1' );
+            }
+
+            $ai_context['is_member']    = $is_member;
+            $ai_context['access_level'] = $is_member
+                ? 'member'
+                : ( ( $eval_context['access_level'] ?? '' ) === 'visitor' ? 'visitor' : 'guest' );
+            // For AI prompts: purchased means "has full member entitlement" (LeSAEp Learner).
+            // Commerce-only _flosc_purchased stays on FLOSC_USER for "thanks for buying" IVR.
+            $ai_context['purchased'] = $is_member;
+            if ( $is_member ) {
+                $ai_context['member_entitlement'] = 'LeSAEp Learner (full member access)';
+            }
         } else {
             // Visitor — check eval_context for pre-login quiz data
             $ai_context['quiz_taken'] = (bool) ($eval_context['quiz_taken'] ?? false);
             if (!empty($eval_context['score'])) {
                 $ai_context['quiz_score'] = $eval_context['score'] . '%';
             }
+            $ai_context['is_member']    = false;
+            $ai_context['access_level'] = 'visitor';
+            $ai_context['purchased']    = false;
         }
 
         // IVR guidance (if IVR matched a scripted response)
@@ -11102,6 +11245,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
         update_user_meta($user_id, '_flosc_subscription_id', $subscription_id);
         update_user_meta($user_id, '_flosc_subscription_plan', $plan_type);
         update_user_meta($user_id, '_flosc_subscription_status', 'active');
+        // Reverse index for webhook renewals (O(1) lookup — no meta_key scans).
+        if (class_exists('FLOSC_PayPal_Provider') && method_exists('FLOSC_PayPal_Provider', 'index_subscription')) {
+            FLOSC_PayPal_Provider::index_subscription($user_id, $subscription_id);
+        }
         if ($resolved_offer_id !== '') {
             update_user_meta($user_id, '_flosc_purchased_offer_id', $resolved_offer_id);
             update_user_meta($user_id, '_flosc_subscription_offer_id', $resolved_offer_id);
@@ -14813,7 +14960,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         // We iterate the full queue and remove everything not ours.
         global $wp_styles, $wp_scripts;
 
-        $flosc_style_whitelist = ['flosc-layout', 'flosc-theme', 'flosc-offers', 'flosc-preset'];
+        // Companion widget must survive if both surfaces ever share a request.
+        $flosc_style_whitelist = ['flosc-layout', 'flosc-theme', 'flosc-offers', 'flosc-preset', 'flosc-companion'];
         if (isset($wp_styles->queue) && is_array($wp_styles->queue)) {
             foreach ($wp_styles->queue as $handle) {
                 if (in_array($handle, $flosc_style_whitelist, true)) {
@@ -14825,8 +14973,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         // -- NUCLEAR DEQUEUE: Remove ALL non-FLOSC scripts --
-        // Keep only flosc-app.js and payment SDKs (PayPal, Stripe).
-        $flosc_script_whitelist = ['flosc-app', 'paypal-js', 'stripe-js'];
+        // Keep only flosc-app.js, companion, and payment SDKs (PayPal, Stripe).
+        $flosc_script_whitelist = ['flosc-app', 'flosc-companion', 'paypal-js', 'stripe-js'];
         if (isset($wp_scripts->queue) && is_array($wp_scripts->queue)) {
             foreach ($wp_scripts->queue as $handle) {
                 if (in_array($handle, $flosc_script_whitelist, true)) {
@@ -14865,7 +15013,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         // 3. Preset CSS (variable definitions only)
         $this->enqueue_chat_style();
 
-        // Payment SDKs first (false = no ?ver= query — PayPal rejects unknown params).
+        // Payment SDKs first. Explicit version satisfies Plugin Check; CDN URLs strip
+        // ?ver= via script_loader_src (PayPal rejects unknown query params).
         $flosc_app_deps = [];
 
         // Stripe.js — first-class when publishable key is set on Payments (WPDB).
@@ -14874,7 +15023,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             $stripe_cfg = $stripe->get_client_config();
             $stripe_pk = (string) ($stripe_cfg['publishableKey'] ?? '');
             if ($stripe_pk !== '') {
-                wp_enqueue_script('stripe-js', 'https://js.stripe.com/v3/', [], false, true);
+                wp_enqueue_script('stripe-js', 'https://js.stripe.com/v3/', [], defined('FLOSC_VERSION') ? FLOSC_VERSION : '1', true);
                 $flosc_app_deps[] = 'stripe-js';
             }
         }
@@ -14923,10 +15072,20 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 if ($pp_intent === 'subscription') {
                     $pp_sdk .= '&vault=true';
                 }
-                // false version is required: FLOSC_VERSION became &ver=8.0.0 and broke the SDK.
-                wp_enqueue_script('paypal-js', $pp_sdk, [], false, true);
+                // Explicit version for Plugin Check; ver is stripped for this handle below.
+                wp_enqueue_script('paypal-js', $pp_sdk, [], defined('FLOSC_VERSION') ? FLOSC_VERSION : '1', true);
                 $flosc_app_deps[] = 'paypal-js';
             }
+        }
+
+        // Strip WP ?ver= from third-party payment CDN scripts (PayPal SDK query contract).
+        if (!empty($flosc_app_deps)) {
+            add_filter('script_loader_src', static function ($src, $handle) {
+                if (in_array($handle, ['paypal-js', 'stripe-js'], true) && is_string($src) && $src !== '') {
+                    return remove_query_arg('ver', $src);
+                }
+                return $src;
+            }, 10, 2);
         }
 
         wp_enqueue_script(
@@ -14942,6 +15101,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * v1.6.1: Enqueue companion widget on non-app WordPress pages.
      * Only loads if companion mode is enabled for the current flow.
      * v1.6.3: Fixed to read from flat per-flow settings (matching admin save pattern)
+     * v8.0.0: Knowledge hubs — resolve flow by handoff param, hub companion URL, or lessons category.
      */
     public function enqueue_companion() {
         // Don't load on app pages (they get the full experience)
@@ -14949,8 +15109,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             return;
         }
 
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display hint query flag, no state change
-        $handoff_request = isset($_GET['flosc_companion_handoff']) && '1' === sanitize_text_field(wp_unslash((string) $_GET['flosc_companion_handoff']));
+        // Public handoff flag from full-page dock (not a form POST — no nonce applies).
+        $handoff_request = ( '1' === sanitize_text_field( (string) filter_input( INPUT_GET, 'flosc_companion_handoff' ) ) );
+
+        // Cross-domain knowledge hub: pick the owning flow before reading settings.
+        $this->resolve_companion_flow_context($handoff_request);
 
         $defaults = $this->get_companion_defaults();
         $numeric_limits = $this->get_companion_numeric_limits();
@@ -14972,12 +15135,15 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         // Visitor gate: when disabled, only logged-in users should see companion.
+        // Handoff from full-page chat always allowed — dock may land cross-domain
+        // (e.g. lesaep.com → dainis.net knowledge hub) without a shared login cookie.
         $show_for_visitors = filter_var($this->get_setting('companion_show_for_visitors', $defaults['show_for_visitors']), FILTER_VALIDATE_BOOLEAN);
-        if (!$show_for_visitors && !is_user_logged_in()) {
+        if (!$handoff_request && !$show_for_visitors && !is_user_logged_in()) {
             return;
         }
 
         // Optional route targeting: exclude rules override include rules.
+        // Handoff always shows the widget so dock navigation is not blocked by include/exclude.
         if (!$handoff_request && !$this->should_show_companion_for_current_request()) {
             return;
         }
@@ -15002,6 +15168,37 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             $position = $defaults['position'];
         }
 
+        // Brand / product identity — header icon + assistant name (not hard-coded FLOSC/emoji).
+        $identity = $this->get_floscflow_identity();
+        $product_name = sanitize_text_field((string) ($identity['name'] ?? ''));
+        if ($product_name === '') {
+            $product_name = sanitize_text_field((string) flosc_get_setting('product_name', 'FLOSC'));
+        }
+        if ($title === '') {
+            $title = $product_name !== ''
+                ? sprintf(
+                    /* translators: %s: product / flow name */
+                    __('%s Companion', 'flosc'),
+                    $product_name
+                )
+                : (string) $defaults['greeting'];
+        }
+        // Header icon: optional companion override → this flow’s Chat Logo → bundled default only if none.
+        $header_icon_url = esc_url_raw( (string) $this->get_setting( 'companion_header_icon_url', '' ) );
+        if ( $header_icon_url === '' ) {
+            // Prefer identity from resolved current flow (hub + app).
+            if ( ! empty( $identity['chatlogo_url'] ) ) {
+                $header_icon_url = esc_url_raw( (string) $identity['chatlogo_url'] );
+            }
+        }
+        if ( $header_icon_url === '' && function_exists( 'flosc_resolve_chatlogo_url' ) ) {
+            // Pass full flow array so flat/nested chatlogo_url both work.
+            $flow_for_logo = $this->get_current_flow();
+            $header_icon_url = flosc_resolve_chatlogo_url( is_array( $flow_for_logo ) ? $flow_for_logo : null, true );
+        } elseif ( $header_icon_url === '' && function_exists( 'flosc_get_chatlogo_url' ) ) {
+            $header_icon_url = esc_url_raw( (string) flosc_get_chatlogo_url() );
+        }
+
         $panel_width = absint($this->get_setting('companion_panel_width', $defaults['panel_width']));
         $panel_height = absint($this->get_setting('companion_panel_height', $defaults['panel_height']));
         $panel_width = max($numeric_limits['panel_width_min'], min($numeric_limits['panel_width_max'], $panel_width));
@@ -15010,10 +15207,15 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         $launcher_size = max($numeric_limits['launcher_size_min'], min($numeric_limits['launcher_size_max'], $launcher_size));
         $launcher_icon = sanitize_key((string) $this->get_setting('companion_launcher_icon', $defaults['launcher_icon']));
         $launcher_svgs = $this->get_companion_launcher_svg_paths();
-        if (!isset($launcher_svgs[$launcher_icon])) {
+        // product_logo = use Chat Logo / header icon image for FAB (not a path SVG).
+        $launcher_uses_product_logo = ($launcher_icon === 'product_logo');
+        if (!$launcher_uses_product_logo && !isset($launcher_svgs[$launcher_icon])) {
             $launcher_icon = $defaults['launcher_icon'];
         }
-        $launcher_svg_path = (string) ($launcher_svgs[$launcher_icon] ?? $launcher_svgs['chat']);
+        $launcher_svg_path = $launcher_uses_product_logo
+            ? ''
+            : (string) ($launcher_svgs[$launcher_icon] ?? $launcher_svgs['chat']);
+        $launcher_icon_url = $launcher_uses_product_logo ? $header_icon_url : '';
 
         $mobile_behavior = (string) $this->get_setting('companion_mobile_behavior', $defaults['mobile_behavior']);
         if (!in_array($mobile_behavior, $this->get_companion_mobile_behaviors(), true)) {
@@ -15148,22 +15350,34 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'toggleFullscreen' => esc_html__('Toggle fullscreen', 'flosc'),
         ]);
 
+        // Expand destination from floscAdmin Hub Full-Screen URL (parameterized).
+        $full_page_url = esc_url_raw((string) $this->get_setting('companion_hub_fullscreen_url', ''));
+        if ($full_page_url === '') {
+            $full_page_url = $app_url;
+        }
+
+        $assistant_title = $product_name !== ''
+            ? $product_name
+            : sanitize_text_field((string) __('Assistant', 'flosc'));
+
         $companion_config = [
             'appUrl' => $app_url,
-            'fullPageUrl' => $app_url,
+            'fullPageUrl' => $full_page_url,
             'returnUrl' => $current_url,
             'flowId' => $flow_id,
             'visitorTokenGrant' => $visitor_wallet_initial,
+            'productName' => $product_name,
             'title' => $title,
             'subtitle' => $subtitle,
             'showHeaderTitle' => $show_header_title,
             'showHeaderSubtitle' => $show_header_subtitle,
             'showOpenFullpage' => $show_open_fullpage,
-            // Neutral first paint: the header count is owned by the server and
-            // arrives via the iframe's flosc_companion_token_update message, so
-            // the PHP config must not seed a grant baseline that could flash
-            // before the real balance loads.
+            // Wallet/tokens render in the iframe profile row — never in the purple header.
             'headerTokenText' => '',
+            'showHeaderTokens' => false,
+            // Parameterized brand icon (Chat Logo / companion_header_icon_url). No emoji default.
+            'headerIconUrl' => $header_icon_url,
+            'avatar' => '',
             'accentColor' => $accent ?: $defaults['accent_color'],
             'position' => $position,
             'mode' => $mode,
@@ -15180,6 +15394,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'launchOnScrollThreshold' => $launch_on_scroll_threshold,
             'launchOnScrollPercent' => $launch_on_scroll_percent,
             'launcherSvgPath' => $launcher_svg_path,
+            'launcherIconUrl' => $launcher_icon_url,
+            'launcherUsesProductLogo' => $launcher_uses_product_logo,
             'triggerDesktopOnly' => $trigger_desktop_only,
             'triggerMinPageTimeMs' => $trigger_min_page_time_ms,
             'triggerSuppressOnAuthCheckout' => $trigger_suppress_on_auth_checkout,
@@ -15192,7 +15408,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'keyboardShortcutKey' => $keyboard_shortcut_key,
             'launcherAriaLabel' => $launcher_aria_label,
             'closeAriaLabel' => $close_aria_label,
-            'assistantTitle' => esc_html__('FLOSC Assistant', 'flosc'),
+            'assistantTitle' => $assistant_title,
             'launcherOpenAriaLabel' => $launcher_aria_label,
             'launcherCollapseAriaLabel' => esc_html__('Collapse Chat', 'flosc'),
             'rememberOpenState' => $remember_open_state,
@@ -15212,9 +15428,14 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         $companion_config['appUrl'] = esc_url_raw((string) ($companion_config['appUrl'] ?? $app_url));
         $companion_config['title'] = sanitize_text_field((string) ($companion_config['title'] ?? $title));
         $companion_config['subtitle'] = sanitize_text_field((string) ($companion_config['subtitle'] ?? $subtitle));
+        $companion_config['productName'] = sanitize_text_field((string) ($companion_config['productName'] ?? $product_name));
+        $companion_config['headerIconUrl'] = esc_url_raw((string) ($companion_config['headerIconUrl'] ?? $header_icon_url));
+        $companion_config['launcherIconUrl'] = esc_url_raw((string) ($companion_config['launcherIconUrl'] ?? $launcher_icon_url));
+        $companion_config['headerTokenText'] = '';
+        $companion_config['showHeaderTokens'] = false;
         $companion_config['launcherAriaLabel'] = sanitize_text_field((string) ($companion_config['launcherAriaLabel'] ?? $launcher_aria_label));
         $companion_config['closeAriaLabel'] = sanitize_text_field((string) ($companion_config['closeAriaLabel'] ?? $close_aria_label));
-        $companion_config['assistantTitle'] = sanitize_text_field((string) ($companion_config['assistantTitle'] ?? esc_html__('FLOSC Assistant', 'flosc')));
+        $companion_config['assistantTitle'] = sanitize_text_field((string) ($companion_config['assistantTitle'] ?? $assistant_title));
         $companion_config['launcherOpenAriaLabel'] = sanitize_text_field((string) ($companion_config['launcherOpenAriaLabel'] ?? $launcher_aria_label));
         $companion_config['launcherCollapseAriaLabel'] = sanitize_text_field((string) ($companion_config['launcherCollapseAriaLabel'] ?? esc_html__('Collapse Chat', 'flosc')));
         if (!is_array($companion_config['contextParams'] ?? null)) {
@@ -15243,24 +15464,200 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
     }
 
     /**
-     * Resolve companion iframe app URL to a guaranteed active FLOSC flow route.
+     * Resolve which flow owns companion on this request (knowledge hub support).
+     *
+     * Priority:
+     * 1) flosc_flow_id / flosc_ivr query (from full-chat dock handoff)
+     * 2) Current URL matches a flow's companion_hub_companion_url
+     * 3) Current WP category matches a flow's lesson_groups / lessons_category
+     * 4) Leave get_current_flow() as-is (domain/slug detection)
+     *
+     * @param bool $handoff_request Whether this is a companion handoff navigation.
      */
-    private function get_companion_chat_app_url() {
-        $configured_slug = sanitize_title((string) $this->get_setting('companion_flow_slug', ''));
-        if ($configured_slug !== '') {
-            $flow = $this->get_flow_by_slug_for_companion($configured_slug);
-            if (is_array($flow) && !empty($flow['slug'])) {
-                return esc_url_raw(home_url('/' . sanitize_title((string) $flow['slug']) . '/'));
+    private function resolve_companion_flow_context($handoff_request = false) {
+        $request_path = $this->get_companion_request_path();
+        $category_slugs = $this->get_companion_request_category_slugs();
+        $req_path = untrailingslashit('/' . ltrim((string) $request_path, '/'));
+
+        // Optional dock hint from full-page chat (public query string, not a form).
+        $hint = sanitize_text_field((string) filter_input(INPUT_GET, 'flosc_flow_id'));
+        if ($hint === '') {
+            $hint = sanitize_text_field((string) filter_input(INPUT_GET, 'flosc_ivr'));
+        }
+        $hint = sanitize_key(preg_replace('/\.md$/i', '', (string) $hint));
+
+        $matches = $this->find_companion_flows_for_request($req_path, $category_slugs);
+        $hub_match = $matches['hub'] ?? null;
+        $category_match = $matches['category'] ?? null;
+        $page_owner = $hub_match ?: $category_match;
+
+        // Hint may only select a companion-enabled flow that either owns this page
+        // or is an explicit handoff to a real flow (dock from full-page chat).
+        if ($hint !== '') {
+            $hint_flow = $this->build_flow_from_ivr_file($hint . '.md');
+            if (!is_array($hint_flow)) {
+                $hint_flow = $this->build_flow_from_ivr_file($hint);
+            }
+            $hint_ok = is_array($hint_flow)
+                && filter_var($hint_flow['companion_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN)
+                && in_array((string) ($hint_flow['companion_content_display_mode'] ?? 'in_chat'), ['companion', 'both'], true);
+
+            if ($hint_ok) {
+                $hint_id = sanitize_key((string) ($hint_flow['id'] ?? $hint));
+                if ($page_owner && $hint_id === $page_owner) {
+                    $this->set_flow_context($hint_id);
+                    return;
+                }
+                if ($handoff_request) {
+                    // Cross-domain dock: hub host may not yet match path heuristics;
+                    // only accept a real companion-enabled flow id, never free-form text.
+                    $this->set_flow_context($hint_id);
+                    return;
+                }
             }
         }
 
-        // Companion expand-out should route to the canonical full chat page.
-        $chat_url = home_url('/chat/');
-        if (!empty($chat_url)) {
-            return esc_url_raw($chat_url);
+        if ($page_owner) {
+            $this->set_flow_context($page_owner);
+        }
+    }
+
+    /**
+     * Find companion-enabled flows that own the current request path or category.
+     *
+     * @param string   $req_path        Normalized request path.
+     * @param string[] $category_slugs  Category slugs for this request.
+     * @return array{hub:?string,category:?string}
+     */
+    private function find_companion_flows_for_request($req_path, array $category_slugs) {
+        $hub_match = null;
+        $hub_match_len = -1;
+        $category_match = null;
+
+        $ivr_files = array_unique(array_map('basename', flosc_config_glob(['*_ivr.md', 'ivr*.md'])));
+        foreach ($ivr_files as $filename) {
+            if (strpos($filename, 'backup') !== false) {
+                continue;
+            }
+            $flow = $this->build_flow_from_ivr_file($filename);
+            if (!is_array($flow)) {
+                continue;
+            }
+            $enabled = filter_var($flow['companion_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $mode = (string) ($flow['companion_content_display_mode'] ?? 'in_chat');
+            if (!$enabled || !in_array($mode, ['companion', 'both'], true)) {
+                continue;
+            }
+
+            $flow_id = pathinfo($filename, PATHINFO_FILENAME);
+
+            // Hub companion URL path match — prefer longest (most specific) path.
+            $hub = esc_url_raw((string) ($flow['companion_hub_companion_url'] ?? ''));
+            if ($hub !== '' && $req_path !== '') {
+                $hub_path = wp_parse_url($hub, PHP_URL_PATH);
+                $hub_path = is_string($hub_path) ? untrailingslashit('/' . ltrim($hub_path, '/')) : '';
+                if ($hub_path !== ''
+                    && ($req_path === $hub_path || strpos($req_path . '/', $hub_path . '/') === 0)
+                ) {
+                    $len = strlen($hub_path);
+                    if ($len > $hub_match_len) {
+                        $hub_match_len = $len;
+                        $hub_match = $flow_id;
+                    }
+                }
+            }
+
+            // Lessons category / content group → knowledge hub archive or lesson posts.
+            if ($category_match === null && !empty($category_slugs)) {
+                $flow_cats = [];
+                if (!empty($flow['lessons_category'])) {
+                    $flow_cats[] = sanitize_title((string) $flow['lessons_category']);
+                }
+                if (!empty($flow['lesson_groups']) && is_array($flow['lesson_groups'])) {
+                    foreach ($flow['lesson_groups'] as $group) {
+                        if (!empty($group['category'])) {
+                            $flow_cats[] = sanitize_title((string) $group['category']);
+                        }
+                    }
+                }
+                $flow_cats = array_filter(array_unique($flow_cats));
+                if (array_intersect($category_slugs, $flow_cats)) {
+                    $category_match = $flow_id;
+                }
+            }
         }
 
-        return esc_url_raw($this->get_app_url());
+        return [
+            'hub'      => $hub_match,
+            'category' => $category_match,
+        ];
+    }
+
+    /**
+     * Category slugs for the current frontend request (archive or single post).
+     *
+     * @return string[]
+     */
+    private function get_companion_request_category_slugs() {
+        $slugs = [];
+        if (function_exists('is_category') && is_category()) {
+            $term = get_queried_object();
+            if ($term && !empty($term->slug)) {
+                $slugs[] = sanitize_title((string) $term->slug);
+            }
+        }
+        if (function_exists('is_singular') && is_singular()) {
+            $post_id = get_queried_object_id();
+            if ($post_id) {
+                $terms = get_the_terms($post_id, 'category');
+                if (is_array($terms)) {
+                    foreach ($terms as $term) {
+                        if (!empty($term->slug)) {
+                            $slugs[] = sanitize_title((string) $term->slug);
+                        }
+                    }
+                }
+            }
+        }
+        return array_values(array_unique(array_filter($slugs)));
+    }
+
+    /**
+     * Resolve companion iframe app URL from floscAdmin parameters only.
+     *
+     * Priority:
+     * 1) companion_chat_app_url (explicit Companion chat URL field)
+     * 2) Default derived from this flow: WordPress site + companion_flow_slug / slug
+     * 3) Flow get_app_url() fallback
+     *
+     * Never hardcode hosts or brands.
+     */
+    private function get_companion_chat_app_url() {
+        $configured = esc_url_raw((string) $this->get_setting('companion_chat_app_url', ''), ['http', 'https']);
+        if ($configured !== '') {
+            return $configured;
+        }
+
+        $flow = $this->get_current_flow();
+        $flow_settings = is_array($flow) ? $flow : [];
+        if (function_exists('flosc_companion_hub_defaults_from_flow')) {
+            $defaults = flosc_companion_hub_defaults_from_flow($flow_settings);
+            $from_defaults = esc_url_raw((string) ($defaults['chat_app'] ?? ''), ['http', 'https']);
+            if ($from_defaults !== '') {
+                return $from_defaults;
+            }
+        }
+
+        $slug = sanitize_title((string) $this->get_setting('companion_flow_slug', ''));
+        if ($slug === '' && is_array($flow) && !empty($flow['slug'])) {
+            $slug = sanitize_title((string) $flow['slug']);
+        }
+        if ($slug !== '') {
+            return esc_url_raw(home_url('/' . $slug . '/'));
+        }
+
+        $app = $this->get_app_url();
+        return !empty($app) ? esc_url_raw($app) : '';
     }
 
     /**
@@ -15329,12 +15726,19 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'show_header_subtitle' => true,
             'show_open_fullpage' => true,
             'contextual_prompt' => 'What do you want to explore together?',
+            // Companion profile row tier codes: Name (V|G|M) — brand-neutral FLOSC defaults.
+            'profile_tier_visitor' => 'V',
+            'profile_tier_guest' => 'G',
+            'profile_tier_member' => 'M',
+            'profile_tier_visitor_label' => 'Visitor',
+            'profile_tier_guest_label' => 'Guest',
+            'profile_tier_member_label' => 'Member',
             'accent_color' => '#6366f1',
             'show_for_visitors' => false,
             'panel_width' => 380,
             'panel_height' => 560,
             'launcher_size' => 60,
-            'launcher_icon' => 'chat',
+            'launcher_icon' => 'product_logo',
             'mobile_behavior' => 'fullscreen',
             'pass_page_context' => true,
             'context_scope' => 'basic',
@@ -16000,13 +16404,50 @@ function flosc_get_favicon_url($size = '') {
 }
 
 /**
+ * Resolve Chat Logo URL from a flow settings array (admin or runtime).
+ * Prefer identity.chatlogo_url, then flat chatlogo_url. Does not invent a brand logo.
+ *
+ * @param array|null $flow_settings Flow option / current settings. Null = current runtime identity.
+ * @param bool       $use_plugin_default When true and nothing set, return bundled FLOSC icon.
+ * @return string URL or empty string when $use_plugin_default is false and no logo is configured.
+ */
+function flosc_resolve_chatlogo_url( $flow_settings = null, $use_plugin_default = true ) {
+    $url = '';
+
+    if ( is_array( $flow_settings ) ) {
+        if ( ! empty( $flow_settings['identity'] ) && is_array( $flow_settings['identity'] ) ) {
+            $url = (string) ( $flow_settings['identity']['chatlogo_url'] ?? '' );
+        }
+        if ( $url === '' && ! empty( $flow_settings['chatlogo_url'] ) ) {
+            $url = (string) $flow_settings['chatlogo_url'];
+        }
+    }
+
+    if ( $url === '' && function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_floscflow_identity' ) ) {
+        $identity = flosc()->get_floscflow_identity();
+        if ( is_array( $identity ) && ! empty( $identity['chatlogo_url'] ) ) {
+            $url = (string) $identity['chatlogo_url'];
+        }
+    }
+
+    $url = esc_url_raw( trim( $url ) );
+    if ( $url !== '' ) {
+        return $url;
+    }
+
+    if ( $use_plugin_default ) {
+        return FLOSC_PLUGIN_URL . 'assets/img/flosc-icon.png';
+    }
+
+    return '';
+}
+
+/**
  * Get the flow's chatLogo URL (landing state header image, sidebar logo).
  * Reads chatlogo_url from flow identity. Falls back to bundled FLOSC default icon.
  */
 function flosc_get_chatlogo_url() {
-    $identity = FLOSC_Framework::instance()->get_floscflow_identity();
-    if (!empty($identity['chatlogo_url'])) return $identity['chatlogo_url'];
-    return FLOSC_PLUGIN_URL . 'assets/img/flosc-icon.png';
+    return flosc_resolve_chatlogo_url( null, true );
 }
 
 

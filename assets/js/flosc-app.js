@@ -236,7 +236,7 @@ class floscApp {
     async init() {
         this.log('[FLOSC] Initializing app...');
 
-        // Apply companion expand handoff before any visitor restore/session logic.
+        // Continuity before restore: visitors (client handoff) and guest/member (server session id).
         this.applyVisitorSessionHandoffFromUrl();
 
         // Keep visitor runtime wallet aligned with flow-level grant changes.
@@ -288,13 +288,17 @@ class floscApp {
             }
 
             if (this.state !== 'visitor') {
-                // v1.7.0: Load sessions for ALL logged-in users (not just funnel-completed)
+                // Logged-in: server sessions are the source of truth. Prefer explicit
+                // collapse/expand session id, then remembered active id, then last session.
                 this.log('[FLOSC] Loading sessions...');
                 await this.loadSessions();
-                
-                // v1.7.0: Auto-restore last session if user has one and chat is empty
-                if (this.currentSession === null) {
+
+                const restoredHandoff = await this.applyUserSessionHandoffFromUrl();
+                if (!restoredHandoff && this.currentSession === null) {
                     await this.restoreLastSession();
+                }
+                if (this.currentSession?.id) {
+                    this.rememberActiveChatSessionId(this.currentSession.id);
                 }
             }
 
@@ -402,13 +406,15 @@ class floscApp {
             if (!this._restoredVisitorMessages && this.config.guestLinkRemaining !== null && this.config.guestLinkRemaining !== undefined) {
                 const days = this.config.guestDaysRemaining;
                 const upgradeUrl = this.config.guestLinkUpgradeUrl || '#';
+                const productLabel = String(this.config?.productName || this.config?.identity?.name || '').trim() || 'this program';
+                const defaultGuestLinkName = `Complimentary ${productLabel} Guest Access Link`;
                 const daysStr = (days !== null && days !== undefined)
-                    ? ` You have <strong>${days}</strong> day${days !== 1 ? 's' : ''} of guest access remaining — we hope you are enjoying your experience as a Complimentary Guest LeSAEp Learner! <a href="${upgradeUrl}">Upgrade for full access here.</a>`
+                    ? ` You have <strong>${days}</strong> day${days !== 1 ? 's' : ''} of guest access remaining — we hope you are enjoying your complimentary guest access! <a href="${upgradeUrl}">Upgrade for full access here.</a>`
                     : '';
                 const welcomeMsg = (this.config.guestLinkWelcomeMessage || '')
                     .replace('{email}', this.user?.email || '')
                     .replace('{n}', this.config.guestLinkRemaining)
-                    .replace('{link_name}', this.config.guestLinkName || 'Complimentary LeSAEp Learners Guest Access Link')
+                    .replace('{link_name}', this.config.guestLinkName || defaultGuestLinkName)
                     .replace('{upgrade_url}', this.config.guestLinkUpgradeUrl || '#')
                     + daysStr;
                 this.addMessage('assistant', welcomeMsg, true);
@@ -423,7 +429,7 @@ class floscApp {
                 && !sessionStorage.getItem('flosc_sso_guest_days_shown')) {
                 const days = this.config.guestDaysRemaining;
                 const upgradeUrl = this.config.guestLinkUpgradeUrl || '#';
-                const msg = `Welcome back! You have <strong>${days}</strong> day${days !== 1 ? 's' : ''} of guest access remaining — we hope you are enjoying your experience as a Complimentary Guest LeSAEp Learner! <a href="${upgradeUrl}">Upgrade for full access here.</a>`;
+                const msg = `Welcome back! You have <strong>${days}</strong> day${days !== 1 ? 's' : ''} of guest access remaining — we hope you are enjoying your complimentary guest access! <a href="${upgradeUrl}">Upgrade for full access here.</a>`;
                 this.addMessage('assistant', msg, true);
                 sessionStorage.setItem('flosc_sso_guest_days_shown', 'true');
             }
@@ -732,11 +738,33 @@ class floscApp {
         }
     }
 
-    encodeSessionHandoffPayload(payload) {
-        if (this.state !== 'visitor') {
+    /** localStorage key: active guest/member chat session on this origin (chat host). */
+    getActiveChatSessionStorageKey() {
+        const flow = String(this.config?.flowId || this.config?.companionFlowId || 'default').slice(0, 80);
+        return 'flosc_active_chat_session_' + flow;
+    }
+
+    rememberActiveChatSessionId(sessionId) {
+        const id = String(sessionId || '').trim();
+        if (!id || this.state === 'visitor') {
+            return;
+        }
+        try {
+            localStorage.setItem(this.getActiveChatSessionStorageKey(), id.slice(0, 80));
+        } catch (e) {
+            // Ignore storage failures.
+        }
+    }
+
+    readRememberedActiveChatSessionId() {
+        try {
+            return String(localStorage.getItem(this.getActiveChatSessionStorageKey()) || '').trim().slice(0, 80);
+        } catch (e) {
             return '';
         }
+    }
 
+    encodeSessionHandoffPayload(payload) {
         try {
             return window.btoa(unescape(encodeURIComponent(JSON.stringify(payload || {}))));
         } catch (e) {
@@ -757,47 +785,69 @@ class floscApp {
         }
     }
 
+    /**
+     * Build continuity payload for surface switches.
+     * - Visitors: client session id + local message history (cautious continuity).
+     * - Guest/member: server chat session id (authoritative WP-user persistence).
+     */
+    buildSessionHandoffPayload() {
+        if (this.state === 'visitor') {
+            const payload = {
+                kind: 'visitor',
+                sessionId: String(this.getVisitorSessionId() || '').slice(0, 80),
+                messages: []
+            };
+            try {
+                const messages = JSON.parse(localStorage.getItem('flosc_visitor_messages') || '[]');
+                if (Array.isArray(messages) && messages.length > 0) {
+                    payload.messages = messages.slice(-50).map((msg) => {
+                        if (!msg || typeof msg !== 'object') {
+                            return null;
+                        }
+                        const role = String(msg.role || '').trim();
+                        if (role !== 'assistant' && role !== 'user') {
+                            return null;
+                        }
+                        return {
+                            role,
+                            content: String(msg.content || '').slice(0, 1200),
+                            timestamp: Math.max(0, parseInt(msg.timestamp, 10) || Date.now())
+                        };
+                    }).filter(Boolean);
+                }
+            } catch (e) {
+                payload.messages = [];
+            }
+            return payload;
+        }
+
+        // Logged-in: server session is source of truth (chat logs on the user).
+        const serverId = String(this.currentSession?.id || this.readRememberedActiveChatSessionId() || '').trim();
+        if (!serverId) {
+            return { kind: 'user', sessionId: '', messages: [] };
+        }
+        this.rememberActiveChatSessionId(serverId);
+        return {
+            kind: 'user',
+            sessionId: serverId.slice(0, 80),
+            messages: []
+        };
+    }
+
+    /** @deprecated Use buildSessionHandoffPayload — kept for older call sites. */
     buildVisitorSessionHandoffPayload() {
         if (this.state !== 'visitor') {
             return null;
         }
-
-        const payload = {
-            sessionId: String(this.getVisitorSessionId() || '').slice(0, 80),
-            messages: []
-        };
-
-        try {
-            const messages = JSON.parse(localStorage.getItem('flosc_visitor_messages') || '[]');
-            if (Array.isArray(messages) && messages.length > 0) {
-                payload.messages = messages.slice(-50).map((msg) => {
-                    if (!msg || typeof msg !== 'object') {
-                        return null;
-                    }
-                    const role = String(msg.role || '').trim();
-                    if (role !== 'assistant' && role !== 'user') {
-                        return null;
-                    }
-                    return {
-                        role,
-                        content: String(msg.content || '').slice(0, 1200),
-                        timestamp: Math.max(0, parseInt(msg.timestamp, 10) || Date.now())
-                    };
-                }).filter(Boolean);
-            }
-        } catch (e) {
-            payload.messages = [];
-        }
-
-        return payload;
+        return this.buildSessionHandoffPayload();
     }
 
     postVisitorSessionHandoffToParent() {
-        if (this.state !== 'visitor' || window.self === window.top) {
+        if (window.self === window.top) {
             return;
         }
 
-        const payload = this.buildVisitorSessionHandoffPayload() || {};
+        const payload = this.buildSessionHandoffPayload() || {};
 
         let targetOrigin = '*';
         try {
@@ -821,7 +871,7 @@ class floscApp {
         try {
             const url = new URL(window.location.href);
             let changed = false;
-            ['flosc_visitor_session', 'flosc_handoff'].forEach((key) => {
+            ['flosc_visitor_session', 'flosc_handoff', 'flosc_session_id'].forEach((key) => {
                 if (url.searchParams.has(key)) {
                     url.searchParams.delete(key);
                     changed = true;
@@ -838,6 +888,9 @@ class floscApp {
         }
     }
 
+    /**
+     * Apply visitor continuity params from the URL (anonymous diligence path).
+     */
     applyVisitorSessionHandoffFromUrl() {
         if (this.state !== 'visitor') {
             return;
@@ -900,6 +953,86 @@ class floscApp {
             this.consumeSessionHandoffQueryParams();
         } catch (e) {
             this.logWarn('[FLOSC] Could not apply visitor session handoff:', e);
+        }
+    }
+
+    /**
+     * Guest/member: prefer explicit flosc_session_id (collapse/expand) or remembered active session.
+     * Server chat logs are the source of truth — load that session, don't mint a new one.
+     *
+     * @return {Promise<boolean>} true when a specific session was restored
+     */
+    async applyUserSessionHandoffFromUrl() {
+        if (this.state === 'visitor') {
+            return false;
+        }
+
+        try {
+            const params = new URLSearchParams(window.location.search || '');
+            let sessionId = String(params.get('flosc_session_id') || '').trim();
+
+            if (!sessionId) {
+                const encoded = String(params.get('flosc_handoff') || '').trim();
+                if (encoded) {
+                    const payload = this.decodeSessionHandoffPayload(encoded);
+                    if (payload && typeof payload === 'object') {
+                        const kind = String(payload.kind || '').toLowerCase();
+                        if (kind !== 'visitor') {
+                            sessionId = String(payload.sessionId || '').trim();
+                        }
+                    }
+                }
+            }
+
+            if (!sessionId) {
+                sessionId = this.readRememberedActiveChatSessionId();
+            }
+
+            this.consumeSessionHandoffQueryParams();
+
+            if (!sessionId) {
+                return false;
+            }
+
+            this.log('[FLOSC] Restoring logged-in session from handoff/memory:', sessionId);
+            const ok = await this.loadSession(sessionId);
+            if (ok && this.currentSession?.id) {
+                this.rememberActiveChatSessionId(this.currentSession.id);
+                return true;
+            }
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not apply user session handoff:', e);
+        }
+        return false;
+    }
+
+    /**
+     * Attach continuity query params to a navigation URL (full ↔ companion).
+     * @param {URL} url
+     */
+    appendSessionContinuityParams(url) {
+        if (!url || typeof url.searchParams?.set !== 'function') {
+            return;
+        }
+        const payload = this.buildSessionHandoffPayload();
+        if (!payload) {
+            return;
+        }
+        const sid = String(payload.sessionId || '').trim();
+        if (this.state === 'visitor') {
+            if (sid) {
+                url.searchParams.set('flosc_visitor_session', sid.slice(0, 80));
+            }
+            const packed = this.encodeSessionHandoffPayload(payload);
+            if (packed && packed.length <= 6000) {
+                url.searchParams.set('flosc_handoff', packed);
+            }
+            return;
+        }
+        // Guest/member: server session id only (messages live on the user profile).
+        if (sid) {
+            url.searchParams.set('flosc_session_id', sid.slice(0, 80));
+            this.rememberActiveChatSessionId(sid);
         }
     }
 
@@ -2382,8 +2515,12 @@ class floscApp {
             const msgEl = this.addMessage('assistant', finalContent, true);
             if (msgEl && ivrMsg.name) msgEl.setAttribute('data-message-name', ivrMsg.name);
         } else {
+            // Brand-neutral: tagline from Identity params when present.
+            const tagline = String(this.config?.identity?.tagline || '').trim();
             const fallback = this.state === 'visitor'
-                ? `Welcome to ${productName}. Learn Excellent Standard American English Pronunciation.\n${badge}\nMaster the sounds that make up clear, confident American English speech.`
+                ? (tagline
+                    ? `Welcome to ${productName}. ${tagline}\n${badge}`
+                    : `Welcome to ${productName}.\n${badge}\nHow can I help you today?`)
                 : `Welcome back!\n${badge}\nHow can I help you today?`;
             this.addMessage('assistant', fallback, true);
         }
@@ -3987,8 +4124,18 @@ class floscApp {
             case 'view_dashboard':
                 window.location.href = this.config.dashboardUrl || '/wp-admin/';
                 break;
-            case 'logout':
-                this.addMessage('assistant', 'See you later LeSAEp Fam! 👋');
+            case 'logout': {
+                // Brand-neutral: product name from flow Identity params, never hard-coded brand.
+                const productLabel = String(
+                    this.config?.productName
+                    || this.config?.identity?.name
+                    || this.config?.appName
+                    || ''
+                ).trim();
+                const goodbye = productLabel
+                    ? `See you later — thanks for learning with ${productLabel}!`
+                    : 'See you later!';
+                this.addMessage('assistant', goodbye);
                 const ajaxLogoutUrl = this.config.ajaxUrl || '/wp-admin/admin-ajax.php';
                 const serverLogoutUrl = this.config.logoutUrl || (this.config.appUrl || '/');
                 const logoutBody = new URLSearchParams({
@@ -4033,6 +4180,7 @@ class floscApp {
                         redirectAfterLogout(serverLogoutUrl);
                     });
                 break;
+            }
             // v1.4.0: Sandbox purchase actions
             case 'send_prompt':
                 if (actionParam) {
@@ -4882,10 +5030,11 @@ class floscApp {
             retryCount: 0
         };
 
+        const productForQuiz = String(this.config?.productName || this.config?.identity?.name || '').trim();
         this.quiz = {
             active: true,
             id: this.config.defaultAudioQuizId || 'pronunciation_ipa_audio_quiz',
-            title: 'LeSAEp Pronunciation Assessment',
+            title: productForQuiz ? `${productForQuiz} Pronunciation Assessment` : 'Pronunciation Assessment',
             type: 'ipa_audio',
             tier: tier,
             startedAt: Date.now(),
@@ -5408,8 +5557,11 @@ class floscApp {
 
                     if (action === 'buy') {
                         this.addMessage('assistant', "Let\u2019s get you set up with full access. \uD83C\uDF89");
-                        this.config.authEscapeTitle = 'Create Your LeSAEp Account';
-                        this.config.authEscapeSubtitle = 'Sign up to unlock full pronunciation lessons and practice.';
+                        const productForAuth = String(this.config?.productName || this.config?.identity?.name || '').trim();
+                        this.config.authEscapeTitle = productForAuth
+                            ? `Create Your ${productForAuth} Account`
+                            : 'Create Your Account';
+                        this.config.authEscapeSubtitle = 'Sign up to unlock full lessons and practice.';
                         setTimeout(() => this.showAuthModal('authEscape'), 400);
                     } else {
                         const label = action === 'beginner' ? 'beginner' : 'intermediate';
@@ -6244,8 +6396,12 @@ class floscApp {
         const configKey = modal?.dataset?.configKey || 'authModal';
         const loadingText = this.config[configKey + 'LoadingText'] || 'Sending link...';
         const buttonText = this.config[configKey + 'ButtonText'] || 'Continue with Email';
+        const productForLink = String(this.config?.productName || this.config?.identity?.name || '').trim();
+        const defaultGuestLinkName = productForLink
+            ? `Complimentary ${productForLink} Guest Access Link`
+            : 'Complimentary Guest Access Link';
         const checkEmailMsg = (this.config.guestLinkCheckEmailMessage || "We've sent you a {link_name} to your email — click it to access this chat as a guest and view your quiz score, free lessons, and a special upgrade offer.")
-            .replace('{link_name}', this.config.guestLinkName || 'Complimentary LeSAEp Learners Guest Access Link');
+            .replace('{link_name}', this.config.guestLinkName || defaultGuestLinkName);
         
         // Update button to show loading
         const submitBtn = document.querySelector('.flosc-auth-submit');
@@ -6899,9 +7055,10 @@ class floscApp {
             ? 'lesaep' : 'default';
 
         if (quizType === 'lesaep') {
+            const quizProduct = String(this.config?.productName || this.config?.identity?.name || 'Pronunciation').trim();
             const html = `
                 <div class="flosc-quiz-topics">
-                    <h3>🎤 LeSAEp Quiz — 10 Sound Topics</h3>
+                    <h3>🎤 ${this.escapeHtml(quizProduct)} Quiz — 10 Sound Topics</h3>
                     <ol class="flosc-quiz-topic-list">
                         <li>The <strong>/æ/</strong> short-a vowel — <em>cat, map, back</em></li>
                         <li>The <strong>American rhotic R</strong> — <em>car, bird, butter</em></li>
@@ -7603,7 +7760,7 @@ Purchased: ${ctx.purchased}
 
         if (this.dockCompanionBtn) {
             this.dockCompanionBtn.addEventListener('click', () => {
-                this.handoffToCompanion();
+                void this.handoffToCompanion();
             });
         }
 
@@ -8356,6 +8513,8 @@ Purchased: ${ctx.purchased}
             // applyGuestTokenGrantOnInit refreshes this again after the REST call).
             const initialTokens = this.resolveLoggedInTokenBalance();
             this.updateLoggedInTokenLabel(initialTokens);
+            // Companion: profile row under the input (sidebar bar is hidden in embed).
+            this.updateCompanionSessionStatus(initialTokens, effectiveName);
 
             if (profileBadge) {
                 // Read badge text from admin-configured data attributes on the profile bar
@@ -8386,6 +8545,16 @@ Purchased: ${ctx.purchased}
                     this.setDisplayState(upgradeContainer, showGuestUpgrade, 'block');
                     upgradeBtnLabel.textContent = guestUpgradeLabel;
                 }
+            }
+        }
+
+        // Companion profile row under the composer — paint once UI is ready
+        // (covers visitor pending path + any missed logged-in updates).
+        if (this.isCompanionSurface()) {
+            if (this.state === 'visitor') {
+                this.updateCompanionSessionStatus(undefined);
+            } else {
+                this.updateCompanionSessionStatus(this.resolveLoggedInTokenBalance());
             }
         }
     }
@@ -8518,7 +8687,10 @@ Purchased: ${ctx.purchased}
 
     updateVisitorTokenLabel(tokenValue) {
         const visitorName = document.querySelector('.profile-name[data-show="visitor"]');
-        if (!visitorName) return;
+        if (!visitorName) {
+            this.updateCompanionSessionStatus(tokenValue);
+            return;
+        }
 
         let baseLabel = (this.config?.visitorTokenDisplay?.label || '').trim();
         if (!baseLabel) {
@@ -8531,6 +8703,7 @@ Purchased: ${ctx.purchased}
         visitorName.innerHTML = `<span class="flosc-visitor-label-text">${this.escapeHtml(baseLabel)}</span> <span class="flosc-visitor-token-count" id="flosc_visitor_token_count">(${this.escapeHtml(formattedTokens)})</span>`;
 
         this.postCompanionTokenUpdate(tokenValue, formattedTokens);
+        this.updateCompanionSessionStatus(tokenValue, baseLabel);
     }
 
     /**
@@ -8561,18 +8734,20 @@ Purchased: ${ctx.purchased}
         }
 
         const profileName = document.getElementById('flosc_profile_name');
-        if (!profileName) {
-            return;
-        }
-
-        let baseName = String(profileName.dataset.baseName || '').trim();
-        if (!baseName) {
-            const existing = profileName.querySelector('.flosc-user-label-text')?.textContent
-                || String(profileName.textContent || '').replace(/\s*\([^)]*\)\s*$/i, '').trim();
-            baseName = existing
-                || String(this.user?.name || '').trim()
+        let baseName = '';
+        if (profileName) {
+            baseName = String(profileName.dataset.baseName || '').trim();
+            if (!baseName) {
+                const existing = profileName.querySelector('.flosc-user-label-text')?.textContent
+                    || String(profileName.textContent || '').replace(/\s*\([^)]*\)\s*$/i, '').trim();
+                baseName = existing
+                    || String(this.user?.name || '').trim()
+                    || (this.state === 'member' ? 'Member' : 'Guest');
+                profileName.dataset.baseName = baseName;
+            }
+        } else {
+            baseName = String(this.user?.name || '').trim()
                 || (this.state === 'member' ? 'Member' : 'Guest');
-            profileName.dataset.baseName = baseName;
         }
 
         const n = Math.max(0, parseInt(tokenValue, 10) || 0);
@@ -8583,14 +8758,262 @@ Purchased: ${ctx.purchased}
             this.user.tokensFormatted = formattedTokens;
         }
 
-        profileName.innerHTML =
-            `<span class="flosc-user-label-text">${this.escapeHtml(baseName)}</span> ` +
-            `<span class="flosc-user-token-count" id="flosc_user_token_count" data-flosc-token-balance="1">(${this.escapeHtml(formattedTokens)})</span>`;
+        if (profileName) {
+            profileName.innerHTML =
+                `<span class="flosc-user-label-text">${this.escapeHtml(baseName)}</span> ` +
+                `<span class="flosc-user-token-count" id="flosc_user_token_count" data-flosc-token-balance="1">(${this.escapeHtml(formattedTokens)})</span>`;
+        }
 
-        this.postCompanionTokenUpdate(n, formattedTokens);
+        this.postCompanionTokenUpdate(n, formattedTokens, baseName);
+        this.updateCompanionSessionStatus(n, baseName);
     }
 
-    postCompanionTokenUpdate(tokenValue, formattedTokens) {
+    /**
+     * Companion-embed only: profile row under the input.
+     * Layout: Name (V|G|M) · TokenCount · ExpandSubMenuCaret
+     * Compact tier letter in parentheses — no full "Member"/"Guest" word, no pill.
+     */
+    updateCompanionSessionStatus(tokenValue, displayName) {
+        if (!this.isCompanionSurface()) {
+            return;
+        }
+
+        const strip = document.getElementById('flosc_companion_session_status');
+        if (!strip) {
+            return;
+        }
+
+        const userEl = document.getElementById('flosc_companion_session_user');
+        const tokensEl = document.getElementById('flosc_companion_session_tokens');
+        const tierEl = document.getElementById('flosc_companion_session_tier');
+        if (!userEl || !tokensEl) {
+            return;
+        }
+
+        let name = String(displayName || '').trim();
+        if (!name) {
+            if (this.state === 'visitor') {
+                name = String(this.config?.visitorTokenDisplay?.label || '').trim() || 'Visitor';
+            } else {
+                name = String(this.user?.name || '').trim() || 'You';
+            }
+        }
+
+        // Compact access code from flow params (FLOSC defaults: V / G / M).
+        const tierCodes = this.config?.companionProfileTier || {};
+        const tierLabels = this.config?.companionProfileTierLabels || {};
+        const stateKey = this.state === 'member' || this.state === 'guest' || this.state === 'visitor'
+            ? this.state
+            : 'visitor';
+        const defaultCodes = { visitor: 'V', guest: 'G', member: 'M' };
+        const defaultLabels = { visitor: 'Visitor', guest: 'Guest', member: 'Member' };
+        let tierCode = String(tierCodes[stateKey] || defaultCodes[stateKey] || 'V').trim().toUpperCase();
+        tierCode = tierCode.replace(/[^A-Z0-9]/g, '').slice(0, 3) || defaultCodes[stateKey] || 'V';
+        let tierLabel = String(tierLabels[stateKey] || defaultLabels[stateKey] || stateKey).trim()
+            || defaultLabels[stateKey]
+            || stateKey;
+        const tierText = `(${tierCode})`;
+
+        let n;
+        let tokenText;
+        if (tokenValue === '...') {
+            tokenText = '…';
+        } else if (tokenValue === undefined || tokenValue === null || tokenValue === '') {
+            if (this.state === 'visitor') {
+                const persisted = this.getPersistedVisitorTokenBalance?.();
+                n = Number.isFinite(persisted) ? persisted : 0;
+            } else {
+                n = this.resolveLoggedInTokenBalance();
+            }
+            if (!Number.isFinite(n)) {
+                n = 0;
+            }
+            tokenText = this.formatProfileTokenDisplay(n);
+        } else {
+            n = Math.max(0, parseInt(tokenValue, 10) || 0);
+            tokenText = this.formatProfileTokenDisplay(n);
+        }
+
+        userEl.textContent = name;
+        tokensEl.textContent = tokenText;
+        if (tierEl) {
+            tierEl.textContent = tierText;
+            tierEl.hidden = false;
+            // No title tooltip (avoids odd browser “badge” popovers). Full meaning on the toggle.
+            tierEl.removeAttribute('title');
+            tierEl.setAttribute('aria-hidden', 'true');
+        }
+        // Accessible full name for the toggle button.
+        const toggle = document.getElementById('flosc_companion_profile_toggle');
+        if (toggle) {
+            toggle.setAttribute('aria-label', `${name}, ${tierLabel}, ${tokenText} tokens`);
+        }
+        strip.hidden = false;
+
+        this.ensureCompanionProfileMenu();
+        this.bindCompanionProfileRowOnce();
+    }
+
+    /**
+     * Build submenu items from the same profile-bar menu config as full page.
+     * Rebuilds when user state changes (visitor/guest/member).
+     */
+    ensureCompanionProfileMenu() {
+        const menu = document.getElementById('flosc_companion_profile_menu');
+        if (!menu) {
+            return;
+        }
+
+        const buildKey = String(this.state || 'visitor') + ':' + String(this.user?.id || 0);
+        if (menu.dataset.builtKey === buildKey) {
+            const nameEl = menu.querySelector('.flosc-companion-profile-menu-name');
+            const emailEl = menu.querySelector('.flosc-companion-profile-menu-email');
+            if (nameEl) {
+                nameEl.textContent = String(this.user?.name || nameEl.textContent || '').trim();
+            }
+            if (emailEl) {
+                emailEl.textContent = String(this.user?.email || '').trim();
+                emailEl.hidden = !emailEl.textContent;
+            }
+            return;
+        }
+
+        const safeAction = (raw) => String(raw || '').trim().replace(/[^a-z0-9_:-]/gi, '');
+        const parts = [];
+        if (this.state !== 'visitor' && this.user) {
+            const uname = this.escapeHtml(String(this.user.name || '').trim());
+            const uemail = this.escapeHtml(String(this.user.email || '').trim());
+            parts.push(
+                `<div class="flosc-companion-profile-menu-header">` +
+                    `<div class="flosc-companion-profile-menu-name">${uname}</div>` +
+                    (uemail ? `<div class="flosc-companion-profile-menu-email">${uemail}</div>` : '') +
+                `</div>`
+            );
+        }
+
+        // Mirror sidebar profile dropdown items for the current state.
+        const groupSel = this.state === 'visitor'
+            ? '.profile-dropdown-group[data-show="visitor"] [data-action]'
+            : '.profile-dropdown-group[data-show="logged-in"] [data-action]';
+        const sourceItems = document.querySelectorAll(groupSel);
+        if (sourceItems.length) {
+            sourceItems.forEach((item) => {
+                const action = safeAction(item.dataset.action);
+                const label = String(item.textContent || '').trim();
+                if (!action || !label) {
+                    return;
+                }
+                if (action === 'open_sandbox_purchase' || action.startsWith('show_offer')) {
+                    return;
+                }
+                parts.push(
+                    `<button type="button" class="flosc-companion-profile-menu-item" role="menuitem" data-action="${this.escapeHtml(action)}">${this.escapeHtml(label)}</button>`
+                );
+            });
+        } else if (this.state === 'visitor') {
+            parts.push(
+                `<button type="button" class="flosc-companion-profile-menu-item" role="menuitem" data-action="login">Log In</button>`,
+                `<button type="button" class="flosc-companion-profile-menu-item" role="menuitem" data-action="open_registration">Sign Up</button>`
+            );
+        } else {
+            parts.push(
+                `<button type="button" class="flosc-companion-profile-menu-item" role="menuitem" data-action="view_profile">My Profile</button>`,
+                `<button type="button" class="flosc-companion-profile-menu-item" role="menuitem" data-action="logout">Log Out</button>`
+            );
+        }
+
+        // Guest/member upgrade when configured on profile bar params.
+        if (this.state === 'guest' || this.state === 'member') {
+            const bar = document.getElementById('flosc_user_profile_bar');
+            const showUpgrade = this.state === 'member'
+                ? String(bar?.dataset.memberUpgradeShow || '0') === '1'
+                : String(bar?.dataset.guestUpgradeShow || '1') === '1';
+            if (showUpgrade) {
+                const label = this.state === 'member'
+                    ? (bar?.dataset.memberUpgradeLabel || 'Upgrade')
+                    : (bar?.dataset.guestUpgradeLabel || 'Upgrade to Pro');
+                parts.push(
+                    `<button type="button" class="flosc-companion-profile-menu-item" role="menuitem" data-action="show_upgrade">${this.escapeHtml(label)}</button>`
+                );
+            }
+        }
+
+        menu.innerHTML = parts.join('');
+        menu.dataset.builtKey = buildKey;
+        menu.hidden = true;
+    }
+
+    bindCompanionProfileRowOnce() {
+        if (this._companionProfileRowBound) {
+            return;
+        }
+        const toggle = document.getElementById('flosc_companion_profile_toggle');
+        const menu = document.getElementById('flosc_companion_profile_menu');
+        const strip = document.getElementById('flosc_companion_session_status');
+        if (!toggle || !menu || !strip) {
+            return;
+        }
+        this._companionProfileRowBound = true;
+
+        const closeMenu = () => {
+            menu.hidden = true;
+            toggle.setAttribute('aria-expanded', 'false');
+        };
+
+        const openMenu = () => {
+            this.ensureCompanionProfileMenu();
+            menu.hidden = false;
+            toggle.setAttribute('aria-expanded', 'true');
+        };
+
+        toggle.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (menu.hidden) {
+                openMenu();
+            } else {
+                closeMenu();
+            }
+        });
+
+        menu.addEventListener('click', (e) => {
+            const item = e.target.closest('[data-action]');
+            if (!item) {
+                return;
+            }
+            e.preventDefault();
+            e.stopPropagation();
+            const action = String(item.dataset.action || '').trim();
+            closeMenu();
+            if (!action) {
+                return;
+            }
+            if (action === 'show_upgrade') {
+                const offerId = this.getOfferIdForProduct?.();
+                if (offerId) {
+                    this.showOffer(offerId, { source: 'user' });
+                }
+                return;
+            }
+            if (typeof this.handleVisitorMenuAction === 'function') {
+                this.handleVisitorMenuAction(action);
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#flosc_companion_session_status')) {
+                closeMenu();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeMenu();
+            }
+        });
+    }
+
+    postCompanionTokenUpdate(tokenValue, formattedTokens, userName) {
         if (window.self === window.top) {
             return;
         }
@@ -8607,6 +9030,7 @@ Purchased: ${ctx.purchased}
                 payload: {
                     formatted: formattedTokens,
                     value: Math.max(0, parseInt(tokenValue, 10) || 0),
+                    userName: String(userName || this.user?.name || '').trim(),
                     ts: Date.now()
                 }
             }, targetOrigin);
@@ -8617,15 +9041,19 @@ Purchased: ${ctx.purchased}
 
     updateVisitorTokenLabelPending() {
         const visitorName = document.querySelector('.profile-name[data-show="visitor"]');
-        if (!visitorName) return;
-
         let baseLabel = (this.config?.visitorTokenDisplay?.label || '').trim();
-        if (!baseLabel) {
+        if (!baseLabel && visitorName) {
             const existingLabel = visitorName.querySelector('.flosc-visitor-label-text')?.textContent || visitorName.textContent || 'Visitor';
             baseLabel = existingLabel.trim().replace(/\s*\([^)]*\)\s*$/i, '') || 'Visitor';
         }
+        if (!baseLabel) {
+            baseLabel = 'Visitor';
+        }
 
-        visitorName.innerHTML = `<span class="flosc-visitor-label-text">${this.escapeHtml(baseLabel)}</span> <span class="flosc-visitor-token-count" id="flosc_visitor_token_count">(...)</span>`;
+        if (visitorName) {
+            visitorName.innerHTML = `<span class="flosc-visitor-label-text">${this.escapeHtml(baseLabel)}</span> <span class="flosc-visitor-token-count" id="flosc_visitor_token_count">(...)</span>`;
+        }
+        this.updateCompanionSessionStatus('...', baseLabel);
     }
 
     getLowTokenWarningStorageKey(thresholdValue) {
@@ -8697,21 +9125,25 @@ Purchased: ${ctx.purchased}
 
     getAllowedCompanionOrigins() {
         const allowed = new Set([window.location.origin]);
-        try {
-            const collapse = new URL(String(this.config?.companionCollapseUrl || ''), window.location.origin);
-            if (/^https?:$/.test(collapse.protocol)) {
-                allowed.add(collapse.origin);
+        const addOrigin = (raw) => {
+            try {
+                const parsed = new URL(String(raw || ''), window.location.origin);
+                if (/^https?:$/.test(parsed.protocol)) {
+                    allowed.add(parsed.origin);
+                }
+            } catch (e) {
+                // Ignore invalid URL.
             }
-        } catch (e) {
-            // Ignore invalid fallback URL.
-        }
+        };
+        // Hub companion / collapse targets (often cross-domain knowledge hubs).
+        addOrigin(this.config?.companionCollapseUrl);
+        addOrigin(this.config?.companionHubCompanionUrl);
+        addOrigin(this.config?.companionHubFullScreenUrl);
+        addOrigin(this.config?.appUrl);
         try {
-            const ref = new URL(String(document.referrer || ''), window.location.origin);
-            if (/^https?:$/.test(ref.protocol)) {
-                allowed.add(ref.origin);
-            }
+            addOrigin(document.referrer);
         } catch (e) {
-            // Ignore invalid referrer URL.
+            // Ignore.
         }
         return allowed;
     }
@@ -8785,7 +9217,13 @@ Purchased: ${ctx.purchased}
             }
         })();
 
-        const rawFallback = String(this.config?.companionCollapseUrl || '/');
+        // Prefer floscAdmin Hub Companion URL (knowledge hub), then collapse URL.
+        const rawHub = String(
+            this.config?.companionHubCompanionUrl
+            || this.config?.companionCollapseUrl
+            || ''
+        ).trim();
+        const rawFallback = rawHub || '/';
 
         const normalizeUrl = (input) => {
             try {
@@ -8793,6 +9231,7 @@ Purchased: ${ctx.purchased}
                 if (!/^https?:$/.test(parsed.protocol)) {
                     return null;
                 }
+                // Absolute hub URLs (cross-domain) must stay allowed via getAllowedCompanionOrigins.
                 if (!allowedOrigins.has(parsed.origin)) {
                     return null;
                 }
@@ -8807,10 +9246,8 @@ Purchased: ${ctx.purchased}
         const referrerParsed = normalizeUrl(sameOriginReferrer);
         const fallbackParsed = normalizeUrl(rawFallback);
 
-        // Canonical behavior: dock/collapse returns to the configured companion
-        // collapse URL first (usually the floscAdmin's home companion host).
-        // Optional override for origin-first behavior can be supplied by config
-        // or filter: companionCollapseTargetPolicy = 'origin'.
+        // Hub mode (default): configured knowledge-hub URL first.
+        // Domain persistence: prefer origin context, then hub fallback.
         const targetPolicy = String(this.config?.companionCollapseTargetPolicy || '').toLowerCase();
         const chosen = (targetPolicy === 'origin')
             ? (contextParsed || lastSiteParsed || referrerParsed || fallbackParsed)
@@ -8823,6 +9260,13 @@ Purchased: ${ctx.purchased}
         chosen.searchParams.set('flosc_companion_open', '1');
         chosen.searchParams.set('flosc_companion_mode', 'panel');
         chosen.searchParams.delete('flosc_companion_expand_target');
+        // Knowledge hub: owning flow id so the hub host loads the correct companion.
+        const flowId = String(this.config?.companionFlowId || this.config?.flowId || '').trim();
+        if (flowId) {
+            chosen.searchParams.set('flosc_flow_id', flowId.slice(0, 80));
+        }
+        // Keep the same chat: guest/member server session id, or visitor client handoff.
+        this.appendSessionContinuityParams(chosen);
         return chosen.toString();
     }
 
@@ -8846,14 +9290,98 @@ Purchased: ${ctx.purchased}
         }
     }
 
-    handoffToCompanion() {
+    /**
+     * Before collapse: ensure guest/member have a server session id to put on the hub URL.
+     * Prefer currentSession, then active sidebar item, then most recent server session.
+     */
+    async ensureSessionIdForCompanionHandoff() {
+        if (this.state === 'visitor') {
+            return String(this.getVisitorSessionId() || '').trim();
+        }
+        if (this.currentSession?.id) {
+            this.rememberActiveChatSessionId(this.currentSession.id);
+            return String(this.currentSession.id).trim();
+        }
+        try {
+            const active = this.sessionList?.querySelector('.flosc-session-item.active');
+            const fromSidebar = String(active?.dataset?.sessionId || '').trim();
+            if (fromSidebar) {
+                await this.loadSession(fromSidebar);
+                if (this.currentSession?.id) {
+                    return String(this.currentSession.id).trim();
+                }
+            }
+        } catch (e) {
+            // Ignore.
+        }
+        try {
+            await this.restoreLastSession();
+        } catch (e) {
+            // Ignore.
+        }
+        if (this.currentSession?.id) {
+            this.rememberActiveChatSessionId(this.currentSession.id);
+            return String(this.currentSession.id).trim();
+        }
+        return '';
+    }
+
+    async handoffToCompanion() {
         if (!this.isCompanionHandoffAvailable()) {
+            this.log?.('FLOSC: companion handoff not enabled for this flow');
             return false;
         }
 
-        const targetUrl = this.resolveCompanionHandoffUrl();
+        // Guest/member: resolve server session before leaving full chat so the hub URL
+        // always carries flosc_session_id (localStorage is origin-scoped and cannot
+        // bridge lesaep.com → dainis.net iframe alone).
+        if (this.state !== 'visitor') {
+            await this.ensureSessionIdForCompanionHandoff();
+        }
+
+        let targetUrl = this.resolveCompanionHandoffUrl();
+        // Last-resort absolute hub URL if origin allowlist rejected intermediate candidates.
         if (!targetUrl) {
+            try {
+                const hub = String(
+                    this.config?.companionHubCompanionUrl
+                    || this.config?.companionCollapseUrl
+                    || ''
+                ).trim();
+                if (hub) {
+                    const u = new URL(hub, window.location.origin);
+                    if (/^https?:$/.test(u.protocol)) {
+                        u.searchParams.set('flosc_companion_handoff', '1');
+                        u.searchParams.set('flosc_companion_open', '1');
+                        u.searchParams.set('flosc_companion_mode', 'panel');
+                        const flowId = String(this.config?.companionFlowId || this.config?.flowId || '').trim();
+                        if (flowId) {
+                            u.searchParams.set('flosc_flow_id', flowId.slice(0, 80));
+                        }
+                        this.appendSessionContinuityParams(u);
+                        targetUrl = u.toString();
+                    }
+                }
+            } catch (e) {
+                targetUrl = '';
+            }
+        }
+        if (!targetUrl) {
+            this.log?.('FLOSC: companion handoff URL empty');
             return false;
+        }
+
+        // Last check: guest/member URL must include flosc_session_id when we have one.
+        if (this.state !== 'visitor' && this.currentSession?.id) {
+            try {
+                const u = new URL(targetUrl, window.location.origin);
+                if (!u.searchParams.get('flosc_session_id')) {
+                    u.searchParams.set('flosc_session_id', String(this.currentSession.id).slice(0, 80));
+                    targetUrl = u.toString();
+                }
+            } catch (e) {
+                // Keep targetUrl as-is.
+            }
         }
 
         this.forceCompanionMinimizedState();
@@ -9818,6 +10346,7 @@ Purchased: ${ctx.purchased}
                 const sessionData = await sessionRes.json();
                 if (sessionData.success && sessionData.session) {
                     this.currentSession = sessionData.session;
+                    this.rememberActiveChatSessionId(this.currentSession.id);
                     this.log('[FLOSC] Auto-created session:', this.currentSession.id, this.currentSession.title);
                     this.loadSessions();
                 } else if (sessionData.code === 'guest_chat_limit' || sessionData.error === 'guest_chat_limit') {
@@ -10107,8 +10636,9 @@ Purchased: ${ctx.purchased}
             });
             const data = await response.json();
             
-            if (data.success) {
+            if (data.success && data.session) {
                 this.currentSession = data.session;
+                this.rememberActiveChatSessionId(data.session?.id || sessionId);
                 // Clear chat and show session messages
                 const inner = this.chatMessages?.querySelector('.messages-inner');
                 if (inner) inner.innerHTML = '';
@@ -10118,7 +10648,8 @@ Purchased: ${ctx.purchased}
                 this._shownAssistant = {};
                 this._repeatIdx = 0;
                 
-                data.session.messages.forEach(msg => {
+                const msgs = Array.isArray(data.session.messages) ? data.session.messages : [];
+                msgs.forEach(msg => {
                     const meta = msg && msg.meta && typeof msg.meta === 'object' ? msg.meta : null;
 
                     if (msg.role === 'assistant' && meta && meta.source === 'admin') {
@@ -10138,10 +10669,12 @@ Purchased: ${ctx.purchased}
                 if (window.innerWidth <= 768 && this.sidebar) {
                     this.sidebar.classList.remove('open');
                 }
+                return true;
             }
         } catch (e) {
             this.logWarn('FLOSC: Could not load session', e);
         }
+        return false;
     }
     
     /**
@@ -10311,6 +10844,7 @@ Purchased: ${ctx.purchased}
             const data = await res.json();
             if (data.success && data.session) {
                 this.currentSession = data.session;
+                this.rememberActiveChatSessionId(this.currentSession.id);
                 await this.loadSessions();
                 return true;
             }
@@ -10439,7 +10973,8 @@ Purchased: ${ctx.purchased}
                 }
             }
             
-            if (latestSession && latestSession.messages && latestSession.messages.length > 0) {
+            // List endpoint may omit message bodies — still load by id (server has full log).
+            if (latestSession && latestSession.id) {
                 this.log('[FLOSC] Restoring last session:', latestSession.id, latestSession.title);
                 await this.loadSession(latestSession.id);
             }
@@ -10850,14 +11385,18 @@ Purchased: ${ctx.purchased}
             }
         }
 
-        // Coupon UI: native PayPal/Stripe — one-time and subscription (monthly/yearly amounts).
-        // Redirect shops keep their own coupons; FLOSC does not apply codes there.
+        // Coupon UI: only when floscAdmin opts in (offer.show_coupon_field) + native PayPal/Stripe.
+        // Access Code remains a separate discreet link. Redirect shops keep their own coupons.
         const couponRow = document.getElementById('flosc-coupon-row');
         const couponInput = document.getElementById('flosc-coupon-input');
         const couponApply = document.getElementById('flosc-coupon-apply');
         const couponStatus = document.getElementById('flosc-coupon-status');
         const processorForCoupon = String(offer?.pricing?.processor || offer?.processor || 'paypal').toLowerCase();
-        const showCoupon = (processorForCoupon === 'paypal' || processorForCoupon === 'stripe');
+        const couponFieldEnabled = offer?.show_coupon_field === true
+            || offer?.show_coupon_field === 1
+            || offer?.show_coupon_field === '1';
+        const showCoupon = couponFieldEnabled
+            && (processorForCoupon === 'paypal' || processorForCoupon === 'stripe');
         this._checkoutIsSubscription = !!isSubscription;
         if (couponRow) {
             this.setDisplayState(couponRow, showCoupon, 'block');

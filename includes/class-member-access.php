@@ -152,22 +152,73 @@ class FLOSC_Member_Access {
     }
     
     /**
+     * Equivalent membership level slugs (legacy ↔ current).
+     * LeSAEp historically used lesaep_learners; offers/default now use pronunciation_learners.
+     *
+     * @param string $level
+     * @return string[]
+     */
+    public function get_level_aliases($level) {
+        $level = sanitize_key((string) $level);
+        if ($level === '') {
+            return [];
+        }
+
+        $groups = [
+            ['pronunciation_learners', 'lesaep_learners'],
+            ['guest_pronunciation_learner', 'guest_lesaep_learner'],
+        ];
+
+        $aliases = [$level];
+        foreach ($groups as $group) {
+            if (in_array($level, $group, true)) {
+                $aliases = array_merge($aliases, $group);
+            }
+        }
+
+        /**
+         * Filter equivalent membership level slugs for access checks.
+         *
+         * @param string[] $aliases Candidate level slugs including $level.
+         * @param string   $level   Requested level.
+         */
+        $aliases = apply_filters('flosc_member_level_aliases', $aliases, $level);
+        if (!is_array($aliases)) {
+            $aliases = [$level];
+        }
+
+        return array_values(array_unique(array_filter(array_map('sanitize_key', $aliases))));
+    }
+
+    /**
      * Check if user has a specific membership level
-     * Checks _flosc_memberlevel_{level} user meta
-     * 
+     * Checks _flosc_memberlevel_{level} user meta, WP role, and legacy aliases.
+     *
      * @param int $user_id
-     * @param string $level e.g. 'samplecourse', 'spanishcourse'
+     * @param string $level e.g. 'samplecourse', 'spanishcourse', 'pronunciation_learners'
      * @return bool
      */
     public function has_level($user_id, $level) {
         if (!$user_id || !$level) {
             return false;
         }
-        
-        $meta_key = '_flosc_memberlevel_' . sanitize_key($level);
-        $value = get_user_meta($user_id, $meta_key, true);
-        
-        return $value === 'yes' || $value === 'true' || $value === true || $value === '1';
+
+        $user = get_userdata($user_id);
+        $roles = ($user && is_array($user->roles)) ? $user->roles : [];
+
+        foreach ($this->get_level_aliases($level) as $candidate) {
+            $meta_key = '_flosc_memberlevel_' . $candidate;
+            $value = get_user_meta($user_id, $meta_key, true);
+            if ($value === 'yes' || $value === 'true' || $value === true || $value === '1') {
+                return true;
+            }
+            // Role-only grants (older accounts / admin-assigned roles without meta).
+            if (in_array($candidate, $roles, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
     
     /**

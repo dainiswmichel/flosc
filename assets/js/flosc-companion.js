@@ -8,9 +8,9 @@
  *   <script>
  *     FloscCompanion.init({
  *       appUrl: 'https://example.com/your-flow-slug/',
- *       title: 'Chat with us',
+ *       title: 'Product Companion',
  *       subtitle: 'We reply instantly',
- *       avatar: '💬',
+ *       headerIconUrl: 'https://example.com/logo.png',
  *       accentColor: '#2563eb'
  *     });
  *   </script>
@@ -35,12 +35,15 @@
         init: function(config) {
             this.config = Object.assign({
                 appUrl: '',
+                productName: '',
                 title: l10n.chatWithUs || 'Chat with us',
                 subtitle: l10n.weReplyInstantly || 'We reply instantly',
                 showHeaderTitle: true,
                 showHeaderSubtitle: true,
                 showOpenFullpage: true,
-                avatar: '💬',
+                showHeaderTokens: false,
+                headerIconUrl: '',
+                avatar: '',
                 accentColor: '#2563eb',
                 position: 'bottom-right',
                 width: '380px',
@@ -56,6 +59,8 @@
                 launchOnScrollThreshold: false,
                 launchOnScrollPercent: 0,
                 launcherSvgPath: 'M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z',
+                launcherIconUrl: '',
+                launcherUsesProductLogo: false,
                 triggerDesktopOnly: true,
                 triggerMinPageTimeMs: 0,
                 triggerSuppressOnAuthCheckout: true,
@@ -70,7 +75,7 @@
                 closeAriaLabel: l10n.collapseChat || 'Collapse Chat',
                 launcherOpenAriaLabel: l10n.openChat || 'Open Chat',
                 launcherCollapseAriaLabel: l10n.collapseChat || 'Collapse Chat',
-                assistantTitle: l10n.floscAssistant || 'FLOSC Assistant',
+                assistantTitle: l10n.floscAssistant || 'Assistant',
                 fullscreenLabel: l10n.toggleFullscreen || 'Toggle fullscreen',
                 rememberOpenState: false,
                 stateStorage: 'session',
@@ -82,8 +87,8 @@
                 returnUrl: ''
             }, config);
 
-            // Session/server is authoritative for token count; never first-paint
-            // a configured baseline in the companion header.
+            // Wallet/username render under the chat input inside the iframe
+            // (companion-embed session strip). Header stays product chrome only.
             this.config.headerTokenText = '';
 
             this.pageStartMs = Date.now();
@@ -97,13 +102,11 @@
             if (this.handoffRequested) {
                 this.config.skipBehaviorTriggers = true;
             }
+            // Capture session continuity from the hub URL before anything strips the query string.
+            // Guest/member: flosc_session_id. Visitor: flosc_visitor_session + optional flosc_handoff.
+            this.continuityParams = this.captureContinuityParamsFromPage();
 
             this.captureCurrentSiteContext();
-
-            var initialTokenText = this.getInitialHeaderTokenText();
-            if (initialTokenText) {
-                this.config.headerTokenText = initialTokenText;
-            }
 
             this.render();
             this.applyMotionMode();
@@ -145,23 +148,21 @@
             var window_el = document.createElement('div');
             window_el.className = 'flosc-companion-window';
 
-            // Header
+            // Header — product chrome only (parameterized title + brand icon).
+            // Wallet lives under the input in the iframe profile row.
             var header = document.createElement('div');
             header.className = 'flosc-companion-header';
-            // Token allotment (wallet) always shows when present; otherwise the subtitle
-            // text renders only when its visibility toggle is on.
-            var subtitleHtml = this.config.headerTokenText
-                ? '<div class="flosc-companion-token-allotment">' + this.escapeHtml(this.config.headerTokenText) + '</div>'
-                : ((this.config.showHeaderSubtitle === false)
-                    ? ''
-                    : '<div class="flosc-companion-subtitle">' + this.escapeHtml(this.config.subtitle) + '</div>');
+            var subtitleHtml = (this.config.showHeaderSubtitle === false || !this.config.subtitle)
+                ? ''
+                : '<div class="flosc-companion-subtitle">' + this.escapeHtml(this.config.subtitle) + '</div>';
             var titleHtml = (this.config.showHeaderTitle === false)
                 ? ''
                 : '<div class="flosc-companion-title">' + this.escapeHtml(this.config.title) + '</div>';
+            var avatarHtml = this.buildHeaderAvatarHtml();
             header.innerHTML =
                 '<div class="flosc-companion-header-info">' +
-                    '<div class="flosc-companion-avatar">' + this.config.avatar + '</div>' +
-                    '<div>' +
+                    avatarHtml +
+                    '<div class="flosc-companion-header-text">' +
                         titleHtml +
                         subtitleHtml +
                     '</div>' +
@@ -176,19 +177,16 @@
             this.iframe = document.createElement('iframe');
             this.iframe.className = 'flosc-companion-body';
             this.iframe.setAttribute('loading', 'lazy');
-            this.iframe.setAttribute('title', this.config.assistantTitle || 'FLOSC Assistant');
+            this.iframe.setAttribute('title', this.config.assistantTitle || this.config.productName || 'Assistant');
 
             window_el.appendChild(header);
             window_el.appendChild(this.iframe);
 
-            // FAB button
+            // FAB button — product logo when configured, else path SVG glyph.
             var fab = document.createElement('button');
             fab.className = 'flosc-companion-fab flosc-launcher';
             fab.setAttribute('aria-label', this.config.launcherAriaLabel);
-            fab.innerHTML =
-                '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">' +
-                    '<path d="' + this.escapeHtml(this.config.launcherSvgPath) + '"/>' +
-                '</svg>';
+            fab.innerHTML = this.buildLauncherHtml();
 
             // Badge (for future notification count)
             var badge = document.createElement('span');
@@ -295,7 +293,9 @@
 
                 var data = event.data || {};
                 if (data.type === 'flosc_companion_token_update') {
-                    self.updateHeaderTokenText(data.payload);
+                    // Tokens/username render in the iframe session strip under the input.
+                    // Cache only for continuity; do not paint wallet into the purple header.
+                    self.cacheTokenUpdate(data.payload);
                     return;
                 }
                 if (data.type === 'flosc_companion_context_request') {
@@ -355,6 +355,48 @@
             }
         },
 
+        /**
+         * Header brand mark: flow Chat Logo / companion_header_icon_url.
+         * No hard-coded chat emoji — empty when no icon is parameterized.
+         */
+        buildHeaderAvatarHtml: function() {
+            var iconUrl = String(this.config.headerIconUrl || '').trim();
+            var product = String(this.config.productName || this.config.title || 'Brand').trim();
+            if (iconUrl) {
+                return '<div class="flosc-companion-avatar flosc-companion-avatar--image">' +
+                    '<img src="' + this.escapeHtml(iconUrl) + '" alt="' + this.escapeHtml(product) + '" class="flosc-companion-avatar-img">' +
+                    '</div>';
+            }
+            var emoji = String(this.config.avatar || '').trim();
+            if (emoji) {
+                return '<div class="flosc-companion-avatar flosc-companion-avatar--emoji">' +
+                    this.escapeHtml(emoji) +
+                    '</div>';
+            }
+            return '';
+        },
+
+        /**
+         * FAB content: product logo image or SVG path from admin launcher icon choice.
+         */
+        buildLauncherHtml: function() {
+            var logoUrl = String(this.config.launcherIconUrl || '').trim();
+            if (this.config.launcherUsesProductLogo && logoUrl) {
+                return '<img src="' + this.escapeHtml(logoUrl) + '" alt="" class="flosc-companion-fab-logo">';
+            }
+            // Prefer header brand icon for FAB when no SVG path and logo URL exists.
+            if (!this.config.launcherSvgPath && logoUrl) {
+                return '<img src="' + this.escapeHtml(logoUrl) + '" alt="" class="flosc-companion-fab-logo">';
+            }
+            var path = String(this.config.launcherSvgPath || '').trim();
+            if (!path) {
+                path = 'M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z';
+            }
+            return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">' +
+                '<path d="' + this.escapeHtml(path) + '"/>' +
+                '</svg>';
+        },
+
         formatTokenCountForHeader: function(tokenValue) {
             var n = Math.max(0, parseInt(tokenValue, 10) || 0);
             try {
@@ -365,12 +407,15 @@
         },
 
         getInitialHeaderTokenText: function() {
-            // Companion header starts neutral and waits for iframe postMessage,
-            // which carries server-confirmed token balance for the active session.
+            // Header never shows wallet; profile row under input is authoritative.
             return '';
         },
 
-        updateHeaderTokenText: function(payload) {
+        /**
+         * Persist token postMessage from the iframe (session continuity only).
+         * Does not mutate the companion chrome header.
+         */
+        cacheTokenUpdate: function(payload) {
             if (!payload || typeof payload !== 'object') {
                 return;
             }
@@ -392,30 +437,11 @@
             this.lastTokenUpdateTs = ts;
             this.persistTokenCache(payload);
             this.config.headerTokenText = formatted;
+        },
 
-            if (!this.container) {
-                return;
-            }
-
-            var headerInfo = this.container.querySelector('.flosc-companion-header-info');
-            if (!headerInfo) {
-                return;
-            }
-
-            var tokenEl = this.container.querySelector('.flosc-companion-token-allotment');
-            if (!tokenEl) {
-                var subtitleEl = this.container.querySelector('.flosc-companion-subtitle');
-                if (subtitleEl) {
-                    var replacement = document.createElement('div');
-                    replacement.className = 'flosc-companion-token-allotment';
-                    subtitleEl.parentNode.replaceChild(replacement, subtitleEl);
-                    tokenEl = replacement;
-                }
-            }
-
-            if (tokenEl) {
-                tokenEl.textContent = formatted;
-            }
+        /** @deprecated Header no longer displays tokens; use cacheTokenUpdate. */
+        updateHeaderTokenText: function(payload) {
+            this.cacheTokenUpdate(payload);
         },
 
         toggle: function() {
@@ -574,6 +600,24 @@
                         }
                         url.searchParams.set(key, String(value));
                     }, this);
+                }
+
+                // Forward collapse/expand continuity into the chat iframe
+                // (parent may be dainis.net; iframe is the chat host e.g. lesaep.com).
+                // Prefer snapshotted params (survive address-bar cleanup), then live query.
+                try {
+                    var cont = (this.continuityParams && typeof this.continuityParams === 'object')
+                        ? this.continuityParams
+                        : {};
+                    var parentParams = new URLSearchParams(window.location.search || '');
+                    ['flosc_session_id', 'flosc_visitor_session', 'flosc_handoff'].forEach(function(key) {
+                        var val = cont[key] || parentParams.get(key);
+                        if (val) {
+                            url.searchParams.set(key, String(val).slice(0, key === 'flosc_handoff' ? 8000 : 120));
+                        }
+                    });
+                } catch (eFwd) {
+                    // Ignore parent URL parse failures.
                 }
 
                 var payload = this.getBrowsingContextPayload();
@@ -1289,6 +1333,26 @@
             }
         },
 
+        /**
+         * Read continuity query args once at shell init (before consumeHandoffRequest).
+         * @return {Object}
+         */
+        captureContinuityParamsFromPage: function() {
+            var out = {};
+            try {
+                var params = new URLSearchParams(window.location.search || '');
+                ['flosc_session_id', 'flosc_visitor_session', 'flosc_handoff'].forEach(function(key) {
+                    var val = params.get(key);
+                    if (val) {
+                        out[key] = String(val);
+                    }
+                });
+            } catch (e) {
+                // Ignore.
+            }
+            return out;
+        },
+
         consumeHandoffRequest: function() {
             try {
                 var url = new URL(window.location.href);
@@ -1299,6 +1363,11 @@
                 url.searchParams.delete('flosc_companion_open');
                 url.searchParams.delete('flosc_companion_mode');
                 url.searchParams.delete('flosc_companion_expand_target');
+                // Continuity params were snapshotted into this.continuityParams and
+                // applied to the iframe src — safe to clean the hub address bar.
+                url.searchParams.delete('flosc_session_id');
+                url.searchParams.delete('flosc_visitor_session');
+                url.searchParams.delete('flosc_handoff');
                 window.history.replaceState({}, document.title, url.toString());
             } catch (e) {
                 // Ignore URL update failures.
@@ -1355,22 +1424,28 @@
 
                     if (handoffPayload && typeof handoffPayload === 'object') {
                         var sid = String(handoffPayload.sessionId || handoffPayload.session_id || '').trim();
-                        if (sid) {
+                        var kind = String(handoffPayload.kind || '').toLowerCase();
+                        // Guest/member: server session id. Visitor: client session + optional message pack.
+                        if (!sid) {
+                            // nothing to attach
+                        } else if (kind === 'visitor') {
                             target.searchParams.set('flosc_visitor_session', sid.slice(0, 80));
-                        }
-
-                        var handoffObj = {
-                            sessionId: sid.slice(0, 80),
-                            messages: Array.isArray(handoffPayload.messages) ? handoffPayload.messages.slice(-50) : []
-                        };
-
-                        try {
-                            var packed = btoa(unescape(encodeURIComponent(JSON.stringify(handoffObj))));
-                            if (packed && packed.length <= 6000) {
-                                target.searchParams.set('flosc_handoff', packed);
+                            var handoffObj = {
+                                kind: 'visitor',
+                                sessionId: sid.slice(0, 80),
+                                messages: Array.isArray(handoffPayload.messages) ? handoffPayload.messages.slice(-50) : []
+                            };
+                            try {
+                                var packed = btoa(unescape(encodeURIComponent(JSON.stringify(handoffObj))));
+                                if (packed && packed.length <= 6000) {
+                                    target.searchParams.set('flosc_handoff', packed);
+                                }
+                            } catch (e) {
+                                // If encoding fails, continue with session id only.
                             }
-                        } catch (e) {
-                            // If encoding fails, continue with session id only.
+                        } else {
+                            // Logged-in (or unknown-kind with a server session id from iframe).
+                            target.searchParams.set('flosc_session_id', sid.slice(0, 80));
                         }
                     }
 

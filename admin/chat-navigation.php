@@ -43,11 +43,19 @@ if (empty($flosc_visitor_menu)) {
 }
 
 $flosc_guest_menu = get_option('flosc_guest_menu_items', []);
+if (!is_array($flosc_guest_menu)) {
+    $flosc_guest_menu = [];
+}
+// Hide purchase rows in admin UI (Upgrade is profile-bar feature button).
+$flosc_guest_menu = array_values(array_filter($flosc_guest_menu, static function ($item) {
+    $action = is_array($item) ? (string) ($item['action'] ?? '') : '';
+    return $action !== 'open_sandbox_purchase' && strpos($action, 'show_offer') !== 0;
+}));
 if (empty($flosc_guest_menu)) {
+    // Upgrade is the profile-bar feature button (show_upgrade), not a dropdown menu row.
     $flosc_guest_menu = [
         ['label' => 'My Profile', 'action' => 'view_profile'],
         ['label' => 'Take Quiz',  'action' => 'open_quiz'],
-        ['label' => 'Upgrade',    'action' => 'open_sandbox_purchase'],
         ['label' => 'Log Out',    'action' => 'logout'],
     ];
 }
@@ -74,7 +82,9 @@ $flosc_available_actions = [
     'open_lesson_library'   => 'Lesson Library — show all lessons',
     'open_quiz_library'     => 'Quiz Library — show all quizzes',
     'open_support'          => 'Support — open help/support',
-    'open_sandbox_purchase' => 'Purchase — open purchase flow',
+    // Visitor menus may use this; it renders as the .upgrade-btn, not a plain link.
+    // Guest/member: Upgrade is controlled only by Profile Bar show_upgrade (skipped in those menus).
+    'open_sandbox_purchase' => 'Upgrade / Purchase — feature button (not a plain menu row)',
     'send_prompt'           => 'Send Prompt — type a message into the chatbot',
     'view_profile'          => 'My Profile — go to user profile page',
     'view_dashboard'        => 'Dashboard — go to WordPress dashboard',
@@ -230,7 +240,7 @@ $flosc_member_levels_chat_url = add_query_arg(
 <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
 
 <h3 class="flosc-ui-section-title">Guest Dropdown Menu</h3>
-<p class="description">Menu items for logged-in users who have not purchased.</p>
+<p class="description">Menu items for logged-in users who have not purchased. <strong>Upgrade</strong> is not a menu row — it is the profile-bar feature button (Style → Profile Bar → Guest → Show Upgrade).</p>
 
 <div id="flosc-guest-menu-repeater">
     <table class="widefat flosc-ui-menu-table">

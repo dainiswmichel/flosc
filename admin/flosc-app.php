@@ -376,9 +376,9 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
                         <div class="dropdown-name" id="flosc_dropdown_name"></div>
                         <div class="dropdown-email" id="flosc_dropdown_email"></div>
                     </div>
-                    <!-- Upgrade: guest only (hidden for member via CSS) -->
+                    <!-- Upgrade: flosc feature button (guest; member only if profile-bar show_upgrade). Not a menu row. -->
                     <div class="upgrade-container" id="flosc_upgrade_container">
-                        <button class="upgrade-btn" id="flosc_upgrade_button">
+                        <button type="button" class="upgrade-btn" id="flosc_upgrade_button">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                             </svg>
@@ -393,12 +393,23 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
                     if (empty($flosc_li_menu)) {
                         $flosc_li_menu = ($user_state === 'member')
                             ? [['label' => 'Log Out', 'action' => 'logout']]
-                            : [['label' => 'Log Out', 'action' => 'logout']];
+                            : [
+                                ['label' => 'My Profile', 'action' => 'view_profile'],
+                                ['label' => 'Log Out', 'action' => 'logout'],
+                            ];
                     }
                     foreach ($flosc_li_menu as $flosc_li_item):
+                        $flosc_li_action = (string) ($flosc_li_item['action'] ?? '');
+                        // Purchase/offer lives on the Upgrade feature button, not as a plain menu link.
+                        if (
+                            $flosc_li_action === 'open_sandbox_purchase'
+                            || strpos($flosc_li_action, 'show_offer') === 0
+                        ) {
+                            continue;
+                        }
                     ?>
-                    <a href="#" class="profile-dropdown-item" data-action="<?php echo esc_attr($flosc_li_item['action']); ?>">
-                        <?php echo esc_html($flosc_li_item['label']); ?>
+                    <a href="#" class="profile-dropdown-item" data-action="<?php echo esc_attr($flosc_li_action); ?>">
+                        <?php echo esc_html($flosc_li_item['label'] ?? ''); ?>
                     </a>
                     <?php endforeach; ?>
                 </div>
@@ -521,6 +532,27 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
                     </svg>
                 </button>
             </div>
+        </div>
+        <?php // Companion-embed only: Name (V|G|M) · TokenCount · ExpandSubMenuCaret under the input. ?>
+        <div id="flosc_companion_session_status"
+             class="flosc-companion-session-status flosc-companion-profile-row"
+             hidden>
+            <div class="flosc-companion-profile-menu" id="flosc_companion_profile_menu" hidden role="menu"></div>
+            <button type="button"
+                    class="flosc-companion-profile-toggle"
+                    id="flosc_companion_profile_toggle"
+                    aria-expanded="false"
+                    aria-haspopup="menu"
+                    aria-controls="flosc_companion_profile_menu">
+                <span class="flosc-companion-session-identity">
+                    <span class="flosc-companion-session-user" id="flosc_companion_session_user"></span>
+                    <span class="flosc-companion-session-tier" id="flosc_companion_session_tier" aria-hidden="true"></span>
+                </span>
+                <span class="flosc-companion-session-tokens" id="flosc_companion_session_tokens" data-flosc-token-balance="1" aria-live="polite"></span>
+                <svg class="flosc-companion-profile-caret" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </button>
         </div>
     </main>
 
@@ -872,33 +904,54 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 $flosc_rest_base = $flosc_scheme . $flosc_current_host . '/' . $flosc_rest_prefix . '/flosc/v1';
             }
 
-            $flosc_companion_mode = sanitize_text_field((string) ($flow_settings['companion_content_display_mode'] ?? 'in_chat'));
-            $flosc_companion_enabled = !empty($flow_settings['companion_enabled']);
+            // Companion params: prefer $flow_settings option, fall back to current flow merge.
+            $flosc_companion_source = is_array($flow_settings) ? $flow_settings : [];
+            if (empty($flosc_companion_source) && !empty($flosc_current_flow) && is_array($flosc_current_flow)) {
+                $flosc_companion_source = $flosc_current_flow;
+            } elseif (!empty($flosc_current_flow) && is_array($flosc_current_flow)) {
+                // Fill missing companion_* keys from live flow object.
+                foreach ($flosc_current_flow as $flosc_ck => $flosc_cv) {
+                    if (strpos((string) $flosc_ck, 'companion_') === 0 && !isset($flosc_companion_source[$flosc_ck])) {
+                        $flosc_companion_source[$flosc_ck] = $flosc_cv;
+                    }
+                }
+                foreach (['lessons_category', 'lesson_groups', 'slug', 'domain'] as $flosc_ck) {
+                    if (!isset($flosc_companion_source[$flosc_ck]) && isset($flosc_current_flow[$flosc_ck])) {
+                        $flosc_companion_source[$flosc_ck] = $flosc_current_flow[$flosc_ck];
+                    }
+                }
+            }
+
+            $flosc_companion_mode = sanitize_text_field((string) ($flosc_companion_source['companion_content_display_mode'] ?? 'in_chat'));
+            $flosc_companion_enabled = !empty($flosc_companion_source['companion_enabled']);
             $flosc_companion_handoff_enabled = $flosc_companion_enabled && in_array($flosc_companion_mode, ['companion', 'both'], true);
             $flosc_companion_show_for_visitors = filter_var(
-                $flow_settings['companion_show_for_visitors'] ?? false,
+                $flosc_companion_source['companion_show_for_visitors'] ?? false,
                 FILTER_VALIDATE_BOOLEAN
             );
             // Full-page chat always exposes companion collapse/return action.
             // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presence-only display flag, no value used
             $flosc_companion_return_available = !isset($_GET['flosc_companion']);
-            $flosc_companion_state_storage = sanitize_text_field((string) ($flow_settings['companion_state_storage'] ?? 'session'));
+            $flosc_companion_state_storage = sanitize_text_field((string) ($flosc_companion_source['companion_state_storage'] ?? 'session'));
             if (!in_array($flosc_companion_state_storage, ['session', 'local'], true)) {
                 $flosc_companion_state_storage = 'session';
             }
             $flosc_companion_state_key = 'flosc_companion_state_' . md5((string) $flosc_app_url);
-            $flosc_companion_routing_mode = sanitize_key((string) ($flow_settings['companion_routing_mode'] ?? 'hub'));
+            $flosc_companion_routing_mode = sanitize_key((string) ($flosc_companion_source['companion_routing_mode'] ?? 'hub'));
             if (!in_array($flosc_companion_routing_mode, ['hub', 'domain_persistence'], true)) {
                 $flosc_companion_routing_mode = 'hub';
             }
-            // Default hub fullscreen = this site's FLOSC app URL (no third-party hardcode).
-            $flosc_hub_fullscreen_url = esc_url_raw((string) ($flow_settings['companion_hub_fullscreen_url'] ?? $flosc_app_url));
+            // Hub URLs from floscAdmin Companion settings (defaults from flow params only).
+            $flosc_hub_defaults_rt = function_exists('flosc_companion_hub_defaults_from_flow')
+                ? flosc_companion_hub_defaults_from_flow($flosc_companion_source)
+                : ['fullscreen' => (string) $flosc_app_url, 'companion' => home_url('/')];
+            $flosc_hub_fullscreen_url = esc_url_raw((string) ($flosc_companion_source['companion_hub_fullscreen_url'] ?? ($flosc_hub_defaults_rt['fullscreen'] ?? $flosc_app_url)));
             if ($flosc_hub_fullscreen_url === '') {
-                $flosc_hub_fullscreen_url = esc_url_raw((string) $flosc_app_url);
+                $flosc_hub_fullscreen_url = esc_url_raw((string) ($flosc_hub_defaults_rt['fullscreen'] ?? $flosc_app_url));
             }
-            $flosc_hub_companion_url = esc_url_raw((string) ($flow_settings['companion_hub_companion_url'] ?? home_url('/')));
+            $flosc_hub_companion_url = esc_url_raw((string) ($flosc_companion_source['companion_hub_companion_url'] ?? ($flosc_hub_defaults_rt['companion'] ?? home_url('/'))));
             if ($flosc_hub_companion_url === '') {
-                $flosc_hub_companion_url = esc_url_raw(home_url('/'));
+                $flosc_hub_companion_url = esc_url_raw((string) ($flosc_hub_defaults_rt['companion'] ?? home_url('/')));
             }
             $flosc_companion_collapse_url = ($flosc_companion_routing_mode === 'hub')
                 ? $flosc_hub_companion_url
@@ -906,7 +959,29 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             $flosc_companion_collapse_target_policy = ($flosc_companion_routing_mode === 'domain_persistence')
                 ? 'origin'
                 : 'fallback';
-            $flosc_companion_contextual_prompt = sanitize_text_field((string) ($flow_settings['companion_contextual_prompt'] ?? 'What do you want to explore together?'));
+            $flosc_companion_contextual_prompt = sanitize_text_field((string) ($flosc_companion_source['companion_contextual_prompt'] ?? 'What do you want to explore together?'));
+            // Profile-row tier codes (FLOSC defaults V/G/M) — per-flow overrideable.
+            $flosc_tier_code = static function ( $raw, $fallback ) {
+                $code = strtoupper( sanitize_text_field( (string) $raw ) );
+                $code = preg_replace( '/[^A-Z0-9]/', '', $code );
+                $code = substr( (string) $code, 0, 3 );
+                return $code !== '' ? $code : $fallback;
+            };
+            $flosc_companion_tier_visitor = $flosc_tier_code( $flosc_companion_source['companion_profile_tier_visitor'] ?? 'V', 'V' );
+            $flosc_companion_tier_guest   = $flosc_tier_code( $flosc_companion_source['companion_profile_tier_guest'] ?? 'G', 'G' );
+            $flosc_companion_tier_member  = $flosc_tier_code( $flosc_companion_source['companion_profile_tier_member'] ?? 'M', 'M' );
+            $flosc_companion_tier_visitor_label = sanitize_text_field( (string) ( $flosc_companion_source['companion_profile_tier_visitor_label'] ?? 'Visitor' ) );
+            $flosc_companion_tier_guest_label   = sanitize_text_field( (string) ( $flosc_companion_source['companion_profile_tier_guest_label'] ?? 'Guest' ) );
+            $flosc_companion_tier_member_label  = sanitize_text_field( (string) ( $flosc_companion_source['companion_profile_tier_member_label'] ?? 'Member' ) );
+            if ( $flosc_companion_tier_visitor_label === '' ) {
+                $flosc_companion_tier_visitor_label = 'Visitor';
+            }
+            if ( $flosc_companion_tier_guest_label === '' ) {
+                $flosc_companion_tier_guest_label = 'Guest';
+            }
+            if ( $flosc_companion_tier_member_label === '' ) {
+                $flosc_companion_tier_member_label = 'Member';
+            }
             
             echo wp_json_encode([
             'restUrl' => $flosc_rest_base . '/',
@@ -986,15 +1061,30 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 return 'capture';
             })(),
             'identity' => $identity,
+            // Convenience alias for JS (logout goodbye, companion labels) — from Identity params.
+            'productName' => is_array($identity) ? (string) ($identity['name'] ?? '') : '',
             'offers' => array_values($offers),
             'appUrl' => $flosc_app_url,
-            'companionHandoffEnabled' => $flosc_companion_return_available,
+            // Dock/collapse handoff when companion mode is companion|both and enabled.
+            'companionHandoffEnabled' => ($flosc_companion_handoff_enabled && $flosc_companion_return_available),
             'companionCollapseUrl' => $flosc_companion_collapse_url,
             'companionCollapseTargetPolicy' => $flosc_companion_collapse_target_policy,
             'companionRoutingMode' => $flosc_companion_routing_mode,
             'companionHubFullScreenUrl' => $flosc_hub_fullscreen_url,
             'companionHubCompanionUrl' => $flosc_hub_companion_url,
+            // Owning flow id for cross-domain knowledge hub handoff (e.g. lesaep_com_ivr).
+            'companionFlowId' => $flosc_current_flow ? sanitize_key((string) ($flosc_current_flow['id'] ?? pathinfo((string) ($flosc_current_flow['ivr_file'] ?? ''), PATHINFO_FILENAME))) : '',
             'companionContextualPrompt' => $flosc_companion_contextual_prompt,
+            'companionProfileTier' => [
+                'visitor' => $flosc_companion_tier_visitor,
+                'guest'   => $flosc_companion_tier_guest,
+                'member'  => $flosc_companion_tier_member,
+            ],
+            'companionProfileTierLabels' => [
+                'visitor' => $flosc_companion_tier_visitor_label,
+                'guest'   => $flosc_companion_tier_guest_label,
+                'member'  => $flosc_companion_tier_member_label,
+            ],
             'companionStateKey' => $flosc_companion_state_key,
             'companionStateStorage' => $flosc_companion_state_storage,
             'ajaxUrl' => admin_url('admin-ajax.php'),

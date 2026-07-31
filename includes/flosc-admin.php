@@ -1318,6 +1318,15 @@ trait FLOSC_Admin_Trait {
 
         $accent = $this->get_setting('companion_accent_color', '#2563eb');
         $title  = $this->get_setting('companion_greeting', 'Chat with us');
+        $header_icon = $this->get_setting('companion_header_icon_url', '');
+        if ($header_icon === '' && function_exists('flosc_get_chatlogo_url')) {
+            $header_icon = flosc_get_chatlogo_url();
+        }
+        $product_name = '';
+        if (function_exists('flosc') && method_exists(flosc(), 'get_floscflow_identity')) {
+            $id = flosc()->get_floscflow_identity();
+            $product_name = sanitize_text_field((string) ($id['name'] ?? ''));
+        }
 
         wp_enqueue_style(
             'flosc-companion',
@@ -1337,9 +1346,14 @@ trait FLOSC_Admin_Trait {
         wp_add_inline_script('flosc-companion', sprintf(
             'FloscCompanion.init(%s);',
             wp_json_encode([
-                'appUrl'      => $app_url,
-                'title'       => $title,
-                'accentColor' => $accent ?: '#2563eb',
+                'appUrl'         => $app_url,
+                'title'          => $title,
+                'productName'    => $product_name,
+                'headerIconUrl'  => $header_icon,
+                'assistantTitle' => $product_name ?: $title,
+                'showHeaderTokens' => false,
+                'headerTokenText'  => '',
+                'accentColor'    => $accent ?: '#2563eb',
             ])
         ));
     }

@@ -3291,78 +3291,79 @@
     font-size: 11px;
 }
 
-.flosc-ivr-selector {
-    background: #2f363d;
-    border: 1px solid #3c434a;
-    padding: 15px 20px;
-    border-radius: 4px 4px 0 0;
-    margin-bottom: 20px;
+/* ───────────────────────────────────────────────────────────────────────────
+   Flow selector chrome (settings header)
+   Namespace: flosc-flow-selector*  — distinct from IVR message admin (flosc-ivr-*).
+   Glass card: stable toolbar row + expandable details panel below (not flex-nested).
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.flosc-flow-selector {
+    --flosc-flow-primary: #4f46e5;
+    --flosc-fs-bg: #ffffff;
+    --flosc-fs-border: #e2e8f0;
+    --flosc-fs-muted: #475569;
+    --flosc-fs-label: #1e293b;
+    /* Match WP admin primary blue used by .button-primary / outline buttons */
+    --flosc-fs-accent: #2271b1;
+    --flosc-fs-accent-fg: #fff;
+    --flosc-fs-meta: #334155;
+    --flosc-fs-divider: #e2e8f0;
+    --flosc-fs-control-border: #8c8f94;
+    --flosc-fs-control-bg: #fff;
+    --flosc-fs-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+    background: var(--flosc-fs-bg);
+    border: 1px solid var(--flosc-fs-border);
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    box-shadow: var(--flosc-fs-shadow);
 }
 
-.flosc-ivr-context-row {
+.flosc-flow-selector[data-theme="glass"] {
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(8px);
+}
+
+/* Toolbar: never reflows when details open */
+.flosc-flow-selector__main-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 8px 10px;
     flex-wrap: wrap;
-    margin-bottom: 12px;
+    width: 100%;
 }
 
-.flosc-ivr-context-label,
-.flosc-ivr-working-row,
-.flosc-ivr-meta-row {
-    color: #9ca3af;
-    font-size: 13px;
+/* Shared control height = WP .button-small (30px box, 1px border) */
+.flosc-flow-selector__main-row .button.button-small,
+.flosc-flow-selector__default-btn {
+    box-sizing: border-box;
+    height: 30px;
+    min-height: 30px;
+    line-height: 28px;
+    padding-top: 0;
+    padding-bottom: 0;
+    vertical-align: middle;
 }
 
-.flosc-ivr-chip {
-    display: inline-block;
-    padding: 3px 11px;
-    border-radius: 12px;
-    font-size: 12px;
-    background: #3c434a;
-    color: #c3c4c7;
-    font-weight: 400;
-}
-
-.flosc-ivr-chip.is-current {
-    background: #2271b1;
-    color: #fff;
-    font-weight: 700;
-}
-
-.flosc-ivr-working-row {
-    margin-bottom: 12px;
-}
-
-.flosc-ivr-working-chip {
-    display: inline-block;
-    margin-left: 4px;
-    padding: 3px 12px;
-    border-radius: 12px;
-    background: #2271b1;
-    color: #fff;
-    font-weight: 700;
-}
-
-.flosc-ivr-controls-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-.flosc-ivr-select-label {
-    color: #f0f0f1;
+.flosc-flow-selector__select-label {
+    color: var(--flosc-fs-label);
     font-weight: 600;
-    font-size: 14px;
+    font-size: 13px;
+    margin: 0;
 }
 
-.flosc-ivr-select-control {
-    padding: 8px 12px;
-    border-radius: 2px;
-    border: 1px solid #50575e;
-    min-width: 250px;
-    font-size: 14px;
+.flosc-flow-selector__select-control {
+    box-sizing: border-box;
+    padding: 0 8px;
+    height: 30px;
+    min-height: 30px;
+    border-radius: 3px;
+    border: 1px solid var(--flosc-fs-control-border);
+    background: var(--flosc-fs-control-bg);
+    min-width: 220px;
+    font-size: 13px;
+    line-height: 28px;
+    color: var(--flosc-fs-label);
 }
 
 .flosc-default-flow-form {
@@ -3371,24 +3372,126 @@
     margin: 0;
 }
 
-.flosc-ivr-meta-row {
-    margin-top: 8px;
-}
-
-.flosc-ivr-meta-filename {
-    color: #c3c4c7;
-}
-
-.flosc-ivr-default-note {
-    margin-left: 6px;
-    color: #8ec5ff;
+/*
+ * Default indicator: inverse of outline .button-small (View App / Set as default).
+ * Same 30px height as sibling buttons; filled primary blue; title case "Default".
+ */
+.flosc-flow-selector__default-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    height: 30px;
+    min-height: 30px;
+    padding: 0 10px;
+    margin: 0;
+    border-radius: 3px;
+    border: 1px solid var(--flosc-fs-accent);
+    background: var(--flosc-fs-accent);
+    color: var(--flosc-fs-accent-fg);
+    font-size: 13px;
     font-weight: 600;
+    line-height: 28px;
+    text-decoration: none;
+    text-transform: none;
+    letter-spacing: normal;
+    white-space: nowrap;
+    cursor: default;
+    vertical-align: middle;
 }
 
-.flosc-ivr-permalink-row {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px solid #50575e;
+/*
+ * Details toggle: push to the far right of the toolbar.
+ * Higher specificity so WP .button margin does not win over margin-left: auto.
+ * Quiet dark-grey chrome (not blue) — secondary disclosure, not a primary action.
+ */
+.flosc-flow-selector__main-row .button.button-small.flosc-flow-selector__details-toggle {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #1d2327;
+    border-color: #8c8f94;
+    background: #f6f7f7;
+    box-shadow: none;
+}
+
+.flosc-flow-selector__main-row .button.button-small.flosc-flow-selector__details-toggle:hover,
+.flosc-flow-selector__main-row .button.button-small.flosc-flow-selector__details-toggle:focus {
+    color: #1d2327;
+    border-color: #646970;
+    background: #f0f0f1;
+    box-shadow: none;
+}
+
+.flosc-flow-selector__main-row .button.button-small.flosc-flow-selector__details-toggle:active {
+    color: #1d2327;
+    border-color: #50575e;
+    background: #e5e5e5;
+}
+
+.flosc-flow-selector__details-caret {
+    display: inline-block;
+    font-size: 11px;
+    line-height: 1;
+    color: inherit;
+    transition: transform 0.12s ease;
+}
+
+.flosc-flow-selector__details-toggle.is-open .flosc-flow-selector__details-caret {
+    transform: rotate(180deg);
+}
+
+/* Panel: sibling below toolbar — does not move the toggle */
+.flosc-flow-selector__details-panel {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--flosc-fs-divider);
+}
+
+.flosc-flow-selector__details-panel[hidden] {
+    display: none;
+}
+
+.flosc-flow-selector__details-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: var(--flosc-fs-meta);
+}
+
+.flosc-flow-selector__details-row:last-child {
+    margin-bottom: 0;
+}
+
+.flosc-flow-selector__details-label {
+    font-weight: 600;
+    color: var(--flosc-fs-label);
+    min-width: 5.5em;
+}
+
+.flosc-flow-selector__meta-filename {
+    color: var(--flosc-fs-meta);
+    font-size: 12px;
+    background: #f6f7f7;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid #dcdcde;
+}
+
+.flosc-flow-selector .flosc-permalink-last-flush {
+    color: #1d2327;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.flosc-flow-selector .flosc-permalink-status {
+    margin-left: 0;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .flosc-permalink-status {

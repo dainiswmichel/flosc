@@ -41,6 +41,9 @@ class FLOSC_Access_Manager {
     /**
      * Check if user is a member (has active offer or subscription)
      * v1.1.1: WordPress admins are always members
+     * v8.0.x: Also honor FLOSC_Member_Access (_flosc_member_access / level meta) so
+     * sandbox, admin grants, and legacy upgrades unlock sale-side features without
+     * a populated _flosc_access ledger.
      */
     public function is_member($user_id) {
         if (!$user_id) {
@@ -68,6 +71,14 @@ class FLOSC_Access_Manager {
             return true;
         }
 
+        // Bridge content-protection membership (role/meta grants).
+        if (class_exists('FLOSC_Member_Access')) {
+            require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
+            if (FLOSC_Member_Access::instance()->is_member($user_id)) {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -76,16 +87,17 @@ class FLOSC_Access_Manager {
      */
     public function has_feature($user_id, $feature) {
         $access = $this->get_user_access($user_id);
+        $feature = (string) $feature;
 
         // Check explicit feature flags
-        if (in_array($feature, $access['features'])) {
+        if (in_array($feature, $access['features'], true)) {
             return true;
         }
 
         // Check offers for feature grants
         foreach ($access['offers'] as $offer_id => $offer_data) {
             if (isset($offer_data['grants']['features']) &&
-                in_array($feature, $offer_data['grants']['features'])) {
+                in_array($feature, $offer_data['grants']['features'], true)) {
 
                 // Check if offer has expired
                 if ($this->is_offer_active($offer_data)) {
@@ -94,15 +106,49 @@ class FLOSC_Access_Manager {
             }
         }
 
+        // Content features for members who have level meta/roles but empty _flosc_access
+        // (e.g. Piano4America sandbox / admin grant path).
+        $member_content_features = [
+            'all_lessons',
+            'full_access',
+            'lesaep_lessons',
+            'pronunciation_exercises',
+            'audio_recordings',
+            'ipa_training',
+            'ai_coach',
+        ];
+        if (in_array($feature, $member_content_features, true) && class_exists('FLOSC_Member_Access')) {
+            require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
+            $member_access = FLOSC_Member_Access::instance();
+            if (
+                $member_access->has_level($user_id, 'pronunciation_learners')
+                || $member_access->has_level($user_id, 'lesaep_learners')
+            ) {
+                return true;
+            }
+            if (in_array($feature, ['all_lessons', 'full_access'], true) && $member_access->is_member($user_id)) {
+                return true;
+            }
+        }
+
         return false;
     }
 
     /**
-     * Check if user can access something (feature or custom check)
+     * Check if user can access something (feature or custom check).
+     *
+     * String aliases:
+     * - 'full' / 'member' → any full member (offer, subscription, or FLOSC_Member_Access)
+     * - other strings → feature flag via has_feature()
      */
     public function can_access($user_id, $requirement) {
         // If requirement is a feature name
         if (is_string($requirement)) {
+            $requirement = strtolower(trim($requirement));
+            // Full membership (not a narrow feature id) — keep userState consistent for AI/IVR.
+            if ($requirement === 'full' || $requirement === 'member') {
+                return $this->is_member($user_id);
+            }
             return $this->has_feature($user_id, $requirement);
         }
 

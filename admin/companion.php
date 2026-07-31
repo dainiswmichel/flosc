@@ -33,11 +33,19 @@ $flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
 
 // Read current values with defaults
 $flosc_content_display_mode = $flosc_flow_settings['companion_content_display_mode'] ?? 'in_chat';
-$flosc_enabled              = $flosc_flow_settings['companion_enabled'] ?? '';
+// Normalize enabled to '1'/'' for checkbox + summary (DB may store 1/true/"1").
+$flosc_enabled              = !empty($flosc_flow_settings['companion_enabled']) ? '1' : '';
 $flosc_position             = $flosc_flow_settings['companion_position'] ?? 'bottom-right';
-$flosc_greeting             = $flosc_flow_settings['companion_greeting'] ?? 'Hi! I\'m your learning companion. Need help with this lesson?';
+// Brand-neutral FLOSC defaults only — product voice lives in per-flow params (not hard-coded here).
+$flosc_greeting             = $flosc_flow_settings['companion_greeting'] ?? 'Chat with us';
 $flosc_subtitle             = $flosc_flow_settings['companion_subtitle'] ?? 'We reply instantly';
 $flosc_contextual_prompt    = $flosc_flow_settings['companion_contextual_prompt'] ?? 'What do you want to explore together?';
+$flosc_tier_visitor         = strtoupper( (string) ( $flosc_flow_settings['companion_profile_tier_visitor'] ?? 'V' ) );
+$flosc_tier_guest           = strtoupper( (string) ( $flosc_flow_settings['companion_profile_tier_guest'] ?? 'G' ) );
+$flosc_tier_member          = strtoupper( (string) ( $flosc_flow_settings['companion_profile_tier_member'] ?? 'M' ) );
+$flosc_tier_visitor_label   = (string) ( $flosc_flow_settings['companion_profile_tier_visitor_label'] ?? 'Visitor' );
+$flosc_tier_guest_label     = (string) ( $flosc_flow_settings['companion_profile_tier_guest_label'] ?? 'Guest' );
+$flosc_tier_member_label    = (string) ( $flosc_flow_settings['companion_profile_tier_member_label'] ?? 'Member' );
 // Explicit visibility toggles so header title/subtitle are never silent "dead" fields.
 // Default true (show) preserves prior behavior; a saved 0 hides the element.
 $flosc_show_header_title    = array_key_exists('companion_show_header_title', $flosc_flow_settings) ? !empty($flosc_flow_settings['companion_show_header_title']) : true;
@@ -80,14 +88,33 @@ $flosc_routing_mode        = sanitize_key((string) ($flosc_flow_settings['compan
 if (!in_array($flosc_routing_mode, ['hub', 'domain_persistence'], true)) {
     $flosc_routing_mode = 'hub';
 }
-$flosc_hub_fullscreen_url  = esc_url((string) ($flosc_flow_settings['companion_hub_fullscreen_url'] ?? 'https://dainis.net/chat'));
+// Hub defaults derived only from this flow's parameters (Identity domain/slug + Content lessons category).
+$flosc_hub_defaults = function_exists('flosc_companion_hub_defaults_from_flow')
+    ? flosc_companion_hub_defaults_from_flow(is_array($flosc_flow_settings) ? $flosc_flow_settings : [])
+    : [
+        'fullscreen' => home_url('/'),
+        'companion'  => home_url('/'),
+        'chat_app'   => home_url('/'),
+        'flow_slug'  => sanitize_title((string) ($flosc_flow_settings['slug'] ?? '')),
+        'lessons_category' => '',
+        'include_rules' => '',
+    ];
+$flosc_default_fullscreen    = (string) ($flosc_hub_defaults['fullscreen'] ?? home_url('/'));
+$flosc_default_companion_hub = (string) ($flosc_hub_defaults['companion'] ?? home_url('/'));
+$flosc_default_chat_app      = (string) ($flosc_hub_defaults['chat_app'] ?? home_url('/'));
+$flosc_hub_fullscreen_url    = esc_url((string) ($flosc_flow_settings['companion_hub_fullscreen_url'] ?? $flosc_default_fullscreen));
 if ($flosc_hub_fullscreen_url === '') {
-    $flosc_hub_fullscreen_url = 'https://dainis.net/chat';
+    $flosc_hub_fullscreen_url = esc_url($flosc_default_fullscreen);
 }
-$flosc_hub_companion_url   = esc_url((string) ($flosc_flow_settings['companion_hub_companion_url'] ?? home_url('/')));
+$flosc_hub_companion_url = esc_url((string) ($flosc_flow_settings['companion_hub_companion_url'] ?? $flosc_default_companion_hub));
 if ($flosc_hub_companion_url === '') {
-    $flosc_hub_companion_url = home_url('/');
+    $flosc_hub_companion_url = esc_url($flosc_default_companion_hub);
 }
+$flosc_chat_app_url = esc_url((string) ($flosc_flow_settings['companion_chat_app_url'] ?? $flosc_default_chat_app));
+if ($flosc_chat_app_url === '') {
+    $flosc_chat_app_url = esc_url($flosc_default_chat_app);
+}
+$flosc_companion_flow_slug = sanitize_title((string) ($flosc_flow_settings['companion_flow_slug'] ?? ($flosc_hub_defaults['flow_slug'] ?? '')));
 
 $flosc_parse_target_rules = static function ($raw_rules) {
     $rules = [];
@@ -244,12 +271,13 @@ foreach ((array) $flosc_target_posts as $flosc_target_post_id) {
 }
 
 $flosc_companion_launcher_icons = apply_filters('flosc_companion_launcher_icon_choices', [
+    'product_logo' => 'Product Logo (Chat Logo)',
     'chat' => 'Chat Bubble',
     'help' => 'Help Circle',
     'spark' => 'Spark',
 ]);
 if (!is_array($flosc_companion_launcher_icons) || empty($flosc_companion_launcher_icons)) {
-    $flosc_companion_launcher_icons = ['chat' => 'Chat Bubble'];
+    $flosc_companion_launcher_icons = ['product_logo' => 'Product Logo (Chat Logo)', 'chat' => 'Chat Bubble'];
 }
 
 $flosc_companion_positions = apply_filters('flosc_companion_allowed_positions', ['bottom-right', 'bottom-left']);
@@ -380,7 +408,7 @@ FLOSC_COMPANION_SNIPPET_NUMERIC_LIMITS;
 $flosc_companion_snippet_frontend_config = <<<'FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG'
 add_filter('flosc_companion_frontend_config', function ($config, $framework) {
     $config['autoOpenDelayMs'] = max(2000, (int) ($config['autoOpenDelayMs'] ?? 0));
-    $config['launcherAriaLabel'] = 'Open learning companion';
+    $config['launcherAriaLabel'] = 'Open chat companion';
     return $config;
 }, 10, 2);
 FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
@@ -450,8 +478,10 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
                     <option value="domain_persistence" <?php selected($flosc_routing_mode, 'domain_persistence'); ?>>Domain Persistence Mode</option>
                 </select>
                 <p class="description">
-                    Hub Mode: entry domain -> expand to hub chat URL -> collapse to hub companion URL.<br>
-                    Domain Persistence Mode: expand/collapse stays on the current domain.
+                    <strong>Hub Mode (knowledge hubs):</strong> full-page chat may live on this flow’s chat domain
+                    (Identity domain / slug); docking collapses to a <em>content</em> URL
+                    (usually the Content tab lessons category archive) with companion still open.<br>
+                    <strong>Domain Persistence:</strong> expand/collapse stays on the current domain.
                 </p>
             </td>
         </tr>
@@ -459,16 +489,50 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
         <tr class="flosc-hub-routing-row">
             <th scope="row"><label for="flow_companion_hub_fullscreen_url">Hub Full-Screen URL</label></th>
             <td>
-                <input type="url" name="flow_companion_hub_fullscreen_url" id="flow_companion_hub_fullscreen_url" class="large-text" value="<?php echo esc_attr($flosc_hub_fullscreen_url); ?>" placeholder="https://dainis.net/chat">
-                <p class="description">Used by Hub Mode as the expand destination.</p>
+                <input type="url" name="flow_companion_hub_fullscreen_url" id="flow_companion_hub_fullscreen_url" class="large-text" value="<?php echo esc_attr($flosc_hub_fullscreen_url); ?>" placeholder="<?php echo esc_attr($flosc_default_fullscreen); ?>">
+                <p class="description">
+                    Full-page FLOSC chat for this flow (expand destination).
+                    Default from Identity: <code><?php echo esc_html($flosc_default_fullscreen); ?></code>
+                    (<code>companion_hub_fullscreen_url</code>).
+                </p>
             </td>
         </tr>
 
         <tr class="flosc-hub-routing-row">
-            <th scope="row"><label for="flow_companion_hub_companion_url">Hub Companion URL</label></th>
+            <th scope="row"><label for="flow_companion_hub_companion_url">Hub Companion URL (knowledge hub)</label></th>
             <td>
-                <input type="url" name="flow_companion_hub_companion_url" id="flow_companion_hub_companion_url" class="large-text" value="<?php echo esc_attr($flosc_hub_companion_url); ?>" placeholder="https://dainis.net/">
-                <p class="description">Used by Hub Mode as the collapse destination.</p>
+                <input type="url" name="flow_companion_hub_companion_url" id="flow_companion_hub_companion_url" class="large-text" value="<?php echo esc_attr($flosc_hub_companion_url); ?>" placeholder="<?php echo esc_attr($flosc_default_companion_hub); ?>">
+                <p class="description">
+                    <strong>Dock / collapse destination</strong> from full-page chat.
+                    Default from Content lessons category: <code><?php echo esc_html($flosc_default_companion_hub); ?></code>
+                    (<code>companion_hub_companion_url</code>). Include that category under Target Parameters.
+                </p>
+            </td>
+        </tr>
+
+        <tr class="flosc-hub-routing-row">
+            <th scope="row"><label for="flow_companion_flow_slug">Companion chat flow slug</label></th>
+            <td>
+                <input type="text" name="flow_companion_flow_slug" id="flow_companion_flow_slug" class="regular-text" value="<?php echo esc_attr($flosc_companion_flow_slug); ?>" placeholder="<?php echo esc_attr((string) ($flosc_hub_defaults['flow_slug'] ?? '')); ?>">
+                <p class="description">
+                    Flow slug used when deriving the default companion chat URL (this flow’s slug if empty).
+                    Setting: <code>companion_flow_slug</code>.
+                </p>
+            </td>
+        </tr>
+
+        <tr class="flosc-hub-routing-row">
+            <th scope="row"><label for="flow_companion_chat_app_url">Companion chat URL (iframe)</label></th>
+            <td>
+                <input type="url" name="flow_companion_chat_app_url" id="flow_companion_chat_app_url" class="large-text" value="<?php echo esc_attr($flosc_chat_app_url); ?>" placeholder="<?php echo esc_attr($flosc_default_chat_app); ?>">
+                <p class="description">
+                    FLOSC app URL loaded <strong>inside</strong> the companion iframe (not the knowledge-hub page).
+                    Default is this WordPress site + companion flow slug:
+                    <code><?php echo esc_html($flosc_default_chat_app); ?></code>
+                    (<code>companion_chat_app_url</code>).
+                    Use the same site origin as your knowledge hub so logged-in guests/members keep their WP session
+                    (and server chat history). Full-screen expand still uses Hub Full-Screen URL above.
+                </p>
             </td>
         </tr>
 
@@ -659,15 +723,69 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
                         <option value="<?php echo esc_attr($flosc_icon_key); ?>" <?php selected($flosc_launcher_icon, $flosc_icon_key); ?>><?php echo esc_html((string) $flosc_icon_label); ?></option>
                     <?php endforeach; ?>
                 </select>
-                <p class="description">Select the launcher glyph used in the floating button.</p>
+                <p class="description">Floating button icon. <strong>Product Logo</strong> uses the flow Chat Logo (Identity). Glyph options are generic SVG marks.</p>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row"><label for="flow_companion_header_icon_url">Header Icon URL</label></th>
+            <td>
+                <?php
+                // Resolve from THIS flow’s Identity (not global runtime identity — admin edit context).
+                $flosc_header_icon_url = esc_url( (string) ( $flosc_flow_settings['companion_header_icon_url'] ?? '' ) );
+                $flosc_identity_chatlogo = '';
+                if ( function_exists( 'flosc_resolve_chatlogo_url' ) ) {
+                    // No plugin default — only this flow’s Chat Logo for preview/copy.
+                    $flosc_identity_chatlogo = flosc_resolve_chatlogo_url( is_array( $flosc_flow_settings ) ? $flosc_flow_settings : [], false );
+                } else {
+                    $flosc_id_arr = is_array( $flosc_flow_settings['identity'] ?? null ) ? $flosc_flow_settings['identity'] : [];
+                    $flosc_identity_chatlogo = esc_url( (string) ( $flosc_id_arr['chatlogo_url'] ?? $flosc_flow_settings['chatlogo_url'] ?? '' ) );
+                }
+                $flosc_preview_icon = $flosc_header_icon_url !== '' ? $flosc_header_icon_url : $flosc_identity_chatlogo;
+                ?>
+                <input type="url" name="flow_companion_header_icon_url" id="flow_companion_header_icon_url" class="large-text" value="<?php echo esc_attr( $flosc_header_icon_url ); ?>" placeholder="<?php echo esc_attr( $flosc_identity_chatlogo !== '' ? $flosc_identity_chatlogo : '' ); ?>">
+                <?php
+                $flosc_identity_tab_url = add_query_arg(
+                    [
+                        'page' => 'flosc-settings',
+                        'ivr'  => $GLOBALS['flosc_current_ivr'] ?? '',
+                        'tab'  => 'identity',
+                        'view' => 'single',
+                    ],
+                    admin_url( 'admin.php' )
+                );
+                ?>
+                <p class="description">
+                    Optional override for the companion header icon only.
+                    <strong>Leave blank</strong> to use this flow’s <strong>Identity → Chat Logo</strong>
+                    <?php if ( $flosc_identity_chatlogo !== '' ) : ?>
+                        (<a href="<?php echo esc_url( $flosc_identity_tab_url ); ?>">Identity tab</a> — already set for this flow).
+                    <?php else : ?>
+                        (set a Chat Logo on the <a href="<?php echo esc_url( $flosc_identity_tab_url ); ?>">Identity tab</a> for this flow).
+                    <?php endif; ?>
+                </p>
+                <?php if ( $flosc_preview_icon !== '' ) : ?>
+                    <p class="description" style="margin-top:8px;">
+                        <?php if ( $flosc_header_icon_url !== '' ) : ?>
+                            <strong>Using override:</strong>
+                        <?php else : ?>
+                            <strong>Using Identity Chat Logo:</strong>
+                        <?php endif; ?>
+                    </p>
+                    <img src="<?php echo esc_url( $flosc_preview_icon ); ?>" alt="" style="max-height:48px;margin-top:4px;border-radius:8px;background:#fff;padding:4px;border:1px solid #d0d5dd;">
+                <?php else : ?>
+                    <p class="description" style="margin-top:8px;color:#b32d2e;">
+                        No Chat Logo on this flow yet — companion will fall back to the generic FLOSC icon until Identity → Chat Logo is set.
+                    </p>
+                <?php endif; ?>
             </td>
         </tr>
         
         <tr>
-            <th scope="row"><label for="flow_companion_greeting">Greeting Message</label></th>
+            <th scope="row"><label for="flow_companion_greeting">Header Title</label></th>
             <td>
-                <textarea name="flow_companion_greeting" id="flow_companion_greeting" rows="3" class="large-text"><?php echo esc_textarea($flosc_greeting); ?></textarea>
-                <p class="description">Title shown in the companion header.</p>
+                <textarea name="flow_companion_greeting" id="flow_companion_greeting" rows="2" class="large-text"><?php echo esc_textarea($flosc_greeting); ?></textarea>
+                <p class="description"><strong>Per-flow FLOSC parameter</strong> (<code>companion_greeting</code>). Short header title for this product only — not hard-coded in the plugin. Prefer one line. Empty → “{product name} Companion” from Identity. Username/tokens live under the message box.</p>
                 <label><input type="checkbox" name="flow_companion_show_header_title" value="1" <?php checked($flosc_show_header_title); ?>> Show this title in the companion header</label>
             </td>
         </tr>
@@ -676,7 +794,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
             <th scope="row"><label for="flow_companion_subtitle">Header Subtitle</label></th>
             <td>
                 <input type="text" name="flow_companion_subtitle" id="flow_companion_subtitle" class="regular-text" value="<?php echo esc_attr($flosc_subtitle); ?>">
-                <p class="description">Short helper line shown in the companion header under the title.</p>
+                <p class="description"><strong>Per-flow parameter</strong> (<code>companion_subtitle</code>). Optional line under the title. Leave blank if unused. Copy can be refined later; keep it product-specific in this field, not in FLOSC core.</p>
                 <label><input type="checkbox" name="flow_companion_show_header_subtitle" value="1" <?php checked($flosc_show_header_subtitle); ?>> Show this subtitle in the companion header</label>
             </td>
         </tr>
@@ -685,7 +803,35 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
             <th scope="row"><label for="flow_companion_contextual_prompt">Companion Contextual Prompt</label></th>
             <td>
                 <input type="text" name="flow_companion_contextual_prompt" id="flow_companion_contextual_prompt" class="regular-text" value="<?php echo esc_attr($flosc_contextual_prompt); ?>">
-                <p class="description">Shown as the first companion context line in embedded chat mode.</p>
+                <p class="description"><strong>Per-flow parameter</strong> (<code>companion_contextual_prompt</code>). First context line when the companion is aware of the current page. Brand-neutral default; override per product here.</p>
+            </td>
+        </tr>
+
+        <tr>
+            <th scope="row">Profile row tier codes</th>
+            <td>
+                <p class="description" style="margin-top:0;">
+                    Companion profile row format: <code>Name (code)</code> then token count.
+                    FLOSC defaults are <strong>V</strong> / <strong>G</strong> / <strong>M</strong> — override per flow if needed.
+                </p>
+                <fieldset style="display:grid;grid-template-columns:auto 4em 12em;gap:8px 12px;align-items:center;max-width:36em;">
+                    <span></span>
+                    <strong style="font-size:11px;">Code</strong>
+                    <strong style="font-size:11px;">A11y label</strong>
+
+                    <label for="flow_companion_profile_tier_visitor">Visitor</label>
+                    <input type="text" class="small-text" maxlength="3" name="flow_companion_profile_tier_visitor" id="flow_companion_profile_tier_visitor" value="<?php echo esc_attr( $flosc_tier_visitor ); ?>" pattern="[A-Za-z0-9]{1,3}">
+                    <input type="text" class="regular-text" name="flow_companion_profile_tier_visitor_label" id="flow_companion_profile_tier_visitor_label" value="<?php echo esc_attr( $flosc_tier_visitor_label ); ?>">
+
+                    <label for="flow_companion_profile_tier_guest">Guest</label>
+                    <input type="text" class="small-text" maxlength="3" name="flow_companion_profile_tier_guest" id="flow_companion_profile_tier_guest" value="<?php echo esc_attr( $flosc_tier_guest ); ?>" pattern="[A-Za-z0-9]{1,3}">
+                    <input type="text" class="regular-text" name="flow_companion_profile_tier_guest_label" id="flow_companion_profile_tier_guest_label" value="<?php echo esc_attr( $flosc_tier_guest_label ); ?>">
+
+                    <label for="flow_companion_profile_tier_member">Member</label>
+                    <input type="text" class="small-text" maxlength="3" name="flow_companion_profile_tier_member" id="flow_companion_profile_tier_member" value="<?php echo esc_attr( $flosc_tier_member ); ?>" pattern="[A-Za-z0-9]{1,3}">
+                    <input type="text" class="regular-text" name="flow_companion_profile_tier_member_label" id="flow_companion_profile_tier_member_label" value="<?php echo esc_attr( $flosc_tier_member_label ); ?>">
+                </fieldset>
+                <p class="description">Keys: <code>companion_profile_tier_visitor</code>, <code>_guest</code>, <code>_member</code> (+ <code>_label</code> for each). Preview: <code>Piano4America (<?php echo esc_html( $flosc_tier_member ); ?>)</code></p>
             </td>
         </tr>
 

@@ -212,6 +212,9 @@ function flosc_handle_offer_save() {
         ],
         // Native PayPal/Stripe coupons (fixed final price preferred; percent optional). Windows = UTC MTC/ISO.
         'coupons'         => flosc_parse_offer_coupons_from_post($post),
+        // Show coupon input on checkout UI (Access Code link is separate and always available when codes exist).
+        // Default off: floscAdmin must opt in.
+        'show_coupon_field' => !empty($post['offer_show_coupon_field']),
         // 100% unlock codes for this offer (in addition to flow-level access_code).
         'access_codes'    => flosc_parse_offer_access_codes_from_post($post),
         // Display-only note for redirect processor (shop owns real coupons).
@@ -983,6 +986,17 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
             <tr>
                 <th><label>Price coupons (native only)</label></th>
                 <td>
+                    <?php $flosc_show_coupon_field = !empty($flosc_offer['show_coupon_field']); ?>
+                    <p class="flosc-description-margin-top-0">
+                        <label>
+                            <input type="checkbox" name="offer_show_coupon_field" value="1" <?php checked($flosc_show_coupon_field); ?>>
+                            <?php esc_html_e('Show coupon code field at checkout', 'flosc'); ?>
+                        </label>
+                    </p>
+                    <p class="description">
+                        Off by default. When unchecked, learners only see payment buttons and the discreet <strong>Access Code</strong> link (not a coupon input).
+                        Codes below still apply when the field is shown and a valid code is entered.
+                    </p>
                     <p class="description flosc-description-margin-top-0">
                         PayPal/Stripe only (one-time <strong>and</strong> subscription). Prefer <strong>fixed final price</strong>:
                         e.g. list <code>$25/mo</code> → coupon value <code>10</code> → charge <strong>$10/month</strong>

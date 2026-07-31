@@ -102,69 +102,69 @@ foreach ($flosc_offers as $flosc_oid => $flosc_offer) {
     if (!is_array($flosc_offer)) {
         continue;
     }
-    $status = strtolower((string) ($flosc_offer['status'] ?? ''));
-    $active = !empty($flosc_offer['active']) || $status === 'active';
-    if ($status === 'draft') {
-        $active = false;
+    $flosc_status = strtolower((string) ($flosc_offer['status'] ?? ''));
+    $flosc_active = !empty($flosc_offer['active']) || $flosc_status === 'active';
+    if ($flosc_status === 'draft') {
+        $flosc_active = false;
     }
-    $type = strtolower((string) ($flosc_offer['type'] ?? 'one_time'));
-    $processor = strtolower((string) ($flosc_offer['pricing']['processor'] ?? $flosc_offer['processor'] ?? 'paypal'));
-    $price = floatval($flosc_offer['pricing']['price'] ?? $flosc_offer['price'] ?? 0);
-    $tokens = is_array($flosc_offer['tokens'] ?? null) ? $flosc_offer['tokens'] : [];
-    $source = sanitize_key((string) ($tokens['source'] ?? 'flow'));
-    if (!in_array($source, ['flow', 'custom', 'none'], true)) {
+    $flosc_type = strtolower((string) ($flosc_offer['type'] ?? 'one_time'));
+    $flosc_processor = strtolower((string) ($flosc_offer['pricing']['processor'] ?? $flosc_offer['processor'] ?? 'paypal'));
+    $flosc_price = floatval($flosc_offer['pricing']['price'] ?? $flosc_offer['price'] ?? 0);
+    $flosc_tokens = is_array($flosc_offer['tokens'] ?? null) ? $flosc_offer['tokens'] : [];
+    $flosc_source = sanitize_key((string) ($flosc_tokens['source'] ?? 'flow'));
+    if (!in_array($flosc_source, ['flow', 'custom', 'none'], true)) {
         // Infer: explicit amount means custom.
-        $source = (isset($tokens['amount']) && $tokens['amount'] !== '' && $tokens['amount'] !== null) ? 'custom' : 'flow';
+        $flosc_source = (isset($flosc_tokens['amount']) && $flosc_tokens['amount'] !== '' && $flosc_tokens['amount'] !== null) ? 'custom' : 'flow';
     }
-    $mode = sanitize_key((string) ($tokens['mode'] ?? ''));
-    if ($mode === '') {
-        $mode = ($type === 'subscription') ? 'recurring' : 'onetime';
+    $flosc_mode = sanitize_key((string) ($flosc_tokens['mode'] ?? ''));
+    if ($flosc_mode === '') {
+        $flosc_mode = ($flosc_type === 'subscription') ? 'recurring' : 'onetime';
     }
-    if (!in_array($mode, ['onetime', 'recurring', 'recurring_yearly'], true)) {
-        $mode = 'onetime';
+    if (!in_array($flosc_mode, ['onetime', 'recurring', 'recurring_yearly'], true)) {
+        $flosc_mode = 'onetime';
     }
-    $cap_mode = sanitize_key((string) ($tokens['cap_mode'] ?? 'flow'));
-    if (!in_array($cap_mode, ['flow', 'none', 'custom'], true)) {
-        if (array_key_exists('cap', $tokens) && $tokens['cap'] !== '' && $tokens['cap'] !== null) {
-            $cap_mode = (intval($tokens['cap']) === 0 && array_key_exists('cap', $tokens)) ? 'none' : 'custom';
+    $flosc_cap_mode = sanitize_key((string) ($flosc_tokens['cap_mode'] ?? 'flow'));
+    if (!in_array($flosc_cap_mode, ['flow', 'none', 'custom'], true)) {
+        if (array_key_exists('cap', $flosc_tokens) && $flosc_tokens['cap'] !== '' && $flosc_tokens['cap'] !== null) {
+            $flosc_cap_mode = (intval($flosc_tokens['cap']) === 0 && array_key_exists('cap', $flosc_tokens)) ? 'none' : 'custom';
         } else {
-            $cap_mode = 'flow';
+            $flosc_cap_mode = 'flow';
         }
     }
 
     // Effective preview numbers for the summary chip.
-    if ($source === 'none') {
-        $eff_grant = 0;
-        $eff_cap_label = '—';
-        $eff_mode_label = 'No tokens';
+    if ($flosc_source === 'none') {
+        $flosc_eff_grant = 0;
+        $flosc_eff_cap_label = '—';
+        $flosc_eff_mode_label = 'No tokens';
     } else {
-        if ($source === 'custom' && isset($tokens['amount']) && $tokens['amount'] !== '') {
-            $eff_grant = max(0, intval($tokens['amount']));
-            $eff_mode_label = $mode;
+        if ($flosc_source === 'custom' && isset($flosc_tokens['amount']) && $flosc_tokens['amount'] !== '') {
+            $flosc_eff_grant = max(0, intval($flosc_tokens['amount']));
+            $flosc_eff_mode_label = $flosc_mode;
         } else {
-            if ($type === 'subscription' || $mode === 'recurring_yearly') {
+            if ($flosc_type === 'subscription' || $flosc_mode === 'recurring_yearly') {
                 // Prefer yearly if mode says so, else recurring for subs.
-                if ($mode === 'recurring_yearly') {
-                    $eff_grant = $flosc_product_token_grant_recurring_yearly;
-                    $eff_mode_label = 'recurring_yearly';
+                if ($flosc_mode === 'recurring_yearly') {
+                    $flosc_eff_grant = $flosc_product_token_grant_recurring_yearly;
+                    $flosc_eff_mode_label = 'recurring_yearly';
                 } else {
-                    $eff_grant = $flosc_product_token_grant_recurring;
-                    $eff_mode_label = 'recurring';
+                    $flosc_eff_grant = $flosc_product_token_grant_recurring;
+                    $flosc_eff_mode_label = 'recurring';
                 }
             } else {
-                $eff_grant = $flosc_product_token_grant_onetime;
-                $eff_mode_label = 'onetime';
+                $flosc_eff_grant = $flosc_product_token_grant_onetime;
+                $flosc_eff_mode_label = 'onetime';
             }
-            if ($source === 'flow') {
-                $eff_mode_label = 'flow → ' . $eff_mode_label;
+            if ($flosc_source === 'flow') {
+                $flosc_eff_mode_label = 'flow → ' . $flosc_eff_mode_label;
             }
         }
-        if ($cap_mode === 'none') {
-            $eff_cap_label = 'no cap';
-        } elseif ($cap_mode === 'custom' && isset($tokens['cap']) && $tokens['cap'] !== '') {
-            $eff_cap_label = 'cap ' . number_format_i18n(max(0, intval($tokens['cap'])));
+        if ($flosc_cap_mode === 'none') {
+            $flosc_eff_cap_label = 'no cap';
+        } elseif ($flosc_cap_mode === 'custom' && isset($flosc_tokens['cap']) && $flosc_tokens['cap'] !== '') {
+            $flosc_eff_cap_label = 'cap ' . number_format_i18n(max(0, intval($flosc_tokens['cap'])));
         } else {
-            $eff_cap_label = $flosc_product_token_cap > 0
+            $flosc_eff_cap_label = $flosc_product_token_cap > 0
                 ? 'cap ' . number_format_i18n($flosc_product_token_cap)
                 : 'no cap';
         }
@@ -173,39 +173,40 @@ foreach ($flosc_offers as $flosc_oid => $flosc_offer) {
     $flosc_product_rows[] = [
         'id' => (string) ($flosc_offer['id'] ?? $flosc_oid),
         'name' => (string) ($flosc_offer['name'] ?? $flosc_oid),
-        'type' => $type,
-        'processor' => $processor,
-        'price' => $price,
+        'type' => $flosc_type,
+        'processor' => $flosc_processor,
+        'price' => $flosc_price,
         'display_price' => (string) ($flosc_offer['display_price'] ?? ''),
-        'active' => $active,
-        'status' => $status !== '' ? $status : ($active ? 'active' : 'inactive'),
-        'source' => $source,
-        'mode' => $mode,
-        'amount' => isset($tokens['amount']) && $tokens['amount'] !== '' ? max(0, intval($tokens['amount'])) : '',
-        'cap_mode' => $cap_mode,
-        'cap' => isset($tokens['cap']) && $tokens['cap'] !== '' ? max(0, intval($tokens['cap'])) : '',
-        'eff_grant' => $eff_grant,
-        'eff_cap_label' => $eff_cap_label,
-        'eff_mode_label' => $eff_mode_label,
+        'active' => $flosc_active,
+        'status' => $flosc_status !== '' ? $flosc_status : ($flosc_active ? 'active' : 'inactive'),
+        'source' => $flosc_source,
+        'mode' => $flosc_mode,
+        'amount' => isset($flosc_tokens['amount']) && $flosc_tokens['amount'] !== '' ? max(0, intval($flosc_tokens['amount'])) : '',
+        'cap_mode' => $flosc_cap_mode,
+        'cap' => isset($flosc_tokens['cap']) && $flosc_tokens['cap'] !== '' ? max(0, intval($flosc_tokens['cap'])) : '',
+        'eff_grant' => $flosc_eff_grant,
+        'eff_cap_label' => $flosc_eff_cap_label,
+        'eff_mode_label' => $flosc_eff_mode_label,
     ];
 }
 
-usort($flosc_product_rows, static function ($a, $b) {
-    if ($a['active'] !== $b['active']) {
-        return $a['active'] ? -1 : 1;
+usort($flosc_product_rows, static function ($flosc_a, $flosc_b) {
+    if ($flosc_a['active'] !== $flosc_b['active']) {
+        return $flosc_a['active'] ? -1 : 1;
     }
-    return strcasecmp($a['name'], $b['name']);
+    return strcasecmp($flosc_a['name'], $flosc_b['name']);
 });
 
-$flosc_active_count = count(array_filter($flosc_product_rows, static function ($r) {
-    return !empty($r['active']);
+$flosc_active_count = count(array_filter($flosc_product_rows, static function ($flosc_row) {
+    return !empty($flosc_row['active']);
 }));
-$flosc_filter = sanitize_key((string) (wp_unslash($_GET['flosc_product_filter'] ?? 'active')));
+// Admin list filter (read-only navigation, not a form submission).
+$flosc_filter = sanitize_key((string) filter_input(INPUT_GET, 'flosc_product_filter'));
 if (!in_array($flosc_filter, ['active', 'all'], true)) {
     $flosc_filter = 'active';
 }
-$flosc_visible_products = array_values(array_filter($flosc_product_rows, static function ($r) use ($flosc_filter) {
-    return $flosc_filter === 'all' || !empty($r['active']);
+$flosc_visible_products = array_values(array_filter($flosc_product_rows, static function ($flosc_row) use ($flosc_filter) {
+    return $flosc_filter === 'all' || !empty($flosc_row['active']);
 }));
 ?>
 
@@ -245,59 +246,58 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
             </div>
         <?php else : ?>
             <div class="flosc-token-product-list">
-                <?php foreach ($flosc_visible_products as $p) :
-                    $pid = $p['id'];
-                    $safe = esc_attr($pid);
-                    $is_custom = ($p['source'] === 'custom');
-                    $is_none = ($p['source'] === 'none');
-                    $status_class = $p['active'] ? 'flosc-is-active' : 'flosc-is-inactive';
-                    $price_label = $p['display_price'] !== ''
-                        ? $p['display_price']
-                        : ('$' . number_format((float) $p['price'], 2));
-                    $type_label = $p['type'] === 'subscription' ? 'Subscription' : ($p['type'] === 'tokens' ? 'Token pack' : 'One-time');
-                    $summary_tokens = $is_none
+                <?php foreach ($flosc_visible_products as $flosc_p) :
+                    $flosc_pid = (string) $flosc_p['id'];
+                    $flosc_is_custom = ($flosc_p['source'] === 'custom');
+                    $flosc_is_none = ($flosc_p['source'] === 'none');
+                    $flosc_status_class = $flosc_p['active'] ? 'flosc-is-active' : 'flosc-is-inactive';
+                    $flosc_price_label = $flosc_p['display_price'] !== ''
+                        ? $flosc_p['display_price']
+                        : ('$' . number_format((float) $flosc_p['price'], 2));
+                    $flosc_type_label = $flosc_p['type'] === 'subscription' ? 'Subscription' : ($flosc_p['type'] === 'tokens' ? 'Token pack' : 'One-time');
+                    $flosc_summary_tokens = $flosc_is_none
                         ? 'No product tokens'
-                        : ('+' . number_format_i18n((int) $p['eff_grant']) . ' · ' . $p['eff_cap_label']);
+                        : ('+' . number_format_i18n((int) $flosc_p['eff_grant']) . ' · ' . $flosc_p['eff_cap_label']);
                     ?>
-                    <details class="flosc-token-product <?php echo esc_attr($status_class); ?>" data-flosc-product-id="<?php echo $safe; ?>">
+                    <details class="flosc-token-product <?php echo esc_attr($flosc_status_class); ?>" data-flosc-product-id="<?php echo esc_attr($flosc_pid); ?>">
                         <summary class="flosc-token-product__head">
                             <span class="flosc-token-product__caret" aria-hidden="true">&rsaquo;</span>
-                            <span class="flosc-token-product__name"><?php echo esc_html($p['name']); ?></span>
-                            <span class="flosc-token-product__meta"><?php echo esc_html($type_label); ?> · <?php echo esc_html($p['processor']); ?></span>
-                            <span class="flosc-token-product__price"><?php echo esc_html($price_label); ?></span>
-                            <span class="flosc-token-product__chip <?php echo $is_none ? 'flosc-is-muted' : ($is_custom ? 'flosc-is-custom' : 'flosc-is-flow'); ?>">
-                                <?php echo esc_html($summary_tokens); ?>
+                            <span class="flosc-token-product__name"><?php echo esc_html($flosc_p['name']); ?></span>
+                            <span class="flosc-token-product__meta"><?php echo esc_html($flosc_type_label); ?> · <?php echo esc_html($flosc_p['processor']); ?></span>
+                            <span class="flosc-token-product__price"><?php echo esc_html($flosc_price_label); ?></span>
+                            <span class="flosc-token-product__chip <?php echo $flosc_is_none ? 'flosc-is-muted' : ($flosc_is_custom ? 'flosc-is-custom' : 'flosc-is-flow'); ?>">
+                                <?php echo esc_html($flosc_summary_tokens); ?>
                             </span>
-                            <span class="flosc-token-product__status <?php echo esc_attr($status_class); ?>">
-                                <?php echo $p['active'] ? '● Active' : '○ ' . esc_html(ucfirst($p['status'])); ?>
+                            <span class="flosc-token-product__status <?php echo esc_attr($flosc_status_class); ?>">
+                                <?php echo $flosc_p['active'] ? '● Active' : '○ ' . esc_html(ucfirst($flosc_p['status'])); ?>
                             </span>
                         </summary>
                         <div class="flosc-token-product__body">
-                            <input type="hidden" name="flosc_product_tokens[<?php echo $safe; ?>][id]" value="<?php echo $safe; ?>">
+                            <input type="hidden" name="flosc_product_tokens[<?php echo esc_attr($flosc_pid); ?>][id]" value="<?php echo esc_attr($flosc_pid); ?>">
 
                             <div class="flosc-token-product__grid">
                                 <label class="flosc-token-field">
                                     <span class="flosc-token-field__label">Token source</span>
                                     <select
-                                        name="flosc_product_tokens[<?php echo $safe; ?>][source]"
+                                        name="flosc_product_tokens[<?php echo esc_attr($flosc_pid); ?>][source]"
                                         class="flosc-token-source-select"
                                         data-flosc-token-source
-                                        data-flosc-product="<?php echo $safe; ?>"
+                                        data-flosc-product="<?php echo esc_attr($flosc_pid); ?>"
                                     >
-                                        <option value="flow" <?php selected($p['source'], 'flow'); ?>>Use flow defaults</option>
-                                        <option value="custom" <?php selected($p['source'], 'custom'); ?>>Custom for this product</option>
-                                        <option value="none" <?php selected($p['source'], 'none'); ?>>No product token grant</option>
+                                        <option value="flow" <?php selected($flosc_p['source'], 'flow'); ?>>Use flow defaults</option>
+                                        <option value="custom" <?php selected($flosc_p['source'], 'custom'); ?>>Custom for this product</option>
+                                        <option value="none" <?php selected($flosc_p['source'], 'none'); ?>>No product token grant</option>
                                     </select>
                                     <span class="description">Flow defaults live in the section below. Custom lets this product add more or less, once or on a schedule.</span>
                                 </label>
 
-                                <div class="flosc-token-product__custom <?php echo $is_custom ? '' : 'flosc-is-disabled'; ?>" data-flosc-token-custom="<?php echo $safe; ?>">
+                                <div class="flosc-token-product__custom <?php echo $flosc_is_custom ? '' : 'flosc-is-disabled'; ?>" data-flosc-token-custom="<?php echo esc_attr($flosc_pid); ?>">
                                     <label class="flosc-token-field">
                                         <span class="flosc-token-field__label">Grant mode</span>
-                                        <select name="flosc_product_tokens[<?php echo $safe; ?>][mode]">
-                                            <option value="onetime" <?php selected($p['mode'], 'onetime'); ?>>One-time (each purchase)</option>
-                                            <option value="recurring" <?php selected($p['mode'], 'recurring'); ?>>Recurring cycle (e.g. monthly)</option>
-                                            <option value="recurring_yearly" <?php selected($p['mode'], 'recurring_yearly'); ?>>Recurring yearly cycle</option>
+                                        <select name="flosc_product_tokens[<?php echo esc_attr($flosc_pid); ?>][mode]">
+                                            <option value="onetime" <?php selected($flosc_p['mode'], 'onetime'); ?>>One-time (each purchase)</option>
+                                            <option value="recurring" <?php selected($flosc_p['mode'], 'recurring'); ?>>Recurring cycle (e.g. monthly)</option>
+                                            <option value="recurring_yearly" <?php selected($flosc_p['mode'], 'recurring_yearly'); ?>>Recurring yearly cycle</option>
                                         </select>
                                     </label>
 
@@ -305,8 +305,8 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
                                         <span class="flosc-token-field__label">Token grant amount</span>
                                         <input
                                             type="number"
-                                            name="flosc_product_tokens[<?php echo $safe; ?>][amount]"
-                                            value="<?php echo esc_attr($p['amount'] === '' ? '' : (string) $p['amount']); ?>"
+                                            name="flosc_product_tokens[<?php echo esc_attr($flosc_pid); ?>][amount]"
+                                            value="<?php echo esc_attr($flosc_p['amount'] === '' ? '' : (string) $flosc_p['amount']); ?>"
                                             min="0"
                                             step="1"
                                             class="regular-text"
@@ -318,22 +318,22 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
                                     <label class="flosc-token-field">
                                         <span class="flosc-token-field__label">Cap</span>
                                         <select
-                                            name="flosc_product_tokens[<?php echo $safe; ?>][cap_mode]"
+                                            name="flosc_product_tokens[<?php echo esc_attr($flosc_pid); ?>][cap_mode]"
                                             data-flosc-token-cap-mode
-                                            data-flosc-product="<?php echo $safe; ?>"
+                                            data-flosc-product="<?php echo esc_attr($flosc_pid); ?>"
                                         >
-                                            <option value="flow" <?php selected($p['cap_mode'], 'flow'); ?>>Use flow product cap (<?php echo esc_html($flosc_product_token_cap > 0 ? number_format_i18n($flosc_product_token_cap) : 'none'); ?>)</option>
-                                            <option value="none" <?php selected($p['cap_mode'], 'none'); ?>>No cap</option>
-                                            <option value="custom" <?php selected($p['cap_mode'], 'custom'); ?>>Custom cap</option>
+                                            <option value="flow" <?php selected($flosc_p['cap_mode'], 'flow'); ?>>Use flow product cap (<?php echo esc_html($flosc_product_token_cap > 0 ? number_format_i18n($flosc_product_token_cap) : 'none'); ?>)</option>
+                                            <option value="none" <?php selected($flosc_p['cap_mode'], 'none'); ?>>No cap</option>
+                                            <option value="custom" <?php selected($flosc_p['cap_mode'], 'custom'); ?>>Custom cap</option>
                                         </select>
                                     </label>
 
-                                    <label class="flosc-token-field flosc-token-cap-custom <?php echo $p['cap_mode'] === 'custom' ? '' : 'flosc-is-disabled'; ?>" data-flosc-token-cap-input="<?php echo $safe; ?>">
+                                    <label class="flosc-token-field flosc-token-cap-custom <?php echo $flosc_p['cap_mode'] === 'custom' ? '' : 'flosc-is-disabled'; ?>" data-flosc-token-cap-input="<?php echo esc_attr($flosc_pid); ?>">
                                         <span class="flosc-token-field__label">Custom cap value</span>
                                         <input
                                             type="number"
-                                            name="flosc_product_tokens[<?php echo $safe; ?>][cap]"
-                                            value="<?php echo esc_attr($p['cap'] === '' ? '' : (string) $p['cap']); ?>"
+                                            name="flosc_product_tokens[<?php echo esc_attr($flosc_pid); ?>][cap]"
+                                            value="<?php echo esc_attr($flosc_p['cap'] === '' ? '' : (string) $flosc_p['cap']); ?>"
                                             min="0"
                                             step="1"
                                             class="regular-text"
@@ -345,10 +345,10 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
 
                             <p class="flosc-token-product__hint">
                                 Preview:
-                                <strong><?php echo esc_html($summary_tokens); ?></strong>
-                                · mode <code><?php echo esc_html($p['eff_mode_label']); ?></code>
-                                · id <code><?php echo esc_html($pid); ?></code>
-                                · <a href="<?php echo esc_url(add_query_arg(['tab' => 'offers', 'edit_offer' => $pid], $flosc_offers_url)); ?>">Edit offer</a>
+                                <strong><?php echo esc_html($flosc_summary_tokens); ?></strong>
+                                · mode <code><?php echo esc_html($flosc_p['eff_mode_label']); ?></code>
+                                · id <code><?php echo esc_html($flosc_pid); ?></code>
+                                · <a href="<?php echo esc_url(add_query_arg(['tab' => 'offers', 'edit_offer' => $flosc_pid], $flosc_offers_url)); ?>">Edit offer</a>
                             </p>
                         </div>
                     </details>
