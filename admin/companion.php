@@ -765,16 +765,16 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
                     <?php endif; ?>
                 </p>
                 <?php if ( $flosc_preview_icon !== '' ) : ?>
-                    <p class="description" style="margin-top:8px;">
+                    <p class="description flosc-companion-desc-spaced">
                         <?php if ( $flosc_header_icon_url !== '' ) : ?>
                             <strong>Using override:</strong>
                         <?php else : ?>
                             <strong>Using Identity Chat Logo:</strong>
                         <?php endif; ?>
                     </p>
-                    <img src="<?php echo esc_url( $flosc_preview_icon ); ?>" alt="" style="max-height:48px;margin-top:4px;border-radius:8px;background:#fff;padding:4px;border:1px solid #d0d5dd;">
+                    <img src="<?php echo esc_url( $flosc_preview_icon ); ?>" alt="" class="flosc-companion-logo-preview">
                 <?php else : ?>
-                    <p class="description" style="margin-top:8px;color:#b32d2e;">
+                    <p class="description flosc-companion-desc-warn">
                         No Chat Logo on this flow yet — companion will fall back to the generic FLOSC icon until Identity → Chat Logo is set.
                     </p>
                 <?php endif; ?>
@@ -810,14 +810,14 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
         <tr>
             <th scope="row">Profile row tier codes</th>
             <td>
-                <p class="description" style="margin-top:0;">
+                <p class="description flosc-description-margin-top-0">
                     Companion profile row format: <code>Name (code)</code> then token count.
                     FLOSC defaults are <strong>V</strong> / <strong>G</strong> / <strong>M</strong> — override per flow if needed.
                 </p>
-                <fieldset style="display:grid;grid-template-columns:auto 4em 12em;gap:8px 12px;align-items:center;max-width:36em;">
+                <fieldset class="flosc-companion-tier-grid">
                     <span></span>
-                    <strong style="font-size:11px;">Code</strong>
-                    <strong style="font-size:11px;">A11y label</strong>
+                    <strong class="flosc-companion-tier-col-head">Code</strong>
+                    <strong class="flosc-companion-tier-col-head">A11y label</strong>
 
                     <label for="flow_companion_profile_tier_visitor">Visitor</label>
                     <input type="text" class="small-text" maxlength="3" name="flow_companion_profile_tier_visitor" id="flow_companion_profile_tier_visitor" value="<?php echo esc_attr( $flosc_tier_visitor ); ?>" pattern="[A-Za-z0-9]{1,3}">
@@ -1173,7 +1173,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
         <?php echo esc_html($flosc_companion_effective_summary); ?>
     </p>
     <p class="flosc-companion-preview-copy flosc-companion-preview-copy-spaced">
-        The floating <strong class="flosc-companion-preview-dot" data-accent="<?php echo esc_attr($flosc_accent_color ?: '#6366f1'); ?>">●</strong> launcher is positioned in the
+        The floating <strong class="flosc-companion-preview-dot">●</strong> launcher is positioned in the
         <strong><?php echo $flosc_position === 'bottom-left' ? 'bottom-left' : 'bottom-right'; ?></strong>
         corner when companion is active.
     </p>
@@ -1184,7 +1184,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
         If the member is reading a lesson, the companion will know which lesson they're on and offer contextual help.
     </p>
     <div class="flosc-companion-preview-bubble-wrap <?php echo $flosc_position === 'bottom-left' ? 'flosc-companion-preview-bubble-wrap--left' : 'flosc-companion-preview-bubble-wrap--right'; ?>">
-        <div class="flosc-companion-preview-bubble" data-accent="<?php echo esc_attr($flosc_accent_color ?: '#6366f1'); ?>">
+        <div class="flosc-companion-preview-bubble">
             💬
         </div>
     </div>
@@ -1217,12 +1217,14 @@ jQuery(document).ready(function($) {
     
     $('input[name="flow_companion_content_display_mode"]').on('change', toggleCompanionSettings);
     
-    // Sync color picker with hex display
+    // Sync color picker with hex display + preview via CSS custom property (no per-element .css())
     $('#flow_companion_accent_color').on('input', function() {
         var color = $(this).val();
+        var preview = document.querySelector('.flosc-companion-preview');
         $('#companion_accent_hex').val(color);
-        $('.flosc-companion-preview-dot').css('color', color);
-        $('.flosc-companion-preview-bubble').css('background', color);
+        if (preview) {
+            preview.style.setProperty('--flosc-companion-accent', color);
+        }
     });
 
     $('#flosc-companion-color-reset').on('click', function() {

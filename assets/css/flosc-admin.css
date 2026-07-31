@@ -2067,6 +2067,7 @@
 }
 
 .flosc-companion-preview {
+    --flosc-companion-accent: #6366f1;
     background: #f8f9fa;
     border: 1px solid #c3c4c7;
     border-radius: 4px;
@@ -2074,6 +2075,10 @@
     position: relative;
     min-height: 200px;
     overflow: hidden;
+}
+
+.flosc-companion-preview-dot {
+    color: var(--flosc-companion-accent);
 }
 
 .flosc-companion-preview-copy {
@@ -2103,7 +2108,7 @@
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    background: #6366f1;
+    background: var(--flosc-companion-accent);
     color: #fff;
     display: flex;
     align-items: center;
@@ -2173,6 +2178,37 @@
     margin: 0 0 10px;
     color: #646970;
     font-style: italic;
+}
+
+/* Companion tab: logo preview + tier-code grid (no inline styles) */
+.flosc-companion-desc-spaced {
+    margin-top: 8px;
+}
+
+.flosc-companion-desc-warn {
+    margin-top: 8px;
+    color: #b32d2e;
+}
+
+.flosc-companion-logo-preview {
+    max-height: 48px;
+    margin-top: 4px;
+    border-radius: 8px;
+    background: #fff;
+    padding: 4px;
+    border: 1px solid #d0d5dd;
+}
+
+.flosc-companion-tier-grid {
+    display: grid;
+    grid-template-columns: auto 4em 12em;
+    gap: 8px 12px;
+    align-items: center;
+    max-width: 36em;
+}
+
+.flosc-companion-tier-col-head {
+    font-size: 11px;
 }
 
 @media (max-width: 960px) {

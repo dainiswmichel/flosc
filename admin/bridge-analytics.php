@@ -33,10 +33,9 @@ $flosc_users_with_bridge = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDa
 );
 
 // Count users currently in bridge state (quiz taken, not purchased)
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only analytics aggregate query
-$flosc_users_in_bridge = $wpdb->get_var(" // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only analytics aggregate query
-    SELECT COUNT(DISTINCT um1.user_id)
+$flosc_users_in_bridge = $wpdb->get_var(
+    "SELECT COUNT(DISTINCT um1.user_id)
     FROM {$wpdb->usermeta} um1
     WHERE um1.meta_key = '_flosc_bridge_data'
     AND NOT EXISTS (
@@ -44,20 +43,19 @@ $flosc_users_in_bridge = $wpdb->get_var(" // phpcs:ignore WordPress.DB.DirectDat
         WHERE um2.user_id = um1.user_id
         AND um2.meta_key = '_flosc_purchased'
         AND um2.meta_value = '1'
-    )
-");
+    )"
+);
 
 // Count users who converted (had bridge data and then purchased)
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only analytics aggregate query
-$flosc_users_converted = $wpdb->get_var(" // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only analytics aggregate query
-    SELECT COUNT(DISTINCT um1.user_id)
+$flosc_users_converted = $wpdb->get_var(
+    "SELECT COUNT(DISTINCT um1.user_id)
     FROM {$wpdb->usermeta} um1
     INNER JOIN {$wpdb->usermeta} um2 ON um1.user_id = um2.user_id
     WHERE um1.meta_key = '_flosc_bridge_data'
     AND um2.meta_key = '_flosc_purchased'
-    AND um2.meta_value = '1'
-");
+    AND um2.meta_value = '1'"
+);
 
 // Calculate conversion rate
 $flosc_conversion_rate = $flosc_users_with_bridge > 0 
@@ -65,13 +63,12 @@ $flosc_conversion_rate = $flosc_users_with_bridge > 0
     : 0;
 
 // Get weakness category distribution
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only analytics distribution query
-$flosc_weakness_data = $wpdb->get_results(" // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only analytics distribution query
-    SELECT meta_value FROM {$wpdb->usermeta}
+$flosc_weakness_data = $wpdb->get_results(
+    "SELECT meta_value FROM {$wpdb->usermeta}
     WHERE meta_key = '_flosc_weakest_category'
-    AND meta_value != ''
-");
+    AND meta_value != ''"
+);
 
 $flosc_weakness_counts = [];
 foreach ($flosc_weakness_data as $flosc_row) {
@@ -84,16 +81,15 @@ foreach ($flosc_weakness_data as $flosc_row) {
 arsort($flosc_weakness_counts);
 
 // Get recent bridge users (last 10)
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only analytics recent users query
-$flosc_recent_bridge_users = $wpdb->get_results(" // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
-    SELECT u.ID, u.user_email, u.display_name, um.meta_value as bridge_data
+$flosc_recent_bridge_users = $wpdb->get_results(
+    "SELECT u.ID, u.user_email, u.display_name, um.meta_value as bridge_data
     FROM {$wpdb->users} u
     INNER JOIN {$wpdb->usermeta} um ON u.ID = um.user_id
     WHERE um.meta_key = '_flosc_bridge_data'
     ORDER BY u.user_registered DESC
-    LIMIT 10
-");
+    LIMIT 10"
+);
 
 ?>
 
