@@ -114,13 +114,13 @@ class FLOSC_Chatpack {
      * @param int $user_id WordPress user ID
      * @return int Number of completed pairs before this message
      */
-    public static function count_message_pairs($session_id, $user_id) {
+    public static function count_message_pairs($session_id, $user_id, $flow_id = '') {
         if (!$session_id || !$user_id) {
             return 0;
         }
 
         $session_manager = new FLOSC_Session_Manager();
-        $session = $session_manager->get_flosc_session($session_id, $user_id);
+        $session = $session_manager->get_flosc_session($session_id, $user_id, $flow_id);
 
         if (!$session || empty($session['messages'])) {
             return 0;
@@ -143,13 +143,13 @@ class FLOSC_Chatpack {
      * @param int $max_messages Maximum messages to return (default 10)
      * @return array Messages in [role, content] format for AI API
      */
-    public static function load_conversation_history($session_id, $user_id, $max_messages = 10) {
+    public static function load_conversation_history($session_id, $user_id, $max_messages = 10, $flow_id = '') {
         if (!$session_id || !$user_id) {
             return [];
         }
 
         $session_manager = new FLOSC_Session_Manager();
-        $session = $session_manager->get_flosc_session($session_id, $user_id);
+        $session = $session_manager->get_flosc_session($session_id, $user_id, $flow_id);
 
         if (!$session || empty($session['messages'])) {
             return [];
@@ -170,8 +170,8 @@ class FLOSC_Chatpack {
      * @param int $user_id WordPress user ID
      * @return bool True if no prior messages exist
      */
-    public static function is_first_message($session_id, $user_id) {
-        return self::count_message_pairs($session_id, $user_id) === 0;
+    public static function is_first_message($session_id, $user_id, $flow_id = '') {
+        return self::count_message_pairs($session_id, $user_id, $flow_id) === 0;
     }
 
     /**
@@ -700,12 +700,20 @@ class FLOSC_Chatpack {
             $bridge_mgr = FLOSC_Bridge_Data_Manager::instance();
             $has_profile = $bridge_mgr->flosc_has_profile($user_id);
             $free_delivered = (bool) get_user_meta($user_id, '_flosc_free_lesson_delivered', true);
-            $purchased = (bool) get_user_meta($user_id, '_flosc_member_access', true);
+            // Per-flow paid entitlement for AI context (not global _flosc_member_access).
+            $flow_for_purchase = (string) ($eval_context['flow_id'] ?? '');
+            $purchased = !empty($eval_context['is_member']) || !empty($eval_context['purchased']);
+            if (!$purchased && function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'sale')) {
+                $sale = flosc()->sale();
+                if ($sale && method_exists($sale, 'access')) {
+                    $purchased = $sale->access()->is_member($user_id, $flow_for_purchase);
+                }
+            }
 
             $section .= "\n**Progress:**\n";
             $section .= "- Has Profile: " . ($has_profile ? 'Yes' : 'No') . "\n";
             $section .= "- Free Lesson Delivered: " . ($free_delivered ? 'Yes' : 'No') . "\n";
-            $section .= "- Purchased: " . ($purchased ? 'Yes' : 'No') . "\n";
+            $section .= "- Member (this flow): " . ($purchased ? 'Yes' : 'No') . "\n";
         }
 
         return $section;

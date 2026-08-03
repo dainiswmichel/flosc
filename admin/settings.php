@@ -195,8 +195,10 @@ if (!function_exists('flosc_resolve_flow_option_key_for_ivr')) {
             }
 
             $message_count = 0;
-            if (isset($flosc_settings['ivr_messages']) && is_array($flosc_settings['ivr_messages'])) {
-                $message_count = count($flosc_settings['ivr_messages']);
+            if (function_exists('flosc_flow_get_messages') && is_array($flosc_settings)) {
+                $message_count = count(flosc_flow_get_messages($flosc_settings));
+            } elseif (isset($flosc_settings['flow_messages']) && is_array($flosc_settings['flow_messages'])) {
+                $message_count = count($flosc_settings['flow_messages']);
             }
 
             $score = 0;
@@ -1734,6 +1736,7 @@ if ($flosc_selected_flow_name === '') {
 }
 
 // Flow chrome accent (Identity brand color) — used by flow-selector theme "flow-primary".
+// Dynamic color via wp_add_inline_style (no HTML style= attributes).
 $flosc_flow_primary_color = sanitize_hex_color(
     (string) ($flosc_flow_settings['identity']['primary_color']
         ?? $flosc_flow_settings['primary_color']
@@ -1741,6 +1744,15 @@ $flosc_flow_primary_color = sanitize_hex_color(
 );
 if (!$flosc_flow_primary_color) {
     $flosc_flow_primary_color = '#4f46e5';
+}
+if (function_exists('wp_add_inline_style')) {
+    wp_add_inline_style(
+        'flosc-admin',
+        sprintf(
+            '#flosc-flow-selector{--flosc-flow-primary:%1$s;}#color-preview{--flosc-preview-bg:%1$s;background:var(--flosc-preview-bg);}',
+            esc_attr($flosc_flow_primary_color)
+        )
+    );
 }
 
 ?>
@@ -1765,8 +1777,7 @@ if (!$flosc_flow_primary_color) {
     <?php // Flow switcher chrome: single-line header + details accordion (ops/secondary). ?>
     <div class="flosc-flow-selector"
          id="flosc-flow-selector"
-         data-theme="glass"
-         style="--flosc-flow-primary: <?php echo esc_attr($flosc_flow_primary_color); ?>;">
+         data-theme="glass">
 
         <div class="flosc-flow-selector__main-row">
             <label class="flosc-flow-selector__select-label" for="ivr-select">Switch Flow:</label>
@@ -2482,14 +2493,18 @@ if (!$flosc_flow_primary_color) {
                             </span>
                             <p class="description">Lesson highlights, form buttons, focus rings, carousel controls. Sets <code>--flosc-primary</code>.</p>
                             <?php ob_start(); ?>
-                            document.getElementById('flow_primary_color').addEventListener('input', function(e) {
-                                document.getElementById('color-preview').style.background = e.target.value;
-                            });
                             (function () {
+                                var input = document.getElementById('flow_primary_color');
                                 var preview = document.getElementById('color-preview');
-                                if (preview) {
-                                    preview.style.background = preview.getAttribute('data-color') || '#4f46e5';
+                                if (!input || !preview) return;
+                                function syncPreview(hex) {
+                                    preview.setAttribute('data-color', hex);
+                                    preview.style.setProperty('--flosc-preview-bg', hex);
                                 }
+                                syncPreview(preview.getAttribute('data-color') || input.value || '#4f46e5');
+                                input.addEventListener('input', function (e) {
+                                    syncPreview(e.target.value);
+                                });
                             })();
                             <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
                         </td>

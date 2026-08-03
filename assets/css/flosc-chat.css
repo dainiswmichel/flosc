@@ -619,6 +619,10 @@ html, body {
 }
 
 /* data-show visibility: visitor content vs logged-in content (cascade, no !important) */
+/* Specificity must beat .flosc-app .user-profile-bar img.flosc-profile-avatar { display:block } */
+.flosc-app[data-user-state="visitor"] .user-profile-bar [data-show="logged-in"],
+.flosc-app[data-user-state="visitor"] .user-profile-bar img#flosc_profile_avatar,
+.flosc-app[data-user-state="visitor"] .user-profile-bar #flosc_profile_avatar_icon,
 [data-user-state="visitor"] [data-show="logged-in"],
 [data-user-state="guest"] [data-show="visitor"],
 [data-user-state="member"] [data-show="visitor"] {
@@ -630,6 +634,43 @@ html, body {
 [data-user-state="guest"] [data-show="logged-in"],
 [data-user-state="member"] [data-show="logged-in"] {
     display: block;
+}
+
+/* Visitor avatar is a flex box (emoji / image), not a block img shell. */
+.flosc-app[data-user-state="visitor"] .user-profile-bar .visitor-avatar[data-show="visitor"] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: transparent;
+    color: inherit;
+    box-shadow: none;
+}
+
+.flosc-app[data-user-state="visitor"] .user-profile-bar .visitor-avatar .flosc-visitor-avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 20px;
+    line-height: 1;
+}
+
+.flosc-app[data-user-state="visitor"] .user-profile-bar .visitor-avatar img.flosc-visitor-avatar-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+    background: transparent;
+    display: block;
+}
+
+.flosc-app[data-user-state="visitor"] .user-profile-bar .visitor-avatar.is-image-failed img.flosc-visitor-avatar-img,
+.flosc-app[data-user-state="visitor"] .user-profile-bar .visitor-avatar img.flosc-visitor-avatar-img[data-failed="1"] {
+    display: none;
 }
 
 /* Upgrade container: guest only */
@@ -690,10 +731,19 @@ html, body {
     display: block;
 }
 
+/* .flosc-hidden must beat the img display:block rule above (never show both tiles). */
+.flosc-app .user-profile-bar .flosc-profile-avatar.flosc-hidden,
+.flosc-app .user-profile-bar img.flosc-profile-avatar.flosc-hidden,
+.flosc-app .user-profile-bar #flosc_profile_avatar.flosc-hidden,
+.flosc-app .user-profile-bar #flosc_profile_avatar_icon.flosc-hidden {
+    display: none;
+}
+
 /* Logged-in avatar: show icon OR image, never both */
 .user-profile-bar #flosc_profile_avatar_icon[data-flosc-display]:not(.flosc-hidden) ~ #flosc_profile_avatar,
 .user-profile-bar #flosc_profile_avatar_icon.flosc-visible-flex ~ #flosc_profile_avatar,
-.user-profile-bar #flosc_profile_avatar_icon.flosc-visible ~ #flosc_profile_avatar {
+.user-profile-bar #flosc_profile_avatar_icon.flosc-visible ~ #flosc_profile_avatar,
+.flosc-app .user-profile-bar #flosc_profile_avatar_icon[data-flosc-display]:not(.flosc-hidden) ~ #flosc_profile_avatar {
     display: none;
 }
 

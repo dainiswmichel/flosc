@@ -1,4 +1,51 @@
 <?php
+
+/**
+ * Default per-flow option key when a caller omits $flow_key.
+ * Runtime config is never stored in global flosc_ivr_messages / flosc_ivr_styles options.
+ */
+function flosc_default_flow_option_key() {
+    return 'flosc_flow_flosc_default_technical_ivr';
+}
+
+/**
+ * Load messages/phases/styles for import/export.
+ * Prefer flosc_flow_* option. Fall back once to legacy global options if empty.
+ *
+ * @param string|null $flow_key
+ * @return array{0:array,1:array,2:array,3:string} messages, phases, styles, flow_key used
+ */
+function flosc_flow_load_runtime_triplet($flow_key = null) {
+    $flow_key = $flow_key ? (string) $flow_key : flosc_default_flow_option_key();
+    $fs = function_exists('flosc_flow_get_option_array')
+        ? flosc_flow_get_option_array($flow_key, true)
+        : get_option($flow_key, array());
+    if (!is_array($fs)) {
+        $fs = array();
+    }
+    $messages = flosc_flow_get_messages($fs);
+    $phases   = flosc_flow_get_phases($fs);
+    $styles   = flosc_flow_get_styles($fs);
+
+    // One-time bridge: old global options (pre multi-flow).
+    if (empty($messages)) {
+        $legacy_m = get_option('flosc_ivr_messages', array());
+        $legacy_p = get_option('flosc_ivr_phases', array());
+        $legacy_s = get_option('flosc_ivr_styles', array());
+        if (!empty($legacy_m) && is_array($legacy_m)) {
+            $messages = $legacy_m;
+            $phases   = is_array($legacy_p) ? $legacy_p : array();
+            $styles   = is_array($legacy_s) ? $legacy_s : array();
+            flosc_flow_set_runtime($fs, $messages, $phases, $styles);
+            update_option($flow_key, $fs, false);
+            // Stop using global keys for new writes; leave old rows for now (optional delete).
+        }
+    }
+
+    return array($messages, $phases, $styles, $flow_key);
+}
+
+
 if (!defined('ABSPATH')) {
     exit;
 }
@@ -21,6 +68,19 @@ function flosc_import_ivr_to_database($preview_only = false, $custom_ivr_file = 
         return ['success' => false, 'message' => 'flosc_default_technical_ivr.md file not found'];
     }
 
+    // Only read markdown from FLOSC data dir or shipped plugin IVR folder.
+    if (function_exists('flosc_is_allowed_ivr_source_path') && !flosc_is_allowed_ivr_source_path($ivr_file)) {
+        return ['success' => false, 'message' => 'IVR file path is not an allowed FLOSC configuration location'];
+    }
+
+    // flow_key must be a per-flow option name, never an arbitrary options row.
+    if ($flow_key !== null && $flow_key !== '') {
+        $flow_key = (string) $flow_key;
+        if (strpos($flow_key, 'flosc_flow_') !== 0 || $flow_key === 'flosc_flow_') {
+            return ['success' => false, 'message' => 'Invalid flow option key'];
+        }
+    }
+
     require_once FLOSC_PLUGIN_DIR . 'includes/class-ivr-parser.php';
     $parser = FLOSC_IVR_Parser::flosc_instance();
     $markdown = file_get_contents($ivr_file);
@@ -30,13 +90,11 @@ function flosc_import_ivr_to_database($preview_only = false, $custom_ivr_file = 
         return ['success' => false, 'message' => 'Failed to parse flosc_default_technical_ivr.md'];
     }
 
-    // Get current database state (per-flow if flow_key provided, else global)
-    if ($flow_key) {
-        $fs = get_option($flow_key, []);
-        $current_messages = $fs['ivr_messages'] ?? [];
-    } else {
-        $current_messages = get_option('flosc_ivr_messages', []);
+    // Runtime state: always per-flow option flosc_flow_{stem} (flow_messages / flow_phases / flow_styles).
+    if (!$flow_key) {
+        $flow_key = flosc_default_flow_option_key();
     }
+    list($current_messages, $_phases_unused, $_styles_unused, $flow_key) = flosc_flow_load_runtime_triplet($flow_key);
 
     // Normalize DB defaults so compare logic matches runtime/export behavior.
     foreach ($current_messages as &$current_msg) {
@@ -201,25 +259,22 @@ function flosc_import_ivr_to_database($preview_only = false, $custom_ivr_file = 
         }
     }
 
-    if ($flow_key) {
-        // Per-flow storage
-        $fs = get_option($flow_key, []);
-        $fs['ivr_messages'] = $final_messages;
-        $fs['ivr_phases'] = $final_phases;
-        $fs['ivr_styles'] = $config['styles'] ?? [];
-        $fs['ivr_last_import'] = current_time('mysql');
-        $fs['autoprompts'] = $autoprompts_from_ivr;
-        update_option($flow_key, $fs);
-
-        // Keep offers registry aligned to IVR offer messages on import.
-        flosc_sync_flow_offers_with_ivr_messages($flow_key, $final_messages);
-    } else {
-        // Global storage (activation hook fallback)
-        update_option('flosc_ivr_messages', $final_messages);
-        update_option('flosc_ivr_phases', $final_phases);
-        update_option('flosc_ivr_styles', $config['styles'] ?? []);
-        update_option('flosc_ivr_last_import', current_time('mysql'));
+    // Always write runtime lists into the per-flow option (flow_* keys only).
+    if (!$flow_key) {
+        $flow_key = flosc_default_flow_option_key();
     }
+    $fs = get_option($flow_key, array());
+    if (!is_array($fs)) {
+        $fs = array();
+    }
+    flosc_flow_set_runtime($fs, $final_messages, $final_phases, $config['styles'] ?? array());
+    $fs['flow_last_import'] = current_time('mysql');
+    // Keep historical key for admin diagnostics that still read ivr_last_import.
+    $fs['ivr_last_import'] = $fs['flow_last_import'];
+    $fs['autoprompts'] = $autoprompts_from_ivr;
+    update_option($flow_key, $fs);
+
+    flosc_sync_flow_offers_with_ivr_messages($flow_key, $final_messages);
 
     // Generate success message
     if ($mode === 'replace') {
@@ -253,16 +308,7 @@ function flosc_import_ivr_to_database($preview_only = false, $custom_ivr_file = 
  * @return string|false Backup filename on success, false on failure
  */
 function flosc_export_ivr_backup($flow_key = null) {
-    if ($flow_key) {
-        $fs = get_option($flow_key, []);
-        $messages = $fs['ivr_messages'] ?? [];
-        $phases = $fs['ivr_phases'] ?? [];
-        $styles = $fs['ivr_styles'] ?? [];
-    } else {
-        $messages = get_option('flosc_ivr_messages', []);
-        $phases = get_option('flosc_ivr_phases', []);
-        $styles = get_option('flosc_ivr_styles', []);
-    }
+    list($messages, $phases, $styles, $flow_key) = flosc_flow_load_runtime_triplet($flow_key);
 
     if (empty($messages)) {
         return false; // No data to backup
@@ -342,22 +388,13 @@ function flosc_export_ivr_backup($flow_key = null) {
  * @return bool Success
  */
 function flosc_auto_export_ivr_to_file($flow_key = null, $target_ivr_file = null) {
-    if ($flow_key) {
-        $fs = get_option($flow_key, []);
-        $messages = $fs['ivr_messages'] ?? [];
-        $phases = $fs['ivr_phases'] ?? [];
-        $styles = $fs['ivr_styles'] ?? [];
-    } else {
-        $messages = get_option('flosc_ivr_messages', []);
-        $phases = get_option('flosc_ivr_phases', []);
-        $styles = get_option('flosc_ivr_styles', []);
-    }
+    list($messages, $phases, $styles, $flow_key) = flosc_flow_load_runtime_triplet($flow_key);
 
     if (empty($messages)) {
         return false;
     }
 
-    // Ensure export includes all DB messages even if ivr_phases is stale or incomplete.
+    // Ensure export includes all option messages even if flow_phases is stale or incomplete.
     // Without this normalization, DB-only messages (often offers) can be dropped from IVR file output.
     $normalized_phases = [
         'freeline' => [],

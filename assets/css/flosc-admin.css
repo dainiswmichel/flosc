@@ -3658,6 +3658,7 @@
     padding: 5px 15px;
     border-radius: 4px;
     color: #fff;
+    background: var(--flosc-preview-bg, #4f46e5);
 }
 
 .flosc-flow-media-row {

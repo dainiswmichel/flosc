@@ -28,9 +28,17 @@ class floscApp {
     constructor() {
         this.config = window.FLOSC_CONFIG || {};
         this.user = window.FLOSC_USER || {};
-        this.state = document.body.dataset.userState || 'visitor';
+        // Real-world (this host only): no user → visitor; user id → guest|member never visitor.
+        this.state = this.resolveAppUserState(
+            this.user,
+            document.body?.dataset?.userState || 'visitor'
+        );
+        if (document.body) {
+            document.body.dataset.userState = this.state;
+            document.body.setAttribute('data-user-state', this.state);
+        }
         
-        // v3.0.0: FLOSC Auth Token — cross-domain authentication
+        // v3.0.0: FLOSC Auth Token — host session continuity
         // Priority: config (freshest, from server) > localStorage (persisted from prior session)
         this.authToken = this.config.authToken || '';
         try {
@@ -143,7 +151,7 @@ class floscApp {
      */
     _loadOfferStates() {
         try {
-            const raw = localStorage.getItem('flosc_offer_states');
+            const raw = localStorage.getItem(this.flowStorageKey('flosc_offer_states'));
             return raw ? JSON.parse(raw) : {};
         } catch (e) {
             return {};
@@ -152,7 +160,7 @@ class floscApp {
 
     _saveOfferStates() {
         try {
-            localStorage.setItem('flosc_offer_states', JSON.stringify(this.ivr.shownThisSession));
+            localStorage.setItem(this.flowStorageKey('flosc_offer_states'), JSON.stringify(this.ivr.shownThisSession));
         } catch (e) {
             this.logWarn('[FLOSC] Could not persist offer states', e);
         }
@@ -238,6 +246,10 @@ class floscApp {
 
         // Continuity before restore: visitors (client handoff) and guest/member (server session id).
         this.applyVisitorSessionHandoffFromUrl();
+
+        // If PHP painted visitor but this browser has a FLOSC auth token, rehydrate
+        // the WP user + per-flow profile wallet before any visitor-token path runs.
+        await this.rehydrateSessionFromAuthToken();
 
         // Keep visitor runtime wallet aligned with flow-level grant changes.
         // When floscAdmin changes the visitor grant, start a fresh visitor session
@@ -331,7 +343,7 @@ class floscApp {
                 // (which also suppresses the opening greeting, since the chat won't be empty).
                 let hasStoredVisitorHistory = false;
                 try {
-                    const stored = JSON.parse(localStorage.getItem('flosc_visitor_messages') || '[]');
+                    const stored = JSON.parse(localStorage.getItem(this.flowStorageKey('flosc_visitor_messages')) || '[]');
                     hasStoredVisitorHistory = Array.isArray(stored) && stored.length > 0;
                 } catch (e) {
                     hasStoredVisitorHistory = false;
@@ -339,7 +351,7 @@ class floscApp {
 
                 if (this.ivr.context.first_show_session && !hasStoredVisitorHistory) {
                     this.log('[FLOSC] First session - no stored history, starting fresh');
-                    try { localStorage.removeItem('flosc_visitor_messages'); } catch(e) { this.logWarn('FLOSC: Could not clear visitor messages', e); }
+                    try { localStorage.removeItem(this.flowStorageKey('flosc_visitor_messages')); } catch(e) { this.logWarn('FLOSC: Could not clear visitor messages', e); }
                     this._restoredVisitorMessages = false;
                 } else {
                     this.log('[FLOSC] Continuing session - restoring visitor messages');
@@ -362,12 +374,15 @@ class floscApp {
             this.startIVR();
             // Post-login quiz display fallback — startIVR only auto-renders when chat is empty.
             const shouldShowPostLoginQuiz = !this.ivr.context.quiz_results_shown
+                && this.shouldSurfaceQuizResults(this.user?.lastQuizData)
                 && this._hasIpaPhraseResults(this.user?.lastQuizData)
                 && (this._pendingQuizResultsWelcome || this.user?.justLoggedIn);
             if (shouldShowPostLoginQuiz) {
                 this.log('[FLOSC] Post-login quiz results welcome (fallback)');
                 setTimeout(() => {
-                    if (!this.ivr.context.quiz_results_shown && this._hasIpaPhraseResults(this.user?.lastQuizData)) {
+                    if (!this.ivr.context.quiz_results_shown
+                        && this.shouldSurfaceQuizResults(this.user?.lastQuizData)
+                        && this._hasIpaPhraseResults(this.user?.lastQuizData)) {
                         this.openQuizResults();
                     }
                 }, 1200);
@@ -426,17 +441,17 @@ class floscApp {
                 && !this._restoredVisitorMessages
                 && this.config.guestDaysRemaining !== null
                 && this.config.guestDaysRemaining !== undefined
-                && !sessionStorage.getItem('flosc_sso_guest_days_shown')) {
+                && !sessionStorage.getItem(this.flowStorageKey('flosc_sso_guest_days_shown'))) {
                 const days = this.config.guestDaysRemaining;
                 const upgradeUrl = this.config.guestLinkUpgradeUrl || '#';
                 const msg = `Welcome back! You have <strong>${days}</strong> day${days !== 1 ? 's' : ''} of guest access remaining — we hope you are enjoying your complimentary guest access! <a href="${upgradeUrl}">Upgrade for full access here.</a>`;
                 this.addMessage('assistant', msg, true);
-                sessionStorage.setItem('flosc_sso_guest_days_shown', 'true');
+                sessionStorage.setItem(this.flowStorageKey('flosc_sso_guest_days_shown'), 'true');
             }
 
             // Profile completion prompt — independent of welcome message, persistent across redirects
             if (this.config.pendingCredentialSetup
-                && !sessionStorage.getItem('flosc_credential_setup_dismissed')) {
+                && !sessionStorage.getItem(this.flowStorageKey('flosc_credential_setup_dismissed'))) {
                 this.showCredentialSetupCard();
             }
 
@@ -621,7 +636,7 @@ class floscApp {
     // didn't survive (cross-domain REST call, cookie issues).
     _hasPendingQuizResult() {
         try {
-            const stored = localStorage.getItem('flosc_quiz_result');
+            const stored = localStorage.getItem(this.flowStorageKey('flosc_quiz_result'));
             if (!stored) return false;
             const result = JSON.parse(stored);
             const age = Date.now() - (result.timestamp || 0);
@@ -738,10 +753,22 @@ class floscApp {
         }
     }
 
+    /**
+     * Storage key scoped to the current flow so multi-tab / multi-flow
+     * (Br3nda vs LeSAEp vs flosc.ai) never share visitor history, offers, or quiz.
+     * Auth token stays host-global (one login per origin).
+     */
+    flowStorageKey(base) {
+        const raw = String(
+            this.config?.flowId || this.config?.ivrFile || this.config?.companionFlowId || 'default'
+        );
+        const flow = raw.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80) || 'default';
+        return String(base) + '__' + flow;
+    }
+
     /** localStorage key: active guest/member chat session on this origin (chat host). */
     getActiveChatSessionStorageKey() {
-        const flow = String(this.config?.flowId || this.config?.companionFlowId || 'default').slice(0, 80);
-        return 'flosc_active_chat_session_' + flow;
+        return this.flowStorageKey('flosc_active_chat_session');
     }
 
     rememberActiveChatSessionId(sessionId) {
@@ -761,6 +788,14 @@ class floscApp {
             return String(localStorage.getItem(this.getActiveChatSessionStorageKey()) || '').trim().slice(0, 80);
         } catch (e) {
             return '';
+        }
+    }
+
+    forgetRememberedActiveChatSessionId() {
+        try {
+            localStorage.removeItem(this.getActiveChatSessionStorageKey());
+        } catch (e) {
+            // Ignore storage failures.
         }
     }
 
@@ -798,7 +833,7 @@ class floscApp {
                 messages: []
             };
             try {
-                const messages = JSON.parse(localStorage.getItem('flosc_visitor_messages') || '[]');
+                const messages = JSON.parse(localStorage.getItem(this.flowStorageKey('flosc_visitor_messages')) || '[]');
                 if (Array.isArray(messages) && messages.length > 0) {
                     payload.messages = messages.slice(-50).map((msg) => {
                         if (!msg || typeof msg !== 'object') {
@@ -909,7 +944,7 @@ class floscApp {
                     if (effectiveSid) {
                         this._visitorSessionId = effectiveSid.slice(0, 80);
                         try {
-                            localStorage.setItem('flosc_visitor_session', this._visitorSessionId);
+                            localStorage.setItem(this.flowStorageKey('flosc_visitor_session'), this._visitorSessionId);
                         } catch (e) {
                             // Ignore storage failures.
                         }
@@ -933,7 +968,7 @@ class floscApp {
                         }).filter(Boolean);
                         if (compact.length > 0) {
                             try {
-                                localStorage.setItem('flosc_visitor_messages', JSON.stringify(compact));
+                                localStorage.setItem(this.flowStorageKey('flosc_visitor_messages'), JSON.stringify(compact));
                             } catch (e) {
                                 // Ignore storage failures.
                             }
@@ -944,7 +979,7 @@ class floscApp {
             } else if (sid) {
                 this._visitorSessionId = sid.slice(0, 80);
                 try {
-                    localStorage.setItem('flosc_visitor_session', this._visitorSessionId);
+                    localStorage.setItem(this.flowStorageKey('flosc_visitor_session'), this._visitorSessionId);
                 } catch (e) {
                     // Ignore storage failures.
                 }
@@ -1100,7 +1135,7 @@ class floscApp {
         // preserve continuity and avoid restart-like greetings.
         if (this.state === 'visitor') {
             try {
-                const messages = JSON.parse(localStorage.getItem('flosc_visitor_messages') || '[]');
+                const messages = JSON.parse(localStorage.getItem(this.flowStorageKey('flosc_visitor_messages')) || '[]');
                 if (Array.isArray(messages) && messages.length > 0) {
                     return '';
                 }
@@ -1257,10 +1292,10 @@ class floscApp {
         }
 
         try {
-            let id = localStorage.getItem('flosc_visitor_session');
+            let id = localStorage.getItem(this.flowStorageKey('flosc_visitor_session'));
             if (!id) {
                 id = String(Date.now());
-                localStorage.setItem('flosc_visitor_session', id);
+                localStorage.setItem(this.flowStorageKey('flosc_visitor_session'), id);
             }
             this._visitorSessionId = id;
             this._persistVisitorSessionCookie(id);
@@ -1329,52 +1364,71 @@ class floscApp {
         if (this._adminPollTimer) return;
         this._adminSince = this._adminSince || 0;
 
-        const poll = () => {
+        const poll = async () => {
             const sid = (this.state === 'visitor')
                 ? this.getVisitorSessionId()
                 : (this.currentSession && this.currentSession.id);
             if (!sid) return;
 
-            // Restore the original direct poll path for admin message delivery.
-            // The open chat only needs its own session id + cursor to receive the
-            // injected admin row and render the green bubble instantly.
-            fetch(this.config.apiUrl + '/admin-messages', {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    session_id: sid,
-                    since_id: this._adminSince || 0,
-                    flow_id: this.config?.flowId || '',
-                })
-            })
-                .then((r) => {
-                    if (!r) return null;
-                    return r.json();
-                })
-                .then(d => {
-                    if (!d) return;
-                    this.syncVisitorTokenBalanceFromPayload(d);
-                    const msgs = (d && d.messages) || [];
-                    msgs.forEach(m => {
-                        if (parseInt(m.id) > (this._adminSince || 0)) this._adminSince = parseInt(m.id);
-                        if (m.source === 'bot') {
-                            this.addMessage('assistant', m.text); // injected Br3nda message
-                            if (this.state === 'visitor') {
-                                this.saveVisitorMessage('assistant', m.text);
-                            }
-                        } else {
-                            this.renderAdminMessage(m.name, m.text); // pale-green "(admin)"
-                            if (this.state === 'visitor') {
-                                this.saveVisitorMessage('assistant', m.text, {
-                                    source: 'admin',
-                                    name: m.name || 'Admin'
-                                });
-                            }
-                        }
+            // Mint session-bound poll_token (required by /admin-messages permission).
+            // Ownership requires at least one chat-log row for this session; fail soft until then.
+            try {
+                if (!this._adminPollToken || String(this._adminPollTokenSession) !== String(sid)) {
+                    const tres = await fetch(this.config.apiUrl + '/admin-messages-token', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ session_id: sid }),
                     });
-                })
-                .catch(() => {});
+                    if (!tres || !tres.ok) return;
+                    const tdata = await tres.json().catch(() => null);
+                    if (!tdata || !tdata.poll_token) return;
+                    this._adminPollToken = tdata.poll_token;
+                    this._adminPollTokenSession = String(sid);
+                }
+
+                const r = await fetch(this.config.apiUrl + '/admin-messages', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sid,
+                        since_id: this._adminSince || 0,
+                        flow_id: this.config?.flowId || '',
+                        poll_token: this._adminPollToken,
+                    }),
+                });
+                if (!r) return;
+                if (r.status === 403) {
+                    // Token invalidated (restart/ownership) — re-mint next tick.
+                    this._adminPollToken = '';
+                    this._adminPollTokenSession = null;
+                    return;
+                }
+                const d = await r.json().catch(() => null);
+                if (!d) return;
+                this.syncVisitorTokenBalanceFromPayload(d);
+                const msgs = (d && d.messages) || [];
+                msgs.forEach(m => {
+                    if (parseInt(m.id) > (this._adminSince || 0)) this._adminSince = parseInt(m.id);
+                    if (m.source === 'bot') {
+                        this.addMessage('assistant', m.text);
+                        if (this.state === 'visitor') {
+                            this.saveVisitorMessage('assistant', m.text);
+                        }
+                    } else {
+                        this.renderAdminMessage(m.name, m.text);
+                        if (this.state === 'visitor') {
+                            this.saveVisitorMessage('assistant', m.text, {
+                                source: 'admin',
+                                name: m.name || 'Admin'
+                            });
+                        }
+                    }
+                });
+            } catch (e) {
+                /* soft-fail poll */
+            }
         };
         poll();
         this._adminPollTimer = setInterval(poll, 8000);
@@ -1526,9 +1580,10 @@ class floscApp {
                 }
             }
             
-            // v8.0.0: User has quiz data — show results as welcome (any state)
-            if (this._hasIpaPhraseResults(this.user?.lastQuizData)) {
-                this.log('FLOSC: Quiz data present — showing results as welcome');
+            // Quiz data only as welcome when THIS flow owns that quiz.
+            if (this.shouldSurfaceQuizResults(this.user?.lastQuizData)
+                && this._hasIpaPhraseResults(this.user?.lastQuizData)) {
+                this.log('FLOSC: Quiz data present for this flow — showing results as welcome');
                 this.openQuizResults();
                 welcomeShown = true;
             } else if (aiActive) {
@@ -2854,8 +2909,61 @@ class floscApp {
         this.renderOfferByFormat(msg, offer, displayFormat);
     }
 
+    /**
+     * Lessons (complimentary + library) only when this flow’s Lessons tab
+     * is configured (FLOSC_CONFIG.servesLessons from flosc_flows / flosc_flow_*).
+     */
+    flowServesLessons() {
+        return this.config?.servesLessons === true;
+    }
+
+    /**
+     * This flow has quiz(es) in its own floscFlow parameters.
+     * Empty → never surface another flow’s quiz results.
+     */
+    flowHasQuizConfigured() {
+        const a = String(this.config?.defaultAudioQuizId || '').trim();
+        const t = String(this.config?.defaultTextQuizId || '').trim();
+        const q = String(this.config?.quizType || '').trim();
+        return !!(a || t || q);
+    }
+
+    /**
+     * Server already filters FLOSC_USER.lastQuizData by flow quiz params.
+     * Client only checks: flow has quiz config + (server data or this-flow local pending).
+     */
+    shouldSurfaceQuizResults(quizData = null) {
+        if (!this.flowHasQuizConfigured()) {
+            return false;
+        }
+        const data = quizData !== null && quizData !== undefined
+            ? quizData
+            : this.user?.lastQuizData;
+        if (data) {
+            return true;
+        }
+        if (typeof this._getPendingLocalQuizResult === 'function' && this._getPendingLocalQuizResult()) {
+            return true;
+        }
+        return false;
+    }
+
+    /** Short denial when a non-lesson flow receives a lesson ask. */
+    denyLessonsOnThisFlow(message = '') {
+        const name = String(this.config?.productName || this.config?.identity?.name || 'this chat').trim();
+        const msg = `${name} doesn’t include lessons — I can help with other questions here.`;
+        this.addMessage('assistant', msg, false);
+        if (message) {
+            this.logClientChatTurn(message, msg, { source: 'lessons_not_on_flow' });
+        }
+        return true;
+    }
+
     /** True if user text is a free-lesson request (phrase list; flow may extend later). */
     isFreeLessonRequest(message) {
+        if (!this.flowServesLessons()) {
+            return false;
+        }
         const t = String(message || '').toLowerCase().replace(/[^\w\s]/g, ' ').replace(/\s+/g, ' ').trim();
         if (!t) return false;
         const phrases = [
@@ -4028,43 +4136,85 @@ class floscApp {
             .replace(/{lessons_completed}/g, ctx.lessons_completed || '0')
             .replace(/{correct_items}/g, this.user?.correctItems || '')
             .replace(/{missed_items}/g, this.user?.missedItems || '')
-            .replace(/{member_levels}/g, (this.user?.memberLevels || []).join(', ') || 'full access');
+            .replace(/{member_levels}/g, this._statusLevelsForThisFlow() || 'member access');
+    }
+
+    /**
+     * Levels to mention in status copy: only this flow’s configured member level(s)
+     * that the user holds — never the global WP role dump (other floscFlows).
+     */
+    _statusLevelsForThisFlow() {
+        const configured = [
+            this.config?.defaultMemberLevel,
+            this.config?.defaultGuestLevel,
+        ].map((x) => String(x || '').trim()).filter(Boolean);
+        const held = Array.isArray(this.user?.memberLevels)
+            ? this.user.memberLevels.map((x) => String(x || '').trim()).filter(Boolean)
+            : [];
+        if (!configured.length) {
+            return '';
+        }
+        const match = configured.filter((c) => held.includes(c));
+        // Prefer paid member level name only when this.state is member
+        if (this.state === 'member' && this.config?.defaultMemberLevel) {
+            const m = String(this.config.defaultMemberLevel).trim();
+            if (m && (held.includes(m) || !held.length)) {
+                return m;
+            }
+        }
+        return match.join(', ');
     }
     
-    // MTS-2026-02-02: [USER-STATUS-FIX] Generate user status response CLIENT-SIDE
-    // This runs in the browser where we have access to this.user and this.state
-    // The IVR message user_status_check_001 has {user_status_response} which calls this function
+    /**
+     * Apply flow-configured status template.
+     * Placeholders: {first_name}, {product_name}, {member_level}, {name}, {email}
+     */
+    _fillStatusTemplate(template, vars) {
+        let out = String(template || '');
+        Object.keys(vars || {}).forEach((key) => {
+            out = out.split('{' + key + '}').join(String(vars[key] ?? ''));
+        });
+        return out;
+    }
+
+    // Status text for THIS floscFlow — templates from FLOSC_CONFIG.userStatus (flow settings).
     generateUserStatusResponse() {
-        const productName = this.config.identity?.name || 'our course';
-        const firstName = this.user?.name?.split(' ')[0] || 'there';
-        const memberLevels = (this.user?.memberLevels || []).join(', ') || 'full access';
-        
-        this.log('[FLOSC-STATUS] Generating status response...');
-        this.log('[FLOSC-STATUS] this.user:', this.user);
-        this.log('[FLOSC-STATUS] this.state:', this.state);
-        this.log('[FLOSC-STATUS] isAdmin:', this.user?.isAdmin);
-        
-        // Check admin first (user object has isAdmin flag set by PHP)
         if (this.user?.isAdmin) {
-            this.log('[FLOSC-STATUS] → Returning ADMIN status');
-            return `Hey, thanks for asking about your user status! You are the **FLOSC Admin**. You have access to all member levels. Hope you're enjoying the FLOSC experience!`;
+            return 'Here is your user status in this flosc ecosystem.\n\nYou are the FLOSC Admin.';
         }
-        
-        // Check member (purchased)
-        if (this.state === 'member' || this.user?.purchased) {
-            this.log('[FLOSC-STATUS] → Returning MEMBER status');
-            return `Hey, thanks for asking about your user status! You are a **Member**. You like to be called **${firstName}** and have access to **${memberLevels}** within "${productName}". Ask me anything about "${productName}" right here in this chat!`;
+
+        const rows = Array.isArray(this.user?.flowStatuses) ? this.user.flowStatuses : [];
+        if (rows.length > 0) {
+            const toLabel = (state) => {
+                const s = String(state || '').toLowerCase();
+                if (s === 'member') return 'Member';
+                if (s === 'guest') return 'Guest';
+                return 'Visitor';
+            };
+
+            const current = rows.find((r) => !!r.current) || rows[0];
+            const lines = [
+                'Here is your user status in this flosc ecosystem.',
+                '',
+                `Current floscFlow ${String(current.name || '')}, you are a ${toLabel(current.state)} with ${Number(current.tokens || 0).toLocaleString()} tokens.`,
+            ];
+
+            rows.forEach((row) => {
+                if (row === current || row.current) return;
+                lines.push(`${String(row.name || '')}, you are a ${toLabel(row.state)} with ${Number(row.tokens || 0).toLocaleString()} tokens.`);
+            });
+
+            return lines.join('\n');
         }
-        
-        // Check guest (logged in but not purchased)
-        if (this.state === 'guest' || (this.user?.id && !this.user?.purchased)) {
-            this.log('[FLOSC-STATUS] → Returning GUEST status');
-            return `Hey, thanks for asking about your user status! You are a **Guest**. You like to be called **${firstName}**. Check out your free lesson and upgrade for full access to "${productName}"!`;
+
+        const state = String(this.state || 'visitor').toLowerCase();
+        if (state === 'member') {
+            return 'Here is your user status in this flosc ecosystem.\n\nCurrent floscFlow, you are a Member.';
         }
-        
-        // Default: visitor (not logged in)
-        this.log('[FLOSC-STATUS] → Returning VISITOR status');
-        return `Hey, thanks for asking about your user status! You are a **Visitor**. Take our free quiz and create an account to unlock personalized learning!`;
+        if (state === 'guest') {
+            return 'Here is your user status in this flosc ecosystem.\n\nCurrent floscFlow, you are a Guest.';
+        }
+        return 'Here is your user status in this flosc ecosystem.\n\nCurrent floscFlow, you are a Visitor.';
     }
 
     performIVRAction(action) {
@@ -4087,19 +4237,33 @@ class floscApp {
                 this.showLoginModal();
                 break;
             case 'open_free_lesson':
+                if (!this.flowServesLessons()) {
+                    this.denyLessonsOnThisFlow();
+                    break;
+                }
                 this.openFreeLesson();
                 break;
             case 'open_lesson_library':
+                if (!this.flowServesLessons()) {
+                    this.denyLessonsOnThisFlow();
+                    break;
+                }
                 this.openLessonLibrary();
                 break;
             case 'open_personalized_path':
+                if (!this.flowServesLessons()) {
+                    this.denyLessonsOnThisFlow();
+                    break;
+                }
                 this.openPersonalizedPath();
                 break;
             case 'resume_last_lesson':
             case 'open_last_lesson':
-                this.resumeLastLesson();
-                break;
             case 'repeat_last_lesson':
+                if (!this.flowServesLessons()) {
+                    this.denyLessonsOnThisFlow();
+                    break;
+                }
                 this.resumeLastLesson();
                 break;
             case 'show_quiz_results':
@@ -6161,7 +6325,7 @@ class floscApp {
                 timestamp: Date.now()
             };
 
-            localStorage.setItem('flosc_quiz_result', JSON.stringify(quizResult));
+            localStorage.setItem(this.flowStorageKey('flosc_quiz_result'), JSON.stringify(quizResult));
 
             // Send to server if available
             await this.authFetch(`${this.config.apiUrl}/quiz-result`, {
@@ -6432,7 +6596,7 @@ class floscApp {
             }
             // Attach quiz results from localStorage so server stores them in user meta
             try {
-                const stored = localStorage.getItem('flosc_quiz_result');
+                const stored = localStorage.getItem(this.flowStorageKey('flosc_quiz_result'));
                 if (stored) {
                     const parsed = JSON.parse(stored);
                     const quizPayload = this._buildRegistrationQuizPayload(parsed);
@@ -6523,7 +6687,7 @@ class floscApp {
 
         skipBtn?.addEventListener('click', (e) => {
             e.preventDefault();
-            sessionStorage.setItem('flosc_credential_setup_dismissed', 'true');
+            sessionStorage.setItem(this.flowStorageKey('flosc_credential_setup_dismissed'), 'true');
             card.closest('.message')?.remove();
         });
 
@@ -6579,7 +6743,7 @@ class floscApp {
         this._persistVisitorSessionCookie(this.getVisitorSessionId());
 
         try {
-            const stored = localStorage.getItem('flosc_quiz_result');
+            const stored = localStorage.getItem(this.flowStorageKey('flosc_quiz_result'));
             if (stored) {
                 const result = JSON.parse(stored);
                 const quizPayload = this._buildRegistrationQuizPayload(result);
@@ -6634,11 +6798,31 @@ class floscApp {
         setTimeout(() => this.showAuthModal(), 600);
     }
 
+    /** Loose lesson intent for non-lesson flows (W sound, free lessons, curriculum). */
+    _looksLikeLessonAsk(message) {
+        const t = this._normalizeAskText(message);
+        if (!t) return false;
+        if (/\bfree\s+lessons?\b/.test(t)) return true;
+        if (/\blessons?\b/.test(t) && /\b(see|show|view|access|my|free|w\b|sound|library|curriculum)\b/.test(t)) {
+            return true;
+        }
+        if (/\b(w sound|lesson on|pronunciation lesson)\b/.test(t)) return true;
+        return false;
+    }
+
     openFreeLesson() {
+        if (!this.flowServesLessons()) {
+            this.denyLessonsOnThisFlow();
+            return;
+        }
         this.requestFreeLesson();
     }
 
     async openLessonLibrary() {
+        if (!this.flowServesLessons()) {
+            this.denyLessonsOnThisFlow();
+            return;
+        }
         // v1.8.1: Simplified access check — member state is the single source of truth.
         // Previously used triple-AND (!hasAccess && !purchased && !== 'member') which could
         // fail when any one flag was stale after purchase.
@@ -6850,7 +7034,7 @@ class floscApp {
     // v8.0.8: Now handles IPA audio quiz data from this.user.lastQuizData.
     _getPendingLocalQuizResult() {
         try {
-            const stored = localStorage.getItem('flosc_quiz_result');
+            const stored = localStorage.getItem(this.flowStorageKey('flosc_quiz_result'));
             if (!stored) return null;
             const result = JSON.parse(stored);
             const age = Date.now() - (result.timestamp || 0);
@@ -6862,6 +7046,10 @@ class floscApp {
     }
 
     openQuizResults() {
+        if (!this.shouldSurfaceQuizResults(this.user?.lastQuizData)) {
+            this.log('[FLOSC] openQuizResults skipped — quiz not configured on this flow');
+            return;
+        }
         // v8.0.8: Check for IPA audio quiz data (from server scoring via user meta)
         const serverData = this.user?.lastQuizData;
         if (this._hasIpaPhraseResults(serverData)) {
@@ -6899,7 +7087,7 @@ class floscApp {
         const score = (rawScore !== null && rawScore !== '') ? parseInt(rawScore, 10) : null;
         if (score === null || isNaN(score)) {
             // Check if scoring is still pending
-            const stored = localStorage.getItem('flosc_quiz_result');
+            const stored = localStorage.getItem(this.flowStorageKey('flosc_quiz_result'));
             if (stored) {
                 try {
                     const pending = JSON.parse(stored);
@@ -7292,7 +7480,7 @@ class floscApp {
                 return;
             }
             this.addMessage('assistant', 'Taking you to secure checkout. You will return here after payment when your host has set that up.');
-            localStorage.setItem('flosc_pending_purchase', JSON.stringify({
+            localStorage.setItem(this.flowStorageKey('flosc_pending_purchase'), JSON.stringify({
                 offer_id: offerId,
                 timestamp: Date.now(),
                 return_url: window.location.href
@@ -7308,7 +7496,7 @@ class floscApp {
     // Check for returning from external checkout
     checkPendingPurchase() {
         try {
-            const pending = localStorage.getItem('flosc_pending_purchase');
+            const pending = localStorage.getItem(this.flowStorageKey('flosc_pending_purchase'));
             if (pending) {
                 const data = JSON.parse(pending);
                 // Only process if recent (within 1 hour)
@@ -7317,7 +7505,7 @@ class floscApp {
                     // The server should have updated user state via webhook
                     // Just clear the pending state
                 }
-                localStorage.removeItem('flosc_pending_purchase');
+                localStorage.removeItem(this.flowStorageKey('flosc_pending_purchase'));
             }
         } catch (e) {
             this.logWarn('[FLOSC-CHECKOUT] Error checking pending purchase', e);
@@ -7669,6 +7857,115 @@ Purchased: ${ctx.purchased}
                     delete a.dataset.floscEmbedded;
                 });
         });
+    }
+
+    /**
+     * Real-world state machine for one host:
+     *   no user id → visitor
+     *   user id    → guest | member (never visitor)
+     *
+     * @param {object} user
+     * @param {string} preferred  body / server hint
+     * @returns {'visitor'|'guest'|'member'}
+     */
+    resolveAppUserState(user, preferred = 'visitor') {
+        const uid = user && (user.id || user.ID);
+        if (!uid) {
+            return 'visitor';
+        }
+        const hint = String(preferred || user.state || 'guest').toLowerCase();
+        if (hint === 'member') {
+            return 'member';
+        }
+        return 'guest';
+    }
+
+    /**
+     * Apply guest/member shell after auth is known (profile wallet, not visitor).
+     * @param {object} user
+     * @param {string} [stateHint]
+     */
+    applyAuthenticatedUserShell(user, stateHint) {
+        if (!user || !(user.id || user.ID)) {
+            return;
+        }
+        this.user = user;
+        window.FLOSC_USER = user;
+        this.state = this.resolveAppUserState(user, stateHint || user.state);
+        if (document.body) {
+            document.body.dataset.userState = this.state;
+            document.body.setAttribute('data-user-state', this.state);
+        }
+        const tokens = parseInt(user.tokens ?? user.tokenBalance ?? user.flowTokens, 10);
+        if (Number.isFinite(tokens) && tokens >= 0) {
+            this.user.tokens = tokens;
+            this.user.tokenBalance = tokens;
+            this.user.flowTokens = user.flowTokens ?? tokens;
+        }
+    }
+
+    /**
+     * If PHP painted visitor but this host has a valid auth token, load the user
+     * profile for THIS flow. Real-world: only needed when the first paint missed
+     * the session cookie; same-host login normally already has FLOSC_USER filled.
+     */
+    async rehydrateSessionFromAuthToken() {
+        if (this.user && (this.user.id || this.user.ID)) {
+            this.applyAuthenticatedUserShell(this.user, this.state);
+            return;
+        }
+
+        if (!this.authToken) {
+            this.state = 'visitor';
+            return;
+        }
+
+        const apiBase = (this.config.apiUrl || this.config.restUrl || '').replace(/\/$/, '');
+        if (!apiBase) {
+            return;
+        }
+
+        try {
+            const params = new URLSearchParams();
+            if (this.config.flowId) {
+                params.set('flow_id', this.config.flowId);
+            }
+            const url = `${apiBase}/session?${params.toString()}`;
+            this.log('[FLOSC] Rehydrating session from auth token…');
+            const response = await this.authFetch(url, {
+                method: 'GET',
+                credentials: 'same-origin',
+            });
+            if (!response.ok) {
+                this.logWarn('[FLOSC] Session rehydrate HTTP', response.status);
+                return;
+            }
+            const data = await response.json();
+            if (!data || !data.success || !data.user || !(data.user.id || data.user.ID)) {
+                if (data && data.state === 'visitor') {
+                    try {
+                        localStorage.removeItem('flosc_auth_token');
+                    } catch (e) { /* ignore */ }
+                    this.authToken = '';
+                }
+                this.state = 'visitor';
+                return;
+            }
+
+            this.applyAuthenticatedUserShell(data.user, data.state || data.user.state);
+
+            if (data.authToken) {
+                this.authToken = data.authToken;
+                this.config.authToken = data.authToken;
+                try {
+                    localStorage.setItem('flosc_auth_token', data.authToken);
+                } catch (e) { /* ignore */ }
+            }
+
+            this.log('[FLOSC] Session rehydrated:', this.state, this.user.name, 'tokens=', this.user.tokens);
+        } catch (err) {
+            this.logWarn('[FLOSC] Session rehydrate failed', err);
+        }
     }
 
     /**
@@ -8143,7 +8440,7 @@ Purchased: ${ctx.purchased}
         if (this.ipaQuiz?.tempId) quizData.tempId = this.ipaQuiz.tempId;
         // v8.0.0: Store DO session_id so registration/login can pull scores from DO
         if (result.sessionId) quizData.sessionId = result.sessionId;
-        localStorage.setItem('flosc_quiz_result', JSON.stringify(quizData));
+        localStorage.setItem(this.flowStorageKey('flosc_quiz_result'), JSON.stringify(quizData));
         
         // v8.0.0: Visitors with audio quiz — server scores on register/login.
         // No need to set the prelogin score cookie (it would contain score: 0).
@@ -8366,12 +8663,12 @@ Purchased: ${ctx.purchased}
         // restart begins a genuinely new conversation with its own concierge desk.
         if (this.state === 'visitor') {
             const previousTokenKey = this.getVisitorTokenStorageKey();
-            localStorage.removeItem('flosc_visitor_messages');
-            localStorage.removeItem('flosc_quiz_result');
+            localStorage.removeItem(this.flowStorageKey('flosc_visitor_messages'));
+            localStorage.removeItem(this.flowStorageKey('flosc_quiz_result'));
             localStorage.removeItem(previousTokenKey);
             const freshVisitorSessionId = String(Date.now());
             this._visitorSessionId = freshVisitorSessionId;
-            try { localStorage.setItem('flosc_visitor_session', freshVisitorSessionId); } catch (e) {}
+            try { localStorage.setItem(this.flowStorageKey('flosc_visitor_session'), freshVisitorSessionId); } catch (e) {}
 
             this.visitorDepletedState.awaitingContactDetails = false;
             this.visitorDepletedState.inputLocked = false;
@@ -8441,6 +8738,7 @@ Purchased: ${ctx.purchased}
 
         // v1.8.0: Populate profile bar — same bar for all states, content toggled via data-show
         if (this.state === 'visitor') {
+            this.bindVisitorAvatarImageFallback();
             this.updateVisitorTokenLabelPending();
         }
 
@@ -8682,6 +8980,29 @@ Purchased: ${ctx.purchased}
             if (this.sendBtn) {
                 this.sendBtn.disabled = false;
             }
+        }
+    }
+
+    /**
+     * Visitor avatar: hide broken icon_url image so emoji fallback shows (no blue empty tile).
+     */
+    bindVisitorAvatarImageFallback() {
+        const wrap = document.querySelector('.user-profile-bar .visitor-avatar');
+        if (!wrap) {
+            return;
+        }
+        const img = wrap.querySelector('img[data-flosc-visitor-avatar-img]');
+        if (!img) {
+            return;
+        }
+        const fail = () => {
+            img.setAttribute('data-failed', '1');
+            wrap.classList.add('is-image-failed');
+            img.removeAttribute('src');
+        };
+        img.addEventListener('error', fail, { once: true });
+        if (img.complete && img.naturalWidth === 0) {
+            fail();
         }
     }
 
@@ -9091,7 +9412,7 @@ Purchased: ${ctx.purchased}
         if (!visitorBar) return;
 
         // Check if dismissed in this session
-        const dismissed = sessionStorage.getItem('flosc_visitor_bar_dismissed');
+        const dismissed = sessionStorage.getItem(this.flowStorageKey('flosc_visitor_bar_dismissed'));
         if (dismissed) return;
 
         // Show bar after 2 second delay
@@ -9105,7 +9426,7 @@ Purchased: ${ctx.purchased}
             ctaBtn.addEventListener('click', () => {
                 this.sendMessage('Start quiz');
                 this.setDisplayState(visitorBar, false, 'block');
-                sessionStorage.setItem('flosc_visitor_bar_dismissed', 'true');
+                sessionStorage.setItem(this.flowStorageKey('flosc_visitor_bar_dismissed'), 'true');
             });
         }
 
@@ -9114,7 +9435,7 @@ Purchased: ${ctx.purchased}
         if (dismissBtn) {
             dismissBtn.addEventListener('click', () => {
                 this.setDisplayState(visitorBar, false, 'block');
-                sessionStorage.setItem('flosc_visitor_bar_dismissed', 'true');
+                sessionStorage.setItem(this.flowStorageKey('flosc_visitor_bar_dismissed'), 'true');
             });
         }
     }
@@ -9460,7 +9781,12 @@ Purchased: ${ctx.purchased}
             return;
         }
 
-        // Free-lesson request: route to loader before IVR/AI (guest/member only).
+        // Free-lesson / lesson-library requests — only if this flow’s Lessons config is on.
+        if (!this.flowServesLessons() && this._looksLikeLessonAsk(message)) {
+            await this.syncSessionTitleFromFirstUserMessage(message);
+            this.denyLessonsOnThisFlow(message);
+            return;
+        }
         if (this.isFreeLessonRequest(message)) {
             if (this.state === 'visitor') {
                 const deny = 'To access your free lessons, please log in or create a free account first.';
@@ -9543,7 +9869,7 @@ Purchased: ${ctx.purchased}
         try {
             let response;
             try {
-                response = await this.callAPI(message, ivrGuidance);
+                response = await this.callAPI(message, ivrGuidance, { allowSessionAutoCreate: true });
             } catch (firstErr) {
                 if (firstErr?.floscCode === 'visitor_tokens_depleted') {
                     throw firstErr;
@@ -9552,7 +9878,7 @@ Purchased: ${ctx.purchased}
                 // registration page reload or long idle sessions.
                 this.log('[FLOSC] Chat failed, refreshing nonce and retrying:', firstErr.message);
                 await this.refreshNonce().catch(() => {});
-                response = await this.callAPI(message, ivrGuidance);
+                response = await this.callAPI(message, ivrGuidance, { allowSessionAutoCreate: true });
             }
             this.hideTyping();
             
@@ -10004,9 +10330,15 @@ Purchased: ${ctx.purchased}
     addMessage(role, content, isHtml = false) {
         this.log('[FLOSC] addMessage() called:', {role, contentLength: content?.length, isHtml});
 
+        const contentStr = String(content || '');
+        // Guardrail: never render internal synthetic prompts as visible user chat.
+        if (role === 'user' && /^\s*\[SYSTEM:/i.test(contentStr)) {
+            this.logWarn('[FLOSC] Skipping synthetic SYSTEM user bubble');
+            return null;
+        }
+
         // Duplicate plain-text assistant lines: skip re-render (do not substitute unrelated copy).
         if (role !== 'user' && !isHtml) {
-            const contentStr = String(content || '');
             if (contentStr.includes('flosc-sandbox-payment') || contentStr.includes('flosc-offer-')) {
                 isHtml = true;
             }
@@ -10330,10 +10662,14 @@ Purchased: ${ctx.purchased}
     }
     
     async callAPI(message, ivrMatch = null, options = {}) {
+        const isSystemGenerated = /^\s*\[SYSTEM:/i.test(String(message || ''));
+        const allowSessionAutoCreate = options && options.allowSessionAutoCreate === true;
+
         // Auto-create session on first message for logged-in users (server enforces guest max).
-        if (this.state !== 'visitor' && !this.currentSession) {
+        // Hard rule: create sessions only from explicit user send/new-chat flows.
+        if (this.state !== 'visitor' && !this.currentSession && !isSystemGenerated && allowSessionAutoCreate) {
             try {
-                const sessionRes = await this.authFetch(this.config.apiUrl + '/sessions', {
+                const sessionRes = await this.authFetch(this.config.apiUrl + '/sessions' + this.sessionsQuery(), {
                     method: 'POST',
                     credentials: 'same-origin',
                     headers: {
@@ -10341,7 +10677,7 @@ Purchased: ${ctx.purchased}
                         'X-WP-Nonce': this.config.nonce
                     },
                     // New session title is always "New Chat"; server renames on first user message.
-                    body: JSON.stringify({})
+                    body: JSON.stringify(this.sessionsFlowBody())
                 });
                 const sessionData = await sessionRes.json();
                 if (sessionData.success && sessionData.session) {
@@ -10392,7 +10728,7 @@ Purchased: ${ctx.purchased}
         // This prevents AI from repeating itself and enables conversation-awareness.
         if (this.state === 'visitor') {
             try {
-                const visitorMsgs = JSON.parse(localStorage.getItem('flosc_visitor_messages') || '[]');
+                const visitorMsgs = JSON.parse(localStorage.getItem(this.flowStorageKey('flosc_visitor_messages')) || '[]');
                 // Send last 10 messages (5 pairs) to keep payload small
                 payload.visitor_history = visitorMsgs.slice(-10).map(m => ({
                     role: m.role,
@@ -10463,7 +10799,11 @@ Purchased: ${ctx.purchased}
     
     saveVisitorMessage(role, content, meta = null) {
         try {
-            const messages = JSON.parse(localStorage.getItem('flosc_visitor_messages') || '[]');
+            const contentStr = String(content || '');
+            if (role === 'user' && /^\s*\[SYSTEM:/i.test(contentStr)) {
+                return;
+            }
+            const messages = JSON.parse(localStorage.getItem(this.flowStorageKey('flosc_visitor_messages')) || '[]');
             const entry = { role, content, timestamp: Date.now() };
             if (meta && typeof meta === 'object') {
                 entry.meta = {
@@ -10473,7 +10813,7 @@ Purchased: ${ctx.purchased}
             }
             messages.push(entry);
             if (messages.length > 50) messages.shift();
-            localStorage.setItem('flosc_visitor_messages', JSON.stringify(messages));
+            localStorage.setItem(this.flowStorageKey('flosc_visitor_messages'), JSON.stringify(messages));
         } catch (e) {
             this.logWarn('FLOSC: Could not save visitor message', e);
         }
@@ -10481,7 +10821,7 @@ Purchased: ${ctx.purchased}
     
     restoreVisitorMessages() {
         try {
-            const messages = JSON.parse(localStorage.getItem('flosc_visitor_messages') || '[]');
+            const messages = JSON.parse(localStorage.getItem(this.flowStorageKey('flosc_visitor_messages')) || '[]');
             const normalizedMessages = [];
             let pendingStartupAssistant = null;
             let seenUserMessage = false;
@@ -10542,9 +10882,31 @@ Purchased: ${ctx.purchased}
         }
     }
     
+    /** Query string for session APIs — always scoped to this flow. */
+    sessionsQuery() {
+        const params = new URLSearchParams();
+        if (this.config.flowId) {
+            params.set('flow_id', this.config.flowId);
+        }
+        if (this.config.ivrFile) {
+            params.set('ivr_file', this.config.ivrFile);
+        }
+        const q = params.toString();
+        return q ? `?${q}` : '';
+    }
+
+    /** Body fields so create/rename/delete stay on this flow. */
+    sessionsFlowBody(extra = {}) {
+        return {
+            ...extra,
+            flow_id: this.config.flowId || '',
+            ivr_file: this.config.ivrFile || '',
+        };
+    }
+
     async loadSessions() {
         try {
-            const response = await this.authFetch(this.config.apiUrl + '/sessions', {
+            const response = await this.authFetch(this.config.apiUrl + '/sessions' + this.sessionsQuery(), {
                 credentials: 'same-origin',
                 headers: { 'X-WP-Nonce': this.config.nonce }
             });
@@ -10630,7 +10992,9 @@ Purchased: ${ctx.purchased}
     
     async loadSession(sessionId) {
         try {
-            const response = await this.authFetch(this.config.apiUrl + '/sessions/' + sessionId, {
+            const response = await this.authFetch(
+                this.config.apiUrl + '/sessions/' + sessionId + this.sessionsQuery(),
+                {
                 credentials: 'same-origin',
                 headers: { 'X-WP-Nonce': this.config.nonce }
             });
@@ -10707,6 +11071,24 @@ Purchased: ${ctx.purchased}
         return out;
     }
 
+    getNewChatWelcomeFallback() {
+        const flowHint = String(this.config.flowId || this.config.ivrFile || '').toLowerCase();
+        const identityName = String(this.config?.identity?.name || '').toLowerCase();
+        const isBr3ndaFlow = /br3nda|dainis/.test(flowHint) || /br3nda/.test(identityName);
+
+        if (isBr3ndaFlow) {
+            if (this.state === 'member' || this.state === 'admin') {
+                return 'Welcome back {NickName}. Br3nda here to help you connect with Dainis and with wonderful humans. What would you like to do first?';
+            }
+            return 'Welcome back. Br3nda here to help you connect with Dainis and with wonderful humans. What would you like to do first?';
+        }
+
+        if (this.state === 'member' || this.state === 'admin') {
+            return 'Hi {NickName}, glad to be chatting with you! What would you like to work on in this session?';
+        }
+        return 'Welcome back, what would you like to work on?';
+    }
+
     countSessionsFromGrouped(sessions) {
         if (!sessions || typeof sessions !== 'object') return 0;
         let n = 0;
@@ -10732,7 +11114,7 @@ Purchased: ${ctx.purchased}
             if (max > 0) {
                 let count = 0;
                 try {
-                    const res = await this.authFetch(this.config.apiUrl + '/sessions', {
+                    const res = await this.authFetch(this.config.apiUrl + '/sessions' + this.sessionsQuery(), {
                         credentials: 'same-origin',
                         headers: { 'X-WP-Nonce': this.config.nonce },
                     });
@@ -10757,14 +11139,14 @@ Purchased: ${ctx.purchased}
         // New chat = new session; title always "New Chat" until first user message / rename.
         try {
             await this.refreshNonce();
-            const res = await this.authFetch(this.config.apiUrl + '/sessions', {
+            const res = await this.authFetch(this.config.apiUrl + '/sessions' + this.sessionsQuery(), {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-WP-Nonce': this.config.nonce,
                 },
-                body: JSON.stringify({}),
+                body: JSON.stringify(this.sessionsFlowBody()),
             });
             const data = await res.json();
             if (!data.success || !data.session) {
@@ -10801,10 +11183,8 @@ Purchased: ${ctx.purchased}
         this.buildIVRContext();
 
         const welcomeTpl = (this.state === 'member' || this.state === 'admin')
-            ? (this.config.memberNewChatWelcomeMessage
-                || 'Hi {NickName}, glad to be chatting with you! What would you like to work on in this session?')
-            : (this.config.guestNewChatWelcomeMessage
-                || 'Welcome back, what would you like to work on?');
+            ? (this.config.memberNewChatWelcomeMessage || this.getNewChatWelcomeFallback())
+            : (this.config.guestNewChatWelcomeMessage || this.getNewChatWelcomeFallback());
         const welcome = this.formatChatListMessage(welcomeTpl);
         if (welcome) {
             this.addMessage('assistant', welcome, false);
@@ -10832,14 +11212,14 @@ Purchased: ${ctx.purchased}
         }
         try {
             await this.refreshNonce();
-            const res = await this.authFetch(this.config.apiUrl + '/sessions', {
+            const res = await this.authFetch(this.config.apiUrl + '/sessions' + this.sessionsQuery(), {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-WP-Nonce': this.config.nonce,
                 },
-                body: JSON.stringify({}),
+                body: JSON.stringify(this.sessionsFlowBody()),
             });
             const data = await res.json();
             if (data.success && data.session) {
@@ -10879,14 +11259,16 @@ Purchased: ${ctx.purchased}
 
         try {
             await this.refreshNonce();
-            const res = await this.authFetch(this.config.apiUrl + '/sessions/' + this.currentSession.id, {
+            const res = await this.authFetch(
+                this.config.apiUrl + '/sessions/' + this.currentSession.id + this.sessionsQuery(),
+                {
                 method: 'PUT',
                 credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-WP-Nonce': this.config.nonce,
                 },
-                body: JSON.stringify({ title }),
+                body: JSON.stringify(this.sessionsFlowBody({ title })),
             });
             const data = await res.json();
             if (data.success) {
@@ -10906,14 +11288,16 @@ Purchased: ${ctx.purchased}
         if (!newTitle || newTitle === currentTitle) return;
 
         try {
-            const response = await this.authFetch(this.config.apiUrl + '/sessions/' + sessionId, {
+            const response = await this.authFetch(
+                this.config.apiUrl + '/sessions/' + sessionId + this.sessionsQuery(),
+                {
                 method: 'PUT',
                 credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-WP-Nonce': this.config.nonce
                 },
-                body: JSON.stringify({ title: newTitle })
+                body: JSON.stringify(this.sessionsFlowBody({ title: newTitle }))
             });
             const data = await response.json();
             if (data.success) {
@@ -10931,17 +11315,42 @@ Purchased: ${ctx.purchased}
         if (!confirm('Delete this chat? This cannot be undone.')) return;
 
         try {
-            const response = await this.authFetch(this.config.apiUrl + '/sessions/' + sessionId, {
+            const deletingActive = String(this.currentSession?.id || '') === String(sessionId || '');
+            const response = await this.authFetch(
+                this.config.apiUrl + '/sessions/' + sessionId + this.sessionsQuery(),
+                {
                 method: 'DELETE',
                 credentials: 'same-origin',
                 headers: { 'X-WP-Nonce': this.config.nonce }
             });
             const data = await response.json();
             if (data.success) {
-                if (this.currentSession?.id == sessionId) {
-                    this.newSession();
+                if (deletingActive) {
+                    this.currentSession = null;
+                    this.forgetRememberedActiveChatSessionId();
+
+                    const inner = this.chatMessages?.querySelector('.messages-inner');
+                    if (inner) inner.innerHTML = '';
+                    else if (this.chatMessages) this.chatMessages.innerHTML = '';
+
+                    this._shownAssistant = {};
+                    this._repeatIdx = 0;
                 }
-                this.loadSessions();
+
+                await this.loadSessions();
+
+                if (deletingActive) {
+                    await this.restoreLastSession();
+                    if (!this.currentSession?.id) {
+                        // No chats left: keep empty pane without creating a new server chat.
+                        this.ivr.messageCount = 0;
+                        this.ivr.shownThisSession = {};
+                        this.ivr.lastInteraction = Date.now();
+
+                        // Keep the pane neutral; no auto-open text after deletion.
+                        this.floscShowUserAutoPrompts();
+                    }
+                }
             }
         } catch (e) {
             this.logWarn('FLOSC: Could not delete session', e);
@@ -10954,7 +11363,7 @@ Purchased: ${ctx.purchased}
      */
     async restoreLastSession() {
         try {
-            const response = await this.authFetch(this.config.apiUrl + '/sessions', {
+            const response = await this.authFetch(this.config.apiUrl + '/sessions' + this.sessionsQuery(), {
                 credentials: 'same-origin',
                 headers: { 'X-WP-Nonce': this.config.nonce }
             });
@@ -10962,7 +11371,7 @@ Purchased: ${ctx.purchased}
             
             if (!data.success) return;
             
-            // Find the most recent session (first item in 'today', then 'yesterday', etc.)
+            // Only sessions for THIS flow (server filters by flow_id).
             const groups = ['today', 'yesterday', 'last_7_days', 'older'];
             let latestSession = null;
             
@@ -10975,7 +11384,7 @@ Purchased: ${ctx.purchased}
             
             // List endpoint may omit message bodies — still load by id (server has full log).
             if (latestSession && latestSession.id) {
-                this.log('[FLOSC] Restoring last session:', latestSession.id, latestSession.title);
+                this.log('[FLOSC] Restoring last session for flow:', this.config.flowId, latestSession.id, latestSession.title);
                 await this.loadSession(latestSession.id);
             }
         } catch (e) {
@@ -11018,21 +11427,26 @@ Purchased: ${ctx.purchased}
     }
 
     _markPendingQuizResultsWelcome() {
-        if (this.user?.justLoggedIn && this._hasIpaPhraseResults(this.user?.lastQuizData)) {
+        if (this.user?.justLoggedIn
+            && this.shouldSurfaceQuizResults(this.user?.lastQuizData)
+            && this._hasIpaPhraseResults(this.user?.lastQuizData)) {
             this._pendingQuizResultsWelcome = true;
         }
     }
 
     async checkPendingQuizResults() {
-        // v8.0.8: This method sets IVR context flags ONLY. It does NOT render results.
-        // Results are presented through the IVR message flow:
-        //   - lesaep_login_success fires (conditioned on first_message_after_login)
-        //   - guest_quiz_review autoprompt pill appears (conditioned on is_guest && quiz_taken)
-        //   - Guest clicks pill → show_quiz_results action → openQuizResults() renders results
-        // Previously this method called showIpaPhraseResultsAfterLogin() directly,
-        // dumping results into chat before the IVR flow had a chance to run.
+        // Sets IVR context flags only when THIS flow is configured for quizzes.
+        if (!this.flowHasQuizConfigured()) {
+            // Clear foreign lastQuizData if it leaked into the client object.
+            if (this.user && this.user.lastQuizData) {
+                this.user.lastQuizData = null;
+                this.user.lastQuizScore = null;
+                this.user.lastQuizId = null;
+            }
+            return;
+        }
         try {
-            const stored = localStorage.getItem('flosc_quiz_result');
+            const stored = localStorage.getItem(this.flowStorageKey('flosc_quiz_result'));
             if (stored) {
                 const result = JSON.parse(stored);
                 const age = Date.now() - (result.timestamp || 0);
@@ -11058,7 +11472,7 @@ Purchased: ${ctx.purchased}
                         }
                         this.ivr.context.score = serverData.score;
                         this._markPendingQuizResultsWelcome();
-                        localStorage.removeItem('flosc_quiz_result');
+                        localStorage.removeItem(this.flowStorageKey('flosc_quiz_result'));
                     } else if (result.phraseResults?.length && !(serverData?.phrase_results?.length)) {
                         // Email/SSO recovery: server meta empty but browser still has scored IPA data.
                         this.log('[FLOSC] Recovering quiz data from localStorage');
@@ -11105,21 +11519,22 @@ Purchased: ${ctx.purchased}
                         }).then(res => {
                             if (res && res.success) {
                                 this.log('[FLOSC] Quiz data persisted to server');
-                                localStorage.removeItem('flosc_quiz_result');
+                                localStorage.removeItem(this.flowStorageKey('flosc_quiz_result'));
                             }
                         }).catch(err => this.logError('[FLOSC] store-quiz-data failed', err));
                     } else if (this.user?.lastQuizScore && serverData?.phrase_results?.length) {
                         // Server has full IPA phrase data — safe to trust score and clear local backup
                         const score = parseInt(this.user.lastQuizScore) || 0;
                         this.ivr.context.score = score;
-                        localStorage.removeItem('flosc_quiz_result');
+                        localStorage.removeItem(this.flowStorageKey('flosc_quiz_result'));
                     } else if (!result.pendingServerScore) {
                         // Non-IPA quiz with results already in localStorage
-                        localStorage.removeItem('flosc_quiz_result');
+                        localStorage.removeItem(this.flowStorageKey('flosc_quiz_result'));
                     }
                 }
-            } else if (this._hasIpaPhraseResults(this.user?.lastQuizData)) {
-                // SSO wiped localStorage but server meta has scored IPA data.
+            } else if (this.shouldSurfaceQuizResults(this.user?.lastQuizData)
+                && this._hasIpaPhraseResults(this.user?.lastQuizData)) {
+                // SSO wiped localStorage but server meta has scored IPA data for this flow.
                 this.log('[FLOSC] checkPendingQuizResults: server IPA data only — setting context flags');
                 this.ivr.context.quiz_completed = true;
                 this.ivr.context.quiz_taken = true;
@@ -11157,6 +11572,11 @@ Purchased: ${ctx.purchased}
     }
     
     async requestFreeLesson() {
+        if (!this.flowServesLessons()) {
+            this.denyLessonsOnThisFlow(this._pendingFreeLessonUserMessage || '');
+            this._pendingFreeLessonUserMessage = '';
+            return;
+        }
         // v8.0.1: Guard against double-calls (IVR action + pill can both fire)
         if (this._freeLessonInFlight) {
             this.log('FLOSC: requestFreeLesson already in flight — skipping duplicate call');
@@ -11795,7 +12215,7 @@ Purchased: ${ctx.purchased}
                     errEl.classList.add('is-success');
                     errEl.textContent = 'Welcome, fam! You\'re in.';
                 }
-                sessionStorage.removeItem('flosc_credential_setup_dismissed');
+                sessionStorage.removeItem(this.flowStorageKey('flosc_credential_setup_dismissed'));
                 setTimeout(() => window.location.reload(), 1500);
             } else {
                 if (context === 'chat') {
@@ -12056,7 +12476,7 @@ Purchased: ${ctx.purchased}
                             this.config.authToken = result.auth_token;
                             localStorage.setItem('flosc_auth_token', result.auth_token);
                             // Clear visitor message cache — they're a member now
-                            localStorage.removeItem('flosc_visitor_messages');
+                            localStorage.removeItem(this.flowStorageKey('flosc_visitor_messages'));
                         }
 
                         // Update local user state so IVR conditions reflect purchase
@@ -12340,7 +12760,7 @@ Purchased: ${ctx.purchased}
                             if (result.auth_token) {
                                 this.config.authToken = result.auth_token;
                                 localStorage.setItem('flosc_auth_token', result.auth_token);
-                                localStorage.removeItem('flosc_visitor_messages');
+                                localStorage.removeItem(this.flowStorageKey('flosc_visitor_messages'));
                             }
 
                             const displayName = result.user_display_name || result.user_email || 'Member';

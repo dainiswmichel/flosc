@@ -152,8 +152,25 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
 <h3>🅿️ PayPal Configuration</h3>
 <p class="description">
     First-class native PayPal (Orders capture for one-time offers; subscription vault when an active offer is type subscription).
-    Add Client ID + Secret, set Sandbox or Live, then set the offer’s Payment Processor to <strong>PayPal</strong> on the Offers tab.
+    Add Client ID + Secret, set mode, configure Webhook ID for renewal/cancel events, then set the offer’s Payment Processor to <strong>PayPal</strong> on the Offers tab.
 </p>
+<?php
+$flosc_paypal_webhook_id_admin = trim((string) ($flosc_flow_settings['paypal_webhook_id'] ?? ''));
+if (!empty($flosc_paypal_enabled) && $flosc_paypal_webhook_id_admin === '') :
+    ?>
+    <div class="notice notice-warning inline">
+        <p>
+            <?php
+            echo esc_html__(
+                'PayPal is enabled but Webhook ID is empty. Subscription renewal and cancel webhooks are rejected until you set the Webhook ID (signature verification is mandatory).',
+                'flosc'
+            );
+            ?>
+        </p>
+    </div>
+    <?php
+endif;
+?>
 
 <table class="form-table">
     <tr>
@@ -197,6 +214,32 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
         </td>
     </tr>
     <tr>
+        <th scope="row"><label for="flow_paypal_webhook_id">PayPal Webhook ID</label></th>
+        <td>
+            <input type="text" id="flow_paypal_webhook_id" name="flow_paypal_webhook_id"
+                   value="<?php echo esc_attr($flosc_flow_settings['paypal_webhook_id'] ?? ''); ?>"
+                   class="large-text" placeholder="e.g. 1JE4291016473214C" autocomplete="off">
+            <p class="description">
+                <?php
+                echo esc_html__(
+                    'Required for subscription renewal / cancel webhooks. Create a webhook in the PayPal Developer Dashboard pointing at this URL, then paste the Webhook ID here. Unsigned or forged events are rejected.',
+                    'flosc'
+                );
+                ?>
+                <br>
+                <?php esc_html_e('Webhook endpoint:', 'flosc'); ?>
+                <code><?php echo esc_html(rest_url('flosc/v1/webhooks/paypal')); ?></code>
+                <br>
+                <?php
+                echo esc_html__(
+                    'Recommended event types: PAYMENT.SALE.COMPLETED, BILLING.SUBSCRIPTION.CANCELLED, BILLING.SUBSCRIPTION.SUSPENDED, BILLING.SUBSCRIPTION.EXPIRED.',
+                    'flosc'
+                );
+                ?>
+            </p>
+        </td>
+    </tr>
+    <tr>
         <th scope="row">Connection Test</th>
         <td>
             <button type="button" id="flosc-paypal-test" class="button button-secondary">Test PayPal Connection</button>
@@ -214,7 +257,21 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
                         btn.disabled = false;
                         btn.textContent = 'Test PayPal Connection';
                         if (data.success) {
-                            result.innerHTML = '<span class="flosc-paypal-result-success">\u2705 Connected — ' + data.data.mode + ' mode, ' + data.data.app_name + '</span>';
+                            var wh = data.data.webhook;
+                            var whText = '';
+                            if (wh && typeof wh === 'object' && wh.id) {
+                                whText = ' · webhook ' + (wh.created ? 'created' : 'ok') + ' (' + String(wh.id).substring(0, 12) + '…)';
+                            } else if (typeof wh === 'string' && wh.indexOf('error:') === 0) {
+                                whText = ' · ' + wh;
+                            }
+                            var p0 = data.data.p0a;
+                            var p0Text = '';
+                            if (p0 && typeof p0 === 'object') {
+                                p0Text = p0.pass
+                                    ? ' · P0-A security OK'
+                                    : ' · P0-A check failed (unsigned=' + (p0.unsigned || '?') + ', forged=' + (p0.forged || '?') + ')';
+                            }
+                            result.innerHTML = '<span class="flosc-paypal-result-success">\u2705 Connected — ' + data.data.mode + ' mode, ' + data.data.app_name + whText + p0Text + '</span>';
                         } else {
                             result.innerHTML = '<span class="flosc-paypal-result-error">\u274c ' + (data.data || 'Connection failed') + '</span>';
                         }

@@ -537,7 +537,7 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
     </details>
 </div>
 
-<script>
+<?php ob_start(); ?>
 (function () {
     function setDisabled(el, off) {
         if (!el) return;
@@ -568,4 +568,4 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
         sync();
     });
 })();
-</script>
+<?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>

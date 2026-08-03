@@ -127,8 +127,14 @@ trait FLOSC_Visitor_Token_Trait {
             return 0;
         }
 
-        $has_member_access = ('true' === get_user_meta($user_id, '_flosc_member_access', true));
-        if ($has_member_access) {
+        // Per-flow: member wallet only when entitled on this flow (not global flag).
+        $is_flow_member = false;
+        if ($this->sale_manager && method_exists($this->sale_manager, 'access')) {
+            $is_flow_member = $this->sale_manager->access()->is_member($user_id, (string) $flow_id);
+        } elseif (class_exists('FLOSC_Member_Access')) {
+            $is_flow_member = FLOSC_Member_Access::instance()->is_member($user_id, (string) $flow_id);
+        }
+        if ($is_flow_member) {
             return max(0, intval($this->flosc_get_member_token_grant_amount((string) $flow_id, $user_id)));
         }
 

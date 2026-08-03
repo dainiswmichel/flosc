@@ -635,23 +635,20 @@ class FLOSC_AI_Chat_Dispatch {
             $user_id = (int) get_current_user_id();
         }
         if ( $user_id > 0 ) {
-            if ( class_exists( 'FLOSC_Member_Access' ) ) {
-                $ma = FLOSC_Member_Access::instance();
-                if ( $ma && method_exists( $ma, 'is_member' ) && $ma->is_member( $user_id ) ) {
-                    return true;
-                }
-            }
+            $flow_for_member = (string) ( $context['flow_id'] ?? '' );
             if ( function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'sale' ) ) {
                 $sale = flosc()->sale();
                 if ( $sale && method_exists( $sale, 'access' ) ) {
                     $access = $sale->access();
-                    if ( $access && method_exists( $access, 'is_member' ) && $access->is_member( $user_id ) ) {
+                    if ( $access && method_exists( $access, 'is_member' ) && $access->is_member( $user_id, $flow_for_member ) ) {
                         return true;
                     }
-                    if ( $access && method_exists( $access, 'get_simple_state' )
-                        && $access->get_simple_state( $user_id ) === 'member' ) {
-                        return true;
-                    }
+                }
+            }
+            if ( class_exists( 'FLOSC_Member_Access' ) ) {
+                $ma = FLOSC_Member_Access::instance();
+                if ( $ma && method_exists( $ma, 'is_member' ) && $ma->is_member( $user_id, $flow_for_member ) ) {
+                    return true;
                 }
             }
         }

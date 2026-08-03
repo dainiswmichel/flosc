@@ -532,12 +532,28 @@ class FLOSC_Condition_Evaluator {
                 $context['free_lessons_count'] = $context['free_lesson_number'] ? 1 : 0;
             }
             
-            // v1.6.2: Set access_level for is_guest/is_visitor/is_member condition evaluation.
-            // Meta is stored as the string 'true'/'false'; compare explicitly so a
-            // revoked member (stored 'false') is not treated as a member — (bool) 'false'
-            // would be true. Mirrors flosc.php determine phase / IVR permission checks.
-            $has_member_access = ('true' === get_user_meta($user_id, '_flosc_member_access', true));
-            $context['access_level'] = $has_member_access ? 'member' : 'guest';
+            // Per-flow access_level for is_guest / is_visitor / is_member.
+            // Global _flosc_member_access alone must not make a LeSAEp member a
+            // member on flosc.ai / Br3nda.
+            $flow_for_level = (string) ($context['flow_id'] ?? '');
+            if ($flow_for_level === '' && function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'get_current_flow')) {
+                $cf = flosc()->get_current_flow();
+                if (is_array($cf)) {
+                    $flow_for_level = (string) ($cf['ivr_file'] ?? $cf['ivr'] ?? $cf['id'] ?? '');
+                }
+            }
+            $context['access_level'] = 'guest';
+            if (function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'sale')) {
+                $sale = flosc()->sale();
+                if ($sale && method_exists($sale, 'access')) {
+                    $acc = $sale->access();
+                    if ($acc && method_exists($acc, 'get_simple_state')) {
+                        $context['access_level'] = $acc->get_simple_state($user_id, $flow_for_level);
+                    }
+                }
+            } elseif (class_exists('FLOSC_Member_Access')) {
+                $context['access_level'] = FLOSC_Member_Access::instance()->get_access_level($user_id, $flow_for_level);
+            }
             
             // v1.0.4: Populate bridge data context (TASK-009)
             if (class_exists('FLOSC_Bridge_Data_Manager')) {

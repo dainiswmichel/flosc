@@ -194,6 +194,12 @@ class OAuth2_Handler {
         header('Cache-Control: no-store, no-cache, must-revalidate, private');
         nocache_headers();
         
+        // Only store allowlisted redirects (never arbitrary attacker-controlled hosts).
+        $redirect_to = is_string($redirect_to) ? $redirect_to : '';
+        if ($redirect_to !== '' && !$this->is_allowed_sso_redirect($redirect_to, $flow_id)) {
+            $redirect_to = '';
+        }
+
         // Generate state for CSRF protection
         // v1.4.9: Include flow_id in state for per-flow credential loading on callback
         $state = $this->generate_state($provider_id, $redirect_to, $flow_id);
@@ -427,6 +433,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
         }
         
         // ── SUCCESS — redirect user back to origin ──
+        $flow_id_for_redirect = sanitize_key((string) ($state_data['flow_id'] ?? ''));
         $redirect_to = !empty($state_data['redirect_to']) ? $state_data['redirect_to'] : $app_url;
         
         // If redirect_to is a wp-login.php URL, extract the inner redirect_to
@@ -451,22 +458,164 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
                 }
             }
         }
+
+        // Fail closed: unapproved redirect_to never receives a login token or redirect.
+        if (!$this->is_allowed_sso_redirect($redirect_to, $flow_id_for_redirect)) {
+            $fallback = is_string($app_url) && $app_url !== '' ? $app_url : home_url('/');
+            if (!$this->is_allowed_sso_redirect($fallback, $flow_id_for_redirect)) {
+                $fallback = home_url('/');
+            }
+            $redirect_to = $fallback;
+        }
         
-        // Cross-domain login token: auth cookie is set on dainis.net (callback domain).
-        // It won't travel to lesaep.com. Append a one-time token that lesaep.com
-        // redeems on arrival (handle_login_token in flosc.php).
+        // Cross-domain login token: only on allowlisted hosts (never arbitrary external).
         $callback_host = strtolower(sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'] ?? '')));
-        $redirect_host = strtolower(wp_parse_url($redirect_to, PHP_URL_HOST) ?? '');
-        if ($redirect_host && $callback_host && $redirect_host !== $callback_host) {
+        $redirect_host = strtolower((string) (wp_parse_url($redirect_to, PHP_URL_HOST) ?? ''));
+        if ($redirect_host && $callback_host && $redirect_host !== $callback_host
+            && $this->is_allowed_sso_redirect($redirect_to, $flow_id_for_redirect)
+        ) {
             $token = $this->generate_login_token($result);
             $redirect_to = add_query_arg('flosc_login_token', $token, $redirect_to);
         }
 
         $redirect_to = add_query_arg('flosc_sso_success', '1', $redirect_to);
-        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Success — redirecting to: ' . $redirect_to);
-        // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- redirect target validated and may be cross-domain app URL
-        wp_redirect($redirect_to); // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- redirect target validated and may be cross-domain app URL
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            flosc_log('[FLOSC SSO] Success — redirecting to: ' . $redirect_to);
+        }
+
+        $home_host = strtolower((string) (wp_parse_url(home_url('/'), PHP_URL_HOST) ?? ''));
+        if ($redirect_host === '' || $redirect_host === $home_host || $redirect_host === $callback_host) {
+            wp_safe_redirect($redirect_to);
+        } else {
+            // Cross-domain but allowlisted FLOSC app origin only.
+            // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- host allowlisted via is_allowed_sso_redirect()
+            wp_redirect($redirect_to);
+        }
         exit;
+    }
+
+    /**
+     * Whether a post-SSO redirect URL is an approved FLOSC / site origin.
+     *
+     * Allows: same-origin WP, configured custom domains / app URLs, flow SSO
+     * post-login redirect hosts. Rejects: javascript:, data:, empty, unconfigured hosts.
+     *
+     * @param string $url     Candidate redirect URL.
+     * @param string $flow_id Optional flow context for domain settings.
+     * @return bool
+     */
+    private function is_allowed_sso_redirect($url, $flow_id = '') {
+        $url = trim((string) $url);
+        if ($url === '') {
+            return false;
+        }
+        // Protocol-relative and dangerous schemes.
+        $lower = strtolower($url);
+        if (strpos($lower, 'javascript:') === 0 || strpos($lower, 'data:') === 0
+            || strpos($lower, 'vbscript:') === 0
+        ) {
+            return false;
+        }
+        if (strpos($url, '//') === 0) {
+            return false;
+        }
+
+        // Relative path → same origin (safe).
+        if (isset($url[0]) && $url[0] === '/' && (!isset($url[1]) || $url[1] !== '/')) {
+            return true;
+        }
+
+        $parsed = wp_parse_url($url);
+        if (!is_array($parsed) || empty($parsed['host'])) {
+            return false;
+        }
+        $scheme = strtolower((string) ($parsed['scheme'] ?? ''));
+        if ($scheme !== 'https' && $scheme !== 'http') {
+            return false;
+        }
+        // Production preference: allow http only for localhost.
+        $host = strtolower((string) $parsed['host']);
+        if ($scheme === 'http' && $host !== 'localhost' && $host !== '127.0.0.1') {
+            // Still allow if site itself is http (local/dev).
+            $site_scheme = strtolower((string) (wp_parse_url(home_url('/'), PHP_URL_SCHEME) ?? 'https'));
+            if ($site_scheme !== 'http') {
+                return false;
+            }
+        }
+
+        $allowed_hosts = $this->get_allowed_sso_redirect_hosts($flow_id);
+        return in_array($host, $allowed_hosts, true);
+    }
+
+    /**
+     * Build allowlist of hosts for SSO redirects + login-token attachment.
+     *
+     * @param string $flow_id Optional flow id.
+     * @return string[] Lowercase hosts.
+     */
+    private function get_allowed_sso_redirect_hosts($flow_id = '') {
+        $hosts = [];
+        $add = static function ($url_or_host) use (&$hosts) {
+            $url_or_host = trim((string) $url_or_host);
+            if ($url_or_host === '') {
+                return;
+            }
+            if (strpos($url_or_host, '://') === false) {
+                $host = strtolower(preg_replace('#^www\.#', '', $url_or_host));
+            } else {
+                $host = strtolower((string) (wp_parse_url($url_or_host, PHP_URL_HOST) ?? ''));
+            }
+            $host = preg_replace('#^www\.#', '', $host);
+            if ($host !== '') {
+                $hosts[$host] = true;
+            }
+        };
+
+        $add(home_url('/'));
+        $add(site_url('/'));
+        $add(admin_url('/'));
+        $add(rest_url('/'));
+        $add(get_option('flosc_custom_domain', ''));
+
+        if (function_exists('flosc')) {
+            $app = flosc()->get_app_url();
+            if (is_string($app) && $app !== '') {
+                $add($app);
+            }
+        }
+
+        // Current request host (callback domain, e.g. dainis.net).
+        if (!empty($_SERVER['HTTP_HOST'])) {
+            $add(sanitize_text_field(wp_unslash((string) $_SERVER['HTTP_HOST'])));
+        }
+
+        // Flow-scoped allowlist only: the current flow's configured domains/app URLs.
+        // This prevents one flow's configured redirect host from implicitly approving
+        // a different flow's post-login target.
+        if ($flow_id !== '') {
+            $settings = get_option('flosc_flow_' . sanitize_key($flow_id), []);
+            if (is_array($settings)) {
+                foreach (['domain', 'custom_domain', 'sso_post_login_redirect_url', 'app_url'] as $field) {
+                    if (!empty($settings[$field])) {
+                        $add($settings[$field]);
+                    }
+                }
+            }
+
+            $resolved_app_url = $this->resolve_app_url_from_flow_id($flow_id);
+            if (is_string($resolved_app_url) && $resolved_app_url !== '') {
+                $add($resolved_app_url);
+            }
+        }
+
+        /**
+         * Filter allowed SSO redirect hosts (lowercase hostnames only).
+         *
+         * @param string[] $hosts Hostnames.
+         * @param string   $flow_id Flow id.
+         */
+        $hosts = apply_filters('flosc_sso_allowed_redirect_hosts', array_keys($hosts), $flow_id);
+        return array_values(array_unique(array_map('strtolower', (array) $hosts)));
     }
     
     /**
@@ -590,13 +739,29 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
             $state_data = get_option($transient_key);
         }
         
-        if (!$state_data) {
-    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] State verification FAILED for key ' . $transient_key);
+        if (!$state_data || !is_array($state_data)) {
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                flosc_log('[FLOSC SSO] State verification FAILED for key ' . $transient_key);
+            }
             return false;
         }
-    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] State verification SUCCESS for provider: ' . ($state_data['provider'] ?? 'unknown'));
+
+        // Enforce absolute expiry even when options-table fallback outlives the transient.
+        $ts = isset($state_data['timestamp']) ? (int) $state_data['timestamp'] : 0;
+        if ($ts <= 0 || (time() - $ts) > self::STATE_EXPIRATION) {
+            delete_transient($transient_key);
+            delete_option($transient_key);
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                flosc_log('[FLOSC SSO] State expired (timestamp check) for key ' . $transient_key);
+            }
+            return false;
+        }
+
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            flosc_log('[FLOSC SSO] State verification SUCCESS for provider: ' . ($state_data['provider'] ?? 'unknown'));
+        }
         
-        // Delete used state (one-time use)
+        // Delete used state (one-time use) — prevent replay via option fallback.
         delete_transient($transient_key);
         delete_option($transient_key);
         
@@ -647,13 +812,20 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
             $existing_user = get_user_by('email', $email);
             
             if ($existing_user) {
-                // Auto-link if email matches and is verified
-                if (!empty($user_data['email_verified']) || apply_filters('flosc_sso_auto_link_email', true, $provider->get_id())) {
+                // Auto-link only when provider asserts email_verified, unless site explicitly allows unverified.
+                $email_verified = !empty($user_data['email_verified']);
+                $allow_unverified = (bool) apply_filters('flosc_sso_auto_link_unverified_email', false, $provider->get_id());
+                // Legacy filter name: if site set flosc_sso_auto_link_email to false, never auto-link.
+                if (false === apply_filters('flosc_sso_auto_link_email', true, $provider->get_id())) {
+                    $email_verified = false;
+                    $allow_unverified = false;
+                }
+                if ($email_verified || $allow_unverified) {
                     $linker->link_account($existing_user->ID, $provider->get_id(), $user_data, $token_data);
                     $this->log_user_in($existing_user->ID);
-                    
+
                     do_action('flosc_sso_account_auto_linked', $existing_user->ID, $provider->get_id(), $user_data);
-                    
+
                     return $existing_user->ID;
                 }
                 
@@ -739,15 +911,24 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
                 $redirect_to = flosc()->get_app_url();
             }
         }
-        $base_url = !empty($redirect_to) ? $redirect_to : home_url();
+        $base_url = !empty($redirect_to) ? $redirect_to : home_url('/');
+        if (!$this->is_allowed_sso_redirect($base_url, '')) {
+            $base_url = home_url('/');
+        }
         
         $redirect_url = add_query_arg(
             array('flosc_sso_error' => $error_token),
             $base_url
         );
-        
-        // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- error redirect may target validated custom app domain
-        wp_redirect($redirect_url); // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- error redirect may target validated custom app domain
+
+        $base_host = strtolower((string) (wp_parse_url($redirect_url, PHP_URL_HOST) ?? ''));
+        $home_host = strtolower((string) (wp_parse_url(home_url('/'), PHP_URL_HOST) ?? ''));
+        if ($base_host === '' || $base_host === $home_host) {
+            wp_safe_redirect($redirect_url);
+        } else {
+            // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- host allowlisted via is_allowed_sso_redirect()
+            wp_redirect($redirect_url);
+        }
         exit;
     }
 }

@@ -190,7 +190,7 @@ class FLOSC_Offer_Manager {
         // Primary source: per-flow DB messages (what IVR Messages tab is editing).
         $flow_key = 'flosc_flow_' . sanitize_key($flow_id);
         $flow_settings = get_option($flow_key, []);
-        $db_messages = $flow_settings['ivr_messages'] ?? [];
+        $db_messages = flosc_flow_get_messages($flow_settings);
         if (is_array($db_messages) && !empty($db_messages)) {
             $messages = $db_messages;
         }

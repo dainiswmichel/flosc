@@ -434,6 +434,24 @@ class SSO_Manager {
                         'sanitize_callback' => array($this, 'sanitize_textarea_setting'),
                         'default'           => $field['default'] ?? '',
                     );
+                } elseif ($field_type === 'password') {
+                    // Client secrets: unslash only — sanitize_text_field can alter secret alphabets.
+                    // Blank field on re-save keeps the existing secret.
+                    $option_name = $field['id'];
+                    $setting_args = array(
+                        'type'              => 'string',
+                        'sanitize_callback' => function ($value) use ($option_name) {
+                            if (!is_string($value)) {
+                                return (string) get_option($option_name, '');
+                            }
+                            $value = wp_unslash($value);
+                            if ('' === $value) {
+                                return (string) get_option($option_name, '');
+                            }
+                            return $value;
+                        },
+                        'default'           => $field['default'] ?? '',
+                    );
                 } else {
                     $setting_args = array(
                         'type'              => 'string',
@@ -484,6 +502,21 @@ class SSO_Manager {
      */
     public function sanitize_checkbox_setting($value) {
         return !empty($value) ? 1 : 0;
+    }
+
+    /**
+     * Pass-through sanitizer for OAuth client secrets and similar credentials.
+     *
+     * @param mixed $value Raw submitted value.
+     * @return string
+     */
+    public function sanitize_secret_setting($value) {
+        // Used only as a fallback; register_settings() wraps secrets so empty
+        // form fields keep the stored OAuth client secret.
+        if (!is_string($value)) {
+            return '';
+        }
+        return wp_unslash($value);
     }
     
     /**

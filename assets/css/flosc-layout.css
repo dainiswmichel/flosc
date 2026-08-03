@@ -511,7 +511,15 @@ html, body {
     min-height: 70px;
 }
 
-/* data-show visibility: visitor content vs logged-in content (cascade, no !important) */
+/* data-show visibility: visitor content vs logged-in content (cascade, no !important).
+ * Specificity MUST beat .flosc-app .user-profile-bar img.flosc-profile-avatar { display:block }
+ * or visitor gets 👋 + blue empty #flosc_profile_avatar square (double icon). */
+.flosc-app[data-user-state="visitor"] .user-profile-bar [data-show="logged-in"],
+.flosc-app[data-user-state="visitor"] .user-profile-bar img#flosc_profile_avatar,
+.flosc-app[data-user-state="visitor"] .user-profile-bar #flosc_profile_avatar_icon,
+.flosc-app[data-user-state="visitor"] .user-profile-bar img.flosc-profile-avatar[data-show="logged-in"],
+.flosc-app[data-user-state="guest"] .user-profile-bar [data-show="visitor"],
+.flosc-app[data-user-state="member"] .user-profile-bar [data-show="visitor"],
 [data-user-state="visitor"] [data-show="logged-in"],
 [data-user-state="guest"] [data-show="visitor"],
 [data-user-state="member"] [data-show="visitor"] {
@@ -519,10 +527,52 @@ html, body {
 }
 
 /* Shown branch: block so <img> avatars size correctly (not inline). */
+.flosc-app[data-user-state="visitor"] .user-profile-bar [data-show="visitor"],
+.flosc-app[data-user-state="guest"] .user-profile-bar [data-show="logged-in"],
+.flosc-app[data-user-state="member"] .user-profile-bar [data-show="logged-in"],
 [data-user-state="visitor"] [data-show="visitor"],
 [data-user-state="guest"] [data-show="logged-in"],
 [data-user-state="member"] [data-show="logged-in"] {
     display: block;
+}
+
+/* Visitor avatar is a flex box (emoji / optional image), not a block img shell. */
+.flosc-app[data-user-state="visitor"] .user-profile-bar .visitor-avatar[data-show="visitor"] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: transparent;
+    color: inherit;
+    box-shadow: none;
+}
+
+.flosc-app[data-user-state="visitor"] .user-profile-bar .visitor-avatar .flosc-visitor-avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 20px;
+    line-height: 1;
+}
+
+/* Optional visitor icon_url: covers fallback only when the image loads. */
+.flosc-app[data-user-state="visitor"] .user-profile-bar .visitor-avatar img.flosc-visitor-avatar-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+    background: transparent;
+    display: block;
+}
+
+/* Broken visitor image: hide tile so only emoji shows — never emoji + blue square. */
+.flosc-app[data-user-state="visitor"] .user-profile-bar .visitor-avatar.is-image-failed img.flosc-visitor-avatar-img,
+.flosc-app[data-user-state="visitor"] .user-profile-bar .visitor-avatar img.flosc-visitor-avatar-img[data-failed="1"] {
+    display: none;
 }
 
 /* Upgrade container: guest only */
@@ -585,16 +635,29 @@ html, body {
     display: block;
 }
 
+/* .flosc-hidden must beat the img display:block rule above (never show both tiles). */
+.flosc-app .user-profile-bar .flosc-profile-avatar.flosc-hidden,
+.flosc-app .user-profile-bar img.flosc-profile-avatar.flosc-hidden,
+.flosc-app .user-profile-bar #flosc_profile_avatar.flosc-hidden,
+.flosc-app .user-profile-bar #flosc_profile_avatar_icon.flosc-hidden {
+    display: none;
+}
+
 /* Logged-in avatar: show icon OR image, never both */
 .user-profile-bar #flosc_profile_avatar_icon[data-flosc-display]:not(.flosc-hidden) ~ #flosc_profile_avatar,
 .user-profile-bar #flosc_profile_avatar_icon.flosc-visible-flex ~ #flosc_profile_avatar,
-.user-profile-bar #flosc_profile_avatar_icon.flosc-visible ~ #flosc_profile_avatar {
+.user-profile-bar #flosc_profile_avatar_icon.flosc-visible ~ #flosc_profile_avatar,
+.flosc-app .user-profile-bar #flosc_profile_avatar_icon[data-flosc-display]:not(.flosc-hidden) ~ #flosc_profile_avatar {
     display: none;
 }
 
 /*
  * Double-icon flash fix: hide both avatar nodes until setDisplayState marks one.
  */
+.flosc-app[data-user-state="guest"] .user-profile-bar #flosc_profile_avatar:not([data-flosc-display]):not(.flosc-visible),
+.flosc-app[data-user-state="member"] .user-profile-bar #flosc_profile_avatar:not([data-flosc-display]):not(.flosc-visible),
+.flosc-app[data-user-state="guest"] .user-profile-bar #flosc_profile_avatar_icon:not([data-flosc-display]):not(.flosc-visible):not(.flosc-visible-flex),
+.flosc-app[data-user-state="member"] .user-profile-bar #flosc_profile_avatar_icon:not([data-flosc-display]):not(.flosc-visible):not(.flosc-visible-flex),
 [data-user-state="guest"] .user-profile-bar #flosc_profile_avatar:not([data-flosc-display]):not(.flosc-visible),
 [data-user-state="member"] .user-profile-bar #flosc_profile_avatar:not([data-flosc-display]):not(.flosc-visible),
 [data-user-state="guest"] .user-profile-bar #flosc_profile_avatar_icon:not([data-flosc-display]):not(.flosc-visible):not(.flosc-visible-flex),

@@ -36,24 +36,51 @@ class FLOSC_Member_Access {
     }
     
     /**
-     * Check if user is a member (has purchased)
-     * 
-     * @param int $user_id
+     * Check if user is a member (optionally for one flow only).
+     *
+     * Prefer FLOSC_Access_Manager when available so UI, tokens, and IVR share one rule.
+     *
+     * @param int         $user_id
+     * @param string|null $flow_id Flow id / ivr / stem. Null = current flow when possible.
      * @return bool
      */
-    public function is_member($user_id) {
-        
+    public function is_member($user_id, $flow_id = null) {
         if (!$user_id) {
             return false;
         }
-        
+
         // v8.1.0: WordPress admins are always members (for testing all content)
         if (user_can($user_id, 'manage_options')) {
             return true;
         }
-        
+
+        if (function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'sale')) {
+            $sale = flosc()->sale();
+            if ($sale && method_exists($sale, 'access')) {
+                $access = $sale->access();
+                if ($access && method_exists($access, 'is_member')) {
+                    return (bool) $access->is_member($user_id, $flow_id);
+                }
+            }
+        }
+
+        // Fallback without sale manager: per-flow flag, else legacy global.
+        $stem = '';
+        if ($flow_id !== null && $flow_id !== '') {
+            $stem = sanitize_key(pathinfo(basename((string) $flow_id), PATHINFO_FILENAME));
+            if ($stem === '') {
+                $stem = sanitize_key((string) $flow_id);
+            }
+        }
+        if ($stem !== '') {
+            $flag = get_user_meta($user_id, '_flosc_member_access_' . $stem, true);
+            if ($flag === 'true' || $flag === true || $flag === '1' || $flag === 'yes') {
+                return true;
+            }
+            return false;
+        }
+
         $member_status = get_user_meta($user_id, '_flosc_member_access', true);
-        
         return $member_status === 'true' || $member_status === true || $member_status === '1';
     }
     
@@ -61,15 +88,39 @@ class FLOSC_Member_Access {
      * Grant member access after purchase
      * 
      * @param int $user_id
-     * @param array $purchase_data Contains offer_id, grants_level, etc.
+     * @param array $purchase_data Contains offer_id, grants_level, flow_id, etc.
      */
     public function grant_member_access($user_id, $purchase_data = []) {
-        
+        $purchase_data = is_array($purchase_data) ? $purchase_data : [];
+
+        // Legacy global flag (admin lists, older readers). Not sufficient alone for UI state.
         update_user_meta($user_id, '_flosc_member_access', 'true');
         update_user_meta($user_id, '_flosc_member_since', time());
         update_user_meta($user_id, '_flosc_purchase_data', $purchase_data);
-        
-        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: Granted member access to user {$user_id}");
+
+        // Per-flow membership — required for multi-flow (LeSAEp member ≠ flosc.ai member).
+        $flow_raw = (string) ($purchase_data['flow_id'] ?? '');
+        if ($flow_raw === '' && function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'get_current_flow')) {
+            $flow = flosc()->get_current_flow();
+            if (is_array($flow)) {
+                $flow_raw = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '');
+            }
+        }
+        $stem = sanitize_key(pathinfo(basename($flow_raw), PATHINFO_FILENAME));
+        if ($stem === '' && $flow_raw !== '') {
+            $stem = sanitize_key($flow_raw);
+        }
+        if ($stem !== '') {
+            update_user_meta($user_id, '_flosc_member_access_' . $stem, 'true');
+            update_user_meta($user_id, '_flosc_member_access_' . $stem . '_since', time());
+            if (empty($purchase_data['flow_id'])) {
+                $purchase_data['flow_id'] = $stem;
+            }
+        }
+
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            flosc_log("FLOSC: Granted member access to user {$user_id}" . ($stem !== '' ? " flow={$stem}" : ''));
+        }
         
         // Grant specific membership level if offer specifies one (v1.0.1)
         if (!empty($purchase_data['grants_level'])) {
@@ -90,25 +141,22 @@ class FLOSC_Member_Access {
     }
     
     /**
-     * Get user's access level
-     * 
-     * @param int $user_id
+     * Get user's access level for a flow.
+     *
+     * @param int         $user_id
+     * @param string|null $flow_id
      * @return string 'visitor', 'guest', or 'member'
      */
-    public function get_access_level($user_id) {
-        
-        // Check if member
-        if ($this->is_member($user_id)) {
+    public function get_access_level($user_id, $flow_id = null) {
+        if (!$user_id) {
+            return 'visitor';
+        }
+
+        if ($this->is_member($user_id, $flow_id)) {
             return 'member';
         }
-        
-        // Check if logged in (guest)
-        if ($user_id && is_user_logged_in()) {
-            return 'guest';
-        }
-        
-        // Not logged in (visitor)
-        return 'visitor';
+
+        return 'guest';
     }
     
     /**

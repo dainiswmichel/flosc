@@ -289,16 +289,16 @@ trait FLOSC_Admin_Trait {
             'flosc_account_plan',
             'flosc_account_purchases_manual',
             'flosc_ai_provider',
-            'flosc_openai_api_key',
-            'flosc_anthropic_api_key',
-            'flosc_xai_api_key',
+            'flosc_openai_api_key' => 'secret',
+            'flosc_anthropic_api_key' => 'secret',
+            'flosc_xai_api_key' => 'secret',
             'flosc_ai_openai_model',
             'flosc_ai_anthropic_model',
             'flosc_ai_xai_model',
             'flosc_ai_temperature',
             'flosc_ai_max_tokens',
             'flosc_stt_provider',
-            'flosc_assemblyai_api_key',
+            'flosc_assemblyai_api_key' => 'secret',
             'flosc_custom_stt_endpoint',
             'flosc_buddyboss_group_id',
             'flosc_lessons_category',
@@ -310,18 +310,19 @@ trait FLOSC_Admin_Trait {
             'flosc_stripe_enabled',
             'flosc_stripe_mode',
             'flosc_stripe_test_pk',
-            'flosc_stripe_test_sk',
+            'flosc_stripe_test_sk' => 'secret',
             'flosc_stripe_live_pk',
-            'flosc_stripe_live_sk',
+            'flosc_stripe_live_sk' => 'secret',
             'flosc_clickbank_enabled',
             'flosc_clickbank_mode',
             'flosc_clickbank_vendor',
-            'flosc_clickbank_secret',
+            'flosc_clickbank_secret' => 'secret',
             'flosc_clickbank_product',
             'flosc_clickbank_access_level',
             'flosc_paypal_mode',
             'flosc_paypal_client_id',
-            'flosc_paypal_secret',
+            'flosc_paypal_secret' => 'secret',
+            'flosc_paypal_webhook_id',
             'flosc_chat_style_preset',
             'flosc_chat_style_bubble',
             'flosc_chat_style_font',
@@ -344,19 +345,19 @@ trait FLOSC_Admin_Trait {
             'flosc_chat_style_accent' => 'hex',
             'flosc_sso_google_enabled' => 'bool',
             'flosc_sso_google_client_id' => 'text',
-            'flosc_sso_google_client_secret' => 'text',
+            'flosc_sso_google_client_secret' => 'secret',
             'flosc_sso_apple_enabled' => 'bool',
             'flosc_sso_apple_client_id' => 'text',
-            'flosc_sso_apple_client_secret' => 'text',
+            'flosc_sso_apple_client_secret' => 'secret',
             'flosc_sso_facebook_enabled' => 'bool',
             'flosc_sso_facebook_client_id' => 'text',
-            'flosc_sso_facebook_client_secret' => 'text',
+            'flosc_sso_facebook_client_secret' => 'secret',
             'flosc_sso_microsoft_enabled' => 'bool',
             'flosc_sso_microsoft_client_id' => 'text',
-            'flosc_sso_microsoft_client_secret' => 'text',
+            'flosc_sso_microsoft_client_secret' => 'secret',
             'flosc_sso_linkedin_enabled' => 'bool',
             'flosc_sso_linkedin_client_id' => 'text',
-            'flosc_sso_linkedin_client_secret' => 'text',
+            'flosc_sso_linkedin_client_secret' => 'secret',
             'flosc_sso_apple_team_id' => 'text',
             'flosc_sso_apple_key_id' => 'text',
             'flosc_sso_apple_private_key' => 'textarea',
@@ -465,6 +466,19 @@ trait FLOSC_Admin_Trait {
             case 'array':
                 $sanitize_callback = array($this, 'sanitize_array_setting');
                 break;
+            case 'secret':
+                // Blank field on re-save means "keep existing secret", not wipe it.
+                $sanitize_callback = function ($value) use ($option_name) {
+                    if (!is_string($value)) {
+                        return (string) get_option($option_name, '');
+                    }
+                    $value = wp_unslash($value);
+                    if ('' === $value) {
+                        return (string) get_option($option_name, '');
+                    }
+                    return $value;
+                };
+                break;
             default:
                 $sanitize_callback = array($this, 'sanitize_text_setting');
                 break;
@@ -569,6 +583,19 @@ trait FLOSC_Admin_Trait {
         }
 
         return sanitize_text_field(wp_unslash((string) $value));
+    }
+
+    /**
+     * Pass-through for API keys and payment secrets (do not use sanitize_text_field).
+     *
+     * @param mixed $value Raw value.
+     * @return string
+     */
+    public function sanitize_secret_setting($value) {
+        if (!is_string($value)) {
+            return '';
+        }
+        return wp_unslash($value);
     }
 
     /**

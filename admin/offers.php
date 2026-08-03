@@ -823,6 +823,32 @@ document.addEventListener('click', function(e) {
 document.addEventListener('DOMContentLoaded', function() {
     const open = document.querySelector('.flosc-offer-card.is-open');
     if (open) open.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    document.querySelectorAll('form').forEach(function(form) {
+        var src = form.querySelector('[data-flosc-offer-token-source]');
+        if (!src) return;
+
+        var offer = src.getAttribute('data-flosc-offer');
+        var custom = form.querySelector('[data-flosc-offer-token-custom="' + offer + '"]');
+        var capMode = form.querySelector('[data-flosc-offer-token-cap-mode]');
+        var capInput = form.querySelector('[data-flosc-offer-token-cap-input="' + offer + '"]');
+
+        function syncSource() {
+            if (custom) custom.classList.toggle('flosc-is-disabled', src.value !== 'custom');
+        }
+
+        function syncCap() {
+            if (capInput) capInput.classList.toggle('flosc-is-disabled', !capMode || capMode.value !== 'custom');
+        }
+
+        src.addEventListener('change', syncSource);
+        if (capMode) {
+            capMode.addEventListener('change', syncCap);
+        }
+
+        syncSource();
+        syncCap();
+    });
 });
 <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
 
@@ -1625,33 +1651,6 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
             <a class="button" href="<?php echo esc_url($token_home_url); ?>">Token Management</a>
         </div>
     </form>
-    <script>
-    (function () {
-        var root = document.currentScript && document.currentScript.previousElementSibling;
-        // Bind within this editor form only.
-        var form = document.currentScript ? document.currentScript.previousElementSibling : null;
-        if (!form || form.tagName !== 'FORM') {
-            form = document.querySelector('.flosc-offer-card.is-open form') || document.querySelector('#offer-<?php echo esc_js($flosc_safe_id); ?> form');
-        }
-        if (!form) return;
-        var src = form.querySelector('[data-flosc-offer-token-source]');
-        if (!src) return;
-        var offer = src.getAttribute('data-flosc-offer');
-        var custom = form.querySelector('[data-flosc-offer-token-custom="' + offer + '"]');
-        var capMode = form.querySelector('[data-flosc-offer-token-cap-mode]');
-        var capInput = form.querySelector('[data-flosc-offer-token-cap-input="' + offer + '"]');
-        function syncSource() {
-            if (custom) custom.classList.toggle('flosc-is-disabled', src.value !== 'custom');
-        }
-        function syncCap() {
-            if (capInput) capInput.classList.toggle('flosc-is-disabled', !capMode || capMode.value !== 'custom');
-        }
-        src.addEventListener('change', syncSource);
-        if (capMode) capMode.addEventListener('change', syncCap);
-        syncSource();
-        syncCap();
-    })();
-    </script>
 <?php } ?>
 
 <form method="post" action="options.php">

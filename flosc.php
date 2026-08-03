@@ -136,6 +136,64 @@ if (!function_exists('flosc_write_data_file')) {
     }
 }
 
+if (!function_exists('flosc_data_file_path')) {
+    /**
+     * Build an absolute path under flosc_data_dir() for a basename only.
+     * Returns '' if uploads data dir is unavailable or the name is empty after cleanup.
+     *
+     * @param string $filename File name (path segments stripped).
+     * @return string Absolute path or ''.
+     */
+    function flosc_data_file_path($filename) {
+        $base = flosc_data_dir();
+        if ('' === $base) {
+            return '';
+        }
+        $name = basename(sanitize_file_name((string) $filename));
+        if ('' === $name || '.' === $name || '..' === $name) {
+            return '';
+        }
+        return $base . $name;
+    }
+}
+
+if (!function_exists('flosc_is_allowed_ivr_source_path')) {
+    /**
+     * True when $path realpath is under uploads flosc data dir or shipped plugin IVR folder.
+     * Used before reading markdown for import so callers cannot pass arbitrary filesystem paths.
+     *
+     * @param string $path Absolute or relative path.
+     * @return bool
+     */
+    function flosc_is_allowed_ivr_source_path($path) {
+        if (!is_string($path) || '' === $path) {
+            return false;
+        }
+        $real = realpath($path);
+        if (false === $real || !is_file($real)) {
+            return false;
+        }
+        $allowed_roots = array();
+        $data_dir = flosc_data_dir();
+        if ('' !== $data_dir) {
+            $data_real = realpath($data_dir);
+            if (false !== $data_real) {
+                $allowed_roots[] = trailingslashit($data_real);
+            }
+        }
+        $plugin_ivr = realpath(FLOSC_PLUGIN_DIR . 'ai_configuration_files');
+        if (false !== $plugin_ivr) {
+            $allowed_roots[] = trailingslashit($plugin_ivr);
+        }
+        foreach ($allowed_roots as $root) {
+            if (0 === strpos($real, $root)) {
+                return true;
+            }
+        }
+        return false;
+    }
+}
+
 /* =============================================================================
  * Per-flow Knowledge Base directory
  * -----------------------------------------------------------------------------
@@ -570,8 +628,20 @@ if (!get_option('flosc_ivr_reparse_800')) {
                     }
                 }
                 $fs['autoprompts'] = $pills;
-                $fs['ivr_messages'] = $messages;
-                $fs['ivr_phases']   = $config['phases'] ?? [];
+                // Runtime lists: flow_messages / flow_phases / flow_styles only.
+                if (function_exists('flosc_flow_set_runtime')) {
+                    flosc_flow_set_runtime(
+                        $fs,
+                        $messages,
+                        $config['phases'] ?? [],
+                        $config['styles'] ?? []
+                    );
+                } else {
+                    $fs['flow_messages'] = $messages;
+                    $fs['flow_phases']   = $config['phases'] ?? [];
+                    $fs['flow_styles']   = $config['styles'] ?? [];
+                    unset($fs['ivr_messages'], $fs['ivr_phases'], $fs['ivr_styles']);
+                }
                 update_option($key, $fs);
             }
         }
@@ -589,6 +659,10 @@ require_once FLOSC_PLUGIN_DIR . 'includes/flosc-rest.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-admin.php';
 require_once FLOSC_PLUGIN_DIR . 'admin/settings-helper.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/traits/class-flosc-visitor-token-trait.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/traits/class-flosc-magic-link-trait.php';
+// WordPress.org package: define('FLOSC_ENABLE_MAGIC_ACCESS_LINKS', false) in wp-config.php
+// (or filter flosc_enable_magic_access_links) to shelve guest MagicLink without deleting code.
+
 
 /**
  * Main FLOSC Framework Class
@@ -597,6 +671,7 @@ class FLOSC_Framework {
     use FLOSC_REST_Trait;
     use FLOSC_Admin_Trait;
     use FLOSC_Visitor_Token_Trait;
+    use FLOSC_Magic_Link_Trait;
     
     private static $instance = null;
     
@@ -715,6 +790,28 @@ class FLOSC_Framework {
      * Write file contents through WP_Filesystem when available.
      */
     private function write_file_safely($path, $content) {
+        if (!is_string($path) || '' === $path) {
+            return false;
+        }
+
+        // Writes only under wp-content/uploads (visitor temp audio, user audio, etc.).
+        $uploads = wp_upload_dir();
+        if (!empty($uploads['error']) || empty($uploads['basedir'])) {
+            return false;
+        }
+        $base_real = realpath($uploads['basedir']);
+        $parent    = dirname($path);
+        if (!is_dir($parent)) {
+            wp_mkdir_p($parent);
+        }
+        $dir_real = realpath($parent);
+        if (false === $base_real || false === $dir_real) {
+            return false;
+        }
+        if (0 !== strpos(trailingslashit($dir_real), trailingslashit($base_real))) {
+            return false;
+        }
+
         $filesystem = $this->get_wp_filesystem();
         if ($filesystem && method_exists($filesystem, 'put_contents')) {
             return (bool) $filesystem->put_contents($path, $content, FS_CHMOD_FILE);
@@ -1098,6 +1195,11 @@ class FLOSC_Framework {
         add_action('admin_post_flosc_guest_request_approve_send', [$this, 'handle_guest_request_approve_send']);
         add_action('admin_post_flosc_guest_request_deny_block', [$this, 'handle_guest_request_deny_block']);
         add_action('admin_post_flosc_guest_request_delete', [$this, 'handle_guest_request_delete']);
+        add_action('show_user_profile', [$this, 'render_email_account_status_profile']);
+        add_action('edit_user_profile', [$this, 'render_email_account_status_profile']);
+        add_action('admin_post_flosc_activate_email_account', [$this, 'handle_admin_activate_email_account']);
+        add_filter('wp_authenticate_user', [$this, 'flosc_block_pending_email_login'], 10, 2);
+
 
         // v1.9.0: Chat logs AJAX (real-time polling)
         add_action('wp_ajax_flosc_get_chat_logs', [$this, 'ajax_flosc_get_chat_logs']);
@@ -1477,19 +1579,45 @@ The Team',
     /**
      * Handle new user registration
      */
+    /**
+     * Block WP password login for pending email-registered accounts until verification.
+     *
+     * @param WP_User|WP_Error $user
+     * @param string           $password
+     * @return WP_User|WP_Error
+     */
+    public function flosc_block_pending_email_login($user, $password) {
+        if (is_wp_error($user) || !($user instanceof WP_User)) {
+            return $user;
+        }
+        $status = (string) get_user_meta($user->ID, '_flosc_email_account_status', true);
+        if ($status === 'pending') {
+            return new WP_Error(
+                'flosc_email_pending',
+                __('Please verify your email address before signing in. Check your inbox for the verification link.', 'flosc')
+            );
+        }
+        return $user;
+    }
+
     public function handle_user_registration($user_id) {
+        // Pending email registrants receive tokens only after verification/activation.
+        if (!empty($this->flosc_skip_registration_token_grants)) {
+            return;
+        }
         // Grant signup bonus tokens + flow-specific guest token baseline
         $token_provider = $this->sale_manager->get_provider('tokens');
         if ($token_provider) {
             $token_provider->grant_signup_bonus($user_id);
         }
 
-        if ($this->flosc_user_should_receive_guest_tokens($user_id)) {
-            $flow_id = sanitize_key((string) get_user_meta($user_id, '_flosc_registration_flow', true));
-            if ($flow_id === '') {
-                $current_flow = $this->get_current_flow();
-                $flow_id = sanitize_key((string) ($current_flow['ivr'] ?? ''));
-            }
+        $flow_id = sanitize_key((string) get_user_meta($user_id, '_flosc_registration_flow', true));
+        if ($flow_id === '') {
+            $current_flow = $this->get_current_flow();
+            $ivr_file = (string) ($current_flow['ivr_file'] ?? $current_flow['ivr'] ?? '');
+            $flow_id = $this->flosc_normalize_flow_stem($ivr_file !== '' ? $ivr_file : (string) ($current_flow['id'] ?? ''));
+        }
+        if ($this->flosc_user_should_receive_guest_tokens($user_id, $flow_id)) {
             $this->flosc_ensure_guest_token_baseline($user_id, $token_provider, $flow_id, 'Guest registration baseline');
         }
         
@@ -1515,16 +1643,13 @@ The Team',
      */
     public function handle_user_login($user_login, $user) {
         $token_provider = $this->sale_manager->get_provider('tokens');
-        if ($this->flosc_user_should_receive_guest_tokens($user->ID)) {
-            $flow_id = sanitize_key((string) get_user_meta($user->ID, '_flosc_registration_flow', true));
-            if ($flow_id === '') {
-                $current_flow = $this->get_current_flow();
-                $ivr_file = (string) ($current_flow['ivr_file'] ?? $current_flow['ivr'] ?? '');
-                $flow_id = sanitize_key(pathinfo(basename($ivr_file), PATHINFO_FILENAME));
-                if ($flow_id === '') {
-                    $flow_id = sanitize_key((string) ($current_flow['ivr'] ?? ''));
-                }
-            }
+        $flow_id = sanitize_key((string) get_user_meta($user->ID, '_flosc_registration_flow', true));
+        if ($flow_id === '') {
+            $current_flow = $this->get_current_flow();
+            $ivr_file = (string) ($current_flow['ivr_file'] ?? $current_flow['ivr'] ?? '');
+            $flow_id = $this->flosc_normalize_flow_stem($ivr_file !== '' ? $ivr_file : (string) ($current_flow['id'] ?? ''));
+        }
+        if ($this->flosc_user_should_receive_guest_tokens($user->ID, $flow_id)) {
             $this->flosc_ensure_guest_token_baseline($user->ID, $token_provider, $flow_id, 'Guest login baseline');
         }
 
@@ -1672,9 +1797,13 @@ The Team',
     }
 
     /**
-     * Guests are non-admin users that are not in a paid/member role.
+     * Whether this user should receive V→G guest tokens on a flow.
+     * Members of *this* flow do not; members of other flows still do.
+     *
+     * @param int    $user_id
+     * @param string $flow_id Flow id / stem for the page or request.
      */
-    private function flosc_user_should_receive_guest_tokens($user_id) {
+    private function flosc_user_should_receive_guest_tokens($user_id, $flow_id = '') {
         $user_id = absint($user_id);
         if ($user_id <= 0) {
             return false;
@@ -1685,18 +1814,15 @@ The Team',
             return false;
         }
 
-        $roles = (array) $user->roles;
-        if (in_array('administrator', $roles, true) || user_can($user_id, 'manage_options')) {
+        if (user_can($user_id, 'manage_options')) {
             return false;
         }
 
-        $member_level = sanitize_key((string) flosc_get_setting('default_member_level', 'lesaep_learners'));
-        if ($member_level === '') {
-            $member_level = 'lesaep_learners';
-        }
-
-        if (in_array($member_level, $roles, true) || in_array('lesaep_learners', $roles, true)) {
-            return false;
+        // Per-flow membership only — LeSAEp role must not block guest tokens on flosc.ai.
+        if ($this->sale_manager && method_exists($this->sale_manager, 'access')) {
+            if ($this->sale_manager->access()->is_member($user_id, $flow_id)) {
+                return false;
+            }
         }
 
         return true;
@@ -2263,71 +2389,72 @@ The Team',
     }
 
     /**
-     * Action: flosc_sso_user_created — generate magic link and send "Guest Access Link ready" email.
+     * SSO welcome email (no MagicLink).
+     * Provider login already authenticated the user; MagicLink is admin/opt-in only.
+     * Skips non-SSO registration methods (email pending flow, purchase, etc.).
      */
     public function send_sso_welcome_email($user_id, $provider_id, $user_data = []) {
+        $user_id = absint($user_id);
+        $provider_id = sanitize_key((string) $provider_id);
         $user = get_userdata($user_id);
-        if (!$user || empty($user->user_email)) return;
+        if (!$user || empty($user->user_email)) {
+            return;
+        }
+
+        // Only SSO providers. Email registration uses verify → activate → welcome-with-magic.
+        $sso_providers = array('google', 'facebook', 'apple', 'microsoft', 'linkedin');
+        $is_sso = in_array($provider_id, $sso_providers, true) || strpos($provider_id, 'sso_') === 0;
+        if (!$is_sso) {
+            return;
+        }
 
         if (!is_array($user_data)) {
-            $user_data = [];
+            $user_data = array();
         }
 
         $flow_id = sanitize_key((string) ($user_data['flow_id'] ?? get_user_meta($user_id, '_flosc_registration_flow', true)));
         $is_new_flow = $this->is_user_new_to_flow($user_id, $flow_id);
 
-        // Always track flow usage for attribution; welcome sequence only starts on first flow entry.
         if (!empty($flow_id)) {
             update_user_meta($user_id, '_flosc_registration_flow', $flow_id);
-            $this->record_user_flow_usage($user_id, $flow_id, 'sso_' . sanitize_key((string) $provider_id));
+            $this->record_user_flow_usage($user_id, $flow_id, 'sso_' . $provider_id);
         }
 
         if (!$is_new_flow) {
             return;
         }
 
+        // SSO accounts are active (provider verified session). No pending email gate.
+        update_user_meta($user_id, '_flosc_email_account_status', 'active');
+        update_user_meta($user_id, '_flosc_email_verified_at', current_time('mysql'));
+
         $context = $this->get_guest_email_context($flow_id, $user_id);
+        $chat_url = !empty($context['chat_url']) ? $context['chat_url'] : $this->get_app_url();
+        $app_name = !empty($context['app_name']) ? $context['app_name'] : 'FLOSC';
+        $team_name = !empty($context['team_name']) ? $context['team_name'] : $app_name;
+        $safe_email = esc_html($user->user_email);
+        $safe_url = esc_url($chat_url);
+        $display = $user->display_name ? $user->display_name : $user->user_login;
 
-        // Generate and store magic link for SSO user (user already exists — use active status directly)
-        $token         = wp_generate_password(32, false, false);
-        $transient_key = 'flosc_magic_' . $token;
-        $payload       = [
-            'status'          => 'active',
-            'email'           => $user->user_email,
-            'temp_id'         => '',
-            'quiz_data'       => null,
-            'session_id'      => '',
-            'flow_id'         => $flow_id,
-            'redirect_to'     => $context['chat_url'],
-            'created_at'      => time(),
-            'first_clicked_at'=> time(),
-            'use_count'       => 0,
-        ];
-        set_transient($transient_key, $payload, 30 * DAY_IN_SECONDS);
-        update_user_meta($user_id, '_flosc_magic_link_token', $token);
+        $subject_tpl = trim((string) ($context['settings']['guest_welcome_subject'] ?? 'Welcome to {app_name}'));
+        $body_tpl = trim((string) ($context['settings']['guest_welcome_body'] ?? "Hi {name}!\n\nWelcome to {app_name}!\n\nYou signed in with social login. Continue here: {chat_url}\n\n— The {team_name}"));
 
-        $magic_url      = add_query_arg('flosc_magic', rawurlencode($token), $context['chat_url']);
-        $safe_link_name = esc_html($context['link_name']);
-        $safe_email     = esc_html($user->user_email);
-        $safe_url       = esc_url($magic_url);
+        // No MagicLink for SSO: strip access-link placeholders if templates still contain them.
+        $subject = $this->replace_guest_email_placeholders($subject_tpl, $user, 30);
+        $subject = str_replace(array('{magic_url}', '{link_name}'), array($chat_url, $app_name), $subject);
 
-        $welcome_subject_tpl = trim((string) ($context['settings']['guest_welcome_subject'] ?? 'Welcome to {app_name} - your {link_name} is ready'));
-        $welcome_body_tpl = trim((string) ($context['settings']['guest_welcome_body'] ?? "Hi {name}!\n\nWelcome to {app_name}!\n\nYour {link_name} is ready.\n\nAccess link: {magic_url}\n\nContinue here: {chat_url}\n\n- The {team_name}"));
-
-        $subject = $this->replace_guest_email_placeholders($welcome_subject_tpl, $user, 30);
-        $subject = str_replace('{magic_url}', $magic_url, $subject);
-
-        $welcome_text = $this->replace_guest_email_placeholders($welcome_body_tpl, $user, 30);
-        $welcome_text = str_replace('{magic_url}', $magic_url, $welcome_text);
+        $welcome_text = $this->replace_guest_email_placeholders($body_tpl, $user, 30);
+        $welcome_text = str_replace(array('{magic_url}', '{link_name}'), array($chat_url, $app_name), $welcome_text);
+        // Remove empty "Access link:" lines if template left a bare label.
+        $welcome_text = preg_replace('/Access link:\s*\n/i', '', $welcome_text);
         $welcome_html = nl2br(esc_html($welcome_text));
 
         $body = '<!doctype html><html><body class="flosc-email-body">'
             . '<div class="flosc-email-wrap">'
             . '<div class="flosc-email-card">'
-            . '<h1 class="flosc-email-title">Your ' . $safe_link_name . ' is ready</h1>'
+            . '<h1 class="flosc-email-title">Welcome to ' . esc_html($app_name) . '</h1>'
             . '<p class="flosc-email-lead">' . $welcome_html . '</p>'
-            . '<p class="flosc-email-copy">Your link can be used up to 10 times over 30 days.</p>'
-            . '<p class="flosc-email-cta-wrap"><a class="flosc-email-cta" href="' . $safe_url . '">' . $safe_link_name . '</a></p>'
+            . '<p class="flosc-email-cta-wrap"><a class="flosc-email-cta" href="' . $safe_url . '">' . esc_html__('Continue', 'flosc') . '</a></p>'
             . '<p class="flosc-email-copy">If the button does not work, copy and paste this link into your browser:</p>'
             . '<p class="flosc-email-url"><a href="' . $safe_url . '">' . $safe_url . '</a></p>'
             . '<p class="flosc-email-foot">This message was sent to ' . $safe_email . '.</p>'
@@ -2344,7 +2471,7 @@ The Team',
             if ($flow_stem !== '') {
                 $sent_by_flow = get_user_meta($user_id, '_flosc_sso_welcome_email_sent_flows', true);
                 if (!is_array($sent_by_flow)) {
-                    $sent_by_flow = [];
+                    $sent_by_flow = array();
                 }
                 $sent_by_flow[$flow_stem] = time();
                 update_user_meta($user_id, '_flosc_sso_welcome_email_sent_flows', $sent_by_flow);
@@ -2352,7 +2479,7 @@ The Team',
                 update_user_meta($user_id, '_flosc_sso_welcome_email_sent', time());
             }
         } elseif (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC SSO: wp_mail failed for user {$user_id} ({$user->user_email})");
+            flosc_log("FLOSC SSO: wp_mail failed for user {$user_id} ({$user->user_email})");
         }
     }
 
@@ -2484,39 +2611,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC SSO: wp_mail failed 
         return $html;
     }
 
-    /**
-     * Issue (or reuse) the user's magic-link URL for a flow. Members keep a 30-day active token.
-     */
-    private function flosc_user_magic_url($user, $context, $flow_id) {
-        $token = get_user_meta($user->ID, '_flosc_magic_link_token', true);
-        if (!$token) {
-            $token = wp_generate_password(32, false, false);
-            update_user_meta($user->ID, '_flosc_magic_link_token', $token);
-        }
-        $transient_key = 'flosc_magic_' . $token;
-        $payload = get_transient($transient_key);
-        if (!is_array($payload)) {
-            $payload = [
-                'status'           => 'active',
-                'email'            => $user->user_email,
-                'temp_id'          => '',
-                'quiz_data'        => null,
-                'session_id'       => '',
-                'flow_id'          => $flow_id,
-                'redirect_to'      => $context['chat_url'],
-                'created_at'       => time(),
-                'first_clicked_at' => time(),
-                'use_count'        => 0,
-            ];
-        }
-        set_transient($transient_key, $payload, 30 * DAY_IN_SECONDS);
-        return add_query_arg('flosc_magic', rawurlencode($token), $context['chat_url']);
-    }
-
-    /**
-     * Member welcome — hooked to flosc_member_access_granted (all purchase paths). One per user per flow+level.
-     * Records the send time, which anchors the member follow-up day offsets.
-     */
     public function dispatch_member_welcome_email($user_id, $purchase_data = []) {
         $user = get_userdata($user_id);
         if (!$user || empty($user->user_email)) return;
@@ -2580,64 +2674,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC SSO: wp_mail failed 
         }
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC newsletter welcome: user {$user_id} flow {$flow_stem} sent=" . ($ok ? '1' : '0'));
     }
-
-    /**
-     * Task 5: Post-purchase single-use login token for cross-domain access.
-     * 
-     * Fires on flosc_purchase_completed (all payment methods). Generates a single-use,
-     * short-lived login token stored in a transient. The token allows immediate cross-domain
-     * login via ?flosc_login_token=TOKEN on the purchase flow's custom domain.
-     * 
-     * Separate from guest magic links: guest links are multi-use (10x/30d), post-purchase
-     * tokens are single-use to prevent shared/forwarded access after purchase.
-     * 
-     * @param int $user_id User who just purchased
-     * @param array $purchase_data Offer details from flosc_purchase_completed action
-     */
-    public function handle_purchase_completed($user_id, $purchase_data = []) {
-        $user = get_userdata($user_id);
-        if (!$user || empty($user->user_email)) return;
-        if (!is_array($purchase_data)) $purchase_data = [];
-
-        // Extract flow context
-        $flow_id = sanitize_key((string) ($purchase_data['flow_id'] ?? get_user_meta($user_id, '_flosc_registration_flow', true)));
-        if (empty($flow_id)) return; // No flow context — skip
-
-        // Generate single-use login token (not a multi-use magic link)
-        $token = wp_generate_password(32, false, false);
-        $transient_key = 'flosc_login_token_' . $token;
-        
-        // Store user_id in transient — handle_login_token (Case 1) will consume it
-        // TTL: 7 days for purchase token (longer than guest to allow delayed follow-up clicks)
-        // But because the transient is deleted on first use, it's effectively single-use
-        set_transient($transient_key, $user_id, 7 * DAY_IN_SECONDS);
-
-        // Build cross-domain login URL
-        // The login_token tells handle_login_token to skip the guest link flow (Case 0)
-        // and jump straight to cross-domain auth (Case 1)
-        $context = $this->get_guest_email_context($flow_id, $user_id);
-        $login_url = add_query_arg('flosc_login_token', rawurlencode($token), $context['chat_url']);
-        $safe_url = esc_url($login_url);
-
-        // Build email
-        $settings = is_array($context['settings'] ?? null) ? $context['settings'] : [];
-        $subject_tpl = trim((string) ($settings['purchase_confirmation_subject'] ?? 'Your {app_name} purchase is complete!'));
-        $body_tpl = trim((string) ($settings['purchase_confirmation_body'] ?? "Hi {name}!\n\nThank you for your purchase!\n\nYour access is now active. Click below to get started:\n\n{magic_url}\n\n— The {team_name}"));
-
-        $subject = $this->replace_guest_email_placeholders($subject_tpl, $user, 0);
-        $text = str_replace('{magic_url}', $login_url, $this->replace_guest_email_placeholders($body_tpl, $user, 0));
-        $body = $this->flosc_email_html_card($context, $user, $text, $login_url, 'Access Now');
-
-        $ok = wp_mail($user->user_email, $subject, $body, $this->get_flosc_mail_headers($flow_id, $user_id, true));
-        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-            flosc_log("FLOSC post-purchase login token: user {$user_id} flow {$flow_id} token=" . substr($token, 0, 8) . "... sent=" . ($ok ? '1' : '0'));
-        }
-    }
-
-    /**
-     * Subscribe a user to the newsletter (idempotent); sends the welcome on first opt-in.
-     * The chatbot opt-in flow can call this for a logged-in user.
-     */
     public function subscribe_to_newsletter($user_id, $flow_id = '') {
         $user_id = (int) $user_id;
         if ($user_id <= 0) return;
@@ -3823,267 +3859,6 @@ The {product_name} Team";
      * wp_redirect() + exit, which would hijack the SSO flow.
      */
     // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only OAuth query routing and token redemption handler
-    public function handle_login_token() {
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query parameters for auth/callback routing
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query parameters for auth/callback routing
-        $get = wp_unslash($_GET); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query parameters for auth/callback routing
-        // Case 0: Email Complimentary LeSAEp Learners Guest Access Link
-        if (!empty($get['flosc_magic'])) {
-            $token        = sanitize_text_field($get['flosc_magic']);
-            $transient_key = 'flosc_magic_' . $token;
-            $payload      = get_transient($transient_key);
-            $offer_url    = flosc_get_setting('guest_link_expired_offer_url', '');
-
-            // Invalid or expired token — redirect to offer page or show expired status
-            if (!$payload || !isset($payload['status'])) {
-                delete_transient($transient_key);
-                if (!empty($offer_url)) {
-                    wp_safe_redirect($offer_url); exit;
-                }
-                wp_safe_redirect(add_query_arg('flosc_guest_status', 'expired', remove_query_arg('flosc_magic'))); exit;
-            }
-
-            $email        = sanitize_email($payload['email']);
-            $is_first_click = ($payload['status'] === 'pending');
-
-            // Check membership before applying use-count limits — members get unlimited access
-            $_pre_user = get_user_by('email', $email);
-            $is_member_user = $_pre_user &&
-                $this->sale_manager->access()->get_simple_state($_pre_user->ID) === 'member';
-
-            if ($is_first_click) {
-                // Phase 1 → Phase 2: Activate link on first click
-                $payload['status']         = 'active';
-                $payload['first_clicked_at'] = time();
-                if (!$is_member_user) {
-                    $payload['use_count'] = 1;
-                }
-                set_transient($transient_key, $payload, 30 * DAY_IN_SECONDS);
-            } else {
-                // Phase 2: Enforce 30-day window; enforce 10-use limit only for non-members
-                $expired = (
-                    $payload['status'] !== 'active' ||
-                    (time() - $payload['first_clicked_at']) > (30 * DAY_IN_SECONDS) ||
-                    (!$is_member_user && $payload['use_count'] >= 10)
-                );
-                if ($expired) {
-                    delete_transient($transient_key);
-                    if (!empty($offer_url)) {
-                        wp_safe_redirect($offer_url); exit;
-                    }
-                    wp_safe_redirect(add_query_arg('flosc_guest_status', 'expired', remove_query_arg('flosc_magic'))); exit;
-                }
-                if (!$is_member_user) {
-                    // Increment use_count and re-save with remaining TTL
-                    $payload['use_count']++;
-                }
-                $elapsed     = time() - $payload['first_clicked_at'];
-                $remaining_ttl = max((30 * DAY_IN_SECONDS) - $elapsed, DAY_IN_SECONDS);
-                set_transient($transient_key, $payload, $remaining_ttl);
-            }
-
-            $remaining_after_use = $is_member_user ? null : (10 - $payload['use_count']);
-
-            // Find or create WP user
-            $existing_user = get_user_by('email', $email);
-            if ($existing_user) {
-                $user_id = (int) $existing_user->ID;
-                $member_level = flosc_get_setting('default_member_level', 'pronunciation_learners');
-                $guest_level = flosc_get_setting('default_guest_level', 'guest_pronunciation_learner');
-                // Upgrade to Guest LeSAEp Learner if still a plain subscriber (no paid role yet)
-                if (!in_array($member_level, (array) $existing_user->roles, true) &&
-                    !in_array($guest_level, (array) $existing_user->roles, true) &&
-                    !in_array('lesaep_learners', (array) $existing_user->roles, true) &&
-                    !in_array('guest_lesaep_learner', (array) $existing_user->roles, true)) {
-                    $existing_user->set_role($guest_level);
-                }
-            } else {
-                $username = $this->generate_username_from_email($email);
-                $password = wp_generate_password(16, true, true);
-                $user_id  = wp_create_user($username, $password, $email);
-                if (is_wp_error($user_id)) {
-                    wp_safe_redirect(add_query_arg('flosc_guest_status', 'error', remove_query_arg('flosc_magic'))); exit;
-                }
-                $new_user = get_user_by('id', $user_id);
-                if ($new_user) {
-                    $new_user->set_role(flosc_get_setting('default_guest_level', 'guest_pronunciation_learner'));
-                }
-                update_user_meta($user_id, '_flosc_registration_method', 'email');
-                update_user_meta($user_id, '_flosc_registered_at', current_time('mysql'));
-                update_user_meta($user_id, '_flosc_registration_flow', $payload_flow_id);
-                do_action('flosc_user_registered', $user_id, 'email', ['flow_id' => $payload_flow_id]);
-                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: New user created via guest link: {$email} (User ID: {$user_id})");
-                }
-            }
-
-            // Log in the user
-            wp_set_current_user($user_id);
-            wp_set_auth_cookie($user_id, true);
-            $flosc_token = $this->generate_flosc_auth_token($user_id);
-            $this->set_flosc_auth_cookie($flosc_token);
-            $wp_user = get_userdata($user_id);
-            if ($wp_user) {
-                $this->handle_user_login($wp_user->user_login, $wp_user);
-            }
-            $this->process_prelogin_data_for_user($user_id);
-
-            // Store token for credential-save email (email-registered users)
-            update_user_meta($user_id, '_flosc_magic_link_token', $token);
-
-            // First click only: snapshot send count to user meta for admin profile visibility
-            if ($is_first_click) {
-                $log  = get_option('flosc_guest_link_log', []);
-                $hash = md5(strtolower($email));
-                if (isset($log[$hash]['count'])) {
-                    update_user_meta($user_id, '_flosc_links_sent', (int) $log[$hash]['count']);
-                }
-            }
-
-            // Persist quiz/session data on first click, or on later clicks when user
-            // meta still lacks scored IPA results (email-scanner prefetch, DO race).
-            $session_id        = sanitize_text_field($payload['session_id'] ?? '');
-            $body_temp_id      = sanitize_text_field($payload['temp_id'] ?? '');
-            $browser_quiz_data = isset($payload['quiz_data']) && is_array($payload['quiz_data']) ? $payload['quiz_data'] : null;
-            if (!$body_temp_id && is_array($browser_quiz_data) && !empty($browser_quiz_data['tempId'])) {
-                $body_temp_id = sanitize_text_field($browser_quiz_data['tempId']);
-            }
-            $has_temp_id       = ($body_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $body_temp_id));
-            $existing_quiz     = get_user_meta($user_id, '_flosc_last_quiz_data', true);
-            $quiz_data_missing = !is_array($existing_quiz) || empty($existing_quiz['phrase_results']);
-
-            if ($is_first_click || ($quiz_data_missing && ($browser_quiz_data || $session_id || $has_temp_id))) {
-                $quiz_stored = false;
-
-                // v8.0.8: Browser-computed quiz data is authoritative; DO pull is fallback.
-                if ($browser_quiz_data) {
-                    $quiz_stored = (bool) $this->store_browser_quiz_data($user_id, $browser_quiz_data, $body_temp_id);
-                } elseif ($session_id) {
-                    $quiz_stored = $this->pull_session_from_do($user_id, $session_id);
-                    if ($quiz_stored) {
-                        $this->delete_session_from_do($session_id);
-                    }
-                }
-
-                if (!$quiz_stored && $has_temp_id) {
-                    update_user_meta($user_id, '_flosc_audio_temp_id', $body_temp_id);
-                }
-            }
-
-            // Short-lived transients consumed by FLOSC_CONFIG on next page render
-            // Members receive a marker value ('member') so memberLinkLogin can detect the magic-link login;
-            // guests receive the remaining-use count for guestLinkRemaining.
-            $_login_transient_val = $is_member_user ? 'member' : (int) $remaining_after_use;
-            set_transient('flosc_just_guest_login_' . $user_id, $_login_transient_val, 10 * MINUTE_IN_SECONDS);
-            if ($is_first_click) {
-                set_transient('flosc_first_guest_login_' . $user_id, true, 10 * MINUTE_IN_SECONDS);
-            }
-
-            $payload_flow_id = sanitize_key((string) ($payload['flow_id'] ?? ''));
-            if (!empty($payload_flow_id)) {
-                update_user_meta($user_id, '_flosc_registration_flow', $payload_flow_id);
-                $this->record_user_flow_usage($user_id, $payload_flow_id, 'magic_link');
-                $this->set_flow_context($payload_flow_id);
-            }
-
-            $payload_redirect = esc_url_raw((string) ($payload['redirect_to'] ?? ''));
-            $redirect_url = (wp_http_validate_url($payload_redirect))
-                ? $payload_redirect
-                : $this->get_guest_link_base_url($payload_flow_id);
-
-            $sync_nonce   = wp_generate_password(32, false);
-            set_transient('flosc_wp_sync_' . $sync_nonce, ['uid' => $user_id, 'url' => $redirect_url], 5 * MINUTE_IN_SECONDS);
-            wp_safe_redirect(home_url('/?flosc_wp_sync=' . rawurlencode($sync_nonce)));
-            exit;
-        }
-
-        // Case 3: dainis.net WP auth cookie sync (hop from magic link on lesaep.com)
-        if (!empty($get['flosc_wp_sync'])) {
-            $sync_nonce = sanitize_text_field($get['flosc_wp_sync']);
-            $data       = get_transient('flosc_wp_sync_' . $sync_nonce);
-            if (!$data) {
-                // Invalid or expired nonce — redirect to app anyway, FLOSC token auth will carry them
-                wp_safe_redirect($this->get_app_url());
-                exit;
-            }
-            $user_id      = (int) (is_array($data) ? $data['uid'] : $data);
-            $redirect_url = is_array($data) && !empty($data['url']) ? $data['url'] : $this->get_app_url();
-            delete_transient('flosc_wp_sync_' . $sync_nonce);
-            wp_set_current_user($user_id);
-            wp_set_auth_cookie($user_id, true);
-            // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- cross-domain return target is validated before this point
-            wp_redirect($redirect_url); // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- wp_redirect not wp_safe_redirect for cross-domain back to lesaep.com
-            exit;
-        }
-
-        // Case 1: Cross-domain login token
-        if (!empty($get['flosc_login_token'])) {
-            $token = sanitize_text_field($get['flosc_login_token']);
-            $transient_key = 'flosc_login_token_' . $token;
-            $user_id = get_transient($transient_key);
-
-            if (!$user_id) {
-                return;
-            }
-
-            // One-time use — delete immediately
-            delete_transient($transient_key);
-
-            // Set auth cookie on THIS domain (flosc.ai / lesaep.com)
-            wp_set_current_user($user_id);
-            wp_set_auth_cookie($user_id, true);
-
-            // v3.0.0: Set FLOSC auth token cookie (empty domain = current host)
-            // This works even when COOKIE_DOMAIN doesn't match the custom domain
-            $flosc_token = $this->generate_flosc_auth_token($user_id);
-            $this->set_flosc_auth_cookie($flosc_token);
-
-            // v1.5.3: Call FLOSC's login handler directly (not do_action)
-            $user = get_userdata($user_id);
-            $this->handle_user_login($user->user_login, $user);
-
-            // v8.0.0: Pull quiz session from DO if pending.
-            // JS set a flosc_pending_session cookie before SSO redirect.
-            // The cookie is on THIS domain (lesaep.com), so it survived the OAuth round-trip.
-            // Pull now so FLOSC_USER.lastQuizData is ready when the page renders.
-            $this->pull_pending_session_from_do($user_id);
-
-            // Redirect to clean URL (strip token + sso_success params)
-            $clean_url = remove_query_arg(['flosc_login_token', 'flosc_sso_success']);
-            wp_safe_redirect($clean_url);
-            exit;
-        }
-
-        // Case 2: Same-domain SSO success (no token needed, cookie already valid)
-        if (!empty($get['flosc_sso_success']) && is_user_logged_in()) {
-            $user = wp_get_current_user();
-            $this->handle_user_login($user->user_login, $user);
-
-            // v8.0.0: Pull quiz session from DO if pending (same as Case 1)
-            $this->pull_pending_session_from_do($user->ID);
-
-            $clean_url = remove_query_arg('flosc_sso_success');
-            wp_safe_redirect($clean_url);
-            exit;
-        }
-    }
-
-    /**
-     * v8.0.0: Pull quiz session from DO at login time.
-     *
-     * Called during handle_login_token() — before the page renders.
-     * JS sets a flosc_pending_session cookie before SSO redirect with the
-     * DO session_id. We read it here, pull scores + audio from DO, store
-     * in user meta, and clear the cookie. By the time the page loads,
-     * FLOSC_USER.lastQuizData is already populated from user meta.
-     *
-     * Why server-side? The client-side authFetch POST to store-quiz-data
-     * fails on custom domains because WP cookies are on the WP domain
-     * (dainis.net) while the browser is on the flow domain (lesaep.com).
-     * Even with FLOSC token auth, the timing is fragile. The server knows
-     * the user is logged in (we just set the cookie) and knows the session_id
-     * (from the cookie). Pull now, no client help needed.
-     */
     private function pull_pending_session_from_do($user_id) {
         $existing = get_user_meta($user_id, '_flosc_last_quiz_data', true);
         if (is_array($existing) && !empty($existing['phrase_results'])) {
@@ -4190,8 +3965,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
 
     /**
      * Set the FLOSC auth token as a cookie with EMPTY domain.
-     * This ensures the cookie binds to whatever host served the response
+     * Empty domain binds to the host that served the response
      * (lesaep.com, flosc.ai, dainis.net — whichever the user is on).
+     * Do not use get_app_url() host: that can point at a different flow
+     * domain than the current request and the browser will reject the cookie.
      *
      * @param string $token The auth token
      * @param int $ttl Lifetime in seconds
@@ -4201,11 +3978,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
             return;
         }
 
-        $app_host = wp_parse_url($this->get_app_url(), PHP_URL_HOST) ?: '';
         setcookie('flosc_auth_token', $token, [
             'expires'  => time() + $ttl,
             'path'     => '/',
-            'domain'   => $app_host,
+            'domain'   => '',
             'secure'   => is_ssl(),
             'httponly'  => true,
             'samesite' => 'Lax',
@@ -4416,11 +4192,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
             return;
         }
 
-        $app_host = wp_parse_url($this->get_app_url(), PHP_URL_HOST) ?: '';
+        // Match set_flosc_auth_cookie: empty domain = host that served this response.
         setcookie('flosc_auth_token', '', [
             'expires'  => time() - YEAR_IN_SECONDS,
             'path'     => '/',
-            'domain'   => $app_host,
+            'domain'   => '',
             'secure'   => is_ssl(),
             'httponly'  => true,
             'samesite' => 'Lax',
@@ -4950,142 +4726,32 @@ HTML;
             ]);
         }
         
-        // Determine user state
+        // Real-world state on this host only:
+        //   not logged in → visitor
+        //   logged in     → guest | member for THIS flow (never visitor)
         $user_state = 'visitor';
         $user_data = [];
+        $current_flow_for_state = $this->get_current_flow();
+        $flow_stem_for_state = '';
+        if (is_array($current_flow_for_state)) {
+            $ivr_for_state = (string) ($current_flow_for_state['ivr_file'] ?? $current_flow_for_state['ivr'] ?? $current_flow_for_state['id'] ?? '');
+            $flow_stem_for_state = $this->flosc_normalize_flow_stem($ivr_for_state);
+            if ($flow_stem_for_state === '' || $flow_stem_for_state === 'default') {
+                $flow_stem_for_state = $this->flosc_normalize_flow_stem((string) ($current_flow_for_state['id'] ?? ''));
+            }
+        }
         
         if (is_user_logged_in()) {
-            $user = wp_get_current_user();
-            $user_state = $this->sale_manager->access()->get_simple_state($user->ID);
-
-            // v07.09: Check for event flags (transients set by specific actions)
-            $just_completed_quiz = (bool) get_transient('flosc_just_completed_quiz_' . $user->ID);
-            $just_logged_in = (bool) get_transient('flosc_just_logged_in_' . $user->ID);
-            $just_purchased = (bool) get_transient('flosc_just_purchased_' . $user->ID);
-
-            // Clear transients after reading
-            if ($just_completed_quiz) delete_transient('flosc_just_completed_quiz_' . $user->ID);
-            if ($just_logged_in) delete_transient('flosc_just_logged_in_' . $user->ID);
-            if ($just_purchased) delete_transient('flosc_just_purchased_' . $user->ID);
-
-            // v8.0.0 FIX: Separate "has member access" from "actually purchased".
-            // Admins get member access for testing, but is_member() returns true even
-            // without a purchase. The IVR needs to know if a real purchase happened
-            // so it doesn't show fake "Congratulations on your purchase!" to admins.
-            $actually_purchased = (bool) get_user_meta($user->ID, '_flosc_purchased', true);
-
-            // Per-flow chat wallet (additive V→G / G→M). Prefer the *current page* flow
-            // so charge keys, visitor remaining, and grants stay aligned.
-            $current_flow_for_tokens = $this->get_current_flow();
-            $ivr_for_tokens = (string) ($current_flow_for_tokens['ivr_file'] ?? $current_flow_for_tokens['ivr'] ?? $current_flow_for_tokens['id'] ?? '');
-            $page_flow_stem = $this->flosc_normalize_flow_stem($ivr_for_tokens);
-            $reg_flow_stem = $this->flosc_normalize_flow_stem(
-                (string) get_user_meta($user->ID, '_flosc_registration_flow', true)
-            );
-            $flow_id_for_tokens = ($page_flow_stem !== '' && $page_flow_stem !== 'default')
-                ? $page_flow_stem
-                : $reg_flow_stem;
-
-            // Apply pending grants on first paint so FLOSC_USER is not stuck at 0
-            // when the JS REST grant call is blocked (adblock, nonce race, etc.).
-            $session_for_grant = $this->flosc_resolve_visitor_session_id_for_grant();
-            if ($this->flosc_user_should_receive_guest_tokens($user->ID)) {
-                // Cookie present → apply now. No cookie → defer (JS has localStorage session).
-                $flow_token_balance = $this->flosc_apply_guest_token_grant_once(
-                    $user->ID,
-                    $flow_id_for_tokens,
-                    $session_for_grant,
-                    false
-                );
-            } elseif ($actually_purchased || ('true' === get_user_meta($user->ID, '_flosc_member_access', true))) {
-                $flow_token_balance = $this->flosc_apply_member_token_grant_once($user->ID, $flow_id_for_tokens);
-            } else {
-                $flow_token_balance = $this->flosc_get_user_flow_token_balance($user->ID, $flow_id_for_tokens);
+            // Profile + per-flow wallet. Never paint visitor for an authenticated user.
+            $user_data = $this->build_app_user_payload(get_current_user_id(), $flow_stem_for_state, [
+                'allow_guest_grant_without_session' => false,
+                'consume_event_transients'          => true,
+            ]);
+            $user_state = (string) ($user_data['state'] ?? 'guest');
+            if ($user_state !== 'member' && $user_state !== 'guest') {
+                $user_state = 'guest';
             }
-
-            $sale_token_balance = 0;
-            $token_provider_for_user = $this->sale_manager->get_provider('tokens');
-            if ($token_provider_for_user && method_exists($token_provider_for_user, 'get_balance')) {
-                $sale_token_balance = (int) $token_provider_for_user->get_balance($user->ID);
-            }
-            // Once a V→G / G→M flag exists, flow meta is authoritative even at 0 spent-down.
-            $guest_grant_done = (bool) get_user_meta(
-                $user->ID,
-                $this->flosc_guest_token_grant_flag_key($flow_id_for_tokens),
-                true
-            );
-            $member_grant_done = (bool) get_user_meta(
-                $user->ID,
-                $this->flosc_member_token_grant_flag_key($flow_id_for_tokens),
-                true
-            );
-            $display_tokens = ($guest_grant_done || $member_grant_done || $flow_token_balance > 0)
-                ? $flow_token_balance
-                : $sale_token_balance;
-
-            $user_data = [
-                'id' => $user->ID,
-                'name' => $user->display_name,
-                'email' => $user->user_email,
-                'avatar' => get_avatar_url($user->ID, ['size' => 40]),
-                'state' => $user_state,
-                'purchased' => $actually_purchased,  // v8.0.0 FIX: true only if real purchase happened (not just admin access)
-                'isAdmin' => user_can($user->ID, 'manage_options'),  // MTS-2026-02-02: [ADMIN-FLAG] Needed for client-side user status response
-                'memberLevels' => ($this->member_access && method_exists($this->member_access, 'get_user_levels'))
-                    ? $this->member_access->get_user_levels($user->ID)
-                    : [],  // MTS-2026-02-02: [MEMBER-LEVELS] List of membership levels for status response
-                'access' => $this->sale_manager->access()->get_user_access($user->ID),
-                'tokens' => $display_tokens,
-                'flowTokens' => $flow_token_balance,
-                'flowId' => $flow_id_for_tokens,
-                'freeLessonDelivered' => (bool) get_user_meta($user->ID, '_flosc_free_lesson_delivered', true),
-                'freeLessonsCount' => count(get_user_meta($user->ID, '_flosc_free_lesson_numbers', true) ?: []),
-                // v8.0.1: Embed free lesson data in config so JS never needs a cross-domain REST call.
-                // Video-only: Free Lesson Manager skips shell posts (no <video>/mp4) so guests
-                // never open catalog stubs (e.g. lessons 54–71) or text-only shells.
-                'freeLessons' => (function() use ($user) {
-                    if (!class_exists('FLOSC_Free_Lesson_Manager')) {
-                        return [];
-                    }
-                    $raw = FLOSC_Free_Lesson_Manager::instance()->get_free_lessons($user->ID);
-                    if (empty($raw) || !is_array($raw)) {
-                        return [];
-                    }
-                    $lessons = [];
-                    foreach ($raw as $row) {
-                        $lessons[] = [
-                            'title' => $row['title'] ?? '',
-                            'content' => $row['content'] ?? '',
-                            'url' => $row['url'] ?? '',
-                            'lesson_number' => $row['lesson_number'] ?? null,
-                        ];
-                    }
-                    return $lessons;
-                })(),
-                'lastQuizScore' => get_user_meta($user->ID, '_flosc_last_quiz_score', true),
-                'lastQuizId' => get_user_meta($user->ID, '_flosc_last_quiz_id', true),
-                // v8.0.0: Full quiz data (phrase_results, ranked_phonemes) for post-login display.
-                // v8.0.4: Also load on justLoggedIn — visitor registers, audio scores during
-                // the wp_login hook, then page reloads. Both flags can be true simultaneously.
-                // v8.0.5: Always load quiz data from user meta. The scored audio files
-                // persist in flosc-users/{user_id}/ — no reason to gate this behind
-                // one-shot transients that expire in 5 minutes and vanish on page refresh.
-                'lastQuizData' => get_user_meta($user->ID, '_flosc_last_quiz_data', true) ?: null,
-                'initialScore' => get_user_meta($user->ID, '_flosc_initial_score', true),
-                'initialQuizId' => get_user_meta($user->ID, '_flosc_initial_quiz_id', true),
-                'funnelCompleted' => (bool) get_user_meta($user->ID, '_flosc_funnel_completed', true),
-                // v07.09: Event flags for IVR first_message_after_* conditions
-                'justCompletedQuiz' => $just_completed_quiz,
-                'justLoggedIn' => $just_logged_in,
-                'justPurchased' => $just_purchased,
-                // v2.0.2: Login count for IVR member tier conditions
-                'loginCount' => (int) get_user_meta($user->ID, '_flosc_login_count', true),
-                // v3.0.2: Completed quizzes for IVR context
-                'completedQuizzes' => get_user_meta($user->ID, '_flosc_completed_quizzes', true) ?: [],
-                // v8.0.1: Purchase tracking for admin visibility
-                'purchaseCount' => (int) get_user_meta($user->ID, '_flosc_purchase_count', true),
-                'memberLevel' => get_user_meta($user->ID, '_flosc_member_level', true) ?: '',
-            ];
+            $user_data['state'] = $user_state;
         }
         
         // v1.3.5: Add admin verification data for in-chat message
@@ -5435,6 +5101,24 @@ HTML;
         if ($flow_id !== '') {
             $flow_id = $this->flosc_normalize_flow_stem($flow_id);
         }
+
+        // Chat always belongs to a flow. Prefer request params; else current route.
+        if ($flow_id === '' && $ivr_file === '' && method_exists($this, 'get_current_flow')) {
+            $current_flow = $this->get_current_flow();
+            if (is_array($current_flow)) {
+                $ivr_file = sanitize_file_name((string) ($current_flow['ivr_file'] ?? $current_flow['ivr'] ?? ''));
+                $flow_id  = $this->flosc_normalize_flow_stem(
+                    (string) ($current_flow['id'] ?? $ivr_file)
+                );
+            }
+        }
+        if ($flow_id === '' && $ivr_file === '') {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => 'flow_id required',
+                'code'    => 'flow_id_required',
+            ], 400);
+        }
         
         // v1.8.9 FIX: Set flow context so flosc_get_setting() can find API keys
         // REST calls from flosc.ai go to dainis.net/wp-json — HTTP_HOST is dainis.net,
@@ -5464,32 +5148,25 @@ HTML;
             }
         }
 
-        // v1.3.7: Load IVR config from flow-specific file
+        // Flow bag first (flow_id and/or ivr_file → stem). .md only if bag empty.
         $ivr_config = [];
-
-        if (!empty($ivr_file)) {
-            // DB first: the flow's IVR lives in its option (the live source). The .md is
-            // a portability export kept current by the integrity hook and is NOT read at
-            // runtime unless the DB has nothing for this flow yet — so a normal chat
-            // message does no file read and no markdown parse.
-            $flow_key = 'flosc_flow_' . sanitize_key(pathinfo($ivr_file, PATHINFO_FILENAME));
-            $fs = get_option($flow_key, []);
-            if (!empty($fs['ivr_messages'])) {
-                $ivr_config = [
-                    'messages' => $fs['ivr_messages'],
-                    'phases'   => $fs['ivr_phases'] ?? [],
-                    'styles'   => $fs['ivr_styles'] ?? [],
-                ];
-            }
-
-            // Fallback only: parse the portability .md when the DB has no IVR for this flow.
-            if (empty($ivr_config['messages'])) {
-                $ivr_path = flosc_config_file($ivr_file);
-                if (file_exists($ivr_path)) {
-                    $parser = FLOSC_IVR_Parser::flosc_instance();
-                    $markdown = file_get_contents($ivr_path);
-                    $ivr_config = $parser->flosc_parse($markdown);
+        $flow_key = '';
+        $fs = [];
+        if ($flow_id !== '' || $ivr_file !== '') {
+            $resolved = flosc_resolve_flow_runtime($flow_id, $ivr_file);
+            $flow_key = (string) ($resolved['flow_key'] ?? '');
+            if ($flow_key !== '') {
+                $fs = get_option($flow_key, []);
+                if (!is_array($fs)) {
+                    $fs = [];
                 }
+            }
+            if (!empty($resolved['messages'])) {
+                $ivr_config = [
+                    'messages' => $resolved['messages'],
+                    'phases'   => $resolved['phases'] ?? [],
+                    'styles'   => $resolved['styles'] ?? [],
+                ];
             }
         }
 
@@ -5583,15 +5260,13 @@ HTML;
             $eval_context['user_name'] = $user_data->display_name ?? 'there';
             $eval_context['user_email'] = $user_data->user_email;
             $eval_context['is_admin'] = user_can($user_id, 'manage_options');
-            // v8.x userState repair: access_level from full membership stack
-            // (meta + sale offers + roles), not only _flosc_member_access === 'true'.
-            // Narrow meta compare mis-labeled LeSAEp Learners (role/sandbox/sale grants)
-            // as guests → AI excuses, no W-lesson, upgrade funnels.
+            // Per-flow userState: member only when entitled on this flow's stem.
             $simple_state = 'guest';
+            $state_flow   = !empty($flow_id) ? $flow_id : '';
             if ( $this->sale_manager && method_exists( $this->sale_manager, 'access' ) ) {
-                $simple_state = $this->sale_manager->access()->get_simple_state( $user_id );
+                $simple_state = $this->sale_manager->access()->get_simple_state( $user_id, $state_flow );
             } elseif ( $this->member_access && method_exists( $this->member_access, 'is_member' ) ) {
-                $simple_state = $this->member_access->is_member( $user_id ) ? 'member' : 'guest';
+                $simple_state = $this->member_access->is_member( $user_id, $state_flow ) ? 'member' : 'guest';
             }
             $eval_context['access_level'] = ( $simple_state === 'member' ) ? 'member' : 'guest';
             $eval_context['is_member']    = ( $eval_context['access_level'] === 'member' );
@@ -5847,9 +5522,9 @@ HTML;
         $chatpack_user_id = $eval_context['user_id'] ?? 0;
         $chatpack_flosc_hash = FLOSC_Chatpack::generate_flosc_hash();
         $chatpack_session_hash = FLOSC_Chatpack::generate_session_hash($chatpack_flosc_hash, $chatpack_user_id, $session_id);
-        $chatpack_pair_number = FLOSC_Chatpack::count_message_pairs($session_id, $chatpack_user_id) + 1;
+        $chatpack_pair_number = FLOSC_Chatpack::count_message_pairs($session_id, $chatpack_user_id, $flow_id) + 1;
         $chatpack_is_first = ($chatpack_pair_number === 1);
-        $chatpack_conv_history = FLOSC_Chatpack::load_conversation_history($session_id, $chatpack_user_id);
+        $chatpack_conv_history = FLOSC_Chatpack::load_conversation_history($session_id, $chatpack_user_id, 10, $flow_id);
         
         // v2.0.7: For visitors (no session/user), use frontend-provided conversation history.
         // Visitors store chat in localStorage; JS sends last 10 messages in the payload.
@@ -6098,10 +5773,11 @@ HTML;
             $eval_context
         );
 
-        // Store message in session if user is logged in
+        // Store message in session if user is logged in (guarded to this flow).
         if (is_user_logged_in() && $session_id) {
-            $this->session_manager->add_flosc_message($session_id, 'user', $message, get_current_user_id());
-            $this->session_manager->add_flosc_message($session_id, 'assistant', $response_message['content'], get_current_user_id());
+            $msg_flow = $this->flosc_normalize_flow_stem((string) ($flow_id ?? ''));
+            $this->session_manager->add_flosc_message($session_id, 'user', $message, get_current_user_id(), null, $msg_flow);
+            $this->session_manager->add_flosc_message($session_id, 'assistant', $response_message['content'], get_current_user_id(), null, $msg_flow);
         }
 
         // v1.9.0: Log chat exchange for admin monitoring
@@ -6927,15 +6603,20 @@ HTML;
             if (!empty($flow_id)) {
                 $this->set_flow_context($flow_id);
             }
-            if (!empty($ivr_file)) {
-                $flow_key = 'flosc_flow_' . sanitize_key(pathinfo($ivr_file, PATHINFO_FILENAME));
-                $fs = get_option($flow_key, []);
+            if ($flow_id !== '' || $ivr_file !== '') {
+                $resolved = flosc_resolve_flow_runtime($flow_id, $ivr_file);
+                $flow_key = (string) ($resolved['flow_key'] ?? '');
+                $fs = ($flow_key !== '') ? get_option($flow_key, []) : [];
+                if (!is_array($fs)) {
+                    $fs = [];
+                }
                 if (class_exists('FLOSC_Trajectory')) {
                     $trajectory_guidance = FLOSC_Trajectory::active_guidance($message, $fs);
                 }
-                if (!empty($fs['ivr_messages'])) {
+                $flow_messages = $resolved['messages'] ?? [];
+                if (!empty($flow_messages)) {
                     $concierge_session = $this->flosc_concierge_session_key($session_id);
-                    $concierge_response = FLOSC_Concierge::handle($message, $concierge_session, ['messages' => $fs['ivr_messages']]);
+                    $concierge_response = FLOSC_Concierge::handle($message, $concierge_session, ['messages' => $flow_messages]);
                     if (is_array($concierge_response)) {
                         $concierge_state = (string) ($concierge_response['flosc_concierge'] ?? '');
                         if (in_array($concierge_state, ['awaiting_password', 'retry'], true)) {
@@ -7505,20 +7186,25 @@ You are a GUIDE, not a teacher. Your job is to:
             $output .= "  - Quiz Score: " . ($legacy_score ? "{$legacy_score}%" : '_No quiz taken_') . "\n";
         }
 
-        // Member access (full stack — meta, sale, roles — same as get_simple_state)
+        // Member access — report current-flow state (not global legacy flag)
         $member_levels = ($this->member_access && method_exists($this->member_access, 'get_user_levels'))
             ? $this->member_access->get_user_levels($user_id)
             : [];
+        $status_flow = $this->get_current_flow();
+        $status_stem = '';
+        if (is_array($status_flow)) {
+            $status_stem = $this->flosc_normalize_flow_stem(
+                (string) ($status_flow['ivr_file'] ?? $status_flow['ivr'] ?? $status_flow['id'] ?? '')
+            );
+        }
         $is_member = false;
         if ( $this->sale_manager && method_exists( $this->sale_manager, 'access' ) ) {
-            $is_member = ( $this->sale_manager->access()->get_simple_state( $user_id ) === 'member' );
+            $is_member = ( $this->sale_manager->access()->get_simple_state( $user_id, $status_stem ) === 'member' );
         } elseif ( $this->member_access && method_exists( $this->member_access, 'is_member' ) ) {
-            $is_member = (bool) $this->member_access->is_member( $user_id );
-        } else {
-            $meta = get_user_meta( $user_id, '_flosc_member_access', true );
-            $is_member = ( $meta === 'true' || $meta === true || $meta === '1' );
+            $is_member = (bool) $this->member_access->is_member( $user_id, $status_stem );
         }
-        $output .= "  - Member Access: " . ( $is_member ? '✅ Yes (LeSAEp Learner)' : '❌ No' ) . "\n";
+        $output .= "  - Flow: " . ($status_stem !== '' ? $status_stem : '_unknown_') . "\n";
+        $output .= "  - Member Access (this flow): " . ( $is_member ? '✅ Yes' : '❌ No (guest if logged in)' ) . "\n";
         $output .= "  - Member Levels: " . (empty($member_levels) ? '_none_' : implode(', ', $member_levels)) . "\n";
 
         // Free lesson
@@ -8230,51 +7916,178 @@ Example good response:
     }
     
     /**
-     * v1.0.9: Generate dynamic user status response
+     * Fill a flow-configured status template.
+     * Placeholders: {first_name}, {product_name}, {member_level}, {name}, {email}
+     *
+     * @param string $template
+     * @param array  $vars
+     * @return string
+     */
+    private function flosc_fill_status_template($template, array $vars) {
+        $out = (string) $template;
+        foreach ($vars as $key => $value) {
+            $out = str_replace('{' . $key . '}', (string) $value, $out);
+        }
+        return $out;
+    }
+
+    /**
+     * Build per-flow status rows for the logged-in user.
+     */
+    private function flosc_build_user_flow_statuses($user_id, $current_stem = '') {
+        $user_id = absint($user_id);
+        if ($user_id <= 0) {
+            return [];
+        }
+
+        $current_stem = $this->flosc_normalize_flow_stem($current_stem);
+        $registration_stem = $this->flosc_normalize_flow_stem((string) get_user_meta($user_id, '_flosc_registration_flow', true));
+
+        $flows = [];
+        if (function_exists('flosc_flows') && is_object(flosc_flows()) && method_exists(flosc_flows(), 'get_all_flows')) {
+            $flows = flosc_flows()->get_all_flows();
+        }
+        if (!is_array($flows)) {
+            $flows = [];
+        }
+
+        $rows = [];
+        foreach ($flows as $flow_key => $flow) {
+            if (!is_array($flow)) {
+                continue;
+            }
+
+            $flow_id = sanitize_key((string) ($flow['id'] ?? (is_string($flow_key) ? $flow_key : '')));
+            $flow_stem = $this->flosc_normalize_flow_stem((string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow_id));
+            if ($flow_stem === '' || $flow_stem === 'default') {
+                continue;
+            }
+
+            $state = 'guest';
+            if ($this->sale_manager && method_exists($this->sale_manager, 'access')) {
+                $state = (string) $this->sale_manager->access()->get_simple_state($user_id, $flow_stem);
+            }
+            if ($state !== 'member' && $state !== 'guest') {
+                $state = 'guest';
+            }
+
+            $tokens = max(0, intval($this->flosc_get_user_flow_token_balance($user_id, $flow_stem)));
+            $is_current = ($current_stem !== '' && $flow_stem === $current_stem);
+            $include = $is_current || $state === 'member' || $tokens > 0 || ($registration_stem !== '' && $registration_stem === $flow_stem);
+            if (!$include) {
+                continue;
+            }
+
+            $name = trim((string) ($flow['name'] ?? ''));
+            if ($name === '') {
+                $identity = is_array($flow['identity'] ?? null) ? $flow['identity'] : [];
+                $name = trim((string) ($identity['name'] ?? ''));
+            }
+            if ($name === '') {
+                $bag = get_option('flosc_flow_' . $flow_stem, []);
+                if (is_array($bag)) {
+                    $name = trim((string) ($bag['name'] ?? $bag['product_name'] ?? ''));
+                    if ($name === '' && is_array($bag['identity'] ?? null)) {
+                        $name = trim((string) ($bag['identity']['name'] ?? ''));
+                    }
+                }
+            }
+            if ($name === '') {
+                $name = strtoupper($flow_stem);
+            }
+
+            $rows[] = [
+                'id' => $flow_id !== '' ? $flow_id : $flow_stem,
+                'stem' => $flow_stem,
+                'name' => $name,
+                'state' => $state,
+                'tokens' => $tokens,
+                'current' => $is_current,
+            ];
+        }
+
+        usort($rows, function ($a, $b) {
+            $ac = !empty($a['current']) ? 1 : 0;
+            $bc = !empty($b['current']) ? 1 : 0;
+            if ($ac !== $bc) {
+                return ($ac > $bc) ? -1 : 1;
+            }
+            return strcasecmp((string) ($a['name'] ?? ''), (string) ($b['name'] ?? ''));
+        });
+
+        return array_values($rows);
+    }
+
+    /**
+     * User status text from real flow state and token data.
      */
     private function generate_user_status_response($context) {
-        // MTS-2026-02-02: [ADMIN-FIX] CRITICAL: Call WordPress functions directly!
-        // Previous bug: Used $context['logged_in'] and $context['user_id'] which could be
-        // missing or incorrect depending on how context was built/passed.
-        // Fix: Always call is_user_logged_in() and get_current_user_id() directly.
-        // These are authoritative - WordPress knows who is logged in.
-        $is_logged_in = is_user_logged_in();
+        if (!is_user_logged_in()) {
+            return 'Here is your user status in this flosc ecosystem.';
+        }
+
         $user_id = get_current_user_id();
-        
-        // Visitor (not logged in)
-        if (!$is_logged_in) {
-            return "Hey, thanks for asking about your user status! You are a **Visitor**. Take our free quiz and create an account to unlock personalized learning!";
-        }
-        
-        // Get user data
-        $user_data = get_userdata($user_id);
-        $first_name = $user_data->first_name ?? $user_data->display_name ?? 'there';
-        $product_name = get_option('flosc_product_name', 'our course');
-        
-        // MTS-2026-02-02: [ADMIN-FIX] Check admin BEFORE member!
-        // WordPress admins have 'manage_options' capability.
-        // They should see "FLOSC Admin" not "Member" or "Guest".
         if (user_can($user_id, 'manage_options')) {
-            return "Hey, thanks for asking about your user status! You are the **FLOSC Admin**. You have access to all member levels. Hope you're enjoying the FLOSC experience!";
+            return "Here is your user status in this flosc ecosystem.\n\nYou are the FLOSC Admin.";
         }
-        
-        // Check if member (purchased)
-        $member_access = FLOSC_Member_Access::instance();
-        // MTS-2026-02-02: [METHOD-FIX] Use correct method names: is_member() and get_user_levels()
-        // Previous bug: Called flosc_is_member() and flosc_get_user_member_levels() which don't exist!
-        $is_member = $member_access->is_member($user_id);
-        $member_levels = $member_access->get_user_levels($user_id);
-        
-        // v1.1.0: Member (purchased access)
-        if ($is_member && !empty($member_levels)) {
-            $level_list = implode(', ', $member_levels);
-            return "Hey, thanks for asking about your user status! You are a **Member**. You like to be called **{$first_name}**, have access to **{$level_list}**, and can ask me anything about \"{$product_name}\" right here in this chat!";
-        } elseif ($is_member) {
-            return "Hey, thanks for asking about your user status! You are a **Member**. You like to be called **{$first_name}**, and can ask me anything about \"{$product_name}\" right here in this chat!";
+
+        $flow = $this->get_current_flow();
+        $stem = '';
+        if (is_array($flow)) {
+            $stem = $this->flosc_normalize_flow_stem((string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? ''));
         }
-        
-        // v1.1.0: Guest (logged in but not purchased)
-        return "Hey, thanks for asking about your user status! You are a **Guest**. You like to be called **{$first_name}**. Check out your free lesson and upgrade for full access to \"{$product_name}\"!";
+
+        $rows = $this->flosc_build_user_flow_statuses($user_id, $stem);
+        if (empty($rows)) {
+            return "Here is your user status in this flosc ecosystem.\n\nCurrent floscFlow, you are a Guest with 0 tokens.";
+        }
+
+        $state_label = static function ($state) {
+            $state = strtolower((string) $state);
+            if ($state === 'member') {
+                return 'Member';
+            }
+            if ($state === 'guest') {
+                return 'Guest';
+            }
+            return 'Visitor';
+        };
+
+        $fmt_tokens = static function ($tokens) {
+            return number_format_i18n(max(0, intval($tokens)));
+        };
+
+        $current = $rows[0];
+        foreach ($rows as $row) {
+            if (!empty($row['current'])) {
+                $current = $row;
+                break;
+            }
+        }
+
+        $lines = [];
+        $lines[] = 'Here is your user status in this flosc ecosystem.';
+        $lines[] = '';
+        $lines[] = sprintf(
+            'Current floscFlow %1$s, you are a %2$s with %3$s tokens.',
+            (string) ($current['name'] ?? ''),
+            $state_label($current['state'] ?? ''),
+            $fmt_tokens($current['tokens'] ?? 0)
+        );
+
+        foreach ($rows as $row) {
+            if (!empty($row['current'])) {
+                continue;
+            }
+            $lines[] = sprintf(
+                '%1$s, you are a %2$s with %3$s tokens.',
+                (string) ($row['name'] ?? ''),
+                $state_label($row['state'] ?? ''),
+                $fmt_tokens($row['tokens'] ?? 0)
+            );
+        }
+
+        return implode("\n", $lines);
     }
     
     /**
@@ -8615,12 +8428,10 @@ Example good response:
             if ( isset( $eval_context['is_member'] ) ) {
                 $is_member = (bool) $eval_context['is_member'];
             } elseif ( $this->sale_manager && method_exists( $this->sale_manager, 'access' ) ) {
-                $is_member = ( $this->sale_manager->access()->get_simple_state( $user_id ) === 'member' );
+                $ai_flow = !empty($eval_context['flow_id']) ? $eval_context['flow_id'] : '';
+                $is_member = ( $this->sale_manager->access()->get_simple_state( $user_id, $ai_flow ) === 'member' );
             } elseif ( $this->member_access && method_exists( $this->member_access, 'is_member' ) ) {
                 $is_member = (bool) $this->member_access->is_member( $user_id );
-            } else {
-                $meta = get_user_meta( $user_id, '_flosc_member_access', true );
-                $is_member = ( $meta === 'true' || $meta === true || $meta === '1' );
             }
 
             $ai_context['is_member']    = $is_member;
@@ -8977,17 +8788,286 @@ Example good response:
         ]);
     }
 
+    /**
+     * Whether this flow serves lesson content (library + complimentary free lessons).
+     *
+     * Source of truth: flosc_flows + flosc_flow_{stem} (Lessons tab) — not product name.
+     * A flow serves lessons only if it has configured lesson groups / category / free-lesson pool.
+     *
+     * @param string $stem Flow stem / id / ivr basename.
+     * @return bool
+     */
+    public function flosc_flow_serves_lessons($stem = '') {
+        $stem = $this->flosc_normalize_flow_stem($stem);
+        $flow = null;
+
+        if ($stem !== '') {
+            $flows = get_option('flosc_flows', []);
+            if (is_array($flows)) {
+                foreach ($flows as $f) {
+                    if (!is_array($f)) {
+                        continue;
+                    }
+                    $id  = sanitize_key((string) ($f['id'] ?? ''));
+                    $ivr = (string) ($f['ivr_file'] ?? $f['ivr'] ?? '');
+                    $fs  = $this->flosc_normalize_flow_stem($ivr !== '' ? $ivr : $id);
+                    if ($fs === $stem || $id === $stem) {
+                        $flow = $f;
+                        if ($stem === '' || $stem === 'default') {
+                            $stem = $fs !== '' ? $fs : $id;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        if (!is_array($flow)) {
+            $flow = $this->get_current_flow();
+            if (is_array($flow) && ($stem === '' || $stem === 'default')) {
+                $stem = $this->flosc_normalize_flow_stem(
+                    (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '')
+                );
+            }
+        }
+
+        $settings = [];
+        if ($stem !== '' && $stem !== 'default') {
+            $bag = get_option('flosc_flow_' . $stem, []);
+            if (is_array($bag)) {
+                $settings = $bag;
+            }
+        }
+
+        // 1) lesson_groups with at least one non-empty category (Lessons tab).
+        $groups = [];
+        if (!empty($settings['lesson_groups']) && is_array($settings['lesson_groups'])) {
+            $groups = $settings['lesson_groups'];
+        } elseif (is_array($flow) && !empty($flow['lesson_groups']) && is_array($flow['lesson_groups'])) {
+            $groups = $flow['lesson_groups'];
+        }
+        foreach ($groups as $group) {
+            if (!is_array($group)) {
+                continue;
+            }
+            $gcat = trim((string) ($group['category'] ?? ''));
+            if ($gcat !== '' && $gcat !== '0') {
+                return true;
+            }
+        }
+
+        // 2) Legacy single lessons_category / wp_category_id on the flow row.
+        $cat = '';
+        if (!empty($settings['lessons_category'])) {
+            $cat = trim((string) $settings['lessons_category']);
+        } elseif (is_array($flow)) {
+            $cat = trim((string) ($flow['lessons_category'] ?? ''));
+            if ($cat === '' && !empty($flow['wp_category_id'])) {
+                $cat = (string) (int) $flow['wp_category_id'];
+            }
+        }
+        if ($cat !== '' && $cat !== '0') {
+            return true;
+        }
+
+        // 3) Complimentary pool category (free lessons) configured for this flow.
+        $pool = sanitize_title((string) ($settings['free_lesson_pool_category'] ?? ''));
+        if ($pool !== '') {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Quiz IDs explicitly configured on this flow (flosc_flows / flosc_flow_* only).
+     * Empty list = this flow does not run or surface quizzes (e.g. Br3nda).
+     * Does not invent pronunciation_* defaults from global options.
+     *
+     * @param string $stem
+     * @return string[]
+     */
+    public function flosc_flow_quiz_ids($stem = '') {
+        $stem = $this->flosc_normalize_flow_stem($stem);
+        $ids  = [];
+
+        $settings = ($stem !== '' && $stem !== 'default')
+            ? get_option('flosc_flow_' . $stem, [])
+            : [];
+        if (!is_array($settings)) {
+            $settings = [];
+        }
+
+        $flow = null;
+        $flows = get_option('flosc_flows', []);
+        if (is_array($flows)) {
+            foreach ($flows as $f) {
+                if (!is_array($f)) {
+                    continue;
+                }
+                $id  = sanitize_key((string) ($f['id'] ?? ''));
+                $ivr = (string) ($f['ivr_file'] ?? $f['ivr'] ?? '');
+                $fs  = $this->flosc_normalize_flow_stem($ivr !== '' ? $ivr : $id);
+                if ($stem !== '' && ($fs === $stem || $id === $stem)) {
+                    $flow = $f;
+                    break;
+                }
+            }
+        }
+        if (!is_array($flow)) {
+            $flow = $this->get_current_flow();
+        }
+        if (!is_array($flow)) {
+            $flow = [];
+        }
+
+        foreach (['default_audio_quiz_id', 'default_text_quiz_id', 'quiz_type'] as $key) {
+            $v = '';
+            if (!empty($settings[$key])) {
+                $v = (string) $settings[$key];
+            } elseif (!empty($flow[$key])) {
+                $v = (string) $flow[$key];
+            }
+            $v = sanitize_key(pathinfo(basename(trim($v)), PATHINFO_FILENAME));
+            if ($v === '') {
+                $v = sanitize_key(trim((string) ($settings[$key] ?? $flow[$key] ?? '')));
+            }
+            if ($v !== '') {
+                $ids[] = $v;
+            }
+        }
+
+        return array_values(array_unique(array_filter($ids)));
+    }
+
+    /**
+     * Whether stored user quiz meta should be exposed on this flow’s chat shell.
+     * Rules (flow parameters only — no product-name heuristics):
+     * 1) Flow must list quiz id(s) in its own config.
+     * 2) If quiz_data.flow_id is set, it must match this stem.
+     * 3) If quiz_id is set, it must equal one of this flow’s configured quiz ids.
+     * 4) Legacy meta with no quiz_id: only if this flow has default_audio_quiz_id
+     *    (explicit audio quiz key on the flow bag) and data has phrase_results.
+     *
+     * @param string     $stem
+     * @param array|null $quiz_data
+     * @param string     $quiz_id_meta
+     * @return bool
+     */
+    public function flosc_flow_should_surface_quiz_data($stem, $quiz_data = null, $quiz_id_meta = '') {
+        $configured = $this->flosc_flow_quiz_ids($stem);
+        if (empty($configured)) {
+            return false;
+        }
+
+        $stem = $this->flosc_normalize_flow_stem($stem);
+        $qid  = sanitize_key((string) $quiz_id_meta);
+
+        if (is_array($quiz_data)) {
+            if ($qid === '' && !empty($quiz_data['quiz_id'])) {
+                $qid = sanitize_key((string) $quiz_data['quiz_id']);
+            }
+            if ($qid === '' && !empty($quiz_data['quizId'])) {
+                $qid = sanitize_key((string) $quiz_data['quizId']);
+            }
+            if (!empty($quiz_data['flow_id'])) {
+                $data_stem = $this->flosc_normalize_flow_stem((string) $quiz_data['flow_id']);
+                if ($data_stem !== '' && $stem !== '' && $data_stem !== $stem) {
+                    return false;
+                }
+            }
+        }
+
+        if ($qid !== '') {
+            return in_array($qid, $configured, true);
+        }
+
+        // Legacy untagged IPA payload: require this flow explicitly sets default_audio_quiz_id.
+        if (is_array($quiz_data) && !empty($quiz_data['phrase_results'])) {
+            $settings = ($stem !== '' && $stem !== 'default')
+                ? get_option('flosc_flow_' . $stem, [])
+                : [];
+            $audio = '';
+            if (is_array($settings) && !empty($settings['default_audio_quiz_id'])) {
+                $audio = sanitize_key((string) $settings['default_audio_quiz_id']);
+            }
+            if ($audio === '') {
+                $flows = get_option('flosc_flows', []);
+                if (is_array($flows)) {
+                    foreach ($flows as $f) {
+                        if (!is_array($f)) {
+                            continue;
+                        }
+                        $id  = sanitize_key((string) ($f['id'] ?? ''));
+                        $ivr = (string) ($f['ivr_file'] ?? $f['ivr'] ?? '');
+                        $fs  = $this->flosc_normalize_flow_stem($ivr !== '' ? $ivr : $id);
+                        if ($fs === $stem || $id === $stem) {
+                            $audio = sanitize_key((string) ($f['default_audio_quiz_id'] ?? ''));
+                            break;
+                        }
+                    }
+                }
+            }
+            return $audio !== '' && in_array($audio, $configured, true);
+        }
+
+        return false;
+    }
+
+    /**
+     * Flow stem from REST request or current app flow (session isolation).
+     *
+     * @param WP_REST_Request|null $request
+     * @return string
+     */
+    private function flosc_request_flow_stem($request = null) {
+        $raw = '';
+        if ($request && method_exists($request, 'get_param')) {
+            $raw = (string) ($request->get_param('flow_id') ?? $request->get_param('ivr_file') ?? '');
+        }
+        if ($raw === '') {
+            $flow = $this->get_current_flow();
+            if (is_array($flow)) {
+                $raw = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '');
+            }
+        }
+        return $this->session_manager->normalize_flow_stem($raw);
+    }
+
     public function get_sessions($request) {
-        $sessions = $this->session_manager->get_flosc_user_sessions(get_current_user_id());
-        return new WP_REST_Response(['success' => true, 'sessions' => $sessions]);
+        $flow_stem = $this->flosc_request_flow_stem($request);
+        if ($flow_stem === '') {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => 'flow_id required',
+                'code'    => 'flow_id_required',
+            ], 400);
+        }
+        $sessions  = $this->session_manager->get_flosc_user_sessions(get_current_user_id(), $flow_stem);
+        return new WP_REST_Response([
+            'success'  => true,
+            'sessions' => $sessions,
+            'flow_id'  => $flow_stem,
+        ]);
     }
     
     /**
-     * v1.7.0: Get a single session by ID
+     * v1.7.0: Get a single session by ID (must belong to current flow).
      */
     public function get_single_session($request) {
         $session_id = (int) $request->get_param('id');
-        $session = $this->session_manager->get_flosc_session($session_id, get_current_user_id());
+        $flow_stem  = $this->flosc_request_flow_stem($request);
+        if ($flow_stem === '') {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => 'flow_id required',
+                'code'    => 'flow_id_required',
+            ], 400);
+        }
+        $session    = $this->session_manager->get_flosc_session(
+            $session_id,
+            get_current_user_id(),
+            $flow_stem
+        );
         
         if (!$session) {
             return new WP_REST_Response(['success' => false, 'error' => 'Session not found'], 404);
@@ -8997,19 +9077,27 @@ Example good response:
     }
 
     public function create_session($request) {
-        // New chat = new session. Title is always the placeholder; first user message
-        // (or rename) updates session.title. No first_chat_title special case.
+        // New chat = new session on THIS flow only.
         $title = 'New Chat';
         $user_id = get_current_user_id();
         if (!$user_id) {
             return new WP_REST_Response(['success' => false, 'error' => 'not_logged_in', 'code' => 'not_logged_in'], 401);
         }
 
+        $flow_stem = $this->flosc_request_flow_stem($request);
+        if ($flow_stem === '') {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => 'flow_id required',
+                'code'    => 'flow_id_required',
+            ], 400);
+        }
+
         // Guest chat cap (0 = unlimited). Members are not capped by guest_max_chats.
-        $user_state = $this->get_user_state_for_session_limits($user_id);
+        $user_state = $this->get_user_state_for_session_limits($user_id, $flow_stem);
         if ($user_state === 'guest') {
             $max_chats = max(0, intval(flosc_get_setting('guest_max_chats', 0)));
-            $count = $this->session_manager->get_flosc_session_count($user_id);
+            $count = $this->session_manager->get_flosc_session_count($user_id, $flow_stem);
             if ($max_chats > 0 && $count >= $max_chats) {
                 $limit_msg = flosc_get_setting(
                     'guest_new_chat_limit_message',
@@ -9037,17 +9125,25 @@ Example good response:
             }
         }
 
-        $session = $this->session_manager->flosc_create_session($user_id, $title);
+        $session = $this->session_manager->flosc_create_session($user_id, $title, $flow_stem);
+        if (!$session) {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => 'flow_id required',
+                'code'    => 'flow_id_required',
+            ], 400);
+        }
         return new WP_REST_Response(['success' => true, 'session' => $session]);
     }
 
     /**
-     * Map current user to visitor|guest|member for chat-session limits.
+     * Map current user to visitor|guest|member for chat-session limits (per flow).
      *
-     * @param int $user_id User ID.
+     * @param int    $user_id User ID.
+     * @param string $flow_id Flow stem.
      * @return string
      */
-    private function get_user_state_for_session_limits($user_id) {
+    private function get_user_state_for_session_limits($user_id, $flow_id = '') {
         $user_id = (int) $user_id;
         if ($user_id <= 0) {
             return 'visitor';
@@ -9055,12 +9151,15 @@ Example good response:
         if (user_can($user_id, 'manage_options')) {
             return 'member';
         }
+        if ($this->sale_manager && method_exists($this->sale_manager, 'access')) {
+            $state = $this->sale_manager->access()->get_simple_state($user_id, $flow_id);
+            return ($state === 'member') ? 'member' : 'guest';
+        }
         if (isset($this->member_access) && is_object($this->member_access)
             && method_exists($this->member_access, 'is_member')
-            && $this->member_access->is_member($user_id)) {
+            && $this->member_access->is_member($user_id, $flow_id)) {
             return 'member';
         }
-        // Logged-in non-member = guest for chat-list purposes.
         return 'guest';
     }
 
@@ -9102,11 +9201,19 @@ Example good response:
         if (!$user_id) {
             return new WP_REST_Response(['success' => false, 'error' => 'not_logged_in'], 401);
         }
-        $state = $this->get_user_state_for_session_limits($user_id);
+        $flow_stem = $this->flosc_request_flow_stem($request);
+        if ($flow_stem === '') {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => 'flow_id required',
+                'code'    => 'flow_id_required',
+            ], 400);
+        }
+        $state = $this->get_user_state_for_session_limits($user_id, $flow_stem);
         if ($state === 'guest' && !$this->flosc_guest_chat_flag_enabled('guest_can_delete_chats')) {
             return new WP_REST_Response(['success' => false, 'error' => 'forbidden', 'code' => 'guest_delete_disabled'], 403);
         }
-        $deleted = $this->session_manager->flosc_delete_session($session_id, $user_id);
+        $deleted = $this->session_manager->flosc_delete_session($session_id, $user_id, $flow_stem);
         if (!$deleted) {
             return new WP_REST_Response(['success' => false, 'error' => 'Session not found'], 404);
         }
@@ -9126,14 +9233,25 @@ Example good response:
         if (empty($title)) {
             return new WP_REST_Response(['success' => false, 'error' => 'Title is required'], 400);
         }
+        $flow_stem = $this->flosc_request_flow_stem($request);
+        if ($flow_stem === '') {
+            return new WP_REST_Response([
+                'success' => false,
+                'error'   => 'flow_id required',
+                'code'    => 'flow_id_required',
+            ], 400);
+        }
         $sessions = get_user_meta($user_id, '_flosc_sessions', true);
         if (!is_array($sessions)) {
             return new WP_REST_Response(['success' => false, 'error' => 'No sessions'], 404);
         }
         $found = false;
-        $state = $this->get_user_state_for_session_limits($user_id);
+        $state = $this->get_user_state_for_session_limits($user_id, $flow_stem);
         foreach ($sessions as &$s) {
             if ($s['id'] == $session_id) {
+                if ($flow_stem !== '' && !$this->session_manager->session_belongs_to_flow($s, $flow_stem, $user_id)) {
+                    return new WP_REST_Response(['success' => false, 'error' => 'Session not found'], 404);
+                }
                 $old = trim((string) ($s['title'] ?? ''));
                 $is_placeholder = ($old === '' || $old === 'New Chat');
                 // Manual rename: guests need guest_can_rename_chats.
@@ -9574,6 +9692,9 @@ Example good response:
         $user_message = sanitize_textarea_field((string) $request->get_param('user_message'));
         $ai_response  = wp_kses_post((string) $request->get_param('ai_response'));
         // Cap huge lesson HTML so logs stay usable.
+        if (strlen($user_message) > 10000) {
+            $user_message = substr($user_message, 0, 10000);
+        }
         if (strlen($ai_response) > 80000) {
             $ai_response = substr($ai_response, 0, 80000) . "\n<!-- truncated -->";
         }
@@ -9590,6 +9711,10 @@ Example good response:
                 $flow_id = sanitize_key(pathinfo(basename($ivr), PATHINFO_FILENAME));
             }
         }
+        $flow_id = $this->flosc_normalize_flow_stem($flow_id);
+        if ($flow_id === '') {
+            return new WP_Error('flow_id_required', __('flow_id required', 'flosc'), ['status' => 400]);
+        }
 
         $session_id = absint($request->get_param('session_id'));
         $phase = sanitize_text_field((string) ($request->get_param('phase') ?? 'content'));
@@ -9599,12 +9724,14 @@ Example good response:
         $user_id = is_user_logged_in() ? get_current_user_id() : 0;
 
         // Persist into guest/member session history when possible (sidebar replay).
+        // add_flosc_message already requires the session to belong to this user + flow.
         if ($user_id > 0 && $session_id > 0 && $this->session_manager) {
+            $hist_flow = $flow_id;
             if ($user_message !== '') {
-                $this->session_manager->add_flosc_message($session_id, 'user', $user_message, $user_id);
+                $this->session_manager->add_flosc_message($session_id, 'user', $user_message, $user_id, null, $hist_flow);
             }
             if ($ai_response !== '') {
-                $this->session_manager->add_flosc_message($session_id, 'assistant', wp_strip_all_tags($ai_response), $user_id);
+                $this->session_manager->add_flosc_message($session_id, 'assistant', wp_strip_all_tags($ai_response), $user_id, null, $hist_flow);
             }
         }
 
@@ -9903,6 +10030,7 @@ Example good response:
             'transaction_id' => $transaction_id,
             'amount' => $formatted_amount,
             'sandbox' => true,
+            'flow_id' => $flow_id,
         ]);
         
         // v1.4.0: Add to member levels array (user can have multiple products)
@@ -9926,6 +10054,7 @@ Example good response:
             'transaction_id' => $transaction_id,
             'amount' => $formatted_amount,
             'sandbox' => true,
+            'flow_id' => $flow_id,
         ]);
         
         // Log the sandbox purchase
@@ -9945,6 +10074,7 @@ Example good response:
             'transaction_id' => $transaction_id,
             'amount' => $formatted_amount,
             'timestamp' => time(),
+            'flow_id' => $flow_id,
         ]);
         
         do_action('flosc_sandbox_purchase', $user_id, [
@@ -10043,8 +10173,27 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("[FLOSC v8.0.7] score_visit
             ], 400);
         }
 
+        // Cap payload so public stash cannot fill object cache / options with megabytes.
+        $encoded = wp_json_encode($quiz_data);
+        if (!is_string($encoded) || strlen($encoded) > 200000) {
+            return new WP_REST_Response([
+                'success' => false,
+                'message' => 'Quiz data too large',
+            ], 400);
+        }
+
+        // Keep only fields the login handoff needs; drop unexpected keys.
+        $safe = array(
+            'phraseResults' => array_slice(array_values($quiz_data['phraseResults']), 0, 20),
+            'tempId'        => '',
+            'score'         => isset($quiz_data['score']) ? floatval($quiz_data['score']) : null,
+        );
+        if (!empty($quiz_data['tempId']) && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', (string) $quiz_data['tempId'])) {
+            $safe['tempId'] = (string) $quiz_data['tempId'];
+        }
+
         $token = wp_generate_password(32, false, false);
-        set_transient('flosc_quiz_stash_' . $token, $quiz_data, HOUR_IN_SECONDS);
+        set_transient('flosc_quiz_stash_' . $token, $safe, HOUR_IN_SECONDS);
 
         return new WP_REST_Response([
             'success' => true,
@@ -10089,375 +10238,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("[FLOSC v8.0.7] score_visit
         return (bool) $this->store_browser_quiz_data($user_id, $quiz_data, $temp_id);
     }
 
-    public function handle_email_registration($request) {
-        $email = sanitize_email($request->get_param('email'));
-        $flow_id = sanitize_key((string) $request->get_param('flow_id'));
-        $redirect_to_raw = esc_url_raw((string) $request->get_param('redirect_to'));
-        $redirect_to = wp_http_validate_url($redirect_to_raw) ? $redirect_to_raw : '';
-        $guest_email_context = $this->get_guest_email_context($flow_id);
-
-        if (empty($email) || !is_email($email)) {
-            return new WP_REST_Response([
-                'success' => false,
-                'message' => 'Please enter a valid email address.'
-            ], 400);
-        }
-
-        if ($this->is_guest_request_email_blocked($email)) {
-            return new WP_REST_Response([
-                'success' => true,
-                'magic_link_sent' => false,
-                'message' => 'Guest account request received. Dainis will respond by email.',
-                'nonce' => wp_create_nonce('wp_rest'),
-            ]);
-        }
-
-        $body_temp_id      = sanitize_text_field($request->get_param('temp_id') ?? '');
-        $has_temp_id       = ($body_temp_id && preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $body_temp_id));
-        $browser_quiz_data = $request->get_param('quiz_data');
-        $session_id        = sanitize_text_field($request->get_param('session_id') ?? '');
-
-        $token         = wp_generate_password(32, false, false);
-        $transient_key = 'flosc_magic_' . $token;
-        $payload       = [
-            'status'     => 'pending',
-            'email'      => $email,
-            'temp_id'    => $has_temp_id ? $body_temp_id : '',
-            'quiz_data'  => is_array($browser_quiz_data) ? $browser_quiz_data : null,
-            'session_id' => $session_id,
-            'flow_id'    => $flow_id,
-            'redirect_to' => $redirect_to,
-            'created_at' => time(),
-        ];
-        set_transient($transient_key, $payload, 7 * DAY_IN_SECONDS);
-
-        $sent = $this->send_guest_link_email($email, $token, $flow_id);
-        if (!$sent) {
-            delete_transient($transient_key);
-            return new WP_REST_Response([
-                'success' => false,
-                'message' => 'We could not send your login link right now. Please try again.'
-            ], 500);
-        }
-
-        $this->record_guest_link_send($email);
-
-        return new WP_REST_Response([
-            'success'          => true,
-            'magic_link_sent'  => true,
-            'message'          => 'Check your email for your ' . $guest_email_context['link_name'] . '.',
-            'nonce'            => wp_create_nonce('wp_rest'),
-        ]);
-    }
-
-    /**
-     * Send the Complimentary LeSAEp Learners Guest Access Link email.
-     */
-    private function normalize_guest_request_email($email) {
-        return strtolower(trim((string) $email));
-    }
-
-    private function get_guest_request_key($email) {
-        return md5($this->normalize_guest_request_email($email));
-    }
-
-    private function get_guest_account_request_queue() {
-        $queue = get_option('flosc_guest_account_request_queue', []);
-        return is_array($queue) ? $queue : [];
-    }
-
-    private function save_guest_account_request_queue(array $queue) {
-        update_option('flosc_guest_account_request_queue', $queue, false);
-    }
-
-    private function get_guest_account_request_denylist() {
-        $denylist = get_option('flosc_guest_account_request_denylist', []);
-        return is_array($denylist) ? $denylist : [];
-    }
-
-    private function save_guest_account_request_denylist(array $denylist) {
-        update_option('flosc_guest_account_request_denylist', $denylist, false);
-    }
-
-    private function is_guest_request_email_blocked($email) {
-        $email = $this->normalize_guest_request_email($email);
-        if ($email === '') {
-            return false;
-        }
-        $denylist = $this->get_guest_account_request_denylist();
-        return isset($denylist[$this->get_guest_request_key($email)]);
-    }
-
-    private function upsert_guest_account_request($email, $flow_id = '', $message = '') {
-        $email = sanitize_email($email);
-        if (empty($email) || !is_email($email)) {
-            return;
-        }
-
-        $flow_id = sanitize_key((string) $flow_id);
-        $queue = $this->get_guest_account_request_queue();
-        $key = $this->get_guest_request_key($email);
-        $now = time();
-        $excerpt = sanitize_textarea_field((string) $message);
-
-        if (!isset($queue[$key]) || !is_array($queue[$key])) {
-            $queue[$key] = [
-                'email' => $email,
-                'flow_id' => $flow_id,
-                'status' => 'pending',
-                'requested_at' => $now,
-                'last_requested_at' => $now,
-                'last_message_excerpt' => $excerpt,
-                'decision_at' => 0,
-                'decided_by' => 0,
-            ];
-        } else {
-            $queue[$key]['email'] = $email;
-            $queue[$key]['flow_id'] = $flow_id !== '' ? $flow_id : sanitize_key((string) ($queue[$key]['flow_id'] ?? ''));
-            $queue[$key]['status'] = 'pending';
-            $queue[$key]['last_requested_at'] = $now;
-            if ($excerpt !== '') {
-                $queue[$key]['last_message_excerpt'] = $excerpt;
-            }
-            if (empty($queue[$key]['requested_at'])) {
-                $queue[$key]['requested_at'] = $now;
-            }
-            $queue[$key]['decision_at'] = 0;
-            $queue[$key]['decided_by'] = 0;
-        }
-
-        $this->save_guest_account_request_queue($queue);
-    }
-
-    private function set_guest_account_request_status($email, $status, $actor_id = 0) {
-        $email = sanitize_email($email);
-        if (empty($email) || !is_email($email)) {
-            return false;
-        }
-
-        $status = sanitize_key((string) $status);
-        if (!in_array($status, ['pending', 'approved', 'denied'], true)) {
-            return false;
-        }
-
-        $queue = $this->get_guest_account_request_queue();
-        $key = $this->get_guest_request_key($email);
-        if (!isset($queue[$key]) || !is_array($queue[$key])) {
-            $queue[$key] = [
-                'email' => $email,
-                'flow_id' => '',
-                'status' => $status,
-                'requested_at' => time(),
-                'last_requested_at' => time(),
-                'last_message_excerpt' => '',
-                'decision_at' => 0,
-                'decided_by' => 0,
-            ];
-        }
-
-        $queue[$key]['status'] = $status;
-        $queue[$key]['decision_at'] = time();
-        $queue[$key]['decided_by'] = intval($actor_id);
-        $this->save_guest_account_request_queue($queue);
-
-        return true;
-    }
-
-    private function delete_guest_account_request($email) {
-        $email = sanitize_email($email);
-        if (empty($email) || !is_email($email)) {
-            return false;
-        }
-
-        $queue = $this->get_guest_account_request_queue();
-        $key = $this->get_guest_request_key($email);
-        if (isset($queue[$key])) {
-            unset($queue[$key]);
-            $this->save_guest_account_request_queue($queue);
-        }
-        return true;
-    }
-
-    private function deny_and_block_guest_account_request($email, $actor_id = 0) {
-        $email = sanitize_email($email);
-        if (empty($email) || !is_email($email)) {
-            return false;
-        }
-
-        $this->set_guest_account_request_status($email, 'denied', $actor_id);
-        $denylist = $this->get_guest_account_request_denylist();
-        $denylist[$this->get_guest_request_key($email)] = [
-            'email' => $email,
-            'blocked_at' => time(),
-            'blocked_by' => intval($actor_id),
-        ];
-        $this->save_guest_account_request_denylist($denylist);
-
-        return true;
-    }
-
-    private function unblock_guest_account_request_email($email) {
-        $email = sanitize_email($email);
-        if (empty($email) || !is_email($email)) {
-            return false;
-        }
-
-        $denylist = $this->get_guest_account_request_denylist();
-        $key = $this->get_guest_request_key($email);
-        if (isset($denylist[$key])) {
-            unset($denylist[$key]);
-            $this->save_guest_account_request_denylist($denylist);
-        }
-
-        return true;
-    }
-
-    private function record_guest_link_send($email) {
-        $email = sanitize_email($email);
-        if (empty($email) || !is_email($email)) {
-            return;
-        }
-
-        $log = get_option('flosc_guest_link_log', []);
-        if (!is_array($log)) {
-            $log = [];
-        }
-        $hash = $this->get_guest_request_key($email);
-        $now = time();
-        if (isset($log[$hash]) && is_array($log[$hash])) {
-            $log[$hash]['count'] = max(0, intval($log[$hash]['count'] ?? 0)) + 1;
-            $log[$hash]['last_sent'] = $now;
-            $log[$hash]['email'] = $email;
-        } else {
-            $log[$hash] = [
-                'email' => $email,
-                'count' => 1,
-                'first_sent' => $now,
-                'last_sent' => $now,
-            ];
-        }
-
-        $cutoff = $now - (90 * DAY_IN_SECONDS);
-        foreach ($log as $key => $entry) {
-            if (!is_array($entry)) {
-                unset($log[$key]);
-                continue;
-            }
-            if (intval($entry['last_sent'] ?? 0) < $cutoff) {
-                unset($log[$key]);
-            }
-        }
-        update_option('flosc_guest_link_log', $log, false);
-
-        if (intval($log[$hash]['count'] ?? 0) === 6) {
-            $this->send_guest_link_warning_email($email, 6);
-        }
-    }
-
-    private function build_guest_request_admin_redirect($notice_key) {
-        $notice_key = sanitize_key((string) $notice_key);
-        $request = wp_unslash($_REQUEST); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only admin redirect context
-        $base_url = add_query_arg([
-            'page' => 'flosc-settings',
-            'tab' => 'login_registration',
-            'ivr' => sanitize_file_name((string) ($request['ivr'] ?? '')),
-            'flosc_guest_request_notice' => $notice_key,
-        ], admin_url('admin.php'));
-
-        return $base_url;
-    }
-
-    private function send_guest_link_email($email, $token, $flow_id = '') {
-        $context = $this->get_guest_email_context($flow_id);
-        $magic_url  = add_query_arg('flosc_magic', rawurlencode($token), $context['chat_url']);
-        $link_name  = $context['link_name'];
-        $raw_subject = trim((string) (($context['settings']['guest_link_email_subject'] ?? '')));
-        if ($raw_subject === '') {
-            $raw_subject = 'Your {link_name}';
-        }
-        $subject    = str_replace('{link_name}', $link_name, $raw_subject);
-
-        $safe_link_name = esc_html($link_name);
-        $safe_email     = esc_html($email);
-        $safe_url       = esc_url($magic_url);
-
-        $body = '<!doctype html><html><body class="flosc-email-body">'
-            . '<div class="flosc-email-wrap">'
-            . '<div class="flosc-email-card">'
-            . '<h1 class="flosc-email-title">Your ' . $safe_link_name . ' is ready</h1>'
-            . '<p class="flosc-email-lead">Click the button below to access the chat, view your quiz score, free lessons, and a special upgrade offer.</p>'
-            . '<p class="flosc-email-copy">Your link is valid for 7 days and can be used up to 10 times over 30 days.</p>'
-            . '<p class="flosc-email-cta-wrap"><a class="flosc-email-cta" href="' . $safe_url . '">' . $safe_link_name . '</a></p>'
-            . '<p class="flosc-email-copy">If the button does not work, copy and paste this link into your browser:</p>'
-            . '<p class="flosc-email-url"><a href="' . $safe_url . '">' . $safe_url . '</a></p>'
-            . '<p class="flosc-email-foot">This message was sent to ' . $safe_email . '.</p>'
-            . '</div></div></body></html>';
-
-        $headers = $this->get_flosc_mail_headers($flow_id, 0, true);
-
-        return wp_mail($email, $subject, $body, $headers);
-    }
-
-    /**
-     * Resolve a stable app URL for guest-link emails and login redirects.
-     * Uses explicit flow settings first, then current host detection fallback.
-     */
-    private function get_guest_link_base_url($flow_id = '') {
-        $flow_id = sanitize_key((string) $flow_id);
-        if (!empty($flow_id)) {
-            $settings_key = 'flosc_flow_' . $flow_id;
-            $settings = get_option($settings_key, []);
-
-            $configured_redirect = trim((string) ($settings['sso_post_login_redirect_url'] ?? ''));
-            if (!empty($configured_redirect)) {
-                $configured_redirect = esc_url_raw($configured_redirect);
-                if (wp_http_validate_url($configured_redirect)) {
-                    return trailingslashit($configured_redirect);
-                }
-            }
-
-            $domain = trim((string) ($settings['domain'] ?? ''));
-            if (!empty($domain)) {
-                $domain = preg_replace('#^https?://#', '', $domain);
-                $domain = rtrim($domain, '/');
-                if (!empty($domain)) {
-                    return 'https://' . $domain . '/';
-                }
-            }
-        }
-
-        return $this->get_app_url();
-    }
-
-    /**
-     * Send a warning email when an email has requested 6+ guest links.
-     * Friendly but firm — covers both genuine learners and potential abusers.
-     */
-    private function send_guest_link_warning_email($email, $count) {
-        $link_name   = flosc_get_setting('guest_link_name', 'Complimentary LeSAEp Learners Guest Access Link');
-        $upgrade_url = flosc_get_setting('guest_link_upgrade_url', '');
-        $safe_email  = esc_html($email);
-        $safe_name   = esc_html($link_name);
-        $safe_upg    = $upgrade_url ? esc_url($upgrade_url) : '';
-
-        $subject = "A note about your {$link_name} requests";
-
-        $body = '<!doctype html><html><body class="flosc-email-body">'
-            . '<div class="flosc-email-wrap">'
-            . '<div class="flosc-email-card">'
-            . '<h1 class="flosc-email-title flosc-email-title--small">A quick note</h1>'
-            . '<p class="flosc-email-lead flosc-email-lead--spaced">We\'ve noticed that ' . $safe_email . ' has requested <strong>' . (int) $count . ' ' . $safe_name . 's</strong>.</p>'
-            . '<p class="flosc-email-lead flosc-email-lead--spaced">If you are a sincere learner — that\'s absolutely fine! We look forward to welcoming you as a full member soon.'
-            . ($safe_upg ? ' <a class="flosc-email-link" href="' . $safe_upg . '">Click here to upgrade</a> and get complete access.' : '')
-            . '</p>'
-            . '<p class="flosc-email-copy">If you are acting maliciously: we are now tracking IP address, geolocation, device fingerprint, and other identifying data associated with these requests. This data is retained and can be reported to the appropriate authorities.</p>'
-            . '<p class="flosc-email-foot flosc-email-foot--brand">LeSAEp Learners</p>'
-            . '</div></div></body></html>';
-
-        $headers = $this->get_flosc_mail_headers('', 0, true);
-        wp_mail($email, $subject, $body, $headers);
-    }
-
     /**
      * Delete a DO session directory after its data has been pulled to WP.
      * Fire-and-forget: failures are logged but do not block the login flow.
@@ -10477,7 +10257,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("[FLOSC v8.0.7] score_visit
         }
     }
 
-    /**
+/**
      * Save guest profile nickname and optional password from the in-chat profile card.
      * Called on first (and every subsequent) guest link login.
      */
@@ -10664,6 +10444,24 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
      */
     public function get_free_lesson($request) {
         $user_id = get_current_user_id();
+
+        // Only flows with Lessons tab config (lesson_groups / category / pool) deliver lessons.
+        $flow_raw = (string) ($request->get_param('flow_id') ?? $request->get_param('ivr_file') ?? '');
+        if ($flow_raw === '') {
+            $cf = $this->get_current_flow();
+            if (is_array($cf)) {
+                $flow_raw = (string) ($cf['ivr_file'] ?? $cf['ivr'] ?? $cf['id'] ?? '');
+            }
+        }
+        $stem = $this->flosc_normalize_flow_stem($flow_raw);
+        if (!$this->flosc_flow_serves_lessons($stem)) {
+            return new WP_REST_Response([
+                'success' => false,
+                'code'    => 'lessons_not_on_flow',
+                'message' => 'Lessons are not available in this chat.',
+            ], 404);
+        }
+
         $free_lesson_mgr = FLOSC_Free_Lesson_Manager::instance();
 
         // v1.4.9 FIX: Call deliver_free_lesson() instead of get_free_lesson()
@@ -10905,9 +10703,70 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
             wp_send_json_error('Auth failed: ' . $err);
         }
 
+        // Register / refresh webhook so renewals verify (same app as Client ID/Secret).
+        $webhook_info = null;
+        if (method_exists($pp, 'ensure_webhook_registered')) {
+            $wh = $pp->ensure_webhook_registered(true);
+            if (is_wp_error($wh)) {
+                wp_send_json_success([
+                    'mode'     => ucfirst($mode),
+                    'app_name' => $body['app_id'] ?? 'PayPal',
+                    'webhook'  => 'error: ' . $wh->get_error_message(),
+                ]);
+            }
+            $webhook_info = [
+                'id'      => $wh['webhook_id'] ?? '',
+                'url'     => $wh['url'] ?? '',
+                'created' => !empty($wh['created']),
+            ];
+        }
+
+        // P0-A security matrix (same path as production REST dispatcher).
+        $p0a = ['unsigned' => null, 'forged' => null, 'headers_wired' => false];
+        if (method_exists($pp, 'handle_webhook') && class_exists('WP_REST_Request')) {
+            $unsigned = $pp->handle_webhook('{"id":"WH-ADMIN-UNSIGNED"}', []);
+            $p0a['unsigned'] = is_wp_error($unsigned)
+                ? ($unsigned->get_error_code() . ':' . (int) ($unsigned->get_error_data()['status'] ?? 0))
+                : 'unexpected_ok';
+
+            // Synthetic headers as the dispatcher would pass them after collection.
+            $forged_headers = [
+                'paypal-transmission-id'   => 'admin-test-tid',
+                'paypal-transmission-time' => '2020-01-01T00:00:00Z',
+                'paypal-transmission-sig'  => 'abc+def/ghi=',
+                'paypal-cert-url'          => 'https://api.paypal.com/v1/notifications/certs/CERT-test',
+                'paypal-auth-algo'         => 'SHA256withRSA',
+            ];
+            $forged = $pp->handle_webhook(
+                '{"id":"WH-ADMIN-FORGED","event_type":"PAYMENT.SALE.COMPLETED","resource":{}}',
+                $forged_headers
+            );
+            $p0a['forged'] = is_wp_error($forged)
+                ? ($forged->get_error_code() . ':' . (int) ($forged->get_error_data()['status'] ?? 0))
+                : 'unexpected_ok';
+
+            $req = new WP_REST_Request('POST', '/flosc/v1/webhooks/paypal');
+            $req->set_header('paypal-transmission-id', 'wire-check');
+            $collected = FLOSC_PayPal_Provider::collect_transmission_headers_from_request($req);
+            $p0a['headers_wired'] = !empty($collected['paypal-transmission-id']);
+            // Unsigned → missing_signature:401; forged → invalid_signature/invalid_cert:401.
+            $p0a['pass'] = (
+                is_string($p0a['unsigned']) && strpos($p0a['unsigned'], 'missing_signature') === 0
+                && is_string($p0a['forged']) && (
+                    strpos($p0a['forged'], 'invalid_signature') === 0
+                    || strpos($p0a['forged'], 'invalid_cert_url') === 0
+                    || strpos($p0a['forged'], 'paypal_verify') === 0
+                    || strpos($p0a['forged'], 'webhook_not_configured') === 0
+                )
+                && $p0a['headers_wired']
+            );
+        }
+
         wp_send_json_success([
             'mode'     => ucfirst($mode),
-            'app_name' => $body['app_id'] ?? 'LeSAEp',
+            'app_name' => $body['app_id'] ?? 'PayPal',
+            'webhook'  => $webhook_info,
+            'p0a'      => $p0a,
         ]);
     }
 
@@ -11265,6 +11124,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
         if ($capture_flow_id) {
             update_user_meta($user_id, '_flosc_purchased_flow_id', $capture_flow_id);
             update_user_meta($user_id, '_flosc_subscription_flow_id', $capture_flow_id);
+        }
+
+        // Ensure PayPal webhook is registered so renewal/cancel events can be verified.
+        if ($paypal && method_exists($paypal, 'ensure_webhook_registered')) {
+            $paypal->ensure_webhook_registered(false);
         }
 
         // Product token credit from the sold offer (custom) or flow Token Management defaults.
@@ -11672,12 +11536,21 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             return new WP_Error('invalid_provider', __('Unknown provider', 'flosc'), ['status' => 400]);
         }
 
-        // Get Stripe signature header (single string, not array)
+        // Collect provider-specific authenticity headers for signature verification.
+        // Webhook routes are public by design; crypto verification lives in each provider.
         $headers = [];
         if ($provider_id === 'stripe') {
             $stripe_sig = $request->get_header('stripe-signature');
             if ($stripe_sig) {
                 $headers['stripe-signature'] = is_array($stripe_sig) ? $stripe_sig[0] : $stripe_sig;
+            }
+        } elseif ($provider_id === 'paypal') {
+            // Single source of truth: FLOSC_PayPal_Provider::collect_transmission_headers_from_request()
+            // (also re-run as fallback inside the provider so this path cannot go unwired).
+            if (class_exists('FLOSC_PayPal_Provider')
+                && method_exists('FLOSC_PayPal_Provider', 'collect_transmission_headers_from_request')
+            ) {
+                $headers = FLOSC_PayPal_Provider::collect_transmission_headers_from_request($request);
             }
         }
 
@@ -11701,12 +11574,278 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
         $user_id = get_current_user_id();
         $access = $this->sale_manager->access();
         $member_access = $this->member_access;
+        $flow_id = sanitize_key((string) ($request->get_param('flow_id') ?? ''));
+        if ($flow_id === '') {
+            $flow = $this->get_current_flow();
+            if (is_array($flow)) {
+                $flow_id = $this->flosc_normalize_flow_stem(
+                    (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '')
+                );
+            }
+        }
         
         return new WP_REST_Response([
-            'state' => $access->get_simple_state($user_id),
-            'level' => $member_access->get_access_level($user_id),
+            'state' => $access->get_simple_state($user_id, $flow_id),
+            'level' => $member_access->get_access_level($user_id, $flow_id),
+            'flow_id' => $flow_id,
             'access' => $access->get_user_access($user_id),
         ]);
+    }
+
+    /**
+     * Bootstrap / rehydrate logged-in session for the app shell.
+     *
+     * When PHP rendered as visitor (WP cookie missing on this host) but the
+     * browser still has flosc_auth_token (localStorage → X-FLOSC-Token), this
+     * endpoint authenticates the user, sets the auth cookie for next paint,
+     * and returns per-flow state + token balances from the USER PROFILE
+     * (never the visitor wallet).
+     *
+     * @param WP_REST_Request $request
+     * @return WP_REST_Response
+     */
+    public function handle_session_bootstrap($request) {
+        nocache_headers();
+
+        // Accept token from header (authFetch) or body/query for recovery paths.
+        if (!is_user_logged_in()) {
+            $token = '';
+            if (!empty($_SERVER['HTTP_X_FLOSC_TOKEN'])) {
+                $token = sanitize_text_field(wp_unslash($_SERVER['HTTP_X_FLOSC_TOKEN']));
+            }
+            if ($token === '') {
+                $token = sanitize_text_field((string) ($request->get_param('auth_token') ?? ''));
+            }
+            if ($token !== '') {
+                $uid = $this->validate_flosc_auth_token($token);
+                if ($uid) {
+                    wp_set_current_user($uid);
+                    $this->flosc_token_auth_used = true;
+                }
+            }
+        }
+
+        if (!is_user_logged_in()) {
+            return new WP_REST_Response([
+                'success' => false,
+                'state'   => 'visitor',
+                'user'    => null,
+            ], 200);
+        }
+
+        $user_id = get_current_user_id();
+        $flow_raw = (string) ($request->get_param('flow_id') ?? '');
+        if ($flow_raw === '') {
+            $flow = $this->get_current_flow();
+            if (is_array($flow)) {
+                $flow_raw = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '');
+            }
+        }
+        $flow_stem = $this->flosc_normalize_flow_stem($flow_raw);
+        if ($flow_stem === '' || $flow_stem === 'default') {
+            $this->set_flow_context($flow_raw);
+            $flow = $this->get_current_flow();
+            if (is_array($flow)) {
+                $flow_stem = $this->flosc_normalize_flow_stem(
+                    (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? $flow_raw)
+                );
+            }
+        }
+
+        $payload = $this->build_app_user_payload($user_id, $flow_stem, [
+            'allow_guest_grant_without_session' => true,
+        ]);
+
+        // Stick auth on this host so the next full page load is not visitor.
+        $auth_token = $this->generate_flosc_auth_token($user_id);
+        $this->set_flosc_auth_cookie($auth_token);
+
+        return new WP_REST_Response([
+            'success'   => true,
+            'state'     => $payload['state'] ?? 'guest',
+            'flow_id'   => $flow_stem,
+            'user'      => $payload,
+            'authToken' => $auth_token,
+        ]);
+    }
+
+    /**
+     * Build FLOSC_USER payload for a logged-in user on one flow.
+     * Tokens always come from user meta for that flow (profile wallet), not visitor session.
+     *
+     * @param int    $user_id
+     * @param string $flow_stem
+     * @param array  $args {
+     *     @type bool $allow_guest_grant_without_session Apply V→G without visitor cookie.
+     *     @type bool $consume_event_transients          Clear justLoggedIn etc. (page paint only).
+     * }
+     * @return array
+     */
+    public function build_app_user_payload($user_id, $flow_stem = '', $args = []) {
+        $user_id = absint($user_id);
+        $args    = wp_parse_args($args, [
+            'allow_guest_grant_without_session' => false,
+            'consume_event_transients'          => false,
+        ]);
+        $user = get_userdata($user_id);
+        if (!$user) {
+            return [];
+        }
+
+        $flow_stem = $this->flosc_normalize_flow_stem($flow_stem);
+        if ($flow_stem === '' || $flow_stem === 'default') {
+            $current = $this->get_current_flow();
+            if (is_array($current)) {
+                $flow_stem = $this->flosc_normalize_flow_stem(
+                    (string) ($current['ivr_file'] ?? $current['ivr'] ?? $current['id'] ?? '')
+                );
+            }
+        }
+
+        // Authenticated payload path: guest or member only (never visitor).
+        $user_state = $this->sale_manager->access()->get_simple_state($user_id, $flow_stem);
+        if ($user_state !== 'member') {
+            $user_state = 'guest';
+        }
+
+        $just_completed_quiz = (bool) get_transient('flosc_just_completed_quiz_' . $user_id);
+        $just_logged_in      = (bool) get_transient('flosc_just_logged_in_' . $user_id);
+        $just_purchased      = (bool) get_transient('flosc_just_purchased_' . $user_id);
+        if (!empty($args['consume_event_transients'])) {
+            if ($just_completed_quiz) {
+                delete_transient('flosc_just_completed_quiz_' . $user_id);
+            }
+            if ($just_logged_in) {
+                delete_transient('flosc_just_logged_in_' . $user_id);
+            }
+            if ($just_purchased) {
+                delete_transient('flosc_just_purchased_' . $user_id);
+            }
+        }
+
+        $actually_purchased = (bool) get_user_meta($user_id, '_flosc_purchased', true);
+        $flow_id_for_tokens = $flow_stem;
+        if ($flow_id_for_tokens === '' || $flow_id_for_tokens === 'default') {
+            $flow_id_for_tokens = $this->flosc_normalize_flow_stem(
+                (string) get_user_meta($user_id, '_flosc_registration_flow', true)
+            );
+        }
+
+        $session_for_grant = $this->flosc_resolve_visitor_session_id_for_grant();
+        if ($this->flosc_user_should_receive_guest_tokens($user_id, $flow_id_for_tokens)) {
+            $flow_token_balance = $this->flosc_apply_guest_token_grant_once(
+                $user_id,
+                $flow_id_for_tokens,
+                $session_for_grant,
+                !empty($args['allow_guest_grant_without_session'])
+            );
+        } elseif ($this->sale_manager->access()->is_member($user_id, $flow_id_for_tokens)) {
+            $flow_token_balance = $this->flosc_apply_member_token_grant_once($user_id, $flow_id_for_tokens);
+        } else {
+            $flow_token_balance = $this->flosc_get_user_flow_token_balance($user_id, $flow_id_for_tokens);
+        }
+
+        $sale_token_balance = 0;
+        $token_provider_for_user = $this->sale_manager->get_provider('tokens');
+        if ($token_provider_for_user && method_exists($token_provider_for_user, 'get_balance')) {
+            $sale_token_balance = (int) $token_provider_for_user->get_balance($user_id);
+        }
+        $guest_grant_done = (bool) get_user_meta(
+            $user_id,
+            $this->flosc_guest_token_grant_flag_key($flow_id_for_tokens),
+            true
+        );
+        $member_grant_done = (bool) get_user_meta(
+            $user_id,
+            $this->flosc_member_token_grant_flag_key($flow_id_for_tokens),
+            true
+        );
+        $display_tokens = ($guest_grant_done || $member_grant_done || $flow_token_balance > 0)
+            ? $flow_token_balance
+            : $sale_token_balance;
+
+        $payload = [
+            'id'                  => $user_id,
+            'name'                => $user->display_name,
+            'email'               => $user->user_email,
+            'avatar'              => get_avatar_url($user_id, ['size' => 40]),
+            'state'               => $user_state,
+            'purchased'           => $actually_purchased,
+            'isAdmin'             => user_can($user_id, 'manage_options'),
+            'memberLevels'        => ($this->member_access && method_exists($this->member_access, 'get_user_levels'))
+                ? $this->member_access->get_user_levels($user_id)
+                : [],
+            'access'              => $this->sale_manager->access()->get_user_access($user_id),
+            'tokens'              => $display_tokens,
+            'tokenBalance'        => $display_tokens,
+            'flowTokens'          => $flow_token_balance,
+            'flowId'              => $flow_id_for_tokens,
+            // Free lessons only when this flow’s Lessons config serves lessons.
+            'freeLessonDelivered' => (bool) get_user_meta($user_id, '_flosc_free_lesson_delivered', true),
+            'freeLessonsCount'    => (function () use ($user_id, $flow_stem) {
+                if (!$this->flosc_flow_serves_lessons($flow_stem)) {
+                    return 0;
+                }
+                return count(get_user_meta($user_id, '_flosc_free_lesson_numbers', true) ?: []);
+            })(),
+            'freeLessons'         => (function () use ($user_id, $flow_stem) {
+                if (!$this->flosc_flow_serves_lessons($flow_stem)) {
+                    return [];
+                }
+                if (!class_exists('FLOSC_Free_Lesson_Manager')) {
+                    return [];
+                }
+                $raw = FLOSC_Free_Lesson_Manager::instance()->get_free_lessons($user_id);
+                if (empty($raw) || !is_array($raw)) {
+                    return [];
+                }
+                $lessons = [];
+                foreach ($raw as $row) {
+                    $lessons[] = [
+                        'title'         => $row['title'] ?? '',
+                        'content'       => $row['content'] ?? '',
+                        'url'           => $row['url'] ?? '',
+                        'lesson_number' => $row['lesson_number'] ?? null,
+                    ];
+                }
+                return $lessons;
+            })(),
+            'lastQuizScore'       => null,
+            'lastQuizId'          => null,
+            'lastQuizData'        => null,
+            'initialScore'        => null,
+            'initialQuizId'       => null,
+            'funnelCompleted'     => (bool) get_user_meta($user_id, '_flosc_funnel_completed', true),
+            'justCompletedQuiz'   => $just_completed_quiz,
+            'justLoggedIn'        => $just_logged_in,
+            'justPurchased'       => $just_purchased,
+            'loginCount'          => (int) get_user_meta($user_id, '_flosc_login_count', true),
+            'completedQuizzes'    => [],
+            'purchaseCount'       => (int) get_user_meta($user_id, '_flosc_purchase_count', true),
+            'memberLevel'         => get_user_meta($user_id, '_flosc_member_level', true) ?: '',
+            'flowStatuses'        => $this->flosc_build_user_flow_statuses($user_id, $flow_stem),
+        ];
+
+        // Quiz meta is per-user global; only attach it when THIS flow owns that quiz.
+        $quiz_data = get_user_meta($user_id, '_flosc_last_quiz_data', true);
+        $quiz_id   = (string) get_user_meta($user_id, '_flosc_last_quiz_id', true);
+        if (!is_array($quiz_data)) {
+            $quiz_data = null;
+        }
+        if ($this->flosc_flow_should_surface_quiz_data($flow_stem, $quiz_data, $quiz_id)) {
+            $payload['lastQuizData']  = $quiz_data;
+            $payload['lastQuizId']    = $quiz_id !== '' ? $quiz_id : null;
+            $payload['lastQuizScore'] = get_user_meta($user_id, '_flosc_last_quiz_score', true);
+            $payload['initialScore']  = get_user_meta($user_id, '_flosc_initial_score', true);
+            $payload['initialQuizId'] = get_user_meta($user_id, '_flosc_initial_quiz_id', true);
+            $completed = get_user_meta($user_id, '_flosc_completed_quizzes', true);
+            $payload['completedQuizzes'] = is_array($completed) ? $completed : [];
+        } else {
+            // Do not fire justCompletedQuiz UI on flows that never ran this quiz.
+            $payload['justCompletedQuiz'] = false;
+        }
+
+        return $payload;
     }
     
     public function get_token_balance($request) {
@@ -11847,47 +11986,46 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
         $user_context['first_message_after_login'] = $request->get_param('after_login') === 'true';
         $user_context['first_message_after_purchase'] = $request->get_param('after_purchase') === 'true';
 
-        // v1.3.8: Load IVR config - prefer explicit ivr_file param, then fall back to detection
-        $config = [];
-        $parser = FLOSC_IVR_Parser::flosc_instance();
-
-        if (!empty($ivr_file)) {
-            // Explicit IVR file from frontend - load directly
-            $ivr_path = flosc_config_file($ivr_file);
-            if (file_exists($ivr_path)) {
-                $markdown = file_get_contents($ivr_path);
-                $config = $parser->flosc_parse($markdown);
-                $ivr_source = 'explicit:' . $ivr_file;
-            } else {
-                // Log warning but continue to fallback
-                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC v1.3.8] IVR file not found: ' . $ivr_file . ' - falling back');
-                }
-            }
-        }
-
-        // Fallback: URL-based detection via flosc_load_config()
-        if (empty($config) || empty($config['messages'])) {
-            $config = $parser->flosc_load_config();
-            $ivr_source = 'detection:flosc_load_config';
-        }
+        // v1.3.8: Resolve flow runtime config (DB first, file fallback only when flow bag is empty)
+        $config = flosc_resolve_flow_runtime($flow_id, $ivr_file);
+        $ivr_source = $config['source'] ?? 'empty';
 
         $all_messages = $config['messages'] ?? [];
         $phases = $config['phases'] ?? [];
         
-        // v1.1.0: Get messages from primary phase AND related phases
-        // Members need messages from both sale and content phases
+        // Phase access matrix (P0-E):
+        // - Public content → 403
+        // - Public sale → sale only (never merge content IVR)
+        // - Member/admin → may merge sale+content
+        $is_member = !empty($user_context['is_member'])
+            || (isset($user_context['access_level']) && in_array((string) $user_context['access_level'], ['member', 'full'], true));
+        if (!$is_member && is_user_logged_in() && $this->member_access) {
+            $is_member = (bool) $this->member_access->is_member(get_current_user_id());
+        }
+        $is_admin = current_user_can('manage_options');
+
+        if ($phase === 'content' && !$is_member && !$is_admin) {
+            return new WP_Error(
+                'flosc_content_phase_forbidden',
+                __('Content phase requires membership.', 'flosc'),
+                ['status' => 403]
+            );
+        }
+
         $phases_to_check = [$phase];
         if ($phase === 'sale' || $phase === 'content') {
-            // Member phases - include both
-            $phases_to_check = ['sale', 'content'];
+            if ($is_member || $is_admin) {
+                $phases_to_check = ['sale', 'content'];
+            } else {
+                // Public sale funnel: sale only (no content-phase leak).
+                $phases_to_check = ['sale'];
+            }
         } elseif ($phase === 'login' || $phase === 'offer') {
-            // Guest phases - include both
             $phases_to_check = ['login', 'offer'];
         }
         
-        // v1.1.0: Always include freeline for 'always' condition messages
-        if (!in_array('freeline', $phases_to_check)) {
+        // Always include freeline for 'always' condition messages (not member content).
+        if (!in_array('freeline', $phases_to_check, true)) {
             $phases_to_check[] = 'freeline';
         }
         
@@ -13081,172 +13219,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             ]);
         }
     }
-
-    /**
-     * Admin AJAX: send a Complimentary LeSAEp Learners Guest Access Link to any email.
-     * Used from the Register & Login settings tab by admins.
-     */
-    public function ajax_send_guest_link() {
-        $post = wp_unslash($_POST);
-        check_ajax_referer('flosc_send_guest_link', 'nonce');
-
-        if (!current_user_can('manage_options')) {
-            wp_send_json_error(['message' => 'Unauthorized'], 403);
-        }
-
-        $email = sanitize_email($post['email'] ?? '');
-        if (empty($email) || !is_email($email)) {
-            wp_send_json_error(['message' => 'Please enter a valid email address.']);
-        }
-
-        // Set flow context so flosc_get_setting reads the correct per-flow settings
-        $ivr = sanitize_file_name($post['ivr'] ?? '');
-        if (!empty($ivr)) {
-            $this->set_flow_context(pathinfo($ivr, PATHINFO_FILENAME));
-        }
-
-        $flow_id       = !empty($ivr) ? sanitize_key(pathinfo($ivr, PATHINFO_FILENAME)) : '';
-        $token         = wp_generate_password(32, false, false);
-        $transient_key = 'flosc_magic_' . $token;
-        $payload       = [
-            'status'     => 'pending',
-            'email'      => $email,
-            'temp_id'    => '',
-            'quiz_data'  => null,
-            'session_id' => '',
-            'flow_id'    => $flow_id,
-            'redirect_to' => '',
-            'created_at' => time(),
-        ];
-        set_transient($transient_key, $payload, 7 * DAY_IN_SECONDS);
-
-        $sent = $this->send_guest_link_email($email, $token, $flow_id);
-        if (!$sent) {
-            delete_transient($transient_key);
-            wp_send_json_error(['message' => 'Email could not be sent. Check your mail configuration.']);
-        }
-
-        $this->record_guest_link_send($email);
-
-        $link_name = flosc_get_setting('guest_link_name', 'Complimentary LeSAEp Learners Guest Access Link');
-        wp_send_json_success([
-            'message' => sprintf('%s sent to %s', esc_html($link_name), esc_html($email)),
-        ]);
-    }
-
-    public function handle_guest_request_approve() {
-        if (!current_user_can('manage_options')) {
-            wp_die(esc_html__('Unauthorized', 'flosc'), '', ['response' => 403]);
-        }
-
-        check_admin_referer('flosc_guest_request_action', 'flosc_guest_request_nonce');
-
-        $post = wp_unslash($_POST);
-        $email = sanitize_email((string) ($post['email'] ?? ''));
-        $actor = get_current_user_id();
-        if (empty($email) || !is_email($email)) {
-            wp_safe_redirect($this->build_guest_request_admin_redirect('invalid_email'));
-            exit;
-        }
-
-        $this->unblock_guest_account_request_email($email);
-        $this->set_guest_account_request_status($email, 'approved', $actor);
-
-        wp_safe_redirect($this->build_guest_request_admin_redirect('approved'));
-        exit;
-    }
-
-    public function handle_guest_request_approve_send() {
-        if (!current_user_can('manage_options')) {
-            wp_die(esc_html__('Unauthorized', 'flosc'), '', ['response' => 403]);
-        }
-
-        check_admin_referer('flosc_guest_request_action', 'flosc_guest_request_nonce');
-
-        $post = wp_unslash($_POST);
-        $email = sanitize_email((string) ($post['email'] ?? ''));
-        $flow_id = sanitize_key((string) ($post['flow_id'] ?? ''));
-        $actor = get_current_user_id();
-        if (empty($email) || !is_email($email)) {
-            wp_safe_redirect($this->build_guest_request_admin_redirect('invalid_email'));
-            exit;
-        }
-
-        $this->unblock_guest_account_request_email($email);
-        $this->set_guest_account_request_status($email, 'approved', $actor);
-
-        $token = wp_generate_password(32, false, false);
-        $transient_key = 'flosc_magic_' . $token;
-        set_transient($transient_key, [
-            'status' => 'pending',
-            'email' => $email,
-            'temp_id' => '',
-            'quiz_data' => null,
-            'session_id' => '',
-            'flow_id' => $flow_id,
-            'redirect_to' => '',
-            'created_at' => time(),
-        ], 7 * DAY_IN_SECONDS);
-
-        $sent = $this->send_guest_link_email($email, $token, $flow_id);
-        if (!$sent) {
-            delete_transient($transient_key);
-            wp_safe_redirect($this->build_guest_request_admin_redirect('approve_send_failed'));
-            exit;
-        }
-
-        $this->record_guest_link_send($email);
-
-        wp_safe_redirect($this->build_guest_request_admin_redirect('approve_sent'));
-        exit;
-    }
-
-    public function handle_guest_request_deny_block() {
-        if (!current_user_can('manage_options')) {
-            wp_die(esc_html__('Unauthorized', 'flosc'), '', ['response' => 403]);
-        }
-
-        check_admin_referer('flosc_guest_request_action', 'flosc_guest_request_nonce');
-
-        $post = wp_unslash($_POST);
-        $email = sanitize_email((string) ($post['email'] ?? ''));
-        $actor = get_current_user_id();
-        if (empty($email) || !is_email($email)) {
-            wp_safe_redirect($this->build_guest_request_admin_redirect('invalid_email'));
-            exit;
-        }
-
-        $this->deny_and_block_guest_account_request($email, $actor);
-
-        wp_safe_redirect($this->build_guest_request_admin_redirect('denied_blocked'));
-        exit;
-    }
-
-    public function handle_guest_request_delete() {
-        if (!current_user_can('manage_options')) {
-            wp_die(esc_html__('Unauthorized', 'flosc'), '', ['response' => 403]);
-        }
-
-        check_admin_referer('flosc_guest_request_action', 'flosc_guest_request_nonce');
-
-        $post = wp_unslash($_POST);
-        $email = sanitize_email((string) ($post['email'] ?? ''));
-        if (empty($email) || !is_email($email)) {
-            wp_safe_redirect($this->build_guest_request_admin_redirect('invalid_email'));
-            exit;
-        }
-
-        $this->delete_guest_account_request($email);
-
-        wp_safe_redirect($this->build_guest_request_admin_redirect('deleted'));
-        exit;
-    }
-
-    /**
-     * v1.9.0: AJAX handler for chat logs polling
-     * Returns recent chat log entries for the admin Chat Logs tab.
-     * Supports since_id for incremental polling (new entries only).
-     */
     public function ajax_flosc_get_chat_logs() {
         $post = wp_unslash($_POST);
         $flow_id = sanitize_key((string) ($post['flow_id'] ?? ''));
@@ -13739,13 +13711,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             );
         }
 
-        if (!$this->flosc_user_should_receive_guest_tokens($user_id)) {
-            // Admins / members: return current flow balance (no V→G).
+        if (!$this->flosc_user_should_receive_guest_tokens($user_id, $flow_id)) {
+            // Admins / members of this flow: return current flow balance (no V→G).
             $balance = $this->flosc_get_user_flow_token_balance($user_id, $flow_id);
-            if ($balance <= 0 && (
-                ('true' === get_user_meta($user_id, '_flosc_member_access', true))
-                || (bool) get_user_meta($user_id, '_flosc_purchased', true)
-            )) {
+            if ($balance <= 0 && $this->sale_manager->access()->is_member($user_id, $flow_id)) {
                 $balance = $this->flosc_apply_member_token_grant_once($user_id, $flow_id);
             }
             return new WP_REST_Response([
@@ -14055,9 +14024,21 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             ]
         );
 
-        // Get parser
-        $parser = FLOSC_IVR_Parser::flosc_instance();
-        $messages = $parser->get_flosc_phase_messages($phase);
+        // P0-E: public content phase forbidden (same matrix as get_ivr_messages).
+        $is_member = !empty($context['is_member'])
+            || (isset($context['access_level']) && in_array((string) $context['access_level'], ['member', 'full'], true));
+        if ($phase === 'content' && !$is_member && !current_user_can('manage_options')) {
+            return new WP_Error(
+                'flosc_content_phase_forbidden',
+                __('Content phase requires membership.', 'flosc'),
+                ['status' => 403]
+            );
+        }
+
+        $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
+        $ivr_file = sanitize_file_name($request->get_param('ivr_file') ?? '');
+        $config = flosc_resolve_flow_runtime($flow_id, $ivr_file);
+        $messages = flosc_flow_phase_messages($config, $phase);
 
         // Filter by type if specified
         if ($type) {
@@ -14065,6 +14046,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 return $m['type'] === $type;
             });
         }
+
+        // Same non-leak rule as get_ivr_messages: concierge never reaches the browser.
+        $messages = array_values(array_filter($messages, static function ($m) {
+            return (($m['type'] ?? '') !== 'concierge');
+        }));
 
         // Evaluate conditions. The Condition Evaluator is the per-message
         // authority: it resolves each message's MessageConditions expression
@@ -16358,7 +16344,10 @@ function flosc_adjust_brightness($hex, $percent) {
 /**
  * IVR import/export/sync hooks were extracted to a dedicated include to keep
  * this bootstrap file smaller and easier to maintain.
+ * Flow runtime (bag-first load + flow_* dual-read helpers) must load before
+ * sync/admin/shell callers that use flosc_resolve_flow_runtime / flosc_flow_*.
  */
+require_once FLOSC_PLUGIN_DIR . 'includes/flosc-flow-runtime.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-ivr-sync.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-lifecycle.php';
 

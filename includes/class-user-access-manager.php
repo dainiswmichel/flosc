@@ -58,7 +58,11 @@ class FLOSC_User_Access_Manager {
      * @param int $user_id
      * @return bool
      */
-    public function is_member($user_id) {
+    /**
+     * @param int         $user_id
+     * @param string|null $flow_id Per-flow stem when known (LeSAEp vs flosc.ai).
+     */
+    public function is_member($user_id, $flow_id = null) {
         if ( ! $user_id ) {
             return false;
         }
@@ -68,47 +72,40 @@ class FLOSC_User_Access_Manager {
             return true;
         }
 
-        // Canonical content-protection membership.
-        if ( class_exists( 'FLOSC_Member_Access' ) ) {
-            $ma = FLOSC_Member_Access::instance();
-            if ( $ma && method_exists( $ma, 'is_member' ) && $ma->is_member( $user_id ) ) {
-                return true;
-            }
-        }
-
-        // Sale ledger / offers / roles (pronunciation_learners, lesaep_learners).
+        // Canonical sale-side per-flow membership (preferred).
         if ( function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'sale' ) ) {
             $sale = flosc()->sale();
             if ( $sale && method_exists( $sale, 'access' ) ) {
                 $access = $sale->access();
-                if ( $access && method_exists( $access, 'get_simple_state' )
-                    && $access->get_simple_state( $user_id ) === 'member' ) {
-                    return true;
-                }
-                if ( $access && method_exists( $access, 'is_member' ) && $access->is_member( $user_id ) ) {
+                if ( $access && method_exists( $access, 'is_member' ) && $access->is_member( $user_id, $flow_id ) ) {
                     return true;
                 }
             }
         }
 
-        // Legacy role / meta (older installs).
-        $user = get_user_by( 'id', $user_id );
-        if ( $user && in_array( 'flosc_member', (array) $user->roles, true ) ) {
-            return true;
+        // FLOSC_Member_Access with optional flow.
+        if ( class_exists( 'FLOSC_Member_Access' ) ) {
+            $ma = FLOSC_Member_Access::instance();
+            if ( $ma && method_exists( $ma, 'is_member' ) && $ma->is_member( $user_id, $flow_id ) ) {
+                return true;
+            }
         }
 
-        $member_status = get_user_meta( $user_id, 'flosc_member_status', true );
-        if ( $member_status === 'active' ) {
-            return true;
+        // Without a flow context only: legacy global markers (do not use when flow_id set).
+        if ( $flow_id === null || $flow_id === '' ) {
+            $user = get_user_by( 'id', $user_id );
+            if ( $user && in_array( 'flosc_member', (array) $user->roles, true ) ) {
+                return true;
+            }
+            $member_status = get_user_meta( $user_id, 'flosc_member_status', true );
+            if ( $member_status === 'active' ) {
+                return true;
+            }
+            $member_access = get_user_meta( $user_id, '_flosc_member_access', true );
+            if ( $member_access === 'true' || $member_access === true || $member_access === '1' ) {
+                return true;
+            }
         }
-
-        // Explicit member meta used by purchase + grant paths.
-        $member_access = get_user_meta( $user_id, '_flosc_member_access', true );
-        if ( $member_access === 'true' || $member_access === true || $member_access === '1' ) {
-            return true;
-        }
-
-        // v1.6.5: quiz completion is guest, not member — do not treat quiz as membership.
 
         return false;
     }

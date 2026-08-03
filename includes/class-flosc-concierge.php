@@ -774,12 +774,12 @@ class FLOSC_Concierge {
 		}
 
 		$fs = get_option( $flow_key, array() );
-		if ( ! isset( $fs['ivr_messages'] ) || ! is_array( $fs['ivr_messages'] ) ) {
-			$fs['ivr_messages'] = array();
-		}
+		$messages = flosc_flow_get_messages( $fs );
+		$phases   = flosc_flow_get_phases( $fs );
+		$styles   = flosc_flow_get_styles( $fs );
 		$id = self::post_message_id( $post );
 
-		$fs['ivr_messages'][ $id ] = array(
+		$messages[ $id ] = array(
 			'name'                        => $id,
 			'type'                        => self::TYPE,
 			'phase'                       => 'freeline',
@@ -800,6 +800,7 @@ class FLOSC_Concierge {
 			'source'                      => 'concierge_post',
 			'concierge_post_id'           => (int) $post->ID,
 		);
+		flosc_flow_set_runtime( $fs, $messages, $phases, $styles );
 		update_option( $flow_key, $fs ); // The integrity hook mirrors this to the .md.
 	}
 
@@ -823,9 +824,13 @@ class FLOSC_Concierge {
 			return;
 		}
 		$fs = get_option( $flow_key, array() );
+		$messages = flosc_flow_get_messages( $fs );
+		$phases   = flosc_flow_get_phases( $fs );
+		$styles   = flosc_flow_get_styles( $fs );
 		$id = self::post_message_id( $post );
-		if ( isset( $fs['ivr_messages'][ $id ] ) ) {
-			unset( $fs['ivr_messages'][ $id ] );
+		if ( isset( $messages[ $id ] ) ) {
+			unset( $messages[ $id ] );
+			flosc_flow_set_runtime( $fs, $messages, $phases, $styles );
 			update_option( $flow_key, $fs );
 		}
 	}

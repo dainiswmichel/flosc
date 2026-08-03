@@ -39,42 +39,385 @@ class FLOSC_Access_Manager {
     }
 
     /**
-     * Check if user is a member (has active offer or subscription)
-     * v1.1.1: WordPress admins are always members
-     * v8.0.x: Also honor FLOSC_Member_Access (_flosc_member_access / level meta) so
-     * sandbox, admin grants, and legacy upgrades unlock sale-side features without
-     * a populated _flosc_access ledger.
+     * Normalize a flow id / ivr path to the stem used in flosc_flow_* options and meta.
+     *
+     * @param string|null $flow_id Flow id, ivr filename, or stem. Empty → current flow when available.
+     * @return string Stem or '' when none can be resolved.
      */
-    public function is_member($user_id) {
+    public function normalize_flow_stem($flow_id = null) {
+        $raw = is_string($flow_id) || is_numeric($flow_id) ? (string) $flow_id : '';
+        if ($raw === '' && function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'get_current_flow')) {
+            $flow = flosc()->get_current_flow();
+            if (is_array($flow)) {
+                $raw = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '');
+            }
+        }
+        $stem = sanitize_key(pathinfo(basename($raw), PATHINFO_FILENAME));
+        if ($stem === '' && $raw !== '') {
+            $stem = sanitize_key($raw);
+        }
+        return $stem;
+    }
+
+    /**
+     * Member levels that grant paid access on a given flow (never guest* roles).
+     *
+     * @param string $stem Flow stem.
+     * @return string[]
+     */
+    public function get_flow_member_levels($stem) {
+        $stem = sanitize_key((string) $stem);
+        $levels = [];
+        if ($stem === '') {
+            return $levels;
+        }
+
+        $flows = get_option('flosc_flows', []);
+        if (is_array($flows)) {
+            foreach ($flows as $flow) {
+                if (!is_array($flow)) {
+                    continue;
+                }
+                $id = sanitize_key((string) ($flow['id'] ?? ''));
+                $ivr = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? '');
+                $flow_stem = sanitize_key(pathinfo(basename($ivr), PATHINFO_FILENAME));
+                if ($flow_stem === '') {
+                    $flow_stem = $id;
+                }
+                if ($flow_stem !== $stem && $id !== $stem) {
+                    continue;
+                }
+                $default = sanitize_key((string) ($flow['default_member_level'] ?? ''));
+                if ($default !== '') {
+                    $levels[] = $default;
+                }
+                $ml = $flow['member_levels'] ?? [];
+                if (is_array($ml)) {
+                    foreach (array_keys($ml) as $k) {
+                        $k = sanitize_key((string) $k);
+                        if ($k !== '') {
+                            $levels[] = $k;
+                        }
+                    }
+                }
+            }
+        }
+
+        $settings = get_option('flosc_flow_' . $stem, []);
+        if (is_array($settings)) {
+            $default = sanitize_key((string) ($settings['default_member_level'] ?? ''));
+            if ($default !== '') {
+                $levels[] = $default;
+            }
+            if (!empty($settings['member_level'])) {
+                $levels[] = sanitize_key((string) $settings['member_level']);
+            }
+        }
+
+        // Do NOT call flosc_get_setting() here: without a real flow row it falls back
+        // to global flosc_default_member_level (often pronunciation_learners) and
+        // incorrectly treats every flow as LeSAEp-member-eligible.
+
+        $levels = array_values(array_unique(array_filter($levels)));
+        // Paid levels only — guest roles are not membership.
+        return array_values(array_filter($levels, static function ($level) {
+            return $level !== '' && strpos($level, 'guest') === false;
+        }));
+    }
+
+    /**
+     * Check if user is a member for a flow (or any flow when $flow_id is null and no current flow).
+     *
+     * Per-flow rules (when a stem is known):
+     * - Explicit _flosc_member_access_{stem}
+     * - Holds a paid level declared by that flow
+     * - Active offer / purchase history for that flow
+     * - Does NOT treat global _flosc_member_access or LeSAEp roles as membership on other flows
+     *
+     * @param int         $user_id
+     * @param string|null $flow_id Flow id / ivr / stem. Null = resolve current flow when possible.
+     * @return bool
+     */
+    public function is_member($user_id, $flow_id = null) {
         if (!$user_id) {
             return false;
         }
 
-        // v1.1.1: WordPress admins are always members (for testing)
+        // WordPress admins: member for content testing on every surface.
         if (user_can($user_id, 'manage_options')) {
             return true;
         }
 
-        $access = $this->get_user_access($user_id);
+        $stem = $this->normalize_flow_stem($flow_id);
+        if ($stem !== '') {
+            return $this->is_member_of_flow((int) $user_id, $stem);
+        }
 
-        // Check if they have any active offers
+        // No flow context (admin tools, non-app requests): any paid entitlement.
+        return $this->is_member_any_flow((int) $user_id);
+    }
+
+    /**
+     * True when this flow stem is a LeSAEp surface (only place LeSAEp roles mean Member).
+     *
+     * @param string $stem
+     * @return bool
+     */
+    public function stem_is_lesaep_family($stem) {
+        $stem = sanitize_key((string) $stem);
+        if ($stem === '') {
+            return false;
+        }
+        if (strpos($stem, 'lesaep') !== false) {
+            return true;
+        }
+        // Match by flow option id / custom domain / ivr when stem alone is ambiguous.
+        $flows = get_option('flosc_flows', []);
+        if (!is_array($flows)) {
+            return false;
+        }
+        foreach ($flows as $flow) {
+            if (!is_array($flow)) {
+                continue;
+            }
+            $id = sanitize_key((string) ($flow['id'] ?? ''));
+            $ivr = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? '');
+            $flow_stem = sanitize_key(pathinfo(basename($ivr), PATHINFO_FILENAME));
+            if ($flow_stem === '') {
+                $flow_stem = $id;
+            }
+            if ($flow_stem !== $stem && $id !== $stem) {
+                continue;
+            }
+            $domain = strtolower((string) ($flow['custom_domain'] ?? ''));
+            $name   = strtolower((string) ($flow['name'] ?? ''));
+            if (strpos($domain, 'lesaep') !== false || strpos($name, 'lesaep') !== false) {
+                return true;
+            }
+            if (strpos($id, 'lesaep') !== false || strpos($flow_stem, 'lesaep') !== false) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Membership on one flow only.
+     *
+     * Product matrix (e.g. Piano4America):
+     * - Member on LeSAEp
+     * - Guest on dainis.net/chat (Br3nda) and flosc.ai when logged in
+     *
+     * Shared WP roles (pronunciation_learners / lesaep_learners) must NOT promote
+     * Member on every flow that happens to list the same default_member_level.
+     *
+     * @param int    $user_id
+     * @param string $stem
+     * @return bool
+     */
+    public function is_member_of_flow($user_id, $stem) {
+        $user_id = (int) $user_id;
+        $stem    = sanitize_key((string) $stem);
+        if ($user_id <= 0 || $stem === '') {
+            return false;
+        }
+
+        // 1) Explicit per-flow grant (purchase / access code / sandbox for this flow).
+        $flag = get_user_meta($user_id, '_flosc_member_access_' . $stem, true);
+        if ($flag === 'true' || $flag === true || $flag === '1' || $flag === 'yes') {
+            return true;
+        }
+
+        // 2) Offers / purchase ledger tagged to this flow only.
+        if ($this->has_active_offer_for_flow($user_id, $stem)) {
+            return true;
+        }
+        if ($this->has_purchase_history_for_flow($user_id, $stem)) {
+            return true;
+        }
+
+        // 3) Legacy LeSAEp roles / global flag — ONLY on LeSAEp stems.
+        //    Never on Br3nda (dainis_net_ivr) or flosc_ai_ivr.
+        if ($this->stem_is_lesaep_family($stem) && $this->user_has_legacy_lesaep_membership($user_id)) {
+            return true;
+        }
+
+        // 4) Non-LeSAEp: registration_flow matches this stem AND user holds a paid
+        //    level declared for this flow (flow-specific product, not LeSAEp bleed).
+        if (!$this->stem_is_lesaep_family($stem) && class_exists('FLOSC_Member_Access')) {
+            $reg_stem = $this->normalize_flow_stem(
+                (string) get_user_meta($user_id, '_flosc_registration_flow', true)
+            );
+            if ($reg_stem !== '' && $reg_stem === $stem) {
+                require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
+                $ma = FLOSC_Member_Access::instance();
+                foreach ($this->get_flow_member_levels($stem) as $level) {
+                    // Skip LeSAEp level slugs on non-LeSAEp flows even if misconfigured.
+                    if (strpos($level, 'lesaep') !== false || strpos($level, 'pronunciation') !== false) {
+                        continue;
+                    }
+                    if ($ma->has_level($user_id, $level)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Legacy LeSAEp paid membership (role / level meta / global flag).
+     *
+     * @param int $user_id
+     * @return bool
+     */
+    private function user_has_legacy_lesaep_membership($user_id) {
+        $user_id = (int) $user_id;
+        if ($user_id <= 0) {
+            return false;
+        }
+        if (class_exists('FLOSC_Member_Access')) {
+            require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
+            $ma = FLOSC_Member_Access::instance();
+            if (
+                $ma->has_level($user_id, 'pronunciation_learners')
+                || $ma->has_level($user_id, 'lesaep_learners')
+            ) {
+                return true;
+            }
+        }
+        $global = get_user_meta($user_id, '_flosc_member_access', true);
+        if ($global === 'true' || $global === true || $global === '1') {
+            // Global flag only counts as LeSAEp if registration is LeSAEp or empty (old accounts).
+            $reg = $this->normalize_flow_stem(
+                (string) get_user_meta($user_id, '_flosc_registration_flow', true)
+            );
+            if ($reg === '' || $this->stem_is_lesaep_family($reg)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @param int    $user_id
+     * @param string $stem
+     * @return bool
+     */
+    private function has_purchase_history_for_flow($user_id, $stem) {
+        $history = get_user_meta($user_id, '_flosc_purchase_history', true);
+        if (!is_array($history)) {
+            return false;
+        }
+        $stem = sanitize_key((string) $stem);
+        foreach ($history as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $row_raw  = (string) ($row['flow_id'] ?? '');
+            $row_stem = sanitize_key(pathinfo(basename($row_raw), PATHINFO_FILENAME));
+            if ($row_stem === '') {
+                $row_stem = sanitize_key($row_raw);
+            }
+            if ($row_stem !== '' && $row_stem === $stem) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * True when the user holds paid access on at least one flow (legacy / no-context).
+     *
+     * @param int $user_id
+     * @return bool
+     */
+    public function is_member_any_flow($user_id) {
+        $user_id = (int) $user_id;
+        if ($user_id <= 0) {
+            return false;
+        }
+
+        $access = $this->get_user_access($user_id);
         if (!empty($access['offers'])) {
-            foreach ($access['offers'] as $offer_id => $offer_data) {
+            foreach ($access['offers'] as $offer_data) {
                 if ($this->is_offer_active($offer_data)) {
                     return true;
                 }
             }
         }
-
-        // Check if they have an active subscription
-        if ($access['subscription'] && $this->is_subscription_active($access['subscription'])) {
+        if (!empty($access['subscription']) && $this->is_subscription_active($access['subscription'])) {
             return true;
         }
 
-        // Bridge content-protection membership (role/meta grants).
+        // Any explicit per-flow member flag.
+        global $wpdb;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+        $flow_flags = $wpdb->get_var($wpdb->prepare(
+            "SELECT meta_key FROM {$wpdb->usermeta}
+             WHERE user_id = %d AND meta_key LIKE %s AND meta_value IN ('true','1','yes')
+             LIMIT 1",
+            $user_id,
+            $wpdb->esc_like('_flosc_member_access_') . '%'
+        ));
+        if (!empty($flow_flags)) {
+            return true;
+        }
+
+        // Legacy global flag or any non-guest member level meta.
+        $global = get_user_meta($user_id, '_flosc_member_access', true);
+        if ($global === 'true' || $global === true || $global === '1') {
+            return true;
+        }
+
         if (class_exists('FLOSC_Member_Access')) {
             require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
-            if (FLOSC_Member_Access::instance()->is_member($user_id)) {
+            $ma = FLOSC_Member_Access::instance();
+            foreach ((array) $ma->get_user_levels($user_id) as $level) {
+                $level = sanitize_key((string) $level);
+                if ($level !== '' && strpos($level, 'guest') === false) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether an active _flosc_access offer belongs to this flow.
+     *
+     * @param int    $user_id
+     * @param string $stem
+     * @return bool
+     */
+    private function has_active_offer_for_flow($user_id, $stem) {
+        $access = $this->get_user_access($user_id);
+        if (empty($access['offers']) || !is_array($access['offers'])) {
+            return false;
+        }
+
+        $offer_manager = null;
+        if (function_exists('flosc_sale') && flosc_sale() && method_exists(flosc_sale(), 'offers')) {
+            $offer_manager = flosc_sale()->offers();
+        }
+
+        foreach ($access['offers'] as $offer_id => $offer_data) {
+            if (!$this->is_offer_active($offer_data)) {
+                continue;
+            }
+            // Require explicit flow_id on the grant — do not treat "offer id exists
+            // in this flow's catalog" as purchase of this flow (cross-flow bleed).
+            $offer_flow = sanitize_key((string) ($offer_data['flow_id'] ?? ''));
+            if ($offer_flow === '') {
+                continue;
+            }
+            $offer_stem = sanitize_key(pathinfo(basename($offer_flow), PATHINFO_FILENAME));
+            if ($offer_stem === '') {
+                $offer_stem = $offer_flow;
+            }
+            if ($offer_stem === $stem || $offer_flow === $stem) {
                 return true;
             }
         }
@@ -181,11 +524,16 @@ class FLOSC_Access_Manager {
         $access = $this->get_user_access($user_id);
 
         // Record the offer purchase
+        $offer_flow_id = (string) ($transaction['flow_id'] ?? $offer['flow_id'] ?? '');
+        if ($offer_flow_id === '') {
+            $offer_flow_id = $this->normalize_flow_stem(null);
+        }
         $access['offers'][$offer['id']] = [
             'purchased_at' => current_time('mysql'),
             'transaction' => $transaction,
             'grants' => $offer['grants'],
             'expires_at' => $this->calculate_expiration($offer),
+            'flow_id' => $offer_flow_id,
         ];
 
         // Apply grants
@@ -269,10 +617,15 @@ class FLOSC_Access_Manager {
         update_user_meta($user_id, '_flosc_purchase_count', $count + 1);
 
         $history = get_user_meta($user_id, '_flosc_purchase_history', true) ?: [];
+        $history_flow = (string) ($transaction['flow_id'] ?? $offer['flow_id'] ?? '');
+        if ($history_flow === '') {
+            $history_flow = $this->normalize_flow_stem(null);
+        }
         $history[] = [
             'offer_id'       => $offer['id'] ?? 'unknown',
             'offer_name'     => $offer['name'] ?? '',
             'member_level'   => $member_level,
+            'flow_id'        => $history_flow,
             'transaction_id' => $transaction['transaction_id'] ?? null,
             'provider'       => $transaction['provider'] ?? 'unknown',
             'amount'         => $transaction['amount'] ?? 0,
@@ -428,47 +781,28 @@ class FLOSC_Access_Manager {
     }
 
     /**
-     * Get simple state for frontend (visitor/guest/member)
+     * Resolve the only three real-world app states.
+     *
+     * Real-world (one browser host, one session):
+     * - No authenticated user  → visitor
+     * - Authenticated, unpaid  → guest   (tokens/wallet from user profile for this flow)
+     * - Authenticated + paid   → member  (for this flow only)
+     *
+     * A non-zero $user_id MUST NEVER return visitor. Multi-host same-user testing
+     * is rare; do not invent visitor UI for a known WP user.
+     *
+     * @param int         $user_id 0 = anonymous
+     * @param string|null $flow_id Flow id / ivr / stem for paid-tier check
+     * @return string visitor|guest|member
      */
-    /**
-     * Get simple user state: visitor, guest, member, or admin
-     * 
-     * MTS-2026-02-02: [USER-STATE] This function is used for frontend data-user-state attribute.
-     * It returns 'member' for admins because the frontend UI (content access, etc) should
-     * treat admins the same as members. But for chat responses about user status,
-     * use generate_user_status_response() which explicitly says "FLOSC Admin".
-     * 
-     * IMPORTANT: This is DIFFERENT from generate_user_status_response()!
-     * - get_simple_state() → frontend body attribute → member/guest/visitor
-     * - generate_user_status_response() → chat response → "FLOSC Admin"/"Member"/etc
-     */
-    public function get_simple_state($user_id) {
-        if (!$user_id) {
+    public function get_simple_state($user_id, $flow_id = null) {
+        $user_id = absint($user_id);
+        if ($user_id <= 0) {
             return 'visitor';
         }
 
-        // MTS-2026-02-02: [ADMIN-ACCESS] Admins get 'member' for content access purposes
-        if (user_can($user_id, 'manage_options')) {
+        if ($this->is_member($user_id, $flow_id)) {
             return 'member';
-        }
-
-        // Check if they are a member (purchased via offer/subscription)
-        if ($this->is_member($user_id)) {
-            return 'member';
-        }
-
-        // Fallback: check _flosc_member_access (set by access code redemption)
-        $member_access = get_user_meta($user_id, '_flosc_member_access', true);
-        if ($member_access === 'true' || $member_access === true || $member_access === '1') {
-            return 'member';
-        }
-
-        // Belt-and-suspenders: WP role granted by grant_level()
-        $user_roles = (array)(get_userdata($user_id)->roles ?? []);
-        foreach (['pronunciation_learners', 'lesaep_learners'] as $member_role) {
-            if (user_can($user_id, $member_role) || in_array($member_role, $user_roles, true)) {
-                return 'member';
-            }
         }
 
         return 'guest';

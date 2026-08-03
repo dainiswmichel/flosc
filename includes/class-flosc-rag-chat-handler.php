@@ -198,9 +198,10 @@ class FLOSC_RAG_Chat_Handler {
         $flosc_session_manager = new FLOSC_Session_Manager();
 
         if ($flosc_user_id > 0) {
-            // Logged-in: use existing Session Manager
-            $flosc_session = $flosc_session_manager->get_flosc_session($flosc_session_id, $flosc_user_id);
-            $flosc_messages = $flosc_session['messages'] ?? [];
+            // Logged-in: session for this flow only (no cross-flow history).
+            $flosc_flow = (string) ($flosc_state['flosc_flow_id'] ?? $flosc_state['flow_id'] ?? '');
+            $flosc_session = $flosc_session_manager->get_flosc_session($flosc_session_id, $flosc_user_id, $flosc_flow);
+            $flosc_messages = is_array($flosc_session) ? ($flosc_session['messages'] ?? []) : [];
         } else {
             // Visitor: no persistent chat history
             $flosc_messages = [];
@@ -459,8 +460,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Response body (
 
         if ($flosc_user_id > 0 && $flosc_session_id) {
             $flosc_session_manager = new FLOSC_Session_Manager();
-            $flosc_session_manager->add_flosc_message($flosc_session_id, 'user', $flosc_message, $flosc_user_id);
-            $flosc_session_manager->add_flosc_message($flosc_session_id, 'assistant', $flosc_response, $flosc_user_id);
+            $flosc_flow = (string) ($flosc_state['flosc_flow_id'] ?? $flosc_state['flow_id'] ?? '');
+            $flosc_session_manager->add_flosc_message($flosc_session_id, 'user', $flosc_message, $flosc_user_id, null, $flosc_flow);
+            $flosc_session_manager->add_flosc_message($flosc_session_id, 'assistant', $flosc_response, $flosc_user_id, null, $flosc_flow);
         }
     }
 

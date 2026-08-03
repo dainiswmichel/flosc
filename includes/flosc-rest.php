@@ -463,7 +463,8 @@ trait FLOSC_REST_Trait {
         register_rest_route('flosc/v1', '/admin-messages', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_admin_messages_poll'],
-            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+            // Requires session-bound poll_token (minted via /admin-messages-token).
+            'permission_callback' => [$this, 'check_visitor_session_poll_permission'],
         ]);
 
         // Visitor poll token minting for admin-message ownership proof.
@@ -486,9 +487,7 @@ trait FLOSC_REST_Trait {
         register_rest_route('flosc/v1', '/apply-guest-token-grant', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_apply_guest_token_grant'],
-            'permission_callback' => function () {
-                return is_user_logged_in();
-            },
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // Quiz Submission (NEW: for collecting quiz answers)
@@ -549,34 +548,34 @@ trait FLOSC_REST_Trait {
         register_rest_route('flosc/v1', '/sessions', [
             'methods' => 'GET',
             'callback' => [$this, 'get_sessions'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         register_rest_route('flosc/v1', '/sessions', [
             'methods' => 'POST',
             'callback' => [$this, 'create_session'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // v1.7.0: Get single session by ID
         register_rest_route('flosc/v1', '/sessions/(?P<id>\d+)', [
             'methods' => 'GET',
             'callback' => [$this, 'get_single_session'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // v8.0.11: Delete a session
         register_rest_route('flosc/v1', '/sessions/(?P<id>\d+)', [
             'methods' => 'DELETE',
             'callback' => [$this, 'delete_session'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // v8.0.11: Rename a session
         register_rest_route('flosc/v1', '/sessions/(?P<id>\d+)', [
             'methods' => 'PUT',
             'callback' => [$this, 'rename_session'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // v1.7.1: Nonce refresh endpoint
@@ -611,7 +610,7 @@ trait FLOSC_REST_Trait {
         register_rest_route('flosc/v1', '/purchase', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_purchase'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // v1.3.1: Sandbox Purchase (fun "pay what you want" testing)
@@ -625,7 +624,7 @@ trait FLOSC_REST_Trait {
         register_rest_route('flosc/v1', '/free-lesson', [
             'methods' => ['GET', 'POST'],
             'callback' => [$this, 'get_free_lesson'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // Create Payment Intent (for Stripe)
@@ -702,31 +701,39 @@ trait FLOSC_REST_Trait {
             'permission_callback' => [$this, 'check_public_endpoint_permission'],
         ]);
 
+        // Session bootstrap: rehydrate logged-in user + per-flow profile tokens when
+        // the HTML shell was painted as visitor (token in localStorage / X-FLOSC-Token).
+        register_rest_route('flosc/v1', '/session', [
+            'methods' => ['GET', 'POST'],
+            'callback' => [$this, 'handle_session_bootstrap'],
+            'permission_callback' => [$this, 'check_public_endpoint_permission'],
+        ]);
+
         // Token balance
         register_rest_route('flosc/v1', '/tokens', [
             'methods' => 'GET',
             'callback' => [$this, 'get_token_balance'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // Purchase intents (affiliate system)
         register_rest_route('flosc/v1', '/intents', [
             'methods' => 'POST',
             'callback' => [$this, 'declare_intent'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         register_rest_route('flosc/v1', '/intents/(?P<id>[a-z0-9_]+)/offers', [
             'methods' => 'GET',
             'callback' => [$this, 'get_intent_offers'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // Referral
         register_rest_route('flosc/v1', '/referral', [
             'methods' => 'GET',
             'callback' => [$this, 'generate_referral'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // Lessons
@@ -734,19 +741,19 @@ trait FLOSC_REST_Trait {
         register_rest_route('flosc/v1', '/lessons', [
             'methods' => 'GET',
             'callback' => [$this, 'get_lessons'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         register_rest_route('flosc/v1', '/lessons/(?P<id>\d+)', [
             'methods' => 'GET',
             'callback' => [$this, 'get_lesson'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         register_rest_route('flosc/v1', '/lessons/free', [
             'methods' => 'GET',
             'callback' => [$this, 'get_free_lesson'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // IVR Messages (v9.2.2)
@@ -768,7 +775,7 @@ trait FLOSC_REST_Trait {
         register_rest_route('flosc/v1', '/bridge-data', [
             'methods' => 'GET',
             'callback' => [$this, 'get_bridge_data'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // v1.0.5: Debug endpoint - full funnel state (TASK-108)
@@ -802,7 +809,7 @@ trait FLOSC_REST_Trait {
         register_rest_route('flosc/v1', '/funnel-complete', [
             'methods' => 'POST',
             'callback' => [$this, 'mark_funnel_complete'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // Test AI connection (v04_05)
@@ -846,7 +853,7 @@ trait FLOSC_REST_Trait {
         register_rest_route('flosc/v1', '/update-guest-profile', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_update_guest_profile'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // v8.0.7: Score pending audio — called by JS after ANY login method (email, FB, Google).
@@ -904,14 +911,14 @@ trait FLOSC_REST_Trait {
         register_rest_route('flosc/v1', '/redeem-access-code', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_redeem_access_code'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // Preview native offer coupon (fixed final $ / percent). Server validates UTC window.
         register_rest_route('flosc/v1', '/apply-offer-coupon', [
             'methods' => 'POST',
             'callback' => [$this, 'handle_apply_offer_coupon'],
-            'permission_callback' => 'is_user_logged_in',
+            'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
         // Client UI turns (free lesson, offer list, etc.) that skip /chat — still write Chat Logs.

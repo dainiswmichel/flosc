@@ -100,6 +100,58 @@ $flosc_signup_action = $flosc_flow_settings['header_signup_action'] ?? 'open_log
 
 <hr>
 
+<h2>User status messages</h2>
+<p class="description">
+    Shown for “What is my user status?” / <code>{user_status_response}</code> on <strong>this floscFlow only</strong>.
+    Placeholders: <code>{first_name}</code>, <code>{product_name}</code>, <code>{member_level}</code>, <code>{name}</code>, <code>{email}</code>.
+    Do not name other flows. Customize copy per product.
+</p>
+<table class="form-table">
+    <tr>
+        <th scope="row"><label for="flow_user_status_visitor">Visitor</label></th>
+        <td>
+            <textarea id="flow_user_status_visitor" name="flow_user_status_visitor" class="large-text" rows="2"><?php
+                echo esc_textarea($flosc_flow_settings['user_status_visitor'] ?? 'Hey, thanks for asking about your user status! You are a **Visitor**. You are chatting in "{product_name}".');
+            ?></textarea>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_user_status_guest">Guest</label></th>
+        <td>
+            <textarea id="flow_user_status_guest" name="flow_user_status_guest" class="large-text" rows="2"><?php
+                echo esc_textarea($flosc_flow_settings['user_status_guest'] ?? 'Hey, thanks for asking about your user status! You are a **Guest**. You like to be called **{first_name}**. You are chatting in "{product_name}".');
+            ?></textarea>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_user_status_member">Member (no level slug)</label></th>
+        <td>
+            <textarea id="flow_user_status_member" name="flow_user_status_member" class="large-text" rows="2"><?php
+                echo esc_textarea($flosc_flow_settings['user_status_member'] ?? 'Hey, thanks for asking about your user status! You are a **Member**. You like to be called **{first_name}**. You are chatting in "{product_name}".');
+            ?></textarea>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_user_status_member_level">Member (with {member_level})</label></th>
+        <td>
+            <textarea id="flow_user_status_member_level" name="flow_user_status_member_level" class="large-text" rows="2"><?php
+                echo esc_textarea($flosc_flow_settings['user_status_member_level'] ?? 'Hey, thanks for asking about your user status! You are a **Member**. You like to be called **{first_name}** and have access to **{member_level}** within "{product_name}".');
+            ?></textarea>
+            <p class="description">Used when this flow has <code>default_member_level</code> set and the user is a member of this flow.</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_user_status_admin">Admin</label></th>
+        <td>
+            <textarea id="flow_user_status_admin" name="flow_user_status_admin" class="large-text" rows="2"><?php
+                echo esc_textarea($flosc_flow_settings['user_status_admin'] ?? 'Hey, thanks for asking about your user status! You are the **FLOSC Admin**. You are chatting in "{product_name}".');
+            ?></textarea>
+        </td>
+    </tr>
+</table>
+
+<hr>
+
 <h2>Post-Quiz Auth Modal</h2>
 <p class="description">Shown when a visitor completes a quiz and needs to register or log in to see results.</p>
 

@@ -103,7 +103,8 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
             ?>
             --flosc-avatar-radius: <?php echo esc_attr($flosc_avatar_radius); ?>;
         }
-    <?php wp_add_inline_style('flosc-chat', ob_get_clean()); ?>
+    <?php // App enqueues flosc-layout (not flosc-chat); attach vars to the live handle. ?>
+    <?php wp_add_inline_style('flosc-layout', ob_get_clean()); ?>
 
     <!-- Markdown parser fallback for IVR rendering when a parser is not already loaded. -->
     <?php // §12: attached to flosc-app as a 'before' inline script so it still defines window.marked prior to flosc-app.js. ?>
@@ -320,25 +321,41 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
              data-member-upgrade-label="<?php echo esc_attr($flosc_pb_member['upgrade_label'] ?? 'Upgrade'); ?>"
              data-upgrade-label="<?php echo esc_attr($flosc_pb_guest['upgrade_label']); ?>">
             <button class="profile-button" id="flosc_profile_button">
-                <!-- Visitor state: profile bar icon -->
-                <div class="flosc-profile-avatar profile-avatar visitor-avatar" data-show="visitor">
+                <?php
+                // Server-side flosc-hidden so wrong-branch nodes never paint.
+                // CSS alone failed: .flosc-app .user-profile-bar img.flosc-profile-avatar
+                // {display:block} beat [data-show="logged-in"]{display:none} → 👋 + blue square.
+                $flosc_is_visitor          = ($user_state === 'visitor');
+                $flosc_pb_visitor_hidden   = $flosc_is_visitor ? '' : ' flosc-hidden';
+                $flosc_pb_logged_in_hidden = $flosc_is_visitor ? ' flosc-hidden' : '';
+                // Icon XOR image: both stay hidden until setupUI setDisplayState picks one.
+                $flosc_pb_avatar_pending   = ' flosc-hidden';
+                ?>
+                <!-- Visitor state: emoji fallback always present; optional image overlays when URL loads -->
+                <div class="flosc-profile-avatar profile-avatar visitor-avatar<?php echo esc_attr($flosc_pb_visitor_hidden); ?>" data-show="visitor">
+                    <span class="flosc-visitor-avatar-fallback" aria-hidden="true"><?php
+                        echo esc_html(($flosc_pb_visitor['icon'] !== '' && $flosc_pb_visitor['icon'] !== null)
+                            ? $flosc_pb_visitor['icon']
+                            : '👋');
+                    ?></span>
                     <?php if (!empty($flosc_pb_visitor['icon_url'])): ?>
-                        <img src="<?php echo esc_url($flosc_pb_visitor['icon_url']); ?>" alt="" class="flosc-profile-avatar profile-avatar">
-                    <?php else: ?>
-                        <?php echo esc_html($flosc_pb_visitor['icon']); ?>
+                        <img src="<?php echo esc_url($flosc_pb_visitor['icon_url']); ?>"
+                             alt=""
+                             class="flosc-visitor-avatar-img flosc-profile-avatar"
+                             data-flosc-visitor-avatar-img="1">
                     <?php endif; ?>
                 </div>
-                <div class="flosc-profile-avatar profile-avatar flosc-profile-avatar-icon" id="flosc_profile_avatar_icon" data-show="logged-in"></div>
-                <!-- Guest/Member state: user avatar -->
-                <img src="" alt="" class="flosc-profile-avatar profile-avatar" id="flosc_profile_avatar" data-show="logged-in">
+                <div class="flosc-profile-avatar profile-avatar flosc-profile-avatar-icon<?php echo esc_attr($flosc_pb_avatar_pending); ?>" id="flosc_profile_avatar_icon" data-show="logged-in"></div>
+                <!-- Guest/Member avatar: no empty src (empty src + accent bg = solid blue tile). -->
+                <img alt="" class="flosc-profile-avatar profile-avatar<?php echo esc_attr($flosc_pb_avatar_pending); ?>" id="flosc_profile_avatar" data-show="logged-in">
                 <div class="profile-info">
-                    <div class="profile-name" data-show="visitor">
+                    <div class="profile-name<?php echo esc_attr($flosc_pb_visitor_hidden); ?>" data-show="visitor">
                         <span class="flosc-visitor-label-text"><?php echo esc_html($flosc_visitor_label_base); ?></span>
                         <span class="flosc-visitor-token-count" id="flosc_visitor_token_count">(<?php echo esc_html($flosc_visitor_wallet_initial_display); ?>)</span>
                     </div>
-                    <div class="profile-name" id="flosc_profile_name" data-show="logged-in"></div>
-                    <div class="profile-badge" data-show="visitor"><?php echo esc_html($flosc_pb_visitor['badge']); ?></div>
-                    <div class="profile-badge" id="flosc_profile_badge" data-show="logged-in"></div>
+                    <div class="profile-name<?php echo esc_attr($flosc_pb_logged_in_hidden); ?>" id="flosc_profile_name" data-show="logged-in"></div>
+                    <div class="profile-badge<?php echo esc_attr($flosc_pb_visitor_hidden); ?>" data-show="visitor"><?php echo esc_html($flosc_pb_visitor['badge']); ?></div>
+                    <div class="profile-badge<?php echo esc_attr($flosc_pb_logged_in_hidden); ?>" id="flosc_profile_badge" data-show="logged-in"></div>
                 </div>
                 <svg class="dropdown-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="6 9 12 15 18 9"></polyline>
@@ -800,15 +817,16 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
     <?php // §12: config built here and attached to flosc-app as a 'before' inline script, then wp_footer() runs below so flosc-app.js prints right after this config (it reads FLOSC_CONFIG on DOMContentLoaded). ?>
     <?php ob_start(); ?>
         <?php
-        // v1.2.3: Load IVR parser config - now flow-aware
-        $flosc_ivr_parser = FLOSC_IVR_Parser::flosc_instance();
-        $flosc_ivr_config = $flosc_ivr_parser->flosc_load_config(); // Load from current flow's IVR file
-        
         // v1.2.3: Get flow's IVR file for version tracking
         $flosc_current_flow = flosc()->get_current_flow();
         $flosc_ivr_filename = ($flosc_current_flow && !empty($flosc_current_flow['ivr_file'])) 
             ? $flosc_current_flow['ivr_file'] 
             : 'flosc_default_technical_ivr.md';
+        $flosc_flow_id = $flosc_current_flow['id'] ?? '';
+
+        // Flow bag runtime first, IVR file only as empty-bag fallback.
+        $flosc_ivr_config = flosc_resolve_flow_runtime($flosc_flow_id, $flosc_ivr_filename);
+
         $flosc_ivr_file = flosc_config_file($flosc_ivr_filename);
         $flosc_ivr_version = file_exists($flosc_ivr_file) ? filemtime($flosc_ivr_file) : time();
 
@@ -818,25 +836,12 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
 if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: WARNING - No IVR messages loaded from ' . $flosc_ivr_filename);
 if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: Config keys: ' . implode(', ', array_keys($flosc_ivr_config)));
                 }
-            
-                // Force re-parse if empty
-                if (file_exists($flosc_ivr_file)) {
-                    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: ' . $flosc_ivr_filename . ' exists, forcing re-parse...');
-                    }
-                    $flosc_markdown = file_get_contents($flosc_ivr_file);
-                    $flosc_ivr_config = $flosc_ivr_parser->flosc_parse($flosc_markdown);
-                    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: Re-parse complete. Messages: ' . count($flosc_ivr_config['messages'] ?? []));
-                    }
-                } else {
-                    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: ERROR - IVR file not found at: ' . $flosc_ivr_file);
-                    }
+                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: Runtime source was ' . ($flosc_ivr_config['source'] ?? 'unknown'));
                 }
             } else {
                 if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config loaded successfully. Messages: ' . count($flosc_ivr_config['messages']));
+if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config loaded successfully. Messages: ' . count($flosc_ivr_config['messages']) . ' source=' . ($flosc_ivr_config['source'] ?? 'unknown'));
                 }
             }
         ?>
@@ -1099,7 +1104,29 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'registrationUrl' => wp_registration_url(),
             'lessonsUrl' => home_url('/lessons/'),
             'checkoutUrl' => home_url('/checkout/'),
-            'lessonsCategory' => $flosc_current_flow['lessons_category'] ?? get_option('flosc_lessons_category', ''),
+            // Per-flow Lessons tab only — never fall back to global flosc_lessons_category.
+            'lessonsCategory' => (function () use ($flosc_current_flow, $flow_settings) {
+                $cat = trim((string) ($flow_settings['lessons_category'] ?? ''));
+                if ($cat === '' && is_array($flosc_current_flow)) {
+                    $cat = trim((string) ($flosc_current_flow['lessons_category'] ?? ''));
+                }
+                return $cat;
+            })(),
+            // Authoritative: flosc_flows / flosc_flow_* Lessons configuration.
+            'servesLessons' => (function () use ($flosc_current_flow) {
+                $stem = '';
+                if (is_array($flosc_current_flow)) {
+                    $ivr = (string) ($flosc_current_flow['ivr_file'] ?? $flosc_current_flow['ivr'] ?? $flosc_current_flow['id'] ?? '');
+                    $stem = sanitize_key(pathinfo(basename($ivr), PATHINFO_FILENAME));
+                    if ($stem === '' || $stem === 'default') {
+                        $stem = sanitize_key((string) ($flosc_current_flow['id'] ?? ''));
+                    }
+                }
+                if (function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'flosc_flow_serves_lessons')) {
+                    return (bool) flosc()->flosc_flow_serves_lessons($stem);
+                }
+                return false;
+            })(),
             'otoOfferId' => $flosc_current_flow['oto_offer_id'] ?? get_option('flosc_oto_offer_id', ''),
             'tokenName' => get_option('flosc_token_name', 'tokens'),
             'communicationTokenEconomics' => (function() {
@@ -1137,7 +1164,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 return ( $m['type'] ?? '' ) !== 'concierge';
             } ),
             'ivrStyles' => $flosc_ivr_config['styles'] ?? [],
-            'ivrStylesCss' => $flosc_ivr_parser->get_flosc_styles_css(),
+            'ivrStylesCss' => flosc_flow_styles_css($flosc_ivr_config),
             'ivrVersion' => $flosc_ivr_version,
             // v8.0.0: AI provider is PER-FLOW (the global flosc_ai_provider is
             // intentionally empty in the per-flow model). Read it from THIS flow's
@@ -1220,14 +1247,46 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'audioQuizUpsellMessage' => flosc_get_setting('audio_quiz_upsell_message', 'Our accent analysis shows you would benefit from lessons on {1st}, {2nd}, and {4th}. Upgrade today for full access to all lessons.'),
             'audioQuizPhonemeLessonMap' => json_decode(flosc_get_setting('audio_quiz_phoneme_lesson_map', '{}'), true) ?: (object)[],
             'ipaApiBaseUrl' => untrailingslashit(flosc_get_setting('ipa_api_base_url', '')),
-            'defaultAudioQuizId' => flosc_get_setting('default_audio_quiz_id', 'pronunciation_ipa_audio_quiz'),
-            'defaultTextQuizId' => flosc_get_setting('default_text_quiz_id', 'pronunciation_assessment_quiz'),
-            'defaultOfferId' => flosc_get_setting('default_offer_id', 'pronunciation_full'),
-            'defaultQuizAction' => flosc_get_setting('default_quiz_action', 'open_quiz:pronunciation_ipa_audio_quiz'),
-            'defaultMemberLevel' => flosc_get_setting('default_member_level', 'pronunciation_learners'),
-            'defaultGuestLevel' => flosc_get_setting('default_guest_level', 'guest_pronunciation_learner'),
-            'authModalTitle' => flosc_get_setting('auth_modal_title', 'Register Or Log In To See Your Quiz Results'),
-            'authModalSubtitle' => flosc_get_setting('auth_modal_subtitle', 'Account creation is necessary for LeSAEp to be able to process your quiz!'),
+            // Quiz IDs: this flow’s bag only — empty means no quiz surface on this flow.
+            // Do not invent pronunciation_* defaults (that made Br3nda claim IPA quiz ownership).
+            'defaultAudioQuizId' => (string) ($flow_settings['default_audio_quiz_id']
+                ?? $flosc_current_flow['default_audio_quiz_id']
+                ?? ''),
+            'defaultTextQuizId' => (string) ($flow_settings['default_text_quiz_id']
+                ?? $flosc_current_flow['default_text_quiz_id']
+                ?? ''),
+            'quizType' => (string) ($flow_settings['quiz_type']
+                ?? $flosc_current_flow['quiz_type']
+                ?? ''),
+            'defaultOfferId' => flosc_get_setting('default_offer_id', ''),
+            'defaultQuizAction' => flosc_get_setting('default_quiz_action', ''),
+            'defaultMemberLevel' => flosc_get_setting('default_member_level', ''),
+            'defaultGuestLevel' => flosc_get_setting('default_guest_level', ''),
+            // Per-flow user-status templates (Login & Registration → User status messages).
+            'userStatus' => [
+                'visitor' => (function () {
+                    $v = flosc_get_setting('user_status_visitor', 'Hey, thanks for asking about your user status! You are a **Visitor**. You are chatting in "{product_name}".');
+                    $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v;
+                })(),
+                'guest' => (function () {
+                    $v = flosc_get_setting('user_status_guest', 'Hey, thanks for asking about your user status! You are a **Guest**. You like to be called **{first_name}**. You are chatting in "{product_name}".');
+                    $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v;
+                })(),
+                'member' => (function () {
+                    $v = flosc_get_setting('user_status_member', 'Hey, thanks for asking about your user status! You are a **Member**. You like to be called **{first_name}**. You are chatting in "{product_name}".');
+                    $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v;
+                })(),
+                'memberLevel' => (function () {
+                    $v = flosc_get_setting('user_status_member_level', 'Hey, thanks for asking about your user status! You are a **Member**. You like to be called **{first_name}** and have access to **{member_level}** within "{product_name}".');
+                    $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v;
+                })(),
+                'admin' => (function () {
+                    $v = flosc_get_setting('user_status_admin', 'Hey, thanks for asking about your user status! You are the **FLOSC Admin**. You are chatting in "{product_name}".');
+                    $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v;
+                })(),
+            ],
+            'authModalTitle' => flosc_get_setting('auth_modal_title', 'Register Or Log In'),
+            'authModalSubtitle' => flosc_get_setting('auth_modal_subtitle', ''),
             'authModalButtonText' => flosc_get_setting('auth_modal_button_text', 'Continue with Email'),
             'authModalDismissMessage' => flosc_get_setting('auth_modal_dismiss_message', 'Your quiz results are temporarily saved. Sign up or log in to see your results before they expire.'),
             'authModalSsoDivider' => flosc_get_setting('auth_modal_sso_divider', 'or continue with'),
@@ -1320,13 +1379,18 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 && !get_user_meta(get_current_user_id(), '_flosc_magic_link_user_credentials_set', true)
                 && empty(get_user_meta(get_current_user_id(), '_flosc_sso_linked_providers', true))),
             'guestLinkProfileConfirmMessage' => (function() { $v = flosc_get_setting('guest_link_profile_confirm_message', 'Perfect, {name}! You can always log in directly at {login_url}, update your profile, and upgrade to full access.'); $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v; })(),
-            // Days of guest access remaining (30-day window from registration)
+            // Days of guest access remaining — only for THIS flow when it defines a guest window.
+            // Do not show LeSAEp complimentary countdown on Br3nda / flosc.ai.
             'guestDaysRemaining' => ($user_state === 'guest' && is_user_logged_in())
                 ? (function() {
+                    $window = intval(flosc_get_setting('guest_access_days', 0));
+                    if ($window <= 0) {
+                        return null;
+                    }
                     $user = get_userdata(get_current_user_id());
                     if (!$user) return null;
                     $days_elapsed = floor((time() - strtotime($user->user_registered)) / DAY_IN_SECONDS);
-                    return max(0, 30 - $days_elapsed);
+                    return max(0, $window - $days_elapsed);
                 })()
                 : null,
             // Guest/member chat list (flow params — not brand hardcodes)

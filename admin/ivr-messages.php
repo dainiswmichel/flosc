@@ -131,8 +131,8 @@ function flosc_run_ivr_diagnostics() {
     
     // 3. Database Messages Check (per-flow)
     $flosc_fs = $GLOBALS['flosc_current_settings'] ?? [];
-    $db_messages = $flosc_fs['ivr_messages'] ?? [];
-    $db_phases = $flosc_fs['ivr_phases'] ?? [];
+    $db_messages = flosc_flow_get_messages($flosc_fs);
+    $db_phases = flosc_flow_get_phases($flosc_fs);
     $last_import = $flosc_fs['ivr_last_import'] ?? 'Never';
     
     if (!empty($db_messages)) {
@@ -449,14 +449,17 @@ if (isset($flosc_post['flosc_upload_ivr_file']) && isset($_FILES['ivr_file_uploa
     $flosc_uploaded_file = $_FILES['ivr_file_upload'];
     
     if ($flosc_uploaded_file['error'] === UPLOAD_ERR_OK) {
-        $flosc_filename = sanitize_file_name($flosc_uploaded_file['name']);
+        $flosc_filename = basename(sanitize_file_name($flosc_uploaded_file['name']));
+        $flosc_target_path = function_exists('flosc_data_file_path')
+            ? flosc_data_file_path($flosc_filename)
+            : '';
 
-        // Ensure uploaded file is markdown.
+        // Ensure uploaded file is markdown and data dir is available.
         if (strtolower((string) pathinfo($flosc_filename, PATHINFO_EXTENSION)) !== 'md') {
             add_settings_error('flosc_settings', 'upload_failed', 'Only .md files are allowed.', 'error');
+        } elseif ('' === $flosc_target_path || !function_exists('flosc_write_data_file')) {
+            add_settings_error('flosc_settings', 'upload_failed', 'Uploads data directory is not available. Cannot save IVR file.', 'error');
         } else {
-            $flosc_target_path = $flosc_ivr_dir . $flosc_filename;
-
             if (!function_exists('wp_handle_upload')) {
                 require_once ABSPATH . 'wp-admin/includes/file.php';
             }
@@ -469,16 +472,20 @@ if (isset($flosc_post['flosc_upload_ivr_file']) && isset($_FILES['ivr_file_uploa
 
             if (isset($flosc_handled_upload['error'])) {
                 add_settings_error('flosc_settings', 'upload_failed', 'Upload failed: ' . $flosc_handled_upload['error'], 'error');
-            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- copy uploaded temp file into managed IVR directory
-            } elseif (!empty($flosc_handled_upload['file']) && @copy($flosc_handled_upload['file'], $flosc_target_path)) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- controlled file copy in FLOSC-managed path
+            } elseif (!empty($flosc_handled_upload['file']) && is_readable($flosc_handled_upload['file'])) {
+                $flosc_upload_body = file_get_contents($flosc_handled_upload['file']);
                 wp_delete_file($flosc_handled_upload['file']);
-                if ($flosc_flow_key) {
-                    $flosc_fs = get_option($flosc_flow_key, []);
-                    $flosc_fs['active_ivr_file'] = $flosc_filename;
-                    $flosc_fs['ivr_file'] = $flosc_filename;
-                    update_option($flosc_flow_key, $flosc_fs);
+                if (false === $flosc_upload_body || !flosc_write_data_file($flosc_target_path, $flosc_upload_body)) {
+                    add_settings_error('flosc_settings', 'upload_failed', 'Failed to save uploaded file into FLOSC data directory.', 'error');
+                } else {
+                    if ($flosc_flow_key) {
+                        $flosc_fs = get_option($flosc_flow_key, []);
+                        $flosc_fs['active_ivr_file'] = $flosc_filename;
+                        $flosc_fs['ivr_file'] = $flosc_filename;
+                        update_option($flosc_flow_key, $flosc_fs);
+                    }
+                    add_settings_error('flosc_settings', 'upload_success', 'Uploaded and set as active: ' . $flosc_filename, 'success');
                 }
-                add_settings_error('flosc_settings', 'upload_success', 'Uploaded and set as active: ' . $flosc_filename, 'success');
             } else {
                 add_settings_error('flosc_settings', 'upload_failed', 'Failed to save uploaded file.', 'error');
             }
@@ -492,11 +499,13 @@ if (isset($flosc_post['flosc_upload_ivr_file']) && isset($_FILES['ivr_file_uploa
 if (isset($flosc_post['flosc_import_selected_ivr_file']) && isset($flosc_post['import_ivr_file'])) {
     check_admin_referer('flosc_import_selected_ivr_file');
 
-    $flosc_selected_file = sanitize_file_name($flosc_post['import_ivr_file']);
-    $flosc_selected_path = $flosc_ivr_dir . $flosc_selected_file;
+    $flosc_selected_file = basename(sanitize_file_name($flosc_post['import_ivr_file']));
+    $flosc_selected_path = function_exists('flosc_data_file_path')
+        ? flosc_data_file_path($flosc_selected_file)
+        : '';
 
-    if (!file_exists($flosc_selected_path)) {
-        add_settings_error('flosc_settings', 'import_selected_failed', 'Selected IVR file not found: ' . $flosc_selected_file, 'error');
+    if ('' === $flosc_selected_path || !file_exists($flosc_selected_path)) {
+        add_settings_error('flosc_settings', 'import_selected_failed', 'Selected IVR file not found in FLOSC data directory: ' . $flosc_selected_file, 'error');
     } else {
         $flosc_result = flosc_import_ivr_to_database(false, $flosc_selected_path, $flosc_flow_key, 'merge');
         if ($flosc_result['success']) {
@@ -551,20 +560,19 @@ if (isset($flosc_post['flosc_save_full_ivr']) && isset($flosc_post['ivr_full_tex
     check_admin_referer('flosc_save_full_ivr');
 
     $flosc_full_text = $flosc_post['ivr_full_text'];
+    $flosc_full_write_path = function_exists('flosc_data_file_path')
+        ? flosc_data_file_path($flosc_active_ivr_file)
+        : $flosc_ivr_file_write_path;
     // Write edited IVR text using the uploads-only API.
-    if ('' === $flosc_ivr_file_write_path) {
-        $flosc_save_ok = false;
-    } else {
-        $flosc_save_ok = function_exists('flosc_write_data_file')
-            ? flosc_write_data_file($flosc_ivr_file_write_path, $flosc_full_text)
-            : false;
-    }
+    $flosc_save_ok = ('' !== $flosc_full_write_path && function_exists('flosc_write_data_file'))
+        ? flosc_write_data_file($flosc_full_write_path, $flosc_full_text)
+        : false;
 
     if ($flosc_save_ok === false) {
         add_settings_error('flosc_settings', 'full_text_save_failed', 'Could not save IVR file text. Check file permissions or uploads availability.', 'error');
     } else {
         add_settings_error('flosc_settings', 'full_text_saved', 'Saved full IVR file text. Use "Merge IVR File → DB" to refresh runtime DB from file.', 'success');
-        clearstatcache(true, $flosc_ivr_file_write_path);
+        clearstatcache(true, $flosc_full_write_path);
     }
 }
 
@@ -599,27 +607,29 @@ if (isset($flosc_get['flosc_download_ivr']) && isset($flosc_get['_wpnonce'])) {
 if (isset($flosc_post['flosc_duplicate_ivr_file']) && isset($flosc_post['duplicate_ivr_file'])) {
     check_admin_referer('flosc_duplicate_ivr_file');
 
-    $flosc_source_file = sanitize_file_name($flosc_post['duplicate_ivr_file']);
+    $flosc_source_file = basename(sanitize_file_name($flosc_post['duplicate_ivr_file']));
     $flosc_source_path = flosc_resolve_ivr_file_path($flosc_source_file);
 
-    if (!file_exists($flosc_source_path)) {
+    if (!file_exists($flosc_source_path) || (function_exists('flosc_is_allowed_ivr_source_path') && !flosc_is_allowed_ivr_source_path($flosc_source_path))) {
         add_settings_error('flosc_settings', 'duplicate_invalid', 'Source IVR file not found.', 'error');
+    } elseif (!function_exists('flosc_data_file_path') || !function_exists('flosc_write_data_file')) {
+        add_settings_error('flosc_settings', 'duplicate_failed', 'Uploads data directory is not available. Cannot duplicate IVR file.', 'error');
     } else {
         $flosc_extension = pathinfo($flosc_source_file, PATHINFO_EXTENSION);
         $flosc_base_name = pathinfo($flosc_source_file, PATHINFO_FILENAME);
         $flosc_duplicate_file = $flosc_base_name . '-copy.' . $flosc_extension;
-        $flosc_duplicate_path = $flosc_ivr_dir . $flosc_duplicate_file;
+        $flosc_duplicate_path = flosc_data_file_path($flosc_duplicate_file);
         $flosc_counter = 2;
 
-        while (file_exists($flosc_duplicate_path)) {
+        while ('' !== $flosc_duplicate_path && file_exists($flosc_duplicate_path)) {
             $flosc_duplicate_file = $flosc_base_name . '-copy-' . $flosc_counter . '.' . $flosc_extension;
-            $flosc_duplicate_path = $flosc_ivr_dir . $flosc_duplicate_file;
+            $flosc_duplicate_path = flosc_data_file_path($flosc_duplicate_file);
             $flosc_counter++;
         }
 
-        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- duplicate operation constrained to managed IVR files
-        if (!copy($flosc_source_path, $flosc_duplicate_path)) { // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- controlled file copy in FLOSC-managed path
-            add_settings_error('flosc_settings', 'duplicate_failed', 'Could not duplicate IVR file. Check file permissions.', 'error');
+        $flosc_source_body = ('' !== $flosc_duplicate_path) ? file_get_contents($flosc_source_path) : false;
+        if (false === $flosc_source_body || '' === $flosc_duplicate_path || !flosc_write_data_file($flosc_duplicate_path, $flosc_source_body)) {
+            add_settings_error('flosc_settings', 'duplicate_failed', 'Could not duplicate IVR file. Check file permissions or uploads availability.', 'error');
         } else {
             add_settings_error('flosc_settings', 'duplicate_success', 'Duplicated IVR file: ' . $flosc_duplicate_file, 'success');
         }
@@ -630,10 +640,13 @@ if (isset($flosc_post['flosc_duplicate_ivr_file']) && isset($flosc_post['duplica
 if (isset($flosc_post['flosc_delete_ivr_file']) && isset($flosc_post['delete_ivr_file'])) {
     check_admin_referer('flosc_delete_ivr_file');
 
-    $flosc_delete_file = sanitize_file_name($flosc_post['delete_ivr_file']);
-    $flosc_delete_path = $flosc_ivr_dir . $flosc_delete_file;
+    $flosc_delete_file = basename(sanitize_file_name($flosc_post['delete_ivr_file']));
+    $flosc_delete_path = function_exists('flosc_data_file_path')
+        ? flosc_data_file_path($flosc_delete_file)
+        : '';
 
-    if (!file_exists($flosc_delete_path)) {
+    // Only delete files that live under the FLOSC uploads data directory.
+    if ('' === $flosc_delete_path || !file_exists($flosc_delete_path)) {
         add_settings_error('flosc_settings', 'delete_invalid', 'File not found or not a managed IVR file.', 'error');
     } elseif (wp_delete_file($flosc_delete_path) === false) {
         add_settings_error('flosc_settings', 'delete_failed', 'Failed to delete IVR file. Check file permissions.', 'error');
@@ -652,15 +665,14 @@ if (isset($flosc_post['flosc_clear_ivr_db'])) {
     // Clear (per-flow)
     if ($flosc_flow_key) {
         $flosc_fs = get_option($flosc_flow_key, []);
-        $flosc_fs['ivr_messages'] = [];
-        $flosc_fs['ivr_phases'] = [
+        $flosc_empty_phases = [
             'freeline' => [],
             'login' => [],
             'offer' => [],
             'sale' => [],
             'content' => [],
         ];
-        $flosc_fs['ivr_styles'] = [];
+        flosc_flow_set_runtime($flosc_fs, [], $flosc_empty_phases, []);
         unset($flosc_fs['ivr_last_import']);
         update_option($flosc_flow_key, $flosc_fs);
     }
@@ -695,7 +707,7 @@ if (isset($flosc_post['flosc_force_resync'])) {
 // Handle explicit offers alignment (active IVR offer messages -> flow offers registry)
 // Keep offers registry aligned with IVR messages as part of normal DB<->IVR sync behavior.
 if (!empty($flosc_flow_key) && function_exists('flosc_sync_flow_offers_with_ivr_messages')) {
-    $flosc_messages_for_sync = $flosc_flow_settings['ivr_messages'] ?? [];
+    $flosc_messages_for_sync = flosc_flow_get_messages($flosc_flow_settings);
     flosc_sync_flow_offers_with_ivr_messages($flosc_flow_key, $flosc_messages_for_sync);
     $GLOBALS['flosc_current_settings'] = get_option($flosc_flow_key, []);
     $flosc_flow_settings = $GLOBALS['flosc_current_settings'];
@@ -753,7 +765,7 @@ if (isset($flosc_post['flosc_preview_import'])) {
 if (isset($flosc_post['flosc_export_ivr'])) {
     check_admin_referer('flosc_export_ivr');
 
-    $flosc_messages = $flosc_flow_settings['ivr_messages'] ?? [];
+    $flosc_messages = flosc_flow_get_messages($flosc_flow_settings);
     if (!empty($flosc_flow_key) && function_exists('flosc_sync_flow_offers_with_ivr_messages')) {
         flosc_sync_flow_offers_with_ivr_messages($flosc_flow_key, $flosc_messages);
     }
@@ -779,11 +791,19 @@ if (isset($flosc_post['save_ivr_message'])) {
     
     // DB = live runtime, IVR file = portable config. Always save to both.
     
-    $flosc_messages = $flosc_flow_settings['ivr_messages'] ?? [];
-    $flosc_phases = $flosc_flow_settings['ivr_phases'] ?? [];
+    $flosc_messages = flosc_flow_get_messages($flosc_flow_settings);
+    $flosc_phases = flosc_flow_get_phases($flosc_flow_settings);
     
-    $flosc_msg_id = sanitize_text_field($flosc_post['message_id'] ?? '');
-    $flosc_phase = sanitize_text_field($flosc_post['message_phase'] ?? '');
+    $flosc_msg_id = sanitize_key((string) ($flosc_post['message_id'] ?? ''));
+    $flosc_phase = sanitize_key((string) ($flosc_post['message_phase'] ?? ''));
+    $flosc_allowed_phases = array('freeline', 'login', 'offer', 'sale', 'content');
+    if (!in_array($flosc_phase, $flosc_allowed_phases, true)) {
+        $flosc_phase = 'freeline';
+    }
+
+    if ('' === $flosc_msg_id) {
+        add_settings_error('flosc_settings', 'message_id_required', 'Message id is required.', 'error');
+    } else {
     
     // v9.2.8: Use sanitize_textarea_field to preserve content without over-escaping
     $flosc_raw_content = $flosc_post['message_content'] ?? '';
@@ -814,9 +834,13 @@ if (isset($flosc_post['save_ivr_message'])) {
             'woo_product'    => sanitize_text_field($flosc_post['message_woo_product'] ?? ''),
             'post_id'        => intval($flosc_post['message_post_id'] ?? 0),
         ];
-        // Only store non-empty values
+        // Only store non-empty values (timer 0 is valid — use array_key_exists path for ints).
         foreach ($flosc_offer_fields as $flosc_k => $flosc_v) {
-            if (!empty($v)) $flosc_message_data[$k] = $v;
+            if ($flosc_k === 'timer' || $flosc_k === 'post_id') {
+                $flosc_message_data[$flosc_k] = $flosc_v;
+            } elseif ($flosc_v !== '' && $flosc_v !== null) {
+                $flosc_message_data[$flosc_k] = $flosc_v;
+            }
         }
     }
 
@@ -845,7 +869,7 @@ if (isset($flosc_post['save_ivr_message'])) {
     $flosc_messages[$flosc_msg_id] = array_merge($flosc_existing_message, $flosc_message_data);
     if ($flosc_flow_key) {
         $flosc_fs = get_option($flosc_flow_key, []);
-        $flosc_fs['ivr_messages'] = $flosc_messages;
+        $flosc_styles = flosc_flow_get_styles($flosc_fs);
     
     // Update phase mapping
     if (!isset($flosc_phases[$flosc_phase])) {
@@ -854,51 +878,62 @@ if (isset($flosc_post['save_ivr_message'])) {
     if (!in_array($flosc_msg_id, $flosc_phases[$flosc_phase])) {
         $flosc_phases[$flosc_phase][] = $flosc_msg_id;
     }
-        $flosc_fs['ivr_phases'] = $flosc_phases;
+        flosc_flow_set_runtime($flosc_fs, $flosc_messages, $flosc_phases, $flosc_styles);
         update_option($flosc_flow_key, $flosc_fs);
         $GLOBALS['flosc_current_settings'] = $flosc_fs;
         $flosc_flow_settings = $flosc_fs;
     }
     
     // Always save to both: DB is the live runtime, IVR file is the portable config
-    flosc_auto_export_ivr_to_file($flosc_flow_key, $flosc_ivr_file_write_path);
+    $flosc_export_path = function_exists('flosc_data_file_path')
+        ? flosc_data_file_path($flosc_active_ivr_file)
+        : $flosc_ivr_file_write_path;
+    flosc_auto_export_ivr_to_file($flosc_flow_key, $flosc_export_path);
     add_settings_error('flosc_settings', 'message_saved', 'Saved to FLOSC DB (live) and IVR file (portable config).', 'success');
+    } // end non-empty message_id
 }
 
 if (isset($flosc_get['delete_message']) && isset($flosc_get['phase'])) {
     check_admin_referer('flosc_delete_message_' . $flosc_get['delete_message']);
     
-    $flosc_msg_id = sanitize_text_field($flosc_get['delete_message']);
-    $flosc_phase = sanitize_text_field($flosc_get['phase']);
+    $flosc_msg_id = sanitize_key((string) $flosc_get['delete_message']);
+    $flosc_phase = sanitize_key((string) $flosc_get['phase']);
+    if ('' === $flosc_msg_id) {
+        add_settings_error('flosc_settings', 'message_delete_invalid', 'Message id is required to delete.', 'error');
+    } else {
     
-    $flosc_messages = $flosc_flow_settings['ivr_messages'] ?? [];
-    $flosc_phases = $flosc_flow_settings['ivr_phases'] ?? [];
+    $flosc_messages = flosc_flow_get_messages($flosc_flow_settings);
+    $flosc_phases = flosc_flow_get_phases($flosc_flow_settings);
     
     unset($flosc_messages[$flosc_msg_id]);
     if ($flosc_flow_key) {
         $flosc_fs = get_option($flosc_flow_key, []);
-        $flosc_fs['ivr_messages'] = $flosc_messages;
+        $flosc_styles = flosc_flow_get_styles($flosc_fs);
     
     if (isset($flosc_phases[$flosc_phase])) {
         $flosc_phases[$flosc_phase] = array_diff($flosc_phases[$flosc_phase], [$flosc_msg_id]);
     }
-        $flosc_fs['ivr_phases'] = $flosc_phases;
+        flosc_flow_set_runtime($flosc_fs, $flosc_messages, $flosc_phases, $flosc_styles);
         update_option($flosc_flow_key, $flosc_fs);
         $GLOBALS['flosc_current_settings'] = $flosc_fs;
         $flosc_flow_settings = $flosc_fs;
     }
     
     // v9.2.10: Delete always resyncs to file (destructive operation)
-    flosc_auto_export_ivr_to_file($flosc_flow_key, $flosc_ivr_file_write_path);
+    $flosc_export_path = function_exists('flosc_data_file_path')
+        ? flosc_data_file_path($flosc_active_ivr_file)
+        : $flosc_ivr_file_write_path;
+    flosc_auto_export_ivr_to_file($flosc_flow_key, $flosc_export_path);
     
     add_settings_error('flosc_settings', 'message_deleted', 'Message deleted from FLOSC DB and removed from Active IVR Messages MD file', 'success');
+    } // end non-empty message_id
 }
 
 // Run diagnostics after mutations so cards reflect the current request actions.
 $flosc_ivr_diagnostics = flosc_run_ivr_diagnostics();
 
-$flosc_messages = $flosc_flow_settings['ivr_messages'] ?? [];
-$flosc_phases = $flosc_flow_settings['ivr_phases'] ?? [];
+$flosc_messages = flosc_flow_get_messages($flosc_flow_settings);
+$flosc_phases = flosc_flow_get_phases($flosc_flow_settings);
 $flosc_active_phase = $flosc_get['ivr_phase'] ?? 'freeline';
 $flosc_editing_message = $flosc_get['edit_message'] ?? null;
 
@@ -918,7 +953,7 @@ if (is_dir($flosc_ivr_files_dir)) {
     $flosc_files = array_unique($flosc_files); // Remove duplicates
     sort($flosc_files); // Alphabetical order
     foreach ($flosc_files as $flosc_file) {
-        $flosc_filename = basename($file);
+        $flosc_filename = basename($flosc_file);
         // Skip backup files
         if (strpos($flosc_filename, 'backup') === false) {
             $flosc_available_ivr_files[] = $flosc_filename;
@@ -1271,7 +1306,7 @@ function floscTestAPI() {
     $flosc_replace_removed_count = count($flosc_import_preview['deleted'] ?? []);
 
     // Build full-entry views for clear compare and direction decisions.
-    $flosc_db_messages_for_compare = $flosc_flow_settings['ivr_messages'] ?? [];
+    $flosc_db_messages_for_compare = flosc_flow_get_messages($flosc_flow_settings);
     $flosc_file_messages_for_compare = [];
     if (file_exists($flosc_ivr_file_path)) {
         require_once FLOSC_PLUGIN_DIR . 'includes/class-ivr-parser.php';
