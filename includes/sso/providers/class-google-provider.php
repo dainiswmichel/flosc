@@ -104,24 +104,31 @@ class Google_Provider extends SSO_Provider_Base {
      */
     protected function normalize_user_data($raw_data) {
         // v1.4.6: Handle both v2 (id) and v3 (sub) response formats
-        $provider_id = $raw_data['id'] ?? ($raw_data['sub'] ?? '');
-        
+        // Pass 8: json_decode of provider JSON does not sanitize — field-sanitize here.
+        $provider_id = sanitize_text_field((string) ($raw_data['id'] ?? ($raw_data['sub'] ?? '')));
+
         // v1.4.6: Get larger avatar (BuddyBoss pattern: replace s96 with s360)
-        $avatar = $raw_data['picture'] ?? '';
-        if ($avatar && strpos($avatar, '=s96-c') !== false) {
+        $avatar = esc_url_raw((string) ($raw_data['picture'] ?? ''));
+        if ($avatar !== '' && strpos($avatar, '=s96-c') !== false) {
             $avatar = str_replace('=s96-c', '=s360-c', $avatar);
         }
-        
+
+        $email_verified = $raw_data['email_verified'] ?? false;
+        if (is_string($email_verified)) {
+            $email_verified = in_array(strtolower($email_verified), array('true', '1', 'yes'), true);
+        }
+
         return array(
             'provider_id'    => $provider_id,
-            'email'          => $raw_data['email'] ?? '',
-            'email_verified' => $raw_data['email_verified'] ?? false,
-            'name'           => $raw_data['name'] ?? '',
-            'first_name'     => $raw_data['given_name'] ?? '',
-            'last_name'      => $raw_data['family_name'] ?? '',
+            'email'          => sanitize_email((string) ($raw_data['email'] ?? '')),
+            'email_verified' => (bool) $email_verified,
+            'name'           => sanitize_text_field((string) ($raw_data['name'] ?? '')),
+            'first_name'     => sanitize_text_field((string) ($raw_data['given_name'] ?? '')),
+            'last_name'      => sanitize_text_field((string) ($raw_data['family_name'] ?? '')),
             'avatar'         => $avatar,
-            'locale'         => $raw_data['locale'] ?? '',
-            'raw_data'       => $raw_data,
+            'locale'         => sanitize_text_field((string) ($raw_data['locale'] ?? '')),
+            // Do not retain the full decoded provider blob for hooks/storage.
+            'raw_data'       => array(),
         );
     }
     

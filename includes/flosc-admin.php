@@ -232,6 +232,16 @@ trait FLOSC_Admin_Trait {
             [$this, 'redirect_to_sso_tab']
         );
 
+        // Engagement (journey parameters + profile summary; between SSO and Chat Logs)
+        add_submenu_page(
+            'flosc-settings',
+            'Engagement',
+            'Engagement',
+            'manage_options',
+            'flosc-engagement',
+            [$this, 'redirect_to_engagement_tab']
+        );
+
         // Chat Logs
         add_submenu_page(
             'flosc-settings',
@@ -277,55 +287,56 @@ trait FLOSC_Admin_Trait {
      * Register Settings
      */
     public function register_settings() {
+        // Pass 2: every option has an explicit sanitizer type (no bare-name → implicit text).
         $this->register_settings_group(array(
-            'flosc_app_slug',
-            'flosc_custom_domain',
-            'flosc_product_name',
-            'flosc_product_title',
-            'flosc_product_tagline',
-            'flosc_share_text',
-            'flosc_email_subject',
-            'flosc_email_body',
-            'flosc_account_plan',
-            'flosc_account_purchases_manual',
-            'flosc_ai_provider',
+            'flosc_app_slug' => 'text',
+            'flosc_custom_domain' => 'text',
+            'flosc_product_name' => 'text',
+            'flosc_product_title' => 'text',
+            'flosc_product_tagline' => 'text',
+            'flosc_share_text' => 'text',
+            'flosc_email_subject' => 'text',
+            'flosc_email_body' => 'textarea',
+            'flosc_account_plan' => 'text',
+            'flosc_account_purchases_manual' => 'text',
+            'flosc_ai_provider' => 'text',
             'flosc_openai_api_key' => 'secret',
             'flosc_anthropic_api_key' => 'secret',
             'flosc_xai_api_key' => 'secret',
-            'flosc_ai_openai_model',
-            'flosc_ai_anthropic_model',
-            'flosc_ai_xai_model',
-            'flosc_ai_temperature',
-            'flosc_ai_max_tokens',
-            'flosc_stt_provider',
+            'flosc_ai_openai_model' => 'text',
+            'flosc_ai_anthropic_model' => 'text',
+            'flosc_ai_xai_model' => 'text',
+            'flosc_ai_temperature' => 'text',
+            'flosc_ai_max_tokens' => 'text',
+            'flosc_stt_provider' => 'text',
             'flosc_assemblyai_api_key' => 'secret',
-            'flosc_custom_stt_endpoint',
-            'flosc_buddyboss_group_id',
-            'flosc_lessons_category',
-            'flosc_oto_offer_id',
-            'flosc_free_lesson_mode',
-            'flosc_free_lesson_count',
-            'flosc_free_lesson_proportion',
-            'flosc_guest_access_days',
-            'flosc_stripe_enabled',
-            'flosc_stripe_mode',
-            'flosc_stripe_test_pk',
+            'flosc_custom_stt_endpoint' => 'url',
+            'flosc_buddyboss_group_id' => 'text',
+            'flosc_lessons_category' => 'text',
+            'flosc_oto_offer_id' => 'text',
+            'flosc_free_lesson_mode' => 'text',
+            'flosc_free_lesson_count' => 'text',
+            'flosc_free_lesson_proportion' => 'text',
+            'flosc_guest_access_days' => 'text',
+            'flosc_stripe_enabled' => 'bool',
+            'flosc_stripe_mode' => 'text',
+            'flosc_stripe_test_pk' => 'text',
             'flosc_stripe_test_sk' => 'secret',
-            'flosc_stripe_live_pk',
+            'flosc_stripe_live_pk' => 'text',
             'flosc_stripe_live_sk' => 'secret',
-            'flosc_clickbank_enabled',
-            'flosc_clickbank_mode',
-            'flosc_clickbank_vendor',
+            'flosc_clickbank_enabled' => 'bool',
+            'flosc_clickbank_mode' => 'text',
+            'flosc_clickbank_vendor' => 'text',
             'flosc_clickbank_secret' => 'secret',
-            'flosc_clickbank_product',
-            'flosc_clickbank_access_level',
-            'flosc_paypal_mode',
-            'flosc_paypal_client_id',
+            'flosc_clickbank_product' => 'text',
+            'flosc_clickbank_access_level' => 'text',
+            'flosc_paypal_mode' => 'text',
+            'flosc_paypal_client_id' => 'text',
             'flosc_paypal_secret' => 'secret',
-            'flosc_paypal_webhook_id',
-            'flosc_chat_style_preset',
-            'flosc_chat_style_bubble',
-            'flosc_chat_style_font',
+            'flosc_paypal_webhook_id' => 'text',
+            'flosc_chat_style_preset' => 'text',
+            'flosc_chat_style_bubble' => 'text',
+            'flosc_chat_style_font' => 'text',
         ));
 
         $this->register_settings_group(array(
@@ -360,7 +371,8 @@ trait FLOSC_Admin_Trait {
             'flosc_sso_linkedin_client_secret' => 'secret',
             'flosc_sso_apple_team_id' => 'text',
             'flosc_sso_apple_key_id' => 'text',
-            'flosc_sso_apple_private_key' => 'textarea',
+            // PEM: pass-through secret sanitizer (not sanitize_textarea_field — Jul email / Pass 2).
+            'flosc_sso_apple_private_key' => 'secret',
             'flosc_ai_base_prompt' => 'textarea',
             'flosc_ai_personality_name' => 'textarea',
             'flosc_ai_personality_role' => 'textarea',
@@ -411,6 +423,10 @@ trait FLOSC_Admin_Trait {
 
                 if ($field_type === 'checkbox') {
                     $field_type = 'bool';
+                }
+                // Pass 2: map password/secret field types to secret pass-through sanitizer.
+                if ($field_type === 'password' || $field_type === 'secret') {
+                    $field_type = 'secret';
                 }
 
                 $this->register_setting_value($option_name, $field_type);
@@ -467,17 +483,8 @@ trait FLOSC_Admin_Trait {
                 $sanitize_callback = array($this, 'sanitize_array_setting');
                 break;
             case 'secret':
-                // Blank field on re-save means "keep existing secret", not wipe it.
-                $sanitize_callback = function ($value) use ($option_name) {
-                    if (!is_string($value)) {
-                        return (string) get_option($option_name, '');
-                    }
-                    $value = wp_unslash($value);
-                    if ('' === $value) {
-                        return (string) get_option($option_name, '');
-                    }
-                    return $value;
-                };
+                // Named public callback (Pass 3): empty-preserve via current_filter option name.
+                $sanitize_callback = array( $this, 'sanitize_secret_setting' );
                 break;
             default:
                 $sanitize_callback = array($this, 'sanitize_text_setting');
@@ -588,14 +595,33 @@ trait FLOSC_Admin_Trait {
     /**
      * Pass-through for API keys and payment secrets (do not use sanitize_text_field).
      *
+     * Empty string on save keeps the stored option (password fields submit empty when
+     * unchanged). To clear a secret deliberately, operators must use a dedicated clear
+     * action or overwrite with a new non-empty value — blank resave is not a wipe.
+     *
+     * Resolves the option name from sanitize_option_{$option} when registered as a
+     * named register_setting sanitize_callback (Pass 3).
+     *
      * @param mixed $value Raw value.
      * @return string
      */
     public function sanitize_secret_setting($value) {
-        if (!is_string($value)) {
-            return '';
+        $option_name = '';
+        $filter      = current_filter();
+        if (is_string($filter) && 0 === strpos($filter, 'sanitize_option_')) {
+            $option_name = substr($filter, strlen('sanitize_option_'));
         }
-        return wp_unslash($value);
+
+        if (!is_string($value)) {
+            return $option_name !== '' ? (string) get_option($option_name, '') : '';
+        }
+
+        $value = wp_unslash($value);
+        if ('' === $value) {
+            return $option_name !== '' ? (string) get_option($option_name, '') : '';
+        }
+
+        return $value;
     }
 
     /**
@@ -991,6 +1017,11 @@ trait FLOSC_Admin_Trait {
 
     public function redirect_to_sso_tab() {
         wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=sso'));
+        exit;
+    }
+
+    public function redirect_to_engagement_tab() {
+        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=engagement'));
         exit;
     }
 

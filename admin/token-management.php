@@ -240,7 +240,7 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
 
         <?php if (empty($flosc_visible_products)) : ?>
             <div class="flosc-token-empty">
-                <strong>No <?php echo $flosc_filter === 'active' ? 'active ' : ''; ?>products on this flow.</strong>
+                <strong>No <?php echo esc_html( $flosc_filter === 'active' ? 'active ' : '' ); ?>products on this flow.</strong>
                 <p>Create or activate an offer under Offers, then return here to set token grants.</p>
                 <a class="button button-primary" href="<?php echo esc_url($flosc_offers_url); ?>">Go to Offers</a>
             </div>
@@ -265,7 +265,7 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
                             <span class="flosc-token-product__name"><?php echo esc_html($flosc_p['name']); ?></span>
                             <span class="flosc-token-product__meta"><?php echo esc_html($flosc_type_label); ?> · <?php echo esc_html($flosc_p['processor']); ?></span>
                             <span class="flosc-token-product__price"><?php echo esc_html($flosc_price_label); ?></span>
-                            <span class="flosc-token-product__chip <?php echo $flosc_is_none ? 'flosc-is-muted' : ($flosc_is_custom ? 'flosc-is-custom' : 'flosc-is-flow'); ?>">
+                            <span class="flosc-token-product__chip <?php echo esc_attr( $flosc_is_none ? 'flosc-is-muted' : ($flosc_is_custom ? 'flosc-is-custom' : 'flosc-is-flow') ); ?>">
                                 <?php echo esc_html($flosc_summary_tokens); ?>
                             </span>
                             <span class="flosc-token-product__status <?php echo esc_attr($flosc_status_class); ?>">
@@ -291,7 +291,7 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
                                     <span class="description">Flow defaults live in the section below. Custom lets this product add more or less, once or on a schedule.</span>
                                 </label>
 
-                                <div class="flosc-token-product__custom <?php echo $flosc_is_custom ? '' : 'flosc-is-disabled'; ?>" data-flosc-token-custom="<?php echo esc_attr($flosc_pid); ?>">
+                                <div class="flosc-token-product__custom <?php echo esc_attr( $flosc_is_custom ? '' : 'flosc-is-disabled' ); ?>" data-flosc-token-custom="<?php echo esc_attr($flosc_pid); ?>">
                                     <label class="flosc-token-field">
                                         <span class="flosc-token-field__label">Grant mode</span>
                                         <select name="flosc_product_tokens[<?php echo esc_attr($flosc_pid); ?>][mode]">
@@ -328,7 +328,7 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
                                         </select>
                                     </label>
 
-                                    <label class="flosc-token-field flosc-token-cap-custom <?php echo $flosc_p['cap_mode'] === 'custom' ? '' : 'flosc-is-disabled'; ?>" data-flosc-token-cap-input="<?php echo esc_attr($flosc_pid); ?>">
+                                    <label class="flosc-token-field flosc-token-cap-custom <?php echo esc_attr( $flosc_p['cap_mode'] === 'custom' ? '' : 'flosc-is-disabled' ); ?>" data-flosc-token-cap-input="<?php echo esc_attr($flosc_pid); ?>">
                                         <span class="flosc-token-field__label">Custom cap value</span>
                                         <input
                                             type="number"

@@ -146,17 +146,18 @@ class Microsoft_Provider extends SSO_Provider_Base {
      * @return array Normalized user data
      */
     protected function normalize_user_data($raw_data) {
+        // Pass 8: field-sanitize after Graph JSON decode; do not keep raw blob.
         return array(
-            'provider_id'    => $raw_data['id'] ?? '',
-            'email'          => $raw_data['mail'] ?? $raw_data['userPrincipalName'] ?? '',
+            'provider_id'    => sanitize_text_field((string) ($raw_data['id'] ?? '')),
+            'email'          => sanitize_email((string) ($raw_data['mail'] ?? $raw_data['userPrincipalName'] ?? '')),
             'email_verified' => true, // Microsoft verifies emails
-            'name'           => $raw_data['displayName'] ?? '',
-            'first_name'     => $raw_data['givenName'] ?? '',
-            'last_name'      => $raw_data['surname'] ?? '',
-            'avatar'         => $raw_data['avatar_url'] ?? '',
-            'locale'         => $raw_data['preferredLanguage'] ?? '',
-            'job_title'      => $raw_data['jobTitle'] ?? '',
-            'raw_data'       => $raw_data,
+            'name'           => sanitize_text_field((string) ($raw_data['displayName'] ?? '')),
+            'first_name'     => sanitize_text_field((string) ($raw_data['givenName'] ?? '')),
+            'last_name'      => sanitize_text_field((string) ($raw_data['surname'] ?? '')),
+            'avatar'         => esc_url_raw((string) ($raw_data['avatar_url'] ?? '')),
+            'locale'         => sanitize_text_field((string) ($raw_data['preferredLanguage'] ?? '')),
+            'job_title'      => sanitize_text_field((string) ($raw_data['jobTitle'] ?? '')),
+            'raw_data'       => array(),
         );
     }
     

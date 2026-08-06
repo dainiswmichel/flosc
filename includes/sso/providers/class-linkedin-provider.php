@@ -84,17 +84,22 @@ class LinkedIn_Provider extends SSO_Provider_Base {
      * @return array Normalized user data
      */
     protected function normalize_user_data($raw_data) {
-        // OpenID Connect format
+        // OpenID Connect format — Pass 8: field-sanitize after JSON decode; no raw blob.
+        $email_verified = $raw_data['email_verified'] ?? false;
+        if (is_string($email_verified)) {
+            $email_verified = in_array(strtolower($email_verified), array('true', '1', 'yes'), true);
+        }
+
         return array(
-            'provider_id'    => $raw_data['sub'] ?? '',
-            'email'          => $raw_data['email'] ?? '',
-            'email_verified' => $raw_data['email_verified'] ?? false,
-            'name'           => $raw_data['name'] ?? '',
-            'first_name'     => $raw_data['given_name'] ?? '',
-            'last_name'      => $raw_data['family_name'] ?? '',
-            'avatar'         => $raw_data['picture'] ?? '',
-            'locale'         => $raw_data['locale'] ?? '',
-            'raw_data'       => $raw_data,
+            'provider_id'    => sanitize_text_field((string) ($raw_data['sub'] ?? '')),
+            'email'          => sanitize_email((string) ($raw_data['email'] ?? '')),
+            'email_verified' => (bool) $email_verified,
+            'name'           => sanitize_text_field((string) ($raw_data['name'] ?? '')),
+            'first_name'     => sanitize_text_field((string) ($raw_data['given_name'] ?? '')),
+            'last_name'      => sanitize_text_field((string) ($raw_data['family_name'] ?? '')),
+            'avatar'         => esc_url_raw((string) ($raw_data['picture'] ?? '')),
+            'locale'         => sanitize_text_field((string) ($raw_data['locale'] ?? '')),
+            'raw_data'       => array(),
         );
     }
     

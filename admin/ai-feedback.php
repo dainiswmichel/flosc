@@ -82,14 +82,17 @@ $flosc_feedback_count = count($flosc_feedback_items);
 if (isset($_POST['flosc_delete_feedback'])) {
     $post = wp_unslash($_POST);
     if (wp_verify_nonce(sanitize_text_field($post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
-    $flosc_delete_id = sanitize_text_field($post['flosc_delete_feedback'] ?? '');
-    $flosc_feedback_items = array_values(array_filter($flosc_feedback_items, function($c) use ($flosc_delete_id) {
-        return ($c['id'] ?? '') !== $flosc_delete_id;
-    }));
-    $flosc_flow_settings['ai_feedback'] = $flosc_feedback_items;
-    update_option($settings_key, $flosc_flow_settings);
-    $flosc_feedback_count = count($flosc_feedback_items);
-    echo '<div class="notice notice-success is-dismissible"><p>Feedback deleted.</p></div>';
+        if (empty($flosc_selected_flow_id) || !flosc_flows()->can_access_flow_admin($flosc_selected_flow_id)) {
+            wp_die(esc_html__('You do not have permission to manage AI feedback for this flow.', 'flosc'));
+        }
+        $flosc_delete_id = sanitize_text_field($post['flosc_delete_feedback'] ?? '');
+        $flosc_feedback_items = array_values(array_filter($flosc_feedback_items, function($c) use ($flosc_delete_id) {
+            return ($c['id'] ?? '') !== $flosc_delete_id;
+        }));
+        $flosc_flow_settings['ai_feedback'] = $flosc_feedback_items;
+        update_option($settings_key, $flosc_flow_settings);
+        $flosc_feedback_count = count($flosc_feedback_items);
+        echo '<div class="notice notice-success is-dismissible"><p>Feedback deleted.</p></div>';
     }
 }
 
@@ -97,6 +100,9 @@ if (isset($_POST['flosc_delete_feedback'])) {
 if (isset($_POST['flosc_add_feedback'])) {
     $post = wp_unslash($_POST);
     if (wp_verify_nonce(sanitize_text_field($post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
+        if (empty($flosc_selected_flow_id) || !flosc_flows()->can_access_flow_admin($flosc_selected_flow_id)) {
+            wp_die(esc_html__('You do not have permission to manage AI feedback for this flow.', 'flosc'));
+        }
         $flosc_new_feedback_item = [
             'id'                 => uniqid('corr_'),
             'timestamp'          => current_time('mysql'),
@@ -125,14 +131,17 @@ $flosc_praises_count = count($flosc_praises);
 if (isset($_POST['flosc_delete_praise'])) {
     $post = wp_unslash($_POST);
     if (wp_verify_nonce(sanitize_text_field($post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
-    $flosc_delete_id = sanitize_text_field($post['flosc_delete_praise'] ?? '');
-    $flosc_praises = array_values(array_filter($flosc_praises, function($p) use ($flosc_delete_id) {
-        return ($p['id'] ?? '') !== $flosc_delete_id;
-    }));
-    $flosc_flow_settings['ai_praises'] = $flosc_praises;
-    update_option($settings_key, $flosc_flow_settings);
-    $flosc_praises_count = count($flosc_praises);
-    echo '<div class="notice notice-success is-dismissible"><p>Praise deleted.</p></div>';
+        if (empty($flosc_selected_flow_id) || !flosc_flows()->can_access_flow_admin($flosc_selected_flow_id)) {
+            wp_die(esc_html__('You do not have permission to manage AI praise for this flow.', 'flosc'));
+        }
+        $flosc_delete_id = sanitize_text_field($post['flosc_delete_praise'] ?? '');
+        $flosc_praises = array_values(array_filter($flosc_praises, function($p) use ($flosc_delete_id) {
+            return ($p['id'] ?? '') !== $flosc_delete_id;
+        }));
+        $flosc_flow_settings['ai_praises'] = $flosc_praises;
+        update_option($settings_key, $flosc_flow_settings);
+        $flosc_praises_count = count($flosc_praises);
+        echo '<div class="notice notice-success is-dismissible"><p>Praise deleted.</p></div>';
     }
 }
 
@@ -140,6 +149,9 @@ if (isset($_POST['flosc_delete_praise'])) {
 if (isset($_POST['flosc_add_praise'])) {
     $post = wp_unslash($_POST);
     if (wp_verify_nonce(sanitize_text_field($post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
+        if (empty($flosc_selected_flow_id) || !flosc_flows()->can_access_flow_admin($flosc_selected_flow_id)) {
+            wp_die(esc_html__('You do not have permission to manage AI praise for this flow.', 'flosc'));
+        }
         $flosc_new_praise = [
             'id'            => uniqid('praise_'),
             'timestamp'     => current_time('mysql'),

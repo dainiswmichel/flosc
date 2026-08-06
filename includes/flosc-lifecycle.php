@@ -7,21 +7,8 @@ if (!defined('ABSPATH')) {
  * Plugin activation (v3.0.9 - Resolved: moved outside class so hook fires correctly)
  */
 function flosc_activate() {
-    // v8.0.0: Register LeSAEp Learner roles (same capabilities as subscriber)
-    $member_level = flosc_get_setting('default_member_level', 'pronunciation_learners', 'lesaep');
-    $guest_level = flosc_get_setting('default_guest_level', 'guest_pronunciation_learner', 'lesaep');
-    if (!get_role($member_level)) {
-        add_role($member_level, 'LeSAEp Learner', ['read' => true]);
-    }
-    if (!get_role($guest_level)) {
-        add_role($guest_level, 'Guest LeSAEp Learner', ['read' => true]);
-    }
-    if ($member_level !== 'lesaep_learners' && !get_role('lesaep_learners')) {
-        add_role('lesaep_learners', 'LeSAEp Learner', ['read' => true]);
-    }
-    if ($guest_level !== 'guest_lesaep_learner' && !get_role('guest_lesaep_learner')) {
-        add_role('guest_lesaep_learner', 'Guest LeSAEp Learner', ['read' => true]);
-    }
+    // Specialty product roles (e.g. LeSAEp) are created when that flow/product
+    // is deliberately imported or configured — not on every generic activate.
 
     // v1.2.2: Migrate legacy settings to flows system
     require_once FLOSC_PLUGIN_DIR . 'includes/class-flow-manager.php';
@@ -30,7 +17,7 @@ function flosc_activate() {
     // Flush rewrite rules to register REST API routes
     flush_rewrite_rules();
 
-    // Set defaults (only if they don't exist)
+    // First-install defaults only — never clobber floscAdmin choices on reactivate.
     $defaults = [
         'flosc_app_slug' => 'flosc', // v1.1.9: Changed default from 'app' to 'flosc'
         'flosc_custom_domain' => '', // v1.1.9: Optional custom domain mapping
@@ -47,22 +34,14 @@ function flosc_activate() {
         'flosc_tokens_nominal_millicents_per_token_denominator' => 1,
         'flosc_tokens_real_millicents_per_token_numerator' => 1,
         'flosc_tokens_real_millicents_per_token_denominator' => 2,
+        'flosc_quiz_content_flosc_sample_audio_quiz' => '1,2,3,4,5,6,7,8,9,10',
+        'flosc_token_name' => 'tokens',
     ];
 
     foreach ($defaults as $key => $value) {
         if (get_option($key) === false) {
             add_option($key, $value);
         }
-    }
-
-    // Force critical "out of box" defaults
-    $force_defaults = [
-        'flosc_quiz_content_flosc_sample_audio_quiz' => '1,2,3,4,5,6,7,8,9,10',
-        'flosc_token_name' => 'tokens',
-    ];
-
-    foreach ($force_defaults as $key => $value) {
-        update_option($key, $value);
     }
 
     // Set PayPal mode to sandbox on fresh install (credentials set via admin Payments tab)
@@ -80,7 +59,11 @@ function flosc_activate() {
         // Copy the shipped canonical default if present, otherwise create minimal version
         $default_ivr = FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_technical_ivr.md';
         if (file_exists($default_ivr)) {
-            copy($default_ivr, $ivr_file); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_copy -- controlled file copy in FLOSC-managed path
+            // Pass 5: read shipped default (plugin dir is read-only source); write only under uploads.
+            $default_body = file_get_contents($default_ivr);
+            if (false !== $default_body && function_exists('flosc_write_data_file')) {
+                flosc_write_data_file($ivr_file, $default_body);
+            }
         } else {
             // Create minimal working ivr.md
             $minimal_ivr = <<<'MD'
@@ -126,8 +109,10 @@ UserInput: Get started
 MessageContent: Great! Let's begin with a quick quiz to see where you stand.
 MessageConditions: !quiz_taken
 MD;
-            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- activation seeding of uploads-rooted IVR default file
-            file_put_contents($ivr_file, $minimal_ivr); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- controlled write in FLOSC-managed path
+            // Pass 5: seed only under uploads via flosc_write_data_file.
+            if (function_exists('flosc_write_data_file')) {
+                flosc_write_data_file($ivr_file, $minimal_ivr);
+            }
         }
     }
 
@@ -137,7 +122,7 @@ MD;
     // v1.9.0: Create chat logs table
     // Must require the file here — activation hook fires before plugins_loaded,
     // so the FLOSC_Framework constructor hasn't loaded class files yet.
-    require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-chat-logger.php';
+    require_once FLOSC_PLUGIN_DIR . 'includes/logging/class-flosc-chat-logger.php';
     FLOSC_Chat_Logger::instance()->flosc_ensure_table();
 
     // v1.4.7: Auto-protect flosc_sample_data category
@@ -161,3 +146,35 @@ function flosc_deactivate() {
     wp_clear_scheduled_hook('flosc_guest_followup_cron');
     flush_rewrite_rules();
 }
+
+/**
+ * Suggested privacy policy text for Settings → Privacy.
+ */
+function flosc_add_privacy_policy_content() {
+    if (!function_exists('wp_add_privacy_policy_content')) {
+        return;
+    }
+
+    $content = '<p class="privacy-policy-tutorial">'
+        . esc_html__('FLOSC (this plugin) may process personal data when visitors use chat, quizzes, login, offers, and payments.', 'flosc')
+        . '</p>'
+        . '<p><strong>' . esc_html__('What FLOSC may collect', 'flosc') . '</strong></p>'
+        . '<ul>'
+        . '<li>' . esc_html__('Chat and quiz messages, scores, and session identifiers.', 'flosc') . '</li>'
+        . '<li>' . esc_html__('Account and authentication data (email, profile fields, SSO provider identifiers).', 'flosc') . '</li>'
+        . '<li>' . esc_html__('Optional audio for pronunciation / speech features.', 'flosc') . '</li>'
+        . '<li>' . esc_html__('Purchase and membership records needed to unlock content.', 'flosc') . '</li>'
+        . '</ul>'
+        . '<p><strong>' . esc_html__('Where data is stored', 'flosc') . '</strong></p>'
+        . '<p>' . esc_html__('On this WordPress site (database options/meta/tables and files under the uploads directory). FLOSC does not write visitor data into the plugin install folder.', 'flosc') . '</p>'
+        . '<p><strong>' . esc_html__('Third parties', 'flosc') . '</strong></p>'
+        . '<p>' . esc_html__('When you enable integrations, data may be sent to AI providers, speech-to-text providers, payment processors, OAuth providers, or a scoring API you configure. See the plugin readme “External Services” section for purpose, data, and policy links for each provider you enable.', 'flosc') . '</p>'
+        . '<p><strong>' . esc_html__('Retention and deletion', 'flosc') . '</strong></p>'
+        . '<p>' . esc_html__('Retention follows your site policies and WordPress tools. Deactivating the plugin keeps data so reactivation can continue. Deleting the plugin runs uninstall cleanup for FLOSC options, FLOSC meta, FLOSC tables, scheduled events, and FLOSC upload folders when present. Some host-level backups may retain copies outside WordPress.', 'flosc') . '</p>';
+
+    wp_add_privacy_policy_content(
+        'FLOSC',
+        wp_kses_post($content)
+    );
+}
+add_action('admin_init', 'flosc_add_privacy_policy_content');

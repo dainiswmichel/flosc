@@ -101,8 +101,8 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
         <th scope="row"><label for="flow_stripe_test_sk">Test Secret Key</label></th>
         <td>
             <input type="password" id="flow_stripe_test_sk" name="flow_stripe_test_sk" 
-                   value="<?php echo esc_attr($flosc_flow_settings['stripe_test_sk'] ?? ''); ?>" 
-                   class="large-text" placeholder="sk_test_...">
+                   value="<?php echo esc_attr( function_exists('flosc_admin_secret_input_value') ? flosc_admin_secret_input_value( $flosc_flow_settings['stripe_test_sk'] ?? '' ) : (string) ( $flosc_flow_settings['stripe_test_sk'] ?? '' ) ); ?>" 
+                   class="large-text" placeholder="sk_test_..." autocomplete="new-password">
             <p class="description">Starts with <code>sk_test_</code>. Keep this secret! Never share publicly.</p>
         </td>
     </tr>
@@ -125,8 +125,8 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
         <th scope="row"><label for="flow_stripe_live_sk">Live Secret Key</label></th>
         <td>
             <input type="password" id="flow_stripe_live_sk" name="flow_stripe_live_sk" 
-                   value="<?php echo esc_attr($flosc_flow_settings['stripe_live_sk'] ?? ''); ?>" 
-                   class="large-text" placeholder="sk_live_...">
+                   value="<?php echo esc_attr( function_exists('flosc_admin_secret_input_value') ? flosc_admin_secret_input_value( $flosc_flow_settings['stripe_live_sk'] ?? '' ) : (string) ( $flosc_flow_settings['stripe_live_sk'] ?? '' ) ); ?>" 
+                   class="large-text" placeholder="sk_live_..." autocomplete="new-password">
             <p class="description">Starts with <code>sk_live_</code>. EXTREMELY SENSITIVE - never share or commit to code.</p>
         </td>
     </tr>
@@ -135,8 +135,8 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
         <th scope="row"><label for="flow_stripe_webhook_secret">Webhook Signing Secret</label></th>
         <td>
             <input type="password" id="flow_stripe_webhook_secret" name="flow_stripe_webhook_secret" 
-                   value="<?php echo esc_attr($flosc_flow_settings['stripe_webhook_secret'] ?? ''); ?>" 
-                   class="large-text" placeholder="whsec_...">
+                   value="<?php echo esc_attr( function_exists('flosc_admin_secret_input_value') ? flosc_admin_secret_input_value( $flosc_flow_settings['stripe_webhook_secret'] ?? '' ) : (string) ( $flosc_flow_settings['stripe_webhook_secret'] ?? '' ) ); ?>" 
+                   class="large-text" placeholder="whsec_..." autocomplete="new-password">
             <p class="description">
                 Webhook endpoint: <code><?php echo esc_html(home_url('/flosc-webhook/stripe')); ?></code><br>
                 Configure in Stripe Dashboard → Developers → Webhooks. Events to listen for: <code>checkout.session.completed</code>, <code>invoice.paid</code>, <code>customer.subscription.deleted</code>
@@ -198,8 +198,8 @@ endif;
         <th scope="row"><label for="flow_paypal_secret">PayPal Secret</label></th>
         <td>
             <input type="password" id="flow_paypal_secret" name="flow_paypal_secret" 
-                   value="<?php echo esc_attr($flosc_flow_settings['paypal_secret'] ?? ''); ?>" 
-                   class="large-text">
+                   value="<?php echo esc_attr( function_exists('flosc_admin_secret_input_value') ? flosc_admin_secret_input_value( $flosc_flow_settings['paypal_secret'] ?? '' ) : (string) ( $flosc_flow_settings['paypal_secret'] ?? '' ) ); ?>" 
+                   class="large-text" autocomplete="new-password">
             <p class="description">Keep this secret. Used for server-side verification.</p>
         </td>
     </tr>

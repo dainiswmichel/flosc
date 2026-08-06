@@ -36,6 +36,79 @@ if (!function_exists('flosc_resolve_ivr_file_path')) {
     }
 }
 
+if (!function_exists('flosc_ivr_safe_json_decode')) {
+    /**
+     * Bounded JSON decode for untrusted admin/request bodies (Pass 5).
+     *
+     * @param mixed $raw       Raw JSON string.
+     * @param int   $max_bytes Maximum payload size.
+     * @param int   $depth     json_decode depth.
+     * @return array|false
+     */
+    function flosc_ivr_safe_json_decode($raw, $max_bytes = 200000, $depth = 32) {
+        $raw = (string) $raw;
+        if ($raw === '' || strlen($raw) > $max_bytes) {
+            return false;
+        }
+
+        $decoded = json_decode($raw, true, $depth);
+        if (JSON_ERROR_NONE !== json_last_error() || !is_array($decoded)) {
+            return false;
+        }
+
+        return $decoded;
+    }
+}
+
+if (!function_exists('flosc_sanitize_ivr_markdown')) {
+    /**
+     * Sanitize IVR Markdown for disk write (Pass 5 / E3).
+     *
+     * Preserves intentional Markdown while rejecting null bytes, validating UTF-8,
+     * normalizing line endings, and capping size.
+     *
+     * @param mixed $raw       Untrusted body.
+     * @param int   $max_bytes Max stored size (default 1.5 MiB).
+     * @return string|WP_Error Sanitized body or error.
+     */
+    function flosc_sanitize_ivr_markdown($raw, $max_bytes = 1572864) {
+        if (!is_string($raw) && !is_numeric($raw)) {
+            return new WP_Error('flosc_ivr_invalid', 'IVR content must be text.');
+        }
+
+        $text = (string) $raw;
+        // Reject null bytes (path/injection vector in some stacks).
+        if (false !== strpos($text, "\0")) {
+            return new WP_Error('flosc_ivr_null_byte', 'IVR content contains invalid characters.');
+        }
+
+        if (function_exists('mb_check_encoding') && !mb_check_encoding($text, 'UTF-8')) {
+            if (function_exists('mb_convert_encoding')) {
+                $converted = @mb_convert_encoding($text, 'UTF-8', 'UTF-8');
+                $text      = is_string($converted) ? $converted : '';
+            } else {
+                return new WP_Error('flosc_ivr_encoding', 'IVR content must be valid UTF-8.');
+            }
+        }
+
+        // Normalize newlines; strip C0 controls except tab/newline.
+        $text = str_replace(array("\r\n", "\r"), "\n", $text);
+        $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text);
+        if (!is_string($text)) {
+            $text = '';
+        }
+
+        // Strip PHP open tags that must never land in markdown configs.
+        $text = str_ireplace(array('<?php', '<?=', '<?'), '', $text);
+
+        if (strlen($text) > $max_bytes) {
+            return new WP_Error('flosc_ivr_too_large', 'IVR content is too large.');
+        }
+
+        return $text;
+    }
+}
+
 $flosc_get = wp_unslash($_GET);
 $flosc_post = wp_unslash($_POST);
 
@@ -100,7 +173,7 @@ function flosc_run_ivr_diagnostics() {
         $file_modified = gmdate('Y-m-d H:i:s', filemtime($ivr_file));
         
         // Try to parse it
-        require_once FLOSC_PLUGIN_DIR . 'includes/class-ivr-parser.php';
+        require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
         $flosc_parser = FLOSC_IVR_Parser::flosc_instance();
         $markdown = file_get_contents($ivr_file);
         $config = $flosc_parser->flosc_parse($markdown);
@@ -396,7 +469,7 @@ function flosc_run_ivr_diagnostics() {
         if ($fk) { $tmp = get_option($fk, []); $tmp['api_last_check'] = $michel_timestamp; update_option($fk, $tmp); }
     } else {
         $body = wp_remote_retrieve_body($api_response);
-        $data = json_decode($body, true);
+        $data = flosc_ivr_safe_json_decode($body);
         
         // Store successful check time (per-flow)
         $fk = $GLOBALS['flosc_settings_key'] ?? '';
@@ -441,15 +514,18 @@ function flosc_run_ivr_diagnostics() {
 }
 
 // Handle file upload
-// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- $_FILES is handled by wp_handle_upload() and validated by extension/mime checks below
 if (isset($flosc_post['flosc_upload_ivr_file']) && isset($_FILES['ivr_file_upload'])) {
     check_admin_referer('flosc_upload_ivr_file');
-    
-    // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- source array is validated by wp_handle_upload(), extension and mime checks below
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to upload IVR files.', 'flosc'));
+    }
+
+    // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- $_FILES validated via wp_handle_upload + extension/size checks below.
     $flosc_uploaded_file = $_FILES['ivr_file_upload'];
     
-    if ($flosc_uploaded_file['error'] === UPLOAD_ERR_OK) {
-        $flosc_filename = basename(sanitize_file_name($flosc_uploaded_file['name']));
+    if (isset($flosc_uploaded_file['error']) && (int) $flosc_uploaded_file['error'] === UPLOAD_ERR_OK) {
+        $flosc_filename = basename(sanitize_file_name((string) ($flosc_uploaded_file['name'] ?? '')));
+        $flosc_upload_size = isset($flosc_uploaded_file['size']) ? absint($flosc_uploaded_file['size']) : 0;
         $flosc_target_path = function_exists('flosc_data_file_path')
             ? flosc_data_file_path($flosc_filename)
             : '';
@@ -457,6 +533,8 @@ if (isset($flosc_post['flosc_upload_ivr_file']) && isset($_FILES['ivr_file_uploa
         // Ensure uploaded file is markdown and data dir is available.
         if (strtolower((string) pathinfo($flosc_filename, PATHINFO_EXTENSION)) !== 'md') {
             add_settings_error('flosc_settings', 'upload_failed', 'Only .md files are allowed.', 'error');
+        } elseif ($flosc_upload_size <= 0 || $flosc_upload_size > 1024 * 1024) {
+            add_settings_error('flosc_settings', 'upload_failed', 'Uploaded IVR file must be between 1 byte and 1 MB.', 'error');
         } elseif ('' === $flosc_target_path || !function_exists('flosc_write_data_file')) {
             add_settings_error('flosc_settings', 'upload_failed', 'Uploads data directory is not available. Cannot save IVR file.', 'error');
         } else {
@@ -498,6 +576,9 @@ if (isset($flosc_post['flosc_upload_ivr_file']) && isset($_FILES['ivr_file_uploa
 // Handle explicit file import from IVR File Management (selected file -> FLOSC DB)
 if (isset($flosc_post['flosc_import_selected_ivr_file']) && isset($flosc_post['import_ivr_file'])) {
     check_admin_referer('flosc_import_selected_ivr_file');
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to import IVR files.', 'flosc'));
+    }
 
     $flosc_selected_file = basename(sanitize_file_name($flosc_post['import_ivr_file']));
     $flosc_selected_path = function_exists('flosc_data_file_path')
@@ -533,7 +614,10 @@ if (isset($flosc_post['flosc_import_selected_ivr_file']) && isset($flosc_post['i
 // Handle changing active IVR file
 if (isset($flosc_post['flosc_change_active_file']) && isset($flosc_post['ivr_file_select'])) {
     check_admin_referer('flosc_change_active_file');
-    
+    if (empty($flosc_selected_flow_id) || !flosc_flows()->can_access_flow_admin($flosc_selected_flow_id)) {
+        wp_die(esc_html__('You do not have permission to change the active IVR file for this flow.', 'flosc'));
+    }
+
     $flosc_selected_file = sanitize_file_name($flosc_post['ivr_file_select']);
     $flosc_file_path = flosc_resolve_ivr_file_path($flosc_selected_file);
     
@@ -555,24 +639,36 @@ if (isset($flosc_post['flosc_change_active_file']) && isset($flosc_post['ivr_fil
     }
 }
 
-// Handle full text save for active IVR file
+// Handle full text save for active IVR file (Pass 5 / E3: sanitize at sink).
 if (isset($flosc_post['flosc_save_full_ivr']) && isset($flosc_post['ivr_full_text'])) {
     check_admin_referer('flosc_save_full_ivr');
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to edit IVR files.', 'flosc'));
+    }
 
-    $flosc_full_text = $flosc_post['ivr_full_text'];
-    $flosc_full_write_path = function_exists('flosc_data_file_path')
-        ? flosc_data_file_path($flosc_active_ivr_file)
-        : $flosc_ivr_file_write_path;
-    // Write edited IVR text using the uploads-only API.
-    $flosc_save_ok = ('' !== $flosc_full_write_path && function_exists('flosc_write_data_file'))
-        ? flosc_write_data_file($flosc_full_write_path, $flosc_full_text)
-        : false;
-
-    if ($flosc_save_ok === false) {
-        add_settings_error('flosc_settings', 'full_text_save_failed', 'Could not save IVR file text. Check file permissions or uploads availability.', 'error');
+    $flosc_full_text = flosc_sanitize_ivr_markdown($flosc_post['ivr_full_text']);
+    if (is_wp_error($flosc_full_text)) {
+        add_settings_error(
+            'flosc_settings',
+            'full_text_invalid',
+            $flosc_full_text->get_error_message(),
+            'error'
+        );
     } else {
-        add_settings_error('flosc_settings', 'full_text_saved', 'Saved full IVR file text. Use "Merge IVR File → DB" to refresh runtime DB from file.', 'success');
-        clearstatcache(true, $flosc_full_write_path);
+        $flosc_full_write_path = function_exists('flosc_data_file_path')
+            ? flosc_data_file_path($flosc_active_ivr_file)
+            : $flosc_ivr_file_write_path;
+        // Write edited IVR text using the uploads-only API.
+        $flosc_save_ok = ('' !== $flosc_full_write_path && function_exists('flosc_write_data_file'))
+            ? flosc_write_data_file($flosc_full_write_path, $flosc_full_text)
+            : false;
+
+        if ($flosc_save_ok === false) {
+            add_settings_error('flosc_settings', 'full_text_save_failed', 'Could not save IVR file text. Check file permissions or uploads availability.', 'error');
+        } else {
+            add_settings_error('flosc_settings', 'full_text_saved', 'Saved full IVR file text. Use "Merge IVR File → DB" to refresh runtime DB from file.', 'success');
+            clearstatcache(true, $flosc_full_write_path);
+        }
     }
 }
 
@@ -580,6 +676,9 @@ if (isset($flosc_post['flosc_save_full_ivr']) && isset($flosc_post['ivr_full_tex
 if (isset($flosc_get['flosc_download_ivr']) && isset($flosc_get['_wpnonce'])) {
     $flosc_download_file = sanitize_file_name($flosc_get['flosc_download_ivr']);
     if (wp_verify_nonce(sanitize_text_field($flosc_get['_wpnonce']), 'flosc_download_ivr_' . $flosc_download_file)) {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('You do not have permission to download IVR files.', 'flosc'));
+        }
         $flosc_download_path = flosc_resolve_ivr_file_path($flosc_download_file);
         if (file_exists($flosc_download_path) && is_readable($flosc_download_path)) {
             if (!function_exists('WP_Filesystem')) {
@@ -606,6 +705,9 @@ if (isset($flosc_get['flosc_download_ivr']) && isset($flosc_get['_wpnonce'])) {
 // Handle IVR file duplication
 if (isset($flosc_post['flosc_duplicate_ivr_file']) && isset($flosc_post['duplicate_ivr_file'])) {
     check_admin_referer('flosc_duplicate_ivr_file');
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to duplicate IVR files.', 'flosc'));
+    }
 
     $flosc_source_file = basename(sanitize_file_name($flosc_post['duplicate_ivr_file']));
     $flosc_source_path = flosc_resolve_ivr_file_path($flosc_source_file);
@@ -639,6 +741,9 @@ if (isset($flosc_post['flosc_duplicate_ivr_file']) && isset($flosc_post['duplica
 // Handle file deletion from IVR Management
 if (isset($flosc_post['flosc_delete_ivr_file']) && isset($flosc_post['delete_ivr_file'])) {
     check_admin_referer('flosc_delete_ivr_file');
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to delete IVR files.', 'flosc'));
+    }
 
     $flosc_delete_file = basename(sanitize_file_name($flosc_post['delete_ivr_file']));
     $flosc_delete_path = function_exists('flosc_data_file_path')
@@ -658,7 +763,10 @@ if (isset($flosc_post['flosc_delete_ivr_file']) && isset($flosc_post['delete_ivr
 // Handle clear DB action
 if (isset($flosc_post['flosc_clear_ivr_db'])) {
     check_admin_referer('flosc_clear_ivr_db');
-    
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to clear the IVR database.', 'flosc'));
+    }
+
     // Backup first
     flosc_export_ivr_backup($flosc_flow_key);
     
@@ -683,7 +791,10 @@ if (isset($flosc_post['flosc_clear_ivr_db'])) {
 // Handle merge-and-sync (union sync: keep entries from both sides, then restore parity)
 if (isset($flosc_post['flosc_force_resync'])) {
     check_admin_referer('flosc_force_resync');
-    
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to resync IVR data.', 'flosc'));
+    }
+
     $flosc_result = flosc_import_ivr_to_database(false, $flosc_ivr_file_path, $flosc_flow_key, 'merge');
     
     if ($flosc_result['success']) {
@@ -716,7 +827,10 @@ if (!empty($flosc_flow_key) && function_exists('flosc_sync_flow_offers_with_ivr_
 // Handle import confirmation (same as Load)
 if (isset($flosc_post['flosc_confirm_import'])) {
     check_admin_referer('flosc_confirm_import');
-    
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to import IVR data.', 'flosc'));
+    }
+
     $flosc_import_mode = (isset($flosc_post['flosc_import_mode']) && $flosc_post['flosc_import_mode'] === 'replace') ? 'replace' : 'merge';
     $flosc_result = flosc_import_ivr_to_database(false, $flosc_ivr_file_path, $flosc_flow_key, $flosc_import_mode);
     
@@ -749,6 +863,9 @@ if (isset($flosc_post['flosc_confirm_import'])) {
 $flosc_import_preview = null;
 if (isset($flosc_post['flosc_preview_import'])) {
     check_admin_referer('flosc_preview_import');
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to preview IVR imports.', 'flosc'));
+    }
     if (!file_exists($flosc_ivr_file_path)) {
         add_settings_error('flosc_settings', 'preview_file_missing', 'Compare unavailable: active IVR file is missing. Next step: Save DB → IVR File, then run Compare again.', 'warning');
     } else {
@@ -764,6 +881,9 @@ if (isset($flosc_post['flosc_preview_import'])) {
 // Handle export
 if (isset($flosc_post['flosc_export_ivr'])) {
     check_admin_referer('flosc_export_ivr');
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to export IVR data.', 'flosc'));
+    }
 
     $flosc_messages = flosc_flow_get_messages($flosc_flow_settings);
     if (!empty($flosc_flow_key) && function_exists('flosc_sync_flow_offers_with_ivr_messages')) {
@@ -788,7 +908,10 @@ if (isset($flosc_post['flosc_export_ivr'])) {
 // Save message: always writes to both DB (live runtime) and IVR file (portable config)
 if (isset($flosc_post['save_ivr_message'])) {
     check_admin_referer('flosc_save_ivr_message');
-    
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to edit IVR messages.', 'flosc'));
+    }
+
     // DB = live runtime, IVR file = portable config. Always save to both.
     
     $flosc_messages = flosc_flow_get_messages($flosc_flow_settings);
@@ -805,10 +928,13 @@ if (isset($flosc_post['save_ivr_message'])) {
         add_settings_error('flosc_settings', 'message_id_required', 'Message id is required.', 'error');
     } else {
     
-    // v9.2.8: Use sanitize_textarea_field to preserve content without over-escaping
-    $flosc_raw_content = $flosc_post['message_content'] ?? '';
-    $flosc_clean_content = sanitize_textarea_field($flosc_raw_content);
-    
+    // Pass 5: message bodies use IVR markdown sanitizer (null-byte/size/UTF-8).
+    $flosc_raw_content = (string) ($flosc_post['message_content'] ?? '');
+    $flosc_clean_content = flosc_sanitize_ivr_markdown($flosc_raw_content, 200000);
+    if (is_wp_error($flosc_clean_content)) {
+        add_settings_error('flosc_settings', 'message_content_invalid', $flosc_clean_content->get_error_message(), 'error');
+    } else {
+
     $flosc_message_data = [
         'name' => sanitize_text_field($flosc_post['message_name'] ?? ''),
         'type' => sanitize_text_field($flosc_post['message_type'] ?? ''),
@@ -890,14 +1016,17 @@ if (isset($flosc_post['save_ivr_message'])) {
         : $flosc_ivr_file_write_path;
     flosc_auto_export_ivr_to_file($flosc_flow_key, $flosc_export_path);
     add_settings_error('flosc_settings', 'message_saved', 'Saved to FLOSC DB (live) and IVR file (portable config).', 'success');
+    } // end valid message content
     } // end non-empty message_id
 }
 
 if (isset($flosc_get['delete_message']) && isset($flosc_get['phase'])) {
-    check_admin_referer('flosc_delete_message_' . $flosc_get['delete_message']);
-    
     $flosc_msg_id = sanitize_key((string) $flosc_get['delete_message']);
     $flosc_phase = sanitize_key((string) $flosc_get['phase']);
+    check_admin_referer('flosc_delete_message_' . $flosc_msg_id);
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to delete IVR messages.', 'flosc'));
+    }
     if ('' === $flosc_msg_id) {
         add_settings_error('flosc_settings', 'message_delete_invalid', 'Message id is required to delete.', 'error');
     } else {
@@ -1017,10 +1146,10 @@ flosc_tab_header('💬', 'IVR Management');
     </p>
 
     <div class="flosc-ivr-actions-row">
-        <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=single')); ?>" class="button <?php echo $flosc_ivr_management_view === 'single' ? 'button-primary' : ''; ?>">
+        <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=single')); ?>" class="button <?php echo esc_attr( $flosc_ivr_management_view === 'single' ? 'button-primary' : '' ); ?>">
             Single Flow: Message Editing
         </a>
-        <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=all')); ?>" class="button <?php echo $flosc_ivr_management_view === 'all' ? 'button-primary' : ''; ?>">
+        <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=all')); ?>" class="button <?php echo esc_attr( $flosc_ivr_management_view === 'all' ? 'button-primary' : '' ); ?>">
             All Flows: File Management
         </a>
     </div>
@@ -1199,9 +1328,63 @@ function floscTestAPI() {
             resultDiv.innerHTML = `❌ <strong>Fetch failed:</strong> ${error.message}`;
         });
 }
+
+document.addEventListener('click', function(event) {
+    const trigger = event.target.closest('[data-flosc-action]');
+    if (!trigger) {
+        return;
+    }
+
+    const action = trigger.dataset.floscAction;
+    if (action === 'test-api-endpoint') {
+        event.preventDefault();
+        floscTestAPI();
+        return;
+    }
+
+    if (action === 'toggle-msg-card') {
+        event.preventDefault();
+        floscToggleMsg(trigger.dataset.msgId || '');
+        return;
+    }
+
+    if (action === 'toggle-new-editor') {
+        event.preventDefault();
+        floscToggleNewEditor(trigger.dataset.phaseId || '', '1' === String(trigger.dataset.open || '0'));
+        return;
+    }
+
+    if (action === 'delete-message') {
+        if (!confirm(trigger.dataset.confirmMessage || 'Delete this message?')) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    }
+});
+
+document.addEventListener('change', function(event) {
+    const trigger = event.target.closest('[data-flosc-action="toggle-offer-fields"]');
+    if (!trigger) {
+        return;
+    }
+
+    floscToggleOfferFields(trigger, trigger.dataset.msgId || '');
+});
+
+document.addEventListener('submit', function(event) {
+    const form = event.target.closest('form[data-confirm-message]');
+    if (!form) {
+        return;
+    }
+
+    if (!confirm(form.dataset.confirmMessage || 'Are you sure?')) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+});
 <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
 
-<h2><?php echo $flosc_ivr_management_view === 'all' ? 'IVR Management - All Flows File Management' : 'IVR Management - Single Flow Message Editing'; ?></h2>
+<h2><?php echo esc_html( $flosc_ivr_management_view === 'all' ? 'IVR Management - All Flows File Management' : 'IVR Management - Single Flow Message Editing' ); ?></h2>
 
 <!-- File Management + Full Text Editor -->
 <?php if ($flosc_ivr_management_view === 'all'): ?>
@@ -1237,7 +1420,7 @@ function floscTestAPI() {
         ?>
             <tr>
                 <td><code><?php echo esc_html($flosc_ivr_filename); ?></code></td>
-                <td><?php echo $flosc_is_active_row ? 'Active' : 'Managed'; ?></td>
+                <td><?php echo esc_html( $flosc_is_active_row ? 'Active' : 'Managed' ); ?></td>
                 <td>
                     <div class="flosc-ivr-file-action-group">
                         <a href="<?php echo esc_url($flosc_edit_url); ?>" class="button button-small">Edit</a>
@@ -1309,7 +1492,7 @@ function floscTestAPI() {
     $flosc_db_messages_for_compare = flosc_flow_get_messages($flosc_flow_settings);
     $flosc_file_messages_for_compare = [];
     if (file_exists($flosc_ivr_file_path)) {
-        require_once FLOSC_PLUGIN_DIR . 'includes/class-ivr-parser.php';
+        require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
         $flosc_preview_parser = FLOSC_IVR_Parser::flosc_instance();
         $flosc_preview_markdown = file_get_contents($flosc_ivr_file_path);
         $flosc_preview_config = $flosc_preview_parser->flosc_parse($flosc_preview_markdown ?: '');
@@ -1575,8 +1758,8 @@ $flosc_total_count = count($flosc_messages);
                 <span class="flosc-ivr-conditional-badge" title="<?php echo esc_attr($flosc_msg['conditions']); ?>">⚡ conditional</span>
             <?php endif; ?>
             <span class="flosc-msg-preview"><?php echo esc_html(wp_trim_words($flosc_msg['content'] ?? '', 12)); ?></span>
-            <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=' . urlencode($flosc_ivr_management_view) . '&ivr_phase=' . urlencode($flosc_active_phase) . '&delete_message=' . urlencode($flosc_msg_id) . '&phase=' . urlencode($flosc_phase_id) . '&_wpnonce=' . wp_create_nonce('flosc_delete_message_' . $flosc_msg_id))); ?>" 
-               class="flosc-msg-delete" data-stop-propagation="1" data-confirm-message="Delete message: <?php echo esc_attr($flosc_msg['name'] ?? $flosc_msg_id); ?>?">✕ Delete</a>
+                <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=' . urlencode($flosc_ivr_management_view) . '&ivr_phase=' . urlencode($flosc_active_phase) . '&delete_message=' . urlencode($flosc_msg_id) . '&phase=' . urlencode($flosc_phase_id) . '&_wpnonce=' . wp_create_nonce('flosc_delete_message_' . $flosc_msg_id))); ?>" 
+                    class="flosc-msg-delete" data-flosc-action="delete-message" data-stop-propagation="1" data-confirm-message="Delete message: <?php echo esc_attr($flosc_msg['name'] ?? $flosc_msg_id); ?>?">✕ Delete</a>
         </div>
         
         <div class="flosc-msg-editor">

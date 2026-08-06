@@ -224,7 +224,7 @@ function flosc_resolve_flow_runtime($flow_id = '', $ivr_file = '') {
         $path = flosc_config_file($ivr_file);
         if ($path && file_exists($path)) {
             if (!class_exists('FLOSC_IVR_Parser')) {
-                require_once FLOSC_PLUGIN_DIR . 'includes/class-ivr-parser.php';
+                require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
             }
 
             $parser   = FLOSC_IVR_Parser::flosc_instance();

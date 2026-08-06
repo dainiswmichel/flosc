@@ -353,7 +353,7 @@ class FLOSC_Quiz_Manager {
         ], $atts);
         
         if (!is_user_logged_in()) {
-            return '<p>Please log in to see your quiz results.</p>';
+            return '<p>' . esc_html__('Please log in to see your quiz results.', 'flosc') . '</p>';
         }
         
         $user_id = get_current_user_id();
@@ -361,33 +361,34 @@ class FLOSC_Quiz_Manager {
         $data = $bridge_manager->get_flosc_bridge_data($user_id, $atts['quiz_id']);
         
         if (!$data) {
-            return '<p>No quiz results found.</p>';
+            return '<p>' . esc_html__('No quiz results found.', 'flosc') . '</p>';
         }
         
         $output = '<div class="flosc-quiz-results">';
-        $output .= '<h3>Quiz Results</h3>';
-        $output .= '<p><strong>Score:</strong> ' . esc_html($data['score']) . '%</p>';
-        $output .= '<p><strong>Date:</strong> ' . esc_html($data['date']) . '</p>';
+        $output .= '<h3>' . esc_html__('Quiz Results', 'flosc') . '</h3>';
+        $output .= '<p><strong>' . esc_html__('Score:', 'flosc') . '</strong> ' . esc_html((string) ($data['score'] ?? '')) . '%</p>';
+        $output .= '<p><strong>' . esc_html__('Date:', 'flosc') . '</strong> ' . esc_html((string) ($data['date'] ?? '')) . '</p>';
         
         if ($atts['show_correct'] === 'yes' && !empty($data['correct_items'])) {
-            $output .= '<h4>✓ Correct</h4><ul>';
-            foreach ($data['correct_items'] as $item) {
-                $output .= '<li>' . esc_html($item) . '</li>';
+            $output .= '<h4>' . esc_html__('Correct', 'flosc') . '</h4><ul>';
+            foreach ((array) $data['correct_items'] as $item) {
+                $output .= '<li>' . esc_html((string) $item) . '</li>';
             }
             $output .= '</ul>';
         }
         
         if ($atts['show_incorrect'] === 'yes' && !empty($data['incorrect_items'])) {
-            $output .= '<h4>✗ Needs Practice</h4><ul>';
-            foreach ($data['incorrect_items'] as $item) {
-                $output .= '<li>' . esc_html($item) . '</li>';
+            $output .= '<h4>' . esc_html__('Needs Practice', 'flosc') . '</h4><ul>';
+            foreach ((array) $data['incorrect_items'] as $item) {
+                $output .= '<li>' . esc_html((string) $item) . '</li>';
             }
             $output .= '</ul>';
         }
         
         $output .= '</div>';
         
-        return $output;
+        // Pass 4: shortcode output is FLOSC-built HTML — allowlist tags before return.
+        return wp_kses_post($output);
     }
 }
 

@@ -927,7 +927,7 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                     </p>
 
                     <!-- PayPal fields (shown when processor = paypal) -->
-                    <div id="proc-paypal-<?php echo esc_attr( $flosc_safe_id ); ?>" class="flosc-proc-fields flosc-offer-proc-fields<?php echo $proc !== 'paypal' ? ' is-hidden' : ''; ?>">
+                    <div id="proc-paypal-<?php echo esc_attr( $flosc_safe_id ); ?>" class="flosc-proc-fields flosc-offer-proc-fields<?php echo esc_attr( $proc !== 'paypal' ? ' is-hidden' : '' ); ?>">
                         <table class="flosc-offer-proc-table">
                             <tr>
                                 <td class="flosc-offer-proc-label-cell"><label>Currency</label></td>
@@ -944,7 +944,7 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                     </div>
 
                     <!-- Stripe fields (shown when processor = stripe) -->
-                    <div id="proc-stripe-<?php echo esc_attr( $flosc_safe_id ); ?>" class="flosc-proc-fields flosc-offer-proc-fields<?php echo $proc !== 'stripe' ? ' is-hidden' : ''; ?>">
+                    <div id="proc-stripe-<?php echo esc_attr( $flosc_safe_id ); ?>" class="flosc-proc-fields flosc-offer-proc-fields<?php echo esc_attr( $proc !== 'stripe' ? ' is-hidden' : '' ); ?>">
                         <table class="flosc-offer-proc-table">
                             <tr>
                                 <td class="flosc-offer-proc-label-cell"><label>Stripe Price ID</label></td>
@@ -967,7 +967,7 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                     </div>
 
                     <!-- Redirect fields (shown when processor = redirect) -->
-                    <div id="proc-redirect-<?php echo esc_attr( $flosc_safe_id ); ?>" class="flosc-proc-fields flosc-offer-proc-fields<?php echo $proc !== 'redirect' ? ' is-hidden' : ''; ?>">
+                    <div id="proc-redirect-<?php echo esc_attr( $flosc_safe_id ); ?>" class="flosc-proc-fields flosc-offer-proc-fields<?php echo esc_attr( $proc !== 'redirect' ? ' is-hidden' : '' ); ?>">
                         <table class="flosc-offer-proc-table">
                             <tr>
                                 <td class="flosc-offer-proc-label-cell"><label>Checkout URL</label></td>

@@ -61,7 +61,7 @@ class FLOSC_Access_Validator {
         if (!empty($violations)) {
             if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
 if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC SECURITY: Content leakage prevented for {$access_level}");
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC SECURITY: Violations - " . json_encode($violations));
+if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC SECURITY: Violations - " . wp_json_encode($violations));
             }
             
             return [
@@ -201,7 +201,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC SECURITY: Violations
         if (!empty($missing)) {
             if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
 if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC WARNING: System prompt missing required phrases for {$access_level}");
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC WARNING: Missing - " . json_encode($missing));
+if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC WARNING: Missing - " . wp_json_encode($missing));
             }
         }
         

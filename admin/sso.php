@@ -195,7 +195,7 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
         );
         ?>
         
-        <div class="flosc-sso-provider card <?php echo $flosc_is_enabled ? 'flosc-sso-provider--enabled' : 'flosc-sso-provider--disabled'; ?>">
+        <div class="flosc-sso-provider card <?php echo esc_attr( $flosc_is_enabled ? 'flosc-sso-provider--enabled' : 'flosc-sso-provider--disabled' ); ?>">
             <h3 class="flosc-sso-provider-title">
             <span class="flosc-sso-provider-icon"><?php echo esc_html($flosc_provider['icon']); ?></span>
                 <?php echo esc_html($flosc_provider['name']); ?>
@@ -235,7 +235,7 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
                            <input type="password" 
                                name="flow_sso_<?php echo esc_attr($flosc_provider_id); ?>_client_secret" 
                                value="<?php echo esc_attr($flosc_client_secret); ?>" 
-                               class="regular-text <?php echo $flosc_provider_id === 'apple' ? 'flosc-sso-apple-secret' : ''; ?>"
+                               class="regular-text <?php echo esc_attr( $flosc_provider_id === 'apple' ? 'flosc-sso-apple-secret' : '' ); ?>"
                                placeholder="<?php echo esc_attr($flosc_provider_id === 'apple' ? 'Leave empty - auto-generated from keys' : 'Your ' . $flosc_provider['name'] . ' Client Secret'); ?>"
                                <?php if ($flosc_provider_id === 'apple') : ?>readonly<?php endif; ?>>
                         <?php if ($flosc_provider_id === 'apple'): ?>

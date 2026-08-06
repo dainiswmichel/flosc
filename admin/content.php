@@ -83,10 +83,12 @@ if ( ! is_array( $flosc_tags ) ) {
 	$flosc_tags = [];
 }
 
-$flosc_enabled_quizzes = $flosc_flow_settings['enabled_quizzes'] ?? [ 'flosc_sample_data_numbers_quiz' ];
+// Empty = no quizzes for this flow. Never invent a sample quiz ID.
+$flosc_enabled_quizzes = $flosc_flow_settings['enabled_quizzes'] ?? [];
 if ( ! is_array( $flosc_enabled_quizzes ) ) {
-	$flosc_enabled_quizzes = [ 'flosc_sample_data_numbers_quiz' ];
+	$flosc_enabled_quizzes = [];
 }
+$flosc_enabled_quizzes = array_values( array_filter( array_map( 'sanitize_key', $flosc_enabled_quizzes ) ) );
 $flosc_quiz_label_map = [];
 if ( class_exists( 'FLOSC_Quiz_Registry' ) ) {
 	$flosc_all_quiz_types = FLOSC_Quiz_Registry::get_all_quizzes();

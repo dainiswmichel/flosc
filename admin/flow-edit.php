@@ -41,10 +41,17 @@ if ($flosc_is_admin && !$flosc_is_new) {
 
 // Handle form submission
 if (isset($_POST['flosc_save_flow']) && wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce'] ?? '')), 'flosc_save_flow')) {
+    // Re-check capability at mutation time (page-load check is not enough for CSRF+authz).
+    if ($flosc_is_new && !$flosc_is_admin) {
+        wp_die(esc_html__('Only administrators can create new flows.', 'flosc'));
+    }
+    if (!$flosc_is_new && !flosc_flows()->can_access_flow_admin($flosc_flow_id)) {
+        wp_die(esc_html__('You do not have permission to edit this flow.', 'flosc'));
+    }
 
     // Save visitor profile bar settings (global settings) — only if posted from Identity tab
-    // v1.8.0: Now writes to unified flosc_profile_bar option
-    if (isset($_POST['visitor_bar_text']) || isset($_POST['visitor_bar_icon'])) {
+    // v1.8.0: Now writes to unified flosc_profile_bar option. Global options require manage_options.
+    if ($flosc_is_admin && (isset($_POST['visitor_bar_text']) || isset($_POST['visitor_bar_icon']))) {
         $flosc_profile_bar = get_option('flosc_profile_bar', []);
         if (isset($_POST['visitor_bar_text'])) {
             $flosc_profile_bar['visitor']['badge'] = sanitize_text_field(wp_unslash($_POST['visitor_bar_text']));
@@ -57,12 +64,14 @@ if (isset($_POST['flosc_save_flow']) && wp_verify_nonce(sanitize_text_field(wp_u
 
     // Save visitor menu items — preserve associative keys (signup, login, quiz).
     // map_deep() sanitizes every leaf value at intake; the loop below shapes
-    // the structure and applies the final per-field types.
-    $flosc_visitor_menu_items_post = isset($_POST['visitor_menu_items']) ? map_deep(wp_unslash($_POST['visitor_menu_items']), 'sanitize_text_field') : null;
+    // the structure and applies the final per-field types. Global option: admin only.
+    $flosc_visitor_menu_items_post = ($flosc_is_admin && isset($_POST['visitor_menu_items']))
+        ? map_deep(wp_unslash($_POST['visitor_menu_items']), 'sanitize_text_field')
+        : null;
     if (is_array($flosc_visitor_menu_items_post)) {
         $flosc_visitor_menu_items = [];
         foreach ($flosc_visitor_menu_items_post as $flosc_key => $flosc_item) {
-            $flosc_visitor_menu_items[$key] = [
+            $flosc_visitor_menu_items[$flosc_key] = [
                 'label'   => sanitize_text_field($flosc_item['label'] ?? ''),
                 'enabled' => isset($flosc_item['enabled']) && $flosc_item['enabled'] === '1',
             ];
@@ -167,9 +176,9 @@ $flosc_categories = get_categories(['hide_empty' => false]);
         <!-- Tabs -->
         <nav class="nav-tab-wrapper">
             <?php foreach ($tabs as $flosc_tab_id => $flosc_tab_label): ?>
-                                         <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-flow-edit&flow_id=' . urlencode($flosc_flow_id) . '&tab=' . $tab_id) ); ?>" 
-                                     class="nav-tab <?php echo $flosc_current_tab === $tab_id ? 'nav-tab-active' : ''; ?>">
-                    <?php echo esc_html($tab_label); ?>
+                <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-flow-edit&flow_id=' . urlencode($flosc_flow_id) . '&tab=' . $flosc_tab_id) ); ?>"
+                   class="nav-tab <?php echo esc_attr( $flosc_current_tab === $flosc_tab_id ? 'nav-tab-active' : '' ); ?>">
+                    <?php echo esc_html($flosc_tab_label); ?>
                 </a>
             <?php endforeach; ?>
         </nav>
@@ -389,12 +398,12 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                             foreach ($flosc_visitor_menu as $flosc_key => $flosc_item):
                             ?>
                             <label class="flosc-flow-edit-menu-row">
-                                <input type="checkbox" name="visitor_menu_items[<?php echo esc_attr($key); ?>][enabled]" value="1"
+                                <input type="checkbox" name="visitor_menu_items[<?php echo esc_attr($flosc_key); ?>][enabled]" value="1"
                                        <?php checked($flosc_item['enabled'] ?? true, true); ?>>
-                                <input type="text" name="visitor_menu_items[<?php echo esc_attr($key); ?>][label]"
+                                <input type="text" name="visitor_menu_items[<?php echo esc_attr($flosc_key); ?>][label]"
                                        value="<?php echo esc_attr($flosc_item['label'] ?? ''); ?>"
                                     class="flosc-flow-edit-menu-label-input">
-                                <code class="flosc-flow-edit-menu-key"><?php echo esc_html($key); ?></code>
+                                <code class="flosc-flow-edit-menu-key"><?php echo esc_html($flosc_key); ?></code>
                             </label>
                             <?php endforeach; ?>
                         </td>
@@ -402,7 +411,7 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                 </table>
                 
                 <p class="submit">
-                    <input type="submit" name="flosc_save_flow" class="button button-primary" value="<?php echo $flosc_is_new ? 'Create Flow' : 'Save Changes'; ?>">
+                    <input type="submit" name="flosc_save_flow" class="button button-primary" value="<?php echo esc_attr( $flosc_is_new ? 'Create Flow' : 'Save Changes' ); ?>">
                     <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-flows') ); ?>" class="button">Cancel</a>
                 </p>
             </form>

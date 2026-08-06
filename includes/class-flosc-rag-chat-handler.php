@@ -267,7 +267,7 @@ class FLOSC_RAG_Chat_Handler {
                     'anthropic-version' => '2023-06-01',
                     'content-type' => 'application/json',
                 ],
-                'body' => json_encode([
+                'body' => wp_json_encode([
                     'model' => $flosc_model,
                     'max_tokens' => $flosc_max_tokens,
                     'system' => $flosc_system_prompt,
@@ -432,7 +432,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Response body (
                 if (is_array($flosc_result)) {
                     $flosc_result = $flosc_result['flosc_user_facing_message']
                         ?? $flosc_result['flosc_reason']
-                        ?? json_encode($flosc_result);
+                        ?? wp_json_encode($flosc_result);
                 }
 
                 $flosc_tool_results[] = [

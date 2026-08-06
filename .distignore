@@ -14,6 +14,7 @@ build-dist-zip.sh
 .DS_Store
 Thumbs.db
 *.swp
+.gitkeep
 
 # Python/local env
 .venv/
@@ -75,3 +76,11 @@ zip-files/
 # Deployment/backup residue
 *.pre-restore-*/
 pre-restore-*/
+
+# Composer / tooling must not ship in WordPress.org zip
+vendor/
+composer.json
+composer.lock
+
+# Static tech-ref HTML not loaded at runtime (admin uses admin/docs/)
+flosc_documentation/

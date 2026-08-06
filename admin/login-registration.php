@@ -1,12 +1,13 @@
 <?php
 /**
  * FLOSC Register & Login Tab
- * 
- * Configurable text for auth modals (popups). Each setup has 10 fields.
- * Two setups: Post-Quiz and General Login.
- * 
- * v8.0.4: Initial implementation — 4 fields for post-quiz modal.
- * v8.1.0: Expanded to 10 fields per setup, added General Login setup.
+ *
+ * Three product concerns on one tab:
+ * 1. Registration — post-quiz / create-account modal copy and header Sign Up
+ * 2. Login — general auth modal copy and header Log In
+ * 3. Guest Access Link (MagicLink) — convenience login for existing users only
+ *
+ * Defaults are product-neutral. Never hardcode a single product brand for all flows.
  */
 
 if (!defined('ABSPATH')) exit;
@@ -152,8 +153,8 @@ $flosc_signup_action = $flosc_flow_settings['header_signup_action'] ?? 'open_log
 
 <hr>
 
-<h2>Post-Quiz Auth Modal</h2>
-<p class="description">Shown when a visitor completes a quiz and needs to register or log in to see results.</p>
+<h2>Registration — Post-Quiz Auth Modal</h2>
+<p class="description">Shown when a visitor completes a quiz and needs to register or log in to see results. Product-neutral defaults; customize per flow.</p>
 
 <table class="form-table">
     <tr>
@@ -168,7 +169,7 @@ $flosc_signup_action = $flosc_flow_settings['header_signup_action'] ?? 'open_log
         <th scope="row"><label for="flow_auth_modal_subtitle">Subtitle</label></th>
         <td>
             <input type="text" id="flow_auth_modal_subtitle" name="flow_auth_modal_subtitle"
-                   value="<?php echo esc_attr($flosc_flow_settings['auth_modal_subtitle'] ?? 'Account creation is necessary for LeSAEp to be able to process your quiz!'); ?>"
+                   value="<?php echo esc_attr($flosc_flow_settings['auth_modal_subtitle'] ?? 'Create an account or log in to process and view your quiz results.'); ?>"
                    class="large-text">
         </td>
     </tr>
@@ -243,7 +244,7 @@ $flosc_signup_action = $flosc_flow_settings['header_signup_action'] ?? 'open_log
 
 <hr>
 
-<h2>General Auth Modal</h2>
+<h2>Login — General Auth Modal</h2>
 <p class="description">Shown when a visitor clicks "Log In" or "Sign Up" from the header or menu.</p>
 
 <table class="form-table">
@@ -332,15 +333,78 @@ $flosc_signup_action = $flosc_flow_settings['header_signup_action'] ?? 'open_log
     </tr>
 </table>
 
-<h2>Complimentary LeSAEp Learners Guest Access Link Settings</h2>
+<hr>
+
+<?php
+// ─── Guest Access Link (MagicLink) ─────────────────────────────────────────
+// Neutral product defaults. Never hardcode a product brand (e.g. LeSAEp) here —
+// each flow sets its own labels. MagicLink logs in an EXISTING WP user only;
+// it never creates accounts on click.
+$flosc_guest_link_name_default = 'Guest Access Link';
+$flosc_guest_link_name = $flosc_flow_settings['guest_link_name'] ?? $flosc_guest_link_name_default;
+$flosc_magic_enabled = !empty($flosc_flow_settings['magic_access_links_enabled']);
+$flosc_magic_max_uses = isset($flosc_flow_settings['guest_link_max_uses'])
+    ? max(1, min(100, intval($flosc_flow_settings['guest_link_max_uses'])))
+    : 10;
+$flosc_magic_window_days = isset($flosc_flow_settings['guest_link_window_days'])
+    ? max(1, min(365, intval($flosc_flow_settings['guest_link_window_days'])))
+    : 30;
+$flosc_package_magic_on = (defined('FLOSC_ENABLE_MAGIC_ACCESS_LINKS') && FLOSC_ENABLE_MAGIC_ACCESS_LINKS)
+    || (!defined('FLOSC_ENABLE_MAGIC_ACCESS_LINKS') && (bool) apply_filters('flosc_enable_magic_access_links', false));
+?>
+
+<h2>Guest Access Link (MagicLink)</h2>
+<p class="description">
+    One-click login for an <strong>existing</strong> WordPress user. Never creates an account from the link.
+    Directory package default is off (package switch + this flow checkbox both required).
+    Letter content for guest sequences lives on the <strong>Email</strong> tab; journey timing parameters live on <strong>Engagement</strong>.
+</p>
+
 <table class="form-table">
+    <tr>
+        <th scope="row">Enable for this flow</th>
+        <td>
+            <label>
+                <input type="checkbox" name="flow_magic_access_links_enabled" value="1"
+                    <?php checked($flosc_magic_enabled); ?>
+                    <?php disabled(!$flosc_package_magic_on); ?>>
+                Allow MagicLink mint and consume for this flow
+            </label>
+            <?php if (!$flosc_package_magic_on): ?>
+                <p class="description">
+                    Package-level MagicLink is off. Set <code>define('FLOSC_ENABLE_MAGIC_ACCESS_LINKS', true);</code>
+                    in <code>wp-config.php</code> (or filter <code>flosc_enable_magic_access_links</code>) for private deploys, then enable this checkbox.
+                </p>
+            <?php else: ?>
+                <p class="description">Package allows MagicLink. This checkbox is still off by default per flow.</p>
+            <?php endif; ?>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_guest_link_max_uses">Max uses (non-members)</label></th>
+        <td>
+            <input type="number" id="flow_guest_link_max_uses" name="flow_guest_link_max_uses"
+                   value="<?php echo esc_attr((string) $flosc_magic_max_uses); ?>"
+                   min="1" max="100" class="small-text">
+            <p class="description">How many times a non-member may use the same link. Members are unlimited. Default 10.</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_guest_link_window_days">Active window (days)</label></th>
+        <td>
+            <input type="number" id="flow_guest_link_window_days" name="flow_guest_link_window_days"
+                   value="<?php echo esc_attr((string) $flosc_magic_window_days); ?>"
+                   min="1" max="365" class="small-text">
+            <p class="description">Days after first click that the link stays valid. Default 30.</p>
+        </td>
+    </tr>
     <tr>
         <th scope="row"><label for="flow_guest_link_name">Link Name</label></th>
         <td>
             <input type="text" id="flow_guest_link_name" name="flow_guest_link_name"
-                   value="<?php echo esc_attr($flosc_flow_settings['guest_link_name'] ?? 'Complimentary LeSAEp Learners Guest Access Link'); ?>"
+                   value="<?php echo esc_attr($flosc_guest_link_name); ?>"
                    class="large-text">
-            <p class="description">The human-readable name for the guest access link. Used as <code>{link_name}</code> in all templates below.</p>
+            <p class="description">Human-readable name for the access link. Used as <code>{link_name}</code> in templates below. Product-neutral default; set per flow.</p>
         </td>
     </tr>
     <tr>
@@ -356,7 +420,7 @@ $flosc_signup_action = $flosc_flow_settings['header_signup_action'] ?? 'open_log
         <th scope="row"><label for="flow_guest_link_check_email_message">"Check Email" Chat Message</label></th>
         <td>
             <input type="text" id="flow_guest_link_check_email_message" name="flow_guest_link_check_email_message"
-                   value="<?php echo esc_attr($flosc_flow_settings['guest_link_check_email_message'] ?? "We've sent you a {link_name} to your email — click it to access this chat as a guest and view your quiz score, free lessons, and a special upgrade offer."); ?>"
+                   value="<?php echo esc_attr($flosc_flow_settings['guest_link_check_email_message'] ?? "We've sent you a {link_name} to your email — click it to access this chat as a guest and view your quiz score, free lessons, and upgrade options."); ?>"
                    class="large-text">
             <p class="description">Shown in chat after user submits email. Use <code>{link_name}</code>.</p>
         </td>
@@ -365,8 +429,16 @@ $flosc_signup_action = $flosc_flow_settings['header_signup_action'] ?? 'open_log
         <th scope="row"><label for="flow_guest_link_welcome_message">Welcome Chat Message</label></th>
         <td>
             <textarea id="flow_guest_link_welcome_message" name="flow_guest_link_welcome_message"
-                      class="large-text" rows="4"><?php echo esc_textarea($flosc_flow_settings['guest_link_welcome_message'] ?? 'Hi, welcome back! Just to confirm: your email address is {email} and you can use your {link_name} {n} more times to access this chat. <a href="{upgrade_url}">Upgrade</a> for complete access to all lessons, quiz audios, and our LeSAEp Learners network...'); ?></textarea>
+                      class="large-text" rows="4"><?php echo esc_textarea($flosc_flow_settings['guest_link_welcome_message'] ?? 'Hi, welcome back! Just to confirm: your email address is {email} and you can use your {link_name} {n} more times to access this chat. <a href="{upgrade_url}">Upgrade</a> for complete access.'); ?></textarea>
             <p class="description">Shown in chat on every guest link login. Placeholders: <code>{email}</code>, <code>{n}</code> (remaining uses), <code>{link_name}</code>, <code>{upgrade_url}</code>.</p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_member_link_welcome_message">Member Welcome (unlimited link)</label></th>
+        <td>
+            <textarea id="flow_member_link_welcome_message" name="flow_member_link_welcome_message"
+                      class="large-text" rows="3"><?php echo esc_textarea($flosc_flow_settings['member_link_welcome_message'] ?? 'Hi, welcome back {name}! Just to confirm: your email address is {email} and you can use your access link unlimited times to access this chat. Enjoy your session!'); ?></textarea>
+            <p class="description">Shown when a member logs in via MagicLink. Placeholders: <code>{name}</code>, <code>{email}</code>.</p>
         </td>
     </tr>
     <tr>
@@ -384,7 +456,7 @@ $flosc_signup_action = $flosc_flow_settings['header_signup_action'] ?? 'open_log
             <input type="url" id="flow_guest_link_expired_offer_url" name="flow_guest_link_expired_offer_url"
                    value="<?php echo esc_attr($flosc_flow_settings['guest_link_expired_offer_url'] ?? ''); ?>"
                    class="large-text">
-            <p class="description">Where to redirect users whose link has been used 10 times or expired after 30 days. Leave empty to show an in-chat expired message instead.</p>
+            <p class="description">Where to redirect users whose link has exhausted max uses or the active window. Leave empty for an in-chat expired message.</p>
         </td>
     </tr>
     <tr>
@@ -396,30 +468,59 @@ $flosc_signup_action = $flosc_flow_settings['header_signup_action'] ?? 'open_log
             <p class="description">Shown in chat after guest saves their profile card. Placeholders: <code>{name}</code>, <code>{login_url}</code>.</p>
         </td>
     </tr>
+    <tr>
+        <th scope="row"><label for="flow_magic_link_admin_send_condition">Admin send condition</label></th>
+        <td>
+            <input type="text" id="flow_magic_link_admin_send_condition" name="flow_magic_link_admin_send_condition"
+                   value="<?php echo esc_attr($flosc_flow_settings['magic_link_admin_send_condition'] ?? ''); ?>"
+                   class="large-text"
+                   placeholder="leave empty = always allow">
+            <p class="description">
+                Optional. Same condition language as Offers. Empty or <code>always</code> = no gate (ship default).
+                When set, the email must already be an existing account and the expression must pass.
+                Works for SSO and email registrants. Example:
+                <code>is_guest &amp;&amp; login_count &gt;= 3 &amp;&amp; days_since_registration &gt;= 10 &amp;&amp; (has_sso || registration_method == "sso")</code>
+            </p>
+            <p class="description">
+                Keys: <code>login_count</code>, <code>days_since_registration</code>, <code>registration_method</code>,
+                <code>has_sso</code>, <code>is_guest</code>, <code>is_member</code>, <code>quiz_taken</code>, <code>purchased</code>, etc.
+                Guest Account Request “Approve + Send” is moderated and does not use this gate.
+            </p>
+        </td>
+    </tr>
 </table>
 
 <hr class="flosc-login-divider">
-<h2>Send <?php echo esc_html($flosc_flow_settings['guest_link_name'] ?? 'Complimentary LeSAEp Learners Guest Access Link'); ?></h2>
-<p>Send a working guest access link directly to any email address — same flow as if the user entered their own email in the chat.</p>
+<h2>Send <?php echo esc_html($flosc_guest_link_name); ?></h2>
+<p>Send a working guest access link to any email. Existing users (including SSO) get a mint only; missing users may be provisioned when the send condition is empty. Click never creates accounts.</p>
 <div class="flosc-login-send-row">
     <div>
         <label for="flosc-send-guest-link-email" class="flosc-login-email-label">Email address</label>
         <input type="email" id="flosc-send-guest-link-email" placeholder="recipient@example.com"
                class="flosc-login-email-input">
     </div>
-    <button type="button" id="flosc-send-guest-link-btn" class="button button-primary">
-        Send <?php echo esc_html($flosc_flow_settings['guest_link_name'] ?? 'Complimentary LeSAEp Learners Guest Access Link'); ?>
+    <button type="button" id="flosc-send-guest-link-btn" class="button button-primary"
+        <?php disabled(!$flosc_package_magic_on || !$flosc_magic_enabled); ?>>
+        Send <?php echo esc_html($flosc_guest_link_name); ?>
     </button>
 </div>
+<p class="description" style="margin-top:6px;">
+    <label>
+        <input type="checkbox" id="flosc-send-guest-link-force" value="1">
+        Force send (bypass admin send condition)
+    </label>
+</p>
 <p id="flosc-send-guest-link-result" class="flosc-login-send-result"></p>
 
 <?php ob_start(); ?>
 (function() {
     document.getElementById('flosc-send-guest-link-btn')?.addEventListener('click', function() {
         const emailEl  = document.getElementById('flosc-send-guest-link-email');
+        const forceEl  = document.getElementById('flosc-send-guest-link-force');
         const resultEl = document.getElementById('flosc-send-guest-link-result');
         const btn      = this;
         const email    = emailEl.value.trim();
+        const sendLabel = <?php echo wp_json_encode('Send ' . $flosc_guest_link_name); ?>;
 
         if (!email) { emailEl.focus(); return; }
 
@@ -432,6 +533,9 @@ $flosc_signup_action = $flosc_flow_settings['header_signup_action'] ?? 'open_log
         data.append('nonce',  '<?php echo esc_js(wp_create_nonce('flosc_send_guest_link')); ?>');
         data.append('email',  email);
         data.append('ivr',    '<?php echo esc_js($GLOBALS['flosc_current_ivr'] ?? ''); ?>');
+        if (forceEl && forceEl.checked) {
+            data.append('force', '1');
+        }
 
         fetch(ajaxurl, { method: 'POST', body: data })
             .then(r => r.json())
@@ -453,7 +557,7 @@ $flosc_signup_action = $flosc_flow_settings['header_signup_action'] ?? 'open_log
             })
             .finally(() => {
                 btn.disabled    = false;
-                btn.textContent = btn.textContent.replace('Sending...', 'Send <?php echo esc_js($flosc_flow_settings['guest_link_name'] ?? 'Complimentary LeSAEp Learners Guest Access Link'); ?>');
+                btn.textContent = sendLabel;
             });
     });
 })();

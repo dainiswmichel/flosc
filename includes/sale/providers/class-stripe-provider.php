@@ -398,11 +398,15 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
             return new WP_Error('invalid_signature', __('Invalid webhook signature', 'flosc'), ['status' => 401]);
         }
 
+        // Pass 8: json_decode does not sanitize — field-sanitize every value we use.
         $event = json_decode($payload, true);
+        if (!is_array($event)) {
+            return new WP_Error('invalid_payload', __('Invalid Stripe webhook JSON', 'flosc'), ['status' => 400]);
+        }
 
         // SECURITY: Idempotency - check if already processed
-        $event_id = $event['id'] ?? '';
-        if ($event_id) {
+        $event_id = sanitize_text_field((string) ($event['id'] ?? ''));
+        if ($event_id !== '') {
             $processed_key = 'flosc_stripe_event_' . $event_id;
             if (get_transient($processed_key)) {
                 return ['success' => true, 'message' => 'Event already processed'];
@@ -410,24 +414,26 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
             // Mark as processed (store for 24 hours)
             set_transient($processed_key, true, DAY_IN_SECONDS);
         }
-        $type = $event['type'] ?? '';
-        $object = $event['data']['object'] ?? [];
-        
+        $type = sanitize_text_field((string) ($event['type'] ?? ''));
+        $object = (isset($event['data']['object']) && is_array($event['data']['object']))
+            ? $event['data']['object']
+            : [];
+
         switch ($type) {
             case 'payment_intent.succeeded':
                 return $this->handle_payment_succeeded($object);
-                
+
             case 'customer.subscription.created':
             case 'customer.subscription.updated':
                 return $this->handle_subscription_updated($object);
-                
+
             case 'customer.subscription.deleted':
                 return $this->handle_subscription_deleted($object);
-                
+
             case 'invoice.payment_failed':
                 return $this->handle_payment_failed($object);
         }
-        
+
         return ['received' => true];
     }
     
@@ -435,78 +441,89 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
      * v1.4.1: Handle successful payment - grant access based on offer
      */
     private function handle_payment_succeeded($payment_intent) {
-        $user_id = $payment_intent['metadata']['user_id'] ?? null;
-        $offer_id = $payment_intent['metadata']['offer_id'] ?? null;
-        
-        if ($user_id && $offer_id) {
+        $meta = (isset($payment_intent['metadata']) && is_array($payment_intent['metadata']))
+            ? $payment_intent['metadata']
+            : [];
+        $user_id = absint($meta['user_id'] ?? 0);
+        $offer_id = sanitize_text_field((string) ($meta['offer_id'] ?? ''));
+        $transaction_id = sanitize_text_field((string) ($payment_intent['id'] ?? ''));
+        $amount = absint($payment_intent['amount'] ?? 0);
+        $currency = sanitize_text_field((string) ($payment_intent['currency'] ?? ''));
+
+        if ($user_id > 0 && $offer_id !== '') {
             // Grant access through sale manager
             $sale_manager = flosc_sale();
             $offer = $sale_manager->offers()->get_offer($offer_id);
-            
+
             if ($offer) {
                 $transaction = [
-                    'transaction_id' => $payment_intent['id'],
+                    'transaction_id' => $transaction_id,
                     'provider' => 'stripe',
-                    'amount' => $payment_intent['amount'],
-                    'currency' => $payment_intent['currency'],
+                    'amount' => $amount,
+                    'currency' => $currency,
                 ];
-                
-                $sale_manager->access()->grant_from_offer(intval($user_id), $offer, $transaction);
-                
+
+                $sale_manager->access()->grant_from_offer($user_id, $offer, $transaction);
+
                 // v1.4.6: Set transient for post-purchase chatbot greeting
-                set_transient('flosc_just_purchased_' . intval($user_id), true, 300);
-                
+                set_transient('flosc_just_purchased_' . $user_id, true, 300);
+
                 // v1.4.6: Fire purchase_completed for listeners (e.g. FLOSC_Member_Access)
-                do_action('flosc_purchase_completed', intval($user_id), [
+                do_action('flosc_purchase_completed', $user_id, [
                     'offer_id' => $offer_id,
-                    'grants_level' => $offer['grants']['level'] ?? 'member',
+                    'grants_level' => sanitize_key((string) ($offer['grants']['level'] ?? 'member')),
                     'provider' => 'stripe',
-                    'transaction_id' => $payment_intent['id'],
-                    'amount' => $payment_intent['amount'],
+                    'transaction_id' => $transaction_id,
+                    'amount' => $amount,
                     'timestamp' => time(),
                 ]);
-                
+
                 if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-                    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: Access granted to user {$user_id} for offer {$offer_id} via Stripe webhook");
-                    }
+                    flosc_log("FLOSC: Access granted to user {$user_id} for offer {$offer_id} via Stripe webhook");
                 }
             }
         }
-        
-        if ($user_id) {
-            do_action('flosc_stripe_payment_succeeded', intval($user_id), $payment_intent);
+
+        if ($user_id > 0) {
+            do_action('flosc_stripe_payment_succeeded', $user_id, $payment_intent);
         }
-        
+
         return ['success' => true];
     }
     
     private function handle_subscription_updated($subscription) {
-        $user_id = $subscription['metadata']['user_id'] ?? null;
-        
-        if ($user_id) {
-            update_user_meta($user_id, '_flosc_subscription_status', $subscription['status']);
-            do_action('flosc_stripe_subscription_updated', intval($user_id), $subscription);
+        $meta = (isset($subscription['metadata']) && is_array($subscription['metadata']))
+            ? $subscription['metadata']
+            : [];
+        $user_id = absint($meta['user_id'] ?? 0);
+        $status = sanitize_key((string) ($subscription['status'] ?? ''));
+
+        if ($user_id > 0) {
+            update_user_meta($user_id, '_flosc_subscription_status', $status);
+            do_action('flosc_stripe_subscription_updated', $user_id, $subscription);
         }
-        
+
         return ['success' => true];
     }
     
     private function handle_subscription_deleted($subscription) {
-        $user_id = $subscription['metadata']['user_id'] ?? null;
-        
-        if ($user_id) {
+        $meta = (isset($subscription['metadata']) && is_array($subscription['metadata']))
+            ? $subscription['metadata']
+            : [];
+        $user_id = absint($meta['user_id'] ?? 0);
+
+        if ($user_id > 0) {
             delete_user_meta($user_id, '_flosc_stripe_subscription');
             update_user_meta($user_id, '_flosc_subscription_status', 'canceled');
-            do_action('flosc_stripe_subscription_canceled', intval($user_id), $subscription);
+            do_action('flosc_stripe_subscription_canceled', $user_id, $subscription);
         }
-        
+
         return ['success' => true];
     }
     
     private function handle_payment_failed($invoice) {
-        $customer_id = $invoice['customer'] ?? '';
-        
+        $customer_id = sanitize_text_field((string) ($invoice['customer'] ?? ''));
+
         // Find user by customer ID
         // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- targeted single-customer lookup by exact meta pair
         $users = get_users([

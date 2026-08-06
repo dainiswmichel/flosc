@@ -118,7 +118,7 @@ class FLOSC_User_Session {
             'flosc_free_lesson_number' => $this->flosc_state['flosc_quiz']['flosc_free_lesson_number'],
             'flosc_flow_id' => $this->flosc_state['flosc_flow_id'],
         ];
-        return md5(json_encode($flosc_cache_relevant));
+        return md5(wp_json_encode($flosc_cache_relevant));
     }
 
     /**
@@ -244,7 +244,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC User Session: Error 
      * @return string JSON representation of state
      */
     public function flosc_to_json() {
-        return json_encode($this->flosc_state, JSON_PRETTY_PRINT);
+        return wp_json_encode($this->flosc_state, JSON_PRETTY_PRINT);
     }
 
     /**

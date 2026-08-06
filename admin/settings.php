@@ -648,6 +648,13 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         'guest_new_chat_limit_message',
         'guest_new_chat_welcome_message',
         'member_new_chat_welcome_message',
+        'guest_link_welcome_message',
+        'member_link_welcome_message',
+        'user_status_visitor',
+        'user_status_guest',
+        'user_status_member',
+        'user_status_member_level',
+        'user_status_admin',
     ];
     $flosc_identity_html_keys = ['privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content'];
     
@@ -680,6 +687,94 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
                 $flosc_new_settings["sso_{$flosc_provider}_enabled"] = '';
             }
         }
+    }
+    if ($flosc_active_tab === 'login') {
+        // MagicLink per-flow enable (default off). Unchecked checkboxes omit POST key.
+        if (!isset($flosc_post['flow_magic_access_links_enabled'])) {
+            $flosc_new_settings['magic_access_links_enabled'] = '';
+        }
+        if (isset($flosc_new_settings['guest_link_max_uses'])) {
+            $flosc_new_settings['guest_link_max_uses'] = max(1, min(100, intval($flosc_new_settings['guest_link_max_uses'])));
+        }
+        if (isset($flosc_new_settings['guest_link_window_days'])) {
+            $flosc_new_settings['guest_link_window_days'] = max(1, min(365, intval($flosc_new_settings['guest_link_window_days'])));
+        }
+    }
+    if ($flosc_active_tab === 'engagement') {
+        if (isset($flosc_new_settings['guest_access_days'])) {
+            $flosc_new_settings['guest_access_days'] = max(0, min(365, intval($flosc_new_settings['guest_access_days'])));
+        }
+        // engagement_rules: when → condition → then (chat and/or email). Not offers.
+        $flosc_r_ids   = (array) ($flosc_post['engagement_rule_id'] ?? []);
+        $flosc_r_aud   = (array) ($flosc_post['engagement_rule_audience'] ?? []);
+        $flosc_r_title = (array) ($flosc_post['engagement_rule_title'] ?? []);
+        $flosc_r_trig  = (array) ($flosc_post['engagement_rule_trigger'] ?? []);
+        $flosc_r_days  = (array) ($flosc_post['engagement_rule_days'] ?? []);
+        $flosc_r_cond  = (array) ($flosc_post['engagement_rule_condition'] ?? []);
+        $flosc_r_chat  = (array) ($flosc_post['engagement_rule_chat_message'] ?? []);
+        $flosc_r_etpl  = (array) ($flosc_post['engagement_rule_email_template'] ?? []);
+        $flosc_r_en    = (array) ($flosc_post['engagement_rule_enabled'] ?? []);
+        $flosc_r_achat = (array) ($flosc_post['engagement_rule_action_chat'] ?? []);
+        $flosc_r_aemail = (array) ($flosc_post['engagement_rule_action_email'] ?? []);
+        $flosc_rules_out = [];
+        $flosc_allow_trig = ['chat_open', 'return_login', 'inactive_days', 'days_since_registration', 'profile_incomplete'];
+        $flosc_allow_tpl  = ['', 'reengagement', 'guest_welcome', 'guest_day10', 'guest_day20', 'guest_day28'];
+        foreach ($flosc_r_ids as $flosc_ri => $flosc_rid) {
+            $flosc_rid = sanitize_key((string) $flosc_rid);
+            if ($flosc_rid === '') {
+                $flosc_rid = 'rule_' . (int) $flosc_ri;
+            }
+            $flosc_aud = sanitize_key((string) ($flosc_r_aud[$flosc_ri] ?? 'guest'));
+            if (!in_array($flosc_aud, ['visitor', 'guest', 'member'], true)) {
+                $flosc_aud = 'guest';
+            }
+            $flosc_trig = sanitize_key((string) ($flosc_r_trig[$flosc_ri] ?? 'inactive_days'));
+            if (!in_array($flosc_trig, $flosc_allow_trig, true)) {
+                $flosc_trig = 'inactive_days';
+            }
+            $flosc_tpl = sanitize_key((string) ($flosc_r_etpl[$flosc_ri] ?? ''));
+            if (!in_array($flosc_tpl, $flosc_allow_tpl, true)) {
+                $flosc_tpl = '';
+            }
+            $flosc_rtitle = sanitize_text_field((string) ($flosc_r_title[$flosc_ri] ?? ''));
+            if ($flosc_rtitle === '') {
+                $flosc_rtitle = $flosc_rid;
+            }
+            $flosc_rules_out[] = [
+                'id'             => $flosc_rid,
+                'title'          => $flosc_rtitle,
+                'audience'       => $flosc_aud,
+                'enabled'        => !empty($flosc_r_en[(string) $flosc_ri]) || !empty($flosc_r_en[$flosc_ri]) ? '1' : '',
+                'trigger'        => $flosc_trig,
+                'trigger_days'   => (string) max(0, min(365, intval($flosc_r_days[$flosc_ri] ?? 0))),
+                'condition'      => sanitize_text_field((string) ($flosc_r_cond[$flosc_ri] ?? '')),
+                'action_chat'    => !empty($flosc_r_achat[(string) $flosc_ri]) || !empty($flosc_r_achat[$flosc_ri]) ? '1' : '',
+                'action_email'   => !empty($flosc_r_aemail[(string) $flosc_ri]) || !empty($flosc_r_aemail[$flosc_ri]) ? '1' : '',
+                'email_template' => $flosc_tpl,
+                'chat_message'   => sanitize_textarea_field((string) ($flosc_r_chat[$flosc_ri] ?? '')),
+            ];
+        }
+        $flosc_new_settings['engagement_rules'] = $flosc_rules_out;
+
+        // Keep legacy re-engagement keys in sync with first enabled inactive+email rule (email cron still uses them).
+        $flosc_reeng_days = 7;
+        $flosc_reeng_on   = '';
+        foreach ($flosc_rules_out as $flosc_rr) {
+            if (empty($flosc_rr['enabled']) || empty($flosc_rr['action_email'])) {
+                continue;
+            }
+            if (($flosc_rr['trigger'] ?? '') !== 'inactive_days') {
+                continue;
+            }
+            if (($flosc_rr['email_template'] ?? '') !== 'reengagement' && ($flosc_rr['email_template'] ?? '') !== '') {
+                // still count as reeng if inactive email of any template
+            }
+            $flosc_reeng_on = '1';
+            $flosc_reeng_days = max(1, min(365, intval($flosc_rr['trigger_days'] ?? 7)));
+            break;
+        }
+        $flosc_new_settings['email_reengagement_enabled'] = $flosc_reeng_on;
+        $flosc_new_settings['email_reengagement_days']    = $flosc_reeng_days;
     }
     if ($flosc_active_tab === 'ai') {
         foreach (['ai_enable_ivr_context', 'ai_enable_content_access', 'ai_enable_chaining'] as $flosc_cb) {
@@ -1894,6 +1989,7 @@ if (function_exists('wp_add_inline_style')) {
             'payments': 'Payments',
             
             'sso': 'SSO',
+            'engagement': 'Engagement',
             'chat-logs': 'Chat Logs',
             'administration': 'Administration',
             'documentation': 'Docs',
@@ -1927,6 +2023,7 @@ if (function_exists('wp_add_inline_style')) {
             'contact-form'  => 'Contact Form',
             'payments'      => 'Payments',
             'sso'           => 'SSO',
+            'engagement'    => 'Engagement',
             'chat-logs'     => 'Chat Logs',
             'administration'=> 'Administration',
             'documentation' => '📖 Docs',
@@ -1998,6 +2095,9 @@ if (function_exists('wp_add_inline_style')) {
             
             // Handle individual flow save via AJAX or form
             if (isset($flosc_post['flosc_save_flow']) && wp_verify_nonce(sanitize_text_field($flosc_post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
+                if (!current_user_can('manage_options')) {
+                    wp_die(esc_html__('You do not have permission to save multi-flow identity settings.', 'flosc'));
+                }
                 $flosc_save_ivr = sanitize_file_name($flosc_post['flosc_save_flow']);
                 if (isset($flosc_all_flows[$flosc_save_ivr])) {
                     $flosc_flow_key = $flosc_all_flows[$flosc_save_ivr]['key'];
@@ -2049,6 +2149,9 @@ if (function_exists('wp_add_inline_style')) {
             
             // Handle save all flows
             if (isset($flosc_post['flosc_save_all_flows']) && wp_verify_nonce(sanitize_text_field($flosc_post['_wpnonce'] ?? ''), 'flosc_save_settings')) {
+                if (!current_user_can('manage_options')) {
+                    wp_die(esc_html__('You do not have permission to save multi-flow identity settings.', 'flosc'));
+                }
                 foreach ($flosc_all_flows as $flosc_ivr_file => $flosc_flow_data) {
                     $flosc_flow_key = $flosc_flow_data['key'];
                     $flosc_new_settings = $flosc_flow_data['settings'];
@@ -2688,6 +2791,9 @@ if (function_exists('wp_add_inline_style')) {
             
         <?php elseif ($flosc_active_tab === 'sso'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/sso.php'; ?>
+
+        <?php elseif ($flosc_active_tab === 'engagement'): ?>
+            <?php include FLOSC_PLUGIN_DIR . 'admin/engagement.php'; ?>
 
         <?php elseif ($flosc_active_tab === 'administration'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/administration.php'; ?>

@@ -459,8 +459,8 @@ foreach ($flosc_state_config as $flosc_state => $flosc_sc):
                 </td>
                 <td class="flosc-trigger-value-cell">
                     <div class="flosc-ap-microlabel">Trigger Value</div>
-                    <span class="flosc-tv-ai flosc-tv-hint<?php echo $flosc_ttype !== 'ai' ? ' flosc-hidden' : ''; ?>">Sends user_input to AI</span>
-                    <select name="<?php echo esc_attr( $flosc_state ); ?>_pill_trigger_value_offer[]" class="flosc-ap-select flosc-ap-select--w200 flosc-tv-offer<?php echo $flosc_ttype !== 'offer' ? ' flosc-hidden' : ''; ?>">
+                    <span class="flosc-tv-ai flosc-tv-hint<?php echo esc_attr( $flosc_ttype !== 'ai' ? ' flosc-hidden' : '' ); ?>">Sends user_input to AI</span>
+                    <select name="<?php echo esc_attr( $flosc_state ); ?>_pill_trigger_value_offer[]" class="flosc-ap-select flosc-ap-select--w200 flosc-tv-offer<?php echo esc_attr( $flosc_ttype !== 'offer' ? ' flosc-hidden' : '' ); ?>">
                         <?php foreach ($flosc_offers_for_trigger as $flosc_oid => $flosc_oname): ?>
                             <option value="<?php echo esc_attr($flosc_oid); ?>" <?php selected($flosc_tval, $flosc_oid); ?>><?php echo esc_html($flosc_oname); ?> (<?php echo esc_html($flosc_oid); ?>)</option>
                         <?php endforeach; ?>
@@ -468,7 +468,7 @@ foreach ($flosc_state_config as $flosc_state => $flosc_sc):
                             <option value="full_access" <?php selected($flosc_tval,'full_access'); ?>>full_access (default)</option>
                         <?php endif; ?>
                     </select>
-                    <select name="<?php echo esc_attr( $flosc_state ); ?>_pill_trigger_value_action[]" class="flosc-ap-select flosc-ap-select--w200 flosc-tv-action<?php echo $flosc_ttype !== 'action' ? ' flosc-hidden' : ''; ?>">
+                    <select name="<?php echo esc_attr( $flosc_state ); ?>_pill_trigger_value_action[]" class="flosc-ap-select flosc-ap-select--w200 flosc-tv-action<?php echo esc_attr( $flosc_ttype !== 'action' ? ' flosc-hidden' : '' ); ?>">
                         <?php foreach ($flosc_available_actions as $flosc_aval => $flosc_adesc): ?>
                             <option value="<?php echo esc_attr($flosc_aval); ?>" <?php selected($flosc_tval, $flosc_aval); ?>><?php echo esc_html($flosc_adesc); ?></option>
                         <?php endforeach; ?>

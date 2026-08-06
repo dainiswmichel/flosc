@@ -686,7 +686,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
             'purchase_units' => [[
                 'reference_id' => $offer_id,
                 'description' => 'FLOSC Purchase - ' . $offer_id,
-                'custom_id' => json_encode([
+                'custom_id' => wp_json_encode([
                     'user_id' => $user->ID ?? 0,
                     'offer_id' => $offer_id,
                 ]),
@@ -849,16 +849,23 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
         // Extract transaction details + payer identity (required for visitor checkout).
         $capture = $body['purchase_units'][0]['payments']['captures'][0] ?? [];
-        $custom_id = json_decode($capture['custom_id'] ?? ($body['purchase_units'][0]['custom_id'] ?? '{}'), true);
-        if (!is_array($custom_id)) {
-            $custom_id = [];
+        // Pass 8: custom_id is JSON from PayPal; sanitize fields after decode.
+        $custom_raw = (string) ($capture['custom_id'] ?? ($body['purchase_units'][0]['custom_id'] ?? '{}'));
+        $custom_id = [];
+        if ($custom_raw !== '' && strlen($custom_raw) <= 4096) {
+            $decoded_custom = json_decode($custom_raw, true, 8);
+            if (JSON_ERROR_NONE === json_last_error() && is_array($decoded_custom)) {
+                $custom_id = $decoded_custom;
+            }
         }
+        $custom_user_id = isset($custom_id['user_id']) ? absint($custom_id['user_id']) : 0;
+        $custom_offer_id = sanitize_text_field((string) ($custom_id['offer_id'] ?? ''));
 
         $payer = is_array($body['payer'] ?? null) ? $body['payer'] : [];
         $payment_source_paypal = is_array($body['payment_source']['paypal'] ?? null) ? $body['payment_source']['paypal'] : [];
         $payer_email = sanitize_email((string) ($payer['email_address'] ?? $payment_source_paypal['email_address'] ?? ''));
-        $given = (string) ($payer['name']['given_name'] ?? $payment_source_paypal['name']['given_name'] ?? '');
-        $surname = (string) ($payer['name']['surname'] ?? $payment_source_paypal['name']['surname'] ?? '');
+        $given = sanitize_text_field((string) ($payer['name']['given_name'] ?? $payment_source_paypal['name']['given_name'] ?? ''));
+        $surname = sanitize_text_field((string) ($payer['name']['surname'] ?? $payment_source_paypal['name']['surname'] ?? ''));
         $payer_name = trim($given . ' ' . $surname);
 
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
@@ -866,13 +873,13 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
         }
 
         return [
-            'order_id' => $body['id'],
-            'status' => $body['status'],
-            'transaction_id' => $capture['id'] ?? '',
-            'amount' => $capture['amount']['value'] ?? '0.00',
-            'currency' => $capture['amount']['currency_code'] ?? 'USD',
-            'user_id' => $custom_id['user_id'] ?? null,
-            'offer_id' => $custom_id['offer_id'] ?? null,
+            'order_id' => sanitize_text_field((string) ($body['id'] ?? '')),
+            'status' => sanitize_text_field((string) ($body['status'] ?? '')),
+            'transaction_id' => sanitize_text_field((string) ($capture['id'] ?? '')),
+            'amount' => sanitize_text_field((string) ($capture['amount']['value'] ?? '0.00')),
+            'currency' => sanitize_text_field((string) ($capture['amount']['currency_code'] ?? 'USD')),
+            'user_id' => $custom_user_id > 0 ? $custom_user_id : null,
+            'offer_id' => $custom_offer_id !== '' ? $custom_offer_id : null,
             'payer_email' => $payer_email,
             'payer_name' => $payer_name,
         ];
@@ -1460,7 +1467,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
             ];
         }
 
-        $event_type = (string) ($data['event_type'] ?? $data['eventType'] ?? '');
+        $event_type = sanitize_text_field((string) ($data['event_type'] ?? $data['eventType'] ?? ''));
         $resource = is_array($data['resource'] ?? null) ? $data['resource'] : [];
         $result = [
             'received'   => true,

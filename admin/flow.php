@@ -39,9 +39,12 @@ if ( $flosc_selected_ivr && file_exists( $flosc_ivr_path ) && class_exists( 'FLO
 }
 
 // F — Freeline: quiz + visitor pills + IVR file
-// Match quiz.php's default: flosc_sample_data_numbers_quiz is the default active quiz
-$flosc_enabled_quizzes = $flosc_flow_settings['enabled_quizzes'] ?? ['flosc_sample_data_numbers_quiz'];
-if ( ! is_array( $flosc_enabled_quizzes ) ) $flosc_enabled_quizzes = ['flosc_sample_data_numbers_quiz'];
+// Empty enabled_quizzes = no quiz for this flow. Never invent a sample quiz.
+$flosc_enabled_quizzes = $flosc_flow_settings['enabled_quizzes'] ?? [];
+if ( ! is_array( $flosc_enabled_quizzes ) ) {
+    $flosc_enabled_quizzes = [];
+}
+$flosc_enabled_quizzes  = array_values( array_filter( array_map( 'sanitize_key', $flosc_enabled_quizzes ) ) );
 $flosc_quiz_configured  = ! empty( $flosc_enabled_quizzes );
 $flosc_quiz_count       = count( $flosc_enabled_quizzes );
 $flosc_quiz_word        = $flosc_quiz_count === 1 ? 'Quiz' : 'Quizzes';
@@ -61,7 +64,7 @@ if ( $flosc_quiz_configured && class_exists( 'FLOSC_Quiz_Registry' ) ) {
 }
 
 $flosc_visitor_pills = count( $flosc_flow_settings['autoprompts']['visitor'] ?? [] );
-$flosc_ivr_file_label      = $flosc_selected_ivr ?: 'None configured';
+$flosc_ivr_file_label = $flosc_selected_ivr ? esc_html( $flosc_selected_ivr ) : 'None configured';
 
 // L — Login: SSO providers
 $flosc_sso_providers   = [];
@@ -276,7 +279,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
             <span>🗺 FLOSC Flow Overview</span>
             <a href="<?php echo esc_url($flosc_flow_docs_url); ?>" class="flosc-docs-link">Docs</a>
         </h2>
-        <p class="flosc-flow-overview-summary">Read-only snapshot of all five flow phases for <strong><?php echo esc_html( $flosc_selected_ivr ?: 'this flow' ); ?></strong>. Click any Edit button to jump to that tab.</p>
+        <p class="flosc-flow-overview-summary">Read-only snapshot of the five flow phases for <strong><?php echo esc_html( $flosc_selected_ivr ?: 'this flow' ); ?></strong>. Click any Edit button to jump to that tab.</p>
     </div>
 
     <?php
@@ -293,7 +296,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
             'edit_label' => 'Edit Pills →',
         ],
         [
-            'label'      => 'IVR file: ' . esc_html( $flosc_ivr_file_label ),
+            'label'      => 'IVR file: ' . $flosc_ivr_file_label,
             'edit_url'   => $flosc_base_url . 'ivr-messages',
             'edit_label' => 'Edit IVR →',
         ],

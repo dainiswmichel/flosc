@@ -322,10 +322,11 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
             return $user_id;
         }
         
+        $name = sanitize_text_field((string) $name);
         $name_parts = explode(' ', trim($name), 2);
-        $first_name = $name_parts[0] ?? '';
-        $last_name = $name_parts[1] ?? '';
-        
+        $first_name = sanitize_text_field((string) ($name_parts[0] ?? ''));
+        $last_name = sanitize_text_field((string) ($name_parts[1] ?? ''));
+
         wp_update_user([
             'ID' => $user_id,
             'display_name' => $name,

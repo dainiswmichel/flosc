@@ -203,7 +203,7 @@ class FLOSC_Offer_Manager {
             }
 
             if (!class_exists('FLOSC_IVR_Parser')) {
-                require_once FLOSC_PLUGIN_DIR . 'includes/class-ivr-parser.php';
+                require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
             }
 
             if (!class_exists('FLOSC_IVR_Parser')) {

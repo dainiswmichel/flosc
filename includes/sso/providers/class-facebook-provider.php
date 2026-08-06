@@ -121,27 +121,31 @@ class Facebook_Provider extends SSO_Provider_Base {
      * @return array Normalized user data
      */
     protected function normalize_user_data($raw_data) {
-        // v1.4.6: Extract avatar from nested picture object with silhouette check (BuddyBoss pattern)
+        // Pass 8: field-sanitize after provider JSON decode; do not keep raw blob.
         $avatar = '';
-        if (isset($raw_data['picture']['data'])) {
+        if (isset($raw_data['picture']['data']) && is_array($raw_data['picture']['data'])) {
             // Skip default silhouette avatars — only use real profile pictures
             if (isset($raw_data['picture']['data']['is_silhouette']) && !$raw_data['picture']['data']['is_silhouette']) {
-                $avatar = $raw_data['picture']['data']['url'] ?? '';
+                $avatar = esc_url_raw((string) ($raw_data['picture']['data']['url'] ?? ''));
             }
-        } elseif (!empty($raw_data['picture']) && filter_var($raw_data['picture'], FILTER_VALIDATE_URL)) {
-            $avatar = $raw_data['picture'];
+        } elseif (!empty($raw_data['picture']) && is_string($raw_data['picture']) && filter_var($raw_data['picture'], FILTER_VALIDATE_URL)) {
+            $avatar = esc_url_raw((string) $raw_data['picture']);
         }
-        
+
+        $first = (string) (!empty($raw_data['first_name']) ? $raw_data['first_name'] : ($raw_data['given_name'] ?? ''));
+        $last  = (string) (!empty($raw_data['last_name']) ? $raw_data['last_name'] : ($raw_data['family_name'] ?? ''));
+        $email = sanitize_email((string) ($raw_data['email'] ?? ''));
+
         return array(
-            'provider_id'    => $raw_data['id'] ?? '',
-            'email'          => $raw_data['email'] ?? '',
-            'email_verified' => !empty($raw_data['email']), // Facebook only returns verified emails
-            'name'           => $raw_data['name'] ?? '',
-            'first_name'     => !empty($raw_data['first_name']) ? $raw_data['first_name'] : ($raw_data['given_name'] ?? ''),
-            'last_name'      => !empty($raw_data['last_name']) ? $raw_data['last_name'] : ($raw_data['family_name'] ?? ''),
+            'provider_id'    => sanitize_text_field((string) ($raw_data['id'] ?? '')),
+            'email'          => $email,
+            'email_verified' => $email !== '', // Facebook only returns verified emails
+            'name'           => sanitize_text_field((string) ($raw_data['name'] ?? '')),
+            'first_name'     => sanitize_text_field($first),
+            'last_name'      => sanitize_text_field($last),
             'avatar'         => $avatar,
-            'locale'         => $raw_data['locale'] ?? '',
-            'raw_data'       => $raw_data,
+            'locale'         => sanitize_text_field((string) ($raw_data['locale'] ?? '')),
+            'raw_data'       => array(),
         );
     }
     

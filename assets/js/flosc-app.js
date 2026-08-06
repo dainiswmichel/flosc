@@ -455,6 +455,9 @@ class floscApp {
                 this.showCredentialSetupCard();
             }
 
+            // Engagement tab: return_login / profile_incomplete chat floscResponses
+            this.applyEngagementChatRules();
+
             // Guest link: handle expired status param (no offer URL configured)
             const _guestParams = new URLSearchParams(window.location.search);
             if (_guestParams.get('flosc_guest_status') === 'expired') {
@@ -470,6 +473,217 @@ class floscApp {
             this.logError('[FLOSC] Error stack:', error.stack);
             throw error;
         }
+    }
+
+    /**
+     * Engagement rules from FLOSC_CONFIG (Engagement tab) — parameters only.
+     * When user sees chat: once per browser session, when chat UI finishes loading
+     * after login (not mid-conversation). Email is server-side. Offers not here.
+     * AI: subsequent turns receive engagement_context so the model knows an admin
+     * inserted the message and its content.
+     */
+    applyEngagementChatRules() {
+        // Restore any notes from earlier this browser session (reload / new tab same origin).
+        this._loadEngagementAiNotes();
+
+        const rules = Array.isArray(this.config?.engagementRules) ? this.config.engagementRules : [];
+        if (!rules.length) {
+            return;
+        }
+        const loginCount = parseInt(this.config?.loginCount, 10) || 0;
+        const daysReg = parseInt(this.config?.daysSinceRegistration, 10) || 0;
+        const state = this.state; // visitor | guest | member | admin
+        const ctx = {
+            is_guest: state === 'guest',
+            is_member: state === 'member' || state === 'admin',
+            is_visitor: state === 'visitor',
+            logged_in: state !== 'visitor',
+            purchased: state === 'member' || state === 'admin' || !!this.user?.purchased,
+            login_count: loginCount,
+            days_since_registration: daysReg,
+            quiz_taken: !!(this.user?.lastQuizData || this.user?.lastQuizScore),
+            returning_user: loginCount >= 2,
+            has_sso: !!this.config?.hasSsoProvider,
+        };
+
+        for (const rule of rules) {
+            if (!rule || !rule.actionChat || !rule.chatMessage) {
+                continue;
+            }
+            const aud = String(rule.audience || 'guest');
+            if (aud === 'visitor' && state !== 'visitor') {
+                continue;
+            }
+            if (aud === 'guest' && state !== 'guest') {
+                continue;
+            }
+            if (aud === 'member' && state !== 'member' && state !== 'admin') {
+                continue;
+            }
+            const trigger = String(rule.trigger || '');
+            const n = parseInt(rule.triggerDays, 10) || 0;
+            if (trigger === 'chat_open') {
+                // Once per browser session when chat UI finishes loading (any audience).
+            } else if (trigger === 'return_login') {
+                if (state === 'visitor' || loginCount < 2) {
+                    continue;
+                }
+            } else if (trigger === 'days_since_registration') {
+                if (state === 'visitor' || daysReg < n) {
+                    continue;
+                }
+            } else if (trigger === 'profile_incomplete') {
+                if (!this.config?.pendingCredentialSetup) {
+                    continue;
+                }
+            } else if (trigger === 'inactive_days') {
+                // Email-side primarily; skip chat on every page load without last-seen meta.
+                continue;
+            } else {
+                continue;
+            }
+            if (rule.condition && !this._evalEngagementCondition(rule.condition, ctx)) {
+                continue;
+            }
+            const onceKey = this.flowStorageKey('flosc_eng_chat_' + (rule.id || trigger));
+            if (sessionStorage.getItem(onceKey)) {
+                continue;
+            }
+            const plain = String(rule.chatMessage).trim();
+            if (!plain) {
+                continue;
+            }
+            // UI: plain admin text as an assistant bubble when chat finishes loading.
+            this.addMessage('assistant', plain, false);
+            sessionStorage.setItem(onceKey, '1');
+            // AI: remember admin insert + content for subsequent turns this session.
+            this._recordEngagementAiNote(rule.id || trigger, plain);
+            if (state === 'visitor') {
+                this.saveVisitorMessage('assistant', plain, { source: 'engagement_admin', name: 'Engagement' });
+            } else if (this.currentSession?.id) {
+                this.logClientChatTurn('', '[Admin engagement message] ' + plain, {
+                    source: 'engagement_admin',
+                    provider: 'engagement',
+                });
+            }
+        }
+    }
+
+    _engagementAiNotesKey() {
+        return this.flowStorageKey('flosc_eng_ai_notes');
+    }
+
+    _loadEngagementAiNotes() {
+        try {
+            const raw = sessionStorage.getItem(this._engagementAiNotesKey());
+            const arr = raw ? JSON.parse(raw) : [];
+            this._engagementAiNotes = Array.isArray(arr) ? arr : [];
+        } catch (e) {
+            this._engagementAiNotes = [];
+        }
+    }
+
+    _recordEngagementAiNote(ruleId, content) {
+        if (!Array.isArray(this._engagementAiNotes)) {
+            this._engagementAiNotes = [];
+        }
+        const note = {
+            rule_id: String(ruleId || ''),
+            content: String(content || '').substring(0, 500),
+        };
+        // De-dupe by rule_id + content
+        const exists = this._engagementAiNotes.some(
+            (n) => n && n.rule_id === note.rule_id && n.content === note.content
+        );
+        if (!exists) {
+            this._engagementAiNotes.push(note);
+            if (this._engagementAiNotes.length > 10) {
+                this._engagementAiNotes = this._engagementAiNotes.slice(-10);
+            }
+            try {
+                sessionStorage.setItem(
+                    this._engagementAiNotesKey(),
+                    JSON.stringify(this._engagementAiNotes)
+                );
+            } catch (e) { /* ignore quota */ }
+        }
+    }
+
+    /**
+     * Minimal safe evaluator for Engagement freeform conditions (subset of FLOSC_Condition_Evaluator).
+     * Supports && || ! () and tokens used on the Engagement condition chips.
+     */
+    _evalEngagementCondition(expr, ctx) {
+        if (!expr || !String(expr).trim()) {
+            return true;
+        }
+        let s = String(expr).trim();
+        // Replace known atoms with true/false
+        const atoms = {
+            'is_guest': !!ctx.is_guest,
+            'is_member': !!ctx.is_member,
+            'is_visitor': !!ctx.is_visitor,
+            'logged_in': !!ctx.logged_in,
+            'purchased': !!ctx.purchased,
+            '!purchased': !ctx.purchased,
+            'quiz_taken': !!ctx.quiz_taken,
+            '!quiz_taken': !ctx.quiz_taken,
+            'returning_user': !!ctx.returning_user,
+            'has_sso': !!ctx.has_sso,
+        };
+        // Numeric comparisons
+        s = s.replace(/login_count\s*(>=|<=|>|<|==)\s*(\d+)/g, (_, op, n) => {
+            const a = ctx.login_count || 0;
+            const b = parseInt(n, 10);
+            return this._cmp(a, op, b) ? ' TRUE ' : ' FALSE ';
+        });
+        s = s.replace(/days_since_registration\s*(>=|<=|>|<|==)\s*(\d+)/g, (_, op, n) => {
+            const a = ctx.days_since_registration || 0;
+            const b = parseInt(n, 10);
+            return this._cmp(a, op, b) ? ' TRUE ' : ' FALSE ';
+        });
+        for (const [k, v] of Object.entries(atoms)) {
+            const re = new RegExp('\\b' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'g');
+            // !purchased already in atoms as key with !
+            if (k.startsWith('!')) {
+                s = s.split(k).join(v ? ' TRUE ' : ' FALSE ');
+            } else {
+                s = s.replace(re, v ? ' TRUE ' : ' FALSE ');
+            }
+        }
+        // Boolean reduce with parentheses (simple recursive)
+        const evalBool = (e) => {
+            e = e.trim();
+            while (e.includes('(')) {
+                e = e.replace(/\(([^()]+)\)/g, (_, inner) => (evalBool(inner) ? 'TRUE' : 'FALSE'));
+            }
+            if (e.includes('||')) {
+                return e.split('||').some((p) => evalBool(p));
+            }
+            if (e.includes('&&')) {
+                return e.split('&&').every((p) => evalBool(p));
+            }
+            e = e.trim();
+            if (e.startsWith('!')) {
+                return !evalBool(e.slice(1));
+            }
+            return e === 'TRUE' || e === 'true';
+        };
+        try {
+            return evalBool(s);
+        } catch (err) {
+            this.log('[FLOSC Engagement] condition eval failed', expr, err);
+            return false;
+        }
+    }
+
+    _cmp(a, op, b) {
+        if (op === '>=') return a >= b;
+        if (op === '<=') return a <= b;
+        if (op === '>') return a > b;
+        if (op === '<') return a < b;
+        if (op === '==') return a === b;
+        return false;
     }
 
     ensureVisitorSessionForConfiguredGrant() {
@@ -1294,7 +1508,7 @@ class floscApp {
         try {
             let id = localStorage.getItem(this.flowStorageKey('flosc_visitor_session'));
             if (!id) {
-                id = String(Date.now());
+                id = this._mintOpaqueVisitorSessionId();
                 localStorage.setItem(this.flowStorageKey('flosc_visitor_session'), id);
             }
             this._visitorSessionId = id;
@@ -1303,10 +1517,39 @@ class floscApp {
         } catch (e) {
             // Storage may be unavailable. Keep a stable in-memory id for this
             // page lifetime so chat/logging does not split mid-conversation.
-            this._visitorSessionId = String(Date.now());
+            this._visitorSessionId = this._mintOpaqueVisitorSessionId();
             this._persistVisitorSessionCookie(this._visitorSessionId);
             return this._visitorSessionId;
         }
+    }
+
+    /**
+     * Opaque visitor session id (not Date.now / sequential).
+     * Prefer crypto.randomUUID; fall back to getRandomValues; last resort: random string.
+     */
+    _mintOpaqueVisitorSessionId() {
+        try {
+            if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+                return crypto.randomUUID();
+            }
+        } catch (e) { /* ignore */ }
+        try {
+            if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+                const bytes = new Uint8Array(16);
+                crypto.getRandomValues(bytes);
+                bytes[6] = (bytes[6] & 0x0f) | 0x40;
+                bytes[8] = (bytes[8] & 0x3f) | 0x80;
+                const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+                return (
+                    hex.slice(0, 8) + '-' +
+                    hex.slice(8, 12) + '-' +
+                    hex.slice(12, 16) + '-' +
+                    hex.slice(16, 20) + '-' +
+                    hex.slice(20)
+                );
+            }
+        } catch (e2) { /* ignore */ }
+        return 'v-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
     }
 
     /**
@@ -2010,7 +2253,7 @@ class floscApp {
                 <div class="flosc-admin-pill-group flosc-admin-pill-group-quiz">
                     <div class="flosc-admin-pill-group-title">🎤 Quiz Cycle</div>
                     <div class="flosc-admin-pill-row">
-                        <button class="flosc-style-pill flosc-admin-pill flosc-admin-pill-quiz" data-action="${this.config.defaultQuizAction || 'open_quiz:pronunciation_ipa_audio_quiz'}">🎤 Start Pronunciation Quiz</button>
+                        ${this.flowHasQuizConfigured() ? `<button class="flosc-style-pill flosc-admin-pill flosc-admin-pill-quiz" data-action="${this.config.defaultQuizAction || 'open_quiz'}">🎤 Start Quiz</button>` : ''}
                     </div>
                 </div>
             </div>`;
@@ -2919,13 +3162,30 @@ class floscApp {
 
     /**
      * This flow has quiz(es) in its own floscFlow parameters.
-     * Empty → never surface another flow’s quiz results.
+     * Empty enabledQuizzes + no default quiz keys → no quiz (never invent sample IDs).
      */
     flowHasQuizConfigured() {
+        const enabled = Array.isArray(this.config?.enabledQuizzes)
+            ? this.config.enabledQuizzes.filter((id) => String(id || '').trim() !== '')
+            : [];
+        if (enabled.length > 0) {
+            return true;
+        }
         const a = String(this.config?.defaultAudioQuizId || '').trim();
         const t = String(this.config?.defaultTextQuizId || '').trim();
         const q = String(this.config?.quizType || '').trim();
         return !!(a || t || q);
+    }
+
+    /** Short denial when this flow has no quiz. */
+    denyQuizOnThisFlow(message = '') {
+        const name = String(this.config?.productName || this.config?.identity?.name || 'this chat').trim();
+        const msg = `${name} doesn’t include a quiz — I can help with other questions here.`;
+        this.addMessage('assistant', msg, false);
+        if (message) {
+            this.logClientChatTurn(message, msg, { source: 'quiz_not_on_flow' });
+        }
+        return true;
     }
 
     /**
@@ -4228,6 +4488,10 @@ class floscApp {
 
         switch (baseAction) {
             case 'open_quiz':
+                if (!this.flowHasQuizConfigured()) {
+                    this.denyQuizOnThisFlow();
+                    break;
+                }
                 this.startInChatQuiz(actionParam || 'default');
                 break;
             case 'open_registration':
@@ -4483,12 +4747,19 @@ class floscApp {
     }
 
     openQuiz() {
-        // v9.3.4: Start in-chat quiz
+        if (!this.flowHasQuizConfigured()) {
+            this.denyQuizOnThisFlow();
+            return;
+        }
         this.startInChatQuiz();
     }
 
     // v9.3.4: In-Chat Quiz System - Now supports TEXT SEQUENCE and AUDIO types!
     async startInChatQuiz(quizId = 'default') {
+        if (!this.flowHasQuizConfigured()) {
+            this.denyQuizOnThisFlow();
+            return;
+        }
         // v1.8.1: Guard — prevent duplicate quiz starts
         // v8.0.0: Allow replacing an active quiz with a DIFFERENT quiz type
         //         (e.g., user started text quiz but wants IPA audio quiz instead)
@@ -4529,10 +4800,12 @@ class floscApp {
 
         this.log('[FLOSC Quiz] Starting in-chat quiz:', quizId);
 
-        // Flow-configured IPA audio quiz — direct to the configured API, no WP involvement
-        const defaultAudioQuizId = this.config.defaultAudioQuizId || 'pronunciation_ipa_audio_quiz';
-        const audioQuizIds = new Set([defaultAudioQuizId, 'lesaep_ipa_audio_quiz']);
-        if (audioQuizIds.has(quizId)) {
+        // Flow-configured IPA audio quiz only — never invent pronunciation IDs when unset
+        const defaultAudioQuizId = String(this.config.defaultAudioQuizId || '').trim();
+        const audioQuizIds = new Set(
+            [defaultAudioQuizId, 'lesaep_ipa_audio_quiz'].filter((id) => id !== '')
+        );
+        if (quizId && audioQuizIds.has(quizId)) {
             this.showQuizConsentGate();
             return;
         }
@@ -4541,9 +4814,7 @@ class floscApp {
         this.addMessage('assistant', '📋 Loading your quiz...');
         
         try {
-            // Fetch quiz from API — passes flow context so server picks the right quiz
-            // v3.0.7: include flow_id + ivr_file so get_quiz_questions() can auto-select
-            //         lesaep_text_based_pronunciation_quiz for the LeSAEp flow when no explicit setting is saved
+            // Fetch quiz from API — flow context only; empty enabled list returns 404 (no invent)
             const quizParams = new URLSearchParams({ id: quizId });
             if (this.config.flowId)  quizParams.append('flow_id',  this.config.flowId);
             if (this.config.ivrFile) quizParams.append('ivr_file', this.config.ivrFile);
@@ -4551,6 +4822,11 @@ class floscApp {
             const data = await response.json();
             
             this.log('[FLOSC Quiz] API response:', data);
+
+            if (!data.success && (data.code === 'flosc_no_quiz' || response.status === 404)) {
+                this.denyQuizOnThisFlow();
+                return;
+            }
             
             if (data.success) {
                 // v9.3.4: Handle different quiz types
@@ -6649,10 +6925,19 @@ class floscApp {
         const _w2 = _words[Math.floor(Math.random() * _words.length)];
         const _num = Math.floor(Math.random() * 90) + 10;
         const suggestedPassword = `${_w1}-${_w2}-${_num}`;
+        // Per-flow Engagement setting; product-neutral fallback
+        const nudgeRaw = (this.config.engagementProfileNudgeMessage
+            || 'Complete your profile to keep your results private and unlock recordings.').toString();
+        const nudgeEsc = nudgeRaw
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
 
         const cardHtml = `
             <div class="flosc-profile-card">
                 <p class="flosc-profile-title">What should I call you?</p>
+                <p class="flosc-profile-help">${nudgeEsc}</p>
                 <input type="text" class="flosc-profile-name" placeholder="First name or nickname..."
                     >
                 <p class="flosc-profile-label">Set a password so you can log in directly:</p>
@@ -6917,7 +7202,9 @@ class floscApp {
                 <div class="flosc-lesson-items flosc-lesson-items--compact">
                     ${initial.map(lesson => `
                         <div class="flosc-lesson-item flosc-lesson-item--title-only"
-                             onclick="window.FLOSC.viewLesson(${parseInt(lesson.id)})">
+                             role="button" tabindex="0"
+                             data-flosc-action="view-lesson"
+                             data-lesson-id="${parseInt(lesson.id, 10) || 0}">
                             <span class="flosc-lesson-item-title">${this.escapeHtml(lesson.title)}</span>
                             <span class="flosc-lesson-item-arrow">›</span>
                         </div>
@@ -6950,7 +7237,10 @@ class floscApp {
             next.forEach(lesson => {
                 const div = document.createElement('div');
                 div.className = 'flosc-lesson-item flosc-lesson-item--title-only';
-                div.onclick = () => window.FLOSC.viewLesson(parseInt(lesson.id));
+                div.setAttribute('role', 'button');
+                div.tabIndex = 0;
+                div.setAttribute('data-flosc-action', 'view-lesson');
+                div.setAttribute('data-lesson-id', String(parseInt(lesson.id, 10) || 0));
                 div.innerHTML = `<span class="flosc-lesson-item-title">${this.escapeHtml(lesson.title)}</span><span class="flosc-lesson-item-arrow">›</span>`;
                 container.appendChild(div);
             });
@@ -6990,7 +7280,7 @@ class floscApp {
                         ${lesson.content}
                     </div>
                     <div class="flosc-wp-lesson-footer">
-                        <button class="flosc-back-to-lessons-btn" onclick="window.FLOSC.openLessonLibrary()">
+                        <button type="button" class="flosc-back-to-lessons-btn" data-flosc-action="open-lesson-library">
                             ← Back to All Lessons
                         </button>
                     </div>
@@ -7008,6 +7298,69 @@ class floscApp {
         window.location.href = this.config.pathUrl || '/my-path/';
     }
 
+    /**
+     * Delegated chat UI actions (replaces inline onclick/onkeyup HTML attributes).
+     * @param {Event|{target: Element, type?: string}} e
+     */
+    handleDelegatedFloscAction(e) {
+        const t = e?.target;
+        if (!t || !t.closest) return;
+        const el = t.closest('[data-flosc-action]');
+        if (!el || (this.chatMessages && !this.chatMessages.contains(el))) return;
+
+        const action = el.getAttribute('data-flosc-action') || '';
+        switch (action) {
+            case 'view-lesson': {
+                const id = parseInt(el.getAttribute('data-lesson-id') || '0', 10);
+                if (id > 0) {
+                    if (window.FLOSC && typeof window.FLOSC.viewLesson === 'function') {
+                        window.FLOSC.viewLesson(id);
+                    } else {
+                        this.viewLesson(id);
+                    }
+                }
+                break;
+            }
+            case 'open-lesson-library':
+                if (window.FLOSC && typeof window.FLOSC.openLessonLibrary === 'function') {
+                    window.FLOSC.openLessonLibrary();
+                } else if (typeof this.openLessonLibrary === 'function') {
+                    this.openLessonLibrary();
+                }
+                break;
+            case 'start-quiz': {
+                const quizId = el.getAttribute('data-quiz-id') || 'default';
+                if (typeof this.startInChatQuiz === 'function') {
+                    this.startInChatQuiz(quizId);
+                }
+                break;
+            }
+            case 'sandbox-preset': {
+                const amount = el.getAttribute('data-amount') || '';
+                const input = document.getElementById('flosc-sandbox-amount');
+                if (input) input.value = amount;
+                break;
+            }
+            case 'sandbox-pay': {
+                const offerId = el.getAttribute('data-offer-id') || 'sandbox';
+                const productId = el.getAttribute('data-product-id') || '';
+                if (typeof this.processSandboxPayment === 'function') {
+                    this.processSandboxPayment(offerId, productId);
+                }
+                break;
+            }
+            case 'free-lesson': {
+                const idx = parseInt(el.getAttribute('data-lesson-index') || '-1', 10);
+                if (idx >= 0 && typeof this.showFreeLessonContent === 'function') {
+                    this.showFreeLessonContent(idx);
+                }
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
     // v1.8.1: Show quiz options in-chat instead of navigating away to /quizzes/
     openQuizLibrary() {
         const quizHtml = `
@@ -7015,7 +7368,7 @@ class floscApp {
                 <p><strong>Available Quizzes</strong></p>
                 <p>Choose a quiz to test your skills:</p>
                 <div class="flosc-quiz-library-actions">
-                    <button class="flosc-quiz-result-cta" onclick="window.floscAppInstance.startInChatQuiz('default')">
+                    <button type="button" class="flosc-quiz-result-cta" data-flosc-action="start-quiz" data-quiz-id="default">
                         🎯 Take the Quiz
                     </button>
                 </div>
@@ -7289,17 +7642,20 @@ class floscApp {
                 <p class="flosc-sandbox-text">Enter any amount you want - it's fake money for testing.</p>
                 <div class="flosc-sandbox-amount">
                     <span>$</span>
-                    <input type="text" id="flosc-sandbox-amount" value="1,000,000,000" 
-                           onkeyup="this.value = this.value.replace(/[^0-9,]/g, '')">
+                    <input type="text" id="flosc-sandbox-amount" value="1,000,000,000"
+                           data-flosc-action="sandbox-amount-filter" inputmode="decimal" autocomplete="off">
                 </div>
                 <div class="flosc-sandbox-presets">
-                    <button onclick="document.getElementById('flosc-sandbox-amount').value='9.99'">$9.99</button>
-                    <button onclick="document.getElementById('flosc-sandbox-amount').value='99'">$99</button>
-                    <button onclick="document.getElementById('flosc-sandbox-amount').value='999'">$999</button>
-                    <button onclick="document.getElementById('flosc-sandbox-amount').value='1,000,000'">$1M</button>
-                    <button onclick="document.getElementById('flosc-sandbox-amount').value='1,000,000,000'">$1B 🚀</button>
+                    <button type="button" data-flosc-action="sandbox-preset" data-amount="9.99">$9.99</button>
+                    <button type="button" data-flosc-action="sandbox-preset" data-amount="99">$99</button>
+                    <button type="button" data-flosc-action="sandbox-preset" data-amount="999">$999</button>
+                    <button type="button" data-flosc-action="sandbox-preset" data-amount="1,000,000">$1M</button>
+                    <button type="button" data-flosc-action="sandbox-preset" data-amount="1,000,000,000">$1B 🚀</button>
                 </div>
-                <button class="flosc-sandbox-pay-btn" onclick="window.floscAppInstance.processSandboxPayment('${offerId}', '${productId}')">
+                <button type="button" class="flosc-sandbox-pay-btn"
+                        data-flosc-action="sandbox-pay"
+                        data-offer-id="${this.escapeHtml(String(offerId || ''))}"
+                        data-product-id="${this.escapeHtml(String(productId || ''))}">
                     🎉 Complete Fake Purchase
                 </button>
                 <p class="flosc-sandbox-subtext">
@@ -7626,10 +7982,12 @@ class floscApp {
             || /(?:ready\s+for|let'?s\s+(?:do|take|try)|i\s+want\s+(?:to\s+)?(?:take|do|try))\s+(?:the\s+|a\s+)?(?:pronunciation\s+)?quiz/i.test(lowerMessage)
             || /(?:can\s+i|could\s+i|may\s+i)\s+(?:take|do|try)\s+(?:the\s+|a\s+)?quiz/i.test(lowerMessage)
         ) {
-            // Route through performIVRAction with the same action string the autoprompt pills
-            // and IVR messages use — ensures the correct flow-configured quiz loads.
-            // Falls back to 'default' only if no IVR quiz action is configured.
-            const quizAction = this.config.ivrQuizAction || this.config.defaultQuizAction || 'open_quiz:pronunciation_ipa_audio_quiz';
+            if (!this.flowHasQuizConfigured()) {
+                this.denyQuizOnThisFlow(message);
+                return true;
+            }
+            // Only configured action strings — never invent a pronunciation quiz ID.
+            const quizAction = this.config.ivrQuizAction || this.config.defaultQuizAction || 'open_quiz';
             this.performIVRAction(quizAction);
             return true;
         }
@@ -8142,6 +8500,25 @@ Purchased: ${ctx.purchased}
                 }
             });
         }
+
+        // E5 / Plugin Check: no inline onclick/onkeyup in rendered chat HTML.
+        // Delegate from the messages root so dynamic message markup stays event-attribute free.
+        if (this.chatMessages && !this.chatMessages.dataset.floscActionBound) {
+            this.chatMessages.dataset.floscActionBound = '1';
+            this.chatMessages.addEventListener('click', (e) => this.handleDelegatedFloscAction(e));
+            this.chatMessages.addEventListener('keydown', (e) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                const target = e.target?.closest?.('[data-flosc-action="view-lesson"]');
+                if (!target || !this.chatMessages.contains(target)) return;
+                e.preventDefault();
+                this.handleDelegatedFloscAction({ target, type: 'keydown' });
+            });
+            this.chatMessages.addEventListener('input', (e) => {
+                const el = e.target;
+                if (!el || el.getAttribute('data-flosc-action') !== 'sandbox-amount-filter') return;
+                el.value = String(el.value || '').replace(/[^0-9,]/g, '');
+            });
+        }
         
         if (this.shareBtn) {
             this.shareBtn.addEventListener('click', () => this.openShareModal());
@@ -8426,7 +8803,7 @@ Purchased: ${ctx.purchased}
             passed: result.passed,
             timestamp: Date.now(),
             userAnswer: result.userAnswer,
-            quizId: this.quiz.id || 'flosc_sample_data_numbers_quiz'
+            quizId: this.quiz.id || ''
         };
         if (result.quizType) quizData.quizType = result.quizType;
         if (result.phraseResults) quizData.phraseResults = result.phraseResults;
@@ -8469,7 +8846,7 @@ Purchased: ${ctx.purchased}
                 },
                 body: JSON.stringify({
                     score: result.score,
-                    quiz_id: this.quiz.id || 'flosc_sample_data_numbers_quiz',
+                    quiz_id: this.quiz.id || '',
                     quiz_type: result.quizType || 'sequence',
                     correct: result.incorrect ? [] : correctPositions,
                     incorrect: result.incorrect || missedPositions,
@@ -10740,6 +11117,18 @@ Purchased: ${ctx.purchased}
                 this.logWarn('[FLOSC] Could not load visitor history:', e);
             }
         }
+
+        // Engagement tab: tell the AI about admin-inserted chat messages (content + that admin wrote them).
+        // Kept in sessionStorage for the browser session so subsequent replies always know.
+        if (!Array.isArray(this._engagementAiNotes)) {
+            this._loadEngagementAiNotes();
+        }
+        if (Array.isArray(this._engagementAiNotes) && this._engagementAiNotes.length) {
+            payload.engagement_context = this._engagementAiNotes.slice(-5).map((n) => ({
+                rule_id: String(n.rule_id || '').substring(0, 64),
+                content: String(n.content || '').substring(0, 500),
+            }));
+        }
         
         // v1.9.3: When frontend finds an IVR match, send the guidance to the backend
         // so AI can use it as the basis for its response (instead of the backend
@@ -11712,7 +12101,7 @@ Purchased: ${ctx.purchased}
         const titles = [];
         lessons.forEach((lesson, i) => {
             titles.push(lesson.title || ('Lesson ' + (i + 1)));
-            cardHtml += `<button class="flosc-free-lesson-card" onclick="window.floscAppInstance.showFreeLessonContent(${i})">`
+            cardHtml += `<button type="button" class="flosc-free-lesson-card" data-flosc-action="free-lesson" data-lesson-index="${i}">`
                 + `<span class="flosc-free-lesson-card-icon">\ud83c\udf93</span>`
                 + `<span class="flosc-free-lesson-card-title">${this.escapeHtml(lesson.title)}</span>`
                 + `</button>`;

@@ -222,7 +222,9 @@ class FLOSC_Flow_Manager {
             ],
             'ivr_file' => 'flosc_default_technical_ivr.md',
             'wp_category_id' => 0,
-            'quiz_type' => 'flosc_sample_data_numbers_quiz',
+            // Empty = no quiz until admin enables one on the Quiz tab.
+            'quiz_type' => '',
+            'enabled_quizzes' => [],
             'created_at' => '',
             'updated_at' => '',
             // v1.2.3: Per-flow settings overrides
@@ -423,122 +425,41 @@ class FLOSC_Flow_Manager {
             return false;
         }
         
-        // v1.2.6: Create multiple default flows for testing
-        $default_flows = [];
-        
-        // 1. FLOSC Default (main flow)
-        $default_flows['default'] = [
-            'id' => 'default',
-            'slug' => get_option('flosc_app_slug', 'flosc'),
-            'custom_domain' => get_option('flosc_custom_domain', ''),
-            'status' => 'active',
-            'identity' => [
-                'name' => get_option('flosc_product_name', 'FLOSC Default'),
-                'tagline' => get_option('flosc_product_tagline', 'The original FLOSC experience'),
-                'chatlogo_url' => get_option('flosc_product_logo', ''),
-                'primary_color' => get_option('flosc_primary_color', '#4f46e5'),
-                'share_text' => get_option('flosc_share_text', ''),
-            ],
-            'ivr_file' => 'flosc_default_technical_ivr.md',
-            'wp_category_id' => intval(get_option('flosc_lessons_category', 0)),
-            'created_at' => current_time('mysql'),
-            'updated_at' => current_time('mysql'),
-        ];
-        
-        // 2. LeSAEp Flow
-        $default_flows['lesaep'] = [
-            'id' => 'lesaep',
-            'slug' => 'lesaep',
-            'custom_domain' => '',
-            'status' => 'active',
-            'identity' => [
-                'name' => 'LeSAEp',
-                'tagline' => 'Learn Spanish Audio-Enhanced pronunciation',
-                'chatlogo_url' => '',
-                'badgeUrl' => 'https://dainis.net/wp-content/uploads/2026/02/lesaep-badge.png',
-                'primary_color' => '#dc2626',
-                'share_text' => '',
-            ],
-            'ivr_file' => 'lesaep_ivr.md',
-            'wp_category_id' => 0,
-            'quiz_type' => 'flosc_sample_audio_quiz',
-            'ipa_api_base_url' => '',
-            'default_audio_quiz_id' => 'pronunciation_ipa_audio_quiz',
-            'default_text_quiz_id' => 'pronunciation_assessment_quiz',
-            'default_offer_id' => 'pronunciation_full',
-            'default_quiz_action' => 'open_quiz:pronunciation_ipa_audio_quiz',
-            'default_member_level' => 'pronunciation_learners',
-            'default_guest_level' => 'guest_pronunciation_learner',
-            'created_at' => current_time('mysql'),
-            'updated_at' => current_time('mysql'),
-        ];
-        
-        // 3. Simplified Solfeggio Flow
-        $default_flows['solfeggio'] = [
-            'id' => 'solfeggio',
-            'slug' => 'solfeggio',
-            'custom_domain' => '',
-            'status' => 'active',
-            'identity' => [
-                'name' => 'Simplified Solfeggio',
-                'tagline' => 'Master music theory the easy way',
-                'chatlogo_url' => '',
-                'primary_color' => '#7c3aed',
-                'share_text' => '',
-            ],
-            'ivr_file' => 'simplified_solfeggio_ivr.md',
-            'wp_category_id' => 0,
-            'quiz_type' => 'flosc_sample_data_numbers_quiz',
-            'created_at' => current_time('mysql'),
-            'updated_at' => current_time('mysql'),
-        ];
-        
-        // 4. Positive Personality Flow
-        $default_flows['positive'] = [
-            'id' => 'positive',
-            'slug' => 'positive',
-            'custom_domain' => '',
-            'status' => 'active',
-            'identity' => [
-                'name' => 'FLOSC Positive',
-                'tagline' => 'Warm, encouraging AI assistant',
-                'chatlogo_url' => '',
-                'primary_color' => '#16a34a',
-                'share_text' => '',
-            ],
-            'ivr_file' => 'flosc_positive_default_ivr.md',
-            'wp_category_id' => 0,
-            'quiz_type' => 'flosc_sample_data_numbers_quiz',
-            'created_at' => current_time('mysql'),
-            'updated_at' => current_time('mysql'),
-        ];
-        
-        // 5. Technical Personality Flow
-        $default_flows['technical'] = [
-            'id' => 'technical',
-            'slug' => 'technical',
-            'custom_domain' => '',
-            'status' => 'active',
-            'identity' => [
-                'name' => 'FLOSC Technical',
-                'tagline' => 'Professional, direct AI assistant',
-                'chatlogo_url' => '',
-                'primary_color' => '#0891b2',
-                'share_text' => '',
-            ],
-            'ivr_file' => 'flosc_technical_default_ivr.md',
-            'wp_category_id' => 0,
-            'quiz_type' => 'flosc_sample_data_numbers_quiz',
-            'created_at' => current_time('mysql'),
-            'updated_at' => current_time('mysql'),
-        ];
-        
-        update_option(self::OPTION_KEY, $default_flows);
-        
-        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.2.6: Created ' . count($default_flows) . ' default flows');
+        // Generic WordPress.org / fresh-install model: ONE active example flow
+        // with an IVR that ships in the package. Specialty products (LeSAEp,
+        // Solfeggio, Br3nda, etc.) are admin imports — not auto-activated.
+        $ivr_file = 'flosc_default_technical_ivr.md';
+        $shipped  = FLOSC_PLUGIN_DIR . 'ai_configuration_files/' . $ivr_file;
+        if (!file_exists($shipped)) {
+            $ivr_file = 'flosc_default_ivr.md';
         }
-        
+
+        $default_flows = array(
+            'default' => array(
+                'id'            => 'default',
+                'slug'          => get_option('flosc_app_slug', 'flosc'),
+                'custom_domain' => get_option('flosc_custom_domain', ''),
+                'status'        => 'active',
+                'identity'      => array(
+                    'name'          => get_option('flosc_product_name', 'FLOSC'),
+                    'tagline'       => get_option('flosc_product_tagline', 'Try before you buy'),
+                    'chatlogo_url'  => get_option('flosc_product_logo', ''),
+                    'primary_color' => get_option('flosc_primary_color', '#4f46e5'),
+                    'share_text'    => get_option('flosc_share_text', ''),
+                ),
+                'ivr_file'       => $ivr_file,
+                'wp_category_id' => intval(get_option('flosc_lessons_category', 0)),
+                'created_at'     => current_time('mysql'),
+                'updated_at'     => current_time('mysql'),
+            ),
+        );
+
+        update_option(self::OPTION_KEY, $default_flows);
+
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            flosc_log('FLOSC: Created single generic default flow (ivr=' . $ivr_file . ')');
+        }
+
         return true;
     }
     

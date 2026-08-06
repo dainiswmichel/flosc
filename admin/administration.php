@@ -99,7 +99,7 @@ if ($flosc_can_assign_editors) {
             </tr>
             <tr>
                 <td>WP_DEBUG</td>
-                <td><?php echo $flosc_wp_debug ? 'ON' : 'OFF'; ?></td>
+                <td><?php echo esc_html( $flosc_wp_debug ? 'ON' : 'OFF' ); ?></td>
             </tr>
             <tr>
                 <td>FLOSC debug mode</td>
@@ -107,11 +107,11 @@ if ($flosc_can_assign_editors) {
             </tr>
             <tr>
                 <td>Effective FLOSC_DEBUG</td>
-                <td><?php echo $flosc_effective_debug ? 'ON' : 'OFF'; ?></td>
+                <td><?php echo esc_html( $flosc_effective_debug ? 'ON' : 'OFF' ); ?></td>
             </tr>
             <tr>
                 <td>Debug badge visibility</td>
-                <td><?php echo $flosc_effective_debug ? 'Visible' : 'Hidden'; ?></td>
+                <td><?php echo esc_html( $flosc_effective_debug ? 'Visible' : 'Hidden' ); ?></td>
             </tr>
         </tbody>
     </table>

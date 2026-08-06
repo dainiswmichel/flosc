@@ -715,23 +715,22 @@ class FLOSC_Content_Protection {
         $preview = $parts[0];
         $has_more = count($parts) > 1;
         
-        $output = '<div class="flosc-protected-content flosc-preview">';
-        $output .= '<div class="flosc-preview-content">' . $preview . '</div>';
-        
-        if ($has_more) {
-            $output .= '<div class="flosc-protected-notice">';
-            $output .= '<p>🔒 The rest of this lesson is for members only.</p>';
-            $output .= '</div>';
-            $output .= $this->get_chatbot_cta($post_id);
+        // Preview body is partial post content from the_content — relay without
+        // wp_kses_post so oEmbed iframes survive. FLOSC-built chrome is kses'd.
+        $notice_and_cta = '';
+        if ( $has_more ) {
+            $notice_and_cta  = '<div class="flosc-protected-notice">';
+            $notice_and_cta .= '<p>' . esc_html__( 'The rest of this lesson is for members only.', 'flosc' ) . '</p>';
+            $notice_and_cta .= '</div>';
+            $notice_and_cta .= $this->get_chatbot_cta( $post_id ); // already wp_kses_post inside helper
+            $notice_and_cta  = wp_kses_post( $notice_and_cta );
         }
-        
+
+        $output  = '<div class="flosc-protected-content flosc-preview">';
+        $output .= '<div class="flosc-preview-content">' . $preview . '</div>';
+        $output .= $notice_and_cta;
         $output .= '</div>';
 
-        // The wrapper, notice, and CTA above are FLOSC's own hardcoded markup
-        // (the CTA's URL is escaped at its source in get_chatbot_cta()); $preview
-        // is core's partial post content. Relay it untouched so a free preview
-        // keeps any oEmbed/video it contains — wp_kses_post() here would strip
-        // those iframes. Escape-what-we-build; never re-filter relayed content.
         return $output;
     }
     

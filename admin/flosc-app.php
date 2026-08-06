@@ -587,20 +587,32 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
             </div>
             <div class="flosc-modal-body">
                 <?php
-                // Get first enabled quiz content for display
+                // First enabled quiz only — empty list = no quiz UI content (never invent sample IDs).
                 $flosc_enabled_quizzes = flosc_get_setting( 'enabled_quizzes', [] );
-                $flosc_quiz_id         = ! empty( $flosc_enabled_quizzes ) ? $flosc_enabled_quizzes[0] : 'flosc_sample_data_numbers_quiz';
-                $flosc_quiz_content    = flosc_get_setting( 'quiz_content_' . $flosc_quiz_id, '1,2,3,4,5,6,7,8,9,10' );
-                $flosc_items = array_map('trim', explode(',', $flosc_quiz_content));
-                $flosc_items_display = implode(', ', $flosc_items);
+                if ( ! is_array( $flosc_enabled_quizzes ) ) {
+                    $flosc_enabled_quizzes = [];
+                }
+                $flosc_quiz_id = ! empty( $flosc_enabled_quizzes ) ? sanitize_key( (string) $flosc_enabled_quizzes[0] ) : '';
+                $flosc_quiz_content = $flosc_quiz_id !== ''
+                    ? (string) flosc_get_setting( 'quiz_content_' . $flosc_quiz_id, '' )
+                    : '';
+                $flosc_items = $flosc_quiz_content !== ''
+                    ? array_map( 'trim', explode( ',', $flosc_quiz_content ) )
+                    : [];
+                $flosc_items_display = implode( ', ', $flosc_items );
                 ?>
                 
                 <!-- Quiz Prompt -->
                 <div class="quiz-prompt">
+                    <?php if ( $flosc_quiz_id === '' ) : ?>
+                    <p class="quiz-prompt-label"><?php echo esc_html__( 'No quiz is enabled for this flow.', 'flosc' ); ?></p>
+                    <p class="quiz-sequence" id="floscQuizSequence"></p>
+                    <?php else : ?>
                     <p class="quiz-prompt-label">Repeat this sequence:</p>
                     <p class="quiz-sequence" id="floscQuizSequence">
                         <?php echo esc_html($flosc_items_display); ?>
                     </p>
+                    <?php endif; ?>
                 </div>
                 
                 <!-- Quiz Tabs Zone -->
@@ -1248,7 +1260,23 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'audioQuizPhonemeLessonMap' => json_decode(flosc_get_setting('audio_quiz_phoneme_lesson_map', '{}'), true) ?: (object)[],
             'ipaApiBaseUrl' => untrailingslashit(flosc_get_setting('ipa_api_base_url', '')),
             // Quiz IDs: this flow’s bag only — empty means no quiz surface on this flow.
-            // Do not invent pronunciation_* defaults (that made Br3nda claim IPA quiz ownership).
+            // Do not invent sample/pronunciation defaults when none are enabled.
+            'enabledQuizzes' => (function () use ($flow_settings, $flosc_current_flow) {
+                $raw = $flow_settings['enabled_quizzes']
+                    ?? $flosc_current_flow['enabled_quizzes']
+                    ?? [];
+                if (!is_array($raw)) {
+                    return [];
+                }
+                $out = [];
+                foreach ($raw as $qid) {
+                    $qid = sanitize_key((string) $qid);
+                    if ($qid !== '') {
+                        $out[] = $qid;
+                    }
+                }
+                return array_values(array_unique($out));
+            })(),
             'defaultAudioQuizId' => (string) ($flow_settings['default_audio_quiz_id']
                 ?? $flosc_current_flow['default_audio_quiz_id']
                 ?? ''),
@@ -1345,11 +1373,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 ?? $flosc_current_flow['subscription_monthly_token_grant']
                 ?? 10000
             )),
-            // Guest link config
+            // Guest link config — product-neutral defaults (never hardcode a brand for all flows)
             // Strip all accumulated backslash layers from stored strings (same idiom as autoprompts)
-            'guestLinkName'              => (function() { $v = flosc_get_setting('guest_link_name', 'Complimentary LeSAEp Learners Guest Access Link'); $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v; })(),
-            'guestLinkCheckEmailMessage' => (function() { $v = flosc_get_setting('guest_link_check_email_message', "We've sent you a {link_name} to your email — click it to access this chat as a guest and view your quiz score, free lessons, and a special upgrade offer."); $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v; })(),
-            'guestLinkWelcomeMessage'    => (function() { $v = flosc_get_setting('guest_link_welcome_message', 'Hi, welcome back! Just to confirm: your email address is {email} and you can use your {link_name} {n} more times to access this chat. <a href="{upgrade_url}">Upgrade</a> for complete access to all lessons, quiz audios, and our LeSAEp Learners network...'); $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v; })(),
+            'guestLinkName'              => (function() { $v = flosc_get_setting('guest_link_name', 'Guest Access Link'); $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v; })(),
+            'guestLinkCheckEmailMessage' => (function() { $v = flosc_get_setting('guest_link_check_email_message', "We've sent you a {link_name} to your email — click it to access this chat as a guest and view your quiz score, free lessons, and upgrade options."); $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v; })(),
+            'guestLinkWelcomeMessage'    => (function() { $v = flosc_get_setting('guest_link_welcome_message', 'Hi, welcome back! Just to confirm: your email address is {email} and you can use your {link_name} {n} more times to access this chat. <a href="{upgrade_url}">Upgrade</a> for complete access.'); $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v; })(),
             'guestLinkUpgradeUrl'        => flosc_get_setting('guest_link_upgrade_url', ''),
             // One-time injection after redirect-back login (via short-lived transient)
             'guestLinkRemaining' => (function() use ($user_state) {
@@ -1366,7 +1394,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 if (get_transient($key) === false) return null;
                 delete_transient($key);
                 $v = flosc_get_setting('member_link_welcome_message',
-                    'Hi, welcome back {name}! Just to confirm: your email address is {email} and you can use your LeSAEp Learners Access Link unlimited times to access this chat. Enjoy your session!');
+                    'Hi, welcome back {name}! Just to confirm: your email address is {email} and you can use your access link unlimited times to access this chat. Enjoy your session!');
                 $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v;
             })(),
             // True if the current user has any SSO provider linked (FB, Google, etc.)
@@ -1379,8 +1407,59 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 && !get_user_meta(get_current_user_id(), '_flosc_magic_link_user_credentials_set', true)
                 && empty(get_user_meta(get_current_user_id(), '_flosc_sso_linked_providers', true))),
             'guestLinkProfileConfirmMessage' => (function() { $v = flosc_get_setting('guest_link_profile_confirm_message', 'Perfect, {name}! You can always log in directly at {login_url}, update your profile, and upgrade to full access.'); $p = null; while ($p !== $v) { $p = $v; $v = stripslashes_deep($v); } return $v; })(),
+            // Engagement tab: profile completion nudge (product-neutral default; per-flow override)
+            'engagementProfileNudgeMessage' => (function() {
+                $v = flosc_get_setting(
+                    'engagement_profile_nudge_message',
+                    'Complete your profile to keep your results private and unlock recordings.'
+                );
+                $p = null;
+                while ($p !== $v) {
+                    $p = $v;
+                    $v = stripslashes_deep($v);
+                }
+                return $v;
+            })(),
+            // Engagement rules (when → condition → chat/email). Offers not included.
+            'engagementRules' => (function () use ($flow_settings, $flosc_current_flow) {
+                $raw = $flow_settings['engagement_rules']
+                    ?? $flosc_current_flow['engagement_rules']
+                    ?? [];
+                if (!is_array($raw)) {
+                    return [];
+                }
+                $out = [];
+                foreach ($raw as $row) {
+                    if (!is_array($row) || empty($row['enabled'])) {
+                        continue;
+                    }
+                    $out[] = [
+                        'id'            => sanitize_key((string) ($row['id'] ?? '')),
+                        'audience'      => sanitize_key((string) ($row['audience'] ?? 'guest')),
+                        'trigger'       => sanitize_key((string) ($row['trigger'] ?? '')),
+                        'triggerDays'   => max(0, min(365, intval($row['trigger_days'] ?? 0))),
+                        'condition'     => sanitize_text_field((string) ($row['condition'] ?? '')),
+                        'actionChat'    => !empty($row['action_chat']),
+                        'actionEmail'   => !empty($row['action_email']),
+                        'emailTemplate' => sanitize_key((string) ($row['email_template'] ?? '')),
+                        'chatMessage'   => sanitize_textarea_field((string) ($row['chat_message'] ?? '')),
+                    ];
+                }
+                return $out;
+            })(),
+            'loginCount' => is_user_logged_in()
+                ? max(0, intval(get_user_meta(get_current_user_id(), '_flosc_login_count', true)))
+                : 0,
+            'daysSinceRegistration' => (is_user_logged_in())
+                ? (function () {
+                    $u = wp_get_current_user();
+                    if (!$u || empty($u->user_registered)) {
+                        return 0;
+                    }
+                    return max(0, (int) floor((time() - strtotime($u->user_registered)) / DAY_IN_SECONDS));
+                })()
+                : 0,
             // Days of guest access remaining — only for THIS flow when it defines a guest window.
-            // Do not show LeSAEp complimentary countdown on Br3nda / flosc.ai.
             'guestDaysRemaining' => ($user_state === 'guest' && is_user_logged_in())
                 ? (function() {
                     $window = intval(flosc_get_setting('guest_access_days', 0));

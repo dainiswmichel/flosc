@@ -372,12 +372,12 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
         
         if (!$endpoint) return [];
         
-        $response = wp_remote_post($endpoint, [
+        $response = flosc_safe_remote_request('POST', $endpoint, [
             'headers' => [
                 'Authorization' => 'Bearer ' . $api_key,
                 'Content-Type' => 'application/json',
             ],
-            'body' => json_encode([
+            'body' => wp_json_encode([
                 'query' => $intent['description'],
                 'category' => $intent['category'],
                 'price_range' => $intent['expected_price'],
@@ -554,15 +554,29 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
     }
     
     private function parse_webhook_payload($source, $payload) {
-        // Parse based on source format
-        $data = is_string($payload) ? json_decode($payload, true) : $payload;
-        
+        // Pass 8: field-sanitize after json_decode of untrusted webhook body.
+        $data = [];
+        if (is_string($payload)) {
+            if ($payload !== '' && strlen($payload) <= 65536) {
+                $decoded = json_decode($payload, true, 16);
+                if (JSON_ERROR_NONE === json_last_error() && is_array($decoded)) {
+                    $data = $decoded;
+                }
+            }
+        } elseif (is_array($payload)) {
+            $data = $payload;
+        }
+
+        $user_raw = $data['user_id'] ?? $data['subid'] ?? null;
+        $user_id = is_numeric($user_raw) ? absint($user_raw) : 0;
+        $commission = isset($data['commission']) ? floatval($data['commission']) : floatval($data['amount'] ?? 0);
+
         return [
-            'source' => $source,
-            'user_id' => $data['user_id'] ?? $data['subid'] ?? null,
-            'commission' => $data['commission'] ?? $data['amount'] ?? 0,
-            'order_id' => $data['order_id'] ?? $data['transaction_id'] ?? '',
-            'intent_id' => $data['intent_id'] ?? '',
+            'source' => sanitize_key((string) $source),
+            'user_id' => $user_id > 0 ? $user_id : null,
+            'commission' => $commission,
+            'order_id' => sanitize_text_field((string) ($data['order_id'] ?? $data['transaction_id'] ?? '')),
+            'intent_id' => sanitize_text_field((string) ($data['intent_id'] ?? '')),
         ];
     }
 }

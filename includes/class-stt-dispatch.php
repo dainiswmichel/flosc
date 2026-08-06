@@ -116,7 +116,7 @@ class FLOSC_STT_Dispatch {
                 'Authorization' => $api_key,
                 'Content-Type' => 'application/json',
             ],
-            'body' => json_encode([
+            'body' => wp_json_encode([
                 'audio_url' => $upload_body['upload_url'],
                 'language_code' => $options['language'] ?? 'en_us',
             ]),
@@ -246,7 +246,7 @@ class FLOSC_STT_Dispatch {
         $body .= file_get_contents($audio_path) . "\r\n";
         $body .= "--{$boundary}--\r\n";
         
-        $response = wp_remote_post($endpoint, [
+        $response = flosc_safe_remote_request('POST', $endpoint, [
             'headers' => [
                 'Content-Type' => 'multipart/form-data; boundary=' . $boundary,
             ],

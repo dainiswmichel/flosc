@@ -252,34 +252,35 @@ $flosc_render_email_series(
 </p>
 
 <?php
+// Product-neutral defaults. Use {app_name} / {team_name} from Identity — never hardcode a brand for all flows.
 $flosc_guest_emails = [
     'guest_welcome' => [
         'label'           => 'Welcome Email',
         'timing'          => 'Sent immediately on first login for this flow',
-        'default_subject' => 'Welcome to LeSAEp — your 30-day guest access is ready',
-        'default_body'    => "Hi {name}!\n\nWelcome to LeSAEp (Learn Excellent Standard American English Pronunciation)!\n\nYou've been given complimentary guest access for 30 days. During this time you can take the pronunciation quiz, hear your recordings, and explore lessons.\n\nContinue your LeSAEp experience: {chat_url}\n\nWe hope you enjoy every moment of it!\n\n— The LeSAEp Team",
+        'default_subject' => 'Welcome to {app_name} — your guest access is ready',
+        'default_body'    => "Hi {name}!\n\nWelcome to {app_name}!\n\nYou've been given complimentary guest access. During this time you can take the quiz, review your results, and explore free content.\n\nContinue here: {chat_url}\n\n— The {team_name}",
     ],
     'guest_day10' => [
         'label'           => 'Day 10 Check-In',
         'timing'          => 'Sent in day window if not yet upgraded',
-        'default_subject' => 'How is your LeSAEp experience going? 🎉',
-        'default_body'    => "Hi {name}!\n\nYou're 10 days into your complimentary LeSAEp guest access — we hope you're enjoying it!\n\nYou still have {days_remaining} days remaining. Did you know you can take the quiz, get personalized feedback, and explore lessons right from the chat?\n\nContinue here: {chat_url}\n\nReady to unlock everything? Upgrade for full access: {upgrade_url}\n\n— The LeSAEp Team",
+        'default_subject' => 'How is your {app_name} experience going?',
+        'default_body'    => "Hi {name}!\n\nYou're into your complimentary {app_name} guest access — we hope you're finding it useful.\n\nYou still have {days_remaining} days remaining. Continue here: {chat_url}\n\nReady to unlock everything? Upgrade: {upgrade_url}\n\n— The {team_name}",
         'default_min_day' => 10,
         'default_max_day' => 12,
     ],
     'guest_day20' => [
-        'label'           => 'Day 20 — Recordings & Scores',
+        'label'           => 'Day 20 — Progress Check',
         'timing'          => 'Sent in day window if not yet upgraded',
-        'default_subject' => 'Your LeSAEp recordings & scores are waiting for you 🎧',
-        'default_body'    => "Hi {name}!\n\nWe hope you're enjoying your LeSAEp experience! Did you know you can listen to your pronunciation recordings and review your quiz scores any time?\n\nVisit your profile here: {profile_url}\n\nYou have {days_remaining} days of guest access remaining. We'd love to welcome you as a full member — upgrade here: {upgrade_url}\n\n— The LeSAEp Team",
+        'default_subject' => 'You have {days_remaining} days of {app_name} access remaining',
+        'default_body'    => "Hi {name}!\n\nYou're well into your complimentary {app_name} guest access.\n\nVisit your profile: {profile_url}\n\nYou have {days_remaining} days remaining. Upgrade for full access: {upgrade_url}\n\n— The {team_name}",
         'default_min_day' => 20,
         'default_max_day' => 22,
     ],
     'guest_day28' => [
         'label'           => 'Day 28 — Final Notice',
         'timing'          => 'Sent in day window if not yet upgraded',
-        'default_subject' => '{days_remaining} days left — your LeSAEp guest access & recordings',
-        'default_body'    => "Hi {name}!\n\nWe would love to welcome you as a full LeSAEp member!\n\nYour guest access expires in {days_remaining} days. We want to be transparent: if you do not upgrade, all guest access information — including your account, pronunciation recordings, and quiz scores — will be removed from our servers.\n\nWe wish you the very very best in your learning journey, whatever you decide.\n\nTo continue your progress and keep your data, upgrade here: {upgrade_url}\n\n— The LeSAEp Team",
+        'default_subject' => '{days_remaining} days left for your guest access',
+        'default_body'    => "Hi {name}!\n\nWe would love to welcome you as a full member of {app_name}.\n\nYour guest access expires in {days_remaining} days. If you do not upgrade, guest account information, recordings, and quiz scores may be removed from our servers.\n\nUpgrade to keep your data: {upgrade_url}\n\n— The {team_name}",
         'default_min_day' => 28,
         'default_max_day' => 30,
     ],

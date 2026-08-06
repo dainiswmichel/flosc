@@ -877,7 +877,8 @@ class FLOSC_Concierge {
 		$html .= '<div class="flosc-cncrg-confirm-foot">Edit this post to change the setup; saving re-syncs it to the chat.</div>';
 		$html .= '</div>';
 
-		return $content . $html;
+		// Pass 4: FLOSC-built admin confirmation block only (post body relayed unchanged).
+		return $content . wp_kses_post( $html );
 	}
 
 	/** Is this post in the concierge category? */

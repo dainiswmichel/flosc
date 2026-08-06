@@ -317,7 +317,7 @@
 <p>Social login via OAuth2 providers. FLOSC supports Google, Apple, Facebook, Microsoft, and LinkedIn. When a user authenticates via SSO, FLOSC looks up their linked WordPress account (by email or linked provider ID) or creates a new one. Handled by the SSO system in <code>includes/sso/</code>.</p>
 
 <h3 id="term-stt">STT (Speech-to-Text)</h3>
-<p>Audio transcription service that converts recorded pronunciation to text for comparison with expected pronunciation. FLOSC supports AssemblyAI, OpenAI Whisper, Deepgram, and a custom provider slot. Required for the Audio Quiz type. STT is not yet integrated in the MVP — the Audio Quiz type exists in the deck but cannot be enabled until the STT pipeline is wired.</p>
+<p>Audio transcription service that converts recorded pronunciation to text for comparison with expected pronunciation. FLOSC supports AssemblyAI, OpenAI Whisper, and a custom provider endpoint. Required for the Audio Quiz type when speech scoring is enabled.</p>
 
 <h3 id="term-stripe">Stripe</h3>
 <p>The primary payment processor for FLOSC. Supports one-time payments via Payment Intents, subscriptions via Stripe Subscriptions, and webhook-based purchase confirmation. Requires a Stripe publishable key (sent to frontend) and secret key (server-side only). Test mode and live mode use different key pairs.</p>

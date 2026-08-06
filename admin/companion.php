@@ -422,7 +422,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
         <th scope="row"><label for="flow_companion_content_display_mode">Display Mode</label></th>
         <td>
             <fieldset>
-                <label class="flosc-companion-mode-card <?php echo $flosc_content_display_mode === 'in_chat' ? 'is-active' : ''; ?>">
+                <label class="flosc-companion-mode-card <?php echo esc_attr( $flosc_content_display_mode === 'in_chat' ? 'is-active' : '' ); ?>">
                     <input type="radio" name="flow_companion_content_display_mode" value="in_chat" <?php checked($flosc_content_display_mode, 'in_chat'); ?>>
                     <strong>💬 In-Chat Only</strong> <em class="flosc-companion-mode-default">(default)</em>
                     <br><span class="flosc-companion-mode-copy">
@@ -430,7 +430,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
                     </span>
                 </label>
                 
-                <label class="flosc-companion-mode-card <?php echo $flosc_content_display_mode === 'companion' ? 'is-active' : ''; ?>">
+                <label class="flosc-companion-mode-card <?php echo esc_attr( $flosc_content_display_mode === 'companion' ? 'is-active' : '' ); ?>">
                     <input type="radio" name="flow_companion_content_display_mode" value="companion" <?php checked($flosc_content_display_mode, 'companion'); ?>>
                     <strong>🤝 Companion Mode</strong>
                     <br><span class="flosc-companion-mode-copy">
@@ -439,7 +439,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
                     </span>
                 </label>
                 
-                <label class="flosc-companion-mode-card <?php echo $flosc_content_display_mode === 'both' ? 'is-active' : ''; ?>">
+                <label class="flosc-companion-mode-card <?php echo esc_attr( $flosc_content_display_mode === 'both' ? 'is-active' : '' ); ?>">
                     <input type="radio" name="flow_companion_content_display_mode" value="both" <?php checked($flosc_content_display_mode, 'both'); ?>>
                     <strong>✨ Hybrid</strong>
                     <br><span class="flosc-companion-mode-copy">
@@ -452,7 +452,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
 </table>
 
 <!-- Companion Widget Settings (only relevant when companion or both mode is active) -->
-<div id="companion-widget-settings" class="<?php echo $flosc_content_display_mode === 'in_chat' ? 'flosc-companion-disabled' : ''; ?>">
+<div id="companion-widget-settings" class="<?php echo esc_attr( $flosc_content_display_mode === 'in_chat' ? 'flosc-companion-disabled' : '' ); ?>">
     
     <hr class="flosc-companion-divider">
     <h2>Companion Widget Settings</h2>
@@ -1174,7 +1174,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
     </p>
     <p class="flosc-companion-preview-copy flosc-companion-preview-copy-spaced">
         The floating <strong class="flosc-companion-preview-dot">●</strong> launcher is positioned in the
-        <strong><?php echo $flosc_position === 'bottom-left' ? 'bottom-left' : 'bottom-right'; ?></strong>
+        <strong><?php echo esc_html( $flosc_position === 'bottom-left' ? 'bottom-left' : 'bottom-right' ); ?></strong>
         corner when companion is active.
     </p>
     <p class="flosc-companion-preview-copy flosc-companion-preview-copy-spaced">
@@ -1183,7 +1183,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
     <p class="flosc-companion-preview-copy flosc-companion-preview-copy-spaced">
         If the member is reading a lesson, the companion will know which lesson they're on and offer contextual help.
     </p>
-    <div class="flosc-companion-preview-bubble-wrap <?php echo $flosc_position === 'bottom-left' ? 'flosc-companion-preview-bubble-wrap--left' : 'flosc-companion-preview-bubble-wrap--right'; ?>">
+    <div class="flosc-companion-preview-bubble-wrap <?php echo esc_attr( $flosc_position === 'bottom-left' ? 'flosc-companion-preview-bubble-wrap--left' : 'flosc-companion-preview-bubble-wrap--right' ); ?>">
         <div class="flosc-companion-preview-bubble">
             💬
         </div>

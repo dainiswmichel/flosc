@@ -85,8 +85,10 @@ class FLOSC_AI_Chat_Dispatch {
         // instead of fabricating quiz content. The AI is an IVR humanizer, NOT a content creator.
         $quiz_action_section = '';
         if ( function_exists( 'flosc_get_setting' ) && class_exists( 'FLOSC_Quiz_Registry' ) ) {
-            $enabled_quizzes = flosc_get_setting( 'enabled_quizzes', ['flosc_sample_data_numbers_quiz'] );
-            if ( ! is_array( $enabled_quizzes ) ) $enabled_quizzes = ['flosc_sample_data_numbers_quiz'];
+            $enabled_quizzes = flosc_get_setting( 'enabled_quizzes', [] );
+            if ( ! is_array( $enabled_quizzes ) ) {
+                $enabled_quizzes = [];
+            }
             if ( ! empty( $enabled_quizzes ) ) {
                 $quiz_action_section  = "## Quiz Action Tags\n";
                 $quiz_action_section .= "When a user asks to take a quiz or test their pronunciation:\n";
@@ -201,8 +203,10 @@ class FLOSC_AI_Chat_Dispatch {
 
             // Quizzes
             if ( function_exists( 'flosc_get_setting' ) && class_exists( 'FLOSC_Quiz_Registry' ) ) {
-                $enabled_quizzes = flosc_get_setting( 'enabled_quizzes', ['flosc_sample_data_numbers_quiz'] );
-                if ( ! is_array( $enabled_quizzes ) ) $enabled_quizzes = ['flosc_sample_data_numbers_quiz'];
+                $enabled_quizzes = flosc_get_setting( 'enabled_quizzes', [] );
+                if ( ! is_array( $enabled_quizzes ) ) {
+                    $enabled_quizzes = [];
+                }
                 if ( $enabled_quizzes ) {
                     $lines[] = "**Configured Quizzes:**";
                     foreach ( $enabled_quizzes as $qid ) {
@@ -801,7 +805,7 @@ class FLOSC_AI_Chat_Dispatch {
         if ($use_cache) {
             // Include user_id in cache key so different users never share cached responses
             $user_id = get_current_user_id();
-            $context_hash = !empty($context) ? md5(json_encode($context)) : '';
+            $context_hash = !empty($context) ? md5(wp_json_encode($context)) : '';
             $cache_key = 'flosc_ai_' . md5($provider . $message . $system_prompt . $context_hash . $user_id);
             $cached = get_transient($cache_key);
 
@@ -1135,7 +1139,7 @@ class FLOSC_AI_Chat_Dispatch {
                 'Authorization' => 'Bearer ' . $api_key,
                 'Content-Type' => 'application/json',
             ],
-            'body' => json_encode([
+            'body' => wp_json_encode([
                 'model' => $model,
                 'messages' => $messages,
                 'max_tokens' => $max_tokens,
@@ -1242,7 +1246,7 @@ class FLOSC_AI_Chat_Dispatch {
                 'anthropic-version' => '2023-06-01',
                 'Content-Type' => 'application/json',
             ],
-            'body' => json_encode($body),
+            'body' => wp_json_encode($body),
             'timeout' => 30,
         ]);
 
@@ -1338,7 +1342,7 @@ class FLOSC_AI_Chat_Dispatch {
                 'Authorization' => 'Bearer ' . $api_key,
                 'Content-Type' => 'application/json',
             ],
-            'body' => json_encode([
+            'body' => wp_json_encode([
                 'model' => $model,
                 'messages' => $messages,
                 'max_tokens' => $max_tokens,
@@ -1361,7 +1365,7 @@ class FLOSC_AI_Chat_Dispatch {
         $body = json_decode(wp_remote_retrieve_body($response), true);
 
         if (isset($body['error'])) {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC xAI API Error: ' . json_encode($body['error']));
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC xAI API Error: ' . wp_json_encode($body['error']));
             if ($test_mode) {
                 $error_msg = is_string($body['error']) ? $body['error'] : ($body['error']['message'] ?? 'Unknown error');
 
@@ -1465,7 +1469,7 @@ class FLOSC_AI_Chat_Dispatch {
                 'Authorization' => 'Bearer ' . $api_key,
                 'Content-Type'  => 'application/json',
             ],
-            'body'    => json_encode($body),
+            'body'    => wp_json_encode($body),
             'timeout' => 30,
         ]);
 

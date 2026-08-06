@@ -64,11 +64,11 @@ class User_Linker {
         // Store linked timestamp
         update_user_meta($user_id, self::META_PREFIX . $provider_id . '_linked_at', time());
         
-        // Store user data snapshot
+        // Store user data snapshot (re-sanitize at sink; never store decoded raw_data blobs).
         update_user_meta($user_id, self::META_PREFIX . $provider_id . '_data', array(
-            'name'   => isset($user_data['name']) ? $user_data['name'] : '',
-            'email'  => isset($user_data['email']) ? $user_data['email'] : '',
-            'avatar' => isset($user_data['avatar']) ? $user_data['avatar'] : '',
+            'name'   => sanitize_text_field((string) ($user_data['name'] ?? '')),
+            'email'  => sanitize_email((string) ($user_data['email'] ?? '')),
+            'avatar' => esc_url_raw((string) ($user_data['avatar'] ?? '')),
         ));
         
         // Store tokens (encrypted)
@@ -168,7 +168,27 @@ class User_Linker {
         
         // Allow filtering before creation
         $user_data_wp = apply_filters('flosc_sso_new_user_data', $user_data_wp, $provider_id, $user_data);
-        
+
+        // Best-in-class: re-sanitize after filter so third-party hooks cannot inject raw fields.
+        if (is_array($user_data_wp)) {
+            $user_data_wp['user_login']   = sanitize_user((string) ($user_data_wp['user_login'] ?? ''), true);
+            $user_data_wp['user_email']   = sanitize_email((string) ($user_data_wp['user_email'] ?? ''));
+            $user_data_wp['display_name'] = sanitize_text_field((string) ($user_data_wp['display_name'] ?? ''));
+            $user_data_wp['first_name']   = sanitize_text_field((string) ($user_data_wp['first_name'] ?? ''));
+            $user_data_wp['last_name']    = sanitize_text_field((string) ($user_data_wp['last_name'] ?? ''));
+            if (isset($user_data_wp['role'])) {
+                $user_data_wp['role'] = sanitize_key((string) $user_data_wp['role']);
+            }
+            if (empty($user_data_wp['user_email']) || !is_email($user_data_wp['user_email'])) {
+                return new \WP_Error('flosc_sso_invalid_email', 'Valid email required for SSO registration.');
+            }
+            if (empty($user_data_wp['user_login'])) {
+                return new \WP_Error('flosc_sso_invalid_login', 'Valid username required for SSO registration.');
+            }
+        } else {
+            return new \WP_Error('flosc_sso_invalid_user_data', 'Invalid SSO user data.');
+        }
+
         $user_id = wp_insert_user($user_data_wp);
         
         if (is_wp_error($user_id)) {
@@ -180,12 +200,17 @@ class User_Linker {
         
         // Store avatar if available
         if (!empty($user_data['avatar'])) {
-            update_user_meta($user_id, self::META_PREFIX . 'avatar', $user_data['avatar']);
+            update_user_meta($user_id, self::META_PREFIX . 'avatar', esc_url_raw((string) $user_data['avatar']));
         }
         
         // Mark as SSO-created user
         update_user_meta($user_id, self::META_PREFIX . 'created_via', $provider_id);
         update_user_meta($user_id, self::META_PREFIX . 'created_at', time());
+        // Canonical registration method for condition evaluator / Engagement summary.
+        // Provider detail remains on created_via; method bucket is "sso".
+        if (!(string) get_user_meta($user_id, '_flosc_registration_method', true)) {
+            update_user_meta($user_id, '_flosc_registration_method', 'sso');
+        }
         
         do_action('flosc_sso_user_created', $user_id, $provider_id, $user_data);
         
@@ -283,7 +308,7 @@ class User_Linker {
      * @return string Encrypted string
      */
     private function encrypt_tokens($tokens) {
-        $json = json_encode($tokens);
+        $json = wp_json_encode($tokens);
         $key = flosc_token_secret(); // §5: dedicated secret, not the auth salt
         
         // Simple XOR encryption with base64 encoding

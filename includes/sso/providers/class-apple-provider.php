@@ -183,48 +183,302 @@ class Apple_Provider extends SSO_Provider_Base {
      * @return array|WP_Error User data or error
      */
     public function get_user_info($access_token, $token_data = array()) {
-        // Apple embeds user info in the id_token JWT from the token exchange response
+        // Standard OIDC: user claims come from a verified id_token (not access_token alone).
         $id_token = isset($token_data['id_token']) ? $token_data['id_token'] : '';
-        
-        if (empty($id_token)) {
+
+        if (empty($id_token) || !is_string($id_token)) {
             return new \WP_Error('no_id_token', 'Apple ID token not found in token response');
         }
-        
-        // Decode the JWT (without verification - Apple's auth server is trusted)
-        $parts = explode('.', $id_token);
-        if (count($parts) !== 3) {
-            return new \WP_Error('invalid_id_token', 'Invalid Apple ID token format');
-        }
-        
-        $payload_raw = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
 
-        if (!is_array($payload_raw) || empty($payload_raw)) {
-            return new \WP_Error('decode_error', 'Failed to decode Apple ID token');
+        $payload_raw = $this->verify_id_token($id_token);
+        if (is_wp_error($payload_raw)) {
+            return $payload_raw;
         }
 
-        // Task 8: sanitize decoded token fields explicitly before downstream use.
+        $email_verified_raw = $payload_raw['email_verified'] ?? false;
+        if (is_bool($email_verified_raw)) {
+            $email_verified = $email_verified_raw ? 'true' : 'false';
+        } else {
+            $email_verified = strtolower(sanitize_text_field((string) $email_verified_raw));
+            if (in_array($email_verified, array('1', 'yes'), true)) {
+                $email_verified = 'true';
+            }
+        }
+
         $payload = array(
             'sub'            => sanitize_text_field((string) ($payload_raw['sub'] ?? '')),
             'email'          => sanitize_email((string) ($payload_raw['email'] ?? '')),
-            'email_verified' => sanitize_text_field((string) ($payload_raw['email_verified'] ?? 'false')),
+            'email_verified' => $email_verified,
         );
-        
+
+        if ($payload['sub'] === '') {
+            return new \WP_Error('invalid_id_token', 'Apple ID token missing subject');
+        }
+
         // Apple may also send user info in the POST data (first login only).
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing,WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- inbound payload from Apple OAuth callback, unslashed and JSON-decoded before use
-        $raw_user_json = isset($_POST['user']) ? wp_unslash($_POST['user']) : '';
-        $user_data_raw = is_string($raw_user_json) && $raw_user_json !== '' ? json_decode($raw_user_json, true) : array();
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- inbound Apple OAuth callback body; decoded + field-sanitized below.
+        $raw_user_json = isset( $_POST['user'] ) ? wp_unslash( $_POST['user'] ) : '';
+        $user_data_raw = array();
+        if ( is_string( $raw_user_json ) && $raw_user_json !== '' && strlen( $raw_user_json ) <= 20000 ) {
+            $decoded_user = json_decode( $raw_user_json, true, 8 );
+            if ( JSON_ERROR_NONE === json_last_error() && is_array( $decoded_user ) ) {
+                $user_data_raw = $decoded_user;
+            }
+        }
         $user_data = array();
-        if (is_array($user_data_raw) && isset($user_data_raw['name']) && is_array($user_data_raw['name'])) {
+        if ( isset( $user_data_raw['name'] ) && is_array( $user_data_raw['name'] ) ) {
             $user_data['name'] = array(
-                'firstName' => sanitize_text_field((string) ($user_data_raw['name']['firstName'] ?? '')),
-                'lastName'  => sanitize_text_field((string) ($user_data_raw['name']['lastName'] ?? '')),
+                'firstName' => sanitize_text_field( (string) ( $user_data_raw['name']['firstName'] ?? '' ) ),
+                'lastName'  => sanitize_text_field( (string) ( $user_data_raw['name']['lastName'] ?? '' ) ),
             );
         }
-        
+
         return $this->normalize_user_data(array(
             'id_token_payload' => $payload,
             'user_data'        => $user_data,
         ));
+    }
+
+    /**
+     * Verify Apple Sign In id_token (standard OIDC JWT / JWKS RS256).
+     *
+     * Checks: alg, signature via Apple JWKS, iss, aud (Service ID), exp, iat, sub.
+     * Fail closed on any check failure.
+     *
+     * @param string $id_token JWT from token endpoint.
+     * @return array|\WP_Error Claims on success.
+     */
+    private function verify_id_token($id_token) {
+        $parts = explode('.', $id_token);
+        if (count($parts) !== 3) {
+            return new \WP_Error('invalid_id_token', 'Invalid Apple ID token format');
+        }
+
+        list($header_b64, $payload_b64, $sig_b64) = $parts;
+
+        $header  = json_decode($this->base64_url_decode($header_b64), true);
+        $payload = json_decode($this->base64_url_decode($payload_b64), true);
+        $sig     = $this->base64_url_decode($sig_b64);
+
+        if (!is_array($header) || !is_array($payload) || $sig === '' || $sig === false) {
+            return new \WP_Error('invalid_id_token', 'Failed to decode Apple ID token');
+        }
+
+        $alg = isset($header['alg']) ? (string) $header['alg'] : '';
+        if ($alg !== 'RS256') {
+            return new \WP_Error('invalid_id_token', 'Unsupported Apple ID token algorithm');
+        }
+
+        $kid = isset($header['kid']) ? (string) $header['kid'] : '';
+        if ($kid === '') {
+            return new \WP_Error('invalid_id_token', 'Apple ID token missing key id');
+        }
+
+        $jwk = $this->get_apple_jwk_by_kid($kid);
+        if (is_wp_error($jwk)) {
+            return $jwk;
+        }
+
+        $pem = $this->jwk_to_pem($jwk);
+        if (is_wp_error($pem)) {
+            return $pem;
+        }
+
+        $signed = $header_b64 . '.' . $payload_b64;
+        $ok     = openssl_verify($signed, $sig, $pem, OPENSSL_ALGO_SHA256);
+        if (1 !== $ok) {
+            return new \WP_Error('invalid_id_token', 'Apple ID token signature verification failed');
+        }
+
+        $iss = isset($payload['iss']) ? (string) $payload['iss'] : '';
+        if ($iss !== 'https://appleid.apple.com') {
+            return new \WP_Error('invalid_id_token', 'Apple ID token issuer mismatch');
+        }
+
+        $aud = $payload['aud'] ?? '';
+        $aud_ok = false;
+        if (is_string($aud) && $aud !== '' && hash_equals((string) $this->client_id, $aud)) {
+            $aud_ok = true;
+        } elseif (is_array($aud)) {
+            foreach ($aud as $a) {
+                if (is_string($a) && hash_equals((string) $this->client_id, $a)) {
+                    $aud_ok = true;
+                    break;
+                }
+            }
+        }
+        if (!$aud_ok) {
+            return new \WP_Error('invalid_id_token', 'Apple ID token audience mismatch');
+        }
+
+        $now = time();
+        $exp = isset($payload['exp']) ? (int) $payload['exp'] : 0;
+        if ($exp < 1 || $now >= $exp) {
+            return new \WP_Error('invalid_id_token', 'Apple ID token expired');
+        }
+
+        $iat = isset($payload['iat']) ? (int) $payload['iat'] : 0;
+        // Reject tokens issued more than 60s in the future (clock skew).
+        if ($iat > 0 && $iat > ($now + 60)) {
+            return new \WP_Error('invalid_id_token', 'Apple ID token iat is not credible');
+        }
+
+        $sub = isset($payload['sub']) ? (string) $payload['sub'] : '';
+        if ($sub === '') {
+            return new \WP_Error('invalid_id_token', 'Apple ID token missing subject');
+        }
+
+        return $payload;
+    }
+
+    /**
+     * Fetch Apple JWKS and return the JWK for $kid (cached).
+     *
+     * @param string $kid JWT header kid.
+     * @return array|\WP_Error
+     */
+    private function get_apple_jwk_by_kid($kid) {
+        $keys = $this->get_apple_jwks();
+        if (is_wp_error($keys)) {
+            return $keys;
+        }
+
+        foreach ($keys as $key) {
+            if (!is_array($key)) {
+                continue;
+            }
+            if (isset($key['kid']) && (string) $key['kid'] === (string) $kid) {
+                return $key;
+            }
+        }
+
+        // Kid miss: bust cache once and retry (key rotation).
+        delete_transient('flosc_apple_jwks');
+        $keys = $this->get_apple_jwks(true);
+        if (is_wp_error($keys)) {
+            return $keys;
+        }
+        foreach ($keys as $key) {
+            if (is_array($key) && isset($key['kid']) && (string) $key['kid'] === (string) $kid) {
+                return $key;
+            }
+        }
+
+        return new \WP_Error('invalid_id_token', 'Apple signing key not found for token');
+    }
+
+    /**
+     * @param bool $force Force network refresh.
+     * @return array|\WP_Error List of JWK arrays.
+     */
+    private function get_apple_jwks($force = false) {
+        if (!$force) {
+            $cached = get_transient('flosc_apple_jwks');
+            if (is_array($cached) && !empty($cached)) {
+                return $cached;
+            }
+        }
+
+        $response = wp_remote_get(
+            'https://appleid.apple.com/auth/keys',
+            array(
+                'timeout' => 15,
+                'headers' => array('Accept' => 'application/json'),
+            )
+        );
+
+        if (is_wp_error($response)) {
+            return $response;
+        }
+
+        $code = (int) wp_remote_retrieve_response_code($response);
+        if ($code < 200 || $code >= 300) {
+            return new \WP_Error('apple_jwks', 'Failed to fetch Apple JWKS');
+        }
+
+        $body = json_decode(wp_remote_retrieve_body($response), true);
+        if (!is_array($body) || empty($body['keys']) || !is_array($body['keys'])) {
+            return new \WP_Error('apple_jwks', 'Invalid Apple JWKS response');
+        }
+
+        set_transient('flosc_apple_jwks', $body['keys'], 12 * HOUR_IN_SECONDS);
+        return $body['keys'];
+    }
+
+    /**
+     * Convert an RSA JWK to a PEM public key for openssl_verify.
+     *
+     * @param array $jwk JWK with n, e.
+     * @return string|\WP_Error PEM
+     */
+    private function jwk_to_pem(array $jwk) {
+        if (empty($jwk['n']) || empty($jwk['e'])) {
+            return new \WP_Error('apple_jwks', 'Incomplete Apple JWK');
+        }
+
+        $n = $this->base64_url_decode($jwk['n']);
+        $e = $this->base64_url_decode($jwk['e']);
+        if ($n === '' || $n === false || $e === '' || $e === false) {
+            return new \WP_Error('apple_jwks', 'Invalid Apple JWK modulus/exponent');
+        }
+
+        $modulus  = $this->asn1_integer($n);
+        $exponent = $this->asn1_integer($e);
+        $sequence = $this->asn1_sequence($modulus . $exponent);
+        $bitstring = "\x03" . $this->asn1_length(strlen($sequence) + 1) . "\x00" . $sequence;
+        $rsa_oid   = pack('H*', '300d06092a864886f70d0101010500'); // rsaEncryption
+        $pubkey    = $this->asn1_sequence($rsa_oid . $bitstring);
+
+        $pem  = "-----BEGIN PUBLIC KEY-----\n";
+        $pem .= chunk_split(base64_encode($pubkey), 64, "\n");
+        $pem .= "-----END PUBLIC KEY-----\n";
+
+        return $pem;
+    }
+
+    /**
+     * @param string $bytes Unsigned big-endian integer bytes.
+     * @return string ASN.1 INTEGER
+     */
+    private function asn1_integer($bytes) {
+        if ($bytes === '' || ord($bytes[0]) > 0x7f) {
+            $bytes = "\x00" . $bytes;
+        }
+        return "\x02" . $this->asn1_length(strlen($bytes)) . $bytes;
+    }
+
+    /**
+     * @param string $contents Inner DER.
+     * @return string ASN.1 SEQUENCE
+     */
+    private function asn1_sequence($contents) {
+        return "\x30" . $this->asn1_length(strlen($contents)) . $contents;
+    }
+
+    /**
+     * @param int $length
+     * @return string ASN.1 length encoding
+     */
+    private function asn1_length($length) {
+        if ($length < 0x80) {
+            return chr($length);
+        }
+        $temp = ltrim(pack('N', $length), "\x00");
+        return chr(0x80 | strlen($temp)) . $temp;
+    }
+
+    /**
+     * Base64url decode (JWT).
+     *
+     * @param string $data
+     * @return string|false
+     */
+    private function base64_url_decode($data) {
+        $remainder = strlen($data) % 4;
+        if ($remainder) {
+            $data .= str_repeat('=', 4 - $remainder);
+        }
+        return base64_decode(strtr($data, '-_', '+/'), true);
     }
     
     /**
@@ -248,10 +502,10 @@ class Apple_Provider extends SSO_Provider_Base {
             $name = trim($first_name . ' ' . $last_name);
         }
 
-        $provider_id = sanitize_text_field($payload['sub'] ?? '');
-        $email = sanitize_email($payload['email'] ?? '');
-        $email_verified = sanitize_text_field($payload['email_verified'] ?? 'false');
-        
+        $provider_id = sanitize_text_field((string) ($payload['sub'] ?? ''));
+        $email = sanitize_email((string) ($payload['email'] ?? ''));
+        $email_verified = sanitize_text_field((string) ($payload['email_verified'] ?? 'false'));
+
         return array(
             'provider_id'    => $provider_id,
             'email'          => $email,
@@ -261,7 +515,9 @@ class Apple_Provider extends SSO_Provider_Base {
             'last_name'      => $last_name,
             'avatar'         => '', // Apple doesn't provide avatars
             'locale'         => '',
-            'raw_data'       => $raw_data,
+            // Pass 8 / WPORG: never pass through the full decoded POST user JSON.
+            // Only sanitized fields above are exposed to hooks and storage.
+            'raw_data'       => array(),
         );
     }
     
@@ -304,8 +560,8 @@ class Apple_Provider extends SSO_Provider_Base {
         );
         
         // Encode header and claims
-        $header_encoded = $this->base64_url_encode(json_encode($header));
-        $claims_encoded = $this->base64_url_encode(json_encode($claims));
+        $header_encoded = $this->base64_url_encode(wp_json_encode($header));
+        $claims_encoded = $this->base64_url_encode(wp_json_encode($claims));
         
         $signature_input = $header_encoded . '.' . $claims_encoded;
         
@@ -436,6 +692,8 @@ class Apple_Provider extends SSO_Provider_Base {
             array(
                 'id'          => 'flosc_sso_apple_private_key',
                 'title'       => __('Private Key', 'flosc'),
+                // UI: multi-line textarea for .p8 body. Sanitizer: class-sso-manager maps
+                // field ids containing "private_key" to sanitize_secret_setting (Pass 2).
                 'type'        => 'textarea',
                 'default'     => '',
                 'description' => __('Contents of the .p8 private key file (include BEGIN/END lines)', 'flosc'),

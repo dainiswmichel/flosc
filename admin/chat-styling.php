@@ -49,6 +49,9 @@ $flosc_style_docs_url = add_query_arg([
 // Handle reset action (runs inside the parent settings form)
 $flosc_reset_nonce = isset($_POST['flosc_reset_chat_style_nonce']) ? sanitize_text_field(wp_unslash((string) $_POST['flosc_reset_chat_style_nonce'])) : '';
 if (isset($_POST['flosc_reset_chat_style']) && wp_verify_nonce($flosc_reset_nonce, 'flosc_reset_chat_style_nonce')) {
+    if (empty($flosc_selected_flow_id) || !flosc_flows()->can_access_flow_admin($flosc_selected_flow_id)) {
+        wp_die(esc_html__('You do not have permission to reset chat styling for this flow.', 'flosc'));
+    }
     $flosc_reset_key = $GLOBALS['flosc_settings_key'] ?? '';
     if ($flosc_reset_key) {
         $flosc_fs = get_option($flosc_reset_key, []);

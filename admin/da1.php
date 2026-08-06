@@ -24,6 +24,22 @@ if (!current_user_can('manage_options')) {
     return;
 }
 
+if (!function_exists('flosc_da1_safe_json_decode')) {
+    function flosc_da1_safe_json_decode($raw, $max_bytes = 200000, $depth = 32) {
+        $raw = (string) $raw;
+        if ($raw === '' || strlen($raw) > $max_bytes) {
+            return new WP_Error('flosc_da1_payload_too_large', 'Payload is invalid or too large.');
+        }
+
+        $decoded = json_decode($raw, true, $depth);
+        if (JSON_ERROR_NONE !== json_last_error() || !is_array($decoded)) {
+            return new WP_Error('flosc_da1_payload_invalid', 'Invalid catalog payload.');
+        }
+
+        return $decoded;
+    }
+}
+
 $flosc_upload_dir = wp_upload_dir();
 $flosc_basedir = trailingslashit($flosc_upload_dir['basedir']);
 $flosc_catalog_dir = $flosc_basedir . 'flosc-catalogs';
@@ -79,6 +95,9 @@ $flosc_control_defaults = [
     'Media Type' => 'chatplayer',
     'Content Category' => 'music',
 ];
+
+$flosc_da1_get = wp_unslash($_GET);
+$flosc_da1_post = wp_unslash($_POST);
 
 function flosc_da1_slugify($value) {
     $value = strtolower(trim((string) $value));
@@ -383,10 +402,10 @@ if (!isset($flosc_da1_catalogs[$flosc_default_catalog_key])) {
 }
 
 $flosc_da1_requested_catalog_key = $flosc_default_catalog_key;
-if (isset($_POST['catalog'])) {
-    $flosc_da1_requested_catalog_key = flosc_da1_normalize_key(sanitize_text_field(wp_unslash($_POST['catalog'])));
-} elseif (isset($_GET['catalog'])) {
-    $flosc_da1_requested_catalog_key = flosc_da1_normalize_key(sanitize_text_field(wp_unslash($_GET['catalog'])));
+if (isset($flosc_da1_post['catalog'])) {
+    $flosc_da1_requested_catalog_key = flosc_da1_normalize_key(sanitize_text_field((string) $flosc_da1_post['catalog']));
+} elseif (isset($flosc_da1_get['catalog'])) {
+    $flosc_da1_requested_catalog_key = flosc_da1_normalize_key(sanitize_text_field((string) $flosc_da1_get['catalog']));
 }
 if ($flosc_da1_requested_catalog_key === '' || !isset($flosc_da1_catalogs[$flosc_da1_requested_catalog_key])) {
     $flosc_da1_requested_catalog_key = $flosc_default_catalog_key;
@@ -411,10 +430,13 @@ if (isset($flosc_ivr_files) && is_array($flosc_ivr_files)) {
     }
 }
 
-if (isset($_POST['flosc_da1_create_catalog'])) {
+if (isset($flosc_da1_post['flosc_da1_create_catalog'])) {
     check_admin_referer('flosc_da1_catalog_manage');
-    $flosc_da1_label = sanitize_text_field(wp_unslash($_POST['flosc_new_catalog_label'] ?? ''));
-    $flosc_da1_key_raw = sanitize_text_field(wp_unslash($_POST['flosc_new_catalog_key'] ?? ''));
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to manage DA1 catalogs.', 'flosc'));
+    }
+    $flosc_da1_label = sanitize_text_field((string) ($flosc_da1_post['flosc_new_catalog_label'] ?? ''));
+    $flosc_da1_key_raw = sanitize_text_field((string) ($flosc_da1_post['flosc_new_catalog_key'] ?? ''));
     $flosc_da1_key = flosc_da1_slugify($flosc_da1_key_raw !== '' ? $flosc_da1_key_raw : $flosc_da1_label);
     if ($flosc_da1_key === '') {
         $flosc_da1_notice_error = 'Catalog key is required.';
@@ -433,9 +455,12 @@ if (isset($_POST['flosc_da1_create_catalog'])) {
     }
 }
 
-if (isset($_POST['flosc_da1_assign_catalogs']) && $flosc_da1_selected_ivr !== '') {
+if (isset($flosc_da1_post['flosc_da1_assign_catalogs']) && $flosc_da1_selected_ivr !== '') {
     check_admin_referer('flosc_da1_catalog_manage');
-    $flosc_da1_assigned = sanitize_text_field(wp_unslash($_POST['flosc_flow_catalogs'] ?? ''));
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to assign DA1 catalogs.', 'flosc'));
+    }
+    $flosc_da1_assigned = sanitize_text_field((string) ($flosc_da1_post['flosc_flow_catalogs'] ?? ''));
     $flosc_da1_parts = array_filter(array_map('trim', explode(',', (string) $flosc_da1_assigned)));
     $flosc_da1_clean = [];
     foreach ($flosc_da1_parts as $flosc_da1_p) {
@@ -455,8 +480,11 @@ if (isset($_POST['flosc_da1_assign_catalogs']) && $flosc_da1_selected_ivr !== ''
 $flosc_da1_catalog_path = flosc_da1_catalog_file($flosc_catalog_dir, $flosc_da1_requested_catalog_key);
 $flosc_da1_selected_catalog_label = $flosc_da1_catalogs[$flosc_da1_requested_catalog_key]['label'] ?? $flosc_da1_requested_catalog_key;
 
-if (isset($_POST['flosc_da1_upload_catalog'])) {
+if (isset($flosc_da1_post['flosc_da1_upload_catalog'])) {
     check_admin_referer('flosc_da1_catalog_manage');
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to upload DA1 catalogs.', 'flosc'));
+    }
     // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- WordPress upload metadata array; each consumed field is validated/sanitized below.
     $flosc_da1_file = $_FILES['flosc_da1_upload_file'] ?? null;
     if (empty($flosc_da1_file) || !isset($flosc_da1_file['error']) || UPLOAD_ERR_OK !== (int) $flosc_da1_file['error']) {
@@ -488,8 +516,11 @@ if (isset($_POST['flosc_da1_upload_catalog'])) {
     }
 }
 
-if (isset($_POST['da1_save_catalog'])) {
+if (isset($flosc_da1_post['da1_save_catalog'])) {
     check_admin_referer('da1_catalog_save');
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to save DA1 catalogs.', 'flosc'));
+    }
 }
 
 if (!file_exists($flosc_da1_catalog_path) && $flosc_da1_requested_catalog_key === $flosc_default_catalog_key && file_exists($flosc_sample_catalog_path)) {
@@ -544,13 +575,13 @@ if (isset($flosc_da1_col_idx['Row Key'])) {
     }
 }
 
-if (isset($_POST['da1_save_catalog'])) {
-    $post = wp_unslash($_POST);
+if (isset($flosc_da1_post['da1_save_catalog'])) {
+    $post = $flosc_da1_post;
     // Large catalogs exceed PHP max_input_vars when posted as per-cell fields.
     // The grid submits the whole table as one JSON field instead; decode it
     // into the shape the rest of this handler expects.
     if (!empty($post['da1_payload'])) {
-        $flosc_da1_decoded = json_decode((string) $post['da1_payload'], true);
+        $flosc_da1_decoded = flosc_da1_safe_json_decode((string) $post['da1_payload']);
         if (is_array($flosc_da1_decoded)) {
             if (isset($flosc_da1_decoded['columns']) && is_array($flosc_da1_decoded['columns'])) {
                 $post['da1_columns'] = $flosc_da1_decoded['columns'];
@@ -752,12 +783,15 @@ if (!empty($flosc_identity_view)) {
 }
 $flosc_da1_form_action = add_query_arg($flosc_da1_form_action_args, admin_url('admin.php'));
 
-if (isset($_GET['da1_export']) && $_GET['da1_export'] === '1') {
-    $flosc_da1_nonce = sanitize_text_field(wp_unslash($_GET['_wpnonce'] ?? ''));
+if (isset($flosc_da1_get['da1_export']) && $flosc_da1_get['da1_export'] === '1') {
+    $flosc_da1_nonce = sanitize_text_field((string) ($flosc_da1_get['_wpnonce'] ?? ''));
     if (wp_verify_nonce($flosc_da1_nonce, 'flosc_da1_export_' . $flosc_da1_requested_catalog_key) && file_exists($flosc_da1_catalog_path)) {
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('You do not have permission to export DA1 catalogs.', 'flosc'));
+        }
         nocache_headers();
         header('Content-Type: text/tab-separated-values; charset=utf-8');
-        header('Content-Disposition: attachment; filename="flosc_da1_catalog_' . $flosc_da1_requested_catalog_key . '.tsv"');
+        header('Content-Disposition: attachment; filename="flosc_da1_catalog_' . sanitize_file_name($flosc_da1_requested_catalog_key) . '.tsv"');
         // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- streaming the uploads-rooted catalog TSV for download.
         readfile($flosc_da1_catalog_path);
         exit;

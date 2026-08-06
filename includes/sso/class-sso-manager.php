@@ -422,34 +422,29 @@ class SSO_Manager {
             foreach ($fields as $field) {
                 $field_type = $field['type'] ?? '';
 
+                $field_id = (string) ( $field['id'] ?? '' );
+                // PEM / private keys: always secret pass-through (even when UI type is textarea).
+                // Must be checked before the generic textarea branch (Pass 2 audit).
+                $is_pem_field = ( false !== strpos( $field_id, 'private_key' ) );
+                $is_secret_field = ( $field_type === 'password' || $field_type === 'secret' || $is_pem_field );
+
                 if ($field_type === 'checkbox') {
                     $setting_args = array(
                         'type'              => 'integer',
                         'sanitize_callback' => array($this, 'sanitize_checkbox_setting'),
                         'default'           => $field['default'] ?? 0,
                     );
+                } elseif ( $is_secret_field ) {
+                    // Client secrets / PEM: empty-preserve + no sanitize_text_field (Jul email ✨).
+                    $setting_args = array(
+                        'type'              => 'string',
+                        'sanitize_callback' => array( $this, 'sanitize_secret_setting' ),
+                        'default'           => $field['default'] ?? '',
+                    );
                 } elseif ($field_type === 'textarea') {
                     $setting_args = array(
                         'type'              => 'string',
                         'sanitize_callback' => array($this, 'sanitize_textarea_setting'),
-                        'default'           => $field['default'] ?? '',
-                    );
-                } elseif ($field_type === 'password') {
-                    // Client secrets: unslash only — sanitize_text_field can alter secret alphabets.
-                    // Blank field on re-save keeps the existing secret.
-                    $option_name = $field['id'];
-                    $setting_args = array(
-                        'type'              => 'string',
-                        'sanitize_callback' => function ($value) use ($option_name) {
-                            if (!is_string($value)) {
-                                return (string) get_option($option_name, '');
-                            }
-                            $value = wp_unslash($value);
-                            if ('' === $value) {
-                                return (string) get_option($option_name, '');
-                            }
-                            return $value;
-                        },
                         'default'           => $field['default'] ?? '',
                     );
                 } else {
@@ -507,16 +502,29 @@ class SSO_Manager {
     /**
      * Pass-through sanitizer for OAuth client secrets and similar credentials.
      *
+     * Empty form fields keep the stored secret (password inputs submit empty when
+     * left unchanged). Option name is resolved from sanitize_option_{$option}.
+     *
      * @param mixed $value Raw submitted value.
      * @return string
      */
     public function sanitize_secret_setting($value) {
-        // Used only as a fallback; register_settings() wraps secrets so empty
-        // form fields keep the stored OAuth client secret.
-        if (!is_string($value)) {
-            return '';
+        $option_name = '';
+        $filter      = current_filter();
+        if (is_string($filter) && 0 === strpos($filter, 'sanitize_option_')) {
+            $option_name = substr($filter, strlen('sanitize_option_'));
         }
-        return wp_unslash($value);
+
+        if (!is_string($value)) {
+            return $option_name !== '' ? (string) get_option($option_name, '') : '';
+        }
+
+        $value = wp_unslash($value);
+        if ('' === $value) {
+            return $option_name !== '' ? (string) get_option($option_name, '') : '';
+        }
+
+        return $value;
     }
     
     /**
@@ -545,21 +553,38 @@ class SSO_Manager {
                 break;
 
             case 'textarea':
+                $flosc_ta_value = (string) $value;
+                $flosc_is_pem = (false !== strpos((string) ($field['id'] ?? ''), 'private_key'));
+                if ($flosc_is_pem && !flosc_admin_may_view_secrets()) {
+                    $flosc_ta_value = '';
+                }
                 printf(
-                    '<textarea id="%s" name="%s" rows="6" class="large-text code">%s</textarea>',
+                    '<textarea id="%s" name="%s" rows="6" class="large-text code" autocomplete="off">%s</textarea>',
                     esc_attr($field['id']),
                     esc_attr($field['id']),
-                    esc_textarea((string) $value)
+                    esc_textarea($flosc_ta_value)
                 );
+                if ($flosc_is_pem && !flosc_admin_may_view_secrets() && (string) $value !== '') {
+                    echo '<p class="description">' . esc_html__('Key is saved. Leave blank to keep the current value.', 'flosc') . '</p>';
+                }
                 break;
                 
             case 'password':
+                // Editors with flow access must not read secrets from page source.
+                $flosc_show_secret = function_exists('flosc_admin_secret_input_value')
+                    ? flosc_admin_secret_input_value($value)
+                    : (current_user_can('manage_options') ? (string) $value : '');
+                $flosc_has_saved = ((string) $value !== '' && !flosc_admin_may_view_secrets());
                 printf(
-                    '<input type="password" id="%s" name="%s" value="%s" class="regular-text" />',
+                    '<input type="password" id="%s" name="%s" value="%s" class="regular-text" autocomplete="new-password" placeholder="%s" />',
                     esc_attr($field['id']),
                     esc_attr($field['id']),
-                    esc_attr($value)
+                    esc_attr($flosc_show_secret),
+                    esc_attr($flosc_has_saved ? '••••••••' : '')
                 );
+                if ($flosc_has_saved) {
+                    echo '<p class="description">' . esc_html__('Secret is saved. Leave blank to keep the current value.', 'flosc') . '</p>';
+                }
                 break;
                 
             default:

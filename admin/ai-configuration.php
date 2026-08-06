@@ -145,7 +145,7 @@ if ($flosc_catalog_age > 7 * DAY_IN_SECONDS) {
             <label for="flow_anthropic_api_key"><strong>Anthropic API Key</strong></label>
         </th>
         <td>
-            <input type="password" id="flow_anthropic_api_key" name="flow_anthropic_api_key" value="<?php echo esc_attr($flosc_flow_settings['anthropic_api_key'] ?? ''); ?>" class="regular-text flosc-ai-key-input" placeholder="sk-ant-api03-...">
+            <input type="password" id="flow_anthropic_api_key" name="flow_anthropic_api_key" value="<?php echo esc_attr( function_exists('flosc_admin_secret_input_value') ? flosc_admin_secret_input_value( $flosc_flow_settings['anthropic_api_key'] ?? '' ) : ( current_user_can('manage_options') ? (string) ( $flosc_flow_settings['anthropic_api_key'] ?? '' ) : '' ) ); ?>" class="regular-text flosc-ai-key-input" placeholder="sk-ant-api03-...">
             <p class="description">
                 <a href="https://console.anthropic.com/settings/keys" target="_blank" class="button button-secondary flosc-ai-key-link">
                     📥 Get Your Anthropic API Key Here
@@ -177,7 +177,7 @@ if ($flosc_catalog_age > 7 * DAY_IN_SECONDS) {
             <label for="flow_openai_api_key"><strong>OpenAI API Key</strong></label>
         </th>
         <td>
-            <input type="password" id="flow_openai_api_key" name="flow_openai_api_key" value="<?php echo esc_attr($flosc_flow_settings['openai_api_key'] ?? ''); ?>" class="regular-text flosc-ai-key-input" placeholder="sk-proj-...">
+            <input type="password" id="flow_openai_api_key" name="flow_openai_api_key" value="<?php echo esc_attr( function_exists('flosc_admin_secret_input_value') ? flosc_admin_secret_input_value( $flosc_flow_settings['openai_api_key'] ?? '' ) : ( current_user_can('manage_options') ? (string) ( $flosc_flow_settings['openai_api_key'] ?? '' ) : '' ) ); ?>" class="regular-text flosc-ai-key-input" placeholder="sk-proj-...">
             <p class="description">
                 <a href="https://platform.openai.com/api-keys" target="_blank" class="button button-secondary flosc-ai-key-link">
                     📥 Get Your OpenAI API Key Here
@@ -210,7 +210,7 @@ if ($flosc_catalog_age > 7 * DAY_IN_SECONDS) {
             <label for="flow_xai_api_key"><strong>xAI API Key</strong></label>
         </th>
         <td>
-            <input type="password" id="flow_xai_api_key" name="flow_xai_api_key" value="<?php echo esc_attr($flosc_flow_settings['xai_api_key'] ?? ''); ?>" class="regular-text flosc-ai-key-input" placeholder="xai-...">
+            <input type="password" id="flow_xai_api_key" name="flow_xai_api_key" value="<?php echo esc_attr( function_exists('flosc_admin_secret_input_value') ? flosc_admin_secret_input_value( $flosc_flow_settings['xai_api_key'] ?? '' ) : ( current_user_can('manage_options') ? (string) ( $flosc_flow_settings['xai_api_key'] ?? '' ) : '' ) ); ?>" class="regular-text flosc-ai-key-input" placeholder="xai-...">
             <p class="description">
                 <a href="https://console.x.ai" target="_blank" class="button button-secondary flosc-ai-key-link">
                     📥 Get Your xAI API Key Here
@@ -290,7 +290,7 @@ if ($flosc_catalog_age > 7 * DAY_IN_SECONDS) {
     </tr>
 </table>
 
-<div id="flosc-chain-config" class="flosc-ai-chain-config<?php echo $flosc_enable_chaining ? '' : ' flosc-hidden'; ?>">
+<div id="flosc-chain-config" class="flosc-ai-chain-config<?php echo esc_attr( $flosc_enable_chaining ? '' : ' flosc-hidden' ); ?>">
     <table class="form-table">
         <tr>
             <th scope="row"><label for="flow_ai_chain_provider_1">Provider 1 (Drafts)</label></th>
@@ -587,7 +587,7 @@ jQuery(document).ready(function($) {
             <label for="flow_assemblyai_api_key"><strong>AssemblyAI API Key</strong></label>
         </th>
         <td>
-            <input type="password" id="flow_assemblyai_api_key" name="flow_assemblyai_api_key" value="<?php echo esc_attr($flosc_flow_settings['assemblyai_api_key'] ?? ''); ?>" class="regular-text flosc-ai-stt-input" placeholder="Your AssemblyAI key">
+            <input type="password" id="flow_assemblyai_api_key" name="flow_assemblyai_api_key" value="<?php echo esc_attr( function_exists('flosc_admin_secret_input_value') ? flosc_admin_secret_input_value( $flosc_flow_settings['assemblyai_api_key'] ?? '' ) : ( current_user_can('manage_options') ? (string) ( $flosc_flow_settings['assemblyai_api_key'] ?? '' ) : '' ) ); ?>" class="regular-text flosc-ai-stt-input" placeholder="Your AssemblyAI key">
             <p class="description">
                 <a href="https://www.assemblyai.com/dashboard/signup" target="_blank" class="button button-secondary flosc-ai-key-link">
                     📥 Get Your AssemblyAI API Key Here

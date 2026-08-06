@@ -215,14 +215,15 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC Content Filter error
         
         switch ($access_level) {
             case 'visitor':
-                // Only public content
+                // Only public content (post body from the_content pipeline).
                 return $public_content;
                 
             case 'guest':
-                // Public + teaser
-                return $public_content . "\n\n" . 
-                       "🔒 **Member-only content available below**\n" .
-                       "Complete the quiz to unlock full access!";
+                // Public post HTML + FLOSC-built notice (escape what we build).
+                $notice = '<p class="flosc-member-teaser">'
+                    . esc_html__( 'Member-only content is available below. Complete the quiz to unlock full access.', 'flosc' )
+                    . '</p>';
+                return $public_content . wp_kses_post( $notice );
                 
             case 'member':
                 // Everything

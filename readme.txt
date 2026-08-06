@@ -1,16 +1,15 @@
 === FLOSC ===
 Contributors: dainismichel
 Donate link: https://flosc.ai
-Repository URI: https://flosc.ai
-Tags: chatbot, quiz, ai, lead-generation, membership
+Tags: chatbot, quiz, ai, membership, payments
 Requires at least: 7.0
-Requires PHP: 7.4
 Tested up to: 7.0
+Requires PHP: 7.4
 Stable tag: 8.0.0
-License: GPL v2 or later
+License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Build guided conversational journeys on WordPress that deliver value first, then unlock content and offers at exactly the right moment.
+Freeline --> Login --> Offer --> Sale --> Content: try-before-you-buy for local poets to the world's largest corporations.
 
 == Description ==
 
@@ -192,16 +191,16 @@ Service terms: determined by the configured endpoint provider.
 Privacy policy: determined by the configured endpoint provider.
 
 6. PayPal (for checkout and subscription flows)
-Endpoint examples: https://api-m.paypal.com, https://api-m.sandbox.paypal.com
-Purpose: create and validate payment and subscription transactions.
-Data sent: order/subscription identifiers, amount/currency, and payment status data needed to complete transactions.
+Endpoint examples: https://api-m.paypal.com, https://api-m.sandbox.paypal.com, https://www.paypal.com/sdk/js (browser PayPal JS SDK when a PayPal client ID is configured)
+Purpose: create and validate payment and subscription transactions; load the PayPal JS SDK only on checkout screens that need it.
+Data sent: order/subscription identifiers, amount/currency, and payment status data needed to complete transactions. Card/wallet data is handled by PayPal when used — not stored by FLOSC.
 Service terms: https://www.paypal.com/us/legalhub/paypal/useragreement-full
 Privacy policy: https://www.paypal.com/us/legalhub/privacy-full
 
 7. Stripe (for checkout and subscription flows)
-Endpoint: https://api.stripe.com/v1
-Purpose: process payment intents, subscriptions, and payment-related webhook events.
-Data sent: payment metadata (amount, currency, customer and transaction identifiers) required to complete transactions.
+Endpoint examples: https://api.stripe.com/v1, https://js.stripe.com (browser Elements/Checkout SDK when Stripe is enabled)
+Purpose: process payment intents, subscriptions, and payment-related webhook events; load Stripe.js only on checkout screens that need it.
+Data sent: payment metadata (amount, currency, customer and transaction identifiers) required to complete transactions. Card data is handled by Stripe.js / Stripe servers when used — not stored by FLOSC.
 Service terms: https://stripe.com/legal
 Privacy policy: https://stripe.com/privacy
 
@@ -209,8 +208,8 @@ Privacy policy: https://stripe.com/privacy
 Endpoint examples: https://sandbox.clickbank.net/checkout/order/hop.php, http://*.hop.clickbank.net/
 Purpose: route buyers to ClickBank checkout and process purchase/refund/rebill events through IPN.
 Data sent: transaction identifiers, product identifiers, receipt fields, and customer identity fields provided by ClickBank IPN.
-Service terms: https://www.clickbank.com/legal/
-Privacy policy: https://www.clickbank.com/privacy-policy/
+Service terms: https://support.clickbank.com/en/articles/10535340-clickbank-terms-of-sale
+Privacy policy: https://support.clickbank.com/en/articles/10535346-clickbank-privacy-policy
 
 9. Google OAuth (for social login)
 Endpoint examples: https://accounts.google.com/o/oauth2/v2/auth, https://oauth2.googleapis.com/token, https://www.googleapis.com/oauth2/v2/userinfo
@@ -259,6 +258,13 @@ Purpose: process LeSAEp pronunciation scoring requests when a flow is configured
 Data sent: quiz audio, phrase/answer payloads, session identifiers, and signed request headers (X-FLOSC-Site, X-FLOSC-MTS, X-FLOSC-Signature).
 Service terms: https://lesaep.com/terms-of-service/
 Privacy policy: https://lesaep.com/privacy/
+
+16. Amazon product search links (optional affiliate offers)
+Endpoint examples: https://www.amazon.com/s (search results URL with affiliate tag when Amazon affiliate is enabled)
+Purpose: generate outbound search links so visitors can find products; FLOSC does not call Amazon Product Advertising API by default.
+Data sent: search keywords and the site's Amazon associate tag in the query string when the visitor follows the link.
+Service terms: https://affiliate-program.amazon.com/help/operating/agreement
+Privacy policy: https://www.amazon.com/gp/help/customer/display.html?nodeId=GX7NJQ4ZB8MHFRNJ
 
 = FLOSC Site Policies =
 

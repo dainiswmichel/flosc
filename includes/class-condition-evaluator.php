@@ -189,6 +189,20 @@ class FLOSC_Condition_Evaluator {
             $minutes = intval($this->context['session_minutes'] ?? 0);
             return $this->compare($minutes, $operator, $value);
         }
+
+        // Login / registration tenure (MagicLink admin gates, IVR, offers)
+        if (preg_match('/^login_count\s*(>=|<=|>|<|==)\s*(\d+)$/', $condition, $matches)) {
+            return $this->compare(intval($this->context['login_count'] ?? 0), $matches[1], intval($matches[2]));
+        }
+        if (preg_match('/^days_since_registration\s*(>=|<=|>|<|==)\s*(\d+)$/', $condition, $matches)) {
+            return $this->compare(intval($this->context['days_since_registration'] ?? 0), $matches[1], intval($matches[2]));
+        }
+        if (preg_match('/^registration_method\s*==\s*"([^"]+)"$/', $condition, $matches)) {
+            return (string) ($this->context['registration_method'] ?? '') === $matches[1];
+        }
+        if (preg_match('/^registration_method\s*!=\s*"([^"]+)"$/', $condition, $matches)) {
+            return (string) ($this->context['registration_method'] ?? '') !== $matches[1];
+        }
         
         // Command conditions
         if (preg_match('/^command\s*==\s*"([^"]+)"$/', $condition, $matches)) {
@@ -253,6 +267,8 @@ class FLOSC_Condition_Evaluator {
                 return ($this->context['access_level'] ?? 'visitor') === 'member';
             case 'has_profile':
                 return !empty($this->context['has_profile']) || is_user_logged_in();
+            case 'has_sso':
+                return !empty($this->context['has_sso']);
         }
         
         // Unknown condition - default to false
@@ -499,7 +515,15 @@ class FLOSC_Condition_Evaluator {
             'bridge_correct_count' => 0,
             'bridge_incorrect_count' => 0,
             'weakest_category' => '',
+            // Access-link / engagement gates (defaults when no user)
+            'login_count' => 0,
+            'days_since_registration' => 0,
+            'registration_method' => '',
+            'has_sso' => false,
         ];
+
+        $skip_last_visit = !empty($additional['_skip_last_visit']);
+        unset($additional['_skip_last_visit']);
         
         if ($user_id) {
             $context['score'] = intval(get_user_meta($user_id, '_flosc_last_quiz_score', true));
@@ -516,6 +540,24 @@ class FLOSC_Condition_Evaluator {
             $context['onboarded'] = (bool) get_user_meta($user_id, '_flosc_funnel_completed', true);
             $context['lessons_completed'] = intval(get_user_meta($user_id, '_flosc_lessons_completed', true));
             $context['returning_user'] = (bool) get_user_meta($user_id, '_flosc_last_visit', true);
+
+            $context['login_count'] = intval(get_user_meta($user_id, '_flosc_login_count', true));
+            $user_obj = get_userdata($user_id);
+            if ($user_obj && !empty($user_obj->user_registered)) {
+                $registered_ts = strtotime($user_obj->user_registered);
+                if ($registered_ts) {
+                    $context['days_since_registration'] = max(0, (int) floor((time() - $registered_ts) / DAY_IN_SECONDS));
+                }
+            }
+            $reg_method = sanitize_key((string) get_user_meta($user_id, '_flosc_registration_method', true));
+            if ($reg_method === '' && get_user_meta($user_id, '_flosc_sso_created_via', true)) {
+                $reg_method = 'sso';
+            }
+            $context['registration_method'] = $reg_method;
+            $linked = get_user_meta($user_id, '_flosc_sso_linked_providers', true);
+            $context['has_sso'] = (is_array($linked) && !empty($linked))
+                || (bool) get_user_meta($user_id, '_flosc_sso_created_via', true)
+                || (strpos($reg_method, 'sso') === 0);
             
             // v1.9.6: Phase — needed by FLOSC_User_Session for RAG handler
             $context['phase'] = flosc()->determine_flosc_phase();
@@ -570,8 +612,10 @@ class FLOSC_Condition_Evaluator {
                 $context['weakest_category'] = $bridge_mgr->get_flosc_weakest_category($user_id) ?? '';
             }
             
-            // Update last visit
-            update_user_meta($user_id, '_flosc_last_visit', current_time('mysql'));
+            // Chat/session path touches last visit; admin gates pass _skip_last_visit.
+            if (!$skip_last_visit) {
+                update_user_meta($user_id, '_flosc_last_visit', current_time('mysql'));
+            }
         }
         
         // Merge additional context

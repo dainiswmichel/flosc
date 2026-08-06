@@ -57,7 +57,7 @@ $flosc_sessions_archived_url = add_query_arg([
         <span>Chat Logs</span>
         <a href="<?php echo esc_url($flosc_chat_logs_docs_url); ?>" class="flosc-chat-logs-docs-link">Docs</a>
     </h2>
-    <p class="description">All chat exchanges for this flow.<?php echo $flosc_logview === 'sessions' ? ' Grouped by conversation, newest first — click a session to read the thread.' : ' Flat view, newest first. Auto-refreshes every 5 seconds.'; ?></p>
+    <p class="description">All chat exchanges for this flow.<?php echo esc_html( $flosc_logview === 'sessions' ? ' Grouped by conversation, newest first — click a session to read the thread.' : ' Flat view, newest first. Auto-refreshes every 5 seconds.' ); ?></p>
     <?php if ($flosc_selected_user_id > 0): ?>
         <p class="description"><strong>User filter:</strong> Showing only User #<?php echo intval($flosc_selected_user_id); ?>. <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=chat-logs')); ?>">Clear filter</a></p>
     <?php endif; ?>
@@ -67,15 +67,15 @@ $flosc_sessions_archived_url = add_query_arg([
 
         <span class="flosc-log-viewswitch flosc-log-viewswitch-spaced">
             View:
-            <a href="<?php echo esc_url($flosc_sessions_url); ?>" class="<?php echo $flosc_logview === 'sessions' ? 'button button-primary button-small' : 'button button-small'; ?>">Sessions</a>
-            <a href="<?php echo esc_url($flosc_flat_url); ?>" class="<?php echo $flosc_logview === 'flat' ? 'button button-primary button-small' : 'button button-small'; ?>">All entries</a>
+            <a href="<?php echo esc_url($flosc_sessions_url); ?>" class="<?php echo esc_attr( $flosc_logview === 'sessions' ? 'button button-primary button-small' : 'button button-small' ); ?>">Sessions</a>
+            <a href="<?php echo esc_url($flosc_flat_url); ?>" class="<?php echo esc_attr( $flosc_logview === 'flat' ? 'button button-primary button-small' : 'button button-small' ); ?>">All entries</a>
         </span>
 
         <?php if ($flosc_logview === 'sessions'): ?>
             <span class="flosc-log-viewswitch flosc-log-viewswitch-spaced">
                 Scope:
-                <a href="<?php echo esc_url($flosc_sessions_active_url); ?>" class="<?php echo $flosc_session_scope === 'active' ? 'button button-primary button-small' : 'button button-small'; ?>">Active</a>
-                <a href="<?php echo esc_url($flosc_sessions_archived_url); ?>" class="<?php echo $flosc_session_scope === 'archived' ? 'button button-primary button-small' : 'button button-small'; ?>">Archived</a>
+                <a href="<?php echo esc_url($flosc_sessions_active_url); ?>" class="<?php echo esc_attr( $flosc_session_scope === 'active' ? 'button button-primary button-small' : 'button button-small' ); ?>">Active</a>
+                <a href="<?php echo esc_url($flosc_sessions_archived_url); ?>" class="<?php echo esc_attr( $flosc_session_scope === 'archived' ? 'button button-primary button-small' : 'button button-small' ); ?>">Archived</a>
             </span>
         <?php endif; ?>
 
@@ -111,7 +111,7 @@ $flosc_sessions_archived_url = add_query_arg([
             <span>Select all</span>
         </label>
         <button type="button" class="button" id="flosc-session-download-selected">Download Selected TSV</button>
-        <button type="button" class="button" id="flosc-session-archive-selected"><?php echo $flosc_session_scope === 'archived' ? 'Restore Selected' : 'Archive Selected'; ?></button>
+        <button type="button" class="button" id="flosc-session-archive-selected"><?php echo esc_html( $flosc_session_scope === 'archived' ? 'Restore Selected' : 'Archive Selected' ); ?></button>
         <button type="button" class="button button-link-delete" id="flosc-session-delete-selected">Delete Selected</button>
         <span class="flosc-session-selection-status" id="flosc-session-selection-status">0 selected</span>
     </div>
@@ -125,7 +125,7 @@ $flosc_sessions_archived_url = add_query_arg([
 
     <div id="flosc-sessions">
         <?php if (empty($flosc_sessions)): ?>
-            <p class="description"><?php echo $flosc_session_scope === 'archived' ? 'No archived conversations for this flow yet.' : 'No conversations yet. They\'ll appear here as people chat.'; ?></p>
+            <p class="description"><?php echo esc_html( $flosc_session_scope === 'archived' ? 'No archived conversations for this flow yet.' : 'No conversations yet. They\'ll appear here as people chat.' ); ?></p>
         <?php else: ?>
             <?php foreach ($flosc_sessions as $flosc_session): ?>
                 <?php echo wp_kses(flosc_render_chat_session($flosc_session), flosc_chat_session_allowed_html()); ?>
@@ -710,7 +710,7 @@ function flosc_render_msg_bubbles($code, $letter, $n, $content, $who, $time, $ri
         $current_ivr = sanitize_file_name((string) ($GLOBALS['flosc_current_ivr'] ?? ''));
         $register_login_url = add_query_arg([
             'page' => 'flosc-settings',
-            'tab'  => 'login_registration',
+            'tab'  => 'login',
             'ivr'  => $current_ivr,
         ], admin_url('admin.php'));
         $hint = '<p class="description">Moderation actions are in <a href="' . esc_url($register_login_url) . '">Register &amp; Login</a>: Approve, Approve + Send MagicLink, Deny + Block, or Delete.</p>';

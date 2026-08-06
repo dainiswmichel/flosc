@@ -119,7 +119,7 @@ class FLOSC_RAG_Manager {
 
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
 if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Executing tool '{$tool_name}' for access level '{$access_level}' in category '{$category_id}'");
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Input - " . json_encode($input));
+if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Input - " . wp_json_encode($input));
         }
 
         try {

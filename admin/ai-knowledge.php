@@ -341,7 +341,7 @@ This information is NOT in your training data. Always reference these files when
                         <td><?php echo esc_html( human_time_diff($flosc_modified, current_time('timestamp')) . ' ago' ); ?></td>
                         <td>
                             <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&edit=' . urlencode($flosc_file)) ); ?>" class="button button-small">
-                                <?php echo $flosc_editing_file === $flosc_file ? 'Editing...' : 'Edit'; ?>
+                                <?php echo esc_html( $flosc_editing_file === $flosc_file ? 'Editing...' : 'Edit' ); ?>
                             </a>
                             <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&toggle_access=' . urlencode($flosc_file)) ); ?>" 
                                class="button button-small">

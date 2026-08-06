@@ -20,8 +20,12 @@ $flosc_quiz_docs_url = add_query_arg([
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-quiz';
-$flosc_enabled_quizzes = $flosc_flow_settings['enabled_quizzes'] ?? ['flosc_sample_data_numbers_quiz'];
-if ( ! is_array( $flosc_enabled_quizzes ) ) $flosc_enabled_quizzes = ['flosc_sample_data_numbers_quiz'];
+// Empty = no quizzes on this flow. Do not invent sample quiz IDs.
+$flosc_enabled_quizzes = $flosc_flow_settings['enabled_quizzes'] ?? [];
+if ( ! is_array( $flosc_enabled_quizzes ) ) {
+    $flosc_enabled_quizzes = [];
+}
+$flosc_enabled_quizzes = array_values( array_filter( array_map( 'sanitize_key', $flosc_enabled_quizzes ) ) );
 $flosc_all_quiz_types  = FLOSC_Quiz_Registry::get_all_quizzes();
 
 echo '<div class="flosc-docs-link-wrap">'

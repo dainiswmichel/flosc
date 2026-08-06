@@ -116,7 +116,7 @@ foreach ($flosc_doc_topics as $flosc_topic) {
                 }
                 ?>
                      <a href="<?php echo esc_url($flosc_link_url); ?>"
-                         class="flosc-docs-topic-link <?php echo $flosc_is_active ? 'flosc-docs-topic-link--active' : ''; ?>">
+                         class="flosc-docs-topic-link <?php echo esc_attr( $flosc_is_active ? 'flosc-docs-topic-link--active' : '' ); ?>">
                           <?php echo esc_html($flosc_status_icon) . ' ' . esc_html($flosc_topic['title']); ?>
                 </a>
             <?php endforeach; ?>

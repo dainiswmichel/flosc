@@ -155,10 +155,19 @@ class FLOSC_Chatpack {
             return [];
         }
 
-        return array_slice(array_map(function($msg) {
+        return array_slice(array_map(function ($msg) {
+            $content = (string) ($msg['content'] ?? '');
+            $src = is_array($msg['meta'] ?? null)
+                ? sanitize_key((string) ($msg['meta']['source'] ?? ''))
+                : '';
+            // Surface admin engagement inserts so the model knows they were admin-written.
+            if ($src === 'engagement_admin' && $content !== ''
+                && strpos($content, '[Admin engagement message]') === false) {
+                $content = '[Admin engagement message] ' . $content;
+            }
             return [
-                'role' => $msg['role'],
-                'content' => $msg['content'],
+                'role'    => $msg['role'],
+                'content' => $content,
             ];
         }, $session['messages']), -$max_messages);
     }
@@ -1183,7 +1192,8 @@ class FLOSC_Chatpack {
                 return [];
             }
 
-            $decoded = json_decode($trimmed, true);
+            // Pass 8: settings may store JSON; sanitize leaves after decode.
+            $decoded = (strlen($trimmed) <= 100000) ? json_decode($trimmed, true, 16) : null;
             if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
                 $items = $decoded;
             } else {
@@ -1198,7 +1208,7 @@ class FLOSC_Chatpack {
             if (!is_scalar($item)) {
                 continue;
             }
-            $v = trim((string) $item);
+            $v = sanitize_text_field(trim((string) $item));
             if ($v !== '') {
                 $normalized[] = $v;
             }
