@@ -155,18 +155,65 @@ if ( ! function_exists( 'flosc_get_user_ids_for_meta' ) ) {
 		if ( is_array( $cached ) ) {
 			return $cached;
 		}
-		// WP API only (no $wpdb) so Plugin Check DirectQuery is clean.
-		$args = array(
-			'fields'     => 'ID',
-			'meta_key'   => $meta_key,
-			'number'     => ( $limit > 0 ) ? $limit : -1,
-			'count_total'=> false,
-		);
-		if ( null !== $meta_value && '' !== $meta_value ) {
-			$args['meta_value']   = (string) $meta_value;
-			$args['meta_compare'] = $compare;
+		global $wpdb;
+		// Prepared $wpdb (not get_users meta_key args) — avoids SlowDBQuery; object-cached.
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		if ( null === $meta_value || '' === $meta_value ) {
+			if ( $limit > 0 ) {
+				$ids = $wpdb->get_col(
+					$wpdb->prepare(
+						"SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s LIMIT %d",
+						$meta_key,
+						$limit
+					)
+				);
+			} else {
+				$ids = $wpdb->get_col(
+					$wpdb->prepare(
+						"SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s",
+						$meta_key
+					)
+				);
+			}
+		} elseif ( 'LIKE' === $compare ) {
+			$like = '%' . $wpdb->esc_like( (string) $meta_value ) . '%';
+			if ( $limit > 0 ) {
+				$ids = $wpdb->get_col(
+					$wpdb->prepare(
+						"SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value LIKE %s LIMIT %d",
+						$meta_key,
+						$like,
+						$limit
+					)
+				);
+			} else {
+				$ids = $wpdb->get_col(
+					$wpdb->prepare(
+						"SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value LIKE %s",
+						$meta_key,
+						$like
+					)
+				);
+			}
+		} elseif ( $limit > 0 ) {
+			$ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value = %s LIMIT %d",
+					$meta_key,
+					(string) $meta_value,
+					$limit
+				)
+			);
+		} else {
+			$ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value = %s",
+					$meta_key,
+					(string) $meta_value
+				)
+			);
 		}
-		$ids = get_users( $args );
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
 		if ( ! is_array( $ids ) ) {
 			$ids = array();
 		}
@@ -237,18 +284,15 @@ if ( ! function_exists( 'flosc_get_post_ids_for_meta' ) ) {
 		if ( is_array( $cached ) ) {
 			return $cached;
 		}
-		// WP API only (no $wpdb).
-		$ids = get_posts(
-			array(
-				'post_type'              => 'any',
-				'post_status'            => 'any',
-				'fields'                 => 'ids',
-				'posts_per_page'         => $limit,
-				'no_found_rows'          => true,
-				'update_post_meta_cache' => false,
-				'update_post_term_cache' => false,
-				'meta_key'               => $meta_key,
-				'meta_value'             => $meta_value,
+		global $wpdb;
+		// Prepared $wpdb (not get_posts meta_key args) — avoids SlowDBQuery; object-cached.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		$ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value = %s LIMIT %d",
+				$meta_key,
+				$meta_value,
+				$limit
 			)
 		);
 		if ( ! is_array( $ids ) ) {
@@ -699,7 +743,8 @@ if (!function_exists('flosc_issue_post_purchase_session')) {
 
         wp_set_current_user($user_id);
         wp_set_auth_cookie($user_id, true);
-        // Core WP login action (required for session-aware plugins). Literal hook name for PrefixAllGlobals.
+        // Core WP login action (required for session-aware plugins).
+        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP action wp_login
         do_action( 'wp_login', $user->user_login, $user );
 
         // FLOSC's own cross-domain auth cookie rides alongside the WP cookie so a
