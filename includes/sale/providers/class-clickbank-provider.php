@@ -105,13 +105,21 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
      * IPN/INS webhook is the sole fulfillment path.
      */
     public function process_payment($user_id, $offer, $payment_data = []) {
-        return [
+        // Redirect only — never settled. Webhook is the only grant path.
+        if ( ! $this->is_configured() ) {
+            return new WP_Error( 'clickbank_not_configured', __( 'ClickBank is not configured', 'flosc' ), array( 'status' => 503 ) );
+        }
+        $url = $this->get_checkout_url( $payment_data['affiliate_id'] ?? null, $payment_data['vtid'] ?? null );
+        if ( $url === '' ) {
+            return new WP_Error( 'clickbank_link', __( 'ClickBank vendor and product item number are required', 'flosc' ), array( 'status' => 400 ) );
+        }
+        return array(
             'success'      => false,
             'pending'      => true,
             'redirect'     => true,
-            'checkout_url' => $this->get_checkout_url($payment_data['affiliate_id'] ?? null),
-            'message'      => __('Redirecting to ClickBank checkout. Access is granted only after ClickBank confirms payment.', 'flosc'),
-        ];
+            'checkout_url' => $url,
+            'message'      => __( 'Redirecting to ClickBank checkout. Access is granted only after ClickBank confirms payment.', 'flosc' ),
+        );
     }
     
     /**
@@ -438,111 +446,136 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
     }
     
     /**
-     * Handle initial sale
+     * Handle initial sale (after encrypted INS or signed form IPN only).
      *
-     * Access is granted only after IPN signature verification (caller).
-     * Receipt is claimed so one ClickBank payment cannot unlock twice.
+     * Contract:
+     * 1) product item matches configured cbitems when both present
+     * 2) FLOSC offer_id setting is required (no synthetic grant)
+     * 3) claim receipt → fulfill_settled_purchase once
      */
     private function handle_sale($params) {
-        $email = sanitize_email($params['ccustemail']);
-        $name = sanitize_text_field($params['ccustname']);
-        $receipt = sanitize_text_field($params['ctransreceipt']);
-        $amount = floatval($params['ctransamount'] ?? 0);
-        $product = sanitize_text_field($params['cproditem'] ?? '');
-        
-        // Check if product SKU matches (if configured)
-        $our_product = $this->get_setting('product', '');
-        if (!empty($our_product) && !empty($product)) {
-            if (strtoupper($product) !== strtoupper($our_product)) {
-                return new WP_REST_Response([
+        $email   = sanitize_email( (string) ( $params['ccustemail'] ?? '' ) );
+        $name    = sanitize_text_field( (string) ( $params['ccustname'] ?? '' ) );
+        $receipt = sanitize_text_field( (string) ( $params['ctransreceipt'] ?? '' ) );
+        $amount  = floatval( $params['ctransamount'] ?? 0 );
+        $product = sanitize_text_field( (string) ( $params['cproditem'] ?? '' ) );
+        $txn_type = strtoupper( (string) ( $params['ctransaction'] ?? '' ) );
+
+        if ( $email === '' || ! is_email( $email ) ) {
+            return new WP_Error( 'invalid_email', __( 'ClickBank sale missing valid customer email', 'flosc' ), array( 'status' => 400 ) );
+        }
+        if ( $receipt === '' ) {
+            return new WP_Error( 'invalid_payload', __( 'ClickBank sale missing receipt', 'flosc' ), array( 'status' => 400 ) );
+        }
+
+        // Live mode: ignore test transaction types (still return 200 so ClickBank does not retry forever).
+        $mode = (string) $this->get_setting( 'mode', 'sandbox' );
+        if ( 'live' === $mode && in_array( $txn_type, array( 'TEST', 'TEST_SALE', 'TEST_BILL', 'TEST_REBILL', 'TEST_RFND' ), true ) ) {
+            return new WP_REST_Response(
+                array(
                     'received' => true,
-                    'action' => 'ignored',
-                    'reason' => 'product_mismatch',
-                ], 200);
+                    'action'   => 'ignored',
+                    'reason'   => 'test_txn_in_live_mode',
+                ),
+                200
+            );
+        }
+
+        // Product item (cbitems) must match when both are set.
+        $our_product = sanitize_text_field( (string) $this->get_setting( 'product', '' ) );
+        if ( $our_product !== '' && $product !== '' && strtoupper( $product ) !== strtoupper( $our_product ) ) {
+            return new WP_REST_Response(
+                array(
+                    'received' => true,
+                    'action'   => 'ignored',
+                    'reason'   => 'product_mismatch',
+                ),
+                200
+            );
+        }
+
+        // Fail-closed: admin must map ClickBank → a real FLOSC offer id.
+        $offer_id = sanitize_text_field( (string) $this->get_setting( 'offer_id', '' ) );
+        if ( $offer_id === '' ) {
+            return new WP_Error(
+                'clickbank_offer_unconfigured',
+                __( 'Configure ClickBank FLOSC Offer ID before granting access', 'flosc' ),
+                array( 'status' => 500 )
+            );
+        }
+
+        if ( ! function_exists( 'flosc_sale' ) ) {
+            return new WP_Error( 'sale_unavailable', __( 'FLOSC sale system unavailable', 'flosc' ), array( 'status' => 500 ) );
+        }
+        $sale  = flosc_sale();
+        $offer = $sale->offers()->get_offer( $offer_id );
+        if ( ! $offer ) {
+            return new WP_Error( 'invalid_offer', __( 'ClickBank-mapped FLOSC offer not found', 'flosc' ), array( 'status' => 404 ) );
+        }
+        if ( method_exists( $sale, 'validate_offer_for_purchase' ) ) {
+            // Sales are paid fulfillment; free-only offers should not be CB-mapped.
+            $valid = $sale->validate_offer_for_purchase( $offer, 'paid' );
+            if ( is_wp_error( $valid ) ) {
+                // Explicit free offer mapped by mistake: still allow only if explicitly free + active.
+                if ( method_exists( $sale, 'offer_is_explicitly_free' ) && $sale->offer_is_explicitly_free( $offer ) ) {
+                    $valid = $sale->validate_offer_for_purchase( $offer, 'free' );
+                }
+                if ( is_wp_error( $valid ) ) {
+                    return $valid;
+                }
             }
         }
-        
-        // Find or create user
-        $user = get_user_by('email', $email);
-        
-        if (!$user) {
-            $user_id = $this->create_user_from_purchase($email, $name);
-            if (is_wp_error($user_id)) {
+
+        $user = get_user_by( 'email', $email );
+        if ( ! $user ) {
+            $user_id = $this->create_user_from_purchase( $email, $name );
+            if ( is_wp_error( $user_id ) ) {
                 return $user_id;
             }
         } else {
-            $user_id = $user->ID;
+            $user_id = (int) $user->ID;
         }
 
-        // Map ClickBank product to a FLOSC offer when configured; else product/access_level meta only.
-        $offer_id = sanitize_text_field((string) $this->get_setting('offer_id', ''));
-        if ($offer_id === '') {
-            $offer_id = 'clickbank_' . sanitize_key($product !== '' ? $product : 'default');
+        $currency = sanitize_text_field( (string) ( $params['ccurrency'] ?? '' ) );
+        $fulfill  = $sale->fulfill_settled_purchase(
+            $user_id,
+            $offer,
+            'clickbank',
+            array(
+                'transaction_id' => $receipt,
+                'provider'       => 'clickbank',
+                'amount'         => $amount,
+                'currency'       => $currency,
+                'success'        => true,
+                'status'         => 'completed',
+            )
+        );
+        if ( is_wp_error( $fulfill ) ) {
+            return $fulfill;
         }
 
-        if (function_exists('flosc_sale')) {
-            $claim = flosc_sale()->claim_transaction_fulfillment(
-                'clickbank',
-                $receipt,
-                $user_id,
-                $offer_id,
-                [
-                    'amount'   => $amount,
-                    'currency' => sanitize_text_field((string) ($params['ccurrency'] ?? '')),
-                ]
-            );
-            if (is_wp_error($claim)) {
-                return $claim;
-            }
-            if ($claim === 'already') {
-                return new WP_REST_Response([
-                    'success'           => true,
-                    'already_fulfilled' => true,
-                    'user_id'           => $user_id,
-                    'receipt'           => $receipt,
-                ], 200);
-            }
+        $access_level = sanitize_key( (string) $this->get_setting( 'access_level', 'full' ) );
+        update_user_meta( $user_id, '_flosc_access_level', $access_level );
+        update_user_meta( $user_id, '_flosc_purchased', true );
+        update_user_meta( $user_id, '_flosc_purchase_date', current_time( 'mysql' ) );
+        update_user_meta( $user_id, '_flosc_clickbank_receipt', $receipt );
+        update_user_meta( $user_id, '_flosc_payment_provider', 'clickbank' );
+        update_user_meta( $user_id, '_flosc_purchase_amount', $amount );
+        update_user_meta( $user_id, '_flosc_purchased_offer_id', $offer_id );
 
-            $offer = flosc_sale()->offers()->get_offer($offer_id);
-            if ($offer) {
-                flosc_sale()->access()->grant_from_offer($user_id, $offer, [
-                    'transaction_id' => $receipt,
-                    'provider'       => 'clickbank',
-                    'amount'         => $amount,
-                    'success'        => true,
-                ]);
-            }
-        }
-        
-        // Grant access (meta flags for legacy paths)
-        $access_level = $this->get_setting('access_level', 'full');
-        update_user_meta($user_id, '_flosc_access_level', $access_level);
-        update_user_meta($user_id, '_flosc_purchased', true);
-        update_user_meta($user_id, '_flosc_purchase_date', current_time('mysql'));
-        update_user_meta($user_id, '_flosc_clickbank_receipt', $receipt);
-        update_user_meta($user_id, '_flosc_payment_provider', 'clickbank');
-        update_user_meta($user_id, '_flosc_purchase_amount', $amount);
-        
-        // Fire action for integrations
-        do_action('flosc_clickbank_sale', $user_id, $params);
-        do_action('flosc_purchase_complete', $user_id, 'clickbank', $amount, [
-            'receipt' => $receipt,
-            'product' => $product,
-        ]);
-        do_action('flosc_purchase_completed', $user_id, [
-            'offer_id'       => $offer_id,
-            'provider'       => 'clickbank',
-            'transaction_id' => $receipt,
-            'amount'         => $amount,
-            'timestamp'      => time(),
-        ]);
-        
-        return new WP_REST_Response([
-            'success' => true,
-            'user_id' => $user_id,
-            'access_level' => $access_level,
-            'receipt' => $receipt,
-        ], 200);
+        do_action( 'flosc_clickbank_sale', $user_id, $params );
+
+        return new WP_REST_Response(
+            array(
+                'success'           => true,
+                'user_id'           => $user_id,
+                'offer_id'          => $offer_id,
+                'access_level'      => $access_level,
+                'receipt'           => $receipt,
+                'already_fulfilled' => ! empty( $fulfill['already_fulfilled'] ),
+            ),
+            200
+        );
     }
     
     /**
