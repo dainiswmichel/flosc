@@ -118,7 +118,7 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
         }
         
         $aff = $affiliate_id ?: 'AFFILIATE';
-        return "http://{$aff}.{$vendor}.hop.clickbank.net/?tid={$product}";
+        return "https://{$aff}.{$vendor}.hop.clickbank.net/?tid={$product}";
     }
     
     /**

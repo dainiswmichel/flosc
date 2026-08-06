@@ -84,3 +84,6 @@ composer.json
 composer.lock
 
 # Static tech-ref (flosc_documentation/) ships with plugin; admin/docs/ is WP admin UI
+
+# WP-CLI sample seeder — not runtime; do not ship to .org
+admin/create-sample-data.php

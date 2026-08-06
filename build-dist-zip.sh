@@ -54,6 +54,7 @@ DENY_PATTERNS=(
   'flosc_development_worknotes'
   'flosc_development_archives'
   'sample-data'
+  'admin/create-sample-data.php'
   'vendor'
   'composer.json'
   'composer.lock'
@@ -109,6 +110,7 @@ done < <(find "$STAGE/flosc" \( \
   -path '*/flosc_development_archives/*' -o \
   -path '*/sample-data' -o \
   -path '*/sample-data/*' -o \
+  -name 'create-sample-data.php' -o \
   -path '*/vendor' -o \
   -path '*/vendor/*' -o \
   -path '*/.git' -o \

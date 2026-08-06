@@ -1,7 +1,6 @@
 === FLOSC ===
 Contributors: dainismichel
 Donate link: https://dainis.net/donate/
-Repository URI: https://github.com/dainiswmichel/flosc
 Tags: chatbot, ai, quiz, membership, payments
 Requires at least: 7.0
 Requires PHP: 7.4
