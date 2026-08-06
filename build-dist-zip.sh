@@ -53,7 +53,6 @@ trap cleanup EXIT
 DENY_PATTERNS=(
   'flosc_development_worknotes'
   'flosc_development_archives'
-  'flosc_documentation'
   'sample-data'
   'vendor'
   'composer.json'
@@ -108,8 +107,6 @@ done < <(find "$STAGE/flosc" \( \
   -path '*/flosc_development_worknotes/*' -o \
   -path '*/flosc_development_archives' -o \
   -path '*/flosc_development_archives/*' -o \
-  -path '*/flosc_documentation' -o \
-  -path '*/flosc_documentation/*' -o \
   -path '*/sample-data' -o \
   -path '*/sample-data/*' -o \
   -path '*/vendor' -o \
@@ -161,9 +158,9 @@ ZIP_PATH="${OUT_DIR}/flosc-${STAMP}.zip"
 )
 
 # Second pass: inspect the zip itself
-if unzip -l "$ZIP_PATH" | grep -Eiq 'worknote|flosc_development_|/vendor/|composer\.(json|lock)|flosc_documentation|sample-data/|\.git/'; then
+if unzip -l "$ZIP_PATH" | grep -Eiq 'worknote|flosc_development_|/vendor/|composer\.(json|lock)|sample-data/|\.git/'; then
   echo "FATAL: zip contents still contain forbidden paths:" >&2
-  unzip -l "$ZIP_PATH" | grep -Ei 'worknote|flosc_development_|/vendor/|composer\.(json|lock)|flosc_documentation|sample-data/|\.git/' >&2 || true
+  unzip -l "$ZIP_PATH" | grep -Ei 'worknote|flosc_development_|/vendor/|composer\.(json|lock)|sample-data/|\.git/' >&2 || true
   rm -f "$ZIP_PATH"
   exit 1
 fi

@@ -83,5 +83,4 @@ vendor/
 composer.json
 composer.lock
 
-# Static tech-ref HTML not loaded at runtime (admin uses admin/docs/)
-flosc_documentation/
+# Static tech-ref (flosc_documentation/) ships with plugin; admin/docs/ is WP admin UI
