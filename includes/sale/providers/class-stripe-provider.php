@@ -134,26 +134,36 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
         }
         
         $user = get_user_by('ID', $user_id);
+        if (!$user) {
+            return new WP_Error('invalid_user', __('User not found', 'flosc'));
+        }
+
+        $offer_id = sanitize_text_field((string) ($offer['id'] ?? ($payment_data['offer_id'] ?? '')));
         
         // Handle based on offer type
-        if ($offer['type'] === 'subscription') {
-            return $this->create_subscription($user, $price_id, $payment_data);
-        } else {
-            return $this->create_payment($user, $price_id, $payment_data);
+        if (($offer['type'] ?? '') === 'subscription') {
+            return $this->create_subscription($user, $price_id, $payment_data, $offer_id);
         }
+
+        return $this->create_payment($user, $price_id, $payment_data, $offer_id);
     }
     
     /**
      * Create one-time payment
+     *
+     * @param WP_User $user
+     * @param string  $price_id
+     * @param array   $payment_data
+     * @param string  $offer_id Bound offer for metadata (PAY-02).
      */
-    private function create_payment($user, $price_id, $payment_data) {
+    private function create_payment($user, $price_id, $payment_data, $offer_id = '') {
         // If we have a payment_method_id, create PaymentIntent and confirm
         if (!empty($payment_data['payment_method_id'])) {
-            return $this->confirm_payment($user, $price_id, $payment_data['payment_method_id']);
+            return $this->confirm_payment($user, $price_id, $payment_data['payment_method_id'], $offer_id);
         }
         
-        // Otherwise, create a PaymentIntent for client-side confirmation
-        return $this->create_payment_intent($user, $price_id);
+        // Client-side confirmation path: returns client_secret only (not settled).
+        return $this->create_payment_intent($user, $price_id, 'usd', $offer_id);
     }
     
     /**
@@ -203,12 +213,25 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
     
     /**
      * Confirm a payment (server-side)
+     *
+     * @param WP_User $user
+     * @param string  $price_id
+     * @param string  $payment_method_id
+     * @param string  $offer_id
      */
-    private function confirm_payment($user, $price_id, $payment_method_id) {
+    private function confirm_payment($user, $price_id, $payment_method_id, $offer_id = '') {
         // Get price details
         $price = $this->api_request('GET', '/prices/' . $price_id);
         if (is_wp_error($price)) {
             return $price;
+        }
+
+        $metadata = [
+            'user_id'    => $user->ID,
+            'user_email' => $user->user_email,
+        ];
+        if ($offer_id !== '') {
+            $metadata['offer_id'] = $offer_id;
         }
         
         // Create and confirm PaymentIntent
@@ -217,10 +240,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
             'currency' => $price['currency'],
             'payment_method' => $payment_method_id,
             'confirm' => true,
-            'metadata' => [
-                'user_id' => $user->ID,
-                'user_email' => $user->user_email,
-            ],
+            'metadata' => $metadata,
             'receipt_email' => $user->user_email,
         ]);
         
@@ -234,14 +254,18 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
                 'transaction_id' => $response['id'],
                 'amount' => $response['amount'],
                 'currency' => $response['currency'],
+                'status' => 'succeeded',
             ];
         }
         
         if ($response['status'] === 'requires_action') {
+            // Incomplete — sale manager must not grant on this payload.
             return [
+                'success' => false,
                 'requires_action' => true,
                 'client_secret' => $response['client_secret'],
                 'payment_intent_id' => $response['id'],
+                'status' => 'requires_action',
             ];
         }
         
@@ -250,13 +274,25 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
     
     /**
      * Create subscription
+     *
+     * @param WP_User $user
+     * @param string  $price_id
+     * @param array   $payment_data
+     * @param string  $offer_id
      */
-    private function create_subscription($user, $price_id, $payment_data) {
+    private function create_subscription($user, $price_id, $payment_data, $offer_id = '') {
         // Get or create Stripe customer
         $customer_id = $this->get_or_create_customer($user);
         
         if (is_wp_error($customer_id)) {
             return $customer_id;
+        }
+
+        $metadata = [
+            'user_id' => $user->ID,
+        ];
+        if ($offer_id !== '') {
+            $metadata['offer_id'] = $offer_id;
         }
         
         $sub_data = [
@@ -264,9 +300,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
             'items' => [['price' => $price_id]],
             'payment_behavior' => 'default_incomplete',
             'expand' => ['latest_invoice.payment_intent'],
-            'metadata' => [
-                'user_id' => $user->ID,
-            ],
+            'metadata' => $metadata,
         ];
         
         // Add payment method if provided
@@ -286,9 +320,11 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
         
         if ($payment_intent && $payment_intent['status'] === 'requires_action') {
             return [
+                'success' => false,
                 'requires_action' => true,
                 'client_secret' => $payment_intent['client_secret'],
                 'subscription_id' => $response['id'],
+                'status' => 'requires_action',
             ];
         }
         
@@ -439,6 +475,7 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
     
     /**
      * v1.4.1: Handle successful payment - grant access based on offer
+     * PAY-01/PAY-02: only metadata-bound offer; claim txn before grant (idempotent with complete_purchase).
      */
     private function handle_payment_succeeded($payment_intent) {
         $meta = (isset($payment_intent['metadata']) && is_array($payment_intent['metadata']))
@@ -450,36 +487,30 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
         $amount = absint($payment_intent['amount'] ?? 0);
         $currency = sanitize_text_field((string) ($payment_intent['currency'] ?? ''));
 
-        if ($user_id > 0 && $offer_id !== '') {
-            // Grant access through sale manager
+        // Unbound payments must not grant — offer_id was set at PaymentIntent creation.
+        if ($user_id > 0 && $offer_id !== '' && $transaction_id !== '' && function_exists('flosc_sale')) {
             $sale_manager = flosc_sale();
             $offer = $sale_manager->offers()->get_offer($offer_id);
 
             if ($offer) {
                 $transaction = [
                     'transaction_id' => $transaction_id,
-                    'provider' => 'stripe',
-                    'amount' => $amount,
-                    'currency' => $currency,
+                    'provider'       => 'stripe',
+                    'amount'         => $amount,
+                    'currency'       => $currency,
+                    'success'        => true,
+                    'status'         => 'succeeded',
                 ];
 
-                $sale_manager->access()->grant_from_offer($user_id, $offer, $transaction);
-
-                // v1.4.6: Set transient for post-purchase chatbot greeting
-                set_transient('flosc_just_purchased_' . $user_id, true, 300);
-
-                // v1.4.6: Fire purchase_completed for listeners (e.g. FLOSC_Member_Access)
-                do_action('flosc_purchase_completed', $user_id, [
-                    'offer_id' => $offer_id,
-                    'grants_level' => sanitize_key((string) ($offer['grants']['level'] ?? 'member')),
-                    'provider' => 'stripe',
-                    'transaction_id' => $transaction_id,
-                    'amount' => $amount,
-                    'timestamp' => time(),
-                ]);
-
-                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-                    flosc_log("FLOSC: Access granted to user {$user_id} for offer {$offer_id} via Stripe webhook");
+                $fulfill = $sale_manager->fulfill_settled_purchase($user_id, $offer, 'stripe', $transaction);
+                if (!is_wp_error($fulfill)) {
+                    set_transient('flosc_just_purchased_' . $user_id, true, 300);
+                    update_user_meta($user_id, '_flosc_purchased_offer_id', $offer_id);
+                    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                        flosc_log("FLOSC: Access granted to user {$user_id} for offer {$offer_id} via Stripe webhook");
+                    }
+                } elseif (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                    flosc_log('FLOSC: Stripe webhook fulfill rejected: ' . $fulfill->get_error_message());
                 }
             }
         }

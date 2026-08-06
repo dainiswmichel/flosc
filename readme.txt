@@ -195,10 +195,10 @@ Data sent: payment metadata (amount, currency, customer and transaction identifi
 Service terms: https://stripe.com/legal
 Privacy policy: https://stripe.com/privacy
 
-8. ClickBank (for redirect checkout and IPN fulfillment)
-Endpoint examples: https://sandbox.clickbank.net/checkout/order/hop.php, https://*.hop.clickbank.net/
-Purpose: route buyers to ClickBank checkout and process purchase/refund/rebill events through IPN.
-Data sent: transaction identifiers, product identifiers, receipt fields, and customer identity fields provided by ClickBank IPN.
+8. ClickBank (for redirect checkout and INS/IPN fulfillment)
+Endpoint examples: https://VENDOR.pay.clickbank.net/?cbitems=ITEM (live seller payment link), https://sandbox.clickbank.net/checkout/order/hop.php (sandbox)
+Purpose: route buyers to ClickBank checkout; grant access only after Instant Notification Service (INS v6+/v8 encrypted JSON) or verified legacy IPN — never on redirect alone.
+Data sent: transaction identifiers, product item numbers (cbitems), receipt fields, and customer identity fields provided by ClickBank INS/IPN.
 Service terms: https://support.clickbank.com/en/articles/10535340-clickbank-terms-of-sale
 Privacy policy: https://support.clickbank.com/en/articles/10535346-clickbank-privacy-policy
 

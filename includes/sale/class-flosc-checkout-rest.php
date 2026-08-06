@@ -140,55 +140,82 @@ class FLOSC_Checkout_Rest {
         $method   = sanitize_text_field($request->get_param('method') ?? '');
         $provider_id = sanitize_text_field($request->get_param('provider') ?? '');
         $payment_data = $request->get_param('payment_data') ?? [];
+        if (!is_array($payment_data)) {
+            $payment_data = [];
+        }
 
-        // Free offer: grant access directly, no payment provider needed
+        $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
+        if (!empty($flow_id)) {
+            $this->flosc->set_flow_context($flow_id);
+        }
+        $offer = $this->flosc->sale()->offers()->get_offer($offer_id, $flow_id ?: null);
+        if (!$offer) {
+            return new WP_Error('invalid_offer', __('Offer not found', 'flosc'), ['status' => 404]);
+        }
+
+        $price = floatval($offer['pricing']['price'] ?? $offer['price'] ?? 0);
+        // Treat explicitly marked free offers as free even if a stray price field exists.
+        $is_free_offer = ($price <= 0.0)
+            || (!empty($offer['is_free']))
+            || (isset($offer['pricing']['type']) && $offer['pricing']['type'] === 'free')
+            || (isset($offer['type']) && $offer['type'] === 'free');
+
+        // PAY-01: Free grant path is only valid for free offers.
+        // Omitting provider on a paid offer must never grant access.
         if ($method === 'free' || empty($provider_id)) {
-            $flow_id = sanitize_text_field($request->get_param('flow_id') ?? '');
-            if (!empty($flow_id)) {
-                $this->flosc->set_flow_context($flow_id);
+            if (!$is_free_offer) {
+                if ($method === 'free') {
+                    return new WP_Error('not_free', __('This offer requires payment', 'flosc'), ['status' => 400]);
+                }
+                return new WP_Error(
+                    'provider_required',
+                    __('A payment provider is required for this offer', 'flosc'),
+                    ['status' => 400]
+                );
             }
-            $offer = $this->flosc->sale()->offers()->get_offer($offer_id, $flow_id ?: null);
-            if (!$offer) {
-                return new WP_Error('invalid_offer', __('Offer not found', 'flosc'), ['status' => 404]);
+
+            // Free offer must be active.
+            if (isset($offer['active']) && empty($offer['active'])) {
+                return new WP_Error('offer_inactive', __('This free offer is not active', 'flosc'), ['status' => 400]);
             }
-            $price = floatval($offer['pricing']['price'] ?? $offer['price'] ?? 0);
-            if ($price > 0 && $method === 'free') {
-                return new WP_Error('not_free', __('This offer requires payment', 'flosc'), ['status' => 400]);
+
+            // Deterministic txn id so free re-claims are idempotent (one free grant per user+offer).
+            $txn_id = 'free_' . $user_id . '_' . $offer_id;
+            $fulfill = $this->flosc->sale()->fulfill_settled_purchase(
+                $user_id,
+                $offer,
+                'free',
+                [
+                    'transaction_id' => $txn_id,
+                    'provider'       => 'free',
+                    'amount'         => 0,
+                    'currency'       => '',
+                    'success'        => true,
+                ]
+            );
+            if (is_wp_error($fulfill)) {
+                return $fulfill;
             }
-            // Grant access
-            $this->flosc->sale()->access()->grant_from_offer($user_id, $offer, [
-                'transaction_id' => 'free_' . time(),
-                'provider' => 'free',
-                'amount' => 0,
-            ]);
-            do_action('flosc_purchase_completed', $user_id, [
-                'offer_id' => $offer_id,
-                'grants_level' => $offer['grants_level'] ?? '',
-                'provider' => 'free',
-                'transaction_id' => 'free_' . time(),
-                'amount' => 0,
-                'timestamp' => time(),
-            ]);
+
             return new WP_REST_Response([
                 'success' => true,
                 'message' => __('Free access granted', 'flosc'),
+                'already_fulfilled' => !empty($fulfill['already_fulfilled']),
             ]);
         }
-        
-        // Paid purchase via provider
+
+        // Paid purchase via provider (process_purchase is fail-closed on incomplete states).
         $result = $this->flosc->sale()->process_purchase(
             $user_id,
             $offer_id,
             $provider_id,
             $payment_data
         );
-        
+
         if (is_wp_error($result)) {
             return $result;
         }
 
-        // process_purchase() already fires flosc_purchase_completed
-        
         return new WP_REST_Response($result);
     }
 
@@ -533,15 +560,15 @@ class FLOSC_Checkout_Rest {
         $numeric_amount = intval(str_replace(',', '', $amount));
         $formatted_amount = '$' . number_format($numeric_amount);
         
-        // Generate fun transaction ID
+        // Admin sandbox only (route is check_admin_endpoint_permission). Unique txn per call.
         $transaction_id = 'sandbox_' . $user_id . '_' . time() . '_' . wp_rand(1000, 9999);
-        
+
         // v3.0.5: Determine member level — check offer first (flow-aware), then product fallback
         $offer_manager = $this->flosc->sale()->offers();
         $member_level = 'member'; // Default fallback
         $product_name = 'Full Access';
         $product_icon = '🎁';
-        
+
         // Try the offer (flow-aware lookup)
         if (!empty($offer_id) && $offer_id !== 'sandbox') {
             $offer = $offer_manager->get_offer($offer_id, $flow_id ?: null);
@@ -552,72 +579,65 @@ class FLOSC_Checkout_Rest {
                 $product_id = $offer['product_id'] ?? '';
             }
         }
-        
-        // Grant product-specific membership level
+
+        $sandbox_offer = [
+            'id'     => $offer_id ?: 'flosc_sandbox',
+            'name'   => $product_name,
+            'grants' => [
+                'level'    => $member_level,
+                'features' => ['all_lessons', 'all_quizzes', 'ai_chat', 'premium_content'],
+            ],
+        ];
+
+        $fulfill = $this->flosc->sale()->fulfill_settled_purchase(
+            $user_id,
+            $sandbox_offer,
+            'sandbox',
+            [
+                'transaction_id' => $transaction_id,
+                'provider'       => 'sandbox',
+                'amount'         => $formatted_amount,
+                'sandbox'        => true,
+                'flow_id'        => $flow_id,
+                'success'        => true,
+                'status'         => 'succeeded',
+            ]
+        );
+        if (is_wp_error($fulfill)) {
+            return $fulfill;
+        }
+
         update_user_meta($user_id, '_flosc_member_level', $member_level);
         update_user_meta($user_id, '_flosc_purchased', true);
         update_user_meta($user_id, '_flosc_purchased_at', current_time('mysql'));
         update_user_meta($user_id, '_flosc_sandbox_amount', $formatted_amount);
         update_user_meta($user_id, '_flosc_sandbox_transaction', $transaction_id);
         update_user_meta($user_id, '_flosc_purchased_product', $product_id);
-        
-        // v1.4.4 FIX: Grant access through FLOSC_Member_Access so content protection works
-        // This sets _flosc_member_access='true' AND _flosc_memberlevel_{level}='yes'
+
         $member_access = FLOSC_Member_Access::instance();
         $member_access->grant_member_access($user_id, [
-            'offer_id' => $offer_id,
-            'grants_level' => $member_level,
-            'provider' => 'sandbox',
+            'offer_id'       => $offer_id,
+            'grants_level'   => $member_level,
+            'provider'       => 'sandbox',
             'transaction_id' => $transaction_id,
-            'amount' => $formatted_amount,
-            'sandbox' => true,
-            'flow_id' => $flow_id,
+            'amount'         => $formatted_amount,
+            'sandbox'        => true,
+            'flow_id'        => $flow_id,
         ]);
-        
-        // v1.4.0: Add to member levels array (user can have multiple products)
+
         $existing_levels = get_user_meta($user_id, '_flosc_member_levels', true) ?: [];
-        if (!in_array($member_level, $existing_levels)) {
+        if (!in_array($member_level, $existing_levels, true)) {
             $existing_levels[] = $member_level;
             update_user_meta($user_id, '_flosc_member_levels', $existing_levels);
         }
-        
-        // Grant full access via access manager
-        $access_manager = $this->flosc->sale()->access();
-        $sandbox_offer = [
-            'id' => $offer_id ?: 'flosc_sandbox',
-            'name' => $product_name,
-            'grants' => [
-                'level' => $member_level,
-                'features' => ['all_lessons', 'all_quizzes', 'ai_chat', 'premium_content'],
-            ],
-        ];
-        $access_manager->grant_from_offer($user_id, $sandbox_offer, [
-            'transaction_id' => $transaction_id,
-            'amount' => $formatted_amount,
-            'sandbox' => true,
-            'flow_id' => $flow_id,
-        ]);
-        
-        // Log the sandbox purchase
+
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Sandbox: User {$user_id} purchased {$product_name} ({$member_level}) for {$formatted_amount} (Transaction: {$transaction_id})");
+            flosc_log("FLOSC Sandbox: User {$user_id} purchased {$product_name} ({$member_level}) for {$formatted_amount} (Transaction: {$transaction_id})");
         }
-        
-        // Set transient for first_message_after_purchase condition
+
         set_transient('flosc_just_purchased_' . $user_id, true, 300);
-        
-        // v1.4.4 FIX: Fire flosc_purchase_completed (was only firing flosc_sandbox_purchase)
-        // This triggers FLOSC_Member_Access::grant_member_access for any other listeners
-        do_action('flosc_purchase_completed', $user_id, [
-            'offer_id' => $offer_id,
-            'grants_level' => $member_level,
-            'provider' => 'sandbox',
-            'transaction_id' => $transaction_id,
-            'amount' => $formatted_amount,
-            'timestamp' => time(),
-            'flow_id' => $flow_id,
-        ]);
-        
+
+        // fulfill_settled_purchase already fires flosc_purchase_completed.
         do_action('flosc_sandbox_purchase', $user_id, [
             'offer_id' => $offer_id,
             'product_id' => $product_id,
@@ -705,86 +725,111 @@ class FLOSC_Checkout_Rest {
     public function complete_purchase($request) {
         $payment_intent_id = sanitize_text_field($request->get_param('payment_intent_id'));
         $offer_id = sanitize_text_field($request->get_param('offer_id'));
-        
+
         if (empty($payment_intent_id) || empty($offer_id)) {
             return new WP_Error('missing_params', __('Missing payment_intent_id or offer_id', 'flosc'), ['status' => 400]);
         }
-        
+
         $user_id = get_current_user_id();
-        
-        // Check if already has access (webhook might have already processed)
-        $access_manager = $this->flosc->sale()->access();
-        if ($access_manager->has_offer($user_id, $offer_id)) {
-            // v1.4.6: Still set transient so post-purchase greeting shows on reload
-            set_transient('flosc_just_purchased_' . $user_id, true, 300);
-            return new WP_REST_Response([
-                'success' => true,
-                'message' => 'Access already granted',
-            ]);
+        if (!$user_id) {
+            return new WP_Error('not_logged_in', __('You must be logged in to complete a purchase', 'flosc'), ['status' => 401]);
         }
-        
-        // Get offer
-        $offer = $this->flosc->sale()->offers()->get_offer($offer_id);
+
+        $flow_id_param = sanitize_text_field($request->get_param('flow_id') ?? '');
+        if ($flow_id_param !== '') {
+            $this->flosc->set_flow_context($flow_id_param);
+        }
+
+        // Get offer (client-supplied offer_id is only a hint until PI metadata binds it).
+        $offer = $this->flosc->sale()->offers()->get_offer($offer_id, $flow_id_param ?: null);
         if (!$offer) {
             return new WP_Error('invalid_offer', __('Offer not found', 'flosc'), ['status' => 404]);
         }
-        
+
         // Verify payment with Stripe
         $stripe = $this->flosc->sale()->get_provider('stripe');
         if (!$stripe || !$stripe->is_configured()) {
             return new WP_Error('stripe_not_configured', __('Stripe is not configured', 'flosc'), ['status' => 500]);
         }
-        
+
         $payment_intent = $stripe->retrieve_payment_intent($payment_intent_id);
         if (is_wp_error($payment_intent)) {
             return $payment_intent;
         }
-        
-        // Verify payment succeeded and belongs to this user
-        if ($payment_intent['status'] !== 'succeeded') {
+
+        // Only succeeded payments fulfill. requires_action / processing / etc. are incomplete.
+        if (($payment_intent['status'] ?? '') !== 'succeeded') {
             return new WP_Error('payment_not_succeeded', __('Payment not completed', 'flosc'), ['status' => 400]);
         }
-        
-        $pi_user_id = $payment_intent['metadata']['user_id'] ?? null;
-        if (intval($pi_user_id) !== $user_id) {
+
+        $meta = (isset($payment_intent['metadata']) && is_array($payment_intent['metadata']))
+            ? $payment_intent['metadata']
+            : [];
+
+        $pi_user_id = absint($meta['user_id'] ?? 0);
+        if ($pi_user_id !== (int) $user_id) {
             return new WP_Error('user_mismatch', __('Payment does not belong to this user', 'flosc'), ['status' => 403]);
         }
-        
-        // Grant access
+
+        // PAY-02: Offer must be cryptographically bound via PI metadata set at intent creation.
+        $bound_offer_id = sanitize_text_field((string) ($meta['offer_id'] ?? ''));
+        if ($bound_offer_id === '') {
+            return new WP_Error(
+                'unbound_payment',
+                __('Payment is not bound to an offer and cannot grant access', 'flosc'),
+                ['status' => 400]
+            );
+        }
+        if ($bound_offer_id !== $offer_id) {
+            return new WP_Error(
+                'offer_mismatch',
+                __('Payment does not match the requested offer', 'flosc'),
+                ['status' => 403]
+            );
+        }
+
+        // Re-load offer from bound id (authoritative).
+        $offer = $this->flosc->sale()->offers()->get_offer($bound_offer_id, $flow_id_param ?: null);
+        if (!$offer) {
+            return new WP_Error('invalid_offer', __('Offer not found', 'flosc'), ['status' => 404]);
+        }
+
         $transaction = [
-            'transaction_id' => $payment_intent['id'],
-            'provider' => 'stripe',
-            'amount' => $payment_intent['amount'],
-            'currency' => $payment_intent['currency'],
+            'transaction_id' => sanitize_text_field((string) ($payment_intent['id'] ?? '')),
+            'provider'       => 'stripe',
+            'amount'         => absint($payment_intent['amount'] ?? 0),
+            'currency'       => sanitize_text_field((string) ($payment_intent['currency'] ?? '')),
+            'success'        => true,
+            'status'         => 'succeeded',
         ];
-        
-        $access_manager->grant_from_offer($user_id, $offer, $transaction);
-        
-        // v1.4.6: Set transient so chatbot shows post-purchase greeting on reload
+
+        $fulfill = $this->flosc->sale()->fulfill_settled_purchase(
+            $user_id,
+            $offer,
+            'stripe',
+            $transaction
+        );
+        if (is_wp_error($fulfill)) {
+            return $fulfill;
+        }
+
         set_transient('flosc_just_purchased_' . $user_id, true, 300);
-        
-        // v1.5.4: Store which flow this purchase belongs to
+
         $current_flow = $this->flosc->get_current_flow();
         $flow_id = $current_flow ? ($current_flow['id'] ?? '') : '';
+        if ($flow_id === '' && $flow_id_param !== '') {
+            $flow_id = $flow_id_param;
+        }
         if ($flow_id) {
             update_user_meta($user_id, '_flosc_purchased_flow_id', $flow_id);
         }
+        update_user_meta($user_id, '_flosc_purchased_offer_id', $bound_offer_id);
 
-        // v1.4.6: Fire purchase_completed for any listeners (e.g. FLOSC_Member_Access)
-        do_action('flosc_purchase_completed', $user_id, [
-            'offer_id' => $offer_id,
-            'grants_level' => $offer['grants']['level'] ?? 'member',
-            'provider' => 'stripe',
-            'transaction_id' => $payment_intent['id'],
-            'amount' => $payment_intent['amount'],
-            'flow_id' => $flow_id,
-            'timestamp' => time(),
-        ]);
-        
         return new WP_REST_Response([
-            'success' => true,
-            'message' => 'Access granted',
-            'access' => $access_manager->get_user_access($user_id),
+            'success'           => true,
+            'message'           => !empty($fulfill['already_fulfilled']) ? 'Access already granted' : 'Access granted',
+            'already_fulfilled' => !empty($fulfill['already_fulfilled']),
+            'access'            => $this->flosc->sale()->access()->get_user_access($user_id),
         ]);
     }
 

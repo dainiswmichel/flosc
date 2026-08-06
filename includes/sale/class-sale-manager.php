@@ -99,6 +99,218 @@ class FLOSC_Sale_Manager {
     }
     
     /**
+     * Whether a provider result is settled payment suitable for granting access.
+     *
+     * Fail-closed: redirect initiation, client_secret, requires_action, processing,
+     * and any result without a confirmed transaction_id never unlock access.
+     *
+     * @param mixed $result Provider process_payment() return value.
+     * @return bool
+     */
+    public function is_payment_settled($result) {
+        if (!is_array($result)) {
+            return false;
+        }
+
+        // Explicit incomplete / initiation-only states.
+        if (!empty($result['requires_action'])) {
+            return false;
+        }
+        if (!empty($result['redirect'])) {
+            return false;
+        }
+        if (!empty($result['pending'])) {
+            return false;
+        }
+
+        $status = strtolower((string) ($result['status'] ?? ''));
+        if (in_array($status, [
+            'requires_action',
+            'requires_payment_method',
+            'requires_confirmation',
+            'requires_capture',
+            'processing',
+            'canceled',
+            'cancelled',
+            'failed',
+        ], true)) {
+            return false;
+        }
+
+        // A client_secret alone is proof of intent creation, not payment.
+        if (!empty($result['client_secret']) && empty($result['success'])) {
+            return false;
+        }
+
+        $txn = isset($result['transaction_id']) ? (string) $result['transaction_id'] : '';
+        if ($txn === '') {
+            return false;
+        }
+
+        if (!empty($result['success'])) {
+            return true;
+        }
+        if (!empty($result['settled']) || !empty($result['paid'])) {
+            return true;
+        }
+        if (in_array($status, ['succeeded', 'active', 'trialing', 'completed', 'captured'], true)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Claim a processor transaction for exactly one (provider, txn) → (user, offer).
+     *
+     * Prevents PAY-02: reusing one settled payment to unlock a different offer.
+     * Same user + same offer is idempotent (webhook + browser race).
+     *
+     * @param string $provider        Provider id (stripe, paypal, tokens, free, …).
+     * @param string $transaction_id  Processor transaction / receipt id.
+     * @param int    $user_id         Buyer WordPress user id.
+     * @param string $offer_id        Offer being fulfilled.
+     * @param array  $extra           Optional amount/currency/mode metadata.
+     * @return true|string|WP_Error true on new claim, 'already' on idempotent repeat, WP_Error on conflict.
+     */
+    public function claim_transaction_fulfillment($provider, $transaction_id, $user_id, $offer_id, $extra = []) {
+        $provider        = sanitize_key((string) $provider);
+        $transaction_id  = sanitize_text_field((string) $transaction_id);
+        $offer_id        = sanitize_text_field((string) $offer_id);
+        $user_id         = absint($user_id);
+        $extra           = is_array($extra) ? $extra : [];
+
+        if ($provider === '' || $transaction_id === '' || $offer_id === '' || $user_id <= 0) {
+            return new WP_Error(
+                'invalid_fulfillment',
+                __('Missing fulfillment binding fields', 'flosc'),
+                ['status' => 400]
+            );
+        }
+
+        $option_key = '_flosc_fulfill_' . md5($provider . '|' . $transaction_id);
+        $record     = [
+            'provider'       => $provider,
+            'transaction_id' => $transaction_id,
+            'user_id'        => $user_id,
+            'offer_id'       => $offer_id,
+            'amount'         => $extra['amount'] ?? null,
+            'currency'       => isset($extra['currency']) ? sanitize_text_field((string) $extra['currency']) : null,
+            'mode'           => isset($extra['mode']) ? sanitize_key((string) $extra['mode']) : null,
+            'claimed_at'     => time(),
+        ];
+
+        // add_option is atomic when the key is new — first writer wins.
+        $added = add_option($option_key, $record, '', 'no');
+        if ($added) {
+            return true;
+        }
+
+        $existing = get_option($option_key);
+        if (!is_array($existing)) {
+            return new WP_Error(
+                'transaction_conflict',
+                __('This payment has already been fulfilled', 'flosc'),
+                ['status' => 409]
+            );
+        }
+
+        $same_user  = (int) ($existing['user_id'] ?? 0) === $user_id;
+        $same_offer = sanitize_text_field((string) ($existing['offer_id'] ?? '')) === $offer_id;
+        if ($same_user && $same_offer) {
+            return 'already';
+        }
+
+        return new WP_Error(
+            'transaction_reuse',
+            __('This payment has already been used for a different purchase', 'flosc'),
+            ['status' => 409]
+        );
+    }
+
+    /**
+     * Fulfill a settled purchase: claim transaction, grant offer, log, fire hooks.
+     *
+     * Call only after payment is confirmed settled (not requires_action / redirect).
+     *
+     * @param int    $user_id
+     * @param array  $offer
+     * @param string $provider_id
+     * @param array  $transaction Must include transaction_id; may include amount/currency.
+     * @return array|WP_Error
+     */
+    public function fulfill_settled_purchase($user_id, array $offer, $provider_id, array $transaction) {
+        $user_id     = absint($user_id);
+        $provider_id = sanitize_key((string) $provider_id);
+        $offer_id    = sanitize_text_field((string) ($offer['id'] ?? ''));
+        $txn_id      = sanitize_text_field((string) ($transaction['transaction_id'] ?? ''));
+
+        if ($user_id <= 0 || $offer_id === '' || $txn_id === '' || $provider_id === '') {
+            return new WP_Error(
+                'invalid_fulfillment',
+                __('Cannot fulfill purchase with incomplete binding', 'flosc'),
+                ['status' => 400]
+            );
+        }
+
+        // Ensure provider is stamped on the transaction for the access ledger.
+        if (empty($transaction['provider'])) {
+            $transaction['provider'] = $provider_id;
+        }
+
+        $claim = $this->claim_transaction_fulfillment(
+            $provider_id,
+            $txn_id,
+            $user_id,
+            $offer_id,
+            [
+                'amount'   => $transaction['amount'] ?? null,
+                'currency' => $transaction['currency'] ?? null,
+                'mode'     => $transaction['mode'] ?? null,
+            ]
+        );
+        if (is_wp_error($claim)) {
+            return $claim;
+        }
+
+        if ($claim === 'already') {
+            return [
+                'success'           => true,
+                'already_fulfilled' => true,
+                'offer'             => $offer,
+                'provider'          => $provider_id,
+                'transaction'       => $transaction,
+                'access'            => $this->access_manager->get_user_access($user_id),
+            ];
+        }
+
+        $this->access_manager->grant_from_offer($user_id, $offer, $transaction);
+        $this->log_purchase($user_id, $offer, $provider_id, $transaction);
+
+        $purchase_payload = [
+            'offer_id'       => $offer_id,
+            'grants_level'   => $offer['grants']['level'] ?? ($offer['grants_level'] ?? ''),
+            'provider'       => $provider_id,
+            'transaction_id' => $txn_id,
+            'amount'         => $transaction['amount'] ?? ($offer['price'] ?? 0),
+            'currency'       => $transaction['currency'] ?? '',
+            'timestamp'      => time(),
+        ];
+        if (!empty($transaction['flow_id'])) {
+            $purchase_payload['flow_id'] = sanitize_text_field((string) $transaction['flow_id']);
+        }
+        do_action('flosc_purchase_completed', $user_id, $purchase_payload);
+
+        return [
+            'success'     => true,
+            'offer'       => $offer,
+            'provider'    => $provider_id,
+            'transaction' => $transaction,
+            'access'      => $this->access_manager->get_user_access($user_id),
+        ];
+    }
+
+    /**
      * Process a purchase
      * 
      * @param int $user_id
@@ -131,31 +343,22 @@ class FLOSC_Sale_Manager {
             do_action('flosc_purchase_failed', $user_id, $offer_id, $provider_id, $result);
             return $result;
         }
-        
-        // Grant access based on offer
-        $this->access_manager->grant_from_offer($user_id, $offer, $result);
-        
-        // Log the purchase
-        $this->log_purchase($user_id, $offer, $provider_id, $result);
-        
-        // Fire purchase completed action with standardized 2-arg signature
-        // Args: $user_id, $purchase_data (array with offer details)
-        do_action('flosc_purchase_completed', $user_id, [
-            'offer_id' => $offer_id,
-            'grants_level' => $offer['grants']['level'] ?? '',
-            'provider' => $provider_id,
-            'transaction_id' => $result['transaction_id'] ?? null,
-            'amount' => $offer['price'] ?? 0,
-            'timestamp' => time(),
-        ]);
-        
-        return [
-            'success' => true,
-            'offer' => $offer,
-            'provider' => $provider_id,
-            'transaction' => $result,
-            'access' => $this->access_manager->get_user_access($user_id),
-        ];
+
+        // PAY-01: Incomplete results (ClickBank redirect, Stripe requires_action / client_secret)
+        // must never grant access. Return the initiation payload for the client to continue.
+        if (!$this->is_payment_settled($result)) {
+            return [
+                'success'     => false,
+                'pending'     => true,
+                'provider'    => $provider_id,
+                'offer_id'    => $offer_id,
+                'transaction' => is_array($result) ? $result : [],
+                'message'     => __('Payment initiated. Access is granted only after payment is confirmed.', 'flosc'),
+            ];
+        }
+
+        // PAY-02 + PAY-01 settled path: bind txn→offer→user before grant.
+        return $this->fulfill_settled_purchase($user_id, $offer, $provider_id, $result);
     }
     
     /**

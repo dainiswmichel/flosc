@@ -329,6 +329,7 @@ trait FLOSC_Admin_Trait {
             'flosc_clickbank_vendor' => 'text',
             'flosc_clickbank_secret' => 'secret',
             'flosc_clickbank_product' => 'text',
+            'flosc_clickbank_offer_id' => 'text',
             'flosc_clickbank_access_level' => 'text',
             'flosc_paypal_mode' => 'text',
             'flosc_paypal_client_id' => 'text',
