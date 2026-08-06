@@ -1,5 +1,6 @@
 # FLOSC distribution exclusions
 # Keep release archives focused on runtime plugin code only.
+# ALWAYS build zips with ./build-dist-zip.sh (fail-closed). Never zip -r by hand.
 
 # VCS and local editor state
 .git/
