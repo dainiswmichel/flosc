@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|--------|
 | **Version** | 8.0.0 |
-| **Git commit** | `c7ee9214ef9398bdccb62a3f65df66def611c2e1` |
+| **Git commit** | `4f959cdc0e2551baf81f63921af3a42a2e8033d9` |
 | **ZIP (operator path)** | `mvp_sprint/flosc_8_0_0/zip-files/flosc.zip` |
 | **Build** | `flosc/build-dist-zip.sh` only |
 | **SHA-256** | `50999f2da6cba73b1cecf985ad0d3cbffbe32259e6f5e89ecf5d5f3d21d7f89f` |
