@@ -273,87 +273,163 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
     }
     
     /**
-     * Create subscription
+     * Create subscription (Stripe Subscriptions API).
+     *
+     * With payment_behavior=default_incomplete the normal first response is
+     * status=incomplete + PaymentIntent client_secret for the client to confirm.
+     * Only status=active is settled for process_purchase fulfillment.
      *
      * @param WP_User $user
-     * @param string  $price_id
+     * @param string  $price_id Stripe Price id.
      * @param array   $payment_data
-     * @param string  $offer_id
+     * @param string  $offer_id Bound offer for metadata (PAY-02).
+     * @return array|WP_Error
      */
     private function create_subscription($user, $price_id, $payment_data, $offer_id = '') {
-        // Get or create Stripe customer
         $customer_id = $this->get_or_create_customer($user);
-        
         if (is_wp_error($customer_id)) {
             return $customer_id;
         }
 
-        $metadata = [
-            'user_id' => $user->ID,
-        ];
+        $metadata = array(
+            'user_id' => (string) $user->ID,
+        );
         if ($offer_id !== '') {
             $metadata['offer_id'] = $offer_id;
         }
-        
-        $sub_data = [
-            'customer' => $customer_id,
-            'items' => [['price' => $price_id]],
-            'payment_behavior' => 'default_incomplete',
-            'expand' => ['latest_invoice.payment_intent'],
-            'metadata' => $metadata,
-        ];
-        
-        // Add payment method if provided
-        if (!empty($payment_data['payment_method_id'])) {
-            $sub_data['default_payment_method'] = $payment_data['payment_method_id'];
+
+        $sub_data = array(
+            'customer'          => $customer_id,
+            'items'             => array( array( 'price' => $price_id ) ),
+            'payment_behavior'  => 'default_incomplete',
+            'expand'            => array( 'latest_invoice.payment_intent' ),
+            'metadata'          => $metadata,
+        );
+
+        if ( ! empty( $payment_data['payment_method_id'] ) ) {
+            $sub_data['default_payment_method'] = sanitize_text_field( (string) $payment_data['payment_method_id'] );
         }
-        
-        $response = $this->api_request('POST', '/subscriptions', $sub_data);
-        
-        if (is_wp_error($response)) {
+
+        $response = $this->api_request( 'POST', '/subscriptions', $sub_data );
+        if ( is_wp_error( $response ) ) {
             return $response;
         }
-        
-        // Check if needs payment confirmation
-        $invoice = $response['latest_invoice'];
+
+        $subscription_id = sanitize_text_field( (string) ( $response['id'] ?? '' ) );
+        if ( $subscription_id === '' ) {
+            return new WP_Error( 'subscription_failed', __( 'Stripe returned no subscription id', 'flosc' ) );
+        }
+
+        $status = strtolower( (string) ( $response['status'] ?? '' ) );
+
+        // Resolve PaymentIntent (may be nested object, id string, or missing).
+        $payment_intent = $this->extract_subscription_payment_intent( $response );
+
+        // Client must confirm / authenticate — never grant access.
+        if ( is_array( $payment_intent ) ) {
+            $pi_status = strtolower( (string) ( $payment_intent['status'] ?? '' ) );
+            $client_secret = (string) ( $payment_intent['client_secret'] ?? '' );
+            if ( $client_secret !== '' && in_array( $pi_status, array(
+                'requires_action',
+                'requires_confirmation',
+                'requires_payment_method',
+                'processing',
+            ), true ) ) {
+                return array(
+                    'success'            => false,
+                    'pending'            => true,
+                    'requires_action'    => ( 'requires_action' === $pi_status ),
+                    'client_secret'      => $client_secret,
+                    'subscription_id'    => $subscription_id,
+                    'payment_intent_id'  => sanitize_text_field( (string) ( $payment_intent['id'] ?? '' ) ),
+                    'status'             => $pi_status,
+                );
+            }
+        }
+
+        // Settled paid subscription only.
+        if ( 'active' === $status ) {
+            update_user_meta( $user->ID, '_flosc_stripe_subscription', $subscription_id );
+            update_user_meta( $user->ID, '_flosc_subscription_status', 'active' );
+
+            return array(
+                'success'         => true,
+                'transaction_id'  => $subscription_id,
+                'subscription_id' => $subscription_id,
+                'status'          => 'active',
+            );
+        }
+
+        // Incomplete is the expected post-create state until PI is confirmed — not a hard failure.
+        if ( in_array( $status, array( 'incomplete', 'incomplete_expired' ), true ) ) {
+            $pending = array(
+                'success'         => false,
+                'pending'         => true,
+                'subscription_id' => $subscription_id,
+                'status'          => $status,
+                'message'         => __( 'Subscription created; complete payment to activate access.', 'flosc' ),
+            );
+            if ( is_array( $payment_intent ) && ! empty( $payment_intent['client_secret'] ) ) {
+                $pending['client_secret']     = (string) $payment_intent['client_secret'];
+                $pending['payment_intent_id'] = sanitize_text_field( (string) ( $payment_intent['id'] ?? '' ) );
+                $pending['requires_action']   = ( 'requires_action' === strtolower( (string) ( $payment_intent['status'] ?? '' ) ) );
+            }
+            return $pending;
+        }
+
+        // Trialing is not settled payment (PAY-01C).
+        if ( 'trialing' === $status ) {
+            update_user_meta( $user->ID, '_flosc_stripe_subscription', $subscription_id );
+            update_user_meta( $user->ID, '_flosc_subscription_status', 'trialing' );
+            return array(
+                'success'         => false,
+                'pending'         => true,
+                'subscription_id' => $subscription_id,
+                'status'          => 'trialing',
+                'message'         => __( 'Subscription is trialing; access is granted only after an active paid status.', 'flosc' ),
+            );
+        }
+
+        return new WP_Error(
+            'subscription_failed',
+            sprintf(
+                /* translators: %s: Stripe subscription status */
+                __( 'Failed to create subscription (status: %s)', 'flosc' ),
+                $status !== '' ? $status : 'unknown'
+            )
+        );
+    }
+
+    /**
+     * Pull PaymentIntent array from a Subscription create/retrieve response.
+     *
+     * @param array $subscription Stripe subscription object.
+     * @return array|null
+     */
+    private function extract_subscription_payment_intent( array $subscription ) {
+        $invoice = $subscription['latest_invoice'] ?? null;
+
+        if ( is_string( $invoice ) && $invoice !== '' ) {
+            $invoice = $this->api_request( 'GET', '/invoices/' . rawurlencode( $invoice ) );
+            if ( is_wp_error( $invoice ) || ! is_array( $invoice ) ) {
+                return null;
+            }
+        }
+
+        if ( ! is_array( $invoice ) ) {
+            return null;
+        }
+
         $payment_intent = $invoice['payment_intent'] ?? null;
-        
-        if ($payment_intent && $payment_intent['status'] === 'requires_action') {
-            return [
-                'success' => false,
-                'requires_action' => true,
-                'client_secret' => $payment_intent['client_secret'],
-                'subscription_id' => $response['id'],
-                'status' => 'requires_action',
-            ];
-        }
-        
-        if ($response['status'] === 'active') {
-            // Save subscription ID to user
-            update_user_meta($user->ID, '_flosc_stripe_subscription', $response['id']);
 
-            return [
-                'success' => true,
-                'transaction_id' => $response['id'],
-                'subscription_id' => $response['id'],
-                'status' => 'active',
-            ];
+        if ( is_string( $payment_intent ) && $payment_intent !== '' ) {
+            $payment_intent = $this->api_request( 'GET', '/payment_intents/' . rawurlencode( $payment_intent ) );
+            if ( is_wp_error( $payment_intent ) || ! is_array( $payment_intent ) ) {
+                return null;
+            }
         }
 
-        // PAY-01C: trialing is not settled payment. Fulfill only after active (or explicit later path).
-        if ($response['status'] === 'trialing') {
-            update_user_meta($user->ID, '_flosc_stripe_subscription', $response['id']);
-            update_user_meta($user->ID, '_flosc_subscription_status', 'trialing');
-            return [
-                'success' => false,
-                'pending' => true,
-                'subscription_id' => $response['id'],
-                'status' => 'trialing',
-                'message' => __('Subscription is trialing; access is granted only after an active paid status.', 'flosc'),
-            ];
-        }
-
-        return new WP_Error('subscription_failed', __('Failed to create subscription', 'flosc'));
+        return is_array( $payment_intent ) ? $payment_intent : null;
     }
     
     /**
