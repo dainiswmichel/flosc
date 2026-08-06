@@ -2,6 +2,10 @@
 # Keep release archives focused on runtime plugin code only.
 # ALWAYS build zips with ./build-dist-zip.sh (fail-closed). Never zip -r by hand.
 
+# Operator / auditor artifacts (never ship in plugin ZIP)
+RELEASE_RECORD.md
+CHECKER-PROMPT*.md
+
 # VCS and local editor state
 .git/
 .github/

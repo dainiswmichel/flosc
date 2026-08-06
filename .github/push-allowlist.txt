@@ -20,6 +20,8 @@ uninstall.php
 .gitignore
 .distignore
 build-dist-zip.sh
+RELEASE_RECORD.md
+CHECKER-PROMPT-RESUBMIT.md
 
 .github/copilot-instructions.md
 .github/push-allowlist.txt
