@@ -4,7 +4,7 @@
 
 I am sorry for wasting your time on earlier packages.
 
-Previous deliveries were treated as “ready” when they were not. Package hygiene, version strings, and static cleanliness were over-weighted. Independently exploitable payment failures (PAY-01 and PAY-02), incomplete provider contracts (especially ClickBank protocol drift and fail-open grants), and plaintext-password email paths were left for you to find. That was an incomplete security review and an unfair use of external auditor time.
+Previous deliveries were treated as "ready" when they were not. Package hygiene, version strings, and static cleanliness were over-weighted. Independently exploitable payment failures (PAY-01 and PAY-02), incomplete provider contracts (especially ClickBank protocol drift and fail-open grants), and plaintext-password email paths were left for you to find. That was an incomplete security review and an unfair use of external auditor time.
 
 I am asking you to **forgive that waste**, discard findings that applied only to **superseded SHAs** unless you re-verify them on **this** ZIP, and audit **only** the package frozen below.
 
@@ -18,9 +18,9 @@ I will not ask you to re-litigate fixed packaging theater. Please apply full rig
 
 | Field | Value |
 |-------|--------|
-| **ZIP** | `mvp_sprint/flosc_8_0_0/zip-files/flosc.zip` (also `flosc-20260806-230613.zip`) |
-| **SHA-256** | `1324a03139a4181ed9ad97c58ba7ab29597dfa46830807027b17f893fedc1cb5` |
-| **Git** | payment architecture at `89c2741`; release record commit on `main` (see GitHub `dainiswmichel/flosc`) |
+| **ZIP** | `mvp_sprint/flosc_8_0_0/zip-files/flosc.zip` |
+| **SHA-256** | `50999f2da6cba73b1cecf985ad0d3cbffbe32259e6f5e89ecf5d5f3d21d7f89f` |
+| **Git** | `205ff528f760c7ec796a03d5ae7df42d08f6320c` on GitHub `dainiswmichel/flosc` (payment architecture `89c2741` + freeze record) |
 | **Version** | `8.0.0` (plugin header, `FLOSC_VERSION`, Stable tag) |
 | **Top-level** | single `flosc/` |
 | **Archive** | 224 ZIP entries |
@@ -78,7 +78,7 @@ readme.txt (ClickBank external services)
 ## Evidence protocol (minimum for GO)
 
 ### Phase 0 — freeze
-- [ ] `shasum -a 256` equals `1324a03139a4181ed9ad97c58ba7ab29597dfa46830807027b17f893fedc1cb5`
+- [ ] `shasum -a 256` equals `50999f2da6cba73b1cecf985ad0d3cbffbe32259e6f5e89ecf5d5f3d21d7f89f`
 - [ ] single top-level `flosc/`
 - [ ] version `8.0.0` in three locations
 - [ ] docs present; prohibited material absent
@@ -122,7 +122,7 @@ readme.txt (ClickBank external services)
 
 - Prefer line-level citations (file + function).
 - Separate **true blockers** from **stale findings** already fixed on prior commits.
-- Facts only. No “looks fine” without path proof.
+- Facts only. No "looks fine" without path proof.
 - If Plugin Check runtime is unavailable in your sandbox, state that and still require the operator to run Plugin-repo on this SHA before upload.
 
 ---

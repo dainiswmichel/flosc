@@ -3,10 +3,10 @@
 | Field | Value |
 |-------|--------|
 | **Version** | 8.0.0 |
-| **Git commit** | `aa0f7d237188ee5d9c552737ce73756182e0d5cf` |
+| **Git commit** | `205ff528f760c7ec796a03d5ae7df42d08f6320c` |
 | **ZIP (operator path)** | `mvp_sprint/flosc_8_0_0/zip-files/flosc.zip` |
 | **Build** | `flosc/build-dist-zip.sh` only |
-| **SHA-256** | `1324a03139a4181ed9ad97c58ba7ab29597dfa46830807027b17f893fedc1cb5` |
+| **SHA-256** | `50999f2da6cba73b1cecf985ad0d3cbffbe32259e6f5e89ecf5d5f3d21d7f89f` |
 | **Entries** | 224 |
 | **PHP** | 128 files, `php -l` clean |
 | **Frozen** | 2026-08-06 |
