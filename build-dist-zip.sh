@@ -16,6 +16,31 @@ if [[ ! -f .distignore ]]; then
   exit 1
 fi
 
+# Refuse to build if review/dev junk is sitting in the ship tree.
+# Silent exclude is not enough — presence means a hand zip -r will ship it.
+SOURCE_DENY=(
+  flosc_development_worknotes
+  flosc_development_archives
+  zip-files
+  tmp
+  node_modules
+)
+source_fail=0
+for d in "${SOURCE_DENY[@]}"; do
+  if [[ -e "$ROOT/$d" ]]; then
+    echo "FATAL: remove $d from the ship tree before building a zip" >&2
+    source_fail=1
+  fi
+done
+if [[ "$source_fail" -ne 0 ]]; then
+  echo "FATAL: clean the ship tree, then re-run ./build-dist-zip.sh" >&2
+  exit 1
+fi
+# vendor/ may exist for local PHPCS; it must never enter the zip (scanned below).
+if [[ -d "$ROOT/vendor" ]]; then
+  echo "[build-dist-zip] note: vendor/ present locally — excluded from zip (must stay excluded)"
+fi
+
 STAMP="${1:-$(date +%Y%m%d-%H%M%S)}"
 OUT_DIR="${FLOSC_ZIP_OUT_DIR:-$(cd .. && pwd)/zip-files}"
 mkdir -p "$OUT_DIR"
