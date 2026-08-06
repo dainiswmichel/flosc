@@ -166,14 +166,14 @@ $flosc_render_rule = static function ($rule, $audience, $index, $open = false) u
         <div class="flosc-eng-rule__body">
             <input type="hidden" name="engagement_rule_id[]" class="flosc-eng-rule-id" value="<?php echo esc_attr($rid); ?>">
             <input type="hidden" name="engagement_rule_audience[]" class="flosc-eng-rule-audience" value="<?php echo esc_attr($audience); ?>">
-            <p style="margin:0 0 10px;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;">
+            <p class="flosc-eng-toolbar">
                 <label>
                     <input type="checkbox" class="flosc-eng-rule-enabled" name="engagement_rule_enabled[<?php echo esc_attr((string) $index); ?>]" value="1" <?php checked($en); ?>>
                     <strong>Rule active</strong>
                 </label>
-                <button type="button" class="button-link-delete flosc-eng-rule-remove" style="color:#b32d2e;">Remove rule</button>
+                <button type="button" class="button-link-delete flosc-eng-rule-remove">Remove rule</button>
             </p>
-            <table class="form-table" style="margin:0;">
+            <table class="form-table flosc-eng-form-table">
                 <tr>
                     <th scope="row"><label>Title</label></th>
                     <td>
@@ -214,16 +214,16 @@ $flosc_render_rule = static function ($rule, $audience, $index, $open = false) u
                 <tr>
                     <th scope="row">Then · floscResponse</th>
                     <td>
-                        <label style="display:block;margin-bottom:6px;">
+                        <label class="flosc-eng-label">
                             <input type="checkbox" class="flosc-eng-rule-action-chat" name="engagement_rule_action_chat[<?php echo esc_attr((string) $index); ?>]" value="1" <?php checked($chat_on); ?>>
                             In-chat message
                         </label>
                         <textarea name="engagement_rule_chat_message[]" rows="2" class="large-text flosc-eng-rule-chat-message"
                                   placeholder="Welcome back!"><?php echo esc_textarea($msg); ?></textarea>
-                        <p class="description" style="margin:4px 0 10px;">
+                        <p class="description flosc-eng-desc-spacious">
                             Parameter you edit. AI is told this was an <strong>admin engagement</strong> insert.
                         </p>
-                        <label style="display:block;margin:10px 0 6px;">
+                        <label class="flosc-eng-label flosc-eng-label-spaced">
                             <input type="checkbox" class="flosc-eng-rule-action-email" name="engagement_rule_action_email[<?php echo esc_attr((string) $index); ?>]" value="1" <?php checked($email_on); ?>>
                             Send email when this fires
                         </label>
@@ -378,7 +378,7 @@ $flosc_framework = class_exists('FLOSC_Framework') ? FLOSC_Framework::instance()
             <strong>In-chat timing:</strong> once per browser session when chat finishes loading — not randomly mid-chat.
             Related surfaces (not reconfigured here): Flow, Quiz, Concierge, Trajectories, Offers, Email.
         </p>
-        <p class="flosc-eng-related-links" style="margin:10px 0 0;display:flex;flex-wrap:wrap;gap:8px;">
+        <p class="flosc-eng-related-links">
             <a class="button button-small" href="<?php echo esc_url($flosc_tab_url('flow')); ?>">Flow →</a>
             <a class="button button-small" href="<?php echo esc_url($flosc_tab_url('quiz')); ?>">Quiz →</a>
             <a class="button button-small" href="<?php echo esc_url($flosc_tab_url('concierge')); ?>">Concierge →</a>
@@ -442,7 +442,7 @@ $flosc_framework = class_exists('FLOSC_Framework') ? FLOSC_Framework::instance()
                     <button type="button" class="flosc-condition-copy" data-condition="offer_shown_full_access"><code>offer_shown_{id}</code></button>
                     <span class="flosc-cond-desc">Replace with real offer id — used when Offers auto-show</span>
                     <button type="button" class="flosc-condition-copy" data-condition="!offer_purchased_full_access"><code>!offer_purchased_{id}</code></button>
-                    <p class="description" style="margin-top:8px;">
+                    <p class="description flosc-eng-desc-mt">
                         <a class="button button-small" href="<?php echo esc_url($flosc_tab_url('offers')); ?>">Open Offers to configure →</a>
                     </p>
                 </div>
@@ -460,7 +460,7 @@ $flosc_framework = class_exists('FLOSC_Framework') ? FLOSC_Framework::instance()
         </div>
     </details>
 
-    <div class="flosc-eng-audience-accordions" style="margin:0 0 1.5rem;">
+    <div class="flosc-eng-audience-accordions">
 
         <?php
         // ── Visitor ──────────────────────────────────────────────────────────
@@ -481,7 +481,7 @@ $flosc_framework = class_exists('FLOSC_Framework') ? FLOSC_Framework::instance()
                     }
                     ?>
                 </div>
-                <p style="margin:12px 0 0;">
+                <p class="flosc-eng-actions">
                     <button type="button" class="button flosc-eng-add-rule" data-audience="visitor">+ Add visitor rule</button>
                 </p>
             </div>
@@ -498,14 +498,14 @@ $flosc_framework = class_exists('FLOSC_Framework') ? FLOSC_Framework::instance()
             </summary>
             <div class="flosc-eng-accordion__body">
                 <p class="description">Free / non-member profiles. Example: welcome-back chat, inactive email.</p>
-                <table class="form-table" style="margin:0 0 12px;">
+                <table class="form-table flosc-eng-form-table-mb">
                     <tr>
                         <th scope="row"><label for="flow_guest_access_days">Guest access duration</label></th>
                         <td>
                             <input type="number" id="flow_guest_access_days" name="flow_guest_access_days"
                                    value="<?php echo esc_attr((string) $flosc_guest_access_days); ?>"
                                    min="0" max="365" class="small-text"> days
-                            <p class="description" style="margin:4px 0 0;">
+                            <p class="description flosc-eng-desc-tight">
                                 Journey length / remaining-day math. <code>0</code> = no countdown.
                                 Same key may appear under Content.
                                 <a href="<?php echo esc_url($flosc_tab_url('email')); ?>">Write email letters →</a>
@@ -521,7 +521,7 @@ $flosc_framework = class_exists('FLOSC_Framework') ? FLOSC_Framework::instance()
                     }
                     ?>
                 </div>
-                <p style="margin:12px 0 0;">
+                <p class="flosc-eng-actions">
                     <button type="button" class="button flosc-eng-add-rule" data-audience="guest">+ Add guest rule</button>
                 </p>
             </div>
@@ -546,7 +546,7 @@ $flosc_framework = class_exists('FLOSC_Framework') ? FLOSC_Framework::instance()
                     }
                     ?>
                 </div>
-                <p style="margin:12px 0 0;">
+                <p class="flosc-eng-actions">
                     <button type="button" class="button flosc-eng-add-rule" data-audience="member">+ Add member rule</button>
                 </p>
             </div>
@@ -579,8 +579,8 @@ $flosc_framework = class_exists('FLOSC_Framework') ? FLOSC_Framework::instance()
         Who is on this floscFlow — people who registered here, last used it, or have activity on it.
         Monitor progress toward gated content.
     </p>
-    <div class="flosc-engagement-summary-scroll" style="max-height: 22rem; overflow: auto; border: 1px solid #c3c4c7; background: #fff;">
-        <table class="widefat striped flosc-login-activity-table" style="margin:0;">
+    <div class="flosc-engagement-summary-scroll">
+        <table class="widefat striped flosc-login-activity-table flosc-eng-table-flush">
             <thead>
                 <tr>
                     <th>User</th>
@@ -632,7 +632,7 @@ $flosc_framework = class_exists('FLOSC_Framework') ? FLOSC_Framework::instance()
                         </td>
                         <td><?php echo esc_html(mysql2date('Y-m-d', $flosc_u->user_registered)); ?></td>
                         <td><?php echo esc_html($flosc_state !== '' ? $flosc_state : '—'); ?></td>
-                        <td><?php echo $flosc_purchased ? 'yes' : 'no'; ?></td>
+                        <td><?php echo esc_html( $flosc_purchased ? 'yes' : 'no' ); ?></td>
                         <td><?php echo $flosc_logins > 0 ? esc_html((string) $flosc_logins) : '—'; ?></td>
                         <td><?php echo $flosc_creds ? 'complete' : 'pending'; ?></td>
                         <td><a href="<?php echo esc_url($flosc_chat_url); ?>">logs</a></td>
@@ -642,7 +642,7 @@ $flosc_framework = class_exists('FLOSC_Framework') ? FLOSC_Framework::instance()
             </tbody>
         </table>
     </div>
-    <p class="description" style="margin-top:8px;">
+    <p class="description flosc-eng-desc-mt">
         <?php echo esc_html((string) count($flosc_summary_users)); ?> row(s).
         <a href="<?php echo esc_url($flosc_tab_url('chat-logs')); ?>">Chat Logs</a>
     </p>

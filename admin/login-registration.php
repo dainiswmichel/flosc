@@ -512,7 +512,7 @@ $flosc_package_magic_on = (defined('FLOSC_ENABLE_MAGIC_ACCESS_LINKS') && FLOSC_E
         Send <?php echo esc_html($flosc_guest_link_name); ?>
     </button>
 </div>
-<p class="description" style="margin-top:6px;">
+<p class="description flosc-login-desc-mt">
     <label>
         <input type="checkbox" id="flosc-send-guest-link-force" value="1">
         Force send (bypass admin send condition)

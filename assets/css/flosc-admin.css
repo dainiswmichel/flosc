@@ -6781,3 +6781,61 @@
 .flosc-table-max-960 {
     max-width: 960px;
 }
+
+/* Engagement hub — layout (moved out of inline style=) */
+.flosc-eng-toolbar {
+	margin: 0 0 10px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px 20px;
+	align-items: center;
+}
+.flosc-eng-rule-remove {
+	color: #b32d2e;
+}
+.flosc-eng-form-table {
+	margin: 0;
+}
+.flosc-eng-form-table-mb {
+	margin: 0 0 12px;
+}
+.flosc-eng-label {
+	display: block;
+	margin-bottom: 6px;
+}
+.flosc-eng-label-spaced {
+	margin: 10px 0 6px;
+}
+.flosc-eng-desc-spacious {
+	margin: 4px 0 10px;
+}
+.flosc-eng-desc-tight {
+	margin: 4px 0 0;
+}
+.flosc-eng-desc-mt {
+	margin-top: 8px;
+}
+.flosc-eng-related-links {
+	margin: 10px 0 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.flosc-eng-audience-accordions {
+	margin: 0 0 1.5rem;
+}
+.flosc-eng-actions {
+	margin: 12px 0 0;
+}
+.flosc-engagement-summary-scroll {
+	max-height: 22rem;
+	overflow: auto;
+	border: 1px solid #c3c4c7;
+	background: #fff;
+}
+.flosc-eng-table-flush {
+	margin: 0;
+}
+.flosc-login-desc-mt {
+	margin-top: 6px;
+}

@@ -1,4 +1,8 @@
 <?php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
 /**
  * MagicLink / guest access-link and related one-time login tokens.
  *
@@ -33,10 +37,6 @@
  *
  * File: includes/magic-link/class-flosc-magic-link-trait.php
  */
-
-if (!defined('ABSPATH')) {
-    exit;
-}
 
 trait FLOSC_Magic_Link_Trait {
 
