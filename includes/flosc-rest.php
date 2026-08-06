@@ -865,7 +865,7 @@ trait FLOSC_REST_Trait {
             'permission_callback' => [$this, 'check_authenticated_user_permission'],
         ]);
 
-        // v8.0.8: Store browser-computed quiz data — no server-side re-scoring needed.
+        // Store browser-computed quiz data — no server-side re-scoring needed.
         // The browser already scored each phrase against the flow-configured pronunciation API during the quiz.
         // This endpoint accepts those results and stores them in user meta + moves audio files.
         // Used by SSO path (post-reload) when email registration didn't carry quiz_data.

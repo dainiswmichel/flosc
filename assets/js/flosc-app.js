@@ -6854,7 +6854,7 @@ class floscApp {
             // Call the email registration API
             // v3.0.0: Use authFetch() for cross-domain support
             // v8.0.4: Include temp_id so server can link visitor's quiz audio to new account
-            // v8.0.8: Send browser-computed quiz data so PHP stores instantly (no re-scoring)
+            // Send browser-computed quiz data so PHP stores instantly (no re-scoring)
             const regBody = {
                 email,
                 flow_id: this.config.flowId || '',
@@ -7384,7 +7384,7 @@ class floscApp {
     }
 
     // v3.0.8: Show stored quiz results for current member or guest.
-    // v8.0.8: Now handles IPA audio quiz data from this.user.lastQuizData.
+    // Now handles IPA audio quiz data from this.user.lastQuizData.
     _getPendingLocalQuizResult() {
         try {
             const stored = localStorage.getItem(this.flowStorageKey('flosc_quiz_result'));
@@ -7403,7 +7403,7 @@ class floscApp {
             this.log('[FLOSC] openQuizResults skipped — quiz not configured on this flow');
             return;
         }
-        // v8.0.8: Check for IPA audio quiz data (from server scoring via user meta)
+        // Check for IPA audio quiz data (from server scoring via user meta)
         const serverData = this.user?.lastQuizData;
         if (this._hasIpaPhraseResults(serverData)) {
             // Render full IPA phrase results using the existing renderer
@@ -7435,7 +7435,7 @@ class floscApp {
 
         // v5.0.3: Read from in-session this.quiz first (has actual item names),
         // fall back to this.user (server-populated from user_meta).
-        // v8.0.8: Coerce empty string to null — WordPress returns '' for unset meta
+        // Coerce empty string to null — WordPress returns '' for unset meta
         const rawScore = this.quiz?.score ?? this.user?.lastQuizScore ?? null;
         const score = (rawScore !== null && rawScore !== '') ? parseInt(rawScore, 10) : null;
         if (score === null || isNaN(score)) {

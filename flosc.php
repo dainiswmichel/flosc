@@ -8036,7 +8036,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
     }
 
     /**
-     * v8.0.8: Store browser-computed quiz data in WordPress user meta.
+     * Store browser-computed quiz data in WordPress user meta.
      *
     * The browser already scored each phrase against the flow-configured pronunciation API during the quiz.
      * This method accepts those results, normalizes the data shape, stores in user meta
@@ -8132,7 +8132,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             $this->move_visitor_audio_to_user($user_id, $temp_id);
         }
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-            flosc_log("FLOSC v8.0.8: store_browser_quiz_data() — user {$user_id}, score: {$score}%");
+            flosc_log("FLOSC: store_browser_quiz_data() — user {$user_id}, score: {$score}%");
         }
         return true;
     }
@@ -8186,7 +8186,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
     }
 
     /**
-     * v8.0.8: Move visitor audio files from flosc-temp/{temp_id}/ to flosc-users/{user_id}/.
+     * Move visitor audio files from flosc-temp/{temp_id}/ to flosc-users/{user_id}/.
      * No scoring — just file relocation for permanent storage in the user's profile.
      */
     private function move_visitor_audio_to_user($user_id, $temp_id) {
@@ -8516,7 +8516,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC v8.0.0: pull_session
     }
 
     /**
-     * v8.0.8: REST endpoint to store browser-computed quiz data after SSO login.
+     * REST endpoint to store browser-computed quiz data after SSO login.
      * SSO triggers a full page redirect, so JS can't send quiz_data during registration.
      * After reload, JS reads localStorage and posts quiz data to this endpoint.
      */
@@ -8549,7 +8549,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             $temp_id = get_user_meta($user_id, '_flosc_audio_temp_id', true) ?: '';
         }
 
-        // v8.0.8: Browser-computed quiz data is authoritative; DO pull is fallback.
+        // Browser-computed quiz data is authoritative; DO pull is fallback.
         if (is_array($quiz_data) && !empty($quiz_data['phraseResults'])) {
             $stored = $this->store_browser_quiz_data($user_id, $quiz_data, $temp_id);
             if ($stored) {
@@ -8596,7 +8596,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      *
      * After scoring, moves the audio dir to flosc-users/{user_id}/ for retention.
      *
-     * NOTE: v8.0.8 replaces this with store_browser_quiz_data() for the main flow.
+     * NOTE: Primary path is store_browser_quiz_data(); this method is a fallback.
      * This method is retained as a fallback for the /score-pending-audio endpoint.
      *
      * @param int    $user_id  The newly registered user's ID

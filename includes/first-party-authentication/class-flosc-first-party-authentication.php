@@ -134,7 +134,7 @@ class FLOSC_First_Party_Authentication {
         // v8.0.5: Score visitor audio on login — covers SSO path (Google/Facebook) where
         // the browser sends the visitor_temp_id cookie set during audio recording.
         // Email registration scoring is handled directly in handle_email_registration().
-        // v8.0.8: Don't re-score server-side (times out on shared hosting).
+        // Don't re-score server-side (times out on shared hosting).
         // Instead, store temp_id in user meta and let JS send browser-computed
         // results via /store-quiz-data after the page reloads.
         $temp_id = $this->flosc->get_signed_cookie('flosc_visitor_temp_id');

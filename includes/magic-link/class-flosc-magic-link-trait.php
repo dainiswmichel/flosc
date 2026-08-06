@@ -343,7 +343,7 @@ trait FLOSC_Magic_Link_Trait {
             if ($is_first_click || ($quiz_data_missing && ($browser_quiz_data || $session_id || $has_temp_id))) {
                 $quiz_stored = false;
 
-                // v8.0.8: Browser-computed quiz data is authoritative; DO pull is fallback.
+                // Browser-computed quiz data is authoritative; DO pull is fallback.
                 if ($browser_quiz_data) {
                     $quiz_stored = (bool) $this->store_browser_quiz_data($user_id, $browser_quiz_data, $body_temp_id);
                 } elseif ($session_id) {
