@@ -29,8 +29,8 @@ $flosc_users_with_bridge = count( $flosc_bridge_ids );
 // In bridge: has bridge data, not purchased.
 $flosc_users_in_bridge = 0;
 foreach ( $flosc_bridge_ids as $flosc_bid ) {
-	$purchased = get_user_meta( (int) $flosc_bid, '_flosc_purchased', true );
-	if ( '1' !== (string) $purchased && true !== $purchased ) {
+	$flosc_purchased = get_user_meta( (int) $flosc_bid, '_flosc_purchased', true );
+	if ( '1' !== (string) $flosc_purchased && true !== $flosc_purchased ) {
 		$flosc_users_in_bridge++;
 	}
 }
@@ -38,8 +38,8 @@ foreach ( $flosc_bridge_ids as $flosc_bid ) {
 // Converted: bridge data + purchased.
 $flosc_users_converted = 0;
 foreach ( $flosc_bridge_ids as $flosc_bid ) {
-	$purchased = get_user_meta( (int) $flosc_bid, '_flosc_purchased', true );
-	if ( '1' === (string) $purchased || true === $purchased ) {
+	$flosc_purchased = get_user_meta( (int) $flosc_bid, '_flosc_purchased', true );
+	if ( '1' === (string) $flosc_purchased || true === $flosc_purchased ) {
 		$flosc_users_converted++;
 	}
 }

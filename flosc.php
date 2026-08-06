@@ -6056,11 +6056,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("[FLOSC v8.0.7] score_visit
             return false;
         }
 
-        if (empty($_COOKIE['flosc_quiz_stash'])) {
+        if ( ! isset( $_COOKIE['flosc_quiz_stash'] ) ) {
             return false;
         }
 
-        $token = sanitize_text_field(urldecode((string) wp_unslash($_COOKIE['flosc_quiz_stash'])));
+        // Sanitize at first touch (Plugin Check ValidatedSanitizedInput).
+        $token = sanitize_text_field( wp_unslash( $_COOKIE['flosc_quiz_stash'] ) );
+        $token = sanitize_text_field( rawurldecode( $token ) );
         setcookie('flosc_quiz_stash', '', time() - 3600, '/');
 
         if ($token === '') {

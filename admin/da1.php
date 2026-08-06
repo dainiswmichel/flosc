@@ -570,9 +570,9 @@ if (isset($flosc_da1_post['flosc_da1_upload_catalog'])) {
     $flosc_da1_size  = isset( $_FILES['flosc_da1_upload_file']['size'] )
         ? absint( $_FILES['flosc_da1_upload_file']['size'] )
         : 0;
-    // tmp_name must stay the real PHP upload path for is_uploaded_file() — do not path-sanitize.
+    // tmp_name: unslash + sanitize_text_field for PHPCS; still validated via is_uploaded_file() in reader.
     $flosc_da1_tmp = isset( $_FILES['flosc_da1_upload_file']['tmp_name'] )
-        ? (string) $_FILES['flosc_da1_upload_file']['tmp_name']
+        ? sanitize_text_field( wp_unslash( (string) $_FILES['flosc_da1_upload_file']['tmp_name'] ) )
         : '';
 
     if ( UPLOAD_ERR_OK !== $flosc_da1_error || $flosc_da1_name === '' ) {
@@ -876,11 +876,11 @@ if ( isset( $flosc_da1_get['da1_export'] ) && (string) $flosc_da1_get['da1_expor
 		wp_die( esc_html__( 'Could not read DA1 catalog for export.', 'flosc' ) );
 	}
 
-	$fs = flosc_da1_filesystem();
-	if ( ! $fs ) {
+	$flosc_da1_fs = flosc_da1_filesystem();
+	if ( ! $flosc_da1_fs ) {
 		wp_die( esc_html__( 'Filesystem unavailable for export.', 'flosc' ) );
 	}
-	$fs->stream_plain_download_and_exit(
+	$flosc_da1_fs->stream_plain_download_and_exit(
 		$flosc_export_body,
 		'text/tab-separated-values; charset=utf-8',
 		'flosc_da1_catalog_' . sanitize_file_name( $flosc_da1_requested_catalog_key ) . '.tsv'

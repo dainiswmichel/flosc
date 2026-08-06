@@ -154,22 +154,63 @@ if ( ! function_exists( 'flosc_get_user_ids_for_meta' ) ) {
 			return $cached;
 		}
 		global $wpdb;
+		// Full SQL string literals in prepare() — WPCS PreparedSQL.NotPrepared rejects $sql vars.
 		if ( null === $meta_value || '' === $meta_value ) {
-			$sql = "SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s";
-			$ids = $limit > 0
-				? $wpdb->get_col( $wpdb->prepare( $sql . ' LIMIT %d', $meta_key, $limit ) )
-				: $wpdb->get_col( $wpdb->prepare( $sql, $meta_key ) );
+			if ( $limit > 0 ) {
+				$ids = $wpdb->get_col(
+					$wpdb->prepare(
+						"SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s LIMIT %d",
+						$meta_key,
+						$limit
+					)
+				);
+			} else {
+				$ids = $wpdb->get_col(
+					$wpdb->prepare(
+						"SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s",
+						$meta_key
+					)
+				);
+			}
 		} elseif ( 'LIKE' === $compare ) {
 			$like = '%' . $wpdb->esc_like( (string) $meta_value ) . '%';
-			$sql  = "SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value LIKE %s";
-			$ids  = $limit > 0
-				? $wpdb->get_col( $wpdb->prepare( $sql . ' LIMIT %d', $meta_key, $like, $limit ) )
-				: $wpdb->get_col( $wpdb->prepare( $sql, $meta_key, $like ) );
+			if ( $limit > 0 ) {
+				$ids = $wpdb->get_col(
+					$wpdb->prepare(
+						"SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value LIKE %s LIMIT %d",
+						$meta_key,
+						$like,
+						$limit
+					)
+				);
+			} else {
+				$ids = $wpdb->get_col(
+					$wpdb->prepare(
+						"SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value LIKE %s",
+						$meta_key,
+						$like
+					)
+				);
+			}
 		} else {
-			$sql = "SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value = %s";
-			$ids = $limit > 0
-				? $wpdb->get_col( $wpdb->prepare( $sql . ' LIMIT %d', $meta_key, (string) $meta_value, $limit ) )
-				: $wpdb->get_col( $wpdb->prepare( $sql, $meta_key, (string) $meta_value ) );
+			if ( $limit > 0 ) {
+				$ids = $wpdb->get_col(
+					$wpdb->prepare(
+						"SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value = %s LIMIT %d",
+						$meta_key,
+						(string) $meta_value,
+						$limit
+					)
+				);
+			} else {
+				$ids = $wpdb->get_col(
+					$wpdb->prepare(
+						"SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value = %s",
+						$meta_key,
+						(string) $meta_value
+					)
+				);
+			}
 		}
 		if ( ! is_array( $ids ) ) {
 			$ids = array();
@@ -191,26 +232,30 @@ if ( ! function_exists( 'flosc_get_user_ids_for_meta_in' ) ) {
 	 */
 	function flosc_get_user_ids_for_meta_in( $meta_key, $values, $limit = 80 ) {
 		$meta_key = (string) $meta_key;
-		$values   = array_values( array_filter( array_map( 'strval', (array) $values ) ) );
+		$values   = array_values( array_unique( array_filter( array_map( 'strval', (array) $values ) ) ) );
 		$limit    = max( 1, (int) $limit );
 		if ( $meta_key === '' || empty( $values ) ) {
 			return array();
 		}
+		// Cap value list (engagement flow stems, status enums — small sets).
+		$values    = array_slice( $values, 0, 50 );
 		$cache_key = 'uids_in_' . md5( $meta_key . '|' . wp_json_encode( $values ) . '|' . $limit );
 		$cached    = wp_cache_get( $cache_key, 'flosc_usermeta' );
 		if ( is_array( $cached ) ) {
 			return $cached;
 		}
-		global $wpdb;
-		$placeholders = implode( ',', array_fill( 0, count( $values ), '%s' ) );
-		$sql          = "SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value IN ( $placeholders ) LIMIT %d";
-		$prepare_args = array_merge( array( $sql, $meta_key ), $values, array( $limit ) );
-		$prepared     = call_user_func_array( array( $wpdb, 'prepare' ), $prepare_args );
-		$ids          = $prepared ? $wpdb->get_col( $prepared ) : array();
-		if ( ! is_array( $ids ) ) {
-			$ids = array();
+		// No dynamic IN (...) SQL — WPCS/Plugin Check reject interpolated IN lists.
+		// Union per-value prepared lookups (same helper, object-cached per key/value).
+		$found = array();
+		foreach ( $values as $value ) {
+			foreach ( flosc_get_user_ids_for_meta( $meta_key, $value, '=', 0 ) as $uid ) {
+				$found[ (int) $uid ] = true;
+				if ( count( $found ) >= $limit ) {
+					break 2;
+				}
+			}
 		}
-		$ids = array_values( array_filter( array_map( 'intval', $ids ) ) );
+		$ids = array_slice( array_map( 'intval', array_keys( $found ) ), 0, $limit );
 		wp_cache_set( $cache_key, $ids, 'flosc_usermeta', 60 );
 		return $ids;
 	}
@@ -694,9 +739,8 @@ if (!function_exists('flosc_issue_post_purchase_session')) {
 
         wp_set_current_user($user_id);
         wp_set_auth_cookie($user_id, true);
-        // Core WP login action (required for session-aware plugins).
-        $flosc_login_hook = 'wp_login';
-        do_action( $flosc_login_hook, $user->user_login, $user );
+        // Core WP login action (required for session-aware plugins). Literal hook name for PrefixAllGlobals.
+        do_action( 'wp_login', $user->user_login, $user );
 
         // FLOSC's own cross-domain auth cookie rides alongside the WP cookie so a
         // flow served on flosc.ai / lesaep.com / dainis.net authenticates even when

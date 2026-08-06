@@ -125,15 +125,15 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
 <?php
 // Companion embed flag is presence-only (dock/handoff). Use filter_input so we do not touch $_GET for PHPCS.
 $flosc_is_companion_embed = ( null !== filter_input( INPUT_GET, 'flosc_companion' ) );
-$body_classes             = 'flosc-app';
+$flosc_body_classes       = 'flosc-app';
 if ( is_admin_bar_showing() ) {
-	$body_classes .= ' admin-bar';
+	$flosc_body_classes .= ' admin-bar';
 }
 if ( $flosc_is_companion_embed ) {
-	$body_classes .= ' flosc-companion-embed';
+	$flosc_body_classes .= ' flosc-companion-embed';
 }
 ?>
-<body class="<?php echo esc_attr( $body_classes ); ?>"
+<body class="<?php echo esc_attr( $flosc_body_classes ); ?>"
       data-user-state="<?php echo esc_attr($user_state); ?>"
       data-flosc-font="<?php echo esc_attr($flosc_chat_font); ?>"
     data-flosc-theme="<?php echo esc_attr($flosc_chat_theme); ?>"
