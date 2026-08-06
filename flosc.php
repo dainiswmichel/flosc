@@ -8547,12 +8547,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * @return array|false     score_data array on success, false on failure
      */
     public function score_visitor_audio($user_id, $temp_id) {
-        // 5 phrases × up to 30s: allow longer run when the host permits.
-        if ( function_exists( 'set_time_limit' ) ) {
-            set_time_limit( 300 );
-        }
-
         // Validate tempID format: YYYY-MMm-DDd-HHh-MMm-SSs-XXXXX
+        // (Do not call set_time_limit — Plugin Check / WPCS discourage it.)
         if (!preg_match('/^\d{4}-\d{2}m-\d{2}d-\d{2}h-\d{2}m-\d{2}s-[0-9a-f]{5}$/', $temp_id)) {
             return false;
         }

@@ -1078,8 +1078,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 }
                 $offers = [];
                 if ($stem !== '') {
-                    $fs = get_option('flosc_flow_' . $stem, []);
-                    $offers = is_array($fs['offers'] ?? null) ? $fs['offers'] : [];
+                    $flosc_flow_settings = get_option('flosc_flow_' . $stem, []);
+                    $offers = is_array($flosc_flow_settings['offers'] ?? null) ? $flosc_flow_settings['offers'] : [];
                 }
                 foreach ($offers as $o) {
                     if (!is_array($o)) {
@@ -1207,8 +1207,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             // instead of resolving matches client-side.
             'aiProvider' => ( static function () use ( $flosc_current_flow ) {
                 $fid = $flosc_current_flow ? ( $flosc_current_flow['id'] ?? '' ) : '';
-                $fs  = $fid ? get_option( 'flosc_flow_' . sanitize_key( $fid ), [] ) : [];
-                $p   = $fs['ai']['provider'] ?? ( $fs['ai_provider'] ?? '' );
+                $flosc_flow_settings  = $fid ? get_option( 'flosc_flow_' . sanitize_key( $fid ), [] ) : [];
+                $p   = $flosc_flow_settings['ai']['provider'] ?? ( $flosc_flow_settings['ai_provider'] ?? '' );
                 return ( $p !== '' ) ? $p : flosc_get_setting( 'ai_provider', 'ivr' );
             } )(),
             // v1.4.0: SSO Providers
@@ -1504,11 +1504,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                     $ivr = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '');
                     $stem = sanitize_key(pathinfo(basename($ivr), PATHINFO_FILENAME));
                 }
-                $fs = $stem !== '' ? get_option('flosc_flow_' . $stem, []) : [];
-                if (!is_array($fs) || !array_key_exists('guest_can_delete_chats', $fs)) {
+                $flosc_flow_settings = $stem !== '' ? get_option('flosc_flow_' . $stem, []) : [];
+                if (!is_array($flosc_flow_settings) || !array_key_exists('guest_can_delete_chats', $flosc_flow_settings)) {
                     return true;
                 }
-                $v = $fs['guest_can_delete_chats'];
+                $v = $flosc_flow_settings['guest_can_delete_chats'];
                 return !($v === '' || $v === '0' || $v === 0 || $v === false || $v === null);
             })(),
             'guestCanRenameChats' => (function () {
@@ -1518,11 +1518,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                     $ivr = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '');
                     $stem = sanitize_key(pathinfo(basename($ivr), PATHINFO_FILENAME));
                 }
-                $fs = $stem !== '' ? get_option('flosc_flow_' . $stem, []) : [];
-                if (!is_array($fs) || !array_key_exists('guest_can_rename_chats', $fs)) {
+                $flosc_flow_settings = $stem !== '' ? get_option('flosc_flow_' . $stem, []) : [];
+                if (!is_array($flosc_flow_settings) || !array_key_exists('guest_can_rename_chats', $flosc_flow_settings)) {
                     return true;
                 }
-                $v = $fs['guest_can_rename_chats'];
+                $v = $flosc_flow_settings['guest_can_rename_chats'];
                 return !($v === '' || $v === '0' || $v === 0 || $v === false || $v === null);
             })(),
             'guestNewChatLimitMessage' => (function () {

@@ -381,12 +381,12 @@ function flosc_da1_write_catalog_file( $path, $content, $catalog_dir ) {
 		return new WP_Error( 'flosc_da1_empty_catalog', __( 'DA1 catalog content cannot be empty.', 'flosc' ) );
 	}
 
-	$fs = flosc_da1_filesystem();
-	if ( ! $fs ) {
+	$flosc_da1_fs = flosc_da1_filesystem();
+	if ( ! $flosc_da1_fs ) {
 		return new WP_Error( 'flosc_da1_filesystem_unavailable', __( 'Filesystem API unavailable while writing DA1 catalog file.', 'flosc' ) );
 	}
 
-	if ( ! $fs->write_text_atomic( $path, $content ) ) {
+	if ( ! $flosc_da1_fs->write_text_atomic( $path, $content ) ) {
 		return new WP_Error( 'flosc_da1_write_failed', __( 'Could not write DA1 catalog file.', 'flosc' ) );
 	}
 
@@ -409,12 +409,12 @@ function flosc_da1_read_catalog_file( $path, $catalog_dir ) {
 		return '';
 	}
 
-	$fs = flosc_da1_filesystem();
-	if ( ! $fs ) {
+	$flosc_da1_fs = flosc_da1_filesystem();
+	if ( ! $flosc_da1_fs ) {
 		return new WP_Error( 'flosc_da1_read_failed', __( 'Could not read DA1 catalog file.', 'flosc' ) );
 	}
 
-	$content = $fs->read_file_safely( $path );
+	$content = $flosc_da1_fs->read_file_safely( $path );
 	if ( false === $content ) {
 		return new WP_Error( 'flosc_da1_read_failed', __( 'Could not read DA1 catalog file.', 'flosc' ) );
 	}
@@ -437,12 +437,12 @@ function flosc_da1_read_shipped_sample( $sample_path ) {
 	if ( ! file_exists( $sample_path ) ) {
 		return false;
 	}
-	$fs = flosc_da1_filesystem();
-	if ( ! $fs ) {
+	$flosc_da1_fs = flosc_da1_filesystem();
+	if ( ! $flosc_da1_fs ) {
 		return false;
 	}
 	// Sample lives in the plugin tree (not uploads) — use read_contents after path allowlist.
-	return $fs->read_contents( $sample_path );
+	return $flosc_da1_fs->read_contents( $sample_path );
 }
 
 /**
@@ -456,11 +456,11 @@ function flosc_da1_read_uploaded_tmp( $tmp_name ) {
 	if ( $tmp_name === '' || ! is_uploaded_file( $tmp_name ) ) {
 		return false;
 	}
-	$fs = flosc_da1_filesystem();
-	if ( ! $fs ) {
+	$flosc_da1_fs = flosc_da1_filesystem();
+	if ( ! $flosc_da1_fs ) {
 		return false;
 	}
-	return $fs->read_contents( $tmp_name );
+	return $flosc_da1_fs->read_contents( $tmp_name );
 }
 
 $flosc_da1_catalogs = get_option($flosc_catalog_index_option, []);
