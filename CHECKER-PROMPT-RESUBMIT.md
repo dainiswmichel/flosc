@@ -20,7 +20,7 @@ I will not ask you to re-litigate fixed packaging theater. Please apply full rig
 |-------|--------|
 | **ZIP** | `mvp_sprint/flosc_8_0_0/zip-files/flosc.zip` |
 | **SHA-256** | `50999f2da6cba73b1cecf985ad0d3cbffbe32259e6f5e89ecf5d5f3d21d7f89f` |
-| **Git** | `4f959cd` (`4f959cdc0e2551baf81f63921af3a42a2e8033d9`) on GitHub dainiswmichel/flosc — payment code 89c2741; freeze docs tip |
+| **Git** | tip `05f0398` on GitHub dainiswmichel/flosc — payment code `89c2741`; freeze docs on main |
 | **Version** | `8.0.0` (plugin header, `FLOSC_VERSION`, Stable tag) |
 | **Top-level** | single `flosc/` |
 | **Archive** | 224 ZIP entries |
