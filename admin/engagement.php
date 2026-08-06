@@ -634,7 +634,7 @@ $flosc_framework = class_exists('FLOSC_Framework') ? FLOSC_Framework::instance()
                         <td><?php echo esc_html($flosc_state !== '' ? $flosc_state : '—'); ?></td>
                         <td><?php echo esc_html( $flosc_purchased ? 'yes' : 'no' ); ?></td>
                         <td><?php echo $flosc_logins > 0 ? esc_html((string) $flosc_logins) : '—'; ?></td>
-                        <td><?php echo $flosc_creds ? 'complete' : 'pending'; ?></td>
+                        <td><?php echo esc_html( $flosc_creds ? 'complete' : 'pending' ); ?></td>
                         <td><a href="<?php echo esc_url($flosc_chat_url); ?>">logs</a></td>
                     </tr>
                 <?php endforeach; ?>

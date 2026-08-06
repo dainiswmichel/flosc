@@ -1,9 +1,9 @@
 <?php
 /**
  * FLOSC Lessons Configuration Tab
- * 
+ *
  * v3.0.0: LESSON GROUPS — multi-quiz-to-category mapping
- * 
+ *
  * Configures lesson delivery system:
  * - Lesson Groups: repeatable Quiz → Category mappings
  *   - Each group maps an optional quiz to a required WordPress category
@@ -11,17 +11,17 @@
  *   - Multiple quizzes can map to the same category (A/B testing)
  * - Per-post content protection override
  * - Guest access & free lessons
- * 
+ *
  * LESSON MAPPING:
  * - Lessons = WordPress posts in designated categories
  * - Each lesson tagged with quiz items (e.g., "5", "phoneme-5")
  * - When user misses quiz item → they get matching lesson from that quiz's category
  * - First lesson FREE, additional lessons require payment
- * 
+ *
  * CONTENT PROTECTION:
  * - Each lesson group's category is auto-protected on save
  * - Individual posts can override protection: Title+Excerpt, Title+ReadMore, Full
- * 
+ *
  * v3.0.0: Replaced single lessons_category with lesson_groups repeater
  * v1.8.2: Removed redundant "Protected Category" selector
  * v1.8.2: Fixed OTO dropdown not loading offers (missing flow_id)
@@ -29,7 +29,9 @@
  * v1.2.9: Added tab header for flow context
  */
 
-if (!defined('ABSPATH')) exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 // v1.2.9: Output tab header
 flosc_tab_header('📚', 'Lessons');

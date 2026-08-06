@@ -165,6 +165,8 @@ function flosc_uninstall_delete_meta_by_prefixes( $object_type ) {
 
 // Options + transients (option API).
 flosc_uninstall_delete_options_by_prefix( 'flosc_' );
+// Payment fulfillment claim rows: add_option( '_flosc_fulfill_' . md5(...) ).
+flosc_uninstall_delete_options_by_prefix( '_flosc_' );
 flosc_uninstall_delete_options_by_prefix( '_transient_flosc_' );
 flosc_uninstall_delete_options_by_prefix( '_transient_timeout_flosc_' );
 
