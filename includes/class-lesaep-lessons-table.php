@@ -13,6 +13,9 @@
 
 if (!defined('ABSPATH')) exit;
 
+// Custom table {prefix}flosc_lessons — no WP API equivalent for schema/CRUD.
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+
 class FLOSC_Lesaep_Lessons_Table {
 
     private static $instance = null;

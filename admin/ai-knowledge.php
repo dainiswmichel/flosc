@@ -342,14 +342,14 @@ This information is NOT in your training data. Always reference these files when
                         <td><?php echo esc_html( size_format($flosc_size) ); ?></td>
                         <td><?php echo esc_html( human_time_diff($flosc_modified, current_time('timestamp')) . ' ago' ); ?></td>
                         <td>
-                            <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&edit=' . urlencode($flosc_file)) ); ?>" class="button button-small">
+                            <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&edit=' . rawurlencode($flosc_file)) ); ?>" class="button button-small">
                                 <?php echo esc_html( $flosc_editing_file === $flosc_file ? 'Editing...' : 'Edit' ); ?>
                             </a>
-                            <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&toggle_access=' . urlencode($flosc_file)) ); ?>" 
+                            <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&toggle_access=' . rawurlencode($flosc_file)) ); ?>" 
                                class="button button-small">
                                 Toggle Access
                             </a>
-                            <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&delete=' . urlencode($flosc_file)) ); ?>" 
+                            <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-settings&tab=ai-knowledge&delete=' . rawurlencode($flosc_file)) ); ?>" 
                                class="button button-small" 
                                          data-confirm-message="Delete <?php echo esc_attr($flosc_file); ?>? This cannot be undone."
                                >

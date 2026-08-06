@@ -133,6 +133,7 @@ class Microsoft_Provider extends SSO_Provider_Base {
         $content_type = wp_remote_retrieve_header($response, 'content-type');
         
         if ($image_data && $content_type) {
+            // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
             return 'data:' . $content_type . ';base64,' . base64_encode($image_data);
         }
         

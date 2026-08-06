@@ -314,6 +314,7 @@ class User_Linker {
             $encrypted .= chr(ord($json[$i]) ^ ord($key[$i % strlen($key)]));
         }
         
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
         return base64_encode($encrypted);
     }
     
@@ -324,6 +325,7 @@ class User_Linker {
      * @return array Token data
      */
     private function decrypt_tokens($encrypted) {
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
         $encrypted = base64_decode($encrypted);
         $key = flosc_token_secret(); // §5: dedicated secret, not the auth salt
         

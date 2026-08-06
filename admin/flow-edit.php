@@ -176,7 +176,7 @@ $flosc_categories = get_categories(['hide_empty' => false]);
         <!-- Tabs -->
         <nav class="nav-tab-wrapper">
             <?php foreach ($tabs as $flosc_tab_id => $flosc_tab_label): ?>
-                <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-flow-edit&flow_id=' . urlencode($flosc_flow_id) . '&tab=' . $flosc_tab_id) ); ?>"
+                <a href="<?php echo esc_url( admin_url('admin.php?page=flosc-flow-edit&flow_id=' . rawurlencode($flosc_flow_id) . '&tab=' . $flosc_tab_id) ); ?>"
                    class="nav-tab <?php echo esc_attr( $flosc_current_tab === $flosc_tab_id ? 'nav-tab-active' : '' ); ?>">
                     <?php echo esc_html($flosc_tab_label); ?>
                 </a>

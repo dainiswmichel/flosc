@@ -394,6 +394,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log( '[FLOSC Lessons] v3.0.8 ge
         
         if ($include_content) {
             // WordPress content filters (shortcodes, embeds, blocks, etc.).
+            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP content filter required for oEmbed/shortcodes
             $lesson['content'] = apply_filters( 'the_content', $post->post_content );
         }
         

@@ -580,6 +580,7 @@ class FLOSC_Free_Lesson_Manager {
             $post = $this->find_free_eligible_lesson_post($lesson_num, $quiz_id);
             if ($post) {
                 // WordPress content filters (shortcodes, embeds, blocks, etc.).
+                // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- core WP content filter required for oEmbed/shortcodes
                 $rendered_content = apply_filters( 'the_content', $post->post_content );
                 $lessons[] = [
                     'post_id'       => $post->ID,

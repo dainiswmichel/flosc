@@ -143,7 +143,7 @@ function flosc_handle_autoprompts_save() {
     update_option($fk, $flosc_fs);
 
     $ivr = sanitize_file_name($post['flosc_ivr'] ?? '');
-    wp_safe_redirect(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($ivr) . '&tab=autoprompts&saved=1'));
+    wp_safe_redirect(admin_url('admin.php?page=flosc-settings&ivr=' . rawurlencode($ivr) . '&tab=autoprompts&saved=1'));
     exit;
 }
 flosc_handle_autoprompts_save();

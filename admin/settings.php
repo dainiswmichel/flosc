@@ -2196,11 +2196,11 @@ if (function_exists('wp_add_inline_style')) {
             
             <!-- View Toggle -->
             <div class="flosc-view-toggle-row">
-                <a href="<?php echo esc_url( '?page=flosc-settings&ivr=' . urlencode( $flosc_selected_ivr ) . '&tab=identity&view=single' ); ?>" 
+                <a href="<?php echo esc_url( '?page=flosc-settings&ivr=' . rawurlencode( $flosc_selected_ivr ) . '&tab=identity&view=single' ); ?>" 
                    class="button <?php echo esc_attr( $flosc_view_mode === 'single' ? 'button-primary' : '' ); ?>">
                     Single Flow
                 </a>
-                <a href="<?php echo esc_url( '?page=flosc-settings&ivr=' . urlencode( $flosc_selected_ivr ) . '&tab=identity&view=all' ); ?>" 
+                <a href="<?php echo esc_url( '?page=flosc-settings&ivr=' . rawurlencode( $flosc_selected_ivr ) . '&tab=identity&view=all' ); ?>" 
                    class="button <?php echo esc_attr( $flosc_view_mode === 'all' ? 'button-primary' : '' ); ?>">
                     All Flows (<?php echo count($flosc_ivr_files); ?>)
                 </a>
@@ -2744,15 +2744,15 @@ if (function_exists('wp_add_inline_style')) {
         <?php elseif ($flosc_active_tab === 'token-management'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/token-management.php'; ?>
         <?php elseif ($flosc_active_tab === 'ai-knowledge'): ?>
-            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($flosc_selected_ivr) . '&tab=ai#flosc-kb-section'); ?>
+            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . rawurlencode($flosc_selected_ivr) . '&tab=ai#flosc-kb-section'); ?>
             <?php wp_add_inline_script('flosc-admin', 'window.location.replace(' . wp_json_encode($flosc_redirect_url) . ');'); ?>
             <p>Redirecting to <a href="<?php echo esc_url($flosc_redirect_url); ?>">Knowledge Base in AI tab</a>&hellip;</p>
         <?php elseif ($flosc_active_tab === 'ai-guide'): ?>
-            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($flosc_selected_ivr) . '&tab=documentation&doc=ref-ai-config'); ?>
+            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . rawurlencode($flosc_selected_ivr) . '&tab=documentation&doc=ref-ai-config'); ?>
             <?php wp_add_inline_script('flosc-admin', 'window.location.replace(' . wp_json_encode($flosc_redirect_url) . ');'); ?>
             <p>Redirecting to <a href="<?php echo esc_url($flosc_redirect_url); ?>">AI Configuration Guide in Documentation</a>&hellip;</p>
         <?php elseif ($flosc_active_tab === 'knowledge'): ?>
-            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($flosc_selected_ivr) . '&tab=ai#flosc-kb-section'); ?>
+            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . rawurlencode($flosc_selected_ivr) . '&tab=ai#flosc-kb-section'); ?>
             <?php wp_add_inline_script('flosc-admin', 'window.location.replace(' . wp_json_encode($flosc_redirect_url) . ');'); ?>
             <p>Redirecting to <a href="<?php echo esc_url($flosc_redirect_url); ?>">Knowledge Base in AI tab</a>&hellip;</p>
             

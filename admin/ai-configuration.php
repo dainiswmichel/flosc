@@ -838,9 +838,9 @@ if ($flosc_editing_kb_path && file_exists($flosc_editing_kb_path)) {
             'guest'   => ['Guest', 'flosc-inline-badge flosc-inline-badge--guest'],
             'member'  => ['Member', 'flosc-inline-badge flosc-inline-badge--member'],
         ][$flosc_kbf_access] ?? ['Visitor', 'flosc-inline-badge flosc-inline-badge--visitor'];
-        $flosc_toggle_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_kb_toggle&kb_file=' . urlencode($flosc_kbf) . '&return_ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '')), 'flosc_kb_toggle_' . $flosc_kbf);
-        $flosc_delete_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_kb_delete&kb_file=' . urlencode($flosc_kbf) . '&return_ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '')), 'flosc_kb_delete_' . $flosc_kbf);
-        $flosc_edit_url   = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '') . '&tab=ai&kb_edit=' . urlencode($flosc_kbf) . '#flosc-kb-section');
+        $flosc_toggle_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_kb_toggle&kb_file=' . rawurlencode($flosc_kbf) . '&return_ivr=' . rawurlencode($GLOBALS['flosc_current_ivr'] ?? '')), 'flosc_kb_toggle_' . $flosc_kbf);
+        $flosc_delete_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_kb_delete&kb_file=' . rawurlencode($flosc_kbf) . '&return_ivr=' . rawurlencode($GLOBALS['flosc_current_ivr'] ?? '')), 'flosc_kb_delete_' . $flosc_kbf);
+        $flosc_edit_url   = admin_url('admin.php?page=flosc-settings&ivr=' . rawurlencode($GLOBALS['flosc_current_ivr'] ?? '') . '&tab=ai&kb_edit=' . rawurlencode($flosc_kbf) . '#flosc-kb-section');
     ?>
         <tr>
             <td>
@@ -877,7 +877,7 @@ if ($flosc_editing_kb_path && file_exists($flosc_editing_kb_path)) {
         <textarea name="file_content" rows="30" class="large-text code flosc-code-textarea"><?php echo esc_textarea($flosc_editing_kb_content); ?></textarea>
         <div class="flosc-margin-top-10">
             <button type="submit" class="button button-primary">Save File</button>
-            <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($GLOBALS['flosc_current_ivr'] ?? '') . '&tab=ai#flosc-kb-section')); ?>" class="button flosc-margin-left-8">Cancel</a>
+            <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . rawurlencode($GLOBALS['flosc_current_ivr'] ?? '') . '&tab=ai#flosc-kb-section')); ?>" class="button flosc-margin-left-8">Cancel</a>
         </div>
     </form>
 </div>

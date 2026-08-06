@@ -909,7 +909,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                             }
                             // v1.4.9: Include flow_id so OAuth handler loads per-flow credentials
                             if (!empty($flosc_flow_id_for_sso)) {
-                                $flosc_auth_url = add_query_arg('flow_id', urlencode($flosc_flow_id_for_sso), $flosc_auth_url);
+                                $flosc_auth_url = add_query_arg('flow_id', rawurlencode($flosc_flow_id_for_sso), $flosc_auth_url);
                             }
                             $flosc_sso_providers[] = [
                                 'id' => $flosc_pid,

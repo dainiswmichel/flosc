@@ -1125,9 +1125,9 @@ $GLOBALS['flosc_current_ivr'] = $flosc_active_ivr_file;
 $flosc_ivr_file_write_path = $flosc_ivr_dir . $flosc_active_ivr_file;
 $flosc_ivr_file_path = flosc_resolve_ivr_file_path($flosc_active_ivr_file);
 
-$flosc_ivr_management_base_url = esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=' . urlencode($flosc_ivr_management_view)));
-$flosc_ivr_management_phase_url = $flosc_ivr_management_base_url . '&ivr_phase=' . urlencode($flosc_active_phase);
-$flosc_ivr_management_all_phase_url = esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=all&ivr_phase=' . urlencode($flosc_active_phase)));
+$flosc_ivr_management_base_url = esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . rawurlencode($flosc_active_ivr_file) . '&view=' . rawurlencode($flosc_ivr_management_view)));
+$flosc_ivr_management_phase_url = $flosc_ivr_management_base_url . '&ivr_phase=' . rawurlencode($flosc_active_phase);
+$flosc_ivr_management_all_phase_url = esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . rawurlencode($flosc_active_ivr_file) . '&view=all&ivr_phase=' . rawurlencode($flosc_active_phase)));
 $flosc_ivr_docs_url = add_query_arg([
     'page' => 'flosc-settings',
     'ivr'  => $flosc_active_ivr_file,
@@ -1165,10 +1165,10 @@ flosc_tab_header('💬', 'IVR Management');
     </p>
 
     <div class="flosc-ivr-actions-row">
-        <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=single')); ?>" class="button <?php echo esc_attr( $flosc_ivr_management_view === 'single' ? 'button-primary' : '' ); ?>">
+        <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . rawurlencode($flosc_active_ivr_file) . '&view=single')); ?>" class="button <?php echo esc_attr( $flosc_ivr_management_view === 'single' ? 'button-primary' : '' ); ?>">
             Single Flow: Message Editing
         </a>
-        <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=all')); ?>" class="button <?php echo esc_attr( $flosc_ivr_management_view === 'all' ? 'button-primary' : '' ); ?>">
+        <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . rawurlencode($flosc_active_ivr_file) . '&view=all')); ?>" class="button <?php echo esc_attr( $flosc_ivr_management_view === 'all' ? 'button-primary' : '' ); ?>">
             All Flows: File Management
         </a>
     </div>
@@ -1431,9 +1431,9 @@ document.addEventListener('submit', function(event) {
         <tbody>
         <?php foreach ($flosc_available_ivr_files as $flosc_ivr_filename):
             $flosc_is_active_row = ($flosc_ivr_filename === $flosc_active_ivr_file);
-            $flosc_edit_url = esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_ivr_filename) . '&view=single'));
+            $flosc_edit_url = esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . rawurlencode($flosc_ivr_filename) . '&view=single'));
             $flosc_download_url = wp_nonce_url(
-                esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=all&flosc_download_ivr=' . urlencode($flosc_ivr_filename))),
+                esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . rawurlencode($flosc_active_ivr_file) . '&view=all&flosc_download_ivr=' . rawurlencode($flosc_ivr_filename))),
                 'flosc_download_ivr_' . $flosc_ivr_filename
             );
         ?>
@@ -1777,7 +1777,7 @@ $flosc_total_count = count($flosc_messages);
                 <span class="flosc-ivr-conditional-badge" title="<?php echo esc_attr($flosc_msg['conditions']); ?>">⚡ conditional</span>
             <?php endif; ?>
             <span class="flosc-msg-preview"><?php echo esc_html(wp_trim_words($flosc_msg['content'] ?? '', 12)); ?></span>
-                <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . urlencode($flosc_active_ivr_file) . '&view=' . urlencode($flosc_ivr_management_view) . '&ivr_phase=' . urlencode($flosc_active_phase) . '&delete_message=' . urlencode($flosc_msg_id) . '&phase=' . urlencode($flosc_phase_id) . '&_wpnonce=' . wp_create_nonce('flosc_delete_message_' . $flosc_msg_id))); ?>" 
+                <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . rawurlencode($flosc_active_ivr_file) . '&view=' . rawurlencode($flosc_ivr_management_view) . '&ivr_phase=' . rawurlencode($flosc_active_phase) . '&delete_message=' . rawurlencode($flosc_msg_id) . '&phase=' . rawurlencode($flosc_phase_id) . '&_wpnonce=' . wp_create_nonce('flosc_delete_message_' . $flosc_msg_id))); ?>" 
                     class="flosc-msg-delete" data-flosc-action="delete-message" data-stop-propagation="1" data-confirm-message="Delete message: <?php echo esc_attr($flosc_msg['name'] ?? $flosc_msg_id); ?>?">✕ Delete</a>
         </div>
         

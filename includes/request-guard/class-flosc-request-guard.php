@@ -68,6 +68,7 @@ class FLOSC_Request_Guard {
      */
     public function sign_cookie_data($data) {
         $json = wp_json_encode($data);
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
         $encoded = base64_encode($json);
         $signature = hash_hmac('sha256', $encoded, flosc_token_secret());
         return $encoded . '|' . $signature;
@@ -99,6 +100,7 @@ class FLOSC_Request_Guard {
         }
         
         // Decode and return data
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
         $json = base64_decode($encoded);
         if ($json === false) {
             return false;

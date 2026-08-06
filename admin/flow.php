@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 $flosc_flow_settings  = $GLOBALS['flosc_current_settings'] ?? [];
 $flosc_selected_ivr   = $GLOBALS['flosc_current_ivr']      ?? '';
-$flosc_ivr_param      = urlencode( $flosc_selected_ivr );
+$flosc_ivr_param      = rawurlencode( $flosc_selected_ivr );
 $flosc_base_url       = admin_url( 'admin.php?page=flosc-settings&ivr=' . $flosc_ivr_param . '&tab=' );
 $flosc_flow_docs_url  = add_query_arg([
     'page' => 'flosc-settings',

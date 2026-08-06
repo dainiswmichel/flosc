@@ -1600,7 +1600,7 @@ The Team',
                 if ($status === 'active') {
                     add_rewrite_rule(
                         '^' . preg_quote($slug, '/') . '/?$',
-                        'index.php?flosc_app=1&flosc_ivr=' . urlencode($filename),
+                        'index.php?flosc_app=1&flosc_ivr=' . rawurlencode($filename),
                         'top'
                     );
                 }
@@ -2307,7 +2307,7 @@ The Team',
 
         // Call /app with the app access token
         $response = wp_remote_get(
-            'https://graph.facebook.com/v19.0/app?access_token=' . urlencode($app_access_token),
+            'https://graph.facebook.com/v19.0/app?access_token=' . rawurlencode($app_access_token),
             ['timeout' => 15, 'sslverify' => true]
         );
 
@@ -6375,6 +6375,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
 
         $response = wp_remote_post($api_base . '/v1/oauth2/token', [
             'headers' => [
+                // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
                 'Authorization' => 'Basic ' . base64_encode($client_id . ':' . $secret),
                 'Content-Type'  => 'application/x-www-form-urlencoded',
             ],
@@ -8575,6 +8576,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             $audio_path = $temp_dir . '/' . $phrase_info['file'];
             if (!file_exists($audio_path)) continue;
 
+            // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
             $audio_b64 = base64_encode(flosc_fs_get_contents($audio_path));
             $words = preg_split('/\s+/', trim($phrase_info['text']));
             $endpoint = count($words) === 1 ? '/analyze' : '/analyze-phrase';

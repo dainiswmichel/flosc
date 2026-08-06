@@ -435,6 +435,7 @@ class Apple_Provider extends SSO_Provider_Base {
         $pubkey    = $this->asn1_sequence($rsa_oid . $bitstring);
 
         $pem  = "-----BEGIN PUBLIC KEY-----\n";
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
         $pem .= chunk_split(base64_encode($pubkey), 64, "\n");
         $pem .= "-----END PUBLIC KEY-----\n";
 
@@ -483,6 +484,7 @@ class Apple_Provider extends SSO_Provider_Base {
         if ($remainder) {
             $data .= str_repeat('=', 4 - $remainder);
         }
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
         return base64_decode(strtr($data, '-_', '+/'), true);
     }
     
@@ -653,6 +655,7 @@ class Apple_Provider extends SSO_Provider_Base {
      * @return string Encoded data
      */
     private function base64_url_encode($data) {
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
         return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
     

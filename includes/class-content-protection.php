@@ -731,7 +731,7 @@ class FLOSC_Content_Protection {
                 'from' => 'lesson',
                 'post_id' => $post_id,
                 'slug' => $post ? $post->post_name : '',
-                'title' => $post ? urlencode($post->post_title) : '',
+                'title' => $post ? rawurlencode($post->post_title) : '',
             ];
             $app_url = add_query_arg($tracking, $app_url);
         }

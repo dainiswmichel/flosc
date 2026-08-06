@@ -286,6 +286,7 @@ class FLOSC_First_Party_Authentication {
         $expiry = time() + $ttl;
         $payload = $user_id . ':' . $expiry;
         $signature = hash_hmac('sha256', $payload, flosc_token_secret());
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
         return base64_encode($payload . ':' . $signature);
     }
 
@@ -296,6 +297,7 @@ class FLOSC_First_Party_Authentication {
      * @return int|false User ID if valid, false otherwise
      */
     public function validate_flosc_auth_token($token) {
+        // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
         $decoded = base64_decode($token, true);
         if ($decoded === false) {
             return false;

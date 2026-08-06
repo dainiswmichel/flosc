@@ -613,6 +613,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
         $response = wp_remote_post($api_base . '/v1/oauth2/token', [
             'headers' => [
+                // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
                 'Authorization' => 'Basic ' . base64_encode($client_id . ':' . $secret),
                 'Content-Type' => 'application/x-www-form-urlencoded',
             ],
@@ -969,7 +970,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
         $token = $this->get_access_token();
         if (is_wp_error($token)) return $token;
 
-        $response = wp_remote_get($this->get_api_base() . '/v1/billing/subscriptions/' . urlencode($subscription_id), [
+        $response = wp_remote_get($this->get_api_base() . '/v1/billing/subscriptions/' . rawurlencode($subscription_id), [
             'headers' => [
                 'Authorization' => 'Bearer ' . $token,
             ],
@@ -1659,7 +1660,8 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
         $cache_key = 'pp_evt_rows_v1';
         $rows      = wp_cache_get( $cache_key, 'flosc_paypal' );
         if ( ! is_array( $rows ) ) {
-            // Claims use add_option( ..., '', 'no' ).
+            // Claims use add_option( ..., '', 'no' ) — bulk LIKE has no WP API.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
             $rows = $wpdb->get_results(
                 $wpdb->prepare(
                     "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s LIMIT 100",
