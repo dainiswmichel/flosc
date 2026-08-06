@@ -143,7 +143,7 @@ $flosc_bubble_styles = [
             <p class="description">Message bubble geometry. Affects both user and assistant messages.</p>
             
             <!-- Bubble Preview -->
-            <div class="flosc-chat-style-preview-card">
+            <div id="flosc-chat-style-preview" class="flosc-chat-style-preview-card">
                 <div class="flosc-chat-style-preview-head">
                     <span>Bubble preview</span>
                     <span>Live</span>
@@ -246,19 +246,18 @@ jQuery(document).ready(function($) {
     // Bubble style data
     var bubbleStyles = <?php echo wp_json_encode($flosc_bubble_styles); ?>;
     
-    // Update bubble preview
+    // Update bubble preview via CSS custom properties (no element.style / jQuery .css).
     function updateBubblePreview() {
-        var style = bubbleStyles[$('#flosc_chat_style_bubble').val()];
-        var accent = $('#flosc_chat_style_accent').val();
-        
-        $('#bubble-preview-user').css({
-            'border-radius': style.user,
-            'background': accent
-        });
-        $('#bubble-preview-assistant').css({
-            'border-radius': style.assistant,
-            'border': style.border
-        });
+        var style = bubbleStyles[$('#flosc_chat_style_bubble').val()] || {};
+        var accent = $('#flosc_chat_style_accent').val() || '';
+        var root = document.getElementById('flosc-chat-style-preview');
+        if (!root) {
+            return;
+        }
+        root.style.setProperty('--flosc-preview-user-radius', style.user || '');
+        root.style.setProperty('--flosc-preview-user-bg', accent);
+        root.style.setProperty('--flosc-preview-assistant-radius', style.assistant || '');
+        root.style.setProperty('--flosc-preview-assistant-border', style.border || '');
     }
     
     // Update scale display
@@ -273,9 +272,9 @@ jQuery(document).ready(function($) {
     $('#flosc_chat_style_accent').on('input', function() {
         $('#flosc_chat_style_accent_hex').val(this.value);
         updateBubblePreview();
-        // Update swatch borders
-        $('.color-swatch').css('border-color', 'transparent');
-        $('.color-swatch[data-color="' + this.value + '"]').css('border-color', '#000');
+        // Swatch selection via class only (no jQuery .css)
+        $('.color-swatch').removeClass('is-active');
+        $('.color-swatch[data-color="' + this.value + '"]').addClass('is-active');
     });
     
     // Quick swatches

@@ -1302,21 +1302,26 @@
 }
 
 .flosc-chat-style-preview-user-bubble {
-    background: #2563eb;
+    background: var(--flosc-preview-user-bg, #2563eb);
     color: #fff;
     padding: 10px 16px;
-    border-radius: 18px 18px 4px 18px;
+    border-radius: var(--flosc-preview-user-radius, 18px 18px 4px 18px);
     font-size: 14px;
     line-height: 1.45;
 }
 
 .flosc-chat-style-preview-assistant-bubble {
     background: transparent;
-    border: 1px solid rgba(0, 0, 0, 0.08);
+    border: var(--flosc-preview-assistant-border, 1px solid rgba(0, 0, 0, 0.08));
     padding: 10px 16px;
-    border-radius: 4px 18px 18px 18px;
+    border-radius: var(--flosc-preview-assistant-radius, 4px 18px 18px 18px);
     font-size: 14px;
     line-height: 1.45;
+}
+
+.flosc-chat-style-swatch.is-active {
+    border-color: #000;
+    box-shadow: 0 0 0 1px #000;
 }
 
 .flosc-chat-style-color-input {

@@ -1825,7 +1825,7 @@ if ($flosc_selected_flow_name === '') {
 }
 
 // Flow chrome accent (Identity brand color) — used by flow-selector theme "flow-primary".
-// Dynamic color via wp_add_inline_style (no HTML style= attributes).
+// Dynamic color via wp_add_inline_style (no HTML style attributes).
 $flosc_flow_primary_color = sanitize_hex_color(
     (string) ($flosc_flow_settings['identity']['primary_color']
         ?? $flosc_flow_settings['primary_color']
