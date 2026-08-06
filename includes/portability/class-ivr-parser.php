@@ -411,7 +411,7 @@ class FLOSC_IVR_Parser {
         // v1.2.2: Use flow-aware IVR file path
         $ivr_file = $this->get_ivr_file_path();
         if (file_exists($ivr_file)) {
-            $markdown = file_get_contents($ivr_file);
+            $markdown = flosc_fs_get_contents($ivr_file);
             $this->flosc_config = $this->flosc_parse($markdown);
             
             // v1.2.3: DO NOT sync to global wp_options - that would break multi-flow

@@ -344,15 +344,15 @@ HTML;
         $flow_stem_for_state = '';
         if (is_array($current_flow_for_state)) {
             $ivr_for_state = (string) ($current_flow_for_state['ivr_file'] ?? $current_flow_for_state['ivr'] ?? $current_flow_for_state['id'] ?? '');
-            $flow_stem_for_state = $this->flosc_normalize_flow_stem($ivr_for_state);
+            $flow_stem_for_state = $this->flosc->flosc_normalize_flow_stem($ivr_for_state);
             if ($flow_stem_for_state === '' || $flow_stem_for_state === 'default') {
-                $flow_stem_for_state = $this->flosc_normalize_flow_stem((string) ($current_flow_for_state['id'] ?? ''));
+                $flow_stem_for_state = $this->flosc->flosc_normalize_flow_stem((string) ($current_flow_for_state['id'] ?? ''));
             }
         }
         
         if (is_user_logged_in()) {
             // Profile + per-flow wallet. Never paint visitor for an authenticated user.
-            $user_data = $this->build_app_user_payload(get_current_user_id(), $flow_stem_for_state, [
+            $user_data = $this->flosc->build_app_user_payload(get_current_user_id(), $flow_stem_for_state, [
                 'allow_guest_grant_without_session' => false,
                 'consume_event_transients'          => true,
             ]);
@@ -400,10 +400,13 @@ HTML;
         if ($flow && !empty($flow['ivr_file'])) {
             $flow_id = pathinfo(basename($flow['ivr_file']), PATHINFO_FILENAME);
         }
-        $offers = $this->sale_manager->get_available_offers(
-            is_user_logged_in() ? get_current_user_id() : null,
-            $flow_id
-        );
+        $sale = method_exists($this->flosc, 'sale') ? $this->flosc->sale() : null;
+        $offers = ($sale && method_exists($sale, 'get_available_offers'))
+            ? $sale->get_available_offers(
+                is_user_logged_in() ? get_current_user_id() : null,
+                $flow_id
+            )
+            : [];
 
         // Admin test-offer mode: bypass conditions/draft status to preview any offer
         $test_offer_id = '';
@@ -411,9 +414,9 @@ HTML;
         if (current_user_can('manage_options') && !empty($get['flosc_test_offer'])) {
             $oid   = sanitize_text_field($get['flosc_test_offer']);
             $nonce = sanitize_text_field($get['flosc_test_nonce'] ?? '');
-            if (wp_verify_nonce($nonce, 'flosc_test_offer_' . $oid)) {
+            if (wp_verify_nonce($nonce, 'flosc_test_offer_' . $oid) && $sale && method_exists($sale, 'offers')) {
                 $test_offer_id = $oid;
-                $all_raw_offers = $this->sale_manager->offers()->get_all_offers($flow_id);
+                $all_raw_offers = $sale->offers()->get_all_offers($flow_id);
                 foreach ($all_raw_offers as $o) {
                     if (($o['id'] ?? '') === $oid) {
                         $offers[$oid] = $o; // inject even if draft/inactive
@@ -425,8 +428,8 @@ HTML;
 
         // v4.0.0: Admin test mode — expose ALL offers (incl. drafts) for direct testing in chat
         $admin_test_offers = [];
-        if ( is_user_logged_in() && current_user_can( 'manage_options' ) ) {
-            $all_raw = $this->sale_manager->offers()->get_all_offers( $flow_id );
+        if ( is_user_logged_in() && current_user_can( 'manage_options' ) && $sale && method_exists($sale, 'offers') ) {
+            $all_raw = $sale->offers()->get_all_offers( $flow_id );
             foreach ( $all_raw as $o ) {
                 $admin_test_offers[] = $o;
             }
@@ -434,13 +437,15 @@ HTML;
 
         // Get payment providers config for frontend
         $providers = [];
-        foreach ($this->sale_manager->get_active_providers() as $id => $provider) {
-            $providers[$id] = [
-                'id' => $id,
-                'name' => $provider->get_name(),
-                'icon' => $provider->get_icon(),
-                'config' => $provider->get_client_config(),
-            ];
+        if ($sale && method_exists($sale, 'get_active_providers')) {
+            foreach ($sale->get_active_providers() as $id => $provider) {
+                $providers[$id] = [
+                    'id' => $id,
+                    'name' => $provider->get_name(),
+                    'icon' => $provider->get_icon(),
+                    'config' => $provider->get_client_config(),
+                ];
+            }
         }
         
         // v3.0.0: Generate FLOSC auth token for cross-domain compatibility
@@ -450,8 +455,8 @@ HTML;
         // due to COOKIE_DOMAIN mismatch on custom domains.
         $flosc_auth_token = '';
         if (is_user_logged_in()) {
-            $flosc_auth_token = $this->generate_flosc_auth_token(get_current_user_id());
-            $this->set_flosc_auth_cookie($flosc_auth_token);
+            $flosc_auth_token = $this->flosc->generate_flosc_auth_token(get_current_user_id());
+            $this->flosc->set_flosc_auth_cookie($flosc_auth_token);
         }
         
         // Load template

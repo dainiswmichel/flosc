@@ -42,10 +42,11 @@ $flosc_doc_topics = [
     ['id' => 'development-wishlist', 'group' => 'development', 'title' => 'User Wishlist',                                      'status' => 'ready', 'anchor' => 'user-wishlist'],
 ];
 
-// Which topic is currently selected?
-// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query parameters used for documentation navigation
-$flosc_get = wp_unslash($_GET);
-$flosc_doc_topic = isset($flosc_get['doc']) ? sanitize_text_field($flosc_get['doc']) : '';
+// Which topic is currently selected? ($flosc_get from settings.php when included).
+if ( ! isset( $flosc_get ) || ! is_array( $flosc_get ) ) {
+	$flosc_get = array();
+}
+$flosc_doc_topic = isset( $flosc_get['doc'] ) ? sanitize_text_field( (string) $flosc_get['doc'] ) : '';
 
 // Group labels for the sidebar
 $flosc_group_labels = [

@@ -524,16 +524,13 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
     private function handle_payment_failed($invoice) {
         $customer_id = sanitize_text_field((string) ($invoice['customer'] ?? ''));
 
-        // Find user by customer ID
-        // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- targeted single-customer lookup by exact meta pair
-        $users = get_users([
-            'meta_key' => '_flosc_stripe_customer', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- targeted single-customer lookup by exact meta pair
-            'meta_value' => $customer_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- targeted single-customer lookup by exact meta pair
-            'number' => 1,
-        ]);
-        
-        if (!empty($users)) {
-            do_action('flosc_stripe_payment_failed', $users[0]->ID, $invoice);
+        // Find user by customer ID (cached usermeta lookup — no SlowDBQuery meta_query).
+        $ids = function_exists( 'flosc_get_user_ids_for_meta' )
+            ? flosc_get_user_ids_for_meta( '_flosc_stripe_customer', $customer_id, '=', 1 )
+            : array();
+
+        if ( ! empty( $ids ) ) {
+            do_action( 'flosc_stripe_payment_failed', (int) $ids[0], $invoice );
         }
         
         return ['success' => true];

@@ -228,7 +228,7 @@ function flosc_resolve_flow_runtime($flow_id = '', $ivr_file = '') {
             }
 
             $parser   = FLOSC_IVR_Parser::flosc_instance();
-            $cfg      = $parser->flosc_parse(file_get_contents($path));
+            $cfg      = $parser->flosc_parse(flosc_fs_get_contents($path));
             $messages = $cfg['messages'] ?? array();
             $phases   = $cfg['phases'] ?? array();
             $styles   = $cfg['styles'] ?? array();

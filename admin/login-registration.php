@@ -29,7 +29,15 @@ $flosc_login_docs_url = add_query_arg([
 </div>
 
 <?php
-$flosc_guest_request_notice = sanitize_key((string) ($_GET['flosc_guest_request_notice'] ?? '')); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- admin notice rendering only
+// Prefer one-shot transient; fall back to sanitized query flag from parent $flosc_get.
+$flosc_guest_request_notice = '';
+$flosc_guest_notice_t = get_transient( 'flosc_guest_request_notice_' . get_current_user_id() );
+if ( is_string( $flosc_guest_notice_t ) && $flosc_guest_notice_t !== '' ) {
+	delete_transient( 'flosc_guest_request_notice_' . get_current_user_id() );
+	$flosc_guest_request_notice = sanitize_key( $flosc_guest_notice_t );
+} elseif ( isset( $flosc_get['flosc_guest_request_notice'] ) ) {
+	$flosc_guest_request_notice = sanitize_key( (string) $flosc_get['flosc_guest_request_notice'] );
+}
 $flosc_guest_request_messages = [
     'approved' => ['type' => 'success', 'text' => 'Guest account request approved.'],
     'approve_sent' => ['type' => 'success', 'text' => 'Guest account request approved and MagicLink sent.'],

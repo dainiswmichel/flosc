@@ -284,11 +284,10 @@ trait FLOSC_Visitor_Token_Trait {
      * Resolve visitor session id for token carry (cookie set by JS before auth).
      */
     public function flosc_resolve_visitor_session_id_for_grant() {
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only cookie for wallet carry
-        $cookies = wp_unslash($_COOKIE);
-        foreach (['flosc_visitor_session', 'flosc_vtok_session'] as $cookie_name) {
-            if (!empty($cookies[$cookie_name])) {
-                return sanitize_text_field(rawurldecode((string) $cookies[$cookie_name]));
+        foreach ( array( 'flosc_visitor_session', 'flosc_vtok_session' ) as $cookie_name ) {
+            $raw = filter_input( INPUT_COOKIE, $cookie_name, FILTER_UNSAFE_RAW );
+            if ( is_string( $raw ) && $raw !== '' ) {
+                return sanitize_text_field( rawurldecode( wp_unslash( $raw ) ) );
             }
         }
         return '';
@@ -794,8 +793,9 @@ trait FLOSC_Visitor_Token_Trait {
 
     /**
      * Contact capture mode once visitor tokens are depleted.
+     * Public: flosc-app.php / full-page shell need this for FLOSC_CONFIG.
      */
-    private function flosc_get_visitor_depleted_contact_mode($flow_id = '') {
+    public function flosc_get_visitor_depleted_contact_mode($flow_id = '') {
         $flow_stem = $this->flosc_normalize_flow_stem((string) $flow_id);
         $settings = get_option('flosc_flow_' . $flow_stem, []);
         if (!is_array($settings)) {

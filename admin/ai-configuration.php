@@ -709,21 +709,35 @@ jQuery(document).ready(function($) {
 <p class="description">Upload markdown files containing lesson catalogs, FAQs, product info, and teaching guidelines. These files are injected into the AI knowledge base on every session.</p>
 
 <?php
-// Fix 15: Display any KB action success message
-// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only status parameters for admin notice display
- $flosc_get = wp_unslash($_GET);
-if (isset($flosc_get['kb_action'])) {
-    $flosc_kb_action = sanitize_key($flosc_get['kb_action']);
-    $flosc_kb_msg = '';
-    if ($flosc_kb_action === 'uploaded')      $flosc_kb_msg = 'File uploaded successfully.';
-    if ($flosc_kb_action === 'deleted')       $flosc_kb_msg = 'File deleted.';
-    if ($flosc_kb_action === 'toggled')       $flosc_kb_msg = 'Access level updated.';
-    if ($flosc_kb_action === 'saved')         $flosc_kb_msg = 'File saved.';
-    if ($flosc_kb_action === 'error')         $flosc_kb_msg = isset($flosc_get['kb_error']) ? sanitize_text_field(urldecode((string) $flosc_get['kb_error'])) : 'An error occurred.';
-    if ($flosc_kb_msg):
-?>
-<div class="notice notice-success inline flosc-margin-bottom-15"><p><?php echo esc_html($flosc_kb_msg); ?></p></div>
-<?php endif; } ?>
+// KB action notices: prefer one-shot user transient (set by handlers); fall back to query arg
+// already present on $flosc_get from settings.php (no re-read of $_GET here).
+$flosc_kb_notice = get_transient( 'flosc_kb_notice_' . get_current_user_id() );
+if ( is_array( $flosc_kb_notice ) ) {
+	delete_transient( 'flosc_kb_notice_' . get_current_user_id() );
+	$flosc_kb_action = sanitize_key( (string) ( $flosc_kb_notice['action'] ?? '' ) );
+	$flosc_kb_error  = sanitize_text_field( (string) ( $flosc_kb_notice['error'] ?? '' ) );
+} else {
+	// $flosc_get is prepared by admin/settings.php before this file is included.
+	$flosc_kb_action = isset( $flosc_get['kb_action'] ) ? sanitize_key( (string) $flosc_get['kb_action'] ) : '';
+	$flosc_kb_error  = isset( $flosc_get['kb_error'] ) ? sanitize_text_field( urldecode( (string) $flosc_get['kb_error'] ) ) : '';
+}
+$flosc_kb_msg = '';
+if ( $flosc_kb_action === 'uploaded' ) {
+	$flosc_kb_msg = 'File uploaded successfully.';
+} elseif ( $flosc_kb_action === 'deleted' ) {
+	$flosc_kb_msg = 'File deleted.';
+} elseif ( $flosc_kb_action === 'toggled' ) {
+	$flosc_kb_msg = 'Access level updated.';
+} elseif ( $flosc_kb_action === 'saved' ) {
+	$flosc_kb_msg = 'File saved.';
+} elseif ( $flosc_kb_action === 'error' ) {
+	$flosc_kb_msg = $flosc_kb_error !== '' ? $flosc_kb_error : 'An error occurred.';
+}
+if ( $flosc_kb_msg !== '' ) :
+	$flosc_kb_notice_class = ( $flosc_kb_action === 'error' ) ? 'notice-error' : 'notice-success';
+	?>
+<div class="notice <?php echo esc_attr( $flosc_kb_notice_class ); ?> inline flosc-margin-bottom-15"><p><?php echo esc_html( $flosc_kb_msg ); ?></p></div>
+<?php endif; ?>
 
 <?php
 // Fix 6: Regenerate Lesson Catalog button
@@ -764,7 +778,7 @@ $flosc_editing_kb_file = isset($flosc_get['kb_edit']) ? sanitize_file_name($flos
 $flosc_editing_kb_content = '';
 $flosc_editing_kb_path = ($flosc_editing_kb_file && $flosc_kb_dir) ? $flosc_kb_dir . $flosc_editing_kb_file : '';
 if ($flosc_editing_kb_path && file_exists($flosc_editing_kb_path)) {
-    $flosc_editing_kb_content = file_get_contents($flosc_editing_kb_path);
+    $flosc_editing_kb_content = flosc_fs_get_contents($flosc_editing_kb_path);
 }
 ?>
 

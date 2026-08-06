@@ -345,36 +345,33 @@ class FLOSC_Flow_Manager {
      * v1.2.3: More robust serialized array handling
      */
     public function get_flow_users($flow_id) {
-        global $wpdb;
-        
-        // Get all users who have _flosc_flow_access meta
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only list of candidate users with flow-access metadata
-        $user_ids = $wpdb->get_col( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
-            "SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = '_flosc_flow_access'"
-        );
-        
-        if (empty($user_ids)) {
-            return [];
+        $candidate_ids = function_exists( 'flosc_get_user_ids_for_meta' )
+            ? flosc_get_user_ids_for_meta( '_flosc_flow_access' )
+            : array();
+
+        if ( empty( $candidate_ids ) ) {
+            return array();
         }
-        
-        // Filter to only users who actually have access to this specific flow
-        $matching_users = [];
-        foreach ($user_ids as $user_id) {
-            $allowed = get_user_meta($user_id, '_flosc_flow_access', true);
-            if (is_array($allowed) && in_array($flow_id, $allowed)) {
+
+        $matching_users = array();
+        foreach ( $candidate_ids as $user_id ) {
+            $user_id = (int) $user_id;
+            $allowed = get_user_meta( $user_id, '_flosc_flow_access', true );
+            if ( is_array( $allowed ) && in_array( $flow_id, $allowed, true ) ) {
                 $matching_users[] = $user_id;
             }
         }
-        
-        if (empty($matching_users)) {
-            return [];
+
+        if ( empty( $matching_users ) ) {
+            return array();
         }
-        
-        return get_users([
-            'include' => $matching_users,
-            'fields' => ['ID', 'display_name', 'user_email'],
-        ]);
+
+        return get_users(
+            array(
+                'include' => $matching_users,
+                'fields'  => array( 'ID', 'display_name', 'user_email' ),
+            )
+        );
     }
     
     /**

@@ -351,18 +351,20 @@ class FLOSC_Access_Manager {
             return true;
         }
 
-        // Any explicit per-flow member flag.
-        global $wpdb;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-        $flow_flags = $wpdb->get_var($wpdb->prepare(
-            "SELECT meta_key FROM {$wpdb->usermeta}
-             WHERE user_id = %d AND meta_key LIKE %s AND meta_value IN ('true','1','yes')
-             LIMIT 1",
-            $user_id,
-            $wpdb->esc_like('_flosc_member_access_') . '%'
-        ));
-        if (!empty($flow_flags)) {
-            return true;
+        // Any explicit per-flow member flag (core usermeta API).
+        $all_meta = get_user_meta( (int) $user_id );
+        if ( is_array( $all_meta ) ) {
+            foreach ( $all_meta as $meta_key => $vals ) {
+                $meta_key = (string) $meta_key;
+                if ( 0 !== strpos( $meta_key, '_flosc_member_access_' ) ) {
+                    continue;
+                }
+                $raw = is_array( $vals ) ? ( $vals[0] ?? '' ) : $vals;
+                $raw = is_string( $raw ) || is_numeric( $raw ) || is_bool( $raw ) ? (string) $raw : '';
+                if ( in_array( $raw, array( 'true', '1', 'yes' ), true ) ) {
+                    return true;
+                }
+            }
         }
 
         // Legacy global flag or any non-guest member level meta.

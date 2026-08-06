@@ -351,30 +351,28 @@ class FLOSC_Member_Access {
         if (!$user_id) {
             return [];
         }
-        
-        global $wpdb;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only retrieval of user membership-level meta keys
-        $meta_keys = $wpdb->get_col($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
-            "SELECT meta_key FROM {$wpdb->usermeta} 
-             WHERE user_id = %d 
-             AND meta_key LIKE %s 
-             AND meta_key NOT LIKE %s 
-             AND meta_key NOT LIKE %s
-             AND meta_key NOT LIKE %s
-             AND meta_value = 'yes'",
-            $user_id,
-            '_flosc_memberlevel_%',
-            '%_since',
-            '%_revoked',
-            '%_revoke_reason'
-        ));
-        
-        $levels = [];
-        foreach ($meta_keys as $key) {
-            $levels[] = str_replace('_flosc_memberlevel_', '', $key);
+
+        // All usermeta for user via core API; filter membership-level keys in PHP.
+        $all_meta = get_user_meta( (int) $user_id );
+        if ( ! is_array( $all_meta ) ) {
+            return array();
         }
-        
+
+        $levels = array();
+        foreach ( $all_meta as $key => $vals ) {
+            $key = (string) $key;
+            if ( 0 !== strpos( $key, '_flosc_memberlevel_' ) ) {
+                continue;
+            }
+            if ( preg_match( '/(_since|_revoked|_revoke_reason)$/', $key ) ) {
+                continue;
+            }
+            $raw = is_array( $vals ) ? ( $vals[0] ?? '' ) : $vals;
+            if ( 'yes' === (string) $raw ) {
+                $levels[] = str_replace( '_flosc_memberlevel_', '', $key );
+            }
+        }
+
         return $levels;
     }
     
@@ -499,29 +497,31 @@ class FLOSC_Member_Access {
         if (!$user_id) {
             return [];
         }
-        
-        global $wpdb;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only retrieval of guest-access meta keys
-        $meta_keys = $wpdb->get_col($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
-            "SELECT meta_key FROM {$wpdb->usermeta} 
-             WHERE user_id = %d 
-             AND meta_key LIKE %s 
-             AND meta_key NOT LIKE %s
-             AND meta_value = 'yes'",
-            $user_id,
-            '_flosc_guest_access_post_%',
-            '%_expires'
-        ));
-        
-        $post_ids = [];
-        foreach ($meta_keys as $key) {
-            $post_id = intval(str_replace('_flosc_guest_access_post_', '', $key));
-            if ($post_id && $this->has_guest_access($user_id, $post_id)) {
+
+        $all_meta = get_user_meta( (int) $user_id );
+        if ( ! is_array( $all_meta ) ) {
+            return array();
+        }
+
+        $post_ids = array();
+        foreach ( $all_meta as $key => $vals ) {
+            $key = (string) $key;
+            if ( 0 !== strpos( $key, '_flosc_guest_access_post_' ) ) {
+                continue;
+            }
+            if ( false !== strpos( $key, '_expires' ) ) {
+                continue;
+            }
+            $raw = is_array( $vals ) ? ( $vals[0] ?? '' ) : $vals;
+            if ( 'yes' !== (string) $raw ) {
+                continue;
+            }
+            $post_id = (int) str_replace( '_flosc_guest_access_post_', '', $key );
+            if ( $post_id && $this->has_guest_access( $user_id, $post_id ) ) {
                 $post_ids[] = $post_id;
             }
         }
-        
+
         return $post_ids;
     }
     

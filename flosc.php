@@ -2,14 +2,14 @@
 /**
  * Plugin Name: FLOSC
  * Plugin URI: https://flosc.ai
- * Description: Freeline --> Login --> Offer --> Sale --> Content: try-before-you-buy for local poets to the world's largest corporations.
+ * Description: (F)reeline --> (L)ogin --> (O)ffer --> (S)ale --> (C)ontent: try-before-you-buy WordPress journeys.
  * Version: 8.0.0
  * Requires at least: 7.0
  * Requires PHP: 7.4
  * Author: Dainis Michel
  * Author URI: https://dainis.net
- * License: GPLv2 or later
- * License URI: https://www.gnu.org/licenses/gpl-2.0.html
+ * License: GPLv3 or later
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  * Text Domain: flosc
  * Domain Path: /languages
  */
@@ -33,16 +33,54 @@ define('FLOSC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 define('FLOSC_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 if (!function_exists('flosc_log')) {
+    /**
+     * Debug logger: writes under uploads/flosc-logs when FLOSC_DEBUG is on (no error_log).
+     *
+     * @param mixed $msg Message or structure to log.
+     */
     function flosc_log($msg) {
-        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-            // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- centralized debug sink gated by FLOSC_DEBUG
-            error_log(is_scalar($msg) ? (string) $msg : wp_json_encode($msg));
+        if ( ! defined( 'FLOSC_DEBUG' ) || ! FLOSC_DEBUG ) {
+            return;
         }
+        $line = is_scalar( $msg ) ? (string) $msg : wp_json_encode( $msg );
+        if ( ! is_string( $line ) || $line === '' ) {
+            return;
+        }
+        if ( ! class_exists( 'FLOSC_Filesystem', false ) ) {
+            $fs_file = FLOSC_PLUGIN_DIR . 'includes/filesystem/class-flosc-filesystem.php';
+            if ( is_readable( $fs_file ) ) {
+                require_once $fs_file;
+            }
+        }
+        if ( ! class_exists( 'FLOSC_Filesystem' ) ) {
+            return;
+        }
+        $uploads = wp_upload_dir();
+        if ( ! empty( $uploads['error'] ) || empty( $uploads['basedir'] ) ) {
+            return;
+        }
+        $dir = trailingslashit( $uploads['basedir'] ) . 'flosc-logs';
+        if ( ! is_dir( $dir ) ) {
+            wp_mkdir_p( $dir );
+        }
+        $path  = $dir . '/debug.log';
+        $entry = '[' . gmdate( 'c' ) . '] ' . $line . "\n";
+        $fs    = new FLOSC_Filesystem();
+        $fs->protect_uploads_dir_with_htaccess( $dir );
+        $existing = $fs->read_file_safely( $path );
+        if ( ! is_string( $existing ) ) {
+            $existing = '';
+        }
+        if ( strlen( $existing ) > 524288 ) {
+            $existing = substr( $existing, -262144 );
+        }
+        $fs->write_file_safely( $path, $existing . $entry );
     }
 }
 
 
-// Domain: filesystem path helpers (uploads-only data + config resolvers).
+// Domain: filesystem helpers then path helpers (write gate needs FLOSC_Filesystem).
+require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/class-flosc-filesystem.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/flosc-data-paths.php';
 
 // v1.2.9: Auto-flush permalinks on activation
@@ -174,7 +212,7 @@ if (!get_option('flosc_ivr_reparse_800')) {
                 $fname    = basename($ivr_file);
                 $key      = 'flosc_flow_' . sanitize_key(pathinfo($fname, PATHINFO_FILENAME));
                 $fs       = get_option($key, []);
-                $markdown = file_get_contents($ivr_file);
+                $markdown = flosc_fs_get_contents($ivr_file);
                 if (!$markdown) continue;
                 $config   = $parser->flosc_parse($markdown);
                 $messages = $config['messages'] ?? [];
@@ -230,7 +268,7 @@ require_once FLOSC_PLUGIN_DIR . 'includes/flosc-admin.php';
 require_once FLOSC_PLUGIN_DIR . 'admin/settings-helper.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/tokens/class-flosc-visitor-token-trait.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/magic-link/class-flosc-magic-link-trait.php';
-require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/class-flosc-filesystem.php';
+// FLOSC_Filesystem already required above (before flosc-data-paths.php).
 require_once FLOSC_PLUGIN_DIR . 'includes/request-guard/class-flosc-request-guard.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/da1/class-flosc-da1-compositions.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/chat-turn/trait-flosc-chat-turn.php';
@@ -392,7 +430,10 @@ class FLOSC_Framework {
         return $this->first_party_auth->allow_flosc_token_auth($result);
     }
 
-    private function send_score_email($user, $score_data) {
+    /**
+     * Collaborator API: first-party login path sends score email via email service.
+     */
+    public function send_score_email($user, $score_data) {
         return $this->email_service->send_score_email($user, $score_data);
     }
 
@@ -619,7 +660,10 @@ class FLOSC_Framework {
     }
 
 
-    private function maybe_run_sso_email_sequence_for_user($user_id) {
+    /**
+     * Collaborator API: first-party login may trigger SSO email sequence.
+     */
+    public function maybe_run_sso_email_sequence_for_user($user_id) {
         return $this->email_service->maybe_run_sso_email_sequence_for_user($user_id);
     }
 
@@ -1446,7 +1490,7 @@ The Team',
     /**
      * v8.0.3: Store quiz score with quiz_id tracking for multi-quiz support
      */
-    private function store_quiz_score($user_id, $score_data) {
+    public function store_quiz_score($user_id, $score_data) {
         $score = intval($score_data['score'] ?? 0);
         $quiz_id = sanitize_key($score_data['quiz_id'] ?? 'default_quiz');
 
@@ -1796,9 +1840,19 @@ The Team',
     // ─────────────────────────────────────────────────────────
 
     private function kb_return_url($ivr, $action, $error = '') {
-        $base = admin_url('admin.php?page=flosc-settings&ivr=' . urlencode($ivr) . '&tab=ai&kb_action=' . $action . '#flosc-kb-section');
-        if ($error) $base .= '&kb_error=' . urlencode($error);
-        return $base;
+        // One-shot admin notice via transient (avoids relying on GET-only status params).
+        $uid = get_current_user_id();
+        if ( $uid > 0 ) {
+            set_transient(
+                'flosc_kb_notice_' . $uid,
+                array(
+                    'action' => sanitize_key( (string) $action ),
+                    'error'  => $error !== '' ? sanitize_text_field( (string) $error ) : '',
+                ),
+                MINUTE_IN_SECONDS
+            );
+        }
+        return admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( (string) $ivr ) . '&tab=ai#flosc-kb-section' );
     }
 
     public function handle_kb_upload() {
@@ -1850,7 +1904,7 @@ The Team',
 
         // Pass 5: write only via uploads gate (never plugin dir). Target is under flosc_flow_kb_dir().
         $uploaded_body = (!empty($handled_upload['file']) && is_readable($handled_upload['file']))
-            ? file_get_contents($handled_upload['file'])
+            ? flosc_fs_get_contents($handled_upload['file'])
             : false;
         if (false === $uploaded_body || !function_exists('flosc_write_data_file') || !flosc_write_data_file($target, $uploaded_body)) {
             if (!empty($handled_upload['file'])) {
@@ -2572,20 +2626,19 @@ The Team',
      * because other plugins (WooCommerce, BuddyBoss) hook wp_login and call
      * wp_redirect() + exit, which would hijack the SSO flow.
      */
-    // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only OAuth query routing and token redemption handler
     private function pull_pending_session_from_do($user_id) {
         $existing = get_user_meta($user_id, '_flosc_last_quiz_data', true);
         if (is_array($existing) && !empty($existing['phrase_results'])) {
             return;
         }
 
-        $cookie = wp_unslash($_COOKIE);
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- cookie array is unslashed above and sanitized on session_id extraction below
-        if (empty($cookie['flosc_pending_session'])) {
+        // Cookie is set by FLOSC during SSO handoff; not a form POST.
+        $pending_raw = filter_input( INPUT_COOKIE, 'flosc_pending_session', FILTER_UNSAFE_RAW );
+        if ( ! is_string( $pending_raw ) || $pending_raw === '' ) {
             return;
         }
 
-        $session_id = sanitize_text_field(urldecode((string) $cookie['flosc_pending_session'])); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- cookie value is read from unslashed array and sanitized inline
+        $session_id = sanitize_text_field( urldecode( wp_unslash( $pending_raw ) ) );
 
         // Clear the cookie immediately (one-time use)
         setcookie('flosc_pending_session', '', time() - 3600, '/');
@@ -2893,8 +2946,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
     /**
      * v1.3.6: Build flow config from IVR filename
      * Reads from flosc_flow_{filename} option in wp_options
+     * Public so companion-mode / other modules can resolve the same shape.
      */
-    private function build_flow_from_ivr_file($filename) {
+    public function build_flow_from_ivr_file($filename) {
         $filename = basename($filename); // Ensure just filename
         $base_name = pathinfo($filename, PATHINFO_FILENAME);
         $settings_key = 'flosc_flow_' . sanitize_key($base_name);
@@ -3550,7 +3604,7 @@ You are a GUIDE, not a teacher. Your job is to:
                 $modified = gmdate('Y', $mtime) . '-' . gmdate('m', $mtime) . 'm-' . gmdate('d', $mtime) . 'd-T' . gmdate('H', $mtime) . 'h:' . gmdate('i', $mtime) . 'm';
                 
                 // Parse to get message count
-                $content = file_get_contents($file);
+                $content = flosc_fs_get_contents($file);
                 preg_match_all('/^## /m', $content, $matches);
                 $message_count = count($matches[0]);
                 
@@ -3618,15 +3672,14 @@ You are a GUIDE, not a teacher. Your job is to:
         $stt_provider = flosc_get_setting('stt_provider', 'assemblyai');
         $output .= "**STT Provider:** {$stt_provider}\n\n";
         
-        // User counts
-        global $wpdb;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only diagnostics in admin debug report
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only diagnostics in admin debug report
-        $member_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->usermeta} WHERE meta_key = '_flosc_member_level'"); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only diagnostics in admin debug report
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only diagnostics in admin debug report
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only diagnostics in admin debug report
-        $quiz_count = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->usermeta} WHERE meta_key = '_flosc_last_quiz_score'"); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only diagnostics in admin debug report
-        
+        // User counts via cached usermeta ID lists (no SlowDBQuery meta_query).
+        $member_count = function_exists( 'flosc_get_user_ids_for_meta' )
+            ? count( flosc_get_user_ids_for_meta( '_flosc_member_level' ) )
+            : 0;
+        $quiz_count   = function_exists( 'flosc_get_user_ids_for_meta' )
+            ? count( flosc_get_user_ids_for_meta( '_flosc_last_quiz_score' ) )
+            : 0;
+
         $output .= "**Users with Quiz Scores:** {$quiz_count}\n";
         $output .= "**Users with Member Levels:** {$member_count}\n\n";
         
@@ -5955,7 +6008,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("[FLOSC v8.0.7] score_visit
      *
      * Stashes visitor quiz payload and (when MagicLink is enabled) mints access
      * for an existing WP user only. MagicLink click never creates accounts;
-     * provisioning happens in flosc_ensure_user_before_magic_mint before mint.
+     * Convenience-link mint requires an existing WP user (never creates on mint).
      */
     public function handle_stash_visitor_quiz($request) {
         $quiz_data = $request->get_param('quiz_data');
@@ -5997,19 +6050,17 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("[FLOSC v8.0.7] score_visit
     /**
      * Consume quiz data stashed via /stash-visitor-quiz before an SSO redirect.
      */
-    private function consume_stashed_visitor_quiz($user_id) {
+    public function consume_stashed_visitor_quiz($user_id) {
         $existing = get_user_meta($user_id, '_flosc_last_quiz_data', true);
         if (is_array($existing) && !empty($existing['phrase_results'])) {
             return false;
         }
 
-        $cookie = wp_unslash($_COOKIE);
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- cookie array is unslashed above and sanitized on token extraction below
-        if (empty($cookie['flosc_quiz_stash'])) {
+        if (empty($_COOKIE['flosc_quiz_stash'])) {
             return false;
         }
 
-        $token = sanitize_text_field(urldecode((string) $cookie['flosc_quiz_stash']));
+        $token = sanitize_text_field(urldecode((string) wp_unslash($_COOKIE['flosc_quiz_stash'])));
         setcookie('flosc_quiz_stash', '', time() - 3600, '/');
 
         if ($token === '') {
@@ -7175,6 +7226,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
                 if ($uid) {
                     wp_set_current_user($uid);
                     $this->flosc_token_auth_used = true;
+                    if ($this->first_party_auth && method_exists($this->first_party_auth, 'mark_flosc_token_auth_used')) {
+                        $this->first_party_auth->mark_flosc_token_auth_used();
+                    }
                 }
             }
         }
@@ -7918,9 +7972,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
 
         if (!file_exists($temp_dir)) {
             wp_mkdir_p($temp_dir);
-            // Block direct HTTP access to audio files
-            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- uploads temp directory protection file
-            file_put_contents($temp_dir . '/.htaccess', "Deny from all\n"); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- controlled write in FLOSC-managed path
+            // Block direct HTTP access to audio files (uploads-bound via FLOSC_Filesystem).
+            if ( isset( $this->filesystem ) && is_object( $this->filesystem ) ) {
+                $this->filesystem->protect_uploads_dir_with_htaccess( $temp_dir );
+            }
         }
 
         // Whitelist extensions
@@ -7933,7 +7988,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             return new WP_Error('write_failed', __('Invalid uploaded audio', 'flosc'), ['status' => 400]);
         }
 
-        $uploaded_audio = file_get_contents($tmp_audio);
+        $uploaded_audio = flosc_fs_get_contents($tmp_audio);
         if ($uploaded_audio === false || !$this->write_file_safely($filepath, $uploaded_audio)) {
             return new WP_Error('write_failed', __('Could not save audio', 'flosc'), ['status' => 500]);
         }
@@ -7941,7 +7996,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
         // Update metadata.json (append phrase data)
         $meta_path = $temp_dir . '/metadata.json';
         $default_audio_quiz_id = flosc_get_setting('default_audio_quiz_id', 'pronunciation_ipa_audio_quiz');
-        $meta = file_exists($meta_path) ? json_decode(file_get_contents($meta_path), true) : [
+        $meta = file_exists($meta_path) ? json_decode(flosc_fs_get_contents($meta_path), true) : [
             'quiz_id' => $default_audio_quiz_id,
             'quiz_type' => 'ipa_audio',
             'created_at' => $temp_id,
@@ -8087,8 +8142,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC v8.0.8: store_browse
         $user_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id;
         if (!file_exists($user_dir)) {
             wp_mkdir_p($user_dir);
-            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- uploads user directory protection file
-            file_put_contents($user_dir . '/.htaccess', "Deny from all\n"); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- controlled write in FLOSC-managed path
+            if ( isset( $this->filesystem ) && is_object( $this->filesystem ) ) {
+                $this->filesystem->protect_uploads_dir_with_htaccess( $user_dir );
+            }
         }
 
         // Per-session storage: flosc-users/{user_id}/sessions/{session_id}/
@@ -8122,7 +8178,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC v8.0.8: store_browse
         $updated = false;
         $meta_path = $session_dir . '/metadata.json';
         if (file_exists($meta_path)) {
-            $meta = json_decode((string) file_get_contents($meta_path), true);
+            $meta = json_decode((string) flosc_fs_get_contents($meta_path), true);
             if (is_array($meta) && !empty($meta['phrases']) && is_array($meta['phrases'])) {
                 $conversion_targets = [];
                 foreach ($meta['phrases'] as &$phrase) {
@@ -8344,8 +8400,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_session_from_d
         $user_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id;
         if (!file_exists($user_dir)) {
             wp_mkdir_p($user_dir);
-            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- uploads user directory protection file
-            file_put_contents($user_dir . '/.htaccess', "Deny from all\n"); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- controlled write in FLOSC-managed path
+            if ( isset( $this->filesystem ) && is_object( $this->filesystem ) ) {
+                $this->filesystem->protect_uploads_dir_with_htaccess( $user_dir );
+            }
         }
 
         $session_dir = $user_dir . '/sessions/' . $session_id;
@@ -8488,12 +8545,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * @return array|false     score_data array on success, false on failure
      */
     public function score_visitor_audio($user_id, $temp_id) {
-        // v8.0.5: 5 phrases × up to 30s each = 150s worst case.
-        // ChemiCloud default max_execution_time is 30-60s. Give PHP 5 minutes.
-        if (function_exists('set_time_limit')) {
-            // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged -- bounded fallback path for long audio scoring jobs
-            // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged -- bounded fallback path for long audio scoring jobs
-            @set_time_limit(300); // phpcs:ignore Squiz.PHP.DiscouragedFunctions.Discouraged -- bounded fallback path for long audio scoring jobs
+        // 5 phrases × up to 30s: allow longer run when the host permits.
+        if ( function_exists( 'set_time_limit' ) ) {
+            set_time_limit( 300 );
         }
 
         // Validate tempID format: YYYY-MMm-DDd-HHh-MMm-SSs-XXXXX
@@ -8510,7 +8564,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             return false;
         }
 
-        $meta = json_decode(file_get_contents($meta_path), true);
+        $meta = json_decode(flosc_fs_get_contents($meta_path), true);
         if (!$meta || empty($meta['phrases'])) {
             return false;
         }
@@ -8523,7 +8577,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             $audio_path = $temp_dir . '/' . $phrase_info['file'];
             if (!file_exists($audio_path)) continue;
 
-            $audio_b64 = base64_encode(file_get_contents($audio_path));
+            $audio_b64 = base64_encode(flosc_fs_get_contents($audio_path));
             $words = preg_split('/\s+/', trim($phrase_info['text']));
             $endpoint = count($words) === 1 ? '/analyze' : '/analyze-phrase';
 
@@ -8627,7 +8681,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         $user_dir = $upload_dir['basedir'] . '/flosc-users/' . $user_id;
         if (!file_exists($user_dir)) {
             wp_mkdir_p($user_dir);
-            file_put_contents($user_dir . '/.htaccess', "Deny from all\n"); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- controlled write in FLOSC-managed path
+            if ( isset( $this->filesystem ) && is_object( $this->filesystem ) ) {
+                $this->filesystem->protect_uploads_dir_with_htaccess( $user_dir );
+            }
         }
         $session_dir = $user_dir . '/sessions/' . $temp_id;
         wp_mkdir_p($session_dir);
@@ -8638,7 +8694,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
         // Store scoring results in the session's metadata.json
         $user_meta_path = $session_dir . '/metadata.json';
-        $user_meta = file_exists($user_meta_path) ? json_decode(file_get_contents($user_meta_path), true) : $meta;
+        $user_meta = file_exists($user_meta_path) ? json_decode(flosc_fs_get_contents($user_meta_path), true) : $meta;
         $user_meta['scored_at'] = gmdate('Y') . '-' . gmdate('m') . 'm-' . gmdate('d') . 'd-'
                                 . gmdate('H') . 'h-' . gmdate('i') . 'm-' . gmdate('s') . 's';
         $user_meta['score'] = $score;
@@ -9076,11 +9132,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             wp_die(esc_html__('No chat rows found for the selected sessions.', 'flosc'));
         }
 
-        nocache_headers();
-        header('Content-Type: text/tab-separated-values; charset=utf-8');
-        $datestamp = gmdate('Y') . '-' . gmdate('m') . 'm-' . gmdate('d') . 'd';
-        header('Content-Disposition: attachment; filename="flosc-chat-logs-' . $datestamp . '.tsv"');
-
         $headers = array_keys($rows[0]);
         $to_tsv_line = static function (array $columns) {
             $encoded = array_map(static function ($value) {
@@ -9095,16 +9146,22 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             return implode("\t", $encoded) . "\n";
         };
 
-        echo $to_tsv_line($headers); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw TSV stream response
+        $tsv_body = $to_tsv_line($headers);
         foreach ($rows as $row) {
             $ordered_row = [];
             foreach ($headers as $header_key) {
                 $value = $row[$header_key] ?? '';
                 $ordered_row[] = is_scalar($value) ? (string) $value : wp_json_encode($value);
             }
-            echo $to_tsv_line($ordered_row); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw TSV stream response
+            $tsv_body .= $to_tsv_line($ordered_row);
         }
-        exit;
+
+        $datestamp = gmdate('Y') . '-' . gmdate('m') . 'm-' . gmdate('d') . 'd';
+        $this->filesystem->stream_plain_download_and_exit(
+            $tsv_body,
+            'text/tab-separated-values; charset=utf-8',
+            'flosc-chat-logs-' . $datestamp . '.tsv'
+        );
     }
 
     /**
@@ -9687,7 +9744,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
 
         // Show audio files if user dir exists
         if ($has_user_dir) {
-            $meta = json_decode(file_get_contents($meta_path), true);
+            $meta = json_decode(flosc_fs_get_contents($meta_path), true);
             $phrases = $meta['phrases'] ?? [];
             $phrases = $meta['phrases'] ?? [];
 
@@ -9738,20 +9795,22 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * Required because flosc-users/ dirs have .htaccess Deny from all.
      */
     public function ajax_serve_user_audio() {
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- signed URL (exp + HMAC sig) endpoint; not a state-changing action
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- signed URL (exp + HMAC sig) endpoint; not a state-changing action
-        $get = wp_unslash($_GET); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- signed URL (exp + HMAC sig) endpoint; not a state-changing action
-        $user_id = isset($get['user_id']) ? absint($get['user_id']) : 0;
-        $file = isset($get['file']) ? sanitize_file_name($get['file']) : '';
-        $is_download = !empty($get['download']);
-        $expires = isset($get['exp']) ? absint($get['exp']) : 0;
-        $sig = isset($get['sig']) ? strtolower(preg_replace('/[^a-f0-9]/', '', (string) $get['sig'])) : '';
+        // Signed URL endpoint (exp + HMAC). Read query via filter_input — not a
+        // state-changing POST; auth is signature and/or capability below.
+        $user_id     = absint( (string) filter_input( INPUT_GET, 'user_id', FILTER_SANITIZE_NUMBER_INT ) );
+        $file_raw    = filter_input( INPUT_GET, 'file', FILTER_UNSAFE_RAW );
+        $file        = is_string( $file_raw ) ? sanitize_file_name( wp_unslash( $file_raw ) ) : '';
+        $is_download = (bool) filter_input( INPUT_GET, 'download', FILTER_UNSAFE_RAW );
+        $expires     = absint( (string) filter_input( INPUT_GET, 'exp', FILTER_SANITIZE_NUMBER_INT ) );
+        $sig_raw     = filter_input( INPUT_GET, 'sig', FILTER_UNSAFE_RAW );
+        $sig         = is_string( $sig_raw ) ? strtolower( preg_replace( '/[^a-f0-9]/', '', wp_unslash( $sig_raw ) ) ) : '';
+        $session_raw = filter_input( INPUT_GET, 'session_id', FILTER_UNSAFE_RAW );
+        $session_id  = is_string( $session_raw ) ? sanitize_text_field( wp_unslash( $session_raw ) ) : '';
 
         if (!$user_id || !$file) {
             wp_die('Missing parameters', 400);
         }
 
-        $session_id = isset($get['session_id']) ? sanitize_text_field($get['session_id']) : '';
         $has_valid_sig = $this->is_valid_audio_access_signature($user_id, $session_id, $file, $expires, $sig);
 
         // Allow owner/admin access, or a valid short-lived signed URL.
@@ -9779,10 +9838,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         $mimes = ['webm' => 'audio/webm', 'mp4' => 'audio/mp4', 'm4a' => 'audio/mp4', 'ogg' => 'audio/ogg', 'wav' => 'audio/wav'];
         $mime = $mimes[$ext] ?? 'application/octet-stream';
 
-        $size  = filesize($filepath);
-        $start = 0;
-        $end   = $size - 1;
-
         $download_name = $file;
         if ($is_download && $session_id) {
             $mts_stamp = preg_replace('/-[0-9a-f]{5}$/', '', $session_id);
@@ -9794,53 +9849,19 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             $download_name = 'phrase_' . $phrase_num . '_' . $mts_stamp . '.' . $ext;
         }
 
-        header('Accept-Ranges: bytes');
-        header('Content-Type: ' . $mime);
-        header('Content-Disposition: ' . ($is_download ? 'attachment' : 'inline') . '; filename="' . sanitize_file_name($download_name) . '"');
-        header('Cache-Control: private, max-age=3600');
+        // Byte range for iOS Safari/WebKit <audio> probe (Range: bytes=0-1).
+        $http_range = filter_input( INPUT_SERVER, 'HTTP_RANGE', FILTER_UNSAFE_RAW );
+        $http_range = is_string( $http_range ) && $http_range !== ''
+            ? sanitize_text_field( wp_unslash( $http_range ) )
+            : null;
 
-        // iOS Safari/WebKit requires Range request support to play <audio>.
-        // It sends Range: bytes=0-1 to probe seekability; without a 206 response it refuses to play.
-        if (isset($_SERVER['HTTP_RANGE'])) {
-            $http_range = sanitize_text_field(wp_unslash($_SERVER['HTTP_RANGE']));
-            preg_match('/bytes=(\d*)-(\d*)/', $http_range, $m);
-            $rs = $m[1] !== '' ? intval($m[1]) : null;
-            $re = isset($m[2]) && $m[2] !== '' ? intval($m[2]) : null;
-            if ($rs !== null) {
-                $start = $rs;
-                $end   = $re !== null ? min($re, $size - 1) : $size - 1;
-            } elseif ($re !== null) {
-                $start = max(0, $size - $re);
-            }
-            if ($start > $end || $start >= $size) {
-                header('HTTP/1.1 416 Range Not Satisfiable');
-                header('Content-Range: bytes */' . $size);
-                exit;
-            }
-            $length = $end - $start + 1;
-            header('HTTP/1.1 206 Partial Content');
-            header('Content-Range: bytes ' . $start . '-' . $end . '/' . $size);
-            header('Content-Length: ' . $length);
-        } else {
-            header('Content-Length: ' . $size);
-        }
-
-        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- binary seekable stream; WP_Filesystem has no fseek equivalent
-        $fp = fopen($filepath, 'rb'); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- streaming read required for binary-safe output
-        fseek($fp, $start);
-        $remaining = $end - $start + 1;
-        while ($remaining > 0 && !feof($fp)) {
-            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- binary seekable stream
-            $chunk = fread($fp, min(8192, $remaining));
-            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- binary stream output
-            echo $chunk;
-            $remaining -= strlen($chunk);
-            if (ob_get_level()) ob_flush();
-            flush();
-        }
-        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- binary seekable stream
-        fclose($fp);
-        exit;
+        $this->filesystem->stream_uploads_binary_range_and_exit(
+            $filepath,
+            $mime,
+            $download_name,
+            $is_download,
+            $http_range
+        );
     }
 
     /**
@@ -9875,8 +9896,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             echo 'LeSAEp';
         });
         add_action('bp_template_content', [$this, 'render_buddyboss_quiz_tab']);
-        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core BuddyPress/BuddyBoss template filter.
-        bp_core_load_template(apply_filters('bp_core_template_plugin', 'members/single/plugins'));
+        // BuddyPress members plugin template (core BP path; no third-party filter needed).
+        bp_core_load_template( 'members/single/plugins' );
     }
 
     /**
@@ -10258,19 +10279,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             }
         }
 
-        global $wpdb;
-        $like = '%' . $wpdb->esc_like($session_id) . '%';
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only fallback lookup in usermeta with prepared value
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only fallback lookup in usermeta with prepared value
-        $rows = $wpdb->get_col($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only fallback lookup in usermeta with prepared value
-            "SELECT meta_value FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value LIKE %s LIMIT 10",
-            '_flosc_last_quiz_data',
-            $like
-        ));
-
-        foreach ((array) $rows as $serialized) {
-            $data = maybe_unserialize($serialized);
-            if (is_array($data) && (($data['session_id'] ?? '') === $session_id)) {
+        // Fallback: usermeta LIKE candidates (cached prepared query).
+        $candidate_ids = function_exists( 'flosc_get_user_ids_for_meta' )
+            ? flosc_get_user_ids_for_meta( '_flosc_last_quiz_data', $session_id, 'LIKE', 10 )
+            : array();
+        foreach ( $candidate_ids as $candidate_id ) {
+            $data = get_user_meta( (int) $candidate_id, '_flosc_last_quiz_data', true );
+            if ( is_array( $data ) && ( ( $data['session_id'] ?? '' ) === $session_id ) ) {
                 return $data;
             }
         }
@@ -10757,8 +10772,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         if ($preset === 'auto') {
             // Auto mode: Light by default, dark via prefers-color-scheme
             if (file_exists($light_path) && file_exists($dark_path)) {
-                $light_content = @file_get_contents($light_path);
-                $dark_content  = @file_get_contents($dark_path);
+                $light_content = flosc_fs_get_contents($light_path);
+                $dark_content  = flosc_fs_get_contents($dark_path);
 
                 if ($light_content) {
                     $light_vars = $this->extract_css_variables($light_content);

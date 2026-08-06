@@ -90,7 +90,7 @@ class FLOSC_Companion_Mode {
         }
 
         // Brand / product identity — header icon + assistant name (not hard-coded FLOSC/emoji).
-        $identity = $this->get_floscflow_identity();
+        $identity = $this->flosc->get_floscflow_identity();
         $product_name = sanitize_text_field((string) ($identity['name'] ?? ''));
         if ($product_name === '') {
             $product_name = sanitize_text_field((string) flosc_get_setting('product_name', 'FLOSC'));
@@ -224,8 +224,23 @@ class FLOSC_Companion_Mode {
 
         $flow = $this->flosc->get_current_flow();
         $flow_id = is_array($flow) ? sanitize_text_field((string) ($flow['id'] ?? '')) : '';
-        $token_provider = $this->sale_manager ? $this->sale_manager->get_provider('tokens') : null;
-        $visitor_wallet_initial = max(0, intval($this->flosc_get_visitor_wallet_initial_amount($flow_id, $token_provider)));
+        $sale = method_exists($this->flosc, 'sale') ? $this->flosc->sale() : null;
+        $token_provider = ($sale && method_exists($sale, 'get_provider')) ? $sale->get_provider('tokens') : null;
+        // Mirror FLOSC_Framework visitor wallet baseline (trait method is private).
+        $visitor_wallet_initial = 0;
+        $flow_stem = sanitize_key(pathinfo(basename((string) $flow_id), PATHINFO_FILENAME));
+        if ($flow_stem !== '') {
+            $flow_settings = get_option('flosc_flow_' . $flow_stem, []);
+            if (is_array($flow_settings) && isset($flow_settings['tokens_communication_tokens_per_message'])) {
+                $visitor_wallet_initial = max(0, intval($flow_settings['tokens_communication_tokens_per_message']));
+            }
+        }
+        if ($visitor_wallet_initial <= 0) {
+            $visitor_wallet_initial = max(0, intval(get_option('flosc_tokens_communication_tokens_per_message', 5000)));
+        }
+        if ($visitor_wallet_initial <= 0) {
+            $visitor_wallet_initial = 5000;
+        }
 
         wp_enqueue_style(
             'flosc-companion',
@@ -415,9 +430,9 @@ class FLOSC_Companion_Mode {
         // Hint may only select a companion-enabled flow that either owns this page
         // or is an explicit handoff to a real flow (dock from full-page chat).
         if ($hint !== '') {
-            $hint_flow = $this->build_flow_from_ivr_file($hint . '.md');
+            $hint_flow = $this->flosc->build_flow_from_ivr_file($hint . '.md');
             if (!is_array($hint_flow)) {
-                $hint_flow = $this->build_flow_from_ivr_file($hint);
+                $hint_flow = $this->flosc->build_flow_from_ivr_file($hint);
             }
             $hint_ok = is_array($hint_flow)
                 && filter_var($hint_flow['companion_enabled'] ?? false, FILTER_VALIDATE_BOOLEAN)
@@ -460,7 +475,7 @@ class FLOSC_Companion_Mode {
             if (strpos($filename, 'backup') !== false) {
                 continue;
             }
-            $flow = $this->build_flow_from_ivr_file($filename);
+            $flow = $this->flosc->build_flow_from_ivr_file($filename);
             if (!is_array($flow)) {
                 continue;
             }
@@ -596,7 +611,7 @@ class FLOSC_Companion_Mode {
                 continue;
             }
 
-            $flow = $this->build_flow_from_ivr_file($filename);
+            $flow = $this->flosc->build_flow_from_ivr_file($filename);
             if (!is_array($flow)) {
                 continue;
             }

@@ -153,8 +153,6 @@ if (!function_exists('flosc_permalink_status_indicator')) {
  */
 if (!function_exists('flosc_resolve_flow_option_key_for_ivr')) {
     function flosc_resolve_flow_option_key_for_ivr($flosc_ivr_filename) {
-        global $wpdb;
-
         $flosc_ivr_filename = basename((string) $flosc_ivr_filename);
         $target_stem = sanitize_key(pathinfo($flosc_ivr_filename, PATHINFO_FILENAME));
         $default_key = 'flosc_flow_' . $target_stem;
@@ -163,24 +161,20 @@ if (!function_exists('flosc_resolve_flow_option_key_for_ivr')) {
         $best_key = $default_key;
         $best_score = -1;
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only scan of plugin flow options for deterministic key resolution
-        $flosc_rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only scan of plugin flow options for deterministic key resolution
-            "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE 'flosc_flow_%'"
-        );
-
-        if (!is_array($flosc_rows)) {
+        // Scan flosc_flow_* (autoload=no) via cached prepared options scan.
+        $flosc_rows = function_exists( 'flosc_get_flow_option_rows' ) ? flosc_get_flow_option_rows() : array();
+        if ( ! is_array( $flosc_rows ) || empty( $flosc_rows ) ) {
             return $default_key;
         }
 
-        foreach ($flosc_rows as $flosc_row) {
-            $option_name = (string) ($flosc_row->option_name ?? '');
-            if ($option_name === '') {
+        foreach ( $flosc_rows as $flosc_row ) {
+            $option_name = (string) ( $flosc_row['option_name'] ?? '' );
+            if ( $option_name === '' || strpos( $option_name, 'flosc_flow_' ) !== 0 ) {
                 continue;
             }
 
-            $flosc_settings = maybe_unserialize($flosc_row->option_value ?? null);
-            if (!is_array($flosc_settings)) {
+            $flosc_settings = maybe_unserialize( $flosc_row['option_value'] ?? '' );
+            if ( ! is_array( $flosc_settings ) ) {
                 continue;
             }
 

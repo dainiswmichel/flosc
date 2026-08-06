@@ -22,9 +22,11 @@ $flosc_chat_logs_docs_url = add_query_arg([
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-chat-logs';
-// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only admin filter parameter
-$flosc_get = wp_unslash($_GET);
-$flosc_selected_user_id = isset($flosc_get['flosc_user_id']) ? absint($flosc_get['flosc_user_id']) : 0;
+// $flosc_get prepared by admin/settings.php (filters are display-only).
+if ( ! isset( $flosc_get ) || ! is_array( $flosc_get ) ) {
+	$flosc_get = array();
+}
+$flosc_selected_user_id = isset( $flosc_get['flosc_user_id'] ) ? absint( $flosc_get['flosc_user_id'] ) : 0;
 // Scope chat logs to the selected flow. Stored flow_id has no file extension
 // (e.g. "dainis_net_ivr"), while $current_ivr is the filename ("dainis_net_ivr.md").
 $flosc_current_flow_id = $flosc_current_ivr !== '' ? pathinfo($flosc_current_ivr, PATHINFO_FILENAME) : '';

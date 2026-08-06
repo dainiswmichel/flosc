@@ -60,7 +60,7 @@ function flosc_activate() {
         $default_ivr = FLOSC_PLUGIN_DIR . 'ai_configuration_files/flosc_default_technical_ivr.md';
         if (file_exists($default_ivr)) {
             // Pass 5: read shipped default (plugin dir is read-only source); write only under uploads.
-            $default_body = file_get_contents($default_ivr);
+            $default_body = flosc_fs_get_contents($default_ivr);
             if (false !== $default_body && function_exists('flosc_write_data_file')) {
                 flosc_write_data_file($ivr_file, $default_body);
             }

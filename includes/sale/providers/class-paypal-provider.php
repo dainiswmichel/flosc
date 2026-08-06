@@ -162,30 +162,19 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
             get_option('flosc_paypal_mode', 'sandbox')
         );
 
-        // 3) All per-flow option arrays.
-        global $wpdb;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- one-time webhook credential resolution; no WP API for bulk option prefix scan
-        $rows = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT option_value FROM {$wpdb->options} WHERE option_name LIKE %s AND option_name NOT LIKE %s",
-                $wpdb->esc_like('flosc_flow_') . '%',
-                '%' . $wpdb->esc_like('_transient') . '%'
-            ),
-            ARRAY_A
-        );
-        if (is_array($rows)) {
-            foreach ($rows as $row) {
-                $data = maybe_unserialize($row['option_value'] ?? '');
-                if (!is_array($data)) {
-                    continue;
-                }
-                $push(
-                    $data['paypal_webhook_id'] ?? '',
-                    $data['paypal_client_id'] ?? '',
-                    $data['paypal_secret'] ?? '',
-                    $data['paypal_mode'] ?? 'sandbox'
-                );
+        // 3) All per-flow option arrays (autoload=no — cached prepared options scan).
+        $rows = function_exists( 'flosc_get_flow_option_rows' ) ? flosc_get_flow_option_rows() : array();
+        foreach ( $rows as $row ) {
+            $data = maybe_unserialize( $row['option_value'] ?? '' );
+            if ( ! is_array( $data ) ) {
+                continue;
             }
+            $push(
+                $data['paypal_webhook_id'] ?? '',
+                $data['paypal_client_id'] ?? '',
+                $data['paypal_secret'] ?? '',
+                $data['paypal_mode'] ?? 'sandbox'
+            );
         }
 
         $this->credential_packs_cache = $packs;
@@ -505,34 +494,23 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
             }
         }
 
-        global $wpdb;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-        $rows = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s AND option_name NOT LIKE %s",
-                $wpdb->esc_like('flosc_flow_') . '%',
-                '%' . $wpdb->esc_like('_transient') . '%'
-            ),
-            ARRAY_A
-        );
-        if (is_array($rows)) {
-            foreach ($rows as $row) {
-                $name = (string) ($row['option_name'] ?? '');
-                $data = maybe_unserialize($row['option_value'] ?? '');
-                if (!is_array($data) || $name === '') {
-                    continue;
+        $rows = function_exists( 'flosc_get_flow_option_rows' ) ? flosc_get_flow_option_rows() : array();
+        foreach ( $rows as $row ) {
+            $name = (string) ( $row['option_name'] ?? '' );
+            $data = maybe_unserialize( $row['option_value'] ?? '' );
+            if ( ! is_array( $data ) || $name === '' ) {
+                continue;
+            }
+            $flow_client = (string) ( $data['paypal_client_id'] ?? '' );
+            $stem        = str_replace( 'flosc_flow_', '', $name );
+            $same_client = ( $client !== '' && $flow_client !== '' && hash_equals( $flow_client, $client ) );
+            $is_current  = in_array( $stem, $stems, true );
+            if ( $same_client || $is_current ) {
+                $data['paypal_webhook_id'] = $webhook_id;
+                if ( $same_client && empty( $data['paypal_mode'] ) ) {
+                    $data['paypal_mode'] = $mode;
                 }
-                $flow_client = (string) ($data['paypal_client_id'] ?? '');
-                $stem = str_replace('flosc_flow_', '', $name);
-                $same_client = ($client !== '' && $flow_client !== '' && hash_equals($flow_client, $client));
-                $is_current  = in_array($stem, $stems, true);
-                if ($same_client || $is_current) {
-                    $data['paypal_webhook_id'] = $webhook_id;
-                    if ($same_client && empty($data['paypal_mode'])) {
-                        $data['paypal_mode'] = $mode;
-                    }
-                    update_option($name, $data, false);
-                }
+                update_option( $name, $data, false );
             }
         }
 
@@ -546,6 +524,9 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
             update_option($key, $data, false);
         }
 
+        if ( function_exists( 'flosc_bust_flow_option_rows_cache' ) ) {
+            flosc_bust_flow_option_rows_cache();
+        }
         $this->credential_packs_cache = null;
     }
 
@@ -1360,8 +1341,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
             if (($value === null || $value === '') && isset($server_aliases[$key])) {
                 foreach ($server_aliases[$key] as $server_key) {
                     if (!empty($_SERVER[$server_key])) {
-                        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized below
-                        $value = wp_unslash($_SERVER[$server_key]);
+                        $value = sanitize_text_field(wp_unslash((string) $_SERVER[$server_key]));
                         break;
                     }
                 }
@@ -1675,22 +1655,28 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
      */
     private function cleanup_expired_paypal_event_claims() {
         global $wpdb;
-        $cutoff = time() - (14 * DAY_IN_SECONDS);
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
-        $rows = $wpdb->get_results(
-            $wpdb->prepare(
-                "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s LIMIT 100",
-                $wpdb->esc_like('flosc_pp_evt_') . '%'
-            ),
-            ARRAY_A
-        );
-        if (!is_array($rows)) {
-            return;
+        $cutoff    = time() - ( 14 * DAY_IN_SECONDS );
+        $cache_key = 'pp_evt_rows_v1';
+        $rows      = wp_cache_get( $cache_key, 'flosc_paypal' );
+        if ( ! is_array( $rows ) ) {
+            // Claims use add_option( ..., '', 'no' ).
+            $rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s LIMIT 100",
+                    $wpdb->esc_like( 'flosc_pp_evt_' ) . '%'
+                ),
+                ARRAY_A
+            );
+            if ( ! is_array( $rows ) ) {
+                $rows = array();
+            }
+            wp_cache_set( $cache_key, $rows, 'flosc_paypal', 300 );
         }
-        foreach ($rows as $row) {
-            $ts = absint($row['option_value'] ?? 0);
-            if ($ts > 0 && $ts < $cutoff) {
-                delete_option((string) $row['option_name']);
+        foreach ( $rows as $row ) {
+            $ts = absint( $row['option_value'] ?? 0 );
+            if ( $ts > 0 && $ts < $cutoff ) {
+                delete_option( (string) $row['option_name'] );
+                wp_cache_delete( $cache_key, 'flosc_paypal' );
             }
         }
     }

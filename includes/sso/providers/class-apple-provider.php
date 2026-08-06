@@ -215,11 +215,13 @@ class Apple_Provider extends SSO_Provider_Base {
             return new \WP_Error('invalid_id_token', 'Apple ID token missing subject');
         }
 
-        // Apple may also send user info in the POST data (first login only).
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- inbound Apple OAuth callback body; decoded + field-sanitized below.
-        $raw_user_json = isset( $_POST['user'] ) ? wp_unslash( $_POST['user'] ) : '';
+        // Apple may send a JSON user object in POST on first authorization only.
+        $user_post = filter_input( INPUT_POST, 'user', FILTER_UNSAFE_RAW );
+        $raw_user_json = is_string( $user_post ) && $user_post !== ''
+            ? sanitize_textarea_field( wp_unslash( $user_post ) )
+            : '';
         $user_data_raw = array();
-        if ( is_string( $raw_user_json ) && $raw_user_json !== '' && strlen( $raw_user_json ) <= 20000 ) {
+        if ( $raw_user_json !== '' && strlen( $raw_user_json ) <= 20000 ) {
             $decoded_user = json_decode( $raw_user_json, true, 8 );
             if ( JSON_ERROR_NONE === json_last_error() && is_array( $decoded_user ) ) {
                 $user_data_raw = $decoded_user;
@@ -231,6 +233,9 @@ class Apple_Provider extends SSO_Provider_Base {
                 'firstName' => sanitize_text_field( (string) ( $user_data_raw['name']['firstName'] ?? '' ) ),
                 'lastName'  => sanitize_text_field( (string) ( $user_data_raw['name']['lastName'] ?? '' ) ),
             );
+        }
+        if ( isset( $user_data_raw['email'] ) ) {
+            $user_data['email'] = sanitize_email( (string) $user_data_raw['email'] );
         }
 
         return $this->normalize_user_data(array(

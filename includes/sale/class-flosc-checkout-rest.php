@@ -54,7 +54,7 @@ class FLOSC_Checkout_Rest {
                 if (!in_array($ext, ['html', 'htm'], true)) {
                     return new WP_REST_Response(['error' => 'Invalid file type'], 400);
                 }
-                $html = wp_kses_post(file_get_contents($path));
+                $html = wp_kses_post(flosc_fs_get_contents($path));
                 return new WP_REST_Response(['html' => $html]);
                 
             case 'woo':
@@ -97,10 +97,13 @@ class FLOSC_Checkout_Rest {
                         403
                     );
                 }
-                return new WP_REST_Response([
-                    // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core WordPress content filter.
-                    'html' => wp_kses_post(apply_filters('the_content', $post->post_content)),
-                ]);
+                // WordPress content filters (shortcodes, embeds, blocks, etc.).
+                $html = apply_filters( 'the_content', $post->post_content );
+                return new WP_REST_Response(
+                    array(
+                        'html' => wp_kses_post( $html ),
+                    )
+                );
                 
             default:
                 return new WP_REST_Response(['error' => 'Invalid source type'], 400);

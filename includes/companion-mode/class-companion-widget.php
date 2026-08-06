@@ -460,8 +460,14 @@ class FLOSC_Companion_Widget {
      */
     private function get_current_url() {
         $protocol = is_ssl() ? 'https://' : 'http://';
-        $host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : 'localhost'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- HTTP_HOST is unslashed and sanitized inline
-        $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : '/'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- REQUEST_URI is unslashed and sanitized inline
+        $host = 'localhost';
+        if (isset($_SERVER['HTTP_HOST'])) {
+            $host = sanitize_text_field(wp_unslash((string) $_SERVER['HTTP_HOST']));
+        }
+        $request_uri = '/';
+        if (isset($_SERVER['REQUEST_URI'])) {
+            $request_uri = sanitize_text_field(wp_unslash((string) $_SERVER['REQUEST_URI']));
+        }
         return $protocol . $host . $request_uri;
     }
 

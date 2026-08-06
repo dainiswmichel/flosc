@@ -152,13 +152,16 @@ class FLOSC_DA1_Compositions {
         $flow_scope_tokens = array_values(array_unique(array_filter($flow_scope_tokens)));
 
         $rows_out = [];
+        $fs       = class_exists( 'FLOSC_Filesystem' ) ? new FLOSC_Filesystem() : null;
         foreach ($catalog_keys as $catalog_key) {
-            $path = trailingslashit($catalog_dir) . 'flosc_da1_catalog_' . $catalog_key . '.tsv';
-            if (!file_exists($path)) {
+            // Keys already restricted to [a-z0-9._-]; path matches admin flosc_da1_catalog_file().
+            $path = trailingslashit( $catalog_dir ) . 'flosc_da1_catalog_' . $catalog_key . '.tsv';
+            if ( ! file_exists( $path ) ) {
                 continue;
             }
-            $content = file_get_contents($path);
-            if ($content === false || trim($content) === '') {
+            // Uploads-bound TSV only — same policy as admin/da1.php (no direct file_get_contents).
+            $content = $fs ? $fs->read_file_safely( $path ) : false;
+            if ( false === $content || trim( (string) $content ) === '' ) {
                 continue;
             }
 

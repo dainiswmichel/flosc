@@ -13,8 +13,27 @@ class FLOSC_First_Party_Authentication {
     /** @var FLOSC_Framework */
     private $flosc;
 
+    /**
+     * Set when authenticate_flosc_token() succeeds for this request.
+     * Used by allow_flosc_token_auth() to skip WP REST nonce check.
+     *
+     * @var bool
+     */
+    private $flosc_token_auth_used = false;
+
     public function __construct($flosc) {
         $this->flosc = $flosc;
+    }
+
+    /** @return object|null Token provider from framework sale manager. */
+    private function get_token_provider() {
+        $sale = method_exists($this->flosc, 'sale') ? $this->flosc->sale() : null;
+        return ($sale && method_exists($sale, 'get_provider')) ? $sale->get_provider('tokens') : null;
+    }
+
+    /** Flag FLOSC token auth for allow_flosc_token_auth() (REST / session bootstrap). */
+    public function mark_flosc_token_auth_used() {
+        $this->flosc_token_auth_used = true;
     }
 
     /**
@@ -43,12 +62,13 @@ class FLOSC_First_Party_Authentication {
 
     public function handle_user_registration($user_id) {
         // Pending email registrants receive tokens only after verification/activation.
-        if (!empty($this->flosc_skip_registration_token_grants)) {
+        // Flag is set on the framework instance by MagicLink / email registration paths.
+        if (!empty($this->flosc->flosc_skip_registration_token_grants)) {
             return;
         }
         // Grant signup bonus tokens + flow-specific guest token baseline
-        $token_provider = $this->sale_manager->get_provider('tokens');
-        if ($token_provider) {
+        $token_provider = $this->get_token_provider();
+        if ($token_provider && method_exists($token_provider, 'grant_signup_bonus')) {
             $token_provider->grant_signup_bonus($user_id);
         }
 
@@ -56,17 +76,17 @@ class FLOSC_First_Party_Authentication {
         if ($flow_id === '') {
             $current_flow = $this->flosc->get_current_flow();
             $ivr_file = (string) ($current_flow['ivr_file'] ?? $current_flow['ivr'] ?? '');
-            $flow_id = $this->flosc_normalize_flow_stem($ivr_file !== '' ? $ivr_file : (string) ($current_flow['id'] ?? ''));
+            $flow_id = $this->flosc->flosc_normalize_flow_stem($ivr_file !== '' ? $ivr_file : (string) ($current_flow['id'] ?? ''));
         }
-        if ($this->flosc_user_should_receive_guest_tokens($user_id, $flow_id)) {
-            $this->flosc_ensure_guest_token_baseline($user_id, $token_provider, $flow_id, 'Guest registration baseline');
+        if ($this->flosc->flosc_user_should_receive_guest_tokens($user_id, $flow_id)) {
+            $this->flosc->flosc_ensure_guest_token_baseline($user_id, $token_provider, $flow_id, 'Guest registration baseline');
         }
         
         // Check for referrer
         $referrer = isset($_COOKIE['flosc_referrer']) ? sanitize_text_field(wp_unslash($_COOKIE['flosc_referrer'])) : null;
         if ($referrer && preg_match('/^REF(\d+)$/', $referrer, $matches)) {
             $referrer_id = intval($matches[1]);
-            if ($referrer_id && $referrer_id !== $user_id) {
+            if ($referrer_id && $referrer_id !== $user_id && $token_provider && method_exists($token_provider, 'grant_referral_bonus')) {
                 $token_provider->grant_referral_bonus($referrer_id, $user_id);
             }
         }
@@ -83,22 +103,22 @@ class FLOSC_First_Party_Authentication {
      * Handle user login - process pre-login quiz scores
      */
     public function handle_user_login($user_login, $user) {
-        $token_provider = $this->sale_manager->get_provider('tokens');
+        $token_provider = $this->get_token_provider();
         $flow_id = sanitize_key((string) get_user_meta($user->ID, '_flosc_registration_flow', true));
         if ($flow_id === '') {
             $current_flow = $this->flosc->get_current_flow();
             $ivr_file = (string) ($current_flow['ivr_file'] ?? $current_flow['ivr'] ?? '');
-            $flow_id = $this->flosc_normalize_flow_stem($ivr_file !== '' ? $ivr_file : (string) ($current_flow['id'] ?? ''));
+            $flow_id = $this->flosc->flosc_normalize_flow_stem($ivr_file !== '' ? $ivr_file : (string) ($current_flow['id'] ?? ''));
         }
-        if ($this->flosc_user_should_receive_guest_tokens($user->ID, $flow_id)) {
-            $this->flosc_ensure_guest_token_baseline($user->ID, $token_provider, $flow_id, 'Guest login baseline');
+        if ($this->flosc->flosc_user_should_receive_guest_tokens($user->ID, $flow_id)) {
+            $this->flosc->flosc_ensure_guest_token_baseline($user->ID, $token_provider, $flow_id, 'Guest login baseline');
         }
 
         // v07.09: Set justLoggedIn flag for IVR
         set_transient('flosc_just_logged_in_' . $user->ID, true, MINUTE_IN_SECONDS * 5);
 
         // Restore browser-computed quiz data stashed before SSO redirect.
-        $this->consume_stashed_visitor_quiz($user->ID);
+        $this->flosc->consume_stashed_visitor_quiz($user->ID);
 
         // v2.0.2: Track login count for IVR condition evaluation (login_count)
         $current_count = (int) get_user_meta($user->ID, '_flosc_login_count', true);
@@ -106,7 +126,7 @@ class FLOSC_First_Party_Authentication {
 
         // v8.0.12: Reliability guard for SSO guest email sequence.
         // If WP-Cron is delayed, process welcome/follow-up checks when an SSO user logs in.
-        $this->maybe_run_sso_email_sequence_for_user($user->ID);
+        $this->flosc->maybe_run_sso_email_sequence_for_user($user->ID);
 
         // v9.4.2: Check for pre-login score in SIGNED cookie
         $score_data = $this->flosc->get_signed_cookie('flosc_prelogin_score');
@@ -154,7 +174,7 @@ class FLOSC_First_Party_Authentication {
 
         if ($score_data && isset($score_data['score'])) {
             // v8.0.3: Store score with quiz_id tracking
-            $this->store_quiz_score($user->ID, $score_data);
+            $this->flosc->store_quiz_score($user->ID, $score_data);
 
             // v1.8.2: Fire flosc_quiz_completed so Free Lesson Manager assigns lessons
             do_action('flosc_quiz_completed', $score_data, $user->ID);
@@ -163,7 +183,7 @@ class FLOSC_First_Party_Authentication {
             set_transient('flosc_just_completed_quiz_' . $user->ID, true, MINUTE_IN_SECONDS * 5);
 
             // Send email with score and OTO
-            $this->send_score_email($user, $score_data);
+            $this->flosc->send_score_email($user, $score_data);
 
             // Clear the cookie (v1.0.7: use array syntax)
             setcookie('flosc_prelogin_score', '', [

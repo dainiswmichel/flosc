@@ -38,14 +38,16 @@ $flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
 // flosc_config_glob() returns paths in uploads-first order.
 $flosc_files = array_values(array_unique(array_map('basename', flosc_config_glob('*.md'))));
 
-// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only view-state parameter for file editor UI
-$flosc_get = wp_unslash($_GET);
-$flosc_editing_file = isset($flosc_get['edit']) ? sanitize_file_name($flosc_get['edit']) : '';
+// View-state from settings.php ($flosc_get); do not re-read $_GET here.
+if ( ! isset( $flosc_get ) || ! is_array( $flosc_get ) ) {
+	$flosc_get = array();
+}
+$flosc_editing_file = isset( $flosc_get['edit'] ) ? sanitize_file_name( (string) $flosc_get['edit'] ) : '';
 $flosc_editing_content = '';
 if ($flosc_editing_file) {
     $flosc_filepath = flosc_config_file($flosc_editing_file);
     if (file_exists($flosc_filepath)) {
-        $flosc_editing_content = file_get_contents($flosc_filepath);
+        $flosc_editing_content = flosc_fs_get_contents($flosc_filepath);
     }
 }
 ?>

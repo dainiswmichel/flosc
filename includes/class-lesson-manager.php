@@ -170,19 +170,34 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log( '[FLOSC Lessons] v3.0.8 ge
             return [];
         }
 
-        // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- intentional lesson ordering by configured lesson-number meta
-        $query = new WP_Query( [
-            'post_type'      => 'post',
-            'post_status'    => 'publish',
-            'posts_per_page' => -1,
-            'category__in'   => $cat_ids,
-            'orderby'        => 'meta_value_num date',
-            'meta_key'       => '_flosc_lesson_number', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- intentional lesson ordering by configured lesson-number meta
-            'order'          => 'ASC',
-        ] );
+        $query = new WP_Query(
+            array(
+                'post_type'              => 'post',
+                'post_status'            => 'publish',
+                'posts_per_page'         => -1,
+                'category__in'           => $cat_ids,
+                'orderby'                => 'date',
+                'order'                  => 'ASC',
+                'no_found_rows'          => true,
+                'update_post_meta_cache' => true,
+            )
+        );
+
+        $posts = $query->posts;
+        usort(
+            $posts,
+            static function ( $a, $b ) {
+                $na = (float) get_post_meta( $a->ID, '_flosc_lesson_number', true );
+                $nb = (float) get_post_meta( $b->ID, '_flosc_lesson_number', true );
+                if ( $na === $nb ) {
+                    return strcmp( (string) $a->post_date, (string) $b->post_date );
+                }
+                return $na <=> $nb;
+            }
+        );
 
         $lessons = [];
-        foreach ( $query->posts as $post ) {
+        foreach ( $posts as $post ) {
             $lessons[] = $this->format_lesson( $post );
         }
 
@@ -378,8 +393,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log( '[FLOSC Lessons] v3.0.8 ge
         }
         
         if ($include_content) {
-            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core WordPress content filter.
-            $lesson['content'] = apply_filters('the_content', $post->post_content);
+            // WordPress content filters (shortcodes, embeds, blocks, etc.).
+            $lesson['content'] = apply_filters( 'the_content', $post->post_content );
         }
         
         return $lesson;

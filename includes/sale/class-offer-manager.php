@@ -211,7 +211,7 @@ class FLOSC_Offer_Manager {
             }
 
             $parser = FLOSC_IVR_Parser::flosc_instance();
-            $parsed = $parser->flosc_parse(file_get_contents($ivr_file));
+            $parsed = $parser->flosc_parse(flosc_fs_get_contents($ivr_file));
             $messages = $parsed['messages'] ?? [];
         }
 

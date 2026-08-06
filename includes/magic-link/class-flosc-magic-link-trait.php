@@ -3,9 +3,9 @@
  * MagicLink / guest access-link and related one-time login tokens.
  *
  * Product model:
- * - MagicLink is an ACCESS convenience for an EXISTING WordPress user.
- * - Accounts are created only during registration / admin provision (before mint).
- * - MagicLink click never calls wp_create_user.
+ * - MagicLink / convenience access link is for an EXISTING WordPress user only.
+ * - Never create a WP user on: link click, mint, admin "send guest link", or admin approve+send.
+ * - Account creation is separate: email registration (pending + verify), payment, SSO — not convenience-link mint.
  *
  * WordPress.org directory package (Pass 10 / E1 decision — product multi-use retained):
  * - MagicLink is DISABLED by default at package level (filter/constant default false).
@@ -119,9 +119,21 @@ trait FLOSC_Magic_Link_Trait {
     }
 
     public function handle_login_token() {
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query parameters for auth/callback routing
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query parameters for auth/callback routing
-        $get = wp_unslash($_GET); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query parameters for auth/callback routing
+        // Auth/callback routing via query string (not a WP form nonce action).
+        $get = array();
+        foreach ( array(
+            'flosc_verify_email',
+            'flosc_magic',
+            'flosc_wp_sync',
+            'flosc_login_token',
+            'flosc_sso_success',
+            'redirect_to',
+        ) as $flosc_qk ) {
+            $raw = filter_input( INPUT_GET, $flosc_qk, FILTER_UNSAFE_RAW );
+            if ( is_string( $raw ) && $raw !== '' ) {
+                $get[ $flosc_qk ] = wp_unslash( $raw );
+            }
+        }
 
         // Email registration verification (not MagicLink login).
         if (!empty($get['flosc_verify_email'])) {
@@ -479,23 +491,40 @@ trait FLOSC_Magic_Link_Trait {
 
 
     /**
-     * Create (or return) a WP user for email registration / admin guest provision.
-     * Account creation belongs HERE — never on MagicLink click.
+     * Resolve an EXISTING WP user for convenience-link mint only.
+     * Never creates an account (admin send / approve / mint must not provision users).
      *
      * @param string $email
-     * @param string $flow_id
-     * @param string $registration_method Meta value for _flosc_registration_method.
      * @return int|WP_Error User ID.
      */
-    private function flosc_ensure_user_before_magic_mint($email, $flow_id = '', $registration_method = 'email', $opts = array()) {
+    private function flosc_resolve_existing_user_for_convenience_link($email) {
         $email = sanitize_email($email);
         if ($email === '' || !is_email($email)) {
             return new WP_Error('flosc_invalid_email', 'A valid email is required.');
         }
-        if (!is_array($opts)) {
-            $opts = array();
+        $existing = get_user_by('email', $email);
+        if ($existing) {
+            return (int) $existing->ID;
         }
-        $pending = !empty($opts['pending']);
+        return new WP_Error(
+            'flosc_no_user_for_access_link',
+            'No WordPress user exists for that email. Convenience access links are for existing accounts only. Register, purchase, or use SSO first.'
+        );
+    }
+
+    /**
+     * Email registration only: create a pending subscriber (or return existing pending/active id).
+     * Not used by convenience-link mint / admin send access link.
+     *
+     * @param string $email
+     * @param string $flow_id
+     * @return int|WP_Error User ID.
+     */
+    private function flosc_create_pending_email_registrant($email, $flow_id = '') {
+        $email = sanitize_email($email);
+        if ($email === '' || !is_email($email)) {
+            return new WP_Error('flosc_invalid_email', 'A valid email is required.');
+        }
 
         $existing = get_user_by('email', $email);
         if ($existing) {
@@ -504,8 +533,8 @@ trait FLOSC_Magic_Link_Trait {
 
         $username = $this->generate_username_from_email($email);
         $password = wp_generate_password(16, true, true);
-        // Skip user_register token grants when creating a pending email account.
-        $this->flosc_skip_registration_token_grants = $pending;
+        // Skip user_register token grants until email activation.
+        $this->flosc_skip_registration_token_grants = true;
         $user_id  = wp_create_user($username, $password, $email);
         $this->flosc_skip_registration_token_grants = false;
         if (is_wp_error($user_id)) {
@@ -515,46 +544,19 @@ trait FLOSC_Magic_Link_Trait {
         $user_id = (int) $user_id;
         $new_user = get_user_by('id', $user_id);
         $flow_id = sanitize_key((string) $flow_id);
-        $registration_method = sanitize_key((string) $registration_method);
 
-        update_user_meta($user_id, '_flosc_registration_method', $registration_method);
+        update_user_meta($user_id, '_flosc_registration_method', 'email');
         update_user_meta($user_id, '_flosc_registered_at', current_time('mysql'));
         if ($flow_id !== '') {
             update_user_meta($user_id, '_flosc_registration_flow', $flow_id);
         }
-
-        if ($pending) {
-            // Email registrants: pending until flosc_verify_email (or admin activate).
-            if ($new_user) {
-                $new_user->set_role('subscriber');
-            }
-            update_user_meta($user_id, '_flosc_email_account_status', 'pending');
-            // Do not fire flosc_user_registered / guest tokens until activation.
-        } else {
-            // Guest role is per-flow. Empty = leave WP default (subscriber). Never hardcode a product role.
-            $guest_level = sanitize_key((string) flosc_get_setting(
-                'default_guest_level',
-                '',
-                $flow_id !== '' ? $flow_id : null
-            ));
-            if ($new_user && $guest_level !== '') {
-                $new_user->set_role($guest_level);
-            }
-            update_user_meta($user_id, '_flosc_email_account_status', 'active');
-            if ($flow_id !== '') {
-                $this->record_user_flow_usage($user_id, $flow_id, $registration_method);
-                $token_provider = ($this->sale_manager && method_exists($this->sale_manager, 'get_provider'))
-                    ? $this->sale_manager->get_provider('tokens')
-                    : null;
-                if ($this->flosc_user_should_receive_guest_tokens($user_id, $flow_id)) {
-                    $this->flosc_ensure_guest_token_baseline($user_id, $token_provider, $flow_id, 'Guest registration baseline');
-                }
-            }
-            do_action('flosc_user_registered', $user_id, $registration_method, array('flow_id' => $flow_id));
+        if ($new_user) {
+            $new_user->set_role('subscriber');
         }
+        update_user_meta($user_id, '_flosc_email_account_status', 'pending');
 
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-            flosc_log("FLOSC: WP user created method={$registration_method} pending=" . ($pending ? '1' : '0') . " email={$email} id={$user_id}");
+            flosc_log("FLOSC: pending email registrant created email={$email} id={$user_id}");
         }
 
         return $user_id;
@@ -942,7 +944,10 @@ trait FLOSC_Magic_Link_Trait {
     /**
      * Issue (or reuse) the user's magic-link URL for a flow. Members keep a 30-day active token.
      */
-    private function flosc_user_magic_url($user, $context, $flow_id) {
+    /**
+     * Collaborator API: FLOSC_Email member welcome magic link.
+     */
+    public function flosc_user_magic_url($user, $context, $flow_id) {
         if (!$user || empty($user->ID)) {
             return '';
         }
@@ -1003,7 +1008,7 @@ trait FLOSC_Magic_Link_Trait {
             ));
         }
 
-        $user_id = $this->flosc_ensure_user_before_magic_mint($email, $flow_id, 'email', array('pending' => true));
+        $user_id = $this->flosc_create_pending_email_registrant($email, $flow_id);
         if (is_wp_error($user_id)) {
             return new WP_REST_Response(array(
                 'success' => false,
@@ -1012,7 +1017,7 @@ trait FLOSC_Magic_Link_Trait {
         }
         $user_id = (int) $user_id;
 
-        // Existing pending: keep pending. New: already pending from ensure.
+        // Existing pending: keep pending. New: already pending from create helper.
         if (!$this->flosc_email_account_is_pending($user_id)) {
             update_user_meta($user_id, '_flosc_email_account_status', 'pending');
         }
@@ -1160,7 +1165,10 @@ trait FLOSC_Magic_Link_Trait {
      * Resolve a stable app URL for guest-link emails and login redirects.
      * Uses explicit flow settings first, then current host detection fallback.
      */
-    private function get_guest_link_base_url($flow_id = '') {
+    /**
+     * Collaborator API: FLOSC_Email guest context / redirects.
+     */
+    public function get_guest_link_base_url($flow_id = '') {
         $flow_id = sanitize_key((string) $flow_id);
         if (!empty($flow_id)) {
             $settings_key = 'flosc_flow_' . $flow_id;
@@ -1437,15 +1445,32 @@ trait FLOSC_Magic_Link_Trait {
 
     private function build_guest_request_admin_redirect($notice_key) {
         $notice_key = sanitize_key((string) $notice_key);
-        $request = wp_unslash($_REQUEST); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only admin redirect context
-        $base_url = add_query_arg([
-            'page' => 'flosc-settings',
-            'tab' => 'login',
-            'ivr' => sanitize_file_name((string) ($request['ivr'] ?? '')),
-            'flosc_guest_request_notice' => $notice_key,
-        ], admin_url('admin.php'));
-
-        return $base_url;
+        $uid = get_current_user_id();
+        if ( $uid > 0 && $notice_key !== '' ) {
+            set_transient( 'flosc_guest_request_notice_' . $uid, $notice_key, MINUTE_IN_SECONDS );
+        }
+        // Prefer flow already resolved on the framework; fall back to sanitized filter_input.
+        $ivr = '';
+        if ( isset( $this->current_ivr_file ) && is_string( $this->current_ivr_file ) ) {
+            $ivr = sanitize_file_name( $this->current_ivr_file );
+        }
+        if ( $ivr === '' ) {
+            $ivr_in = filter_input( INPUT_POST, 'ivr', FILTER_DEFAULT );
+            if ( ! is_string( $ivr_in ) || $ivr_in === '' ) {
+                $ivr_in = filter_input( INPUT_GET, 'ivr', FILTER_DEFAULT );
+            }
+            if ( is_string( $ivr_in ) ) {
+                $ivr = sanitize_file_name( wp_unslash( $ivr_in ) );
+            }
+        }
+        return add_query_arg(
+            array(
+                'page' => 'flosc-settings',
+                'tab'  => 'login',
+                'ivr'  => $ivr,
+            ),
+            admin_url( 'admin.php' )
+        );
     }
 
     /**
@@ -1535,10 +1560,10 @@ trait FLOSC_Magic_Link_Trait {
             wp_send_json_error(['message' => $cond_ok->get_error_message()]);
         }
 
-        // Admin may provision a guest account, then mint access — never mint without a user.
-        $user_id = $this->flosc_ensure_user_before_magic_mint($email, $flow_id, 'admin_guest_link');
+        // Convenience link only: existing account required (never create user here).
+        $user_id = $this->flosc_resolve_existing_user_for_convenience_link($email);
         if (is_wp_error($user_id)) {
-            wp_send_json_error(['message' => 'Could not resolve or create a user for that email.']);
+            wp_send_json_error(['message' => $user_id->get_error_message()]);
         }
 
         $token = $this->flosc_mint_magic_access_for_user((int) $user_id, [
@@ -1611,7 +1636,8 @@ trait FLOSC_Magic_Link_Trait {
         $this->unblock_guest_account_request_email($email);
         $this->set_guest_account_request_status($email, 'approved', $actor);
 
-        $user_id = $this->flosc_ensure_user_before_magic_mint($email, $flow_id, 'admin_guest_approve');
+        // Convenience link only: existing account required (never create user here).
+        $user_id = $this->flosc_resolve_existing_user_for_convenience_link($email);
         if (is_wp_error($user_id)) {
             wp_safe_redirect($this->build_guest_request_admin_redirect('approve_send_failed'));
             exit;

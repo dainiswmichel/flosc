@@ -1,15 +1,16 @@
 === FLOSC ===
 Contributors: dainismichel
-Donate link: https://flosc.ai
-Tags: chatbot, quiz, ai, membership, payments
+Donate link: https://dainis.net/donate/
+Repository URI: https://github.com/dainiswmichel/flosc
+Tags: chatbot, ai, quiz, membership, payments
 Requires at least: 7.0
-Tested up to: 7.0
 Requires PHP: 7.4
+Tested up to: 7.0
 Stable tag: 8.0.0
-License: GPLv2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
+License: GPLv3 or later
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Freeline --> Login --> Offer --> Sale --> Content: try-before-you-buy for local poets to the world's largest corporations.
+(F)reeline --> (L)ogin --> (O)ffer --> (S)ale --> (C)ontent: try-before-you-buy WordPress journeys.
 
 == Description ==
 
@@ -73,7 +74,7 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 
 = License & Attribution =
 
-FLOSC is free software, released under the GNU General Public License, version 2 or later (GPLv2+). You're free to use, modify, and redistribute it — including commercially — as long as derivative works stay under the same license and the original copyright and license notices are preserved. Full text: https://www.gnu.org/licenses/gpl-2.0.html
+FLOSC is free software, released under the GNU General Public License, version 3 or later (GPLv3+). You're free to use, modify, and redistribute it — including commercially — as long as derivative works stay under the same license and the original copyright and license notices are preserved. Full text: https://www.gnu.org/licenses/gpl-3.0.html
 
 == Installation ==
 

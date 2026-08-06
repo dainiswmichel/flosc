@@ -87,15 +87,23 @@ class FLOSC_Lesaep_Lessons_Table {
      * Check if the table exists
      */
     public function table_exists() {
+        $cache_key = 'table_exists_' . $this->table_name;
+        $cached    = wp_cache_get( $cache_key, 'flosc_lesaep' );
+        if ( is_bool( $cached ) ) {
+            return $cached;
+        }
+
         global $wpdb;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only existence check
-        $result = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+        // Custom table: no core table-exists API. prepare() + object cache.
+        $result = $wpdb->get_var(
             $wpdb->prepare(
                 'SHOW TABLES LIKE %s',
                 $this->table_name
             )
         );
-        return ($result === $this->table_name);
+        $exists = ( $result === $this->table_name );
+        wp_cache_set( $cache_key, $exists, 'flosc_lesaep', 300 );
+        return $exists;
     }
 
     /**
@@ -104,10 +112,23 @@ class FLOSC_Lesaep_Lessons_Table {
     public function get_count() {
         global $wpdb;
         if (!$this->table_exists()) return 0;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only count on plugin-owned table
-        return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+        $cache_key = 'count_' . $this->table_name;
+        $cached    = wp_cache_get( $cache_key, 'flosc_lesaep' );
+        if ( is_int( $cached ) ) {
+            return $cached;
+        }
+        $count = (int) $wpdb->get_var(
             $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $this->table_name )
         );
+        wp_cache_set( $cache_key, $count, 'flosc_lesaep', 120 );
+        return $count;
+    }
+
+    private function flosc_bust_lesaep_cache() {
+        wp_cache_delete( 'count_' . $this->table_name, 'flosc_lesaep' );
+        wp_cache_delete( 'all_' . $this->table_name, 'flosc_lesaep' );
+        wp_cache_delete( 'list_' . $this->table_name, 'flosc_lesaep' );
+        wp_cache_delete( 'table_exists_' . $this->table_name, 'flosc_lesaep' );
     }
 
     /**
@@ -119,7 +140,6 @@ class FLOSC_Lesaep_Lessons_Table {
     public function insert_lesson($data) {
         global $wpdb;
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- intentional insert into plugin-owned lessons table
         $result = $wpdb->insert(
             $this->table_name,
             [
@@ -138,7 +158,11 @@ class FLOSC_Lesaep_Lessons_Table {
             ['%s', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s']
         );
 
-        return $result !== false ? $wpdb->insert_id : false;
+        if ( $result !== false ) {
+            $this->flosc_bust_lesaep_cache();
+            return $wpdb->insert_id;
+        }
+        return false;
     }
 
     /**
@@ -151,14 +175,24 @@ class FLOSC_Lesaep_Lessons_Table {
 
         if (!$this->table_exists()) return [];
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only query on plugin-owned table
-        return $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+        $cache_key = 'all_' . $this->table_name;
+        $cached    = wp_cache_get( $cache_key, 'flosc_lesaep' );
+        if ( is_array( $cached ) ) {
+            return $cached;
+        }
+
+        $rows = $wpdb->get_results(
             $wpdb->prepare(
                 'SELECT * FROM %i ORDER BY sort_order ASC',
                 $this->table_name
             ),
             ARRAY_A
         );
+        if ( ! is_array( $rows ) ) {
+            $rows = array();
+        }
+        wp_cache_set( $cache_key, $rows, 'flosc_lesaep', 120 );
+        return $rows;
     }
 
     /**
@@ -172,8 +206,14 @@ class FLOSC_Lesaep_Lessons_Table {
 
         if (!$this->table_exists()) return null;
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only query on plugin-owned table
-        return $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+        $lesson_number = (string) $lesson_number;
+        $cache_key     = 'by_num_' . $this->table_name . '_' . $lesson_number;
+        $cached        = wp_cache_get( $cache_key, 'flosc_lesaep' );
+        if ( is_array( $cached ) || null === $cached ) {
+            return $cached;
+        }
+
+        $row = $wpdb->get_row(
             $wpdb->prepare(
                 'SELECT * FROM %i WHERE lesson_number = %s',
                 $this->table_name,
@@ -181,6 +221,8 @@ class FLOSC_Lesaep_Lessons_Table {
             ),
             ARRAY_A
         );
+        wp_cache_set( $cache_key, $row, 'flosc_lesaep', 120 );
+        return $row;
     }
 
     /**
@@ -194,8 +236,14 @@ class FLOSC_Lesaep_Lessons_Table {
 
         if (!$this->table_exists()) return null;
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only query on plugin-owned table
-        return $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+        $id        = (int) $id;
+        $cache_key = 'by_id_' . $this->table_name . '_' . $id;
+        $cached    = wp_cache_get( $cache_key, 'flosc_lesaep' );
+        if ( is_array( $cached ) || null === $cached ) {
+            return $cached;
+        }
+
+        $row = $wpdb->get_row(
             $wpdb->prepare(
                 'SELECT * FROM %i WHERE id = %d',
                 $this->table_name,
@@ -203,6 +251,8 @@ class FLOSC_Lesaep_Lessons_Table {
             ),
             ARRAY_A
         );
+        wp_cache_set( $cache_key, $row, 'flosc_lesaep', 120 );
+        return $row;
     }
 
     /**
@@ -216,8 +266,14 @@ class FLOSC_Lesaep_Lessons_Table {
 
         if (!$this->table_exists()) return [];
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only query on plugin-owned table
-        return $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+        $category  = (string) $category;
+        $cache_key = 'by_cat_' . $this->table_name . '_' . md5( $category );
+        $cached    = wp_cache_get( $cache_key, 'flosc_lesaep' );
+        if ( is_array( $cached ) ) {
+            return $cached;
+        }
+
+        $rows = $wpdb->get_results(
             $wpdb->prepare(
                 'SELECT * FROM %i WHERE sound_category = %s ORDER BY sort_order ASC',
                 $this->table_name,
@@ -225,6 +281,11 @@ class FLOSC_Lesaep_Lessons_Table {
             ),
             ARRAY_A
         );
+        if ( ! is_array( $rows ) ) {
+            $rows = array();
+        }
+        wp_cache_set( $cache_key, $rows, 'flosc_lesaep', 120 );
+        return $rows;
     }
 
     /**
@@ -237,8 +298,13 @@ class FLOSC_Lesaep_Lessons_Table {
 
         if (!$this->table_exists()) return [];
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only lesson metadata query
-        return $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+        $cache_key = 'list_' . $this->table_name;
+        $cached    = wp_cache_get( $cache_key, 'flosc_lesaep' );
+        if ( is_array( $cached ) ) {
+            return $cached;
+        }
+
+        $rows = $wpdb->get_results(
             $wpdb->prepare(
                 'SELECT id, lesson_number, sort_order, session_title, session_short_description,
                         ipa_symbol, sound_category, video_url
@@ -248,6 +314,11 @@ class FLOSC_Lesaep_Lessons_Table {
             ),
             ARRAY_A
         );
+        if ( ! is_array( $rows ) ) {
+            $rows = array();
+        }
+        wp_cache_set( $cache_key, $rows, 'flosc_lesaep', 120 );
+        return $rows;
     }
 
     /**
@@ -257,10 +328,11 @@ class FLOSC_Lesaep_Lessons_Table {
      */
     public function truncate() {
         global $wpdb;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- admin-triggered reset of plugin-owned lessons table
-        return $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+        $result = $wpdb->query(
             $wpdb->prepare( 'TRUNCATE TABLE %i', $this->table_name )
         );
+        $this->flosc_bust_lesaep_cache();
+        return $result;
     }
 
     /**

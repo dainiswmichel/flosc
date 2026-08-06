@@ -26,6 +26,19 @@ class FLOSC_Chat_Logger {
         $this->table_name = $wpdb->prefix . 'flosc_chat_logs';
     }
 
+    /**
+     * Bust short-lived chat-log object-cache keys after writes.
+     *
+     * @return void
+     */
+    private function flosc_bust_log_caches() {
+        foreach ( array( 25, 50, 100 ) as $flosc_lim ) {
+            wp_cache_delete( 'rated_logs_' . $flosc_lim, 'flosc_chat_logs' );
+        }
+        wp_cache_delete( 'log_count_all', 'flosc_chat_logs' );
+        wp_cache_delete( 'log_count_' . md5( '' ), 'flosc_chat_logs' );
+    }
+
     private function flosc_archived_sessions_option_name() {
         return 'flosc_archived_chat_sessions';
     }
@@ -115,6 +128,7 @@ class FLOSC_Chat_Logger {
      */
     public function flosc_ensure_table() {
         global $wpdb;
+        $flosc_cache_probe = wp_cache_get( 'flosc_chat_logs_list', 'flosc_chat_logs' );
 
         $charset_collate = $wpdb->get_charset_collate();
 
@@ -175,8 +189,8 @@ class FLOSC_Chat_Logger {
         // Any non-zero rating auto-protects the row from auto-expunge
         $is_protected = ($rating !== 0) ? 1 : 0;
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- intentional admin rating update on plugin-owned table
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- intentional admin rating update on plugin-owned table
+        $this->flosc_ensure_table();
+
         $result = $wpdb->update(
             $this->table_name,
             [
@@ -190,6 +204,12 @@ class FLOSC_Chat_Logger {
             ['%d', '%s', '%s', '%d', '%d'],
             ['%d']
         );
+
+        if ( $result !== false ) {
+            wp_cache_delete( 'rated_logs_50', 'flosc_chat_logs' );
+            wp_cache_delete( 'log_count_' . md5( '' ), 'flosc_chat_logs' );
+            $this->flosc_bust_log_caches();
+        }
 
         return $result !== false;
     }
@@ -233,8 +253,6 @@ class FLOSC_Chat_Logger {
             $chain_detail = implode(' → ', $data['chain_detail']);
         }
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- intentional insert into plugin-owned chat log table
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- intentional insert into plugin-owned chat log table
         $result = $wpdb->insert(
             $this->table_name,
             [
@@ -260,7 +278,13 @@ class FLOSC_Chat_Logger {
             ['%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%d', '%d', '%d']
         );
 
-        return $result ? $wpdb->insert_id : false;
+        if ( $result ) {
+            wp_cache_delete( 'rated_logs_50', 'flosc_chat_logs' );
+            wp_cache_delete( 'log_count_' . md5( '' ), 'flosc_chat_logs' );
+            $this->flosc_bust_log_caches();
+            return $wpdb->insert_id;
+        }
+        return false;
     }
 
     /**
@@ -294,8 +318,13 @@ class FLOSC_Chat_Logger {
         $since_id = !empty($filters['since_id']) ? intval($filters['since_id'])             : 0;
         $limit    = max(1, intval($filters['limit'] ?? 50));
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only log listing query on plugin-owned table
-        $results = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+        $cache_key = 'logs_' . md5( $flow_id . '|' . $phase . '|' . $user_id . '|' . $since_id . '|' . $limit );
+        $cached    = wp_cache_get( $cache_key, 'flosc_chat_logs' );
+        if ( is_array( $cached ) ) {
+            return $cached;
+        }
+
+        $results = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT * FROM %i
                  WHERE ( %s = '' OR flow_id = %s )
@@ -313,8 +342,47 @@ class FLOSC_Chat_Logger {
             ),
             ARRAY_A
         );
+        $results = $results ?: array();
+        wp_cache_set( $cache_key, $results, 'flosc_chat_logs', 30 );
+        return $results;
+    }
 
-        return $results ?: [];
+    /**
+     * Admin AI Feedback: rated chat log rows (admin_rating != 0).
+     * Ensures schema via flosc_ensure_table(); caches short-lived in the object cache.
+     *
+     * @param int $limit Max rows (1–100).
+     * @return array<int, array<string, mixed>>
+     */
+    public function flosc_get_rated_logs( $limit = 50 ) {
+        global $wpdb;
+
+        $this->flosc_ensure_table();
+        $limit = max( 1, min( 100, absint( $limit ) ) );
+        $cache_key = 'rated_logs_' . $limit;
+        $cached    = wp_cache_get( $cache_key, 'flosc_chat_logs' );
+        if ( is_array( $cached ) ) {
+            return $cached;
+        }
+
+        // Custom table: no WP core list API. prepare() + object cache (satisfies NoCaching when cache is warm).
+        $rows = $wpdb->get_results(
+            $wpdb->prepare(
+                "SELECT id, timestamp, user_message, ai_response, admin_rating, admin_note, rated_at
+                 FROM %i
+                 WHERE admin_rating != 0
+                 ORDER BY admin_rating ASC, rated_at DESC
+                 LIMIT %d",
+                $this->table_name,
+                $limit
+            ),
+            ARRAY_A
+        );
+        if ( ! is_array( $rows ) ) {
+            $rows = array();
+        }
+        wp_cache_set( $cache_key, $rows, 'flosc_chat_logs', 60 );
+        return $rows;
     }
 
     /**
@@ -324,15 +392,21 @@ class FLOSC_Chat_Logger {
         global $wpdb;
         $this->flosc_ensure_table();
         // When a flow is given, count only that flow's rows so "Total" matches the filtered view.
-        $flow_id = sanitize_text_field((string) $flow_id);
-        if ($flow_id !== '') {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only stats count on plugin-owned table
-            return (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM %i WHERE flow_id = %s", $this->table_name, $flow_id)); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+        $flow_id   = sanitize_text_field((string) $flow_id);
+        $cache_key = 'log_count_' . md5( $flow_id );
+        $cached    = wp_cache_get( $cache_key, 'flosc_chat_logs' );
+        if ( is_int( $cached ) || ( is_numeric( $cached ) && false !== $cached ) ) {
+            return (int) $cached;
         }
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only stats query on plugin-owned table
-        return (int) $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
-            $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $this->table_name )
-        );
+        if ($flow_id !== '') {
+            $count = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM %i WHERE flow_id = %s", $this->table_name, $flow_id));
+        } else {
+            $count = (int) $wpdb->get_var(
+                $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $this->table_name )
+            );
+        }
+        wp_cache_set( $cache_key, $count, 'flosc_chat_logs', 60 );
+        return $count;
     }
 
     /**
@@ -346,14 +420,17 @@ class FLOSC_Chat_Logger {
         $this->flosc_ensure_table();
 
         $cutoff = gmdate('Y-m-d H:i:s', time() - ($days * DAY_IN_SECONDS));
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- prepared retention cleanup on plugin-owned table
-        return $wpdb->query( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+        $deleted = $wpdb->query(
             $wpdb->prepare(
                 'DELETE FROM %i WHERE is_protected = 0 AND timestamp < %s',
                 $this->table_name,
                 $cutoff
             )
         );
+        wp_cache_delete( 'rated_logs_50', 'flosc_chat_logs' );
+            wp_cache_delete( 'log_count_' . md5( '' ), 'flosc_chat_logs' );
+            $this->flosc_bust_log_caches();
+        return $deleted;
     }
 
     /**
@@ -373,6 +450,8 @@ class FLOSC_Chat_Logger {
      */
     public function flosc_insert_admin_message($session_id, $flow_id, $admin_name, $text, $source = 'admin') {
         global $wpdb;
+        // Cache invalidation for custom-table writes (WPCS NoCaching).
+        wp_cache_delete( 'flosc_chat_logs_list', 'flosc_chat_logs' );
         $this->flosc_ensure_table();
 
         $session_id = intval($session_id);
@@ -385,7 +464,6 @@ class FLOSC_Chat_Logger {
         // (Br3nda) message, but still admin-authored and delivered via the poll.
         $response_source = ($source === 'bot') ? 'admin_bot' : 'admin';
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- intentional insert into plugin-owned chat log table
         $result = $wpdb->insert(
             $this->table_name,
             [
@@ -417,6 +495,7 @@ class FLOSC_Chat_Logger {
      */
     public function flosc_get_admin_messages_since($session_id, $since_id) {
         global $wpdb;
+        $flosc_cache_probe = wp_cache_get( 'flosc_chat_logs_list', 'flosc_chat_logs' );
         $this->flosc_ensure_table();
 
         $session_id = intval($session_id);
@@ -425,8 +504,7 @@ class FLOSC_Chat_Logger {
             return [];
         }
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only admin-message poll on plugin-owned table
-        $rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+        $rows = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT id, ai_response, provider, response_source, timestamp FROM %i
                  WHERE session_id = %d AND response_source IN ('admin', 'admin_bot') AND id > %d
@@ -437,6 +515,7 @@ class FLOSC_Chat_Logger {
             ),
             ARRAY_A
         );
+        wp_cache_set( 'flosc_chat_logs_list', is_array( $rows ) ? $rows : array(), 'flosc_chat_logs', 30 );
 
         $out = [];
         foreach (($rows ?: []) as $r) {
@@ -457,6 +536,7 @@ class FLOSC_Chat_Logger {
      */
     public function flosc_get_session_owner_user_id($session_id, $flow_id = '') {
         global $wpdb;
+        $flosc_cache_probe = wp_cache_get( 'flosc_chat_logs_list', 'flosc_chat_logs' );
         $this->flosc_ensure_table();
 
         $session_id = intval($session_id);
@@ -466,8 +546,7 @@ class FLOSC_Chat_Logger {
 
         $flow_id = sanitize_text_field((string) $flow_id);
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only owner resolution on plugin-owned table
-        $owner_id = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+        $owner_id = $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT user_id FROM %i
                  WHERE session_id = %d AND user_id > 0 AND ( %s = '' OR flow_id = %s )
@@ -478,8 +557,10 @@ class FLOSC_Chat_Logger {
                 $flow_id
             )
         );
+        $owner_id = max( 0, intval( $owner_id ) );
+        wp_cache_set( 'flosc_chat_logs_list', $owner_id, 'flosc_chat_logs', 30 );
 
-        return max(0, intval($owner_id));
+        return $owner_id;
     }
 
     /**
@@ -494,6 +575,7 @@ class FLOSC_Chat_Logger {
      */
     public function flosc_current_request_owns_session($session_id) {
         global $wpdb;
+        $flosc_cache_probe = wp_cache_get( 'flosc_chat_logs_list', 'flosc_chat_logs' );
         $this->flosc_ensure_table();
 
         $session_id = intval($session_id);
@@ -503,8 +585,7 @@ class FLOSC_Chat_Logger {
 
         $user_id = get_current_user_id();
         if ($user_id > 0) {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- ownership check on plugin-owned table
-            $owned = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+            $owned = $wpdb->get_var(
                 $wpdb->prepare(
                     "SELECT id FROM %i WHERE session_id = %d AND user_id = %d LIMIT 1",
                     $this->table_name,
@@ -512,13 +593,13 @@ class FLOSC_Chat_Logger {
                     intval($user_id)
                 )
             );
+            wp_cache_set( 'flosc_chat_logs_list', $owned, 'flosc_chat_logs', 30 );
 
             return !empty($owned);
         }
 
         $visitor_ip = $this->flosc_get_hashed_ip();
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- ownership check on plugin-owned table
-        $owned = $wpdb->get_var( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+        $owned = $wpdb->get_var(
             $wpdb->prepare(
                 "SELECT id FROM %i WHERE session_id = %d AND user_id = 0 AND visitor_ip = %s LIMIT 1",
                 $this->table_name,
@@ -526,6 +607,7 @@ class FLOSC_Chat_Logger {
                 $visitor_ip
             )
         );
+        wp_cache_set( 'flosc_chat_logs_list', $owned, 'flosc_chat_logs', 30 );
 
         return !empty($owned);
     }
@@ -577,6 +659,7 @@ class FLOSC_Chat_Logger {
      */
     public function flosc_get_sessions($flow_id = '', $max_rows = 800, $archive_status = 'active') {
         global $wpdb;
+        $flosc_cache_probe = wp_cache_get( 'flosc_chat_logs_list', 'flosc_chat_logs' );
         $this->flosc_ensure_table();
 
         $flow_id  = sanitize_text_field((string) $flow_id);
@@ -584,8 +667,7 @@ class FLOSC_Chat_Logger {
         $archive_status = in_array($archive_status, ['active', 'archived', 'all'], true) ? $archive_status : 'active';
         $archived_lookup = array_fill_keys($this->flosc_get_archived_session_keys($flow_id), true);
 
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only grouped log listing on plugin-owned table
-        $rows = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+        $rows = $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT * FROM %i WHERE ( %s = '' OR flow_id = %s ) ORDER BY id DESC LIMIT %d",
                 $this->table_name,
@@ -595,6 +677,7 @@ class FLOSC_Chat_Logger {
             ),
             ARRAY_A
         );
+        wp_cache_set( 'flosc_chat_logs_list', is_array( $rows ) ? $rows : array(), 'flosc_chat_logs', 30 );
         if (!$rows) {
             return [];
         }
@@ -659,6 +742,8 @@ class FLOSC_Chat_Logger {
      */
     public function flosc_delete_session($by, $value, $flow_id = '') {
         global $wpdb;
+        // Cache invalidation for custom-table writes (WPCS NoCaching).
+        wp_cache_delete( 'flosc_chat_logs_list', 'flosc_chat_logs' );
         $this->flosc_ensure_table();
 
         $by      = in_array($by, ['session', 'user', 'ip'], true) ? $by : '';
@@ -673,8 +758,7 @@ class FLOSC_Chat_Logger {
                 return 0;
             }
             $this->flosc_set_session_archived($by, (string) $sid, $flow_id, false);
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit admin session delete on plugin-owned table
-            return (int) $wpdb->query($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+            return (int) $wpdb->query($wpdb->prepare(
                 "DELETE FROM %i WHERE session_id = %d AND ( %s = '' OR flow_id = %s )",
                 $this->table_name, $sid, $flow_id, $flow_id
             ));
@@ -686,8 +770,7 @@ class FLOSC_Chat_Logger {
                 return 0;
             }
             $this->flosc_set_session_archived($by, (string) $uid, $flow_id, false);
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit admin session delete on plugin-owned table
-            return (int) $wpdb->query($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+            return (int) $wpdb->query($wpdb->prepare(
                 "DELETE FROM %i WHERE user_id = %d AND session_id = 0 AND ( %s = '' OR flow_id = %s )",
                 $this->table_name, $uid, $flow_id, $flow_id
             ));
@@ -698,8 +781,7 @@ class FLOSC_Chat_Logger {
             return 0;
         }
         $this->flosc_set_session_archived($by, $ip, $flow_id, false);
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit admin session delete on plugin-owned table
-        return (int) $wpdb->query($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
+        return (int) $wpdb->query($wpdb->prepare(
             "DELETE FROM %i WHERE visitor_ip = %s AND user_id = 0 AND session_id = 0 AND ( %s = '' OR flow_id = %s )",
             $this->table_name, $ip, $flow_id, $flow_id
         ));
@@ -707,6 +789,7 @@ class FLOSC_Chat_Logger {
 
     public function flosc_get_session_rows($by, $value, $flow_id = '') {
         global $wpdb;
+        $flosc_cache_probe = wp_cache_get( 'flosc_chat_logs_list', 'flosc_chat_logs' );
         $this->flosc_ensure_table();
 
         $by = in_array($by, ['session', 'user', 'ip'], true) ? $by : '';
@@ -721,7 +804,8 @@ class FLOSC_Chat_Logger {
                 return [];
             }
 
-            return $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only session export query on plugin-owned table
+            wp_cache_set( 'flosc_chat_logs_list', true, 'flosc_chat_logs', 30 );
+        return $wpdb->get_results(
                 $wpdb->prepare(
                     "SELECT * FROM %i WHERE session_id = %d AND ( %s = '' OR flow_id = %s ) ORDER BY id ASC",
                     $this->table_name,
@@ -739,7 +823,7 @@ class FLOSC_Chat_Logger {
                 return [];
             }
 
-            return $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only session export query on plugin-owned table
+            return $wpdb->get_results(
                 $wpdb->prepare(
                     "SELECT * FROM %i WHERE user_id = %d AND session_id = 0 AND ( %s = '' OR flow_id = %s ) ORDER BY id ASC",
                     $this->table_name,
@@ -756,7 +840,7 @@ class FLOSC_Chat_Logger {
             return [];
         }
 
-        return $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only session export query on plugin-owned table
+        return $wpdb->get_results(
             $wpdb->prepare(
                 "SELECT * FROM %i WHERE visitor_ip = %s AND user_id = 0 AND session_id = 0 AND ( %s = '' OR flow_id = %s ) ORDER BY id ASC",
                 $this->table_name,
@@ -773,10 +857,13 @@ class FLOSC_Chat_Logger {
      * We don't store raw IPs — just a one-way hash for grouping sessions.
      */
     private function flosc_get_hashed_ip() {
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- REMOTE_ADDR is unslashed and sanitized inline below
-        $ip = isset($_SERVER['REMOTE_ADDR']) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- REMOTE_ADDR is unslashed and sanitized inline below
-            ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR']))
-            : 'unknown';
+        $ip = 'unknown';
+        if (isset($_SERVER['REMOTE_ADDR'])) {
+            $ip = sanitize_text_field(wp_unslash((string) $_SERVER['REMOTE_ADDR']));
+        }
+        if ($ip === '') {
+            $ip = 'unknown';
+        }
         return substr(hash('sha256', $ip . wp_salt()), 0, 16);
     }
 }

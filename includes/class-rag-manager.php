@@ -183,7 +183,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Input - " . wp_
         }
         
         foreach ($files as $file) {
-            $content = file_get_contents($file);
+            $content = flosc_fs_get_contents($file);
             
             // Simple keyword search (case-insensitive)
             if (stripos($content, $query) !== false) {
@@ -241,15 +241,15 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Input - " . wp_
         
         // Also support searching by lesson number (e.g., "1", "2", "10")
         if (is_numeric($keywords) && $keywords >= 1 && $keywords <= 10) {
-            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- intentional exact lesson-number query path
-            $args['meta_query'] = [
-                [
-                    'key' => '_flosc_lesson_number',
-                    'value' => intval($keywords),
-                    'compare' => '='
-                ]
-            ];
-            unset($args['s']); // Don't use text search if searching by number
+            unset($args['s']);
+            $pids = function_exists( 'flosc_get_post_ids_for_meta' )
+                ? flosc_get_post_ids_for_meta( '_flosc_lesson_number', (string) intval( $keywords ), 20 )
+                : array();
+            if ( empty( $pids ) ) {
+                return "No posts found for: {$keywords}";
+            }
+            $args['post__in'] = $pids;
+            $args['orderby']  = 'post__in';
         }
         
         $posts = get_posts($args);
@@ -302,22 +302,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Input - " . wp_
         
         // Try to find by lesson number first
         if ($lesson_number) {
-            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- intentional exact lesson-number lookup
-            $args = [
-                'post_type' => 'post', // FUTURE: 'flosc_lesson'
-                'posts_per_page' => 1,
-                'meta_query' => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- intentional exact lesson-number lookup
-                    [
-                        'key' => '_flosc_lesson_number',
-                        'value' => $lesson_number,
-                        'compare' => '='
-                    ]
-                ]
-            ];
-            
-            $posts = get_posts($args);
-            if (!empty($posts)) {
-                $post = $posts[0];
+            $pids = function_exists( 'flosc_get_post_ids_for_meta' )
+                ? flosc_get_post_ids_for_meta( '_flosc_lesson_number', (string) $lesson_number, 1 )
+                : array();
+            if ( ! empty( $pids ) ) {
+                $post = get_post( (int) $pids[0] );
             }
         }
         
@@ -397,17 +386,24 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Input - " . wp_
             return "No lessons configured for this flow.";
         }
 
-        // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- intentional lesson ordering by configured lesson-number meta
-        $args = [
-            'post_type' => 'post', // FUTURE: 'flosc_lesson'
-            'posts_per_page' => -1,
-            'category__in' => $cat_ids, // flow-scoped
-            'orderby' => 'meta_value_num',
-            'meta_key' => '_flosc_lesson_number', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- intentional lesson ordering by configured lesson-number meta
-            'order' => 'ASC'
-        ];
-
-        $posts = get_posts($args);
+        $posts = get_posts(
+            array(
+                'post_type'              => 'post', // FUTURE: 'flosc_lesson'
+                'posts_per_page'         => -1,
+                'category__in'           => $cat_ids, // flow-scoped
+                'orderby'                => 'date',
+                'order'                  => 'ASC',
+                'update_post_meta_cache' => true,
+            )
+        );
+        usort(
+            $posts,
+            static function ( $a, $b ) {
+                $na = (float) get_post_meta( $a->ID, '_flosc_lesson_number', true );
+                $nb = (float) get_post_meta( $b->ID, '_flosc_lesson_number', true );
+                return $na <=> $nb;
+            }
+        );
 
         if (empty($posts)) {
             return "No lessons configured for this flow.";

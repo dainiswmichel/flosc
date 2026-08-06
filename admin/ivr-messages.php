@@ -175,7 +175,7 @@ function flosc_run_ivr_diagnostics() {
         // Try to parse it
         require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
         $flosc_parser = FLOSC_IVR_Parser::flosc_instance();
-        $markdown = file_get_contents($ivr_file);
+        $markdown = flosc_fs_get_contents($ivr_file);
         $config = $flosc_parser->flosc_parse($markdown);
         
         $file_message_count = count($config['messages'] ?? []);
@@ -520,12 +520,28 @@ if (isset($flosc_post['flosc_upload_ivr_file']) && isset($_FILES['ivr_file_uploa
         wp_die(esc_html__('You do not have permission to upload IVR files.', 'flosc'));
     }
 
-    // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- $_FILES validated via wp_handle_upload + extension/size checks below.
-    $flosc_uploaded_file = $_FILES['ivr_file_upload'];
-    
-    if (isset($flosc_uploaded_file['error']) && (int) $flosc_uploaded_file['error'] === UPLOAD_ERR_OK) {
-        $flosc_filename = basename(sanitize_file_name((string) ($flosc_uploaded_file['name'] ?? '')));
-        $flosc_upload_size = isset($flosc_uploaded_file['size']) ? absint($flosc_uploaded_file['size']) : 0;
+    // Build a sanitized view of the upload entry (do not pass raw $_FILES around).
+    $flosc_uploaded_file = array(
+        'name'     => isset($_FILES['ivr_file_upload']['name'])
+            ? sanitize_file_name(wp_unslash((string) $_FILES['ivr_file_upload']['name']))
+            : '',
+        'type'     => isset($_FILES['ivr_file_upload']['type'])
+            ? sanitize_text_field(wp_unslash((string) $_FILES['ivr_file_upload']['type']))
+            : '',
+        'tmp_name' => isset($_FILES['ivr_file_upload']['tmp_name'])
+            ? sanitize_text_field(wp_unslash((string) $_FILES['ivr_file_upload']['tmp_name']))
+            : '',
+        'error'    => isset($_FILES['ivr_file_upload']['error'])
+            ? absint($_FILES['ivr_file_upload']['error'])
+            : UPLOAD_ERR_NO_FILE,
+        'size'     => isset($_FILES['ivr_file_upload']['size'])
+            ? absint($_FILES['ivr_file_upload']['size'])
+            : 0,
+    );
+
+    if ((int) $flosc_uploaded_file['error'] === UPLOAD_ERR_OK) {
+        $flosc_filename = basename((string) $flosc_uploaded_file['name']);
+        $flosc_upload_size = (int) $flosc_uploaded_file['size'];
         $flosc_target_path = function_exists('flosc_data_file_path')
             ? flosc_data_file_path($flosc_filename)
             : '';
@@ -551,7 +567,7 @@ if (isset($flosc_post['flosc_upload_ivr_file']) && isset($_FILES['ivr_file_uploa
             if (isset($flosc_handled_upload['error'])) {
                 add_settings_error('flosc_settings', 'upload_failed', 'Upload failed: ' . $flosc_handled_upload['error'], 'error');
             } elseif (!empty($flosc_handled_upload['file']) && is_readable($flosc_handled_upload['file'])) {
-                $flosc_upload_body = file_get_contents($flosc_handled_upload['file']);
+                $flosc_upload_body = flosc_fs_get_contents($flosc_handled_upload['file']);
                 wp_delete_file($flosc_handled_upload['file']);
                 if (false === $flosc_upload_body || !flosc_write_data_file($flosc_target_path, $flosc_upload_body)) {
                     add_settings_error('flosc_settings', 'upload_failed', 'Failed to save uploaded file into FLOSC data directory.', 'error');
@@ -690,12 +706,15 @@ if (isset($flosc_get['flosc_download_ivr']) && isset($flosc_get['_wpnonce'])) {
             if ($flosc_download_content === false) {
                 $flosc_download_content = '';
             }
-            nocache_headers();
-            header('Content-Type: text/markdown; charset=UTF-8');
-            header('Content-Disposition: attachment; filename="' . basename($flosc_download_file) . '"');
-            header('Content-Length: ' . strlen($flosc_download_content));
-            // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- raw markdown file download stream
-            echo $flosc_download_content;
+            $flosc_fs_dl = class_exists( 'FLOSC_Filesystem' ) ? new FLOSC_Filesystem() : null;
+            if ( $flosc_fs_dl ) {
+                $flosc_fs_dl->stream_plain_download_and_exit(
+                    (string) $flosc_download_content,
+                    'text/markdown; charset=UTF-8',
+                    basename( (string) $flosc_download_file )
+                );
+            }
+            status_header( 500 );
             exit;
         }
     }
@@ -729,7 +748,7 @@ if (isset($flosc_post['flosc_duplicate_ivr_file']) && isset($flosc_post['duplica
             $flosc_counter++;
         }
 
-        $flosc_source_body = ('' !== $flosc_duplicate_path) ? file_get_contents($flosc_source_path) : false;
+        $flosc_source_body = ('' !== $flosc_duplicate_path) ? flosc_fs_get_contents($flosc_source_path) : false;
         if (false === $flosc_source_body || '' === $flosc_duplicate_path || !flosc_write_data_file($flosc_duplicate_path, $flosc_source_body)) {
             add_settings_error('flosc_settings', 'duplicate_failed', 'Could not duplicate IVR file. Check file permissions or uploads availability.', 'error');
         } else {
@@ -1450,7 +1469,7 @@ document.addEventListener('submit', function(event) {
     <?php
     $flosc_active_ivr_full_text = '';
     if (file_exists($flosc_ivr_file_path)) {
-        $flosc_active_ivr_full_text = file_get_contents($flosc_ivr_file_path);
+        $flosc_active_ivr_full_text = flosc_fs_get_contents($flosc_ivr_file_path);
         if ($flosc_active_ivr_full_text === false) {
             $flosc_active_ivr_full_text = '';
         }
@@ -1494,7 +1513,7 @@ document.addEventListener('submit', function(event) {
     if (file_exists($flosc_ivr_file_path)) {
         require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
         $flosc_preview_parser = FLOSC_IVR_Parser::flosc_instance();
-        $flosc_preview_markdown = file_get_contents($flosc_ivr_file_path);
+        $flosc_preview_markdown = flosc_fs_get_contents($flosc_ivr_file_path);
         $flosc_preview_config = $flosc_preview_parser->flosc_parse($flosc_preview_markdown ?: '');
         $flosc_file_messages_for_compare = $flosc_preview_config['messages'] ?? [];
     }

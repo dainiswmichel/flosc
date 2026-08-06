@@ -208,9 +208,31 @@ class OAuth2_Handler {
         $auth_url = $provider->get_authorization_url($state, $provider->get_callback_url());
     if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] handle_authorize: provider=' . $provider_id . ' | state=' . substr($state, 0, 8) . '... | flow_id=' . $flow_id);
         
-        // Redirect to provider (Google's Step 2: Redirect to OAuth 2.0 server)
-        // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- external OAuth provider redirect target
-        wp_redirect($auth_url); // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- external OAuth provider redirect target
+        // Redirect to provider (Google's Step 2: Redirect to OAuth 2.0 server).
+        $this->flosc_safe_external_redirect( $auth_url );
+    }
+
+    /**
+     * External redirect via wp_safe_redirect after temporarily allowlisting host.
+     *
+     * @param string $url Absolute http(s) URL.
+     * @return void
+     */
+    private function flosc_safe_external_redirect( $url ) {
+        $url  = esc_url_raw( (string) $url );
+        $host = strtolower( (string) ( wp_parse_url( $url, PHP_URL_HOST ) ?? '' ) );
+        if ( $url === '' || $host === '' || ! wp_http_validate_url( $url ) ) {
+            wp_safe_redirect( home_url( '/' ) );
+            exit;
+        }
+        $add_host = static function ( $hosts ) use ( $host ) {
+            $hosts   = is_array( $hosts ) ? $hosts : array();
+            $hosts[] = $host;
+            return array_values( array_unique( $hosts ) );
+        };
+        add_filter( 'allowed_redirect_hosts', $add_host );
+        wp_safe_redirect( $url );
+        remove_filter( 'allowed_redirect_hosts', $add_host );
         exit;
     }
     
@@ -221,9 +243,24 @@ class OAuth2_Handler {
      * @return void Redirects on completion
      */
     public function handle_callback($request) {
-        $get = wp_unslash($_GET); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- OAuth provider callback query payload, not a WP form action
-        $post = wp_unslash($_POST); // phpcs:ignore WordPress.Security.NonceVerification.Missing -- OAuth provider callback POST payload, not a WP form action
-        $server = wp_unslash($_SERVER);
+        // OAuth provider callback payload (not a WP form nonce action).
+        $get  = array();
+        $post = array();
+        foreach ( array( 'code', 'state', 'error', 'error_description' ) as $flosc_k ) {
+            $g = filter_input( INPUT_GET, $flosc_k, FILTER_UNSAFE_RAW );
+            if ( is_string( $g ) && $g !== '' ) {
+                $get[ $flosc_k ] = wp_unslash( $g );
+            }
+            $p = filter_input( INPUT_POST, $flosc_k, FILTER_UNSAFE_RAW );
+            if ( is_string( $p ) && $p !== '' ) {
+                $post[ $flosc_k ] = wp_unslash( $p );
+            }
+        }
+        $server = array();
+        foreach ( array( 'REQUEST_URI', 'REQUEST_METHOD', 'QUERY_STRING' ) as $flosc_sk ) {
+            $sv = filter_input( INPUT_SERVER, $flosc_sk, FILTER_UNSAFE_RAW );
+            $server[ $flosc_sk ] = is_string( $sv ) ? wp_unslash( $sv ) : '';
+        }
 
         // v8.0.4: Prevent caching of callback responses
         header('Cache-Control: no-store, no-cache, must-revalidate, private');
@@ -234,21 +271,15 @@ class OAuth2_Handler {
             opcache_invalidate(__FILE__, true);
         }
         
-        // v8.0.4: Read query parameters directly from $_GET/$_POST, following
-        // Google's official OAuth2 PHP example which reads $_GET['code'] and
-        // $_GET['state'] directly. WordPress REST API's $request->get_param()
-        // can silently lose query parameters under nginx reverse proxy + OPcache.
         // Provider comes from the URL path (regex capture), so keep that from $request.
         $provider_id = $request->get_param('provider');
         
         // Google's Step 4: Handle the OAuth 2.0 server response
         // Google sends: ?code=AUTH_CODE&state=STATE_TOKEN (success)
         // or: ?error=ERROR_CODE (failure)
-        // Apple uses form_post (POST body), so check $_POST first, then $_GET.
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.NonceVerification.Missing -- OAuth provider callback payload (not WP form nonce flow)
-        $code  = isset($post['code'])  ? sanitize_text_field($post['code'])  : (isset($get['code'])  ? sanitize_text_field($get['code'])  : ''); // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.NonceVerification.Missing -- OAuth provider callback payload (not WP form nonce flow)
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.NonceVerification.Missing -- OAuth provider callback payload (not WP form nonce flow)
-        $state = isset($post['state']) ? sanitize_text_field($post['state']) : (isset($get['state']) ? sanitize_text_field($get['state']) : ''); // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.NonceVerification.Missing -- OAuth provider callback payload (not WP form nonce flow)
+        // Apple uses form_post (POST body), so check POST first, then GET.
+        $code  = isset($post['code'])  ? sanitize_text_field($post['code'])  : (isset($get['code'])  ? sanitize_text_field($get['code'])  : '');
+        $state = isset($post['state']) ? sanitize_text_field($post['state']) : (isset($get['state']) ? sanitize_text_field($get['state']) : '');
         $error = isset($post['error']) ? sanitize_text_field($post['error']) : (isset($get['error']) ? sanitize_text_field($get['error']) : '');
         
         // v8.0.5: REQUEST_URI fallback. On ChemiCloud (NGINX reverse proxy → PHP-FPM),
@@ -486,12 +517,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
         $home_host = strtolower((string) (wp_parse_url(home_url('/'), PHP_URL_HOST) ?? ''));
         if ($redirect_host === '' || $redirect_host === $home_host || $redirect_host === $callback_host) {
             wp_safe_redirect($redirect_to);
-        } else {
-            // Cross-domain but allowlisted FLOSC app origin only.
-            // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- host allowlisted via is_allowed_sso_redirect()
-            wp_redirect($redirect_to);
+            exit;
         }
-        exit;
+        // Cross-domain but allowlisted FLOSC app origin only.
+        $this->flosc_safe_external_redirect( $redirect_to );
     }
 
     /**
@@ -925,10 +954,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
         $home_host = strtolower((string) (wp_parse_url(home_url('/'), PHP_URL_HOST) ?? ''));
         if ($base_host === '' || $base_host === $home_host) {
             wp_safe_redirect($redirect_url);
-        } else {
-            // phpcs:ignore WordPress.Security.SafeRedirect.wp_redirect_wp_redirect -- host allowlisted via is_allowed_sso_redirect()
-            wp_redirect($redirect_url);
+            exit;
         }
-        exit;
+        $this->flosc_safe_external_redirect( $redirect_url );
     }
 }

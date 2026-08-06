@@ -3,8 +3,10 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only admin display flags below; no state change is performed from these values.
-$flosc_get = wp_unslash($_GET);
+// $flosc_get prepared by admin/settings.php before include.
+if ( ! isset( $flosc_get ) || ! is_array( $flosc_get ) ) {
+	$flosc_get = array();
+}
 $flosc_selected_ivr = sanitize_file_name((string) ($GLOBALS['flosc_current_ivr'] ?? ''));
 
 $flosc_files = function_exists('flosc_config_glob') ? flosc_config_glob(['*_ivr.md', 'ivr*.md']) : [];

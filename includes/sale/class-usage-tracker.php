@@ -306,40 +306,42 @@ class FLOSC_Usage_Tracker {
      * Get aggregate usage across all users for a period
      */
     public function get_global_usage($period = null) {
-        global $wpdb;
-        
         $period = $period ?: $this->get_current_period();
-        
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only analytics scan on usermeta
-        $results = $wpdb->get_results($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only analytics scan on usermeta
-            "SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = %s",
-            $this->meta_key
-        ));
-        
-        $aggregate = [];
-        
-        foreach ($results as $row) {
-            $usage = maybe_unserialize($row->meta_value);
-            
-            if (isset($usage[$period])) {
-                foreach ($usage[$period] as $event => $data) {
-                    if ($event[0] === '_') continue; // Skip meta keys
-                    
-                    if (!isset($aggregate[$event])) {
-                        $aggregate[$event] = [
-                            'users' => 0,
-                            'count' => 0,
-                            'quantity' => 0,
-                        ];
-                    }
-                    
-                    $aggregate[$event]['users']++;
-                    $aggregate[$event]['count'] += $data['count'];
-                    $aggregate[$event]['quantity'] += $data['quantity'];
+
+        $user_ids = function_exists( 'flosc_get_user_ids_for_meta' )
+            ? flosc_get_user_ids_for_meta( $this->meta_key )
+            : array();
+
+        $aggregate = array();
+
+        foreach ( (array) $user_ids as $user_id ) {
+            $usage = get_user_meta( (int) $user_id, $this->meta_key, true );
+            if ( ! is_array( $usage ) || ! isset( $usage[ $period ] ) || ! is_array( $usage[ $period ] ) ) {
+                continue;
+            }
+
+            foreach ( $usage[ $period ] as $event => $data ) {
+                if ( ! is_string( $event ) || $event === '' || $event[0] === '_' ) {
+                    continue;
                 }
+                if ( ! is_array( $data ) ) {
+                    continue;
+                }
+
+                if ( ! isset( $aggregate[ $event ] ) ) {
+                    $aggregate[ $event ] = array(
+                        'users'    => 0,
+                        'count'    => 0,
+                        'quantity' => 0,
+                    );
+                }
+
+                $aggregate[ $event ]['users']++;
+                $aggregate[ $event ]['count']    += (int) ( $data['count'] ?? 0 );
+                $aggregate[ $event ]['quantity'] += (int) ( $data['quantity'] ?? 0 );
             }
         }
-        
+
         return $aggregate;
     }
     
@@ -347,30 +349,26 @@ class FLOSC_Usage_Tracker {
      * Get top users by usage
      */
     public function get_top_users($event, $period = null, $limit = 10) {
-        global $wpdb;
-        
         $period = $period ?: $this->get_current_period();
-        
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only analytics scan on usermeta
-        $results = $wpdb->get_results($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
-            "SELECT user_id, meta_value FROM {$wpdb->usermeta} WHERE meta_key = %s",
-            $this->meta_key
-        ));
-        
-        $users = [];
-        
-        foreach ($results as $row) {
-            $usage = maybe_unserialize($row->meta_value);
-            
-            if (isset($usage[$period][$event])) {
-                $users[] = [
-                    'user_id' => $row->user_id,
-                    'count' => $usage[$period][$event]['count'],
-                    'quantity' => $usage[$period][$event]['quantity'],
-                ];
+
+        $user_ids = function_exists( 'flosc_get_user_ids_for_meta' )
+            ? flosc_get_user_ids_for_meta( $this->meta_key )
+            : array();
+
+        $users = array();
+
+        foreach ( (array) $user_ids as $user_id ) {
+            $usage = get_user_meta( (int) $user_id, $this->meta_key, true );
+            if ( ! is_array( $usage ) || ! isset( $usage[ $period ][ $event ] ) || ! is_array( $usage[ $period ][ $event ] ) ) {
+                continue;
             }
+            $users[] = array(
+                'user_id'  => (int) $user_id,
+                'count'    => (int) ( $usage[ $period ][ $event ]['count'] ?? 0 ),
+                'quantity' => (int) ( $usage[ $period ][ $event ]['quantity'] ?? 0 ),
+            );
         }
-        
+
         // Sort by quantity descending
         usort($users, function($a, $b) {
             return $b['quantity'] - $a['quantity'];

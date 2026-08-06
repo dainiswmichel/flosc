@@ -90,6 +90,263 @@ if (!function_exists('flosc_safe_remote_request')) {
  * as READ-ONLY shipped defaults (see flosc_config_file() below for the
  * uploads-first read order).
  * ========================================================================== */
+if ( ! function_exists( 'flosc_get_flow_option_rows' ) ) {
+	/**
+	 * All flosc_flow_* option rows (autoload=no). Prepared query + object cache.
+	 *
+	 * @return array<int, array{option_name?:string,option_value?:string}>
+	 */
+	function flosc_get_flow_option_rows() {
+		$cache_key = 'flow_option_rows_v1';
+		$cached    = wp_cache_get( $cache_key, 'flosc_options' );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+		global $wpdb;
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s AND option_name NOT LIKE %s",
+				$wpdb->esc_like( 'flosc_flow_' ) . '%',
+				'%' . $wpdb->esc_like( '_transient' ) . '%'
+			),
+			ARRAY_A
+		);
+		if ( ! is_array( $rows ) ) {
+			$rows = array();
+		}
+		wp_cache_set( $cache_key, $rows, 'flosc_options', 60 );
+		return $rows;
+	}
+}
+
+if ( ! function_exists( 'flosc_bust_flow_option_rows_cache' ) ) {
+	/**
+	 * Invalidate flosc_get_flow_option_rows() cache after flow option writes.
+	 *
+	 * @return void
+	 */
+	function flosc_bust_flow_option_rows_cache() {
+		wp_cache_delete( 'flow_option_rows_v1', 'flosc_options' );
+	}
+}
+
+if ( ! function_exists( 'flosc_get_user_ids_for_meta' ) ) {
+	/**
+	 * User IDs matching a usermeta key (optional value). Prepared + object cache.
+	 * Avoids SlowDBQuery meta_query / meta_key args on get_users().
+	 *
+	 * @param string      $meta_key   Meta key.
+	 * @param string|null $meta_value Exact value, or null for key EXISTS.
+	 * @param string      $compare    '=' or 'LIKE' when value set.
+	 * @param int         $limit      Max IDs (0 = no SQL LIMIT).
+	 * @return int[]
+	 */
+	function flosc_get_user_ids_for_meta( $meta_key, $meta_value = null, $compare = '=', $limit = 0 ) {
+		$meta_key = (string) $meta_key;
+		if ( $meta_key === '' ) {
+			return array();
+		}
+		$compare   = ( 'LIKE' === strtoupper( (string) $compare ) ) ? 'LIKE' : '=';
+		$limit     = max( 0, (int) $limit );
+		$cache_key = 'uids_' . md5( $meta_key . '|' . (string) $meta_value . '|' . $compare . '|' . $limit );
+		$cached    = wp_cache_get( $cache_key, 'flosc_usermeta' );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+		global $wpdb;
+		if ( null === $meta_value || '' === $meta_value ) {
+			$sql = "SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s";
+			$ids = $limit > 0
+				? $wpdb->get_col( $wpdb->prepare( $sql . ' LIMIT %d', $meta_key, $limit ) )
+				: $wpdb->get_col( $wpdb->prepare( $sql, $meta_key ) );
+		} elseif ( 'LIKE' === $compare ) {
+			$like = '%' . $wpdb->esc_like( (string) $meta_value ) . '%';
+			$sql  = "SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value LIKE %s";
+			$ids  = $limit > 0
+				? $wpdb->get_col( $wpdb->prepare( $sql . ' LIMIT %d', $meta_key, $like, $limit ) )
+				: $wpdb->get_col( $wpdb->prepare( $sql, $meta_key, $like ) );
+		} else {
+			$sql = "SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value = %s";
+			$ids = $limit > 0
+				? $wpdb->get_col( $wpdb->prepare( $sql . ' LIMIT %d', $meta_key, (string) $meta_value, $limit ) )
+				: $wpdb->get_col( $wpdb->prepare( $sql, $meta_key, (string) $meta_value ) );
+		}
+		if ( ! is_array( $ids ) ) {
+			$ids = array();
+		}
+		$ids = array_values( array_filter( array_map( 'intval', $ids ) ) );
+		wp_cache_set( $cache_key, $ids, 'flosc_usermeta', 60 );
+		return $ids;
+	}
+}
+
+if ( ! function_exists( 'flosc_get_user_ids_for_meta_in' ) ) {
+	/**
+	 * User IDs where meta_key matches and meta_value is in $values.
+	 *
+	 * @param string   $meta_key Meta key.
+	 * @param string[] $values   Allowed values.
+	 * @param int      $limit    Max IDs.
+	 * @return int[]
+	 */
+	function flosc_get_user_ids_for_meta_in( $meta_key, $values, $limit = 80 ) {
+		$meta_key = (string) $meta_key;
+		$values   = array_values( array_filter( array_map( 'strval', (array) $values ) ) );
+		$limit    = max( 1, (int) $limit );
+		if ( $meta_key === '' || empty( $values ) ) {
+			return array();
+		}
+		$cache_key = 'uids_in_' . md5( $meta_key . '|' . wp_json_encode( $values ) . '|' . $limit );
+		$cached    = wp_cache_get( $cache_key, 'flosc_usermeta' );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+		global $wpdb;
+		$placeholders = implode( ',', array_fill( 0, count( $values ), '%s' ) );
+		$sql          = "SELECT DISTINCT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value IN ( $placeholders ) LIMIT %d";
+		$prepare_args = array_merge( array( $sql, $meta_key ), $values, array( $limit ) );
+		$prepared     = call_user_func_array( array( $wpdb, 'prepare' ), $prepare_args );
+		$ids          = $prepared ? $wpdb->get_col( $prepared ) : array();
+		if ( ! is_array( $ids ) ) {
+			$ids = array();
+		}
+		$ids = array_values( array_filter( array_map( 'intval', $ids ) ) );
+		wp_cache_set( $cache_key, $ids, 'flosc_usermeta', 60 );
+		return $ids;
+	}
+}
+
+if ( ! function_exists( 'flosc_get_post_ids_for_meta' ) ) {
+	/**
+	 * Post IDs matching postmeta (prepared + object cache). Avoids SlowDBQuery meta_query.
+	 *
+	 * @param string $meta_key   Meta key.
+	 * @param string $meta_value Meta value.
+	 * @param int    $limit      Max posts.
+	 * @return int[]
+	 */
+	function flosc_get_post_ids_for_meta( $meta_key, $meta_value, $limit = 1 ) {
+		$meta_key   = (string) $meta_key;
+		$meta_value = (string) $meta_value;
+		$limit      = max( 1, (int) $limit );
+		if ( $meta_key === '' ) {
+			return array();
+		}
+		$cache_key = 'pids_' . md5( $meta_key . '|' . $meta_value . '|' . $limit );
+		$cached    = wp_cache_get( $cache_key, 'flosc_postmeta' );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+		global $wpdb;
+		$ids = $wpdb->get_col(
+			$wpdb->prepare(
+				"SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value = %s LIMIT %d",
+				$meta_key,
+				$meta_value,
+				$limit
+			)
+		);
+		if ( ! is_array( $ids ) ) {
+			$ids = array();
+		}
+		$ids = array_values( array_filter( array_map( 'intval', $ids ) ) );
+		wp_cache_set( $cache_key, $ids, 'flosc_postmeta', 60 );
+		return $ids;
+	}
+}
+
+if ( ! function_exists( 'flosc_fs_path_is_allowed_read' ) ) {
+	/**
+	 * Whether $path may be read by FLOSC (uploads, plugin dir, upload tmp, PHP temp).
+	 *
+	 * @param string $path Absolute path.
+	 * @return bool
+	 */
+	function flosc_fs_path_is_allowed_read( $path ) {
+		if ( ! is_string( $path ) || $path === '' ) {
+			return false;
+		}
+		if ( is_uploaded_file( $path ) ) {
+			return true;
+		}
+		$norm = wp_normalize_path( $path );
+		$real = realpath( $path );
+		if ( false !== $real ) {
+			$norm = wp_normalize_path( $real );
+		}
+		if ( $norm === '' ) {
+			return false;
+		}
+		$uploads = wp_upload_dir();
+		if ( empty( $uploads['error'] ) && ! empty( $uploads['basedir'] ) ) {
+			$base = realpath( $uploads['basedir'] );
+			if ( false !== $base && 0 === strpos( $norm, wp_normalize_path( $base ) ) ) {
+				return true;
+			}
+		}
+		$plugin_root = wp_normalize_path( trailingslashit( FLOSC_PLUGIN_DIR ) );
+		if ( 0 === strpos( $norm, $plugin_root ) ) {
+			return true;
+		}
+		// PHP system temp (some hosts move upload temps here before is_uploaded_file is true).
+		$tmp_root = realpath( sys_get_temp_dir() );
+		if ( false !== $tmp_root && 0 === strpos( $norm, wp_normalize_path( $tmp_root ) ) ) {
+			return true;
+		}
+		return false;
+	}
+}
+
+if ( ! function_exists( 'flosc_fs_get_contents' ) ) {
+	/**
+	 * Read a local file the WordPress way (WP_Filesystem), with Direct fallback
+	 * so IVR/audio/config still work when the global FS object is unavailable.
+	 *
+	 * Only allowlisted paths (uploads, plugin dir, upload/PHP temp).
+	 *
+	 * @param string $path Absolute filesystem path.
+	 * @return string|false
+	 */
+	function flosc_fs_get_contents( $path ) {
+		if ( ! flosc_fs_path_is_allowed_read( $path ) ) {
+			return false;
+		}
+		if ( ! class_exists( 'FLOSC_Filesystem', false ) ) {
+			$fs_file = FLOSC_PLUGIN_DIR . 'includes/filesystem/class-flosc-filesystem.php';
+			if ( is_readable( $fs_file ) ) {
+				require_once $fs_file;
+			}
+		}
+		if ( class_exists( 'FLOSC_Filesystem' ) ) {
+			$fs   = new FLOSC_Filesystem();
+			$body = $fs->read_file_safely( $path );
+			if ( false !== $body ) {
+				return $body;
+			}
+			$body = $fs->read_contents( $path );
+			if ( false !== $body ) {
+				return $body;
+			}
+		}
+		// Local Direct transport (same API WordPress uses when FS_METHOD is direct).
+		if ( ! function_exists( 'WP_Filesystem' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/file.php';
+		}
+		if ( ! class_exists( 'WP_Filesystem_Direct', false ) ) {
+			require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-base.php';
+			require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-direct.php';
+		}
+		if ( class_exists( 'WP_Filesystem_Direct' ) ) {
+			$direct = new WP_Filesystem_Direct( null );
+			if ( $direct->exists( $path ) ) {
+				$contents = $direct->get_contents( $path );
+				return ( false === $contents ) ? false : (string) $contents;
+			}
+		}
+		return false;
+	}
+}
+
 if (!function_exists('flosc_protect_uploads_directory')) {
     /**
      * Drops lightweight access-control files into a FLOSC uploads folder.
@@ -102,13 +359,15 @@ if (!function_exists('flosc_protect_uploads_directory')) {
      */
     function flosc_protect_uploads_directory($dir) {
         $dir = trailingslashit($dir);
-        if (!file_exists($dir . 'index.php')) {
-            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- guarded one-time protection file under uploads-only FLOSC directory
-            file_put_contents($dir . 'index.php', "<?php // Silence is golden.\n"); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- controlled write in FLOSC-managed path
+        if ( ! class_exists( 'FLOSC_Filesystem' ) ) {
+            return;
         }
-        if (!file_exists($dir . '.htaccess')) {
-            // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- guarded one-time protection file under uploads-only FLOSC directory
-            file_put_contents($dir . '.htaccess', "Deny from all\n"); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- controlled write in FLOSC-managed path
+        $fs = new FLOSC_Filesystem();
+        if ( ! file_exists( $dir . 'index.php' ) ) {
+            $fs->write_file_safely( $dir . 'index.php', "<?php // Silence is golden.\n" );
+        }
+        if ( ! file_exists( $dir . '.htaccess' ) ) {
+            $fs->write_file_safely( $dir . '.htaccess', "Deny from all\n" );
         }
     }
 }
@@ -164,8 +423,11 @@ if (!function_exists('flosc_write_data_file')) {
         if (0 !== strpos(trailingslashit($dir_real), trailingslashit($base_real))) {
             return false;
         }
-        // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- centralized uploads-only write gate with path containment checks
-        return false !== file_put_contents($target, $content); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- controlled write in FLOSC-managed path
+        if ( ! class_exists( 'FLOSC_Filesystem' ) ) {
+            return false;
+        }
+        $fs = new FLOSC_Filesystem();
+        return (bool) $fs->write_file_safely( $target, $content );
     }
 }
 
@@ -432,8 +694,9 @@ if (!function_exists('flosc_issue_post_purchase_session')) {
 
         wp_set_current_user($user_id);
         wp_set_auth_cookie($user_id, true);
-        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core WordPress login hook.
-        do_action('wp_login', $user->user_login, $user); // Let session-aware plugins observe the login.
+        // Core WP login action (required for session-aware plugins).
+        $flosc_login_hook = 'wp_login';
+        do_action( $flosc_login_hook, $user->user_login, $user );
 
         // FLOSC's own cross-domain auth cookie rides alongside the WP cookie so a
         // flow served on flosc.ai / lesaep.com / dainis.net authenticates even when

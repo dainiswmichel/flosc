@@ -254,10 +254,10 @@ foreach ($flosc_rules as $flosc_rule) {
     if (!is_array($flosc_rule)) {
         continue;
     }
-    $aud = sanitize_key((string) ($flosc_rule['audience'] ?? 'guest'));
-    if ($aud === 'visitor') {
+    $flosc_aud = sanitize_key((string) ($flosc_rule['audience'] ?? 'guest'));
+    if ($flosc_aud === 'visitor') {
         $flosc_visitor_rules[] = $flosc_rule;
-    } elseif ($aud === 'member') {
+    } elseif ($flosc_aud === 'member') {
         $flosc_member_rules[] = $flosc_rule;
     } else {
         $flosc_guest_rules[] = $flosc_rule;
@@ -306,45 +306,44 @@ if ($flosc_flow_id !== '' || $flosc_current_ivr !== '') {
     })));
 
     $flosc_by_id = [];
-    if (!empty($flosc_flow_match_vals)) {
-        $flosc_found = get_users([
-            'number'     => 80,
-            'orderby'    => 'registered',
-            'order'      => 'DESC',
-            'fields'     => ['ID', 'user_email', 'display_name', 'user_registered'],
-            'meta_query' => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-                'relation' => 'OR',
-                [
-                    'key'     => '_flosc_registration_flow',
-                    'value'   => $flosc_flow_match_vals,
-                    'compare' => 'IN',
-                ],
-                [
-                    'key'     => '_flosc_last_flow',
-                    'value'   => $flosc_flow_match_vals,
-                    'compare' => 'IN',
-                ],
-                [
-                    'key'     => '_flosc_first_flow',
-                    'value'   => $flosc_flow_match_vals,
-                    'compare' => 'IN',
-                ],
-            ],
-        ]);
-        foreach ($flosc_found as $flosc_u_row) {
-            $flosc_by_id[(int) $flosc_u_row->ID] = $flosc_u_row;
+    if (!empty($flosc_flow_match_vals) && function_exists( 'flosc_get_user_ids_for_meta_in' )) {
+        $flosc_merged_ids = array();
+        foreach ( array( '_flosc_registration_flow', '_flosc_last_flow', '_flosc_first_flow' ) as $flosc_mk ) {
+            $flosc_merged_ids = array_merge(
+                $flosc_merged_ids,
+                flosc_get_user_ids_for_meta_in( $flosc_mk, $flosc_flow_match_vals, 80 )
+            );
+        }
+        $flosc_merged_ids = array_values( array_unique( array_map( 'intval', $flosc_merged_ids ) ) );
+        if ( ! empty( $flosc_merged_ids ) ) {
+            $flosc_found = get_users(
+                array(
+                    'include' => $flosc_merged_ids,
+                    'orderby' => 'registered',
+                    'order'   => 'DESC',
+                    'fields'  => array( 'ID', 'user_email', 'display_name', 'user_registered' ),
+                )
+            );
+            foreach ( $flosc_found as $flosc_u_row ) {
+                $flosc_by_id[ (int) $flosc_u_row->ID ] = $flosc_u_row;
+            }
         }
     }
     // Also surface users who used this flow (counts array) even if registration_flow missing.
     if ($flosc_stem !== '') {
-        $flosc_count_users = get_users([
-            'number'     => 100,
-            'orderby'    => 'registered',
-            'order'      => 'DESC',
-            'fields'     => ['ID', 'user_email', 'display_name', 'user_registered'],
-            'meta_key'   => '_flosc_flow_use_counts', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-            'meta_compare' => 'EXISTS',
-        ]);
+        $flosc_count_ids = function_exists( 'flosc_get_user_ids_for_meta' )
+            ? flosc_get_user_ids_for_meta( '_flosc_flow_use_counts', null, '=', 100 )
+            : array();
+        $flosc_count_users = ! empty( $flosc_count_ids )
+            ? get_users(
+                array(
+                    'include' => $flosc_count_ids,
+                    'orderby' => 'registered',
+                    'order'   => 'DESC',
+                    'fields'  => array( 'ID', 'user_email', 'display_name', 'user_registered' ),
+                )
+            )
+            : array();
         foreach ($flosc_count_users as $flosc_cu) {
             $flosc_counts = get_user_meta((int) $flosc_cu->ID, '_flosc_flow_use_counts', true);
             if (!is_array($flosc_counts)) {

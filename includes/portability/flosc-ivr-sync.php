@@ -87,7 +87,7 @@ function flosc_import_ivr_to_database($preview_only = false, $custom_ivr_file = 
 
     require_once FLOSC_PLUGIN_DIR . 'includes/portability/class-ivr-parser.php';
     $parser = FLOSC_IVR_Parser::flosc_instance();
-    $markdown = file_get_contents($ivr_file);
+    $markdown = flosc_fs_get_contents($ivr_file);
     $config = $parser->flosc_parse($markdown);
 
     if (empty($config)) {

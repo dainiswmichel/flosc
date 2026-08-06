@@ -978,7 +978,7 @@ class FLOSC_Chatpack {
             : '';
         if (!$catalog_path || !file_exists($catalog_path)) return '';
 
-        $catalog = file_get_contents($catalog_path);
+        $catalog = flosc_fs_get_contents($catalog_path);
         if (!$catalog) return '';
 
         $recommendations = [];
@@ -1395,7 +1395,7 @@ class FLOSC_Chatpack {
                 continue; // user's tier is not high enough for this file
             }
 
-            $file_content = file_get_contents($path);
+            $file_content = flosc_fs_get_contents($path);
             if ($file_content === false || $file_content === '') {
                 continue;
             }

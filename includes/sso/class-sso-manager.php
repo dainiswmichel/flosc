@@ -372,11 +372,9 @@ class SSO_Manager {
      * auth modal so the user can try a different login method.
      */
     public function handle_sso_error_display() {
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query parameter used only to fetch/display transient error text
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- duplicate warning may be raised for indexed access on the same query key
-        $get = wp_unslash($_GET);
-        if (isset($get['flosc_sso_error'])) {
-            $error_token = sanitize_key($get['flosc_sso_error']);
+        $err_raw = filter_input( INPUT_GET, 'flosc_sso_error', FILTER_UNSAFE_RAW );
+        if ( is_string( $err_raw ) && $err_raw !== '' ) {
+            $error_token = sanitize_key( wp_unslash( $err_raw ) );
             if ($error_token === '') {
                 return;
             }

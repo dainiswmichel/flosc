@@ -88,7 +88,7 @@ class FLOSC_STT_Dispatch {
         }
         
         // Step 1: Upload audio file
-        $audio_data = file_get_contents($audio_path);
+        $audio_data = flosc_fs_get_contents($audio_path);
         
         $upload_response = wp_remote_post('https://api.assemblyai.com/v2/upload', [
             'headers' => [
@@ -187,7 +187,7 @@ class FLOSC_STT_Dispatch {
         $body .= "--{$boundary}\r\n";
         $body .= "Content-Disposition: form-data; name=\"file\"; filename=\"{$upload_meta['filename']}\"\r\n";
         $body .= "Content-Type: {$upload_meta['mime']}\r\n\r\n";
-        $body .= file_get_contents($audio_path) . "\r\n";
+        $body .= flosc_fs_get_contents($audio_path) . "\r\n";
         
         // Add model
         $body .= "--{$boundary}\r\n";
@@ -243,7 +243,7 @@ class FLOSC_STT_Dispatch {
         $body .= "--{$boundary}\r\n";
         $body .= "Content-Disposition: form-data; name=\"audio\"; filename=\"{$upload_meta['filename']}\"\r\n";
         $body .= "Content-Type: {$upload_meta['mime']}\r\n\r\n";
-        $body .= file_get_contents($audio_path) . "\r\n";
+        $body .= flosc_fs_get_contents($audio_path) . "\r\n";
         $body .= "--{$boundary}--\r\n";
         
         $response = flosc_safe_remote_request('POST', $endpoint, [

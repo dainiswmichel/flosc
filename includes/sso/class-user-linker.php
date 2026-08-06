@@ -34,18 +34,15 @@ class User_Linker {
      * @return int|false User ID or false if not found
      */
     public function find_linked_user($provider_id, $provider_user_id) {
-        global $wpdb;
-        
         $meta_key = self::META_PREFIX . $provider_id . '_id';
-        
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only user lookup by provider account mapping
-        $user_id = $wpdb->get_var($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
-            "SELECT user_id FROM {$wpdb->usermeta} WHERE meta_key = %s AND meta_value = %s LIMIT 1",
-            $meta_key,
-            $provider_user_id
-        ));
-        
-        return $user_id ? (int) $user_id : false;
+        $ids      = function_exists( 'flosc_get_user_ids_for_meta' )
+            ? flosc_get_user_ids_for_meta( $meta_key, (string) $provider_user_id, '=', 1 )
+            : array();
+        if ( empty( $ids ) ) {
+            return false;
+        }
+        $user_id = (int) $ids[0];
+        return $user_id > 0 ? $user_id : false;
     }
     
     /**

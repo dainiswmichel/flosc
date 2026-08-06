@@ -821,8 +821,8 @@ trait FLOSC_Admin_Trait {
         }
 
         // Dedicated AutoPrompts admin runtime (externalized from inline tab template JS).
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query var used only to choose admin assets.
-        $flosc_tab = isset($_GET['tab']) ? sanitize_key(wp_unslash($_GET['tab'])) : '';
+        $flosc_tab_raw = filter_input( INPUT_GET, 'tab', FILTER_UNSAFE_RAW );
+        $flosc_tab     = is_string( $flosc_tab_raw ) ? sanitize_key( wp_unslash( $flosc_tab_raw ) ) : '';
         if ($flosc_tab === 'autoprompts') {
             $flosc_autoprompts_js_path = FLOSC_PLUGIN_DIR . 'assets/js/flosc-autoprompts-admin.js';
             if (file_exists($flosc_autoprompts_js_path)) {
@@ -1111,8 +1111,8 @@ trait FLOSC_Admin_Trait {
         ], $atts);
 
         $settings = $this->get_contact_form_settings((string) $atts['flow']);
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display state for post-redirect UI messaging.
-        $status = sanitize_key((string) wp_unslash($_GET['flosc_contact_status'] ?? ''));
+        $status_raw = filter_input( INPUT_GET, 'flosc_contact_status', FILTER_UNSAFE_RAW );
+        $status     = is_string( $status_raw ) ? sanitize_key( wp_unslash( $status_raw ) ) : '';
 
         wp_enqueue_style(
             'flosc-contact-form',
@@ -1468,8 +1468,8 @@ trait FLOSC_Admin_Trait {
         if ($preset === 'auto') {
             // Auto mode: Light by default, dark via prefers-color-scheme
             if (file_exists($light_path) && file_exists($dark_path)) {
-                $light_content = @file_get_contents($light_path);
-                $dark_content  = @file_get_contents($dark_path);
+                $light_content = flosc_fs_get_contents($light_path);
+                $dark_content  = flosc_fs_get_contents($dark_path);
                 
                 if ($light_content) {
                     $light_vars = $this->extract_css_variables($light_content);

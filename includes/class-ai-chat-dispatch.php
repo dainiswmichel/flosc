@@ -321,69 +321,66 @@ class FLOSC_AI_Chat_Dispatch {
      * for backward compatibility with manually-added entries.
      */
     private function build_feedback_prompt() {
-        global $wpdb;
-
         $sections = [];
 
-        // ── DB-rated entries (new system) ──
-        $table = $wpdb->prefix . 'flosc_chat_logs';
-
-        // Check if admin_rating column exists before querying
-        $col = $wpdb->get_results($wpdb->prepare("SHOW COLUMNS FROM %i LIKE %s", $table, 'admin_rating')); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only schema probe on plugin-owned table
-        if (!empty($col)) {
-            // Get negative-rated logs (feedback), strongest first, limit 20
-            $negatives = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only retrieval from plugin-owned table
-                $wpdb->prepare(
-                    'SELECT user_message, ai_response, admin_rating, admin_note FROM %i
-                     WHERE admin_rating < %d ORDER BY admin_rating ASC, rated_at DESC LIMIT %d',
-                    $table,
-                    0,
-                    20
-                ),
-                ARRAY_A
+        // ── DB-rated entries via Chat Logger (object-cached, no direct $wpdb here) ──
+        if ( class_exists( 'FLOSC_Chat_Logger' ) ) {
+            $rated = FLOSC_Chat_Logger::instance()->flosc_get_rated_logs( 100 );
+            $negatives = array();
+            $positives = array();
+            foreach ( (array) $rated as $row ) {
+                if ( ! is_array( $row ) ) {
+                    continue;
+                }
+                $score = isset( $row['admin_rating'] ) ? (int) $row['admin_rating'] : 0;
+                if ( $score < 0 && count( $negatives ) < 20 ) {
+                    $negatives[] = $row;
+                } elseif ( $score > 0 && count( $positives ) < 20 ) {
+                    $positives[] = $row;
+                }
+            }
+            // Strongest first for each polarity.
+            usort(
+                $negatives,
+                static function ( $a, $b ) {
+                    return (int) ( $a['admin_rating'] ?? 0 ) <=> (int) ( $b['admin_rating'] ?? 0 );
+                }
+            );
+            usort(
+                $positives,
+                static function ( $a, $b ) {
+                    return (int) ( $b['admin_rating'] ?? 0 ) <=> (int) ( $a['admin_rating'] ?? 0 );
+                }
             );
 
-            if (!empty($negatives)) {
+            if ( ! empty( $negatives ) ) {
                 $prompt = "## Admin Feedback (Rated Responses)\n";
                 $prompt .= "The administrator scored these responses negatively. Avoid this behavior.\n\n";
-                foreach ($negatives as $i => $row) {
-                    $num = $i + 1;
+                foreach ( $negatives as $i => $row ) {
+                    $num   = $i + 1;
                     $score = $row['admin_rating'];
                     $prompt .= "### Feedback {$num} (score: {$score}/10)\n";
-                    $prompt .= "**User said:** \"" . mb_substr($row['user_message'], 0, 200) . "\"\n";
-                    $prompt .= "**Your bad response:** \"" . mb_substr($row['ai_response'], 0, 300) . "\"\n";
-                    if (!empty($row['admin_note'])) {
-                        $prompt .= "**Admin note:** {$row['admin_note']}\n";
+                    $prompt .= '**User said:** "' . mb_substr( (string) ( $row['user_message'] ?? '' ), 0, 200 ) . "\"\n";
+                    $prompt .= '**Your bad response:** "' . mb_substr( (string) ( $row['ai_response'] ?? '' ), 0, 300 ) . "\"\n";
+                    if ( ! empty( $row['admin_note'] ) ) {
+                        $prompt .= '**Admin note:** ' . $row['admin_note'] . "\n";
                     }
                     $prompt .= "\n";
                 }
                 $sections[] = $prompt;
             }
 
-            // Get positive-rated logs (praise), strongest first, limit 20
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only retrieval from plugin-owned table
-            $positives = $wpdb->get_results( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- direct query on FLOSC-owned tables/data path where no core API exists
-                $wpdb->prepare(
-                    'SELECT user_message, ai_response, admin_rating, admin_note FROM %i
-                     WHERE admin_rating > %d ORDER BY admin_rating DESC, rated_at DESC LIMIT %d',
-                    $table,
-                    0,
-                    20
-                ),
-                ARRAY_A
-            );
-
-            if (!empty($positives)) {
+            if ( ! empty( $positives ) ) {
                 $prompt = "## Admin Praise (Rated Responses)\n";
                 $prompt .= "The administrator scored these responses positively. Replicate this quality.\n\n";
-                foreach ($positives as $i => $row) {
-                    $num = $i + 1;
+                foreach ( $positives as $i => $row ) {
+                    $num   = $i + 1;
                     $score = $row['admin_rating'];
                     $prompt .= "### Example {$num} (score: +{$score}/10)\n";
-                    $prompt .= "**User said:** \"" . mb_substr($row['user_message'], 0, 200) . "\"\n";
-                    $prompt .= "**Your excellent response:** \"" . mb_substr($row['ai_response'], 0, 300) . "\"\n";
-                    if (!empty($row['admin_note'])) {
-                        $prompt .= "**Why this was good:** {$row['admin_note']}\n";
+                    $prompt .= '**User said:** "' . mb_substr( (string) ( $row['user_message'] ?? '' ), 0, 200 ) . "\"\n";
+                    $prompt .= '**Your excellent response:** "' . mb_substr( (string) ( $row['ai_response'] ?? '' ), 0, 300 ) . "\"\n";
+                    if ( ! empty( $row['admin_note'] ) ) {
+                        $prompt .= '**Why this was good:** ' . $row['admin_note'] . "\n";
                     }
                     $prompt .= "\n";
                 }
@@ -586,7 +583,7 @@ class FLOSC_AI_Chat_Dispatch {
                 continue; // user's tier is not high enough for this file
             }
 
-            $file_content = file_get_contents($filepath);
+            $file_content = flosc_fs_get_contents($filepath);
             if ($file_content) {
                 $content .= "\n\n### {$file}\n" . $file_content;
             }

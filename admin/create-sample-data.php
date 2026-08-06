@@ -78,16 +78,18 @@ function flosc_create_sample_posts() {
     
     foreach ($number_words as $num => $word) {
         
-        // Check if post already exists
-        // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- intentional idempotency check by lesson-number meta pair
-        $existing = get_posts([
-            'category' => $cat_id,
-            'meta_key' => '_flosc_lesson_number', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- intentional idempotency check by lesson-number meta pair
-            'meta_value' => $num, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- intentional idempotency check by lesson-number meta pair
-            'posts_per_page' => 1,
-            'post_status' => 'any'
-        ]);
-        
+        // Idempotency: existing lesson post for this number.
+        $existing_ids = function_exists( 'flosc_get_post_ids_for_meta' )
+            ? flosc_get_post_ids_for_meta( '_flosc_lesson_number', (string) $num, 5 )
+            : array();
+        $existing     = array();
+        foreach ( $existing_ids as $eid ) {
+            if ( has_term( (int) $cat_id, 'category', (int) $eid ) ) {
+                $existing[] = (int) $eid;
+                break;
+            }
+        }
+
         if (!empty($existing)) {
             WP_CLI::line("Post {$num} already exists, skipping...");
             $skipped++;

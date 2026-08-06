@@ -147,8 +147,10 @@ function flosc_handle_autoprompts_save() {
     exit;
 }
 flosc_handle_autoprompts_save();
-// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only query parameters used for tab/view state
-$flosc_get = wp_unslash($_GET);
+// $flosc_get is prepared by admin/settings.php before include (tab/view state).
+if ( ! isset( $flosc_get ) || ! is_array( $flosc_get ) ) {
+	$flosc_get = array();
+}
 
 // ============================================
 // LOAD CURRENT DATA

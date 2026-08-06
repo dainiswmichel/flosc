@@ -228,15 +228,16 @@ class FLOSC_Free_Lesson_Manager {
             return null;
         }
 
-        $posts = get_posts([
-            'meta_key'       => '_flosc_lesson_number', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-            'meta_value'     => $lesson_num, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
-            'posts_per_page' => 1,
-            'post_status'    => 'publish',
-            'category_name'  => $category_slug,
-        ]);
-        if (!empty($posts)) {
-            return $posts[0];
+        $pids = function_exists( 'flosc_get_post_ids_for_meta' )
+            ? flosc_get_post_ids_for_meta( '_flosc_lesson_number', (string) $lesson_num, 5 )
+            : array();
+        if ( ! empty( $pids ) ) {
+            foreach ( $pids as $pid ) {
+                $post = get_post( (int) $pid );
+                if ( $post && has_term( $category_slug, 'category', $post ) ) {
+                    return $post;
+                }
+            }
         }
 
         // Title fallback within category (same as main finder)
@@ -479,88 +480,56 @@ class FLOSC_Free_Lesson_Manager {
             }
         }
 
-        // 1. Meta query — fast path, scoped to category if known
-        // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- explicit coverage for Plugin Check entries on this lookup path
-        // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- targeted lesson lookup by explicit lesson number
-        $meta_args = [
-            'meta_key'       => '_flosc_lesson_number', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- targeted lesson lookup by explicit lesson number
-            'meta_value'     => $lesson_num, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- targeted lesson lookup by explicit lesson number
-            'posts_per_page' => 1,
-            'post_status'    => 'publish',
-        ];
-        if (!empty($configured_cat)) {
-            $meta_args[is_numeric($configured_cat) ? 'cat' : 'category_name'] =
-                is_numeric($configured_cat) ? intval($configured_cat) : sanitize_title($configured_cat);
-        }
-        $posts = get_posts($meta_args);
-        if (!empty($posts)) return $posts[0];
-
-        // 2. Slug-based SQL lookup — works without _flosc_lesson_number meta.
-        // LeSAEp posts follow the convention: lesson-{N}-description
-        global $wpdb;
-        $slug_prefix = 'lesson-' . intval($lesson_num) . '-';
-        $post_id     = null;
-
-        if (!empty($configured_cat)) {
-            $cat_obj = is_numeric($configured_cat)
-                ? get_term(intval($configured_cat), 'category')
-                : get_term_by('slug', sanitize_title($configured_cat), 'category');
-            if ($cat_obj && !is_wp_error($cat_obj)) {
-                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
-                // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only fallback slug lookup scoped by category
-                $post_id = $wpdb->get_var($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only fallback slug lookup scoped by category
-                    "SELECT p.ID FROM {$wpdb->posts} p
-                     INNER JOIN {$wpdb->term_relationships} tr ON p.ID = tr.object_id
-                     INNER JOIN {$wpdb->term_taxonomy} tt ON tr.term_taxonomy_id = tt.term_taxonomy_id
-                     WHERE tt.taxonomy = 'category'
-                       AND tt.term_id = %d
-                       AND p.post_status = 'publish'
-                       AND p.post_name LIKE %s
-                     LIMIT 1",
-                    $cat_obj->term_id,
-                    $wpdb->esc_like($slug_prefix) . '%'
-                ));
-            }
-        } else {
-            // No category configured — search all published posts by slug pattern
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- explicit coverage for Plugin Check direct/no-cache entries on this query
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- read-only fallback slug lookup
-                        $post_id = $wpdb->get_var($wpdb->prepare( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- read-only fallback slug lookup
-                "SELECT ID FROM {$wpdb->posts}
-                 WHERE post_status = 'publish'
-                   AND post_name LIKE %s
-                 LIMIT 1",
-                $wpdb->esc_like($slug_prefix) . '%'
-            ));
-        }
-
-        if ($post_id) {
-            $post = get_post($post_id);
-            if ($post) {
-                // Auto-stamp so the faster meta query hits next time
-                update_post_meta($post_id, '_flosc_lesson_number', intval($lesson_num));
+        // 1. Lesson number meta → post IDs (cached prepared postmeta), then scope to category.
+        $pids = function_exists( 'flosc_get_post_ids_for_meta' )
+            ? flosc_get_post_ids_for_meta( '_flosc_lesson_number', (string) intval( $lesson_num ), 10 )
+            : array();
+        if ( ! empty( $pids ) ) {
+            foreach ( $pids as $pid ) {
+                $post = get_post( (int) $pid );
+                if ( ! $post || 'publish' !== $post->post_status ) {
+                    continue;
+                }
+                if ( ! empty( $configured_cat ) ) {
+                    if ( is_numeric( $configured_cat ) ) {
+                        if ( ! has_term( (int) $configured_cat, 'category', $post ) ) {
+                            continue;
+                        }
+                    } elseif ( ! has_term( sanitize_title( $configured_cat ), 'category', $post ) ) {
+                        continue;
+                    }
+                }
                 return $post;
             }
         }
 
-        // 3. Title fallback — only viable when scoped to a category
-        if (!empty($configured_cat)) {
-            $cat_key   = is_numeric($configured_cat) ? 'cat' : 'category_name';
-            $cat_val   = is_numeric($configured_cat) ? intval($configured_cat) : sanitize_title($configured_cat);
-            $cat_posts = get_posts([
-                $cat_key                 => $cat_val,
-                'posts_per_page'         => -1,
-                'post_status'            => 'publish',
-                'no_found_rows'          => true,
-                'update_post_meta_cache' => false,
-                'update_post_term_cache' => false,
-            ]);
-            $pattern = '/^Lesson\s+' . preg_quote((string) intval($lesson_num), '/') . '\b/i';
-            foreach ($cat_posts as $p) {
-                if (preg_match($pattern, $p->post_title)) {
-                    update_post_meta($p->ID, '_flosc_lesson_number', intval($lesson_num));
-                    return $p;
-                }
+        // 2. Slug / title fallback via get_posts (no direct $wpdb).
+        // LeSAEp posts follow the convention: lesson-{N}-description
+        $slug_prefix = 'lesson-' . intval( $lesson_num ) . '-';
+        $list_args   = array(
+            'posts_per_page'         => -1,
+            'post_status'            => 'publish',
+            'no_found_rows'          => true,
+            'update_post_meta_cache' => false,
+            'update_post_term_cache' => false,
+        );
+        if ( ! empty( $configured_cat ) ) {
+            $list_args[ is_numeric( $configured_cat ) ? 'cat' : 'category_name' ] =
+                is_numeric( $configured_cat ) ? intval( $configured_cat ) : sanitize_title( $configured_cat );
+        }
+        $candidates = get_posts( $list_args );
+        $title_pat  = '/^Lesson\s+' . preg_quote( (string) intval( $lesson_num ), '/' ) . '\b/i';
+        foreach ( (array) $candidates as $p ) {
+            $name = isset( $p->post_name ) ? (string) $p->post_name : '';
+            if ( $name !== '' && 0 === strpos( $name, $slug_prefix ) ) {
+                update_post_meta( $p->ID, '_flosc_lesson_number', intval( $lesson_num ) );
+                return $p;
+            }
+        }
+        foreach ( (array) $candidates as $p ) {
+            if ( preg_match( $title_pat, $p->post_title ) ) {
+                update_post_meta( $p->ID, '_flosc_lesson_number', intval( $lesson_num ) );
+                return $p;
             }
         }
 
@@ -610,10 +579,8 @@ class FLOSC_Free_Lesson_Manager {
             }
             $post = $this->find_free_eligible_lesson_post($lesson_num, $quiz_id);
             if ($post) {
-                // v1.8.3: Run content through the_content filters so WordPress
-                // renders shortcodes, wpautop, embeds, etc.
-                // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Core WordPress content filter.
-                $rendered_content = apply_filters('the_content', $post->post_content);
+                // WordPress content filters (shortcodes, embeds, blocks, etc.).
+                $rendered_content = apply_filters( 'the_content', $post->post_content );
                 $lessons[] = [
                     'post_id'       => $post->ID,
                     'lesson_number' => $lesson_num,

@@ -94,73 +94,52 @@ class FLOSC_Content_Protection {
             return;
         }
         
-        // v1.8.2: Find posts with any non-"protected" mode (they should be visible in archives)
-        // This covers: _flosc_protection_mode = full/title_excerpt/title_readmore
-        // AND legacy: _flosc_public_post = yes
-        // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- intentional visibility override query across protected categories
-        $override_post_ids = get_posts([
-            'post_type'      => 'post',
-            'post_status'    => 'publish',
-            'posts_per_page' => -1,
-            'fields'         => 'ids',
-            'category__in'   => $protected_cat_ids,
-            'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- intentional visibility override query across protected categories
-                'relation' => 'OR',
-                [
-                    'key'     => '_flosc_public_post',
-                    'value'   => 'yes',
-                    'compare' => '=',
-                ],
-                [
-                    'key'     => '_flosc_protection_mode',
-                    'value'   => 'protected',
-                    'compare' => '!=',
-                ],
-            ],
-        ]);
-        
+        // Visibility overrides without meta_query: load IDs in protected cats,
+        // prime meta cache, classify in PHP (public/mode override vs hidden).
+        $candidate_ids = get_posts(
+            array(
+                'post_type'              => 'post',
+                'post_status'            => 'publish',
+                'posts_per_page'         => -1,
+                'fields'                 => 'ids',
+                'category__in'           => $protected_cat_ids,
+                'no_found_rows'          => true,
+                'update_post_meta_cache' => true,
+                'update_post_term_cache' => false,
+            )
+        );
+
+        $override_post_ids = array();
+        $hidden_post_ids   = array();
+        foreach ( (array) $candidate_ids as $post_id ) {
+            $post_id = (int) $post_id;
+            $public  = (string) get_post_meta( $post_id, '_flosc_public_post', true );
+            $mode    = (string) get_post_meta( $post_id, '_flosc_protection_mode', true );
+            $is_override = ( 'yes' === $public ) || ( $mode !== '' && 'protected' !== $mode );
+            if ( $is_override ) {
+                $override_post_ids[] = $post_id;
+            } else {
+                $hidden_post_ids[] = $post_id;
+            }
+        }
+
         // Exclude protected categories from the query
         $existing_cat_not_in = $query->get('category__not_in');
         if (!is_array($existing_cat_not_in)) {
             $existing_cat_not_in = [];
         }
         $query->set('category__not_in', array_merge($existing_cat_not_in, $protected_cat_ids));
-        
-        // Re-include override posts via post__in (merge with existing if any)
-        if (!empty($override_post_ids)) {
-            // We can't use post__in with category__not_in directly,
-            // so we use a post__not_in exclusion approach instead:
-            // Get ALL post IDs in protected categories that do NOT have the override
-            // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- intentional inverse visibility query for hidden-post exclusion set
-            $hidden_post_ids = get_posts([
-                'post_type'      => 'post',
-                'post_status'    => 'publish',
-                'posts_per_page' => -1,
-                'fields'         => 'ids',
-                'category__in'   => $protected_cat_ids,
-                'meta_query'     => [ // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- intentional inverse visibility query for hidden-post exclusion set
-                    'relation' => 'OR',
-                    [
-                        'key'     => '_flosc_public_post',
-                        'compare' => 'NOT EXISTS',
-                    ],
-                    [
-                        'key'     => '_flosc_public_post',
-                        'value'   => 'yes',
-                        'compare' => '!=',
-                    ],
-                ],
-            ]);
-            
-            // Remove category exclusion, use post exclusion instead
-            $query->set('category__not_in', $existing_cat_not_in);
-            
-            if (!empty($hidden_post_ids)) {
-                $existing_not_in = $query->get('post__not_in');
-                if (!is_array($existing_not_in)) {
-                    $existing_not_in = [];
+
+        // Re-include override posts: drop category exclusion, exclude hidden posts.
+        if ( ! empty( $override_post_ids ) ) {
+            $query->set( 'category__not_in', $existing_cat_not_in );
+
+            if ( ! empty( $hidden_post_ids ) ) {
+                $existing_not_in = $query->get( 'post__not_in' );
+                if ( ! is_array( $existing_not_in ) ) {
+                    $existing_not_in = array();
                 }
-                $query->set('post__not_in', array_merge($existing_not_in, $hidden_post_ids));
+                $query->set( 'post__not_in', array_merge( $existing_not_in, $hidden_post_ids ) );
             }
         }
     }

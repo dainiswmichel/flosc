@@ -28,7 +28,7 @@ $flosc_ivr_pill_counts = [ 'freeline' => 0, 'offer' => 0, 'content' => 0 ];
 $flosc_ivr_path = flosc_config_file($flosc_selected_ivr);
 if ( $flosc_selected_ivr && file_exists( $flosc_ivr_path ) && class_exists( 'FLOSC_IVR_Parser' ) ) {
     $flosc_ivr_parser = FLOSC_IVR_Parser::flosc_instance();
-    $flosc_ivr_data   = $flosc_ivr_parser->flosc_parse( file_get_contents( $flosc_ivr_path ) );
+    $flosc_ivr_data   = $flosc_ivr_parser->flosc_parse( flosc_fs_get_contents( $flosc_ivr_path ) );
     foreach ( array_keys( $flosc_ivr_pill_counts ) as $flosc_phase ) {
         foreach ( $flosc_ivr_data['phases'][ $flosc_phase ] ?? [] as $flosc_name ) {
             if ( ( $flosc_ivr_data['messages'][ $flosc_name ]['type'] ?? '' ) === 'suggested_user_autoprompt' ) {

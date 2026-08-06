@@ -58,7 +58,10 @@ class flosc_content_filter {
         // SAFEGUARD 4: Skip if this is a REST API request (unless FLOSC-specific)
         if (defined('REST_REQUEST') && REST_REQUEST) {
             // Only process if this is a FLOSC REST endpoint
-            $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- REQUEST_URI is unslashed and sanitized inline
+            $request_uri = '';
+            if (isset($_SERVER['REQUEST_URI'])) {
+                $request_uri = sanitize_text_field(wp_unslash((string) $_SERVER['REQUEST_URI']));
+            }
             if (strpos($request_uri, '/flosc/') === false) {
                 return $content;
             }

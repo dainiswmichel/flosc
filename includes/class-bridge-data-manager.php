@@ -453,17 +453,12 @@ class FLOSC_Bridge_Data_Manager {
      * @return string Display text
      */
     private function get_item_display_text($item_id, $correct) {
-        // Try to get lesson title
-        // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- targeted single-item lesson lookup by lesson-number meta
-        $posts = get_posts([
-            'meta_key' => '_flosc_lesson_number', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- targeted single-item lesson lookup by lesson-number meta
-            'meta_value' => $item_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- targeted single-item lesson lookup by lesson-number meta
-            'posts_per_page' => 1,
-            'post_status' => 'publish',
-        ]);
-        
-        if (!empty($posts)) {
-            $title = $posts[0]->post_title;
+        // Targeted single-item lesson lookup by lesson-number meta.
+        $pids = function_exists( 'flosc_get_post_ids_for_meta' )
+            ? flosc_get_post_ids_for_meta( '_flosc_lesson_number', (string) $item_id, 1 )
+            : array();
+        if ( ! empty( $pids ) ) {
+            $title = get_the_title( (int) $pids[0] );
             return $correct 
                 ? "✓ {$title}"
                 : "✗ {$title}";

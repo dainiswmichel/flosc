@@ -13,6 +13,9 @@ class FLOSC_Email {
     /** @var FLOSC_Framework */
     private $flosc;
 
+    /** @var int Emails sent in current cron/run (rate limit). */
+    private $flosc_email_sent_this_run = 0;
+
     public function __construct($flosc) {
         $this->flosc = $flosc;
     }
@@ -49,7 +52,10 @@ class FLOSC_Email {
         $oto_link = $context['chat_url'] ?: home_url('/' . get_option('flosc_app_slug', 'flosc') . '/');
         
         if ($oto_offer_id) {
-            $oto_offer = $this->sale_manager->offers()->get_offer($oto_offer_id, $flow_id ?: null);
+            $sale = method_exists($this->flosc, 'sale') ? $this->flosc->sale() : null;
+            if ($sale && method_exists($sale, 'offers')) {
+                $oto_offer = $sale->offers()->get_offer($oto_offer_id, $flow_id ?: null);
+            }
         }
         
         // Build email
@@ -129,7 +135,7 @@ class FLOSC_Email {
             'app_name' => $app_name,
             'team_name' => $app_name . ' Team',
             'link_name' => $link_name,
-            'chat_url' => $this->get_guest_link_base_url($flow_id),
+            'chat_url' => $this->flosc->get_guest_link_base_url($flow_id),
             'upgrade_url' => $upgrade_url,
         ];
     }
@@ -451,7 +457,7 @@ class FLOSC_Email {
         $subject_tpl = trim((string) ($settings[$prefix . '_welcome_subject'] ?? 'Welcome to {app_name} — your membership is active'));
         $body_tpl    = trim((string) ($settings[$prefix . '_welcome_body'] ?? "Hi {name}!\n\nYour {app_name} membership is now active. Continue here: {chat_url}\n\n— The {team_name}"));
 
-        $magic_url = $this->flosc_user_magic_url($user, $context, $flow_id);
+        $magic_url = $this->flosc->flosc_user_magic_url($user, $context, $flow_id);
         $subject   = str_replace('{magic_url}', $magic_url, $this->replace_guest_email_placeholders($subject_tpl, $user, 0));
         $text      = str_replace('{magic_url}', $magic_url, $this->replace_guest_email_placeholders($body_tpl, $user, 0));
         $body      = $this->flosc_email_html_card($context, $user, $text, $magic_url, $context['link_name']);
@@ -520,7 +526,7 @@ class FLOSC_Email {
     public function save_newsletter_profile_field($user_id) {
         if (!current_user_can('edit_user', $user_id)) return;
         // WP core verifies the profile-update nonce before these hooks fire.
-        $opted = isset($_POST['flosc_newsletter_optin']); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+        $opted = (bool) filter_input( INPUT_POST, 'flosc_newsletter_optin', FILTER_UNSAFE_RAW );
         if ($opted) {
             $this->subscribe_to_newsletter($user_id);
         } else {
@@ -579,26 +585,22 @@ class FLOSC_Email {
     public function run_guest_followup_emails() {
         $this->flosc_email_sent_this_run = 0; // reset per-run rate-limit counter
         // Guest pass: SSO/email guests (excludes purchased) — existing behavior.
-        // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- scheduled follow-up job on specific user-meta flag
-        $guests = get_users([
-            'meta_key'     => '_flosc_sso_linked_providers', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- scheduled follow-up job on specific user-meta flag
-            'meta_compare' => 'EXISTS',
-            'number'       => -1,
-            'fields'       => 'all',
-        ]);
-        foreach ($guests as $user) {
-            $this->send_due_guest_followups_for_user($user->ID);
+        $guest_ids = function_exists( 'flosc_get_user_ids_for_meta' )
+            ? flosc_get_user_ids_for_meta( '_flosc_sso_linked_providers' )
+            : array();
+        foreach ( $guest_ids as $guest_uid ) {
+            $this->send_due_guest_followups_for_user( (int) $guest_uid );
         }
 
         // Member pass: members get their level's follow-up series (anchor = member welcome send time).
-        // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- scheduled follow-up job on specific user-meta flag
-        $members = get_users([
-            'meta_key'     => '_flosc_member_access', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-            'meta_value'   => 'true', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
-            'number'       => -1,
-            'fields'       => 'all',
-        ]);
-        foreach ($members as $user) {
+        $member_ids = function_exists( 'flosc_get_user_ids_for_meta' )
+            ? flosc_get_user_ids_for_meta( '_flosc_member_access', 'true', '=' )
+            : array();
+        foreach ( $member_ids as $member_uid ) {
+            $user = get_userdata( (int) $member_uid );
+            if ( ! $user ) {
+                continue;
+            }
             $level     = sanitize_key((string) get_user_meta($user->ID, '_flosc_member_level', true)) ?: 'member';
             $flow_id   = (string) get_user_meta($user->ID, '_flosc_registration_flow', true);
             $flow_stem = sanitize_key(pathinfo(basename($flow_id), PATHINFO_FILENAME));
@@ -608,14 +610,14 @@ class FLOSC_Email {
         }
 
         // Newsletter pass: opted-in subscribers (anchor = newsletter welcome send time).
-        // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- scheduled follow-up job on specific user-meta flag
-        $subscribers = get_users([
-            'meta_key'     => 'flosc_newsletter_optin', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-            'meta_compare' => 'EXISTS',
-            'number'       => -1,
-            'fields'       => 'all',
-        ]);
-        foreach ($subscribers as $user) {
+        $subscriber_ids = function_exists( 'flosc_get_user_ids_for_meta' )
+            ? flosc_get_user_ids_for_meta( 'flosc_newsletter_optin' )
+            : array();
+        foreach ( $subscriber_ids as $sub_uid ) {
+            $user = get_userdata( (int) $sub_uid );
+            if ( ! $user ) {
+                continue;
+            }
             $flow_id   = (string) get_user_meta($user->ID, '_flosc_registration_flow', true);
             $flow_stem = sanitize_key(pathinfo(basename($flow_id), PATHINFO_FILENAME));
             $wsent     = get_user_meta($user->ID, '_flosc_newsletter_welcome_sent', true);

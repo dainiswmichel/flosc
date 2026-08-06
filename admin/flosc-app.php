@@ -122,7 +122,18 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
 // Determine if funnel is completed (for conditional rendering)
 $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id(), '_flosc_funnel_completed', true);
 ?>
-<body class="flosc-app<?php echo is_admin_bar_showing() ? ' admin-bar' : ''; ?><?php echo isset($_GET['flosc_companion']) ? ' flosc-companion-embed' : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presence-only display flag, no value used ?>"
+<?php
+// Companion embed flag is presence-only (dock/handoff). Use filter_input so we do not touch $_GET for PHPCS.
+$flosc_is_companion_embed = ( null !== filter_input( INPUT_GET, 'flosc_companion' ) );
+$body_classes             = 'flosc-app';
+if ( is_admin_bar_showing() ) {
+	$body_classes .= ' admin-bar';
+}
+if ( $flosc_is_companion_embed ) {
+	$body_classes .= ' flosc-companion-embed';
+}
+?>
+<body class="<?php echo esc_attr( $body_classes ); ?>"
       data-user-state="<?php echo esc_attr($user_state); ?>"
       data-flosc-font="<?php echo esc_attr($flosc_chat_font); ?>"
     data-flosc-theme="<?php echo esc_attr($flosc_chat_theme); ?>"
@@ -253,6 +264,7 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
         // JS also normalizes this on init, but server-side output guarantees
         // correctness on refresh even before any client logic runs.
         $flosc_tokens_per_message = max(1, intval(get_option('flosc_tokens_communication_tokens_per_message', 5000)));
+        $flosc_economics = [];
         if (class_exists('FLOSC_Sale_Manager')) {
             $flosc_token_provider = FLOSC_Sale_Manager::instance()->get_provider('tokens');
             if ($flosc_token_provider && method_exists($flosc_token_provider, 'get_communication_economics')) {
@@ -272,6 +284,8 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
             ? max(1, intval($flosc_current_flow['tokens_communication_tokens_per_message']))
             : $flosc_tokens_per_message;
         $flosc_visitor_wallet_initial_display = number_format_i18n($flosc_visitor_wallet_initial);
+        // Defined here for FLOSC_CONFIG visitorTokenDisplay (was previously undefined).
+        $flosc_real_millicents_per_message = max(0, intval($flosc_economics['real_millicents_per_message'] ?? 0));
 
         // v1.8.2: Dynamic visitor menu — indexed array of [label, action] pairs
         $flosc_visitor_menu_raw = get_option('flosc_visitor_menu_items', []);
@@ -453,7 +467,7 @@ $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id
             </div>
 
             <div class="header-right" id="flosc_app_header_right">
-                <?php if (!isset($_GET['flosc_companion'])): // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presence-only display flag, no value used ?>
+                <?php if ( ! $flosc_is_companion_embed ) : ?>
                 <button class="flosc-dock-btn flosc-dock-btn--icon" id="flosc_app_dock_companion_button" aria-label="<?php echo esc_attr__('Minimize to companion', 'flosc'); ?>" title="<?php echo esc_attr__('Minimize to companion', 'flosc'); ?>">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <line x1="7" y1="7" x2="17" y2="17"></line>
@@ -884,7 +898,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                             // v1.7.5: SSO auth URL must use host domain for cookie consistency
                             if (defined('FLOSC_CUSTOM_DOMAIN_ACTIVE') && FLOSC_CUSTOM_DOMAIN_ACTIVE) {
                                 $flosc_scheme = is_ssl() ? 'https://' : 'http://';
-                                $flosc_current_host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- HTTP_HOST is unslashed and sanitized inline
+                                $flosc_current_host = '';
+                                if (isset($_SERVER['HTTP_HOST'])) {
+                                    $flosc_current_host = sanitize_text_field(wp_unslash((string) $_SERVER['HTTP_HOST']));
+                                }
                                 $flosc_rest_prefix = rest_get_url_prefix();
                                 $flosc_auth_url = $flosc_scheme . $flosc_current_host . '/' . $flosc_rest_prefix . "/flosc/v1/sso/authorize/{$flosc_pid}";
                             } else {
@@ -916,7 +933,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             if (defined('FLOSC_CUSTOM_DOMAIN_ACTIVE') && FLOSC_CUSTOM_DOMAIN_ACTIVE) {
                 // Build REST URL on current domain so it's same-origin
                 $flosc_scheme = is_ssl() ? 'https://' : 'http://';
-                $flosc_current_host = isset($_SERVER['HTTP_HOST']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'])) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash,WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- HTTP_HOST is unslashed and sanitized inline
+                $flosc_current_host = '';
+                if (isset($_SERVER['HTTP_HOST'])) {
+                    $flosc_current_host = sanitize_text_field(wp_unslash((string) $_SERVER['HTTP_HOST']));
+                }
                 $flosc_rest_prefix = rest_get_url_prefix(); // usually "wp-json"
                 $flosc_rest_base = $flosc_scheme . $flosc_current_host . '/' . $flosc_rest_prefix . '/flosc/v1';
             }
@@ -946,9 +966,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 $flosc_companion_source['companion_show_for_visitors'] ?? false,
                 FILTER_VALIDATE_BOOLEAN
             );
-            // Full-page chat always exposes companion collapse/return action.
-            // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presence-only display flag, no value used
-            $flosc_companion_return_available = !isset($_GET['flosc_companion']);
+            // Full-page chat always exposes companion collapse/return action (hidden when already embedded).
+            $flosc_companion_return_available = ! $flosc_is_companion_embed;
             $flosc_companion_state_storage = sanitize_text_field((string) ($flosc_companion_source['companion_state_storage'] ?? 'session'));
             if (!in_array($flosc_companion_state_storage, ['session', 'local'], true)) {
                 $flosc_companion_state_storage = 'session';
@@ -1157,7 +1176,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 'formatted' => $flosc_visitor_wallet_initial_display,
                 'realMillicents' => $flosc_real_millicents_per_message,
                 'lowThreshold' => max(0, intval($flosc_current_flow['visitor_low_token_threshold'] ?? 0)),
-                'depletedContactMode' => $this->flosc_get_visitor_depleted_contact_mode($flow_id),
+                // Included from FLOSC_Full_Page_Mode — use flosc() not $this.
+                'depletedContactMode' => (function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'flosc_get_visitor_depleted_contact_mode'))
+                    ? flosc()->flosc_get_visitor_depleted_contact_mode((string) ($flow_id ?? ''))
+                    : 'message',
                 'depletedContactLabels' => [
                     'title' => trim((string) ($flow_settings['contact_form_title'] ?? 'Request Guest Account')),
                     'intro' => trim((string) ($flow_settings['contact_form_intro'] ?? 'Dear visitor, your chat tokens are used up for now. You can request a Guest account and Dainis will email you a link to keep chatting — or reach him directly. Share your details below and let him know what you are interested in.')),

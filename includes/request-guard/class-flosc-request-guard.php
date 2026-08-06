@@ -146,9 +146,12 @@ class FLOSC_Request_Guard {
      * @return array|false Decoded data or false if invalid/missing
      */
     public function get_signed_cookie($name) {
-        // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- raw value required for HMAC signature verification; sanitizing would corrupt the hash
-        $value = isset($_COOKIE[$name]) ? wp_unslash($_COOKIE[$name]) : null;
-        if (empty($value)) {
+        if (!isset($_COOKIE[$name]) || !is_string($_COOKIE[$name])) {
+            return false;
+        }
+        // base64|hmac hex — sanitize_text_field preserves charset; signature still verified below.
+        $value = sanitize_text_field(wp_unslash($_COOKIE[$name]));
+        if ($value === '') {
             return false;
         }
         return $this->verify_signed_cookie($value);
