@@ -136,42 +136,48 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
      * Handle ClickBank IPN webhook
      */
     public function handle_webhook($payload, $headers = []) {
-        $params = [];
-        parse_str($payload, $params);
-        
-        // Validate required fields
+        $raw_params = [];
+        parse_str((string) $payload, $raw_params);
+        if (!is_array($raw_params)) {
+            $raw_params = [];
+        }
+
+        // Validate required fields on raw IPN (pre-sanitize) for signature fidelity.
         $required = ['ctransaction', 'ctransreceipt', 'cvendor', 'ccustname', 'ccustemail'];
         foreach ($required as $field) {
-            if (empty($params[$field])) {
+            if (empty($raw_params[$field])) {
                 /* translators: %s: name of the missing ClickBank webhook field. */
                 return new WP_Error('missing_field', sprintf(__('Missing required field: %s', 'flosc'), $field), ['status' => 400]);
             }
         }
-        
+
         // Verify vendor matches
         $our_vendor = $this->get_setting('vendor', '');
-        if (strtolower($params['cvendor']) !== strtolower($our_vendor)) {
+        if (strtolower((string) $raw_params['cvendor']) !== strtolower((string) $our_vendor)) {
             return new WP_Error('vendor_mismatch', __('Vendor does not match', 'flosc'), ['status' => 400]);
         }
-        
+
         // Mandatory signature verification before any account or access side effects.
         $secret_key = $this->get_setting('secret', '');
         if (empty($secret_key)) {
             return new WP_Error('clickbank_not_configured', __('ClickBank secret is not configured', 'flosc'), ['status' => 500]);
         }
 
-        if (empty($params['cverify'])) {
+        if (empty($raw_params['cverify'])) {
             return new WP_Error('missing_signature', __('Missing IPN signature', 'flosc'), ['status' => 401]);
         }
 
-        if (!$this->verify_ipn_signature($params, $secret_key)) {
+        if (!$this->verify_ipn_signature($raw_params, $secret_key)) {
             return new WP_Error('invalid_signature', __('Invalid IPN signature', 'flosc'), ['status' => 401]);
         }
-        
+
+        // Field-sanitize every IPN value before handlers, meta, and hooks.
+        $params = $this->sanitize_ipn_params($raw_params);
+
         // Idempotency check - prevent duplicate processing
-        $receipt = sanitize_text_field($params['ctransreceipt']);
+        $receipt = sanitize_text_field((string) ($params['ctransreceipt'] ?? ''));
         $idempotency_key = 'flosc_cb_' . md5($receipt . ($params['ctransaction'] ?? ''));
-        
+
         if (get_transient($idempotency_key)) {
             return new WP_REST_Response([
                 'success' => true,
@@ -179,43 +185,43 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
                 'receipt' => $receipt,
             ], 200);
         }
-        
+
         // Process transaction based on type
-        $transaction_type = strtoupper($params['ctransaction'] ?? '');
+        $transaction_type = strtoupper((string) ($params['ctransaction'] ?? ''));
         $result = null;
-        
+
         switch ($transaction_type) {
             case 'SALE':
             case 'TEST_SALE':
             case 'TEST':
                 $result = $this->handle_sale($params);
                 break;
-                
+
             case 'RFND':
             case 'CGBK':
             case 'INSF':
                 $result = $this->handle_refund($params);
                 break;
-                
+
             case 'REBILL':
             case 'TEST_REBILL':
                 $result = $this->handle_rebill($params);
                 break;
-                
+
             case 'CANCEL-REBILL':
             case 'UNCANCEL-REBILL':
                 $result = $this->handle_subscription_change($params);
                 break;
-                
+
             default:
                 return new WP_REST_Response(['received' => true, 'action' => 'ignored'], 200);
         }
-        
+
         // Mark as processed (24 hour idempotency window)
         if (!is_wp_error($result)) {
             set_transient($idempotency_key, time(), DAY_IN_SECONDS);
         }
-        
+
         return $result;
     }
     
@@ -227,23 +233,49 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
         if (empty($params['cverify'])) {
             return false;
         }
-        
+
         $received_hash = $params['cverify'];
-        
+
         // Build string to hash (all params except cverify, in alphabetical order)
         $hash_params = $params;
         unset($hash_params['cverify']);
         ksort($hash_params);
-        
+
         $string_to_hash = '';
         foreach ($hash_params as $key => $value) {
             $string_to_hash .= $value . '|';
         }
         $string_to_hash .= $secret_key;
-        
+
         $expected = strtoupper(hash('sha256', $string_to_hash));
-        
-        return hash_equals($expected, strtoupper($received_hash));
+
+        return hash_equals($expected, strtoupper((string) $received_hash));
+    }
+
+    /**
+     * Sanitize ClickBank IPN key/value map after signature verification.
+     *
+     * @param array $params Raw IPN params.
+     * @return array
+     */
+    private function sanitize_ipn_params(array $params) {
+        $clean = array();
+        $i     = 0;
+        foreach ($params as $key => $value) {
+            if ($i++ > 100) {
+                break;
+            }
+            $k = sanitize_key((string) $key);
+            if ($k === '') {
+                continue;
+            }
+            if (is_array($value)) {
+                // IPN is flat form fields; drop nested noise.
+                continue;
+            }
+            $clean[ $k ] = sanitize_text_field(wp_unslash((string) $value));
+        }
+        return $clean;
     }
     
     /**

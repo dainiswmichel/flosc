@@ -8064,14 +8064,20 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             'phrase_results'       => [],
         ];
 
-        // phraseResults: array of {phrase, data} — the raw API responses stored in localStorage
+        // phraseResults: array of {phrase, data} — STT payloads from the browser (schema-sanitize, depth-capped).
         if (!empty($quiz_data['phraseResults']) && is_array($quiz_data['phraseResults'])) {
-            $score_data['phrase_results'] = array_map(function($pr) {
-                return [
-                    'phrase' => sanitize_text_field($pr['phrase'] ?? ''),
-                    'data'   => $pr['data'] ?? [],
-                ];
-            }, $quiz_data['phraseResults']);
+            $score_data['phrase_results'] = array_map(function ($pr) {
+                if (!is_array($pr)) {
+                    return array(
+                        'phrase' => '',
+                        'data'   => array(),
+                    );
+                }
+                return array(
+                    'phrase' => sanitize_text_field((string) ($pr['phrase'] ?? '')),
+                    'data'   => $this->flosc_sanitize_quiz_nested_value($pr['data'] ?? array(), 0, 6),
+                );
+            }, array_slice(array_values($quiz_data['phraseResults']), 0, 20));
         }
 
         // rankedPhonemes: array of IPA strings (worst → best)
@@ -8105,9 +8111,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             $score_data['ranked_worst_lessons'] = $ranked_worst;
         }
 
-        // wordIpa: the reference IPA dictionary (espeak, mw, da1ni5 for each word)
+        // wordIpa: reference IPA dictionary (espeak, mw, da1ni5 for each word) — sanitize keys/values.
         if (!empty($quiz_data['wordIpa']) && is_array($quiz_data['wordIpa'])) {
-            $score_data['word_ipa'] = $quiz_data['wordIpa'];
+            $score_data['word_ipa'] = $this->flosc_sanitize_quiz_nested_value($quiz_data['wordIpa'], 0, 5);
         }
 
         // Store in user meta via existing store_quiz_score()
@@ -8125,8 +8131,58 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
         if ($temp_id) {
             $this->move_visitor_audio_to_user($user_id, $temp_id);
         }
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC v8.0.8: store_browser_quiz_data() — user {$user_id}, score: {$score}%");
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            flosc_log("FLOSC v8.0.8: store_browser_quiz_data() — user {$user_id}, score: {$score}%");
+        }
         return true;
+    }
+
+    /**
+     * Depth-capped sanitizer for nested quiz JSON (STT scores, IPA maps).
+     * Scalars only as text/number/bool; arrays recurse; objects dropped.
+     *
+     * @param mixed $value Incoming browser value.
+     * @param int   $depth Current depth.
+     * @param int   $max   Max depth.
+     * @return mixed
+     */
+    private function flosc_sanitize_quiz_nested_value($value, $depth = 0, $max = 6) {
+        if ($depth > $max) {
+            return null;
+        }
+        if (is_null($value) || is_bool($value)) {
+            return $value;
+        }
+        if (is_int($value) || is_float($value)) {
+            return $value;
+        }
+        if (is_string($value)) {
+            // Cap runaway strings from STT blobs.
+            if (strlen($value) > 4000) {
+                $value = substr($value, 0, 4000);
+            }
+            return sanitize_text_field($value);
+        }
+        if (!is_array($value)) {
+            return null;
+        }
+        $out = array();
+        $i   = 0;
+        foreach ($value as $k => $v) {
+            if ($i++ > 200) {
+                break;
+            }
+            $key = is_string($k) ? sanitize_key($k) : (is_int($k) ? $k : sanitize_key((string) $k));
+            if ($key === '' && !is_int($k)) {
+                continue;
+            }
+            $clean = $this->flosc_sanitize_quiz_nested_value($v, $depth + 1, $max);
+            if (null === $clean && !is_null($v) && !is_array($v)) {
+                continue;
+            }
+            $out[ is_int($k) ? $k : $key ] = $clean;
+        }
+        return $out;
     }
 
     /**

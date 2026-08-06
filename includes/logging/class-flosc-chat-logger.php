@@ -10,7 +10,7 @@
 if (!defined('ABSPATH')) exit;
 
 // Custom table {prefix}flosc_chat_logs — no WP API equivalent for schema/CRUD.
-// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- custom table flosc_chat_logs; no WP API
 
 class FLOSC_Chat_Logger {
 

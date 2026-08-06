@@ -1661,7 +1661,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
         $rows      = wp_cache_get( $cache_key, 'flosc_paypal' );
         if ( ! is_array( $rows ) ) {
             // Claims use add_option( ..., '', 'no' ) — bulk LIKE has no WP API.
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- bulk LIKE on autoload=no options; object-cached
             $rows = $wpdb->get_results(
                 $wpdb->prepare(
                     "SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s LIMIT 100",

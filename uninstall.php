@@ -10,7 +10,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 }
 
 // Uninstall must purge FLOSC options (autoload=no) and custom tables.
-// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- uninstall purge of options + custom tables
 
 /**
  * Delete all options whose names match a prefix (uses core option API).

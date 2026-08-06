@@ -205,7 +205,7 @@ Service terms: https://stripe.com/legal
 Privacy policy: https://stripe.com/privacy
 
 8. ClickBank (for redirect checkout and IPN fulfillment)
-Endpoint examples: https://sandbox.clickbank.net/checkout/order/hop.php, http://*.hop.clickbank.net/
+Endpoint examples: https://sandbox.clickbank.net/checkout/order/hop.php, https://*.hop.clickbank.net/
 Purpose: route buyers to ClickBank checkout and process purchase/refund/rebill events through IPN.
 Data sent: transaction identifiers, product identifiers, receipt fields, and customer identity fields provided by ClickBank IPN.
 Service terms: https://support.clickbank.com/en/articles/10535340-clickbank-terms-of-sale

@@ -402,70 +402,86 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
      * Track a click on an affiliate offer
      */
     public function track_click($user_id, $intent_id, $offer) {
+        $user_id   = absint($user_id);
+        $intent_id = sanitize_key((string) $intent_id);
+        $offer     = is_array($offer) ? $offer : array();
+        $safe_offer = array(
+            'source' => sanitize_key((string) ($offer['source'] ?? '')),
+            'url'    => esc_url_raw((string) ($offer['url'] ?? '')),
+            'title'  => sanitize_text_field((string) ($offer['title'] ?? '')),
+            'id'     => sanitize_text_field((string) ($offer['id'] ?? '')),
+        );
         $intents = $this->get_intents($user_id);
-        
-        if (isset($intents[$intent_id])) {
-            $intents[$intent_id]['clicks'][] = [
-                'offer_source' => $offer['source'],
-                'offer_url' => $offer['url'],
-                'timestamp' => current_time('mysql'),
-            ];
+
+        if ($user_id > 0 && $intent_id !== '' && isset($intents[ $intent_id ])) {
+            $intents[ $intent_id ]['clicks'][] = array(
+                'offer_source' => $safe_offer['source'],
+                'offer_url'    => $safe_offer['url'],
+                'timestamp'    => current_time('mysql'),
+            );
             update_user_meta($user_id, $this->intents_meta_key, $intents);
         }
-        
-        do_action('flosc_affiliate_click', $user_id, $intent_id, $offer);
+
+        do_action('flosc_affiliate_click', $user_id, $intent_id, $safe_offer);
     }
-    
+
     /**
      * Record a conversion (called by webhook or postback)
      */
     public function record_conversion($tracking_data) {
-        // Tracking data comes from affiliate network postback
-        // Contains: user_id, intent_id, commission, order_id, etc.
-        
-        $user_id = $tracking_data['user_id'] ?? null;
-        $commission = floatval($tracking_data['commission'] ?? 0);
-        
+        // Tracking data comes from affiliate network postback.
+        $tracking_data = is_array($tracking_data) ? $tracking_data : array();
+        $safe          = array(
+            'user_id'    => absint($tracking_data['user_id'] ?? 0),
+            'intent_id'  => sanitize_key((string) ($tracking_data['intent_id'] ?? '')),
+            'commission' => floatval($tracking_data['commission'] ?? 0),
+            'order_id'   => sanitize_text_field((string) ($tracking_data['order_id'] ?? '')),
+            'source'     => sanitize_key((string) ($tracking_data['source'] ?? 'unknown')),
+        );
+
+        $user_id    = $safe['user_id'];
+        $commission = $safe['commission'];
+
         if (!$user_id || $commission <= 0) {
             return new WP_Error('invalid_data', __('Invalid conversion data', 'flosc'));
         }
-        
+
         // Apply credit rate
         $rate = floatval($this->get_setting('credit_rate', 100)) / 100;
         $credit = $commission * $rate;
-        
+
         // Add credits
-        $this->add_credits($user_id, $credit, [
-            'source' => $tracking_data['source'] ?? 'unknown',
-            'order_id' => $tracking_data['order_id'] ?? '',
+        $this->add_credits($user_id, $credit, array(
+            'source'     => $safe['source'],
+            'order_id'   => $safe['order_id'],
             'commission' => $commission,
-            'intent_id' => $tracking_data['intent_id'] ?? '',
-        ]);
-        
+            'intent_id'  => $safe['intent_id'],
+        ));
+
         // Update intent if provided
-        if (!empty($tracking_data['intent_id'])) {
-            $this->update_intent($user_id, $tracking_data['intent_id'], [
-                'status' => 'fulfilled',
+        if ($safe['intent_id'] !== '') {
+            $this->update_intent($user_id, $safe['intent_id'], array(
+                'status'      => 'fulfilled',
                 'conversions' => array_merge(
-                    $this->get_intents($user_id)[$tracking_data['intent_id']]['conversions'] ?? [],
-                    [$tracking_data]
+                    $this->get_intents($user_id)[ $safe['intent_id'] ]['conversions'] ?? array(),
+                    array( $safe )
                 ),
-            ]);
+            ));
         }
-        
+
         // Also credit tokens if token provider is active
         $token_provider = flosc_sale()->get_provider('tokens');
         if ($token_provider) {
-            $token_provider->credit_from_affiliate($user_id, $credit, $tracking_data);
+            $token_provider->credit_from_affiliate($user_id, $credit, $safe);
         }
-        
-        do_action('flosc_affiliate_conversion', $user_id, $credit, $tracking_data);
-        
-        return [
-            'success' => true,
+
+        do_action('flosc_affiliate_conversion', $user_id, $credit, $safe);
+
+        return array(
+            'success'       => true,
             'credits_added' => $credit,
-            'new_balance' => $this->get_credits($user_id),
-        ];
+            'new_balance'   => $this->get_credits($user_id),
+        );
     }
     
     // =========================================================================

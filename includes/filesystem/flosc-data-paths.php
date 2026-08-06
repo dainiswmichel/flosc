@@ -104,7 +104,7 @@ if ( ! function_exists( 'flosc_get_flow_option_rows' ) ) {
 		}
 		global $wpdb;
 		// Bulk LIKE on autoload=no options — no WP API; prepared + object-cached.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- bulk LIKE flosc_flow_* options; object-cached
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE %s AND option_name NOT LIKE %s",
@@ -157,7 +157,7 @@ if ( ! function_exists( 'flosc_get_user_ids_for_meta' ) ) {
 		}
 		global $wpdb;
 		// Prepared $wpdb (not get_users meta_key args) — avoids SlowDBQuery; object-cached.
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- prepared usermeta lookups; object-cached
 		if ( null === $meta_value || '' === $meta_value ) {
 			if ( $limit > 0 ) {
 				$ids = $wpdb->get_col(
@@ -286,7 +286,7 @@ if ( ! function_exists( 'flosc_get_post_ids_for_meta' ) ) {
 		}
 		global $wpdb;
 		// Prepared $wpdb (not get_posts meta_key args) — avoids SlowDBQuery; object-cached.
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- prepared postmeta lookup; object-cached
 		$ids = $wpdb->get_col(
 			$wpdb->prepare(
 				"SELECT post_id FROM {$wpdb->postmeta} WHERE meta_key = %s AND meta_value = %s LIMIT %d",
