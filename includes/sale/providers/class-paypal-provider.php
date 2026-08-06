@@ -831,6 +831,32 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
 
         // Extract transaction details + payer identity (required for visitor checkout).
         $capture = $body['purchase_units'][0]['payments']['captures'][0] ?? [];
+        if (!is_array($capture) || empty($capture)) {
+            return new WP_Error(
+                'payment_not_completed',
+                __('PayPal capture is missing; payment is not completed', 'flosc'),
+                ['status' => 400]
+            );
+        }
+
+        // PP-01: require completed order + completed capture (HTTP 2xx alone is not settlement).
+        $order_status   = strtoupper((string) ($body['status'] ?? ''));
+        $capture_status = strtoupper((string) ($capture['status'] ?? ''));
+        if ($order_status !== 'COMPLETED') {
+            return new WP_Error(
+                'payment_not_completed',
+                sprintf(__('PayPal order status is not COMPLETED (%s)', 'flosc'), $order_status !== '' ? $order_status : 'empty'),
+                ['status' => 400]
+            );
+        }
+        if ($capture_status !== 'COMPLETED') {
+            return new WP_Error(
+                'payment_not_completed',
+                sprintf(__('PayPal capture status is not COMPLETED (%s)', 'flosc'), $capture_status !== '' ? $capture_status : 'empty'),
+                ['status' => 400]
+            );
+        }
+
         // Pass 8: custom_id is JSON from PayPal; sanitize fields after decode.
         $custom_raw = (string) ($capture['custom_id'] ?? ($body['purchase_units'][0]['custom_id'] ?? '{}'));
         $custom_id = [];
@@ -850,14 +876,20 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
         $surname = sanitize_text_field((string) ($payer['name']['surname'] ?? $payment_source_paypal['name']['surname'] ?? ''));
         $payer_name = trim($given . ' ' . $surname);
 
+        $txn_id = sanitize_text_field((string) ($capture['id'] ?? ''));
+        if ($txn_id === '') {
+            return new WP_Error('payment_not_completed', __('PayPal capture has no transaction id', 'flosc'), ['status' => 400]);
+        }
+
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-            flosc_log('[FLOSC-PAYPAL] capture_order SUCCESS: transaction_id=' . ($capture['id'] ?? 'NONE') . ', amount=' . ($capture['amount']['value'] ?? '?') . ', payer=' . ($payer_email ?: 'none'));
+            flosc_log('[FLOSC-PAYPAL] capture_order SUCCESS: transaction_id=' . $txn_id . ', amount=' . ($capture['amount']['value'] ?? '?') . ', payer=' . ($payer_email ?: 'none'));
         }
 
         return [
+            'success' => true,
             'order_id' => sanitize_text_field((string) ($body['id'] ?? '')),
-            'status' => sanitize_text_field((string) ($body['status'] ?? '')),
-            'transaction_id' => sanitize_text_field((string) ($capture['id'] ?? '')),
+            'status' => 'completed',
+            'transaction_id' => $txn_id,
             'amount' => sanitize_text_field((string) ($capture['amount']['value'] ?? '0.00')),
             'currency' => sanitize_text_field((string) ($capture['amount']['currency_code'] ?? 'USD')),
             'user_id' => $custom_user_id > 0 ? $custom_user_id : null,

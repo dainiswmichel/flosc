@@ -328,18 +328,31 @@ class FLOSC_Stripe_Provider extends FLOSC_Payment_Provider {
             ];
         }
         
-        if ($response['status'] === 'active' || $response['status'] === 'trialing') {
+        if ($response['status'] === 'active') {
             // Save subscription ID to user
             update_user_meta($user->ID, '_flosc_stripe_subscription', $response['id']);
-            
+
             return [
                 'success' => true,
                 'transaction_id' => $response['id'],
                 'subscription_id' => $response['id'],
-                'status' => $response['status'],
+                'status' => 'active',
             ];
         }
-        
+
+        // PAY-01C: trialing is not settled payment. Fulfill only after active (or explicit later path).
+        if ($response['status'] === 'trialing') {
+            update_user_meta($user->ID, '_flosc_stripe_subscription', $response['id']);
+            update_user_meta($user->ID, '_flosc_subscription_status', 'trialing');
+            return [
+                'success' => false,
+                'pending' => true,
+                'subscription_id' => $response['id'],
+                'status' => 'trialing',
+                'message' => __('Subscription is trialing; access is granted only after an active paid status.', 'flosc'),
+            ];
+        }
+
         return new WP_Error('subscription_failed', __('Failed to create subscription', 'flosc'));
     }
     

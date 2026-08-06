@@ -141,20 +141,25 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
      * Process payment (spend tokens)
      */
     public function process_payment($user_id, $offer, $payment_data = []) {
-        $cost = $offer['pricing']['tokens']['cost'] ?? 0;
-        
-        if ($cost <= 0) {
-            // Free with tokens
-            return [
-                'success' => true,
-                'transaction_id' => 'token_free_' . uniqid(),
-                'amount' => 0,
-                'currency' => 'tokens',
-            ];
+        // PAY-01B: token provider never treats missing/zero cost as free unlock of a paid offer.
+        if (!is_array($offer['pricing']['tokens'] ?? null) || !array_key_exists('cost', $offer['pricing']['tokens'])) {
+            return new WP_Error(
+                'invalid_token_price',
+                __('Token cost is not configured for this offer', 'flosc'),
+                ['status' => 400]
+            );
         }
-        
+        $cost = intval($offer['pricing']['tokens']['cost']);
+        if ($cost <= 0) {
+            return new WP_Error(
+                'invalid_token_price',
+                __('Token purchases require a positive token cost', 'flosc'),
+                ['status' => 400]
+            );
+        }
+
         $balance = $this->get_balance($user_id);
-        
+
         if ($balance < $cost) {
             return new WP_Error(
                 'insufficient_tokens',
@@ -166,16 +171,19 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
                 ['required' => $cost, 'available' => $balance]
             );
         }
-        
-        // Deduct tokens
-        $this->deduct($user_id, $cost, 'Purchase: ' . $offer['name']);
-        
+
+        $deducted = $this->deduct($user_id, $cost, 'Purchase: ' . ($offer['name'] ?? $offer['id'] ?? 'offer'));
+        if (is_wp_error($deducted)) {
+            return $deducted;
+        }
+
         return [
             'success' => true,
-            'transaction_id' => 'token_purchase_' . uniqid(),
+            'transaction_id' => 'token_purchase_' . $user_id . '_' . time() . '_' . wp_generate_password(6, false, false),
             'amount' => $cost,
             'currency' => 'tokens',
             'new_balance' => $this->get_balance($user_id),
+            'status' => 'completed',
         ];
     }
     

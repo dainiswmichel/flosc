@@ -153,35 +153,27 @@ class FLOSC_Checkout_Rest {
             return new WP_Error('invalid_offer', __('Offer not found', 'flosc'), ['status' => 404]);
         }
 
-        $price = floatval($offer['pricing']['price'] ?? $offer['price'] ?? 0);
-        // Treat explicitly marked free offers as free even if a stray price field exists.
-        $is_free_offer = ($price <= 0.0)
-            || (!empty($offer['is_free']))
-            || (isset($offer['pricing']['type']) && $offer['pricing']['type'] === 'free')
-            || (isset($offer['type']) && $offer['type'] === 'free');
+        $sale = $this->flosc->sale();
+        $is_free_offer = $sale->offer_is_explicitly_free($offer);
 
-        // PAY-01: Free grant path is only valid for free offers.
-        // Omitting provider on a paid offer must never grant access.
+        // PAY-01A: Free path only for explicitly free + active offers. Missing price ≠ free.
         if ($method === 'free' || empty($provider_id)) {
-            if (!$is_free_offer) {
-                if ($method === 'free') {
-                    return new WP_Error('not_free', __('This offer requires payment', 'flosc'), ['status' => 400]);
+            $free_ok = $sale->validate_offer_for_purchase($offer, 'free');
+            if (is_wp_error($free_ok)) {
+                // Empty provider on a non-free offer → provider_required (not a free-claim error).
+                if (empty($provider_id) && $method !== 'free' && $free_ok->get_error_code() === 'not_free') {
+                    return new WP_Error(
+                        'provider_required',
+                        __('A payment provider is required for this offer', 'flosc'),
+                        ['status' => 400]
+                    );
                 }
-                return new WP_Error(
-                    'provider_required',
-                    __('A payment provider is required for this offer', 'flosc'),
-                    ['status' => 400]
-                );
-            }
-
-            // Free offer must be active.
-            if (isset($offer['active']) && empty($offer['active'])) {
-                return new WP_Error('offer_inactive', __('This free offer is not active', 'flosc'), ['status' => 400]);
+                return $free_ok;
             }
 
             // Deterministic txn id so free re-claims are idempotent (one free grant per user+offer).
             $txn_id = 'free_' . $user_id . '_' . $offer_id;
-            $fulfill = $this->flosc->sale()->fulfill_settled_purchase(
+            $fulfill = $sale->fulfill_settled_purchase(
                 $user_id,
                 $offer,
                 'free',
@@ -204,8 +196,13 @@ class FLOSC_Checkout_Rest {
             ]);
         }
 
+        $paid_ok = $sale->validate_offer_for_purchase($offer, 'paid');
+        if (is_wp_error($paid_ok)) {
+            return $paid_ok;
+        }
+
         // Paid purchase via provider (process_purchase is fail-closed on incomplete states).
-        $result = $this->flosc->sale()->process_purchase(
+        $result = $sale->process_purchase(
             $user_id,
             $offer_id,
             $provider_id,

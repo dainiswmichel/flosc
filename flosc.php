@@ -6653,11 +6653,20 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] X-WP-Nonce 
             flosc_log('[FLOSC-PAYPAL] activate-subscription check status=' . $status);
         }
 
-        if (!in_array($status, ['ACTIVE', 'APPROVED'], true)) {
+        // PP-02: APPROVED is not settled; only ACTIVE grants access.
+        if ($status !== 'ACTIVE') {
             if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
                 flosc_log('[FLOSC-PAYPAL] activate-subscription not active: status=' . $status . ' sub=' . $subscription_id);
             }
-            return new WP_Error('subscription_not_active', 'Subscription status not active: ' . $status, ['status' => 400]);
+            return new WP_Error(
+                'subscription_not_active',
+                sprintf(
+                    /* translators: %s: PayPal subscription status */
+                    __('Subscription is not ACTIVE (status: %s). Access is granted only after ACTIVE status.', 'flosc'),
+                    $status !== '' ? $status : 'empty'
+                ),
+                ['status' => 400]
+            );
         }
 
         $plan_type = $this->resolve_paypal_subscription_plan_type($sub, $requested_plan_type);
@@ -6665,12 +6674,28 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] X-WP-Nonce 
             return $plan_type;
         }
 
+        $subscriber_email = sanitize_email((string) ($sub['subscriber']['email_address'] ?? ''));
+        $subscriber_name  = trim(
+            sanitize_text_field((string) ($sub['subscriber']['name']['given_name'] ?? '')) . ' ' .
+            sanitize_text_field((string) ($sub['subscriber']['name']['surname'] ?? ''))
+        );
+
+        // PP-02: logged-in buyer must match PayPal subscriber email.
+        if ($user_id > 0 && $subscriber_email !== '') {
+            $wp_user = get_userdata($user_id);
+            if ($wp_user && !empty($wp_user->user_email)
+                && strcasecmp((string) $wp_user->user_email, $subscriber_email) !== 0) {
+                return new WP_Error(
+                    'buyer_mismatch',
+                    __('PayPal subscriber email does not match the logged-in buyer', 'flosc'),
+                    ['status' => 403]
+                );
+            }
+        }
+
         // If visitor (no WP account), create one from PayPal subscriber data
         if (!$user_id) {
-            $subscriber_email = $sub['subscriber']['email_address'] ?? '';
-            $subscriber_name  = trim(($sub['subscriber']['name']['given_name'] ?? '') . ' ' . ($sub['subscriber']['name']['surname'] ?? ''));
-
-            if (empty($subscriber_email)) {
+            if ($subscriber_email === '') {
                 return new WP_Error('no_email', __('Could not retrieve email from PayPal subscription.', 'flosc'), ['status' => 400]);
             }
 
@@ -6713,34 +6738,38 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             }
         }
 
-        // Sold offer first (checkout offer_id / binding), then flow defaults — token grants follow the product sold.
-        $default_offer_id = flosc_get_setting('default_offer_id', 'full_access', $flow_id ?: null);
+        // PP-02: exact offer binding — require sold offer id (client or binding). No default/first-offer fallback.
+        if ($sold_offer_id === '') {
+            return new WP_Error(
+                'missing_offer',
+                __('Offer id is required to activate a subscription', 'flosc'),
+                ['status' => 400]
+            );
+        }
         $default_member_level = flosc_get_setting('default_member_level', 'member', $flow_id ?: null);
-        $offer = null;
-        if ($sold_offer_id !== '') {
-            $offer = $this->sale_manager->offers()->get_offer($sold_offer_id, $flow_id ?: null);
-        }
-        if (!$offer && $default_offer_id !== '') {
-            $offer = $this->sale_manager->offers()->get_offer($default_offer_id, $flow_id ?: null);
-        }
+        $offer = $this->sale_manager->offers()->get_offer($sold_offer_id, $flow_id ?: null);
         if (!$offer) {
-            // Try any active offer on this flow before a minimal generic shell.
-            $all_flow_offers = $this->sale_manager->offers()->get_active_offers($flow_id ?: null);
-            if (!empty($all_flow_offers) && is_array($all_flow_offers)) {
-                $offer = reset($all_flow_offers);
+            return new WP_Error('invalid_offer', __('Offer not found', 'flosc'), ['status' => 404]);
+        }
+        if (method_exists($this->sale_manager, 'validate_offer_for_purchase')) {
+            $offer_ok = $this->sale_manager->validate_offer_for_purchase($offer, 'paid');
+            if (is_wp_error($offer_ok)) {
+                return $offer_ok;
             }
         }
-        if (!$offer) {
-            $offer = [
-                'id'   => $default_offer_id ?: 'full_access',
-                'name' => __('Full Access', 'flosc'),
-                'type' => 'subscription',
-                'grants' => [
-                    'features'      => ['full_access'],
-                    'level'         => $default_member_level,
-                    'duration_days' => $plan_type === 'yearly' ? 365 : 30,
-                ],
-            ];
+        // Optional: if offer declares PayPal plan ids, require plan match.
+        $offer_monthly = sanitize_text_field((string) ($offer['pricing']['paypal']['monthly_plan_id'] ?? $offer['paypal_monthly_plan_id'] ?? ''));
+        $offer_yearly  = sanitize_text_field((string) ($offer['pricing']['paypal']['yearly_plan_id'] ?? $offer['paypal_yearly_plan_id'] ?? ''));
+        $sub_plan_id   = sanitize_text_field((string) ($sub['plan_id'] ?? ($sub['plan']['id'] ?? '')));
+        if ($sub_plan_id !== '' && ($offer_monthly !== '' || $offer_yearly !== '')) {
+            $allowed = array_filter([$offer_monthly, $offer_yearly]);
+            if (!in_array($sub_plan_id, $allowed, true)) {
+                return new WP_Error(
+                    'offer_mismatch',
+                    __('PayPal plan does not match the selected offer', 'flosc'),
+                    ['status' => 403]
+                );
+            }
         }
         // Override duration based on plan type
         if (!isset($offer['grants']) || !is_array($offer['grants'])) {
@@ -6864,7 +6893,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
         // flosc_purchase_completed already fired inside fulfill_settled_purchase.
         if (empty($fulfill['already_fulfilled'])) {
             do_action('flosc_paypal_subscription_activated', $user_id, [
-                'offer_id'       => $resolved_offer_id ?: $default_offer_id,
+                'offer_id'       => $resolved_offer_id,
                 'provider'       => 'paypal',
                 'transaction_id' => $subscription_id,
                 'amount'         => $amount,
@@ -7083,6 +7112,37 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
         $offer = $this->sale_manager->offers()->get_offer($offer_id, $flow_id ?: null);
         if (!$offer) {
             return new WP_Error('invalid_offer', __('Offer not found', 'flosc'), ['status' => 404]);
+        }
+        if (method_exists($this->sale_manager, 'validate_offer_for_purchase')) {
+            $offer_ok = $this->sale_manager->validate_offer_for_purchase($offer, 'paid');
+            if (is_wp_error($offer_ok)) {
+                return $offer_ok;
+            }
+        }
+
+        // PP-01 amount/currency: when offer declares a list price, capture must match (within 1 cent).
+        $expected = 0.0;
+        if (is_array($offer['pricing'] ?? null) && array_key_exists('price', $offer['pricing'])) {
+            $expected = floatval($offer['pricing']['price']);
+        } elseif (array_key_exists('price', $offer)) {
+            $expected = floatval($offer['price']);
+        }
+        $captured_amt = floatval($capture_result['amount'] ?? 0);
+        $expected_cur = strtoupper((string) ($offer['pricing']['currency'] ?? $offer['currency'] ?? 'USD'));
+        $captured_cur = strtoupper((string) ($capture_result['currency'] ?? 'USD'));
+        if ($expected > 0 && abs($captured_amt - $expected) > 0.011) {
+            return new WP_Error(
+                'payment_mismatch',
+                __('PayPal capture amount does not match the offer price', 'flosc'),
+                ['status' => 403]
+            );
+        }
+        if ($expected > 0 && $expected_cur !== '' && $captured_cur !== '' && $expected_cur !== $captured_cur) {
+            return new WP_Error(
+                'payment_mismatch',
+                __('PayPal capture currency does not match the offer', 'flosc'),
+                ['status' => 403]
+            );
         }
 
         // Only check user mismatch for logged-in users (user_id > 0)

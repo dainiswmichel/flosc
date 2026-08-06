@@ -147,17 +147,105 @@ class FLOSC_Sale_Manager {
             return false;
         }
 
+        // trialing is not settled payment unless the provider set settled/paid explicitly
+        // after an offer-level allow_trial check (see Stripe create_subscription).
+        if ($status === 'trialing' && empty($result['settled']) && empty($result['paid'])) {
+            return false;
+        }
+
         if (!empty($result['success'])) {
             return true;
         }
         if (!empty($result['settled']) || !empty($result['paid'])) {
             return true;
         }
-        if (in_array($status, ['succeeded', 'active', 'trialing', 'completed', 'captured'], true)) {
+        if (in_array($status, ['succeeded', 'active', 'completed', 'captured'], true)) {
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Offer is free only when explicitly marked free — never by missing price.
+     *
+     * @param array $offer Offer row.
+     * @return bool
+     */
+    public function offer_is_explicitly_free(array $offer) {
+        if (!empty($offer['is_free'])) {
+            return true;
+        }
+        if (isset($offer['pricing']['type']) && (string) $offer['pricing']['type'] === 'free') {
+            return true;
+        }
+        if (isset($offer['type']) && (string) $offer['type'] === 'free') {
+            return true;
+        }
+        // Explicit numeric zero only when the price key is present.
+        if (is_array($offer['pricing'] ?? null) && array_key_exists('price', $offer['pricing'])) {
+            return floatval($offer['pricing']['price']) <= 0.0;
+        }
+        if (array_key_exists('price', $offer)) {
+            return floatval($offer['price']) <= 0.0;
+        }
+        return false;
+    }
+
+    /**
+     * Whether an offer may be purchased or free-granted (status=active).
+     *
+     * @param array $offer Offer row.
+     * @return bool
+     */
+    public function offer_is_active_for_purchase(array $offer) {
+        $status = sanitize_key((string) ($offer['status'] ?? ''));
+        if ($status === 'active') {
+            return true;
+        }
+        // Legacy boolean flag when status is omitted.
+        if ($status === '' && !empty($offer['active'])) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Validate offer before free or paid fulfillment.
+     *
+     * @param array  $offer Offer row.
+     * @param string $mode  free|paid
+     * @return true|WP_Error
+     */
+    public function validate_offer_for_purchase(array $offer, $mode = 'paid') {
+        $mode = sanitize_key((string) $mode);
+        if (!$this->offer_is_active_for_purchase($offer)) {
+            return new WP_Error(
+                'offer_inactive',
+                __('This offer is not active', 'flosc'),
+                ['status' => 400]
+            );
+        }
+        $is_free = $this->offer_is_explicitly_free($offer);
+        if ($mode === 'free') {
+            if (!$is_free) {
+                return new WP_Error(
+                    'not_free',
+                    __('This offer requires payment', 'flosc'),
+                    ['status' => 400]
+                );
+            }
+            return true;
+        }
+        // Paid path: free-only offers should use free branch.
+        if ($is_free) {
+            return new WP_Error(
+                'use_free_path',
+                __('This free offer must be claimed without a payment provider', 'flosc'),
+                ['status' => 400]
+            );
+        }
+        return true;
     }
 
     /**
@@ -324,6 +412,11 @@ class FLOSC_Sale_Manager {
         $offer = $this->offer_manager->get_offer($offer_id);
         if (!$offer) {
               return new WP_Error('invalid_offer', __('Offer not found', 'flosc'));
+        }
+
+        $valid = $this->validate_offer_for_purchase($offer, 'paid');
+        if (is_wp_error($valid)) {
+            return $valid;
         }
         
         // Get provider

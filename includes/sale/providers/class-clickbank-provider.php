@@ -198,33 +198,35 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
             $params = $this->map_ins_json_to_params($decrypted);
         }
 
-        // --- Legacy form IPN ---
+        // --- Legacy form IPN (requires cverify). CB-01: never accept unsigned plaintext JSON. ---
         if ($params === null) {
             $raw_params = [];
             parse_str($payload, $raw_params);
             if (!is_array($raw_params) || empty($raw_params)) {
-                // Also accept application/json that is the decrypted shape already (tests).
-                if (is_array($json) && !empty($json['receipt']) && !empty($json['transactionType'])) {
-                    $params = $this->map_ins_json_to_params($json);
-                } else {
-                    return new WP_Error('invalid_payload', __('Unrecognized ClickBank notification payload', 'flosc'), ['status' => 400]);
+                // CB-01: unsigned plaintext JSON (even with receipt/transactionType) is rejected.
+                if (is_array($json) && ( ! empty($json['receipt']) || ! empty($json['transactionType']) )) {
+                    return new WP_Error(
+                        'unsigned_payload',
+                        __('Unsigned ClickBank JSON is not accepted. Use encrypted INS (notification+iv) or signed form IPN (cverify).', 'flosc'),
+                        ['status' => 401]
+                    );
                 }
-            } else {
-                $required = ['ctransaction', 'ctransreceipt', 'cvendor', 'ccustname', 'ccustemail'];
-                foreach ($required as $field) {
-                    if (empty($raw_params[ $field ])) {
-                        /* translators: %s: name of the missing ClickBank webhook field. */
-                        return new WP_Error('missing_field', sprintf(__('Missing required field: %s', 'flosc'), $field), ['status' => 400]);
-                    }
-                }
-                if (empty($raw_params['cverify'])) {
-                    return new WP_Error('missing_signature', __('Missing IPN signature', 'flosc'), ['status' => 401]);
-                }
-                if (!$this->verify_ipn_signature($raw_params, $secret_key)) {
-                    return new WP_Error('invalid_signature', __('Invalid IPN signature', 'flosc'), ['status' => 401]);
-                }
-                $params = $this->sanitize_ipn_params($raw_params);
+                return new WP_Error('invalid_payload', __('Unrecognized ClickBank notification payload', 'flosc'), ['status' => 400]);
             }
+            $required = ['ctransaction', 'ctransreceipt', 'cvendor', 'ccustname', 'ccustemail'];
+            foreach ($required as $field) {
+                if (empty($raw_params[ $field ])) {
+                    /* translators: %s: name of the missing ClickBank webhook field. */
+                    return new WP_Error('missing_field', sprintf(__('Missing required field: %s', 'flosc'), $field), ['status' => 400]);
+                }
+            }
+            if (empty($raw_params['cverify'])) {
+                return new WP_Error('missing_signature', __('Missing IPN signature', 'flosc'), ['status' => 401]);
+            }
+            if (!$this->verify_ipn_signature($raw_params, $secret_key)) {
+                return new WP_Error('invalid_signature', __('Invalid IPN signature', 'flosc'), ['status' => 401]);
+            }
+            $params = $this->sanitize_ipn_params($raw_params);
         }
 
         if (!is_array($params) || empty($params['ctransreceipt'])) {

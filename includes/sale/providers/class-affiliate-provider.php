@@ -136,16 +136,22 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
      * Process payment via affiliate credits
      */
     public function process_payment($user_id, $offer, $payment_data = []) {
-        $required = $offer['pricing']['affiliate']['credit_amount'] ?? 0;
-        
+        if (!is_array($offer['pricing']['affiliate'] ?? null)
+            || !array_key_exists('credit_amount', $offer['pricing']['affiliate'])) {
+            return new WP_Error(
+                'invalid_affiliate_price',
+                __('Affiliate credit amount is not configured for this offer', 'flosc'),
+                ['status' => 400]
+            );
+        }
+        $required = floatval($offer['pricing']['affiliate']['credit_amount']);
+
         if ($required <= 0) {
-            // Free via affiliate system
-            return [
-                'success' => true,
-                'transaction_id' => 'affiliate_free_' . uniqid(),
-                'amount' => 0,
-                'currency' => 'affiliate_credits',
-            ];
+            return new WP_Error(
+                'invalid_affiliate_price',
+                __('Affiliate purchases require a positive credit amount', 'flosc'),
+                ['status' => 400]
+            );
         }
         
         $credits = $this->get_credits($user_id);
