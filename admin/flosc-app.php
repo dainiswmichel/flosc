@@ -1277,7 +1277,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             // Audio quiz configurable messages
             'audioQuizPhraseCompleteMessage' => flosc_get_setting('audio_quiz_phrase_complete_message', 'Thank you. {current} of {total} recorded.'),
             'audioQuizCompleteMessage' => flosc_get_setting('audio_quiz_complete_message', 'Pronunciation assessment complete! All {total} phrases recorded and analyzed. Sign up to see your results.'),
-            'audioQuizResultsMessage' => flosc_get_setting('audio_quiz_results_message', 'Welcome! Here are your pronunciation assessment results.'),
+            'audioQuizResultsMessage' => flosc_get_setting('audio_quiz_results_message', 'Welcome! Here are your assessment results.'),
             'audioQuizUpsellMessage' => flosc_get_setting('audio_quiz_upsell_message', 'Our accent analysis shows you would benefit from lessons on {1st}, {2nd}, and {4th}. Upgrade today for full access to all lessons.'),
             'audioQuizPhonemeLessonMap' => json_decode(flosc_get_setting('audio_quiz_phoneme_lesson_map', '{}'), true) ?: (object)[],
             'ipaApiBaseUrl' => untrailingslashit(flosc_get_setting('ipa_api_base_url', '')),

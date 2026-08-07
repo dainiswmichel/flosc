@@ -48,7 +48,7 @@
     <td><code>audioQuizResultsMessage</code></td>
     <td>After login, before the detailed results</td>
     <td>None</td>
-    <td>Welcome! Here are your pronunciation assessment results.</td>
+    <td>Welcome! Here are your assessment results.</td>
   </tr>
 </table>
 

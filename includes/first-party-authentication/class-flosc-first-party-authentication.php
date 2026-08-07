@@ -161,7 +161,7 @@ class FLOSC_First_Party_Authentication {
                     }
                 }
                 $score_data = [
-                    'quiz_id'   => $raw['quiz_id']      ?? flosc_get_setting('default_text_quiz_id', 'pronunciation_assessment_quiz'),
+                    'quiz_id'   => $raw['quiz_id']      ?? flosc_get_setting('default_text_quiz_id', 'sample_assessment_quiz'),
                     'score'     => intval( $raw['score'] ),
                     'correct'   => $correct,
                     'incorrect' => $incorrect,

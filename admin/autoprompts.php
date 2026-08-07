@@ -550,7 +550,7 @@ $flosc_pill_demos = [
                 [ 'icon'=>'🔍', 'label'=>'Find R sound lessons',      'user_input'=>'Find R sound lessons for me',          'trigger_type'=>'ai',     'trigger_value'=>'',                    'condition'=>'is_member',                'style'=>'pill'   ],
                 [ 'icon'=>'🔍', 'label'=>'Find TH lessons',           'user_input'=>'Find TH lessons for me',               'trigger_type'=>'ai',     'trigger_value'=>'',                    'condition'=>'is_member',                'style'=>'pill'   ],
                 [ 'icon'=>'▶️', 'label'=>'Continue last lesson',      'user_input'=>'Continue my last lesson',              'trigger_type'=>'action', 'trigger_value'=>'continue_lesson',     'condition'=>'is_member',                'style'=>'button' ],
-                [ 'icon'=>'🔄', 'label'=>'Retake quiz',               'user_input'=>'Retake my pronunciation assessment',   'trigger_type'=>'action', 'trigger_value'=>'open_quiz',           'condition'=>'is_member',                'style'=>'pill'   ],
+                [ 'icon'=>'🔄', 'label'=>'Retake quiz',               'user_input'=>'Retake my assessment',   'trigger_type'=>'action', 'trigger_value'=>'open_quiz',           'condition'=>'is_member',                'style'=>'pill'   ],
             ],
         ],
     ],

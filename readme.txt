@@ -40,7 +40,7 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 
 = Use Cases =
 
-* **Language Learning** - Guide learners through pronunciation assessment and personalized lessons
+* **Assessments & lessons** - Guide learners through quizzes, topic feedback, and gated content
 * **Online Courses** - Gate lesson modules based on quiz results before requesting payment
 * **Lead Qualification** - Qualify prospects through conversational screening before routing to sales
 * **Product Trials** - Let visitors experience product value (user-specific lessons, sample content) before sales pitch

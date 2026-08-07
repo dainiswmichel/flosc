@@ -5545,7 +5545,7 @@ class floscApp {
         this.quiz = {
             active: true,
             id: this.config.defaultAudioQuizId || 'pronunciation_ipa_audio_quiz',
-            title: productForQuiz ? `${productForQuiz} Pronunciation Assessment` : 'Pronunciation Assessment',
+            title: productForQuiz ? `${productForQuiz} Assessment` : 'Sample Assessment Quiz',
             type: 'ipa_audio',
             tier: tier,
             startedAt: Date.now(),
@@ -6134,7 +6134,7 @@ class floscApp {
     }
 
     showIpaPhraseResultsAfterLogin(result) {
-        // Renders full pronunciation assessment results after login.
+        // Renders full assessment results after login.
         // Called by checkPendingQuizResults() when quizType === 'ipa_audio'.
         // result.phraseResults: array of {phrase, data} from the pre-login quiz.
         // result.wordIpa: the static reference IPA dictionary (espeak, mw, da1ni5).
@@ -6164,7 +6164,7 @@ class floscApp {
 
         // Overall summary
         let summary = `<div class="flosc-ipa-final ${scoreClass}">`;
-        summary += `<div class="flosc-ipa-final-title">Pronunciation Assessment Results</div>`;
+        summary += `<div class="flosc-ipa-final-title">Assessment Results</div>`;
         summary += `<div class="flosc-quiz-score-circle" data-score-percent="${score}"><span class="flosc-quiz-score-value">${score}%</span></div>`;
         summary += `<div class="flosc-ipa-final-stats">${allWords.length} words &middot; ${total} phonemes across ${phraseResults.length} phrases</div>`;
 
@@ -6178,7 +6178,7 @@ class floscApp {
         }
         summary += `</div>`;
 
-        const introMsg = this.config.audioQuizResultsMessage || 'Welcome! Here are your pronunciation assessment results.';
+        const introMsg = this.config.audioQuizResultsMessage || 'Welcome! Here are your assessment results.';
         this.addMessage('assistant', introMsg, false);
         setTimeout(() => { this.addMessage('assistant', summary, true); }, 200);
 
@@ -6290,7 +6290,7 @@ class floscApp {
             const scoreClass = score >= 70 ? '' : score >= 40 ? 'medium-score' : 'low-score';
 
             let h = `<div class="flosc-ipa-final ${scoreClass}">`;
-            h += `<div class="flosc-ipa-final-title">Pronunciation Assessment Complete</div>`;
+            h += `<div class="flosc-ipa-final-title">Assessment Complete</div>`;
             h += `<div class="flosc-quiz-score-circle" data-score-percent="${score}"><span class="flosc-quiz-score-value">${score}%</span></div>`;
             h += `<div class="flosc-ipa-final-stats">${allWords.length} words &middot; ${total} phonemes across ${results.length} phrases</div>`;
 
@@ -7660,37 +7660,37 @@ class floscApp {
         }
     }
 
-    // v3.0.8: Show the 10 sound topics covered by the quiz
-    // Triggered by: "quiz lessons", "topics from the quiz", "quiz answer sheet"
+    // Show sample topics covered by the assessment quiz (generic placeholders).
+    // floscAdmins replace quiz content and topic labels per flow.
     openQuizTopics() {
-        // Topic sheet when this flow enables a pronunciation assessment quiz (by quiz id).
         const enabledQuizzes = this.config.enabledQuizzes || this.config.enabled_quizzes || [];
         const quizIds = Array.isArray(enabledQuizzes) ? enabledQuizzes.map(String) : [];
-        const isPronunciationQuiz = quizIds.some((id) =>
-            id.includes('pronunciation') || id.includes('ipa') || id.includes('assessment')
+        const hasAssessment = quizIds.some((id) =>
+            id.includes('sample_assessment') || id.includes('assessment') || id.includes('quiz')
         );
 
-        if (isPronunciationQuiz) {
-            const quizProduct = String(this.config?.productName || this.config?.identity?.name || 'Pronunciation').trim();
+        if (hasAssessment) {
+            const quizProduct = String(this.config?.productName || this.config?.identity?.name || 'This flow').trim();
             const html = `
                 <div class="flosc-quiz-topics">
-                    <h3>🎤 ${this.escapeHtml(quizProduct)} Quiz — 10 Sound Topics</h3>
+                    <h3>${this.escapeHtml(quizProduct)} — Sample topics (replace in Quiz admin)</h3>
                     <ol class="flosc-quiz-topic-list">
-                        <li>The <strong>/æ/</strong> short-a vowel — <em>cat, map, back</em></li>
-                        <li>The <strong>American rhotic R</strong> — <em>car, bird, butter</em></li>
-                        <li>Voiceless <strong>TH /θ/</strong> — <em>think, three, bath</em></li>
-                        <li>Voiced <strong>TH /ð/</strong> — <em>this, that, the</em></li>
-                        <li><strong>/ɪ/ vs /iː/</strong> — <em>ship vs sheep</em></li>
-                        <li>The <strong>schwa /ə/</strong> and unstressed vowels — <em>banana</em></li>
-                        <li>The <strong>flap T</strong> — <em>butter = "budder"</em></li>
-                        <li><strong>Word stress</strong> patterns — <em>DES-ert vs de-SERT</em></li>
-                        <li><strong>Connected speech</strong> / linking — <em>turn-it-off</em></li>
-                        <li>Dark <strong>L</strong> vs light L — <em>full, ball, feel</em></li>
+                        <li><strong>Topic 1</strong> — Getting started</li>
+                        <li><strong>Topic 2</strong> — Core ideas</li>
+                        <li><strong>Topic 3</strong> — Practice basics</li>
+                        <li><strong>Topic 4</strong> — Common mistakes</li>
+                        <li><strong>Topic 5</strong> — Building habits</li>
+                        <li><strong>Topic 6</strong> — Intermediate skills</li>
+                        <li><strong>Topic 7</strong> — Applying skills</li>
+                        <li><strong>Topic 8</strong> — Feedback loops</li>
+                        <li><strong>Topic 9</strong> — Advanced practice</li>
+                        <li><strong>Topic 10</strong> — Next steps</li>
                     </ol>
+                    <p>These labels are sample defaults. Your flow's real topics come from quiz content and content gates you configure.</p>
                 </div>`;
             this.addMessage('assistant', html, true);
         } else {
-            this.addMessage('assistant', 'The quiz covered 10 topics. Ask me about any specific one to learn more!');
+            this.addMessage('assistant', 'Ask me about any quiz topic configured for this flow.');
         }
     }
 

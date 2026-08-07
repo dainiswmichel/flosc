@@ -12,7 +12,7 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/abstract-quiz-type.php';
-require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/class-flosc-pronunciation-assessment-quiz.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/class-flosc-sample-assessment-quiz.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/class-flosc-sample-text-based-quiz.php';
 
 class FLOSC_Quiz_Registry {
@@ -23,7 +23,7 @@ class FLOSC_Quiz_Registry {
     private static function init() {
         if ( self::$quizzes !== null ) return;
         self::$quizzes = [
-            'pronunciation_assessment_quiz'        => new FLOSC_Pronunciation_Assessment_Quiz(),
+            'sample_assessment_quiz'               => new FLOSC_Sample_Assessment_Quiz(),
             'flosc_sample_data_numbers_quiz'        => new FLOSC_Sample_Text_Based_Quiz(),
         ];
     }

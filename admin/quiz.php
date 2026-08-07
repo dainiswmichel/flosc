@@ -42,236 +42,34 @@ if ( empty( $flosc_all_quiz_types ) ) {
 // Content format must match the quiz type's own get_instructions() format.
 $flosc_quiz_demos = [
 
-    // ── Pronunciation (Q+options block format) ──────────────────────
-    'pronunciation_assessment_quiz' => [
+    // ── Sample Assessment (Q+options block format) ─────────────────
+    // Subject-neutral sample. floscAdmins replace content per flow.
+    'sample_assessment_quiz' => [
 
         [
-            'name' => 'Minimal Pairs Discrimination',
-            'desc' => '10 questions on distinguishing sounds that differ by one phoneme — great for intermediate learners.',
+            'name' => 'Sample 10-topic assessment',
+            'desc' => 'Generic placeholders for 10 topics. Replace with your own questions; map CorrectContent to real posts.',
             'content' => <<<'DEMO'
-Which word pair are minimal pairs (differ by only ONE sound)?
-A: cat / bat
-B: cat / cats
-C: cat / catfish
-D: bat / bad
-CORRECT: A
-
-In "sheep" vs "ship" — what single difference makes them different words?
-A: The consonants
-B: The vowel — /iː/ (long) vs /ɪ/ (short)
-C: The word stress
-D: The final consonant
+Sample question for Topic 1 — Getting started. (Replace this quiz in FLOSC → Quiz.) Which statement is true?
+A: This is a placeholder wrong answer.
+B: This is the sample correct answer for this topic.
+C: Another placeholder wrong answer.
+D: Another placeholder wrong answer.
 CORRECT: B
+TOPIC: topic-1-getting-started
+CorrectContent: post:sample-topic-1-getting-started
 
-"Fan" and "van" are minimal pairs. What single sound is different?
-A: The vowel
-B: The final consonant
-C: The initial consonant — /f/ vs /v/
-D: The word stress
-CORRECT: C
-
-Which pair is NOT a minimal pair?
-A: pin / bin
-B: cat / hat
-C: run / running
-D: seat / sit
-CORRECT: C
-
-"Think" and "sink" differ in only one sound. What is different?
-A: The vowel
-B: The initial consonant — /θ/ vs /s/
-C: The final consonant
-D: The word stress
+Sample question for Topic 2 — Core ideas. Which statement is true?
+A: This is a placeholder wrong answer.
+B: This is the sample correct answer for this topic.
+C: Another placeholder wrong answer.
+D: Another placeholder wrong answer.
 CORRECT: B
-
-"Bed" and "bad" are minimal pairs. What sound is different?
-A: The initial consonant
-B: The final consonant
-C: The vowel — /ɛ/ vs /æ/
-D: The word stress
-CORRECT: C
-
-Which pair represents the /p/ vs /b/ minimal pair distinction?
-A: pat / bat
-B: pat / cat
-C: pat / hat
-D: pat / fat
-CORRECT: A
-
-"Light" and "night" are minimal pairs. Which sound changes?
-A: The vowel
-B: The final consonant
-C: The initial consonant — /l/ vs /n/
-D: Both consonants
-CORRECT: C
-
-"Cold" and "gold" differ in only one sound. What is it?
-A: The vowel
-B: The initial consonant — /k/ vs /g/
-C: The final consonant
-D: The word stress
-CORRECT: B
-
-In "this" vs "these" — what is the main pronunciation difference?
-A: The initial consonant
-B: The vowel — /ɪ/ (short) in "this" vs /iː/ (long) in "these"
-C: The final consonant
-D: The TH sound changes
-CORRECT: B
+TOPIC: topic-2-core-ideas
+CorrectContent: post:sample-topic-2-core-ideas
 DEMO,
         ],
 
-        [
-            'name' => 'American Vowel Sounds',
-            'desc' => '10 questions focused specifically on American English vowel identification and contrast.',
-            'content' => <<<'DEMO'
-Which word has the /æ/ (short A) vowel sound?
-A: late
-B: cat
-C: caught
-D: cut
-CORRECT: B
-
-"Caught", "call", and "law" all share which vowel?
-A: /æ/ as in "cat"
-B: /ɑː/ as in "father"
-C: /ɔː/ as in "thought"
-D: /oʊ/ as in "go"
-CORRECT: C
-
-In "butter", "above", and "fun" — the stressed vowel is:
-A: /æ/ (short A)
-B: /ʌ/ (short U — "uh" sound)
-C: /ɒ/ (short O)
-D: /ə/ (schwa)
-CORRECT: B
-
-"Bit", "sit", "tip" — these words share which vowel?
-A: /iː/ (long E, as in "see")
-B: /ɪ/ (short I, as in "bit")
-C: /e/ (as in "bed")
-D: /aɪ/ (as in "bike")
-CORRECT: B
-
-Which word has a DIFFERENT vowel from the others?
-A: beat
-B: feet
-C: bit
-D: meat
-CORRECT: C
-
-The words "go", "home", and "boat" share which vowel?
-A: /ɒ/ (short O as in "hot")
-B: /ɔː/ (as in "thought")
-C: /oʊ/ (long O diphthong)
-D: /uː/ (as in "boot")
-CORRECT: C
-
-"Food", "moon", and "blue" share which vowel?
-A: /ʊ/ (as in "book")
-B: /uː/ (long U, as in "boot")
-C: /oʊ/ (as in "go")
-D: /juː/ (as in "cute")
-CORRECT: B
-
-In "book", "put", and "should" — the vowel is:
-A: /uː/ (long U as in "boot")
-B: /ʌ/ (as in "cut")
-C: /ʊ/ (short U as in "book")
-D: /oʊ/ (as in "go")
-CORRECT: C
-
-"Cot" and "caught" — in General American English (most of the US):
-A: Sound completely different
-B: Sound identical (the cot-caught merger)
-C: "Cot" is longer
-D: Only differ in spelling
-CORRECT: B
-
-The schwa /ə/ is:
-A: A stressed vowel found in content words
-B: The unstressed reduced vowel found in weak syllables
-C: Only found at the end of words
-D: The same as the short I sound
-CORRECT: B
-DEMO,
-        ],
-
-        [
-            'name' => 'Connected Speech & Rhythm',
-            'desc' => '10 questions on linking, reduction, stress timing, and natural American speech flow.',
-            'content' => <<<'DEMO'
-In natural American English, "I'm going to go" is most often reduced to:
-A: "I am going to go" (all words fully pronounced)
-B: "I'm gonna go"
-C: "I go"
-D: "Am going go"
-CORRECT: B
-
-"Want to" in casual speech becomes:
-A: "wanna"
-B: "wan-to"
-C: "want-a"
-D: "wanto"
-CORRECT: A
-
-In American English, which syllables receive the MOST stress?
-A: Function words (the, a, to, of)
-B: Content words (nouns, main verbs, adjectives, adverbs)
-C: All syllables equally
-D: The last syllable of every sentence
-CORRECT: B
-
-"Did you eat yet?" in fast natural speech sounds most like:
-A: "Did — you — eat — yet?" (each word distinct)
-B: "Didja eat yet?"
-C: "Did you ate yet?"
-D: "You eat yet?"
-CORRECT: B
-
-Word linking — "an apple" in natural speech sounds like:
-A: "an — apple" (brief pause between words)
-B: "a-napple" (the N links to the next word)
-C: "ann apple"
-D: "a apple"
-CORRECT: B
-
-In American English rhythm, unstressed syllables are typically:
-A: Longer and louder than stressed syllables
-B: Shorter, quieter, and often reduced to schwa
-C: The same length as stressed syllables
-D: Always silent
-CORRECT: B
-
-The phrase "I don't know" reduced to "I dunno" is an example of:
-A: Incorrect grammar
-B: Informal contracted pronunciation in casual speech
-C: A regional dialect only
-D: Rude speech
-CORRECT: B
-
-Which sentence has the typical American English stress pattern?
-A: "I BOUGHT a COFFEE at the STORE" (stress on all content words)
-B: "I bought a coffee at the store" (all words equal stress)
-C: "I bought A COFFEE at THE STORE" (stress on articles)
-D: "i bought a coffee at the STORE" (stress only on last word)
-CORRECT: A
-
-"What do you think?" in natural speech most commonly sounds like:
-A: "What — do — you — think?" (fully separated)
-B: "Whadya think?" or "Whaddya think?"
-C: "What you think?"
-D: "What do think?"
-CORRECT: B
-
-The "t" in words like "water", "better", "butter" in American English sounds like:
-A: A strong, aspirated /t/ like in "top"
-B: A soft /d/-like flap
-C: Silent — not pronounced
-D: A glottal stop like in British English
-CORRECT: B
-DEMO,
-        ],
     ],
 
     // ── Multiple Choice (pipe-delimited format) ────────────────────────────
@@ -452,7 +250,7 @@ DEMO,
         <tr>
             <th scope="row"><label for="flow_audio_quiz_results_message">Results Intro</label></th>
             <td>
-                <input type="text" id="flow_audio_quiz_results_message" name="flow_audio_quiz_results_message" class="large-text" value="<?php echo esc_attr( $flosc_flow_settings['audio_quiz_results_message'] ?? 'Welcome! Here are your pronunciation assessment results.' ); ?>">
+                <input type="text" id="flow_audio_quiz_results_message" name="flow_audio_quiz_results_message" class="large-text" value="<?php echo esc_attr( $flosc_flow_settings['audio_quiz_results_message'] ?? 'Welcome! Here are your assessment results.' ); ?>">
                 <p class="description">Shown after login, before the detailed results.</p>
             </td>
         </tr>

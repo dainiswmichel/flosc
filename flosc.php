@@ -4398,7 +4398,7 @@ Example good response:
      */
     public function get_quiz_questions($request) {
         $quiz_id = sanitize_text_field($request->get_param('id') ?? 'default');
-        $default_text_quiz_id = flosc_get_setting('default_text_quiz_id', 'pronunciation_assessment_quiz');
+        $default_text_quiz_id = flosc_get_setting('default_text_quiz_id', 'sample_assessment_quiz');
         
         // v9.3.4: If 'default', rotate through ENABLED quizzes (ABAB pattern)
         // v3.0.2: Use flosc_get_setting to check flow settings first, then global option
@@ -6377,7 +6377,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("[FLOSC v8.0.7] score_visit
                     }
                 }
                 $score_data = [
-                    'quiz_id'   => $raw['quiz_id']      ?? flosc_get_setting('default_text_quiz_id', 'pronunciation_assessment_quiz'),
+                    'quiz_id'   => $raw['quiz_id']      ?? flosc_get_setting('default_text_quiz_id', 'sample_assessment_quiz'),
                     'score'     => intval( $raw['score'] ),
                     'correct'   => $correct,
                     'incorrect' => $incorrect,

@@ -112,52 +112,48 @@ class FLOSC_AI_Chat_Dispatch {
             }
         }
 
-        // v4.0.0: Pronunciation quiz results — available to Guests and members.
+        // Sample / flow assessment results — available to Guests and members.
         // Visitors NEVER see quiz results or learn which questions they missed.
         // They must create an account first. This is a STRICT business rule.
         $quiz_results_section = '';
-        if ( is_user_logged_in() && class_exists( 'FLOSC_Pronunciation_Assessment_Quiz' ) ) {
+        if ( is_user_logged_in() && class_exists( 'FLOSC_Sample_Assessment_Quiz' ) ) {
             $user_id     = get_current_user_id();
-            $raw_answers = get_user_meta( $user_id, '_flosc_quiz_answers_pronunciation_assessment_quiz', true );
+            $raw_answers = get_user_meta( $user_id, '_flosc_quiz_answers_sample_assessment_quiz', true );
             if ( ! empty( $raw_answers ) ) {
-                $quiz    = new FLOSC_Pronunciation_Assessment_Quiz();
-                $content = function_exists( 'flosc_get_setting' ) ? flosc_get_setting( 'quiz_content_pronunciation_assessment_quiz', '' ) : '';
+                $quiz    = new FLOSC_Sample_Assessment_Quiz();
+                $content = function_exists( 'flosc_get_setting' ) ? flosc_get_setting( 'quiz_content_sample_assessment_quiz', '' ) : '';
                 $result  = $quiz->analyze( $raw_answers, $content );
-
-                $sound_map = [
-                    1  => 'The /æ/ short-a vowel (cat, map, back)',
-                    2  => 'The American rhotic R (car, bird, butter)',
-                    3  => 'Voiceless TH /θ/ (think, three, bath)',
-                    4  => 'Voiced TH /ð/ (this, that, the)',
-                    5  => '/ɪ/ vs /iː/ — ship vs sheep',
-                    6  => 'Schwa /ə/ and unstressed vowels',
-                    7  => 'Flap T (butter = "budder")',
-                    8  => 'Word stress patterns (DES-ert vs de-SERT)',
-                    9  => 'Connected speech / linking (turn-it-off)',
-                    10 => 'Dark L vs. light L (full, ball, feel)',
-                ];
 
                 $score  = $result['score'];
                 $missed = $result['incorrect'];
                 $got    = $result['correct'];
                 $total  = count( $got ) + count( $missed );
+                $details = is_array( $result['details'] ?? null ) ? $result['details'] : array();
 
-                $quiz_results_section  = "## Pronunciation Quiz Results\n";
+                $quiz_results_section  = "## Assessment Quiz Results\n";
                 $quiz_results_section .= "Score: {$score}% (" . count( $got ) . "/{$total} correct)\n\n";
 
                 if ( ! empty( $missed ) ) {
-                    $quiz_results_section .= "**Sounds this learner needs to work on:**\n";
-                    foreach ( $missed as $lesson_num ) {
-                        $sound = $sound_map[ $lesson_num ] ?? "Lesson {$lesson_num}";
-                        $quiz_results_section .= "- Lesson {$lesson_num}: {$sound}\n";
+                    $quiz_results_section .= "**Topics this learner needs to work on:**\n";
+                    foreach ( $missed as $item_num ) {
+                        $topic = "Topic {$item_num}";
+                        $idx   = (int) $item_num - 1;
+                        if ( isset( $details[ $idx ]['topics'][0] ) && $details[ $idx ]['topics'][0] !== '' ) {
+                            $topic = (string) $details[ $idx ]['topics'][0];
+                        }
+                        $quiz_results_section .= "- Item {$item_num}: {$topic}\n";
                     }
                 }
 
                 if ( ! empty( $got ) ) {
-                    $quiz_results_section .= "\n**Sounds already mastered:**\n";
-                    foreach ( $got as $lesson_num ) {
-                        $sound = $sound_map[ $lesson_num ] ?? "Lesson {$lesson_num}";
-                        $quiz_results_section .= "- Lesson {$lesson_num}: {$sound}\n";
+                    $quiz_results_section .= "\n**Topics already solid:**\n";
+                    foreach ( $got as $item_num ) {
+                        $topic = "Topic {$item_num}";
+                        $idx   = (int) $item_num - 1;
+                        if ( isset( $details[ $idx ]['topics'][0] ) && $details[ $idx ]['topics'][0] !== '' ) {
+                            $topic = (string) $details[ $idx ]['topics'][0];
+                        }
+                        $quiz_results_section .= "- Item {$item_num}: {$topic}\n";
                     }
                 }
 
