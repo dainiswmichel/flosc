@@ -268,6 +268,38 @@ DEMO,
                 <p class="description">JSON object mapping IPA phoneme symbols (as returned by the pronunciation API) to lesson numbers. Example: <code>{"æ": 1, "θ": 35, "ð": 36}</code></p>
             </td>
         </tr>
+        <tr>
+            <th scope="row"><?php esc_html_e( 'Between-phrase escape hatch', 'flosc' ); ?></th>
+            <td>
+                <?php
+                $flosc_escape_enabled = ! isset( $flosc_flow_settings['audio_quiz_escape_enabled'] )
+                    || ! empty( $flosc_flow_settings['audio_quiz_escape_enabled'] );
+                $flosc_escape_once = ! isset( $flosc_flow_settings['audio_quiz_escape_once'] )
+                    || ! empty( $flosc_flow_settings['audio_quiz_escape_once'] );
+                $flosc_escape_after = isset( $flosc_flow_settings['audio_quiz_escape_after_phrase'] )
+                    ? max( 0, min( 99, (int) $flosc_flow_settings['audio_quiz_escape_after_phrase'] ) )
+                    : 3;
+                ?>
+                <label for="flow_audio_quiz_escape_enabled">
+                    <input type="checkbox" id="flow_audio_quiz_escape_enabled" name="flow_audio_quiz_escape_enabled" value="1" <?php checked( $flosc_escape_enabled ); ?>>
+                    <?php esc_html_e( 'Show escape hatch (upgrade / change tier) during the audio quiz', 'flosc' ); ?>
+                </label>
+                <br>
+                <label for="flow_audio_quiz_escape_once" class="flosc-inline-check-top">
+                    <input type="checkbox" id="flow_audio_quiz_escape_once" name="flow_audio_quiz_escape_once" value="1" <?php checked( $flosc_escape_once ); ?>>
+                    <?php esc_html_e( 'Show at most once per quiz attempt', 'flosc' ); ?>
+                </label>
+                <p class="description" style="margin-top:8px;">
+                    <label for="flow_audio_quiz_escape_after_phrase">
+                        <?php esc_html_e( 'Show after phrase number', 'flosc' ); ?>
+                        <input type="number" id="flow_audio_quiz_escape_after_phrase" name="flow_audio_quiz_escape_after_phrase" class="small-text" min="0" max="99" step="1" value="<?php echo esc_attr( (string) $flosc_escape_after ); ?>">
+                    </label>
+                </p>
+                <p class="description">
+                    <?php esc_html_e( 'Example: after phrase 3 of 5. Use 0 to show after every completed phrase (not recommended). Beginner tier shows an upgrade link; intermediate/advanced offer a softer tier. Defaults: enabled, once, after phrase 3.', 'flosc' ); ?>
+                </p>
+            </td>
+        </tr>
     </table>
 
     <!-- ── Active Quizzes — summary of what is live in the funnel ────────── -->

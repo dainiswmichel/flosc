@@ -5953,8 +5953,7 @@ class floscApp {
 
         this.ipaQuiz.currentIndex++;
         if (this.ipaQuiz.currentIndex < this.ipaQuiz.phrases.length) {
-            // Escape hatch once only — after phrase 3 (not after every phrase).
-            if (phraseNum === 3 && !this.ipaQuiz.escapeHatchShown) {
+            if (this._shouldShowQuizEscapeHatch(phraseNum)) {
                 this.ipaQuiz.escapeHatchShown = true;
                 this._showQuizEscapeHatch(phraseNum);
             }
@@ -6058,12 +6057,38 @@ class floscApp {
     }
 
     /**
-     * v8.0.1: Funny buy-now escape hatch shown between quiz phrases.
-     * Clicking it opens the offer/purchase flow immediately.
+     * Whether to show the between-phrase escape hatch for this phrase.
+     * Driven by flow settings: audio_quiz_escape_enabled / once / after_phrase.
+     *
+     * @param {number} phraseNum 1-based phrase just completed
+     * @return {boolean}
      */
+    _shouldShowQuizEscapeHatch(phraseNum) {
+        const cfg = this.config || {};
+        const enabled = cfg.audioQuizEscapeEnabled !== false && cfg.audioQuizEscapeEnabled !== 0 && cfg.audioQuizEscapeEnabled !== '0';
+        if (!enabled) {
+            return false;
+        }
+        const once = cfg.audioQuizEscapeOnce !== false && cfg.audioQuizEscapeOnce !== 0 && cfg.audioQuizEscapeOnce !== '0';
+        if (once && this.ipaQuiz?.escapeHatchShown) {
+            return false;
+        }
+        let after = parseInt(cfg.audioQuizEscapeAfterPhrase, 10);
+        if (!Number.isFinite(after)) {
+            after = 3;
+        }
+        after = Math.max(0, Math.min(99, after));
+        // 0 = after every completed phrase (admin opt-in); otherwise only that phrase number.
+        if (after === 0) {
+            return true;
+        }
+        return Number(phraseNum) === after;
+    }
+
     /**
      * Tier-aware escape hatch shown between quiz phrases.
      * Beginner: upgrade link. Intermediate: drop to beginner. Advanced: drop to beginner or intermediate.
+     * Timing is controlled by flow params via _shouldShowQuizEscapeHatch().
      */
     _showQuizEscapeHatch(phraseNum) {
         const tier = this.ipaQuiz.tier || 'intermediate';

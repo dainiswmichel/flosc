@@ -1284,6 +1284,16 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'audioQuizResultsMessage' => flosc_get_setting('audio_quiz_results_message', 'Welcome! Here are your assessment results.'),
             'audioQuizUpsellMessage' => flosc_get_setting('audio_quiz_upsell_message', 'Our accent analysis shows you would benefit from lessons on {1st}, {2nd}, and {4th}. Upgrade today for full access to all lessons.'),
             'audioQuizPhonemeLessonMap' => json_decode(flosc_get_setting('audio_quiz_phoneme_lesson_map', '{}'), true) ?: (object)[],
+            // Between-phrase escape hatch (upgrade / softer tier) — per-flow admin params.
+            'audioQuizEscapeEnabled' => (function () {
+                $v = flosc_get_setting( 'audio_quiz_escape_enabled', '1' );
+                return $v === '' || $v === null ? true : (bool) $v;
+            })(),
+            'audioQuizEscapeOnce' => (function () {
+                $v = flosc_get_setting( 'audio_quiz_escape_once', '1' );
+                return $v === '' || $v === null ? true : (bool) $v;
+            })(),
+            'audioQuizEscapeAfterPhrase' => max( 0, min( 99, (int) flosc_get_setting( 'audio_quiz_escape_after_phrase', 3 ) ) ),
             'ipaApiBaseUrl' => untrailingslashit(flosc_get_setting('ipa_api_base_url', '')),
             // Quiz IDs: this flow’s bag only — empty means no quiz surface on this flow.
             // Do not invent sample/pronunciation defaults when none are enabled.

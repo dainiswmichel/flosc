@@ -1045,6 +1045,18 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
                 $flosc_new_settings["quiz_variant_{$flosc_letter}_enabled"] = '';
             }
         }
+        // Audio quiz escape hatch checkboxes (unchecked = omit POST key).
+        foreach (['audio_quiz_escape_enabled', 'audio_quiz_escape_once'] as $flosc_cb) {
+            if (!isset($flosc_post["flow_{$flosc_cb}"])) {
+                $flosc_new_settings[$flosc_cb] = '';
+            }
+        }
+        if (isset($flosc_new_settings['audio_quiz_escape_after_phrase'])) {
+            $flosc_new_settings['audio_quiz_escape_after_phrase'] = max(
+                0,
+                min(99, intval($flosc_new_settings['audio_quiz_escape_after_phrase']))
+            );
+        }
     }
     if ($flosc_active_tab === 'style') {
         foreach (['companion_enabled', 'companion_show_for_visitors', 'companion_pass_page_context', 'companion_auto_open_enabled', 'companion_auto_open_once_per_session', 'companion_launch_on_exit_intent', 'companion_launch_on_scroll_threshold', 'companion_trigger_desktop_only', 'companion_trigger_suppress_on_auth_checkout', 'companion_focus_on_open', 'companion_allow_escape_close', 'companion_enable_keyboard_shortcut', 'companion_remember_open_state'] as $flosc_cb) {
