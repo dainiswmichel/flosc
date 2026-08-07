@@ -553,7 +553,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
             $locked  = true;
             $current = floatval($row->meta_value);
         } else {
-            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.SlowDBQuery.slow_db_query_meta_key,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- atomic balance row create by user_id+meta_key under transaction
             $wpdb->insert(
                 $wpdb->usermeta,
                 [
@@ -590,7 +590,7 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
         }
 
         $new_balance = $current - $amount;
-        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- atomic debit update by umeta_id under row lock
         $updated = $wpdb->update(
             $wpdb->usermeta,
             ['meta_value' => (string) $new_balance],
