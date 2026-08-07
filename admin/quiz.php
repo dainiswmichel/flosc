@@ -289,7 +289,7 @@ DEMO,
                     <input type="checkbox" id="flow_audio_quiz_escape_once" name="flow_audio_quiz_escape_once" value="1" <?php checked( $flosc_escape_once ); ?>>
                     <?php esc_html_e( 'Show at most once per quiz attempt', 'flosc' ); ?>
                 </label>
-                <p class="description" style="margin-top:8px;">
+                <p class="description flosc-description-top-8">
                     <label for="flow_audio_quiz_escape_after_phrase">
                         <?php esc_html_e( 'Show after phrase number', 'flosc' ); ?>
                         <input type="number" id="flow_audio_quiz_escape_after_phrase" name="flow_audio_quiz_escape_after_phrase" class="small-text" min="0" max="99" step="1" value="<?php echo esc_attr( (string) $flosc_escape_after ); ?>">
