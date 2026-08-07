@@ -3738,7 +3738,7 @@ class floscApp {
         merged.id = (configOffer && configOffer.id) || merged.id || merged.offer_id || wantId;
         merged.offer_id = merged.offer_id || merged.id;
 
-        // Never show a bare offer id / message slug as the product title.
+        // Never show a bare offer id / message slug as the offer title.
         const rawName = String(merged.name || '').trim();
         if (!rawName || rawName === wantId || rawName === merged.id || rawName === merged.offer_id
             || /^[a-z0-9]+(?:_[a-z0-9]+)+$/i.test(rawName)) {
