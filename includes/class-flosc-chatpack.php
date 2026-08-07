@@ -951,9 +951,10 @@ class FLOSC_Chatpack {
         $weakest_sounds = $eval_context['ipa_weakest_sounds'] ?? [];
         if (empty($weakest_sounds)) return '';
 
-        $catalog_path = function_exists('flosc_config_file')
-            ? flosc_config_file('lesaep_lesson_catalog.md')
-            : '';
+        // Neutral + legacy basenames (lesson_catalog.md, lesaep_lesson_catalog.md).
+        $catalog_path = function_exists('flosc_resolve_lesson_catalog_path')
+            ? flosc_resolve_lesson_catalog_path()
+            : (function_exists('flosc_config_file') ? flosc_config_file('lesson_catalog.md') : '');
         if (!$catalog_path || !file_exists($catalog_path)) return '';
 
         $catalog = flosc_fs_get_contents($catalog_path);

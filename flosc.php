@@ -1870,21 +1870,42 @@ The Team',
     }
 
     /**
-     * Generate lesaep_lesson_catalog.md from all published posts in the LeSAEp category.
-     * Writes to ai_configuration_files/lesaep_lesson_catalog.md.
+     * Generate the flow lesson catalog markdown from published posts in the
+     * configured lessons category (default category slug remains product BC).
+     * Writes every basename from flosc_lesson_catalog_write_paths() (neutral + legacy).
      * Auto-updates on save_post hook; also callable manually.
      */
     public function generate_lesaep_lesson_catalog() {
         if (!defined('FLOSC_PLUGIN_DIR')) return;
-        $catalog_dir = flosc_data_dir();
-        if ('' === $catalog_dir) {
-            return; // Uploads unavailable — regenerate on a later request instead of writing elsewhere.
+        $write_paths = function_exists('flosc_lesson_catalog_write_paths')
+            ? flosc_lesson_catalog_write_paths()
+            : [];
+        if (empty($write_paths)) {
+            $catalog_dir = flosc_data_dir();
+            if ('' === $catalog_dir) {
+                return; // Uploads unavailable — regenerate on a later request instead of writing elsewhere.
+            }
+            $write_paths = [
+                $catalog_dir . 'lesson_catalog.md',
+                $catalog_dir . 'lesaep_lesson_catalog.md',
+            ];
         }
-        $catalog_path = $catalog_dir . 'lesaep_lesson_catalog.md';
 
-        // Query all published posts in the LeSAEp category
+        // Category: flow setting first, then legacy product slug so existing installs keep working.
+        $category = '';
+        if (function_exists('flosc_get_setting')) {
+            $category = sanitize_title((string) flosc_get_setting('lessons_category', ''));
+            if ($category === '') {
+                $category = sanitize_title((string) flosc_get_setting('free_lesson_pool_category', ''));
+            }
+        }
+        if ($category === '') {
+            $category = 'lesaep';
+        }
+
+        // Query all published posts in the lessons category
         $args = [
-            'category_name' => 'lesaep',
+            'category_name' => $category,
             'post_status'   => 'publish',
             'posts_per_page'=> -1,
             'orderby'       => 'date',
@@ -1912,10 +1933,22 @@ The Team',
 
         $lesson_count = count($lessons);
         $date = current_time('Y-m-d');
+        $product_label = function_exists('flosc_get_setting')
+            ? trim((string) (flosc_get_setting('identity', [])['name'] ?? ''))
+            : '';
+        if ($product_label === '' && function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'get_current_flow')) {
+            $flow = flosc()->get_current_flow();
+            if (is_array($flow)) {
+                $product_label = trim((string) ($flow['identity']['name'] ?? $flow['name'] ?? ''));
+            }
+        }
+        if ($product_label === '') {
+            $product_label = 'Lesson';
+        }
 
-        $content  = "# LeSAEp Lesson Catalog\n\n";
+        $content  = "# {$product_label} Lesson Catalog\n\n";
         $content .= "**Auto-generated from WordPress.** This catalog is everything you have been given about\n";
-        $content .= "LeSAEp lessons. If a lesson is not listed here, you have not been given information about\n";
+        $content .= "these lessons. If a lesson is not listed here, you have not been given information about\n";
         $content .= "it — say so rather than inventing titles, numbers, or content.\n\n";
         $content .= "**Total lessons: {$lesson_count}**\n\n";
         $content .= "All lessons require membership unless explicitly marked free in a learner's profile.\n\n";
@@ -1945,10 +1978,16 @@ The Team',
         }
 
         $content .= "\n---\n\n";
-        $content .= "*Generated: {$date}. Source: WordPress LeSAEp category, published posts only.*\n";
+        $content .= "*Generated: {$date}. Source: WordPress category \"{$category}\", published posts only.*\n";
         $content .= "*If a lesson is not in this table, you do not have information about it — say so.*\n";
 
-        if (flosc_write_data_file($catalog_path, $content)) {
+        $wrote = false;
+        foreach ($write_paths as $catalog_path) {
+            if (flosc_write_data_file($catalog_path, $content)) {
+                $wrote = true;
+            }
+        }
+        if ($wrote) {
             update_option('flosc_lesson_catalog_generated', current_time('mysql'));
             update_option('flosc_lesson_catalog_count', $lesson_count);
         }

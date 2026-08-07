@@ -41,7 +41,9 @@ $flosc_chain_provider_3 = $flosc_flow_settings['ai_chain_provider_3'] ?? '';
 // Fix 9: Risk condition notices — read directly from flow settings (get_current_flow() is null in admin context)
 $flosc_product_name = $flosc_flow_settings['identity']['name'] ?? $flosc_flow_settings['name'] ?? '';
 $flosc_product_tag  = $flosc_flow_settings['identity']['tagline'] ?? $flosc_flow_settings['tagline'] ?? '';
-$flosc_catalog_file  = function_exists('flosc_config_file') ? flosc_config_file('lesaep_lesson_catalog.md') : '';
+$flosc_catalog_file  = function_exists('flosc_resolve_lesson_catalog_path')
+    ? flosc_resolve_lesson_catalog_path()
+    : (function_exists('flosc_config_file') ? flosc_config_file('lesson_catalog.md') : '');
 $flosc_catalog_age   = ($flosc_catalog_file && file_exists($flosc_catalog_file)) ? (time() - filemtime($flosc_catalog_file)) : PHP_INT_MAX;
 $flosc_notices = [];
 if ((float) $flosc_ai_temperature > 0.5) {
@@ -741,7 +743,9 @@ if ( $flosc_kb_msg !== '' ) :
 
 <?php
 // Fix 6: Regenerate Lesson Catalog button
-$flosc_catalog_file   = function_exists('flosc_config_file') ? flosc_config_file('lesaep_lesson_catalog.md') : '';
+$flosc_catalog_file   = function_exists('flosc_resolve_lesson_catalog_path')
+    ? flosc_resolve_lesson_catalog_path()
+    : (function_exists('flosc_config_file') ? flosc_config_file('lesson_catalog.md') : '');
 $flosc_catalog_exists = $flosc_catalog_file && file_exists($flosc_catalog_file);
 $flosc_catalog_gen    = get_option('flosc_lesson_catalog_generated', '');
 $flosc_catalog_count  = get_option('flosc_lesson_catalog_count', 0);
@@ -756,7 +760,7 @@ $flosc_regen_url      = wp_nonce_url(admin_url('admin-post.php?action=flosc_rege
         <?php else: ?>
             <span class="flosc-text-danger flosc-margin-left-8">Not yet generated</span>
         <?php endif; ?>
-        <p class="description flosc-margin-top-4">Auto-regenerates when a LeSAEp lesson is saved. Manual regeneration queries all published LeSAEp posts.</p>
+        <p class="description flosc-margin-top-4">Auto-regenerates when a lesson post in the configured lessons category is saved. Manual regeneration queries published posts in that category (legacy default: lesaep).</p>
     </div>
     <a href="<?php echo esc_url($flosc_regen_url); ?>" class="button button-secondary">Regenerate Lesson Catalog</a>
 </div>

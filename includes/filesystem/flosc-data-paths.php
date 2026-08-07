@@ -871,6 +871,77 @@ if (!function_exists('flosc_config_file')) {
         return FLOSC_PLUGIN_DIR . 'ai_configuration_files/' . $filename;
     }
 }
+
+/**
+ * Lesson-catalog basenames: neutral first, legacy product filename second.
+ * Filterable so a product module can add/override names without forking readers.
+ *
+ * @return string[]
+ */
+if (!function_exists('flosc_lesson_catalog_basenames')) {
+    function flosc_lesson_catalog_basenames() {
+        $names = ['lesson_catalog.md', 'lesaep_lesson_catalog.md'];
+        /**
+         * @param string[] $names Basename candidates, first match wins for reads.
+         */
+        $names = apply_filters('flosc_lesson_catalog_basenames', $names);
+        return is_array($names) ? array_values(array_filter(array_map('strval', $names))) : [];
+    }
+}
+
+/**
+ * Resolve the on-disk lesson catalog for recs/admin: first existing basename.
+ * If none exist, returns the path for the preferred (first) basename (may not exist yet).
+ *
+ * @return string Absolute path or empty string.
+ */
+if (!function_exists('flosc_resolve_lesson_catalog_path')) {
+    function flosc_resolve_lesson_catalog_path() {
+        if (!function_exists('flosc_config_file')) {
+            return '';
+        }
+        $preferred = '';
+        foreach (flosc_lesson_catalog_basenames() as $i => $base) {
+            $base = ltrim((string) $base, '/');
+            if ($base === '') {
+                continue;
+            }
+            $path = flosc_config_file($base);
+            if ($i === 0) {
+                $preferred = $path;
+            }
+            // flosc_config_file returns plugin path even when missing; require real file for match.
+            if ($path && file_exists($path)) {
+                return $path;
+            }
+        }
+        return $preferred;
+    }
+}
+
+/**
+ * Absolute write targets for generated catalog (uploads dir). Writes all basenames
+ * so legacy product filenames and neutral ship names stay in sync.
+ *
+ * @return string[] Absolute paths under flosc_data_dir(), or empty if uploads unavailable.
+ */
+if (!function_exists('flosc_lesson_catalog_write_paths')) {
+    function flosc_lesson_catalog_write_paths() {
+        $dir = function_exists('flosc_data_dir') ? flosc_data_dir() : '';
+        if ($dir === '') {
+            return [];
+        }
+        $out = [];
+        foreach (flosc_lesson_catalog_basenames() as $base) {
+            $base = ltrim((string) $base, '/');
+            if ($base !== '') {
+                $out[] = $dir . $base;
+            }
+        }
+        return $out;
+    }
+}
+
 if (!function_exists('flosc_config_glob')) {
     // Union of glob matches across uploads + plugin dirs, deduped by basename
     // (uploads wins, since it is scanned first). $patterns is one pattern or a list.
