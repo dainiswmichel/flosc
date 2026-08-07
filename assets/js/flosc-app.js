@@ -4804,14 +4804,21 @@ class floscApp {
     }
     
     // Offer ID for Upgrade / checkout entry — flow offers registry only (no brand hardcodes).
+    // Prefer explicit default_offer_id (admin intent), then first active paid offer.
     getOfferIdForProduct(productId) {
         const offers = this.config.offers || [];
-        const active = offers.find(o => (o.status === 'active' || o.active) && o.id !== 'free_trial');
+        const defaultId = String(this.config.defaultOfferId || '').trim();
+        if (defaultId) {
+            const match = offers.find((o) => o && String(o.id || '') === defaultId);
+            if (match && match.id) {
+                return match.id;
+            }
+            // Still return configured id even if not in client list (admin may load via API).
+            return defaultId;
+        }
+        const active = offers.find((o) => (o.status === 'active' || o.active) && o.id !== 'free_trial');
         if (active && active.id) {
             return active.id;
-        }
-        if (this.config.defaultOfferId) {
-            return this.config.defaultOfferId;
         }
         if (offers[0] && offers[0].id) {
             return offers[0].id;
