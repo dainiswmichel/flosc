@@ -94,9 +94,8 @@ class FLOSC_AI_Chat_Dispatch {
                 $quiz_action_section .= "When a user asks to take a quiz or test their pronunciation:\n";
                 $quiz_action_section .= "- Just allow the quiz code to do its thing and present the quiz to the user.\n";
                 $quiz_action_section .= "- DO NOT fabricate a quiz. You are NOT the content creator here. ";
-                $quiz_action_section .= "You are an IVR message humanizer and the special LeSAEp ";
-                $quiz_action_section .= "(Learn Excellent Standard American English Pronunciation) content facilitator. ";
-                $quiz_action_section .= "The content is the LeSAEp category of WordPress posts. ";
+                $quiz_action_section .= "You are an IVR message humanizer and content facilitator for this flow. ";
+                $quiz_action_section .= "Lesson content comes from this flow's WordPress posts / knowledge base. ";
                 $quiz_action_section .= "You do not need to fabricate quizzes — please DO NOT FABRICATE QUIZZES.\n";
                 $quiz_action_section .= "- Should you be unable to restrain yourself, and simply MUST interject yourself ";
                 $quiz_action_section .= "between the user's quiz request and the system's presentation of the quiz to the user, ";
@@ -113,16 +112,22 @@ class FLOSC_AI_Chat_Dispatch {
             }
         }
 
-        // v4.0.0: LeSAEp quiz results — available to Guests and LeSAEp Learners (members).
+        // v4.0.0: Pronunciation quiz results — available to Guests and members.
         // Visitors NEVER see quiz results or learn which questions they missed.
         // They must create an account first. This is a STRICT business rule.
         $quiz_results_section = '';
         if ( is_user_logged_in() && class_exists( 'FLOSC_LeSAEp_Pronunciation_Quiz' ) ) {
             $user_id     = get_current_user_id();
             $raw_answers = get_user_meta( $user_id, '_flosc_quiz_answers_lesaep_text_based_pronunciation_quiz', true );
+            if ( empty( $raw_answers ) ) {
+                $raw_answers = get_user_meta( $user_id, '_flosc_quiz_answers_pronunciation_assessment_quiz', true );
+            }
             if ( ! empty( $raw_answers ) ) {
                 $quiz    = new FLOSC_LeSAEp_Pronunciation_Quiz();
                 $content = function_exists( 'flosc_get_setting' ) ? flosc_get_setting( 'quiz_content_lesaep_text_based_pronunciation_quiz', '' ) : '';
+                if ( $content === '' && function_exists( 'flosc_get_setting' ) ) {
+                    $content = flosc_get_setting( 'quiz_content_pronunciation_assessment_quiz', '' );
+                }
                 $result  = $quiz->analyze( $raw_answers, $content );
 
                 $sound_map = [
@@ -143,7 +148,7 @@ class FLOSC_AI_Chat_Dispatch {
                 $got    = $result['correct'];
                 $total  = count( $got ) + count( $missed );
 
-                $quiz_results_section  = "## LeSAEp Pronunciation Quiz Results\n";
+                $quiz_results_section  = "## Pronunciation Quiz Results\n";
                 $quiz_results_section .= "Score: {$score}% (" . count( $got ) . "/{$total} correct)\n\n";
 
                 if ( ! empty( $missed ) ) {
@@ -163,20 +168,19 @@ class FLOSC_AI_Chat_Dispatch {
                 }
 
                 // Membership for AI: trust access_level / is_member first, then purchased (bool or Yes).
-                // Never require purchased === 'Yes' alone — that mis-labels LeSAEp Learners as guests.
                 $is_member = $this->flosc_context_user_is_member( $context );
                 if ( $is_member ) {
-                    $quiz_results_section .= "\n**Context:** This user is a **LeSAEp Learner** (full member access). "
+                    $quiz_results_section .= "\n**Context:** This user is a **member** (full member access). "
                         . "You CAN and SHOULD discuss their missed sounds in detail, reference specific lesson numbers "
                         . "(e.g. Lesson 45 for [w]), guide them to real WordPress lessons, and help them practice. "
                         . "Do NOT claim they are a guest. Do NOT push upgrades or free-lesson funnels. "
                         . "Do NOT say you already answered, refuse, or make excuses — find the lesson and help.\n";
                 } else {
                     // Guest — logged in, not full member
-                    $quiz_results_section .= "\n**Context:** This user is a **Guest** (logged in, not a LeSAEp Learner yet). "
+                    $quiz_results_section .= "\n**Context:** This user is a **Guest** (logged in, not a full member yet). "
                         . "You MAY share their quiz score and which sounds they missed. "
                         . "Do NOT deliver full lesson content (videos, exercises, detailed how-to). "
-                        . "You may invite them to unlock full LeSAEp Learner access.\n";
+                        . "You may invite them to unlock full member access.\n";
                 }
             }
         }
@@ -678,7 +682,7 @@ class FLOSC_AI_Chat_Dispatch {
                 || $context['purchased'] === ''
             ) {
                 // Has full access even if _flosc_purchased is empty (admin/sandbox grant).
-                $context['member_entitlement'] = 'LeSAEp Learner (full member access)';
+                $context['member_entitlement'] = 'Member (full member access)';
             }
         }
 
@@ -700,7 +704,7 @@ class FLOSC_AI_Chat_Dispatch {
             $lines[] = "- **{$label}:** {$formatted_value}";
         }
         if ( $is_member ) {
-            $lines[] = '- **User tier for content:** LeSAEp Learner — full lesson access. Do NOT treat as guest. Do NOT refuse lesson requests or invent upgrade funnels.';
+            $lines[] = '- **User tier for content:** Member — full lesson access. Do NOT treat as guest. Do NOT refuse lesson requests or invent upgrade funnels.';
         }
 
         foreach ($context as $key => $value) {

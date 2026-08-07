@@ -4171,22 +4171,22 @@ Example BAD response:
 \"Here's the full lesson content...\" ← NO! Content is for members only!",
             
             'member' => "
-**✅ ACCESS LEVEL: MEMBER — LeSAEp Learner (full access granted)**
+**✅ ACCESS LEVEL: MEMBER (full access granted)**
 
-This user is a **LeSAEp Learner**, not a guest and not a visitor.
+This user is a **member**, not a guest and not a visitor.
 
 You can and must share:
 - ✅ Full lesson content
 - ✅ Complete guides and instructions
 - ✅ Step-by-step walkthroughs
 - ✅ All member-only content
-- ✅ Specific lesson numbers (e.g. Lesson 45 for the [w] sound)
+- ✅ Specific lesson numbers and topics from this flow's library
 
 **NO-EXCUSE POLICY (CRITICAL):**
 - Do NOT claim they are a guest or need to upgrade.
 - Do NOT say you already answered, cannot find a lesson, or invent barriers.
 - Do NOT push free-lesson funnels or purchase offers to members.
-- When they ask for a sound or topic (e.g. W / [w]), find the matching lesson and help.
+- When they ask for a topic, find the matching lesson and help.
 - Prefer real WordPress lesson titles/numbers over fabricating content.
 
 **YOUR ROLE:**
@@ -4197,7 +4197,7 @@ You are still a GUIDE. Don't try to teach everything yourself.
 - Celebrate their membership!
 
 Example good response:
-\"As a LeSAEp Learner you have full access. For the [w] sound, start with Lesson 45 — want me to open it?\"",
+\"As a member you have full access. For that topic, start with the matching lesson — want me to open it?\"",
 
         ];
         
@@ -5151,9 +5151,9 @@ Example good response:
 
         if (!empty($incorrect) && is_array($incorrect)) {
             $response .= "Here are the sounds you missed: **" . implode(', ', array_slice($incorrect, 0, 10)) . "**.\n\n";
-            $response .= "Each of these sounds has a specific mouth position and airflow pattern. The full LeSAEp course walks you through each one with video demonstrations. Would you like to try a free lesson?";
+            $response .= "Each of these sounds has a specific mouth position and airflow pattern. The full course walks you through each one with video demonstrations. Would you like to try a free lesson?";
         } else {
-            $response .= "The full LeSAEp course covers all the sounds you need to practice, with detailed lessons on mouth position, tongue placement, and airflow. Would you like to try a free lesson?";
+            $response .= "The full course covers all the sounds you need to practice, with detailed lessons on mouth position, tongue placement, and airflow. Would you like to try a free lesson?";
         }
 
         return $response;
@@ -5276,11 +5276,11 @@ Example good response:
             $ai_context['access_level'] = $is_member
                 ? 'member'
                 : ( ( $eval_context['access_level'] ?? '' ) === 'visitor' ? 'visitor' : 'guest' );
-            // For AI prompts: purchased means "has full member entitlement" (LeSAEp Learner).
+            // For AI prompts: purchased means "has full member entitlement".
             // Commerce-only _flosc_purchased stays on FLOSC_USER for "thanks for buying" IVR.
             $ai_context['purchased'] = $is_member;
             if ( $is_member ) {
-                $ai_context['member_entitlement'] = 'LeSAEp Learner (full member access)';
+                $ai_context['member_entitlement'] = 'Member (full member access)';
             }
         } else {
             // Visitor — check eval_context for pre-login quiz data
@@ -10322,11 +10322,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         if (!$displayed_user_id) return;
 
         bp_core_new_nav_item([
-            'name'                => __('LeSAEp', 'flosc'),
-            'slug'                => 'lesaep_tab',
+            'name'                => __('Quiz Results', 'flosc'),
+            'slug'                => 'flosc_quiz_tab',
             'position'            => 80,
             'screen_function'     => [$this, 'buddyboss_quiz_tab_screen'],
-            'default_subnav_slug' => 'lesaep_tab',
+            'default_subnav_slug' => 'flosc_quiz_tab',
             'show_for_displayed_user' => true,
         ]);
     }
@@ -10337,7 +10337,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      */
     public function buddyboss_quiz_tab_screen() {
         add_action('bp_template_title', function() {
-            echo 'LeSAEp';
+            echo esc_html__('Quiz Results', 'flosc');
         });
         add_action('bp_template_content', [$this, 'render_buddyboss_quiz_tab']);
         // BuddyPress members plugin template (core BP path; no third-party filter needed).
