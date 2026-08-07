@@ -35,7 +35,7 @@ $flosc_concierge_default_success = 'Password confirmed - here you go.';
 $flosc_concierge_default_delivery = "Warm, concise, and human.\nAlways offer a soft off-ramp: Would you like to continue this concierge exchange, or would you like to chat about something else?";
 $flosc_concierge_default_off_ramp_exactness = 'preferred';
 $flosc_concierge_default_off_ramp_phrases = "Do you want to continue trying to enter the correct password for {keyword}, or would you like to chat about something else?\nWould you like to continue this concierge exchange, or would you like to chat about something else?\nWould you like to continue with this, or are you interested in something else?";
-$flosc_concierge_default_content = "https://dainis.net/music/put-vejini-saulstavu-apdare/\n\nWould you like to continue this concierge exchange, or would you like to chat about something else?";
+$flosc_concierge_default_content = "https://example.com/private-resource\n\nWould you like to continue this concierge exchange, or would you like to chat about something else?";
 
 $flosc_concierge_posts = get_posts([
     'post_type' => 'post',
@@ -71,12 +71,12 @@ $flosc_concierge_posts = array_values(array_filter((array) $flosc_concierge_post
         <div class="notice notice-error"><p>Could not create concierge post. Please try again.</p></div>
     <?php endif; ?>
 
-    <p>Primary workflow: create a <strong>private WordPress post</strong> in category path <strong>flosc-internal/concierge</strong>. FLOSC syncs it into the flow DB immediately, and Br3nda uses the same live AI engine to host it.</p>
+    <p>Primary workflow: create a <strong>private WordPress post</strong> in category path <strong>flosc-internal/concierge</strong>. FLOSC syncs it into the flow DB immediately, and the active flow assistant uses the same live AI engine to host it.</p>
 
     <h3>Post Template (Copy/Paste)</h3>
     <p class="description">All a floscAdmin has to do is create a private post in <strong>flosc-internal/concierge</strong> and follow this shape:</p>
-    <pre><code>Flow: Br3nda
-Deployment: dainis.net/chat
+    <pre><code>Flow: Your Flow Name
+Deployment: your-domain.example/chat
 Keyword: concierge-keyword
 Password: optional-password
 Delivery style: Warm, concise, and human.
@@ -171,7 +171,7 @@ Would you like to continue this concierge exchange, or would you like to chat ab
                 <th scope="row"><label for="flosc_cncrg_content">Content To Deliver</label></th>
                 <td>
                     <textarea id="flosc_cncrg_content" name="flosc_cncrg_content" rows="10" class="large-text" placeholder="Put private concierge content here (links, PDFs, contact details, instructions)." required><?php echo esc_textarea($flosc_concierge_default_content); ?></textarea>
-                    <p class="description">This is the private source Br3nda uses when the guest clears keyword/password.</p>
+                    <p class="description">This is the private source assistant uses when the guest clears keyword/password.</p>
                 </td>
             </tr>
         </table>
@@ -221,8 +221,8 @@ Would you like to continue this concierge exchange, or would you like to chat ab
     <hr>
     <h3>Template For New Concierge Posts</h3>
     <p class="description">Copy this into a new WordPress post, then edit values. Save as <strong>Private</strong> to activate, or <strong>Draft</strong> to keep OFF.</p>
-    <pre><code>Flow: Br3nda
-Deployment: dainis.net/chat
+    <pre><code>Flow: Your Flow Name
+Deployment: your-domain.example/chat
 Keyword: banana
 Password: orange
 Delivery style: Warm, concise, and human.
@@ -233,7 +233,7 @@ Would you like to continue with this, or are you interested in something else?
 Instructions template: Ask consent before revealing details.
 
 Content to deliver:
-https://dainis.net/music/put-vejini-saulstavu-apdare/
+https://example.com/private-resource
 
 Would you like to continue this concierge exchange, or would you like to chat about something else?</code></pre>
 </div>

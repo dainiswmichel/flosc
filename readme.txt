@@ -241,16 +241,9 @@ Privacy policy: https://www.linkedin.com/legal/privacy-policy
 Endpoint examples: https://api.yourdomain.tld/analyze, https://api.yourdomain.tld/analyze-phrase, https://api.yourdomain.tld/finalize-session, https://api.yourdomain.tld/session/{id}
 Purpose: score quiz submissions and finalize/retrieve session scoring data for flows that use an external scoring provider.
 Data sent: quiz audio, answer payloads, and session-finalization data required by the configured provider. FLOSC also sends request-signing headers: X-FLOSC-Site, X-FLOSC-MTS (UTC Michel timestamp), and X-FLOSC-Signature (HMAC-SHA256 over payload_json + newline + mts + newline + site).
-Configuration note: floscAdmins can configure a per-flow external scoring endpoint. If a flow uses an external scoring provider, quiz audio and related scoring payloads may be sent to that provider. Audio playback conversion dispatch is optional and flow-scoped through the Audio Conversion Provider setting (none|lesaep).
+Configuration note: floscAdmins can configure a per-flow external scoring endpoint. If a flow uses an external scoring provider, quiz audio and related scoring payloads may be sent to that provider. Audio playback conversion dispatch is optional and flow-scoped through the Audio Conversion Provider setting (none|external).
 
-15. LeSAEp API (for LeSAEp pronunciation scoring and optional playback conversion)
-Endpoint examples: https://api.lesaep.com/analyze, https://api.lesaep.com/analyze-phrase, https://api.lesaep.com/finalize-session, https://api.lesaep.com/session/{id}
-Purpose: process LeSAEp pronunciation scoring requests when a flow is configured to use LeSAEp as its external scoring provider; optionally dispatch playback conversion jobs when Audio Conversion Provider is set to lesaep.
-Data sent: quiz audio, phrase/answer payloads, session identifiers, and signed request headers (X-FLOSC-Site, X-FLOSC-MTS, X-FLOSC-Signature).
-Service terms: https://lesaep.com/terms-of-service/
-Privacy policy: https://lesaep.com/privacy/
-
-16. Amazon product search links (optional affiliate offers)
+15. Amazon product search links (optional affiliate offers)
 Endpoint examples: https://www.amazon.com/s (search results URL with affiliate tag when Amazon affiliate is enabled)
 Purpose: generate outbound search links so visitors can find products; FLOSC does not call Amazon Product Advertising API by default.
 Data sent: search keywords and the site's Amazon associate tag in the query string when the visitor follows the link.

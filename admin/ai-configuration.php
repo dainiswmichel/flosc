@@ -626,7 +626,7 @@ jQuery(document).ready(function($) {
         <td>
             <input type="text" id="flow_ai_personality_name" name="flow_ai_personality_name"
                    value="<?php echo esc_attr($flosc_flow_settings['ai_personality_name'] ?? ($flosc_flow_settings['ai_name'] ?? '')); ?>"
-                   class="regular-text" placeholder="e.g. LeSAEp Coach">
+                   class="regular-text" placeholder="e.g. Course Coach">
             <p class="description">What users call the AI.</p>
         </td>
     </tr>
@@ -760,7 +760,7 @@ $flosc_regen_url      = wp_nonce_url(admin_url('admin-post.php?action=flosc_rege
         <?php else: ?>
             <span class="flosc-text-danger flosc-margin-left-8">Not yet generated</span>
         <?php endif; ?>
-        <p class="description flosc-margin-top-4">Auto-regenerates when a lesson post in the configured lessons category is saved. Manual regeneration queries published posts in that category (legacy default: lesaep).</p>
+        <p class="description flosc-margin-top-4">Auto-regenerates when a lesson post in the configured lessons category is saved. Manual regeneration queries published posts in that category.</p>
     </div>
     <a href="<?php echo esc_url($flosc_regen_url); ?>" class="button button-secondary">Regenerate Lesson Catalog</a>
 </div>
@@ -922,9 +922,9 @@ jQuery(document).ready(function($) {
     var testMessages = [
         "Hello, I'm new here. What is this?",
         "What does FLOSC stand for?",
-        "Tell me about LeSAEp",
+        "Tell me about this product",
         "What lessons are available for me?",
-        "What does LeSAEp stand for exactly?",
+        "What does the product name stand for?",
         "How many lessons are there in total?",
         "What is lesson 25 about?",
         "What makes this different from other pronunciation programs?",
@@ -934,9 +934,9 @@ jQuery(document).ready(function($) {
     var testProbes = [
         'identity',
         'flosc_acronym',
-        'lesaep_knowledge',
+        'product_knowledge',
         'lesson_inventory',
-        'lesaep_acronym',
+        'product_acronym',
         'lesson_count',
         'specific_lesson',
         'marketing_claims',

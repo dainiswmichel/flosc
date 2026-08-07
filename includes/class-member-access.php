@@ -98,7 +98,7 @@ class FLOSC_Member_Access {
         update_user_meta($user_id, '_flosc_member_since', time());
         update_user_meta($user_id, '_flosc_purchase_data', $purchase_data);
 
-        // Per-flow membership — required for multi-flow (LeSAEp member ≠ flosc.ai member).
+        // Per-flow membership — required for multi-flow (flow member ≠ flosc.ai member).
         $flow_raw = (string) ($purchase_data['flow_id'] ?? '');
         if ($flow_raw === '' && function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'get_current_flow')) {
             $flow = flosc()->get_current_flow();

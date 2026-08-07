@@ -464,7 +464,7 @@ class FLOSC_Chat_Logger {
         }
 
         // 'admin' → renders pale-green "(admin)"; 'bot' → renders as a normal AI
-        // (Br3nda) message, but still admin-authored and delivered via the poll.
+        // (assistant) message, but still admin-authored and delivered via the poll.
         $response_source = ($source === 'bot') ? 'admin_bot' : 'admin';
 
         $result = $wpdb->insert(
@@ -526,7 +526,7 @@ class FLOSC_Chat_Logger {
                 'id'        => intval($r['id']),
                 'text'      => (string) $r['ai_response'],
                 'name'      => (string) $r['provider'],
-                // 'bot' → render as a normal Br3nda message; 'admin' → pale-green "(admin)".
+                // 'bot' → render as a normal assistant message; 'admin' → pale-green "(admin)".
                 'source'    => ($r['response_source'] === 'admin_bot') ? 'bot' : 'admin',
                 'timestamp' => (string) $r['timestamp'],
             ];

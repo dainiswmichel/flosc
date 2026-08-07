@@ -439,7 +439,7 @@ $flosc_free_lesson_never_free = (string) ($flosc_flow_settings['free_lesson_neve
             <p class="description">
                 <strong>Saved as <code>free_lesson_pool_category</code>.</strong>
                 Only published posts in this category (matching <code>_flosc_lesson_number</code>) can be free samples.
-                Tip: child category under main lessons (e.g. <code>lesaep</code> → <code>4guests</code>).
+                Tip: child category under main lessons (e.g. <code>main_lessons</code> → <code>4guests</code>).
             </p>
         </td>
     </tr>

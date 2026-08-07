@@ -89,7 +89,7 @@ trait FLOSC_Chat_Turn_Trait {
         }
         
         // v1.8.9 FIX: Set flow context so flosc_get_setting() can find API keys
-        // REST calls from flosc.ai go to dainis.net/wp-json — HTTP_HOST is dainis.net,
+        // REST calls from flosc.ai go to the WordPress host/wp-json — HTTP_HOST is the WordPress host,
         // not the custom domain, so get_current_flow() fails. This forces the flow.
         if (!empty($flow_id)) {
             $this->set_flow_context($flow_id);
@@ -192,7 +192,7 @@ trait FLOSC_Chat_Turn_Trait {
                     ];
                 }
             }
-            // Desk open for this guest? Inject the authorized brief so Br3nda hosts
+            // Desk open for this guest? Inject the authorized brief so assistant hosts
             // the reveal in her own voice; otherwise this is the empty string and the
             // normal chat path is byte-for-byte unchanged. The brief speaks ONLY in
             // reply to the guest's own messages — never the auto-welcome or any other
@@ -305,7 +305,7 @@ trait FLOSC_Chat_Turn_Trait {
 
             $contact_email = sanitize_email((string) ($contact_form['email'] ?? ''));
             if ($contact_email !== '' && is_email($contact_email) && $this->is_guest_request_email_blocked($contact_email)) {
-                $thank_you_message = __('Thanks, dear guest. Br3nda has recorded your request and Dainis will respond by email.', 'flosc');
+                $thank_you_message = __('Thanks, dear guest. Your request has been recorded and an administrator will respond by email.', 'flosc');
                 $redirect_url = $this->flosc_get_visitor_session_end_redirect_url($flow_id);
                 $contact_log_message = implode("\n", [
                     '[GUEST ACCOUNT REQUEST BLOCKED]',
@@ -367,13 +367,13 @@ trait FLOSC_Chat_Turn_Trait {
                 ], 400);
             }
 
-            // Two intents share this path (both email Dainis via the submission above):
+            // Two intents share this path (both email the site operator via the submission above):
             // "Request Guest Account" (guest=1) also queues a guest-account request
             // for admin approval; "Submit Contact Request" (guest=0) is message-only.
             $request_guest_account = !empty($request->get_param('request_guest_account'));
             $thank_you_message = $request_guest_account
-                ? __('Your guest account request has been sent — Dainis will review it and email you a link.', 'flosc')
-                : __('Your message has been sent to Dainis, thank you!', 'flosc');
+                ? __('Your guest account request has been sent — an administrator will review it and email you a link.', 'flosc')
+                : __('Your message has been sent to the site operator, thank you!', 'flosc');
             $redirect_url = $this->flosc_get_visitor_session_end_redirect_url($flow_id);
             $contact_log_message = implode("\n", [
                 $request_guest_account ? '[GUEST ACCOUNT REQUEST SUBMITTED]' : '[CONTACT REQUEST SUBMITTED]',
@@ -405,7 +405,7 @@ trait FLOSC_Chat_Turn_Trait {
 
             // Only queue a guest-account request (for the moderation panel) when the
             // visitor chose "Request Guest Account". Message-only contact submissions
-            // are forwarded to Dainis but do not enter the guest-account queue.
+            // are forwarded to the site operator but do not enter the guest-account queue.
             if ($request_guest_account) {
                 $this->upsert_guest_account_request(
                     (string) ($contact_form['email'] ?? ''),

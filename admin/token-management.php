@@ -84,7 +84,7 @@ $flosc_low_message = trim((string) ($flosc_flow_settings['visitor_low_tokens_mes
 if ($flosc_low_message === '') {
     $flosc_low_message = $flosc_default_low_message;
 }
-$flosc_default_depleted_message = 'Dear guest, your chat tokens are used up for now. Please get in touch with Dainis personally, communicate with him in one of your shared groups, or make sure your purchases have been registered to your account so you have more chat tokens. I\'ll be shutting down this chat for now. Thanks for stopping by! Sincerely, Br3nda, Dainis\' virtual AI assistant.';
+$flosc_default_depleted_message = 'Dear guest, your chat tokens are used up for now. Please contact the site operator directly, or make sure your purchases have been registered to your account so you have more chat tokens. I\'ll be shutting down this chat for now. Thanks for stopping by!';
 $flosc_depleted_message = trim((string) ($flosc_flow_settings['visitor_tokens_depleted_message'] ?? $flosc_default_depleted_message));
 if ($flosc_depleted_message === '') {
     $flosc_depleted_message = $flosc_default_depleted_message;

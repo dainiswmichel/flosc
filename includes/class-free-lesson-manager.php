@@ -16,10 +16,10 @@
  * FLOW:
  * 1. User takes quiz "sae_pronunciation": "4,7,9" = 30%
  * 2. System checks lesson_groups for quiz → category mapping
- * 3. Finds category "lesaep" for quiz "sae_pronunciation"
+ * 3. Finds the configured lesson category for the quiz
  * 4. Calculates missed items: 1,2,3,5,6,8,10
  * 5. Picks random (e.g., #8)
- * 6. Delivers WordPress post with _flosc_lesson_number = 8 from category "lesaep"
+ * 6. Delivers WordPress post with _flosc_lesson_number = 8 from the configured category
  * 
  * @since 9.1.8
  */
@@ -504,7 +504,7 @@ class FLOSC_Free_Lesson_Manager {
         }
 
         // 2. Slug / title fallback via get_posts (no direct $wpdb).
-        // LeSAEp posts follow the convention: lesson-{N}-description
+        // lesson posts follow the convention: lesson-{N}-description
         $slug_prefix = 'lesson-' . intval( $lesson_num ) . '-';
         $list_args   = array(
             'posts_per_page'         => -1,

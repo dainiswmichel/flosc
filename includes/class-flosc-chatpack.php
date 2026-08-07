@@ -28,7 +28,7 @@ class FLOSC_Chatpack {
      * Generate or retrieve the permanent FLOSC installation hash.
      *
      * Format: flosc_{domain}_{MTS}_{7-char hex}
-     * Example: flosc_dainis_net_26_02m_21d_T14h30m12s_a3f7e21
+     * Example: flosc_host_flow_26_02m_21d_T14h30m12s_a3f7e21
      *
      * Generated once on first call, then stored permanently in wp_options.
      * The MTS (Michel Time Stamp) records when FLOSC first generated the hash.
@@ -951,7 +951,7 @@ class FLOSC_Chatpack {
         $weakest_sounds = $eval_context['ipa_weakest_sounds'] ?? [];
         if (empty($weakest_sounds)) return '';
 
-        // Neutral + legacy basenames (lesson_catalog.md, lesaep_lesson_catalog.md).
+        // Catalog path from neutral resolver (lesson_catalog.md).
         $catalog_path = function_exists('flosc_resolve_lesson_catalog_path')
             ? flosc_resolve_lesson_catalog_path()
             : (function_exists('flosc_config_file') ? flosc_config_file('lesson_catalog.md') : '');

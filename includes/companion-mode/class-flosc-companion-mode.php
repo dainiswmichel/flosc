@@ -57,7 +57,7 @@ class FLOSC_Companion_Mode {
 
         // Visitor gate: when disabled, only logged-in users should see companion.
         // Handoff from full-page chat always allowed — dock may land cross-domain
-        // (e.g. lesaep.com → dainis.net knowledge hub) without a shared login cookie.
+        // (e.g. the flow domain → the WordPress host knowledge hub) without a shared login cookie.
         $show_for_visitors = filter_var($this->flosc->get_setting('companion_show_for_visitors', $defaults['show_for_visitors']), FILTER_VALIDATE_BOOLEAN);
         if (!$handoff_request && !$show_for_visitors && !is_user_logged_in()) {
             return;

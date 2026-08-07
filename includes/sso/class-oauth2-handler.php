@@ -330,9 +330,9 @@ class OAuth2_Handler {
 if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] handle_callback: provider=' . $provider_id . ' | state=' . ($state ?: '(empty)') . ' | code=' . ($code ? 'present' : 'absent') . ' | error=' . ($error ?: 'none') . ' | method=' . sanitize_text_field($server['REQUEST_METHOD'] ?? 'unknown') . ' | source=' . (!empty($get['state']) ? '$_GET' : (!empty($server['REQUEST_URI']) && strpos($server['REQUEST_URI'], 'state=') !== false ? 'REQUEST_URI' : (!empty($server['QUERY_STRING']) ? 'QUERY_STRING' : 'WP_REST'))));
         
         // ── Resolve the correct app URL from state ──
-        // The callback runs on dainis.net (registered with Google), but the user
-        // came from lesaep.com. get_current_flow() fails here because it matches
-        // by HTTP_HOST = dainis.net. Instead, use the flow_id stored in state to
+        // The callback runs on the WordPress host (registered with Google), but the user
+        // came from the flow domain. get_current_flow() fails here because it matches
+        // by HTTP_HOST = the WordPress host. Instead, use the flow_id stored in state to
         // look up the flow's custom_domain directly from the database.
         $app_url = home_url(); // absolute last resort
         $error_redirect_to = '';
@@ -344,7 +344,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] handle_callbac
                 $peek_data = get_option($transient_key);
             }
             if ($peek_data) {
-                // Use stored redirect_to (the URL the user was on: lesaep.com)
+                // Use stored redirect_to (the URL the user was on: the flow domain)
                 if (!empty($peek_data['redirect_to'])) {
                     $error_redirect_to = $peek_data['redirect_to'];
                 }
@@ -455,7 +455,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
             $user_data['flow_id'] = sanitize_key($state_data['flow_id']);
         }
         
-        // ── Process login (find/create/link user, set auth cookie on dainis.net) ──
+        // ── Process login (find/create/link user, set auth cookie on the WordPress host) ──
         $result = $this->process_sso_login($provider, $user_data, $token_data);
         if (is_wp_error($result)) {
     if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Login processing failed: ' . $result->get_error_message());
@@ -479,7 +479,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
         }
         
         // Resolve slug-based URLs to custom domain
-        // e.g. dainis.net/lesaepivr/ → lesaep.com/
+        // e.g. the WordPress host/flow_path/ → the flow domain/
         if (function_exists('flosc')) {
             $app_slug = get_option('flosc_app_slug', 'flosc');
             if (strpos($redirect_to, '/' . $app_slug) !== false) {
@@ -613,7 +613,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
             }
         }
 
-        // Current request host (callback domain, e.g. dainis.net).
+        // Current request host (callback domain, e.g. the WordPress host).
         if (!empty($_SERVER['HTTP_HOST'])) {
             $add(sanitize_text_field(wp_unslash((string) $_SERVER['HTTP_HOST'])));
         }
@@ -650,10 +650,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
     /**
      * Resolve the app URL from a flow_id by looking up the flow's custom domain
      * directly from the database. This works during REST API callbacks where
-     * get_current_flow() fails because HTTP_HOST is dainis.net, not the custom domain.
+     * get_current_flow() fails because HTTP_HOST is the WordPress host, not the custom domain.
      *
-     * @param string $flow_id Flow ID (e.g. 'lesaep_ivr')
-     * @return string|false App URL (e.g. 'https://lesaep.com/') or false if not found
+     * @param string $flow_id Flow ID (e.g. 'flow_ivr')
+     * @return string|false App URL (e.g. 'https://the flow domain/') or false if not found
      */
     private function resolve_app_url_from_flow_id($flow_id) {
         if (empty($flow_id)) {
@@ -897,8 +897,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
 
     /**
      * Generate a one-time login token for cross-domain redirect
-     * v1.5.2: Solves cookie domain problem — auth cookie set on dainis.net
-     * doesn't travel to flosc.ai/lesaep.com. Token lets the target domain
+     * v1.5.2: Solves cookie domain problem — auth cookie set on the WordPress host
+     * doesn't travel to flosc.ai/the flow domain. Token lets the target domain
      * authenticate the user on arrival.
      *
      * @param int $user_id User ID
@@ -933,8 +933,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO] Provider error
     if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC SSO ERROR] ' . $message . ' | redirect_to: ' . ($redirect_to ?: '(empty)'));
         
         // v8.0.2: Use custom domain app URL as fallback instead of home_url().
-        // home_url() returns dainis.net, but if the user initiated SSO from
-        // lesaep.com, they need to go back to lesaep.com where FLOSC JS runs.
+        // home_url() returns the WordPress host, but if the user initiated SSO from
+        // the flow domain, they need to go back to the flow domain where FLOSC JS runs.
         if (empty($redirect_to)) {
             if (function_exists('flosc')) {
                 $redirect_to = flosc()->get_app_url();

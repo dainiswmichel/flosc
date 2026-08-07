@@ -116,7 +116,7 @@ class FLOSC_Access_Manager {
 
         // Do NOT call flosc_get_setting() here: without a real flow row it falls back
         // to global flosc_default_member_level (often pronunciation_learners) and
-        // incorrectly treats every flow as LeSAEp-member-eligible.
+        // incorrectly treats every flow as member-eligible.
 
         $levels = array_values(array_unique(array_filter($levels)));
         // Paid levels only — guest roles are not membership.
@@ -132,7 +132,7 @@ class FLOSC_Access_Manager {
      * - Explicit _flosc_member_access_{stem}
      * - Holds a paid level declared by that flow
      * - Active offer / purchase history for that flow
-     * - Does NOT treat global _flosc_member_access or LeSAEp roles as membership on other flows
+    * - Does NOT treat global _flosc_member_access or any other-flow roles as membership on other flows
      *
      * @param int         $user_id
      * @param string|null $flow_id Flow id / ivr / stem. Null = resolve current flow when possible.

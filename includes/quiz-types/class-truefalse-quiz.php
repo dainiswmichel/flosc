@@ -46,7 +46,7 @@ class FLOSC_TrueFalse_Quiz extends FLOSC_Abstract_Quiz_Type {
     }
 
     public function get_default_content() {
-        return "The TH in \"think\" and the TH in \"this\" are both voiceless.|False|CorrectContent: post:lesson-36-the-feather-scathe|RelatedContent: post:lesson-35-three-athens-froth, category:lesaep|RelatedContent: tag:fricatives, id:1036\nIn American English every written T is pronounced as a crisp T sound.|False|CorrectContent: post:lesson-28-t-d-tip-dip-cat-dad|RelatedContent: post:lesson-23-t-t-tap-attack-cat, post:lesson-24-d-dog-adorable-blinded|RelatedContent: category:lesaep, search:flap T American English\nThe schwa is the most common vowel sound in English.|True|CorrectContent: post:lesson-20-1-introduction-to-the-schwa|RelatedContent: post:lesson-20-2-replacing-unstressed-vowels, tag:unstressed-vowels|RelatedContent: id:1020, category:lesaep/vowels";
+        return "The TH in \"think\" and the TH in \"this\" are both voiceless.|False|CorrectContent: post:lesson-36-the-feather-scathe|RelatedContent: post:lesson-35-three-athens-froth, category:sample_lessons|RelatedContent: tag:fricatives, id:1036\nIn American English every written T is pronounced as a crisp T sound.|False|CorrectContent: post:lesson-28-t-d-tip-dip-cat-dad|RelatedContent: post:lesson-23-t-t-tap-attack-cat, post:lesson-24-d-dog-adorable-blinded|RelatedContent: category:sample_lessons, search:flap T American English\nThe schwa is the most common vowel sound in English.|True|CorrectContent: post:lesson-20-1-introduction-to-the-schwa|RelatedContent: post:lesson-20-2-replacing-unstressed-vowels, tag:unstressed-vowels|RelatedContent: id:1020, category:sample_lessons/vowels";
     }
 
     public function validate_input($input) {

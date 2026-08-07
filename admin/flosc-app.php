@@ -928,7 +928,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             
             // v1.7.5: REST API URL must use the SAME origin as the page
             // so cookies/nonce travel with the request. When on a custom domain
-            // (flosc.ai), rest_url() returns dainis.net which is cross-origin.
+            // (flosc.ai), rest_url() returns the WordPress host which is cross-origin.
             $flosc_rest_base = rest_url('flosc/v1');
             if (defined('FLOSC_CUSTOM_DOMAIN_ACTIVE') && FLOSC_CUSTOM_DOMAIN_ACTIVE) {
                 // Build REST URL on current domain so it's same-origin
@@ -1108,7 +1108,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'companionRoutingMode' => $flosc_companion_routing_mode,
             'companionHubFullScreenUrl' => $flosc_hub_fullscreen_url,
             'companionHubCompanionUrl' => $flosc_hub_companion_url,
-            // Owning flow id for cross-domain knowledge hub handoff (e.g. lesaep_com_ivr).
+            // Owning flow id for cross-domain knowledge hub handoff (e.g. flow_com_ivr).
             'companionFlowId' => $flosc_current_flow ? sanitize_key((string) ($flosc_current_flow['id'] ?? pathinfo((string) ($flosc_current_flow['ivr_file'] ?? ''), PATHINFO_FILENAME))) : '',
             'companionContextualPrompt' => $flosc_companion_contextual_prompt,
             'companionProfileTier' => [
@@ -1182,7 +1182,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                     : 'message',
                 'depletedContactLabels' => [
                     'title' => trim((string) ($flow_settings['contact_form_title'] ?? 'Request Guest Account')),
-                    'intro' => trim((string) ($flow_settings['contact_form_intro'] ?? 'Dear visitor, your chat tokens are used up for now. You can request a Guest account and Dainis will email you a link to keep chatting — or reach him directly. Share your details below and let him know what you are interested in.')),
+                    'intro' => trim((string) ($flow_settings['contact_form_intro'] ?? 'Dear visitor, your chat tokens are used up for now. You can request a Guest account and an administrator will email you a link to keep chatting. Share your details below and let the site operator know what you are interested in.')),
                     'submitText' => trim((string) ($flow_settings['contact_form_submit_text'] ?? 'Request Guest Account')),
                 ],
                 'label' => $flosc_visitor_label_base,
@@ -1216,7 +1216,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             // v3.0.0: FLOSC auth token for cross-domain authentication
             // Cookie-based auth (flosc_auth_token cookie set at login by
             // set_flosc_auth_cookie) handles this. The cookie is on the current
-            // domain (lesaep.com) and travels with same-origin REST requests.
+            // domain (the flow domain) and travels with same-origin REST requests.
             // DO NOT generate a token here for the header — authenticate_flosc_token()
             // checks the header BEFORE the cookie, and if the header token is
             // present but fails validation, it blocks the valid cookie fallback.

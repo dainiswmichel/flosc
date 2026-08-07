@@ -767,7 +767,7 @@ trait FLOSC_Visitor_Token_Trait {
         $template = trim((string) ($settings['visitor_tokens_depleted_message'] ?? ''));
 
         if ($template === '') {
-            $template = __('This session has run out of chat tokens. You can log in, and Dainis will give you {token_grant} tokens to use this chat. You can also contact Dainis personally or input your phone number or email address and preferred contact method and time for Dainis to get back to you.', 'flosc');
+            $template = __('This session has run out of chat tokens. You can log in to receive {token_grant} tokens to use this chat. You can also share your phone number or email address, plus your preferred contact method and time, and an administrator can follow up with you.', 'flosc');
         }
 
         return str_replace('{token_grant}', number_format_i18n($grant), $template);

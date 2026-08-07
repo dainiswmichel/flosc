@@ -9,9 +9,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 <h2 id="team">Team</h2>
 <ul>
-    <li>Plugin maintainer: Dainis W. Michel.</li>
-    <li>WordPress.org profile: https://profiles.wordpress.org/dainismichel/</li>
-    <li>Readme contributor slug: dainismichel.</li>
+    <li>Plugin maintainer: the site operator W. Michel.</li>
+    <li>WordPress.org profile: https://profiles.wordpress.org/your-slug/</li>
+    <li>Readme contributor slug: (your WordPress.org username).</li>
     <li>Release ownership: maintainer approves acceptance-critical scope, changelog, and submission package.</li>
     <li>Support ownership: user support and roadmap intake are managed through official FLOSC channels and WordPress.org-facing documentation.</li>
 </ul>

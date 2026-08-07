@@ -1,9 +1,9 @@
 <?php
 /**
- * FLOSC LESAEP Lessons Table
+ * FLOSC Lessons Table
  * 
  * Custom table for structured pronunciation lesson data.
- * Stores the 55 LESAEP lessons with discrete, queryable fields.
+ * Stores structured pronunciation lessons with discrete, queryable fields.
  * Word sequences and IPA transcriptions stored as ordered JSON arrays.
  *
  * @package FLOSC
@@ -16,12 +16,12 @@ if (!defined('ABSPATH')) exit;
 // Custom table {prefix}flosc_lessons — no WP API equivalent for schema/CRUD.
 // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- custom table flosc_lessons; no WP API
 
-class FLOSC_Lesaep_Lessons_Table {
+class FLOSC_Lessons_Table {
 
     private static $instance = null;
     private $table_name;
     private $db_version = '1.0.0';
-    private $db_version_option = 'flosc_lesaep_lessons_db_version';
+    private $db_version_option = 'flosc_lessons_table_db_version';
 
     public static function instance() {
         if (null === self::$instance) {
@@ -82,7 +82,7 @@ class FLOSC_Lesaep_Lessons_Table {
         update_option($this->db_version_option, $this->db_version);
 
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-            flosc_log('[FLOSC LESAEP] Lessons table ensured: ' . $this->table_name);
+            flosc_log('[FLOSC] Lessons table ensured: ' . $this->table_name);
         }
     }
 
@@ -91,7 +91,7 @@ class FLOSC_Lesaep_Lessons_Table {
      */
     public function table_exists() {
         $cache_key = 'table_exists_' . $this->table_name;
-        $cached    = wp_cache_get( $cache_key, 'flosc_lesaep' );
+        $cached    = wp_cache_get( $cache_key, 'flosc_lessons' );
         if ( is_bool( $cached ) ) {
             return $cached;
         }
@@ -105,7 +105,7 @@ class FLOSC_Lesaep_Lessons_Table {
             )
         );
         $exists = ( $result === $this->table_name );
-        wp_cache_set( $cache_key, $exists, 'flosc_lesaep', 300 );
+        wp_cache_set( $cache_key, $exists, 'flosc_lessons', 300 );
         return $exists;
     }
 
@@ -116,22 +116,22 @@ class FLOSC_Lesaep_Lessons_Table {
         global $wpdb;
         if (!$this->table_exists()) return 0;
         $cache_key = 'count_' . $this->table_name;
-        $cached    = wp_cache_get( $cache_key, 'flosc_lesaep' );
+        $cached    = wp_cache_get( $cache_key, 'flosc_lessons' );
         if ( is_int( $cached ) ) {
             return $cached;
         }
         $count = (int) $wpdb->get_var(
             $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $this->table_name )
         );
-        wp_cache_set( $cache_key, $count, 'flosc_lesaep', 120 );
+        wp_cache_set( $cache_key, $count, 'flosc_lessons', 120 );
         return $count;
     }
 
-    private function flosc_bust_lesaep_cache() {
-        wp_cache_delete( 'count_' . $this->table_name, 'flosc_lesaep' );
-        wp_cache_delete( 'all_' . $this->table_name, 'flosc_lesaep' );
-        wp_cache_delete( 'list_' . $this->table_name, 'flosc_lesaep' );
-        wp_cache_delete( 'table_exists_' . $this->table_name, 'flosc_lesaep' );
+    private function flosc_bust_lessons_cache() {
+        wp_cache_delete( 'count_' . $this->table_name, 'flosc_lessons' );
+        wp_cache_delete( 'all_' . $this->table_name, 'flosc_lessons' );
+        wp_cache_delete( 'list_' . $this->table_name, 'flosc_lessons' );
+        wp_cache_delete( 'table_exists_' . $this->table_name, 'flosc_lessons' );
     }
 
     /**
@@ -162,7 +162,7 @@ class FLOSC_Lesaep_Lessons_Table {
         );
 
         if ( $result !== false ) {
-            $this->flosc_bust_lesaep_cache();
+            $this->flosc_bust_lessons_cache();
             return $wpdb->insert_id;
         }
         return false;
@@ -179,7 +179,7 @@ class FLOSC_Lesaep_Lessons_Table {
         if (!$this->table_exists()) return [];
 
         $cache_key = 'all_' . $this->table_name;
-        $cached    = wp_cache_get( $cache_key, 'flosc_lesaep' );
+        $cached    = wp_cache_get( $cache_key, 'flosc_lessons' );
         if ( is_array( $cached ) ) {
             return $cached;
         }
@@ -194,7 +194,7 @@ class FLOSC_Lesaep_Lessons_Table {
         if ( ! is_array( $rows ) ) {
             $rows = array();
         }
-        wp_cache_set( $cache_key, $rows, 'flosc_lesaep', 120 );
+        wp_cache_set( $cache_key, $rows, 'flosc_lessons', 120 );
         return $rows;
     }
 
@@ -211,7 +211,7 @@ class FLOSC_Lesaep_Lessons_Table {
 
         $lesson_number = (string) $lesson_number;
         $cache_key     = 'by_num_' . $this->table_name . '_' . $lesson_number;
-        $cached        = wp_cache_get( $cache_key, 'flosc_lesaep' );
+        $cached        = wp_cache_get( $cache_key, 'flosc_lessons' );
         if ( is_array( $cached ) || null === $cached ) {
             return $cached;
         }
@@ -224,7 +224,7 @@ class FLOSC_Lesaep_Lessons_Table {
             ),
             ARRAY_A
         );
-        wp_cache_set( $cache_key, $row, 'flosc_lesaep', 120 );
+        wp_cache_set( $cache_key, $row, 'flosc_lessons', 120 );
         return $row;
     }
 
@@ -241,7 +241,7 @@ class FLOSC_Lesaep_Lessons_Table {
 
         $id        = (int) $id;
         $cache_key = 'by_id_' . $this->table_name . '_' . $id;
-        $cached    = wp_cache_get( $cache_key, 'flosc_lesaep' );
+        $cached    = wp_cache_get( $cache_key, 'flosc_lessons' );
         if ( is_array( $cached ) || null === $cached ) {
             return $cached;
         }
@@ -254,7 +254,7 @@ class FLOSC_Lesaep_Lessons_Table {
             ),
             ARRAY_A
         );
-        wp_cache_set( $cache_key, $row, 'flosc_lesaep', 120 );
+        wp_cache_set( $cache_key, $row, 'flosc_lessons', 120 );
         return $row;
     }
 
@@ -271,7 +271,7 @@ class FLOSC_Lesaep_Lessons_Table {
 
         $category  = (string) $category;
         $cache_key = 'by_cat_' . $this->table_name . '_' . md5( $category );
-        $cached    = wp_cache_get( $cache_key, 'flosc_lesaep' );
+        $cached    = wp_cache_get( $cache_key, 'flosc_lessons' );
         if ( is_array( $cached ) ) {
             return $cached;
         }
@@ -287,7 +287,7 @@ class FLOSC_Lesaep_Lessons_Table {
         if ( ! is_array( $rows ) ) {
             $rows = array();
         }
-        wp_cache_set( $cache_key, $rows, 'flosc_lesaep', 120 );
+        wp_cache_set( $cache_key, $rows, 'flosc_lessons', 120 );
         return $rows;
     }
 
@@ -302,7 +302,7 @@ class FLOSC_Lesaep_Lessons_Table {
         if (!$this->table_exists()) return [];
 
         $cache_key = 'list_' . $this->table_name;
-        $cached    = wp_cache_get( $cache_key, 'flosc_lesaep' );
+        $cached    = wp_cache_get( $cache_key, 'flosc_lessons' );
         if ( is_array( $cached ) ) {
             return $cached;
         }
@@ -320,7 +320,7 @@ class FLOSC_Lesaep_Lessons_Table {
         if ( ! is_array( $rows ) ) {
             $rows = array();
         }
-        wp_cache_set( $cache_key, $rows, 'flosc_lesaep', 120 );
+        wp_cache_set( $cache_key, $rows, 'flosc_lessons', 120 );
         return $rows;
     }
 
@@ -334,7 +334,7 @@ class FLOSC_Lesaep_Lessons_Table {
         $result = $wpdb->query(
             $wpdb->prepare( 'TRUNCATE TABLE %i', $this->table_name )
         );
-        $this->flosc_bust_lesaep_cache();
+        $this->flosc_bust_lessons_cache();
         return $result;
     }
 

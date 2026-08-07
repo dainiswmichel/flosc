@@ -101,14 +101,14 @@ $flosc_feature_links = [
 <p><strong>Required control columns:</strong> <code>Row Key</code>, <code>Parent Key</code>, <code>Catalog Key</code>, <code>Record Type</code>, <code>Flow Scope</code>, <code>VGM</code>, <code>Delivery Instruction</code>, <code>Delivery Rule</code>, <code>Fallback Order</code>, <code>Status</code>.</p>
 <p><strong>Status values:</strong> Use <code>active</code> or <code>paused</code>. Parent <code>paused</code> means child rows should be treated as paused for serving.</p>
 <p><strong>Row model:</strong> Parent rows use integer keys like <code>85</code>. Child rows use decimal keys like <code>85.1</code>, <code>85.2</code>, and set <code>Parent Key</code> to <code>85</code>.</p>
-<p><strong>Flow Scope:</strong> Required. Use one or more flow keys comma-separated (for example <code>lesaep_ivr,dainis_net_ivr</code>) or <code>all</code>.</p>
+<p><strong>Flow Scope:</strong> Required. Use one or more flow keys comma-separated (for example <code>flow_a_ivr,flow_b_ivr</code>) or <code>all</code>.</p>
 <p><strong>VGM values:</strong> Use <code>visitor</code>, <code>guest</code>, <code>member</code>, or <code>all</code>.</p>
 <p><strong>Payload fields:</strong> Keep catalog content flexible. Recommended payload columns are <code>Date</code>, <code>Title</code>, <code>Description</code>, <code>Lyrics</code>, <code>Media</code>, <code>Media Type</code>, and <code>Notes</code>. Additional columns are allowed and preserved.</p>
 <p><strong>Catalog operations:</strong> DA1 supports create catalog, assign catalogs per flow, upload TSV, and export TSV. One flow can use multiple catalogs ordered by priority.</p>
 <pre><code>Row Key	Parent Key	Catalog Key	Record Type	Flow Scope	VGM	Delivery Instruction	Delivery Rule	Fallback Order	Status	Date	Title	Description	Lyrics	Media	Media Type	Notes
-85		music_core	work	lesaep_ivr	visitor	contextual match	preference	chatplayer &gt; media-link &gt; text	active	1996	Time Flies	Rock collaboration				Primary work row
-85.1	85	music_core	media	lesaep_ivr	visitor	contextual match	preference	chatplayer &gt; media-link &gt; text	active		Time Flies	Live version		https://example.com/youtube-link	youtube	Live performance
-85.2	85	music_core	media	lesaep_ivr	visitor	contextual match	preference	chatplayer &gt; media-link &gt; text	active		Time Flies	Short form clip		https://example.com/tiktok-link	tiktok	Social clip</code></pre>
+85		music_core	work	flow_ivr	visitor	contextual match	preference	chatplayer &gt; media-link &gt; text	active	1996	Time Flies	Rock collaboration				Primary work row
+85.1	85	music_core	media	flow_ivr	visitor	contextual match	preference	chatplayer &gt; media-link &gt; text	active		Time Flies	Live version		https://example.com/youtube-link	youtube	Live performance
+85.2	85	music_core	media	flow_ivr	visitor	contextual match	preference	chatplayer &gt; media-link &gt; text	active		Time Flies	Short form clip		https://example.com/tiktok-link	tiktok	Social clip</code></pre>
 <h3 id="visitor-autoprompts-intropanelshow-panel">⚪ Visitor AutoPrompts — IntroPanelShow panel</h3>
 <p><a href="<?php echo esc_url($flosc_feature_links['autoprompts']); ?>">Open Feature: AutoPrompts tab (Visitor section)</a></p>
 <p><strong>One further step:</strong> Toggle the Visitor panel visibility once and save, then reload the tab to confirm the state persisted for the active flow.</p>
@@ -123,7 +123,7 @@ $flosc_feature_links = [
 <p><strong>Tech Ref Level:</strong> Guest prompts define the intermediate prompt set used after visitor interactions and before member-only content.</p>
 <p><strong>Code Level:</strong> admin/autoprompts.php renders the guest panel rows, and the prompt display logic reads them from the same flow settings.</p>
 
-<h3 id="member-autoprompts-memberpromptpanelshow-panel">🔵 LeSAEp Learner AutoPrompts — MemberPromptPanelShow panel</h3>
+<h3 id="member-autoprompts-memberpromptpanelshow-panel">🔵 member AutoPrompts — MemberPromptPanelShow panel</h3>
 <p><a href="<?php echo esc_url($flosc_feature_links['autoprompts']); ?>">Open Feature: AutoPrompts tab (Member section)</a></p>
 <p><strong>One further step:</strong> Validate one learner autoprompt trigger phrase against your IVR messaging intent so member prompts remain behaviorally consistent.</p>
 <p><strong>Procedure Level:</strong> Check one learner trigger phrase, then verify it still matches the intended member-facing prompt behavior.</p>

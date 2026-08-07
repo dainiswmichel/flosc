@@ -8,7 +8,7 @@
 <ol>
   <li><strong>Abstract base</strong> (<code>abstract-quiz-type.php</code>) — defines the contract every quiz type must fulfill, plus shared scoring and lesson-lookup logic</li>
   <li><strong>Factory</strong> (<code>class-quiz-type-factory.php</code>) — discovers and instantiates quiz types</li>
-  <li><strong>Implementations</strong> — one PHP class per quiz format (LeSAEp, Multiple Choice, True/False, Numbers, Audio)</li>
+  <li><strong>Implementations</strong> — one PHP class per quiz format (the product, Multiple Choice, True/False, Numbers, Audio)</li>
 </ol>
 <p>The admin quiz tab exposes two UI zones: <strong>Active Quizzes</strong> (summary of what is live in the flow) and <strong>Quiz Deck</strong> (library of all quiz types with enable toggle and inline editor).</p>
 
@@ -72,7 +72,7 @@ Params: <code>user_id</code>, <code>quiz_id</code>, <code>score_data</code> (obj
 <h3 id="quiz-abstract-contract">Required Abstract Methods</h3>
 <table>
   <tr><th>Method</th><th>Returns</th><th>Purpose</th></tr>
-  <tr><td><code>get_id()</code></td><td>string</td><td>Unique slug (e.g. <code>lesaep_pronunciation</code>)</td></tr>
+  <tr><td><code>get_id()</code></td><td>string</td><td>Unique slug (e.g. <code>pronunciation_assessment</code>)</td></tr>
   <tr><td><code>get_name()</code></td><td>string</td><td>Display name for admin UI</td></tr>
   <tr><td><code>get_description()</code></td><td>string</td><td>Short description for quiz card</td></tr>
   <tr><td><code>get_icon()</code></td><td>string</td><td>Emoji icon</td></tr>
@@ -127,10 +127,10 @@ Params: <code>user_id</code>, <code>quiz_id</code>, <code>score_data</code> (obj
 
 <h2 id="quiz-types">Quiz Type Implementations</h2>
 
-<h3 id="quiz-lesaep">class-flosc-lesaep-pronunciation-quiz.php — LeSAEp Pronunciation Assessment</h3>
+<h3 id="quiz-pronunciation">class-flosc-pronunciation-assessment-quiz.php — the product Pronunciation Assessment</h3>
 <p>10-question multiple-choice accent assessment for Standard American English. Each question maps to a specific sound lesson. Designed so typical non-native speakers score 40–70%, creating a natural moment for lesson recommendations.</p>
 
-<h4 id="quiz-lesaep-format">Question Format</h4>
+<h4 id="quiz-pronunciation-format">Question Format</h4>
 <pre><code>Which pair of words use the SAME vowel sound?
 A: cat / cut
 B: map / mop
@@ -140,7 +140,7 @@ CORRECT: C
 TOPIC: short-a-vowel</code></pre>
 <p>One question per block, blocks separated by blank lines. <code>TOPIC:</code> is optional but required for lesson recommendations to work. Accepts comma-separated multiple topics: <code>TOPIC: voiceless-th, th-sounds</code></p>
 
-<h4 id="quiz-lesaep-defaults">Default Question-to-Topic Mapping (v4.0.4)</h4>
+<h4 id="quiz-pronunciation-defaults">Default Question-to-Topic Mapping (v4.0.4)</h4>
 <table>
   <tr><th>Question</th><th>Sound</th><th>Topic Slug</th></tr>
   <tr><td>Q1</td><td>/æ/ short-a vowel</td><td>short-a-vowel</td></tr>
@@ -205,7 +205,7 @@ TOPIC: short-a-vowel</code></pre>
 <h3 id="quiz-admin-demo-library">Demo Quiz Sets</h3>
 <p>Collapsible section (open by default) with ready-made question sets. Each demo has a "Load →" button that fills the corresponding quiz's editor textarea and opens the editor panel. Available demos:</p>
 <ul>
-  <li><strong>LeSAEp Pronunciation:</strong> Minimal Pairs Discrimination, American Vowel Sounds, Connected Speech &amp; Rhythm</li>
+  <li><strong>the product Pronunciation:</strong> Minimal Pairs Discrimination, American Vowel Sounds, Connected Speech &amp; Rhythm</li>
   <li><strong>Multiple Choice:</strong> American Idioms, Business English Communication</li>
   <li><strong>True/False:</strong> Pronunciation Myths vs Facts, Grammar Confidence Check</li>
   <li><strong>1-10 Numbers:</strong> Classic 1–10 Sequence, Primary Color Names, Days of the Week</li>

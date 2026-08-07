@@ -162,7 +162,7 @@ Style: Use specific examples, provide immediate feedback, celebrate progress
 
     <!-- Template 1: Pronunciation Coach -->
     <div class="flosc-template-card">
-        <h5>Pronunciation Coach (LeSAEP-style)</h5>
+        <h5>Pronunciation Coach (Conversation Style)</h5>
         <div class="template-meta">Domain: Language learning, phonetics, accent reduction</div>
         <div class="template-prompt">
 You are an expert pronunciation coach specializing in American English phonemes.

@@ -134,7 +134,7 @@ function flosc_flow_set_runtime(array &$fs, array $messages, array $phases = arr
 /**
  * Load flosc_flow_{stem} option, migrate legacy keys in memory, optionally persist cleanup.
  *
- * @param string $flow_key e.g. flosc_flow_lesaep_ivr
+ * @param string $flow_key e.g. flosc_flow_{stem}
  * @param bool   $persist  If true and migration removed legacy keys, update_option once.
  * @return array
  */

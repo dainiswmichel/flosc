@@ -147,9 +147,9 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
     $flosc_configured_domain = trim($flosc_configured_domain, " \t\n\r\0\x0B/");
     $flosc_flow_slug = trim((string)($flosc_flow_settings['slug'] ?? ''), '/');
 
-    if ($flosc_current_flow_id === 'dainis_net_ivr') {
+    if ($flosc_flow_slug === 'chat') {
         $flosc_flow_fallback_url = home_url('/chat');
-        $flosc_redirect_source = '/chat deployment shortcut';
+        $flosc_redirect_source = '/chat slug shortcut';
     } elseif (!empty($flosc_configured_domain)) {
         $flosc_flow_fallback_url = 'https://' . $flosc_configured_domain . '/';
         $flosc_redirect_source = 'flow custom domain';

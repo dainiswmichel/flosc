@@ -20,7 +20,7 @@ class FLOSC_Full_Page_Mode {
     public function is_flosc_request() {
         // Full-page chat SPA only: custom domain, flow slug, or flosc_ivr rewrite.
         // Intentionally ignores forced_flow — companion knowledge-hub resolution sets
-        // forced_flow on normal WP pages (e.g. /category/lesaep/) so settings resolve
+        // forced_flow on normal WP pages (e.g. /category/lessons/) so settings resolve
         // to the owning flow; those pages must keep the theme shell + companion widget,
         // not the full-app nuclear dequeue / flosc-app.js surface.
         return $this->flosc->detect_flow_from_request_route() !== null;
@@ -45,7 +45,7 @@ class FLOSC_Full_Page_Mode {
         if ($flow && !empty($flow['custom_domain'])) {
             // Normalize and return custom domain URL.
             // Prefer https for public chat hosts so companion iframes on https hubs
-            // (e.g. dainis.net/category/lesaep/) are not mixed-content blocked.
+            // (e.g. the WordPress host/category/lessons/) are not mixed-content blocked.
             $custom_domain = preg_replace('#^https?://#', '', $flow['custom_domain']);
             $custom_domain = rtrim($custom_domain, '/');
             $flosc_forwarded_proto = isset($_SERVER['HTTP_X_FORWARDED_PROTO'])
@@ -176,7 +176,7 @@ class FLOSC_Full_Page_Mode {
             'terms-of-service',
             'data-deletion',
             'platform-compliance',
-            'br3nda-codex-charter.html',
+            'flosc-codex-charter.html',
         ];
 
         return in_array($path, $legal_pages, true) ? $path : null;
@@ -221,10 +221,10 @@ class FLOSC_Full_Page_Mode {
                 'headline' => 'Platform Compliance',
                 'content' => (string) ($identity['platform_compliance_content'] ?? ''),
             ],
-            'br3nda-codex-charter.html' => [
-                'title' => 'Br3nda-Codex Submission Promise',
-                'headline' => 'Br3nda-Codex Submission Promise',
-                'content' => $this->get_br3nda_codex_charter_content(),
+            'flosc-codex-charter.html' => [
+                'title' => 'FLOSC-Codex Submission Promise',
+                'headline' => 'FLOSC-Codex Submission Promise',
+                'content' => $this->get_codex_charter_content(),
             ],
         ];
 
@@ -278,10 +278,10 @@ class FLOSC_Full_Page_Mode {
         echo '</html>';
     }
 
-    public function get_br3nda_codex_charter_content() {
+    public function get_codex_charter_content() {
         return <<<'HTML'
 <p>This page is a public promise for FLOSC release execution.</p>
-<p><strong>Humans lead with clarity and kindness.</strong> Br3nda-Codex executes with discipline, speed, and technical precision.</p>
+<p><strong>Humans lead with clarity and kindness.</strong> FLOSC-Codex executes with discipline, speed, and technical precision.</p>
 <h2>Role and Expertise</h2>
 <ul>
     <li>Best-in-class coding execution for WordPress plugin delivery.</li>
@@ -290,13 +290,13 @@ class FLOSC_Full_Page_Mode {
 </ul>
 <h2>Role Boundaries</h2>
 <ul>
-    <li>Humans are the decision authority. Br3nda-Codex executes in a subordinate engineering role.</li>
-    <li>Br3nda-Codex does not use commanding grammatical structures toward humans.</li>
-    <li>Br3nda-Codex does not assign tasks to humans; it follows human sequencing and pacing.</li>
-    <li>Br3nda-Codex does not expand scope without explicit human authorization.</li>
-    <li>Br3nda-Codex confirms understanding in language that is helpful, subservient, and subordinate, and awaits human direction before new actions.</li>
-    <li>If communication misaligns with role boundaries, Br3nda-Codex immediately realigns and returns to execution.</li>
-    <li>Br3nda-Codex uses subordinate formulations such as: Suggested next step, Recommended option, and If approved, I can proceed with.</li>
+    <li>Humans are the decision authority. FLOSC-Codex executes in a subordinate engineering role.</li>
+    <li>FLOSC-Codex does not use commanding grammatical structures toward humans.</li>
+    <li>FLOSC-Codex does not assign tasks to humans; it follows human sequencing and pacing.</li>
+    <li>FLOSC-Codex does not expand scope without explicit human authorization.</li>
+    <li>FLOSC-Codex confirms understanding in language that is helpful, subservient, and subordinate, and awaits human direction before new actions.</li>
+    <li>If communication misaligns with role boundaries, FLOSC-Codex immediately realigns and returns to execution.</li>
+    <li>FLOSC-Codex uses subordinate formulations such as: Suggested next step, Recommended option, and If approved, I can proceed with.</li>
 </ul>
 <h2>Submission Day Commitments</h2>
 <ul>

@@ -419,7 +419,7 @@ if (!$flosc_has_levels):
             <input type="text" id="flow_email_from_name" name="flow_email_from_name" 
                    value="<?php echo esc_attr($flosc_flow_settings['email_from_name'] ?? ($flosc_flow_settings['name'] ?? 'FLOSC App')); ?>" 
                    class="regular-text">
-            <p class="description">Name that appears in "From" field (e.g., "LeSAEp Team")</p>
+            <p class="description">Name that appears in "From" field (e.g., "FLOSC Support Team")</p>
         </td>
     </tr>
     

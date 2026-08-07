@@ -50,7 +50,7 @@ class FLOSC_User_Access_Manager {
     }
     
     /**
-     * Check if user is a member (full entitlement / LeSAEp Learner).
+     * Check if user is a member (full entitlement).
      *
      * Bridges legacy keys plus FLOSC_Member_Access and sale-side access so RAG
      * and AI userState match content gates (sandbox grants, roles, offers).
@@ -60,7 +60,7 @@ class FLOSC_User_Access_Manager {
      */
     /**
      * @param int         $user_id
-     * @param string|null $flow_id Per-flow stem when known (LeSAEp vs flosc.ai).
+     * @param string|null $flow_id Per-flow stem when known.
      */
     public function is_member($user_id, $flow_id = null) {
         if ( ! $user_id ) {

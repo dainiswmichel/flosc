@@ -341,8 +341,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Input - " . wp_
     public function get_available_lessons($access_level) {
 
         // Scope to THIS flow's lesson categories. Without this the query returns
-        // EVERY flow's lessons site-wide, so one chatbot (e.g. dainis.net) would
-        // surface another flow's lessons (e.g. LeSAEp pronunciation) — a cross-flow
+        // EVERY flow's lessons site-wide, so one chatbot (e.g. the WordPress host) would
+        // surface another flow's lessons (e.g. pronunciation) — a cross-flow
         // bleed. Flow isolation is the whole point, so we resolve the flow's
         // categories the same way FLOSC_Lesson_Manager does and filter on them.
         $categories = [];

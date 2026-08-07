@@ -7,7 +7,7 @@ if (!defined('ABSPATH')) {
  * Plugin activation (v3.0.9 - Resolved: moved outside class so hook fires correctly)
  */
 function flosc_activate() {
-    // Specialty product roles (e.g. LeSAEp) are created when that flow/product
+    // Specialty product roles are created when that flow/product
     // is deliberately imported or configured — not on every generic activate.
 
     // v1.2.2: Migrate legacy settings to flows system

@@ -116,18 +116,12 @@ class FLOSC_AI_Chat_Dispatch {
         // Visitors NEVER see quiz results or learn which questions they missed.
         // They must create an account first. This is a STRICT business rule.
         $quiz_results_section = '';
-        if ( is_user_logged_in() && class_exists( 'FLOSC_LeSAEp_Pronunciation_Quiz' ) ) {
+        if ( is_user_logged_in() && class_exists( 'FLOSC_Pronunciation_Assessment_Quiz' ) ) {
             $user_id     = get_current_user_id();
-            $raw_answers = get_user_meta( $user_id, '_flosc_quiz_answers_lesaep_text_based_pronunciation_quiz', true );
-            if ( empty( $raw_answers ) ) {
-                $raw_answers = get_user_meta( $user_id, '_flosc_quiz_answers_pronunciation_assessment_quiz', true );
-            }
+            $raw_answers = get_user_meta( $user_id, '_flosc_quiz_answers_pronunciation_assessment_quiz', true );
             if ( ! empty( $raw_answers ) ) {
-                $quiz    = new FLOSC_LeSAEp_Pronunciation_Quiz();
-                $content = function_exists( 'flosc_get_setting' ) ? flosc_get_setting( 'quiz_content_lesaep_text_based_pronunciation_quiz', '' ) : '';
-                if ( $content === '' && function_exists( 'flosc_get_setting' ) ) {
-                    $content = flosc_get_setting( 'quiz_content_pronunciation_assessment_quiz', '' );
-                }
+                $quiz    = new FLOSC_Pronunciation_Assessment_Quiz();
+                $content = function_exists( 'flosc_get_setting' ) ? flosc_get_setting( 'quiz_content_pronunciation_assessment_quiz', '' ) : '';
                 $result  = $quiz->analyze( $raw_answers, $content );
 
                 $sound_map = [
@@ -176,7 +170,7 @@ class FLOSC_AI_Chat_Dispatch {
                         . "Do NOT claim they are a guest. Do NOT push upgrades or free-lesson funnels. "
                         . "Do NOT say you already answered, refuse, or make excuses — find the lesson and help.\n";
                 } else {
-                    // Guest — logged in, not full member
+                    // Guest — logged in, not a full member
                     $quiz_results_section .= "\n**Context:** This user is a **Guest** (logged in, not a full member yet). "
                         . "You MAY share their quiz score and which sounds they missed. "
                         . "Do NOT deliver full lesson content (videos, exercises, detailed how-to). "
@@ -295,7 +289,7 @@ class FLOSC_AI_Chat_Dispatch {
             if ($product_tagline) {
                 $prompt .= "**Tagline:** {$product_tagline}\n";
             }
-            $prompt .= "You are the AI assistant for **{$product_name}**. ";
+            $prompt .= "You are the assistant for **{$product_name}**. ";
             $prompt .= "Refer to this product by name when users ask what this site offers.\n\n";
         } else {
             $prompt .= "## This Site's Product\n";
@@ -597,11 +591,11 @@ class FLOSC_AI_Chat_Dispatch {
     }
 
     /**
-     * Whether AI context represents a full member (LeSAEp Learner), not a guest.
+     * Whether AI context represents a full member (member), not a guest.
      *
      * Prefer access_level / is_member. Treat purchased as truthy for bool and
      * common string forms ('Yes', 'true', '1') — never require purchased === 'Yes'
-     * alone (that mis-labeled sandbox / meta-granted LeSAEp Learners as guests).
+     * alone (that mis-labeled sandbox / meta-granted members as guests).
      *
      * @param array $context AI / session context
      * @return bool
@@ -1536,21 +1530,6 @@ class FLOSC_AI_Chat_Dispatch {
                 );
                 if ($response !== $original) {
                     $feedback_log[] = 'Corrected wrong FLOSC expansion';
-                }
-            }
-        }
-
-        // Correct wrong LeSAEp expansions
-        if (preg_match('/LeSAEp\s+stands?\s+for\b/i', $response)) {
-            if (!preg_match('/Learn\s+Excellent\s+Standard\s+American\s+English\s+Pronunciation/i', $response)) {
-                $original = $response;
-                $response = preg_replace(
-                    '/LeSAEp\s+stands?\s+for[^.!?\n]*/i',
-                    'LeSAEp stands for Learn Excellent Standard American English Pronunciation',
-                    $response
-                );
-                if ($response !== $original) {
-                    $feedback_log[] = 'Corrected wrong LeSAEp expansion';
                 }
             }
         }

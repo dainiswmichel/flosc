@@ -638,7 +638,7 @@ class FLOSC_Offer_Manager {
                 'timer_seconds' => 0,
                 'guarantee' => '',
                 'grants' => [
-                    'features' => ['lesaep_lessons', 'pronunciation_exercises', 'audio_recordings', 'ipa_training', 'ai_coach'],
+                    'features' => ['all_lessons', 'pronunciation_exercises', 'audio_recordings', 'ipa_training', 'ai_coach'],
                     'level' => 'pronunciation_learners',
                     'duration_days' => 30,
                     'usage_limits' => [],
@@ -649,7 +649,7 @@ class FLOSC_Offer_Manager {
                     'badge' => 'Pre-Launch Price',
                     'savings' => 'Save $20 with yearly!',
                 ],
-                'product_id' => 'lesaep',
+                'product_id' => '',
                 'sort_order' => 102,
                 'created_at' => current_time('mysql'),
             ],

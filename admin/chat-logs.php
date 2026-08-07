@@ -28,7 +28,7 @@ if ( ! isset( $flosc_get ) || ! is_array( $flosc_get ) ) {
 }
 $flosc_selected_user_id = isset( $flosc_get['flosc_user_id'] ) ? absint( $flosc_get['flosc_user_id'] ) : 0;
 // Scope chat logs to the selected flow. Stored flow_id has no file extension
-// (e.g. "dainis_net_ivr"), while $current_ivr is the filename ("dainis_net_ivr.md").
+// (e.g. "flow_ivr"), while $current_ivr is the filename ("flow_ivr.md").
 $flosc_current_flow_id = $flosc_current_ivr !== '' ? pathinfo($flosc_current_ivr, PATHINFO_FILENAME) : '';
 $flosc_total_logs = $flosc_logger->flosc_get_log_count($flosc_current_flow_id);
 $flosc_chat_logs_nonce = wp_create_nonce('flosc_chat_logs');
@@ -291,7 +291,7 @@ $flosc_sessions_archived_url = add_query_arg([
                     var safe = $('<div>').text(res.data.text).html();
                     var who = $('<div>').text(res.data.name).html();
                     if (res.data.as === 'bot') {
-                        // Posted as the bot — render like a normal AI (Br3nda) message.
+                        // Posted as the bot — render like a normal assistant message.
                         $thread.append(
                             '<div class="flosc-msg flosc-msg-ai">' +
                             '<div class="flosc-msg-meta"><span class="flosc-msg-who">AI</span></div>' +
@@ -810,7 +810,7 @@ function flosc_render_chat_session($flosc_s) {
             continue;
         }
 
-        // Admin posted AS the bot — renders like a normal AI (Br3nda) message.
+        // Admin posted AS the bot — renders like a normal assistant message.
         if ($src === 'admin_bot') {
             $b_seq++;
             $thread .= flosc_render_msg_bubbles(
@@ -856,7 +856,7 @@ function flosc_render_chat_session($flosc_s) {
         if ($admin_name === '') {
             $admin_name = 'Admin';
         }
-        $bot_name = flosc_get_setting('ai_personality_name', flosc_get_setting('ai_identity_name', 'Br3nda'));
+        $bot_name = flosc_get_setting('ai_personality_name', flosc_get_setting('ai_identity_name', 'Site Assistant'));
 
         $latest_usage_row = null;
         $latest_row = null;

@@ -1,6 +1,6 @@
 <?php
 /**
- * LeSAEp Pronunciation Assessment Quiz Type
+ * Pronunciation assessment quiz type
  *
  * 10-question accent assessment for Standard American English pronunciation.
  * Each question maps to a specific sound lesson (question N = lesson N).
@@ -25,7 +25,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-class FLOSC_LeSAEp_Pronunciation_Quiz extends FLOSC_Abstract_Quiz_Type {
+class FLOSC_Pronunciation_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 
     public function get_id() {
         return 'pronunciation_assessment_quiz';

@@ -437,7 +437,7 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                             </select>
                             <p class="description">
                                 Files are located in <code>ai_configuration_files/</code><br>
-                                Use naming convention: <code>{flowname}_ivr.md</code> (e.g., <code>lesaep_ivr.md</code>)
+                                Use naming convention: <code>{flowname}_ivr.md</code> (e.g., <code>course_coach_ivr.md</code>)
                             </p>
                         </td>
                     </tr>

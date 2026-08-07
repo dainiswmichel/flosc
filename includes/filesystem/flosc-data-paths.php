@@ -544,9 +544,9 @@ if (!function_exists('flosc_is_allowed_ivr_source_path')) {
  * Each floscFlow owns a physically separate basket of uploaded knowledge files,
  * living under flosc_data_dir()/kb/<flow_stem>/. Because the folder is keyed to
  * the flow's stem, one flow's files are never visible to another (no cross-flow
- * bleed) — uploading a resume to the dainis.net flow's basket can never surface
- * in the lesaep flow. The folder is web-protected (Deny from all + silent index)
- * and created on first use. $flow_stem is the flow id (e.g. 'dainis_net_ivr').
+ * bleed) — uploading a resume to the the WordPress host flow's basket can never surface
+ * in the this flow. The folder is web-protected (Deny from all + silent index)
+ * and created on first use. $flow_stem is the flow id (e.g. 'flow_ivr').
  * ========================================================================== */
 if (!function_exists('flosc_flow_kb_dir')) {
     function flosc_flow_kb_dir($flow_stem) {
@@ -576,7 +576,7 @@ if (!function_exists('flosc_chat_archive_dir')) {
     /**
      * Get per-flow chat archive directory.
      *
-     * @param string $flow_stem Flow identifier (e.g. 'dainis_net_ivr').
+     * @param string $flow_stem Flow identifier (e.g. 'flow_ivr').
      *
      * @return string Trailing-slashed archive directory, or '' if unavailable.
      */
@@ -830,7 +830,7 @@ if (!function_exists('flosc_issue_post_purchase_session')) {
         do_action( 'wp_login', $user->user_login, $user );
 
         // FLOSC's own cross-domain auth cookie rides alongside the WP cookie so a
-        // flow served on flosc.ai / lesaep.com / dainis.net authenticates even when
+        // flow served on flosc.ai / the flow domain / the WordPress host authenticates even when
         // COOKIE_DOMAIN does not match the custom domain. The methods live on the
         // framework singleton (flosc()), not a separate session class.
         if (function_exists('flosc') && method_exists(flosc(), 'generate_flosc_auth_token')) {

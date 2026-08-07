@@ -3,7 +3,7 @@
  * FLOSC Session Manager
  * Handles chat session storage and retrieval — scoped per flow.
  *
- * Real-world: a guest on Br3nda must not see LeSAEp chats (and vice versa).
+ * Real-world: a guest on assistant must not see other-flow chats (and vice versa).
  * Sessions live in user meta `_flosc_sessions` with an optional `flow_id` stem.
  */
 
@@ -72,8 +72,7 @@ class FLOSC_Session_Manager {
             return $session_stem === $stem;
         }
 
-        // Legacy sessions (no flow_id): only show on the user's registration flow,
-        // or on a LeSAEp stem when registration is empty (old LeSAEp accounts).
+        // Legacy sessions (no flow_id): only show on the user's registration flow.
         $reg = $this->normalize_flow_stem(
             (string) get_user_meta((int) $user_id, '_flosc_registration_flow', true)
         );
@@ -81,8 +80,8 @@ class FLOSC_Session_Manager {
             return $reg === $stem;
         }
 
-        // No registration: treat untagged as LeSAEp-only (historical default product).
-        return (strpos($stem, 'lesaep') !== false);
+        // No registration flow means untagged sessions are not attributed to any flow.
+        return false;
     }
 
     /**

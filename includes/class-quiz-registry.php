@@ -12,14 +12,10 @@
 if ( ! defined( 'ABSPATH' ) ) exit;
 
 require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/abstract-quiz-type.php';
-require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/class-flosc-lesaep-pronunciation-quiz.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/class-flosc-pronunciation-assessment-quiz.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/class-flosc-sample-text-based-quiz.php';
 
 class FLOSC_Quiz_Registry {
-
-    private static $aliases = [
-        'lesaep_text_based_pronunciation_quiz' => 'pronunciation_assessment_quiz',
-    ];
 
     /** @var FLOSC_Abstract_Quiz_Type[]|null */
     private static $quizzes = null;
@@ -27,13 +23,13 @@ class FLOSC_Quiz_Registry {
     private static function init() {
         if ( self::$quizzes !== null ) return;
         self::$quizzes = [
-            'pronunciation_assessment_quiz'        => new FLOSC_LeSAEp_Pronunciation_Quiz(),
+            'pronunciation_assessment_quiz'        => new FLOSC_Pronunciation_Assessment_Quiz(),
             'flosc_sample_data_numbers_quiz'        => new FLOSC_Sample_Text_Based_Quiz(),
         ];
     }
 
     private static function resolve_quiz_id( $quiz_id ) {
-        return self::$aliases[ $quiz_id ] ?? $quiz_id;
+        return $quiz_id;
     }
 
     /**

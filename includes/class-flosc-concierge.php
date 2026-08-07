@@ -553,9 +553,9 @@ class FLOSC_Concierge {
 
 		// OpenClaw fallback: resolve the flow for any field left blank in the meta box.
 		// Tried in order of how a person would name it:
-		//   1. an explicit .md filename in floscFlow/Flow/FlowName ("… (dainis_net_ivr.md)")
-		//   2. the flow's NAME in floscFlow/Flow/FlowName ("Br3nda", "LeSAEp")
-		//   3. the human-facing Deployment ("dainis.net/chat", "flosc.ai")
+		//   1. an explicit .md filename in floscFlow/Flow/FlowName ("… (flow_ivr.md)")
+		//   2. the flow's NAME in floscFlow/Flow/FlowName ("Site Assistant", "the product")
+		//   3. the human-facing Deployment ("the WordPress host/chat", "flosc.ai")
 		if ( '' === $flow ) {
 			$flow = self::flow_file( $flow_hint );
 		}
@@ -919,7 +919,7 @@ class FLOSC_Concierge {
 		return 'concierge_' . sanitize_key( $slug );
 	}
 
-	/** Resolve a flow option key from a flow file ('dainis_net_ivr.md' -> 'flosc_flow_dainis_net_ivr'). */
+	/** Resolve a flow option key from a flow file ('flow_ivr.md' -> 'flosc_flow_flow_ivr'). */
 	protected static function flow_key( $flow_file ) {
 		$flow_file = (string) $flow_file;
 		if ( '' === $flow_file ) {
@@ -928,7 +928,7 @@ class FLOSC_Concierge {
 		return 'flosc_flow_' . sanitize_key( pathinfo( $flow_file, PATHINFO_FILENAME ) );
 	}
 
-	/** Pull a '*.md' flow file out of a floscFlow value ('Br3nda (dainis_net_ivr.md)' -> 'dainis_net_ivr.md'). */
+	/** Pull a '*.md' flow file out of a floscFlow value ('assistant (flow_ivr.md)' -> 'flow_ivr.md'). */
 	protected static function flow_file( $value ) {
 		if ( preg_match( '/([A-Za-z0-9_\-]+\.md)\b/i', (string) $value, $m ) ) {
 			return $m[1];
@@ -937,14 +937,14 @@ class FLOSC_Concierge {
 	}
 
 	/**
-	 * Resolve a flow file from a flow's NAME ('Br3nda' -> 'dainis_net_ivr.md').
+	 * Resolve a flow file from a flow's NAME ('Site Assistant' -> 'flow_ivr.md').
 	 *
 	 * Every flow carries a human name (identity.name) — the same name shown in the
 	 * IVR editor and the Flow dropdown. Matching is case-insensitive and ignores
 	 * surrounding quotes, so an admin or OpenClaw can simply name the flow.
 	 *
 	 * @param string $value A flow name, possibly quoted.
-	 * @return string Flow file (e.g. 'dainis_net_ivr.md'), or '' if no name matches.
+	 * @return string Flow file (e.g. 'flow_ivr.md'), or '' if no name matches.
 	 */
 	protected static function flow_by_name( $value ) {
 		$name = mb_strtolower( self::unquote( (string) $value ) );
@@ -964,15 +964,15 @@ class FLOSC_Concierge {
 	}
 
 	/**
-	 * Resolve a flow file from a human-facing Deployment ('dainis.net/chat' -> 'dainis_net_ivr.md').
+	 * Resolve a flow file from a human-facing Deployment ('the WordPress host/chat' -> 'flow_ivr.md').
 	 *
-	 * OpenClaw writes the deployment it knows — "dainis.net/chat", "flosc.ai",
-	 * "lesaep.com" — never the internal filename. We reduce that to a bare domain,
-	 * turn it into a stem ("dainis.net" -> "dainis_net"), and match it against the
+	 * OpenClaw writes the deployment it knows — "the WordPress host/chat", "flosc.ai",
+	 * "the flow domain" — never the internal filename. We reduce that to a bare domain,
+	 * turn it into a stem ("the WordPress host" -> "host_flow"), and match it against the
 	 * actual *_ivr.md flow files so their names stay the single source of truth.
 	 *
 	 * @param string $deployment Deployment value from the post body.
-	 * @return string Flow file (e.g. 'dainis_net_ivr.md'), or '' if none matches.
+	 * @return string Flow file (e.g. 'flow_ivr.md'), or '' if none matches.
 	 */
 	protected static function flow_from_deployment( $deployment ) {
 		$host = strtolower( trim( (string) $deployment ) );
@@ -982,14 +982,14 @@ class FLOSC_Concierge {
 		$host = preg_replace( '#^[a-z][a-z0-9+.\-]*://#', '', $host ); // drop scheme
 		$host = preg_replace( '#[/?\#].*$#', '', $host );              // drop path/query/fragment
 		$host = preg_replace( '#^www\.#', '', $host );                 // drop www.
-		$stem = trim( (string) preg_replace( '/[^a-z0-9]+/', '_', $host ), '_' ); // dainis.net -> dainis_net
+		$stem = trim( (string) preg_replace( '/[^a-z0-9]+/', '_', $host ), '_' ); // the WordPress host -> host_flow
 		if ( '' === $stem ) {
 			return '';
 		}
 		$files = function_exists( 'flosc_config_glob' ) ? flosc_config_glob( '*_ivr.md' ) : array();
 		foreach ( (array) $files as $file ) {
 			$name  = basename( (string) $file );
-			$fstem = pathinfo( $name, PATHINFO_FILENAME );             // e.g. dainis_net_ivr
+			$fstem = pathinfo( $name, PATHINFO_FILENAME );             // e.g. flow_ivr
 			if ( $fstem === $stem || 0 === strpos( $fstem, $stem . '_' ) ) {
 				if ( ! empty( get_option( 'flosc_flow_' . sanitize_key( $fstem ) ) ) ) {
 					return $name;

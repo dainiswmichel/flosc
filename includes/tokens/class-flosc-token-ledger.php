@@ -101,7 +101,7 @@ class FLOSC_Token_Ledger {
             return false;
         }
 
-        // Per-flow membership only — LeSAEp role must not block guest tokens on flosc.ai.
+        // Per-flow membership only — the product role must not block guest tokens on flosc.ai.
         if ($this->flosc->sale() && method_exists($this->flosc->sale(), 'access')) {
             if ($this->flosc->sale()->access()->is_member($user_id, $flow_id)) {
                 return false;
@@ -219,8 +219,8 @@ class FLOSC_Token_Ledger {
 
     /**
      * V→G additive token grant for the logged-in guest.
-     * Client sends visitor_session_id so visitor remaining can be carried after SSO
-     * (when the grant on wp_login ran without the lesaep.com visitor cookie).
+    * Client sends visitor_session_id so visitor remaining can be carried after SSO
+    * (when the grant on wp_login ran without the flow-domain visitor cookie).
      *
      * @param WP_REST_Request $request flow_id, visitor_session_id
      * @return WP_REST_Response

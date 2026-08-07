@@ -197,7 +197,7 @@ class FLOSC_First_Party_Authentication {
     /**
      * v9.5.7: Redirect users to FLOSC app after login
      * v1.0.0: ONLY redirect if user was on FLOSC app or has pre-login quiz score
-     * v1.4.9: Use get_app_url() for custom domain support (lesaep.com, flosc.ai)
+     * v1.4.9: Use get_app_url() for custom domain support (the flow domain, flosc.ai)
      *
      * IMPORTANT: This function does NOT hijack normal WordPress logins.
      * Only redirects to FLOSC app when there's a clear FLOSC context.
@@ -335,7 +335,7 @@ class FLOSC_First_Party_Authentication {
     /**
      * Set the FLOSC auth token as a cookie with EMPTY domain.
      * Empty domain binds to the host that served the response
-     * (lesaep.com, flosc.ai, dainis.net — whichever the user is on).
+     * (the flow domain, flosc.ai, the WordPress host — whichever the user is on).
      * Do not use get_app_url() host: that can point at a different flow
      * domain than the current request and the browser will reject the cookie.
      *

@@ -453,7 +453,15 @@ class SSO_Manager {
                     );
                 }
 
-                register_setting('flosc_sso_settings', $field['id'], $setting_args);
+                register_setting(
+                    'flosc_sso_settings',
+                    $field['id'],
+                    array(
+                        'type'              => $setting_args['type'],
+                        'sanitize_callback' => $setting_args['sanitize_callback'],
+                        'default'           => $setting_args['default'],
+                    )
+                );
                 
                 add_settings_field(
                     $field['id'],

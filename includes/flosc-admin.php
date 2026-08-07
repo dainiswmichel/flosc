@@ -492,16 +492,14 @@ trait FLOSC_Admin_Trait {
                 break;
         }
 
-        $setting_args = array(
-            'type'              => $this->get_setting_registration_type($sanitize_type),
-            'sanitize_callback' => $sanitize_callback,
-            'default'           => $this->get_setting_default_value($sanitize_type),
-        );
-
         register_setting(
             'flosc_settings',
             $option_name,
-            $setting_args
+            array(
+                'type'              => $this->get_setting_registration_type($sanitize_type),
+                'sanitize_callback' => $sanitize_callback,
+                'default'           => $this->get_setting_default_value($sanitize_type),
+            )
         );
     }
 
@@ -720,7 +718,7 @@ trait FLOSC_Admin_Trait {
      * Check whether current user can manage chat logs for a specific flow.
      * Site admins are always allowed; delegated floscEditors require flow assignment.
      *
-     * @param string $flow_id Flow stem (for example dainis_net_ivr).
+     * @param string $flow_id Flow stem (for example flow_ivr).
      * @return bool
      */
     private function can_manage_flow_chat_logs($flow_id) {
@@ -1336,10 +1334,10 @@ trait FLOSC_Admin_Trait {
 
         return [
             'flow_id' => $flow_id,
-            'form_title' => trim((string) ($settings['contact_form_title'] ?? 'Contact Dainis')),
-            'form_intro' => trim((string) ($settings['contact_form_intro'] ?? 'Please fill out the form below to get in touch with Dainis. If he does not get back to you, try contacting him another way.')),
+            'form_title' => trim((string) ($settings['contact_form_title'] ?? 'Contact the Site Operator')),
+            'form_intro' => trim((string) ($settings['contact_form_intro'] ?? 'Please fill out the form below to get in touch with the site operator. If you do not receive a response, please try another contact method.')),
             'submit_button_text' => trim((string) ($settings['contact_form_submit_text'] ?? 'Send Message')),
-            'success_message' => trim((string) ($settings['contact_form_success_message'] ?? 'We\'ve forwarded your message to Dainis, thank you!')),
+            'success_message' => trim((string) ($settings['contact_form_success_message'] ?? 'We\'ve forwarded your message to the site operator, thank you!')),
             'forward_to_email' => trim((string) ($settings['contact_form_forward_to_email'] ?? get_option('admin_email'))),
             'email_subject' => trim((string) ($settings['contact_form_email_subject'] ?? 'FLOSC Contact Form Message')),
             'min_submit_seconds' => max(2, intval($settings['contact_form_min_submit_seconds'] ?? 4)),

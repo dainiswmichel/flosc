@@ -9,7 +9,7 @@
  *
  * Admin content format: one answer per block, separated by a blank line.
  * Each block: answer value, then optional CorrectContent: and RelatedContent: lines.
- * Consistent with LeSAEp block format. Legacy flat format (1,2,3,...) still works.
+ * Consistent with the standard block format. Legacy flat format (1,2,3,...) still works.
  *
  * @package FLOSC
  * @version 3.0.7
@@ -232,7 +232,7 @@ class FLOSC_Sample_Text_Based_Quiz extends FLOSC_Abstract_Quiz_Type {
      * Parse expected_content into answers array + per-answer content map.
      *
      * Primary format — one answer per block, separated by blank lines
-     * (consistent with LeSAEp block format):
+    * (consistent with the standard block format):
      *   1
      *   CorrectContent: post:lesson-one
      *   RelatedContent: post:lesson-two, post:lesson-three

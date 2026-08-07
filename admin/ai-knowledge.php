@@ -68,7 +68,7 @@ if ($flosc_editing_file) {
             <input type="text" id="flow_ai_personality_name" name="flow_ai_personality_name" 
                    value="<?php echo esc_attr($flosc_flow_settings['ai_personality_name'] ?? ($flosc_flow_settings['name'] ?? 'FLOSC')); ?>" 
                    class="regular-text">
-            <p class="description">What should users call your AI? (e.g., "LeSAEp Coach", "Pronunciation Buddy")</p>
+            <p class="description">What should users call your AI? (e.g., "Course Coach", "Pronunciation Buddy")</p>
         </td>
     </tr>
     

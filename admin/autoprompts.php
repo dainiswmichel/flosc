@@ -24,7 +24,7 @@ flosc_tab_header('💊', 'AutoPrompts');
 
 if (!function_exists('flosc_autoprompt_is_machine_label')) {
     /**
-     * Detect technical key-style labels (e.g., dainis_net_music_overview)
+     * Detect technical key-style labels (e.g., host_flow_music_overview)
      * that should not be shown as user-facing autoprompt labels.
      *
      * @param string $label

@@ -45,8 +45,8 @@ trait FLOSC_REST_Trait {
             return true;
         }
 
-        // Visitors get stricter limits
-        if (!$this->check_rate_limit('public_visitor_' . $endpoint, 60, 3600)) {
+        // Visitors get stricter limits.
+        if (!$this->check_rate_limit('public_visitor_' . $endpoint, 30, 3600)) {
             return new WP_Error('rate_limit', __('Rate limit reached. Please try again later.', 'flosc'), ['status' => 429]);
         }
 
@@ -217,10 +217,9 @@ trait FLOSC_REST_Trait {
     }
 
     /**
-     * §4: Permission callback for /ivr-messages.
-     * Preserves public rate limiting for visitor-safe phases.
-     * Only content phase is entitlement-gated; sale remains part of the public
-     * purchase journey.
+     * Permission callback for /ivr-messages and /ivr/messages.
+     * Public rate limiting for visitor funnel phases (including sale/offer).
+     * Content phase requires membership entitlement.
      */
     public function check_ivr_messages_permission($request) {
         // Keep the existing public rate-limit behavior for the visitor funnel.
@@ -234,7 +233,7 @@ trait FLOSC_REST_Trait {
             return $phase;
         }
 
-        // Content is the only protected phase.
+        // Content phase is member-entitled only (sale stays public for guest purchase).
         if ($phase === 'content') {
             $user_id = get_current_user_id();
             // The meta is stored as the string 'true' / 'false' (see
@@ -242,6 +241,13 @@ trait FLOSC_REST_Trait {
             // 'false' as truthy and let a revoked member through — compare the
             // string explicitly.
             $has_member_access = $user_id && 'true' === get_user_meta($user_id, '_flosc_member_access', true);
+            // Also honor flow-scoped membership when available.
+            if (!$has_member_access && $user_id && function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'sale')) {
+                $sale = flosc()->sale();
+                if ($sale && method_exists($sale, 'access') && method_exists($sale->access(), 'is_member')) {
+                    $has_member_access = (bool) $sale->access()->is_member($user_id);
+                }
+            }
             if (!$has_member_access) {
                 return new WP_Error('forbidden', __('Not entitled to this content.', 'flosc'), ['status' => 403]);
             }

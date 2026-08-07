@@ -196,7 +196,7 @@ function flosc_purge_legacy_sandbox_autoprompts() {
     }
 }
 
-// v8.0.0: One-time IVR re-parse — fixes guest_upgrade action (was show_offer_full_access → checkout_lesaep_full)
+// v8.0.0: One-time IVR re-parse — fixes guest_upgrade action (was show_offer_full_access → checkout_flow_full_offer)
 // Runs once on next page load, then sets a flag so it never runs again.
 if (!get_option('flosc_ivr_reparse_800')) {
     add_action('init', function() {
@@ -829,7 +829,7 @@ class FLOSC_Framework {
         }
 
         $provider = strtolower((string) flosc_get_setting('audio_conversion_provider', 'none'));
-        if ($provider !== 'lesaep') {
+        if ($provider !== 'external') {
             return ['ok' => false, 'status' => 'provider_none'];
         }
 
@@ -968,7 +968,7 @@ class FLOSC_Framework {
         // v3.0.0: Clear FLOSC auth token on logout
         add_action('wp_logout', [$this, 'clear_flosc_auth_token']);
 
-        // Specialty roles (LeSAEp, etc.) are created when that product is
+        // Specialty roles (the product, etc.) are created when that product is
         // imported/configured — not on every request for a generic install.
 
         // v8.0.0: Instant logout via AJAX — bypasses wp-login.php confirmation screen
@@ -1841,8 +1841,8 @@ The Team',
     // ─────────────────────────────────────────────────────────
 
     /**
-     * Hook: regenerate lesson catalog when a LeSAEp post is saved.
-     * Only fires for published posts in the LeSAEp category.
+     * Hook: regenerate lesson catalog when a the product post is saved.
+     * Only fires for published posts in the lessons category.
      */
     public function maybe_regenerate_lesson_catalog($post_id, $post) {
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
@@ -1869,7 +1869,7 @@ The Team',
                 return;
             }
         }
-        $this->generate_lesaep_lesson_catalog();
+        $this->generate_lesson_catalog();
     }
 
     /**
@@ -1878,7 +1878,7 @@ The Team',
     public function handle_regenerate_lesson_catalog() {
         check_admin_referer('flosc_regen_catalog');
         if (!current_user_can('manage_options')) wp_die('Unauthorized');
-        $this->generate_lesaep_lesson_catalog();
+        $this->generate_lesson_catalog();
         $referer = wp_get_referer() ?: admin_url('admin.php?page=flosc-settings&tab=ai');
         wp_safe_redirect(add_query_arg('catalog_regenerated', '1', $referer));
         exit;
@@ -1890,7 +1890,7 @@ The Team',
      * Writes every basename from flosc_lesson_catalog_write_paths() (neutral + legacy).
      * Auto-updates on save_post hook; also callable manually.
      */
-    public function generate_lesaep_lesson_catalog() {
+    public function generate_lesson_catalog() {
         if (!defined('FLOSC_PLUGIN_DIR')) return;
         $write_paths = function_exists('flosc_lesson_catalog_write_paths')
             ? flosc_lesson_catalog_write_paths()
@@ -2259,13 +2259,6 @@ The Team',
                 }
             }
         }
-        if (preg_match('/LeSAEp\s+stands?\s+for/i', $response_text)) {
-            if (!preg_match('/Learn\s+Excellent\s+Standard\s+American\s+English\s+Pronunciation/i', $response_text)) {
-                $pass = false;
-                $corrected = true;
-            }
-        }
-
         wp_send_json_success([
             'response'  => $response_text,
             'tokens_in' => 0, // Token tracking requires provider-specific response parsing; placeholder
@@ -2783,7 +2776,7 @@ The Team',
      * v1.5.2: Handle cross-domain SSO login token
      * v1.5.3: Also handles same-domain SSO success cleanup
      *
-     * Cross-domain: When SSO callback on dainis.net redirects to flosc.ai,
+     * Cross-domain: When SSO callback on the WordPress host redirects to flosc.ai,
      * the auth cookie doesn't travel (different domain). This handler picks
      * up the one-time token, verifies it, sets the auth cookie on the
      * current domain, and redirects to a clean URL.
@@ -2829,9 +2822,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
     // =========================================================================
     //
     // WordPress sets auth cookies using COOKIE_DOMAIN (derived from site_url).
-    // When a custom domain (lesaep.com) points to a WordPress host (dainis.net),
-    // the browser rejects auth cookies because lesaep.com cannot set cookies
-    // for dainis.net.
+    // When a custom domain (the flow domain) points to a WordPress host (the WordPress host),
+    // the browser rejects auth cookies because the flow domain cannot set cookies
+    // for the WordPress host.
     //
     // The FLOSC Auth Token solves this:
     // 1. On login/registration, a stateless HMAC-signed token is generated
@@ -3079,7 +3072,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
     /**
      * v1.7.5: Explicitly set flow context for REST API calls.
      * Needed when purchase requests come from domains other than the custom domain
-     * (e.g., dainis.net, clickbank, any host embedding the FLOSC checkout).
+     * (e.g., the WordPress host, clickbank, any host embedding the FLOSC checkout).
      */
     public function set_flow_context($flow_id) {
         if (empty($flow_id)) return;
@@ -3205,8 +3198,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
         return $this->full_page_mode->render_legal_page($page);
     }
 
-    private function get_br3nda_codex_charter_content() {
-        return $this->full_page_mode->get_br3nda_codex_charter_content();
+    private function get_codex_charter_content() {
+        return $this->full_page_mode->get_codex_charter_content();
     }
 
     private function render_flosc_app() {
@@ -3501,9 +3494,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
             // Flow identity settings only — no hard-coded personal brand defaults (WP.org).
             $bio_summary = trim((string) flosc_get_setting('identity_bio_summary', ''));
             if ($bio_summary === '') {
-                $bio_summary = trim((string) flosc_get_setting('dainis_bio_summary', '')); // legacy key
-            }
-            if ($bio_summary === '') {
                 $identity_name = trim((string) flosc_get_setting('name', ''));
                 if ($identity_name === '') {
                     $identity_name = 'this host';
@@ -3516,9 +3506,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
             }
 
             $bio_url = trim((string) flosc_get_setting('identity_bio_url', ''));
-            if ($bio_url === '') {
-                $bio_url = trim((string) flosc_get_setting('dainis_bio_url', '')); // legacy key
-            }
             $reply = $bio_summary;
             if ($bio_url !== '' && filter_var($bio_url, FILTER_VALIDATE_URL)) {
                 $reply .= "\n" . sprintf(
@@ -3547,7 +3534,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
             ? mb_strtolower($message, 'UTF-8')
             : strtolower($message);
         // Generic bio/identity queries only. Person-specific phrases belong in
-        // flow IVR / trajectories (e.g. Br3nda), not engine hardcode.
+        // flow IVR / trajectories (e.g. assistant), not engine hardcode.
         return (bool) preg_match(
             '/\b(bio|biography|background|resume|cv|who\s+are\s+you|about\s+you|about\s+the\s+(host|author|founder))\b/u',
             $message
@@ -4415,9 +4402,9 @@ Example good response:
         
         // v9.3.4: If 'default', rotate through ENABLED quizzes (ABAB pattern)
         // v3.0.2: Use flosc_get_setting to check flow settings first, then global option
-        // v3.0.7: Auto-detect LeSAEp flow from request params and fall back to lesaep_text_based_pronunciation_quiz
+        // Resolve 'default' via this flow's enabled quizzes / default_text_quiz_id.
         if ($quiz_id === 'default') {
-            // v3.0.7: Set flow context from request so flosc_get_setting() finds per-flow settings
+            // Set flow context from request so flosc_get_setting() finds per-flow settings.
             $req_flow_id  = sanitize_text_field($request->get_param('flow_id') ?? '');
             $req_ivr_file = sanitize_file_name($request->get_param('ivr_file') ?? '');
             if ($req_flow_id) {
@@ -4502,7 +4489,7 @@ Example good response:
                 ]);
             }
 
-            // v4.0.0: LeSAEp Pronunciation Assessment — use admin-configured content when set
+            // v4.0.0: the product Pronunciation Assessment — use admin-configured content when set
             if ($quiz_id === $default_text_quiz_id) {
                 $saved_content = flosc_get_setting('quiz_content_' . $default_text_quiz_id, '');
                 if ( ! empty( $saved_content ) ) {
@@ -5730,7 +5717,7 @@ Example good response:
 
     /**
      * Quiz IDs explicitly configured on this flow (flosc_flows / flosc_flow_* only).
-     * Empty list = this flow does not run or surface quizzes (e.g. Br3nda).
+     * Empty list = this flow does not run or surface quizzes (e.g. assistant).
      * Does not invent pronunciation_* defaults from global options.
      *
      * @param string $stem
@@ -8693,8 +8680,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
                 $already_attempted = !empty($meta['conversion']['attempted_at']);
                 if (!$already_attempted && !empty($conversion_targets)) {
                     $dispatch = $this->dispatch_remote_playback_conversion($session_id, $conversion_targets);
+                    $saved_provider = strtolower((string) flosc_get_setting('audio_conversion_provider', 'none'));
                     $meta['conversion'] = [
-                        'provider' => strtolower((string) flosc_get_setting('audio_conversion_provider', 'none')),
+                        'provider' => $saved_provider,
                         'attempted_at' => $this->get_utc_mts(),
                         'status' => $dispatch['status'] ?? 'unknown',
                     ];
@@ -8747,7 +8735,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
      *
      * Called during registration or login when a session_id is available.
      * The DO API scored each phrase during the quiz and saved audio + results
-     * in /opt/lesaep/sessions/{session_id}/. This method:
+     * in /opt/sessions/sessions/{session_id}/. This method:
      *   1. Fetches the finalized summary from GET /session/{session_id}
      *   2. Downloads each phrase audio file to flosc-users/{user_id}/
      *   3. Stores scores in user meta via store_quiz_score()
@@ -9641,12 +9629,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         // "as admin" → the admin's own name, shown "(admin)"; "as bot" → the flow's
-        // AI name (e.g. Br3nda), rendered as a normal assistant message.
+        // AI name (e.g. assistant), rendered as a normal assistant message.
         if ($flow !== '') {
             $this->set_flow_context($flow);
         }
         if ($as === 'bot') {
-            $name = flosc_get_setting('ai_personality_name', flosc_get_setting('ai_identity_name', 'Br3nda'));
+            $name = flosc_get_setting('ai_personality_name', flosc_get_setting('ai_identity_name', __('Site Assistant', 'flosc')));
         } else {
             $name = wp_get_current_user()->display_name;
             if ($name === '') {

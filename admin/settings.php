@@ -84,7 +84,7 @@ if (!function_exists('flosc_check_permalink_status')) {
         }
         
         // Check if any rule contains our slug pattern
-        // Rules are stored as: '^lesaep/?$' => 'index.php?flosc_app=1&flosc_ivr=...'
+        // Rules are stored as: '^app/?$' => 'index.php?flosc_app=1&flosc_ivr=...'
         foreach ($rules as $regex => $flosc_query) {
             // Check if this rule matches our slug (the regex starts with ^slug)
             if (preg_match('/^\^' . preg_quote($slug, '/') . '/', $regex)) {
@@ -2317,7 +2317,7 @@ if (function_exists('wp_add_inline_style')) {
                                 <label class="flosc-flow-field__label">Custom Domain</label>
                                 <input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>domain" 
                                        value="<?php echo esc_attr($flosc_settings['domain'] ?? ''); ?>"
-                                       placeholder="e.g., flosc.ai or lesaep.com"
+                                        placeholder="e.g., flow.example.com"
                                        class="flosc-flow-input">
                                 <p class="flosc-flow-field__hint">Custom domain pointing to this flow</p>
                             </div>
@@ -2326,7 +2326,7 @@ if (function_exists('wp_add_inline_style')) {
                                 <label class="flosc-flow-field__label">Name</label>
                                 <input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>name" 
                                        value="<?php echo esc_attr($flosc_settings['name'] ?? ''); ?>"
-                                       placeholder="e.g., FLOSC or LeSAEp"
+                                        placeholder="e.g., FLOSC Flow"
                                        class="flosc-flow-input">
                             </div>
                             
@@ -2548,7 +2548,7 @@ if (function_exists('wp_add_inline_style')) {
                         <td>
                             <input type="text" id="flow_domain" name="flow_domain" class="regular-text"
                                    value="<?php echo esc_attr($flosc_flow_settings['domain'] ?? ''); ?>"
-                                   placeholder="e.g., flosc.ai or lesaep.com">
+                                placeholder="e.g., flow.example.com">
                             <p class="description">Custom domain pointing to this flow</p>
                         </td>
                     </tr>
@@ -2557,7 +2557,7 @@ if (function_exists('wp_add_inline_style')) {
                         <td>
                             <input type="text" id="flow_name" name="flow_name" class="regular-text"
                                    value="<?php echo esc_attr($flosc_fi['name'] ?? ''); ?>"
-                                   placeholder="e.g., FLOSC or LeSAEp">
+                                placeholder="e.g., FLOSC Flow">
                             <p class="description">Display name shown in the chat header.</p>
                         </td>
                     </tr>

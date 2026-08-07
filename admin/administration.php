@@ -191,7 +191,7 @@ if ($flosc_can_assign_editors) {
         <tr>
             <th scope="row"><label for="flosc_account_purchases_manual">Purchased items (manual)</label></th>
             <td>
-                <textarea id="flosc_account_purchases_manual" name="flosc_account_purchases_manual" rows="6" class="large-text" placeholder="One item per line, e.g.&#10;LeSAEp Advanced Bundle&#10;LeSAEp Member Access"><?php echo esc_textarea($flosc_manual_purchases_raw); ?></textarea>
+                <textarea id="flosc_account_purchases_manual" name="flosc_account_purchases_manual" rows="6" class="large-text" placeholder="One item per line, e.g.&#10;Pronunciation Advanced Bundle&#10;Member Access"><?php echo esc_textarea($flosc_manual_purchases_raw); ?></textarea>
                 <p class="description">Enter one item per line.</p>
             </td>
         </tr>

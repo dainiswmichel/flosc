@@ -42,7 +42,7 @@ if ( empty( $flosc_all_quiz_types ) ) {
 // Content format must match the quiz type's own get_instructions() format.
 $flosc_quiz_demos = [
 
-    // ── LeSAEp Pronunciation (Q+options block format) ──────────────────────
+    // ── Pronunciation (Q+options block format) ──────────────────────
     'pronunciation_assessment_quiz' => [
 
         [
@@ -430,9 +430,9 @@ DEMO,
             <td>
                 <select id="flow_audio_conversion_provider" name="flow_audio_conversion_provider">
                     <option value="none" <?php selected( $flosc_flow_settings['audio_conversion_provider'] ?? 'none', 'none' ); ?>>none (default)</option>
-                    <option value="lesaep" <?php selected( $flosc_flow_settings['audio_conversion_provider'] ?? 'none', 'lesaep' ); ?>>lesaep</option>
+                    <option value="external" <?php selected( $flosc_flow_settings['audio_conversion_provider'] ?? 'none', 'external' ); ?>>external</option>
                 </select>
-                <p class="description">Select <code>lesaep</code> only when your flow is configured to call a compatible remote conversion endpoint. <code>none</code> keeps conversion dispatch disabled.</p>
+                <p class="description">Select <code>external</code> only when your flow is configured to call a compatible remote conversion endpoint. <code>none</code> keeps conversion dispatch disabled.</p>
             </td>
         </tr>
         <tr>

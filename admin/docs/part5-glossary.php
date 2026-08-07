@@ -157,7 +157,7 @@
 <p>In FLOSC: a library of scripted responses that the chatbot delivers based on conditions, without calling the AI API. Named after telecom IVR (phone tree) systems. The IVR-first dispatch model means scripted responses are always preferred over AI-generated ones — they are faster, cheaper, and fully under admin control. See Part 1: The IVR Inspiration.</p>
 
 <h3 id="term-ivr-config-file">IVR Config File</h3>
-<p>A Markdown file (e.g., <code>lesaep_ivr.md</code>) in the <code>ai_configuration_files/</code> directory that defines all scripted responses for a flow. Each flow has one IVR file. The file is parsed by <code>class-ivr-parser.php</code> and the resulting message tree is stored in the database for fast lookups.</p>
+<p>A Markdown file (e.g., <code>{flowname}_ivr.md</code>) in the <code>ai_configuration_files/</code> directory that defines all scripted responses for a flow. Each flow has one IVR file. The file is parsed by <code>class-ivr-parser.php</code> and the resulting message tree is stored in the database for fast lookups.</p>
 
 <h3 id="term-ivr-message">IVR Message</h3>
 <p>One scripted response in the IVR config file. A message has: a phase, a name, a trigger condition, optional autoprompt pills, optional offer triggers, a style, and the message content (Markdown with template variables). The condition is evaluated against the current user context at dispatch time.</p>
@@ -178,14 +178,14 @@
 
 <h2 id="glossary-l">L</h2>
 
-<h3 id="term-lesaep">LeSAEp</h3>
+<h3 id="term-product-example">the product</h3>
 <p>Latvian-born Standard American English Pronunciation. The native quiz type for FLOSC. Assesses 10 core American English pronunciation challenges — short-a vowel, rhotic R, voiceless TH, voiced TH, short-i/long-e distinction, schwa, flap-T, word stress, connected speech, and dark L — using a text-based sequence format. The quiz result maps each missed item to a topic slug for lesson recommendation.</p>
 
 <h3 id="term-lesson">Lesson</h3>
 <p>A WordPress post (standard <code>post</code> type) assigned to a FLOSC-configured lesson category. Lessons are the primary content delivered to members. The post title, content, and tags are indexed by FLOSC for search and recommendation. Lessons are delivered via AI tool calls, not via direct links — the AI delivers the lesson text inline in the conversation.</p>
 
 <h3 id="term-lesson-number">Lesson Number</h3>
-<p>A numeric post meta field (<code>_flosc_lesson_number</code>) that maps a WordPress post to a quiz item. Lesson 1 maps to quiz item 1. The LeSAEp quiz returns incorrect item numbers; FLOSC looks up the corresponding lesson by number. This field is set when sample data is created, or manually by the admin.</p>
+<p>A numeric post meta field (<code>_flosc_lesson_number</code>) that maps a WordPress post to a quiz item. Lesson 1 maps to quiz item 1. The the product quiz returns incorrect item numbers; FLOSC looks up the corresponding lesson by number. This field is set when sample data is created, or manually by the admin.</p>
 
 <h3 id="term-login-token">Login Token</h3>
 <p>A one-time URL token that authenticates a user without a password, used for cross-domain login scenarios. Generated server-side, stored as a transient with a short TTL, consumed on first use. Handled by <code>handle_login_token()</code>.</p>
@@ -273,7 +273,7 @@
 <p><code>class-quiz-type-factory.php</code>. Creates quiz type instances. Loads all registered quiz type classes, provides <code>get_quiz_type()</code> by ID, and <code>get_all_quiz_types()</code> for the admin UI. Quiz type files are discovered by scanning the <code>includes/quiz-types/</code> directory.</p>
 
 <h3 id="term-quiz-type">Quiz Type</h3>
-<p>A PHP class extending <code>FLOSC_Abstract_Quiz_Type</code> that implements a specific question format. Each quiz type defines: its ID, name, description, icon, whether it needs audio/STT, question format instructions, default content, input validation, and the <code>analyze()</code> method that scores the user's answers and returns the result structure including incorrect items with topic slugs. Current types: LeSAEp pronunciation, Multiple Choice, True/False, Text Sequence (numbers), Audio, Word Matching.</p>
+<p>A PHP class extending <code>FLOSC_Abstract_Quiz_Type</code> that implements a specific question format. Each quiz type defines: its ID, name, description, icon, whether it needs audio/STT, question format instructions, default content, input validation, and the <code>analyze()</code> method that scores the user's answers and returns the result structure including incorrect items with topic slugs. Current types: pronunciation, Multiple Choice, True/False, Text Sequence (numbers), Audio, Word Matching.</p>
 
 <h2 id="glossary-r">R</h2>
 

@@ -30,7 +30,7 @@ class FLOSC_DA1_Compositions {
 
         if ($this->is_count_request($message)) {
             $works_url = $this->get_works_list_url();
-            $reply = 'Dainis currently has ' . count($items) . ' compositions in this catalog.'
+            $reply = 'This catalog currently has ' . count($items) . ' compositions.'
                 . "\nComplete works list: " . $works_url
                 . "\nIf you want, I can suggest 1 to 3 compositions by style or mood.";
             return $this->limit_chat_response_length($reply);

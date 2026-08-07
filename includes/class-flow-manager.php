@@ -266,7 +266,7 @@ class FLOSC_Flow_Manager {
         $flow['slug'] = sanitize_title($flow['slug']);
         $flow['custom_domain'] = sanitize_text_field($flow['custom_domain']);
         $flow['status'] = in_array($flow['status'], ['active', 'draft']) ? $flow['status'] : 'draft';
-        // v1.2.3: Allow subdirectory paths for IVR files (e.g., 'lesaep/ivr.md')
+        // v1.2.3: Allow subdirectory paths for IVR files (e.g., '{flowname}/ivr.md')
         $flow['ivr_file'] = preg_replace('#[^a-zA-Z0-9/_.-]#', '', $flow['ivr_file']);
         $flow['wp_category_id'] = intval($flow['wp_category_id']);
         $flow['quiz_type'] = sanitize_key($flow['quiz_type']);
@@ -423,8 +423,8 @@ class FLOSC_Flow_Manager {
         }
         
         // Generic WordPress.org / fresh-install model: ONE active example flow
-        // with an IVR that ships in the package. Specialty products (LeSAEp,
-        // Solfeggio, Br3nda, etc.) are admin imports — not auto-activated.
+        // with an IVR that ships in the package. Specialty products (the product,
+        // Solfeggio, assistant, etc.) are admin imports — not auto-activated.
         $ivr_file = 'flosc_default_technical_ivr.md';
         $shipped  = FLOSC_PLUGIN_DIR . 'ai_configuration_files/' . $ivr_file;
         if (!file_exists($shipped)) {

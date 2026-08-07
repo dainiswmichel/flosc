@@ -603,7 +603,7 @@
                 }
 
                 // Forward collapse/expand continuity into the chat iframe
-                // (parent may be dainis.net; iframe is the chat host e.g. lesaep.com).
+                // (parent may be the WordPress host; iframe is the flow chat host domain).
                 // Prefer snapshotted params (survive address-bar cleanup), then live query.
                 try {
                     var cont = (this.continuityParams && typeof this.continuityParams === 'object')

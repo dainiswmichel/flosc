@@ -12,10 +12,10 @@ $flosc_current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
 $flosc_shortcode = '[flosc_contact_form_01]';
 
 $flosc_contact_defaults = [
-    'contact_form_title' => 'Contact Dainis',
-    'contact_form_intro' => 'Please fill out the form below to get in touch with Dainis. If he does not get back to you, try contacting him another way.',
+    'contact_form_title' => 'Contact the Site Operator',
+    'contact_form_intro' => 'Please fill out the form below to get in touch with the site operator. If you do not receive a response, please try another contact method.',
     'contact_form_submit_text' => 'Send Message',
-    'contact_form_success_message' => 'We\'ve forwarded your message to Dainis, thank you!',
+    'contact_form_success_message' => 'We\'ve forwarded your message to the site operator, thank you!',
     'contact_form_forward_to_email' => get_option('admin_email'),
     'contact_form_email_subject' => 'FLOSC Contact Form Message',
     'contact_form_min_submit_seconds' => 4,

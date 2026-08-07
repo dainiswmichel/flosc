@@ -1046,7 +1046,7 @@ class floscApp {
 
     /**
      * Storage key scoped to the current flow so multi-tab / multi-flow
-     * (Br3nda vs LeSAEp vs flosc.ai) never share visitor history, offers, or quiz.
+     * (assistant vs the product vs flosc.ai) never share visitor history, offers, or quiz.
      * Auth token stays host-global (one login per origin).
      */
     flowStorageKey(base) {
@@ -1441,7 +1441,7 @@ class floscApp {
             return companionPrompt || 'What do you want to explore together?';
         }
 
-        // Full-page chat uses its standard Br3nda welcome. Page context still reaches the
+        // Full-page chat uses its standard welcome. Page context still reaches the
         // AI through the prompt, so there is no forced "continue from the page" opening line.
         return '';
     }
@@ -1678,7 +1678,7 @@ class floscApp {
      * line lands at the bottom of this session. We poll a public read-only endpoint
      * for any such messages newer than what we've shown, and render them in place:
      * "(admin)" lines as a pale-green admin bubble; "bot" injections as a normal
-     * Br3nda message. Lightweight, runs while the chat is open.
+     * assistant message. Lightweight, runs while the chat is open.
      */
     startAdminPoll() {
         if (this._adminPollTimer) return;
@@ -2466,7 +2466,7 @@ class floscApp {
         }).join('');
         
         // v8.1.0: DA1NI5 Michel Duck and Show Chevron — replaces header row + X-close
-        // https://github.com/dainismichel/DA1NI5_michel_duck_and_show_chevron
+        // https://example.com/project
         container.setAttribute('data-da1-panel', '');
         container.setAttribute('data-da1-state', 'shown');
         container.innerHTML = `
@@ -2845,7 +2845,7 @@ class floscApp {
         const badgeUrl = this._getValidBadgeUrl();
         const badge = badgeUrl ? `<div class="flosc-welcome-badge-wrap"><img src="${badgeUrl}" alt="${productName}" class="flosc-welcome-badge"></div>` : '';
         // Flow-neutral welcome: no "badge" and no learning-specific framing (those
-        // fit LeSAEp, not every flow — and naming a badge made the AI invent a badge
+        // fit the product, not every flow — and naming a badge made the AI invent a badge
         // slug). The frontend still inserts a real badge image below, but only when
         // this flow actually has one configured.
         const syntheticMessage = `[SYSTEM: Generate a brief, warm welcome greeting for a new visitor to ${productName}, in your own voice for this site. Vary it each time. Open with a friendly hello and what ${productName} helps with, then invite them to share what they're looking for. Two short sentences. Do NOT output any badge, image, placeholder, slug, or markup — only the greeting text.]`;
@@ -3688,7 +3688,7 @@ class floscApp {
      * Product identity (name, headline, price, badge, CTA, etc.) comes from the
      * Offers registry in WPDB → FLOSC_CONFIG.offers. Message/script rows may supply
      * offer_id and optional body copy, but must never clobber registry name with a
-     * message slug (e.g. title "lesaep_offer" instead of "LeSAEp Prelaunch Offer").
+     * message slug (e.g. title "flow_offer" instead of "the product Prelaunch Offer").
      */
     getOfferData(offerId) {
         const wantId = String(offerId || '').trim();
@@ -3771,7 +3771,7 @@ class floscApp {
 
     /**
      * Title for in-chat offer surfaces: Offers registry name/headline only;
-     * never the raw offer_id (e.g. lesaep_offer).
+     * never the raw offer_id (e.g. flow_offer).
      */
     resolveOfferDisplayTitle(offer, msg, offerId) {
         const id = String(offerId || offer?.id || msg?.offer_id || msg?.name || '').trim();
@@ -4875,9 +4875,7 @@ class floscApp {
 
         // Flow-configured IPA audio quiz only — never invent pronunciation IDs when unset
         const defaultAudioQuizId = String(this.config.defaultAudioQuizId || '').trim();
-        const audioQuizIds = new Set(
-            [defaultAudioQuizId, 'lesaep_ipa_audio_quiz'].filter((id) => id !== '')
-        );
+        const audioQuizIds = new Set([defaultAudioQuizId].filter((id) => id !== ''));
         if (quizId && audioQuizIds.has(quizId)) {
             this.showQuizConsentGate();
             return;
@@ -5429,7 +5427,7 @@ class floscApp {
         // espeak: ~90% precision reference (auto-generated)
         // mw: Merriam-Webster IPA reference ('' = no MW entry for contractions/proper nouns)
         // da1ni5: scoring target — the source of 100% correctness
-        // \u2705 = da1ni5 APPROVED by Dainis | \u26A0\uFE0F = placeholder (espeak copy, awaiting approval)
+        // \u2705 = da1ni5 APPROVED by the site operator | \u26A0\uFE0F = placeholder (espeak copy, awaiting approval)
         const wordIpa = {
             // \u2500\u2500 Beginner P1: Cat, bat, mat -- where's my yellow hat? \u2500\u2500 \u2705 APPROVED
             "cat,":      { espeak: 'k\u00E6t',   mw: 'k\u00E6t',   da1ni5: ['k\u00E6t'] },
@@ -8681,7 +8679,7 @@ Purchased: ${ctx.purchased}
 
         // v3.0.4: Upgrade button → show offer (floscAdmin-configured)
         // v8.0.0: Use dynamic lookup — the offer ID comes from admin config,
-        // not hardcoded. LeSAEp uses 'lesaep_full', other flows use their own IDs.
+        // not hardcoded. the product uses 'flow_full_offer', other flows use their own IDs.
         const upgradeBtn = document.getElementById('flosc_upgrade_button');
         if (upgradeBtn) {
             const upgradeOfferId = this.getOfferIdForProduct();
@@ -9149,7 +9147,7 @@ Purchased: ${ctx.purchased}
         // Rebuild context
         this.buildIVRContext();
 
-        // A manual Br3nda refresh is an explicit new conversation request.
+        // A manual chat refresh is an explicit new conversation request.
         // Clear companion carry-over context so restart always lands on a
         // fresh intro path instead of "continue from page" greeting.
         this.consumeBrowsingContextQueryParams();
@@ -10109,7 +10107,7 @@ Purchased: ${ctx.purchased}
 
         // Guest/member: resolve server session before leaving full chat so the hub URL
         // always carries flosc_session_id (localStorage is origin-scoped and cannot
-        // bridge lesaep.com → dainis.net iframe alone).
+        // bridge the flow domain → the WordPress host iframe alone).
         if (this.state !== 'visitor') {
             await this.ensureSessionIdForCompanionHandoff();
         }
@@ -10458,7 +10456,7 @@ Purchased: ${ctx.purchased}
 
         const labels = this.config?.visitorTokenDisplay?.depletedContactLabels || {};
         const title = this.escapeHtml(String(labels.title || 'Request Guest Account').trim());
-        const intro = this.escapeHtml(String(labels.intro || 'To continue this conversation you can request a Guest account from Dainis directly. Please let him know what you are interested in, and Dainis will respond to you via email.').trim());
+        const intro = this.escapeHtml(String(labels.intro || 'To continue this conversation, you can request a Guest account from the site operator. Share what you are interested in, and an administrator will respond by email.').trim());
         const submitText = this.escapeHtml(String(labels.submitText || 'Request Guest Account').trim());
 
         // Stamp render time so the server's min-submit-seconds timing trap measures
@@ -10506,7 +10504,7 @@ Purchased: ${ctx.purchased}
 
             // Which button was pressed: "Request Guest Account" (guest=1) queues a
             // guest-account request for admin approval; "Submit Contact Request"
-            // (guest=0) just forwards the message to Dainis.
+            // (guest=0) forwards the message to the site operator.
             const requestGuest = !!(event.submitter && event.submitter.dataset && event.submitter.dataset.floscGuest === '1');
 
             const statusEl = document.getElementById('flosc_depleted_form_status');
@@ -10537,8 +10535,8 @@ Purchased: ${ctx.purchased}
                 });
 
                 const fallbackThanks = requestGuest
-                    ? 'Your guest account request has been sent — Dainis will review it and email you a link.'
-                    : 'Your message has been sent to Dainis, thank you!';
+                    ? 'Your guest account request has been sent — an administrator will review it and email you a link.'
+                    : 'Your message has been sent to the site operator, thank you!';
                 const thanksMessage = String(result?.message || fallbackThanks).trim();
                 const successHtml = `<div class="flosc-depleted-success-notice">${this.escapeHtml(thanksMessage)}</div>`;
                 this.addMessage('assistant', successHtml, true);
@@ -11561,17 +11559,7 @@ Purchased: ${ctx.purchased}
     }
 
     getNewChatWelcomeFallback() {
-        const flowHint = String(this.config.flowId || this.config.ivrFile || '').toLowerCase();
-        const identityName = String(this.config?.identity?.name || '').toLowerCase();
-        const isBr3ndaFlow = /br3nda|dainis/.test(flowHint) || /br3nda/.test(identityName);
-
-        if (isBr3ndaFlow) {
-            if (this.state === 'member' || this.state === 'admin') {
-                return 'Welcome back {NickName}. Br3nda here to help you connect with Dainis and with wonderful humans. What would you like to do first?';
-            }
-            return 'Welcome back. Br3nda here to help you connect with Dainis and with wonderful humans. What would you like to do first?';
-        }
-
+        // Flow-specific welcome text belongs in IVR / settings, not product hardcode.
         if (this.state === 'member' || this.state === 'admin') {
             return 'Hi {NickName}, glad to be chatting with you! What would you like to work on in this session?';
         }
@@ -12092,7 +12080,7 @@ Purchased: ${ctx.purchased}
 
         // v8.0.1: Read free lessons from PHP config (embedded at page load).
         // This eliminates the cross-domain REST call that fails with 403
-        // when frontend (e.g. lesaep.com) and WP backend (e.g. dainis.net) are on different domains.
+        // when frontend (e.g. the flow domain) and WP backend (e.g. the WordPress host) are on different domains.
         // PHP reads stored post IDs from user meta and passes title + content in the config.
         const configLessons = this.user?.freeLessons;
         if (configLessons && configLessons.length > 0) {

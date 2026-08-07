@@ -189,8 +189,8 @@ flosc_uninstall_delete_meta_by_prefixes( 'post' );
  */
 function flosc_uninstall_drop_table( $flosc_table ) {
 	global $wpdb;
-	wp_cache_delete( 'table_exists_' . $flosc_table, 'flosc_lesaep' );
-	wp_cache_delete( 'all_' . $flosc_table, 'flosc_lesaep' );
+	wp_cache_delete( 'table_exists_' . $flosc_table, 'flosc_lessons' );
+	wp_cache_delete( 'all_' . $flosc_table, 'flosc_lessons' );
 	$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $flosc_table ) );
 }
 

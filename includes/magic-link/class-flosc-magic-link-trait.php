@@ -434,7 +434,7 @@ trait FLOSC_Magic_Link_Trait {
                 return;
             }
 
-            // Set auth cookie on THIS domain (flosc.ai / lesaep.com) for known user only
+            // Set auth cookie on this flow domain for known user only.
             wp_set_current_user($user_id);
             wp_set_auth_cookie($user_id, true);
 
@@ -448,7 +448,7 @@ trait FLOSC_Magic_Link_Trait {
 
             // v8.0.0: Pull quiz session from DO if pending.
             // JS set a flosc_pending_session cookie before SSO redirect.
-            // The cookie is on THIS domain (lesaep.com), so it survived the OAuth round-trip.
+            // The cookie is on this flow domain, so it survived the OAuth round-trip.
             // Pull now so FLOSC_USER.lastQuizData is ready when the page renders.
             $this->pull_pending_session_from_do($user_id);
 
@@ -483,7 +483,7 @@ trait FLOSC_Magic_Link_Trait {
      *
      * Why server-side? The client-side authFetch POST to store-quiz-data
      * fails on custom domains because WP cookies are on the WP domain
-     * (dainis.net) while the browser is on the flow domain (lesaep.com).
+    * while the browser is on the flow domain.
      * Even with FLOSC token auth, the timing is fragile. The server knows
      * the user is logged in (we just set the cookie) and knows the session_id
      * (from the cookie). Pull now, no client help needed.
@@ -986,7 +986,7 @@ trait FLOSC_Magic_Link_Trait {
                 'success' => true,
                 'verification_sent' => false,
                 'magic_link_sent' => false,
-                'message' => 'Guest account request received. Dainis will respond by email.',
+                'message' => 'Guest account request received. An administrator will respond by email.',
                 'nonce' => wp_create_nonce('wp_rest'),
             ));
         }

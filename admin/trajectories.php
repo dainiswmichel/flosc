@@ -30,8 +30,8 @@ $flosc_contact_trj_default_title = 'Contact Exchange Encouragement';
 $flosc_contact_trj_default_keywords = 'music, songs, album, support, collaborate, contact, phone, email';
 $flosc_contact_trj_default_priority = 80;
 $flosc_contact_trj_default_off_ramp_exactness = 'preferred';
-$flosc_contact_trj_default_off_ramp_phrases = "Would you like me to continue facilitating human-to-human connection between you and Dainis, or would you like to chat about something else?\nDo you want to keep chatting about this trajectory, or would you like to chat about something else?\nDo you have any other questions, or are you interested in something else?";
-$flosc_contact_trj_default_instructions = "Encourage direct human-to-human connection when relevant.\nInvite exchange of contact information (email, phone, or message).\nAsk for one concrete next step and keep tone warm, concise, and natural.\nOffer a clear off-ramp: Would you like me to continue facilitating human-to-human connection between you and Dainis, or would you like to chat about something else?";
+$flosc_contact_trj_default_off_ramp_phrases = "Would you like me to continue facilitating human-to-human connection between you and the site operator, or would you like to chat about something else?\nDo you want to keep chatting about this trajectory, or would you like to chat about something else?\nDo you have any other questions, or are you interested in something else?";
+$flosc_contact_trj_default_instructions = "Encourage direct human-to-human connection when relevant.\nInvite exchange of contact information (email, phone, or message).\nAsk for one concrete next step and keep tone warm, concise, and natural.\nOffer a clear off-ramp: Would you like me to continue facilitating human-to-human connection between you and the site operator, or would you like to chat about something else?";
 
 $flosc_trajectory_posts = get_posts([
     'post_type' => 'post',
@@ -75,23 +75,23 @@ $flosc_trajectory_posts = array_values(array_filter((array) $flosc_trajectory_po
         <div class="notice notice-success"><p>Trajectory entry set to OFF.</p></div>
     <?php endif; ?>
 
-    <p>Trajectories run through the same existing AI engine. Each private trajectory post adds silent steering guidance to the flow before Br3nda responds. No separate response engine is used.</p>
+    <p>Trajectories run through the same existing AI engine. Each private trajectory post adds silent steering guidance to the flow before the assistant responds. No separate response engine is used.</p>
     <p><strong>Primary workflow:</strong> create a private post in <strong>flosc-internal/trajectories</strong>. FLOSC syncs that post into flow DB guidance instantly.</p>
 
     <h3>Post Template (Copy/Paste)</h3>
-    <pre><code>floscFlow: dainis_net_ivr.md
+    <pre><code>floscFlow: your_flow_ivr.md
 Keywords: contact, connect, phone, email
 Priority: 80
 Off-ramp exactness: preferred
 Off-ramp phrases:
-Would you like me to continue facilitating human-to-human connection between you and Dainis, or would you like to chat about something else?
+Would you like me to continue facilitating human-to-human connection between you and the site operator, or would you like to chat about something else?
 Do you have any other questions, or are you interested in something else?
 
 Instructions:
 Encourage human-to-human connection.
 Offer phone, electronic communication, or in-person options.
 Ask for one concrete next step.
-Would you like me to continue facilitating human-to-human connection between you and Dainis, or would you like to chat about something else?</code></pre>
+Would you like me to continue facilitating human-to-human connection between you and the site operator, or would you like to chat about something else?</code></pre>
     <p class="description"><strong>Priority range is 0-100.</strong> Higher number wins when multiple trajectories match the same message. Suggested ranges: 0-39 low, 40-69 medium, 70-89 strong, 90-100 highest override.</p>
 
     <h3>Quick Create Trajectory Post</h3>
@@ -133,8 +133,8 @@ Would you like me to continue facilitating human-to-human connection between you
             <tr>
                 <th scope="row"><label for="flosc_trj_instructions">Trajectory Guidance</label></th>
                 <td>
-                    <textarea id="flosc_trj_instructions" name="flosc_trj_instructions" rows="8" class="large-text" placeholder="You serve Dainis in facilitating human-to-human connection. Encourage exchange of contact information and suggest one next step."><?php echo esc_textarea($flosc_contact_trj_default_instructions); ?></textarea>
-                    <p class="description">This is silent steering for Br3nda. It is injected into the existing prompt path before response generation.</p>
+                    <textarea id="flosc_trj_instructions" name="flosc_trj_instructions" rows="8" class="large-text" placeholder="You serve the site operator in facilitating human-to-human connection. Encourage exchange of contact information and suggest one next step."><?php echo esc_textarea($flosc_contact_trj_default_instructions); ?></textarea>
+                    <p class="description">This is silent steering for assistant. It is injected into the existing prompt path before response generation.</p>
                 </td>
             </tr>
             <tr>
@@ -208,18 +208,18 @@ Would you like me to continue facilitating human-to-human connection between you
     <h3>Template For New Trajectory Posts</h3>
     <p class="description">Copy this into a new WordPress post, then edit values. Save as <strong>Private</strong> to activate, or <strong>Draft</strong> to keep OFF.</p>
     <p class="description"><strong>Priority uses a 0-100 scale.</strong> 100 has stronger precedence than 80, and 80 has stronger precedence than 50 when keyword matches overlap.</p>
-    <pre><code>Flow: Br3nda
-Deployment: dainis.net/chat
+    <pre><code>Flow: Your Flow Name
+Deployment: your-domain.example/chat
 Keywords: contact, connect, phone, email
 Priority: 80
 Off-ramp exactness: preferred
 Off-ramp phrases:
-Would you like me to continue facilitating human-to-human connection between you and Dainis, or would you like to chat about something else?
+Would you like me to continue facilitating human-to-human connection between you and the site operator, or would you like to chat about something else?
 Do you have any other questions, or are you interested in something else?
 
 Instructions:
 Encourage human-to-human connection.
 Offer phone, electronic communication, or in-person options.
 Ask for one concrete next step.
-Would you like me to continue facilitating human-to-human connection between you and Dainis, or would you like to chat about something else?</code></pre>
+Would you like me to continue facilitating human-to-human connection between you and the site operator, or would you like to chat about something else?</code></pre>
 </div>
