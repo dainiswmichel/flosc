@@ -17,7 +17,7 @@
 
 <p>The same framework runs a songwriting course, a music-theory program, a pronunciation assessment, a paid newsletter, a consulting intake funnel, or a corporate product trial. None of those require a code change — only different content, copy, and configuration.</p>
 
-<h3 id="first-deployment">The First Deployment Was Pronunciation — That's Incidental</h3>
+<h3 id="first-deployment">The First Deployment Was Pronunciation</h3>
 
 <p>The first thing actually built on FLOSC was a Standard American English pronunciation assessment: a short quiz that identifies which sounds a speaker is missing, followed by a guided conversation about what to practice. It was a good first deployment because it exercises every part of the framework — a quiz, a result, conditional follow-ups, an offer, gated content.</p>
 
