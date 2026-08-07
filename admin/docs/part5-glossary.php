@@ -273,7 +273,7 @@
 <p><code>class-quiz-type-factory.php</code>. Creates quiz type instances. Loads all registered quiz type classes, provides <code>get_quiz_type()</code> by ID, and <code>get_all_quiz_types()</code> for the admin UI. Quiz type files are discovered by scanning the <code>includes/quiz-types/</code> directory.</p>
 
 <h3 id="term-quiz-type">Quiz Type</h3>
-<p>A PHP class extending <code>FLOSC_Abstract_Quiz_Type</code> that implements a specific question format. Each quiz type defines: its ID, name, description, icon, whether it needs audio/STT, question format instructions, default content, input validation, and the <code>analyze()</code> method that scores the user's answers and returns the result structure including incorrect items with topic slugs. Current types: pronunciation, Multiple Choice, True/False, Text Sequence (numbers), Audio, Word Matching.</p>
+<p>A PHP class extending <code>FLOSC_Abstract_Quiz_Type</code> that implements a specific question format. Each quiz type defines: its ID, name, description, icon, whether it needs audio/STT, question format instructions, default content, input validation, and the <code>analyze()</code> method that scores the user's answers and returns the result structure including incorrect items with topic slugs. Current types: Sample Assessment Quiz, Multiple Choice, True/False, Text Sequence (numbers), Audio, Word Matching.</p>
 
 <h2 id="glossary-r">R</h2>
 

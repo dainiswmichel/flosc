@@ -1,6 +1,6 @@
 <?php
 /**
- * Sample assessment quiz type
+ * Sample Assessment Quiz type
  *
  * Subject-neutral sample: 10 topics with one multiple-choice item each.
  * floscAdmins replace this content with their own questions, map wrong answers
@@ -56,8 +56,10 @@ class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 			. "  C: Option text  (D: optional)\n"
 			. "  CORRECT: A\n"
 			. "  CorrectContent: post:my-post-slug\n"
-			. "  RelatedContent: post:slug-one, category:parent/child\n\n"
-			. "Paste your own questions here. Topics and content gates (freeline / guest / member) are configured in the flow — this sample only illustrates format.";
+			. "  RelatedContent: post:slug-one, category:parent/child\n"
+			. "  TOPIC: topic-slug\n\n"
+			. "Paste your own questions here (or replace the sample bank in FLOSC → Quiz).\n"
+			. "Topics and content gates (freeline / guest / member) are configured in the flow — this sample only illustrates format.";
 	}
 
 	/**
@@ -117,7 +119,7 @@ class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 				} elseif ( preg_match( '/^CorrectContent:\s*(.+)$/i', $line, $m ) ) {
 					$correct_content[] = trim( $m[1] );
 				} elseif ( preg_match( '/^RelatedContent:\s*(.+)$/i', $line, $m ) ) {
-					$parts = array_map( 'trim', explode( ',', $m[1] ) );
+					$parts           = array_map( 'trim', explode( ',', $m[1] ) );
 					$related_content = array_merge( $related_content, $parts );
 				} elseif ( preg_match( '/^TOPIC:\s*(.+)$/i', $line, $m ) ) {
 					$parts  = array_map( 'trim', explode( ',', $m[1] ) );
@@ -144,13 +146,37 @@ class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 	}
 
 	/**
+	 * Validate user input before scoring.
+	 *
+	 * @param mixed $input Answer map, letter list, or empty (not yet answered).
+	 * @return true|WP_Error
+	 */
+	public function validate_input( $input ) {
+		if ( $input === null || $input === '' || $input === array() ) {
+			return new WP_Error( 'invalid_input', __( 'Please answer the questions before submitting.', 'flosc' ) );
+		}
+		if ( ! is_string( $input ) && ! is_array( $input ) ) {
+			return new WP_Error( 'invalid_input', __( 'Invalid answer format.', 'flosc' ) );
+		}
+		return true;
+	}
+
+	/**
 	 * Score answers against expected content or sample defaults.
 	 *
-	 * @param array  $user_answers      Map of question index/id => selected key.
+	 * Compatible with FLOSC_Abstract_Quiz_Type::analyze( $input, $expected_content, $context = [] ).
+	 *
+	 * $input may be:
+	 *   - array map: q1 => 'B', q2 => 'A', ...  or  0 => 'B', 1 => 'A', ...
+	 *   - string: "A,B,C,..." or "A\nB\nC"
+	 *   - JSON string of the same map/list
+	 *
+	 * @param mixed  $input             User answers.
 	 * @param string $expected_content  Admin-edited question bank (optional).
-	 * @return array
+	 * @param array  $context           Unused optional context.
+	 * @return array score, correct, incorrect (structured), response_key, details
 	 */
-	public function analyze( $user_answers, $expected_content = '' ) {
+	public function analyze( $input, $expected_content, $context = array() ) {
 		$questions = ! empty( $expected_content )
 			? $this->parse_content_to_questions( $expected_content )
 			: array();
@@ -159,44 +185,70 @@ class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 			$questions = $this->get_default_questions();
 		}
 
-		$correct_ids   = array();
-		$incorrect_ids = array();
-		$details       = array();
+		$user_answers = $this->normalize_user_answers( $input );
+
+		$correct   = array();
+		$incorrect = array();
+		$details   = array();
 
 		foreach ( $questions as $i => $question ) {
 			$qid         = $question['id'] ?? ( 'q' . ( $i + 1 ) );
-			$user_key    = strtoupper( trim( (string) ( $user_answers[ $qid ] ?? $user_answers[ $i ] ?? $user_answers[ (string) $i ] ?? '' ) ) );
-			$correct_key = strtoupper( trim( $question['correct'] ) );
+			$correct_key = strtoupper( trim( (string) $question['correct'] ) );
+			$user_key    = $this->lookup_user_answer( $user_answers, $qid, $i );
 			$is_correct  = ( $user_key !== '' && $user_key === $correct_key );
 
-			if ( $is_correct ) {
-				$correct_ids[] = $i + 1;
-			} else {
-				$incorrect_ids[] = $i + 1;
-			}
-
-			$details[] = array(
+			$item = array(
 				'question_index'  => $i + 1,
 				'question_id'     => $qid,
+				'question'        => $question['text'] ?? '',
 				'user_answer'     => $user_key,
 				'correct_answer'  => $correct_key,
-				'is_correct'      => $is_correct,
-				'topics'          => $question['topics'] ?? array(),
-				'correct_content' => $question['correct_content'] ?? array(),
-				'related_content' => $question['related_content'] ?? array(),
+				'answer'          => $correct_key,
+				'topics'          => array_values( (array) ( $question['topics'] ?? array() ) ),
+				'correct_content' => (array) ( $question['correct_content'] ?? array() ),
+				'related_content' => (array) ( $question['related_content'] ?? array() ),
 			);
+
+			if ( $is_correct ) {
+				$correct[] = $item;
+			} else {
+				$incorrect[] = $item;
+			}
+
+			$details[] = array_merge( $item, array( 'is_correct' => $is_correct ) );
 		}
 
-		$total = count( $questions );
-		$score = $total > 0 ? (int) round( ( count( $correct_ids ) / $total ) * 100 ) : 0;
+		$total_possible = count( $questions );
+		$total_correct  = count( $correct );
+		$score          = $this->calculate_percentage( $total_correct, $total_possible );
+		$response_key   = $this->get_response_key_from_score( $score );
 
 		return array(
-			'score'     => $score,
-			'correct'   => $correct_ids,
-			'incorrect' => $incorrect_ids,
-			'total'     => $total,
-			'details'   => $details,
-			'topics'    => array(),
+			'score'        => $score,
+			'correct'      => $correct,
+			'incorrect'    => $incorrect,
+			'response_key' => $response_key,
+			'details'      => array(
+				'total_correct'  => $total_correct,
+				'total_possible' => $total_possible,
+				'items'          => $details,
+			),
+		);
+	}
+
+	/**
+	 * Admin settings for this quiz type.
+	 *
+	 * @return array
+	 */
+	public function get_settings_fields() {
+		return array(
+			'show_topics' => array(
+				'type'        => 'checkbox',
+				'label'       => 'Show Topics in Results',
+				'default'     => true,
+				'description' => 'Display topic labels for missed items in results messaging.',
+			),
 		);
 	}
 
@@ -225,8 +277,8 @@ class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 			$out[] = array(
 				'id'              => 'q' . $n,
 				'text'            => sprintf(
-					/* translators: %d: topic number; %s: topic label */
-					__( 'Sample question for %1$s. (Replace this entire quiz in FLOSC → Quiz with your own items.) Which statement is true?', 'flosc' ),
+					/* translators: %s: topic label */
+					__( 'Sample question for %s. (Replace this entire quiz in FLOSC → Quiz with your own items.) Which statement is true?', 'flosc' ),
 					$meta['label']
 				),
 				'options'         => array(
@@ -237,11 +289,86 @@ class FLOSC_Sample_Assessment_Quiz extends FLOSC_Abstract_Quiz_Type {
 				),
 				'correct'         => 'B',
 				// Placeholder slugs — map to real posts in admin for each flow.
-				'correct_content' => 'post:sample-' . $meta['slug'],
+				'correct_content' => array( 'post:sample-' . $meta['slug'] ),
 				'related_content' => array( 'post:sample-' . $meta['slug'] . '-extra' ),
 				'topics'          => array( $meta['slug'] ),
 			);
 		}
 		return $out;
+	}
+
+	/**
+	 * Normalize raw input into a flat answer map/list.
+	 *
+	 * @param mixed $input Raw input.
+	 * @return array
+	 */
+	private function normalize_user_answers( $input ) {
+		if ( is_array( $input ) ) {
+			return $input;
+		}
+
+		if ( ! is_string( $input ) ) {
+			return array();
+		}
+
+		$trim = trim( $input );
+		if ( $trim === '' ) {
+			return array();
+		}
+
+		// JSON object/array of answers.
+		if ( ( $trim[0] === '{' || $trim[0] === '[' ) ) {
+			$decoded = json_decode( $trim, true );
+			if ( is_array( $decoded ) ) {
+				return $decoded;
+			}
+		}
+
+		// Comma- or newline-separated letter list: A,B,C or A\nB\nC
+		if ( strpos( $trim, ',' ) !== false ) {
+			$parts = explode( ',', $trim );
+		} else {
+			$parts = preg_split( "/\r\n|\n|\r/", $trim );
+		}
+
+		return array_map(
+			static function ( $v ) {
+				return strtoupper( trim( (string) $v ) );
+			},
+			$parts
+		);
+	}
+
+	/**
+	 * Resolve the user's selected key for one question.
+	 *
+	 * @param array  $user_answers Normalized answers.
+	 * @param string $qid          Question id (e.g. q3).
+	 * @param int    $index        Zero-based index.
+	 * @return string Uppercase letter or empty.
+	 */
+	private function lookup_user_answer( array $user_answers, $qid, $index ) {
+		$candidates = array(
+			$qid,
+			(string) $qid,
+			$index,
+			(string) $index,
+			$index + 1,
+			(string) ( $index + 1 ),
+		);
+
+		foreach ( $candidates as $key ) {
+			if ( array_key_exists( $key, $user_answers ) ) {
+				return strtoupper( trim( (string) $user_answers[ $key ] ) );
+			}
+		}
+
+		// Numeric list: answers ordered by question index.
+		if ( array_key_exists( $index, $user_answers ) ) {
+			return strtoupper( trim( (string) $user_answers[ $index ] ) );
+		}
+
+		return '';
 	}
 }

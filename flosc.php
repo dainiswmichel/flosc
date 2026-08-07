@@ -4489,7 +4489,7 @@ Example good response:
                 ]);
             }
 
-            // v4.0.0: the product Pronunciation Assessment — use admin-configured content when set
+            // Default text assessment for this flow — use admin-configured content when set
             if ($quiz_id === $default_text_quiz_id) {
                 $saved_content = flosc_get_setting('quiz_content_' . $default_text_quiz_id, '');
                 if ( ! empty( $saved_content ) ) {
@@ -5119,15 +5119,14 @@ Example good response:
             strpos($lower, 'quiz') !== false ||
             strpos($lower, 'miss') !== false ||
             strpos($lower, 'score') !== false ||
-            strpos($lower, 'sounds did i') !== false ||
-            strpos($lower, 'pronunciation') !== false ||
+            strpos($lower, 'topic') !== false ||
             strpos($lower, 'results') !== false
         );
         if (!$is_quiz_question) return null;
 
         $quiz_taken = $eval_context['quiz_taken'] ?? false;
         if (!$quiz_taken) {
-            return "It looks like you haven't taken the quiz yet! Take the quiz first, and I'll be able to tell you exactly which sounds to focus on.";
+            return "It looks like you haven't taken the quiz yet! Take the quiz first, and I'll be able to tell you exactly which topics to focus on.";
         }
 
         $score = $eval_context['score'] ?? $eval_context['quiz_score'] ?? '?';
@@ -5149,10 +5148,19 @@ Example good response:
         }
 
         if (!empty($incorrect) && is_array($incorrect)) {
-            $response .= "Here are the sounds you missed: **" . implode(', ', array_slice($incorrect, 0, 10)) . "**.\n\n";
-            $response .= "Each of these sounds has a specific mouth position and airflow pattern. The full course walks you through each one with video demonstrations. Would you like to try a free lesson?";
+            // incorrect_items may be plain labels/ids or structured rows
+            $labels = [];
+            foreach (array_slice($incorrect, 0, 10) as $item) {
+                if (is_array($item)) {
+                    $labels[] = $item['topics'][0] ?? $item['question_id'] ?? $item['question'] ?? 'topic';
+                } else {
+                    $labels[] = (string) $item;
+                }
+            }
+            $response .= "Here are the topics to work on: **" . implode(', ', $labels) . "**.\n\n";
+            $response .= "Member content covers each of these in more depth. Would you like to try a free lesson (if one is available for your flow)?";
         } else {
-            $response .= "The full course covers all the sounds you need to practice, with detailed lessons on mouth position, tongue placement, and airflow. Would you like to try a free lesson?";
+            $response .= "Member content covers the topics from this assessment in more depth. Would you like to try a free lesson (if one is available for your flow)?";
         }
 
         return $response;

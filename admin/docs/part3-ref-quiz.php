@@ -72,7 +72,7 @@ Params: <code>user_id</code>, <code>quiz_id</code>, <code>score_data</code> (obj
 <h3 id="quiz-abstract-contract">Required Abstract Methods</h3>
 <table>
   <tr><th>Method</th><th>Returns</th><th>Purpose</th></tr>
-  <tr><td><code>get_id()</code></td><td>string</td><td>Unique slug (e.g. <code>pronunciation_assessment</code>)</td></tr>
+  <tr><td><code>get_id()</code></td><td>string</td><td>Unique slug (e.g. <code>sample_assessment_quiz</code>)</td></tr>
   <tr><td><code>get_name()</code></td><td>string</td><td>Display name for admin UI</td></tr>
   <tr><td><code>get_description()</code></td><td>string</td><td>Short description for quiz card</td></tr>
   <tr><td><code>get_icon()</code></td><td>string</td><td>Emoji icon</td></tr>

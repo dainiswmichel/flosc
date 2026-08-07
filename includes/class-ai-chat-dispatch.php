@@ -122,38 +122,39 @@ class FLOSC_AI_Chat_Dispatch {
             if ( ! empty( $raw_answers ) ) {
                 $quiz    = new FLOSC_Sample_Assessment_Quiz();
                 $content = function_exists( 'flosc_get_setting' ) ? flosc_get_setting( 'quiz_content_sample_assessment_quiz', '' ) : '';
-                $result  = $quiz->analyze( $raw_answers, $content );
+                $result  = $quiz->analyze( $raw_answers, $content, array( 'user_id' => $user_id ) );
 
-                $score  = $result['score'];
-                $missed = $result['incorrect'];
-                $got    = $result['correct'];
+                $score  = (int) ( $result['score'] ?? 0 );
+                $missed = is_array( $result['incorrect'] ?? null ) ? $result['incorrect'] : array();
+                $got    = is_array( $result['correct'] ?? null ) ? $result['correct'] : array();
                 $total  = count( $got ) + count( $missed );
-                $details = is_array( $result['details'] ?? null ) ? $result['details'] : array();
 
                 $quiz_results_section  = "## Assessment Quiz Results\n";
                 $quiz_results_section .= "Score: {$score}% (" . count( $got ) . "/{$total} correct)\n\n";
 
                 if ( ! empty( $missed ) ) {
                     $quiz_results_section .= "**Topics this learner needs to work on:**\n";
-                    foreach ( $missed as $item_num ) {
-                        $topic = "Topic {$item_num}";
-                        $idx   = (int) $item_num - 1;
-                        if ( isset( $details[ $idx ]['topics'][0] ) && $details[ $idx ]['topics'][0] !== '' ) {
-                            $topic = (string) $details[ $idx ]['topics'][0];
+                    foreach ( $missed as $item ) {
+                        $item_num = is_array( $item ) ? (int) ( $item['question_index'] ?? 0 ) : (int) $item;
+                        $topic    = $item_num > 0 ? "Topic {$item_num}" : 'Topic';
+                        if ( is_array( $item ) && ! empty( $item['topics'][0] ) ) {
+                            $topic = (string) $item['topics'][0];
                         }
-                        $quiz_results_section .= "- Item {$item_num}: {$topic}\n";
+                        $label = $item_num > 0 ? "Item {$item_num}" : 'Item';
+                        $quiz_results_section .= "- {$label}: {$topic}\n";
                     }
                 }
 
                 if ( ! empty( $got ) ) {
                     $quiz_results_section .= "\n**Topics already solid:**\n";
-                    foreach ( $got as $item_num ) {
-                        $topic = "Topic {$item_num}";
-                        $idx   = (int) $item_num - 1;
-                        if ( isset( $details[ $idx ]['topics'][0] ) && $details[ $idx ]['topics'][0] !== '' ) {
-                            $topic = (string) $details[ $idx ]['topics'][0];
+                    foreach ( $got as $item ) {
+                        $item_num = is_array( $item ) ? (int) ( $item['question_index'] ?? 0 ) : (int) $item;
+                        $topic    = $item_num > 0 ? "Topic {$item_num}" : 'Topic';
+                        if ( is_array( $item ) && ! empty( $item['topics'][0] ) ) {
+                            $topic = (string) $item['topics'][0];
                         }
-                        $quiz_results_section .= "- Item {$item_num}: {$topic}\n";
+                        $label = $item_num > 0 ? "Item {$item_num}" : 'Item';
+                        $quiz_results_section .= "- {$label}: {$topic}\n";
                     }
                 }
 
@@ -161,15 +162,16 @@ class FLOSC_AI_Chat_Dispatch {
                 $is_member = $this->flosc_context_user_is_member( $context );
                 if ( $is_member ) {
                     $quiz_results_section .= "\n**Context:** This user is a **member** (full member access). "
-                        . "You CAN and SHOULD discuss their missed sounds in detail, reference specific lesson numbers "
-                        . "(e.g. Lesson 45 for [w]), guide them to real WordPress lessons, and help them practice. "
+                        . "You CAN and SHOULD discuss their missed topics in detail, reference matching content "
+                        . "from CorrectContent / RelatedContent and flow topics, guide them to real WordPress lessons, "
+                        . "and help them practice. "
                         . "Do NOT claim they are a guest. Do NOT push upgrades or free-lesson funnels. "
-                        . "Do NOT say you already answered, refuse, or make excuses — find the lesson and help.\n";
+                        . "Do NOT say you already answered, refuse, or make excuses — find the content and help.\n";
                 } else {
                     // Guest — logged in, not a full member
                     $quiz_results_section .= "\n**Context:** This user is a **Guest** (logged in, not a full member yet). "
-                        . "You MAY share their quiz score and which sounds they missed. "
-                        . "Do NOT deliver full lesson content (videos, exercises, detailed how-to). "
+                        . "You MAY share their quiz score and which topics they missed. "
+                        . "Do NOT deliver full member content (videos, exercises, detailed how-to). "
                         . "You may invite them to unlock full member access.\n";
                 }
             }
