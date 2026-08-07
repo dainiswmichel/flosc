@@ -7367,7 +7367,7 @@ class floscApp {
             // WordPress content is already formatted with the_content filter applied
             // Title is escaped; content is trusted (authored by floscAdmin, served via authenticated endpoint)
             const lessonHtml = `
-                <div class="flosc-wp-lesson">
+                <div class="flosc-wp-lesson" data-flosc-lesson-id="${this.escapeHtml(String(lessonId))}">
                     <div class="flosc-wp-lesson-header">
                         <h2>${this.escapeHtml(lesson.title)}</h2>
                     </div>
@@ -7383,6 +7383,19 @@ class floscApp {
             `;
 
             this.addMessage('assistant', lessonHtml, true);
+
+            // Persist for companion ↔ full-page continuity (same pattern as free-lesson open).
+            // Without this, expand only reloads server chat logs and the lesson bubble vanishes.
+            const userLine = 'Open lesson: ' + (lesson.title || ('#' + lessonId));
+            if (this.state === 'visitor') {
+                this.saveVisitorMessage?.('user', userLine);
+                this.saveVisitorMessage?.('assistant', lessonHtml);
+            } else {
+                this.logClientChatTurn(userLine, lessonHtml, {
+                    source: 'view_lesson',
+                    provider: 'client',
+                });
+            }
         } catch (error) {
             this.logError('[FLOSC] Failed to load lesson:', error);
             this.addMessage('assistant', '❌ Could not load lesson. Please try again.');
@@ -11532,7 +11545,9 @@ Purchased: ${ctx.purchased}
                     if (msg.role === 'assistant' && !content) {
                         return;
                     }
-                    this.addMessage(msg.role, content);
+                    // Lesson/free-lesson HTML and other client UI turns must replay as HTML.
+                    const isHtml = msg.role === 'assistant' && this._messageContentLooksLikeHtml(content);
+                    this.addMessage(msg.role, content, isHtml);
                 });
                 
                 // Update active state in sidebar
@@ -11550,6 +11565,22 @@ Purchased: ${ctx.purchased}
             this.logWarn('FLOSC: Could not load session', e);
         }
         return false;
+    }
+
+    /**
+     * True when session/history content should be rendered as HTML (not markdown).
+     * @param {string} content
+     * @return {boolean}
+     */
+    _messageContentLooksLikeHtml(content) {
+        const s = String(content || '');
+        if (!s) {
+            return false;
+        }
+        if (s.includes('flosc-wp-lesson') || s.includes('flosc-free-lesson') || s.includes('flosc-offer-')) {
+            return true;
+        }
+        return /<\/?(div|p|h[1-6]|ul|ol|li|table|video|iframe|figure|section|article|button)\b/i.test(s);
     }
     
     /**
