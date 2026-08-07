@@ -493,6 +493,7 @@ trait FLOSC_Chat_Turn_Trait {
         $chatpack_pair_number = FLOSC_Chatpack::count_message_pairs($session_id, $chatpack_user_id, $flow_id) + 1;
         $chatpack_is_first = ($chatpack_pair_number === 1);
         $chatpack_conv_history = FLOSC_Chatpack::load_conversation_history($session_id, $chatpack_user_id, 10, $flow_id);
+        $flosc_prior_opening_block = '';
         
         // v2.0.7: For visitors (no session/user), use frontend-provided conversation history.
         // Visitors store chat in localStorage; JS sends last 10 messages in the payload.
@@ -517,15 +518,36 @@ trait FLOSC_Chat_Turn_Trait {
                 // any leading assistant turns (e.g. the persisted opening greeting) so the
                 // history begins with a user turn. Both are required for a valid Anthropic
                 // messages array (alternating roles, user-first); otherwise the API returns 400.
+                //
+                // CRITICAL: do not discard stripped assistant text. On turn 2 the history is
+                // often only [opening greeting, current user]. Popping the user + shifting the
+                // greeting leaves an empty messages array, so the model re-greets ("Sveiks!",
+                // language preference, intro) every turn. Keep those openings in the system
+                // prompt as already-delivered content.
+                $flosc_stripped_openings = [];
                 if (!empty($chatpack_conv_history)) {
                     $flosc_tail = end($chatpack_conv_history);
                     if (is_array($flosc_tail) && ($flosc_tail['role'] ?? '') === 'user') {
                         array_pop($chatpack_conv_history);
                     }
                     while (!empty($chatpack_conv_history) && (($chatpack_conv_history[0]['role'] ?? '') !== 'user')) {
-                        array_shift($chatpack_conv_history);
+                        $flosc_lead = array_shift($chatpack_conv_history);
+                        if (is_array($flosc_lead) && ($flosc_lead['role'] ?? '') === 'assistant') {
+                            $flosc_lead_c = trim((string) ($flosc_lead['content'] ?? ''));
+                            if ($flosc_lead_c !== '') {
+                                $flosc_stripped_openings[] = $flosc_lead_c;
+                            }
+                        }
                     }
                     $chatpack_conv_history = array_values($chatpack_conv_history);
+                }
+                if (!empty($flosc_stripped_openings)) {
+                    $flosc_prior_opening_block = "\n\n## ALREADY DELIVERED IN THIS CHAT (do not repeat)\n"
+                        . "The following assistant message(s) were already shown to the user in this session "
+                        . "(opening greeting / intro). Do NOT re-greet, do NOT re-introduce yourself, do NOT "
+                        . "re-ask language preference, and do NOT restate this content unless the user asks. "
+                        . "Answer the user's current message directly.\n\n"
+                        . implode("\n\n---\n\n", $flosc_stripped_openings);
                 }
             }
         }
@@ -664,6 +686,7 @@ trait FLOSC_Chat_Turn_Trait {
             if ($trajectory_guidance !== '') { $chatpack_prompt .= $trajectory_guidance; }
             if ($concierge_guidance !== '') { $chatpack_prompt .= $concierge_guidance; }
             if ($flosc_engagement_prompt_block !== '') { $chatpack_prompt .= $flosc_engagement_prompt_block; }
+            if ($flosc_prior_opening_block !== '') { $chatpack_prompt .= $flosc_prior_opening_block; }
             $ai_response = $this->ai_chat_dispatch->get_response($message, $chatpack_prompt, $chatpack_conv_history);
 
             if ($ai_response && !is_wp_error($ai_response)) {
@@ -704,6 +727,7 @@ trait FLOSC_Chat_Turn_Trait {
                     if ($trajectory_guidance !== '') { $chatpack_prompt .= $trajectory_guidance; }
                     if ($concierge_guidance !== '') { $chatpack_prompt .= $concierge_guidance; }
                     if ($flosc_engagement_prompt_block !== '') { $chatpack_prompt .= $flosc_engagement_prompt_block; }
+                    if ($flosc_prior_opening_block !== '') { $chatpack_prompt .= $flosc_prior_opening_block; }
                     $flosc_rag_response = $flosc_rag_handler->flosc_handle_with_state($message, $flosc_user_session, $session_id, $chatpack_prompt, $chatpack_conv_history);
 
                     if ($flosc_rag_response && !is_wp_error($flosc_rag_response)) {
@@ -738,6 +762,7 @@ trait FLOSC_Chat_Turn_Trait {
                     if ($trajectory_guidance !== '') { $chatpack_prompt .= $trajectory_guidance; }
                     if ($concierge_guidance !== '') { $chatpack_prompt .= $concierge_guidance; }
                     if ($flosc_engagement_prompt_block !== '') { $chatpack_prompt .= $flosc_engagement_prompt_block; }
+                    if ($flosc_prior_opening_block !== '') { $chatpack_prompt .= $flosc_prior_opening_block; }
                     $ai_response = $this->ai_chat_dispatch->get_response($message, $chatpack_prompt, $chatpack_conv_history);
 
                     // v5.0.2: When AI fails, provide a useful fallback instead of generic error.

@@ -55,11 +55,27 @@ class FLOSC_RAG_Chat_Handler {
             }, $flosc_conv_history);
             $flosc_normalized = array_slice($flosc_normalized, -10);
             // Anthropic requires the messages array to begin with a user turn, so drop
-            // any leading assistant messages (e.g. the opening greeting).
+            // any leading assistant messages (e.g. the opening greeting). Preserve text
+            // in the system prompt so the model does not re-greet when history is only
+            // [opening assistant, current user].
+            $flosc_stripped_openings = [];
             while (!empty($flosc_normalized) && $flosc_normalized[0]['role'] !== 'user') {
-                array_shift($flosc_normalized);
+                $flosc_lead = array_shift($flosc_normalized);
+                if (($flosc_lead['role'] ?? '') === 'assistant') {
+                    $flosc_lead_c = trim((string) ($flosc_lead['content'] ?? ''));
+                    if ($flosc_lead_c !== '') {
+                        $flosc_stripped_openings[] = $flosc_lead_c;
+                    }
+                }
             }
-            $flosc_history = $flosc_normalized;
+            $flosc_history = array_values($flosc_normalized);
+            if (!empty($flosc_stripped_openings) && is_string($flosc_chatpack_prompt)
+                && strpos($flosc_chatpack_prompt, 'ALREADY DELIVERED IN THIS CHAT') === false) {
+                $flosc_chatpack_prompt .= "\n\n## ALREADY DELIVERED IN THIS CHAT (do not repeat)\n"
+                    . "The following assistant message(s) were already shown to the user in this session. "
+                    . "Do NOT re-greet, re-introduce, or re-ask language preference. Answer the current message directly.\n\n"
+                    . implode("\n\n---\n\n", $flosc_stripped_openings);
+            }
         }
 
         // v1.9.2: Use chatpack prompt if provided (includes feedback, praise, KB, WP info)
