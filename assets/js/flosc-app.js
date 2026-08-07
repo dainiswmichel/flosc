@@ -5564,7 +5564,8 @@ class floscApp {
         const productForQuiz = String(this.config?.productName || this.config?.identity?.name || '').trim();
         this.quiz = {
             active: true,
-            id: this.config.defaultAudioQuizId || 'pronunciation_ipa_audio_quiz',
+            // Flow-configured only — never invent a product quiz id when unset.
+            id: String(this.config.defaultAudioQuizId || '').trim(),
             title: productForQuiz ? `${productForQuiz} Assessment` : 'Sample Assessment Quiz',
             type: 'ipa_audio',
             tier: tier,

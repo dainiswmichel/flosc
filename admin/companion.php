@@ -831,7 +831,7 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
                     <input type="text" class="small-text" maxlength="3" name="flow_companion_profile_tier_member" id="flow_companion_profile_tier_member" value="<?php echo esc_attr( $flosc_tier_member ); ?>" pattern="[A-Za-z0-9]{1,3}">
                     <input type="text" class="regular-text" name="flow_companion_profile_tier_member_label" id="flow_companion_profile_tier_member_label" value="<?php echo esc_attr( $flosc_tier_member_label ); ?>">
                 </fieldset>
-                <p class="description">Keys: <code>companion_profile_tier_visitor</code>, <code>_guest</code>, <code>_member</code> (+ <code>_label</code> for each). Preview: <code>Piano4America (<?php echo esc_html( $flosc_tier_member ); ?>)</code></p>
+                <p class="description">Keys: <code>companion_profile_tier_visitor</code>, <code>_guest</code>, <code>_member</code> (+ <code>_label</code> for each). Preview: <code>DisplayName (<?php echo esc_html( $flosc_tier_member ); ?>)</code></p>
             </td>
         </tr>
 

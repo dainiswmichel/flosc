@@ -8420,7 +8420,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
 
         // Update metadata.json (append phrase data)
         $meta_path = $temp_dir . '/metadata.json';
-        $default_audio_quiz_id = flosc_get_setting('default_audio_quiz_id', 'pronunciation_ipa_audio_quiz');
+        $default_audio_quiz_id = flosc_get_setting('default_audio_quiz_id', '');
         $meta = file_exists($meta_path) ? json_decode(flosc_fs_get_contents($meta_path), true) : [
             'quiz_id' => $default_audio_quiz_id,
             'quiz_type' => 'ipa_audio',
@@ -8471,7 +8471,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
         // Validate and normalize quiz data from browser
         $score = intval($quiz_data['score'] ?? 0);
         if ($score < 0 || $score > 100) return false;
-        $default_audio_quiz_id = flosc_get_setting('default_audio_quiz_id', 'pronunciation_ipa_audio_quiz');
+        $default_audio_quiz_id = flosc_get_setting('default_audio_quiz_id', '');
 
         $score_data = [
             'quiz_id'              => sanitize_key($quiz_data['quizId'] ?? $quiz_data['quiz_id'] ?? $default_audio_quiz_id),
@@ -8858,7 +8858,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_session_from_d
         $incorrect = array_values(array_unique($incorrect));
 
         // 4. Build score_data array
-        $default_audio_quiz_id = flosc_get_setting('default_audio_quiz_id', 'pronunciation_ipa_audio_quiz');
+        $default_audio_quiz_id = flosc_get_setting('default_audio_quiz_id', '');
         $score_data = [
             'quiz_id'              => $default_audio_quiz_id,
             'quiz_type'            => 'ipa_audio',
@@ -9201,7 +9201,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         return [
-            'quiz_id' => $meta['quiz_id'] ?? flosc_get_setting('default_audio_quiz_id', 'pronunciation_ipa_audio_quiz'),
+            'quiz_id' => $meta['quiz_id'] ?? flosc_get_setting('default_audio_quiz_id', ''),
             'quiz_type' => 'ipa_audio',
             'score' => $score,
             'correct' => [],
