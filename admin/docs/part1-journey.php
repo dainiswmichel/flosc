@@ -19,9 +19,9 @@
 
 <h3 id="first-deployment">The First Deployment Was Pronunciation — That's Incidental</h3>
 
-<p>The first thing actually built on FLOSC was the product, a Standard American English pronunciation assessment: a short quiz that identifies which sounds a speaker is missing, followed by a guided conversation about what to practice. It was a good first deployment because it exercises every part of the framework — a quiz, a result, conditional follow-ups, an offer, gated content.</p>
+<p>The first thing actually built on FLOSC was a Standard American English pronunciation assessment: a short quiz that identifies which sounds a speaker is missing, followed by a guided conversation about what to practice. It was a good first deployment because it exercises every part of the framework — a quiz, a result, conditional follow-ups, an offer, gated content.</p>
 
-<p>But pronunciation didn't drive the design, and it isn't the point. Songwriting, solfeggio, or any number of other subjects could have been the first deployment just as easily. the product is one worked example of the framework, not its origin story. When you see pronunciation examples in this documentation, read them as "here is the framework doing its job," not "here is what FLOSC is for."</p>
+<p>But pronunciation didn't drive the design, and it isn't the point. Songwriting, solfeggio, or any number of other subjects could have been the first deployment just as easily. That first deployment is one worked example of the framework, not its origin story. When you see pronunciation examples in this documentation, read them as "here is the framework doing its job," not "here is what FLOSC is for."</p>
 
 <h3 id="flosc-acronym">The FLOSC Acronym — What Each Letter Means</h3>
 
