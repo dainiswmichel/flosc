@@ -5557,7 +5557,8 @@ class floscApp {
             tier: tier,
             currentIndex: 0,
             results: [],
-            retryCount: 0
+            retryCount: 0,
+            escapeHatchShown: false,
         };
 
         const productForQuiz = String(this.config?.productName || this.config?.identity?.name || '').trim();
@@ -5952,7 +5953,11 @@ class floscApp {
 
         this.ipaQuiz.currentIndex++;
         if (this.ipaQuiz.currentIndex < this.ipaQuiz.phrases.length) {
-            this._showQuizEscapeHatch(phraseNum);
+            // Escape hatch once only — after phrase 3 (not after every phrase).
+            if (phraseNum === 3 && !this.ipaQuiz.escapeHatchShown) {
+                this.ipaQuiz.escapeHatchShown = true;
+                this._showQuizEscapeHatch(phraseNum);
+            }
             this.showTyping();
             setTimeout(() => {
                 this.hideTyping();
