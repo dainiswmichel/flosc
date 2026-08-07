@@ -47,9 +47,9 @@ if (!function_exists('flosc_tab_header')) {
  */
 if (!function_exists('flosc_tab_footer')) {
     function flosc_tab_footer() {
-        $version = defined('FLOSC_VERSION') ? FLOSC_VERSION : '?.?.?';
+        $flosc_version = defined('FLOSC_VERSION') ? FLOSC_VERSION : '?.?.?';
         echo '<div class="flosc-tab-footer">';
-        echo '<span class="flosc-tab-footer__version">FLOSC v' . esc_html($version) . '</span>';
+        echo '<span class="flosc-tab-footer__version">FLOSC v' . esc_html($flosc_version) . '</span>';
         echo '</div>';
     }
 }
@@ -85,13 +85,13 @@ if (!function_exists('flosc_check_permalink_status')) {
         
         // Check if any rule contains our slug pattern
         // Rules are stored as: '^lesaep/?$' => 'index.php?flosc_app=1&flosc_ivr=...'
-        foreach ($rules as $regex => $query) {
+        foreach ($rules as $regex => $flosc_query) {
             // Check if this rule matches our slug (the regex starts with ^slug)
             if (preg_match('/^\^' . preg_quote($slug, '/') . '/', $regex)) {
                 return 'ok';
             }
             // Also check query string for flosc_app (indicates FLOSC route)
-            if (strpos($regex, $slug) !== false && strpos($query, 'flosc_app=1') !== false) {
+            if (strpos($regex, $slug) !== false && strpos($flosc_query, 'flosc_app=1') !== false) {
                 return 'ok';
             }
         }
@@ -109,7 +109,7 @@ if (!function_exists('flosc_check_permalink_status')) {
  */
 if (!function_exists('flosc_permalink_status_indicator')) {
     function flosc_permalink_status_indicator($slug) {
-        $status = flosc_check_permalink_status($slug);
+        $flosc_status = flosc_check_permalink_status($slug);
         $last_flush = get_option('flosc_last_permalink_flush', null);
         
         $colors = [
@@ -118,7 +118,7 @@ if (!function_exists('flosc_permalink_status_indicator')) {
             'unknown' => ['class' => 'flosc-permalink-badge--unknown', 'text' => '? Status Unknown'],
         ];
         
-        $color = $colors[$status];
+        $color = $colors[$flosc_status];
         
         echo '<div class="flosc-permalink-status">';
 
@@ -1356,13 +1356,13 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         $flosc_collect_companion_rules = static function ($prefix, $post_data, $custom_parser) {
             $rules = [];
 
-            $pages = array_values(array_unique(array_filter(array_map('absint', (array) ($post_data['flow_companion_' . $prefix . '_pages'] ?? [])))));
-            foreach ($pages as $page_id) {
+            $flosc_page_ids = array_values(array_unique(array_filter(array_map('absint', (array) ($post_data['flow_companion_' . $prefix . '_pages'] ?? [])))));
+            foreach ($flosc_page_ids as $page_id) {
                 $rules[] = 'page:' . $page_id;
             }
 
-            $posts = array_values(array_unique(array_filter(array_map('absint', (array) ($post_data['flow_companion_' . $prefix . '_posts'] ?? [])))));
-            foreach ($posts as $post_id) {
+            $flosc_post_ids = array_values(array_unique(array_filter(array_map('absint', (array) ($post_data['flow_companion_' . $prefix . '_posts'] ?? [])))));
+            foreach ($flosc_post_ids as $post_id) {
                 $rules[] = 'post:' . $post_id;
             }
 
@@ -1483,13 +1483,13 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         $flosc_group_quizzes    = $flosc_post['lesson_group_quiz']     ?? [];
         $flosc_group_categories = $flosc_post['lesson_group_category'] ?? [];
         $flosc_lesson_groups = [];
-        foreach ($flosc_group_categories as $flosc_i => $cat) {
-            $cat = sanitize_text_field($cat);
-            if ($cat === '') continue; // Skip rows with no category selected
+        foreach ($flosc_group_categories as $flosc_i => $flosc_cat) {
+            $flosc_cat = sanitize_text_field($flosc_cat);
+            if ($flosc_cat === '') continue; // Skip rows with no category selected
             $flosc_quiz = sanitize_text_field($flosc_group_quizzes[$flosc_i] ?? '');
             $flosc_lesson_groups[] = [
                 'quiz_id'  => $flosc_quiz,
-                'category' => $cat,
+                'category' => $flosc_cat,
             ];
         }
         // Only overwrite lesson_groups when the form actually submitted rows.
@@ -1838,7 +1838,7 @@ if (function_exists('wp_add_inline_style')) {
     wp_add_inline_style(
         'flosc-admin',
         sprintf(
-            '#flosc-flow-selector{--flosc-flow-primary:%1$s;}#color-preview{--flosc-preview-bg:%1$s;background:var(--flosc-preview-bg);}',
+            '#flosc-flow-selector{--flosc-flow-primary:%1$flosc_s;}#color-preview{--flosc-preview-bg:%1$flosc_s;background:var(--flosc-preview-bg);}',
             esc_attr($flosc_flow_primary_color)
         )
     );
@@ -2100,7 +2100,7 @@ if (function_exists('wp_add_inline_style')) {
                     // Update from POST data (fields prefixed with ivr filename hash)
                     $flosc_prefix = 'flow_' . md5($flosc_save_ivr) . '_';
                     $flosc_identity_html_keys = ['privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content'];
-                    foreach ($post as $flosc_key => $flosc_value) {
+                    foreach ($flosc_post as $flosc_key => $flosc_value) {
                         if (strpos($flosc_key, $flosc_prefix) === 0) {
                             $flosc_setting_key = substr($flosc_key, strlen($flosc_prefix));
                             if (in_array($flosc_setting_key, $flosc_identity_html_keys, true)) {
@@ -2126,14 +2126,14 @@ if (function_exists('wp_add_inline_style')) {
                         'data_deletion_content',
                         'platform_compliance_content',
                     ];
-                    $id = $flosc_new_settings['identity'] ?? [];
+                    $flosc_id = $flosc_new_settings['identity'] ?? [];
                     foreach ($flosc_id_keys as $flosc_ik) {
                         if (isset($flosc_new_settings[$flosc_ik])) {
-                            $id[$flosc_ik] = $flosc_new_settings[$flosc_ik];
+                            $flosc_id[$flosc_ik] = $flosc_new_settings[$flosc_ik];
                             unset($flosc_new_settings[$flosc_ik]);
                         }
                     }
-                    $flosc_new_settings['identity'] = $id;
+                    $flosc_new_settings['identity'] = $flosc_id;
                     
                     update_option($flosc_flow_key, $flosc_new_settings);
                     $flosc_all_flows[$flosc_save_ivr]['settings'] = $flosc_new_settings;
@@ -2152,7 +2152,7 @@ if (function_exists('wp_add_inline_style')) {
                     
                     $flosc_prefix = 'flow_' . md5($flosc_ivr_file) . '_';
                     $flosc_identity_html_keys = ['privacy_policy_content', 'terms_of_service_content', 'data_deletion_content', 'platform_compliance_content'];
-                    foreach ($post as $flosc_key => $flosc_value) {
+                    foreach ($flosc_post as $flosc_key => $flosc_value) {
                         if (strpos($flosc_key, $flosc_prefix) === 0) {
                             $flosc_setting_key = substr($flosc_key, strlen($flosc_prefix));
                             if (in_array($flosc_setting_key, $flosc_identity_html_keys, true)) {
@@ -2178,14 +2178,14 @@ if (function_exists('wp_add_inline_style')) {
                         'data_deletion_content',
                         'platform_compliance_content',
                     ];
-                    $id = $flosc_new_settings['identity'] ?? [];
+                    $flosc_id = $flosc_new_settings['identity'] ?? [];
                     foreach ($flosc_id_keys as $flosc_ik) {
                         if (isset($flosc_new_settings[$flosc_ik])) {
-                            $id[$flosc_ik] = $flosc_new_settings[$flosc_ik];
+                            $flosc_id[$flosc_ik] = $flosc_new_settings[$flosc_ik];
                             unset($flosc_new_settings[$flosc_ik]);
                         }
                     }
-                    $flosc_new_settings['identity'] = $id;
+                    $flosc_new_settings['identity'] = $flosc_id;
                     
                     update_option($flosc_flow_key, $flosc_new_settings);
                     $flosc_all_flows[$flosc_ivr_file]['settings'] = $flosc_new_settings;

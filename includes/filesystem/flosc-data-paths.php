@@ -712,6 +712,88 @@ if (!function_exists('flosc_checkout_binding_verify')) {
     }
 }
 
+/**
+ * PayPal purchase intent (industry standard bind).
+ *
+ * Minted server-side before the PayPal JS createSubscription call. The intent UUID
+ * is placed in PayPal custom_id. On activate, the server loads the intent and
+ * requires: ACTIVE status, plan_id match, offer/amount/currency from intent only.
+ */
+if (!function_exists('flosc_paypal_purchase_intent_create')) {
+    /**
+     * @param array $data offer_id, plan_id, plan_type, amount, currency, flow_id, user_id, session_id, mode
+     * @return array|WP_Error Intent record including purchase_uuid
+     */
+    function flosc_paypal_purchase_intent_create(array $data) {
+        $uuid = function_exists('wp_generate_uuid4') ? wp_generate_uuid4() : wp_generate_password(32, false, false);
+        $uuid = sanitize_text_field((string) $uuid);
+        if ($uuid === '') {
+            return new WP_Error('intent_failed', __('Could not create purchase intent', 'flosc'), array('status' => 500));
+        }
+        $offer_id = sanitize_text_field((string) ($data['offer_id'] ?? ''));
+        $plan_id  = sanitize_text_field((string) ($data['plan_id'] ?? ''));
+        if ($offer_id === '' || $plan_id === '') {
+            return new WP_Error('invalid_intent', __('Offer and PayPal plan are required', 'flosc'), array('status' => 400));
+        }
+        $record = array(
+            'purchase_uuid' => $uuid,
+            'offer_id'      => $offer_id,
+            'plan_id'       => $plan_id,
+            'plan_type'     => sanitize_key((string) ($data['plan_type'] ?? '')),
+            'amount'        => number_format((float) ($data['amount'] ?? 0), 2, '.', ''),
+            'currency'      => strtoupper(sanitize_text_field((string) ($data['currency'] ?? 'USD'))) ?: 'USD',
+            'flow_id'       => sanitize_key((string) ($data['flow_id'] ?? '')),
+            'user_id'       => absint($data['user_id'] ?? 0),
+            'session_id'    => sanitize_text_field((string) ($data['session_id'] ?? '')),
+            'mode'          => sanitize_key((string) ($data['mode'] ?? '')),
+            'status'        => 'pending',
+            'created_at'    => time(),
+            'expires_at'    => time() + (2 * HOUR_IN_SECONDS),
+        );
+        // 2h: enough for PayPal popup; short-lived if leaked.
+        set_transient('flosc_pp_pi_' . $uuid, $record, 2 * HOUR_IN_SECONDS);
+        return $record;
+    }
+}
+
+if (!function_exists('flosc_paypal_purchase_intent_get')) {
+    /**
+     * @param string $uuid
+     * @return array|false
+     */
+    function flosc_paypal_purchase_intent_get($uuid) {
+        $uuid = sanitize_text_field((string) $uuid);
+        if ($uuid === '') {
+            return false;
+        }
+        $record = get_transient('flosc_pp_pi_' . $uuid);
+        return is_array($record) ? $record : false;
+    }
+}
+
+if (!function_exists('flosc_paypal_purchase_intent_mark_fulfilled')) {
+    /**
+     * @param string $uuid
+     * @param string $subscription_id
+     * @param int    $user_id
+     * @return bool
+     */
+    function flosc_paypal_purchase_intent_mark_fulfilled($uuid, $subscription_id, $user_id = 0) {
+        $record = flosc_paypal_purchase_intent_get($uuid);
+        if (!is_array($record)) {
+            return false;
+        }
+        $record['status']          = 'fulfilled';
+        $record['subscription_id'] = sanitize_text_field((string) $subscription_id);
+        $record['fulfilled_at']    = time();
+        if (absint($user_id) > 0) {
+            $record['user_id'] = absint($user_id);
+        }
+        set_transient('flosc_pp_pi_' . $uuid, $record, DAY_IN_SECONDS);
+        return true;
+    }
+}
+
 if (!function_exists('flosc_issue_post_purchase_session')) {
     /**
      * Issue an authenticated session after a verified purchase, for the buyer's

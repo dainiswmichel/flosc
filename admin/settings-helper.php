@@ -76,7 +76,7 @@ function flosc_admin_get_editing_flow_id() {
  */
 function flosc_admin_text_input($key, $default = '', $class = 'regular-text', $placeholder = null) {
     $value = flosc_admin_get_value($key, $default);
-    $name = 'flosc_' . $key;
+    $flosc_name = 'flosc_' . $key;
     
     // When editing flow, show global value as placeholder
     if (flosc_admin_is_editing_flow() && $placeholder === null) {
@@ -86,8 +86,8 @@ function flosc_admin_text_input($key, $default = '', $class = 'regular-text', $p
     
     printf(
         '<input type="text" id="%s" name="%s" value="%s" class="%s" placeholder="%s">',
-        esc_attr($name),
-        esc_attr($name),
+        esc_attr($flosc_name),
+        esc_attr($flosc_name),
         esc_attr($value),
         esc_attr($class),
         esc_attr($placeholder ?? '')
@@ -99,7 +99,7 @@ function flosc_admin_text_input($key, $default = '', $class = 'regular-text', $p
  */
 function flosc_admin_textarea($key, $default = '', $rows = 5, $class = 'large-text') {
     $value = flosc_admin_get_value($key, $default);
-    $name = 'flosc_' . $key;
+    $flosc_name = 'flosc_' . $key;
     
     $placeholder = '';
     if (flosc_admin_is_editing_flow()) {
@@ -109,8 +109,8 @@ function flosc_admin_textarea($key, $default = '', $rows = 5, $class = 'large-te
     
     printf(
         '<textarea id="%s" name="%s" rows="%d" class="%s" placeholder="%s">%s</textarea>',
-        esc_attr($name),
-        esc_attr($name),
+        esc_attr($flosc_name),
+        esc_attr($flosc_name),
         absint( $rows ),
         esc_attr($class),
         esc_attr($placeholder),
@@ -123,13 +123,13 @@ function flosc_admin_textarea($key, $default = '', $rows = 5, $class = 'large-te
  */
 function flosc_admin_select($key, $options, $default = '') {
     $value = flosc_admin_get_value($key, $default);
-    $name = 'flosc_' . $key;
+    $flosc_name = 'flosc_' . $key;
     
     // When editing flow and no value set, show "Use Global" option
     $show_use_global = flosc_admin_is_editing_flow();
     $global_value = flosc_admin_get_global($key, $default);
     
-    echo '<select id="' . esc_attr($name) . '" name="' . esc_attr($name) . '">';
+    echo '<select id="' . esc_attr($flosc_name) . '" name="' . esc_attr($flosc_name) . '">';
     
     if ($show_use_global) {
         $global_label = isset($options[$global_value]) ? $options[$global_value] : $global_value;

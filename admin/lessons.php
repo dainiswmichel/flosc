@@ -148,9 +148,9 @@ foreach ($flosc_lesson_groups as $flosc_group) {
             <td>
                 <select name="lesson_group_category[]" class="regular-text flosc-width-full">
                     <option value="">— Select Category —</option>
-                    <?php foreach ($flosc_categories as $cat): ?>
-                        <option value="<?php echo esc_attr($cat->slug); ?>" <?php selected($flosc_group['category'] ?? '', $cat->slug); ?>>
-                            <?php echo esc_html($cat->name); ?> (<?php echo esc_html($cat->count); ?> posts)
+                    <?php foreach ($flosc_categories as $flosc_cat): ?>
+                        <option value="<?php echo esc_attr($flosc_cat->slug); ?>" <?php selected($flosc_group['category'] ?? '', $flosc_cat->slug); ?>>
+                            <?php echo esc_html($flosc_cat->name); ?> (<?php echo esc_html($flosc_cat->count); ?> posts)
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -215,7 +215,7 @@ foreach ($flosc_lesson_groups as $flosc_group) {
             <?php else: ?>
                 <input type="text" class="flosc-protection-level regular-text"
                        data-cat-id="<?php echo esc_attr($flosc_cat_obj->term_id); ?>"
-                       value="<?php echo esc_attr($flosc_req_level); ?>" placeholder="flosc_plugin_member">
+                       value="<?php echo esc_attr($flosc_req_level); ?>" placeholder="member">
             <?php endif; ?>
 
             <?php if (!$flosc_is_protected): ?>
@@ -300,8 +300,8 @@ jQuery(document).ready(function($) {
     ?>;
     var catOptions = <?php
         $flosc_opts = '<option value="">— Select Category —</option>';
-        foreach ($flosc_categories as $cat) {
-            $flosc_opts .= '<option value="' . esc_attr($cat->slug) . '">' . esc_html($cat->name) . ' (' . esc_html($cat->count) . ' posts)</option>';
+        foreach ($flosc_categories as $flosc_cat) {
+            $flosc_opts .= '<option value="' . esc_attr($flosc_cat->slug) . '">' . esc_html($flosc_cat->name) . ' (' . esc_html($flosc_cat->count) . ' posts)</option>';
         }
         echo wp_json_encode($flosc_opts);
     ?>;
@@ -422,17 +422,17 @@ $flosc_free_lesson_never_free = (string) ($flosc_flow_settings['free_lesson_neve
         <td>
             <select name="flow_free_lesson_pool_category" id="flow_free_lesson_pool_category" class="regular-text">
                 <option value="">— Same as lesson group category (all mapped lessons) —</option>
-                <?php foreach ($flosc_categories as $cat):
-                    $flosc_cat_label = $cat->name;
-                    if (!empty($cat->parent)) {
-                        $flosc_cat_parent = get_category((int) $cat->parent);
+                <?php foreach ($flosc_categories as $flosc_cat):
+                    $flosc_cat_label = $flosc_cat->name;
+                    if (!empty($flosc_cat->parent)) {
+                        $flosc_cat_parent = get_category((int) $flosc_cat->parent);
                         if ($flosc_cat_parent && !is_wp_error($flosc_cat_parent)) {
-                            $flosc_cat_label = $flosc_cat_parent->name . ' → ' . $cat->name;
+                            $flosc_cat_label = $flosc_cat_parent->name . ' → ' . $flosc_cat->name;
                         }
                     }
                     ?>
-                    <option value="<?php echo esc_attr($cat->slug); ?>" <?php selected($flosc_free_lesson_pool_category, $cat->slug); ?>>
-                        <?php echo esc_html($flosc_cat_label); ?> (<?php echo esc_html((string) $cat->count); ?> posts)
+                    <option value="<?php echo esc_attr($flosc_cat->slug); ?>" <?php selected($flosc_free_lesson_pool_category, $flosc_cat->slug); ?>>
+                        <?php echo esc_html($flosc_cat_label); ?> (<?php echo esc_html((string) $flosc_cat->count); ?> posts)
                     </option>
                 <?php endforeach; ?>
             </select>

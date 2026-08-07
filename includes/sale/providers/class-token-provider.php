@@ -224,35 +224,108 @@ class FLOSC_Token_Provider extends FLOSC_Payment_Provider {
     }
     
     /**
-     * Deduct tokens from user's balance
+     * Deduct tokens from user's balance (atomic conditional debit).
+     *
+     * Uses a row lock on usermeta when available so two concurrent purchases
+     * that can only afford one debit cannot both succeed (PAY-ACC-01).
      */
     public function deduct($user_id, $amount, $reason = '', $meta = []) {
+        $user_id = absint($user_id);
+        $amount  = intval($amount);
+        if ($user_id <= 0) {
+            return new WP_Error('invalid_user', __('Invalid user', 'flosc'));
+        }
         if ($amount <= 0) {
             return new WP_Error('invalid_amount', __('Amount must be positive', 'flosc'));
         }
-        
-        $current = $this->get_balance($user_id);
-        
+
+        global $wpdb;
+        $meta_key = $this->balance_meta_key;
+        $locked   = false;
+        $current  = 0;
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic debit under row lock
+        $wpdb->query('START TRANSACTION');
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+        $row = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT umeta_id, meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s LIMIT 1 FOR UPDATE",
+                $user_id,
+                $meta_key
+            )
+        );
+        if ($row) {
+            $locked  = true;
+            $current = intval($row->meta_value);
+        } else {
+            // No row yet: create zero balance under the same transaction path.
+            $current = 0;
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+            $wpdb->insert(
+                $wpdb->usermeta,
+                [
+                    'user_id'    => $user_id,
+                    'meta_key'   => $meta_key,
+                    'meta_value' => '0',
+                ],
+                ['%d', '%s', '%s']
+            );
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $row = $wpdb->get_row(
+                $wpdb->prepare(
+                    "SELECT umeta_id, meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s LIMIT 1 FOR UPDATE",
+                    $user_id,
+                    $meta_key
+                )
+            );
+            if ($row) {
+                $locked  = true;
+                $current = intval($row->meta_value);
+            }
+        }
+
+        if (!$locked) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->query('ROLLBACK');
+            return new WP_Error('debit_failed', __('Could not lock token balance', 'flosc'));
+        }
+
         if ($current < $amount) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->query('ROLLBACK');
             return new WP_Error('insufficient_balance', __('Insufficient token balance', 'flosc'));
         }
-        
+
         $new_balance = $current - $amount;
-        
-        update_user_meta($user_id, $this->balance_meta_key, $new_balance);
-        
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+        $updated = $wpdb->update(
+            $wpdb->usermeta,
+            ['meta_value' => (string) $new_balance],
+            ['umeta_id' => absint($row->umeta_id)],
+            ['%s'],
+            ['%d']
+        );
+        if (false === $updated) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->query('ROLLBACK');
+            return new WP_Error('debit_failed', __('Token debit failed', 'flosc'));
+        }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+        $wpdb->query('COMMIT');
+        wp_cache_delete($user_id, 'user_meta');
+
         $this->log_transaction($user_id, [
-            'type' => 'debit',
-            'amount' => $amount,
-            'reason' => $reason,
+            'type'           => 'debit',
+            'amount'         => $amount,
+            'reason'         => $reason,
             'balance_before' => $current,
-            'balance_after' => $new_balance,
-            'meta' => $meta,
-            'timestamp' => current_time('mysql'),
+            'balance_after'  => $new_balance,
+            'meta'           => $meta,
+            'timestamp'      => current_time('mysql'),
         ]);
-        
+
         do_action('flosc_tokens_debited', $user_id, $amount, $reason);
-        
+
         return $new_balance;
     }
     

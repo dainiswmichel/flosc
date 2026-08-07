@@ -134,18 +134,18 @@ $flosc_parse_target_rules = static function ($raw_rules) {
             continue;
         }
 
-        list($type, $value) = array_map('trim', explode(':', $raw_rule, 2));
-        $type = strtolower($type);
+        list($flosc_type, $value) = array_map('trim', explode(':', $raw_rule, 2));
+        $flosc_type = strtolower($flosc_type);
         $value = (string) $value;
         if ($value === '') {
             continue;
         }
 
-        if ($type === 'path') {
+        if ($flosc_type === 'path') {
             $value = '/' . ltrim($value, '/');
         }
 
-        $rules[] = ['type' => $type, 'value' => $value];
+        $rules[] = ['type' => $flosc_type, 'value' => $value];
     }
 
     return $rules;

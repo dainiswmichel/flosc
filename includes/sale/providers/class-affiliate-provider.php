@@ -173,15 +173,19 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
             );
         }
         
-        // Deduct credits
-        $this->deduct_credits($user_id, $required, 'Purchase: ' . $offer['name']);
-        
+        // Deduct credits (atomic; fail closed if concurrent debit wins).
+        $deducted = $this->deduct_credits($user_id, $required, 'Purchase: ' . ($offer['name'] ?? $offer['id'] ?? 'offer'));
+        if (is_wp_error($deducted)) {
+            return $deducted;
+        }
+
         return [
-            'success' => true,
-            'transaction_id' => 'affiliate_purchase_' . uniqid(),
-            'amount' => $required,
-            'currency' => 'affiliate_credits',
-            'remaining_credits' => $this->get_credits($user_id),
+            'success'            => true,
+            'transaction_id'     => 'affiliate_purchase_' . uniqid(),
+            'amount'             => $required,
+            'currency'           => 'affiliate_credits',
+            'remaining_credits'  => $this->get_credits($user_id),
+            'status'             => 'completed',
         ];
     }
     
@@ -518,20 +522,93 @@ class FLOSC_Affiliate_Provider extends FLOSC_Payment_Provider {
     }
     
     /**
-     * Deduct affiliate credits
+     * Deduct affiliate credits (atomic conditional debit — PAY-ACC-01).
      */
     public function deduct_credits($user_id, $amount, $reason = '') {
-        $current = $this->get_credits($user_id);
-        
+        $user_id = absint($user_id);
+        $amount  = floatval($amount);
+        if ($user_id <= 0) {
+            return new WP_Error('invalid_user', __('Invalid user', 'flosc'));
+        }
+        if ($amount <= 0) {
+            return new WP_Error('invalid_amount', __('Amount must be positive', 'flosc'));
+        }
+
+        global $wpdb;
+        $meta_key = $this->credits_meta_key;
+        $locked   = false;
+        $current  = 0.0;
+
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic debit under row lock
+        $wpdb->query('START TRANSACTION');
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+        $row = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT umeta_id, meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s LIMIT 1 FOR UPDATE",
+                $user_id,
+                $meta_key
+            )
+        );
+        if ($row) {
+            $locked  = true;
+            $current = floatval($row->meta_value);
+        } else {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+            $wpdb->insert(
+                $wpdb->usermeta,
+                [
+                    'user_id'    => $user_id,
+                    'meta_key'   => $meta_key,
+                    'meta_value' => '0',
+                ],
+                ['%d', '%s', '%s']
+            );
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $row = $wpdb->get_row(
+                $wpdb->prepare(
+                    "SELECT umeta_id, meta_value FROM {$wpdb->usermeta} WHERE user_id = %d AND meta_key = %s LIMIT 1 FOR UPDATE",
+                    $user_id,
+                    $meta_key
+                )
+            );
+            if ($row) {
+                $locked  = true;
+                $current = floatval($row->meta_value);
+            }
+        }
+
+        if (!$locked) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->query('ROLLBACK');
+            return new WP_Error('debit_failed', __('Could not lock affiliate credit balance', 'flosc'));
+        }
+
         if ($current < $amount) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->query('ROLLBACK');
             return new WP_Error('insufficient', __('Insufficient credits', 'flosc'));
         }
-        
-        $new_balance = $current - floatval($amount);
-        update_user_meta($user_id, $this->credits_meta_key, $new_balance);
-        
+
+        $new_balance = $current - $amount;
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+        $updated = $wpdb->update(
+            $wpdb->usermeta,
+            ['meta_value' => (string) $new_balance],
+            ['umeta_id' => absint($row->umeta_id)],
+            ['%s'],
+            ['%d']
+        );
+        if (false === $updated) {
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+            $wpdb->query('ROLLBACK');
+            return new WP_Error('debit_failed', __('Affiliate credit debit failed', 'flosc'));
+        }
+        // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+        $wpdb->query('COMMIT');
+        wp_cache_delete($user_id, 'user_meta');
+
         $this->log_credit_change($user_id, 'debit', $amount, ['reason' => $reason]);
-        
+
         return $new_balance;
     }
     

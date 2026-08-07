@@ -319,8 +319,8 @@ function flosc_da1_apply_defaults(&$flosc_da1_row, $flosc_da1_columns, $flosc_da
     }
 
     if (isset($flosc_da1_col_idx['Status'])) {
-        $s = strtolower(trim((string) ($flosc_da1_row[$flosc_da1_col_idx['Status']] ?? '')));
-        if ($s === '' || ($s !== 'active' && $s !== 'paused')) {
+        $flosc_s = strtolower(trim((string) ($flosc_da1_row[$flosc_da1_col_idx['Status']] ?? '')));
+        if ($flosc_s === '' || ($flosc_s !== 'active' && $flosc_s !== 'paused')) {
             $flosc_da1_row[$flosc_da1_col_idx['Status']] = 'active';
         }
     }
@@ -655,22 +655,22 @@ if (isset($flosc_da1_col_idx['Row Key'])) {
 }
 
 if (isset($flosc_da1_post['da1_save_catalog'])) {
-    $post = $flosc_da1_post;
+    $flosc_post = $flosc_da1_post;
     // Large catalogs exceed PHP max_input_vars when posted as per-cell fields.
     // The grid submits the whole table as one JSON field instead; decode it
     // into the shape the rest of this handler expects.
-    if (!empty($post['da1_payload'])) {
-        $flosc_da1_decoded = flosc_da1_safe_json_decode((string) $post['da1_payload']);
+    if (!empty($flosc_post['da1_payload'])) {
+        $flosc_da1_decoded = flosc_da1_safe_json_decode((string) $flosc_post['da1_payload']);
         if (is_array($flosc_da1_decoded)) {
             if (isset($flosc_da1_decoded['columns']) && is_array($flosc_da1_decoded['columns'])) {
-                $post['da1_columns'] = $flosc_da1_decoded['columns'];
+                $flosc_post['da1_columns'] = $flosc_da1_decoded['columns'];
             }
             if (isset($flosc_da1_decoded['rows']) && is_array($flosc_da1_decoded['rows'])) {
-                $post['da1_rows'] = $flosc_da1_decoded['rows'];
+                $flosc_post['da1_rows'] = $flosc_da1_decoded['rows'];
             }
         }
     }
-    $flosc_da1_saved_columns = isset($post['da1_columns']) && is_array($post['da1_columns']) ? array_values(array_map('sanitize_text_field', $post['da1_columns'])) : $flosc_da1_columns;
+    $flosc_da1_saved_columns = isset($flosc_post['da1_columns']) && is_array($flosc_post['da1_columns']) ? array_values(array_map('sanitize_text_field', $flosc_post['da1_columns'])) : $flosc_da1_columns;
     $flosc_da1_saved_columns = flosc_da1_normalize_columns($flosc_da1_saved_columns, $flosc_required_columns, $flosc_base_payload_columns);
     $flosc_da1_saved_col_idx = flosc_da1_col_index_map($flosc_da1_saved_columns);
 
@@ -682,7 +682,7 @@ if (isset($flosc_da1_post['da1_save_catalog'])) {
     }
 
     if ($flosc_da1_notice_error === '') {
-        $flosc_da1_rows_post = $post['da1_rows'] ?? [];
+        $flosc_da1_rows_post = $flosc_post['da1_rows'] ?? [];
         $flosc_da1_lines = [];
         $flosc_da1_lines[] = implode("\t", array_map('flosc_da1_tsv_cell', $flosc_da1_saved_columns));
         $flosc_da1_validation_errors = [];
@@ -765,8 +765,8 @@ if (isset($flosc_da1_post['da1_save_catalog'])) {
                     $flosc_da1_validation_errors[] = 'Row ' . $flosc_da1_row_key . ': child Row Key must begin with Parent Key plus dot.';
                 }
 
-                $status = strtolower(trim((string) ($flosc_da1_row_values['Status'] ?? '')));
-                if ($status !== 'active' && $status !== 'paused') {
+                $flosc_status = strtolower(trim((string) ($flosc_da1_row_values['Status'] ?? '')));
+                if ($flosc_status !== 'active' && $flosc_status !== 'paused') {
                     $flosc_da1_validation_errors[] = 'Row ' . $flosc_da1_row_key . ': Status must be active or paused.';
                 }
 
@@ -920,9 +920,9 @@ if ( isset( $flosc_da1_get['da1_export'] ) && (string) $flosc_da1_get['da1_expor
             <?php endif; ?>
             <label for="flosc-da1-catalog-select"><strong>Catalog</strong></label>
             <select id="flosc-da1-catalog-select" name="catalog">
-                <?php foreach ($flosc_da1_catalogs as $flosc_da1_cat_key => $cat): ?>
+                <?php foreach ($flosc_da1_catalogs as $flosc_da1_cat_key => $flosc_cat): ?>
                     <option value="<?php echo esc_attr($flosc_da1_cat_key); ?>" <?php selected($flosc_da1_cat_key, $flosc_da1_requested_catalog_key); ?>>
-                        <?php echo esc_html(($cat['label'] ?? $flosc_da1_cat_key) . ' [' . $flosc_da1_cat_key . ']'); ?>
+                        <?php echo esc_html(($flosc_cat['label'] ?? $flosc_da1_cat_key) . ' [' . $flosc_da1_cat_key . ']'); ?>
                     </option>
                 <?php endforeach; ?>
             </select>

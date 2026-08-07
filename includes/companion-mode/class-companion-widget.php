@@ -80,7 +80,10 @@ class FLOSC_Companion_Widget {
             return;
         }
 
+        // Cache plugins (WP Super Cache, W3TC, LiteSpeed, etc.) look for this
+        // exact unprefixed constant — cannot use a flosc_ prefix.
         if (!defined('DONOTCACHEPAGE')) {
+            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- industry-standard cache-bypass flag; name is not under our control
             define('DONOTCACHEPAGE', true);
         }
 

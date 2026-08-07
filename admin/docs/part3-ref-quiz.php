@@ -32,7 +32,7 @@
     'pass_score'     => 70,
     'source'         => 'learndash',
 ]);</code></pre>
-<p>Stored in <code>flosc_quiz_registry</code> WordPress option. Retrieved via <code>get_quiz($id)</code>, <code>get_all_quizzes()</code>, removed via <code>unregister_quiz($id)</code>.</p>
+<p>Stored in <code>flosc_quiz_registry</code> WordPress option. Retrieved via <code>get_quiz($flosc_id)</code>, <code>get_all_quizzes()</code>, removed via <code>unregister_quiz($flosc_id)</code>.</p>
 
 <h3 id="quiz-manager-lesson-mapping">apply_lesson_mapping() — Question IDs to Lesson Numbers</h3>
 <p>When <code>submit_score()</code> is called with a registered quiz, <code>apply_lesson_mapping()</code> converts question IDs in <code>correct_items</code> and <code>incorrect_items</code> to lesson numbers based on the registered mapping array. This lets FLOSC know which lessons to recommend from external quiz results.</p>
@@ -62,7 +62,7 @@ Params: <code>user_id</code>, <code>quiz_id</code>, <code>score_data</code> (obj
 <h3 id="quiz-factory-registry">Key Methods</h3>
 <ul>
   <li><code>get_all_quiz_types()</code> — returns all registered <code>FLOSC_Abstract_Quiz_Type</code> instances keyed by ID</li>
-  <li><code>get_quiz_type($id)</code> — returns a single quiz type instance or null</li>
+  <li><code>get_quiz_type($flosc_id)</code> — returns a single quiz type instance or null</li>
   <li><code>get_active_quiz_type()</code> — returns the currently selected quiz type from flow settings</li>
 </ul>
 
@@ -109,10 +109,10 @@ Params: <code>user_id</code>, <code>quiz_id</code>, <code>score_data</code> (obj
 <p>Default implementation (as of v4.0.4) collects all <code>'topics'</code> values from incorrect items, deduplicates them, then resolves each via <code>lookup_lesson_by_tag()</code>.</p>
 <p>Resolution order for each topic tag:</p>
 <ol>
-  <li><strong>Numeric post/lesson ID</strong> — <code>get_post((int)$tag)</code></li>
-  <li><strong>WordPress category slug</strong> — <code>get_category_by_slug($tag)</code> → posts in that category</li>
-  <li><strong>WordPress post tag slug</strong> — <code>get_term_by('slug', $tag, 'post_tag')</code> → tagged posts</li>
-  <li><strong>Title / full-text search</strong> — <code>get_posts(['s' => $tag])</code></li>
+  <li><strong>Numeric post/lesson ID</strong> — <code>get_post((int)$flosc_tag)</code></li>
+  <li><strong>WordPress category slug</strong> — <code>get_category_by_slug($flosc_tag)</code> → posts in that category</li>
+  <li><strong>WordPress post tag slug</strong> — <code>get_term_by('slug', $flosc_tag, 'post_tag')</code> → tagged posts</li>
+  <li><strong>Title / full-text search</strong> — <code>get_posts(['s' => $flosc_tag])</code></li>
 </ol>
 <p>Returns array of <code>['id' => int, 'title' => string, 'reason' => string]</code>. First result becomes the free lesson; remaining become locked upgrade suggestions.</p>
 
@@ -230,10 +230,10 @@ TOPIC: short-a-vowel</code></pre>
 <h3 id="quiz-topic-resolution">Resolution Order</h3>
 <p>For each TOPIC tag, <code>lookup_lesson_by_tag()</code> tries:</p>
 <ol>
-  <li>Numeric → <code>get_post((int)$tag)</code> — direct post or lesson ID</li>
+  <li>Numeric → <code>get_post((int)$flosc_tag)</code> — direct post or lesson ID</li>
   <li>Category slug → posts in that category (up to 5)</li>
   <li>Post tag slug → posts with that tag (up to 5)</li>
-  <li>Search → <code>get_posts(['s' => $tag])</code> — catches title matches and content (up to 3)</li>
+  <li>Search → <code>get_posts(['s' => $flosc_tag])</code> — catches title matches and content (up to 3)</li>
 </ol>
 <p>First resolution that returns results wins. Deduplication by post ID across all topics.</p>
 

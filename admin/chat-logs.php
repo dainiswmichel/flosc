@@ -695,12 +695,12 @@ function flosc_render_msg_bubbles($code, $letter, $n, $content, $who, $time, $ri
     // One stored field = ONE message = ONE bubble, shown verbatim. We do NOT split
     // it into sub-bubbles — the chat shows each response as a single message (internal
     // line breaks and all), so the log must mirror that, not fragment it.
-    $id   = $code . '-' . $letter . '-' . $n;
+    $flosc_id   = $code . '-' . $letter . '-' . $n;
     $meta = '<div class="flosc-msg-meta">';
     if ($time !== '') {
         $meta .= '<span class="flosc-msg-t">' . esc_html($time) . '</span> ';
     }
-    $meta .= '<span class="flosc-msg-id">' . esc_html($id) . '</span> '
+    $meta .= '<span class="flosc-msg-id">' . esc_html($flosc_id) . '</span> '
         . '<span class="flosc-msg-who">' . esc_html($who) . '</span></div>';
 
     $hint = '';
@@ -725,7 +725,7 @@ function flosc_render_msg_bubbles($code, $letter, $n, $content, $who, $time, $ri
         }
     }
 
-    return '<div class="flosc-msg ' . esc_attr($css) . '" data-msg-id="' . esc_attr($id) . '" title="row ' . intval($rid) . '">'
+    return '<div class="flosc-msg ' . esc_attr($css) . '" data-msg-id="' . esc_attr($flosc_id) . '" title="row ' . intval($rid) . '">'
         . $meta
         . '<div class="flosc-msg-body">' . esc_html(trim((string) $content)) . '</div>'
         . $hint
@@ -738,25 +738,25 @@ function flosc_render_msg_bubbles($code, $letter, $n, $content, $who, $time, $ri
  * The auto-welcome "[SYSTEM: …]" rows are skipped so only the real back-and-forth
  * shows. The header carries a Delete control that removes the whole conversation.
  */
-function flosc_render_chat_session($s) {
-    $when  = esc_html(flosc_format_mts_utc((string) ($s['last_ts'] ?? '')));
-    $turns = intval($s['turns'] ?? 0);
-    $label = esc_html($s['label'] ?? '');
-    $is_archived = !empty($s['is_archived']);
+function flosc_render_chat_session($flosc_s) {
+    $when  = esc_html(flosc_format_mts_utc((string) ($flosc_s['last_ts'] ?? '')));
+    $turns = intval($flosc_s['turns'] ?? 0);
+    $label = esc_html($flosc_s['label'] ?? '');
+    $is_archived = !empty($flosc_s['is_archived']);
 
     // First real visitor message → preview line in the header.
-    $preview = '';
-    foreach (($s['rows'] ?? []) as $r) {
+    $flosc_preview = '';
+    foreach (($flosc_s['rows'] ?? []) as $r) {
         $um = (string) ($r['user_message'] ?? '');
         if ($um !== '' && strncmp($um, '[SYSTEM:', 8) !== 0) {
-            $preview = mb_substr($um, 0, 70);
+            $flosc_preview = mb_substr($um, 0, 70);
             break;
         }
     }
 
-    $by   = esc_attr($s['by'] ?? '');
-    $val  = esc_attr($s['value'] ?? '');
-    $flow = esc_attr($s['flow_id'] ?? '');
+    $by   = esc_attr($flosc_s['by'] ?? '');
+    $val  = esc_attr($flosc_s['value'] ?? '');
+    $flow = esc_attr($flosc_s['flow_id'] ?? '');
     $download_url = wp_nonce_url(
         add_query_arg([
             'action' => 'flosc_download_chat_tsv',
@@ -773,14 +773,14 @@ function flosc_render_chat_session($s) {
         . '<span class="flosc-session-when">' . $when . '</span>'
         . '<span class="flosc-session-label">' . $label . '</span>'
         . '<span class="flosc-session-turns">' . $turns . ' msg</span>'
-        . '<span class="flosc-session-preview">' . ($preview !== '' ? esc_html($preview) : '<em>opened — no messages</em>') . '</span>'
+        . '<span class="flosc-session-preview">' . ($flosc_preview !== '' ? esc_html($flosc_preview) : '<em>opened — no messages</em>') . '</span>'
         . '<a href="' . esc_url($download_url) . '" class="button button-small flosc-session-download flosc-session-control">Download TSV</a>'
         . '<button type="button" class="button button-small flosc-session-archive flosc-session-control" data-operation="' . ($is_archived ? 'restore' : 'archive') . '" data-by="' . $by . '" data-value="' . $val . '" data-flow="' . $flow . '">' . ($is_archived ? 'Restore' : 'Archive') . '</button>'
         . '<button type="button" class="button button-small flosc-session-delete" data-by="' . $by . '" data-value="' . $val . '" data-flow="' . $flow . '">Delete</button>'
         . '</summary>';
 
-    $code      = (string) ($s['code'] ?? '');
-    $label_raw = (string) ($s['label'] ?? '');
+    $code      = (string) ($flosc_s['code'] ?? '');
+    $label_raw = (string) ($flosc_s['label'] ?? '');
     $thread = '<div class="flosc-session-thread">';
     $shown = 0;
     // Per-speaker counters: bot welcome b-001, visitor reply u-001, bot reply b-002…
@@ -788,7 +788,7 @@ function flosc_render_chat_session($s) {
     $u_seq = 0;
     $b_seq = 0;
     $a_seq = 0;
-    foreach (($s['rows'] ?? []) as $r) {
+    foreach (($flosc_s['rows'] ?? []) as $r) {
         $um  = (string) ($r['user_message'] ?? '');
         $ar  = (string) ($r['ai_response'] ?? '');
         $rid = intval($r['id'] ?? 0);
@@ -851,7 +851,7 @@ function flosc_render_chat_session($s) {
     // (visitors now carry one). Posting drops a pale-green "(admin)" line at the
     // bottom; the visitor's widget shows it on its next poll.
     $composer = '';
-    if (($s['by'] ?? '') === 'session' && intval($s['value'] ?? 0) > 0) {
+    if (($flosc_s['by'] ?? '') === 'session' && intval($flosc_s['value'] ?? 0) > 0) {
         $admin_name = wp_get_current_user()->display_name;
         if ($admin_name === '') {
             $admin_name = 'Admin';
@@ -861,7 +861,7 @@ function flosc_render_chat_session($s) {
         $latest_usage_row = null;
         $latest_row = null;
         $latest_context_row = null;
-        $session_rows = is_array($s['rows'] ?? null) ? $s['rows'] : [];
+        $session_rows = is_array($flosc_s['rows'] ?? null) ? $flosc_s['rows'] : [];
         for ($i = count($session_rows) - 1; $i >= 0; $i--) {
             $row = $session_rows[$i];
             if (!is_array($latest_row)) {
@@ -973,15 +973,15 @@ function flosc_render_chat_session($s) {
                 . '<option value="bot">' . esc_html($bot_name) . '</option>'
             . '</select>'
             . '<input type="text" class="flosc-admin-join-input" placeholder="' . esc_attr('Type a message to join the chat…') . '">'
-            . '<button type="button" class="button button-small flosc-admin-join-send" data-session="' . esc_attr($s['value']) . '" data-flow="' . esc_attr($s['flow_id'] ?? '') . '">Send</button>'
+            . '<button type="button" class="button button-small flosc-admin-join-send" data-session="' . esc_attr($flosc_s['value']) . '" data-flow="' . esc_attr($flosc_s['flow_id'] ?? '') . '">Send</button>'
             . '</div>';
 
         $composer .= '<div class="flosc-admin-assign-tokens">'
             . '<input type="number" class="flosc-admin-token-amount" min="1" step="1" value="" placeholder="Token amount">'
-            . '<button type="button" class="button button-small flosc-admin-assign-send" data-session="' . esc_attr($s['value']) . '" data-flow="' . esc_attr($s['flow_id'] ?? '') . '">Assign Tokens</button>'
+            . '<button type="button" class="button button-small flosc-admin-assign-send" data-session="' . esc_attr($flosc_s['value']) . '" data-flow="' . esc_attr($flosc_s['flow_id'] ?? '') . '">Assign Tokens</button>'
             . '</div>';
     }
 
-    return '<details class="flosc-session" data-key="' . esc_attr($s['key'] ?? '') . '">' . $head . $thread . $composer . '</details>';
+    return '<details class="flosc-session" data-key="' . esc_attr($flosc_s['key'] ?? '') . '">' . $head . $thread . $composer . '</details>';
 }
 ?>

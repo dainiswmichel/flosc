@@ -447,6 +447,9 @@ class floscApp {
                 const msg = `Welcome back! You have <strong>${days}</strong> day${days !== 1 ? 's' : ''} of guest access remaining — we hope you are enjoying your complimentary guest access! <a href="${upgradeUrl}">Upgrade for full access here.</a>`;
                 this.addMessage('assistant', msg, true);
                 sessionStorage.setItem(this.flowStorageKey('flosc_sso_guest_days_shown'), 'true');
+                try {
+                    sessionStorage.setItem(this.flowStorageKey('flosc_eng_welcome_shown'), '1');
+                } catch (e) { /* ignore */ }
             }
 
             // Profile completion prompt — independent of welcome message, persistent across redirects
@@ -482,6 +485,63 @@ class floscApp {
      * AI: subsequent turns receive engagement_context so the model knows an admin
      * inserted the message and its content.
      */
+    /**
+     * Normalize assistant text for duplicate welcome detection.
+     */
+    _normalizeAssistantPlain(text) {
+        return String(text || '')
+            .replace(/<[^>]+>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
+            .toLowerCase();
+    }
+
+    /**
+     * Strip internal AI-history label if it ever leaked into stored content.
+     */
+    _stripEngagementAdminLabel(text) {
+        return String(text || '').replace(/^\[Admin engagement message\]\s*/i, '').trim();
+    }
+
+    /**
+     * True if chat already shows an assistant bubble that is the same welcome
+     * (or another "Welcome back..." line) so engagement must not double-insert.
+     */
+    _assistantWelcomeAlreadyShown(candidatePlain) {
+        const cand = this._normalizeAssistantPlain(
+            this._stripEngagementAdminLabel(candidatePlain)
+        );
+        if (!cand) {
+            return false;
+        }
+        try {
+            if (sessionStorage.getItem(this.flowStorageKey('flosc_eng_welcome_shown'))) {
+                return true;
+            }
+        } catch (e) { /* ignore */ }
+        const root = this.chatMessages || document.getElementById('flosc_app_messages');
+        if (!root) {
+            return false;
+        }
+        const nodes = root.querySelectorAll('.message-content, .flosc-message-content, .message.assistant, [data-role="assistant"]');
+        for (const el of nodes) {
+            const existing = this._normalizeAssistantPlain(
+                this._stripEngagementAdminLabel(el.textContent || el.innerText || '')
+            );
+            if (!existing) {
+                continue;
+            }
+            if (existing === cand) {
+                return true;
+            }
+            // Both are return-login style welcomes (SSO days msg + engagement "Welcome back!").
+            if (existing.startsWith('welcome back') && cand.startsWith('welcome back')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     applyEngagementChatRules() {
         // Restore any notes from earlier this browser session (reload / new tab same origin).
         this._loadEngagementAiNotes();
@@ -553,19 +613,36 @@ class floscApp {
             if (!plain) {
                 continue;
             }
-            // UI: plain admin text as an assistant bubble when chat finishes loading.
+            // Avoid double "Welcome back..." (SSO days bubble + engagement, or two rules).
+            if (this._assistantWelcomeAlreadyShown(plain)) {
+                sessionStorage.setItem(onceKey, '1');
+                continue;
+            }
+            // UI: plain admin text only — never show "[Admin engagement message]" in the chat pane.
+            // (That label is for the AI history assembler only, via meta.source.)
             this.addMessage('assistant', plain, false);
             sessionStorage.setItem(onceKey, '1');
+            // Mark all welcome-style engagement slots for this session so a second
+            // rule (or SSO "Welcome back" + engagement) cannot stack another line.
+            if (this._normalizeAssistantPlain(plain).startsWith('welcome back')) {
+                try {
+                    sessionStorage.setItem(this.flowStorageKey('flosc_eng_welcome_shown'), '1');
+                } catch (e) { /* ignore */ }
+            }
             // AI: remember admin insert + content for subsequent turns this session.
             this._recordEngagementAiNote(rule.id || trigger, plain);
             if (state === 'visitor') {
                 this.saveVisitorMessage('assistant', plain, { source: 'engagement_admin', name: 'Engagement' });
             } else if (this.currentSession?.id) {
-                this.logClientChatTurn('', '[Admin engagement message] ' + plain, {
+                // Store plain text only. Server meta source=engagement_admin; chatpack
+                // prefixes for the model — not for the user-visible bubble.
+                this.logClientChatTurn('', plain, {
                     source: 'engagement_admin',
                     provider: 'engagement',
                 });
             }
+            // One engagement chat insert per open is enough; more rules would stack welcomes.
+            break;
         }
     }
 
@@ -4723,11 +4800,9 @@ class floscApp {
             return 'simplified_solfeggio';
         } else if (ivrFile.includes('lesaep')) {
             return 'lesaep';
-        } else if (ivrFile.includes('flosc_default') || ivrFile.includes('flosc_technical')) {
-            return 'flosc_plugin';
         }
-        
-        return ''; // Default/generic sandbox
+        // Default/generic flows are not a paid "flosc_plugin" product (WPORG-01).
+        return '';
     }
     
     // Offer ID for Upgrade / checkout entry — flow offers registry only (no brand hardcodes).
@@ -10707,6 +10782,13 @@ Purchased: ${ctx.purchased}
     addMessage(role, content, isHtml = false) {
         this.log('[FLOSC] addMessage() called:', {role, contentLength: content?.length, isHtml});
 
+        // Never show the AI-history engagement label in the user chat pane.
+        if (role === 'assistant' && typeof content === 'string') {
+            content = this._stripEngagementAdminLabel
+                ? this._stripEngagementAdminLabel(content)
+                : content.replace(/^\[Admin engagement message\]\s*/i, '');
+        }
+
         const contentStr = String(content || '');
         // Guardrail: never render internal synthetic prompts as visible user chat.
         if (role === 'user' && /^\s*\[SYSTEM:/i.test(contentStr)) {
@@ -10722,7 +10804,15 @@ Purchased: ${ctx.purchased}
         }
         if (role !== 'user' && !isHtml) {
             this._shownAssistant = this._shownAssistant || {};
-            const repKey = String(content || '').replace(/\s+/g, ' ').trim();
+            let repKey = String(content || '').replace(/\s+/g, ' ').trim();
+            // Collapse "Welcome back!" / "Welcome back." / "Welcome back..." into one key.
+            const welcomeKey = repKey.toLowerCase().replace(/[.!…]+$/u, '').trim();
+            if (welcomeKey === 'welcome back' || welcomeKey.startsWith('welcome back')) {
+                const shortWelcome = welcomeKey === 'welcome back' || /^welcome back(\s|$)/.test(welcomeKey);
+                if (shortWelcome && welcomeKey.length < 80) {
+                    repKey = '__welcome_back__';
+                }
+            }
             if (repKey && this._shownAssistant[repKey]) {
                 this.log('[FLOSC] Skipping duplicate assistant message');
                 return null;
@@ -11410,7 +11500,15 @@ Purchased: ${ctx.purchased}
                         return;
                     }
 
-                    this.addMessage(msg.role, msg.content);
+                    let content = msg.content || '';
+                    // Never show the AI-history label in the chat UI.
+                    if (msg.role === 'assistant') {
+                        content = this._stripEngagementAdminLabel(content);
+                    }
+                    if (msg.role === 'assistant' && !content) {
+                        return;
+                    }
+                    this.addMessage(msg.role, content);
                 });
                 
                 // Update active state in sidebar
@@ -12807,9 +12905,38 @@ Purchased: ${ctx.purchased}
 
             const btns = paypal.Buttons({
                 style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'subscribe', height: 45 },
-                createSubscription: (data, actions) => {
-                    this.log('[FLOSC-CHECKOUT] Creating subscription: plan=' + planId + ', type=' + selectedPlan);
-                    return actions.subscription.create({ plan_id: planId });
+                createSubscription: async (data, actions) => {
+                    this.log('[FLOSC-CHECKOUT] Preparing subscription intent: plan=' + planId + ', type=' + selectedPlan);
+                    await this.refreshNonce();
+                    const sessionId = this.getVisitorSessionId() || '';
+                    // Industry standard: server mints purchase intent; UUID goes in PayPal custom_id.
+                    const prepRes = await this.authFetch(this.config.apiUrl + '/paypal/prepare-subscription', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: { 'Content-Type': 'application/json', 'X-WP-Nonce': this.config.nonce },
+                        body: JSON.stringify({
+                            offer_id: offerId || '',
+                            plan_type: selectedPlan,
+                            flow_id: this.config.flowId || '',
+                            session_id: sessionId,
+                        }),
+                    });
+                    const prepRaw = await prepRes.text();
+                    let prep = {};
+                    try {
+                        prep = prepRaw ? JSON.parse(prepRaw) : {};
+                    } catch (e) {
+                        throw new Error('Could not prepare PayPal purchase (invalid JSON)');
+                    }
+                    if (!prepRes.ok || !prep.purchase_uuid || !prep.plan_id) {
+                        throw new Error(prep.message || 'Could not prepare PayPal purchase intent');
+                    }
+                    this._paypalPurchaseUuid = prep.purchase_uuid;
+                    this.log('[FLOSC-CHECKOUT] Creating subscription with purchase_uuid=' + prep.purchase_uuid);
+                    return actions.subscription.create({
+                        plan_id: prep.plan_id,
+                        custom_id: String(prep.purchase_uuid).slice(0, 127),
+                    });
                 },
                 onApprove: async (data) => {
                     this.log('[FLOSC-CHECKOUT] Subscription approved: subscriptionID=' + data.subscriptionID);
@@ -12837,6 +12964,7 @@ Purchased: ${ctx.purchased}
                                 plan_type: selectedPlan,
                                 flow_id: this.config.flowId || '',
                                 offer_id: offerId || '',
+                                purchase_uuid: this._paypalPurchaseUuid || '',
                                 binding_token: bindingToken || '',
                                 session_id: bindingSessionId,
                             }),

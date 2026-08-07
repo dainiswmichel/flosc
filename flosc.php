@@ -561,6 +561,125 @@ class FLOSC_Framework {
         return $this->checkout_rest->handle_checkout_binding($request);
     }
 
+    /**
+     * PayPal: prepare subscription purchase intent (server-side bind before JS SDK).
+     *
+     * Industry standard: mint offer/plan/amount/currency on the server, return UUID
+     * for PayPal custom_id; activate loads that intent and ignores client offer swaps.
+     *
+     * @param WP_REST_Request $request Request.
+     * @return WP_REST_Response|WP_Error
+     */
+    public function paypal_prepare_subscription($request) {
+        $offer_id  = sanitize_text_field((string) $request->get_param('offer_id'));
+        $plan_type = sanitize_key((string) $request->get_param('plan_type'));
+        $flow_id   = sanitize_key((string) ($request->get_param('flow_id') ?? ''));
+        $session_id = sanitize_text_field((string) ($request->get_param('session_id') ?? ''));
+
+        if ($offer_id === '') {
+            return new WP_Error('missing_offer', __('Offer id is required', 'flosc'), ['status' => 400]);
+        }
+        if ($plan_type !== 'monthly' && $plan_type !== 'yearly') {
+            return new WP_Error('invalid_plan_type', __('plan_type must be monthly or yearly', 'flosc'), ['status' => 400]);
+        }
+
+        if ($flow_id !== '') {
+            $this->set_flow_context($flow_id);
+        }
+
+        $paypal = $this->sale_manager->get_provider('paypal');
+        if (!$paypal || !$paypal->is_configured()) {
+            return new WP_Error('paypal_not_configured', __('PayPal is not configured', 'flosc'), ['status' => 503]);
+        }
+
+        $offer = $this->sale_manager->offers()->get_offer($offer_id, $flow_id ?: null);
+        if (!$offer) {
+            return new WP_Error('invalid_offer', __('Offer not found', 'flosc'), ['status' => 404]);
+        }
+        if (method_exists($this->sale_manager, 'validate_offer_for_purchase')) {
+            $ok = $this->sale_manager->validate_offer_for_purchase($offer, 'paid');
+            if (is_wp_error($ok)) {
+                return $ok;
+            }
+        }
+
+        // Resolve exact PayPal plan id (site catalog + optional offer overrides).
+        $plans = [];
+        if (method_exists($paypal, 'get_stored_plans')) {
+            $plans = $paypal->get_stored_plans();
+        }
+        if (!is_array($plans) || empty($plans['monthly_plan_id']) || empty($plans['yearly_plan_id'])) {
+            $plans = get_option('flosc_paypal_plans', []);
+        }
+        if (!is_array($plans)) {
+            $plans = [];
+        }
+
+        $offer_monthly = sanitize_text_field((string) ($offer['pricing']['paypal']['monthly_plan_id'] ?? $offer['paypal_monthly_plan_id'] ?? ''));
+        $offer_yearly  = sanitize_text_field((string) ($offer['pricing']['paypal']['yearly_plan_id'] ?? $offer['paypal_yearly_plan_id'] ?? ''));
+
+        if ($plan_type === 'yearly') {
+            $plan_id = $offer_yearly !== '' ? $offer_yearly : sanitize_text_field((string) ($plans['yearly_plan_id'] ?? ''));
+        } else {
+            $plan_id = $offer_monthly !== '' ? $offer_monthly : sanitize_text_field((string) ($plans['monthly_plan_id'] ?? ''));
+        }
+        if ($plan_id === '') {
+            return new WP_Error(
+                'plan_unconfigured',
+                __('PayPal plan is not configured for this offer', 'flosc'),
+                ['status' => 400]
+            );
+        }
+
+        $monthly_amt = floatval($offer['subscription']['plans']['monthly']['price'] ?? 0);
+        $yearly_amt  = floatval($offer['subscription']['plans']['yearly']['price'] ?? 0);
+        if ($monthly_amt <= 0) {
+            $monthly_amt = floatval($offer['pricing']['price'] ?? $offer['price'] ?? 0);
+        }
+        if ($yearly_amt <= 0) {
+            $yearly_amt = $monthly_amt > 0 ? ($monthly_amt * 10) : 0;
+        }
+        $amount = number_format($plan_type === 'yearly' ? $yearly_amt : $monthly_amt, 2, '.', '');
+        if ((float) $amount <= 0) {
+            return new WP_Error('invalid_amount', __('Offer amount is not configured', 'flosc'), ['status' => 400]);
+        }
+        $currency = strtoupper(sanitize_text_field((string) ($offer['pricing']['currency'] ?? $offer['currency'] ?? 'USD'))) ?: 'USD';
+
+        $mode = 'live';
+        if (method_exists($paypal, 'get_setting')) {
+            $mode = sanitize_key((string) $paypal->get_setting('mode', 'live'));
+        }
+
+        if (!function_exists('flosc_paypal_purchase_intent_create')) {
+            return new WP_Error('intent_unavailable', __('Purchase intent unavailable', 'flosc'), ['status' => 500]);
+        }
+
+        $intent = flosc_paypal_purchase_intent_create([
+            'offer_id'   => sanitize_text_field((string) ($offer['id'] ?? $offer_id)),
+            'plan_id'    => $plan_id,
+            'plan_type'  => $plan_type,
+            'amount'     => $amount,
+            'currency'   => $currency,
+            'flow_id'    => $flow_id,
+            'user_id'    => get_current_user_id(),
+            'session_id' => $session_id,
+            'mode'       => $mode,
+        ]);
+        if (is_wp_error($intent)) {
+            return $intent;
+        }
+
+        return new WP_REST_Response([
+            'success'        => true,
+            'purchase_uuid'  => $intent['purchase_uuid'],
+            'plan_id'        => $plan_id,
+            'plan_type'      => $plan_type,
+            'amount'         => $amount,
+            'currency'       => $currency,
+            'offer_id'       => $intent['offer_id'],
+        ], 200);
+    }
+
     public function handle_webhook($request) {
         return $this->checkout_rest->handle_webhook($request);
     }
@@ -3376,8 +3495,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
         $message = function_exists('mb_strtolower')
             ? mb_strtolower($message, 'UTF-8')
             : strtolower($message);
-        return (bool) preg_match('/\b(bio|biography|background|resume|who\s+are\s+you|about\s+you|about\s+the\s+(host|author|founder))\b/u', $message)
-            || (bool) preg_match('/\b(who\s+is\s+dainis|about\s+dainis)\b/u', $message); // legacy phrases still match
+        // Generic bio/identity queries only. Person-specific phrases belong in
+        // flow IVR / trajectories (e.g. Br3nda), not engine hardcode.
+        return (bool) preg_match(
+            '/\b(bio|biography|background|resume|cv|who\s+are\s+you|about\s+you|about\s+the\s+(host|author|founder))\b/u',
+            $message
+        );
     }
 
 
@@ -6583,55 +6706,34 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
 
     /**
      * PayPal Subscriptions — Activate after user approves in PayPal popup.
-     * Verifies subscription status, grants lesaep_learners level.
+     *
+     * Order (correct):
+     * 1) GET subscription from PayPal — ACTIVE only
+     * 2) custom_id = server purchase_uuid — load intent
+     * 3) plan/offer/amount from intent only
+     * 4) then browser binding + account create + fulfill
      */
     public function paypal_activate_subscription($request) {
-        // Entry logging — diagnose whether cross-domain requests reach this endpoint
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] activate-subscription HIT at ' . gmdate('Y-m-d H:i:s'));
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] user_logged_in=' . (is_user_logged_in() ? 'yes' : 'no'));
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] current_user_id=' . get_current_user_id());
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] raw params=' . wp_json_encode($request->get_json_params()));
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] X-FLOSC-Token header=' . ($request->get_header('X-FLOSC-Token') ? 'present' : 'missing'));
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] X-WP-Nonce header=' . ($request->get_header('X-WP-Nonce') ? 'present' : 'missing'));
+            flosc_log('[FLOSC-PAYPAL] activate-subscription HIT user=' . get_current_user_id());
         }
 
-        $subscription_id = sanitize_text_field($request->get_param('subscription_id'));
-        $requested_plan_type = sanitize_text_field($request->get_param('plan_type')); // Browser hint only; verified PayPal plan is authoritative.
-        $flow_id         = sanitize_text_field($request->get_param('flow_id') ?? '');
-        $sold_offer_id   = sanitize_text_field($request->get_param('offer_id') ?? '');
+        $subscription_id = sanitize_text_field((string) $request->get_param('subscription_id'));
+        $flow_id         = sanitize_key((string) ($request->get_param('flow_id') ?? ''));
+        $client_offer    = sanitize_text_field((string) ($request->get_param('offer_id') ?? ''));
         $binding_token   = sanitize_text_field((string) $request->get_param('binding_token'));
         $binding_session = sanitize_text_field((string) $request->get_param('session_id'));
 
-        if (empty($subscription_id)) {
+        if ($subscription_id === '') {
             return new WP_Error('missing_params', __('Missing subscription_id', 'flosc'), ['status' => 400]);
         }
 
-        $user_id = get_current_user_id();
-        $binding_record = null;
+        $user_id         = get_current_user_id();
+        $is_new_user     = false;
+        $auth_token      = '';
+        $binding_record  = null;
 
-        // Enforce buyer-browser proof before any account creation or access grant
-        // in visitor purchase flows. Logged-in buyers already have an authenticated
-        // browser session from WordPress auth.
-        // Also accept binding for logged-in buyers when present (carries sold offer_id).
-        if (!$user_id) {
-            $binding_record = flosc_checkout_binding_verify($binding_token, $binding_session);
-            if (!$binding_record) {
-                return new WP_Error('invalid_checkout_binding', __('Missing or invalid checkout binding token.', 'flosc'), ['status' => 403]);
-            }
-        } elseif ($binding_token !== '') {
-            $binding_record = flosc_checkout_binding_verify($binding_token, $binding_session);
-        }
-        if ($sold_offer_id === '' && is_array($binding_record) && !empty($binding_record['offer_id'])) {
-            $sold_offer_id = sanitize_text_field((string) $binding_record['offer_id']);
-        }
-
-        // Visitor purchasing: no WP account yet — we'll create one from PayPal subscriber data
-        // after verifying the subscription with PayPal.
-        $is_new_user = false;
-        $auth_token = '';
-
-        if (!empty($flow_id)) {
+        if ($flow_id !== '') {
             $this->set_flow_context($flow_id);
         }
 
@@ -6640,24 +6742,17 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] X-WP-Nonce 
             return new WP_Error('paypal_not_configured', __('PayPal is not configured', 'flosc'), ['status' => 500]);
         }
 
-        // Verify subscription status with PayPal in a non-blocking single check.
-        // Any transient APPROVAL_PENDING state should be retried by the caller.
-        $sub = null;
-        $status = '';
+        // 1) Processor truth.
         $sub = $paypal->get_subscription($subscription_id);
-        if (is_wp_error($sub)) return $sub;
-
-        $status = strtoupper($sub['status'] ?? '');
-
-        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-            flosc_log('[FLOSC-PAYPAL] activate-subscription check status=' . $status);
+        if (is_wp_error($sub)) {
+            return $sub;
+        }
+        if (!is_array($sub)) {
+            return new WP_Error('paypal_error', __('Invalid PayPal subscription response', 'flosc'), ['status' => 502]);
         }
 
-        // PP-02: APPROVED is not settled; only ACTIVE grants access.
+        $status = strtoupper((string) ($sub['status'] ?? ''));
         if ($status !== 'ACTIVE') {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-                flosc_log('[FLOSC-PAYPAL] activate-subscription not active: status=' . $status . ' sub=' . $subscription_id);
-            }
             return new WP_Error(
                 'subscription_not_active',
                 sprintf(
@@ -6669,9 +6764,140 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] X-WP-Nonce 
             );
         }
 
-        $plan_type = $this->resolve_paypal_subscription_plan_type($sub, $requested_plan_type);
-        if (is_wp_error($plan_type)) {
-            return $plan_type;
+        // 2) Server purchase intent via custom_id (minted by prepare-subscription).
+        $purchase_uuid = sanitize_text_field((string) ($sub['custom_id'] ?? ''));
+        if ($purchase_uuid !== '' && isset($purchase_uuid[0]) && $purchase_uuid[0] === '{') {
+            $decoded_custom = json_decode($purchase_uuid, true, 8);
+            if (JSON_ERROR_NONE === json_last_error() && is_array($decoded_custom)) {
+                $purchase_uuid = sanitize_text_field((string) ($decoded_custom['purchase_uuid'] ?? $decoded_custom['uuid'] ?? ''));
+            } else {
+                $purchase_uuid = '';
+            }
+        }
+        // Optional client echo of purchase_uuid if PayPal omitted custom_id (should not happen).
+        if ($purchase_uuid === '') {
+            $purchase_uuid = sanitize_text_field((string) ($request->get_param('purchase_uuid') ?? ''));
+        }
+        if ($purchase_uuid === '' || !function_exists('flosc_paypal_purchase_intent_get')) {
+            return new WP_Error(
+                'missing_purchase_intent',
+                __('PayPal subscription is missing a server purchase intent (custom_id). Restart checkout.', 'flosc'),
+                ['status' => 403]
+            );
+        }
+
+        $intent = flosc_paypal_purchase_intent_get($purchase_uuid);
+        if (!is_array($intent)) {
+            return new WP_Error(
+                'invalid_purchase_intent',
+                __('Purchase intent expired or not found. Restart checkout.', 'flosc'),
+                ['status' => 403]
+            );
+        }
+        if (($intent['status'] ?? '') === 'fulfilled') {
+            return new WP_REST_Response([
+                'success'           => true,
+                'already_fulfilled' => true,
+                'subscription_id'   => $subscription_id,
+                'offer_id'          => sanitize_text_field((string) ($intent['offer_id'] ?? '')),
+            ], 200);
+        }
+        if (($intent['status'] ?? '') !== 'pending') {
+            return new WP_Error('intent_not_pending', __('Purchase intent is not pending', 'flosc'), ['status' => 409]);
+        }
+        if (!empty($intent['expires_at']) && time() > (int) $intent['expires_at']) {
+            return new WP_Error('intent_expired', __('Purchase intent expired. Restart checkout.', 'flosc'), ['status' => 403]);
+        }
+
+        $intent_plan_id = sanitize_text_field((string) ($intent['plan_id'] ?? ''));
+        $sub_plan_id    = sanitize_text_field((string) ($sub['plan_id'] ?? ($sub['plan']['id'] ?? '')));
+        if ($intent_plan_id === '' || $sub_plan_id === '' || !hash_equals($intent_plan_id, $sub_plan_id)) {
+            return new WP_Error(
+                'plan_mismatch',
+                __('PayPal plan does not match the purchase intent', 'flosc'),
+                ['status' => 403]
+            );
+        }
+
+        $plan_type = sanitize_key((string) ($intent['plan_type'] ?? ''));
+        if ($plan_type !== 'monthly' && $plan_type !== 'yearly') {
+            $plan_type = 'monthly';
+        }
+
+        $sold_offer_id = sanitize_text_field((string) ($intent['offer_id'] ?? ''));
+        if ($sold_offer_id === '') {
+            return new WP_Error('missing_offer', __('Purchase intent has no offer', 'flosc'), ['status' => 400]);
+        }
+        if ($client_offer !== '' && !hash_equals($sold_offer_id, $client_offer)) {
+            return new WP_Error(
+                'offer_mismatch',
+                __('Offer does not match the purchase intent', 'flosc'),
+                ['status' => 403]
+            );
+        }
+
+        $intent_flow = sanitize_key((string) ($intent['flow_id'] ?? ''));
+        if ($intent_flow !== '') {
+            $flow_id = $intent_flow;
+            $this->set_flow_context($flow_id);
+        }
+
+        $amount   = sanitize_text_field((string) ($intent['amount'] ?? '0.00'));
+        $currency = strtoupper(sanitize_text_field((string) ($intent['currency'] ?? 'USD'))) ?: 'USD';
+        if ((float) $amount <= 0) {
+            return new WP_Error('invalid_amount', __('Purchase intent has invalid amount', 'flosc'), ['status' => 400]);
+        }
+
+        $last_payment = (isset($sub['billing_info']['last_payment']['amount']) && is_array($sub['billing_info']['last_payment']['amount']))
+            ? $sub['billing_info']['last_payment']['amount']
+            : null;
+        if (is_array($last_payment)) {
+            $paid_amt   = isset($last_payment['value']) ? (float) $last_payment['value'] : -1.0;
+            $paid_cur   = strtoupper(sanitize_text_field((string) ($last_payment['currency_code'] ?? '')));
+            $expect_amt = (float) $amount;
+            if ($paid_cur !== '' && $currency !== '' && $paid_cur !== $currency) {
+                return new WP_Error(
+                    'payment_mismatch',
+                    __('PayPal subscription currency does not match the purchase intent', 'flosc'),
+                    ['status' => 403]
+                );
+            }
+            if ($paid_amt >= 0 && $expect_amt > 0 && abs($paid_amt - $expect_amt) > 0.05) {
+                return new WP_Error(
+                    'payment_mismatch',
+                    __('PayPal subscription amount does not match the purchase intent', 'flosc'),
+                    ['status' => 403]
+                );
+            }
+        }
+
+        $offer = $this->sale_manager->offers()->get_offer($sold_offer_id, $flow_id ?: null);
+        if (!$offer) {
+            return new WP_Error('invalid_offer', __('Offer not found', 'flosc'), ['status' => 404]);
+        }
+        if (method_exists($this->sale_manager, 'validate_offer_for_purchase')) {
+            $offer_ok = $this->sale_manager->validate_offer_for_purchase($offer, 'paid');
+            if (is_wp_error($offer_ok)) {
+                return $offer_ok;
+            }
+        }
+
+        // 3) Browser binding (after processor+intent checks so we do not burn the token early).
+        if ($user_id <= 0) {
+            $binding_record = flosc_checkout_binding_verify($binding_token, $binding_session);
+            if (!$binding_record) {
+                return new WP_Error('invalid_checkout_binding', __('Missing or invalid checkout binding token.', 'flosc'), ['status' => 403]);
+            }
+            $binding_offer = sanitize_text_field((string) ($binding_record['offer_id'] ?? ''));
+            if ($binding_offer !== '' && !hash_equals($sold_offer_id, $binding_offer)) {
+                return new WP_Error(
+                    'offer_mismatch',
+                    __('Checkout binding offer does not match the purchase intent', 'flosc'),
+                    ['status' => 403]
+                );
+            }
+        } elseif ($binding_token !== '') {
+            $binding_record = flosc_checkout_binding_verify($binding_token, $binding_session);
         }
 
         $subscriber_email = sanitize_email((string) ($sub['subscriber']['email_address'] ?? ''));
@@ -6680,8 +6906,14 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] X-WP-Nonce 
             sanitize_text_field((string) ($sub['subscriber']['name']['surname'] ?? ''))
         );
 
-        // PP-02: logged-in buyer must match PayPal subscriber email.
-        if ($user_id > 0 && $subscriber_email !== '') {
+        if ($user_id > 0) {
+            if ($subscriber_email === '') {
+                return new WP_Error(
+                    'buyer_proof_missing',
+                    __('PayPal did not return a subscriber email; cannot verify the buyer', 'flosc'),
+                    ['status' => 403]
+                );
+            }
             $wp_user = get_userdata($user_id);
             if ($wp_user && !empty($wp_user->user_email)
                 && strcasecmp((string) $wp_user->user_email, $subscriber_email) !== 0) {
@@ -6693,107 +6925,65 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] X-WP-Nonce 
             }
         }
 
-        // If visitor (no WP account), create one from PayPal subscriber data
-        if (!$user_id) {
+        if ($user_id <= 0) {
             if ($subscriber_email === '') {
                 return new WP_Error('no_email', __('Could not retrieve email from PayPal subscription.', 'flosc'), ['status' => 400]);
             }
-
-            // Check if user already exists with this email
             $existing_user = get_user_by('email', $subscriber_email);
             if ($existing_user) {
-                $user_id = $existing_user->ID;
+                $user_id = (int) $existing_user->ID;
             } else {
-                // Create new WordPress account
                 $username = $this->generate_username_from_email($subscriber_email);
                 $password = wp_generate_password(16, true, true);
-                $user_id  = wp_create_user($username, $password, $subscriber_email);
-
-                if (is_wp_error($user_id)) {
-                    return new WP_Error('user_creation_failed', 'Could not create account: ' . $user_id->get_error_message(), ['status' => 500]);
+                $created  = wp_create_user($username, $password, $subscriber_email);
+                if (is_wp_error($created)) {
+                    return new WP_Error(
+                        'user_creation_failed',
+                        'Could not create account: ' . $created->get_error_message(),
+                        ['status' => 500]
+                    );
                 }
-
-                $user = get_user_by('id', $user_id);
-                $user->set_role(apply_filters('flosc_default_user_role', 'subscriber'));
-
-                if ($subscriber_name) {
-                    $subscriber_name = sanitize_text_field($subscriber_name);
+                $user_id = (int) $created;
+                $user    = get_user_by('id', $user_id);
+                if ($user) {
+                    $user->set_role(apply_filters('flosc_default_user_role', 'subscriber'));
+                }
+                if ($subscriber_name !== '') {
                     $name_parts = explode(' ', $subscriber_name, 2);
                     wp_update_user([
                         'ID'           => $user_id,
                         'first_name'   => sanitize_text_field((string) ($name_parts[0] ?? '')),
                         'last_name'    => sanitize_text_field((string) ($name_parts[1] ?? '')),
-                        'display_name' => $subscriber_name,
+                        'display_name' => sanitize_text_field($subscriber_name),
                     ]);
                 }
-
                 update_user_meta($user_id, '_flosc_registration_method', 'paypal_purchase');
                 update_user_meta($user_id, '_flosc_registered_at', current_time('mysql'));
                 do_action('flosc_user_registered', $user_id, 'paypal_purchase', ['flow_id' => $flow_id]);
                 $is_new_user = true;
-
-                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new user from PayPal: ' . $subscriber_email . ' (ID: ' . $user_id . ')');
-                }
             }
         }
 
-        // PP-02: exact offer binding — require sold offer id (client or binding). No default/first-offer fallback.
-        if ($sold_offer_id === '') {
+        $intent_user = absint($intent['user_id'] ?? 0);
+        if ($intent_user > 0 && $intent_user !== (int) $user_id) {
             return new WP_Error(
-                'missing_offer',
-                __('Offer id is required to activate a subscription', 'flosc'),
-                ['status' => 400]
+                'buyer_mismatch',
+                __('Purchase intent belongs to a different user', 'flosc'),
+                ['status' => 403]
             );
         }
+
         $default_member_level = flosc_get_setting('default_member_level', 'member', $flow_id ?: null);
-        $offer = $this->sale_manager->offers()->get_offer($sold_offer_id, $flow_id ?: null);
-        if (!$offer) {
-            return new WP_Error('invalid_offer', __('Offer not found', 'flosc'), ['status' => 404]);
-        }
-        if (method_exists($this->sale_manager, 'validate_offer_for_purchase')) {
-            $offer_ok = $this->sale_manager->validate_offer_for_purchase($offer, 'paid');
-            if (is_wp_error($offer_ok)) {
-                return $offer_ok;
-            }
-        }
-        // Optional: if offer declares PayPal plan ids, require plan match.
-        $offer_monthly = sanitize_text_field((string) ($offer['pricing']['paypal']['monthly_plan_id'] ?? $offer['paypal_monthly_plan_id'] ?? ''));
-        $offer_yearly  = sanitize_text_field((string) ($offer['pricing']['paypal']['yearly_plan_id'] ?? $offer['paypal_yearly_plan_id'] ?? ''));
-        $sub_plan_id   = sanitize_text_field((string) ($sub['plan_id'] ?? ($sub['plan']['id'] ?? '')));
-        if ($sub_plan_id !== '' && ($offer_monthly !== '' || $offer_yearly !== '')) {
-            $allowed = array_filter([$offer_monthly, $offer_yearly]);
-            if (!in_array($sub_plan_id, $allowed, true)) {
-                return new WP_Error(
-                    'offer_mismatch',
-                    __('PayPal plan does not match the selected offer', 'flosc'),
-                    ['status' => 403]
-                );
-            }
-        }
-        // Override duration based on plan type
         if (!isset($offer['grants']) || !is_array($offer['grants'])) {
             $offer['grants'] = [];
         }
-        $offer['grants']['duration_days'] = $plan_type === 'yearly' ? 365 : 30;
+        $offer['grants']['duration_days'] = ($plan_type === 'yearly') ? 365 : 30;
         $resolved_offer_id = sanitize_text_field((string) ($offer['id'] ?? $sold_offer_id));
 
-        // Amount from offer plan pricing (flow product config), not a brand hardcode.
-        $monthly_amt = floatval($offer['subscription']['plans']['monthly']['price'] ?? 0);
-        $yearly_amt = floatval($offer['subscription']['plans']['yearly']['price'] ?? 0);
-        if ($monthly_amt <= 0) {
-            $monthly_amt = floatval($offer['pricing']['price'] ?? $offer['price'] ?? 10);
-        }
-        if ($yearly_amt <= 0) {
-            $yearly_amt = $monthly_amt > 0 ? ($monthly_amt * 10) : 100;
-        }
-        $amount = number_format($plan_type === 'yearly' ? $yearly_amt : $monthly_amt, 2, '.', '');
-
-        // Store flow before fulfill so purchase_completed carries flow_id.
-        $current_flow = $this->get_current_flow();
-        $capture_flow_id = $current_flow ? ($current_flow['id'] ?? '') : '';
-        if ($capture_flow_id === '' && !empty($flow_id)) {
-            $capture_flow_id = sanitize_key($flow_id);
+        $capture_flow_id = $flow_id;
+        if ($capture_flow_id === '') {
+            $current_flow = $this->get_current_flow();
+            $capture_flow_id = $current_flow ? sanitize_key((string) ($current_flow['id'] ?? '')) : '';
         }
 
         $transaction = [
@@ -6801,13 +6991,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             'subscription_id' => $subscription_id,
             'provider'        => 'paypal',
             'amount'          => $amount,
-            'currency'        => strtoupper((string) ($offer['pricing']['currency'] ?? 'USD')) ?: 'USD',
+            'currency'        => $currency,
             'success'         => true,
             'status'          => 'active',
             'flow_id'         => $capture_flow_id,
+            'purchase_uuid'   => $purchase_uuid,
         ];
 
-        // PAY-02: claim subscription id → offer → user before grant.
         $fulfill_offer = $offer;
         if (empty($fulfill_offer['id']) && $resolved_offer_id !== '') {
             $fulfill_offer['id'] = $resolved_offer_id;
@@ -6815,6 +7005,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
         $fulfill = $this->sale_manager->fulfill_settled_purchase($user_id, $fulfill_offer, 'paypal', $transaction);
         if (is_wp_error($fulfill)) {
             return $fulfill;
+        }
+
+        if (function_exists('flosc_paypal_purchase_intent_mark_fulfilled')) {
+            flosc_paypal_purchase_intent_mark_fulfilled($purchase_uuid, $subscription_id, $user_id);
         }
 
         // Store subscription metadata (incl. sold offer for renewals / token grants)
@@ -6909,6 +7103,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
         }
 
         $user_data = get_userdata($user_id);
+        $access_manager = $this->sale_manager->access();
 
         $product_name = '';
         $current_flow_welcome = $this->get_current_flow();
@@ -6995,18 +7190,42 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
 
         $user = wp_get_current_user();
 
-        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] create_order calling API: amount=' . $amount . ', currency=' . $currency . ', user_id=' . $user->ID);
+        $session_id = sanitize_text_field((string) ($request->get_param('session_id') ?? ''));
+        $purchase_uuid = '';
+        if (function_exists('flosc_paypal_purchase_intent_create')) {
+            $intent = flosc_paypal_purchase_intent_create([
+                'offer_id'   => sanitize_text_field((string) ($offer['id'] ?? $offer_id)),
+                'plan_id'    => 'order', // one-time Orders API (not a billing plan)
+                'plan_type'  => 'onetime',
+                'amount'     => number_format((float) $amount, 2, '.', ''),
+                'currency'   => $currency,
+                'flow_id'    => $flow_id,
+                'user_id'    => (int) ($user->ID ?? 0),
+                'session_id' => $session_id,
+                'mode'       => method_exists($paypal, 'get_setting') ? sanitize_key((string) $paypal->get_setting('mode', 'live')) : 'live',
+            ]);
+            if (is_wp_error($intent)) {
+                return $intent;
+            }
+            $purchase_uuid = (string) ($intent['purchase_uuid'] ?? '');
         }
 
-        $result = $paypal->create_order($user, $amount, $currency, $offer_id);
+        if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+            flosc_log('[FLOSC-PAYPAL] create_order calling API: amount=' . $amount . ', currency=' . $currency . ', user_id=' . $user->ID . ', intent=' . $purchase_uuid);
+        }
+
+        $result = $paypal->create_order($user, $amount, $currency, $offer_id, $purchase_uuid);
 
         if (is_wp_error($result)) {
             return $result;
         }
 
+        if (is_array($result) && $purchase_uuid !== '') {
+            $result['purchase_uuid'] = $purchase_uuid;
+        }
+
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-    if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] === create_order SUCCESS === order_id=' . ($result['order_id'] ?? 'NONE'));
+            flosc_log('[FLOSC-PAYPAL] === create_order SUCCESS === order_id=' . ($result['order_id'] ?? 'NONE'));
         }
 
         return new WP_REST_Response($result);
@@ -7088,8 +7307,24 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             return new WP_REST_Response($capture_result, 422);
         }
 
-        // PAY-02: Offer must match the offer stamped on the PayPal order at create_order time.
+        // PAY-02: offer from server purchase intent (custom_id UUID) or legacy bound offer_id.
+        $purchase_uuid  = sanitize_text_field((string) ($capture_result['purchase_uuid'] ?? ''));
         $bound_offer_id = sanitize_text_field((string) ($capture_result['offer_id'] ?? ''));
+        $intent         = false;
+        if ($purchase_uuid !== '' && function_exists('flosc_paypal_purchase_intent_get')) {
+            $intent = flosc_paypal_purchase_intent_get($purchase_uuid);
+            if (is_array($intent) && !empty($intent['offer_id'])) {
+                $bound_offer_id = sanitize_text_field((string) $intent['offer_id']);
+            }
+            if (is_array($intent) && ($intent['status'] ?? '') === 'fulfilled') {
+                return new WP_REST_Response([
+                    'success'           => true,
+                    'already_fulfilled' => true,
+                    'order_id'          => $order_id,
+                    'offer_id'          => $bound_offer_id,
+                ], 200);
+            }
+        }
         if ($bound_offer_id === '') {
             return new WP_Error(
                 'unbound_payment',
@@ -7097,17 +7332,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
                 ['status' => 400]
             );
         }
-        if ($bound_offer_id !== $offer_id) {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-                flosc_log('[FLOSC-PAYPAL] capture_order FAIL: offer mismatch bound=' . $bound_offer_id . ' requested=' . $offer_id);
-            }
+        if ($offer_id !== '' && !hash_equals($bound_offer_id, $offer_id)) {
             return new WP_Error(
                 'offer_mismatch',
                 __('Payment does not match the requested offer', 'flosc'),
                 ['status' => 403]
             );
         }
-        // Authoritative offer from order binding (not client-only param).
         $offer_id = $bound_offer_id;
         $offer = $this->sale_manager->offers()->get_offer($offer_id, $flow_id ?: null);
         if (!$offer) {
@@ -7120,15 +7351,20 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
             }
         }
 
-        // PP-01 amount/currency: when offer declares a list price, capture must match (within 1 cent).
+        // Amount/currency: intent expected when present, else offer list price.
         $expected = 0.0;
-        if (is_array($offer['pricing'] ?? null) && array_key_exists('price', $offer['pricing'])) {
-            $expected = floatval($offer['pricing']['price']);
+        $expected_cur = 'USD';
+        if (is_array($intent) && isset($intent['amount'])) {
+            $expected     = floatval($intent['amount']);
+            $expected_cur = strtoupper(sanitize_text_field((string) ($intent['currency'] ?? 'USD'))) ?: 'USD';
+        } elseif (is_array($offer['pricing'] ?? null) && array_key_exists('price', $offer['pricing'])) {
+            $expected     = floatval($offer['pricing']['price']);
+            $expected_cur = strtoupper((string) ($offer['pricing']['currency'] ?? $offer['currency'] ?? 'USD'));
         } elseif (array_key_exists('price', $offer)) {
-            $expected = floatval($offer['price']);
+            $expected     = floatval($offer['price']);
+            $expected_cur = strtoupper((string) ($offer['pricing']['currency'] ?? $offer['currency'] ?? 'USD'));
         }
         $captured_amt = floatval($capture_result['amount'] ?? 0);
-        $expected_cur = strtoupper((string) ($offer['pricing']['currency'] ?? $offer['currency'] ?? 'USD'));
         $captured_cur = strtoupper((string) ($capture_result['currency'] ?? 'USD'));
         if ($expected > 0 && abs($captured_amt - $expected) > 0.011) {
             return new WP_Error(
@@ -7224,6 +7460,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('[FLOSC-PAYPAL] Created new
         $fulfill = $this->sale_manager->fulfill_settled_purchase($user_id, $offer, 'paypal', $transaction);
         if (is_wp_error($fulfill)) {
             return $fulfill;
+        }
+
+        if ($purchase_uuid !== '' && function_exists('flosc_paypal_purchase_intent_mark_fulfilled')) {
+            flosc_paypal_purchase_intent_mark_fulfilled($purchase_uuid, (string) ($capture_result['transaction_id'] ?? $order_id), $user_id);
         }
 
         set_transient('flosc_just_purchased_' . $user_id, true, 300);

@@ -15,12 +15,12 @@ $flosc_administration_docs_url = add_query_arg([
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-administration';
 
-$current_user = wp_get_current_user();
+$flosc_user = wp_get_current_user();
 $flosc_user_id = get_current_user_id();
 
 $flosc_first_name = $flosc_user_id > 0 ? (string) get_user_meta($flosc_user_id, 'first_name', true) : '';
 $flosc_last_name = $flosc_user_id > 0 ? (string) get_user_meta($flosc_user_id, 'last_name', true) : '';
-$flosc_roles = (!empty($current_user->roles) && is_array($current_user->roles)) ? implode(', ', $current_user->roles) : '';
+$flosc_roles = (!empty($flosc_user->roles) && is_array($flosc_user->roles)) ? implode(', ', $flosc_user->roles) : '';
 
 $flosc_account_plan = get_option('flosc_account_plan', 'free');
 if (!in_array($flosc_account_plan, ['free', 'paid', 'enterprise'], true)) {
@@ -83,7 +83,7 @@ if ($flosc_can_assign_editors) {
         <tbody>
             <tr>
                 <td>Current user</td>
-                <td><?php echo esc_html($current_user->user_login ?: 'Not logged in'); ?></td>
+                <td><?php echo esc_html($flosc_user->user_login ?: 'Not logged in'); ?></td>
             </tr>
             <tr>
                 <td>Current access level</td>
@@ -146,15 +146,15 @@ if ($flosc_can_assign_editors) {
             </tr>
             <tr>
                 <td>Login</td>
-                <td><?php echo esc_html($current_user->user_login ?: 'Not logged in'); ?></td>
+                <td><?php echo esc_html($flosc_user->user_login ?: 'Not logged in'); ?></td>
             </tr>
             <tr>
                 <td>Display name</td>
-                <td><?php echo esc_html($current_user->display_name ?: 'Not set'); ?></td>
+                <td><?php echo esc_html($flosc_user->display_name ?: 'Not set'); ?></td>
             </tr>
             <tr>
                 <td>Email</td>
-                <td><?php echo esc_html($current_user->user_email ?: 'Not set'); ?></td>
+                <td><?php echo esc_html($flosc_user->user_email ?: 'Not set'); ?></td>
             </tr>
             <tr>
                 <td>First name</td>
@@ -170,7 +170,7 @@ if ($flosc_can_assign_editors) {
             </tr>
             <tr>
                 <td>Registered</td>
-                <td><?php echo esc_html($current_user->user_registered && $current_user->user_registered !== '0000-00-00 00:00:00' ? $current_user->user_registered : 'Not set'); ?></td>
+                <td><?php echo esc_html($flosc_user->user_registered && $flosc_user->user_registered !== '0000-00-00 00:00:00' ? $flosc_user->user_registered : 'Not set'); ?></td>
             </tr>
         </tbody>
     </table>

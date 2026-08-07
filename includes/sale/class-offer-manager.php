@@ -560,44 +560,11 @@ class FLOSC_Offer_Manager {
             ],
             
             // ============================================
-            // v1.4.0: PRODUCT-SPECIFIC OFFERS
-            // Each product has its own offer and member level
+            // Example site-owner content offers only.
+            // Never seed a paid "buy the FLOSC plugin" / plugin-feature unlock
+            // (WordPress.org guidelines 5 and 9 — WPORG-01).
             // ============================================
-            
-            'flosc_plugin_full' => [
-                'id' => 'flosc_plugin_full',
-                'name' => 'FLOSC Plugin - Full Access',
-                'description' => 'Complete FLOSC WordPress plugin with lifetime updates, AI-powered quiz funnels, and premium support.',
-                'type' => self::TYPE_ONE_TIME,
-                'status' => 'active',
-                'display_price' => '$197',
-                'original_price' => '$297',
-                'pricing' => [
-                    'stripe' => ['price_id' => '', 'product_id' => ''],
-                    'tokens' => ['cost' => 0],
-                    'affiliate' => ['credit_amount' => 50],
-                    'redirect_url' => '',
-                ],
-                'display_format' => 'featured',
-                'cta' => 'Get FLOSC Plugin',
-                'timer_seconds' => 0,
-                'guarantee' => '30-day money-back guarantee',
-                'grants' => [
-                    'features' => ['flosc_plugin', 'plugin_updates', 'premium_support', 'ai_chat', 'all_quizzes'],
-                    'level' => 'flosc_plugin_member',
-                    'duration_days' => 0, // Lifetime
-                    'usage_limits' => [],
-                ],
-                'meta' => [
-                    'icon' => '🔌',
-                    'badge' => 'WordPress Plugin',
-                    'savings' => 'Save $100',
-                ],
-                'product_id' => 'flosc_plugin',
-                'sort_order' => 100,
-                'created_at' => current_time('mysql'),
-            ],
-            
+
             'simplified_solfeggio_full' => [
                 'id' => 'simplified_solfeggio_full',
                 'name' => 'Simplified Solfeggio - Complete Course',
@@ -774,82 +741,82 @@ class FLOSC_Offer_Manager {
     }
     
     /**
-     * v1.4.0: Get offer by product ID
-     * Maps product identifiers to their offers
+     * Get offer by product ID (site-owner content products only).
+     * Does not map a paid unlock of the FLOSC plugin itself.
      */
     public function get_offer_by_product($product_id) {
+        $product_id = sanitize_key((string) $product_id);
+        if ($product_id === '' || $product_id === 'flosc_plugin') {
+            return null;
+        }
         $product_offer_map = [
-            'flosc_plugin' => 'flosc_plugin_full',
             'simplified_solfeggio' => 'simplified_solfeggio_full',
-            'lesaep' => flosc_get_setting('default_offer_id', 'pronunciation_full', 'lesaep'),
+            'lesaep'               => flosc_get_setting('default_offer_id', 'pronunciation_full', 'lesaep'),
         ];
-        
+
         $offer_id = $product_offer_map[$product_id] ?? null;
-        
+
         if ($offer_id) {
             return $this->get_offer($offer_id);
         }
-        
+
         return null;
     }
-    
+
     /**
-     * v1.4.0: Get member level for a product
-     * Maps product identifiers to their member levels
+     * Get member level for a site-owner content product.
      */
     public function get_member_level_for_product($product_id) {
+        $product_id = sanitize_key((string) $product_id);
+        if ($product_id === '' || $product_id === 'flosc_plugin') {
+            return 'member';
+        }
         $product_level_map = [
-            'flosc_plugin' => 'flosc_plugin_member',
             'simplified_solfeggio' => 'simplified_solfeggio_member',
-            'lesaep' => flosc_get_setting('default_member_level', 'pronunciation_learners', 'lesaep'),
+            'lesaep'               => flosc_get_setting('default_member_level', 'pronunciation_learners', 'lesaep'),
         ];
-        
-        return $product_level_map[$product_id] ?? 'flosc_sandbox';
+
+        return $product_level_map[$product_id] ?? 'member';
     }
-    
+
     /**
-     * v1.4.0: Get all product IDs
+     * Product IDs for example content products (not the plugin itself).
      */
     public function get_product_ids() {
-        return ['flosc_plugin', 'simplified_solfeggio', 'lesaep'];
+        return ['simplified_solfeggio', 'lesaep'];
     }
-    
+
     /**
-     * v1.4.0: Get product metadata
+     * Product metadata for example content products.
      */
     public function get_product_metadata($product_id) {
-        $lesaep_flow = function_exists('flosc_flows') ? flosc_flows()->get_flow('lesaep') : null;
+        $product_id = sanitize_key((string) $product_id);
+        if ($product_id === '' || $product_id === 'flosc_plugin') {
+            return null;
+        }
+        $lesaep_flow     = function_exists('flosc_flows') ? flosc_flows()->get_flow('lesaep') : null;
         $lesaep_identity = $lesaep_flow['identity'] ?? [];
-        $products = [
-            'flosc_plugin' => [
-                'id' => 'flosc_plugin',
-                'name' => 'FLOSC WordPress Plugin',
-                'tagline' => 'AI-Powered Quiz Funnels for WordPress',
-                'icon' => '🔌',
-                'ivr_file' => 'flosc_default_technical_ivr.md',
-                'member_level' => 'flosc_plugin_member',
-                'offer_id' => 'flosc_plugin_full',
-            ],
+        $products        = [
             'simplified_solfeggio' => [
-                'id' => 'simplified_solfeggio',
-                'name' => 'Simplified Solfeggio',
-                'tagline' => 'The Michel Hand of Music - Sight-Singing Made Simple',
-                'icon' => '🎵',
-                'ivr_file' => 'simplified_solfeggio_ivr.md',
+                'id'           => 'simplified_solfeggio',
+                'name'         => 'Simplified Solfeggio',
+                'tagline'      => 'The Michel Hand of Music - Sight-Singing Made Simple',
+                'icon'         => '🎵',
+                'ivr_file'     => 'simplified_solfeggio_ivr.md',
                 'member_level' => 'simplified_solfeggio_member',
-                'offer_id' => 'simplified_solfeggio_full',
+                'offer_id'     => 'simplified_solfeggio_full',
             ],
-            'lesaep' => [
-                'id' => 'lesaep',
-                'name' => $lesaep_identity['name'] ?? 'LeSAEp Pronunciation',
-                'tagline' => $lesaep_identity['tagline'] ?? 'Learn Excellent Standard American English Pronunciation',
-                'icon' => '🎤',
-                'ivr_file' => 'lesaep_ivr.md',
+            'lesaep'               => [
+                'id'           => 'lesaep',
+                'name'         => $lesaep_identity['name'] ?? 'LeSAEp Pronunciation',
+                'tagline'      => $lesaep_identity['tagline'] ?? 'Learn Excellent Standard American English Pronunciation',
+                'icon'         => '🎤',
+                'ivr_file'     => 'lesaep_ivr.md',
                 'member_level' => flosc_get_setting('default_member_level', 'pronunciation_learners', 'lesaep'),
-                'offer_id' => flosc_get_setting('default_offer_id', 'pronunciation_full', 'lesaep'),
+                'offer_id'     => flosc_get_setting('default_offer_id', 'pronunciation_full', 'lesaep'),
             ],
         ];
-        
+
         return $products[$product_id] ?? null;
     }
 }

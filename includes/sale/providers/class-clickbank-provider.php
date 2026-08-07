@@ -241,9 +241,16 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
             return new WP_Error('invalid_payload', __('ClickBank notification missing receipt', 'flosc'), ['status' => 400]);
         }
 
-        $our_vendor = strtolower((string) $this->get_setting('vendor', ''));
-        $msg_vendor = strtolower((string) ($params['cvendor'] ?? ''));
-        if ($our_vendor !== '' && $msg_vendor !== '' && $msg_vendor !== $our_vendor) {
+        // CB-01: vendor is mandatory and must match exactly (empty incoming is not a pass).
+        $our_vendor = strtolower(preg_replace('/[^a-z0-9]/', '', (string) $this->get_setting('vendor', '')));
+        $msg_vendor = strtolower(preg_replace('/[^a-z0-9]/', '', (string) ($params['cvendor'] ?? '')));
+        if ($our_vendor === '') {
+            return new WP_Error('vendor_unconfigured', __('ClickBank vendor is not configured', 'flosc'), ['status' => 500]);
+        }
+        if ($msg_vendor === '') {
+            return new WP_Error('vendor_missing', __('ClickBank notification missing vendor', 'flosc'), ['status' => 400]);
+        }
+        if ($msg_vendor !== $our_vendor) {
             return new WP_Error('vendor_mismatch', __('Vendor does not match', 'flosc'), ['status' => 400]);
         }
 
@@ -408,15 +415,10 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
         }
         $string_to_hash .= $secret_key;
 
-        // Official legacy sample: sha1, first 8 hex chars, uppercase.
+        // Official legacy ClickBank sample only: sha1, first 8 hex chars, uppercase.
+        // Do not accept undocumented SHA-256 "custom/test" signatures in production (CB-01).
         $expected_sha1 = strtoupper(substr(sha1($string_to_hash), 0, 8));
-        if (hash_equals($expected_sha1, $received) || hash_equals($expected_sha1, strtoupper(substr($received, 0, 8)))) {
-            return true;
-        }
-
-        // Tolerate full SHA-256 if a custom/test integration used it.
-        $expected_sha256 = strtoupper(hash('sha256', $string_to_hash));
-        return hash_equals($expected_sha256, $received);
+        return hash_equals($expected_sha1, $received) || hash_equals($expected_sha1, strtoupper(substr($received, 0, 8)));
     }
 
     /**
@@ -481,9 +483,23 @@ class FLOSC_ClickBank_Provider extends FLOSC_Payment_Provider {
             );
         }
 
-        // Product item (cbitems) must match when both are set.
+        // CB-01: product item is mandatory and must match configured cbitems exactly.
         $our_product = sanitize_text_field( (string) $this->get_setting( 'product', '' ) );
-        if ( $our_product !== '' && $product !== '' && strtoupper( $product ) !== strtoupper( $our_product ) ) {
+        if ( $our_product === '' ) {
+            return new WP_Error(
+                'product_unconfigured',
+                __( 'ClickBank product item number is not configured', 'flosc' ),
+                array( 'status' => 500 )
+            );
+        }
+        if ( $product === '' ) {
+            return new WP_Error(
+                'product_missing',
+                __( 'ClickBank notification missing product item', 'flosc' ),
+                array( 'status' => 400 )
+            );
+        }
+        if ( strtoupper( $product ) !== strtoupper( $our_product ) ) {
             return new WP_REST_Response(
                 array(
                     'received' => true,

@@ -749,24 +749,12 @@ class FLOSC_Chatpack {
         }
 
         // Phase descriptions (the 5 FLOSC phases)
-        $is_dainis_chat = self::is_dainis_chat_flow($flow_id, $eval_context);
         $section .= "\n**FLOSC Phases:**\n";
-        if ($is_dainis_chat) {
-            $section .= "1. **Freeline** — Visitor intake. Goal: clarify inquiry and preferred language.\n";
-            $section .= "2. **Login** — Account created/sign-in. Goal: keep better touch continuity.\n";
-            $section .= "3. **Offer** — Next-step guidance. Goal: account completion and internal messaging readiness.\n";
-            $section .= "4. **Sale** — Reserved phase (flow-dependent).\n";
-            $section .= "5. **Content** — Ongoing support and communication continuity.\n";
-
-            $section .= "\n**Dainis Biography Anchor (authoritative):**\n";
-            $section .= self::get_dainis_bio_anchor();
-        } else {
-            $section .= "1. **Freeline** — Visitor (not logged in). Goal: get them to take the quiz.\n";
-            $section .= "2. **Login** — Guest (logged in, quiz done). Goal: show score, deliver free lesson.\n";
-            $section .= "3. **Offer** — Guest (free lesson viewed). Goal: present upgrade offer.\n";
-            $section .= "4. **Sale** — Member (purchased). Full access to all content.\n";
-            $section .= "5. **Content** — Ongoing member engagement, support, encouragement.\n";
-        }
+        $section .= "1. **Freeline** — Visitor (not logged in). Goal: get them to take the quiz.\n";
+        $section .= "2. **Login** — Guest (logged in, quiz done). Goal: show score, deliver free lesson.\n";
+        $section .= "3. **Offer** — Guest (free lesson viewed). Goal: present upgrade offer.\n";
+        $section .= "4. **Sale** — Member (purchased). Full access to all content.\n";
+        $section .= "5. **Content** — Ongoing member engagement, support, encouragement.\n";
 
         $phase_outcomes = self::get_phase_outcomes($phase, $eval_context, $flow_id);
         if (!empty($phase_outcomes)) {
@@ -855,17 +843,7 @@ class FLOSC_Chatpack {
      * Section 6: IVR Guidance — scripted response the AI should rewrite.
      */
     private static function build_ivr_section($ivr_guidance, $flow_id = null, $eval_context = []) {
-        $prefix = '';
-        if (self::is_dainis_chat_flow($flow_id, $eval_context)) {
-            $prefix = "**dainis.net secretary mode (absolute):**\n"
-                . "- This chat is inbound secretary intake only.\n"
-                . "- Never offer lessons, tutoring, courses, or language training in-chat.\n"
-                . "- Encourage visitors to state how they think/feel Dainis can help them.\n"
-                . "- Prioritize preferred language, inquiry purpose, and follow-up path.\n\n";
-        }
-
         return "## IVR RESPONSE GUIDANCE\n\n"
-            . $prefix
             . "The scripted system matched the following reference material for the user's input. "
             . "This is AUTHORITATIVE product information written by the site administrator. "
             . "Use it as the factual basis for your reply — do not contradict it or add information "
@@ -1012,30 +990,6 @@ class FLOSC_Chatpack {
                 $quiz_in_progress = !empty($eval_context['quiz_in_progress']);
                 $phase_outcomes = self::get_phase_outcomes('freeline', $eval_context, $flow_id);
                                 $quiz_outcome_enabled = self::outcomes_include_quiz($phase_outcomes);
-                if (self::is_dainis_chat_flow($flow_id, $eval_context)) {
-                    $contact_email = self::get_contact_exchange_email();
-                    $contact_line = $contact_email
-                        ? "- If the user shares an email for contact exchange, acknowledge it and share this contact email: {$contact_email}.\n"
-                        : "- If the user shares an email for contact exchange, acknowledge it and offer to continue via the configured site contact channel.\n";
-
-                            return "**CURRENT PHASE INSTRUCTIONS (Freeline):**\n"
-                                . "This visitor is in dainis.net chat intake mode.\n"
-                                . "- PRIMARY PURPOSE: inbound secretary intake to understand what the visitor wants/needs and how Dainis can help.\n"
-                                . "- LEAD WITH: 'What are you interested in?' and 'How can Dainis help you?'\n"
-                                . "- Also ask: 'What challenges can Dainis help you with?'\n"
-                                . "- FIRST ask their preferred language of communication.\n"
-                                . "- Communicate in the language they choose when possible.\n"
-                                . "- Ask for their purpose of inquiry before steering anywhere else.\n"
-                                . "- Explicitly encourage visitors to share how they think/feel Dainis can help them.\n"
-                                . "- Use inquiry-first guidance: clarify intent, then suggest next steps.\n"
-                                . $contact_line
-                                . "- Invite profile creation at dainis.net as a strong next step when appropriate.\n"
-                                . "- Ask how they think Dainis can help them and capture that purpose clearly in the conversation.\n"
-                                . "- HARD RULE: this chat NEVER gives lessons, courses, tutoring, or language training in-chat.\n"
-                            . "- If asked for lessons/training, decline and continue secretary intake: ask what support they want from Dainis and how to follow up.\n"
-                            . "- Keep tone direct, respectful, and concise.\n"
-                            . "- DON'T fabricate offers, credentials, or promises.\n";
-                }
                 $freeline_intro = $quiz_in_progress
                     ? "This visitor is CURRENTLY TAKING the pronunciation quiz (in progress right now).\n"
                       . "- The quiz is managed by a SEPARATE recording/analysis system — NOT by you.\n"
@@ -1070,16 +1024,6 @@ class FLOSC_Chatpack {
                     . "- After delivering this message, if the visitor STILL goes off-topic, give a brief final redirect and stop engaging on the topic.\n";
 
             case 'login':
-                if (self::is_dainis_chat_flow($flow_id, $eval_context)) {
-                    return "**CURRENT PHASE INSTRUCTIONS (Login):**\n"
-                        . "User has created an account or signed in for dainis.net communication continuity.\n"
-                        . "- PRIMARY PURPOSE: secretary intake and support routing around how Dainis can help\n"
-                        . "- DO: Confirm why they reached out and summarize their purpose clearly\n"
-                        . "- DO: Encourage profile completion so Dainis can better understand context\n"
-                        . "- DO: Mention internal messages as the preferred ongoing channel\n"
-                        . "- HARD RULE: never present lessons, tutoring, or training offerings\n"
-                        . "- DON'T: Push paid member framing or upsell language\n";
-                }
                 return "**CURRENT PHASE INSTRUCTIONS (Login):**\n"
                     . "User has taken the quiz and logged in.\n"
                     . "- DO: Reference their quiz score and results\n"
@@ -1088,16 +1032,6 @@ class FLOSC_Chatpack {
                     . "- DON'T: Pressure them to buy yet\n";
 
             case 'offer':
-                if (self::is_dainis_chat_flow($flow_id, $eval_context)) {
-                    return "**CURRENT PHASE INSTRUCTIONS (Offer):**\n"
-                        . "User is beyond initial intake on dainis.net.\n"
-                        . "- DO: Present next-step communication outcomes (profile completion + internal messaging)\n"
-                        . "- DO: Ask what concrete support they want from Dainis\n"
-                        . "- DO: Encourage a concise statement of how they think/feel Dainis can help\n"
-                        . "- DO: Keep guidance practical and specific\n"
-                        . "- HARD RULE: do not offer lessons, lesson tracks, tutoring, or language instruction\n"
-                        . "- DON'T: Use sales pressure or purchase-conversion framing\n";
-                }
                 return "**CURRENT PHASE INSTRUCTIONS (Offer):**\n"
                     . "User has seen their free lesson.\n"
                     . "- DO: Present the upgrade offer naturally\n"
@@ -1129,17 +1063,6 @@ class FLOSC_Chatpack {
      * Get a one-liner description for phase change notifications.
      */
     private static function get_phase_one_liner($phase, $eval_context = []) {
-        if (self::is_dainis_chat_flow(null, $eval_context)) {
-            $dainis_liners = [
-                'freeline' => 'Goal: clarify language and inquiry purpose.',
-                'login'    => 'Goal: keep better touch via account continuity.',
-                'offer'    => 'Goal: profile completion and internal messaging readiness.',
-                'sale'     => 'Flow-dependent phase.',
-                'content'  => 'Ongoing support and communication continuity.',
-            ];
-            return $dainis_liners[$phase] ?? '';
-        }
-
         $liners = [
             'freeline' => 'Goal: encourage quiz.',
             'login'    => 'Goal: celebrate score, deliver free lesson.',
@@ -1238,19 +1161,9 @@ class FLOSC_Chatpack {
      */
     private static function get_default_phase_outcomes($phase, $eval_context = [], $flow_id = null) {
         $quiz_in_progress = !empty($eval_context['quiz_in_progress']);
-        $is_dainis_chat = self::is_dainis_chat_flow($flow_id, $eval_context);
 
         switch ($phase) {
             case 'freeline':
-                if ($is_dainis_chat) {
-                    return [
-                        'Preferred language capture',
-                        'Inquiry clarification',
-                        'Contact exchange',
-                        'Profile creation at dainis.net',
-                        'How Dainis can help',
-                    ];
-                }
                 return $quiz_in_progress
                     ? ['Finish the in-progress quiz']
                     : ['Quiz entry', 'Inquiry clarification'];
@@ -1265,84 +1178,6 @@ class FLOSC_Chatpack {
             default:
                 return [];
         }
-    }
-
-    /**
-     * Flow detector for dainis.net chat behavior.
-     */
-    private static function is_dainis_chat_flow($flow_id = null, $eval_context = []) {
-        $candidates = [];
-
-        if (is_string($flow_id) && $flow_id !== '') {
-            $candidates[] = $flow_id;
-        }
-
-        if (!empty($eval_context['flow_id']) && is_string($eval_context['flow_id'])) {
-            $candidates[] = $eval_context['flow_id'];
-        }
-
-        // NOTE: do NOT use get_bloginfo('url') here. Every flow on this install lives
-        // on dainis.net, so the site URL matched for ALL flows — making flosc.ai and
-        // lesaep wrongly behave as the dainis.net "secretary" chat. Match the FLOW
-        // (its id / slug / ivr file / per-flow domain) only.
-
-        if (function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'get_current_flow')) {
-            $flow = flosc()->get_current_flow();
-            if (is_array($flow)) {
-                foreach (['id', 'slug', 'ivr_file', 'domain', 'custom_domain'] as $k) {
-                    if (!empty($flow[$k]) && is_string($flow[$k])) {
-                        $candidates[] = $flow[$k];
-                    }
-                }
-            }
-        }
-
-        foreach ($candidates as $value) {
-            $needle = strtolower((string) $value);
-            if (strpos($needle, 'dainis.net') !== false || strpos($needle, 'dainis_net') !== false || strpos($needle, 'dainis') !== false) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Resolve the email used for visitor contact exchange.
-     */
-    private static function get_contact_exchange_email() {
-        $candidates = [
-            flosc_get_setting('contact_email', ''),
-            flosc_get_setting('support_email', ''),
-            flosc_get_setting('business_email', ''),
-            function_exists('get_option') ? get_option('admin_email', '') : '',
-        ];
-
-        foreach ($candidates as $email) {
-            $email = trim((string) $email);
-            if ($email !== '' && function_exists('is_email') && is_email($email)) {
-                return $email;
-            }
-        }
-
-        return '';
-    }
-
-    private static function get_dainis_bio_anchor() {
-        $bio_summary = trim((string) flosc_get_setting('dainis_bio_summary', ''));
-        if ($bio_summary === '') {
-            $bio_summary = 'Dainis W. Michel is a composer, inventor, and entrepreneur building ideas into real-world projects across music, education, AI systems, and digital business tools.';
-        }
-
-        $bio_url = trim((string) flosc_get_setting('dainis_bio_url', ''));
-        if ($bio_url === '' || !filter_var($bio_url, FILTER_VALIDATE_URL)) {
-            $bio_url = 'https://dainis.net/business/resume';
-        }
-
-        return "- {$bio_summary}\n"
-            . "- Primary biography source: {$bio_url}\n"
-            . "- If asked who Dainis is, answer from this bio anchor and include the source URL.\n"
-            . "- Do not claim missing biography context when this anchor is present.\n";
     }
 
     /**

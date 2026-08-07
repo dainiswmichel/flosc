@@ -59,16 +59,16 @@ $flosc_autoprompt_docs_anchor = [
 // SAVE HANDLER
 // ============================================
 function flosc_handle_autoprompts_save() {
-    $post = wp_unslash($_POST);
+    $flosc_post = wp_unslash($_POST);
 
-    if (!isset($post['save_autoprompts']) || !wp_verify_nonce(sanitize_text_field($post['flosc_autoprompts_nonce'] ?? ''), 'flosc_save_autoprompts')) {
+    if (!isset($flosc_post['save_autoprompts']) || !wp_verify_nonce(sanitize_text_field($flosc_post['flosc_autoprompts_nonce'] ?? ''), 'flosc_save_autoprompts')) {
         return;
     }
     if (!current_user_can('manage_options')) return;
 
     // §10: accept the posted flow key only if it is a known flow option key.
     // Validate without transforming, so the key matches where settings are stored.
-    $fk = sanitize_text_field($post['flosc_flow_key'] ?? '');
+    $fk = sanitize_text_field($flosc_post['flosc_flow_key'] ?? '');
     if ($fk === '' || !in_array($fk, flosc_known_flow_option_keys(), true)) return;
 
     $flosc_fs = get_option($fk, []);
@@ -78,26 +78,26 @@ function flosc_handle_autoprompts_save() {
     // Save panel header text per state
     $flosc_panel_headers = [];
     foreach ($states as $state) {
-        $flosc_panel_headers[$state] = sanitize_text_field($post['panel_header_' . $state] ?? 'Try these AutoPrompts!');
+        $flosc_panel_headers[$state] = sanitize_text_field($flosc_post['panel_header_' . $state] ?? 'Try these AutoPrompts!');
     }
 
     // Save panel show/hide toggle per state (checkbox — absent means unchecked = 0)
     $flosc_panel_enabled = [];
     foreach ($states as $state) {
-        $flosc_panel_enabled[$state] = isset($post['panel_enabled_' . $state]) ? 1 : 0;
+        $flosc_panel_enabled[$state] = isset($flosc_post['panel_enabled_' . $state]) ? 1 : 0;
     }
 
     // Companion Mode panel visibility (ship default: off)
-    $flosc_companion_panel_enabled = isset($post['panel_enabled_companion']) ? 1 : 0;
+    $flosc_companion_panel_enabled = isset($flosc_post['panel_enabled_companion']) ? 1 : 0;
 
     foreach ($states as $state) {
-        $icons          = $post[$state . '_pill_icon']           ?? [];
-        $labels         = $post[$state . '_pill_label']          ?? [];
-        $inputs         = $post[$state . '_pill_user_input']     ?? [];
-        $trigger_types  = $post[$state . '_pill_trigger_type']   ?? [];
-        $trigger_values = $post[$state . '_pill_trigger_value']  ?? [];
-        $flosc_conditions     = $post[$state . '_pill_conditions']     ?? [];
-        $styles         = $post[$state . '_pill_style']          ?? [];
+        $icons          = $flosc_post[$state . '_pill_icon']           ?? [];
+        $labels         = $flosc_post[$state . '_pill_label']          ?? [];
+        $inputs         = $flosc_post[$state . '_pill_user_input']     ?? [];
+        $trigger_types  = $flosc_post[$state . '_pill_trigger_type']   ?? [];
+        $trigger_values = $flosc_post[$state . '_pill_trigger_value']  ?? [];
+        $flosc_conditions     = $flosc_post[$state . '_pill_conditions']     ?? [];
+        $styles         = $flosc_post[$state . '_pill_style']          ?? [];
 
         $flosc_pills = [];
         foreach ($labels as $i => $label) {
@@ -142,7 +142,7 @@ function flosc_handle_autoprompts_save() {
     $flosc_fs['autoprompt_companion_enabled'] = $flosc_companion_panel_enabled;
     update_option($fk, $flosc_fs);
 
-    $ivr = sanitize_file_name($post['flosc_ivr'] ?? '');
+    $ivr = sanitize_file_name($flosc_post['flosc_ivr'] ?? '');
     wp_safe_redirect(admin_url('admin.php?page=flosc-settings&ivr=' . rawurlencode($ivr) . '&tab=autoprompts&saved=1'));
     exit;
 }
@@ -290,7 +290,7 @@ if (!function_exists('flosc_autoprompt_expected_behavior_text')) {
         }
 
         return sprintf(
-            'User sees a %1$s labeled "%2$s" when condition "%3$s" is true. On click, "%4$s" is sent as user text. %5$s',
+            'User sees a %1$flosc_s labeled "%2$flosc_s" when condition "%3$flosc_s" is true. On click, "%4$flosc_s" is sent as user text. %5$flosc_s',
             $flosc_style !== '' ? $flosc_style : 'pill',
             $flosc_label !== '' ? $flosc_label : '(empty label)',
             $flosc_visibility_text,

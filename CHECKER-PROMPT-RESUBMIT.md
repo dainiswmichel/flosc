@@ -19,7 +19,7 @@ I will not ask you to re-litigate fixed packaging theater. Please apply full rig
 | Field | Value |
 |-------|--------|
 | **ZIP** | `mvp_sprint/flosc_8_0_0/zip-files/flosc.zip` |
-| **SHA-256** | `50999f2da6cba73b1cecf985ad0d3cbffbe32259e6f5e89ecf5d5f3d21d7f89f` |
+| **SHA-256** | `db34b4659609c5e979df99ab1e339c43753dc4f7b59f26a2f06f70f3baaf1e0a` |
 | **Git** | tip `05f0398` on GitHub dainiswmichel/flosc — payment code `89c2741`; freeze docs on main |
 | **Version** | `8.0.0` (plugin header, `FLOSC_VERSION`, Stable tag) |
 | **Top-level** | single `flosc/` |
@@ -78,7 +78,7 @@ readme.txt (ClickBank external services)
 ## Evidence protocol (minimum for GO)
 
 ### Phase 0 — freeze
-- [ ] `shasum -a 256` equals `50999f2da6cba73b1cecf985ad0d3cbffbe32259e6f5e89ecf5d5f3d21d7f89f`
+- [ ] `shasum -a 256` equals `db34b4659609c5e979df99ab1e339c43753dc4f7b59f26a2f06f70f3baaf1e0a`
 - [ ] single top-level `flosc/`
 - [ ] version `8.0.0` in three locations
 - [ ] docs present; prohibited material absent

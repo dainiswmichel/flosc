@@ -44,19 +44,19 @@ echo '<div class="flosc-docs-link-wrap">'
  * Parse offer coupon rows from POST (fixed_price preferred; percent optional).
  * Validity windows are UTC (ISO or MTS). Empty bounds = no start/end limit.
  *
- * @param array $post Unslashed POST.
+ * @param array $flosc_post Unslashed POST.
  * @return array<int, array<string, mixed>>
  */
-function flosc_parse_offer_coupons_from_post(array $post) {
-    $codes = $post['offer_coupon_code'] ?? [];
+function flosc_parse_offer_coupons_from_post(array $flosc_post) {
+    $codes = $flosc_post['offer_coupon_code'] ?? [];
     if (!is_array($codes)) {
         return [];
     }
-    $types   = is_array($post['offer_coupon_type'] ?? null) ? $post['offer_coupon_type'] : [];
-    $values  = is_array($post['offer_coupon_value'] ?? null) ? $post['offer_coupon_value'] : [];
-    $froms   = is_array($post['offer_coupon_valid_from'] ?? null) ? $post['offer_coupon_valid_from'] : [];
-    $untils  = is_array($post['offer_coupon_valid_until'] ?? null) ? $post['offer_coupon_valid_until'] : [];
-    $actives = is_array($post['offer_coupon_active'] ?? null) ? $post['offer_coupon_active'] : [];
+    $types   = is_array($flosc_post['offer_coupon_type'] ?? null) ? $flosc_post['offer_coupon_type'] : [];
+    $values  = is_array($flosc_post['offer_coupon_value'] ?? null) ? $flosc_post['offer_coupon_value'] : [];
+    $froms   = is_array($flosc_post['offer_coupon_valid_from'] ?? null) ? $flosc_post['offer_coupon_valid_from'] : [];
+    $untils  = is_array($flosc_post['offer_coupon_valid_until'] ?? null) ? $flosc_post['offer_coupon_valid_until'] : [];
+    $actives = is_array($flosc_post['offer_coupon_active'] ?? null) ? $flosc_post['offer_coupon_active'] : [];
 
     $out = [];
     $n = count($codes);
@@ -65,19 +65,19 @@ function flosc_parse_offer_coupons_from_post(array $post) {
         if ($code === '') {
             continue;
         }
-        $type = sanitize_key((string) ($types[$i] ?? 'fixed_price'));
-        if (!in_array($type, ['fixed_price', 'percent'], true)) {
-            $type = 'fixed_price';
+        $flosc_type = sanitize_key((string) ($types[$i] ?? 'fixed_price'));
+        if (!in_array($flosc_type, ['fixed_price', 'percent'], true)) {
+            $flosc_type = 'fixed_price';
         }
         $value = floatval($values[$i] ?? 0);
-        if ($type === 'percent') {
+        if ($flosc_type === 'percent') {
             $value = max(0, min(100, $value));
         } else {
             $value = max(0, $value);
         }
         $out[] = [
             'code'            => $code,
-            'type'            => $type,
+            'type'            => $flosc_type,
             'value'           => $value,
             'valid_from_utc'  => sanitize_text_field((string) ($froms[$i] ?? '')),
             'valid_until_utc' => sanitize_text_field((string) ($untils[$i] ?? '')),
@@ -90,11 +90,11 @@ function flosc_parse_offer_coupons_from_post(array $post) {
 /**
  * Parse comma/newline separated access codes for full unlock of this offer.
  *
- * @param array $post Unslashed POST.
+ * @param array $flosc_post Unslashed POST.
  * @return string[]
  */
-function flosc_parse_offer_access_codes_from_post(array $post) {
-    $raw = (string) ($post['offer_access_codes'] ?? '');
+function flosc_parse_offer_access_codes_from_post(array $flosc_post) {
+    $raw = (string) ($flosc_post['offer_access_codes'] ?? '');
     if ($raw === '') {
         return [];
     }
@@ -114,9 +114,9 @@ function flosc_parse_offer_access_codes_from_post(array $post) {
 // v1.6.5: Removed dead add_action('init',...) — file loads after init fires
 // ============================================
 function flosc_handle_offer_save() {
-    $post = wp_unslash($_POST);
+    $flosc_post = wp_unslash($_POST);
 
-    if (!isset($post['save_offer']) || !wp_verify_nonce(sanitize_text_field($post['flosc_save_offer_nonce'] ?? ''), 'flosc_save_offer')) {
+    if (!isset($flosc_post['save_offer']) || !wp_verify_nonce(sanitize_text_field($flosc_post['flosc_save_offer_nonce'] ?? ''), 'flosc_save_offer')) {
         return;
     }
     if (!current_user_can('manage_options')) {
@@ -125,12 +125,12 @@ function flosc_handle_offer_save() {
 
     // §10: accept the posted flow key only if it is a known flow option key.
     // Validate without transforming, so the key matches where settings are stored.
-    $fk = sanitize_text_field($post['flosc_flow_key'] ?? '');
+    $fk = sanitize_text_field($flosc_post['flosc_flow_key'] ?? '');
     if ($fk === '' || !in_array($fk, flosc_known_flow_option_keys(), true)) {
         return;
     }
 
-    $flosc_offer_id = sanitize_text_field($post['offer_id'] ?? '');
+    $flosc_offer_id = sanitize_text_field($flosc_post['offer_id'] ?? '');
     if ($flosc_offer_id === 'new') {
         $flosc_offer_id = 'offer_' . wp_generate_password(8, false);
     }
@@ -140,18 +140,18 @@ function flosc_handle_offer_save() {
     foreach ($all_formats as $fmt) {
         $key = str_replace('-', '_', $fmt);
         $display_formats[$fmt] = [
-            'enabled'   => !empty($post['fmt_' . $key . '_enabled']),
-            'condition' => sanitize_text_field($post['fmt_' . $key . '_condition'] ?? ''),
-            'timer'     => intval($post['fmt_' . $key . '_timer'] ?? 0),
+            'enabled'   => !empty($flosc_post['fmt_' . $key . '_enabled']),
+            'condition' => sanitize_text_field($flosc_post['fmt_' . $key . '_condition'] ?? ''),
+            'timer'     => intval($flosc_post['fmt_' . $key . '_timer'] ?? 0),
         ];
         if ($fmt === 'pill') {
-            $display_formats[$fmt]['label'] = sanitize_text_field($post['fmt_pill_label'] ?? '');
-            $display_formats[$fmt]['icon'] = sanitize_text_field($post['fmt_pill_icon'] ?? '');
-            $display_formats[$fmt]['phrase'] = sanitize_text_field($post['fmt_pill_phrase'] ?? '');
-            $display_formats[$fmt]['target_panel'] = sanitize_text_field($post['fmt_pill_target_panel'] ?? 'guest');
+            $display_formats[$fmt]['label'] = sanitize_text_field($flosc_post['fmt_pill_label'] ?? '');
+            $display_formats[$fmt]['icon'] = sanitize_text_field($flosc_post['fmt_pill_icon'] ?? '');
+            $display_formats[$fmt]['phrase'] = sanitize_text_field($flosc_post['fmt_pill_phrase'] ?? '');
+            $display_formats[$fmt]['target_panel'] = sanitize_text_field($flosc_post['fmt_pill_target_panel'] ?? 'guest');
         }
         if (in_array($fmt, ['card', 'featured', 'banner'], true)) {
-            $display_formats[$fmt]['headline_override'] = sanitize_text_field($post['fmt_' . $key . '_headline'] ?? '');
+            $display_formats[$fmt]['headline_override'] = sanitize_text_field($flosc_post['fmt_' . $key . '_headline'] ?? '');
         }
     }
 
@@ -163,64 +163,64 @@ function flosc_handle_offer_save() {
 
     $offer_data = [
         'id'             => $flosc_offer_id,
-        'name'           => sanitize_text_field($post['offer_name'] ?? ''),
-        'type'           => sanitize_text_field($post['offer_type'] ?? ''),
-        'price'          => floatval($post['offer_price'] ?? 0),
-        'original_price' => floatval($post['offer_original_price'] ?? 0),
-        'display_price'  => !empty($post['offer_display_price'])
-            ? sanitize_text_field($post['offer_display_price'])
-            : (floatval($post['offer_price'] ?? 0) > 0 ? '$' . number_format(floatval($post['offer_price'] ?? 0), 2) : 'Free'),
-        'headline'       => sanitize_text_field($post['offer_headline'] ?? ''),
-        'description'    => sanitize_textarea_field($post['offer_description'] ?? ''),
-        'features'       => sanitize_textarea_field($post['offer_features'] ?? ''),
-        'cta'            => sanitize_text_field($post['offer_cta'] ?? ''),
-        'trigger'        => sanitize_text_field($post['offer_trigger'] ?? ''),
-        'condition'      => sanitize_text_field($post['offer_condition'] ?? ''),
-        'reveal_phrase'  => sanitize_text_field($post['offer_reveal_phrase'] ?? ''),
-        'match_type'     => sanitize_text_field($post['offer_match_type'] ?? 'exact'),
-        'grants_level'   => sanitize_key($post['offer_grants_level'] ?? ''),
+        'name'           => sanitize_text_field($flosc_post['offer_name'] ?? ''),
+        'type'           => sanitize_text_field($flosc_post['offer_type'] ?? ''),
+        'price'          => floatval($flosc_post['offer_price'] ?? 0),
+        'original_price' => floatval($flosc_post['offer_original_price'] ?? 0),
+        'display_price'  => !empty($flosc_post['offer_display_price'])
+            ? sanitize_text_field($flosc_post['offer_display_price'])
+            : (floatval($flosc_post['offer_price'] ?? 0) > 0 ? '$' . number_format(floatval($flosc_post['offer_price'] ?? 0), 2) : 'Free'),
+        'headline'       => sanitize_text_field($flosc_post['offer_headline'] ?? ''),
+        'description'    => sanitize_textarea_field($flosc_post['offer_description'] ?? ''),
+        'features'       => sanitize_textarea_field($flosc_post['offer_features'] ?? ''),
+        'cta'            => sanitize_text_field($flosc_post['offer_cta'] ?? ''),
+        'trigger'        => sanitize_text_field($flosc_post['offer_trigger'] ?? ''),
+        'condition'      => sanitize_text_field($flosc_post['offer_condition'] ?? ''),
+        'reveal_phrase'  => sanitize_text_field($flosc_post['offer_reveal_phrase'] ?? ''),
+        'match_type'     => sanitize_text_field($flosc_post['offer_match_type'] ?? 'exact'),
+        'grants_level'   => sanitize_key($flosc_post['offer_grants_level'] ?? ''),
         'grants'         => [
             'features' => ['full_access'],
-            'level'    => sanitize_key($post['offer_grants_level'] ?? ''),
+            'level'    => sanitize_key($flosc_post['offer_grants_level'] ?? ''),
         ],
         'pricing'        => [
-            'price'        => floatval($post['offer_price'] ?? 0),
-            'currency'     => strtoupper(sanitize_text_field($post['offer_currency'] ?? 'USD')) ?: 'USD',
-            'processor'    => sanitize_key($post['offer_processor'] ?? 'paypal'),
+            'price'        => floatval($flosc_post['offer_price'] ?? 0),
+            'currency'     => strtoupper(sanitize_text_field($flosc_post['offer_currency'] ?? 'USD')) ?: 'USD',
+            'processor'    => sanitize_key($flosc_post['offer_processor'] ?? 'paypal'),
             'stripe'       => [
-                'price_id'   => sanitize_text_field($post['offer_stripe_price_id'] ?? ''),
-                'product_id' => sanitize_text_field($post['offer_stripe_product_id'] ?? ''),
+                'price_id'   => sanitize_text_field($flosc_post['offer_stripe_price_id'] ?? ''),
+                'product_id' => sanitize_text_field($flosc_post['offer_stripe_product_id'] ?? ''),
             ],
-            'redirect_url' => esc_url_raw($post['offer_redirect_url'] ?? ''),
+            'redirect_url' => esc_url_raw($flosc_post['offer_redirect_url'] ?? ''),
         ],
-        'timer_minutes'   => intval($post['offer_timer'] ?? 0),
-        'timer_seconds'   => intval($post['offer_timer'] ?? 0) * 60,
+        'timer_minutes'   => intval($flosc_post['offer_timer'] ?? 0),
+        'timer_seconds'   => intval($flosc_post['offer_timer'] ?? 0) * 60,
         // Urgency = countdown only. Reveal = when to first show. Frequency = how often.
         // after_offer: start delay when another offer in this flow was shown.
-        'reveal_event'            => sanitize_key($post['offer_reveal_event'] ?? 'manual'),
-        'reveal_delay_seconds'    => max(0, intval($post['offer_reveal_delay_seconds'] ?? 0)),
-        'after_offer_id'          => sanitize_key($post['offer_after_offer_id'] ?? ''),
-        'frequency_max_shows'     => max(0, intval($post['offer_frequency_max_shows'] ?? 1)),
-        'frequency_scope'         => sanitize_key($post['offer_frequency_scope'] ?? 'browser'),
+        'reveal_event'            => sanitize_key($flosc_post['offer_reveal_event'] ?? 'manual'),
+        'reveal_delay_seconds'    => max(0, intval($flosc_post['offer_reveal_delay_seconds'] ?? 0)),
+        'after_offer_id'          => sanitize_key($flosc_post['offer_after_offer_id'] ?? ''),
+        'frequency_max_shows'     => max(0, intval($flosc_post['offer_frequency_max_shows'] ?? 1)),
+        'frequency_scope'         => sanitize_key($flosc_post['offer_frequency_scope'] ?? 'browser'),
         // Lower number = higher priority when user is asking for next/all offers.
-        'presentation_priority'   => max(0, intval($post['offer_presentation_priority'] ?? 100)),
-        'guarantee'       => sanitize_text_field($post['offer_guarantee'] ?? ''),
+        'presentation_priority'   => max(0, intval($flosc_post['offer_presentation_priority'] ?? 100)),
+        'guarantee'       => sanitize_text_field($flosc_post['offer_guarantee'] ?? ''),
         'preview'         => [
-            'icon'    => sanitize_text_field($post['offer_icon'] ?? '⭐'),
-            'badge'   => sanitize_text_field($post['offer_badge'] ?? ''),
-            'savings' => sanitize_text_field($post['offer_savings'] ?? ''),
+            'icon'    => sanitize_text_field($flosc_post['offer_icon'] ?? '⭐'),
+            'badge'   => sanitize_text_field($flosc_post['offer_badge'] ?? ''),
+            'savings' => sanitize_text_field($flosc_post['offer_savings'] ?? ''),
         ],
         // Native PayPal/Stripe coupons (fixed final price preferred; percent optional). Windows = UTC MTC/ISO.
-        'coupons'         => flosc_parse_offer_coupons_from_post($post),
+        'coupons'         => flosc_parse_offer_coupons_from_post($flosc_post),
         // Show coupon input on checkout UI (Access Code link is separate and always available when codes exist).
         // Default off: floscAdmin must opt in.
-        'show_coupon_field' => !empty($post['offer_show_coupon_field']),
+        'show_coupon_field' => !empty($flosc_post['offer_show_coupon_field']),
         // 100% unlock codes for this offer (in addition to flow-level access_code).
-        'access_codes'    => flosc_parse_offer_access_codes_from_post($post),
+        'access_codes'    => flosc_parse_offer_access_codes_from_post($flosc_post),
         // Display-only note for redirect processor (shop owns real coupons).
-        'external_sale_note' => sanitize_text_field($post['offer_external_sale_note'] ?? ''),
-        'status'          => isset($post['offer_active']) ? 'active' : 'draft',
-        'active'          => isset($post['offer_active']),
+        'external_sale_note' => sanitize_text_field($flosc_post['offer_external_sale_note'] ?? ''),
+        'status'          => isset($flosc_post['offer_active']) ? 'active' : 'draft',
+        'active'          => isset($flosc_post['offer_active']),
         'updated'         => current_time('mysql'),
     ];
 
@@ -232,30 +232,30 @@ function flosc_handle_offer_save() {
         $offer_data['conversions'] = $existing_offer['conversions'] ?? 0;
         $offer_data['views'] = $existing_offer['views'] ?? 0;
         $offer_data['created'] = $existing_offer['created'] ?? current_time('mysql');
-        if (strtolower((string)($existing_offer['status'] ?? '')) !== 'draft' && empty($post['offer_active'])) {
+        if (strtolower((string)($existing_offer['status'] ?? '')) !== 'draft' && empty($flosc_post['offer_active'])) {
             $offer_data['status'] = 'inactive';
         }
     }
 
     $offer_data = array_merge($offer_data, [
         'display_formats' => $display_formats,
-        'pill_label'      => sanitize_text_field($post['fmt_pill_label'] ?? ''),
-        'pill_icon'       => sanitize_text_field($post['fmt_pill_icon'] ?? ''),
-        'pill_phrase'     => sanitize_text_field($post['fmt_pill_phrase'] ?? ''),
+        'pill_label'      => sanitize_text_field($flosc_post['fmt_pill_label'] ?? ''),
+        'pill_icon'       => sanitize_text_field($flosc_post['fmt_pill_icon'] ?? ''),
+        'pill_phrase'     => sanitize_text_field($flosc_post['fmt_pill_phrase'] ?? ''),
     ]);
 
     // Product token grants (also editable on Token Management home).
     // Only apply when the offer editor posted token fields (skip demo one-click forms).
-    if (array_key_exists('flosc_offer_token_source', $post)) {
-        $token_source = sanitize_key((string) ($post['flosc_offer_token_source'] ?? 'flow'));
+    if (array_key_exists('flosc_offer_token_source', $flosc_post)) {
+        $token_source = sanitize_key((string) ($flosc_post['flosc_offer_token_source'] ?? 'flow'));
         if (!in_array($token_source, ['flow', 'custom', 'none'], true)) {
             $token_source = 'flow';
         }
-        $token_mode = sanitize_key((string) ($post['flosc_offer_token_mode'] ?? 'onetime'));
+        $token_mode = sanitize_key((string) ($flosc_post['flosc_offer_token_mode'] ?? 'onetime'));
         if (!in_array($token_mode, ['onetime', 'recurring', 'recurring_yearly'], true)) {
             $token_mode = 'onetime';
         }
-        $token_cap_mode = sanitize_key((string) ($post['flosc_offer_token_cap_mode'] ?? 'flow'));
+        $token_cap_mode = sanitize_key((string) ($flosc_post['flosc_offer_token_cap_mode'] ?? 'flow'));
         if (!in_array($token_cap_mode, ['flow', 'none', 'custom'], true)) {
             $token_cap_mode = 'flow';
         }
@@ -269,15 +269,15 @@ function flosc_handle_offer_save() {
             $tokens['amount'] = 0;
             $tokens['cap'] = 0;
         } elseif ($token_source === 'custom') {
-            if (isset($post['flosc_offer_token_amount']) && $post['flosc_offer_token_amount'] !== '') {
-                $tokens['amount'] = max(0, intval($post['flosc_offer_token_amount']));
+            if (isset($flosc_post['flosc_offer_token_amount']) && $flosc_post['flosc_offer_token_amount'] !== '') {
+                $tokens['amount'] = max(0, intval($flosc_post['flosc_offer_token_amount']));
             } else {
                 unset($tokens['amount']);
             }
             if ($token_cap_mode === 'none') {
                 $tokens['cap'] = 0;
-            } elseif ($token_cap_mode === 'custom' && isset($post['flosc_offer_token_cap']) && $post['flosc_offer_token_cap'] !== '') {
-                $tokens['cap'] = max(0, intval($post['flosc_offer_token_cap']));
+            } elseif ($token_cap_mode === 'custom' && isset($flosc_post['flosc_offer_token_cap']) && $flosc_post['flosc_offer_token_cap'] !== '') {
+                $tokens['cap'] = max(0, intval($flosc_post['flosc_offer_token_cap']));
             } else {
                 unset($tokens['cap']);
             }
@@ -296,7 +296,7 @@ function flosc_handle_offer_save() {
     $flosc_fs['offers'] = $all_offers;
     update_option($fk, $flosc_fs);
 
-    $ivr = sanitize_file_name($post['flosc_ivr'] ?? '');
+    $ivr = sanitize_file_name($flosc_post['flosc_ivr'] ?? '');
     wp_safe_redirect(esc_url_raw(admin_url('admin.php?page=flosc-settings&ivr=' . rawurlencode($ivr) . '&tab=offers&saved=1')));
     exit;
 }
@@ -422,8 +422,8 @@ $flosc_all_format_meta = [
 // ============================================
 $flosc_active_offers = [];
 foreach ($flosc_offers as $flosc_offer_id => $flosc_offer) {
-    $status = strtolower((string)($flosc_offer['status'] ?? ''));
-    $flosc_is_active = !empty($flosc_offer['active']) && $status !== 'draft';
+    $flosc_status = strtolower((string)($flosc_offer['status'] ?? ''));
+    $flosc_is_active = !empty($flosc_offer['active']) && $flosc_status !== 'draft';
     if (!$flosc_is_active) {
         continue;
     }
@@ -445,7 +445,7 @@ foreach ($flosc_offers as $flosc_offer_id => $flosc_offer) {
         'formats' => implode(', ', $flosc_formats),
         'condition' => (string)($flosc_offer['condition'] ?? 'always'),
         'cta' => (string)($flosc_offer['cta'] ?? ''),
-        'status' => $status === '' ? 'active' : $status,
+        'status' => $flosc_status === '' ? 'active' : $flosc_status,
     ];
 }
 ?>

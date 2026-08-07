@@ -150,17 +150,17 @@ $flosc_protected_items = $flosc_flow_settings['protected_content'] ?? [];
                            <select name="protection_value[]" class="flosc-protection-value flosc-width-full">
                             <option value="">— Select —</option>
                             <?php if ( $flosc_item_type === 'category' ) : ?>
-                                <?php foreach ( $flosc_categories as $cat ) : ?>
-                                    <option value="<?php echo esc_attr( $cat->term_id ); ?>" 
-                                            <?php selected( $flosc_item['id'] ?? '', $cat->term_id ); ?>>
-                                        <?php echo esc_html( $cat->name ); ?> (<?php echo esc_html( (string) $cat->count ); ?> posts)
+                                <?php foreach ( $flosc_categories as $flosc_cat ) : ?>
+                                    <option value="<?php echo esc_attr( $flosc_cat->term_id ); ?>" 
+                                            <?php selected( $flosc_item['id'] ?? '', $flosc_cat->term_id ); ?>>
+                                        <?php echo esc_html( $flosc_cat->name ); ?> (<?php echo esc_html( (string) $flosc_cat->count ); ?> posts)
                                     </option>
                                 <?php endforeach; ?>
                             <?php elseif ( $flosc_item_type === 'tag' ) : ?>
-                                <?php foreach ( $flosc_tags as $tag ) : ?>
-                                    <option value="<?php echo esc_attr( $tag->term_id ); ?>" 
-                                            <?php selected( $flosc_item['id'] ?? '', $tag->term_id ); ?>>
-                                        <?php echo esc_html( $tag->name ); ?> (<?php echo esc_html( (string) $tag->count ); ?> posts)
+                                <?php foreach ( $flosc_tags as $flosc_tag ) : ?>
+                                    <option value="<?php echo esc_attr( $flosc_tag->term_id ); ?>" 
+                                            <?php selected( $flosc_item['id'] ?? '', $flosc_tag->term_id ); ?>>
+                                        <?php echo esc_html( $flosc_tag->name ); ?> (<?php echo esc_html( (string) $flosc_tag->count ); ?> posts)
                                     </option>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -361,16 +361,16 @@ jQuery(document).ready(function($) {
     // Build option strings for JS-generated rows
     var categoryOptions = <?php
         $flosc_opts = '<option value="">— Select —</option>';
-        foreach ( $flosc_categories as $cat ) {
-            $flosc_opts .= '<option value="' . esc_attr( $cat->term_id ) . '">' . esc_html( $cat->name ) . ' (' . intval( $cat->count ) . ' posts)</option>';
+        foreach ( $flosc_categories as $flosc_cat ) {
+            $flosc_opts .= '<option value="' . esc_attr( $flosc_cat->term_id ) . '">' . esc_html( $flosc_cat->name ) . ' (' . intval( $flosc_cat->count ) . ' posts)</option>';
         }
         echo wp_json_encode( $flosc_opts );
     ?>;
 
     var tagOptions = <?php
         $flosc_opts = '<option value="">— Select —</option>';
-        foreach ( $flosc_tags as $tag ) {
-            $flosc_opts .= '<option value="' . esc_attr( $tag->term_id ) . '">' . esc_html( $tag->name ) . ' (' . intval( $tag->count ) . ' posts)</option>';
+        foreach ( $flosc_tags as $flosc_tag ) {
+            $flosc_opts .= '<option value="' . esc_attr( $flosc_tag->term_id ) . '">' . esc_html( $flosc_tag->name ) . ' (' . intval( $flosc_tag->count ) . ' posts)</option>';
         }
         echo wp_json_encode( $flosc_opts );
     ?>;

@@ -471,9 +471,9 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                         <td>
                             <select id="wp_category" name="wp_category" class="regular-text">
                                 <option value="0">— All Categories —</option>
-                                <?php foreach ($flosc_categories as $cat): ?>
-                                    <option value="<?php echo esc_attr($cat->term_id); ?>" <?php selected($flosc_flow['wp_category_id'] ?? 0, $cat->term_id); ?>>
-                                        <?php echo esc_html($cat->name); ?> (<?php echo esc_html( (string) $cat->count ); ?> posts)
+                                <?php foreach ($flosc_categories as $flosc_cat): ?>
+                                    <option value="<?php echo esc_attr($flosc_cat->term_id); ?>" <?php selected($flosc_flow['wp_category_id'] ?? 0, $flosc_cat->term_id); ?>>
+                                        <?php echo esc_html($flosc_cat->name); ?> (<?php echo esc_html( (string) $flosc_cat->count ); ?> posts)
                                     </option>
                                 <?php endforeach; ?>
                             </select>

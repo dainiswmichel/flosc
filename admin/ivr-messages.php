@@ -281,12 +281,12 @@ function flosc_run_ivr_diagnostics() {
             };
 
             $mismatches = [];
-            foreach ($file_ids as $id) {
-                $file_msg = $normalize_for_compare($config['messages'][$id] ?? []);
-                $db_msg   = $normalize_for_compare($db_messages[$id] ?? []);
+            foreach ($file_ids as $flosc_id) {
+                $file_msg = $normalize_for_compare($config['messages'][$flosc_id] ?? []);
+                $db_msg   = $normalize_for_compare($db_messages[$flosc_id] ?? []);
                 foreach ($compare_fields as $field) {
                     if ((string) ($file_msg[$field] ?? '') !== (string) ($db_msg[$field] ?? '')) {
-                        $mismatches[] = $id;
+                        $mismatches[] = $flosc_id;
                         break; // one differing field is enough to flag this message
                     }
                 }
@@ -1541,8 +1541,8 @@ document.addEventListener('submit', function(event) {
                     <details class="flosc-ivr-inline-details">
                         <summary class="flosc-ivr-inline-details__summary flosc-ivr-inline-details__summary--blue">▼ show all</summary>
                         <div class="flosc-ivr-id-cloud flosc-ivr-id-cloud--green">
-                            <?php foreach ($flosc_import_preview['added'] as $id): ?>
-                                <code class="flosc-ivr-id-chip"><?php echo esc_html($id); ?></code>
+                            <?php foreach ($flosc_import_preview['added'] as $flosc_id): ?>
+                                <code class="flosc-ivr-id-chip"><?php echo esc_html($flosc_id); ?></code>
                             <?php endforeach; ?>
                         </div>
                     </details>
@@ -1554,10 +1554,10 @@ document.addEventListener('submit', function(event) {
                     <details>
                         <summary class="flosc-ivr-inline-details__summary flosc-ivr-inline-details__summary--blue">Show full entries: New in file</summary>
                         <div class="flosc-ivr-entry-grid">
-                            <?php foreach ($flosc_import_preview['added'] as $id): ?>
+                            <?php foreach ($flosc_import_preview['added'] as $flosc_id): ?>
                                 <div class="flosc-ivr-entry-card flosc-ivr-entry-card--file">
-                                    <div class="flosc-ivr-entry-card__title"><?php echo esc_html($id); ?></div>
-                                    <pre class="flosc-ivr-entry-card__json"><?php echo esc_html(wp_json_encode($flosc_file_messages_for_compare[$id] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)); ?></pre>
+                                    <div class="flosc-ivr-entry-card__title"><?php echo esc_html($flosc_id); ?></div>
+                                    <pre class="flosc-ivr-entry-card__json"><?php echo esc_html(wp_json_encode($flosc_file_messages_for_compare[$flosc_id] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)); ?></pre>
                                 </div>
                             <?php endforeach; ?>
                         </div>
@@ -1576,8 +1576,8 @@ document.addEventListener('submit', function(event) {
                     <details class="flosc-ivr-inline-details">
                         <summary class="flosc-ivr-inline-details__summary flosc-ivr-inline-details__summary--gray">▼ show all</summary>
                         <div class="flosc-ivr-id-cloud flosc-ivr-id-cloud--gray">
-                            <?php foreach ($flosc_unchanged_ids as $id): ?>
-                                <code class="flosc-ivr-id-chip"><?php echo esc_html($id); ?></code>
+                            <?php foreach ($flosc_unchanged_ids as $flosc_id): ?>
+                                <code class="flosc-ivr-id-chip"><?php echo esc_html($flosc_id); ?></code>
                             <?php endforeach; ?>
                         </div>
                     </details>
@@ -1590,8 +1590,8 @@ document.addEventListener('submit', function(event) {
                     <details class="flosc-ivr-inline-details">
                         <summary class="flosc-ivr-inline-details__summary flosc-ivr-inline-details__summary--orange">▼ show all</summary>
                         <div class="flosc-ivr-id-cloud flosc-ivr-id-cloud--orange">
-                            <?php foreach ($flosc_import_preview['deleted'] as $id): ?>
-                                <code class="flosc-ivr-id-chip"><?php echo esc_html($id); ?></code>
+                            <?php foreach ($flosc_import_preview['deleted'] as $flosc_id): ?>
+                                <code class="flosc-ivr-id-chip"><?php echo esc_html($flosc_id); ?></code>
                             <?php endforeach; ?>
                         </div>
                     </details>
@@ -1602,10 +1602,10 @@ document.addEventListener('submit', function(event) {
                     <details>
                         <summary class="flosc-ivr-inline-details__summary flosc-ivr-inline-details__summary--orange">Show full entries: Only in DB</summary>
                         <div class="flosc-ivr-entry-grid">
-                            <?php foreach ($flosc_import_preview['deleted'] as $id): ?>
+                            <?php foreach ($flosc_import_preview['deleted'] as $flosc_id): ?>
                                 <div class="flosc-ivr-entry-card flosc-ivr-entry-card--db-only">
-                                    <div class="flosc-ivr-entry-card__title"><?php echo esc_html($id); ?></div>
-                                    <pre class="flosc-ivr-entry-card__json"><?php echo esc_html(wp_json_encode($flosc_db_messages_for_compare[$id] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)); ?></pre>
+                                    <div class="flosc-ivr-entry-card__title"><?php echo esc_html($flosc_id); ?></div>
+                                    <pre class="flosc-ivr-entry-card__json"><?php echo esc_html(wp_json_encode($flosc_db_messages_for_compare[$flosc_id] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)); ?></pre>
                                 </div>
                             <?php endforeach; ?>
                         </div>
@@ -1831,8 +1831,8 @@ $flosc_total_count = count($flosc_messages);
                         <th>Style</th>
                         <td>
                             <select name="message_style">
-                                <?php foreach (['default','pill','button','chip','card'] as $s): ?>
-                                    <option value="<?php echo esc_attr( $s ); ?>" <?php selected($flosc_msg['style'] ?? 'default', $s); ?>><?php echo esc_html( ucfirst($s) ); ?></option>
+                                <?php foreach (['default','pill','button','chip','card'] as $flosc_s): ?>
+                                    <option value="<?php echo esc_attr( $flosc_s ); ?>" <?php selected($flosc_msg['style'] ?? 'default', $flosc_s); ?>><?php echo esc_html( ucfirst($flosc_s) ); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </td>
@@ -1983,8 +1983,8 @@ $flosc_total_count = count($flosc_messages);
                         <th>Style</th>
                         <td>
                             <select name="message_style">
-                                <?php foreach (['default','pill','button','chip','card'] as $s): ?>
-                                    <option value="<?php echo esc_attr( $s ); ?>"><?php echo esc_html( ucfirst($s) ); ?></option>
+                                <?php foreach (['default','pill','button','chip','card'] as $flosc_s): ?>
+                                    <option value="<?php echo esc_attr( $flosc_s ); ?>"><?php echo esc_html( ucfirst($flosc_s) ); ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </td>

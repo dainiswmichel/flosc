@@ -665,6 +665,13 @@ trait FLOSC_REST_Trait {
             'permission_callback' => [$this, 'check_checkout_endpoint_permission'],
         ]);
 
+        // PayPal Subscriptions — mint server purchase intent before JS createSubscription.
+        register_rest_route('flosc/v1', '/paypal/prepare-subscription', [
+            'methods' => 'POST',
+            'callback' => [$this, 'paypal_prepare_subscription'],
+            'permission_callback' => [$this, 'check_checkout_endpoint_permission'],
+        ]);
+
         // PayPal Subscriptions - Activate after user approves
         register_rest_route('flosc/v1', '/paypal/activate-subscription', [
             'methods' => 'POST',

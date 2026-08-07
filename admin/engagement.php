@@ -130,9 +130,9 @@ $flosc_email_templates = [
  */
 $flosc_render_rule = static function ($rule, $audience, $index, $open = false) use ($flosc_triggers, $flosc_email_templates) {
     $rid = sanitize_key((string) ($rule['id'] ?? ('rule_' . $index)));
-    $title = trim((string) ($rule['title'] ?? ''));
-    if ($title === '') {
-        $title = $rid !== '' ? $rid : ('Rule ' . ((int) $index + 1));
+    $flosc_title = trim((string) ($rule['title'] ?? ''));
+    if ($flosc_title === '') {
+        $flosc_title = $rid !== '' ? $rid : ('Rule ' . ((int) $index + 1));
     }
     $en  = !empty($rule['enabled']);
     $trig = sanitize_key((string) ($rule['trigger'] ?? 'chat_open'));
@@ -156,12 +156,12 @@ $flosc_render_rule = static function ($rule, $audience, $index, $open = false) u
         $preview_bits[] = 'email';
     }
     $preview_bits[] = $trig_lab;
-    $preview = implode(' · ', $preview_bits);
+    $flosc_preview = implode(' · ', $preview_bits);
     ?>
     <details class="flosc-eng-rule" data-audience="<?php echo esc_attr($audience); ?>" data-rule-index="<?php echo esc_attr((string) $index); ?>"<?php echo $open ? ' open' : ''; ?>>
         <summary class="flosc-eng-rule__summary">
-            <span class="flosc-eng-rule__summary-title"><?php echo esc_html($title); ?></span>
-            <span class="flosc-eng-rule__summary-preview"><?php echo esc_html($preview); ?></span>
+            <span class="flosc-eng-rule__summary-title"><?php echo esc_html($flosc_title); ?></span>
+            <span class="flosc-eng-rule__summary-preview"><?php echo esc_html($flosc_preview); ?></span>
         </summary>
         <div class="flosc-eng-rule__body">
             <input type="hidden" name="engagement_rule_id[]" class="flosc-eng-rule-id" value="<?php echo esc_attr($rid); ?>">
@@ -178,7 +178,7 @@ $flosc_render_rule = static function ($rule, $audience, $index, $open = false) u
                     <th scope="row"><label>Title</label></th>
                     <td>
                         <input type="text" name="engagement_rule_title[]" class="regular-text flosc-eng-rule-title"
-                               value="<?php echo esc_attr($title); ?>" placeholder="e.g. Welcome back chat">
+                               value="<?php echo esc_attr($flosc_title); ?>" placeholder="e.g. Welcome back chat">
                         <p class="description">Shown in the rule accordion header. Id: <code class="flosc-eng-rule-id-label"><?php echo esc_html($rid); ?></code></p>
                     </td>
                 </tr>

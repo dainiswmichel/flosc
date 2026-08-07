@@ -28,7 +28,7 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * **AI-Ready** - Integration with your own AI provider (OpenAI, Anthropic, Grok, etc.) for conversational responses via Bring-Your-Own-Key
 * **WordPress Native** - Built as a standard WordPress plugin; no external platform required
 
-= Free Version Includes =
+= Included Features =
 
 * Create and manage unlimited FloscFlows — FLOSC chatbots served across unlimited domains
 * Unlimited visitors and sessions

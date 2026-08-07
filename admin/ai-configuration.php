@@ -521,7 +521,7 @@ jQuery(document).ready(function($) {
         var $btn = $(this);
         var $loading = $('#test-loading');
         var $results = $('#test-results');
-        var $status = $('#test-status');
+        var $flosc_status = $('#test-status');
         var $details = $('#test-details');
 
         $btn.prop('disabled', true);
@@ -541,17 +541,17 @@ jQuery(document).ready(function($) {
                 $results.show();
                 
                 if (response.success) {
-                    $status.html('<span class="flosc-pass-status flosc-pass-status--pass">✓ Connection Successful!</span>');
+                    $flosc_status.html('<span class="flosc-pass-status flosc-pass-status--pass">✓ Connection Successful!</span>');
                     $details.text('Provider: ' + response.data.provider + '\nResponse: ' + response.data.response);
                 } else {
-                    $status.html('<span class="flosc-pass-status flosc-pass-status--fail">✗ Connection Failed</span>');
+                    $flosc_status.html('<span class="flosc-pass-status flosc-pass-status--fail">✗ Connection Failed</span>');
                     $details.text(response.data.message || 'Unknown error');
                 }
             },
             error: function() {
                 $loading.hide();
                 $results.show();
-                $status.html('<span class="flosc-pass-status flosc-pass-status--fail">✗ Request Failed</span>');
+                $flosc_status.html('<span class="flosc-pass-status flosc-pass-status--fail">✗ Request Failed</span>');
                 $details.text('Could not reach the server. Please try again.');
             },
             complete: function() {

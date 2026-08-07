@@ -217,7 +217,7 @@ if ( $flosc_is_companion_embed ) {
 
         <!-- User Profile Bar — one component, 3 states: visitor | guest | member -->
         <?php
-        $current_user = is_user_logged_in() ? wp_get_current_user() : null;
+        $flosc_user = is_user_logged_in() ? wp_get_current_user() : null;
         $flosc_profile_bar = get_option('flosc_profile_bar', []);
         $flosc_pb_visitor = wp_parse_args($flosc_profile_bar['visitor'] ?? [], [
             'name'  => 'Visitor',
@@ -310,8 +310,8 @@ if ( $flosc_is_companion_embed ) {
                 ['label' => 'Take Quiz', 'action' => 'open_quiz'],
             ];
         }
-        $flosc_profile_url = ($current_user && function_exists('bp_core_get_user_domain'))
-            ? bp_core_get_user_domain($current_user->ID)
+        $flosc_profile_url = ($flosc_user && function_exists('bp_core_get_user_domain'))
+            ? bp_core_get_user_domain($flosc_user->ID)
             : admin_url('profile.php');
         ?>
         <div class="user-profile-bar" id="flosc_user_profile_bar"
@@ -1089,8 +1089,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                     if (!$active) {
                         continue;
                     }
-                    $type = strtolower((string) ($o['type'] ?? 'one_time'));
-                    if ($type === 'subscription' || !empty($o['subscription']['plans'])) {
+                    $flosc_type = strtolower((string) ($o['type'] ?? 'one_time'));
+                    if ($flosc_type === 'subscription' || !empty($o['subscription']['plans'])) {
                         return 'subscription';
                     }
                 }
@@ -1125,7 +1125,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'companionStateStorage' => $flosc_companion_state_storage,
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'logoutNonce' => wp_create_nonce('flosc_logout'),
-            'profileUrl' => ($current_user && function_exists('bp_core_get_user_domain')) ? bp_core_get_user_domain($current_user->ID) : admin_url('profile.php'),
+            'profileUrl' => ($flosc_user && function_exists('bp_core_get_user_domain')) ? bp_core_get_user_domain($flosc_user->ID) : admin_url('profile.php'),
             'dashboardUrl' => admin_url(),
             'loginUrl' => wp_login_url($flosc_app_url),
             'logoutUrl' => wp_logout_url(
@@ -1137,11 +1137,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'checkoutUrl' => home_url('/checkout/'),
             // Per-flow Lessons tab only — never fall back to global flosc_lessons_category.
             'lessonsCategory' => (function () use ($flosc_current_flow, $flow_settings) {
-                $cat = trim((string) ($flow_settings['lessons_category'] ?? ''));
-                if ($cat === '' && is_array($flosc_current_flow)) {
-                    $cat = trim((string) ($flosc_current_flow['lessons_category'] ?? ''));
+                $flosc_cat = trim((string) ($flow_settings['lessons_category'] ?? ''));
+                if ($flosc_cat === '' && is_array($flosc_current_flow)) {
+                    $flosc_cat = trim((string) ($flosc_current_flow['lessons_category'] ?? ''));
                 }
-                return $cat;
+                return $flosc_cat;
             })(),
             // Authoritative: flosc_flows / flosc_flow_* Lessons configuration.
             'servesLessons' => (function () use ($flosc_current_flow) {
@@ -1231,9 +1231,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 $out    = [];
                 $panel_map = ['visitor' => 'intro', 'guest' => 'prompt', 'member' => 'prompt'];
                 $phase_map = ['visitor' => 'freeline', 'guest' => 'offer', 'member' => 'content'];
-                foreach ($states as $s) {
-                    foreach (($raw[$s] ?? []) as $i => $p) {
-                        $name = 'for_' . $s . 's_' . $i;
+                foreach ($states as $flosc_s) {
+                    foreach (($raw[$flosc_s] ?? []) as $i => $p) {
+                        $flosc_name = 'for_' . $flosc_s . 's_' . $i;
                         // v8.0.0: If pill has an Action but no explicit trigger_type,
                         // route it as 'action' type so the JS click handler calls
                         // performIVRAction() instead of sending text to AI.
@@ -1241,16 +1241,16 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                         $explicit_trigger = $p['trigger_type'] ?? '';
                         $trigger_type  = $explicit_trigger ?: ($action ? 'action' : 'ai');
                         $trigger_value = $p['trigger_value'] ?? ($action ?: '');
-                        $out[$name] = [
-                            'name'          => $name,
+                        $out[$flosc_name] = [
+                            'name'          => $flosc_name,
                             'type'          => 'suggested_user_autoprompt',
                             'icon'          => $p['icon']          ?? '',
                             'user_input'    => $p['user_input']    ?? ($p['label'] ?? ''),
                             '_pill_label'   => $p['user_input']    ?? ($p['label'] ?? ''),
-                            'conditions'    => $p['conditions']    ?? ('is_' . $s),
+                            'conditions'    => $p['conditions']    ?? ('is_' . $flosc_s),
                             'message_style' => $p['style']         ?? 'pill',
-                            'panel'         => $panel_map[$s],
-                            'phase'         => $phase_map[$s],
+                            'panel'         => $panel_map[$flosc_s],
+                            'phase'         => $phase_map[$flosc_s],
                             'action'        => $action,
                             '_trigger_type' => $trigger_type,
                             '_trigger_value'=> $trigger_value,

@@ -652,15 +652,24 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
      * Create a PayPal order (called from REST endpoint)
      * v5.0.7: Retries once on 401 (stale token), logs all steps
      */
-    public function create_order($user, $amount_dollars, $currency, $offer_id) {
+    public function create_order($user, $amount_dollars, $currency, $offer_id, $purchase_uuid = '') {
         $token = $this->get_access_token();
         if (is_wp_error($token)) return $token;
 
         $amount = number_format(floatval($amount_dollars), 2, '.', '');
         $currency = strtoupper($currency);
+        $purchase_uuid = sanitize_text_field((string) $purchase_uuid);
+        // Industry standard: custom_id is the server purchase intent UUID when present.
+        // Fall back to JSON bind for older clients (still includes offer_id).
+        $custom_id = $purchase_uuid !== ''
+            ? substr($purchase_uuid, 0, 127)
+            : wp_json_encode([
+                'user_id'  => $user->ID ?? 0,
+                'offer_id' => $offer_id,
+            ]);
 
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-            flosc_log('[FLOSC-PAYPAL] create_order: user=' . ($user->ID ?? 0) . ', amount=' . $amount . ' ' . $currency . ', offer=' . $offer_id);
+            flosc_log('[FLOSC-PAYPAL] create_order: user=' . ($user->ID ?? 0) . ', amount=' . $amount . ' ' . $currency . ', offer=' . $offer_id . ', intent=' . ($purchase_uuid ?: 'legacy'));
         }
 
         $order_body = [
@@ -668,10 +677,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
             'purchase_units' => [[
                 'reference_id' => $offer_id,
                 'description' => 'FLOSC Purchase - ' . $offer_id,
-                'custom_id' => wp_json_encode([
-                    'user_id' => $user->ID ?? 0,
-                    'offer_id' => $offer_id,
-                ]),
+                'custom_id' => $custom_id,
                 'amount' => [
                     'currency_code' => $currency,
                     'value' => $amount,
@@ -845,6 +851,7 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
         if ($order_status !== 'COMPLETED') {
             return new WP_Error(
                 'payment_not_completed',
+                /* translators: %s: PayPal order status string. */
                 sprintf(__('PayPal order status is not COMPLETED (%s)', 'flosc'), $order_status !== '' ? $order_status : 'empty'),
                 ['status' => 400]
             );
@@ -852,22 +859,40 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
         if ($capture_status !== 'COMPLETED') {
             return new WP_Error(
                 'payment_not_completed',
+                /* translators: %s: PayPal capture status string. */
                 sprintf(__('PayPal capture status is not COMPLETED (%s)', 'flosc'), $capture_status !== '' ? $capture_status : 'empty'),
                 ['status' => 400]
             );
         }
 
-        // Pass 8: custom_id is JSON from PayPal; sanitize fields after decode.
-        $custom_raw = (string) ($capture['custom_id'] ?? ($body['purchase_units'][0]['custom_id'] ?? '{}'));
-        $custom_id = [];
-        if ($custom_raw !== '' && strlen($custom_raw) <= 4096) {
+        // custom_id: server purchase_uuid (preferred) or legacy JSON {user_id, offer_id}.
+        $custom_raw = sanitize_text_field((string) ($capture['custom_id'] ?? ($body['purchase_units'][0]['custom_id'] ?? '')));
+        $custom_user_id  = 0;
+        $custom_offer_id = '';
+        $purchase_uuid   = '';
+
+        if ($custom_raw !== '' && isset($custom_raw[0]) && $custom_raw[0] === '{') {
             $decoded_custom = json_decode($custom_raw, true, 8);
             if (JSON_ERROR_NONE === json_last_error() && is_array($decoded_custom)) {
-                $custom_id = $decoded_custom;
+                $custom_user_id  = isset($decoded_custom['user_id']) ? absint($decoded_custom['user_id']) : 0;
+                $custom_offer_id = sanitize_text_field((string) ($decoded_custom['offer_id'] ?? ''));
+                $purchase_uuid   = sanitize_text_field((string) ($decoded_custom['purchase_uuid'] ?? ''));
+            }
+        } elseif ($custom_raw !== '') {
+            $purchase_uuid = $custom_raw;
+        }
+
+        if ($purchase_uuid !== '' && function_exists('flosc_paypal_purchase_intent_get')) {
+            $intent = flosc_paypal_purchase_intent_get($purchase_uuid);
+            if (is_array($intent)) {
+                if ($custom_offer_id === '' && !empty($intent['offer_id'])) {
+                    $custom_offer_id = sanitize_text_field((string) $intent['offer_id']);
+                }
+                if ($custom_user_id <= 0 && !empty($intent['user_id'])) {
+                    $custom_user_id = absint($intent['user_id']);
+                }
             }
         }
-        $custom_user_id = isset($custom_id['user_id']) ? absint($custom_id['user_id']) : 0;
-        $custom_offer_id = sanitize_text_field((string) ($custom_id['offer_id'] ?? ''));
 
         $payer = is_array($body['payer'] ?? null) ? $body['payer'] : [];
         $payment_source_paypal = is_array($body['payment_source']['paypal'] ?? null) ? $body['payment_source']['paypal'] : [];
@@ -886,16 +911,17 @@ class FLOSC_PayPal_Provider extends FLOSC_Payment_Provider {
         }
 
         return [
-            'success' => true,
-            'order_id' => sanitize_text_field((string) ($body['id'] ?? '')),
-            'status' => 'completed',
-            'transaction_id' => $txn_id,
-            'amount' => sanitize_text_field((string) ($capture['amount']['value'] ?? '0.00')),
-            'currency' => sanitize_text_field((string) ($capture['amount']['currency_code'] ?? 'USD')),
-            'user_id' => $custom_user_id > 0 ? $custom_user_id : null,
-            'offer_id' => $custom_offer_id !== '' ? $custom_offer_id : null,
-            'payer_email' => $payer_email,
-            'payer_name' => $payer_name,
+            'success'         => true,
+            'order_id'        => sanitize_text_field((string) ($body['id'] ?? '')),
+            'status'          => 'completed',
+            'transaction_id'  => $txn_id,
+            'amount'          => sanitize_text_field((string) ($capture['amount']['value'] ?? '0.00')),
+            'currency'        => sanitize_text_field((string) ($capture['amount']['currency_code'] ?? 'USD')),
+            'user_id'         => $custom_user_id > 0 ? $custom_user_id : null,
+            'offer_id'        => $custom_offer_id !== '' ? $custom_offer_id : null,
+            'purchase_uuid'   => $purchase_uuid !== '' ? $purchase_uuid : null,
+            'payer_email'     => $payer_email,
+            'payer_name'      => $payer_name,
         ];
     }
 

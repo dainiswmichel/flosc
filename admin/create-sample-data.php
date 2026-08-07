@@ -27,16 +27,16 @@ if (!defined('ABSPATH')) {
  * Create flosc_sample_data category if it doesn't exist
  */
 function flosc_create_sample_category() {
-    $cat = get_category_by_slug('flosc_sample_data');
+    $flosc_cat = get_category_by_slug('flosc_sample_data');
     
-    if (!$cat) {
+    if (!$flosc_cat) {
         $cat_id = wp_create_category('flosc_sample_data');
         WP_CLI::success("Created category 'flosc_sample_data' (ID: {$cat_id})");
         return $cat_id;
     }
     
-    WP_CLI::line("Category 'flosc_sample_data' already exists (ID: {$cat->term_id})");
-    return $cat->term_id;
+    WP_CLI::line("Category 'flosc_sample_data' already exists (ID: {$flosc_cat->term_id})");
+    return $flosc_cat->term_id;
 }
 
 /**

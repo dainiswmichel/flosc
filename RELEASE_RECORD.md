@@ -1,25 +1,27 @@
-# FLOSC 8.0.0 — authoritative package freeze
+# FLOSC 8.0.0 — package freeze
 
 | Field | Value |
 |-------|--------|
 | **Version** | 8.0.0 |
-| **Git commit** | `4f959cdc0e2551baf81f63921af3a42a2e8033d9` |
-| **ZIP (operator path)** | `mvp_sprint/flosc_8_0_0/zip-files/flosc.zip` |
+| **ZIP** | `mvp_sprint/flosc_8_0_0/zip-files/flosc.zip` |
 | **Build** | `flosc/build-dist-zip.sh` only |
-| **SHA-256** | `50999f2da6cba73b1cecf985ad0d3cbffbe32259e6f5e89ecf5d5f3d21d7f89f` |
-| **Entries** | 224 |
-| **PHP** | 128 files, `php -l` clean |
-| **Frozen** | 2026-08-06 |
+| **SHA-256** | `cb4d47bbb64b2fa1faff6cf3fbe1183ac0172b166383c3792a49baf9bbcca2a3` |
+| **Frozen** | 2026-08-07 |
 
-## Payment gates included in this freeze
+## Included in this freeze
 
-- PAY-01: no grant without settled payment (`is_payment_settled`, free path only for free offers)
-- PAY-02: `claim_transaction_fulfillment` binds provider+txn → user+offer
-- Stripe: metadata offer bind; complete + webhook via `fulfill_settled_purchase`
-- PayPal: capture/subscription fulfill with bound offer
-- ClickBank: `pay.clickbank.net/?cbitems=`, INS v8 decrypt, redirect not settled
-- No plaintext password in purchase/profile welcome emails
+### WPORG-01
+- Removed seeded `$197` “FLOSC Plugin – Full Access” offer and `flosc_plugin*` product maps
+- readme: **Included Features**
+
+### PayPal (industry standard purchase intent)
+- **Subscriptions:** `POST /paypal/prepare-subscription` → intent UUID in PayPal `custom_id` → activate requires ACTIVE + plan/offer/amount from intent
+- **One-time orders:** create_order mints intent, `custom_id` = purchase_uuid; capture resolves offer/amount from intent
+- Fail-closed buyer email when logged in; claim via `fulfill_settled_purchase`
+
+### Also
+- ClickBank: SHA-1 IPN only; mandatory vendor + product item
+- Token/affiliate: atomic debit under row lock
 
 ## Rule
-
-Any source change after this record requires a **new** ZIP, a **new** SHA, and a full re-audit. Do not upload superseded SHAs (including `3dcb3742…`).
+Any code change requires a new zip, new SHA, and re-freeze. Do not upload superseded SHAs.
