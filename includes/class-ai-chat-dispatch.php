@@ -119,36 +119,11 @@ class FLOSC_AI_Chat_Dispatch {
         if ( is_user_logged_in() && class_exists( 'FLOSC_Sample_Assessment_Quiz' ) ) {
             $user_id     = get_current_user_id();
             $raw_answers = get_user_meta( $user_id, '_flosc_quiz_answers_sample_assessment_quiz', true );
-            // Legacy answer meta keys from pre-rename quiz IDs.
-            if ( empty( $raw_answers ) ) {
-                foreach ( array(
-                    '_flosc_quiz_answers_pronunciation_assessment_quiz',
-                    '_flosc_quiz_answers_lesaep_text_based_pronunciation_quiz',
-                    '_flosc_quiz_answers_lesaep_pronunciation',
-                ) as $legacy_meta ) {
-                    $try = get_user_meta( $user_id, $legacy_meta, true );
-                    if ( ! empty( $try ) ) {
-                        $raw_answers = $try;
-                        break;
-                    }
-                }
-            }
             if ( ! empty( $raw_answers ) ) {
                 $quiz    = new FLOSC_Sample_Assessment_Quiz();
-                $content = '';
-                if ( function_exists( 'flosc_get_setting' ) ) {
-                    foreach ( array(
-                        'quiz_content_sample_assessment_quiz',
-                        'quiz_content_pronunciation_assessment_quiz',
-                        'quiz_content_lesaep_text_based_pronunciation_quiz',
-                    ) as $ck ) {
-                        $try = flosc_get_setting( $ck, '' );
-                        if ( is_string( $try ) && $try !== '' ) {
-                            $content = $try;
-                            break;
-                        }
-                    }
-                }
+                $content = function_exists( 'flosc_get_setting' )
+                    ? flosc_get_setting( 'quiz_content_sample_assessment_quiz', '' )
+                    : '';
                 $result  = $quiz->analyze( $raw_answers, $content, array( 'user_id' => $user_id ) );
 
                 $score  = (int) ( $result['score'] ?? 0 );

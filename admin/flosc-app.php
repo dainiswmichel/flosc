@@ -1310,7 +1310,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                     if ($qid === '') {
                         continue;
                     }
-                    // Resolve legacy rename IDs so the client never asks for a gone quiz.
                     if (class_exists('FLOSC_Quiz_Registry')) {
                         $qid = FLOSC_Quiz_Registry::resolve_id($qid);
                     }

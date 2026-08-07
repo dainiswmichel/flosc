@@ -4437,7 +4437,7 @@ Example good response:
             $quiz_id = $enabled_quizzes[$quiz_index];
         }
         
-        // Get the quiz type handler (resolves legacy renamed IDs).
+        // Get the quiz type handler (id must match a registered quiz).
         $quiz_type = FLOSC_Quiz_Registry::get_quiz($quiz_id);
         $resolved_id = $quiz_type ? $quiz_type->get_id() : FLOSC_Quiz_Registry::resolve_id($quiz_id);
         
@@ -4500,21 +4500,10 @@ Example good response:
             if (method_exists($quiz_type, 'parse_content_to_questions')
                 && method_exists($quiz_type, 'get_default_questions')) {
                 $questions = [];
+                // Content key for this quiz id only: quiz_content_{id}
                 $saved_content = $content;
-                // Also try legacy content keys if resolved content empty (pre-migration flows).
-                if ($saved_content === '' || $saved_content === null) {
-                    foreach ([
-                        'quiz_content_sample_assessment_quiz',
-                        'quiz_content_pronunciation_assessment_quiz',
-                        'quiz_content_lesaep_text_based_pronunciation_quiz',
-                        'quiz_content_lesaep_pronunciation',
-                    ] as $legacy_key) {
-                        $try = flosc_get_setting($legacy_key, '');
-                        if (is_string($try) && $try !== '') {
-                            $saved_content = $try;
-                            break;
-                        }
-                    }
+                if (($saved_content === '' || $saved_content === null) && $resolved_id !== '') {
+                    $saved_content = flosc_get_setting('quiz_content_' . $resolved_id, '');
                 }
                 if (is_string($saved_content) && $saved_content !== '') {
                     $questions = $quiz_type->parse_content_to_questions($saved_content);

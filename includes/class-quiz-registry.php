@@ -9,7 +9,9 @@
  * @version 4.0.7
  */
 
-if ( ! defined( 'ABSPATH' ) ) exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
 
 require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/abstract-quiz-type.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/class-flosc-sample-assessment-quiz.php';
@@ -17,86 +19,70 @@ require_once FLOSC_PLUGIN_DIR . 'includes/quiz-types/class-flosc-sample-text-bas
 
 class FLOSC_Quiz_Registry {
 
-    /** @var FLOSC_Abstract_Quiz_Type[]|null */
-    private static $quizzes = null;
+	/** @var FLOSC_Abstract_Quiz_Type[]|null */
+	private static $quizzes = null;
 
-    private static function init() {
-        if ( self::$quizzes !== null ) return;
-        self::$quizzes = [
-            'sample_assessment_quiz'               => new FLOSC_Sample_Assessment_Quiz(),
-            'flosc_sample_data_numbers_quiz'        => new FLOSC_Sample_Text_Based_Quiz(),
-        ];
-    }
+	private static function init() {
+		if ( self::$quizzes !== null ) {
+			return;
+		}
+		self::$quizzes = array(
+			'sample_assessment_quiz'        => new FLOSC_Sample_Assessment_Quiz(),
+			'flosc_sample_data_numbers_quiz' => new FLOSC_Sample_Text_Based_Quiz(),
+		);
+	}
 
-    /**
-     * Resolve renamed/legacy quiz IDs to a registered ship ID.
-     *
-     * Live flows may still store pre-rename IDs (pronunciation / lesaep names).
-     * Map them to sample_assessment_quiz so registry lookups never return null
-     * after the subject-neutral rename. Ship code does not register dual classes.
-     *
-     * @param string $quiz_id
-     * @return string
-     */
-    private static function resolve_quiz_id( $quiz_id ) {
-        $quiz_id = sanitize_key( (string) $quiz_id );
-        if ( $quiz_id === '' ) {
-            return $quiz_id;
-        }
+	/**
+	 * Normalize a quiz id for lookup (sanitize only — no rename table).
+	 *
+	 * @param string $quiz_id
+	 * @return string
+	 */
+	private static function normalize_quiz_id( $quiz_id ) {
+		return sanitize_key( (string) $quiz_id );
+	}
 
-        static $legacy = array(
-            'pronunciation_assessment_quiz'              => 'sample_assessment_quiz',
-            'pronunciation_assessment'                   => 'sample_assessment_quiz',
-            'lesaep_pronunciation'                       => 'sample_assessment_quiz',
-            'lesaep_pronunciation_quiz'                  => 'sample_assessment_quiz',
-            'lesaep_text_based_pronunciation_quiz'       => 'sample_assessment_quiz',
-            'flosc_pronunciation_assessment_quiz'        => 'sample_assessment_quiz',
-        );
+	/**
+	 * Public helper: same normalize as get_quiz / quiz_exists.
+	 *
+	 * @param string $quiz_id
+	 * @return string
+	 */
+	public static function resolve_id( $quiz_id ) {
+		return self::normalize_quiz_id( $quiz_id );
+	}
 
-        return $legacy[ $quiz_id ] ?? $quiz_id;
-    }
+	/**
+	 * Get a quiz by its ID.
+	 *
+	 * @param  string $quiz_id
+	 * @return FLOSC_Abstract_Quiz_Type|null  Null if the ID is not registered.
+	 */
+	public static function get_quiz( $quiz_id ) {
+		self::init();
+		$quiz_id = self::normalize_quiz_id( $quiz_id );
+		return self::$quizzes[ $quiz_id ] ?? null;
+	}
 
-    /**
-     * Public helper for config/JS export (same rename map as get_quiz).
-     *
-     * @param string $quiz_id
-     * @return string
-     */
-    public static function resolve_id( $quiz_id ) {
-        return self::resolve_quiz_id( $quiz_id );
-    }
+	/**
+	 * Return all registered quizzes as [ quiz_id => quiz_instance ].
+	 *
+	 * @return FLOSC_Abstract_Quiz_Type[]
+	 */
+	public static function get_all_quizzes() {
+		self::init();
+		return self::$quizzes;
+	}
 
-    /**
-     * Get a quiz by its ID.
-     *
-     * @param  string $quiz_id
-     * @return FLOSC_Abstract_Quiz_Type|null  Null if the ID is not registered.
-     */
-    public static function get_quiz( $quiz_id ) {
-        self::init();
-        $quiz_id = self::resolve_quiz_id( $quiz_id );
-        return self::$quizzes[ $quiz_id ] ?? null;
-    }
-
-    /**
-     * Return all registered quizzes as [ quiz_id => quiz_instance ].
-     *
-     * @return FLOSC_Abstract_Quiz_Type[]
-     */
-    public static function get_all_quizzes() {
-        self::init();
-        return self::$quizzes;
-    }
-
-    /**
-     * Check whether a quiz with the given ID is registered.
-     *
-     * @param  string $quiz_id
-     * @return bool
-     */
-    public static function quiz_exists( $quiz_id ) {
-        self::init();
-        $quiz_id = self::resolve_quiz_id( $quiz_id );
-        return isset( self::$quizzes[ $quiz_id ] );
-    }
+	/**
+	 * Check whether a quiz with the given ID is registered.
+	 *
+	 * @param  string $quiz_id
+	 * @return bool
+	 */
+	public static function quiz_exists( $quiz_id ) {
+		self::init();
+		$quiz_id = self::normalize_quiz_id( $quiz_id );
+		return isset( self::$quizzes[ $quiz_id ] );
+	}
 }
