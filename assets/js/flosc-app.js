@@ -4873,10 +4873,18 @@ class floscApp {
 
         this.log('[FLOSC Quiz] Starting in-chat quiz:', quizId);
 
-        // Flow-configured IPA audio quiz only — never invent pronunciation IDs when unset
+        // Flow-configured IPA audio quiz only — never invent an audio ID when unset.
+        // IVR often uses open_quiz:{defaultAudioQuizId}; also accept 'default' when only
+        // the audio quiz is the intended assessment (defaultAudio set, optional text bank).
         const defaultAudioQuizId = String(this.config.defaultAudioQuizId || '').trim();
-        const audioQuizIds = new Set([defaultAudioQuizId].filter((id) => id !== ''));
-        if (quizId && audioQuizIds.has(quizId)) {
+        const ipaConfigured = defaultAudioQuizId !== '' && String(this.config.ipaApiBaseUrl || '').trim() !== '';
+        const wantsIpa =
+            ipaConfigured &&
+            quizId &&
+            (quizId === defaultAudioQuizId ||
+                quizId === 'default' ||
+                /ipa_audio|audio_quiz/i.test(String(quizId)));
+        if (wantsIpa) {
             this.showQuizConsentGate();
             return;
         }
