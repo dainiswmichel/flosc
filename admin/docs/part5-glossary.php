@@ -178,14 +178,14 @@
 
 <h2 id="glossary-l">L</h2>
 
-<h3 id="term-product-example">the product</h3>
+<h3 id="term-product-example">Worked example (pronunciation)</h3>
 <p>Latvian-born Standard American English Pronunciation. The native quiz type for FLOSC. Assesses 10 core American English pronunciation challenges — short-a vowel, rhotic R, voiceless TH, voiced TH, short-i/long-e distinction, schwa, flap-T, word stress, connected speech, and dark L — using a text-based sequence format. The quiz result maps each missed item to a topic slug for lesson recommendation.</p>
 
 <h3 id="term-lesson">Lesson</h3>
 <p>A WordPress post (standard <code>post</code> type) assigned to a FLOSC-configured lesson category. Lessons are the primary content delivered to members. The post title, content, and tags are indexed by FLOSC for search and recommendation. Lessons are delivered via AI tool calls, not via direct links — the AI delivers the lesson text inline in the conversation.</p>
 
 <h3 id="term-lesson-number">Lesson Number</h3>
-<p>A numeric post meta field (<code>_flosc_lesson_number</code>) that maps a WordPress post to a quiz item. Lesson 1 maps to quiz item 1. The the product quiz returns incorrect item numbers; FLOSC looks up the corresponding lesson by number. This field is set when sample data is created, or manually by the admin.</p>
+<p>A numeric post meta field (<code>_flosc_lesson_number</code>) that maps a WordPress post to a quiz item. Lesson 1 maps to quiz item 1. The pronunciation quiz returns incorrect item numbers; FLOSC looks up the corresponding lesson by number. This field is set when sample data is created, or manually by the admin.</p>
 
 <h3 id="term-login-token">Login Token</h3>
 <p>A one-time URL token that authenticates a user without a password, used for cross-domain login scenarios. Generated server-side, stored as a transient with a short TTL, consumed on first use. Handled by <code>handle_login_token()</code>.</p>

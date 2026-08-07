@@ -83,11 +83,11 @@
 
 <h3 id="why-not-native-app">Why Not a Native App?</h3>
 
-<p>A native app would get better microphone access and push notifications, but it would also mean App Store review, separate iOS and Android codebases, device-specific bugs, and a deployment pipeline divorced from the admin's existing site. Web-first means the product ships the same way a blog post does. The companion widget embeds in any iframe; the interface adapts to mobile through responsive CSS.</p>
+<p>A native app would get better microphone access and push notifications, but it would also mean App Store review, separate iOS and Android codebases, device-specific bugs, and a deployment pipeline divorced from the admin's existing site. Web-first means the framework ships the same way a blog post does. The companion widget embeds in any iframe; the interface adapts to mobile through responsive CSS.</p>
 
 <h3 id="why-not-saas">Why Not SaaS From Day One?</h3>
 
-<p>Multi-tenant SaaS — its own database, billing, and user management — was considered and set aside for the first version. The plan was to build the product, prove it on a real deployment, then generalize. The multi-flow architecture (v1.2.2) is the path toward multi-tenancy, but delivered inside WordPress, where the admin already has hosting, a domain, and a user table. No new infrastructure to stand up.</p>
+<p>Multi-tenant SaaS — its own database, billing, and user management — was considered and set aside for the first version. The plan was to build a first flow, prove it on a real deployment, then generalize. The multi-flow architecture (v1.2.2) is the path toward multi-tenancy, but delivered inside WordPress, where the admin already has hosting, a domain, and a user table. No new infrastructure to stand up.</p>
 
 <h3 id="why-wordpress">Why WordPress</h3>
 
@@ -115,7 +115,7 @@
 <p>A static HTML quiz — questions in JavaScript arrays, scoring client-side, results shown inline. No server, no AI, no WordPress. It proved the assessment concept worked.</p>
 
 <h3 id="era-chat-interface">Era 2: The Chat Interface (v0.4–v1.0)</h3>
-<p>A conversation replaced the static results page. Instead of showing a score, the product explained what it meant — in dialogue. WordPress involvement was still minimal; the chat was embedded as a shortcode.</p>
+<p>A conversation replaced the static results page. Instead of showing a score, the chat explained what it meant — in dialogue. WordPress involvement was still minimal; the chat was embedded as a shortcode.</p>
 
 <h3 id="era-ivr-system">Era 3: The IVR System (v1.1–v1.4)</h3>
 <p>The IVR parser gave admins control over what the assistant says. Rather than hardcoding responses, the admin writes a Markdown file of message conditions that the parser evaluates at runtime. This separated "what the assistant says" from "how the system works," a split that persists through every later version.</p>

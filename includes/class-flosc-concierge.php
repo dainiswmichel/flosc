@@ -554,7 +554,7 @@ class FLOSC_Concierge {
 		// OpenClaw fallback: resolve the flow for any field left blank in the meta box.
 		// Tried in order of how a person would name it:
 		//   1. an explicit .md filename in floscFlow/Flow/FlowName ("… (flow_ivr.md)")
-		//   2. the flow's NAME in floscFlow/Flow/FlowName ("Site Assistant", "the product")
+		//   2. the flow's NAME in floscFlow/Flow/FlowName (flow identity name)
 		//   3. the human-facing Deployment ("the WordPress host/chat", "flosc.ai")
 		if ( '' === $flow ) {
 			$flow = self::flow_file( $flow_hint );

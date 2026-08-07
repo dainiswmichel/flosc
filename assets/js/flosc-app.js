@@ -1046,7 +1046,7 @@ class floscApp {
 
     /**
      * Storage key scoped to the current flow so multi-tab / multi-flow
-     * (assistant vs the product vs flosc.ai) never share visitor history, offers, or quiz.
+     * Different flows never share visitor history, offers, or quiz state.
      * Auth token stays host-global (one login per origin).
      */
     flowStorageKey(base) {
@@ -2845,7 +2845,7 @@ class floscApp {
         const badgeUrl = this._getValidBadgeUrl();
         const badge = badgeUrl ? `<div class="flosc-welcome-badge-wrap"><img src="${badgeUrl}" alt="${productName}" class="flosc-welcome-badge"></div>` : '';
         // Flow-neutral welcome: no "badge" and no learning-specific framing (those
-        // fit the product, not every flow — and naming a badge made the AI invent a badge
+        // Badge labels are flow-specific — avoid hardcoding a product badge name.
         // slug). The frontend still inserts a real badge image below, but only when
         // this flow actually has one configured.
         const syntheticMessage = `[SYSTEM: Generate a brief, warm welcome greeting for a new visitor to ${productName}, in your own voice for this site. Vary it each time. Open with a friendly hello and what ${productName} helps with, then invite them to share what they're looking for. Two short sentences. Do NOT output any badge, image, placeholder, slug, or markup — only the greeting text.]`;
@@ -3688,7 +3688,7 @@ class floscApp {
      * Product identity (name, headline, price, badge, CTA, etc.) comes from the
      * Offers registry in WPDB → FLOSC_CONFIG.offers. Message/script rows may supply
      * offer_id and optional body copy, but must never clobber registry name with a
-     * message slug (e.g. title "flow_offer" instead of "the product Prelaunch Offer").
+     * message slug (e.g. title "flow_offer" instead of a long offer display name).
      */
     getOfferData(offerId) {
         const wantId = String(offerId || '').trim();
@@ -8679,7 +8679,7 @@ Purchased: ${ctx.purchased}
 
         // v3.0.4: Upgrade button → show offer (floscAdmin-configured)
         // v8.0.0: Use dynamic lookup — the offer ID comes from admin config,
-        // not hardcoded. the product uses 'flow_full_offer', other flows use their own IDs.
+        // Offer IDs come from flow config, not hardcode.
         const upgradeBtn = document.getElementById('flosc_upgrade_button');
         if (upgradeBtn) {
             const upgradeOfferId = this.getOfferIdForProduct();

@@ -8,7 +8,7 @@
 <ol>
   <li><strong>Abstract base</strong> (<code>abstract-quiz-type.php</code>) — defines the contract every quiz type must fulfill, plus shared scoring and lesson-lookup logic</li>
   <li><strong>Factory</strong> (<code>class-quiz-type-factory.php</code>) — discovers and instantiates quiz types</li>
-  <li><strong>Implementations</strong> — one PHP class per quiz format (the product, Multiple Choice, True/False, Numbers, Audio)</li>
+  <li><strong>Implementations</strong> — one PHP class per quiz format (Pronunciation Assessment, Multiple Choice, True/False, Numbers, Audio)</li>
 </ol>
 <p>The admin quiz tab exposes two UI zones: <strong>Active Quizzes</strong> (summary of what is live in the flow) and <strong>Quiz Deck</strong> (library of all quiz types with enable toggle and inline editor).</p>
 
@@ -127,7 +127,7 @@ Params: <code>user_id</code>, <code>quiz_id</code>, <code>score_data</code> (obj
 
 <h2 id="quiz-types">Quiz Type Implementations</h2>
 
-<h3 id="quiz-pronunciation">class-flosc-pronunciation-assessment-quiz.php — the product Pronunciation Assessment</h3>
+<h3 id="quiz-pronunciation">class-flosc-pronunciation-assessment-quiz.php — Pronunciation Assessment</h3>
 <p>10-question multiple-choice accent assessment for Standard American English. Each question maps to a specific sound lesson. Designed so typical non-native speakers score 40–70%, creating a natural moment for lesson recommendations.</p>
 
 <h4 id="quiz-pronunciation-format">Question Format</h4>
@@ -205,7 +205,7 @@ TOPIC: short-a-vowel</code></pre>
 <h3 id="quiz-admin-demo-library">Demo Quiz Sets</h3>
 <p>Collapsible section (open by default) with ready-made question sets. Each demo has a "Load →" button that fills the corresponding quiz's editor textarea and opens the editor panel. Available demos:</p>
 <ul>
-  <li><strong>the product Pronunciation:</strong> Minimal Pairs Discrimination, American Vowel Sounds, Connected Speech &amp; Rhythm</li>
+  <li><strong>Pronunciation assessment:</strong> Minimal Pairs Discrimination, American Vowel Sounds, Connected Speech &amp; Rhythm</li>
   <li><strong>Multiple Choice:</strong> American Idioms, Business English Communication</li>
   <li><strong>True/False:</strong> Pronunciation Myths vs Facts, Grammar Confidence Check</li>
   <li><strong>1-10 Numbers:</strong> Classic 1–10 Sequence, Primary Color Names, Days of the Week</li>

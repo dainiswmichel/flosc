@@ -101,7 +101,7 @@ class FLOSC_Token_Ledger {
             return false;
         }
 
-        // Per-flow membership only — the product role must not block guest tokens on flosc.ai.
+        // Per-flow membership only — membership on one flow must not block guest tokens on another.
         if ($this->flosc->sale() && method_exists($this->flosc->sale(), 'access')) {
             if ($this->flosc->sale()->access()->is_member($user_id, $flow_id)) {
                 return false;

@@ -3,7 +3,7 @@
  * FLOSC Session Manager
  * Handles chat session storage and retrieval — scoped per flow.
  *
- * Real-world: a guest on assistant must not see other-flow chats (and vice versa).
+ * Real-world: a guest on one flow must not see another flow's chats.
  * Sessions live in user meta `_flosc_sessions` with an optional `flow_id` stem.
  */
 

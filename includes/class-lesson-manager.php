@@ -63,7 +63,7 @@ class FLOSC_Lesson_Manager {
      * Get all lessons from ALL configured categories (lesson_groups + lessons_category).
      *
      * v3.0.8: Queries every category across all lesson_groups in the current flow so
-     * "show all lessons" returns the full library (e.g. the product 65 + FLOSC Sample 10 = 75).
+     * "show all lessons" returns the full library across enabled lesson groups.
      * Falls back to single lessons_category for flows without lesson_groups.
      */
     public function get_all_lessons() {

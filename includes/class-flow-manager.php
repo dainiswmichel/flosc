@@ -423,7 +423,7 @@ class FLOSC_Flow_Manager {
         }
         
         // Generic WordPress.org / fresh-install model: ONE active example flow
-        // with an IVR that ships in the package. Specialty products (the product,
+        // with an IVR that ships in the package. Specialty product flows (admin imports,
         // Solfeggio, assistant, etc.) are admin imports — not auto-activated.
         $ivr_file = 'flosc_default_technical_ivr.md';
         $shipped  = FLOSC_PLUGIN_DIR . 'ai_configuration_files/' . $ivr_file;
