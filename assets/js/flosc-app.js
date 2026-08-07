@@ -4794,21 +4794,12 @@ class floscApp {
     
     // v1.4.0: Detect product from current IVR flow
     detectProductFromFlow() {
-        const ivrFile = this.config.ivrFile || '';
-        const flowId = String(this.config.flowId || this.config.flow_id || '').toLowerCase();
-        
-        if (ivrFile.includes('simplified_solfeggio') || flowId.includes('simplified_solfeggio')) {
-            return 'simplified_solfeggio';
+        // Product = configured flow id (instance of FLOSC), not a brand substring.
+        const flowId = String(this.config.flowId || this.config.flow_id || '').trim();
+        if (flowId && flowId !== 'default' && flowId !== 'flosc' && flowId !== 'flosc_plugin') {
+            return flowId;
         }
-        // Product id from flow config when present; legacy IVR filename still recognized.
-        if (flowId && flowId !== 'default' && flowId !== 'flosc') {
-            if (flowId.includes('lesaep') || ivrFile.includes('lesaep')) {
-                return 'lesaep';
-            }
-        } else if (ivrFile.includes('lesaep')) {
-            return 'lesaep';
-        }
-        // Default/generic flows are not a paid "flosc_plugin" product (WPORG-01).
+        // Default/generic flows are not a paid product (WPORG-01).
         return '';
     }
     
@@ -7674,12 +7665,12 @@ class floscApp {
     // v3.0.8: Show the 10 sound topics covered by the quiz
     // Triggered by: "quiz lessons", "topics from the quiz", "quiz answer sheet"
     openQuizTopics() {
-        // Pronunciation topic sheet when this flow enables a pronunciation assessment quiz.
+        // Topic sheet when this flow enables a pronunciation assessment quiz (by quiz id).
         const enabledQuizzes = this.config.enabledQuizzes || this.config.enabled_quizzes || [];
         const quizIds = Array.isArray(enabledQuizzes) ? enabledQuizzes.map(String) : [];
         const isPronunciationQuiz = quizIds.some((id) =>
-            id.includes('pronunciation') || id.includes('lesaep') || id.includes('ipa')
-        ) || (this.config.ivrFile && this.config.ivrFile.includes('lesaep'));
+            id.includes('pronunciation') || id.includes('ipa') || id.includes('assessment')
+        );
 
         if (isPronunciationQuiz) {
             const quizProduct = String(this.config?.productName || this.config?.identity?.name || 'Pronunciation').trim();

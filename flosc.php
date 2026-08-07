@@ -1847,12 +1847,27 @@ The Team',
     public function maybe_regenerate_lesson_catalog($post_id, $post) {
         if (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) return;
         if ($post->post_status !== 'publish') return;
-        if (!has_category('lesaep', $post_id) && !has_category('LeSAEp', $post_id)) {
-            // Also check term slug variations
+        // Regenerate only when the post is in this flow's configured lessons category
+        // (instance content — not a hard-coded product brand).
+        $category = '';
+        if (function_exists('flosc_get_setting')) {
+            $category = sanitize_title((string) flosc_get_setting('lessons_category', ''));
+            if ($category === '') {
+                $category = sanitize_title((string) flosc_get_setting('free_lesson_pool_category', ''));
+            }
+        }
+        if ($category === '') {
+            return;
+        }
+        if (!has_category($category, $post_id)) {
             $terms = get_the_terms($post_id, 'category');
-            if (!$terms || is_wp_error($terms)) return;
+            if (!$terms || is_wp_error($terms)) {
+                return;
+            }
             $slugs = array_column($terms, 'slug');
-            if (!in_array('lesaep', $slugs, true)) return;
+            if (!in_array($category, $slugs, true)) {
+                return;
+            }
         }
         $this->generate_lesaep_lesson_catalog();
     }
@@ -1885,10 +1900,7 @@ The Team',
             if ('' === $catalog_dir) {
                 return; // Uploads unavailable — regenerate on a later request instead of writing elsewhere.
             }
-            $write_paths = [
-                $catalog_dir . 'lesson_catalog.md',
-                $catalog_dir . 'lesaep_lesson_catalog.md',
-            ];
+            $write_paths = [ $catalog_dir . 'lesson_catalog.md' ];
         }
 
         // Category: flow setting first, then legacy product slug so existing installs keep working.
@@ -1900,7 +1912,7 @@ The Team',
             }
         }
         if ($category === '') {
-            $category = 'lesaep';
+            return; // No lessons category configured for this flow — nothing to generate.
         }
 
         // Query all published posts in the lessons category

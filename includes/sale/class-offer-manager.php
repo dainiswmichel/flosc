@@ -14,10 +14,16 @@ if (!defined('ABSPATH')) exit;
 class FLOSC_Offer_Manager {
     
     private $option_key = 'flosc_offers';
-    private $offer_aliases = [
-        'lesaep_full' => 'pronunciation_full',
-        'pronunciation_full' => 'lesaep_full',
-    ];
+    /** @var array Offer id aliases (empty in core; instances may filter). */
+    private $offer_aliases = [];
+
+    /**
+     * @return array<string,string>
+     */
+    private function get_offer_aliases() {
+        $aliases = apply_filters('flosc_offer_aliases', $this->offer_aliases);
+        return is_array($aliases) ? $aliases : [];
+    }
     
     /**
      * Offer types
@@ -98,7 +104,8 @@ class FLOSC_Offer_Manager {
         if (isset($offers[$offer_id])) {
             return $offers[$offer_id];
         }
-        $alias = $this->offer_aliases[$offer_id] ?? null;
+        $aliases = $this->get_offer_aliases();
+        $alias   = $aliases[ $offer_id ] ?? null;
         return $alias && isset($offers[$alias]) ? $offers[$alias] : null;
     }
     
@@ -749,14 +756,18 @@ class FLOSC_Offer_Manager {
         if ($product_id === '' || $product_id === 'flosc_plugin') {
             return null;
         }
-        $product_offer_map = [
-            'simplified_solfeggio' => 'simplified_solfeggio_full',
-            'lesaep'               => flosc_get_setting('default_offer_id', 'pronunciation_full', 'lesaep'),
-        ];
-
-        $offer_id = $product_offer_map[$product_id] ?? null;
-
-        if ($offer_id) {
+        // Resolve from the named flow's default offer (instance config), not a brand map.
+        $offer_id = '';
+        if (function_exists('flosc_get_setting')) {
+            $offer_id = sanitize_key((string) flosc_get_setting('default_offer_id', '', $product_id));
+        }
+        if ($offer_id === '' && function_exists('flosc_flows')) {
+            $flow = flosc_flows()->get_flow($product_id);
+            if (is_array($flow) && !empty($flow['default_offer_id'])) {
+                $offer_id = sanitize_key((string) $flow['default_offer_id']);
+            }
+        }
+        if ($offer_id !== '') {
             return $this->get_offer($offer_id);
         }
 
@@ -764,59 +775,93 @@ class FLOSC_Offer_Manager {
     }
 
     /**
-     * Get member level for a site-owner content product.
+     * Get member level for a site-owner content product (flow default level).
      */
     public function get_member_level_for_product($product_id) {
         $product_id = sanitize_key((string) $product_id);
         if ($product_id === '' || $product_id === 'flosc_plugin') {
             return 'member';
         }
-        $product_level_map = [
-            'simplified_solfeggio' => 'simplified_solfeggio_member',
-            'lesaep'               => flosc_get_setting('default_member_level', 'pronunciation_learners', 'lesaep'),
-        ];
-
-        return $product_level_map[$product_id] ?? 'member';
+        $level = '';
+        if (function_exists('flosc_get_setting')) {
+            $level = sanitize_key((string) flosc_get_setting('default_member_level', '', $product_id));
+        }
+        return $level !== '' ? $level : 'member';
     }
 
     /**
-     * Product IDs for example content products (not the plugin itself).
+     * Product IDs = configured flow IDs (site instances of FLOSC), not brand seeds.
      */
     public function get_product_ids() {
-        return ['simplified_solfeggio', 'lesaep'];
+        $ids = [];
+        if (function_exists('flosc_flows') && method_exists(flosc_flows(), 'get_all_flows')) {
+            $flows = flosc_flows()->get_all_flows();
+            if (is_array($flows)) {
+                foreach ($flows as $flow) {
+                    if (!is_array($flow)) {
+                        continue;
+                    }
+                    $id = sanitize_key((string) ($flow['id'] ?? ''));
+                    if ($id !== '' && $id !== 'flosc_plugin') {
+                        $ids[] = $id;
+                    }
+                }
+            }
+        }
+        if (empty($ids)) {
+            $flows = get_option('flosc_flows', []);
+            if (is_array($flows)) {
+                foreach ($flows as $flow) {
+                    if (!is_array($flow)) {
+                        continue;
+                    }
+                    $id = sanitize_key((string) ($flow['id'] ?? ''));
+                    if ($id !== '' && $id !== 'flosc_plugin') {
+                        $ids[] = $id;
+                    }
+                }
+            }
+        }
+        return array_values(array_unique($ids));
     }
 
     /**
-     * Product metadata for example content products.
+     * Product metadata from a configured flow (instance), not hard-coded brands.
      */
     public function get_product_metadata($product_id) {
         $product_id = sanitize_key((string) $product_id);
         if ($product_id === '' || $product_id === 'flosc_plugin') {
             return null;
         }
-        $lesaep_flow     = function_exists('flosc_flows') ? flosc_flows()->get_flow('lesaep') : null;
-        $lesaep_identity = $lesaep_flow['identity'] ?? [];
-        $products        = [
-            'simplified_solfeggio' => [
-                'id'           => 'simplified_solfeggio',
-                'name'         => 'Simplified Solfeggio',
-                'tagline'      => 'The Michel Hand of Music - Sight-Singing Made Simple',
-                'icon'         => '🎵',
-                'ivr_file'     => 'simplified_solfeggio_ivr.md',
-                'member_level' => 'simplified_solfeggio_member',
-                'offer_id'     => 'simplified_solfeggio_full',
-            ],
-            'lesaep'               => [
-                'id'           => 'lesaep',
-                'name'         => $lesaep_identity['name'] ?? 'LeSAEp Pronunciation',
-                'tagline'      => $lesaep_identity['tagline'] ?? 'Learn Excellent Standard American English Pronunciation',
-                'icon'         => '🎤',
-                'ivr_file'     => 'lesaep_ivr.md',
-                'member_level' => flosc_get_setting('default_member_level', 'pronunciation_learners', 'lesaep'),
-                'offer_id'     => flosc_get_setting('default_offer_id', 'pronunciation_full', 'lesaep'),
-            ],
+        $flow = null;
+        if (function_exists('flosc_flows')) {
+            $flow = flosc_flows()->get_flow($product_id);
+        }
+        if (!is_array($flow)) {
+            $flows = get_option('flosc_flows', []);
+            if (is_array($flows)) {
+                foreach ($flows as $candidate) {
+                    if (is_array($candidate) && sanitize_key((string) ($candidate['id'] ?? '')) === $product_id) {
+                        $flow = $candidate;
+                        break;
+                    }
+                }
+            }
+        }
+        if (!is_array($flow)) {
+            return null;
+        }
+        $identity = is_array($flow['identity'] ?? null) ? $flow['identity'] : [];
+        return [
+            'id'           => $product_id,
+            'name'         => (string) ($identity['name'] ?? $flow['name'] ?? $product_id),
+            'tagline'      => (string) ($identity['tagline'] ?? $flow['tagline'] ?? ''),
+            'icon'         => (string) ($flow['icon'] ?? '📦'),
+            'ivr_file'     => (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? ''),
+            'member_level' => $this->get_member_level_for_product($product_id),
+            'offer_id'     => (string) (function_exists('flosc_get_setting')
+                ? flosc_get_setting('default_offer_id', '', $product_id)
+                : ''),
         ];
-
-        return $products[$product_id] ?? null;
     }
 }

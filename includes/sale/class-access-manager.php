@@ -158,58 +158,12 @@ class FLOSC_Access_Manager {
     }
 
     /**
-     * True when this flow stem is a LeSAEp surface (only place LeSAEp roles mean Member).
+     * Membership on one flow only (FLOSC framework rule).
      *
-     * @param string $stem
-     * @return bool
-     */
-    public function stem_is_lesaep_family($stem) {
-        $stem = sanitize_key((string) $stem);
-        if ($stem === '') {
-            return false;
-        }
-        if (strpos($stem, 'lesaep') !== false) {
-            return true;
-        }
-        // Match by flow option id / custom domain / ivr when stem alone is ambiguous.
-        $flows = get_option('flosc_flows', []);
-        if (!is_array($flows)) {
-            return false;
-        }
-        foreach ($flows as $flow) {
-            if (!is_array($flow)) {
-                continue;
-            }
-            $id = sanitize_key((string) ($flow['id'] ?? ''));
-            $ivr = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? '');
-            $flow_stem = sanitize_key(pathinfo(basename($ivr), PATHINFO_FILENAME));
-            if ($flow_stem === '') {
-                $flow_stem = $id;
-            }
-            if ($flow_stem !== $stem && $id !== $stem) {
-                continue;
-            }
-            $domain = strtolower((string) ($flow['custom_domain'] ?? ''));
-            $name   = strtolower((string) ($flow['name'] ?? ''));
-            if (strpos($domain, 'lesaep') !== false || strpos($name, 'lesaep') !== false) {
-                return true;
-            }
-            if (strpos($id, 'lesaep') !== false || strpos($flow_stem, 'lesaep') !== false) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Membership on one flow only.
-     *
-     * Product matrix (e.g. Piano4America):
-     * - Member on LeSAEp
-     * - Guest on dainis.net/chat (Br3nda) and flosc.ai when logged in
-     *
-     * Shared WP roles (pronunciation_learners / lesaep_learners) must NOT promote
-     * Member on every flow that happens to list the same default_member_level.
+     * Product brands (categories, lesson libraries, instance role names) are
+     * per-flow configuration — not FLOSC core. Membership is:
+     * 1) per-flow grant meta, 2) offers/purchases for this flow, 3) member
+     * levels declared on this flow only (never a global product brand branch).
      *
      * @param int    $user_id
      * @param string $stem
@@ -236,67 +190,18 @@ class FLOSC_Access_Manager {
             return true;
         }
 
-        // 3) Legacy LeSAEp roles / global flag — ONLY on LeSAEp stems.
-        //    Never on Br3nda (dainis_net_ivr) or flosc_ai_ivr.
-        if ($this->stem_is_lesaep_family($stem) && $this->user_has_legacy_lesaep_membership($user_id)) {
-            return true;
-        }
-
-        // 4) Non-LeSAEp: registration_flow matches this stem AND user holds a paid
-        //    level declared for this flow (flow-specific product, not LeSAEp bleed).
-        if (!$this->stem_is_lesaep_family($stem) && class_exists('FLOSC_Member_Access')) {
-            $reg_stem = $this->normalize_flow_stem(
-                (string) get_user_meta($user_id, '_flosc_registration_flow', true)
-            );
-            if ($reg_stem !== '' && $reg_stem === $stem) {
-                require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
-                $ma = FLOSC_Member_Access::instance();
-                foreach ($this->get_flow_member_levels($stem) as $level) {
-                    // Skip LeSAEp level slugs on non-LeSAEp flows even if misconfigured.
-                    if (strpos($level, 'lesaep') !== false || strpos($level, 'pronunciation') !== false) {
-                        continue;
-                    }
-                    if ($ma->has_level($user_id, $level)) {
-                        return true;
-                    }
+        // 3) Levels listed on THIS flow only — prevents cross-flow bleed when
+        //    several flows share a similar default level name in config.
+        if (class_exists('FLOSC_Member_Access')) {
+            require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
+            $ma = FLOSC_Member_Access::instance();
+            foreach ($this->get_flow_member_levels($stem) as $level) {
+                if ($ma->has_level($user_id, $level)) {
+                    return true;
                 }
             }
         }
 
-        return false;
-    }
-
-    /**
-     * Legacy LeSAEp paid membership (role / level meta / global flag).
-     *
-     * @param int $user_id
-     * @return bool
-     */
-    private function user_has_legacy_lesaep_membership($user_id) {
-        $user_id = (int) $user_id;
-        if ($user_id <= 0) {
-            return false;
-        }
-        if (class_exists('FLOSC_Member_Access')) {
-            require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
-            $ma = FLOSC_Member_Access::instance();
-            if (
-                $ma->has_level($user_id, 'pronunciation_learners')
-                || $ma->has_level($user_id, 'lesaep_learners')
-            ) {
-                return true;
-            }
-        }
-        $global = get_user_meta($user_id, '_flosc_member_access', true);
-        if ($global === 'true' || $global === true || $global === '1') {
-            // Global flag only counts as LeSAEp if registration is LeSAEp or empty (old accounts).
-            $reg = $this->normalize_flow_stem(
-                (string) get_user_meta($user_id, '_flosc_registration_flow', true)
-            );
-            if ($reg === '' || $this->stem_is_lesaep_family($reg)) {
-                return true;
-            }
-        }
         return false;
     }
 
@@ -451,29 +356,27 @@ class FLOSC_Access_Manager {
             }
         }
 
-        // Content features for members who have level meta/roles but empty _flosc_access
-        // (e.g. Piano4America sandbox / admin grant path).
+        // Content features for members with flow-scoped membership but empty _flosc_access.
         $member_content_features = [
             'all_lessons',
             'full_access',
-            'lesaep_lessons',
             'pronunciation_exercises',
             'audio_recordings',
             'ipa_training',
             'ai_coach',
         ];
-        if (in_array($feature, $member_content_features, true) && class_exists('FLOSC_Member_Access')) {
-            require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
-            $member_access = FLOSC_Member_Access::instance();
-            if (
-                $member_access->has_level($user_id, 'pronunciation_learners')
-                || $member_access->has_level($user_id, 'lesaep_learners')
-            ) {
-                return true;
-            }
-            if (in_array($feature, ['all_lessons', 'full_access'], true) && $member_access->is_member($user_id)) {
-                return true;
-            }
+        /**
+         * Extra feature slugs that count as full-member content for a flow instance.
+         *
+         * @param string[] $features
+         * @param int      $user_id
+         */
+        $member_content_features = apply_filters('flosc_member_content_features', $member_content_features, $user_id);
+        if (!is_array($member_content_features)) {
+            $member_content_features = ['all_lessons', 'full_access'];
+        }
+        if (in_array($feature, $member_content_features, true) && $this->is_member($user_id)) {
+            return true;
         }
 
         return false;

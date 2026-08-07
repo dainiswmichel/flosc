@@ -880,7 +880,8 @@ if (!function_exists('flosc_config_file')) {
  */
 if (!function_exists('flosc_lesson_catalog_basenames')) {
     function flosc_lesson_catalog_basenames() {
-        $names = ['lesson_catalog.md', 'lesaep_lesson_catalog.md'];
+        // Ship core: neutral name only. Instances may add legacy basenames via filter.
+        $names = ['lesson_catalog.md'];
         /**
          * @param string[] $names Basename candidates, first match wins for reads.
          */

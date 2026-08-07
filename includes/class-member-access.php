@@ -200,8 +200,8 @@ class FLOSC_Member_Access {
     }
     
     /**
-     * Equivalent membership level slugs (legacy ↔ current).
-     * LeSAEp historically used lesaep_learners; offers/default now use pronunciation_learners.
+     * Equivalent membership level slugs (instance-specific aliases via filter only).
+     * FLOSC core does not ship product brand level pairs — instances add their own.
      *
      * @param string $level
      * @return string[]
@@ -212,15 +212,23 @@ class FLOSC_Member_Access {
             return [];
         }
 
-        $groups = [
-            ['pronunciation_learners', 'lesaep_learners'],
-            ['guest_pronunciation_learner', 'guest_lesaep_learner'],
-        ];
-
         $aliases = [$level];
-        foreach ($groups as $group) {
-            if (in_array($level, $group, true)) {
-                $aliases = array_merge($aliases, $group);
+        /**
+         * Alias groups for an install (e.g. historical product role renames).
+         * Default empty — product instances supply groups if needed.
+         *
+         * @param array[] $groups List of string[] groups of equivalent slugs.
+         */
+        $groups = apply_filters('flosc_member_level_alias_groups', []);
+        if (is_array($groups)) {
+            foreach ($groups as $group) {
+                if (!is_array($group)) {
+                    continue;
+                }
+                $group = array_map('sanitize_key', $group);
+                if (in_array($level, $group, true)) {
+                    $aliases = array_merge($aliases, $group);
+                }
             }
         }
 
@@ -292,12 +300,12 @@ class FLOSC_Member_Access {
                 if (!in_array($sanitized_level, $user->roles, true)) {
                     $user->add_role($sanitized_level);
                 }
-                // Always remove guest role on upgrade — regardless of whether role was already present
-                $member_aliases = ['pronunciation_learners', 'lesaep_learners'];
-                $guest_aliases = ['guest_pronunciation_learner', 'guest_lesaep_learner'];
-                if (in_array($sanitized_level, $member_aliases, true)) {
+                // Remove guest-tier roles on member-level grant when instance defines pairs.
+                $guest_aliases = apply_filters('flosc_guest_level_slugs_to_clear_on_member_grant', [], $sanitized_level);
+                if (is_array($guest_aliases)) {
                     foreach ($guest_aliases as $guest_alias) {
-                        if (in_array($guest_alias, $user->roles, true)) {
+                        $guest_alias = sanitize_key((string) $guest_alias);
+                        if ($guest_alias !== '' && in_array($guest_alias, $user->roles, true)) {
                             $user->remove_role($guest_alias);
                         }
                     }
