@@ -178,8 +178,8 @@
 
 <h2 id="glossary-l">L</h2>
 
-<h3 id="term-product-example">Worked example (pronunciation)</h3>
-<p>Latvian-born Standard American English Pronunciation. The native quiz type for FLOSC. Assesses 10 core American English pronunciation challenges — short-a vowel, rhotic R, voiceless TH, voiced TH, short-i/long-e distinction, schwa, flap-T, word stress, connected speech, and dark L — using a text-based sequence format. The quiz result maps each missed item to a topic slug for lesson recommendation.</p>
+<h3 id="term-lesaep">LeSAEp</h3>
+<p><strong>Learn Excellent Standard American English Pronunciation.</strong> A real-world FLOSC deployment used as a worked example in this documentation — not a hard requirement of the framework. Assesses 10 core American English pronunciation challenges (short-a vowel, rhotic R, voiceless/voiced TH, short-i/long-e, schwa, flap-T, word stress, connected speech, dark L). Lesson posts typically live in a WordPress category the site admin chooses (e.g. category slug <code>lesaep</code>). Members who purchase full access are often labeled with a site-defined member level (e.g. “LeSAEp Learners”) in flow settings — those names are configuration, not FLOSC core.</p>
 
 <h3 id="term-lesson">Lesson</h3>
 <p>A WordPress post (standard <code>post</code> type) assigned to a FLOSC-configured lesson category. Lessons are the primary content delivered to members. The post title, content, and tags are indexed by FLOSC for search and recommendation. Lessons are delivered via AI tool calls, not via direct links — the AI delivers the lesson text inline in the conversation.</p>

@@ -8,7 +8,7 @@
 <ol>
   <li><strong>Abstract base</strong> (<code>abstract-quiz-type.php</code>) — defines the contract every quiz type must fulfill, plus shared scoring and lesson-lookup logic</li>
   <li><strong>Factory</strong> (<code>class-quiz-type-factory.php</code>) — discovers and instantiates quiz types</li>
-  <li><strong>Implementations</strong> — one PHP class per quiz format (Pronunciation Assessment, Multiple Choice, True/False, Numbers, Audio)</li>
+  <li><strong>Implementations</strong> — one PHP class per quiz format (Pronunciation Assessment — used by the LeSAEp example deployment — plus Multiple Choice, True/False, Numbers, Audio)</li>
 </ol>
 <p>The admin quiz tab exposes two UI zones: <strong>Active Quizzes</strong> (summary of what is live in the flow) and <strong>Quiz Deck</strong> (library of all quiz types with enable toggle and inline editor).</p>
 
@@ -128,7 +128,7 @@ Params: <code>user_id</code>, <code>quiz_id</code>, <code>score_data</code> (obj
 <h2 id="quiz-types">Quiz Type Implementations</h2>
 
 <h3 id="quiz-pronunciation">class-flosc-pronunciation-assessment-quiz.php — Pronunciation Assessment</h3>
-<p>10-question multiple-choice accent assessment for Standard American English. Each question maps to a specific sound lesson. Designed so typical non-native speakers score 40–70%, creating a natural moment for lesson recommendations.</p>
+<p>10-question multiple-choice accent assessment for Standard American English. Each question maps to a specific sound lesson. Designed so typical non-native speakers score 40–70%, creating a natural moment for lesson recommendations. The <strong>LeSAEp</strong> site uses this quiz type as its primary assessment; any FLOSC flow can enable it the same way.</p>
 
 <h4 id="quiz-pronunciation-format">Question Format</h4>
 <pre><code>Which pair of words use the SAME vowel sound?
