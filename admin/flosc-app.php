@@ -380,7 +380,11 @@ if ( $flosc_is_companion_embed ) {
                 <!-- Visitor dropdown items — v1.8.2 dynamic menu -->
                 <div class="profile-dropdown-group" data-show="visitor">
                     <?php foreach ($flosc_visitor_menu as $flosc_item):
-                        $flosc_is_offer = (strpos($flosc_item['action'], 'show_offer') === 0 || $flosc_item['action'] === 'open_sandbox_purchase');
+                        $flosc_is_offer = (
+                            strpos( (string) $flosc_item['action'], 'show_offer' ) === 0
+                            || (string) $flosc_item['action'] === 'show_upgrade'
+                            || (string) $flosc_item['action'] === 'open_sandbox_purchase'
+                        );
                     ?>
                     <?php if ($flosc_is_offer): ?>
                     <?php if (!empty($flosc_pb_visitor['show_upgrade'])): ?>

@@ -4700,12 +4700,16 @@ class floscApp {
                 }
                 break;
             case 'show_offer':
-                if (actionParam) {
-                    this.showOffer(actionParam, { source: 'auto' });
+            case 'show_upgrade': {
+                // Explicit show_offer:ID, or flow default_offer_id when bare show_offer / show_upgrade.
+                const offerId = String(actionParam || this.getOfferIdForProduct() || '').trim();
+                if (offerId) {
+                    this.showOffer(offerId, { source: 'user' });
                 } else {
-                    this.log('FLOSC: show_offer action missing offer ID parameter');
+                    this.log('FLOSC: show_offer/show_upgrade — no offer ID for this flow');
                 }
                 break;
+            }
             case 'checkout':
                 if (actionParam) {
                     this.openCheckout(actionParam);
