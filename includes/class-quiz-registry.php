@@ -28,8 +28,42 @@ class FLOSC_Quiz_Registry {
         ];
     }
 
+    /**
+     * Resolve renamed/legacy quiz IDs to a registered ship ID.
+     *
+     * Live flows may still store pre-rename IDs (pronunciation / lesaep names).
+     * Map them to sample_assessment_quiz so registry lookups never return null
+     * after the subject-neutral rename. Ship code does not register dual classes.
+     *
+     * @param string $quiz_id
+     * @return string
+     */
     private static function resolve_quiz_id( $quiz_id ) {
-        return $quiz_id;
+        $quiz_id = sanitize_key( (string) $quiz_id );
+        if ( $quiz_id === '' ) {
+            return $quiz_id;
+        }
+
+        static $legacy = array(
+            'pronunciation_assessment_quiz'              => 'sample_assessment_quiz',
+            'pronunciation_assessment'                   => 'sample_assessment_quiz',
+            'lesaep_pronunciation'                       => 'sample_assessment_quiz',
+            'lesaep_pronunciation_quiz'                  => 'sample_assessment_quiz',
+            'lesaep_text_based_pronunciation_quiz'       => 'sample_assessment_quiz',
+            'flosc_pronunciation_assessment_quiz'        => 'sample_assessment_quiz',
+        );
+
+        return $legacy[ $quiz_id ] ?? $quiz_id;
+    }
+
+    /**
+     * Public helper for config/JS export (same rename map as get_quiz).
+     *
+     * @param string $quiz_id
+     * @return string
+     */
+    public static function resolve_id( $quiz_id ) {
+        return self::resolve_quiz_id( $quiz_id );
     }
 
     /**

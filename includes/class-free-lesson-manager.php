@@ -14,12 +14,12 @@
  * v9.1.8: Initial implementation
  * 
  * FLOW:
- * 1. User takes quiz "sae_pronunciation": "4,7,9" = 30%
+ * 1. User takes a flow quiz (e.g. sample_assessment_quiz); score < 100%
  * 2. System checks lesson_groups for quiz → category mapping
  * 3. Finds the configured lesson category for the quiz
- * 4. Calculates missed items: 1,2,3,5,6,8,10
- * 5. Picks random (e.g., #8)
- * 6. Delivers WordPress post with _flosc_lesson_number = 8 from the configured category
+ * 4. Calculates missed items (lesson numbers or question indexes)
+ * 5. Picks random eligible free lesson(s)
+ * 6. Delivers WordPress post with _flosc_lesson_number from the configured category
  * 
  * @since 9.1.8
  */
@@ -380,10 +380,33 @@ class FLOSC_Free_Lesson_Manager {
      * @return array Array of missed lesson numbers
      */
     private function get_missed_lessons($quiz_result) {
-        // v1.8.2: Check structured incorrect/missed keys first (quiz types can provide these directly)
+        // Quiz types may return either plain lesson numbers or structured rows
+        // (question_index / topics / correct_content) from analyze().
         $incorrect = $quiz_result['incorrect'] ?? $quiz_result['missed'] ?? [];
-        if (!empty($incorrect)) {
-            return array_map('intval', array_filter((array)$incorrect, 'is_numeric'));
+        if (!empty($incorrect) && is_array($incorrect)) {
+            $nums = [];
+            foreach ($incorrect as $item) {
+                if (is_numeric($item)) {
+                    $nums[] = (int) $item;
+                    continue;
+                }
+                if (!is_array($item)) {
+                    continue;
+                }
+                // Prefer explicit lesson number fields, then question index (1-based).
+                foreach (['lesson', 'lesson_number', 'question_index', 'index', 'id'] as $key) {
+                    if (isset($item[$key]) && is_numeric($item[$key])) {
+                        $nums[] = (int) $item[$key];
+                        break;
+                    }
+                }
+            }
+            $nums = array_values(array_unique(array_filter($nums, static function ($n) {
+                return $n > 0;
+            })));
+            if (!empty($nums)) {
+                return $nums;
+            }
         }
 
         // Fallback: comma-separated number parsing

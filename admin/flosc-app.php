@@ -1293,18 +1293,29 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 $out = [];
                 foreach ($raw as $qid) {
                     $qid = sanitize_key((string) $qid);
-                    if ($qid !== '') {
-                        $out[] = $qid;
+                    if ($qid === '') {
+                        continue;
                     }
+                    // Resolve legacy rename IDs so the client never asks for a gone quiz.
+                    if (class_exists('FLOSC_Quiz_Registry')) {
+                        $qid = FLOSC_Quiz_Registry::resolve_id($qid);
+                    }
+                    $out[] = $qid;
                 }
                 return array_values(array_unique($out));
             })(),
             'defaultAudioQuizId' => (string) ($flow_settings['default_audio_quiz_id']
                 ?? $flosc_current_flow['default_audio_quiz_id']
                 ?? ''),
-            'defaultTextQuizId' => (string) ($flow_settings['default_text_quiz_id']
-                ?? $flosc_current_flow['default_text_quiz_id']
-                ?? ''),
+            'defaultTextQuizId' => (function () use ($flow_settings, $flosc_current_flow) {
+                $id = (string) ($flow_settings['default_text_quiz_id']
+                    ?? $flosc_current_flow['default_text_quiz_id']
+                    ?? '');
+                if ($id !== '' && class_exists('FLOSC_Quiz_Registry')) {
+                    $id = FLOSC_Quiz_Registry::resolve_id($id);
+                }
+                return $id;
+            })(),
             'quizType' => (string) ($flow_settings['quiz_type']
                 ?? $flosc_current_flow['quiz_type']
                 ?? ''),

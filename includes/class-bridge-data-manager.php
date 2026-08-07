@@ -95,13 +95,21 @@ class FLOSC_Bridge_Data_Manager {
         
         $quiz_id = $quiz_result['quiz_id'] ?? 'default';
         
+        $correct   = $quiz_result['correct'] ?? [];
+        $incorrect = $quiz_result['incorrect'] ?? [];
+        $total     = (is_array($correct) ? count($correct) : 0)
+            + (is_array($incorrect) ? count($incorrect) : 0);
+        if ($total < 1) {
+            $total = 10; // legacy fallback when callers omit item lists
+        }
+
         // Build scoring results from quiz data
         $scoring_results = [
             'score' => $quiz_result['score'] ?? 0,
             'percentage' => $quiz_result['score'] ?? 0,
-            'total_questions' => 10, // Default for FLOSC sample quiz
-            'correct_items' => $quiz_result['correct'] ?? [],
-            'incorrect_items' => $quiz_result['incorrect'] ?? [],
+            'total_questions' => $total,
+            'correct_items' => $correct,
+            'incorrect_items' => $incorrect,
             'item_results' => $this->build_item_results($quiz_result),
             'user_answer' => $quiz_result['user_answer'] ?? '',
             'correct_answer' => $quiz_result['correct_answer'] ?? '',
@@ -203,20 +211,44 @@ class FLOSC_Bridge_Data_Manager {
         $incorrect = $quiz_result['incorrect'] ?? [];
         
         foreach ($correct as $item) {
-            $item_results[$item] = [
+            $key = $this->item_result_key($item);
+            $item_results[$key] = [
                 'correct' => true,
                 'category' => $this->get_item_category($item),
             ];
         }
         
         foreach ($incorrect as $item) {
-            $item_results[$item] = [
+            $key = $this->item_result_key($item);
+            $item_results[$key] = [
                 'correct' => false,
                 'category' => $this->get_item_category($item),
             ];
         }
         
         return $item_results;
+    }
+
+    /**
+     * Stable string key for bridge item_results (supports structured analyze rows).
+     *
+     * @param mixed $item
+     * @return string
+     */
+    private function item_result_key($item) {
+        if (is_array($item)) {
+            if (isset($item['question_id']) && $item['question_id'] !== '') {
+                return (string) $item['question_id'];
+            }
+            if (isset($item['question_index']) && is_numeric($item['question_index'])) {
+                return 'q' . (int) $item['question_index'];
+            }
+            if (isset($item['id']) && (is_string($item['id']) || is_numeric($item['id']))) {
+                return (string) $item['id'];
+            }
+            return 'item_' . md5(wp_json_encode($item));
+        }
+        return (string) $item;
     }
     
     /**
@@ -225,7 +257,7 @@ class FLOSC_Bridge_Data_Manager {
      * Maps lesson numbers to categories for weakness analysis.
      * Override this method or use filter for custom categorization.
      * 
-     * @param mixed $item Item ID or number
+     * @param mixed $item Item ID, number, or structured analyze row
      * @return string Category name
      */
     private function get_item_category($item) {
@@ -233,6 +265,13 @@ class FLOSC_Bridge_Data_Manager {
         $category = apply_filters('flosc_item_category', null, $item);
         if ($category) {
             return $category;
+        }
+
+        if (is_array($item)) {
+            if (!empty($item['topics'][0])) {
+                return sanitize_title((string) $item['topics'][0]);
+            }
+            $item = $item['question_index'] ?? $item['lesson_number'] ?? $item['id'] ?? 0;
         }
         
         // Default: group by lesson number ranges

@@ -4416,7 +4416,10 @@ Example good response:
             if (!is_array($enabled_quizzes)) {
                 $enabled_quizzes = [];
             }
-            $enabled_quizzes = array_values(array_filter(array_map('sanitize_key', $enabled_quizzes)));
+            $enabled_quizzes = array_values(array_unique(array_filter(array_map(static function ($id) {
+                $id = sanitize_key((string) $id);
+                return $id !== '' ? FLOSC_Quiz_Registry::resolve_id($id) : '';
+            }, $enabled_quizzes))));
             if (empty($enabled_quizzes)) {
                 return new WP_Error(
                     'flosc_no_quiz',
@@ -4434,15 +4437,19 @@ Example good response:
             $quiz_id = $enabled_quizzes[$quiz_index];
         }
         
-        // Get the quiz type handler
+        // Get the quiz type handler (resolves legacy renamed IDs).
         $quiz_type = FLOSC_Quiz_Registry::get_quiz($quiz_id);
+        $resolved_id = $quiz_type ? $quiz_type->get_id() : FLOSC_Quiz_Registry::resolve_id($quiz_id);
         
         if ($quiz_type) {
-            // Get content from admin settings
-            $content = get_option('flosc_quiz_content_' . $quiz_id, $quiz_type->get_default_content());
+            // Prefer flow settings (quiz_content_{id}), then global option, then type default.
+            $content = flosc_get_setting('quiz_content_' . $resolved_id, '');
+            if ($content === '' || $content === null) {
+                $content = get_option('flosc_quiz_content_' . $resolved_id, $quiz_type->get_default_content());
+            }
             
             // Check if this is a TEXT SEQUENCE quiz (type: 1,2,3...10)
-            if ($quiz_id === 'flosc_sample_data_numbers_quiz') {
+            if ($resolved_id === 'flosc_sample_data_numbers_quiz') {
                 // Parse expected values - ensure we have valid content
                 $expected = array_filter(array_map('trim', explode(',', $content)), function($v) {
                     return $v !== '';
@@ -4454,7 +4461,7 @@ Example good response:
                 // Return text sequence quiz format
                 return new WP_REST_Response([
                     'success' => true,
-                    'id' => $quiz_id,
+                    'id' => $resolved_id,
                     'title' => $quiz_type->get_name(),
                     'type' => 'text_sequence',
                     'prompt' => 'Type the sequence from 1 to 10 (e.g., "1, 2, 3, 4, 5, 6, 7, 8, 9, 10")',
@@ -4464,10 +4471,10 @@ Example good response:
             }
             
             // Check if this is AUDIO quiz
-            if ($quiz_id === 'flosc_sample_audio_quiz') {
+            if ($resolved_id === 'flosc_sample_audio_quiz') {
                 return new WP_REST_Response([
                     'success' => true,
-                    'id' => $quiz_id,
+                    'id' => $resolved_id,
                     'title' => $quiz_type->get_name(),
                     'type' => 'audio',
                     'prompt' => 'Record yourself saying the sequence from 1 to 10',
@@ -4476,31 +4483,48 @@ Example good response:
                 ]);
             }
             
-            // Check if this is MULTIPLE CHOICE
-            if ($quiz_id === 'multiplechoice') {
+            // Check if this is MULTIPLE CHOICE (pipe format)
+            if ($resolved_id === 'multiplechoice') {
                 // Parse content as JSON or structured format
                 $questions = $this->parse_multiplechoice_content($content);
                 return new WP_REST_Response([
                     'success' => true,
-                    'id' => $quiz_id,
+                    'id' => $resolved_id,
                     'title' => $quiz_type->get_name(),
                     'type' => 'multiple_choice',
                     'questions' => $questions,
                 ]);
             }
 
-            // Default text assessment for this flow — use admin-configured content when set
-            if ($quiz_id === $default_text_quiz_id) {
-                $saved_content = flosc_get_setting('quiz_content_' . $default_text_quiz_id, '');
-                if ( ! empty( $saved_content ) ) {
-                    $questions = $quiz_type->parse_content_to_questions( $saved_content );
+            // Sample / flow assessment quiz types with block parser + default questions
+            if (method_exists($quiz_type, 'parse_content_to_questions')
+                && method_exists($quiz_type, 'get_default_questions')) {
+                $questions = [];
+                $saved_content = $content;
+                // Also try legacy content keys if resolved content empty (pre-migration flows).
+                if ($saved_content === '' || $saved_content === null) {
+                    foreach ([
+                        'quiz_content_sample_assessment_quiz',
+                        'quiz_content_pronunciation_assessment_quiz',
+                        'quiz_content_lesaep_text_based_pronunciation_quiz',
+                        'quiz_content_lesaep_pronunciation',
+                    ] as $legacy_key) {
+                        $try = flosc_get_setting($legacy_key, '');
+                        if (is_string($try) && $try !== '') {
+                            $saved_content = $try;
+                            break;
+                        }
+                    }
                 }
-                if ( empty( $questions ) ) {
+                if (is_string($saved_content) && $saved_content !== '') {
+                    $questions = $quiz_type->parse_content_to_questions($saved_content);
+                }
+                if (empty($questions)) {
                     $questions = $quiz_type->get_default_questions();
                 }
                 return new WP_REST_Response([
                     'success'   => true,
-                    'id'        => $default_text_quiz_id,
+                    'id'        => $resolved_id,
                     'title'     => $quiz_type->get_name(),
                     'type'      => 'multiple_choice',
                     'questions' => $questions,
@@ -5488,8 +5512,15 @@ Example good response:
             ]);
         }
 
-        // Get expected content for this quiz type
-        $expected_content = get_option('flosc_quiz_content_' . $quiz_type->get_id(), $quiz_type->get_default_content());
+        // Flow settings first, then global option, then type default.
+        $qid = $quiz_type->get_id();
+        $expected_content = flosc_get_setting('quiz_content_' . $qid, '');
+        if ($expected_content === '' || $expected_content === null) {
+            $expected_content = get_option('flosc_quiz_content_' . $qid, $quiz_type->get_default_content());
+        }
+        if (($expected_content === '' || $expected_content === null) && method_exists($quiz_type, 'get_default_content')) {
+            $expected_content = $quiz_type->get_default_content();
+        }
 
         // Analyze using quiz type
         $analysis = $quiz_type->analyze($transcript, $expected_content, [
@@ -5568,8 +5599,15 @@ Example good response:
             return $validation;
         }
 
-        // Get expected content
-        $expected_content = get_option('flosc_quiz_content_' . $quiz_type->get_id(), $quiz_type->get_default_content());
+        // Flow settings first, then global option, then type default.
+        $qid = $quiz_type->get_id();
+        $expected_content = flosc_get_setting('quiz_content_' . $qid, '');
+        if ($expected_content === '' || $expected_content === null) {
+            $expected_content = get_option('flosc_quiz_content_' . $qid, $quiz_type->get_default_content());
+        }
+        if (($expected_content === '' || $expected_content === null) && method_exists($quiz_type, 'get_default_content')) {
+            $expected_content = $quiz_type->get_default_content();
+        }
 
         // Analyze
         $analysis = $quiz_type->analyze($input, $expected_content, [
