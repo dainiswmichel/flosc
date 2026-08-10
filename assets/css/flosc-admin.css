@@ -3524,7 +3524,7 @@
 }
 
 /*
- * Default indicator: inverse of outline .button-small (View App / Set as default).
+ * Default indicator: inverse of outline .button-small (View Flow / Set as default).
  * Same 30px height as sibling buttons; filled primary blue; title case "Default".
  */
 .flosc-flow-selector__default-btn {
@@ -4711,9 +4711,85 @@
 
 .flosc-ivr-upload-form {
     display: flex;
-    gap: 8px;
-    align-items: center;
+    gap: 10px;
+    align-items: stretch;
+    flex-wrap: wrap;
     margin: 0;
+    width: 100%;
+}
+
+.flosc-ivr-upload-note {
+    flex: 1 1 100%;
+    margin: 0 0 4px;
+    color: #646970;
+}
+
+.flosc-ivr-dropzone {
+    position: relative;
+    flex: 1 1 280px;
+    min-height: 88px;
+    border: 2px dashed #c3c4c7;
+    border-radius: 8px;
+    background: #f6f7f7;
+    cursor: pointer;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.flosc-ivr-dropzone:hover,
+.flosc-ivr-dropzone:focus {
+    border-color: #2271b1;
+    background: #f0f6fc;
+    outline: none;
+}
+
+.flosc-ivr-dropzone.is-dragover {
+    border-color: #135e96;
+    background: #e5f0fa;
+    box-shadow: inset 0 0 0 1px #135e96;
+}
+
+.flosc-ivr-dropzone.is-has-file {
+    border-style: solid;
+    border-color: #00a32a;
+    background: #edfaef;
+}
+
+.flosc-ivr-dropzone__input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    font-size: 0;
+}
+
+.flosc-ivr-dropzone__ui {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 4px;
+    padding: 14px 16px;
+    pointer-events: none;
+}
+
+.flosc-ivr-dropzone__title {
+    font-size: 13px;
+    color: #1d2327;
+}
+
+.flosc-ivr-dropzone__hint {
+    font-size: 12px;
+    color: #646970;
+}
+
+.flosc-ivr-dropzone__file {
+    font-size: 12px;
+    font-family: Consolas, Monaco, monospace;
+    color: #135e96;
+    margin-top: 4px;
+    word-break: break-all;
 }
 
 .flosc-ivr-file-table {

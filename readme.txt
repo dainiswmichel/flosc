@@ -1,7 +1,7 @@
 === FLOSC ===
 Contributors: dainismichel
 Donate link: https://dainis.net/donate/
-Tags: chatbot, ai, quiz, membership, payments
+Tags: leads, sales, access, ai, chatbot
 Requires at least: 7.0
 Requires PHP: 7.4
 Tested up to: 7.0
@@ -15,7 +15,7 @@ License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
 **FLOSC** (Freeline → Login → Offer → Sale → Content) is a WordPress plugin for building guided conversational journeys that move visitors through value-first experiences before presenting any offer.
 
-Instead of "Are you interested in buying?" FLOSC asks "What should I help you with first?" Visitors complete quizzes, unlock personalized content, and engage with offers at the right moment-all inside your WordPress site, with your data staying in your database.
+Instead of "Are you interested in buying?" FLOSC asks "What should I help you with first?" Visitors complete quizzes, unlock personalized content, and engage with offers at the right moment - all inside your WordPress site.
 
 = What FLOSC Does =
 

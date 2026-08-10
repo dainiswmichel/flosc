@@ -513,80 +513,31 @@ function flosc_run_ivr_diagnostics() {
     return $diagnostics;
 }
 
-// Handle file upload
-if (isset($flosc_post['flosc_upload_ivr_file']) && isset($_FILES['ivr_file_upload'])) {
-    check_admin_referer('flosc_upload_ivr_file');
-    if (!current_user_can('manage_options')) {
-        wp_die(esc_html__('You do not have permission to upload IVR files.', 'flosc'));
-    }
+/**
+ * IVR .md upload (All Flows file management).
+ * Prefer admin_init via flosc_admin_handle_ivr_file_upload() so redirect is not mid-render.
+ * Fallback call here if early path did not run (idempotent via $GLOBALS flag).
+ */
+if (!function_exists('flosc_admin_handle_ivr_file_upload')) {
+    require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
+}
+flosc_admin_handle_ivr_file_upload();
 
-    // Build a sanitized view of the upload entry (do not pass raw $_FILES around).
-    $flosc_uploaded_file = array(
-        'name'     => isset($_FILES['ivr_file_upload']['name'])
-            ? sanitize_file_name(wp_unslash((string) $_FILES['ivr_file_upload']['name']))
-            : '',
-        'type'     => isset($_FILES['ivr_file_upload']['type'])
-            ? sanitize_text_field(wp_unslash((string) $_FILES['ivr_file_upload']['type']))
-            : '',
-        'tmp_name' => isset($_FILES['ivr_file_upload']['tmp_name'])
-            ? sanitize_text_field(wp_unslash((string) $_FILES['ivr_file_upload']['tmp_name']))
-            : '',
-        'error'    => isset($_FILES['ivr_file_upload']['error'])
-            ? absint($_FILES['ivr_file_upload']['error'])
-            : UPLOAD_ERR_NO_FILE,
-        'size'     => isset($_FILES['ivr_file_upload']['size'])
-            ? absint($_FILES['ivr_file_upload']['size'])
-            : 0,
+// Notice after successful new-flow upload redirect.
+if (isset($flosc_get['flosc_ivr_uploaded']) && '1' === (string) $flosc_get['flosc_ivr_uploaded']) {
+    $flosc_up_name = isset($flosc_get['ivr']) ? sanitize_file_name((string) $flosc_get['ivr']) : '';
+    add_settings_error(
+        'flosc_settings',
+        'upload_success',
+        $flosc_up_name !== ''
+            ? sprintf(
+                /* translators: %s: IVR filename for the new flow */
+                esc_html__('New flow ready: %s. It is selected in Switch Flow.', 'flosc'),
+                esc_html($flosc_up_name)
+            )
+            : esc_html__('New flow ready from the uploaded IVR file.', 'flosc'),
+        'success'
     );
-
-    if ((int) $flosc_uploaded_file['error'] === UPLOAD_ERR_OK) {
-        $flosc_filename = basename((string) $flosc_uploaded_file['name']);
-        $flosc_upload_size = (int) $flosc_uploaded_file['size'];
-        $flosc_target_path = function_exists('flosc_data_file_path')
-            ? flosc_data_file_path($flosc_filename)
-            : '';
-
-        // Ensure uploaded file is markdown and data dir is available.
-        if (strtolower((string) pathinfo($flosc_filename, PATHINFO_EXTENSION)) !== 'md') {
-            add_settings_error('flosc_settings', 'upload_failed', 'Only .md files are allowed.', 'error');
-        } elseif ($flosc_upload_size <= 0 || $flosc_upload_size > 1024 * 1024) {
-            add_settings_error('flosc_settings', 'upload_failed', 'Uploaded IVR file must be between 1 byte and 1 MB.', 'error');
-        } elseif ('' === $flosc_target_path || !function_exists('flosc_write_data_file')) {
-            add_settings_error('flosc_settings', 'upload_failed', 'Uploads data directory is not available. Cannot save IVR file.', 'error');
-        } else {
-            if (!function_exists('wp_handle_upload')) {
-                require_once ABSPATH . 'wp-admin/includes/file.php';
-            }
-
-            $flosc_upload_overrides = [
-                'test_form' => false,
-                'mimes'     => ['md' => 'text/markdown'],
-            ];
-            $flosc_handled_upload = wp_handle_upload($flosc_uploaded_file, $flosc_upload_overrides);
-
-            if (isset($flosc_handled_upload['error'])) {
-                add_settings_error('flosc_settings', 'upload_failed', 'Upload failed: ' . $flosc_handled_upload['error'], 'error');
-            } elseif (!empty($flosc_handled_upload['file']) && is_readable($flosc_handled_upload['file'])) {
-                $flosc_upload_body = flosc_fs_get_contents($flosc_handled_upload['file']);
-                wp_delete_file($flosc_handled_upload['file']);
-                if (false === $flosc_upload_body || !flosc_write_data_file($flosc_target_path, $flosc_upload_body)) {
-                    add_settings_error('flosc_settings', 'upload_failed', 'Failed to save uploaded file into FLOSC data directory.', 'error');
-                } else {
-                    if ($flosc_flow_key) {
-                        $flosc_fs = get_option($flosc_flow_key, []);
-                        $flosc_fs['active_ivr_file'] = $flosc_filename;
-                        $flosc_fs['ivr_file'] = $flosc_filename;
-                        update_option($flosc_flow_key, $flosc_fs);
-                    }
-                    add_settings_error('flosc_settings', 'upload_success', 'Uploaded and set as active: ' . $flosc_filename, 'success');
-                }
-            } else {
-                add_settings_error('flosc_settings', 'upload_failed', 'Failed to save uploaded file.', 'error');
-            }
-        }
-    } else {
-        add_settings_error('flosc_settings', 'upload_failed', 'File upload error: ' . $flosc_uploaded_file['error'], 'error');
-    }
 }
 
 // Handle explicit file import from IVR File Management (selected file -> FLOSC DB)
@@ -1413,12 +1364,97 @@ document.addEventListener('submit', function(event) {
 
     <div class="flosc-ivr-file-actions">
         <a href="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" class="button">🔃 Refresh File List</a>
-        <form method="post" action="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" enctype="multipart/form-data" class="flosc-ivr-upload-form">
+        <form method="post" action="<?php echo esc_url($flosc_ivr_management_all_phase_url); ?>" enctype="multipart/form-data" class="flosc-ivr-upload-form" id="flosc-ivr-upload-form">
             <?php wp_nonce_field('flosc_upload_ivr_file'); ?>
-            <input type="file" name="ivr_file_upload" accept=".md,text/markdown" required>
-            <button type="submit" name="flosc_upload_ivr_file" class="button button-secondary">📤 Upload IVR .md</button>
+            <div class="flosc-ivr-dropzone" id="flosc-ivr-dropzone" tabindex="0" role="button" aria-label="<?php echo esc_attr__('Drop IVR markdown file here or choose a file', 'flosc'); ?>">
+                <input type="file" name="ivr_file_upload" id="flosc-ivr-file-input" class="flosc-ivr-dropzone__input" accept=".md,text/markdown,text/plain" required>
+                <div class="flosc-ivr-dropzone__ui">
+                    <strong class="flosc-ivr-dropzone__title"><?php echo esc_html__('Upload as new flow', 'flosc'); ?></strong>
+                    <span class="flosc-ivr-dropzone__hint"><?php echo esc_html__('Drag & drop an .md IVR file here, or click to choose', 'flosc'); ?></span>
+                    <span class="flosc-ivr-dropzone__file" id="flosc-ivr-dropzone-filename" hidden></span>
+                </div>
+            </div>
+            <button type="submit" name="flosc_upload_ivr_file" value="1" class="button button-primary"><?php echo esc_html__('Create flow from file', 'flosc'); ?></button>
         </form>
+        <p class="description flosc-ivr-upload-note"><?php echo esc_html__('Creates a new flow (new *_ivr.md + Switch Flow entry). Does not replace the currently selected flow.', 'flosc'); ?></p>
     </div>
+    <?php
+    // Drag-and-drop for IVR upload (All Flows file management only).
+    ob_start();
+    ?>
+    (function () {
+        var form = document.getElementById('flosc-ivr-upload-form');
+        var zone = document.getElementById('flosc-ivr-dropzone');
+        var input = document.getElementById('flosc-ivr-file-input');
+        var nameEl = document.getElementById('flosc-ivr-dropzone-filename');
+        if (!form || !zone || !input) {
+            return;
+        }
+        function setFile(file) {
+            if (!file) {
+                return;
+            }
+            var lower = (file.name || '').toLowerCase();
+            if (lower.slice(-3) !== '.md') {
+                window.alert('Only .md IVR files are allowed.');
+                return;
+            }
+            try {
+                var dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+            } catch (e) {
+                // Older browsers: user must use the file input.
+            }
+            if (nameEl) {
+                nameEl.hidden = false;
+                nameEl.textContent = file.name;
+            }
+            zone.classList.add('is-has-file');
+        }
+        function onDrag(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        ['dragenter', 'dragover'].forEach(function (ev) {
+            zone.addEventListener(ev, function (e) {
+                onDrag(e);
+                zone.classList.add('is-dragover');
+            });
+        });
+        ['dragleave', 'drop'].forEach(function (ev) {
+            zone.addEventListener(ev, function (e) {
+                onDrag(e);
+                zone.classList.remove('is-dragover');
+            });
+        });
+        zone.addEventListener('drop', function (e) {
+            var files = e.dataTransfer && e.dataTransfer.files;
+            if (files && files.length) {
+                setFile(files[0]);
+            }
+        });
+        zone.addEventListener('click', function () {
+            input.click();
+        });
+        zone.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                input.click();
+            }
+        });
+        input.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+        input.addEventListener('change', function () {
+            if (input.files && input.files[0]) {
+                setFile(input.files[0]);
+            }
+        });
+    })();
+    <?php
+    wp_add_inline_script('flosc-admin', ob_get_clean());
+    ?>
 
     <table class="widefat striped flosc-ivr-file-table">
         <thead>

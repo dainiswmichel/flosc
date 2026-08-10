@@ -1,7 +1,7 @@
 # FLOSC Technical Default — IVR Configuration
 # Personality: professional, direct, efficient. No emojis.
-# Best for SaaS, B2B, and technical products. Flow: evaluate → decide.
-# This is a starter template — rename it to your flow and edit freely.
+# Best for SaaS, B2B, docs, and technical products.
+# Identity: technical answers agent — not a lesson coach.
 
 ---
 
@@ -11,7 +11,7 @@
 MessageName: tech_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: Welcome. I'm your AI assistant. Ask me anything, or pick an option below to get oriented.
+MessageContent: Hello. I am your technical answers agent. Do you have any technical questions for me? Note: this is IVR-style copy — configure your preferred AI API under Settings → AI for much more intelligent free-form responses.
 MessageConditions: is_visitor && first_show_session
 
 ---
@@ -21,9 +21,31 @@ MessageName: tech_intro_what
 MessageType: suggested_user_autoprompt
 MessageStyle: card
 UserInput: What is this?
-MessageContent: A plain, quick overview of what this product does and who it's for.
+MessageContent: I am a technical assistant for this product. Ask a concrete question, or pick an option below. Without an AI API key, I stay on IVR buttons and keywords; floscAdmins enable full chat under Settings → AI.
 MessageConditions: is_visitor || is_guest || is_member
-Keywords: what is this, overview, what do you do, about
+Keywords: what is this, overview, what do you do, about, who are you
+
+---
+
+## Configure AI API
+MessageName: tech_intro_ai_api
+MessageType: suggested_user_autoprompt
+MessageStyle: card
+UserInput: How do I enable AI chat?
+MessageContent: This is just IVR-style copy until AI is connected. Configure your preferred AI API under Settings → AI (OpenAI, Anthropic, xAI, etc. — BYOK: paste key, test, save) for much more intelligent free-form technical answers.
+MessageConditions: is_visitor || is_guest || is_member
+Keywords: ai, api, openai, anthropic, grok, xai, byok, enable ai, configure ai
+
+---
+
+## Ask a tech question
+MessageName: tech_intro_ask
+MessageType: suggested_user_autoprompt
+MessageStyle: card
+UserInput: I have a technical question
+MessageContent: Good. State the system, the symptom, and what you already tried. For best free-form answers, floscAdmin should connect an AI API under Settings → AI.
+MessageConditions: is_visitor || is_guest || is_member
+Keywords: technical, bug, error, how do i, configure, setup
 
 ---
 
@@ -43,7 +65,7 @@ MessageName: tech_intro_pricing
 MessageType: suggested_user_autoprompt
 MessageStyle: card
 UserInput: How much does it cost?
-MessageContent: A straight answer on pricing and what each tier includes.
+MessageContent: A straight answer on pricing and what each tier includes — when your admin has configured offers.
 MessageConditions: is_visitor || is_guest || is_member
 Keywords: pricing, cost, how much, plans
 
@@ -55,7 +77,7 @@ Keywords: pricing, cost, how much, plans
 MessageName: tech_guest_welcome
 MessageType: auto
 MessageStyle: pill
-MessageContent: Account created. You now have access to the guest features. Pick an option or ask a question.
+MessageContent: Signed in. I'm still your technical answers agent. What do you need to solve?
 MessageConditions: is_guest && first_show_session
 
 ---
@@ -65,7 +87,7 @@ MessageName: tech_guest_docs
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: View documentation
-MessageContent: Here's where to find the documentation and reference material.
+MessageContent: Point me at the topic — setup, API, errors, or architecture — and I'll keep the answer tight.
 MessageConditions: is_guest || is_member
 Keywords: docs, documentation, reference, manual
 
@@ -76,7 +98,7 @@ MessageName: tech_guest_support
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: Contact support
-MessageContent: Tell me the issue in one line and I'll route you to the fastest path to a fix.
+MessageContent: One-line summary of the issue, plus environment if you have it. Fastest path to a fix.
 MessageConditions: is_guest || is_member
 Keywords: support, help, contact, issue, problem
 
@@ -88,7 +110,7 @@ Keywords: support, help, contact, issue, problem
 MessageName: tech_member_welcome
 MessageType: auto
 MessageStyle: pill
-MessageContent: Purchase confirmed. Full access granted. How would you like to proceed?
+MessageContent: Full access. Technical answers agent online. What should we debug or configure next?
 MessageConditions: is_member && first_show_session
 
 ---
@@ -98,7 +120,7 @@ MessageName: tech_member_dashboard
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: Open the dashboard
-MessageContent: Taking you to your dashboard and current status.
+MessageContent: If a dashboard is configured for this flow, start there; otherwise ask me a technical question and we'll proceed.
 MessageConditions: is_member
 Keywords: dashboard, account, status, home
 
@@ -109,6 +131,6 @@ MessageName: tech_member_next
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: What should I set up first?
-MessageContent: A short, prioritized setup checklist so you get value fast.
+MessageContent: Prioritized setup: credentials, core config, then verify with one test path. Which area first?
 MessageConditions: is_member
 Keywords: next, setup, get started, first steps

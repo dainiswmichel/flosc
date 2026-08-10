@@ -25,7 +25,9 @@ class FLOSC_Companion_Mode {
      * v8.0.0: Knowledge hubs — resolve flow by handoff param, hub companion URL, or lessons category.
      */
     public function enqueue_companion() {
-        // Don't load on app pages (they get the full experience)
+        // Outer chrome is for normal WP host pages only.
+        // FLOSC app routes (is_flosc_request) never load outer chrome — by construction
+        // the companion iframe may only target an app route, so nesting cannot occur.
         if ($this->flosc->is_flosc_request()) {
             return;
         }
@@ -58,7 +60,12 @@ class FLOSC_Companion_Mode {
         // Visitor gate: when disabled, only logged-in users should see companion.
         // Handoff from full-page chat always allowed — dock may land cross-domain
         // (e.g. the flow domain → the WordPress host knowledge hub) without a shared login cookie.
-        $show_for_visitors = filter_var($this->flosc->get_setting('companion_show_for_visitors', $defaults['show_for_visitors']), FILTER_VALIDATE_BOOLEAN);
+        // Sales default is on (see get_companion_defaults). Stored 0/1 after Style save;
+        // legacy empty string falls through get_setting to the default (on).
+        $show_for_visitors = filter_var(
+            $this->flosc->get_setting('companion_show_for_visitors', $defaults['show_for_visitors']),
+            FILTER_VALIDATE_BOOLEAN
+        );
         if (!$handoff_request && !$show_for_visitors && !is_user_logged_in()) {
             return;
         }
@@ -69,9 +76,10 @@ class FLOSC_Companion_Mode {
             return;
         }
 
-        // Companion must always point to a valid FLOSC app route.
+        // Iframe target must be a FLOSC app route (slug or custom domain of an active flow).
+        // Non-app URLs (hub, home, posts) are invalid — no widget, no nest path.
         $app_url = $this->get_companion_chat_app_url();
-        if (empty($app_url)) {
+        if (empty($app_url) || !$this->is_flosc_app_route_url($app_url)) {
             return;
         }
 
@@ -286,9 +294,9 @@ class FLOSC_Companion_Mode {
             'toggleFullscreen' => esc_html__('Toggle fullscreen', 'flosc'),
         ]);
 
-        // Expand destination from floscAdmin Hub Full-Screen URL (parameterized).
-        $full_page_url = esc_url_raw((string) $this->flosc->get_setting('companion_hub_fullscreen_url', ''));
-        if ($full_page_url === '') {
+        // Expand destination: must also be a FLOSC app route (same invariant as iframe).
+        $full_page_url = esc_url_raw((string) $this->flosc->get_setting('companion_hub_fullscreen_url', ''), ['http', 'https']);
+        if ($full_page_url === '' || !$this->is_flosc_app_route_url($full_page_url)) {
             $full_page_url = $app_url;
         }
 
@@ -361,7 +369,13 @@ class FLOSC_Companion_Mode {
         }
 
         // Keep runtime payload stable even when third-party filters alter value types.
-        $companion_config['appUrl'] = esc_url_raw((string) ($companion_config['appUrl'] ?? $app_url));
+        // Filters cannot smuggle a non-app URL into the iframe.
+        $companion_config['appUrl'] = esc_url_raw((string) ($companion_config['appUrl'] ?? $app_url), ['http', 'https']);
+        $filtered_app = (string) $companion_config['appUrl'];
+        if ($filtered_app === '' || !$this->is_flosc_app_route_url($filtered_app)) {
+            return;
+        }
+        $companion_config['appUrl'] = $filtered_app;
         $companion_config['title'] = sanitize_text_field((string) ($companion_config['title'] ?? $title));
         $companion_config['subtitle'] = sanitize_text_field((string) ($companion_config['subtitle'] ?? $subtitle));
         $companion_config['productName'] = sanitize_text_field((string) ($companion_config['productName'] ?? $product_name));
@@ -413,7 +427,8 @@ class FLOSC_Companion_Mode {
     private function resolve_companion_flow_context($handoff_request = false) {
         $request_path = $this->get_companion_request_path();
         $category_slugs = $this->get_companion_request_category_slugs();
-        $req_path = untrailingslashit('/' . ltrim((string) $request_path, '/'));
+        // Normalize so site-root "/" is not collapsed to "" (WP untrailingslashit('/')).
+        $req_path = $this->companion_normalize_url_path($request_path);
 
         // Optional dock hint from full-page chat (public query string, not a form).
         $hint = sanitize_text_field((string) filter_input(INPUT_GET, 'flosc_flow_id'));
@@ -488,17 +503,23 @@ class FLOSC_Companion_Mode {
             $flow_id = pathinfo($filename, PATHINFO_FILENAME);
 
             // Hub companion URL path match — prefer longest (most specific) path.
+            // Site-root hubs (https://dainis.net/) must match path "/" — never drop to "".
             $hub = esc_url_raw((string) ($flow['companion_hub_companion_url'] ?? ''));
             if ($hub !== '' && $req_path !== '') {
-                $hub_path = wp_parse_url($hub, PHP_URL_PATH);
-                $hub_path = is_string($hub_path) ? untrailingslashit('/' . ltrim($hub_path, '/')) : '';
-                if ($hub_path !== ''
-                    && ($req_path === $hub_path || strpos($req_path . '/', $hub_path . '/') === 0)
-                ) {
-                    $len = strlen($hub_path);
-                    if ($len > $hub_match_len) {
-                        $hub_match_len = $len;
-                        $hub_match = $flow_id;
+                $hub_path_raw = wp_parse_url($hub, PHP_URL_PATH);
+                $hub_path = is_string($hub_path_raw) ? $this->companion_normalize_url_path($hub_path_raw) : '';
+                if ($hub_path !== '') {
+                    // Site-root hub ("/") is a low-priority sitewide owner (e.g. dainis.net).
+                    // Longer hub paths always win (e.g. /category/lesaep/).
+                    $matches_hub = ($hub_path === '/')
+                        || $req_path === $hub_path
+                        || strpos($req_path . '/', $hub_path . '/') === 0;
+                    if ($matches_hub) {
+                        $len = ($hub_path === '/') ? 1 : strlen($hub_path);
+                        if ($len > $hub_match_len) {
+                            $hub_match_len = $len;
+                            $hub_match = $flow_id;
+                        }
                     }
                 }
             }
@@ -559,28 +580,218 @@ class FLOSC_Companion_Mode {
     }
 
     /**
+     * Normalize URL path for companion comparisons.
+     * Empty / missing path and bare "/" all mean site root.
+     *
+     * @param string $url Absolute or relative URL.
+     * @return string Path with leading slash, no trailing slash except root "/".
+     */
+    private function companion_normalize_url_path($url) {
+        $path = (string) wp_parse_url((string) $url, PHP_URL_PATH);
+        $path = untrailingslashit($path);
+        return ($path === '' || $path === false) ? '/' : $path;
+    }
+
+    /**
+     * True when $url is a FLOSC full-page app route (active flow slug or custom domain).
+     * Hub pages, posts, home, and arbitrary WP paths are not app routes.
+     *
+     * This is the structural invariant: companion iframe may only load such URLs.
+     * App routes never enqueue outer companion chrome (is_flosc_request), so nesting
+     * cannot occur.
+     *
+     * @param string $url Absolute http(s) URL.
+     * @return bool
+     */
+    private function is_flosc_app_route_url($url) {
+        $url = esc_url_raw((string) $url, ['http', 'https']);
+        if ($url === '') {
+            return false;
+        }
+
+        $host = strtolower((string) wp_parse_url($url, PHP_URL_HOST));
+        $path = $this->companion_normalize_url_path($url);
+        if ($host === '') {
+            return false;
+        }
+
+        $home_host = strtolower((string) wp_parse_url(home_url('/'), PHP_URL_HOST));
+
+        if (function_exists('flosc_config_glob')) {
+            $ivr_files = array_unique(array_map('basename', flosc_config_glob(['*_ivr.md', 'ivr*.md'])));
+            foreach ($ivr_files as $filename) {
+                if (strpos((string) $filename, 'backup') !== false) {
+                    continue;
+                }
+                $flow = $this->flosc->build_flow_from_ivr_file($filename);
+                if (!$flow || (($flow['status'] ?? 'active') !== 'active')) {
+                    continue;
+                }
+
+                if (!empty($flow['custom_domain'])) {
+                    $domain = strtolower(preg_replace('#^https?://#', '', trim((string) $flow['custom_domain'])));
+                    $domain = rtrim($domain, '/');
+                    if ($domain !== '' && $this->companion_hosts_match($host, $domain)) {
+                        // Custom-domain flows serve the SPA for that host.
+                        return true;
+                    }
+                }
+
+                if (!empty($flow['slug']) && $home_host !== '') {
+                    $slug = sanitize_title((string) $flow['slug']);
+                    if (
+                        $slug !== ''
+                        && $this->companion_hosts_match($host, $home_host)
+                        && $this->companion_path_is_flow_slug($path, $slug)
+                    ) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // Legacy global app slug / custom domain (pre multi-flow fallbacks).
+        $global_slug = sanitize_title((string) get_option('flosc_app_slug', 'flosc'));
+        if (
+            $global_slug !== ''
+            && $home_host !== ''
+            && $this->companion_hosts_match($host, $home_host)
+            && $this->companion_path_is_flow_slug($path, $global_slug)
+        ) {
+            return true;
+        }
+
+        $global_domain = strtolower(preg_replace('#^https?://#', '', trim((string) get_option('flosc_custom_domain', ''))));
+        $global_domain = rtrim($global_domain, '/');
+        if ($global_domain !== '' && $this->companion_hosts_match($host, $global_domain)) {
+            return true;
+        }
+
+        // Resolved flow after hub/handoff context (forced_flow). Session dock handoff
+        // sets this before enqueue; must still accept that flow's app surface so
+        // flosc_session_id / visitor continuity can load into the iframe.
+        $flow = $this->flosc->get_current_flow();
+        if (is_array($flow)) {
+            if (!empty($flow['custom_domain'])) {
+                $domain = strtolower(preg_replace('#^https?://#', '', trim((string) $flow['custom_domain'])));
+                $domain = rtrim($domain, '/');
+                if ($domain !== '' && $this->companion_hosts_match($host, $domain)) {
+                    return true;
+                }
+            }
+            if (!empty($flow['slug']) && $home_host !== '') {
+                $slug = sanitize_title((string) $flow['slug']);
+                if (
+                    $slug !== ''
+                    && $this->companion_hosts_match($host, $home_host)
+                    && $this->companion_path_is_flow_slug($path, $slug)
+                ) {
+                    return true;
+                }
+            }
+        }
+
+        $resolved_app = esc_url_raw((string) $this->flosc->get_app_url(), ['http', 'https']);
+        if ($resolved_app !== '' && $this->companion_app_routes_match($url, $resolved_app)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Same app document (host + path); query/fragment ignored.
+     * Used so session handoff targets still match get_app_url() exactly.
+     *
+     * @param string $url_a First URL.
+     * @param string $url_b Second URL.
+     * @return bool
+     */
+    private function companion_app_routes_match($url_a, $url_b) {
+        $url_a = (string) $url_a;
+        $url_b = (string) $url_b;
+        if ($url_a === '' || $url_b === '') {
+            return false;
+        }
+        $host_a = strtolower((string) wp_parse_url($url_a, PHP_URL_HOST));
+        $host_b = strtolower((string) wp_parse_url($url_b, PHP_URL_HOST));
+        if ($host_a === '' || $host_b === '' || !$this->companion_hosts_match($host_a, $host_b)) {
+            return false;
+        }
+        return $this->companion_normalize_url_path($url_a) === $this->companion_normalize_url_path($url_b);
+    }
+
+    /**
+     * @param string $host_a Host A.
+     * @param string $host_b Host B.
+     * @return bool
+     */
+    private function companion_hosts_match($host_a, $host_b) {
+        $host_a = strtolower((string) $host_a);
+        $host_b = strtolower((string) $host_b);
+        if ($host_a === '' || $host_b === '') {
+            return false;
+        }
+        if ($host_a === $host_b) {
+            return true;
+        }
+        return $host_a === 'www.' . $host_b || $host_b === 'www.' . $host_a;
+    }
+
+    /**
+     * Path is exactly /{slug} or under /{slug}/...
+     *
+     * @param string $path Normalized path (/ or /foo).
+     * @param string $slug Flow slug.
+     * @return bool
+     */
+    private function companion_path_is_flow_slug($path, $slug) {
+        $slug = sanitize_title((string) $slug);
+        if ($slug === '') {
+            return false;
+        }
+        $path = (string) $path;
+        if ($path === '' || $path[0] !== '/') {
+            $path = $this->companion_normalize_url_path($path);
+        } else {
+            $path = untrailingslashit($path);
+            if ($path === '') {
+                $path = '/';
+            }
+        }
+        $prefix = '/' . $slug;
+        return $path === $prefix || strpos($path . '/', $prefix . '/') === 0;
+    }
+
+    /**
      * Resolve companion iframe app URL from floscAdmin parameters only.
      *
-     * Priority:
+     * Priority matches the pre-nest-fix order (session integrity / same chat surface):
      * 1) companion_chat_app_url (explicit Companion chat URL field)
-     * 2) Default derived from this flow: WordPress site + companion_flow_slug / slug
-     * 3) Flow get_app_url() fallback
+     * 2) hub defaults chat_app (same-origin flow slug when available)
+     * 3) companion_flow_slug / flow slug on this WordPress site
+     * 4) Flow get_app_url()
      *
-     * Never hardcode hosts or brands.
+     * Fullscreen / expand URL is separate (full_page_url) — not an iframe candidate.
+     * Only URLs that pass is_flosc_app_route_url() are returned (no hub/home iframe).
      */
     private function get_companion_chat_app_url() {
+        $candidates = [];
+
         $configured = esc_url_raw((string) $this->flosc->get_setting('companion_chat_app_url', ''), ['http', 'https']);
         if ($configured !== '') {
-            return $configured;
+            $candidates[] = $configured;
         }
 
         $flow = $this->flosc->get_current_flow();
         $flow_settings = is_array($flow) ? $flow : [];
         if (function_exists('flosc_companion_hub_defaults_from_flow')) {
             $defaults = flosc_companion_hub_defaults_from_flow($flow_settings);
+            // chat_app only — same as HEAD. Do not prefer fullscreen for the iframe
+            // (wrong surface can drop guest/member continuity onto another route).
             $from_defaults = esc_url_raw((string) ($defaults['chat_app'] ?? ''), ['http', 'https']);
             if ($from_defaults !== '') {
-                return $from_defaults;
+                $candidates[] = $from_defaults;
             }
         }
 
@@ -589,11 +800,21 @@ class FLOSC_Companion_Mode {
             $slug = sanitize_title((string) $flow['slug']);
         }
         if ($slug !== '') {
-            return esc_url_raw(home_url('/' . $slug . '/'));
+            $candidates[] = esc_url_raw(home_url('/' . $slug . '/'), ['http', 'https']);
         }
 
         $app = $this->flosc->get_app_url();
-        return !empty($app) ? esc_url_raw($app) : '';
+        if (!empty($app)) {
+            $candidates[] = esc_url_raw((string) $app, ['http', 'https']);
+        }
+
+        foreach ($candidates as $candidate) {
+            if ($candidate !== '' && $this->is_flosc_app_route_url($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return '';
     }
 
     /**
@@ -670,7 +891,9 @@ class FLOSC_Companion_Mode {
             'profile_tier_guest_label' => 'Guest',
             'profile_tier_member_label' => 'Member',
             'accent_color' => '#6366f1',
-            'show_for_visitors' => false,
+            // Sales freeline default: site visitors see the companion bubble.
+            // Operators may still turn this off per flow (stored 0/1).
+            'show_for_visitors' => true,
             'panel_width' => 380,
             'panel_height' => 560,
             'launcher_size' => 60,

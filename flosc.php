@@ -6,7 +6,7 @@
  * Version: 8.0.0
  * Requires at least: 7.0
  * Requires PHP: 7.4
- * Author: Dainis Michel
+ * Author: Dainis W. Michel
  * Author URI: https://dainis.net
  * License: GPLv3 or later
  * License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -250,6 +250,31 @@ if (!get_option('flosc_ivr_reparse_800')) {
                     $fs['flow_styles']   = $config['styles'] ?? [];
                     unset($fs['ivr_messages'], $fs['ivr_phases'], $fs['ivr_styles']);
                 }
+                // Fresh install: re-parse used to write messages-only options, skipping
+                // admin seed (empty() false) and hiding View Flow (needs status+slug).
+                $stem_slug = strtolower(preg_replace('/[^a-z0-9_-]/i', '', pathinfo($fname, PATHINFO_FILENAME)));
+                if ($stem_slug === '') {
+                    $stem_slug = 'flosc';
+                }
+                if (empty($fs['slug']) || !is_string($fs['slug'])) {
+                    $fs['slug'] = $stem_slug;
+                }
+                if (empty($fs['status']) || !is_string($fs['status'])) {
+                    $fs['status'] = 'active';
+                } elseif (!in_array($fs['status'], ['active', 'draft'], true)) {
+                    $fs['status'] = 'active';
+                }
+                if (empty($fs['name']) || !is_string($fs['name'])) {
+                    $shipped = function_exists('flosc_shipped_flow_display_name')
+                        ? flosc_shipped_flow_display_name($fname)
+                        : '';
+                    $fs['name'] = $shipped !== ''
+                        ? $shipped
+                        : ucwords(str_replace(['_', '-', 'ivr', '.md'], [' ', ' ', '', ''], $fname));
+                }
+                if (!isset($fs['primary_color']) || $fs['primary_color'] === '') {
+                    $fs['primary_color'] = '#4f46e5';
+                }
                 update_option($key, $fs);
             }
         }
@@ -261,6 +286,26 @@ if (!get_option('flosc_ivr_reparse_800')) {
 // v1.2.9: Michel timestamp generator (global scope for activation hook)
 function flosc_michel_timestamp_global() {
     return gmdate('Y') . 'y-' . gmdate('m') . 'm-' . gmdate('d') . 'd-UTC' . gmdate('H') . 'h-' . gmdate('i') . 'm-' . gmdate('s') . 's';
+}
+
+/**
+ * Friendly display names for shipped sample IVR stems (Identity / sidebar).
+ *
+ * @param string $ivr_filename_or_stem e.g. flosc_default_technical_ivr.md
+ * @return string Empty if not a known shipped sample (caller falls back).
+ */
+function flosc_shipped_flow_display_name($ivr_filename_or_stem) {
+    $stem = sanitize_key(pathinfo(basename((string) $ivr_filename_or_stem), PATHINFO_FILENAME));
+    if ($stem === '') {
+        $stem = sanitize_key((string) $ivr_filename_or_stem);
+    }
+    $map = [
+        'flosc_default_br3nda_emotional_support_ivr' => 'Br3nda',
+        'flosc_default_technical_ivr'                  => 'Tech Agent',
+        'flosc_default_friendly_ivr'                   => 'Friendly Guide',
+        'flosc_default_ivr'                            => 'FLOSC Starter',
+    ];
+    return $map[$stem] ?? '';
 }
 
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-rest.php';
@@ -1115,6 +1160,17 @@ class FLOSC_Framework {
         // Admin post handler for flush permalinks (v9.5.1)
         add_action('admin_post_flosc_flush_permalinks', [$this, 'handle_flush_permalinks']);
 
+        // Set default flow (must run before admin HTML — not inside settings.php render)
+        add_action('admin_post_flosc_set_default_flow', [$this, 'handle_set_default_flow']);
+
+        // Settings Save / trajectory / concierge POSTs redirect — must run before admin HTML
+        // or wp_safe_redirect fails and exit leaves a white content pane.
+        add_action('admin_init', [$this, 'maybe_process_flosc_settings_post'], 1);
+
+        // Sidebar shortcuts (UI & Nav, Style, AI, …) must redirect before admin chrome.
+        // Late menu callbacks + headers_sent + exit = blank main content area.
+        add_action('admin_init', [$this, 'maybe_redirect_flosc_admin_shortcuts'], 1);
+
         // Fix 6: Lesson catalog auto-regeneration on post save + manual admin-post handler
         add_action('save_post', [$this, 'maybe_regenerate_lesson_catalog'], 20, 2);
         add_action('admin_post_flosc_regenerate_lesson_catalog', [$this, 'handle_regenerate_lesson_catalog']);
@@ -1770,16 +1826,27 @@ The Team',
             // Canonical defaults — add new keys here whenever a new setting is introduced
             // Note: enabled_quizzes intentionally omitted — admin configures which quizzes
             // are active; no default should be forced on any flow.
+            $stem_slug = strtolower( preg_replace( '/[^a-z0-9_-]/i', '', pathinfo( $basename, PATHINFO_FILENAME ) ) );
+            if ( $stem_slug === '' ) {
+                $stem_slug = 'flosc';
+            }
             $defaults = [
-                'paypal_mode' => 'sandbox',
-                'stripe_mode' => 'test',
+                'paypal_mode'   => 'sandbox',
+                'stripe_mode'   => 'test',
+                'slug'          => $stem_slug,
+                'status'        => 'active',
+                'primary_color' => '#4f46e5',
             ];
 
             foreach ( $defaults as $key => $default ) {
-                if ( ! isset( $settings[ $key ] ) ) {
+                if ( ! isset( $settings[ $key ] ) || $settings[ $key ] === '' || $settings[ $key ] === null ) {
                     $settings[ $key ] = $default;
                     $changed = true;
                 }
+            }
+            if ( isset( $settings['status'] ) && ! in_array( $settings['status'], [ 'active', 'draft' ], true ) ) {
+                $settings['status'] = 'active';
+                $changed = true;
             }
             if ( $changed ) {
                 update_option( $option_key, $settings );
@@ -5183,19 +5250,21 @@ Example good response:
      * Get default response for a phase
      */
     private function get_phase_default_response($phase, $context) {
-        // v3.0.3: Phase defaults for IVR-only mode (no AI configured).
-        // These show when user types free-form text with no IVR keyword match.
+        // Phase defaults for IVR-only mode (no AI configured / no keyword match).
+        // Keep product-agnostic: no hard-coded lessons/quiz spam for every flow.
         // Guest phase is 'login' but user IS logged in — message must reflect that.
         $name = $context['user_name'] ?? $context['name'] ?? 'there';
+        // Reminder when free-form hits button/keyword IVR only (no model).
+        $ai_hint = ' This is just IVR-style copy — remember to configure your preferred AI API for much more intelligent responses!';
         $responses = [
-            'freeline' => 'Thanks for your interest! Try one of the suggestions above, or take the quiz to get started.',
-            'login' => "Hey {$name}! I work best with the suggestion buttons above. Try tapping one to get started — or ask me about your quiz results or your free lesson.",
-            'offer' => 'Would you like to learn more about our offer? Try the suggestions above!',
-            'sale' => 'Ready to take the next step? Check out the options above.',
-            'content' => 'Welcome back! Use the suggestions above to navigate your lessons.',
+            'freeline' => 'Thanks for your interest! Try one of the suggestions above.' . $ai_hint,
+            'login' => "Hey {$name}! I work best with the suggestion buttons above. Try tapping one to continue." . $ai_hint,
+            'offer' => 'Would you like to learn more about our offer? Try the suggestions above!' . $ai_hint,
+            'sale' => 'Ready to take the next step? Check out the options above.' . $ai_hint,
+            'content' => 'Welcome back! Use the suggestions above to continue.' . $ai_hint,
         ];
-        
-        return $responses[$phase] ?? 'Try one of the suggestions above — I can help you from there!';
+
+        return $responses[$phase] ?? ('Try one of the suggestions above.' . $ai_hint);
     }
     
     /**
@@ -9288,6 +9357,18 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
 
         // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
         $provider = flosc_get_setting('ai_provider', 'ivr');
+        if ($provider === '' || $provider === null) {
+            $provider = 'ivr';
+        }
+
+        if ($provider === 'ivr') {
+            return new WP_REST_Response([
+                'success' => false,
+                'provider' => 'ivr',
+                'error_code' => 'ivr_not_external_api',
+                'message' => 'Provider is IVR (scripted only). No external API call was made. Select OpenAI, Anthropic, or xAI, Save Settings, then test again.',
+            ], 200);
+        }
 
         try {
             // Build AI context for freeline phase (simplest phase)
@@ -9350,6 +9431,51 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         $start_time = microtime(true);
         $test_message = "Hello, this is a connection test. Please respond with 'Connection successful'.";
         $provider = flosc_get_setting('ai_provider', 'ivr');
+        if ($provider === '' || $provider === null) {
+            $provider = 'ivr';
+        }
+
+        // IVR is scripted local copy — not an external API. Do not report as API success.
+        if ($provider === 'ivr') {
+            wp_send_json_error([
+                'provider' => 'ivr',
+                'message'  => "Provider is IVR (scripted only). No external API call was made.\n\n"
+                    . "1. Primary AI Provider → OpenAI, Anthropic, or xAI Grok\n"
+                    . "2. Paste the API key for that provider\n"
+                    . "3. Click Save Settings (bottom of this page)\n"
+                    . "4. Confirm the URL has saved=1, then Test again\n\n"
+                    . "Expected success line: Provider: xai (or openai / anthropic), not ivr.",
+            ]);
+        }
+
+        // Resolved model + key presence (for diagnostics; never return full secrets).
+        $model_setting_key = [
+            'openai'    => 'ai_openai_model',
+            'anthropic' => 'ai_anthropic_model',
+            'xai'       => 'ai_xai_model',
+        ];
+        $key_setting_key = [
+            'openai'    => 'openai_api_key',
+            'anthropic' => 'anthropic_api_key',
+            'xai'       => 'xai_api_key',
+        ];
+        $configured_model = isset($model_setting_key[$provider])
+            ? (string) flosc_get_setting($model_setting_key[$provider], '')
+            : '';
+        $key_raw = isset($key_setting_key[$provider])
+            ? (string) flosc_get_setting($key_setting_key[$provider], '')
+            : '';
+        $key_present = ($key_raw !== '');
+        $key_suffix  = $key_present && strlen($key_raw) >= 4
+            ? substr($key_raw, -4)
+            : '';
+
+        $endpoint = [
+            'openai'    => 'https://api.openai.com/v1/chat/completions',
+            'anthropic' => 'https://api.anthropic.com/v1/messages',
+            'xai'       => 'https://api.x.ai/v1/chat/completions',
+        ];
+        $endpoint_url = $endpoint[$provider] ?? '';
 
         try {
             $ai_context = ['phase' => 'freeline', 'is_admin' => true];
@@ -9359,20 +9485,66 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
 
             if (is_wp_error($response)) {
                 wp_send_json_error([
-                    'message' => $response->get_error_message(),
-                    'provider' => $provider,
+                    'message'           => $response->get_error_message(),
+                    'provider'          => $provider,
+                    'model'             => $configured_model,
+                    'endpoint'          => $endpoint_url,
+                    'api_key_present'   => $key_present,
+                    'api_key_suffix'    => $key_suffix,
+                    'response_time'     => $response_time,
+                    'flow_ivr'          => $ivr,
                 ]);
             }
 
+            $billing = method_exists($this->ai_chat_dispatch, 'get_last_billing_meta')
+                ? (array) $this->ai_chat_dispatch->get_last_billing_meta()
+                : [];
+            $usage = is_array($billing['usage'] ?? null) ? $billing['usage'] : [];
+            $model_used = (string) ($billing['model'] ?? $configured_model);
+            if ($model_used === '') {
+                $model_used = $configured_model;
+            }
+
+            $in_tok  = intval($usage['prompt_tokens'] ?? $usage['input_tokens'] ?? 0);
+            $out_tok = intval($usage['completion_tokens'] ?? $usage['output_tokens'] ?? 0);
+            $tot_tok = intval($usage['total_tokens'] ?? ($in_tok + $out_tok));
+
+            $flow = $this->get_current_flow();
+            $flow_label = '';
+            if (is_array($flow)) {
+                $flow_label = trim((string) ($flow['identity']['name'] ?? $flow['name'] ?? ''));
+            }
+            if ($flow_label === '' && $ivr !== '') {
+                $flow_label = pathinfo($ivr, PATHINFO_FILENAME);
+            }
+
             wp_send_json_success([
-                'provider' => $provider,
-                'response' => $response,
-                'response_time' => $response_time,
+                'provider'        => $provider,
+                'model'           => $model_used,
+                'model_configured'=> $configured_model,
+                'endpoint'        => $endpoint_url,
+                'api_key_present' => $key_present,
+                'api_key_suffix'  => $key_suffix,
+                'response'        => is_string($response) ? $response : wp_json_encode($response),
+                'response_time'   => $response_time,
+                'tokens_in'       => $in_tok,
+                'tokens_out'      => $out_tok,
+                'tokens_total'    => $tot_tok,
+                'billing_source'  => (string) ($billing['source'] ?? ''),
+                'flow_ivr'        => $ivr,
+                'flow_label'      => $flow_label,
+                'http_ok'         => true,
+                'test_message'    => $test_message,
             ]);
         } catch (\Throwable $e) {
             wp_send_json_error([
-                'message' => $e->getMessage(),
-                'provider' => $provider,
+                'message'         => $e->getMessage(),
+                'provider'        => $provider,
+                'model'           => $configured_model,
+                'endpoint'        => $endpoint_url,
+                'api_key_present' => $key_present,
+                'api_key_suffix'  => $key_suffix,
+                'flow_ivr'        => $ivr,
             ]);
         }
     }

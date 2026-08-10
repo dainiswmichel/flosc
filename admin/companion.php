@@ -3,14 +3,12 @@
  * FLOSC Companion Configuration Tab
  * 
  * Configures the floating Companion chat widget that appears on WordPress
- * pages alongside FLOSC content and interactions. This is "Companion Mode" —
- * the chatbot as a contextual companion while members browse flow resources as
- * normal WordPress content.
- * 
- * Content Display Modes:
- * - In-Chat:    FLOSC content and interactions run inside the chatbot app (default)
- * - Companion:  Floating widget on WP pages (except flow URL) while content is browsed on-site
- * - Hybrid:     Full-page chat at flow URL + companion widget with include/exclude targeting
+ * pages alongside FLOSC content and interactions.
+ *
+ * Operator display modes (stored values unchanged for compatibility):
+ * - Full-page  (in_chat)   — Chat only at the flow URL; no site bubble
+ * - Companion  (companion) — Floating bubble on WP pages (except full chat route)
+ * - Hybrid     (both)      — Full-page + companion; expand/collapse continuous session
  * 
  * Settings (per-flow via companion override group):
  * - content_display_mode:  'in_chat' | 'companion' | 'both'
@@ -53,7 +51,13 @@ $flosc_show_header_subtitle = array_key_exists('companion_show_header_subtitle',
 // Some floscAdmins won't want to offer the standalone full chat page; default true (show).
 $flosc_show_open_fullpage   = array_key_exists('companion_show_open_fullpage', $flosc_flow_settings) ? !empty($flosc_flow_settings['companion_show_open_fullpage']) : true;
 $flosc_accent_color         = $flosc_flow_settings['companion_accent_color'] ?? '';
-$flosc_show_for_visitors    = $flosc_flow_settings['companion_show_for_visitors'] ?? '';
+// Sales default: visitors see companion when the key was never saved (new flows).
+// After Style save: 1 = on, 0 or empty legacy = off.
+if (array_key_exists('companion_show_for_visitors', $flosc_flow_settings)) {
+    $flosc_show_for_visitors = !empty($flosc_flow_settings['companion_show_for_visitors']) ? '1' : '';
+} else {
+    $flosc_show_for_visitors = '1';
+}
 $flosc_target_include       = $flosc_flow_settings['companion_target_include'] ?? '';
 $flosc_target_exclude       = $flosc_flow_settings['companion_target_exclude'] ?? '';
 $flosc_panel_width          = intval($flosc_flow_settings['companion_panel_width'] ?? 380);
@@ -233,11 +237,13 @@ $flosc_target_mode = $flosc_target_include_has_rules ? 'selected' : 'sitewide';
 
 $flosc_companion_effective_summary = '';
 if ($flosc_content_display_mode === 'in_chat' || $flosc_enabled !== '1') {
-    $flosc_companion_effective_summary = 'Companion widget is currently OFF. Full-page chat runs at the flow URL.';
+    $flosc_companion_effective_summary = 'Full-page mode: chat at the flow URL only. Companion widget is OFF.';
 } elseif ($flosc_target_mode === 'selected') {
-    $flosc_companion_effective_summary = 'Companion widget is ON for selected targets only (Include/Exclude rules).';
+    $flosc_companion_effective_summary = ($flosc_content_display_mode === 'both' ? 'Hybrid' : 'Companion')
+        . ': widget ON for selected targets only (Include/Exclude rules).';
 } else {
-    $flosc_companion_effective_summary = 'Companion widget is ON sitewide (except full-page chatbot route).';
+    $flosc_companion_effective_summary = ($flosc_content_display_mode === 'both' ? 'Hybrid' : 'Companion')
+        . ': widget ON sitewide (except full-page chat route).';
 }
 
 $flosc_target_pages = get_pages([
@@ -414,8 +420,12 @@ add_filter('flosc_companion_frontend_config', function ($config, $framework) {
 FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
 ?>
 
-<h2>Content Display Mode</h2>
-<p>Choose where the FLOSC chat experience runs. Full-page mode runs at your flow URL. Companion mode runs as a floating widget on selected WordPress targets (posts, pages, categories, or tags).</p>
+<h2>Display Mode</h2>
+<p>
+    <strong>Full-page</strong> — chat at the flow URL.
+    <strong>Companion</strong> — floating bubble on WordPress pages.
+    <strong>Hybrid</strong> — both surfaces, with expand/collapse and continuous session.
+</p>
 
 <table class="form-table">
     <tr>
@@ -424,26 +434,27 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
             <fieldset>
                 <label class="flosc-companion-mode-card <?php echo esc_attr( $flosc_content_display_mode === 'in_chat' ? 'is-active' : '' ); ?>">
                     <input type="radio" name="flow_companion_content_display_mode" value="in_chat" <?php checked($flosc_content_display_mode, 'in_chat'); ?>>
-                    <strong>💬 In-Chat Only</strong> <em class="flosc-companion-mode-default">(default)</em>
+                    <strong>Full-page</strong> <em class="flosc-companion-mode-default">(default)</em>
                     <br><span class="flosc-companion-mode-copy">
-                        The full-page FLOSC chat interface runs at your flow URL only.
+                        Chat only at the flow URL. No floating companion widget.
                     </span>
                 </label>
                 
                 <label class="flosc-companion-mode-card <?php echo esc_attr( $flosc_content_display_mode === 'companion' ? 'is-active' : '' ); ?>">
                     <input type="radio" name="flow_companion_content_display_mode" value="companion" <?php checked($flosc_content_display_mode, 'companion'); ?>>
-                    <strong>🤝 Companion Mode</strong>
+                    <strong>Companion</strong>
                     <br><span class="flosc-companion-mode-copy">
-                        The companion widget appears sitewide on WordPress pages (except the full-page chatbot URL)
-                        and provides contextual chat support while users stay on-site.
+                        Floating bubble on WordPress pages (except the full-page chat route).
+                        Targeting uses Include/Exclude below.
                     </span>
                 </label>
                 
                 <label class="flosc-companion-mode-card <?php echo esc_attr( $flosc_content_display_mode === 'both' ? 'is-active' : '' ); ?>">
                     <input type="radio" name="flow_companion_content_display_mode" value="both" <?php checked($flosc_content_display_mode, 'both'); ?>>
-                    <strong>✨ Hybrid</strong>
+                    <strong>Hybrid</strong>
                     <br><span class="flosc-companion-mode-copy">
-                        Full-page chat stays at the flow URL, and companion targeting is controlled with Include/Exclude parameters.
+                        Full-page chat and companion bubble. Expand to full page, collapse back to the hub;
+                        conversation continues. Targeting uses Include/Exclude below.
                     </span>
                 </label>
             </fieldset>
@@ -860,7 +871,10 @@ FLOSC_COMPANION_SNIPPET_FRONTEND_CONFIG;
                     <input type="checkbox" name="flow_companion_show_for_visitors" id="flow_companion_show_for_visitors" value="1" <?php checked($flosc_show_for_visitors, '1'); ?>>
                     Show companion to non-logged-in visitors
                 </label>
-                <p class="description">When unchecked, only logged-in users see the companion. Visitors are directed to the full chatbot experience.</p>
+                <p class="description">
+                    Default is <strong>on</strong> (sales freeline: visitors see the bubble).
+                    Uncheck only for logged-in / member-only companion surfaces.
+                </p>
             </td>
         </tr>
 

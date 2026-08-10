@@ -216,16 +216,26 @@
         </tr>`;
     }
 
+    /**
+     * Parse a fragment of <tr> rows. Browsers discard <tr> when set as a div's
+     * innerHTML (invalid parent) — use a real table/tbody host instead.
+     */
+    function parseTableRows(html) {
+        const table = document.createElement('table');
+        const tbody = document.createElement('tbody');
+        table.appendChild(tbody);
+        tbody.innerHTML = html;
+        return Array.prototype.slice.call(tbody.querySelectorAll('tr'));
+    }
+
     function appendDemoPills(state, pills) {
         const tbody = document.getElementById(`tbody-${state}`);
         if (!tbody || !pills.length) return 0;
 
         pills.forEach(function(pill) {
-            const tmpDiv = document.createElement('div');
-            tmpDiv.innerHTML = buildRowWithData(state, pill);
-            const rows = tmpDiv.querySelectorAll('tr');
+            const rows = parseTableRows(buildRowWithData(state, pill));
             rows.forEach(function(row) { tbody.appendChild(row); });
-            updateExpectedBehaviorRow(rows[0]);
+            if (rows[0]) updateExpectedBehaviorRow(rows[0]);
         });
 
         applyAutopromptStriping();
@@ -270,9 +280,9 @@
             const tbody = document.getElementById(`tbody-${state}`);
             if (!tbody) return;
 
-            const tmpDiv = document.createElement('div');
-            tmpDiv.innerHTML = buildRow(state, defaultCond);
-            const rows = tmpDiv.querySelectorAll('tr');
+            const rows = parseTableRows(buildRow(state, defaultCond));
+            if (!rows.length) return;
+
             rows.forEach(function(row) { tbody.appendChild(row); });
 
             const primaryRow = rows[0];

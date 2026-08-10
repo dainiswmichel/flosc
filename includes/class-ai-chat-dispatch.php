@@ -1328,7 +1328,22 @@ class FLOSC_AI_Chat_Dispatch {
         $messages[] = ['role' => 'user', 'content' => $message];
 
         // v1.8.7: Per-flow model, temperature, max_tokens
-        $model = flosc_get_setting('ai_xai_model', 'grok-2-latest');
+        // Default tracks current xAI chat flagship (see docs.x.ai/developers/models).
+        $model = (string) flosc_get_setting('ai_xai_model', 'grok-4.5');
+        if ($model === '') {
+            $model = 'grok-4.5';
+        }
+        // Retired slugs still stored on older installs — remap so chat works without re-save.
+        $flosc_xai_legacy = [
+            'grok-2-latest'    => 'grok-4.5',
+            'grok-2'           => 'grok-4.5',
+            'grok-2-1212'      => 'grok-4.5',
+            'grok-beta'        => 'grok-4.5',
+            'grok-vision-beta' => 'grok-4.5',
+        ];
+        if (isset($flosc_xai_legacy[$model])) {
+            $model = $flosc_xai_legacy[$model];
+        }
         $temperature = (float) flosc_get_setting('ai_temperature', '0.3');
         $max_tokens = (int) flosc_get_setting('ai_max_tokens', '500');
 
@@ -1372,6 +1387,11 @@ class FLOSC_AI_Chat_Dispatch {
                     $help_text .= "3. Create a new API key\n";
                     $help_text .= "4. Replace the old key with the new one above\n";
                     $help_text .= "5. Make sure you copied the entire key (starts with xai-...)";
+                } elseif (stripos($error_msg, 'model not found') !== false || stripos($error_msg, 'does not exist') !== false) {
+                    $help_text .= "1. The model ID is retired or not enabled on your xAI account (requested: {$model})\n";
+                    $help_text .= "2. AI tab → xAI Model → choose Grok 4.5 (or another current ID)\n";
+                    $help_text .= "3. Click Save Settings, then Test again\n";
+                    $help_text .= "4. Model catalog: https://docs.x.ai/developers/models";
                 } else {
                     $help_text .= "1. Check the error message above for details\n";
                     $help_text .= "2. Verify your API key at https://console.x.ai\n";

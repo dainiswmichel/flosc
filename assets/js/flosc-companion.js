@@ -20,6 +20,14 @@
 (function(window, document) {
     'use strict';
 
+    // Single boot: PHP enqueues this only on host pages with a validated FLOSC app
+    // route as iframe target. App routes never load this script (is_flosc_request).
+    // Nesting is impossible by that invariant — not by runtime "nest guards."
+    if (window.__FLOSC_COMPANION_BOOTED__) {
+        return;
+    }
+    window.__FLOSC_COMPANION_BOOTED__ = true;
+
     var l10n = window.floscCompanionL10n || {};
 
     var FloscCompanion = {
@@ -31,8 +39,30 @@
         browsingContext: null,
         lastIframeContextSignature: '',
         lastTokenUpdateTs: 0,
+        _initialized: false,
+        _eventsBound: false,
+
+        destroyMount: function() {
+            // DOM only. Do not clear continuityParams / token cache / sessionStorage —
+            // collapse↔expand and dock handoff depend on those surviving remount.
+            if (this.container && this.container.parentNode) {
+                this.container.parentNode.removeChild(this.container);
+            }
+            this.container = null;
+            this.iframe = null;
+            this.isOpen = false;
+            this._initialized = false;
+        },
 
         init: function(config) {
+            // Single mount: second init (double enqueue / SPA re-run) is a no-op
+            // once a live container is already on the page.
+            if (this._initialized && this.container && document.body.contains(this.container)) {
+                return;
+            }
+
+            this.destroyMount();
+
             this.config = Object.assign({
                 appUrl: '',
                 productName: '',
@@ -102,13 +132,20 @@
             if (this.handoffRequested) {
                 this.config.skipBehaviorTriggers = true;
             }
-            // Capture session continuity from the hub URL before anything strips the query string.
-            // Guest/member: flosc_session_id. Visitor: flosc_visitor_session + optional flosc_handoff.
+            // Session integrity: snapshot continuity BEFORE render and BEFORE
+            // applyHandoffRequest cleans the hub address bar. buildIframeUrl
+            // forwards these into the app-route iframe (same chat session).
+            // Guest/member: flosc_session_id. Visitor: flosc_visitor_session + flosc_handoff.
             this.continuityParams = this.captureContinuityParamsFromPage();
 
             this.captureCurrentSiteContext();
 
+            // Shell mounts first; iframe src is assigned on first open (see open())
+            // via buildIframeUrl(), which reads this.continuityParams. That must stay
+            // snapshotted here so applyHandoffRequest can clean the hub URL without
+            // dropping flosc_session_id / visitor continuity on the chat app route.
             this.render();
+            this._initialized = true;
             this.applyMotionMode();
             this.syncViewportCssVars();
             this.bindEvents();
@@ -132,6 +169,7 @@
             // Container
             this.container = document.createElement('div');
             this.container.className = 'flosc-companion';
+            this.container.setAttribute('data-flosc-companion-root', '1');
 
             // Position class keeps placement behavior deterministic from admin settings.
             if (this.config.position === 'bottom-left') {
@@ -150,6 +188,7 @@
 
             // Header — product chrome only (parameterized title + brand icon).
             // Wallet lives under the input in the iframe profile row.
+            // Exactly one header node per mount (never re-appended after init).
             var header = document.createElement('div');
             header.className = 'flosc-companion-header';
             var subtitleHtml = (this.config.showHeaderSubtitle === false || !this.config.subtitle)
@@ -201,17 +240,25 @@
 
         bindEvents: function() {
             var self = this;
+            if (!this.container) {
+                return;
+            }
+
             var fab = this.container.querySelector('.flosc-companion-fab');
             var closeBtn = this.container.querySelector('.flosc-companion-close');
             var fullPageBtn = this.container.querySelector('.flosc-companion-open-fullpage');
 
-            fab.addEventListener('click', function() {
-                self.toggle();
-            });
+            if (fab) {
+                fab.addEventListener('click', function() {
+                    self.toggle();
+                });
+            }
 
-            closeBtn.addEventListener('click', function() {
-                self.close();
-            });
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    self.close();
+                });
+            }
 
             if (fullPageBtn) {
                 fullPageBtn.addEventListener('click', function() {
@@ -225,8 +272,17 @@
                 });
             }
 
+            // Document/window listeners once — re-init must not stack handlers.
+            if (this._eventsBound) {
+                return;
+            }
+            this._eventsBound = true;
+
             // Keyboard: Escape to close
             document.addEventListener('keydown', function(e) {
+                if (!self.container) {
+                    return;
+                }
                 if (self.config.allowEscapeClose && e.key === 'Escape' && self.isOpen) {
                     self.close();
                     return;
@@ -242,16 +298,25 @@
             });
 
             window.addEventListener('popstate', function() {
+                if (!self.container) {
+                    return;
+                }
                 self.captureCurrentSiteContext();
                 self.refreshIframeContextIfNeeded();
             });
 
             window.addEventListener('hashchange', function() {
+                if (!self.container) {
+                    return;
+                }
                 self.captureCurrentSiteContext();
                 self.refreshIframeContextIfNeeded();
             });
 
             document.addEventListener('visibilitychange', function() {
+                if (!self.container) {
+                    return;
+                }
                 if (document.visibilityState === 'visible') {
                     self.captureCurrentSiteContext();
                     self.refreshIframeContextIfNeeded();
@@ -261,10 +326,16 @@
             });
 
             window.addEventListener('pagehide', function() {
+                if (!self.container) {
+                    return;
+                }
                 self.saveNavigationState();
             });
 
             var syncViewport = function() {
+                if (!self.container) {
+                    return;
+                }
                 self.syncViewportCssVars();
                 self.scheduleViewportClamp();
             };
@@ -467,16 +538,19 @@
             var payload = this.getBrowsingContextPayload();
             var signature = this.getContextSignature(payload);
 
-            // Lazy-load iframe on first open; reload src when parent page context changes.
+            // Lazy-load iframe on first open only. Never hard-reload after load —
+            // reassigning iframe.src aborts in-flight turns, drops replies, and
+            // breaks session continuity (full-page chat is unaffected). Later
+            // context updates go via postMessage only. First src includes
+            // continuityParams (session_id / visitor / handoff pack).
             if (!this.iframe.src) {
                 this.lastIframeContextSignature = signature;
                 var iframeSrc = this.buildIframeUrl();
-                if (iframeSrc) { this.iframe.src = iframeSrc; }
-            } else if (signature !== this.lastIframeContextSignature) {
-                this.lastIframeContextSignature = signature;
-                var iframeSrc = this.buildIframeUrl();
-                if (iframeSrc) { this.iframe.src = iframeSrc; }
+                if (iframeSrc) {
+                    this.iframe.src = iframeSrc;
+                }
             } else {
+                this.lastIframeContextSignature = signature;
                 this.deliverBrowsingContextToIframe();
             }
 
@@ -559,8 +633,8 @@
         },
 
         /**
-         * Iframe chat URL must stay on the configured FLOSC app origin only.
-         * Never load arbitrary site pages inside the companion iframe.
+         * Iframe URL from PHP-validated appUrl (FLOSC app route only).
+         * Reject non-http(s) schemes; do not invent alternate targets.
          */
         resolveAllowedAppUrl: function() {
             try {
@@ -568,8 +642,6 @@
                     return null;
                 }
                 var app = new URL(this.config.appUrl, window.location.origin);
-                // Same origin as the page, or same origin as the configured app URL host.
-                // Reject protocol-relative / javascript: / data: and off-app hosts.
                 if (app.protocol !== 'http:' && app.protocol !== 'https:') {
                     return null;
                 }
@@ -585,6 +657,7 @@
                 if (!url) {
                     return '';
                 }
+                // Embed surface flags for the *inner* app (CSS / layout), not outer chrome.
                 url.searchParams.set('flosc_surface', 'companion');
                 url.searchParams.set('flosc_companion', '1');
 

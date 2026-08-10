@@ -27,7 +27,12 @@ $flosc_base_prompt = $flosc_flow_settings['ai_base_prompt'] ?? '';
 $flosc_ai_provider = $flosc_flow_settings['ai_provider'] ?? 'ivr';
 $flosc_ai_openai_model = $flosc_flow_settings['ai_openai_model'] ?? 'gpt-4o-mini';
 $flosc_ai_anthropic_model = $flosc_flow_settings['ai_anthropic_model'] ?? 'claude-sonnet-4-5-20250929';
-$flosc_ai_xai_model = $flosc_flow_settings['ai_xai_model'] ?? 'grok-2-latest';
+$flosc_ai_xai_model = $flosc_flow_settings['ai_xai_model'] ?? 'grok-4.5';
+// Retired xAI slugs no longer resolve on api.x.ai — surface current default in the UI.
+$flosc_xai_legacy_models = ['grok-2-latest', 'grok-2', 'grok-2-1212', 'grok-beta', 'grok-vision-beta'];
+if (in_array($flosc_ai_xai_model, $flosc_xai_legacy_models, true)) {
+    $flosc_ai_xai_model = 'grok-4.5';
+}
 $flosc_ai_temperature = $flosc_flow_settings['ai_temperature'] ?? '0.3';
 $flosc_ai_max_tokens = $flosc_flow_settings['ai_max_tokens'] ?? '500';
 $flosc_enable_ivr_context = $flosc_flow_settings['ai_enable_ivr_context'] ?? true;
@@ -225,10 +230,29 @@ if ($flosc_catalog_age > 7 * DAY_IN_SECONDS) {
         <th scope="row"><label for="flow_ai_xai_model">xAI Model</label></th>
         <td>
             <select name="flow_ai_xai_model" id="flow_ai_xai_model" class="flosc-ai-model-select">
-                <option value="grok-2-latest" <?php selected($flosc_ai_xai_model, 'grok-2-latest'); ?>>Grok 2 (Recommended)</option>
-                <option value="grok-beta" <?php selected($flosc_ai_xai_model, 'grok-beta'); ?>>Grok Beta (Legacy)</option>
+                <?php
+                $flosc_xai_model_options = [
+                    'grok-4.5'     => 'Grok 4.5 (Recommended — chat / coding)',
+                    'grok-4-0709'  => 'Grok 4 (0709)',
+                    'grok-4'       => 'Grok 4 (alias)',
+                    'grok-3'       => 'Grok 3 (legacy alias if still enabled on your account)',
+                    'grok-3-mini'  => 'Grok 3 Mini (legacy / budget)',
+                ];
+                $flosc_xai_known = array_keys($flosc_xai_model_options);
+                if ($flosc_ai_xai_model !== '' && !in_array($flosc_ai_xai_model, $flosc_xai_known, true)) {
+                    $flosc_xai_model_options[$flosc_ai_xai_model] = $flosc_ai_xai_model . ' (saved custom ID)';
+                }
+                foreach ($flosc_xai_model_options as $flosc_xai_id => $flosc_xai_label) :
+                    ?>
+                <option value="<?php echo esc_attr($flosc_xai_id); ?>" <?php selected($flosc_ai_xai_model, $flosc_xai_id); ?>><?php echo esc_html($flosc_xai_label); ?></option>
+                <?php endforeach; ?>
             </select>
-            <p class="description">Choose which Grok model to use for this flow.</p>
+            <p class="description">
+                API model ID sent to <code>api.x.ai</code>. Default: <code>grok-4.5</code>.
+                If a model is retired, xAI returns “Model not found” — pick a current ID from
+                <a href="https://docs.x.ai/developers/models" target="_blank" rel="noopener noreferrer">docs.x.ai/models</a>
+                and Save again.
+            </p>
         </td>
     </tr>
 </table>
@@ -543,11 +567,53 @@ jQuery(document).ready(function($) {
                 $results.show();
                 
                 if (response.success) {
-                    $flosc_status.html('<span class="flosc-pass-status flosc-pass-status--pass">✓ Connection Successful!</span>');
-                    $details.text('Provider: ' + response.data.provider + '\nResponse: ' + response.data.response);
+                    var d = response.data || {};
+                    var lines = [];
+                    lines.push('Result: LIVE external API call succeeded (not IVR scripted mode)');
+                    if (d.provider) { lines.push('Provider: ' + d.provider); }
+                    if (d.model) { lines.push('Model used: ' + d.model); }
+                    if (d.model_configured && d.model_configured !== d.model) {
+                        lines.push('Model configured: ' + d.model_configured);
+                    }
+                    if (d.endpoint) { lines.push('Endpoint: ' + d.endpoint); }
+                    if (d.api_key_present) {
+                        lines.push('API key: present' + (d.api_key_suffix ? (' (…' + d.api_key_suffix + ')') : ''));
+                    } else {
+                        lines.push('API key: missing in saved settings');
+                    }
+                    if (d.flow_label || d.flow_ivr) {
+                        lines.push('Flow: ' + (d.flow_label || d.flow_ivr) + (d.flow_ivr && d.flow_label ? (' (' + d.flow_ivr + ')') : ''));
+                    }
+                    if (d.response_time != null) { lines.push('Latency: ' + d.response_time + ' ms'); }
+                    if (d.tokens_total > 0 || d.tokens_in > 0 || d.tokens_out > 0) {
+                        lines.push(
+                            'Tokens: in ' + (d.tokens_in || 0) +
+                            ' / out ' + (d.tokens_out || 0) +
+                            ' / total ' + (d.tokens_total || ((d.tokens_in || 0) + (d.tokens_out || 0)))
+                        );
+                    } else {
+                        lines.push('Tokens: (provider did not return usage on this call)');
+                    }
+                    if (d.billing_source) { lines.push('Billing source: ' + d.billing_source); }
+                    lines.push('Model reply: ' + (d.response || '(empty)'));
+                    $flosc_status.html('<span class="flosc-pass-status flosc-pass-status--pass">✓ External API OK — key + model path verified</span>');
+                    $details.text(lines.join('\n'));
                 } else {
+                    var ed = response.data || {};
+                    var elines = [];
                     $flosc_status.html('<span class="flosc-pass-status flosc-pass-status--fail">✗ Connection Failed</span>');
-                    $details.text(response.data.message || 'Unknown error');
+                    if (ed.provider) { elines.push('Provider: ' + ed.provider); }
+                    if (ed.model) { elines.push('Model: ' + ed.model); }
+                    if (ed.endpoint) { elines.push('Endpoint: ' + ed.endpoint); }
+                    if (ed.api_key_present === false) {
+                        elines.push('API key: missing in saved settings — Save Settings after paste');
+                    } else if (ed.api_key_present && ed.api_key_suffix) {
+                        elines.push('API key: present (…' + ed.api_key_suffix + ') — rejected by provider or wrong model');
+                    }
+                    if (ed.flow_ivr) { elines.push('Flow: ' + ed.flow_ivr); }
+                    if (ed.response_time != null) { elines.push('Latency: ' + ed.response_time + ' ms'); }
+                    elines.push(ed.message || 'Unknown error');
+                    $details.text(elines.join('\n'));
                 }
             },
             error: function() {
@@ -786,7 +852,16 @@ if ($flosc_editing_kb_path && file_exists($flosc_editing_kb_path)) {
 }
 ?>
 
-<!-- Upload form (separate from the main settings form) -->
+<?php
+// HTML forbids nested forms. Close the main settings form before KB upload/edit forms.
+// Save Settings uses form="flosc-settings-form" so it still posts provider/key fields above.
+if (empty($GLOBALS['flosc_settings_form_closed_early'])) {
+    echo '</form>';
+    $GLOBALS['flosc_settings_form_closed_early'] = true;
+}
+?>
+
+<!-- Upload form (sibling of main settings form — not nested) -->
 <div class="card flosc-card-max-700">
     <h4 class="flosc-card-title-reset">Upload Knowledge File</h4>
     <form method="post" enctype="multipart/form-data" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">

@@ -19,10 +19,10 @@
  * - Detects current page context (lesson post, category, general) for contextual awareness
  * - Respects per-flow settings via companion override group
  * 
- * Content Display Modes (admin-configured per-flow):
- * - 'in_chat'    — Lessons shown inside the full chatbot app (default, existing behavior)
- * - 'companion'  — Floating widget on WP pages, lessons are normal WP posts
- * - 'both'       — Both modes available, user can switch
+ * Display modes (admin-configured per-flow; labels: Full-page / Companion / Hybrid):
+ * - 'in_chat'    — Full-page only (default)
+ * - 'companion'  — Companion bubble on WP pages
+ * - 'both'       — Hybrid: full-page + companion, expand/collapse
  * 
  * @package FLOSC
  * @since   1.6.0
@@ -125,7 +125,7 @@ class FLOSC_Companion_Widget {
             'position'             => 'bottom-right',
             'greeting'             => 'Chat with us',
             'accent_color'         => '',
-            'show_for_visitors'    => false,
+            'show_for_visitors'    => true,
         ];
 
         // Attempt per-flow resolution
@@ -171,7 +171,7 @@ class FLOSC_Companion_Widget {
             return false;
         }
 
-        // Never load on the full FLOSC app route — that's a separate experience
+        // Outer chrome never on FLOSC app routes (iframe targets only app routes).
         if (function_exists('flosc') && flosc()->is_flosc_request()) {
             return false;
         }

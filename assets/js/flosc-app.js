@@ -67,6 +67,12 @@ class floscApp {
         this.stripe = null;
         this.cardElement = null;
 
+        // Chat send serialization — companion + full page share one AI turn path.
+        // Without this, a second user message while the first is in flight can drop
+        // the first reply (only one response bubble / one token charge).
+        this._sendInFlight = false;
+        this._sendQueue = [];
+
         // v9.1.1: Security whitelist for condition parser
         this.allowedConditionVars = new Set([
             // State variables
@@ -6811,9 +6817,6 @@ class floscApp {
                     <p class="flosc-auth-terms">
                         ${termsText}
                     </p>
-                    <div class="flosc-access-code-trigger">
-                        <a href="#" class="flosc-access-code-link flosc-access-code-auth-trigger">Access Code</a>
-                    </div>
                 </div>
             </div>
         `;
@@ -6849,14 +6852,7 @@ class floscApp {
         // Apply dynamic CSS variables and data-driven measurements.
         this.applyDynamicStyleTokens(document.getElementById('flosc-auth-modal'));
 
-        // Bind Access Code link in auth modal
-        const acTrigger = document.querySelector('.flosc-access-code-auth-trigger');
-        if (acTrigger) {
-            acTrigger.addEventListener('click', (e) => {
-                e.preventDefault();
-                this._showAccessCodeInput('auth');
-            });
-        }
+        // Access Code is payment/offer only — never on Log In / Create Account.
         
         // Focus email input
         setTimeout(() => {
@@ -10268,208 +10264,269 @@ Purchased: ${ctx.purchased}
         }
     }
     
-    async sendMessage(directMessage = null, { executeActions = true } = {}) {
-        const message = directMessage?.trim() || this.chatInput?.value?.trim();
+    /**
+     * Composer busy state while a turn is in flight (full page + companion iframe).
+     * Input stays enabled so the next message can be typed; send still works via queue.
+     */
+    setComposerBusy(busy) {
+        const depleted = !!(this.state === 'visitor' && this.visitorDepletedState?.inputLocked);
+        if (this.sendBtn) {
+            // Visual cue only while in flight; Enter still queues via sendMessage.
+            this.sendBtn.setAttribute('aria-busy', busy ? 'true' : 'false');
+            this.sendBtn.disabled = depleted;
+        }
+        if (this.chatInput && depleted) {
+            this.chatInput.disabled = true;
+        } else if (this.chatInput && !depleted) {
+            this.chatInput.disabled = false;
+        }
+    }
+
+    /**
+     * Drain one queued user turn after the current API/IVR turn finishes.
+     */
+    async drainSendQueue() {
+        if (this._sendInFlight || !Array.isArray(this._sendQueue) || this._sendQueue.length === 0) {
+            return;
+        }
+        const next = this._sendQueue.shift();
+        if (!next || !next.message) {
+            return;
+        }
+        await this.sendMessage(next.message, {
+            executeActions: next.executeActions !== false,
+            _fromQueue: true,
+        });
+    }
+
+    async sendMessage(directMessage = null, { executeActions = true, _fromQueue = false } = {}) {
+        const message = _fromQueue
+            ? String(directMessage || '').trim()
+            : (directMessage?.trim() || this.chatInput?.value?.trim());
         if (!message) return;
 
         if (this.state === 'visitor' && this.visitorDepletedState?.inputLocked) {
             return;
         }
 
-        // Clear input
-        this.chatInput.value = '';
-        
-        // Show user message
-        this.addMessage('user', message);
-        
-        if (this.state === 'visitor') {
-            this.saveVisitorMessage('user', message);
-        }
-        
-        // Update context
-        this.ivr.messageCount++;
-        this.ivr.lastInteraction = Date.now();
-        this.buildIVRContext();
-        
-        // Check for special commands
-        if (this.onUserMessage(message)) {
-            return;
-        }
-
-        // Free-lesson / lesson-library requests — only if this flow’s Lessons config is on.
-        if (!this.flowServesLessons() && this._looksLikeLessonAsk(message)) {
-            await this.syncSessionTitleFromFirstUserMessage(message);
-            this.denyLessonsOnThisFlow(message);
-            return;
-        }
-        if (this.isFreeLessonRequest(message)) {
+        // Fresh user turn: paint bubble immediately, then queue if another turn is running.
+        // Queued turns skip re-adding the user bubble (already shown).
+        if (!_fromQueue) {
+            if (this.chatInput) {
+                this.chatInput.value = '';
+            }
+            this.addMessage('user', message);
             if (this.state === 'visitor') {
-                const deny = 'To access your free lessons, please log in or create a free account first.';
-                this.addMessage('assistant', deny, false);
-                this.logClientChatTurn(message, deny, { source: 'free_lesson_guest_gate' });
+                this.saveVisitorMessage('user', message);
+            }
+
+            if (this._sendInFlight) {
+                if (!Array.isArray(this._sendQueue)) {
+                    this._sendQueue = [];
+                }
+                this._sendQueue.push({ message, executeActions });
+                this.log('[FLOSC] Queued user message while prior turn in flight');
                 return;
             }
-            await this.syncSessionTitleFromFirstUserMessage(message);
-            this._pendingFreeLessonUserMessage = message;
-            this.requestFreeLesson();
-            return;
         }
 
-        // User is asking for offers / all offers: real flow offers only (no AI catalog).
-        if (this.handleUserOfferAsk(message)) {
-            await this.syncSessionTitleFromFirstUserMessage(message);
-            // Offer UI is rendered by handleUserOfferAsk; log the user ask + short summary.
-            this.logClientChatTurn(message, '(Offer presentation — see chat UI)', {
-                source: 'offer_ask',
-                provider: 'client',
-            });
-            return;
-        }
-        
-        // v3.0.5: Check if user message matches any offer's reveal_phrase (exact match).
-        // Exact match happens client-side — no API call needed. AI interpretation
-        // is handled server-side via the chat dispatch.
-        const phraseMatchOffer = this._matchOfferRevealPhrase(message);
-        if (phraseMatchOffer) {
-            this.log('[FLOSC-OFFER] Reveal phrase matched offer:', phraseMatchOffer.id);
-            setTimeout(() => this.showOffer(phraseMatchOffer.id, { source: 'user' }), 300);
-            return;
-        }
-        
-        this.showTyping();
-        
-        // Try IVR match first
-        const ivrMatch = this.findIVRResponse(message);
-        
-        // v1.9.3: When AI is in charge, IVR matches are GUIDANCE for AI, not direct output.
-        // IVR tells us WHAT to communicate. AI decides HOW to say it.
-        // When AI is not configured (provider is 'ivr'), IVR displays directly.
-        const aiActive = this.config.aiProvider && this.config.aiProvider !== 'ivr';
-        
-        if (ivrMatch && this.evaluateCondition(ivrMatch.conditions) && !aiActive) {
-            // No AI — display IVR directly (original behavior)
-            setTimeout(() => {
-                this.hideTyping();
-                const content = this.replaceVariables(ivrMatch.content);
-                const el = this.addMessage('assistant', content);
-                if (el && ivrMatch.name) el.setAttribute('data-message-name', ivrMatch.name);
-                
-                if (this.state === 'visitor') {
-                    this.saveVisitorMessage('assistant', content);
-                }
-                
-                // v9.3.4: Execute action if present (e.g., open_quiz)
-                // v2.0.8 FIX: Skip action when executeActions is false (prevents infinite loop
-                // from requestFreeLesson → sendMessage → IVR action → requestFreeLesson)
-                if (ivrMatch.action && executeActions) {
-                    this.log('FLOSC: IVR action triggered:', ivrMatch.action);
-                    this.performIVRAction(ivrMatch.action);
-                }
-                
-                this.floscShowUserAutoPrompts();
-            }, 500);
-            return;
-        }
-        
-        // v1.9.3: If IVR matched AND AI is active, send IVR guidance to AI.
-        // If no IVR match, AI responds freely within Chatpack boundaries.
-        // Either way, we call the API — AI is always in charge when configured.
-        const ivrGuidance = (ivrMatch && this.evaluateCondition(ivrMatch.conditions) && aiActive)
-            ? ivrMatch : null;
-        
-        if (ivrGuidance) {
-            this.log('FLOSC: IVR match found, routing through AI:', ivrGuidance.name);
-        }
-        
+        this._sendInFlight = true;
+        this.setComposerBusy(true);
+
         try {
-            let response;
-            try {
-                response = await this.callAPI(message, ivrGuidance, { allowSessionAutoCreate: true });
-            } catch (firstErr) {
-                if (firstErr?.floscCode === 'visitor_tokens_depleted') {
-                    throw firstErr;
-                }
-                // v8.0.0 FIX: Retry once with fresh nonce — handles stale-nonce after
-                // registration page reload or long idle sessions.
-                this.log('[FLOSC] Chat failed, refreshing nonce and retrying:', firstErr.message);
-                await this.refreshNonce().catch(() => {});
-                response = await this.callAPI(message, ivrGuidance, { allowSessionAutoCreate: true });
+            // Update context
+            this.ivr.messageCount++;
+            this.ivr.lastInteraction = Date.now();
+            this.buildIVRContext();
+
+            // Check for special commands
+            if (this.onUserMessage(message)) {
+                return;
             }
-            this.hideTyping();
-            
-            if (response) {
-                // v3.0.5: Extract [ACTION:...] tags from AI response (for AI-interpretation offer triggers)
-                const { cleanText, actions } = this._extractActionTags(response);
-                
-                // v8.1.0: Convert markdown to HTML before rendering — AI returns raw markdown
-                const htmlText = this.formatMarkdown(cleanText);
-                const msgEl = this.addMessage('assistant', htmlText, true);
-                if (msgEl && ivrGuidance?.name) msgEl.setAttribute('data-message-name', ivrGuidance.name);
-                
-                // v1.9.0: Admin feedback buttons — flag bad or praise good AI responses
-                if (msgEl && this.user?.isAdmin) {
-                    this.addAdminFeedbackButtons(msgEl, message, cleanText);
-                }
-                
+
+            // Free-lesson / lesson-library requests — only if this flow’s Lessons config is on.
+            if (!this.flowServesLessons() && this._looksLikeLessonAsk(message)) {
+                await this.syncSessionTitleFromFirstUserMessage(message);
+                this.denyLessonsOnThisFlow(message);
+                return;
+            }
+            if (this.isFreeLessonRequest(message)) {
                 if (this.state === 'visitor') {
-                    this.saveVisitorMessage('assistant', cleanText);
+                    const deny = 'To access your free lessons, please log in or create a free account first.';
+                    this.addMessage('assistant', deny, false);
+                    this.logClientChatTurn(message, deny, { source: 'free_lesson_guest_gate' });
+                    return;
                 }
-                
-                // v1.9.3: Execute IVR action AFTER AI response (e.g., open_quiz)
-                // The action is structural (triggers quiz, opens panel) — not content.
-                // v2.0.8 FIX: Skip action when executeActions is false (prevents infinite loop
-                // from requestFreeLesson → sendMessage → IVR action → requestFreeLesson)
-                if (ivrGuidance?.action && executeActions) {
-                    this.log('FLOSC: IVR action triggered (via AI):', ivrGuidance.action);
-                    this.performIVRAction(ivrGuidance.action);
+                await this.syncSessionTitleFromFirstUserMessage(message);
+                this._pendingFreeLessonUserMessage = message;
+                this.requestFreeLesson();
+                return;
+            }
+
+            // User is asking for offers / all offers: real flow offers only (no AI catalog).
+            if (this.handleUserOfferAsk(message)) {
+                await this.syncSessionTitleFromFirstUserMessage(message);
+                // Offer UI is rendered by handleUserOfferAsk; log the user ask + short summary.
+                this.logClientChatTurn(message, '(Offer presentation — see chat UI)', {
+                    source: 'offer_ask',
+                    provider: 'client',
+                });
+                return;
+            }
+
+            // v3.0.5: Check if user message matches any offer's reveal_phrase (exact match).
+            // Exact match happens client-side — no API call needed. AI interpretation
+            // is handled server-side via the chat dispatch.
+            const phraseMatchOffer = this._matchOfferRevealPhrase(message);
+            if (phraseMatchOffer) {
+                this.log('[FLOSC-OFFER] Reveal phrase matched offer:', phraseMatchOffer.id);
+                setTimeout(() => this.showOffer(phraseMatchOffer.id, { source: 'user' }), 300);
+                return;
+            }
+
+            this.showTyping();
+
+            // Try IVR match first
+            const ivrMatch = this.findIVRResponse(message);
+
+            // v1.9.3: When AI is in charge, IVR matches are GUIDANCE for AI, not direct output.
+            // IVR tells us WHAT to communicate. AI decides HOW to say it.
+            // When AI is not configured (provider is 'ivr'), IVR displays directly.
+            const aiActive = this.config.aiProvider && this.config.aiProvider !== 'ivr';
+
+            if (ivrMatch && this.evaluateCondition(ivrMatch.conditions) && !aiActive) {
+                // No AI — display IVR directly (original behavior)
+                await new Promise((resolve) => {
+                    setTimeout(() => {
+                        this.hideTyping();
+                        const content = this.replaceVariables(ivrMatch.content);
+                        const el = this.addMessage('assistant', content);
+                        if (el && ivrMatch.name) el.setAttribute('data-message-name', ivrMatch.name);
+
+                        if (this.state === 'visitor') {
+                            this.saveVisitorMessage('assistant', content);
+                        }
+
+                        // v9.3.4: Execute action if present (e.g., open_quiz)
+                        // v2.0.8 FIX: Skip action when executeActions is false (prevents infinite loop
+                        // from requestFreeLesson → sendMessage → IVR action → requestFreeLesson)
+                        if (ivrMatch.action && executeActions) {
+                            this.log('FLOSC: IVR action triggered:', ivrMatch.action);
+                            this.performIVRAction(ivrMatch.action);
+                        }
+
+                        this.floscShowUserAutoPrompts();
+                        resolve();
+                    }, 500);
+                });
+                return;
+            }
+
+            // v1.9.3: If IVR matched AND AI is active, send IVR guidance to AI.
+            // If no IVR match, AI responds freely within Chatpack boundaries.
+            // Either way, we call the API — AI is always in charge when configured.
+            const ivrGuidance = (ivrMatch && this.evaluateCondition(ivrMatch.conditions) && aiActive)
+                ? ivrMatch : null;
+
+            if (ivrGuidance) {
+                this.log('FLOSC: IVR match found, routing through AI:', ivrGuidance.name);
+            }
+
+            try {
+                let response;
+                try {
+                    response = await this.callAPI(message, ivrGuidance, { allowSessionAutoCreate: true });
+                } catch (firstErr) {
+                    if (firstErr?.floscCode === 'visitor_tokens_depleted') {
+                        throw firstErr;
+                    }
+                    // v8.0.0 FIX: Retry once with fresh nonce — handles stale-nonce after
+                    // registration page reload or long idle sessions.
+                    this.log('[FLOSC] Chat failed, refreshing nonce and retrying:', firstErr.message);
+                    await this.refreshNonce().catch(() => {});
+                    response = await this.callAPI(message, ivrGuidance, { allowSessionAutoCreate: true });
                 }
-                
-                // v3.0.5: Execute AI-embedded action tags (e.g., [ACTION:show_offer_full_access])
-                if (actions.length > 0 && executeActions) {
-                    for (const action of actions) {
-                        this.log('[FLOSC-OFFER] AI action tag:', action);
-                        this.performIVRAction(action);
+                this.hideTyping();
+
+                if (response) {
+                    // v3.0.5: Extract [ACTION:...] tags from AI response (for AI-interpretation offer triggers)
+                    const { cleanText, actions } = this._extractActionTags(response);
+
+                    // v8.1.0: Convert markdown to HTML before rendering — AI returns raw markdown
+                    const htmlText = this.formatMarkdown(cleanText);
+                    const msgEl = this.addMessage('assistant', htmlText, true);
+                    if (msgEl && ivrGuidance?.name) msgEl.setAttribute('data-message-name', ivrGuidance.name);
+
+                    // v1.9.0: Admin feedback buttons — flag bad or praise good AI responses
+                    if (msgEl && this.user?.isAdmin) {
+                        this.addAdminFeedbackButtons(msgEl, message, cleanText);
+                    }
+
+                    if (this.state === 'visitor') {
+                        this.saveVisitorMessage('assistant', cleanText);
+                    }
+
+                    // v1.9.3: Execute IVR action AFTER AI response (e.g., open_quiz)
+                    // The action is structural (triggers quiz, opens panel) — not content.
+                    // v2.0.8 FIX: Skip action when executeActions is false (prevents infinite loop
+                    // from requestFreeLesson → sendMessage → IVR action → requestFreeLesson)
+                    if (ivrGuidance?.action && executeActions) {
+                        this.log('FLOSC: IVR action triggered (via AI):', ivrGuidance.action);
+                        this.performIVRAction(ivrGuidance.action);
+                    }
+
+                    // v3.0.5: Execute AI-embedded action tags (e.g., [ACTION:show_offer_full_access])
+                    if (actions.length > 0 && executeActions) {
+                        for (const action of actions) {
+                            this.log('[FLOSC-OFFER] AI action tag:', action);
+                            this.performIVRAction(action);
+                        }
+                    }
+
+                    this.floscShowUserAutoPrompts();
+                    // Server may have set session.title from first user message (placeholder "New Chat").
+                    if (this.state !== 'visitor' && this.currentSession) {
+                        this.loadSessions();
+                    }
+                } else {
+                    // AI returned nothing — fall back to raw IVR if available
+                    // v8.0.0: Try ivrGuidance first, then ivrMatch (even if conditions didn't pass)
+                    // as a last resort. The action (show_quiz_results, open_lesson_library) is still
+                    // useful even when conditions like is_member aren't met.
+                    const fallback = ivrGuidance || ivrMatch;
+                    if (fallback) {
+                        const content = this.replaceVariables(fallback.content);
+                        this.addMessage('assistant', content);
+                        if (fallback.action && executeActions) this.performIVRAction(fallback.action);
+                    } else {
+                        this.addMessage('assistant', this.formatChatFailureMessage(null));
                     }
                 }
-                
-                this.floscShowUserAutoPrompts();
-                // Server may have set session.title from first user message (placeholder "New Chat").
-                if (this.state !== 'visitor' && this.currentSession) {
-                    this.loadSessions();
+            } catch (error) {
+                this.logError('FLOSC: API error:', error);
+                this.hideTyping();
+
+                if (this.state === 'visitor' && error?.floscCode === 'visitor_tokens_depleted') {
+                    this.syncVisitorTokenBalanceFromPayload(error?.floscPayload || null);
+                    this.handleVisitorTokensDepleted(error.message || 'This session has run out of chat tokens.');
+                    return;
                 }
-            } else {
-                // AI returned nothing — fall back to raw IVR if available
-                // v8.0.0: Try ivrGuidance first, then ivrMatch (even if conditions didn't pass)
-                // as a last resort. The action (show_quiz_results, open_lesson_library) is still
-                // useful even when conditions like is_member aren't met.
+
+                // On error, fall back to raw IVR if we had a match
                 const fallback = ivrGuidance || ivrMatch;
                 if (fallback) {
                     const content = this.replaceVariables(fallback.content);
                     this.addMessage('assistant', content);
                     if (fallback.action && executeActions) this.performIVRAction(fallback.action);
                 } else {
-                    this.addMessage('assistant', this.formatChatFailureMessage(null));
+                    this.addMessage('assistant', this.formatChatFailureMessage(error));
                 }
             }
-        } catch (error) {
-            this.logError('FLOSC: API error:', error);
-            this.hideTyping();
-
-            if (this.state === 'visitor' && error?.floscCode === 'visitor_tokens_depleted') {
-                this.syncVisitorTokenBalanceFromPayload(error?.floscPayload || null);
-                this.handleVisitorTokensDepleted(error.message || 'This session has run out of chat tokens.');
-                return;
-            }
-
-            // On error, fall back to raw IVR if we had a match
-            const fallback = ivrGuidance || ivrMatch;
-            if (fallback) {
-                const content = this.replaceVariables(fallback.content);
-                this.addMessage('assistant', content);
-                if (fallback.action && executeActions) this.performIVRAction(fallback.action);
-            } else {
-                this.addMessage('assistant', this.formatChatFailureMessage(error));
-            }
+        } finally {
+            this._sendInFlight = false;
+            this.setComposerBusy(false);
+            // Process next queued user turn (order preserved). Do not await from callers.
+            void this.drainSendQueue();
         }
     }
 
@@ -12568,55 +12625,17 @@ Purchased: ${ctx.purchased}
         }
     }
 
-    // Access Code UI: payment = toggle panels; auth = separate modal fill (not checkout).
+    // Access Code UI: payment/offer modal only (not Log In / Create Account).
     _showAccessCodeInput(context) {
-        if (context === 'payment') {
-            const modal = document.getElementById('flosc_modal_payment');
-            if (!modal) return;
-            // Ensure modal is open and pay DOM still exists under #flosc-payment-main.
-            this.setDisplayState(modal, true, 'flex');
-            this._bindPaymentModalChrome(modal);
-            this._showPaymentAccessCodeView();
+        if (context !== 'payment') {
             return;
-        } else if (context === 'auth') {
-            const modal = document.getElementById('flosc-auth-modal');
-            if (!modal) return;
-            const inner = modal.querySelector('.flosc-auth-modal');
-            if (!inner) return;
-            inner.innerHTML = `
-                <button class="flosc-auth-close" type="button">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-                <div class="flosc-access-code-panel">
-                    <div class="flosc-access-code-title">Enter Access Code</div>
-                    <input type="text" id="flosc-access-code-input" maxlength="20" autocomplete="off" spellcheck="false"
-                           class="flosc-access-code-input"
-                           placeholder="CODE">
-                    <div class="flosc-access-code-actions">
-                        <button id="flosc-access-code-submit" class="flosc-access-code-submit">Submit</button>
-                    </div>
-                    <div id="flosc-access-code-error" class="flosc-access-code-error"></div>
-                </div>
-            `;
-            document.getElementById('flosc-access-code-input').focus();
-            document.getElementById('flosc-access-code-submit').addEventListener('click', () => {
-                const code = document.getElementById('flosc-access-code-input').value.trim();
-                if (code) this._redeemAccessCode(code, 'auth');
-            });
-            document.getElementById('flosc-access-code-input').addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    const code = e.target.value.trim();
-                    if (code) this._redeemAccessCode(code, 'auth');
-                }
-            });
-            const closeBtn = inner.querySelector('.flosc-auth-close');
-            if (closeBtn) {
-                closeBtn.addEventListener('click', () => this.hideAuthModal());
-            }
         }
+        const modal = document.getElementById('flosc_modal_payment');
+        if (!modal) return;
+        // Ensure modal is open and pay DOM still exists under #flosc-payment-main.
+        this.setDisplayState(modal, true, 'flex');
+        this._bindPaymentModalChrome(modal);
+        this._showPaymentAccessCodeView();
     }
 
     /** Coupon code for native charge: applied code, else current modal input. */

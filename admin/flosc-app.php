@@ -84,6 +84,36 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
     <link rel="icon" href="<?php echo esc_url($flosc_favicon_generic); ?>">
     <link rel="icon" type="image/png" sizes="32x32" href="<?php echo esc_url($flosc_favicon_32); ?>">
     <link rel="apple-touch-icon" sizes="180x180" href="<?php echo esc_url($flosc_favicon_180); ?>">
+
+    <?php
+    // Companion embed flag early: critical CSS must run before flosc-layout.css so the
+    // 512×512 default chat logo never paints full-size for one frame (FOUC).
+    $flosc_is_companion_embed = ( null !== filter_input( INPUT_GET, 'flosc_companion' ) );
+    if ( $flosc_is_companion_embed ) :
+        ?>
+    <style id="flosc-companion-embed-critical">
+        /* Hide full-page chrome immediately; layout CSS keeps the same rules. */
+        body.flosc-companion-embed .flosc-sidebar,
+        body.flosc-companion-embed .flosc-sidebar-overlay,
+        body.flosc-companion-embed #flosc_app_sidebar_toggle,
+        body.flosc-companion-embed .flosc-header,
+        body.flosc-companion-embed .mobile-menu-btn,
+        body.flosc-companion-embed .logo-mobile,
+        body.flosc-companion-embed .landing-state {
+            display: none !important;
+        }
+        /* Hard-cap brand images if anything is still painted before rules cascade. */
+        body.flosc-companion-embed img.logo-img,
+        body.flosc-companion-embed img.logo-mobile__img,
+        body.flosc-companion-embed img.landing-icon {
+            width: 32px !important;
+            height: 32px !important;
+            max-width: 32px !important;
+            max-height: 32px !important;
+            object-fit: contain !important;
+        }
+    </style>
+    <?php endif; ?>
     
     <!-- Dynamic Primary Color -->
     <?php // §12: dynamic CSS vars attached to the enqueued flosc-chat handle (prints in <head> via wp_head) instead of an inline <style> tag. ?>
@@ -123,13 +153,12 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
 $flosc_flow_completed = is_user_logged_in() && get_user_meta(get_current_user_id(), '_flosc_funnel_completed', true);
 ?>
 <?php
-// Companion embed flag is presence-only (dock/handoff). Use filter_input so we do not touch $_GET for PHPCS.
-$flosc_is_companion_embed = ( null !== filter_input( INPUT_GET, 'flosc_companion' ) );
-$flosc_body_classes       = 'flosc-app';
+// $flosc_is_companion_embed set in <head> (critical CSS). Presence-only flag.
+$flosc_body_classes = 'flosc-app';
 if ( is_admin_bar_showing() ) {
 	$flosc_body_classes .= ' admin-bar';
 }
-if ( $flosc_is_companion_embed ) {
+if ( ! empty( $flosc_is_companion_embed ) ) {
 	$flosc_body_classes .= ' flosc-companion-embed';
 }
 ?>
@@ -172,7 +201,7 @@ if ( $flosc_is_companion_embed ) {
     <aside class="flosc-sidebar" id="flosc_app_sidebar">
         <div class="sidebar-header">
             <div class="logo">
-                <img src="<?php echo esc_url(flosc_get_chatlogo_url()); ?>" alt="<?php echo esc_attr($identity['name']); ?>" class="logo-img">
+                <img src="<?php echo esc_url(flosc_get_chatlogo_url()); ?>" alt="<?php echo esc_attr($identity['name']); ?>" class="logo-img" width="32" height="32" decoding="async">
                 <span class="logo-text"><?php echo esc_html($identity['name'] ?: 'FLOSC'); ?></span>
             </div>
             <div class="sidebar-header-actions">
@@ -465,7 +494,7 @@ if ( $flosc_is_companion_embed ) {
                     </svg>
                 </button>
                 <div class="logo-mobile">
-                    <img src="<?php echo esc_url(flosc_get_chatlogo_url()); ?>" alt="" class="logo-mobile__img">
+                    <img src="<?php echo esc_url(flosc_get_chatlogo_url()); ?>" alt="" class="logo-mobile__img" width="28" height="28" decoding="async">
                     <?php echo esc_html($identity['name'] ?: 'FLOSC'); ?>
                 </div>
             </div>
@@ -506,14 +535,15 @@ if ( $flosc_is_companion_embed ) {
 
         <!-- Chat container -->
         <div class="chat-container" id="flosc_chat_container">
-            <!-- Landing state: compact Grok-style centered identity -->
+            <?php if ( empty( $flosc_is_companion_embed ) ) : ?>
+            <!-- Landing state: compact Grok-style centered identity (full-page only; not in companion iframe). -->
             <div class="landing-state" id="landingState">
                 <div class="landing-header">
                     <?php
                     // v1.9.7: Landing state uses logo. Falls back to FLOSC default icon.
                     $flosc_landing_logo = function_exists('flosc_get_chatlogo_url') ? flosc_get_chatlogo_url() : (FLOSC_PLUGIN_URL . 'assets/img/flosc-icon.png');
                     ?>
-                        <img src="<?php echo esc_url($flosc_landing_logo); ?>" alt="" class="landing-icon">
+                        <img src="<?php echo esc_url($flosc_landing_logo); ?>" alt="" class="landing-icon" width="36" height="36" decoding="async">
                     <span class="landing-title"><?php echo esc_html($identity['name'] ?: 'FLOSC'); ?></span>
                     <?php if (!empty($identity['title'])): ?>
                         <span class="landing-subtitle"><?php echo esc_html($identity['title']); ?></span>
@@ -523,6 +553,7 @@ if ( $flosc_is_companion_embed ) {
                     <div class="landing-tagline"><?php echo esc_html($identity['tagline']); ?></div>
                 <?php endif; ?>
             </div>
+            <?php endif; ?>
 
             <!-- v1.8.0: Old visitor engagement bar removed. Profile bar (sidebar bottom) now handles
                  all visitor/guest/member states. Configured via FLOSC → UI & Navigation. -->
@@ -967,7 +998,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             $flosc_companion_enabled = !empty($flosc_companion_source['companion_enabled']);
             $flosc_companion_handoff_enabled = $flosc_companion_enabled && in_array($flosc_companion_mode, ['companion', 'both'], true);
             $flosc_companion_show_for_visitors = filter_var(
-                $flosc_companion_source['companion_show_for_visitors'] ?? false,
+                $flosc_companion_source['companion_show_for_visitors'] ?? true,
                 FILTER_VALIDATE_BOOLEAN
             );
             // Full-page chat always exposes companion collapse/return action (hidden when already embedded).

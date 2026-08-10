@@ -41,7 +41,7 @@ if [[ -d "$ROOT/vendor" ]]; then
   echo "[build-dist-zip] note: vendor/ present locally — excluded from zip (must stay excluded)"
 fi
 
-STAMP="${1:-$(date +%Y%m%d-%H%M%S)}"
+# Always write flosc.zip (overwrite). No timestamped / prod-* names.
 OUT_DIR="${FLOSC_ZIP_OUT_DIR:-$(cd .. && pwd)/zip-files}"
 mkdir -p "$OUT_DIR"
 STAGE="$(mktemp -d "${TMPDIR:-/tmp}/flosc-dist.XXXXXX")"
@@ -149,8 +149,9 @@ if [[ "$fail" -ne 0 ]]; then
   exit 1
 fi
 
-ZIP_PATH="${OUT_DIR}/flosc-${STAMP}.zip"
+ZIP_PATH="${OUT_DIR}/flosc.zip"
 # Relative path inside zip must be flosc/...
+rm -f "$ZIP_PATH"
 (
   cd "$STAGE"
   # -X strip extra attrs; -9 compress

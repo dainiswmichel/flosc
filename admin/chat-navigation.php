@@ -240,7 +240,7 @@ $flosc_member_levels_chat_url = add_query_arg(
 <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
 
 <h3 class="flosc-ui-section-title">Guest Dropdown Menu</h3>
-<p class="description">Menu items for logged-in users who have not purchased. <strong>Upgrade</strong> is not a menu row — it is the profile-bar feature button (Style → Profile Bar → Guest → Show Upgrade).</p>
+<p class="description">Menu items for logged-in users who have not purchased. <strong>Upgrade</strong> is not a menu row — it is the profile-bar feature button (Profile Bar tab → Guest → Show Upgrade).</p>
 
 <div id="flosc-guest-menu-repeater">
     <table class="widefat flosc-ui-menu-table">

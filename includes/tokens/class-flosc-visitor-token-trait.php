@@ -43,12 +43,17 @@ trait FLOSC_Visitor_Token_Trait {
     }
 
     /**
-     * Resolve per-chat AI token charge for this flow.
+     * Minimum tokens required to START an AI chat turn (pre-check gate).
      *
      * Priority:
-     * 1) Flow override: cost_ai_query
+     * 1) Flow override: cost_ai_query (flat per-turn reserve)
      * 2) Global override option: flosc_cost_ai_query
-     * 3) Visitor wallet baseline: tokens_communication_tokens_per_message
+     * 3) 1 token — allow any positive balance; actual debit uses
+     *    flosc_resolve_chat_charge_tokens() (real API millicents → tokens, or 1).
+     *
+     * NOTE: Do NOT fall back to the full visitor wallet size. That made a balance
+     * of e.g. 3876 fail the gate when the wallet baseline was 5000, while the UI
+     * still showed thousands remaining ("Token limit reached" false positive).
      */
     private function flosc_get_ai_query_token_cost($flow_id = '', $token_provider = null) {
         $flow_stem = $this->flosc_normalize_flow_stem((string) $flow_id);
@@ -65,7 +70,7 @@ trait FLOSC_Visitor_Token_Trait {
             return $global_override;
         }
 
-        return max(1, intval($this->flosc_get_visitor_wallet_initial_amount((string) $flow_id, $token_provider)));
+        return 1;
     }
 
     /**

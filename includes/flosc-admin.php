@@ -914,36 +914,257 @@ trait FLOSC_Admin_Trait {
     // Chat Style now integrated into main settings page
 
     /**
+     * Early admin_init redirects for FLOSC sidebar shortcuts.
+     * Menu callbacks run after admin chrome starts; if headers are already sent,
+     * wp_safe_redirect is a no-op and exit leaves a blank content pane
+     * (seen on UI & Nav → page=flosc-ui-navigation).
+     */
+    public function maybe_redirect_flosc_admin_shortcuts() {
+        if (!is_admin() || wp_doing_ajax() || (defined('DOING_CRON') && DOING_CRON)) {
+            return;
+        }
+
+        // Read-only admin menu routing (capability-checked below). No nonce: GET page
+        // slug only; never mutates options. filter_input avoids direct $_GET PHPCS noise.
+        $page_raw = filter_input(INPUT_GET, 'page', FILTER_UNSAFE_RAW);
+        $page     = is_string($page_raw) ? sanitize_key(wp_unslash($page_raw)) : '';
+        if ($page === '' || $page === 'flosc-settings') {
+            return;
+        }
+
+        $map = [
+            'flosc-flow'              => 'flow',
+            'flosc-identity'          => 'identity',
+            'flosc-ivr-messages'      => 'ivr-messages',
+            'flosc-autoprompts'       => 'autoprompts',
+            'flosc-content'           => 'content',
+            'flosc-member-levels'     => 'content',
+            'flosc-lessons'           => 'content',
+            'flosc-trajectories'      => 'trajectories',
+            'flosc-offers'            => 'offers',
+            'flosc-login'             => 'login',
+            'flosc-chat-style'        => 'style',
+            'flosc-ui-navigation'     => 'ui',
+            'flosc-ai-config'         => 'ai',
+            'flosc-token-management'  => 'token-management',
+            'flosc-concierge'         => 'concierge',
+            'flosc-quiz'              => 'quiz',
+            'flosc-email'             => 'email',
+            'flosc-contact-form'      => 'contact-form',
+            'flosc-payments'          => 'payments',
+            'flosc-sso'               => 'sso',
+            'flosc-engagement'        => 'engagement',
+            'flosc-chat-logs'         => 'chat-logs',
+            'flosc-administration'    => 'administration',
+            'flosc-documentation'     => 'documentation',
+            'flosc-docs'              => 'documentation',
+            'flosc-da1'               => 'da1',
+        ];
+
+        if (!isset($map[$page])) {
+            return;
+        }
+
+        // Same gate as Settings shell (site admin or delegated editor).
+        if (!current_user_can('manage_options') && !current_user_can('edit_others_posts')) {
+            return;
+        }
+
+        $tab = $map[$page];
+        $args = [
+            'page' => 'flosc-settings',
+            'tab'  => $tab,
+        ];
+        $ivr_raw = filter_input(INPUT_GET, 'ivr', FILTER_UNSAFE_RAW);
+        if (is_string($ivr_raw) && $ivr_raw !== '') {
+            $args['ivr'] = sanitize_file_name(wp_unslash($ivr_raw));
+        }
+        $view_raw = filter_input(INPUT_GET, 'view', FILTER_UNSAFE_RAW);
+        if (is_string($view_raw) && $view_raw !== '') {
+            $view = sanitize_text_field(wp_unslash($view_raw));
+            if (in_array($view, ['single', 'all'], true)) {
+                $args['view'] = $view;
+            }
+        }
+
+        wp_safe_redirect(add_query_arg($args, admin_url('admin.php')));
+        exit;
+    }
+
+    /**
+     * Process FLOSC Settings form POSTs that redirect (Save, trajectory, concierge).
+     * Must run on admin_init — render_admin_page already has headers sent.
+     */
+    public function maybe_process_flosc_settings_post() {
+        if (!is_admin() || wp_doing_ajax() || (defined('DOING_CRON') && DOING_CRON)) {
+            return;
+        }
+
+        $page_raw = filter_input(INPUT_GET, 'page', FILTER_UNSAFE_RAW);
+        $page     = is_string($page_raw) ? sanitize_key(wp_unslash($page_raw)) : '';
+        if ($page !== 'flosc-settings') {
+            return;
+        }
+
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified inside handlers
+        $post = isset($_POST) && is_array($_POST) ? wp_unslash($_POST) : [];
+        if ($post === []) {
+            return;
+        }
+
+        // IVR new-flow upload: must redirect before admin chrome (Set-as-default class of bug).
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in handler
+        if (!empty($post['flosc_upload_ivr_file']) && !empty($_FILES['ivr_file_upload'])) {
+            if (!function_exists('flosc_admin_handle_ivr_file_upload')) {
+                require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
+            }
+            flosc_admin_handle_ivr_file_upload();
+            // Success exits inside handler. Failure: continue so the settings page can show errors.
+            return;
+        }
+
+        $redirect_post_keys = [
+            'flosc_save',
+            'flosc_toggle_trajectory_post',
+            'flosc_create_concierge_post',
+            'flosc_create_trajectory_post',
+        ];
+        $hit = false;
+        foreach ($redirect_post_keys as $key) {
+            if (!empty($post[$key])) {
+                $hit = true;
+                break;
+            }
+        }
+        if (!$hit) {
+            return;
+        }
+
+        if (!empty($GLOBALS['flosc_settings_early_post_running'])) {
+            return;
+        }
+        $GLOBALS['flosc_settings_early_post_running'] = true;
+
+        // settings.php POST handlers call wp_safe_redirect + exit on success.
+        // On failure they fall through; we return before any HTML is printed.
+        include FLOSC_PLUGIN_DIR . 'admin/settings.php';
+
+        $GLOBALS['flosc_settings_early_post_running'] = false;
+    }
+
+    /**
+     * Admin-post: set current user's default FLOSC flow (Settings chrome).
+     * Runs before any admin HTML so wp_safe_redirect works (not mid-render).
+     */
+    public function handle_set_default_flow() {
+        if (!is_user_logged_in()) {
+            wp_die(esc_html__('You must be logged in.', 'flosc'));
+        }
+
+        check_admin_referer('flosc_set_default_flow', 'flosc_default_flow_nonce');
+
+        $post = wp_unslash($_POST);
+        $ivr  = isset($post['ivr']) ? sanitize_file_name((string) $post['ivr']) : '';
+        $tab  = isset($post['tab']) ? sanitize_text_field((string) $post['tab']) : 'identity';
+        $view = isset($post['view']) ? sanitize_text_field((string) $post['view']) : 'single';
+        if (!in_array($view, ['single', 'all'], true)) {
+            $view = 'single';
+        }
+
+        if ($ivr === '') {
+            wp_die(esc_html__('Missing flow file.', 'flosc'));
+        }
+
+        $flow_id = sanitize_key(pathinfo($ivr, PATHINFO_FILENAME));
+        if (!flosc_flows()->can_access_flow_admin($flow_id)) {
+            wp_die(esc_html__('You do not have permission to set a default FLOSC flow.', 'flosc'));
+        }
+
+        // Same key as admin/settings.php selector.
+        update_user_meta(get_current_user_id(), '_flosc_admin_default_ivr', $ivr);
+
+        $redirect = add_query_arg(
+            [
+                'page'        => 'flosc-settings',
+                'ivr'         => $ivr,
+                'tab'         => $tab,
+                'view'        => $view,
+                'default_set' => '1',
+            ],
+            admin_url('admin.php')
+        );
+
+        wp_safe_redirect($redirect);
+        exit;
+    }
+
+    /**
+     * Redirect to a FLOSC Settings tab. Prefer HTTP redirect; if headers already
+     * sent, render the settings shell so the admin never gets a blank pane.
+     *
+     * @param string $tab Settings tab slug.
+     */
+    private function redirect_to_settings_tab($tab) {
+        $tab = sanitize_key((string) $tab);
+        if ($tab === '') {
+            $tab = 'flow';
+        }
+
+        $args = [
+            'page' => 'flosc-settings',
+            'tab'  => $tab,
+        ];
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        if (!empty($_GET['ivr'])) {
+            $args['ivr'] = sanitize_file_name(wp_unslash((string) $_GET['ivr']));
+        }
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        if (!empty($_GET['view'])) {
+            $view = sanitize_text_field(wp_unslash((string) $_GET['view']));
+            if (in_array($view, ['single', 'all'], true)) {
+                $args['view'] = $view;
+            }
+        }
+
+        $url = add_query_arg($args, admin_url('admin.php'));
+        if (!headers_sent()) {
+            wp_safe_redirect($url);
+            exit;
+        }
+
+        // Fallback: paint Settings with the requested tab (no blank exit).
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $_GET['page'] = 'flosc-settings';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $_GET['tab'] = $tab;
+        $this->render_admin_page();
+    }
+
+    /**
      * Redirect handlers for tab shortcuts - ALL menu items go to Settings tabs
      */
     public function redirect_to_product_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=product'));
-        exit;
+        $this->redirect_to_settings_tab('product');
     }
 
     public function redirect_to_flow_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=flow'));
-        exit;
+        $this->redirect_to_settings_tab('flow');
     }
 
     public function redirect_to_identity_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=identity'));
-        exit;
+        $this->redirect_to_settings_tab('identity');
     }
 
     public function redirect_to_ivr_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=ivr-messages'));
-        exit;
+        $this->redirect_to_settings_tab('ivr-messages');
     }
 
     public function redirect_to_autoprompts_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=autoprompts'));
-        exit;
+        $this->redirect_to_settings_tab('autoprompts');
     }
 
     public function redirect_to_content_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=content'));
-        exit;
+        $this->redirect_to_settings_tab('content');
     }
 
     public function redirect_to_member_levels_tab() {
@@ -951,63 +1172,51 @@ trait FLOSC_Admin_Trait {
     }
 
     public function redirect_to_trajectories_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=trajectories'));
-        exit;
+        $this->redirect_to_settings_tab('trajectories');
     }
 
     public function redirect_to_style_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=style'));
-        exit;
+        $this->redirect_to_settings_tab('style');
     }
 
     public function redirect_to_ai_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=ai'));
-        exit;
+        $this->redirect_to_settings_tab('ai');
     }
 
     public function redirect_to_token_management_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=token-management'));
-        exit;
+        $this->redirect_to_settings_tab('token-management');
     }
 
     public function redirect_to_concierge_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=concierge'));
-        exit;
+        $this->redirect_to_settings_tab('concierge');
     }
 
     public function redirect_to_quiz_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=quiz'));
-        exit;
+        $this->redirect_to_settings_tab('quiz');
     }
 
     public function redirect_to_email_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=email'));
-        exit;
+        $this->redirect_to_settings_tab('email');
     }
 
     public function redirect_to_contact_form_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=contact-form'));
-        exit;
+        $this->redirect_to_settings_tab('contact-form');
     }
 
     public function redirect_to_ai_knowledge_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=ai-knowledge'));
-        exit;
+        $this->redirect_to_settings_tab('ai');
     }
 
     public function redirect_to_login_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=login'));
-        exit;
+        $this->redirect_to_settings_tab('login');
     }
 
     public function redirect_to_offers_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=offers'));
-        exit;
+        $this->redirect_to_settings_tab('offers');
     }
 
     public function redirect_to_payments_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=payments'));
-        exit;
+        $this->redirect_to_settings_tab('payments');
     }
 
     public function redirect_to_lessons_tab() {
@@ -1015,42 +1224,35 @@ trait FLOSC_Admin_Trait {
     }
 
     public function redirect_to_sso_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=sso'));
-        exit;
+        $this->redirect_to_settings_tab('sso');
     }
 
     public function redirect_to_engagement_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=engagement'));
-        exit;
+        $this->redirect_to_settings_tab('engagement');
     }
 
     public function redirect_to_administration_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=administration'));
-        exit;
+        $this->redirect_to_settings_tab('administration');
     }
 
     public function redirect_to_chat_logs_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=chat-logs'));
-        exit;
+        $this->redirect_to_settings_tab('chat-logs');
     }
 
     public function redirect_to_docs_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=documentation'));
-        exit;
+        $this->redirect_to_settings_tab('documentation');
     }
 
     public function redirect_to_da1_tab() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=da1'));
-        exit;
+        $this->redirect_to_settings_tab('da1');
     }
 
     /**
-     * v1.8.0 → v1.8.2: UI & Navigation is now a tab on the main settings page.
-     * This redirect keeps the old submenu link working.
+     * v1.8.0 → v1.8.2: UI & Navigation → Settings tab=ui (Profile Bar + chat menus).
+     * Early admin_init also maps flosc-ui-navigation; this is the menu callback fallback.
      */
     public function render_ui_navigation_page() {
-        wp_safe_redirect(admin_url('admin.php?page=flosc-settings&tab=ui'));
-        exit;
+        $this->redirect_to_settings_tab('ui');
     }
 
     public function render_da1_page() {
@@ -1363,15 +1565,22 @@ trait FLOSC_Admin_Trait {
      * v1.6.3: Fixed to read from flat per-flow settings (matching admin save pattern)
      */
     public function enqueue_companion() {
-        // Don't load on app pages (they get the full experience)
-        if ($this->is_flosc_request()) return;
+        // Production path is FLOSC_Companion_Mode::enqueue_companion (app-route-only iframe).
+        // App routes never load outer chrome; non-app iframe targets are invalid there.
+        if ($this->is_flosc_request()) {
+            return;
+        }
 
         // Read from per-flow settings (flat keys, not overrides)
         $enabled = $this->get_setting('companion_enabled', false);
-        if (!$enabled) return;
+        if (!$enabled) {
+            return;
+        }
 
         $app_url = $this->get_app_url();
-        if (empty($app_url)) return;
+        if (empty($app_url)) {
+            return;
+        }
 
         $accent = $this->get_setting('companion_accent_color', '#2563eb');
         $title  = $this->get_setting('companion_greeting', 'Chat with us');

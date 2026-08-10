@@ -195,18 +195,18 @@ function flosc_companion_hub_defaults_from_flow(array $flow_settings) {
         $flow_for_app['slug'] = $slug;
     }
 
+    // Full-page chat surface must be a FLOSC app route (flow slug or custom domain).
+    // Never default to site home — that is not an app route and must not be iframe src.
     $fullscreen = '';
     if (function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'get_app_url')) {
         $fullscreen = (string) flosc()->get_app_url($flow_for_app);
     }
-    if ($fullscreen === '') {
-        $fullscreen = $slug !== '' ? home_url('/' . $slug . '/') : home_url('/');
+    if ($fullscreen === '' && $slug !== '') {
+        $fullscreen = home_url('/' . $slug . '/');
     }
     $fullscreen = esc_url_raw($fullscreen, ['http', 'https']);
-    if ($fullscreen === '') {
-        $fullscreen = home_url('/');
-    }
 
+    // Collapse/hub destination (WP content) — not an iframe chat target.
     $companion = $lessons_cat !== ''
         ? home_url('/category/' . $lessons_cat . '/')
         : home_url('/');
@@ -217,16 +217,15 @@ function flosc_companion_hub_defaults_from_flow(array $flow_settings) {
 
     $flow_slug = sanitize_title((string) ($flow_settings['companion_flow_slug'] ?? $slug));
 
-    // Iframe chat route: WordPress site + flow slug (parameterized).
-    // Knowledge hubs usually live on the WP host; a same-origin iframe keeps
-    // guest/member WP sessions. Override anytime with companion_chat_app_url.
-    $chat_app = $flow_slug !== ''
-        ? home_url('/' . $flow_slug . '/')
-        : home_url('/');
-    $chat_app = esc_url_raw($chat_app, ['http', 'https']);
-    if ($chat_app === '') {
-        $chat_app = home_url('/');
+    // Iframe chat route: flow slug on this host, else full-page app URL from get_app_url.
+    $chat_app = '';
+    if ($flow_slug !== '') {
+        $chat_app = esc_url_raw(home_url('/' . $flow_slug . '/'), ['http', 'https']);
     }
+    if ($chat_app === '' && $fullscreen !== '') {
+        $chat_app = $fullscreen;
+    }
+    $chat_app = esc_url_raw((string) $chat_app, ['http', 'https']);
 
     // Suggested include rules from Content → lessons category (still editable in admin).
     $include = [];

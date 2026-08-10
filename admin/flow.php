@@ -118,7 +118,7 @@ $flosc_member_pills  = count( $flosc_flow_settings['autoprompts']['member'] ?? [
 $flosc_companion_mode = sanitize_text_field((string) ($flosc_flow_settings['companion_content_display_mode'] ?? 'in_chat'));
 $flosc_companion_enabled = !empty($flosc_flow_settings['companion_enabled']);
 $flosc_companion_mode_labels = [
-    'in_chat' => 'In-Chat Only',
+    'in_chat' => 'Full-page',
     'companion' => 'Companion',
     'both' => 'Hybrid',
 ];
@@ -129,13 +129,13 @@ $flosc_companion_sitewide_profile_active = (
     && !empty($flosc_flow_settings['companion_allow_fullscreen'])
     && !empty($flosc_flow_settings['companion_default_fullscreen'])
 );
-$flosc_companion_mode_label = $flosc_companion_mode_labels[$flosc_companion_mode] ?? 'In-Chat Only';
+$flosc_companion_mode_label = $flosc_companion_mode_labels[$flosc_companion_mode] ?? 'Full-page';
 if ($flosc_companion_sitewide_profile_active) {
     $flosc_companion_mode_label = 'Sitewide ON Profile (' . $flosc_companion_mode_label . ')';
 }
 $flosc_companion_status = ($flosc_companion_mode === 'companion' || $flosc_companion_mode === 'both')
     ? ($flosc_companion_enabled ? 'Widget enabled' : 'Widget disabled')
-    : 'Widget not used in this mode';
+    : 'Full-page only (no companion widget)';
 $flosc_companion_auto = !empty($flosc_flow_settings['companion_auto_open_enabled']) ? 'Auto open' : 'Manual open';
 $flosc_companion_exit = !empty($flosc_flow_settings['companion_launch_on_exit_intent']) ? 'Exit trigger on' : 'Exit trigger off';
 $flosc_companion_scroll = !empty($flosc_flow_settings['companion_launch_on_scroll_threshold'])

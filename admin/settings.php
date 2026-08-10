@@ -317,20 +317,62 @@ $flosc_settings_key = flosc_resolve_flow_option_key_for_ivr($flosc_selected_ivr)
 
 // Load settings for this flow
 $flosc_flow_settings = get_option($flosc_settings_key, []);
+if (!is_array($flosc_flow_settings)) {
+    $flosc_flow_settings = [];
+}
 
-// Set defaults if empty AND save them (v1.3.0 fix)
+// v1.3.5: Preserve underscores in default slug (don't use sanitize_title which converts to hyphens)
+$flosc_default_slug = strtolower(preg_replace('/[^a-z0-9_-]/i', '', pathinfo($flosc_selected_ivr, PATHINFO_FILENAME)));
+if ($flosc_default_slug === '') {
+    $flosc_default_slug = 'flosc';
+}
+
+// Seed empty options fully; also backfill status/slug when a partial option exists
+// (e.g. IVR re-parse wrote messages first — empty() is false, old seed skipped).
+$flosc_flow_seed_needed = false;
+$flosc_shipped_name = function_exists('flosc_shipped_flow_display_name')
+    ? flosc_shipped_flow_display_name($flosc_selected_ivr)
+    : '';
+$flosc_fallback_name = $flosc_shipped_name !== ''
+    ? $flosc_shipped_name
+    : ucwords(str_replace(['_', '-', 'ivr', '.md'], [' ', ' ', '', ''], $flosc_selected_ivr));
+
 if (empty($flosc_flow_settings)) {
-    // v1.3.5: Preserve underscores in default slug (don't use sanitize_title which converts to hyphens)
-    $flosc_default_slug = strtolower(preg_replace('/[^a-z0-9_-]/i', '', pathinfo($flosc_selected_ivr, PATHINFO_FILENAME)));
     $flosc_flow_settings = [
-        'name' => ucwords(str_replace(['_', '-', 'ivr', '.md'], [' ', ' ', '', ''], $flosc_selected_ivr)),
+        'name' => $flosc_fallback_name,
         'title' => '',
         'tagline' => '',
         'slug' => $flosc_default_slug,
         'primary_color' => '#4f46e5',
         'status' => 'active',
     ];
-    // v1.3.0: Save defaults so rewrite rules can find them
+    $flosc_flow_seed_needed = true;
+} else {
+    if (empty($flosc_flow_settings['slug']) || !is_string($flosc_flow_settings['slug'])) {
+        $flosc_flow_settings['slug'] = $flosc_default_slug;
+        $flosc_flow_seed_needed = true;
+    }
+    if (empty($flosc_flow_settings['status']) || !is_string($flosc_flow_settings['status'])) {
+        $flosc_flow_settings['status'] = 'active';
+        $flosc_flow_seed_needed = true;
+    } elseif (!in_array($flosc_flow_settings['status'], ['active', 'draft'], true)) {
+        $flosc_flow_settings['status'] = 'active';
+        $flosc_flow_seed_needed = true;
+    }
+    // Upgrade ugly filename-stem names for shipped samples only (leave custom names alone).
+    if ($flosc_shipped_name !== '') {
+        $flosc_cur_name  = trim((string) ($flosc_flow_settings['name'] ?? ($flosc_flow_settings['identity']['name'] ?? '')));
+        $flosc_stem_ugly = ucwords(str_replace(['_', '-', 'ivr', '.md'], [' ', ' ', '', ''], $flosc_selected_ivr));
+        if ($flosc_cur_name === '' || strcasecmp($flosc_cur_name, $flosc_stem_ugly) === 0 || strcasecmp($flosc_cur_name, $flosc_default_slug) === 0) {
+            $flosc_flow_settings['name'] = $flosc_shipped_name;
+            if (isset($flosc_flow_settings['identity']) && is_array($flosc_flow_settings['identity'])) {
+                $flosc_flow_settings['identity']['name'] = $flosc_shipped_name;
+            }
+            $flosc_flow_seed_needed = true;
+        }
+    }
+}
+if ($flosc_flow_seed_needed) {
     update_option($flosc_settings_key, $flosc_flow_settings);
 }
 
@@ -346,25 +388,8 @@ if (!in_array($flosc_identity_view, ['single', 'all'], true)) {
     $flosc_identity_view = 'single';
 }
 
-if (isset($flosc_post['flosc_set_default_flow']) && wp_verify_nonce(sanitize_text_field($flosc_post['flosc_default_flow_nonce'] ?? ''), 'flosc_set_default_flow')) {
-    if (!flosc_flows()->can_access_flow_admin($flosc_selected_flow_id)) {
-        wp_die(esc_html__('You do not have permission to set a default FLOSC flow.', 'flosc'));
-    }
-
-    update_user_meta($flosc_current_user_id, $flosc_default_ivr_meta_key, $flosc_selected_ivr);
-    $flosc_user_default_ivr = $flosc_selected_ivr;
-
-    $flosc_redirect_url = add_query_arg([
-        'page' => 'flosc-settings',
-        'ivr'  => $flosc_selected_ivr,
-        'tab'  => $flosc_active_tab,
-        'view' => $flosc_identity_view,
-        'default_set' => '1',
-    ], admin_url('admin.php'));
-
-    wp_safe_redirect($flosc_redirect_url);
-    exit;
-}
+// Set-as-default is handled on admin_post_flosc_set_default_flow (before admin HTML).
+// Do not redirect here — headers are already sent during page render (white content pane).
 
 // Trajectory quick-toggle: flip a trajectory post between LIVE (private) and OFF (draft).
 if (isset($flosc_post['flosc_toggle_trajectory_post']) && wp_verify_nonce(sanitize_text_field($flosc_post['flosc_toggle_trajectory_nonce'] ?? ''), 'flosc_toggle_trajectory_post')) {
@@ -1059,7 +1084,10 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         }
     }
     if ($flosc_active_tab === 'style') {
-        foreach (['companion_enabled', 'companion_show_for_visitors', 'companion_pass_page_context', 'companion_auto_open_enabled', 'companion_auto_open_once_per_session', 'companion_launch_on_exit_intent', 'companion_launch_on_scroll_threshold', 'companion_trigger_desktop_only', 'companion_trigger_suppress_on_auth_checkout', 'companion_focus_on_open', 'companion_allow_escape_close', 'companion_enable_keyboard_shortcut', 'companion_remember_open_state'] as $flosc_cb) {
+        // Visitor visibility uses 0/1 so "off" is not confused with unset (sales default = on).
+        $flosc_new_settings['companion_show_for_visitors'] = isset($flosc_post['flow_companion_show_for_visitors']) ? 1 : 0;
+
+        foreach (['companion_enabled', 'companion_pass_page_context', 'companion_auto_open_enabled', 'companion_auto_open_once_per_session', 'companion_launch_on_exit_intent', 'companion_launch_on_scroll_threshold', 'companion_trigger_desktop_only', 'companion_trigger_suppress_on_auth_checkout', 'companion_focus_on_open', 'companion_allow_escape_close', 'companion_enable_keyboard_shortcut', 'companion_remember_open_state'] as $flosc_cb) {
             if (!isset($flosc_post["flow_{$flosc_cb}"])) {
                 $flosc_new_settings[$flosc_cb] = '';
             }
@@ -1801,6 +1829,12 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
     exit;
 }
 
+// Early POST processing (admin_init): redirect handlers above exit on success.
+// Do not print admin HTML during admin_init.
+if (!empty($GLOBALS['flosc_settings_early_post_running'])) {
+    return;
+}
+
 // Build flow URL
 $flosc_flow_url = home_url('/' . ($flosc_flow_settings['slug'] ?? 'flosc') . '/');
 
@@ -1864,9 +1898,37 @@ if (function_exists('wp_add_inline_style')) {
     </h1>
     
     <?php if (isset($flosc_saved) || isset($flosc_get['saved'])): ?>
-        <div class="notice notice-success is-dismissible">
+        <div id="flosc-save-feedback" class="notice notice-success is-dismissible" role="status" tabindex="-1">
             <p>✓ Settings saved for <strong><?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $flosc_selected_ivr); ?></strong></p>
         </div>
+        <?php
+        // One notice only (bottom duplicate removed). After PRG reload, bring it into view
+        // and drop ?saved=1 so refresh does not re-flash the banner.
+        ob_start();
+        ?>
+        (function () {
+            var notice = document.getElementById('flosc-save-feedback');
+            if (notice) {
+                try {
+                    notice.focus({ preventScroll: true });
+                } catch (e) {
+                    try { notice.focus(); } catch (e2) { /* ignore */ }
+                }
+                if (typeof notice.scrollIntoView === 'function') {
+                    notice.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+            try {
+                var url = new URL(window.location.href);
+                if (url.searchParams.has('saved')) {
+                    url.searchParams.delete('saved');
+                    window.history.replaceState({}, document.title, url.pathname + url.search + url.hash);
+                }
+            } catch (e3) { /* ignore */ }
+        })();
+        <?php
+        wp_add_inline_script('flosc-admin', ob_get_clean());
+        ?>
     <?php endif; ?>
 
     <?php if (isset($flosc_get['default_set'])): ?>
@@ -1900,7 +1962,7 @@ if (function_exists('wp_add_inline_style')) {
 
             <?php if (($flosc_flow_settings['status'] ?? '') === 'active' && !empty($flosc_flow_settings['slug'])): ?>
                 <a href="<?php echo esc_url($flosc_flow_url); ?>" target="_blank" rel="noopener noreferrer" class="button button-small">
-                    View App &#8599;
+                    View Flow &#8599;
                 </a>
             <?php endif; ?>
 
@@ -1910,9 +1972,13 @@ if (function_exists('wp_add_inline_style')) {
                     <?php echo esc_html__('Default', 'flosc'); ?>
                 </span>
             <?php else: ?>
-                <form method="post" action="" class="flosc-default-flow-form">
+                <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>" class="flosc-default-flow-form">
                     <?php wp_nonce_field('flosc_set_default_flow', 'flosc_default_flow_nonce'); ?>
-                    <button type="submit" name="flosc_set_default_flow" value="1" class="button button-small">
+                    <input type="hidden" name="action" value="flosc_set_default_flow">
+                    <input type="hidden" name="ivr" value="<?php echo esc_attr($flosc_selected_ivr); ?>">
+                    <input type="hidden" name="tab" value="<?php echo esc_attr($flosc_active_tab); ?>">
+                    <input type="hidden" name="view" value="<?php echo esc_attr($flosc_identity_view); ?>">
+                    <button type="submit" class="button button-small">
                         <?php echo esc_html__('Set as default', 'flosc'); ?>
                     </button>
                 </form>
@@ -2064,8 +2130,8 @@ if (function_exists('wp_add_inline_style')) {
         <?php return; ?>
     <?php endif; ?>
     
-    <!-- Settings Form -->
-    <form method="post" class="flosc-settings-form">
+    <!-- Settings Form (id required: AI tab closes this form before sibling KB forms — save uses form=) -->
+    <form method="post" class="flosc-settings-form" id="flosc-settings-form">
         <?php wp_nonce_field('flosc_save_settings'); ?>
         
         <?php if ($flosc_active_tab === 'flow'): ?>
@@ -2668,8 +2734,9 @@ if (function_exists('wp_add_inline_style')) {
                         <th><label for="flow_status">Status</label></th>
                         <td>
                             <select id="flow_status" name="flow_status">
-                                <option value="active" <?php selected($flosc_flow_settings['status'] ?? '', 'active'); ?>>Active</option>
-                                <option value="draft" <?php selected($flosc_flow_settings['status'] ?? '', 'draft'); ?>>Draft</option>
+                                <?php $flosc_status_ui = (string) ($flosc_flow_settings['status'] ?? 'active'); ?>
+                                <option value="active" <?php selected($flosc_status_ui, 'active'); ?>>Active</option>
+                                <option value="draft" <?php selected($flosc_status_ui, 'draft'); ?>>Draft</option>
                             </select>
                             <p class="description">Draft flows are only visible to admins.</p>
                         </td>
@@ -2821,20 +2888,18 @@ if (function_exists('wp_add_inline_style')) {
         <?php endif; ?>
 
         <?php if ($flosc_active_tab !== 'documentation' && $flosc_active_tab !== 'autoprompts' && $flosc_active_tab !== 'da1' && $flosc_active_tab !== 'trajectories' && $flosc_active_tab !== 'concierge'): ?>
-        <?php if (isset($flosc_get['saved'])): ?>
-        <div id="flosc-save-feedback" class="notice notice-success inline is-dismissible">
-            <p>✓ Saved. Settings for <strong><?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $flosc_selected_ivr); ?></strong> are updated.</p>
-        </div>
-        <?php endif; ?>
         <p class="submit flosc-settings-submit-row">
-            <button type="submit" name="flosc_save" class="button button-primary button-large">
+            <?php // form= keeps submit bound if AI tab closed #flosc-settings-form early (no nested forms). ?>
+            <button type="submit" name="flosc_save" value="1" form="flosc-settings-form" class="button button-primary button-large">
                 Save Settings for <?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $flosc_selected_ivr); ?>
             </button>
         </p>
         <?php endif; ?>
         
         <?php flosc_tab_footer(); ?>
+    <?php if (empty($GLOBALS['flosc_settings_form_closed_early'])): ?>
     </form>
+    <?php endif; ?>
 </div>
 
 <!-- Styles in assets/css/flosc-admin.css -->

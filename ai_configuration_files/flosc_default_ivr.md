@@ -1,7 +1,7 @@
 # FLOSC Starter Template — IVR Configuration
-# Purpose: non-active template for floscAdmins to activate, duplicate, and customize.
-# This file is intentionally neutral and should not be treated as the out-of-box live default.
-# Out-of-box shipped defaults are purpose-built files such as:
+# Purpose: neutral template for floscAdmins to duplicate and customize.
+# Identity: "FLOSC starter" — clearly a blank you rewrite, not a live product persona.
+# Character defaults (use these as live examples instead):
 # - flosc_default_technical_ivr.md
 # - flosc_default_friendly_ivr.md
 # - flosc_default_br3nda_emotional_support_ivr.md
@@ -14,7 +14,7 @@
 MessageName: template_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: Welcome. This is the FLOSC starter template. Replace this text with your product-specific welcome.
+MessageContent: Welcome — this is the **FLOSC starter template**. Swap this welcome for your product voice. This is just IVR-style copy — remember to configure your preferred AI API under Settings → AI for much more intelligent responses. What would you like to try first?
 MessageConditions: is_visitor && first_show_session
 
 ---
@@ -24,9 +24,20 @@ MessageName: template_intro_prompt
 MessageType: suggested_user_autoprompt
 MessageStyle: card
 UserInput: Show me what this is
-MessageContent: This is starter copy. Replace with your own positioning, audience language, and first-step guidance.
+MessageContent: FLOSC runs guided chat journeys (freeline → login → offer → sale → content). Replace this copy with your own positioning and first step. Without AI configured, free text falls back to buttons and short defaults.
 MessageConditions: is_visitor || is_guest || is_member
-Keywords: intro, overview, what is this, help
+Keywords: intro, overview, what is this, help, flosc
+
+---
+
+## Customize me
+MessageName: template_intro_customize
+MessageType: suggested_user_autoprompt
+MessageStyle: card
+UserInput: How do I customize this?
+MessageContent: floscAdmin checklist: (1) Identity — name, slug, color; (2) IVR Management — your messages; (3) Settings → AI — configure your preferred AI API (BYOK) for much more intelligent free-form responses. Until then, this is just IVR-style copy.
+MessageConditions: is_visitor || is_guest || is_member
+Keywords: customize, edit, configure, admin, setup, ai, api
 
 ---
 
@@ -36,7 +47,7 @@ Keywords: intro, overview, what is this, help
 MessageName: template_guest_welcome
 MessageType: auto
 MessageStyle: pill
-MessageContent: You are in guest mode. Replace this with your guest onboarding message.
+MessageContent: Guest mode (starter template). Replace this with your real guest onboarding.
 MessageConditions: is_guest && first_show_session
 
 ---
@@ -46,7 +57,7 @@ MessageName: template_guest_prompt
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: What should I do first?
-MessageContent: This is starter guidance. Replace with your real first action.
+MessageContent: Starter guidance — replace with your real first action for guests.
 MessageConditions: is_guest || is_member
 Keywords: first step, start, onboarding
 
@@ -58,7 +69,7 @@ Keywords: first step, start, onboarding
 MessageName: template_member_welcome
 MessageType: auto
 MessageStyle: pill
-MessageContent: Full access detected. Replace this with your member welcome and next-step instructions.
+MessageContent: Member access (starter template). Replace this with your member welcome and next steps.
 MessageConditions: is_member && first_show_session
 
 ---
@@ -68,6 +79,6 @@ MessageName: template_member_prompt
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: Show my next step
-MessageContent: This is starter member copy. Replace with your real member progression logic.
+MessageContent: Starter member copy — replace with your real progression.
 MessageConditions: is_member
 Keywords: next step, continue, member
