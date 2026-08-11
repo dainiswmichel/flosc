@@ -1,11 +1,10 @@
 /**
  * Flow Portability — kit file picker (list-then-submit).
  *
- * Industry pattern:
- * - Window-level preventDefault on file dragover/drop (stop browser open/download)
- * - dragenter/dragleave depth counter for stable is-dragover (HTML5 DnD)
- * - Visually hidden <input type="file">; zone click opens picker
- * - pendingFiles is UI source of truth; DataTransfer assigns input.files on submit
+ * DnD notes (Chromium + OS file drag):
+ * - Always preventDefault on dragover (zone + window) or the browser opens files.
+ * - Do not gate highlight on dataTransfer.types === "Files" (often empty on early frames).
+ * - dragover continuously sets over-state; leave when pointer exits zone rect.
  *
  * @package FLOSC
  */
@@ -13,6 +12,26 @@
 	'use strict';
 
 	var MAX_TSV = 10;
+
+	/** Inline styles so drag state cannot lose to admin CSS cascade. */
+	var STYLE_IDLE = {
+		backgroundColor: '',
+		borderColor: '',
+		borderStyle: '',
+		borderWidth: '',
+		boxShadow: '',
+		color: '',
+		transform: ''
+	};
+	var STYLE_OVER = {
+		backgroundColor: '#8ec8f0',
+		borderColor: '#0a4b78',
+		borderStyle: 'solid',
+		borderWidth: '3px',
+		boxShadow: '0 0 0 4px rgba(10, 75, 120, 0.45)',
+		color: '#0a4b78',
+		transform: 'scale(1.01)'
+	};
 
 	/**
 	 * @param {function(): void} fn
@@ -29,20 +48,28 @@
 	 * @param {DataTransfer|null|undefined} dt
 	 * @return {boolean}
 	 */
-	function dataTransferHasFiles(dt) {
-		if (!dt || !dt.types) {
+	function looksLikeFileDrag(dt) {
+		if (!dt) {
 			return false;
 		}
-		var types = dt.types;
-		if (typeof types.contains === 'function') {
-			return types.contains('Files') || types.contains('application/x-moz-file');
+		// During OS→browser drag, types is often empty on first events — still a file drag.
+		if (!dt.types || !dt.types.length) {
+			return true;
 		}
+		var types = dt.types;
 		var i;
 		for (i = 0; i < types.length; i++) {
-			if (types[i] === 'Files' || types[i] === 'application/x-moz-file') {
+			var t = types[i];
+			if (
+				t === 'Files' ||
+				t === 'application/x-moz-file' ||
+				t === 'public.file-url' ||
+				t === 'text/uri-list'
+			) {
 				return true;
 			}
 		}
+		// Non-file drags (e.g. text) usually have text/plain / text/html only.
 		return false;
 	}
 
@@ -83,7 +110,6 @@
 	}
 
 	/**
-	 * Assign File[] onto an <input type="file"> for multipart POST.
 	 * @param {HTMLInputElement} input
 	 * @param {File[]} files
 	 * @return {boolean}
@@ -105,6 +131,33 @@
 		}
 	}
 
+	/**
+	 * @param {HTMLElement} el
+	 * @param {number} x
+	 * @param {number} y
+	 * @return {boolean}
+	 */
+	function pointIn(el, x, y) {
+		if (!el || x == null || y == null || Number.isNaN(x) || Number.isNaN(y)) {
+			return false;
+		}
+		var r = el.getBoundingClientRect();
+		return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+	}
+
+	/**
+	 * @param {HTMLElement} el
+	 * @param {Object} styles
+	 */
+	function applyStyles(el, styles) {
+		var k;
+		for (k in styles) {
+			if (Object.prototype.hasOwnProperty.call(styles, k)) {
+				el.style[k] = styles[k];
+			}
+		}
+	}
+
 	onReady(function () {
 		var form = document.getElementById('flosc-ivr-dropzone-upload-form');
 		var zone = document.getElementById('flosc-ivr-dropzone');
@@ -121,20 +174,30 @@
 			return;
 		}
 
+		form.setAttribute('data-flosc-portability-ready', '1');
+
 		/** @type {File[]} */
 		var pending = [];
-		/** Nested dragenter count on zone (standard anti-flicker technique). */
-		var dragDepth = 0;
+		var isOver = false;
 
 		/**
 		 * @param {boolean} over
 		 */
 		function setOver(over) {
+			over = !!over;
+			if (over === isOver) {
+				return;
+			}
+			isOver = over;
 			zone.classList.toggle('is-dragover', over);
 			form.classList.toggle('is-dragover', over);
+			applyStyles(zone, over ? STYLE_OVER : STYLE_IDLE);
 			if (titleIdle && titleDrag) {
 				titleIdle.hidden = over;
 				titleDrag.hidden = !over;
+			}
+			if (!over) {
+				zone.classList.toggle('is-has-file', pending.length > 0);
 			}
 		}
 
@@ -147,7 +210,7 @@
 			if (btnClear) {
 				btnClear.disabled = n === 0;
 			}
-			zone.classList.toggle('is-has-file', n > 0 && dragDepth === 0);
+			zone.classList.toggle('is-has-file', n > 0 && !isOver);
 
 			var i;
 			for (i = 0; i < n; i++) {
@@ -179,7 +242,6 @@
 		}
 
 		/**
-		 * Validate and stage files (replace current selection).
 		 * @param {FileList|File[]} fileList
 		 */
 		function stageFiles(fileList) {
@@ -221,81 +283,80 @@
 			render();
 		}
 
-		/* —— Window: never let the browser navigate/download on file drop —— */
+		/* Window: stop browser from opening/downloading dropped files anywhere on the page. */
 		window.addEventListener(
 			'dragover',
 			function (e) {
-				if (dataTransferHasFiles(e.dataTransfer)) {
+				if (looksLikeFileDrag(e.dataTransfer)) {
 					e.preventDefault();
+					if (e.dataTransfer) {
+						e.dataTransfer.dropEffect = pointIn(zone, e.clientX, e.clientY) ? 'copy' : 'none';
+					}
+					// Drive highlight from coordinates (stable vs enter/leave).
+					setOver(pointIn(zone, e.clientX, e.clientY));
 				}
 			},
 			false
 		);
+
 		window.addEventListener(
 			'drop',
 			function (e) {
-				if (dataTransferHasFiles(e.dataTransfer)) {
-					e.preventDefault();
+				if (!looksLikeFileDrag(e.dataTransfer)) {
+					setOver(false);
+					return;
 				}
+				e.preventDefault();
+				if (pointIn(zone, e.clientX, e.clientY) || pointIn(form, e.clientX, e.clientY)) {
+					var files = e.dataTransfer && e.dataTransfer.files;
+					setOver(false);
+					if (files && files.length) {
+						stageFiles(files);
+					}
+					return;
+				}
+				setOver(false);
 			},
 			false
 		);
 
-		/* —— Zone: drag depth counter (enter/leave child elements) —— */
-		zone.addEventListener('dragenter', function (e) {
-			if (!dataTransferHasFiles(e.dataTransfer)) {
-				return;
-			}
-			e.preventDefault();
-			dragDepth += 1;
-			if (dragDepth === 1) {
-				setOver(true);
-			}
+		window.addEventListener('dragend', function () {
+			setOver(false);
 		});
 
-		zone.addEventListener('dragleave', function (e) {
-			if (!dataTransferHasFiles(e.dataTransfer)) {
-				return;
-			}
+		window.addEventListener('blur', function () {
+			setOver(false);
+		});
+
+		/* Zone handlers (backup path if window listener is delayed). */
+		zone.addEventListener('dragenter', function (e) {
 			e.preventDefault();
-			dragDepth = Math.max(0, dragDepth - 1);
-			if (dragDepth === 0) {
-				setOver(false);
-			}
+			setOver(true);
 		});
 
 		zone.addEventListener('dragover', function (e) {
-			if (!dataTransferHasFiles(e.dataTransfer)) {
-				return;
-			}
 			e.preventDefault();
 			e.stopPropagation();
 			if (e.dataTransfer) {
 				e.dataTransfer.dropEffect = 'copy';
 			}
-			if (dragDepth === 0) {
-				dragDepth = 1;
-				setOver(true);
+			setOver(true);
+		});
+
+		zone.addEventListener('dragleave', function (e) {
+			// Leave only when pointer exits the zone box.
+			if (!pointIn(zone, e.clientX, e.clientY)) {
+				setOver(false);
 			}
 		});
 
 		zone.addEventListener('drop', function (e) {
-			if (!dataTransferHasFiles(e.dataTransfer)) {
-				return;
-			}
 			e.preventDefault();
 			e.stopPropagation();
-			dragDepth = 0;
 			setOver(false);
 			if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
 				stageFiles(e.dataTransfer.files);
 			}
-		});
-
-		/* Reset if OS cancels the drag */
-		window.addEventListener('dragend', function () {
-			dragDepth = 0;
-			setOver(false);
 		});
 
 		/* Click / keyboard → native file picker */

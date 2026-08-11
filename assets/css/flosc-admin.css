@@ -563,16 +563,17 @@
     box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--flosc-dz-accent);
 }
 
-/* Active drop target — must be unmistakable (solid border + saturated fill + ring) */
+/* Active drop target — high-contrast (JS also sets inline styles as cascade backup) */
 .flosc-portability-kit-form .flosc-dropzone--kit.is-dragover,
-.flosc-portability-kit-form.is-dragover .flosc-dropzone--kit {
-    border-style: solid;
-    border-color: var(--flosc-dz-accent-deep);
-    background: var(--flosc-dz-active-bg);
-    box-shadow:
-        0 0 0 4px var(--flosc-dz-ring),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.6);
-    color: var(--flosc-dz-accent-deep);
+.flosc-portability-kit-form.is-dragover .flosc-dropzone--kit,
+.flosc-dropzone--kit.is-dragover {
+    border-style: solid !important;
+    border-width: 3px !important;
+    border-color: #0a4b78 !important;
+    background: #8ec8f0 !important;
+    background-color: #8ec8f0 !important;
+    box-shadow: 0 0 0 4px rgba(10, 75, 120, 0.45) !important;
+    color: #0a4b78 !important;
 }
 
 .flosc-portability-kit-form .flosc-dropzone--kit.is-dragover .flosc-dropzone__glyph,
