@@ -1,6 +1,10 @@
 /**
- * Flow Portability kit picker.
- * Guard: safe to load once via enqueue or inline on flosc-admin.
+ * Flow Portability — single kit drop zone (list, then Create/Apply).
+ *
+ * One surface: #flosc-ivr-dropzone with one covering <input type="file">.
+ * No second picker. Selected-files panel is display-only.
+ *
+ * @package FLOSC
  */
 (function () {
 	'use strict';
@@ -12,7 +16,61 @@
 
 	var MAX_TSV = 10;
 
-	function boot() {
+	function onReady(fn) {
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', fn);
+		} else {
+			fn();
+		}
+	}
+
+	function extOf(name) {
+		var n = String(name || '').toLowerCase();
+		var i = n.lastIndexOf('.');
+		return i < 0 ? '' : n.slice(i + 1);
+	}
+
+	function toFiles(list) {
+		if (!list || !list.length) {
+			return [];
+		}
+		return Array.prototype.slice.call(list, 0);
+	}
+
+	function formatBytes(n) {
+		n = parseInt(n, 10) || 0;
+		if (n < 1024) {
+			return n + ' B';
+		}
+		if (n < 1048576) {
+			return (n / 1024).toFixed(1) + ' KB';
+		}
+		return (n / 1048576).toFixed(2) + ' MB';
+	}
+
+	/**
+	 * @param {HTMLInputElement} input
+	 * @param {File[]} files
+	 * @return {boolean}
+	 */
+	function setInputFiles(input, files) {
+		if (typeof DataTransfer === 'undefined') {
+			return !!(input.files && input.files.length === files.length);
+		}
+		try {
+			var dt = new DataTransfer();
+			var i;
+			for (i = 0; i < files.length; i++) {
+				dt.items.add(files[i]);
+			}
+			input.files = dt.files;
+			return input.files.length === files.length;
+		} catch (err) {
+			return false;
+		}
+	}
+
+	onReady(function () {
 		var form = document.getElementById('flosc-ivr-dropzone-upload-form');
 		var zone = document.getElementById('flosc-ivr-dropzone');
 		var input = document.getElementById('flosc-ivr-file-input');
@@ -32,80 +90,18 @@
 
 		/** @type {File[]} */
 		var pending = [];
-		var dragDepth = 0;
+		/** dragenter depth on the zone hit target only */
+		var depth = 0;
 
-		function ext(name) {
-			var n = String(name || '').toLowerCase();
-			var i = n.lastIndexOf('.');
-			return i < 0 ? '' : n.slice(i + 1);
-		}
-
-		function bytes(n) {
-			n = parseInt(n, 10) || 0;
-			if (n < 1024) {
-				return n + ' B';
+		function setDrag(active) {
+			zone.classList.toggle('is-dragover', active);
+			if (titleIdle) {
+				titleIdle.hidden = active;
 			}
-			if (n < 1048576) {
-				return (n / 1024).toFixed(1) + ' KB';
+			if (titleDrag) {
+				titleDrag.hidden = !active;
 			}
-			return (n / 1048576).toFixed(2) + ' MB';
-		}
-
-		function toArr(list) {
-			if (!list || !list.length) {
-				return [];
-			}
-			return Array.prototype.slice.call(list, 0);
-		}
-
-		function assignFiles(files) {
-			if (typeof DataTransfer === 'undefined') {
-				return !!(input.files && input.files.length === files.length);
-			}
-			try {
-				var dt = new DataTransfer();
-				var i;
-				for (i = 0; i < files.length; i++) {
-					dt.items.add(files[i]);
-				}
-				input.files = dt.files;
-				return input.files.length === files.length;
-			} catch (err) {
-				return false;
-			}
-		}
-
-		/**
-		 * High-contrast drag paint — class + inline (beats admin CSS cache).
-		 * @param {boolean} on
-		 */
-		function paint(on) {
-			if (on) {
-				zone.classList.add('is-dragover');
-				form.classList.add('is-dragover');
-				zone.style.setProperty('background', '#4da3e0', 'important');
-				zone.style.setProperty('background-color', '#4da3e0', 'important');
-				zone.style.setProperty('border', '3px solid #063a5c', 'important');
-				zone.style.setProperty('box-shadow', '0 0 0 5px rgba(6, 58, 92, 0.55)', 'important');
-				if (titleIdle) {
-					titleIdle.hidden = true;
-				}
-				if (titleDrag) {
-					titleDrag.hidden = false;
-				}
-			} else {
-				zone.classList.remove('is-dragover');
-				form.classList.remove('is-dragover');
-				zone.style.removeProperty('background');
-				zone.style.removeProperty('background-color');
-				zone.style.removeProperty('border');
-				zone.style.removeProperty('box-shadow');
-				if (titleIdle) {
-					titleIdle.hidden = false;
-				}
-				if (titleDrag) {
-					titleDrag.hidden = true;
-				}
+			if (!active) {
 				zone.classList.toggle('is-has-file', pending.length > 0);
 			}
 		}
@@ -119,7 +115,7 @@
 			if (btnClear) {
 				btnClear.disabled = n === 0;
 			}
-			if (dragDepth === 0) {
+			if (depth === 0) {
 				zone.classList.toggle('is-has-file', n > 0);
 			}
 			var i;
@@ -131,7 +127,7 @@
 				code.textContent = f.name || '(unnamed)';
 				var meta = document.createElement('span');
 				meta.className = 'description';
-				meta.textContent = bytes(f.size);
+				meta.textContent = formatBytes(f.size);
 				li.appendChild(code);
 				li.appendChild(document.createTextNode(' '));
 				li.appendChild(meta);
@@ -139,8 +135,11 @@
 			}
 		}
 
+		/**
+		 * @param {FileList|File[]} fileList
+		 */
 		function stage(fileList) {
-			var files = toArr(fileList);
+			var files = toFiles(fileList);
 			if (!files.length) {
 				return;
 			}
@@ -148,7 +147,7 @@
 			var tsv = [];
 			var i;
 			for (i = 0; i < files.length; i++) {
-				var e = ext(files[i].name);
+				var e = extOf(files[i].name);
 				if (e === 'md') {
 					md.push(files[i]);
 				} else if (e === 'tsv') {
@@ -171,7 +170,7 @@
 				return;
 			}
 			pending = md.concat(tsv);
-			assignFiles(pending);
+			setInputFiles(input, pending);
 			render();
 		}
 
@@ -180,92 +179,50 @@
 			try {
 				input.value = '';
 			} catch (err) { /* ignore */ }
-			assignFiles([]);
+			setInputFiles(input, []);
 			render();
 		}
 
-		function dragEnter(e) {
+		/* —— Single hit target: covering file input —— */
+		input.addEventListener('dragenter', function (e) {
 			e.preventDefault();
 			e.stopPropagation();
-			dragDepth += 1;
-			if (dragDepth === 1) {
-				paint(true);
+			depth += 1;
+			if (depth === 1) {
+				setDrag(true);
 			}
-		}
+		});
 
-		function dragOver(e) {
+		input.addEventListener('dragover', function (e) {
 			e.preventDefault();
 			e.stopPropagation();
 			if (e.dataTransfer) {
 				e.dataTransfer.dropEffect = 'copy';
 			}
-			if (dragDepth < 1) {
-				dragDepth = 1;
-				paint(true);
+			if (depth < 1) {
+				depth = 1;
+				setDrag(true);
 			}
-		}
-
-		function dragLeave(e) {
-			e.preventDefault();
-			e.stopPropagation();
-			dragDepth = Math.max(0, dragDepth - 1);
-			if (dragDepth === 0) {
-				paint(false);
-			}
-		}
-
-		function drop(e) {
-			e.preventDefault();
-			e.stopPropagation();
-			dragDepth = 0;
-			paint(false);
-			var files = e.dataTransfer && e.dataTransfer.files;
-			if (files && files.length) {
-				stage(files);
-			}
-		}
-
-		// Full-zone opacity-0 input is the hit target (covers the box). Bind only here
-		// so dragDepth is not tripled by zone+form bubble duplicates.
-		input.addEventListener('dragenter', dragEnter, false);
-		input.addEventListener('dragover', dragOver, false);
-		input.addEventListener('dragleave', dragLeave, false);
-		input.addEventListener('drop', drop, false);
-
-		// Drops on the staged-files panel (same form) also stage.
-		form.addEventListener('dragover', function (e) {
-			e.preventDefault();
-		});
-		form.addEventListener('drop', function (e) {
-			if (e.target === input) {
-				return;
-			}
-			drop(e);
 		});
 
-		// Block browser open/download for file drops on this admin page.
-		window.addEventListener(
-			'dragover',
-			function (e) {
-				e.preventDefault();
-			},
-			false
-		);
-		window.addEventListener(
-			'drop',
-			function (e) {
-				e.preventDefault();
-			},
-			false
-		);
-		window.addEventListener(
-			'dragend',
-			function () {
-				dragDepth = 0;
-				paint(false);
-			},
-			false
-		);
+		input.addEventListener('dragleave', function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			depth = Math.max(0, depth - 1);
+			if (depth === 0) {
+				setDrag(false);
+			}
+		});
+
+		input.addEventListener('drop', function (e) {
+			e.preventDefault();
+			e.stopPropagation();
+			depth = 0;
+			setDrag(false);
+			if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+				stage(e.dataTransfer.files);
+			}
+		});
 
 		input.addEventListener('change', function () {
 			if (input.files && input.files.length) {
@@ -273,8 +230,18 @@
 			}
 		});
 
-		// Zone click is handled by the covering file input (opacity 0).
-		// Keyboard still opens picker.
+		/* Stop browser from navigating when a file is dropped on this page. */
+		window.addEventListener('dragover', function (e) {
+			e.preventDefault();
+		});
+		window.addEventListener('drop', function (e) {
+			e.preventDefault();
+		});
+		window.addEventListener('dragend', function () {
+			depth = 0;
+			setDrag(false);
+		});
+
 		zone.addEventListener('keydown', function (e) {
 			if (e.key === 'Enter' || e.key === ' ') {
 				e.preventDefault();
@@ -309,21 +276,16 @@
 				window.alert('Select files first (drop or click the box), then Create or Apply.');
 				return;
 			}
-			if (!assignFiles(pending)) {
+			if (!setInputFiles(input, pending)) {
 				e.preventDefault();
 				window.alert('Could not attach files. Click the box and select again.');
 				return;
 			}
 			var mdCount = 0;
-			var tsvCount = 0;
 			var j;
 			for (j = 0; j < pending.length; j++) {
-				var x = ext(pending[j].name);
-				if (x === 'md') {
+				if (extOf(pending[j].name) === 'md') {
 					mdCount += 1;
-				}
-				if (x === 'tsv') {
-					tsvCount += 1;
 				}
 			}
 			if (act === 'create' && mdCount < 1) {
@@ -340,11 +302,5 @@
 		});
 
 		render();
-	}
-
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', boot);
-	} else {
-		boot();
-	}
+	});
 })();

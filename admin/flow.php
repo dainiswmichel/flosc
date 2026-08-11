@@ -720,72 +720,8 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
             <input type="hidden" name="flosc_working_ivr" value="<?php echo esc_attr($flosc_selected_ivr); ?>">
 
             <?php
-            /*
-             * Full-zone opacity-0 file input (native click + OS drop hit target).
-             * Runtime: flosc-portability-admin.js (also inlined on flosc-admin below).
-             */
+            /* One drop surface: covering file input + label UI. JS: flosc-portability-admin.js */
             ?>
-            <style id="flosc-dropzone-critical-css">
-                .flosc-portability-kit-form .flosc-dropzone--kit {
-                    position: relative;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    min-height: 128px;
-                    margin-top: 8px;
-                    border: 2px dashed #8c8f94;
-                    border-radius: 12px;
-                    background: #fff;
-                    cursor: pointer;
-                    box-sizing: border-box;
-                }
-                .flosc-portability-kit-form .flosc-dropzone--kit .flosc-dropzone__file {
-                    position: absolute;
-                    inset: 0;
-                    z-index: 5;
-                    width: 100%;
-                    height: 100%;
-                    margin: 0;
-                    padding: 0;
-                    opacity: 0;
-                    cursor: pointer;
-                    border: 0;
-                    font-size: 0;
-                }
-                .flosc-portability-kit-form .flosc-dropzone--kit .flosc-dropzone__surface {
-                    position: relative;
-                    z-index: 1;
-                    display: flex;
-                    flex-direction: column;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 6px;
-                    width: 100%;
-                    padding: 22px 24px;
-                    text-align: center;
-                    pointer-events: none;
-                }
-                .flosc-portability-kit-form .flosc-dropzone--kit.is-dragover {
-                    border: 3px solid #063a5c !important;
-                    background: #4da3e0 !important;
-                    background-color: #4da3e0 !important;
-                    box-shadow: 0 0 0 5px rgba(6, 58, 92, 0.55) !important;
-                    color: #063a5c !important;
-                }
-                .flosc-portability-kit-form .flosc-dropzone--kit.is-has-file:not(.is-dragover) {
-                    border-style: solid;
-                    border-color: #00a32a;
-                    background: #edfaef;
-                }
-                .flosc-portability-kit-form .flosc-dropzone__title { font-size: 14px; font-weight: 600; }
-                .flosc-portability-kit-form .flosc-dropzone__hint { font-size: 12px; color: #646970; }
-                .flosc-portability-kit-form .flosc-dropzone__glyph { color: #646970; }
-                .flosc-portability-kit-form .flosc-dropzone--kit.is-dragover .flosc-dropzone__glyph,
-                .flosc-portability-kit-form .flosc-dropzone--kit.is-dragover .flosc-dropzone__title,
-                .flosc-portability-kit-form .flosc-dropzone--kit.is-dragover .flosc-dropzone__hint {
-                    color: #063a5c !important;
-                }
-            </style>
             <div
                 class="flosc-dropzone flosc-dropzone--kit"
                 id="flosc-ivr-dropzone"
@@ -803,8 +739,8 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
                     accept=".md,.tsv,text/markdown,text/plain,text/tab-separated-values"
                     multiple
                 >
-                <div class="flosc-dropzone__surface">
-                    <span class="flosc-dropzone__glyph" aria-hidden="true">
+                <div class="flosc-dropzone__surface" aria-hidden="true">
+                    <span class="flosc-dropzone__glyph">
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
                             <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
                             <path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
@@ -900,25 +836,18 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
     </div>
 
     <?php
-    // Guarantee kit picker JS runs when this markup is painted: attach full file
-    // to flosc-admin (always footer-printed on FLOSC admin). Guard inside JS
-    // prevents double-bind if the external handle also loads.
+    // One script load for kit picker (footer). No second inline copy of the same file.
     $flosc_port_js_path = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
-    if ( file_exists( $flosc_port_js_path ) ) {
-        $flosc_port_js_body = file_get_contents( $flosc_port_js_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-        if ( is_string( $flosc_port_js_body ) && $flosc_port_js_body !== '' ) {
-            wp_add_inline_script( 'flosc-admin', $flosc_port_js_body );
-        }
-        // External copy for cacheable load + DevTools mapping (no deps — always prints).
+    if ( file_exists( $flosc_port_js_path ) && ! wp_script_is( 'flosc-portability-admin', 'enqueued' ) ) {
         wp_enqueue_script(
             'flosc-portability-admin',
             FLOSC_PLUGIN_URL . 'assets/js/flosc-portability-admin.js',
             array(),
-            (string) filemtime( $flosc_port_js_path ) . '.dz3',
+            (string) filemtime( $flosc_port_js_path ),
             true
         );
     }
-    // Table delete/duplicate confirm.
+    // Table delete/duplicate confirm only.
     ob_start();
     ?>
     (function () {
