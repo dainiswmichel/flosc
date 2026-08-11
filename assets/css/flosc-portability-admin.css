@@ -1,7 +1,23 @@
 /**
  * Flow Portability kit drop zone (admin only).
- * Loaded as its own stylesheet so rules always apply on the Flow tab.
+ * Linked immediately before the Portability form (see admin/flow.php).
  */
+
+/* Hide file input completely — do not rely only on WP .screen-reader-text */
+.flosc-portability-kit-form .flosc-sr-only,
+.flosc-portability-kit-form input.flosc-sr-only#flosc-ivr-file-input {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect(0, 0, 0, 0) !important;
+	clip-path: inset(50%) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+	opacity: 0 !important;
+}
 
 .flosc-portability-kit-form .flosc-dropzone--kit {
 	position: relative;

@@ -713,28 +713,31 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
             </li>
         </ul>
 
+        <?php
+        // Stylesheet BEFORE markup so the file input never paints “Choose Files”.
+        $flosc_port_css = FLOSC_PLUGIN_DIR . 'assets/css/flosc-portability-admin.css';
+        if ( file_exists( $flosc_port_css ) ) {
+            $flosc_port_css_url = add_query_arg(
+                'ver',
+                rawurlencode( (string) filemtime( $flosc_port_css ) ),
+                FLOSC_PLUGIN_URL . 'assets/css/flosc-portability-admin.css'
+            );
+            // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet
+            echo '<link rel="stylesheet" href="' . esc_url( $flosc_port_css_url ) . '" id="flosc-portability-admin-css" />' . "\n";
+        }
+        ?>
         <form method="post" action="<?php echo esc_url($flosc_flow_all_url); ?>" enctype="multipart/form-data" class="flosc-ivr-upload-form flosc-portability-kit-form" id="flosc-ivr-dropzone-upload-form">
             <?php wp_nonce_field('flosc_portability_kit'); ?>
             <input type="hidden" name="flosc_upload_redirect_tab" value="flow">
             <input type="hidden" name="flosc_upload_redirect_view" value="all">
             <input type="hidden" name="flosc_working_ivr" value="<?php echo esc_attr($flosc_selected_ivr); ?>">
 
-            <?php
-            /*
-             * One drop surface. File input uses WP core .screen-reader-text (always in admin)
-             * so native “Choose Files” never paints. Label provides click target; JS does DnD.
-             */
-            ?>
-            <div
-                class="flosc-dropzone flosc-dropzone--kit"
-                id="flosc-ivr-dropzone"
-                aria-controls="flosc-portability-file-list"
-            >
+            <div class="flosc-dropzone flosc-dropzone--kit" id="flosc-ivr-dropzone" aria-controls="flosc-portability-file-list">
                 <input
                     type="file"
                     name="flosc_kit_files[]"
                     id="flosc-ivr-file-input"
-                    class="screen-reader-text"
+                    class="flosc-sr-only screen-reader-text"
                     accept=".md,.tsv,text/markdown,text/plain,text/tab-separated-values"
                     multiple
                 >
@@ -837,22 +840,8 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
     </div>
 
     <?php
-    /*
-     * Portability assets MUST print with this markup.
-     * Mid-template wp_enqueue_style() is too late for admin head — CSS never
-     * reaches the page and the native file control shows. Link + script here.
-     */
-    $flosc_port_css = FLOSC_PLUGIN_DIR . 'assets/css/flosc-portability-admin.css';
-    $flosc_port_js  = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
-    if ( file_exists( $flosc_port_css ) ) {
-        $flosc_port_css_url = add_query_arg(
-            'ver',
-            rawurlencode( (string) filemtime( $flosc_port_css ) ),
-            FLOSC_PLUGIN_URL . 'assets/css/flosc-portability-admin.css'
-        );
-        // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet
-        echo '<link rel="stylesheet" href="' . esc_url( $flosc_port_css_url ) . '" id="flosc-portability-admin-css" />' . "\n";
-    }
+    // Kit JS after markup (CSS already linked above the form).
+    $flosc_port_js = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
     if ( file_exists( $flosc_port_js ) ) {
         $flosc_port_js_url = add_query_arg(
             'ver',
