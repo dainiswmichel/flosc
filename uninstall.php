@@ -3,18 +3,17 @@
  * FLOSC uninstall routine.
  *
  * Runs only when the plugin is deleted from WordPress admin.
+ * Keep this fast and dependency-free so Delete can finish removing plugins/flosc/.
+ * Do not load the main plugin, loop all users/posts, or call optional helpers.
  */
 
 if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-// Uninstall must purge FLOSC options (autoload=no) and custom tables.
-// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- uninstall purge of options + custom tables
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.DirectDatabaseQuery.SchemaChange -- uninstall purge
 
 /**
- * Delete all options whose names match a prefix (uses core option API).
- *
  * @param string $prefix Option name prefix.
  * @return void
  */
@@ -24,7 +23,6 @@ function flosc_uninstall_delete_options_by_prefix( $prefix ) {
 	if ( $prefix === '' ) {
 		return;
 	}
-	// Include autoload=no options. Bust options object cache after bulk delete.
 	$wpdb->query(
 		$wpdb->prepare(
 			"DELETE FROM {$wpdb->options} WHERE option_name LIKE %s",
@@ -33,14 +31,9 @@ function flosc_uninstall_delete_options_by_prefix( $prefix ) {
 	);
 	wp_cache_delete( 'alloptions', 'options' );
 	wp_cache_delete( 'notoptions', 'options' );
-	if ( function_exists( 'flosc_bust_flow_option_rows_cache' ) ) {
-		flosc_bust_flow_option_rows_cache();
-	}
 }
 
 /**
- * Delete all site meta keys with a prefix (multisite).
- *
  * @param string $prefix Meta key prefix.
  * @return void
  */
@@ -48,186 +41,84 @@ function flosc_uninstall_delete_sitemeta_by_prefix( $prefix ) {
 	if ( ! is_multisite() ) {
 		return;
 	}
+	global $wpdb;
 	$prefix = (string) $prefix;
-	if ( $prefix === '' || ! function_exists( 'get_site_option' ) ) {
+	if ( $prefix === '' ) {
 		return;
 	}
-	global $wpdb;
-	// Network options live in sitemeta; list keys then delete via API.
-	$like      = $wpdb->esc_like( $prefix ) . '%';
-	$cache_key = 'sitemeta_keys_' . md5( $like );
-	$keys      = wp_cache_get( $cache_key, 'flosc_uninstall' );
-	if ( ! is_array( $keys ) ) {
-		$keys = $wpdb->get_col(
-			$wpdb->prepare(
-				"SELECT meta_key FROM {$wpdb->sitemeta} WHERE meta_key LIKE %s",
-				$like
-			)
-		);
-		if ( ! is_array( $keys ) ) {
-			$keys = array();
-		}
-		wp_cache_set( $cache_key, $keys, 'flosc_uninstall', 60 );
-	}
-	foreach ( $keys as $key ) {
-		delete_site_option( (string) $key );
-	}
-	wp_cache_delete( $cache_key, 'flosc_uninstall' );
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM {$wpdb->sitemeta} WHERE meta_key LIKE %s",
+			$wpdb->esc_like( $prefix ) . '%'
+		)
+	);
 }
 
 /**
- * Delete user/term/post meta rows with FLOSC key prefixes via object loops.
+ * Bulk-delete object meta by key prefix (no per-object PHP loops).
  *
- * @param string $object_type user|term|post.
+ * @param string $table Full table name (usermeta, postmeta, termmeta).
+ * @param string $prefix Meta key prefix.
  * @return void
  */
-function flosc_uninstall_delete_meta_by_prefixes( $object_type ) {
-	$prefixes = array( '_flosc_', 'flosc_' );
-
-	if ( 'user' === $object_type ) {
-		$user_ids = get_users( array( 'fields' => 'ID' ) );
-		foreach ( (array) $user_ids as $user_id ) {
-			$all = get_user_meta( (int) $user_id );
-			if ( ! is_array( $all ) ) {
-				continue;
-			}
-			foreach ( array_keys( $all ) as $key ) {
-				$key = (string) $key;
-				foreach ( $prefixes as $prefix ) {
-					if ( 0 === strpos( $key, $prefix ) ) {
-						delete_user_meta( (int) $user_id, $key );
-						break;
-					}
-				}
-			}
-		}
+function flosc_uninstall_delete_meta_table_prefix( $table, $prefix ) {
+	global $wpdb;
+	$table  = (string) $table;
+	$prefix = (string) $prefix;
+	if ( $table === '' || $prefix === '' ) {
 		return;
 	}
-
-	if ( 'term' === $object_type ) {
-		$terms = get_terms(
-			array(
-				'taxonomy'   => get_taxonomies(),
-				'hide_empty' => false,
-				'fields'     => 'ids',
-			)
-		);
-		if ( is_wp_error( $terms ) || ! is_array( $terms ) ) {
-			return;
-		}
-		foreach ( $terms as $term_id ) {
-			$all = get_term_meta( (int) $term_id );
-			if ( ! is_array( $all ) ) {
-				continue;
-			}
-			foreach ( array_keys( $all ) as $key ) {
-				$key = (string) $key;
-				foreach ( $prefixes as $prefix ) {
-					if ( 0 === strpos( $key, $prefix ) ) {
-						delete_term_meta( (int) $term_id, $key );
-						break;
-					}
-				}
-			}
-		}
-		return;
-	}
-
-	if ( 'post' === $object_type ) {
-		$q = new WP_Query(
-			array(
-				'post_type'              => 'any',
-				'post_status'            => 'any',
-				'posts_per_page'         => -1,
-				'fields'                 => 'ids',
-				'no_found_rows'          => true,
-				'update_post_meta_cache' => false,
-				'update_post_term_cache' => false,
-			)
-		);
-		foreach ( (array) $q->posts as $post_id ) {
-			$all = get_post_meta( (int) $post_id );
-			if ( ! is_array( $all ) ) {
-				continue;
-			}
-			foreach ( array_keys( $all ) as $key ) {
-				$key = (string) $key;
-				foreach ( $prefixes as $prefix ) {
-					if ( 0 === strpos( $key, $prefix ) ) {
-						delete_post_meta( (int) $post_id, $key );
-						break;
-					}
-				}
-			}
-		}
-	}
+	// Table name from $wpdb->* only — not user input.
+	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	$wpdb->query(
+		$wpdb->prepare(
+			"DELETE FROM {$table} WHERE meta_key LIKE %s",
+			$wpdb->esc_like( $prefix ) . '%'
+		)
+	);
 }
 
-// Options + transients (option API).
+// Options + transients.
 flosc_uninstall_delete_options_by_prefix( 'flosc_' );
-// Payment fulfillment claim rows: add_option( '_flosc_fulfill_' . md5(...) ).
 flosc_uninstall_delete_options_by_prefix( '_flosc_' );
 flosc_uninstall_delete_options_by_prefix( '_transient_flosc_' );
 flosc_uninstall_delete_options_by_prefix( '_transient_timeout_flosc_' );
 
 if ( is_multisite() ) {
 	flosc_uninstall_delete_sitemeta_by_prefix( 'flosc_' );
+	flosc_uninstall_delete_sitemeta_by_prefix( '_flosc_' );
 	flosc_uninstall_delete_sitemeta_by_prefix( '_transient_flosc_' );
 	flosc_uninstall_delete_sitemeta_by_prefix( '_transient_timeout_flosc_' );
 }
 
-// User / term / post meta.
-flosc_uninstall_delete_meta_by_prefixes( 'user' );
-flosc_uninstall_delete_meta_by_prefixes( 'term' );
-flosc_uninstall_delete_meta_by_prefixes( 'post' );
-
-/**
- * Drop a FLOSC custom table (no core API for arbitrary plugin tables).
- *
- * @param string $flosc_table Full table name.
- * @return void
- */
-function flosc_uninstall_drop_table( $flosc_table ) {
-	global $wpdb;
-	wp_cache_delete( 'table_exists_' . $flosc_table, 'flosc_lessons' );
-	wp_cache_delete( 'all_' . $flosc_table, 'flosc_lessons' );
-	$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $flosc_table ) );
+// Meta (SQL bulk — safe on large user/post counts).
+global $wpdb;
+foreach ( array( '_flosc_', 'flosc_' ) as $flosc_meta_prefix ) {
+	flosc_uninstall_delete_meta_table_prefix( $wpdb->usermeta, $flosc_meta_prefix );
+	flosc_uninstall_delete_meta_table_prefix( $wpdb->postmeta, $flosc_meta_prefix );
+	if ( ! empty( $wpdb->termmeta ) ) {
+		flosc_uninstall_delete_meta_table_prefix( $wpdb->termmeta, $flosc_meta_prefix );
+	}
 }
 
-// Drop FLOSC custom tables if present.
-global $wpdb;
+// Custom tables.
 $flosc_tables = array(
 	$wpdb->prefix . 'flosc_chat_logs',
 	$wpdb->prefix . 'flosc_lessons',
 );
 foreach ( $flosc_tables as $flosc_table ) {
-	flosc_uninstall_drop_table( $flosc_table );
+	// Identifier only from $wpdb->prefix + fixed suffix.
+	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	$wpdb->query( "DROP TABLE IF EXISTS `{$flosc_table}`" );
 }
 
-// Clear FLOSC cron events if they still exist.
 if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
 	wp_clear_scheduled_hook( 'flosc_cleanup_visitor_audio' );
 	wp_clear_scheduled_hook( 'flosc_guest_followup_cron' );
 }
 
-// Remove FLOSC-managed uploads directories (AI configs, user audio, temp).
-$flosc_uploads = wp_upload_dir( null, false );
-if ( empty( $flosc_uploads['error'] ) && ! empty( $flosc_uploads['basedir'] ) ) {
-	$flosc_upload_roots = array(
-		trailingslashit( $flosc_uploads['basedir'] ) . 'flosc',
-		trailingslashit( $flosc_uploads['basedir'] ) . 'flosc-users',
-		trailingslashit( $flosc_uploads['basedir'] ) . 'flosc-temp',
-		trailingslashit( $flosc_uploads['basedir'] ) . 'flosc-catalogs',
-	);
-	foreach ( $flosc_upload_roots as $flosc_dir ) {
-		if ( is_dir( $flosc_dir ) ) {
-			flosc_uninstall_rm_rf( $flosc_dir );
-		}
-	}
-}
-
 /**
- * Recursively remove a directory under uploads during uninstall via WP_Filesystem.
+ * Recursively remove a directory under uploads.
  *
  * @param string $dir Absolute path.
  * @return void
@@ -243,15 +134,14 @@ function flosc_uninstall_rm_rf( $dir ) {
 	}
 	global $wp_filesystem;
 	if ( ! is_object( $wp_filesystem ) ) {
+		// Direct method: uninstall has no form credentials for FTP.
 		WP_Filesystem();
 	}
-	if ( is_object( $wp_filesystem ) && method_exists( $wp_filesystem, 'rmdir' ) ) {
-		$wp_filesystem->rmdir( $dir, true );
+	if ( is_object( $wp_filesystem ) && method_exists( $wp_filesystem, 'rmdir' ) && $wp_filesystem->rmdir( $dir, true ) ) {
 		return;
 	}
 
-	// Fallback: recursive delete with wp_delete_file for files.
-	$items = scandir( $dir );
+	$items = @scandir( $dir );
 	if ( ! is_array( $items ) ) {
 		return;
 	}
@@ -262,11 +152,25 @@ function flosc_uninstall_rm_rf( $dir ) {
 		$path = $dir . DIRECTORY_SEPARATOR . $item;
 		if ( is_dir( $path ) ) {
 			flosc_uninstall_rm_rf( $path );
-		} else {
+		} elseif ( function_exists( 'wp_delete_file' ) ) {
 			wp_delete_file( $path );
+		} else {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+			@unlink( $path );
 		}
 	}
-	if ( is_object( $wp_filesystem ) && method_exists( $wp_filesystem, 'rmdir' ) ) {
-		$wp_filesystem->rmdir( $dir, false );
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir
+	@rmdir( $dir );
+}
+
+// FLOSC data under uploads only (never touch plugins/flosc — core removes that).
+$flosc_uploads = wp_upload_dir( null, false );
+if ( empty( $flosc_uploads['error'] ) && ! empty( $flosc_uploads['basedir'] ) ) {
+	$base = trailingslashit( $flosc_uploads['basedir'] );
+	foreach ( array( 'flosc', 'flosc-users', 'flosc-temp', 'flosc-catalogs' ) as $flosc_subdir ) {
+		$flosc_dir = $base . $flosc_subdir;
+		if ( is_dir( $flosc_dir ) ) {
+			flosc_uninstall_rm_rf( $flosc_dir );
+		}
 	}
 }
