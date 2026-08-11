@@ -721,10 +721,71 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 
             <?php
             /*
-             * Visually-hidden file input + clickable drop surface.
-             * DnD + highlight: assets/js/flosc-portability-admin.js (drag depth counter).
+             * Full-zone opacity-0 file input (native click + OS drop hit target).
+             * Runtime: flosc-portability-admin.js (also inlined on flosc-admin below).
              */
             ?>
+            <style id="flosc-dropzone-critical-css">
+                .flosc-portability-kit-form .flosc-dropzone--kit {
+                    position: relative;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-height: 128px;
+                    margin-top: 8px;
+                    border: 2px dashed #8c8f94;
+                    border-radius: 12px;
+                    background: #fff;
+                    cursor: pointer;
+                    box-sizing: border-box;
+                }
+                .flosc-portability-kit-form .flosc-dropzone--kit .flosc-dropzone__file {
+                    position: absolute;
+                    inset: 0;
+                    z-index: 5;
+                    width: 100%;
+                    height: 100%;
+                    margin: 0;
+                    padding: 0;
+                    opacity: 0;
+                    cursor: pointer;
+                    border: 0;
+                    font-size: 0;
+                }
+                .flosc-portability-kit-form .flosc-dropzone--kit .flosc-dropzone__surface {
+                    position: relative;
+                    z-index: 1;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 6px;
+                    width: 100%;
+                    padding: 22px 24px;
+                    text-align: center;
+                    pointer-events: none;
+                }
+                .flosc-portability-kit-form .flosc-dropzone--kit.is-dragover {
+                    border: 3px solid #063a5c !important;
+                    background: #4da3e0 !important;
+                    background-color: #4da3e0 !important;
+                    box-shadow: 0 0 0 5px rgba(6, 58, 92, 0.55) !important;
+                    color: #063a5c !important;
+                }
+                .flosc-portability-kit-form .flosc-dropzone--kit.is-has-file:not(.is-dragover) {
+                    border-style: solid;
+                    border-color: #00a32a;
+                    background: #edfaef;
+                }
+                .flosc-portability-kit-form .flosc-dropzone__title { font-size: 14px; font-weight: 600; }
+                .flosc-portability-kit-form .flosc-dropzone__hint { font-size: 12px; color: #646970; }
+                .flosc-portability-kit-form .flosc-dropzone__glyph { color: #646970; }
+                .flosc-portability-kit-form .flosc-dropzone--kit.is-dragover .flosc-dropzone__glyph,
+                .flosc-portability-kit-form .flosc-dropzone--kit.is-dragover .flosc-dropzone__title,
+                .flosc-portability-kit-form .flosc-dropzone--kit.is-dragover .flosc-dropzone__hint {
+                    color: #063a5c !important;
+                }
+            </style>
             <div
                 class="flosc-dropzone flosc-dropzone--kit"
                 id="flosc-ivr-dropzone"
@@ -738,11 +799,9 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
                     type="file"
                     name="flosc_kit_files[]"
                     id="flosc-ivr-file-input"
-                    class="flosc-dropzone__input"
+                    class="flosc-dropzone__file"
                     accept=".md,.tsv,text/markdown,text/plain,text/tab-separated-values"
                     multiple
-                    tabindex="-1"
-                    aria-hidden="true"
                 >
                 <div class="flosc-dropzone__surface">
                     <span class="flosc-dropzone__glyph" aria-hidden="true">
@@ -841,8 +900,25 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
     </div>
 
     <?php
-    // flosc-portability-admin.js is enqueued on admin_enqueue_scripts (flow tab).
-    // Table delete/duplicate confirm stays on flosc-admin handle.
+    // Guarantee kit picker JS runs when this markup is painted: attach full file
+    // to flosc-admin (always footer-printed on FLOSC admin). Guard inside JS
+    // prevents double-bind if the external handle also loads.
+    $flosc_port_js_path = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
+    if ( file_exists( $flosc_port_js_path ) ) {
+        $flosc_port_js_body = file_get_contents( $flosc_port_js_path ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+        if ( is_string( $flosc_port_js_body ) && $flosc_port_js_body !== '' ) {
+            wp_add_inline_script( 'flosc-admin', $flosc_port_js_body );
+        }
+        // External copy for cacheable load + DevTools mapping (no deps — always prints).
+        wp_enqueue_script(
+            'flosc-portability-admin',
+            FLOSC_PLUGIN_URL . 'assets/js/flosc-portability-admin.js',
+            array(),
+            (string) filemtime( $flosc_port_js_path ) . '.dz3',
+            true
+        );
+    }
+    // Table delete/duplicate confirm.
     ob_start();
     ?>
     (function () {

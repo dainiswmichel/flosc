@@ -835,16 +835,17 @@ trait FLOSC_Admin_Trait {
             }
         }
 
-        // Flow Portability kit picker (list-then-Create/Apply). Must enqueue here so
-        // the handle is registered before admin footer print — not mid-template.
+        // Flow Portability kit picker: also enqueued/inlined from admin/flow.php when
+        // Portability view is rendered (markup-gated). Early enqueue here so the
+        // external file is available when tab=flow even before template runs.
         if ( $flosc_tab === 'flow' ) {
             $flosc_port_js = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
             if ( file_exists( $flosc_port_js ) ) {
                 wp_enqueue_script(
                     'flosc-portability-admin',
                     FLOSC_PLUGIN_URL . 'assets/js/flosc-portability-admin.js',
-                    array( 'flosc-admin' ),
-                    (string) filemtime( $flosc_port_js ),
+                    array(),
+                    (string) filemtime( $flosc_port_js ) . '.dz3',
                     true
                 );
             }
