@@ -1,10 +1,10 @@
 /**
- * Flow Portability kit picker: drop/choose → list → Create/Apply submit.
- * pendingFiles is source of truth; input.files is synced for POST.
+ * Flow Portability kit picker: drop/choose → list → Create/Apply.
+ * pendingFiles is source of truth; input.files synced for multipart POST.
  *
- * Chromium: file drops must preventDefault on dragover (capture) or the
- * browser opens/downloads the file and dataTransfer never reaches the page.
- * Zone uses a full-size opacity-0 file input so native drop + click both work.
+ * Drag UX: hit-test zone/form via getBoundingClientRect (not dragleave), so
+ * highlight stays solid while the OS file drag is over the drop target.
+ * Capture preventDefault so Chromium does not open/download dropped files.
  */
 (function () {
 	'use strict';
@@ -23,15 +23,19 @@
 	 */
 	function isFileDrag(e) {
 		var dt = e.dataTransfer;
-		if (!dt || !dt.types) {
+		if (!dt) {
 			return false;
+		}
+		// types empty on some dragenter frames in Safari — treat as possible file drag
+		if (!dt.types || !dt.types.length) {
+			return true;
 		}
 		var types = dt.types;
 		if (typeof types.includes === 'function') {
-			return types.includes('Files');
+			return types.includes('Files') || types.includes('application/x-moz-file');
 		}
 		if (typeof types.contains === 'function') {
-			return types.contains('Files');
+			return types.contains('Files') || types.contains('application/x-moz-file');
 		}
 		var i;
 		for (i = 0; i < types.length; i++) {
@@ -58,6 +62,20 @@
 		return out;
 	}
 
+	/**
+	 * @param {HTMLElement} el
+	 * @param {number} x
+	 * @param {number} y
+	 * @return {boolean}
+	 */
+	function pointInElement(el, x, y) {
+		if (!el || x == null || y == null) {
+			return false;
+		}
+		var r = el.getBoundingClientRect();
+		return x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
+	}
+
 	ready(function () {
 		var form = document.getElementById('flosc-ivr-dropzone-upload-form');
 		var zone = document.getElementById('flosc-ivr-dropzone');
@@ -67,6 +85,8 @@
 		var btnClear = document.getElementById('flosc-portability-clear-files');
 		var btnCreate = document.getElementById('flosc-portability-btn-create');
 		var btnApply = document.getElementById('flosc-portability-btn-apply');
+		var titleIdle = zone ? zone.querySelector('.flosc-ivr-dropzone__title--idle') : null;
+		var titleDrag = zone ? zone.querySelector('.flosc-ivr-dropzone__title--drag') : null;
 
 		if (!form || !zone || !input || !listEl) {
 			return;
@@ -75,6 +95,8 @@
 		/** @type {File[]} */
 		var pendingFiles = [];
 		var maxTsv = 10;
+		var dragActive = false;
+		var overZone = false;
 
 		function formatSize(bytes) {
 			var n = parseInt(bytes, 10) || 0;
@@ -96,7 +118,7 @@
 			if (btnClear) {
 				btnClear.disabled = n === 0;
 			}
-			zone.classList.toggle('is-has-file', n > 0);
+			zone.classList.toggle('is-has-file', n > 0 && !overZone);
 			var i;
 			for (i = 0; i < n; i++) {
 				var f = pendingFiles[i];
@@ -115,7 +137,6 @@
 		}
 
 		/**
-		 * Copy pendingFiles onto the file input for multipart POST.
 		 * @return {boolean}
 		 */
 		function syncInputFromPending() {
@@ -188,6 +209,47 @@
 		}
 
 		/**
+		 * @param {boolean} active page-level file drag
+		 * @param {boolean} zoneHit pointer over drop target
+		 */
+		function setDragUi(active, zoneHit) {
+			dragActive = !!active;
+			overZone = !!zoneHit;
+			form.classList.toggle('is-file-dragging', dragActive);
+			zone.classList.toggle('is-dragover', overZone);
+			document.documentElement.classList.toggle('flosc-portability-dragging', dragActive);
+			if (titleIdle && titleDrag) {
+				titleIdle.hidden = overZone;
+				titleDrag.hidden = !overZone;
+			}
+			if (!overZone && pendingFiles.length) {
+				zone.classList.add('is-has-file');
+			}
+		}
+
+		function endDragUi() {
+			setDragUi(false, false);
+		}
+
+		/**
+		 * Drop target = zone (and the staged-files panel under it for larger hit area).
+		 * @param {DragEvent} e
+		 * @return {boolean}
+		 */
+		function isOverDropTarget(e) {
+			var x = e.clientX;
+			var y = e.clientY;
+			if (pointInElement(zone, x, y)) {
+				return true;
+			}
+			var panel = document.getElementById('flosc-portability-file-panel');
+			if (panel && pointInElement(panel, x, y)) {
+				return true;
+			}
+			return false;
+		}
+
+		/**
 		 * @param {DragEvent} e
 		 */
 		function takeDroppedFiles(e) {
@@ -195,71 +257,40 @@
 			if (typeof e.stopPropagation === 'function') {
 				e.stopPropagation();
 			}
-			zone.classList.remove('is-dragover');
 			var files = e.dataTransfer && e.dataTransfer.files;
+			endDragUi();
 			if (files && files.length) {
 				acceptFiles(files);
 			}
 		}
 
-		/**
-		 * @param {Event} e
-		 * @return {boolean}
-		 */
-		function eventInsideForm(e) {
-			var t = e.target;
-			if (t && t.nodeType === 1 && typeof form.contains === 'function' && form.contains(t)) {
-				return true;
-			}
-			if (t === form || t === zone || t === input) {
-				return true;
-			}
-			// Drag events over the opacity-0 input sometimes report odd targets; use coords.
-			if (e.clientX != null && e.clientY != null && document.elementFromPoint) {
-				var under = document.elementFromPoint(e.clientX, e.clientY);
-				if (under && typeof form.contains === 'function' && form.contains(under)) {
-					return true;
+		document.addEventListener(
+			'dragenter',
+			function (e) {
+				if (!isFileDrag(e)) {
+					return;
 				}
-			}
-			return false;
-		}
+				e.preventDefault();
+				setDragUi(true, isOverDropTarget(e));
+			},
+			true
+		);
 
-		/**
-		 * @param {boolean} on
-		 */
-		function setDragHighlight(on) {
-			zone.classList.toggle('is-dragover', !!on);
-		}
-
-		// Capture: prevent browser open/download; drive highlight from continuous dragover
-		// (dragleave + relatedTarget is unreliable over a full-zone file input).
 		document.addEventListener(
 			'dragover',
 			function (e) {
 				if (!isFileDrag(e)) {
 					return;
 				}
-				if (eventInsideForm(e)) {
+				var hit = isOverDropTarget(e);
+				// Always preventDefault over our form so drop can fire; also over zone/panel.
+				if (hit || pointInElement(form, e.clientX, e.clientY)) {
 					e.preventDefault();
 					if (e.dataTransfer) {
 						e.dataTransfer.dropEffect = 'copy';
 					}
-					setDragHighlight(true);
-				} else {
-					setDragHighlight(false);
 				}
-			},
-			true
-		);
-
-		document.addEventListener(
-			'dragenter',
-			function (e) {
-				if (!isFileDrag(e) || !eventInsideForm(e)) {
-					return;
-				}
-				e.preventDefault();
-				setDragHighlight(true);
+				setDragUi(true, hit);
 			},
 			true
 		);
@@ -268,34 +299,37 @@
 			'drop',
 			function (e) {
 				if (!isFileDrag(e)) {
-					setDragHighlight(false);
+					endDragUi();
 					return;
 				}
-				if (!eventInsideForm(e)) {
-					setDragHighlight(false);
+				if (isOverDropTarget(e) || pointInElement(form, e.clientX, e.clientY)) {
+					takeDroppedFiles(e);
 					return;
 				}
-				takeDroppedFiles(e);
+				endDragUi();
 			},
 			true
 		);
 
+		document.addEventListener('dragend', endDragUi, true);
+		window.addEventListener('blur', endDragUi);
+
+		// If drag leaves the window entirely.
 		document.addEventListener(
-			'dragend',
-			function () {
-				setDragHighlight(false);
+			'dragleave',
+			function (e) {
+				if (!isFileDrag(e)) {
+					return;
+				}
+				// relatedTarget null + leaving document → clear
+				if (!e.relatedTarget || e.relatedTarget === document.documentElement || e.relatedTarget === document.body) {
+					if (e.clientX <= 0 || e.clientY <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight) {
+						endDragUi();
+					}
+				}
 			},
 			true
 		);
-
-		// Bubble drop backup (zone / form).
-		zone.addEventListener('drop', takeDroppedFiles);
-		form.addEventListener('drop', function (e) {
-			if (!isFileDrag(e)) {
-				return;
-			}
-			takeDroppedFiles(e);
-		});
 
 		if (btnClear) {
 			btnClear.addEventListener('click', function (e) {
@@ -305,14 +339,12 @@
 			});
 		}
 
-		// Native input covers zone (opacity 0): click + native drop both set input.files.
 		input.addEventListener('change', function () {
 			if (input.files && input.files.length) {
 				acceptFiles(input.files);
 			}
 		});
 
-		// Keyboard: zone is focusable; open picker.
 		zone.addEventListener('keydown', function (e) {
 			if (e.key === 'Enter' || e.key === ' ') {
 				e.preventDefault();
@@ -332,7 +364,6 @@
 				return;
 			}
 
-			// Prefer staged list; fall back to whatever is on the native input.
 			if (!pendingFiles.length && input.files && input.files.length) {
 				acceptFiles(input.files);
 			}
