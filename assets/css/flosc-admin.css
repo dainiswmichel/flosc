@@ -4852,6 +4852,19 @@
     font-size: 0;
 }
 
+/* Screen-reader / off-panel file input — must NOT cover the drop zone. */
+.flosc-portability-file-input-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 .flosc-ivr-dropzone__ui {
     display: flex;
     flex-direction: column;

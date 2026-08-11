@@ -719,11 +719,13 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
             <input type="hidden" name="flosc_upload_redirect_view" value="all">
             <input type="hidden" name="flosc_working_ivr" value="<?php echo esc_attr($flosc_selected_ivr); ?>">
 
-            <div class="flosc-ivr-dropzone flosc-ivr-dropzone--kit" id="flosc-ivr-dropzone" tabindex="0" role="region" aria-label="<?php echo esc_attr__('Select flow files', 'flosc'); ?>">
-                <input type="file" name="flosc_kit_files[]" id="flosc-ivr-file-input" class="flosc-ivr-dropzone__input" accept=".md,.tsv,text/markdown,text/plain,text/tab-separated-values" multiple>
+            <?php /* File input is NOT overlaid on the drop zone — overlay breaks drop attach in Chromium. */ ?>
+            <input type="file" name="flosc_kit_files[]" id="flosc-ivr-file-input" class="flosc-portability-file-input-sr" accept=".md,.tsv,text/markdown,text/plain,text/tab-separated-values" multiple>
+
+            <div class="flosc-ivr-dropzone flosc-ivr-dropzone--kit" id="flosc-ivr-dropzone" tabindex="0" role="button" aria-controls="flosc-portability-file-list" aria-label="<?php echo esc_attr__('Drop flow files here or press Enter to choose files', 'flosc'); ?>">
                 <div class="flosc-ivr-dropzone__ui">
                     <strong class="flosc-ivr-dropzone__title"><?php echo esc_html__('Add flow files', 'flosc'); ?></strong>
-                    <span class="flosc-ivr-dropzone__hint"><?php echo esc_html__('Drag and drop here, or choose files. One .md + optional .tsv (max 10). Then Create or Apply.', 'flosc'); ?></span>
+                    <span class="flosc-ivr-dropzone__hint"><?php echo esc_html__('Drop .md / .tsv here, or use Choose files. Then click Create or Apply.', 'flosc'); ?></span>
                 </div>
             </div>
 
@@ -748,7 +750,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
                 </button>
             </div>
             <p class="description">
-                <?php echo esc_html__('1) Select files. 2) Create = new flow from the .md (optional .tsv catalogs). Apply = merge into the current flow. One .md max; up to 10 .tsv.', 'flosc'); ?>
+                <?php echo esc_html__('1) Select files (list below must show names). 2) Create = new flow from .md (+ optional .tsv). Apply = merge into current flow. One .md max; up to 10 .tsv.', 'flosc'); ?>
             </p>
         </form>
 
@@ -813,241 +815,21 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
         </p>
     </div>
 
-    <?php ob_start(); ?>
+    <?php
+    // Portability kit JS: external file (cache-busted). Confirm dialogs for table forms stay inline.
+    $flosc_port_js = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
+    if ( file_exists( $flosc_port_js ) ) {
+        wp_enqueue_script(
+            'flosc-portability-admin',
+            FLOSC_PLUGIN_URL . 'assets/js/flosc-portability-admin.js',
+            array( 'flosc-admin' ),
+            (string) filemtime( $flosc_port_js ),
+            true
+        );
+    }
+    ob_start();
+    ?>
     (function () {
-        var form = document.getElementById('flosc-ivr-dropzone-upload-form');
-        var zone = document.getElementById('flosc-ivr-dropzone');
-        var input = document.getElementById('flosc-ivr-file-input');
-        var listEl = document.getElementById('flosc-portability-file-list');
-        var countEl = document.getElementById('flosc-portability-file-count');
-        var btnChoose = document.getElementById('flosc-portability-choose-files');
-        var btnClear = document.getElementById('flosc-portability-clear-files');
-        var btnCreate = document.getElementById('flosc-portability-btn-create');
-        var btnApply = document.getElementById('flosc-portability-btn-apply');
-        if (!form || !zone || !input || !listEl) {
-            return;
-        }
-
-        function formatSize(bytes) {
-            var n = parseInt(bytes, 10) || 0;
-            if (n < 1024) {
-                return n + ' B';
-            }
-            if (n < 1024 * 1024) {
-                return (n / 1024).toFixed(1) + ' KB';
-            }
-            return (n / (1024 * 1024)).toFixed(2) + ' MB';
-        }
-
-        function renderList() {
-            var files = input.files;
-            listEl.innerHTML = '';
-            var n = files ? files.length : 0;
-            if (countEl) {
-                countEl.textContent = n ? (n + (n === 1 ? ' file' : ' files')) : 'None selected';
-            }
-            if (btnClear) {
-                btnClear.disabled = n === 0;
-            }
-            if (n) {
-                zone.classList.add('is-has-file');
-            } else {
-                zone.classList.remove('is-has-file');
-            }
-            if (!n) {
-                return;
-            }
-            for (var i = 0; i < n; i++) {
-                var f = files[i];
-                var li = document.createElement('li');
-                li.className = 'flosc-portability-file-list__item';
-                var name = document.createElement('code');
-                name.textContent = f.name || '(unnamed)';
-                var meta = document.createElement('span');
-                meta.className = 'description';
-                meta.textContent = formatSize(f.size);
-                li.appendChild(name);
-                li.appendChild(document.createTextNode(' '));
-                li.appendChild(meta);
-                listEl.appendChild(li);
-            }
-        }
-
-        function setInputFiles(fileArray) {
-            if (typeof DataTransfer === 'undefined') {
-                window.alert('This browser cannot attach dropped files. Use Choose files… instead.');
-                return false;
-            }
-            try {
-                var dt = new DataTransfer();
-                for (var i = 0; i < fileArray.length; i++) {
-                    dt.items.add(fileArray[i]);
-                }
-                input.files = dt.files;
-            } catch (err) {
-                window.alert('Could not attach files to the form. Use Choose files… instead.');
-                return false;
-            }
-            if (!input.files || input.files.length !== fileArray.length) {
-                window.alert('File selection did not attach to the upload field. Use Choose files… instead.');
-                return false;
-            }
-            renderList();
-            return true;
-        }
-
-        function clearFiles() {
-            if (typeof DataTransfer !== 'undefined') {
-                try {
-                    input.files = new DataTransfer().files;
-                } catch (e1) {
-                    input.value = '';
-                }
-            } else {
-                input.value = '';
-            }
-            renderList();
-        }
-
-        function acceptFiles(fileList) {
-            if (!fileList || !fileList.length) {
-                return;
-            }
-            var maxTsv = 10;
-            var mdFiles = [];
-            var tsvFiles = [];
-            for (var i = 0; i < fileList.length; i++) {
-                var lower = (fileList[i].name || '').toLowerCase();
-                if (lower.slice(-3) === '.md') {
-                    mdFiles.push(fileList[i]);
-                } else if (lower.slice(-4) === '.tsv') {
-                    tsvFiles.push(fileList[i]);
-                }
-            }
-            if (!mdFiles.length && !tsvFiles.length) {
-                window.alert('Use one .md (flow) and/or .tsv (DA1) catalog files.');
-                return;
-            }
-            if (mdFiles.length > 1) {
-                window.alert('Only one .md flow file per upload — never two .md files.');
-                return;
-            }
-            if (tsvFiles.length > maxTsv) {
-                window.alert('At most ' + maxTsv + ' DA1 .tsv catalogs per upload. Use the DA1 tab for larger bulk work.');
-                return;
-            }
-            if (tsvFiles.length > 5) {
-                if (!window.confirm('Select ' + tsvFiles.length + ' DA1 catalogs?')) {
-                    return;
-                }
-            }
-            setInputFiles(mdFiles.concat(tsvFiles));
-        }
-
-        function onDrag(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-        ['dragenter', 'dragover'].forEach(function (ev) {
-            zone.addEventListener(ev, function (e) {
-                onDrag(e);
-                zone.classList.add('is-dragover');
-            });
-        });
-        ['dragleave', 'drop'].forEach(function (ev) {
-            zone.addEventListener(ev, function (e) {
-                onDrag(e);
-                zone.classList.remove('is-dragover');
-            });
-        });
-        zone.addEventListener('drop', function (e) {
-            var files = e.dataTransfer && e.dataTransfer.files;
-            if (files && files.length) {
-                acceptFiles(files);
-            }
-        });
-        if (btnChoose) {
-            btnChoose.addEventListener('click', function () {
-                input.click();
-            });
-        }
-        if (btnClear) {
-            btnClear.addEventListener('click', function () {
-                clearFiles();
-            });
-        }
-        zone.addEventListener('click', function (e) {
-            if (e.target === input) {
-                return;
-            }
-            input.click();
-        });
-        zone.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                input.click();
-            }
-        });
-        input.addEventListener('click', function (e) {
-            e.stopPropagation();
-        });
-        input.addEventListener('change', function () {
-            if (input.files && input.files.length) {
-                acceptFiles(input.files);
-            } else {
-                renderList();
-            }
-        });
-
-        form.addEventListener('submit', function (e) {
-            var submitter = e.submitter || document.activeElement;
-            var act = (submitter && submitter.value) ? String(submitter.value) : 'create';
-            if (act !== 'create' && act !== 'apply') {
-                act = 'create';
-            }
-            if (act === 'apply' && btnApply && btnApply.disabled) {
-                e.preventDefault();
-                window.alert('Select a current flow in Switch Flow first.');
-                return;
-            }
-            var mdCount = 0;
-            var tsvCount = 0;
-            var maxTsv = 10;
-            if (input.files) {
-                for (var i = 0; i < input.files.length; i++) {
-                    var n = (input.files[i].name || '').toLowerCase();
-                    if (n.slice(-3) === '.md') { mdCount++; }
-                    if (n.slice(-4) === '.tsv') { tsvCount++; }
-                }
-            }
-            if (!mdCount && !tsvCount) {
-                e.preventDefault();
-                window.alert('Select files first (Choose files… or drop), then Create or Apply.');
-                return;
-            }
-            if (mdCount > 1) {
-                e.preventDefault();
-                window.alert('Only one .md flow file per upload — never two .md files.');
-                return;
-            }
-            if (tsvCount > maxTsv) {
-                e.preventDefault();
-                window.alert('At most ' + maxTsv + ' DA1 .tsv catalogs per upload.');
-                return;
-            }
-            if (tsvCount > 5 && !window.confirm('Upload ' + tsvCount + ' DA1 catalogs?')) {
-                e.preventDefault();
-                return;
-            }
-            if (act === 'create' && mdCount < 1) {
-                e.preventDefault();
-                window.alert('Create new flow needs one .md file (optional .tsv with it).');
-                return;
-            }
-            if (btnCreate) { btnCreate.disabled = true; }
-            if (btnApply) { btnApply.disabled = true; }
-        });
-
         document.addEventListener('submit', function (event) {
             var formEl = event.target.closest('form[data-confirm-message]');
             if (!formEl) {
@@ -1058,10 +840,10 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
                 event.stopPropagation();
             }
         });
-
-        renderList();
     })();
-    <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
+    <?php
+    wp_add_inline_script( 'flosc-admin', ob_get_clean() );
+    ?>
     <?php endif; ?>
 
 </div>
