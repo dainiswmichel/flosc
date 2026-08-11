@@ -837,26 +837,30 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
     </div>
 
     <?php
-    // Kit CSS/JS are enqueued on admin_enqueue_scripts (tab=flow) in flosc-admin.php.
-    // Late enqueue here if that early path missed this request.
+    /*
+     * Portability assets MUST print with this markup.
+     * Mid-template wp_enqueue_style() is too late for admin head — CSS never
+     * reaches the page and the native file control shows. Link + script here.
+     */
     $flosc_port_css = FLOSC_PLUGIN_DIR . 'assets/css/flosc-portability-admin.css';
     $flosc_port_js  = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
-    if ( file_exists( $flosc_port_css ) && ! wp_style_is( 'flosc-portability-admin', 'enqueued' ) ) {
-        wp_enqueue_style(
-            'flosc-portability-admin',
-            FLOSC_PLUGIN_URL . 'assets/css/flosc-portability-admin.css',
-            array( 'flosc-admin' ),
-            (string) filemtime( $flosc_port_css )
+    if ( file_exists( $flosc_port_css ) ) {
+        $flosc_port_css_url = add_query_arg(
+            'ver',
+            rawurlencode( (string) filemtime( $flosc_port_css ) ),
+            FLOSC_PLUGIN_URL . 'assets/css/flosc-portability-admin.css'
         );
+        // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet
+        echo '<link rel="stylesheet" href="' . esc_url( $flosc_port_css_url ) . '" id="flosc-portability-admin-css" />' . "\n";
     }
-    if ( file_exists( $flosc_port_js ) && ! wp_script_is( 'flosc-portability-admin', 'enqueued' ) ) {
-        wp_enqueue_script(
-            'flosc-portability-admin',
-            FLOSC_PLUGIN_URL . 'assets/js/flosc-portability-admin.js',
-            array(),
-            (string) filemtime( $flosc_port_js ),
-            true
+    if ( file_exists( $flosc_port_js ) ) {
+        $flosc_port_js_url = add_query_arg(
+            'ver',
+            rawurlencode( (string) filemtime( $flosc_port_js ) ),
+            FLOSC_PLUGIN_URL . 'assets/js/flosc-portability-admin.js'
         );
+        // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript
+        echo '<script src="' . esc_url( $flosc_port_js_url ) . '" id="flosc-portability-admin-js"></script>' . "\n";
     }
     // Table delete/duplicate confirm only.
     ob_start();
