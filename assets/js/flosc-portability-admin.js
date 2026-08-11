@@ -177,7 +177,23 @@
 			render();
 		}
 
-		input.addEventListener('dragenter', function (e) {
+		// Zone is the only interactive surface (input is clipped + pointer-events:none).
+		zone.addEventListener('click', function (e) {
+			if (e.target === input) {
+				return;
+			}
+			e.preventDefault();
+			input.click();
+		});
+
+		zone.addEventListener('keydown', function (e) {
+			if (e.key === 'Enter' || e.key === ' ') {
+				e.preventDefault();
+				input.click();
+			}
+		});
+
+		zone.addEventListener('dragenter', function (e) {
 			e.preventDefault();
 			e.stopPropagation();
 			depth += 1;
@@ -186,7 +202,7 @@
 			}
 		});
 
-		input.addEventListener('dragover', function (e) {
+		zone.addEventListener('dragover', function (e) {
 			e.preventDefault();
 			e.stopPropagation();
 			if (e.dataTransfer) {
@@ -198,16 +214,21 @@
 			}
 		});
 
-		input.addEventListener('dragleave', function (e) {
+		zone.addEventListener('dragleave', function (e) {
 			e.preventDefault();
 			e.stopPropagation();
+			// Leaving to a child still inside zone: keep highlight.
+			var rel = e.relatedTarget;
+			if (rel && zone.contains(rel)) {
+				return;
+			}
 			depth = Math.max(0, depth - 1);
 			if (depth === 0) {
 				setDrag(false);
 			}
 		});
 
-		input.addEventListener('drop', function (e) {
+		zone.addEventListener('drop', function (e) {
 			e.preventDefault();
 			e.stopPropagation();
 			depth = 0;
@@ -217,18 +238,17 @@
 			}
 		});
 
-		// Native picker and some OS drops set input.files + fire change.
 		input.addEventListener('change', function () {
 			if (input.files && input.files.length) {
 				stage(input.files);
 			}
 		});
 
-		// If files were chosen before JS bound (race), list them now.
 		if (input.files && input.files.length) {
 			stage(input.files);
 		}
 
+		// Prevent browser open/download when files are dropped on this admin page.
 		window.addEventListener('dragover', function (e) {
 			e.preventDefault();
 		});
@@ -238,13 +258,6 @@
 		window.addEventListener('dragend', function () {
 			depth = 0;
 			setDrag(false);
-		});
-
-		zone.addEventListener('keydown', function (e) {
-			if (e.key === 'Enter' || e.key === ' ') {
-				e.preventDefault();
-				input.click();
-			}
 		});
 
 		if (btnClear) {
