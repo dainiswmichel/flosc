@@ -835,20 +835,8 @@ trait FLOSC_Admin_Trait {
             }
         }
 
-        // Flow Portability kit picker (single drop zone). Enqueue on flow tab;
-        // flow.php also enqueues once if this early path was skipped.
-        if ( $flosc_tab === 'flow' ) {
-            $flosc_port_js = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
-            if ( file_exists( $flosc_port_js ) ) {
-                wp_enqueue_script(
-                    'flosc-portability-admin',
-                    FLOSC_PLUGIN_URL . 'assets/js/flosc-portability-admin.js',
-                    array(),
-                    (string) filemtime( $flosc_port_js ),
-                    true
-                );
-            }
-        }
+        // Portability kit JS is printed next to the Portability markup in admin/flow.php
+        // (must bind with the form; footer-only enqueue left native Choose Files + empty list).
 
         if ($flosc_tab === 'email') {
             $flosc_email_css_path = FLOSC_PLUGIN_DIR . 'assets/css/flosc-email.css';

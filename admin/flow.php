@@ -836,16 +836,18 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
     </div>
 
     <?php
-    // One script load for kit picker (footer). No second inline copy of the same file.
+    // Kit picker JS: print immediately after Portability markup so change/list
+    // always binds (footer enqueue alone was leaving native “Choose Files” + empty list).
     $flosc_port_js_path = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
-    if ( file_exists( $flosc_port_js_path ) && ! wp_script_is( 'flosc-portability-admin', 'enqueued' ) ) {
-        wp_enqueue_script(
-            'flosc-portability-admin',
-            FLOSC_PLUGIN_URL . 'assets/js/flosc-portability-admin.js',
-            array(),
-            (string) filemtime( $flosc_port_js_path ),
-            true
+    if ( file_exists( $flosc_port_js_path ) ) {
+        $flosc_port_js_ver = (string) filemtime( $flosc_port_js_path );
+        $flosc_port_js_url = add_query_arg(
+            'ver',
+            rawurlencode( $flosc_port_js_ver ),
+            FLOSC_PLUGIN_URL . 'assets/js/flosc-portability-admin.js'
         );
+        // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- admin Portability partial; must run with markup.
+        echo '<script src="' . esc_url( $flosc_port_js_url ) . '" id="flosc-portability-admin-js"></script>' . "\n";
     }
     // Table delete/duplicate confirm only.
     ob_start();

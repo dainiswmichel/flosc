@@ -1,10 +1,6 @@
 /**
- * Flow Portability — single kit drop zone (list, then Create/Apply).
- *
- * One surface: #flosc-ivr-dropzone with one covering <input type="file">.
- * No second picker. Selected-files panel is display-only.
- *
- * @package FLOSC
+ * Flow Portability — single kit drop zone.
+ * Stages files into #flosc-portability-file-list, then Create/Apply.
  */
 (function () {
 	'use strict';
@@ -48,11 +44,6 @@
 		return (n / 1048576).toFixed(2) + ' MB';
 	}
 
-	/**
-	 * @param {HTMLInputElement} input
-	 * @param {File[]} files
-	 * @return {boolean}
-	 */
 	function setInputFiles(input, files) {
 		if (typeof DataTransfer === 'undefined') {
 			return !!(input.files && input.files.length === files.length);
@@ -90,13 +81,12 @@
 
 		/** @type {File[]} */
 		var pending = [];
-		/** dragenter depth on the zone hit target only */
 		var depth = 0;
 
 		function setDrag(active) {
-			zone.classList.toggle('is-dragover', active);
+			zone.classList.toggle('is-dragover', !!active);
 			if (titleIdle) {
-				titleIdle.hidden = active;
+				titleIdle.hidden = !!active;
 			}
 			if (titleDrag) {
 				titleDrag.hidden = !active;
@@ -118,16 +108,20 @@
 			if (depth === 0) {
 				zone.classList.toggle('is-has-file', n > 0);
 			}
+
 			var i;
 			for (i = 0; i < n; i++) {
 				var f = pending[i];
 				var li = document.createElement('li');
 				li.className = 'flosc-portability-file-list__item';
+
 				var code = document.createElement('code');
 				code.textContent = f.name || '(unnamed)';
+
 				var meta = document.createElement('span');
 				meta.className = 'description';
 				meta.textContent = formatBytes(f.size);
+
 				li.appendChild(code);
 				li.appendChild(document.createTextNode(' '));
 				li.appendChild(meta);
@@ -135,14 +129,12 @@
 			}
 		}
 
-		/**
-		 * @param {FileList|File[]} fileList
-		 */
 		function stage(fileList) {
 			var files = toFiles(fileList);
 			if (!files.length) {
 				return;
 			}
+
 			var md = [];
 			var tsv = [];
 			var i;
@@ -154,6 +146,7 @@
 					tsv.push(files[i]);
 				}
 			}
+
 			if (!md.length && !tsv.length) {
 				window.alert('Use one .md (flow) and/or .tsv (DA1) catalog files.');
 				return;
@@ -169,6 +162,7 @@
 			if (tsv.length > 5 && !window.confirm('Select ' + tsv.length + ' DA1 catalogs?')) {
 				return;
 			}
+
 			pending = md.concat(tsv);
 			setInputFiles(input, pending);
 			render();
@@ -183,7 +177,6 @@
 			render();
 		}
 
-		/* —— Single hit target: covering file input —— */
 		input.addEventListener('dragenter', function (e) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -224,13 +217,18 @@
 			}
 		});
 
+		// Native picker and some OS drops set input.files + fire change.
 		input.addEventListener('change', function () {
 			if (input.files && input.files.length) {
 				stage(input.files);
 			}
 		});
 
-		/* Stop browser from navigating when a file is dropped on this page. */
+		// If files were chosen before JS bound (race), list them now.
+		if (input.files && input.files.length) {
+			stage(input.files);
+		}
+
 		window.addEventListener('dragover', function (e) {
 			e.preventDefault();
 		});
