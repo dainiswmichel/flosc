@@ -135,7 +135,7 @@ Deactivating FLOSC leaves your flow settings, messages, and related data in the 
 
 = What happens if I delete FLOSC? =
 
-Deleting the plugin from Plugins runs uninstall.php. That removes FLOSC options, FLOSC user/post/term meta, FLOSC custom tables, and FLOSC data under the uploads directory (for example flosc, flosc-users, flosc-temp, flosc-catalogs). WordPress then removes the plugin files.
+Deleting the plugin from Plugins runs uninstall.php. That removes FLOSC options, FLOSC user/post/term meta, FLOSC custom tables, and FLOSC runtime folders under uploads (flosc, flosc-users, flosc-temp). DA1 catalog files under uploads/flosc-catalogs are kept as site content. WordPress then removes the plugin files.
 
 = How can I integrate my own AI provider? =
 

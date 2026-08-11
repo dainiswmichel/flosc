@@ -163,11 +163,13 @@ function flosc_uninstall_rm_rf( $dir ) {
 	@rmdir( $dir );
 }
 
-// FLOSC data under uploads only (never touch plugins/flosc — core removes that).
+// FLOSC runtime under uploads only (never touch plugins/flosc — core removes that).
+// Keep uploads/flosc-catalogs: DA1 TSV catalogs are site content (re-uploadable index
+// lives in options and is cleared with other flosc_* options above).
 $flosc_uploads = wp_upload_dir( null, false );
 if ( empty( $flosc_uploads['error'] ) && ! empty( $flosc_uploads['basedir'] ) ) {
 	$base = trailingslashit( $flosc_uploads['basedir'] );
-	foreach ( array( 'flosc', 'flosc-users', 'flosc-temp', 'flosc-catalogs' ) as $flosc_subdir ) {
+	foreach ( array( 'flosc', 'flosc-users', 'flosc-temp' ) as $flosc_subdir ) {
 		$flosc_dir = $base . $flosc_subdir;
 		if ( is_dir( $flosc_dir ) ) {
 			flosc_uninstall_rm_rf( $flosc_dir );
