@@ -4830,10 +4830,12 @@
     outline: none;
 }
 
-.flosc-ivr-dropzone.is-dragover {
+.flosc-ivr-dropzone.is-dragover,
+.flosc-portability-kit-form .flosc-ivr-dropzone.is-dragover {
     border-color: #135e96;
-    background: #e5f0fa;
-    box-shadow: inset 0 0 0 1px #135e96;
+    border-style: solid;
+    background: #c5e0f5;
+    box-shadow: inset 0 0 0 2px #135e96;
 }
 
 .flosc-ivr-dropzone.is-has-file {

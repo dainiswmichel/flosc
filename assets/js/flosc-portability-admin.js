@@ -208,29 +208,58 @@
 		 */
 		function eventInsideForm(e) {
 			var t = e.target;
-			if (!t) {
-				return false;
+			if (t && t.nodeType === 1 && typeof form.contains === 'function' && form.contains(t)) {
+				return true;
 			}
 			if (t === form || t === zone || t === input) {
 				return true;
 			}
-			if (typeof form.contains === 'function' && t.nodeType === 1 && form.contains(t)) {
-				return true;
+			// Drag events over the opacity-0 input sometimes report odd targets; use coords.
+			if (e.clientX != null && e.clientY != null && document.elementFromPoint) {
+				var under = document.elementFromPoint(e.clientX, e.clientY);
+				if (under && typeof form.contains === 'function' && form.contains(under)) {
+					return true;
+				}
 			}
 			return false;
 		}
 
-		// Capture phase: cancel browser open/download of dropped files over this form.
+		/**
+		 * @param {boolean} on
+		 */
+		function setDragHighlight(on) {
+			zone.classList.toggle('is-dragover', !!on);
+		}
+
+		// Capture: prevent browser open/download; drive highlight from continuous dragover
+		// (dragleave + relatedTarget is unreliable over a full-zone file input).
 		document.addEventListener(
 			'dragover',
+			function (e) {
+				if (!isFileDrag(e)) {
+					return;
+				}
+				if (eventInsideForm(e)) {
+					e.preventDefault();
+					if (e.dataTransfer) {
+						e.dataTransfer.dropEffect = 'copy';
+					}
+					setDragHighlight(true);
+				} else {
+					setDragHighlight(false);
+				}
+			},
+			true
+		);
+
+		document.addEventListener(
+			'dragenter',
 			function (e) {
 				if (!isFileDrag(e) || !eventInsideForm(e)) {
 					return;
 				}
 				e.preventDefault();
-				if (e.dataTransfer) {
-					e.dataTransfer.dropEffect = 'copy';
-				}
+				setDragHighlight(true);
 			},
 			true
 		);
@@ -238,7 +267,12 @@
 		document.addEventListener(
 			'drop',
 			function (e) {
-				if (!isFileDrag(e) || !eventInsideForm(e)) {
+				if (!isFileDrag(e)) {
+					setDragHighlight(false);
+					return;
+				}
+				if (!eventInsideForm(e)) {
+					setDragHighlight(false);
 					return;
 				}
 				takeDroppedFiles(e);
@@ -246,37 +280,15 @@
 			true
 		);
 
-		['dragenter', 'dragover'].forEach(function (ev) {
-			zone.addEventListener(ev, function (e) {
-				if (!isFileDrag(e)) {
-					return;
-				}
-				e.preventDefault();
-				if (e.dataTransfer) {
-					e.dataTransfer.dropEffect = 'copy';
-				}
-				zone.classList.add('is-dragover');
-			});
-			form.addEventListener(ev, function (e) {
-				if (!isFileDrag(e)) {
-					return;
-				}
-				e.preventDefault();
-				if (e.dataTransfer) {
-					e.dataTransfer.dropEffect = 'copy';
-				}
-			});
-		});
+		document.addEventListener(
+			'dragend',
+			function () {
+				setDragHighlight(false);
+			},
+			true
+		);
 
-		zone.addEventListener('dragleave', function (e) {
-			var rel = e.relatedTarget;
-			if (rel && zone.contains(rel)) {
-				return;
-			}
-			zone.classList.remove('is-dragover');
-		});
-
-		// Bubble drop (backup if capture path skipped).
+		// Bubble drop backup (zone / form).
 		zone.addEventListener('drop', takeDroppedFiles);
 		form.addEventListener('drop', function (e) {
 			if (!isFileDrag(e)) {
