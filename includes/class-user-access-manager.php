@@ -226,7 +226,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC WishList Member API 
             $context['quiz_taken'] = !empty($quiz_score) || !empty(get_user_meta($user_id, '_flosc_quiz_completed_at', true));
             $context['score'] = intval($quiz_score ?: 0);
             $context['purchased'] = $this->is_member($user_id);
-            $context['lesson_viewed'] = (bool) get_user_meta($user_id, '_flosc_free_lesson_delivered', true);
+            $context['lesson_viewed'] = (bool) get_user_meta($user_id, '_flosc_free_content_item_delivered', true);
             $context['lessons_completed'] = intval(get_user_meta($user_id, '_flosc_lessons_completed', true));
             $context['onboarded'] = (bool) get_user_meta($user_id, '_flosc_funnel_completed', true);
         }

@@ -10,6 +10,18 @@ flosc_tab_header('✉', 'Contact Form');
 $flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
 $flosc_current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
 $flosc_shortcode = '[flosc_contact_form_01]';
+$flosc_contact_docs_url = add_query_arg([
+    'page' => 'flosc-settings',
+    'ivr'  => $flosc_current_ivr,
+    'tab'  => 'documentation',
+    'doc'  => 'ref-admin',
+], admin_url('admin.php')) . '#tab-contact-form';
+$flosc_contact_docs_inventory_url = add_query_arg([
+    'page' => 'flosc-settings',
+    'ivr'  => $flosc_current_ivr,
+    'tab'  => 'documentation',
+    'doc'  => 'ref-admin',
+], admin_url('admin.php')) . '#inventory-communication-family';
 
 $flosc_contact_defaults = [
     'contact_form_title' => 'Contact the Site Operator',
@@ -32,7 +44,14 @@ $flosc_contact_defaults = [
 $flosc_contact_settings = array_merge($flosc_contact_defaults, array_intersect_key((array) $flosc_flow_settings, $flosc_contact_defaults));
 ?>
 
-<h2>Contact Form</h2>
+<div class="flosc-docs-link-wrap">
+    <a href="<?php echo esc_url($flosc_contact_docs_url); ?>" class="flosc-docs-link">Docs</a>
+</div>
+
+<h2>
+    Contact Form
+    <a href="<?php echo esc_url($flosc_contact_docs_inventory_url); ?>" class="flosc-docs-link">Docs</a>
+</h2>
 <p>Configure a shortcode-driven contact form with required fields, a friendly success message, and lightweight anti-bot controls.</p>
 
 <table class="form-table">

@@ -12,7 +12,7 @@
  * 5. Complimentary pool / selection (guests)
  * 6. Guest chat caps
  *
- * Setting keys keep free_lesson_* / lesson_groups for runtime compatibility.
+ * Setting keys: free_content_item_*, content_item_*, exclude_items_from_freeline.
  *
  * @package FLOSC
  * @since 8.0.0
@@ -37,6 +37,15 @@ $flosc_content_docs_url = add_query_arg(
 	],
 	admin_url( 'admin.php' )
 ) . '#tab-content';
+$flosc_content_docs_inventory_url = add_query_arg(
+	[
+		'page' => 'flosc-settings',
+		'ivr'  => $flosc_current_ivr,
+		'tab'  => 'documentation',
+		'doc'  => 'ref-admin',
+	],
+	admin_url( 'admin.php' )
+) . '#inventory-content-family';
 
 // Content types: list of { singular, plural }. Migrate legacy single-label fields.
 $flosc_content_types = $flosc_flow_settings['content_types'] ?? [];
@@ -99,25 +108,25 @@ if ( class_exists( 'FLOSC_Quiz_Registry' ) ) {
 	}
 }
 
-$flosc_lesson_groups = $flosc_flow_settings['lesson_groups'] ?? [];
-if ( empty( $flosc_lesson_groups ) && ! empty( $flosc_flow_settings['lessons_category'] ) ) {
-	$flosc_lesson_groups = [
-		[ 'quiz_id' => '', 'category' => $flosc_flow_settings['lessons_category'] ],
+$flosc_content_item_groups = $flosc_flow_settings['content_item_groups'] ?? [];
+if ( empty( $flosc_content_item_groups ) && ! empty( $flosc_flow_settings['content_item_category'] ) ) {
+	$flosc_content_item_groups = [
+		[ 'quiz_id' => '', 'category' => $flosc_flow_settings['content_item_category'] ],
 	];
 }
-if ( empty( $flosc_lesson_groups ) ) {
-	$flosc_lesson_groups = [ [ 'quiz_id' => '', 'category' => '' ] ];
+if ( empty( $flosc_content_item_groups ) ) {
+	$flosc_content_item_groups = [ [ 'quiz_id' => '', 'category' => '' ] ];
 }
 
 $flosc_saved_levels      = $flosc_flow_settings['member_levels'] ?? $flosc_member_levels;
 $flosc_protected_items   = $flosc_flow_settings['protected_content'] ?? [];
-$flosc_free_lesson_mode  = $flosc_flow_settings['free_lesson_mode'] ?? 'fixed';
-$flosc_free_lesson_count = $flosc_flow_settings['free_lesson_count'] ?? 1;
-$flosc_free_lesson_proportion = $flosc_flow_settings['free_lesson_proportion'] ?? '1/3';
+$flosc_free_content_item_mode  = $flosc_flow_settings['free_content_item_mode'] ?? 'fixed';
+$flosc_free_content_item_count = $flosc_flow_settings['free_content_item_count'] ?? 1;
+$flosc_free_content_item_proportion = $flosc_flow_settings['free_content_item_proportion'] ?? '1/3';
 $flosc_guest_access_days = $flosc_flow_settings['guest_access_days'] ?? 0;
-$flosc_free_lesson_guaranteed = $flosc_flow_settings['free_lesson_guaranteed'] ?? 0;
-$flosc_free_lesson_pool_category = sanitize_title( (string) ( $flosc_flow_settings['free_lesson_pool_category'] ?? '' ) );
-$flosc_pool_exclude = (string) ( $flosc_flow_settings['free_lesson_never_free'] ?? '' );
+$flosc_free_content_item_guaranteed = $flosc_flow_settings['free_content_item_guaranteed'] ?? 0;
+$flosc_free_content_item_pool_category = sanitize_title( (string) ( $flosc_flow_settings['free_content_item_pool_category'] ?? '' ) );
+$flosc_pool_exclude = (string) ( $flosc_flow_settings['exclude_items_from_freeline'] ?? '' );
 $flosc_guest_max_chats = isset( $flosc_flow_settings['guest_max_chats'] )
 	? max( 0, intval( $flosc_flow_settings['guest_max_chats'] ) )
 	: 0;
@@ -147,7 +156,10 @@ $flosc_chat_list_settings_url = add_query_arg(
 </p>
 
 <!-- 1. Content types -->
-<h2><?php echo esc_html__( 'Content Types', 'flosc' ); ?></h2>
+<h2>
+	<?php echo esc_html__( 'Content Types', 'flosc' ); ?>
+	<a href="<?php echo esc_url( $flosc_content_docs_inventory_url ); ?>" class="flosc-docs-link"><?php echo esc_html__( 'Docs', 'flosc' ); ?></a>
+</h2>
 <p><?php echo esc_html__( 'Add any number of content type names for this flow. Examples: Lesson / Lessons, Recipe / Recipes. Empty rows are ignored. Default chrome uses “content item(s)” when none are set.', 'flosc' ); ?></p>
 <table class="widefat flosc-content-types-table flosc-table-max-860">
 	<thead>
@@ -183,7 +195,10 @@ $flosc_chat_list_settings_url = add_query_arg(
 
 <!-- 2. Levels -->
 <hr class="flosc-member-levels-divider">
-<h2><?php echo esc_html__( 'Member levels', 'flosc' ); ?></h2>
+<h2>
+	<?php echo esc_html__( 'Member levels', 'flosc' ); ?>
+	<a href="<?php echo esc_url( $flosc_content_docs_inventory_url ); ?>" class="flosc-docs-link"><?php echo esc_html__( 'Docs', 'flosc' ); ?></a>
+</h2>
 <p><?php echo esc_html__( 'Define membership levels for this flow. Offers grant a level. Protection rules require a level.', 'flosc' ); ?></p>
 
 <table class="widefat flosc-levels-table flosc-member-levels-table">
@@ -231,7 +246,10 @@ $flosc_chat_list_settings_url = add_query_arg(
 
 <!-- 3. Content groups -->
 <hr class="flosc-member-levels-divider">
-<h2><?php echo esc_html__( 'Content groups', 'flosc' ); ?></h2>
+<h2>
+	<?php echo esc_html__( 'Content groups', 'flosc' ); ?>
+	<a href="<?php echo esc_url( $flosc_content_docs_inventory_url ); ?>" class="flosc-docs-link"><?php echo esc_html__( 'Docs', 'flosc' ); ?></a>
+</h2>
 <p>
 	<?php
 	echo esc_html(
@@ -252,10 +270,10 @@ $flosc_chat_list_settings_url = add_query_arg(
 		</tr>
 	</thead>
 	<tbody id="flosc-lesson-groups-body">
-		<?php foreach ( $flosc_lesson_groups as $flosc_group ) : ?>
+		<?php foreach ( $flosc_content_item_groups as $flosc_group ) : ?>
 		<tr class="flosc-lesson-group-row">
 			<td>
-				<select name="lesson_group_quiz[]" class="regular-text flosc-width-full">
+				<select name="content_item_group_quiz[]" class="regular-text flosc-width-full">
 					<option value=""><?php echo esc_html__( '— No Quiz (Standalone) —', 'flosc' ); ?></option>
 					<?php foreach ( $flosc_enabled_quizzes as $flosc_eq ) : ?>
 						<option value="<?php echo esc_attr( $flosc_eq ); ?>" <?php selected( $flosc_group['quiz_id'] ?? '', $flosc_eq ); ?>>
@@ -265,7 +283,7 @@ $flosc_chat_list_settings_url = add_query_arg(
 				</select>
 			</td>
 			<td>
-				<select name="lesson_group_category[]" class="regular-text flosc-width-full">
+				<select name="content_item_group_category[]" class="regular-text flosc-width-full">
 					<option value=""><?php echo esc_html__( '— Select Category —', 'flosc' ); ?></option>
 					<?php foreach ( $flosc_categories as $flosc_cat ) : ?>
 						<option value="<?php echo esc_attr( $flosc_cat->slug ); ?>" <?php selected( $flosc_group['category'] ?? '', $flosc_cat->slug ); ?>>
@@ -290,7 +308,10 @@ $flosc_chat_list_settings_url = add_query_arg(
 
 <!-- 4. Protection -->
 <hr class="flosc-member-levels-divider">
-<h2><?php echo esc_html__( 'Content protection', 'flosc' ); ?></h2>
+<h2>
+	<?php echo esc_html__( 'Content protection', 'flosc' ); ?>
+	<a href="<?php echo esc_url( $flosc_content_docs_inventory_url ); ?>" class="flosc-docs-link"><?php echo esc_html__( 'Docs', 'flosc' ); ?></a>
+</h2>
 <p><?php echo esc_html__( 'Assign WordPress content to member levels. Guests only open complimentary selection from the pool below until Sale grants a level.', 'flosc' ); ?></p>
 <table class="widefat flosc-protection-table flosc-member-protection-table">
 	<thead>
@@ -371,7 +392,10 @@ $flosc_chat_list_settings_url = add_query_arg(
 
 <!-- 5. Pool / selection -->
 <hr class="flosc-member-levels-divider">
-<h2><?php echo esc_html__( 'Complimentary pool & selection (guests)', 'flosc' ); ?></h2>
+<h2>
+	<?php echo esc_html__( 'Complimentary pool & selection (guests)', 'flosc' ); ?>
+	<a href="<?php echo esc_url( $flosc_content_docs_inventory_url ); ?>" class="flosc-docs-link"><?php echo esc_html__( 'Docs', 'flosc' ); ?></a>
+</h2>
 <p>
 	<?php
 	echo esc_html(
@@ -386,9 +410,9 @@ $flosc_chat_list_settings_url = add_query_arg(
 </p>
 <table class="form-table">
 	<tr>
-		<th scope="row"><label for="flow_free_lesson_pool_category"><?php echo esc_html__( 'Pool (category)', 'flosc' ); ?></label></th>
+		<th scope="row"><label for="flow_free_content_item_pool_category"><?php echo esc_html__( 'Pool (category)', 'flosc' ); ?></label></th>
 		<td>
-			<select name="flow_free_lesson_pool_category" id="flow_free_lesson_pool_category" class="regular-text">
+			<select name="flow_free_content_item_pool_category" id="flow_free_content_item_pool_category" class="regular-text">
 				<option value=""><?php echo esc_html__( '— Same as content group category —', 'flosc' ); ?></option>
 				<?php foreach ( $flosc_categories as $flosc_cat ) :
 					$flosc_cat_label = $flosc_cat->name;
@@ -399,7 +423,7 @@ $flosc_chat_list_settings_url = add_query_arg(
 						}
 					}
 					?>
-					<option value="<?php echo esc_attr( $flosc_cat->slug ); ?>" <?php selected( $flosc_free_lesson_pool_category, $flosc_cat->slug ); ?>>
+					<option value="<?php echo esc_attr( $flosc_cat->slug ); ?>" <?php selected( $flosc_free_content_item_pool_category, $flosc_cat->slug ); ?>>
 						<?php echo esc_html( $flosc_cat_label ); ?> (<?php echo esc_html( (string) $flosc_cat->count ); ?> posts)
 					</option>
 				<?php endforeach; ?>
@@ -408,28 +432,28 @@ $flosc_chat_list_settings_url = add_query_arg(
 		</td>
 	</tr>
 	<tr>
-		<th scope="row"><label for="flow_free_lesson_never_free"><?php echo esc_html__( 'Exclude from pool (numbers)', 'flosc' ); ?></label></th>
+		<th scope="row"><label for="flow_exclude_items_from_freeline"><?php echo esc_html__( 'Exclude from freeline', 'flosc' ); ?></label></th>
 		<td>
-			<input type="text" id="flow_free_lesson_never_free" name="flow_free_lesson_never_free"
+			<input type="text" id="flow_exclude_items_from_freeline" name="flow_exclude_items_from_freeline"
 				value="<?php echo esc_attr( $flosc_pool_exclude ); ?>"
 				class="large-text" placeholder="e.g. 1, 2, 7, 12">
-			<p class="description"><?php echo esc_html__( 'Comma-separated numbers that stay out of complimentary selection even if in the pool category.', 'flosc' ); ?></p>
+			<p class="description"><?php echo esc_html__( 'Content item numbers that freeline selection must never grant, even if those posts are in the pool category (e.g. 1, 2, 7, 12).', 'flosc' ); ?></p>
 		</td>
 	</tr>
 	<tr>
-		<th scope="row"><label for="flow_free_lesson_mode"><?php echo esc_html__( 'Selection mode', 'flosc' ); ?></label></th>
+		<th scope="row"><label for="flow_free_content_item_mode"><?php echo esc_html__( 'Selection mode', 'flosc' ); ?></label></th>
 		<td>
-			<select name="flow_free_lesson_mode" id="flow_free_lesson_mode">
-				<option value="fixed" <?php selected( $flosc_free_lesson_mode, 'fixed' ); ?>><?php echo esc_html__( 'Fixed number', 'flosc' ); ?></option>
-				<option value="proportion" <?php selected( $flosc_free_lesson_mode, 'proportion' ); ?>><?php echo esc_html__( 'Proportion of missed (non-IPA)', 'flosc' ); ?></option>
+			<select name="flow_free_content_item_mode" id="flow_free_content_item_mode">
+				<option value="fixed" <?php selected( $flosc_free_content_item_mode, 'fixed' ); ?>><?php echo esc_html__( 'Fixed number', 'flosc' ); ?></option>
+				<option value="proportion" <?php selected( $flosc_free_content_item_mode, 'proportion' ); ?>><?php echo esc_html__( 'Proportion of missed (non-IPA)', 'flosc' ); ?></option>
 			</select>
 		</td>
 	</tr>
-	<tr id="flow_free_lesson_count_row">
-		<th scope="row"><label for="flow_free_lesson_count"><?php echo esc_html__( 'Guest selection count', 'flosc' ); ?></label></th>
+	<tr id="flow_free_content_item_count_row">
+		<th scope="row"><label for="flow_free_content_item_count"><?php echo esc_html__( 'Guest selection count', 'flosc' ); ?></label></th>
 		<td>
-			<input type="number" id="flow_free_lesson_count" name="flow_free_lesson_count"
-				value="<?php echo esc_attr( (string) $flosc_free_lesson_count ); ?>" min="1" max="50" class="small-text">
+			<input type="number" id="flow_free_content_item_count" name="flow_free_content_item_count"
+				value="<?php echo esc_attr( (string) $flosc_free_content_item_count ); ?>" min="1" max="50" class="small-text">
 			<p class="description">
 				<?php
 				echo esc_html(
@@ -443,22 +467,22 @@ $flosc_chat_list_settings_url = add_query_arg(
 			</p>
 		</td>
 	</tr>
-	<tr id="flow_free_lesson_proportion_row">
-		<th scope="row"><label for="flow_free_lesson_proportion"><?php echo esc_html__( 'Proportion of missed', 'flosc' ); ?></label></th>
+	<tr id="flow_free_content_item_proportion_row">
+		<th scope="row"><label for="flow_free_content_item_proportion"><?php echo esc_html__( 'Proportion of missed', 'flosc' ); ?></label></th>
 		<td>
-			<select name="flow_free_lesson_proportion" id="flow_free_lesson_proportion">
-				<option value="1/5" <?php selected( $flosc_free_lesson_proportion, '1/5' ); ?>>1/5</option>
-				<option value="1/4" <?php selected( $flosc_free_lesson_proportion, '1/4' ); ?>>1/4</option>
-				<option value="1/3" <?php selected( $flosc_free_lesson_proportion, '1/3' ); ?>>1/3</option>
-				<option value="1/2" <?php selected( $flosc_free_lesson_proportion, '1/2' ); ?>>1/2</option>
+			<select name="flow_free_content_item_proportion" id="flow_free_content_item_proportion">
+				<option value="1/5" <?php selected( $flosc_free_content_item_proportion, '1/5' ); ?>>1/5</option>
+				<option value="1/4" <?php selected( $flosc_free_content_item_proportion, '1/4' ); ?>>1/4</option>
+				<option value="1/3" <?php selected( $flosc_free_content_item_proportion, '1/3' ); ?>>1/3</option>
+				<option value="1/2" <?php selected( $flosc_free_content_item_proportion, '1/2' ); ?>>1/2</option>
 			</select>
 		</td>
 	</tr>
 	<tr>
-		<th scope="row"><label for="flow_free_lesson_guaranteed"><?php echo esc_html__( 'Bonus item number', 'flosc' ); ?></label></th>
+		<th scope="row"><label for="flow_free_content_item_guaranteed"><?php echo esc_html__( 'Bonus item number', 'flosc' ); ?></label></th>
 		<td>
-			<input type="number" id="flow_free_lesson_guaranteed" name="flow_free_lesson_guaranteed"
-				value="<?php echo esc_attr( (string) $flosc_free_lesson_guaranteed ); ?>" min="0" max="9999" class="small-text">
+			<input type="number" id="flow_free_content_item_guaranteed" name="flow_free_content_item_guaranteed"
+				value="<?php echo esc_attr( (string) $flosc_free_content_item_guaranteed ); ?>" min="0" max="9999" class="small-text">
 			<p class="description"><?php echo esc_html__( 'Optional extra number always included when in pool and not excluded. 0 = off.', 'flosc' ); ?></p>
 		</td>
 	</tr>
@@ -475,7 +499,10 @@ $flosc_chat_list_settings_url = add_query_arg(
 
 <!-- 6. Guest chats -->
 <hr class="flosc-member-levels-divider">
-<h2><?php echo esc_html__( 'Guest chats', 'flosc' ); ?></h2>
+<h2>
+	<?php echo esc_html__( 'Guest chats', 'flosc' ); ?>
+	<a href="<?php echo esc_url( $flosc_content_docs_inventory_url ); ?>" class="flosc-docs-link"><?php echo esc_html__( 'Docs', 'flosc' ); ?></a>
+</h2>
 <p><?php echo esc_html__( 'Chat list caps for guests (not content delivery). Profile bar labels live under Profile Bar / UI.', 'flosc' ); ?></p>
 <table class="form-table">
 	<tr>
@@ -512,7 +539,10 @@ $flosc_chat_list_settings_url = add_query_arg(
 </table>
 
 <div class="flosc-member-levels-info-box">
-	<h3 class="flosc-member-levels-info-box__title"><?php echo esc_html__( 'How Content + Sale work together', 'flosc' ); ?></h3>
+	<h3 class="flosc-member-levels-info-box__title">
+		<?php echo esc_html__( 'How Content + Sale work together', 'flosc' ); ?>
+		<a href="<?php echo esc_url( $flosc_content_docs_url ); ?>" class="flosc-docs-link"><?php echo esc_html__( 'Docs', 'flosc' ); ?></a>
+	</h3>
 	<p class="flosc-member-levels-info-box__lead">
 		<strong>1.</strong> <?php echo esc_html__( 'Define levels and content groups.', 'flosc' ); ?><br>
 		<strong>2.</strong> <?php echo esc_html__( 'Protect content by level.', 'flosc' ); ?><br>
@@ -585,8 +615,8 @@ jQuery(document).ready(function($) {
 	?>;
 	$('#flosc-add-lesson-group').on('click', function() {
 		var row = '<tr class="flosc-lesson-group-row">'
-			+ '<td><select name="lesson_group_quiz[]" class="regular-text flosc-width-full">' + quizOptions + '</select></td>'
-			+ '<td><select name="lesson_group_category[]" class="regular-text flosc-width-full">' + catOptions + '</select></td>'
+			+ '<td><select name="content_item_group_quiz[]" class="regular-text flosc-width-full">' + quizOptions + '</select></td>'
+			+ '<td><select name="content_item_group_category[]" class="regular-text flosc-width-full">' + catOptions + '</select></td>'
 			+ '<td class="flosc-text-center"><button type="button" class="button flosc-remove-lesson-group" title="Remove">&times;</button></td>'
 			+ '</tr>';
 		$('#flosc-lesson-groups-body').append(row);
@@ -649,17 +679,17 @@ jQuery(document).ready(function($) {
 	});
 
 	function toggleFreeLessonFields() {
-		var mode = $('#flow_free_lesson_mode').val();
+		var mode = $('#flow_free_content_item_mode').val();
 		if (mode === 'fixed') {
-			$('#flow_free_lesson_count_row').show();
-			$('#flow_free_lesson_proportion_row').hide();
+			$('#flow_free_content_item_count_row').show();
+			$('#flow_free_content_item_proportion_row').hide();
 		} else {
-			$('#flow_free_lesson_count_row').hide();
-			$('#flow_free_lesson_proportion_row').show();
+			$('#flow_free_content_item_count_row').hide();
+			$('#flow_free_content_item_proportion_row').show();
 		}
 	}
 	toggleFreeLessonFields();
-	$('#flow_free_lesson_mode').on('change', toggleFreeLessonFields);
+	$('#flow_free_content_item_mode').on('change', toggleFreeLessonFields);
 });
 <?php
 wp_add_inline_script( 'flosc-admin', ob_get_clean() );

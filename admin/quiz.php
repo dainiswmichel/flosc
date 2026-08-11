@@ -20,6 +20,12 @@ $flosc_quiz_docs_url = add_query_arg([
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-quiz';
+$flosc_quiz_docs_inventory_url = add_query_arg([
+    'page' => 'flosc-settings',
+    'ivr'  => $flosc_current_ivr,
+    'tab'  => 'documentation',
+    'doc'  => 'ref-admin',
+], admin_url('admin.php')) . '#inventory-quiz-family';
 // Empty = no quizzes on this flow. Do not invent sample quiz IDs.
 $flosc_enabled_quizzes = $flosc_flow_settings['enabled_quizzes'] ?? [];
 if ( ! is_array( $flosc_enabled_quizzes ) ) {
@@ -177,7 +183,10 @@ DEMO,
 
     <!-- ── Flow preview ──────────────────────────────────────────────────── -->
     <div class="flosc-section-header">
-        <h2>Quiz Configuration</h2>
+        <h2>
+            Quiz Configuration
+            <a href="<?php echo esc_url($flosc_quiz_docs_inventory_url); ?>" class="flosc-docs-link">Docs</a>
+        </h2>
         <p>Enable quizzes and edit their questions. The first enabled quiz is shown to visitors.</p>
     </div>
 
@@ -219,6 +228,7 @@ DEMO,
             'doc'  => 'ref-audio-quiz-flow',
         ], admin_url('admin.php'));
         ?>
+        <a href="<?php echo esc_url($flosc_quiz_docs_inventory_url); ?>" class="flosc-docs-link">Docs</a>
         <a href="<?php echo esc_url($flosc_helplink_url); ?>" class="flosc-help-link" title="Full documentation for the Audio Quiz Flow">📖 Help</a>
     </h3>
     <p class="description">These messages appear in the chatbot during and after the audio pronunciation quiz. Placeholders: <code>{current}</code> = phrase number, <code>{total}</code> = total phrases.</p>
@@ -303,7 +313,10 @@ DEMO,
     </table>
 
     <!-- ── Active Quizzes — summary of what is live in the funnel ────────── -->
-    <h3>✅ Active Quizzes</h3>
+    <h3>
+        ✅ Active Quizzes
+        <a href="<?php echo esc_url($flosc_quiz_docs_inventory_url); ?>" class="flosc-docs-link">Docs</a>
+    </h3>
     <?php if ( empty( $flosc_active_quiz_types ) ): ?>
     <p class="flosc-quiz-warning">
         No quizzes are currently active. Enable one in the Quiz Deck below.
@@ -323,7 +336,10 @@ DEMO,
     <?php endif; ?>
 
     <!-- ── Quiz Deck — configure and enable quizzes ───────────────────────── -->
-    <h3 class="flosc-heading-top-28">🗂 Quiz Deck</h3>
+    <h3 class="flosc-heading-top-28">
+        🗂 Quiz Deck
+        <a href="<?php echo esc_url($flosc_quiz_docs_url); ?>" class="flosc-docs-link">Docs</a>
+    </h3>
     <p>Your library of available quizzes. Enable a quiz to make it Active. Load a demo below to populate the question editor.</p>
 
     <div class="flosc-quiz-grid">

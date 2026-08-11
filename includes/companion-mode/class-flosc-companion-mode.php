@@ -419,7 +419,7 @@ class FLOSC_Companion_Mode {
      * Priority:
      * 1) flosc_flow_id / flosc_ivr query (from full-chat dock handoff)
      * 2) Current URL matches a flow's companion_hub_companion_url
-     * 3) Current WP category matches a flow's lesson_groups / lessons_category
+     * 3) Current WP category matches a flow's content_item_groups / content_item_category
      * 4) Leave get_current_flow() as-is (domain/slug detection)
      *
      * @param bool $handoff_request Whether this is a companion handoff navigation.
@@ -527,11 +527,11 @@ class FLOSC_Companion_Mode {
             // Lessons category / content group → knowledge hub archive or lesson posts.
             if ($category_match === null && !empty($category_slugs)) {
                 $flow_cats = [];
-                if (!empty($flow['lessons_category'])) {
-                    $flow_cats[] = sanitize_title((string) $flow['lessons_category']);
+                if (!empty($flow['content_item_category'])) {
+                    $flow_cats[] = sanitize_title((string) $flow['content_item_category']);
                 }
-                if (!empty($flow['lesson_groups']) && is_array($flow['lesson_groups'])) {
-                    foreach ($flow['lesson_groups'] as $group) {
+                if (!empty($flow['content_item_groups']) && is_array($flow['content_item_groups'])) {
+                    foreach ($flow['content_item_groups'] as $group) {
                         if (!empty($group['category'])) {
                             $flow_cats[] = sanitize_title((string) $group['category']);
                         }

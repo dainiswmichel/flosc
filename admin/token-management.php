@@ -20,7 +20,13 @@ $flosc_token_docs_url = add_query_arg([
     'ivr'  => $flosc_current_ivr,
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
-], admin_url('admin.php')) . '#tab-payments';
+], admin_url('admin.php')) . '#tab-token-management';
+$flosc_token_docs_inventory_url = add_query_arg([
+    'page' => 'flosc-settings',
+    'ivr'  => $flosc_current_ivr,
+    'tab'  => 'documentation',
+    'doc'  => 'ref-admin',
+], admin_url('admin.php')) . '#inventory-token-family';
 $flosc_offers_url = add_query_arg([
     'page' => 'flosc-settings',
     'ivr'  => $flosc_current_ivr,
@@ -223,7 +229,10 @@ $flosc_visible_products = array_values(array_filter($flosc_product_rows, static 
     <!-- ========== PRODUCTS ========== -->
     <div class="flosc-token-section">
         <div class="flosc-token-section__bar">
-            <h2 class="flosc-token-section__title">Products</h2>
+            <h2 class="flosc-token-section__title">
+                Products
+                <a href="<?php echo esc_url($flosc_token_docs_inventory_url); ?>" class="flosc-settings-docs-link">Docs</a>
+            </h2>
             <div class="flosc-token-section__tools">
                 <label class="screen-reader-text" for="flosc-token-product-filter">Filter products</label>
                 <select id="flosc-token-product-filter" class="flosc-token-filter" data-flosc-action="redirect-on-change">

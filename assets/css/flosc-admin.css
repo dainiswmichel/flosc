@@ -454,6 +454,90 @@
     gap: 10px;
 }
 
+.flosc-flow-portability-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 8px;
+}
+
+.flosc-flow-portability-title .flosc-docs-link {
+    margin-left: auto;
+}
+
+.flosc-flow-portability-checklist {
+    margin: 0 0 14px 18px;
+}
+
+.flosc-flow-portability-checklist li {
+    margin-bottom: 6px;
+}
+
+.flosc-flow-portability-target {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    background: #eef6ff;
+    border: 1px solid #cfe4fb;
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 8px 0 14px;
+}
+
+.flosc-flow-portability-target__line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.flosc-flow-portability-target code {
+    font-size: 12px;
+}
+
+.flosc-flow-portability-target__hint {
+    color: #415161;
+    font-size: 12px;
+    margin: 0;
+    line-height: 1.45;
+}
+
+.flosc-flow-portability-actions-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 12px 0 6px;
+}
+
+.flosc-flow-portability-primary-btn {
+    min-width: 180px;
+}
+
+.flosc-portability-kit-form .flosc-ivr-dropzone {
+    margin-top: 4px;
+}
+
+.flosc-ivr-file-actions--table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 16px 0 8px;
+}
+
+.flosc-flow-view-hint {
+    margin: 6px 0 0;
+}
+
+.flosc-ivr-row--active td {
+    background: #f0f8ff;
+}
+
+.flosc-flow-portability-actions-help {
+    margin: 8px 0 0;
+}
+
 .flosc-flow-overview-title .flosc-docs-link {
     margin-left: auto;
 }
@@ -857,6 +941,10 @@
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.flosc-sso-provider-title .flosc-sso-docs-link {
+    margin-left: auto;
 }
 
 .flosc-sso-provider-icon {
@@ -4801,7 +4889,8 @@
 }
 
 .flosc-ivr-col-actions {
-    width: 160px;
+    min-width: 320px;
+    width: auto;
 }
 
 .flosc-ivr-file-action-group {
@@ -4817,8 +4906,16 @@
 }
 
 .flosc-ivr-inline-form--warn .button {
-    color: #b91c1c;
-    border-color: #b91c1c;
+    background-color: #b91c1c;
+    color: #ffffff;
+    border-color: #8a1515;
+}
+
+.flosc-ivr-inline-form--warn .button:hover,
+.flosc-ivr-inline-form--warn .button:focus {
+    background-color: #8a1515;
+    color: #ffffff;
+    border-color: #6f1010;
 }
 
 .flosc-ivr-full-editor {

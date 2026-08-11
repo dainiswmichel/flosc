@@ -25,20 +25,20 @@ class FLOSC_Lesson_Manager {
     
     /**
      * v1.8.2: Resolve lessons category from per-flow settings first, then global option.
-     * The admin Lessons tab saves to flow_lessons_category → $flow_settings['lessons_category'].
-     * The global flosc_lessons_category option may be empty if only per-flow was configured.
+     * The admin Lessons tab saves to flow_content_item_category → $flow_settings['content_item_category'].
+     * The global flosc_content_item_category option may be empty if only per-flow was configured.
      */
     private function resolve_category() {
         // 1. Try per-flow settings (where the admin actually saves it)
         if (function_exists('flosc')) {
             $flow = flosc()->get_current_flow();
-            if ($flow && !empty($flow['lessons_category'])) {
-                return $flow['lessons_category'];
+            if ($flow && !empty($flow['content_item_category'])) {
+                return $flow['content_item_category'];
             }
         }
         
         // 2. Try global option (legacy / fallback)
-        $global = get_option('flosc_lessons_category', '');
+        $global = get_option('flosc_content_item_category', '');
         if (!empty($global)) {
             return $global;
         }
@@ -50,8 +50,8 @@ class FLOSC_Lesson_Manager {
             foreach (array_unique(array_map('basename', $files)) as $filename) {
                 $key = 'flosc_flow_' . sanitize_key(pathinfo($filename, PATHINFO_FILENAME));
                 $settings = get_option($key, []);
-                if (!empty($settings['lessons_category'])) {
-                    return $settings['lessons_category'];
+                if (!empty($settings['content_item_category'])) {
+                    return $settings['content_item_category'];
                 }
             }
         }
@@ -60,19 +60,19 @@ class FLOSC_Lesson_Manager {
     }
     
     /**
-     * Get all lessons from ALL configured categories (lesson_groups + lessons_category).
+     * Get all lessons from ALL configured categories (content_item_groups + content_item_category).
      *
-     * v3.0.8: Queries every category across all lesson_groups in the current flow so
+     * v3.0.8: Queries every category across all content_item_groups in the current flow so
      * "show all lessons" returns the full library across enabled lesson groups.
-     * Falls back to single lessons_category for flows without lesson_groups.
+     * Falls back to single content_item_category for flows without content_item_groups.
      */
     public function get_all_lessons() {
-        // --- Collect every category slug/ID from lesson_groups first ---
+        // --- Collect every category slug/ID from content_item_groups first ---
         $categories = [];
         if ( function_exists( 'flosc' ) ) {
             $flow = flosc()->get_current_flow();
-            if ( $flow && ! empty( $flow['lesson_groups'] ) && is_array( $flow['lesson_groups'] ) ) {
-                foreach ( $flow['lesson_groups'] as $group ) {
+            if ( $flow && ! empty( $flow['content_item_groups'] ) && is_array( $flow['content_item_groups'] ) ) {
+                foreach ( $flow['content_item_groups'] as $group ) {
                     if ( ! empty( $group['category'] ) ) {
                         $categories[] = $group['category'];
                     }
@@ -80,11 +80,11 @@ class FLOSC_Lesson_Manager {
             }
         }
 
-        // --- If no lesson_groups, fall back to the single lessons_category ---
+        // --- If no content_item_groups, fall back to the single content_item_category ---
         if ( empty( $categories ) ) {
             $single = $this->resolve_category();
             if ( empty( $single ) ) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log( '[FLOSC Lessons] No lesson categories configured. Set lesson_groups or lessons_category.' );
+if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log( '[FLOSC Lessons] No lesson categories configured. Set content_item_groups or content_item_category.' );
                 return [];
             }
             $categories = [ $single ];
@@ -130,7 +130,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log( '[FLOSC Lessons] v3.0.8 ge
     }
     
     /**
-     * v3.0.8: Get lessons from quiz-linked categories only (lesson_groups with quiz_id set).
+     * v3.0.8: Get lessons from quiz-linked categories only (content_item_groups with quiz_id set).
      * Used for "show me the lessons covered in the quiz" — returns the quiz-mapped
      * content library (e.g. FLOSC Sample Data 10 posts), not the standalone library.
      */
@@ -138,8 +138,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log( '[FLOSC Lessons] v3.0.8 ge
         $categories = [];
         if ( function_exists( 'flosc' ) ) {
             $flow = flosc()->get_current_flow();
-            if ( $flow && ! empty( $flow['lesson_groups'] ) && is_array( $flow['lesson_groups'] ) ) {
-                foreach ( $flow['lesson_groups'] as $group ) {
+            if ( $flow && ! empty( $flow['content_item_groups'] ) && is_array( $flow['content_item_groups'] ) ) {
+                foreach ( $flow['content_item_groups'] as $group ) {
                     // Only include groups that have a quiz_id (quiz-linked, not standalone)
                     if ( ! empty( $group['quiz_id'] ) && ! empty( $group['category'] ) ) {
                         $categories[] = $group['category'];
@@ -218,8 +218,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log( '[FLOSC Lessons] v3.0.8 ge
         $categories = [];
         if ( function_exists( 'flosc' ) ) {
             $flow = flosc()->get_current_flow();
-            if ( $flow && ! empty( $flow['lesson_groups'] ) && is_array( $flow['lesson_groups'] ) ) {
-                foreach ( $flow['lesson_groups'] as $group ) {
+            if ( $flow && ! empty( $flow['content_item_groups'] ) && is_array( $flow['content_item_groups'] ) ) {
+                foreach ( $flow['content_item_groups'] as $group ) {
                     if ( ! empty( $group['category'] ) ) {
                         $categories[] = $group['category'];
                     }

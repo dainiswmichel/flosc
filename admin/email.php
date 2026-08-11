@@ -37,6 +37,12 @@ $flosc_email_docs_url = add_query_arg([
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-email';
+$flosc_email_docs_inventory_url = add_query_arg([
+    'page' => 'flosc-settings',
+    'ivr'  => $flosc_current_ivr,
+    'tab'  => 'documentation',
+    'doc'  => 'ref-admin',
+], admin_url('admin.php')) . '#inventory-communication-family';
 $flosc_product_name = $flosc_flow_settings['name'] ?? 'FLOSC App';
 $flosc_default_subject = "Your {$flosc_product_name} Quiz Results: {score}%";
 $flosc_default_body = "Hi {name},
@@ -60,7 +66,10 @@ The {$flosc_product_name} Team";
     <a href="<?php echo esc_url($flosc_email_docs_url); ?>" class="flosc-docs-link">Docs</a>
 </div>
 
-<h2>Email Templates & Automation</h2>
+<h2>
+    Email Templates & Automation
+    <a href="<?php echo esc_url($flosc_email_docs_inventory_url); ?>" class="flosc-docs-link">Docs</a>
+</h2>
 <p>Customize emails sent to users and configure when they're triggered.</p>
 
 <?php
@@ -120,7 +129,10 @@ $flosc_render_email_series = function ($prefix, $flow_settings, $welcome_default
 <!-- NEWSLETTER EMAIL SEQUENCE (optional / lead-gen) -->
 <!-- ============================================ -->
 <hr class="flosc-email-hr-top">
-<h3>Newsletter Email Sequence <span class="flosc-email-status-badge flosc-email-status-badge--optional">OPTIONAL</span></h3>
+<h3>
+    Newsletter Email Sequence <span class="flosc-email-status-badge flosc-email-status-badge--optional">OPTIONAL</span>
+    <a href="<?php echo esc_url($flosc_email_docs_inventory_url); ?>" class="flosc-docs-link">Docs</a>
+</h3>
 <p class="description">
     Optional sequence for users who opt into the newsletter (a profile checkbox; the chatbot can also offer sign-up).
     Placeholders: <code>{name}</code>, <code>{chat_url}</code>, <code>{profile_url}</code>, <code>{app_name}</code>, <code>{team_name}</code>.
@@ -146,7 +158,10 @@ $flosc_render_email_series(
 <!-- ============================================ -->
 <!-- PRIMARY QUIZ RESULTS EMAIL -->
 <!-- ============================================ -->
-<h3>Quiz Results Email <span class="flosc-email-status-badge flosc-email-status-badge--ready">READY</span></h3>
+<h3>
+    Quiz Results Email <span class="flosc-email-status-badge flosc-email-status-badge--ready">READY</span>
+    <a href="<?php echo esc_url($flosc_email_docs_inventory_url); ?>" class="flosc-docs-link">Docs</a>
+</h3>
 <p class="description">Sent after user completes quiz. Customize subject and body with placeholders.</p>
 
 <table class="form-table">
@@ -177,7 +192,10 @@ $flosc_render_email_series(
 <!-- EMAIL AUTOMATION TRIGGERS [PLANNED UI] -->
 <!-- ============================================ -->
 <hr class="flosc-email-hr">
-<h3>Email Automation Triggers <span class="flosc-email-status-badge flosc-email-status-badge--backend">PLANNED UI</span></h3>
+<h3>
+    Email Automation Triggers <span class="flosc-email-status-badge flosc-email-status-badge--backend">PLANNED UI</span>
+    <a href="<?php echo esc_url($flosc_email_docs_inventory_url); ?>" class="flosc-docs-link">Docs</a>
+</h3>
 <p class="description">Configuration controls reserved for a future automation module. These fields are not used by current runtime dispatch.</p>
 
 <table class="form-table">
@@ -245,7 +263,10 @@ $flosc_render_email_series(
 <!-- GUEST ACCESS EMAIL SEQUENCE [LIVE] -->
 <!-- ============================================ -->
 <hr class="flosc-email-hr">
-<h3>Guest Access Email Sequence <span class="flosc-email-status-badge flosc-email-status-badge--live">LIVE</span></h3>
+<h3>
+    Guest Access Email Sequence <span class="flosc-email-status-badge flosc-email-status-badge--live">LIVE</span>
+    <a href="<?php echo esc_url($flosc_email_docs_inventory_url); ?>" class="flosc-docs-link">Docs</a>
+</h3>
 <p class="description">
     Emails sent automatically to guests who have not purchased.
     Placeholders: <code>{name}</code>, <code>{days_remaining}</code>, <code>{chat_url}</code>, <code>{profile_url}</code>, <code>{upgrade_url}</code>.
@@ -336,7 +357,10 @@ foreach ($flosc_guest_emails as $flosc_key => $flosc_cfg):
 <!-- MEMBER EMAIL SEQUENCE (per level) -->
 <!-- ============================================ -->
 <hr class="flosc-email-hr">
-<h3>Member Email Sequence</h3>
+<h3>
+    Member Email Sequence
+    <a href="<?php echo esc_url($flosc_email_docs_inventory_url); ?>" class="flosc-docs-link">Docs</a>
+</h3>
 <p class="description">
     Per-level emails sent to members. Levels come from the <strong>Member Levels</strong> tab.
     Placeholders: <code>{name}</code>, <code>{chat_url}</code>, <code>{profile_url}</code>, <code>{upgrade_url}</code>, <code>{app_name}</code>, <code>{team_name}</code>.
@@ -395,7 +419,10 @@ if (!$flosc_has_levels):
 <!-- EMAIL PROVIDER SETTINGS [BACKEND NEEDED] -->
 <!-- ============================================ -->
 <hr class="flosc-email-hr">
-<h3>Email Provider Settings <span class="flosc-email-status-badge flosc-email-status-badge--backend">BACKEND NEEDED</span></h3>
+<h3>
+    Email Provider Settings <span class="flosc-email-status-badge flosc-email-status-badge--backend">BACKEND NEEDED</span>
+    <a href="<?php echo esc_url($flosc_email_docs_inventory_url); ?>" class="flosc-docs-link">Docs</a>
+</h3>
 <p class="description">Configure email delivery provider. Currently uses WordPress default (wp_mail).</p>
 
 <table class="form-table">
@@ -448,7 +475,10 @@ if (!$flosc_has_levels):
 <!-- TEMPLATE EXAMPLES & INSPIRATION -->
 <!-- ============================================ -->
 <hr class="flosc-email-hr">
-<h3>Email Template Examples (Copy-Paste Reference)</h3>
+<h3>
+    Email Template Examples (Copy-Paste Reference)
+    <a href="<?php echo esc_url($flosc_email_docs_inventory_url); ?>" class="flosc-docs-link">Docs</a>
+</h3>
 <p class="description">Best practice email templates for different scenarios. Copy and customize as needed.</p>
 
 <div class="flosc-email-template-card flosc-email-template-card--congrats">

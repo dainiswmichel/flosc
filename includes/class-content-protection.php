@@ -342,7 +342,7 @@ class FLOSC_Content_Protection {
         }
         $cat_slug = sanitize_title((string) $cat->slug);
 
-        $flows = $this->get_flows_owning_lessons_category($cat_slug);
+        $flows = $this->get_flows_owning_content_item_category($cat_slug);
         foreach ($flows as $flow) {
             if (!is_array($flow)) {
                 continue;
@@ -369,12 +369,12 @@ class FLOSC_Content_Protection {
     }
 
     /**
-     * Find flow option payloads whose lessons_category / lesson_groups use this category slug.
+     * Find flow option payloads whose content_item_category / content_item_groups use this category slug.
      *
      * @param string $category_slug
      * @return array[]
      */
-    private function get_flows_owning_lessons_category($category_slug) {
+    private function get_flows_owning_content_item_category($category_slug) {
         $category_slug = sanitize_title((string) $category_slug);
         if ($category_slug === '' || !function_exists('flosc_config_glob')) {
             return [];
@@ -392,11 +392,11 @@ class FLOSC_Content_Protection {
                 continue;
             }
             $flow_cats = [];
-            if (!empty($settings['lessons_category'])) {
-                $flow_cats[] = sanitize_title((string) $settings['lessons_category']);
+            if (!empty($settings['content_item_category'])) {
+                $flow_cats[] = sanitize_title((string) $settings['content_item_category']);
             }
-            if (!empty($settings['lesson_groups']) && is_array($settings['lesson_groups'])) {
-                foreach ($settings['lesson_groups'] as $group) {
+            if (!empty($settings['content_item_groups']) && is_array($settings['content_item_groups'])) {
+                foreach ($settings['content_item_groups'] as $group) {
                     if (!empty($group['category'])) {
                         $flow_cats[] = sanitize_title((string) $group['category']);
                     }
@@ -462,15 +462,15 @@ class FLOSC_Content_Protection {
         }
         
         // v3.0.1: Flow-wide member access — if this post's category is in ANY
-        // of the current flow's lesson_groups, check if the user has the required
+        // of the current flow's content_item_groups, check if the user has the required
         // level for ANY category in that flow. One purchase unlocks all flow categories.
         if (function_exists('flosc')) {
             $flow = flosc()->get_current_flow();
-            if ($flow && !empty($flow['lesson_groups']) && is_array($flow['lesson_groups'])) {
-                // Is this post's category in this flow's lesson_groups?
+            if ($flow && !empty($flow['content_item_groups']) && is_array($flow['content_item_groups'])) {
+                // Is this post's category in this flow's content_item_groups?
                 $post_cat_id = $protection['category_id'];
                 $post_in_flow = false;
-                foreach ($flow['lesson_groups'] as $group) {
+                foreach ($flow['content_item_groups'] as $group) {
                     if (!empty($group['category'])) {
                         $cat_obj = get_term_by('slug', sanitize_title($group['category']), 'category');
                         if ($cat_obj && (int)$cat_obj->term_id === (int)$post_cat_id) {
@@ -481,7 +481,7 @@ class FLOSC_Content_Protection {
                 }
                 // If yes, check if user has ANY level from this flow's categories
                 if ($post_in_flow) {
-                    foreach ($flow['lesson_groups'] as $group) {
+                    foreach ($flow['content_item_groups'] as $group) {
                         if (!empty($group['category'])) {
                             $cat_obj = get_term_by('slug', sanitize_title($group['category']), 'category');
                             if ($cat_obj) {

@@ -100,7 +100,7 @@ $flosc_hub_defaults = function_exists('flosc_companion_hub_defaults_from_flow')
         'companion'  => home_url('/'),
         'chat_app'   => home_url('/'),
         'flow_slug'  => sanitize_title((string) ($flosc_flow_settings['slug'] ?? '')),
-        'lessons_category' => '',
+        'content_item_category' => '',
         'include_rules' => '',
     ];
 $flosc_default_fullscreen    = (string) ($flosc_hub_defaults['fullscreen'] ?? home_url('/'));

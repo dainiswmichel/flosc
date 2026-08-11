@@ -214,17 +214,17 @@ TOPIC: short-a-vowel</code></pre>
 <h3 id="quiz-admin-save">Save Behavior</h3>
 <p>Quiz content, enabled state, and score templates are all part of the main FLOSC settings form. The main page Save button (which submits <code>flosc_save</code>) is the only save mechanism. There is no separate quiz save button — a previous dead button (<code>save_quiz</code>) was removed in v4.0.4 because the settings handler never checked for it.</p>
 
-<h2 id="quiz-topic-linking">TOPIC: Linking — How Wrong Answers Recommend Lessons</h2>
+<h2 id="quiz-topic-linking">TOPIC: Linking — How Wrong Answers Recommend Content</h2>
 
 <h3 id="quiz-topic-workflow">Workflow</h3>
 <ol>
-  <li>Admin creates WordPress posts, categories, or tags for each lesson topic</li>
+  <li>Admin prepares WordPress posts, categories, or tags for each content topic</li>
   <li>Admin notes the category slug, post tag slug, post title, or post ID</li>
   <li>Admin adds <code>TOPIC: slug</code> to relevant quiz questions in the editor</li>
   <li>Visitor takes quiz</li>
   <li><code>analyze()</code> returns wrong answers with their topic tags</li>
-  <li><code>map_to_lessons()</code> resolves tags to WordPress posts</li>
-  <li><code>format_results()</code> renders the lesson list in the chat response via <code>{lesson_recommendations}</code></li>
+  <li><code>map_to_lessons()</code> resolves tags to WordPress posts/resources</li>
+  <li><code>format_results()</code> renders the recommended content list in the chat response via <code>{lesson_recommendations}</code></li>
 </ol>
 
 <h3 id="quiz-topic-resolution">Resolution Order</h3>
@@ -238,4 +238,41 @@ TOPIC: short-a-vowel</code></pre>
 <p>First resolution that returns results wins. Deduplication by post ID across all topics.</p>
 
 <h2 id="quiz-frontend">Quiz Frontend</h2>
-<p class="skeleton-marker">Content pending — covers how quizzes render inside the chat window, user interaction flow, and results display. See <code>assets/js/flosc-app.js</code> quiz methods and <code>admin/flosc-app.php</code> quiz HTML template.</p>
+<p>The quiz frontend renders inside the main chat app shell and uses one modal surface for both text and audio entry.</p>
+
+<h3 id="quiz-frontend-render">Render Source</h3>
+<ul>
+  <li><strong>Modal markup:</strong> <code>admin/flosc-app.php</code> defines the quiz modal (<code>#flosc_modal_recording</code>) with text and audio tabs, prompt sequence, submit controls, and result panel.</li>
+  <li><strong>Runtime behavior:</strong> <code>assets/js/flosc-app.js</code> controls quiz open/close, input mode switching, recording workflow, scoring submission, and results rendering.</li>
+  <li><strong>Flow scope:</strong> modal content is driven by flow-scoped quiz settings (first enabled quiz and its content), not global hardcoded sample IDs.</li>
+</ul>
+
+<h3 id="quiz-frontend-availability">Availability Rules</h3>
+<ul>
+  <li><strong>Quiz enabled check:</strong> frontend uses <code>flowHasQuizConfigured()</code> to confirm this flow actually has quiz configuration before opening quiz actions.</li>
+  <li><strong>No-quiz guard:</strong> if a flow has no quiz settings, the app returns a denial message instead of inventing fallback quiz content.</li>
+  <li><strong>Results visibility:</strong> <code>shouldSurfaceQuizResults()</code> gates whether results are shown, using flow quiz config plus server/local pending result data.</li>
+</ul>
+
+<h3 id="quiz-frontend-interaction">Interaction Flow</h3>
+<ol>
+  <li>User triggers quiz action (pill/button/menu action).</li>
+  <li>Quiz modal opens with sequence prompt and input mode tabs (Type/Speak).</li>
+  <li>User submits text answer or records/submits audio.</li>
+  <li>Frontend sends data to quiz APIs and waits for scored response.</li>
+  <li>Results panel or in-chat results summary is rendered from scored data.</li>
+</ol>
+
+<h3 id="quiz-frontend-results">Results Rendering</h3>
+<ul>
+  <li><strong>Audio/IPA path:</strong> if phrase-level IPA results are present, frontend renders detailed phrase/phoneme results.</li>
+  <li><strong>Text/general path:</strong> frontend renders score summary with correct/missed items and optional follow-up CTA text.</li>
+  <li><strong>State update:</strong> after results are shown, context flags are updated so follow-up prompts/offers can be sequenced correctly.</li>
+</ul>
+
+<h3 id="quiz-frontend-ops">Operator Notes</h3>
+<ul>
+  <li>Quiz UI quality depends on per-flow quiz setup in the Quiz tab (<code>enabled_quizzes</code>, quiz content, defaults).</li>
+  <li>If no quiz is enabled for a flow, this is treated as intentional configuration and frontend does not auto-inject sample quiz data.</li>
+  <li>Use flow-specific testing: verify quiz open, submit, score display, and post-quiz prompt sequence on each configured flow.</li>
+</ul>

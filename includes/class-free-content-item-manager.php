@@ -5,17 +5,17 @@
  * 
  * STATUS: ✅ FULLY FUNCTIONAL
  * 
- * v3.0.0: Quiz-aware lesson delivery via lesson_groups
+ * v3.0.0: Quiz-aware lesson delivery via content_item_groups
  * - handle_quiz_completion() reads quiz_id from $quiz_result
- * - find_lesson_post() resolves category from lesson_groups[quiz_id]
- * - Backward compatible: falls back to lessons_category if lesson_groups absent
+ * - find_lesson_post() resolves category from content_item_groups[quiz_id]
+ * - Backward compatible: falls back to content_item_category if content_item_groups absent
  * 
  * v1.5.4: Multiple free lessons
  * v9.1.8: Initial implementation
  * 
  * FLOW:
  * 1. User takes a flow quiz (e.g. sample_assessment_quiz); score < 100%
- * 2. System checks lesson_groups for quiz → category mapping
+ * 2. System checks content_item_groups for quiz → category mapping
  * 3. Finds the configured lesson category for the quiz
  * 4. Calculates missed items (lesson numbers or question indexes)
  * 5. Picks random eligible free lesson(s)
@@ -26,7 +26,7 @@
 
 if (!defined('ABSPATH')) exit;
 
-class FLOSC_Free_Lesson_Manager {
+class FLOSC_Free_Content_Item_Manager {
     
     private static $instance = null;
     
@@ -46,7 +46,7 @@ class FLOSC_Free_Lesson_Manager {
      * Handle quiz completion and select free lesson(s)
      * 
      * v3.0.0: Now quiz-aware — reads quiz_id from $quiz_result to resolve
-     * the correct lesson category via the flow's lesson_groups config.
+     * the correct lesson category via the flow's content_item_groups config.
      * 
      * @param array $quiz_result Quiz results with score, answers, quiz_id
      * @param int   $user_id    User ID
@@ -71,10 +71,10 @@ class FLOSC_Free_Lesson_Manager {
             return;
         }
 
-        // Admin-configured complimentary count (flow free_lesson_count / proportion).
+        // Admin-configured complimentary count (flow free_content_item_count / proportion).
         require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
         $member_access = FLOSC_Member_Access::instance();
-        $count = max(1, intval($member_access->calculate_free_lesson_count(count($missed))));
+        $count = max(1, intval($member_access->calculate_free_content_item_count(count($missed))));
 
         // v8.0.0: IPA audio quiz free lesson selection.
         // ranked_worst is sorted worst→best (lowest score = index 0).
@@ -99,7 +99,7 @@ class FLOSC_Free_Lesson_Manager {
             $selected_lessons = [];
             foreach ($missed as $lesson_num) {
                 $n = intval($lesson_num);
-                if ($this->is_never_free_lesson($n)) {
+                if ($this->is_excluded_from_freeline($n)) {
                     continue;
                 }
                 if ($this->lesson_number_is_free_eligible($n, $quiz_id)) {
@@ -111,12 +111,12 @@ class FLOSC_Free_Lesson_Manager {
             }
         }
 
-        // Bonus free lesson (admin: free_lesson_guaranteed) — in pool, not never-free
+        // Bonus free lesson (admin: free_content_item_guaranteed) — in pool, not never-free
         $guaranteed = intval(function_exists('flosc_get_setting')
-            ? flosc_get_setting('free_lesson_guaranteed', 35)
+            ? flosc_get_setting('free_content_item_guaranteed', 35)
             : 35);
         if ($guaranteed > 0
-            && !$this->is_never_free_lesson($guaranteed)
+            && !$this->is_excluded_from_freeline($guaranteed)
             && !in_array($guaranteed, $selected_lessons, true)
             && $this->lesson_number_is_free_eligible($guaranteed, $quiz_id)
         ) {
@@ -130,10 +130,10 @@ class FLOSC_Free_Lesson_Manager {
             return;
         }
 
-        update_user_meta($user_id, '_flosc_free_lesson_number', $selected_lessons[0]);
-        update_user_meta($user_id, '_flosc_free_lesson_numbers', $selected_lessons);
-        update_user_meta($user_id, '_flosc_free_lesson_quiz_id', $quiz_id);
-        update_user_meta($user_id, '_flosc_free_lesson_offered', time());
+        update_user_meta($user_id, '_flosc_free_content_item_number', $selected_lessons[0]);
+        update_user_meta($user_id, '_flosc_free_content_item_numbers', $selected_lessons);
+        update_user_meta($user_id, '_flosc_free_content_item_quiz_id', $quiz_id);
+        update_user_meta($user_id, '_flosc_free_content_item_offered', time());
 
         $granted_posts = [];
         $granted_nums  = [];
@@ -156,9 +156,9 @@ class FLOSC_Free_Lesson_Manager {
             return;
         }
 
-        update_user_meta($user_id, '_flosc_free_lesson_number', $granted_nums[0]);
-        update_user_meta($user_id, '_flosc_free_lesson_numbers', $granted_nums);
-        update_user_meta($user_id, '_flosc_free_lesson_post_ids', $granted_posts);
+        update_user_meta($user_id, '_flosc_free_content_item_number', $granted_nums[0]);
+        update_user_meta($user_id, '_flosc_free_content_item_numbers', $granted_nums);
+        update_user_meta($user_id, '_flosc_free_content_item_post_ids', $granted_posts);
 
         if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
             flosc_log("FLOSC: User {$user_id} offered " . count($granted_nums) . " free lesson(s) (scored {$score}%, quiz: {$quiz_id})");
@@ -168,29 +168,29 @@ class FLOSC_Free_Lesson_Manager {
     }
 
     /**
-     * Per-flow free-sample pool category slug (Lessons → free_lesson_pool_category).
+     * Per-flow free-sample pool category slug (Lessons → free_content_item_pool_category).
      * Empty = use the normal lesson-group category (all mapped lessons).
      *
      * @return string
      */
-    private function get_free_lesson_pool_category() {
+    private function get_free_content_item_pool_category() {
         if (!function_exists('flosc_get_setting')) {
             return '';
         }
-        return sanitize_title((string) flosc_get_setting('free_lesson_pool_category', ''));
+        return sanitize_title((string) flosc_get_setting('free_content_item_pool_category', ''));
     }
 
     /**
      * Lesson numbers that must never be given as complimentary guest content.
-     * Admin: free_lesson_never_free (comma/space-separated numbers).
+     * Admin: exclude_items_from_freeline (comma/space-separated numbers).
      *
      * @return int[]
      */
-    private function get_never_free_lesson_numbers() {
+    private function get_exclude_items_from_freeline_numbers() {
         if (!function_exists('flosc_get_setting')) {
             return [];
         }
-        $raw = (string) flosc_get_setting('free_lesson_never_free', '');
+        $raw = (string) flosc_get_setting('exclude_items_from_freeline', '');
         if ($raw === '') {
             return [];
         }
@@ -209,9 +209,9 @@ class FLOSC_Free_Lesson_Manager {
      * @param int $lesson_num Lesson number.
      * @return bool
      */
-    private function is_never_free_lesson($lesson_num) {
+    private function is_excluded_from_freeline($lesson_num) {
         $n = intval($lesson_num);
-        return $n > 0 && in_array($n, $this->get_never_free_lesson_numbers(), true);
+        return $n > 0 && in_array($n, $this->get_exclude_items_from_freeline_numbers(), true);
     }
 
     /**
@@ -260,14 +260,14 @@ class FLOSC_Free_Lesson_Manager {
     }
 
     /**
-     * Resolve free-sample post: only from free_lesson_pool_category when set.
+     * Resolve free-sample post: only from free_content_item_pool_category when set.
      *
      * @param int    $lesson_num
      * @param string $quiz_id
      * @return WP_Post|null
      */
     private function find_free_eligible_lesson_post($lesson_num, $quiz_id = '') {
-        $pool = $this->get_free_lesson_pool_category();
+        $pool = $this->get_free_content_item_pool_category();
         if ($pool !== '') {
             return $this->find_lesson_post_in_category($lesson_num, $pool);
         }
@@ -282,7 +282,7 @@ class FLOSC_Free_Lesson_Manager {
      */
     private function lesson_number_is_free_eligible($lesson_num, $quiz_id = '') {
         $n = intval($lesson_num);
-        if ($n <= 0 || $this->is_never_free_lesson($n)) {
+        if ($n <= 0 || $this->is_excluded_from_freeline($n)) {
             return false;
         }
         // Published post in free-lesson pool (or lesson group if no pool). Video not required.
@@ -316,7 +316,7 @@ class FLOSC_Free_Lesson_Manager {
 
     /**
      * Tier-walk free-lesson pick limited to the free lesson pool + never-free rules.
-     * Returns up to $count lesson numbers (admin free_lesson_count).
+     * Returns up to $count lesson numbers (admin free_content_item_count).
      *
      * @param array  $tiers
      * @param string $quiz_id
@@ -426,10 +426,10 @@ class FLOSC_Free_Lesson_Manager {
     }
     
     /**
-     * Resolve the lesson category for a given quiz_id using lesson_groups
+     * Resolve the lesson category for a given quiz_id using content_item_groups
      * 
-     * v3.0.0: Searches the current flow's lesson_groups array for a matching
-     * quiz_id → category mapping. Falls back to legacy lessons_category.
+     * v3.0.0: Searches the current flow's content_item_groups array for a matching
+     * quiz_id → category mapping. Falls back to legacy content_item_category.
      * 
      * @param string $quiz_id The quiz ID to look up (e.g., "flosc_sample_data_numbers_quiz")
      * @return string Category slug, or empty string if not found
@@ -440,42 +440,42 @@ class FLOSC_Free_Lesson_Manager {
             $flow = flosc()->get_current_flow();
         }
 
-        // v3.0.0: Check lesson_groups first
-        if ($flow && !empty($flow['lesson_groups']) && is_array($flow['lesson_groups'])) {
+        // v3.0.0: Check content_item_groups first
+        if ($flow && !empty($flow['content_item_groups']) && is_array($flow['content_item_groups'])) {
             // First pass: exact quiz_id match
-            foreach ($flow['lesson_groups'] as $group) {
+            foreach ($flow['content_item_groups'] as $group) {
                 if (!empty($group['quiz_id']) && $group['quiz_id'] === $quiz_id && !empty($group['category'])) {
                     return $group['category'];
                 }
             }
             // Second pass: if quiz_id is empty or not found, use the first group
             // that has no quiz (standalone) or just the first group as fallback
-            foreach ($flow['lesson_groups'] as $group) {
+            foreach ($flow['content_item_groups'] as $group) {
                 if (empty($group['quiz_id']) && !empty($group['category'])) {
                     return $group['category'];
                 }
             }
             // Last resort: first group with any category
-            foreach ($flow['lesson_groups'] as $group) {
+            foreach ($flow['content_item_groups'] as $group) {
                 if (!empty($group['category'])) {
                     return $group['category'];
                 }
             }
         }
 
-        // v1.8.2 backward compat: single lessons_category
-        if ($flow && !empty($flow['lessons_category'])) {
-            return $flow['lessons_category'];
+        // v1.8.2 backward compat: single content_item_category
+        if ($flow && !empty($flow['content_item_category'])) {
+            return $flow['content_item_category'];
         }
 
         // Global fallback
-        return get_option('flosc_lessons_category', '');
+        return get_option('flosc_content_item_category', '');
     }
 
     /**
      * Find a lesson post by lesson number
      * 
-     * v3.0.0: Quiz-aware — resolves category from lesson_groups
+     * v3.0.0: Quiz-aware — resolves category from content_item_groups
      * v1.4.4: Fallback to common slug patterns
      * 
      * @param int    $lesson_num Lesson number to find
@@ -483,7 +483,7 @@ class FLOSC_Free_Lesson_Manager {
      * @return WP_Post|null
      */
     private function find_lesson_post($lesson_num, $quiz_id = '') {
-        // v3.0.0: Resolve category through lesson_groups → legacy → global → scan
+        // v3.0.0: Resolve category through content_item_groups → legacy → global → scan
         $configured_cat = $this->resolve_category_for_quiz($quiz_id);
 
         // Scan all IVR flow settings if category still not resolved
@@ -493,12 +493,12 @@ class FLOSC_Free_Lesson_Manager {
             if (!empty($files)) {
                 foreach (array_unique(array_map('basename', $files)) as $fn) {
                     $s = get_option('flosc_flow_' . sanitize_key(pathinfo($fn, PATHINFO_FILENAME)), []);
-                    if (!empty($s['lesson_groups']) && is_array($s['lesson_groups'])) {
-                        foreach ($s['lesson_groups'] as $g) {
+                    if (!empty($s['content_item_groups']) && is_array($s['content_item_groups'])) {
+                        foreach ($s['content_item_groups'] as $g) {
                             if (!empty($g['category'])) { $configured_cat = $g['category']; break 2; }
                         }
                     }
-                    if (!empty($s['lessons_category'])) { $configured_cat = $s['lessons_category']; break; }
+                    if (!empty($s['content_item_category'])) { $configured_cat = $s['content_item_category']; break; }
                 }
             }
         }
@@ -578,11 +578,11 @@ class FLOSC_Free_Lesson_Manager {
      * @return array Array of lesson data arrays
      */
     public function get_free_lessons($user_id) {
-        $lesson_nums = get_user_meta($user_id, '_flosc_free_lesson_numbers', true);
+        $lesson_nums = get_user_meta($user_id, '_flosc_free_content_item_numbers', true);
 
         // Backward compat: fall back to single lesson number
         if (empty($lesson_nums)) {
-            $single = get_user_meta($user_id, '_flosc_free_lesson_number', true);
+            $single = get_user_meta($user_id, '_flosc_free_content_item_number', true);
             $lesson_nums = $single ? [$single] : [];
         }
 
@@ -591,13 +591,13 @@ class FLOSC_Free_Lesson_Manager {
         }
 
         // v3.0.0: Read the quiz_id that was stored at completion time
-        $quiz_id = get_user_meta($user_id, '_flosc_free_lesson_quiz_id', true) ?: '';
+        $quiz_id = get_user_meta($user_id, '_flosc_free_content_item_quiz_id', true) ?: '';
 
         $lessons = [];
         foreach ($lesson_nums as $lesson_num) {
             // Published pool post only (never-free already filtered at grant time).
             // Video is not required — admins control the pool category + never-free list.
-            if ($this->is_never_free_lesson(intval($lesson_num))) {
+            if ($this->is_excluded_from_freeline(intval($lesson_num))) {
                 continue;
             }
             $post = $this->find_free_eligible_lesson_post($lesson_num, $quiz_id);
@@ -626,7 +626,7 @@ class FLOSC_Free_Lesson_Manager {
      * @return bool
      */
     public function has_received_free_lesson($user_id) {
-        $offered = get_user_meta($user_id, '_flosc_free_lesson_offered', true);
+        $offered = get_user_meta($user_id, '_flosc_free_content_item_offered', true);
         return !empty($offered);
     }
     
@@ -667,7 +667,7 @@ class FLOSC_Free_Lesson_Manager {
         }
 
         // Mark as delivered
-        update_user_meta($user_id, '_flosc_free_lesson_delivered', time());
+        update_user_meta($user_id, '_flosc_free_content_item_delivered', time());
 
         $count = count($lessons);
 

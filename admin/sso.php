@@ -111,6 +111,12 @@ $flosc_sso_docs_url = add_query_arg([
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-sso';
+$flosc_sso_docs_inventory_url = add_query_arg([
+    'page' => 'flosc-settings',
+    'ivr'  => $flosc_selected_ivr,
+    'tab'  => 'documentation',
+    'doc'  => 'ref-admin',
+], admin_url('admin.php')) . '#inventory-auth-family';
 $flosc_flow_display_name = trim((string)($flosc_flow_settings['identity']['name'] ?? ''));
 if ($flosc_flow_display_name === '') {
     $flosc_flow_display_name = trim((string)($flosc_flow_settings['name'] ?? ''));
@@ -127,7 +133,7 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
     </div>
     <div class="flosc-sso-header">
         <div>
-            <h2 class="flosc-sso-title">🔐 SSO / Social Login Settings</h2>
+            <h2 class="flosc-sso-title">🔐 SSO / Social Login Settings <a href="<?php echo esc_url($flosc_sso_docs_inventory_url); ?>" class="flosc-sso-docs-link">Docs</a></h2>
             <p class="description flosc-sso-subtitle">Configure OAuth2 providers to enable social login in your FLOSC chat. Users can sign in with their existing accounts.</p>
         </div>
         <button type="submit" name="flosc_save" class="button button-primary flosc-sso-save-top">
@@ -164,7 +170,7 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
     ?>
 
     <div class="card flosc-sso-flow-card">
-        <h3 class="flosc-sso-flow-title">Flow Redirect Context</h3>
+        <h3 class="flosc-sso-flow-title">Flow Redirect Context <a href="<?php echo esc_url($flosc_sso_docs_url); ?>" class="flosc-sso-docs-link">Docs</a></h3>
         <p class="flosc-sso-flow-row"><strong>IVR file:</strong> <code><?php echo esc_html($flosc_selected_ivr ?: '(none selected)'); ?></code></p>
         <p class="flosc-sso-flow-row"><strong>flow_id parameter:</strong> <code><?php echo esc_html($flosc_current_flow_id ?: '(none)'); ?></code></p>
         <p class="flosc-sso-flow-row"><strong>Runtime redirect_to (primary):</strong> <code>window.location.href</code> from chat page at click-time</p>
@@ -202,6 +208,7 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
                 <?php if ($flosc_is_enabled && $flosc_client_id && $flosc_client_secret): ?>
                     <span class="flosc-sso-enabled-badge">ENABLED</span>
                 <?php endif; ?>
+                <a href="<?php echo esc_url($flosc_sso_docs_inventory_url); ?>" class="flosc-sso-docs-link">Docs</a>
             </h3>
             
             <table class="form-table flosc-sso-form-table">
@@ -362,7 +369,7 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
     
     <!-- General SSO Info -->
     <div class="card flosc-sso-info-card">
-        <h3 class="flosc-sso-card-title">ℹ️ How SSO Works</h3>
+        <h3 class="flosc-sso-card-title">ℹ️ How SSO Works <a href="<?php echo esc_url($flosc_sso_docs_url); ?>" class="flosc-sso-docs-link">Docs</a></h3>
         <p>When a user clicks a social login button in the FLOSC chat:</p>
         <ol>
             <li>They're redirected to the provider's login page</li>
@@ -375,7 +382,7 @@ $flosc_current_flow_id = $flosc_selected_ivr ? sanitize_key(pathinfo($flosc_sele
     
     <!-- Test Endpoints -->
     <div class="card flosc-sso-endpoints-card">
-        <h3 class="flosc-sso-card-title">🔧 API Endpoints</h3>
+        <h3 class="flosc-sso-card-title">🔧 API Endpoints <a href="<?php echo esc_url($flosc_sso_docs_url); ?>" class="flosc-sso-docs-link">Docs</a></h3>
         <table class="widefat flosc-sso-endpoints-table">
             <tr>
                 <th>Endpoint</th>

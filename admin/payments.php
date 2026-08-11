@@ -27,6 +27,12 @@ $flosc_payments_docs_url = add_query_arg([
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-payments';
+$flosc_payments_docs_inventory_url = add_query_arg([
+    'page' => 'flosc-settings',
+    'ivr'  => $flosc_current_ivr,
+    'tab'  => 'documentation',
+    'doc'  => 'ref-admin',
+], admin_url('admin.php')) . '#inventory-token-family';
 $flosc_stripe_enabled = $flosc_flow_settings['stripe_enabled'] ?? false;
 $flosc_stripe_mode = $flosc_flow_settings['stripe_mode'] ?? 'test';
 $flosc_paypal_enabled = $flosc_flow_settings['paypal_enabled'] ?? false;
@@ -37,7 +43,10 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
     <a href="<?php echo esc_url($flosc_payments_docs_url); ?>" class="flosc-payments-docs-link">Docs</a>
 </div>
 
-<h2>Payment Processing Configuration</h2>
+<h2>
+    Payment Processing Configuration
+    <a href="<?php echo esc_url($flosc_payments_docs_inventory_url); ?>" class="flosc-payments-docs-link">Docs</a>
+</h2>
 <p>
     <strong>Two layers:</strong>
     (1) This tab = native PayPal and Stripe credentials for this flow.
@@ -55,7 +64,10 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
 <!-- ============================================ -->
 <!-- STRIPE PAYMENT CONFIGURATION -->
 <!-- ============================================ -->
-<h3>💳 Stripe Configuration</h3>
+<h3>
+    💳 Stripe Configuration
+    <a href="<?php echo esc_url($flosc_payments_docs_inventory_url); ?>" class="flosc-payments-docs-link">Docs</a>
+</h3>
 <p class="description">
     First-class native cards via Stripe.js + Payment Intents. Enable Stripe, add the publishable and secret keys for test or live mode, then set the offer’s Payment Processor to <strong>Stripe</strong> and optional Stripe Price ID on the Offers tab.
 </p>
@@ -149,7 +161,10 @@ $flosc_manual_payments_enabled = $flosc_flow_settings['manual_payments_enabled']
 <!-- PAYPAL CONFIGURATION -->
 <!-- ============================================ -->
 <hr class="flosc-payments-divider">
-<h3>🅿️ PayPal Configuration</h3>
+<h3>
+    🅿️ PayPal Configuration
+    <a href="<?php echo esc_url($flosc_payments_docs_inventory_url); ?>" class="flosc-payments-docs-link">Docs</a>
+</h3>
 <p class="description">
     First-class native PayPal (Orders capture for one-time offers; subscription vault when an active offer is type subscription).
     Add Client ID + Secret, set mode, configure Webhook ID for renewal/cancel events, then set the offer’s Payment Processor to <strong>PayPal</strong> on the Offers tab.
@@ -291,7 +306,10 @@ endif;
 <!-- MANUAL PAYMENTS -->
 <!-- ============================================ -->
 <hr class="flosc-payments-divider">
-<h3>💵 Manual Payments</h3>
+<h3>
+    💵 Manual Payments
+    <a href="<?php echo esc_url($flosc_payments_docs_inventory_url); ?>" class="flosc-payments-docs-link">Docs</a>
+</h3>
 <p class="description">Accept payments via bank transfer, check, or other offline methods. Admin manually confirms payment and grants access.</p>
 
 <table class="form-table">
@@ -330,7 +348,10 @@ Access will be granted within 24 hours of payment confirmation.');
 <!-- ORDER MANAGEMENT -->
 <!-- ============================================ -->
 <hr class="flosc-payments-divider">
-<h3>📦 Order Management</h3>
+<h3>
+    📦 Order Management
+    <a href="<?php echo esc_url($flosc_payments_docs_inventory_url); ?>" class="flosc-payments-docs-link">Docs</a>
+</h3>
 <p class="description">View and manage customer orders, refunds, and access grants.</p>
 
 <div class="card flosc-payments-orders-card">
@@ -363,7 +384,10 @@ Access will be granted within 24 hours of payment confirmation.');
 <!-- TEST PAYMENT CARDS -->
 <!-- ============================================ -->
 <hr class="flosc-payments-divider">
-<h3>🧪 Test Payment Cards (Stripe Test Mode)</h3>
+<h3>
+    🧪 Test Payment Cards (Stripe Test Mode)
+    <a href="<?php echo esc_url($flosc_payments_docs_inventory_url); ?>" class="flosc-payments-docs-link">Docs</a>
+</h3>
 <p class="description">Use these cards in test mode to simulate different payment scenarios.</p>
 
 <div class="flosc-payments-test-cards-wrap">

@@ -157,7 +157,7 @@ function flosc_admin_select($key, $options, $default = '') {
  *
  * Uses only this flow's own Identity/Content fields:
  * - domain / custom_domain + slug → full-screen chat URL
- * - lessons_category or first lesson_groups[].category → knowledge-hub category archive
+ * - content_item_category or first content_item_groups[].category → knowledge-hub category archive
  * - companion_flow_slug or slug on WordPress site URL → companion iframe chat route
  *   (same origin as the knowledge hub so WP login cookies apply for guests/members)
  *
@@ -167,7 +167,7 @@ function flosc_admin_select($key, $options, $default = '') {
  *   companion: string,
  *   chat_app: string,
  *   flow_slug: string,
- *   lessons_category: string,
+ *   content_item_category: string,
  *   include_rules: string
  * }
  */
@@ -177,9 +177,9 @@ function flosc_companion_hub_defaults_from_flow(array $flow_settings) {
     $domain = preg_replace('#^https?://#i', '', $domain);
     $domain = rtrim((string) $domain, '/');
 
-    $lessons_cat = sanitize_title((string) ($flow_settings['lessons_category'] ?? ''));
-    if ($lessons_cat === '' && !empty($flow_settings['lesson_groups']) && is_array($flow_settings['lesson_groups'])) {
-        foreach ($flow_settings['lesson_groups'] as $group) {
+    $lessons_cat = sanitize_title((string) ($flow_settings['content_item_category'] ?? ''));
+    if ($lessons_cat === '' && !empty($flow_settings['content_item_groups']) && is_array($flow_settings['content_item_groups'])) {
+        foreach ($flow_settings['content_item_groups'] as $group) {
             if (!empty($group['category'])) {
                 $lessons_cat = sanitize_title((string) $group['category']);
                 break;
@@ -248,7 +248,7 @@ function flosc_companion_hub_defaults_from_flow(array $flow_settings) {
         'companion'        => $companion,
         'chat_app'         => $chat_app,
         'flow_slug'        => $flow_slug,
-        'lessons_category' => $lessons_cat,
+        'content_item_category' => $lessons_cat,
         'include_rules'    => implode("\n", $include),
     ];
 }

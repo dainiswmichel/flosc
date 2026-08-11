@@ -26,6 +26,7 @@ $flosc_doc_topics = [
     ['id' => 'ref-quiz',             'group' => 'reference', 'title' => 'Quiz System Reference',               'status' => 'ready'],
     ['id' => 'ref-audio-quiz-flow',  'group' => 'reference', 'title' => 'Audio Quiz Flow',                     'status' => 'ready'],
     ['id' => 'ref-admin',            'group' => 'reference', 'title' => 'Admin Pages Reference',               'status' => 'ready'],
+    ['id' => 'ref-settings-fields',  'group' => 'reference', 'title' => 'Flow Settings Fields (Portable)',      'status' => 'ready'],
     ['id' => 'ref-ai',               'group' => 'reference', 'title' => 'AI & RAG Reference',                  'status' => 'pending'],
     ['id' => 'ref-ai-config',        'group' => 'reference', 'title' => 'AI Configuration Guide',               'status' => 'ready'],
     ['id' => 'ref-payments',         'group' => 'reference', 'title' => 'Payments & Offers Reference',         'status' => 'pending'],
@@ -197,6 +198,11 @@ foreach ($flosc_doc_topics as $flosc_topic) {
         <?php elseif ($flosc_doc_topic === 'ref-admin'): ?>
             <div class="flosc-doc-article flosc-doc-card">
                 <?php include FLOSC_PLUGIN_DIR . 'admin/docs/ref_admin_skeleton.php'; ?>
+            </div>
+
+        <?php elseif ($flosc_doc_topic === 'ref-settings-fields'): ?>
+            <div class="flosc-doc-article flosc-doc-card">
+                <?php include FLOSC_PLUGIN_DIR . 'admin/docs/part3-ref-settings-fields.php'; ?>
             </div>
 
         <?php elseif ($flosc_doc_topic === 'ref-ai-config'): ?>

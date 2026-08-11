@@ -12,6 +12,9 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
 $flosc_flow_settings  = $GLOBALS['flosc_current_settings'] ?? [];
 $flosc_selected_ivr   = $GLOBALS['flosc_current_ivr']      ?? '';
+$flosc_flow_key       = $GLOBALS['flosc_settings_key']     ?? '';
+$flosc_get            = wp_unslash($_GET);
+$flosc_post           = wp_unslash($_POST);
 $flosc_ivr_param      = rawurlencode( $flosc_selected_ivr );
 $flosc_base_url       = admin_url( 'admin.php?page=flosc-settings&ivr=' . $flosc_ivr_param . '&tab=' );
 $flosc_flow_docs_url  = add_query_arg([
@@ -20,6 +23,261 @@ $flosc_flow_docs_url  = add_query_arg([
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-flow';
+$flosc_flow_docs_inventory_url = add_query_arg([
+    'page' => 'flosc-settings',
+    'ivr'  => $flosc_selected_ivr,
+    'tab'  => 'documentation',
+    'doc'  => 'ref-admin',
+], admin_url('admin.php')) . '#inventory-flow-family';
+$flosc_portability_docs_url = add_query_arg([
+    'page' => 'flosc-settings',
+    'ivr'  => $flosc_selected_ivr,
+    'tab'  => 'documentation',
+    'doc'  => 'ref-admin',
+], admin_url('admin.php')) . '#tab-flow-all-flows-portability-fields';
+$flosc_flow_view = isset($flosc_get['view']) ? sanitize_key((string) $flosc_get['view']) : 'single';
+if (!in_array($flosc_flow_view, ['single', 'all'], true)) {
+    $flosc_flow_view = 'single';
+}
+$flosc_flow_single_url = add_query_arg([
+    'page' => 'flosc-settings',
+    'tab'  => 'flow',
+    'ivr'  => $flosc_selected_ivr,
+    'view' => 'single',
+], admin_url('admin.php'));
+$flosc_flow_all_url = add_query_arg([
+    'page' => 'flosc-settings',
+    'tab'  => 'flow',
+    'ivr'  => $flosc_selected_ivr,
+    'view' => 'all',
+], admin_url('admin.php'));
+
+$flosc_available_ivr_files = [];
+if ($flosc_flow_view === 'all') {
+    if (!function_exists('flosc_admin_handle_ivr_file_upload')) {
+        require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
+    }
+    flosc_admin_handle_ivr_file_upload();
+
+    if (isset($flosc_get['flosc_ivr_uploaded']) && '1' === (string) $flosc_get['flosc_ivr_uploaded']) {
+        $flosc_up_name = isset($flosc_get['ivr']) ? sanitize_file_name((string) $flosc_get['ivr']) : '';
+        add_settings_error(
+            'flosc_settings',
+            'upload_success',
+            $flosc_up_name !== ''
+                ? sprintf(
+                    /* translators: %s: IVR filename for the new flow */
+                    esc_html__('New flow ready: %s. It is selected in Switch Flow.', 'flosc'),
+                    esc_html($flosc_up_name)
+                )
+                : esc_html__('New flow ready from the uploaded IVR file.', 'flosc'),
+            'success'
+        );
+    }
+    if (isset($flosc_get['flosc_portability_done']) && '1' === (string) $flosc_get['flosc_portability_done']) {
+        $flosc_port_notice = get_transient('flosc_portability_notice_' . get_current_user_id());
+        delete_transient('flosc_portability_notice_' . get_current_user_id());
+        if (is_string($flosc_port_notice) && $flosc_port_notice !== '') {
+            add_settings_error('flosc_settings', 'portability_done', esc_html($flosc_port_notice), 'success');
+        } else {
+            add_settings_error(
+                'flosc_settings',
+                'portability_done',
+                esc_html__('Portability upload finished.', 'flosc'),
+                'success'
+            );
+        }
+    }
+
+    $flosc_ivr_dir = function_exists('flosc_data_dir') ? flosc_data_dir() : '';
+
+    if (isset($flosc_get['flosc_download_ivr']) && isset($flosc_get['_wpnonce'])) {
+        $flosc_download_file = sanitize_file_name((string) $flosc_get['flosc_download_ivr']);
+        if (wp_verify_nonce(sanitize_text_field((string) $flosc_get['_wpnonce']), 'flosc_download_ivr_' . $flosc_download_file)) {
+            if (!current_user_can('manage_options')) {
+                wp_die(esc_html__('You do not have permission to download IVR files.', 'flosc'));
+            }
+            $flosc_download_path = function_exists('flosc_resolve_ivr_file_path')
+                ? flosc_resolve_ivr_file_path($flosc_download_file)
+                : '';
+            if ($flosc_download_path !== '' && file_exists($flosc_download_path) && is_readable($flosc_download_path)) {
+                if (!function_exists('WP_Filesystem')) {
+                    require_once ABSPATH . 'wp-admin/includes/file.php';
+                }
+                global $wp_filesystem;
+                WP_Filesystem();
+                $flosc_download_content = is_object($wp_filesystem) ? $wp_filesystem->get_contents($flosc_download_path) : '';
+                if ($flosc_download_content === false) {
+                    $flosc_download_content = '';
+                }
+                $flosc_fs_dl = class_exists('FLOSC_Filesystem') ? new FLOSC_Filesystem() : null;
+                if ($flosc_fs_dl) {
+                    $flosc_fs_dl->stream_plain_download_and_exit(
+                        (string) $flosc_download_content,
+                        'text/markdown; charset=UTF-8',
+                        basename((string) $flosc_download_file)
+                    );
+                }
+                status_header(500);
+                exit;
+            }
+        }
+        add_settings_error('flosc_settings', 'download_failed', 'Could not download IVR file.', 'error');
+    }
+
+    if (isset($flosc_post['flosc_duplicate_ivr_file']) && isset($flosc_post['duplicate_ivr_file'])) {
+        check_admin_referer('flosc_duplicate_ivr_file');
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('You do not have permission to duplicate IVR files.', 'flosc'));
+        }
+
+        $flosc_source_file = basename(sanitize_file_name((string) $flosc_post['duplicate_ivr_file']));
+        $flosc_source_path = function_exists('flosc_resolve_ivr_file_path')
+            ? flosc_resolve_ivr_file_path($flosc_source_file)
+            : '';
+
+        if (!file_exists((string) $flosc_source_path)) {
+            add_settings_error('flosc_settings', 'duplicate_invalid', 'Source IVR file not found.', 'error');
+        } elseif (!function_exists('flosc_data_file_path') || !function_exists('flosc_write_data_file')) {
+            add_settings_error('flosc_settings', 'duplicate_failed', 'Uploads data directory is not available. Cannot duplicate IVR file.', 'error');
+        } else {
+            $flosc_extension = pathinfo($flosc_source_file, PATHINFO_EXTENSION);
+            $flosc_base_name = pathinfo($flosc_source_file, PATHINFO_FILENAME);
+            $flosc_duplicate_file = $flosc_base_name . '-copy.' . $flosc_extension;
+            $flosc_duplicate_path = flosc_data_file_path($flosc_duplicate_file);
+            $flosc_counter = 2;
+
+            while ('' !== $flosc_duplicate_path && file_exists($flosc_duplicate_path)) {
+                $flosc_duplicate_file = $flosc_base_name . '-copy-' . $flosc_counter . '.' . $flosc_extension;
+                $flosc_duplicate_path = flosc_data_file_path($flosc_duplicate_file);
+                $flosc_counter++;
+            }
+
+            $flosc_source_body = ('' !== $flosc_duplicate_path) ? flosc_fs_get_contents($flosc_source_path) : false;
+            if (false === $flosc_source_body || '' === $flosc_duplicate_path || !flosc_write_data_file($flosc_duplicate_path, $flosc_source_body)) {
+                add_settings_error('flosc_settings', 'duplicate_failed', 'Could not duplicate IVR file. Check file permissions or uploads availability.', 'error');
+            } else {
+                add_settings_error('flosc_settings', 'duplicate_success', 'Duplicated IVR file: ' . $flosc_duplicate_file, 'success');
+            }
+        }
+    }
+
+    // Table "Apply": merge SOURCE file into CURRENT flow (Switch Flow); do not re-point current flow to the source filename.
+    if (isset($flosc_post['flosc_import_selected_ivr_file']) && isset($flosc_post['import_ivr_file'])) {
+        check_admin_referer('flosc_import_selected_ivr_file');
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('You do not have permission to import IVR files.', 'flosc'));
+        }
+
+        $flosc_source_file = basename(sanitize_file_name((string) $flosc_post['import_ivr_file']));
+        $flosc_source_path = '';
+        if (function_exists('flosc_resolve_ivr_file_path')) {
+            $flosc_source_path = (string) flosc_resolve_ivr_file_path($flosc_source_file);
+        }
+        if ($flosc_source_path === '' && function_exists('flosc_data_file_path')) {
+            $flosc_source_path = (string) flosc_data_file_path($flosc_source_file);
+        }
+        $flosc_work_file = $flosc_selected_ivr !== '' ? $flosc_selected_ivr : $flosc_source_file;
+        $flosc_work_path = function_exists('flosc_data_file_path')
+            ? flosc_data_file_path($flosc_work_file)
+            : '';
+        $flosc_work_key = $flosc_flow_key;
+        if ($flosc_work_key === '' && $flosc_work_file !== '') {
+            $flosc_work_key = 'flosc_flow_' . sanitize_key(pathinfo($flosc_work_file, PATHINFO_FILENAME));
+        }
+
+        if ($flosc_source_path === '' || !file_exists($flosc_source_path)) {
+            add_settings_error('flosc_settings', 'import_selected_failed', 'Selected IVR file not found: ' . $flosc_source_file, 'error');
+        } elseif ($flosc_work_key === '') {
+            add_settings_error('flosc_settings', 'import_selected_failed', esc_html__('No current flow selected (Switch Flow).', 'flosc'), 'error');
+        } else {
+            $flosc_result = flosc_import_ivr_to_database(false, $flosc_source_path, $flosc_work_key, 'merge');
+            if (!empty($flosc_result['success'])) {
+                $flosc_export_ok = false;
+                if ($flosc_work_path !== '' && function_exists('flosc_auto_export_ivr_to_file')) {
+                    $flosc_export_ok = (bool) flosc_auto_export_ivr_to_file($flosc_work_key, $flosc_work_path);
+                }
+                $flosc_fs = get_option($flosc_work_key, []);
+                if (!is_array($flosc_fs)) {
+                    $flosc_fs = [];
+                }
+                // Keep current flow's own IVR filename; only ensure it is set.
+                if (empty($flosc_fs['active_ivr_file'])) {
+                    $flosc_fs['active_ivr_file'] = $flosc_work_file;
+                }
+                if (empty($flosc_fs['ivr_file'])) {
+                    $flosc_fs['ivr_file'] = $flosc_work_file;
+                }
+                update_option($flosc_work_key, $flosc_fs);
+                $GLOBALS['flosc_current_settings'] = $flosc_fs;
+                $flosc_flow_settings = $flosc_fs;
+                if ($flosc_export_ok) {
+                    add_settings_error(
+                        'flosc_settings',
+                        'import_selected_success',
+                        sprintf(
+                            /* translators: 1: source file 2: current flow file */
+                            esc_html__('Merged %1$s into current flow %2$s (settings merge; secrets unchanged).', 'flosc'),
+                            esc_html($flosc_source_file),
+                            esc_html($flosc_work_file)
+                        ),
+                        'success'
+                    );
+                } else {
+                    add_settings_error(
+                        'flosc_settings',
+                        'import_selected_partial',
+                        sprintf(
+                            /* translators: %s: current flow file */
+                            esc_html__('Merged into current flow, but file sync failed for: %s', 'flosc'),
+                            esc_html($flosc_work_file)
+                        ),
+                        'error'
+                    );
+                }
+            } else {
+                add_settings_error('flosc_settings', 'import_selected_failed', 'Import failed: ' . esc_html((string) ($flosc_result['message'] ?? 'Unknown error')), 'error');
+            }
+        }
+    }
+
+    if (isset($flosc_post['flosc_delete_ivr_file']) && isset($flosc_post['delete_ivr_file'])) {
+        check_admin_referer('flosc_delete_ivr_file');
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('You do not have permission to delete IVR files.', 'flosc'));
+        }
+
+        $flosc_delete_file = basename(sanitize_file_name((string) $flosc_post['delete_ivr_file']));
+        $flosc_delete_path = function_exists('flosc_data_file_path')
+            ? flosc_data_file_path($flosc_delete_file)
+            : '';
+
+        if ($flosc_delete_file === (string) $flosc_selected_ivr) {
+            add_settings_error('flosc_settings', 'delete_blocked_current', 'Cannot delete the currently selected flow file. Switch flow first, then delete if needed.', 'error');
+        } elseif ('' === $flosc_delete_path || !file_exists($flosc_delete_path)) {
+            add_settings_error('flosc_settings', 'delete_invalid', 'File not found or not a managed IVR file.', 'error');
+        } elseif (wp_delete_file($flosc_delete_path) === false) {
+            add_settings_error('flosc_settings', 'delete_failed', 'Failed to delete IVR file. Check file permissions.', 'error');
+        } else {
+            add_settings_error('flosc_settings', 'delete_success', 'Deleted IVR file: ' . $flosc_delete_file, 'success');
+        }
+    }
+
+    if (is_dir($flosc_ivr_dir)) {
+        $flosc_files = array_merge(
+            glob($flosc_ivr_dir . '*_ivr.md'),
+            glob($flosc_ivr_dir . 'ivr*.md')
+        );
+        $flosc_files = array_unique($flosc_files);
+        sort($flosc_files);
+        foreach ($flosc_files as $flosc_file) {
+            $flosc_filename = basename($flosc_file);
+            if (strpos($flosc_filename, 'backup') === false) {
+                $flosc_available_ivr_files[] = $flosc_filename;
+            }
+        }
+    }
+}
 
 // ── Gather live data ──────────────────────────────────────────────────────────
 
@@ -106,11 +364,11 @@ $flosc_stripe_sk   = $flosc_stripe_mode === 'live'
 $flosc_stripe_cfg  = ! empty( $flosc_flow_settings['stripe_enabled'] ) && ! empty( $flosc_stripe_sk );
 
 // C — Content: lessons + member pills + AI provider
-$flosc_lesson_groups  = $flosc_flow_settings['lesson_groups'] ?? [];
-if ( empty( $flosc_lesson_groups ) && ! empty( $flosc_flow_settings['lessons_category'] ) ) {
-    $flosc_lesson_groups = [ [ 'category' => $flosc_flow_settings['lessons_category'] ] ];
+$flosc_content_item_groups  = $flosc_flow_settings['content_item_groups'] ?? [];
+if ( empty( $flosc_content_item_groups ) && ! empty( $flosc_flow_settings['content_item_category'] ) ) {
+    $flosc_content_item_groups = [ [ 'category' => $flosc_flow_settings['content_item_category'] ] ];
 }
-$flosc_lesson_count  = count( $flosc_lesson_groups );
+$flosc_lesson_count  = count( $flosc_content_item_groups );
 $flosc_lessons_label = $flosc_lesson_count ? $flosc_lesson_count . ' lesson group' . ( $flosc_lesson_count !== 1 ? 's' : '' ) : 'Not configured';
 
 $flosc_member_pills  = count( $flosc_flow_settings['autoprompts']['member'] ?? [] ) + $flosc_ivr_pill_counts['content'];
@@ -278,8 +536,21 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
         <h2 class="flosc-flow-overview-title">
             <span>🗺 FLOSC Flow Overview</span>
             <a href="<?php echo esc_url($flosc_flow_docs_url); ?>" class="flosc-docs-link">Docs</a>
+            <a href="<?php echo esc_url($flosc_flow_docs_inventory_url); ?>" class="flosc-docs-link">Parameter Docs</a>
         </h2>
         <p class="flosc-flow-overview-summary">Read-only snapshot of the five flow phases for <strong><?php echo esc_html( $flosc_selected_ivr ?: 'this flow' ); ?></strong>. Click any Edit button to jump to that tab.</p>
+
+        <div class="flosc-view-toggle-row">
+            <a href="<?php echo esc_url($flosc_flow_single_url); ?>" class="button <?php echo esc_attr($flosc_flow_view === 'single' ? 'button-primary' : ''); ?>"><?php echo esc_html__('Overview', 'flosc'); ?></a>
+            <a href="<?php echo esc_url($flosc_flow_all_url); ?>" class="button <?php echo esc_attr($flosc_flow_view === 'all' ? 'button-primary' : ''); ?>"><?php echo esc_html__('Portability', 'flosc'); ?></a>
+        </div>
+        <p class="description flosc-flow-view-hint">
+            <?php if ($flosc_flow_view === 'all') : ?>
+                <?php echo esc_html__('Portability: manage all flow files. Apply always targets the current flow in Switch Flow above.', 'flosc'); ?>
+            <?php else : ?>
+                <?php echo esc_html__('Overview: phase snapshot for the current flow selected in Switch Flow.', 'flosc'); ?>
+            <?php endif; ?>
+        </p>
     </div>
 
     <?php
@@ -398,7 +669,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 
     echo '<div class="flosc-flow-diagnostics">';
     echo '<div id="' . esc_attr( $flosc_diagnostics_start ) . '" class="flosc-flow-diagnostics__anchor"></div>';
-    echo '<h3 class="flosc-flow-diagnostics__title">Diagnostics</h3>';
+    echo '<h3 class="flosc-flow-diagnostics__title">Diagnostics <a href="' . esc_url( $flosc_flow_docs_url ) . '" class="flosc-docs-link">Docs</a></h3>';
     echo '<p class="flosc-flow-diagnostics__hashes">Open <code>#' . esc_html( $flosc_diagnostics_start ) . '</code> to jump here, and <code>#' . esc_html( $flosc_diagnostics_end ) . '</code> to jump past the diagnostics block.</p>';
     echo '<ul class="flosc-flow-diagnostics__list">';
     echo '<li><strong>Flow:</strong> ' . esc_html( $flosc_diagnostics_flow_label ) . ' <code>' . esc_html( $flosc_selected_ivr ?: '(no IVR selected)' ) . '</code></li>';
@@ -409,6 +680,305 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
     echo '<div id="' . esc_attr( $flosc_diagnostics_end ) . '" class="flosc-flow-diagnostics__anchor"></div>';
     echo '</div>';
     ?>
+
+    <?php if ($flosc_flow_view === 'all'): ?>
+    <div class="flosc-info-box flosc-ivr-info-box">
+        <h3 class="flosc-flow-portability-title">
+            <span><?php echo esc_html__('Flow Portability', 'flosc'); ?></span>
+            <a href="<?php echo esc_url($flosc_portability_docs_url); ?>" class="flosc-docs-link"><?php echo esc_html__('Docs', 'flosc'); ?></a>
+        </h3>
+        <p class="flosc-ivr-info-box__lead">
+            <?php echo esc_html__('Manage all flow files here. Drop an .md (IVR + Settings YAML) and optionally a .tsv (DA1) together. Choose Create new flow or Apply to current flow.', 'flosc'); ?>
+        </p>
+
+        <div class="flosc-flow-portability-target">
+            <div class="flosc-flow-portability-target__line">
+                <strong><?php echo esc_html__('Current flow (Apply target):', 'flosc'); ?></strong>
+                <code><?php echo esc_html($flosc_selected_ivr ?: '(none — use Switch Flow)'); ?></code>
+            </div>
+            <p class="flosc-flow-portability-target__hint">
+                <?php echo esc_html__('Switch Flow above picks the current flow. Create always makes a new flow. Apply merges file values into the current flow; other settings stay. Secrets never come from files.', 'flosc'); ?>
+            </p>
+        </div>
+
+        <ul class="flosc-flow-portability-checklist">
+            <li><strong><?php echo esc_html__('IVR + Settings YAML (.md):', 'flosc'); ?></strong> <?php echo esc_html__('Create or Apply from drop zone (or Apply from the file table).', 'flosc'); ?></li>
+            <li><strong><?php echo esc_html__('DA1 (.tsv):', 'flosc'); ?></strong> <?php echo esc_html__('Optional; up to 10 per drop, each added to the flow’s catalog list (confirm if more than 5).', 'flosc'); ?></li>
+            <li><strong><?php echo esc_html__('Content posts:', 'flosc'); ?></strong> <?php echo esc_html__('WXR via Tools → Import (not this drop zone).', 'flosc'); ?>
+                <a href="<?php echo esc_url($flosc_base_url . 'content'); ?>"><?php echo esc_html__('Content tab', 'flosc'); ?></a>
+            </li>
+            <li><strong><?php echo esc_html__('DA1 tab:', 'flosc'); ?></strong>
+                <a href="<?php echo esc_url($flosc_base_url . 'da1'); ?>"><?php echo esc_html__('Open DA1', 'flosc'); ?></a>
+                <?php echo esc_html__('for catalog editing after upload.', 'flosc'); ?>
+            </li>
+        </ul>
+
+        <form method="post" action="<?php echo esc_url($flosc_flow_all_url); ?>" enctype="multipart/form-data" class="flosc-ivr-upload-form flosc-portability-kit-form" id="flosc-ivr-dropzone-upload-form">
+            <?php wp_nonce_field('flosc_portability_kit'); ?>
+            <input type="hidden" name="flosc_upload_redirect_tab" value="flow">
+            <input type="hidden" name="flosc_upload_redirect_view" value="all">
+            <input type="hidden" name="flosc_working_ivr" value="<?php echo esc_attr($flosc_selected_ivr); ?>">
+
+            <div class="flosc-ivr-dropzone flosc-ivr-dropzone--kit" id="flosc-ivr-dropzone" tabindex="0" role="button" aria-label="<?php echo esc_attr__('Drop .md and optional .tsv files here', 'flosc'); ?>">
+                <input type="file" name="flosc_kit_files[]" id="flosc-ivr-file-input" class="flosc-ivr-dropzone__input" accept=".md,.tsv,text/markdown,text/plain,text/tab-separated-values" multiple>
+                <div class="flosc-ivr-dropzone__ui">
+                    <strong class="flosc-ivr-dropzone__title"><?php echo esc_html__('Drop flow file(s) here', 'flosc'); ?></strong>
+                    <span class="flosc-ivr-dropzone__hint"><?php echo esc_html__('Drop one .md (+ optional .tsv) to create a new flow. Or use the buttons below.', 'flosc'); ?></span>
+                    <span class="flosc-ivr-dropzone__file" id="flosc-ivr-dropzone-filename" hidden></span>
+                </div>
+            </div>
+
+            <div class="flosc-flow-portability-actions-row">
+                <button type="submit" name="flosc_portability_submit" value="create" class="button button-primary flosc-flow-portability-primary-btn" id="flosc-portability-btn-create">
+                    <?php echo esc_html__('Create new flow', 'flosc'); ?>
+                </button>
+                <button type="submit" name="flosc_portability_submit" value="apply" class="button flosc-flow-portability-primary-btn" id="flosc-portability-btn-apply" <?php disabled($flosc_selected_ivr === ''); ?>>
+                    <?php echo esc_html__('Apply to current flow', 'flosc'); ?>
+                </button>
+            </div>
+            <p class="description">
+                <?php echo esc_html__('Create = clean slate from the .md. Apply = merge into the current flow (other settings stay). One .md max; up to 10 .tsv per drop (each added to the flow’s catalog list). More than 10 catalogs: use the DA1 tab.', 'flosc'); ?>
+            </p>
+        </form>
+
+        <div class="flosc-ivr-file-actions flosc-ivr-file-actions--table-toolbar">
+            <strong><?php echo esc_html__('Managed flow files', 'flosc'); ?></strong>
+            <a href="<?php echo esc_url($flosc_flow_all_url); ?>" class="button button-small"><?php echo esc_html__('Refresh list', 'flosc'); ?></a>
+        </div>
+
+        <table class="widefat striped flosc-ivr-file-table">
+            <thead>
+                <tr>
+                    <th><?php echo esc_html__('File', 'flosc'); ?></th>
+                    <th class="flosc-ivr-col-status"><?php echo esc_html__('Status', 'flosc'); ?></th>
+                    <th class="flosc-ivr-col-actions"><?php echo esc_html__('Actions', 'flosc'); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ($flosc_available_ivr_files as $flosc_ivr_filename):
+                $flosc_is_active_row = ($flosc_ivr_filename === $flosc_selected_ivr);
+                $flosc_edit_url = esc_url(admin_url('admin.php?page=flosc-settings&tab=ivr-messages&ivr=' . rawurlencode($flosc_ivr_filename) . '&view=single'));
+                $flosc_download_url = wp_nonce_url(
+                    esc_url(add_query_arg([
+                        'page' => 'flosc-settings',
+                        'tab' => 'flow',
+                        'ivr' => $flosc_selected_ivr,
+                        'view' => 'all',
+                        'flosc_download_ivr' => $flosc_ivr_filename,
+                    ], admin_url('admin.php'))),
+                    'flosc_download_ivr_' . $flosc_ivr_filename
+                );
+            ?>
+                <tr class="<?php echo esc_attr($flosc_is_active_row ? 'flosc-ivr-row--active' : ''); ?>">
+                    <td><code><?php echo esc_html($flosc_ivr_filename); ?></code></td>
+                    <td><?php echo esc_html($flosc_is_active_row ? __('Current flow', 'flosc') : __('Managed', 'flosc')); ?></td>
+                    <td>
+                        <div class="flosc-ivr-file-action-group">
+                            <a href="<?php echo esc_url($flosc_edit_url); ?>" class="button button-small"><?php echo esc_html__('Edit', 'flosc'); ?></a>
+                            <a href="<?php echo esc_url($flosc_download_url); ?>" class="button button-small"><?php echo esc_html__('Download', 'flosc'); ?></a>
+                            <form method="post" action="<?php echo esc_url($flosc_flow_all_url); ?>" class="flosc-ivr-inline-form">
+                                <?php wp_nonce_field('flosc_duplicate_ivr_file'); ?>
+                                <input type="hidden" name="duplicate_ivr_file" value="<?php echo esc_attr($flosc_ivr_filename); ?>">
+                                <button type="submit" name="flosc_duplicate_ivr_file" class="button button-small"><?php echo esc_html__('Duplicate', 'flosc'); ?></button>
+                            </form>
+                            <form method="post" action="<?php echo esc_url($flosc_flow_all_url); ?>" class="flosc-ivr-inline-form">
+                                <?php wp_nonce_field('flosc_import_selected_ivr_file'); ?>
+                                <input type="hidden" name="import_ivr_file" value="<?php echo esc_attr($flosc_ivr_filename); ?>">
+                                <button type="submit" name="flosc_import_selected_ivr_file" class="button button-small" title="<?php echo esc_attr__('Merge this file into the current flow', 'flosc'); ?>"><?php echo esc_html__('Apply', 'flosc'); ?></button>
+                            </form>
+                            <form method="post" action="<?php echo esc_url($flosc_flow_all_url); ?>" class="flosc-ivr-inline-form flosc-ivr-inline-form--warn" data-confirm-message="<?php echo esc_attr(sprintf(/* translators: %s filename */ __('Delete IVR file %s? This cannot be undone from this panel.', 'flosc'), $flosc_ivr_filename)); ?>">
+                                <?php wp_nonce_field('flosc_delete_ivr_file'); ?>
+                                <input type="hidden" name="delete_ivr_file" value="<?php echo esc_attr($flosc_ivr_filename); ?>">
+                                <button type="submit" name="flosc_delete_ivr_file" class="button button-small"><?php echo esc_html__('Delete', 'flosc'); ?></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <p class="description flosc-flow-portability-actions-help">
+            <?php echo esc_html__('Table Apply: merge that managed file into the current flow (same merge rules as the drop zone).', 'flosc'); ?>
+        </p>
+    </div>
+
+    <?php ob_start(); ?>
+    (function () {
+        var form = document.getElementById('flosc-ivr-dropzone-upload-form');
+        var zone = document.getElementById('flosc-ivr-dropzone');
+        var input = document.getElementById('flosc-ivr-file-input');
+        var nameEl = document.getElementById('flosc-ivr-dropzone-filename');
+        var btnCreate = document.getElementById('flosc-portability-btn-create');
+        var btnApply = document.getElementById('flosc-portability-btn-apply');
+        if (!form || !zone || !input) {
+            return;
+        }
+        function showNames(fileList) {
+            if (!nameEl) {
+                return;
+            }
+            var names = [];
+            for (var i = 0; i < fileList.length; i++) {
+                names.push(fileList[i].name);
+            }
+            if (names.length) {
+                nameEl.hidden = false;
+                nameEl.textContent = names.join(', ');
+                zone.classList.add('is-has-file');
+            } else {
+                nameEl.hidden = true;
+                nameEl.textContent = '';
+                zone.classList.remove('is-has-file');
+            }
+        }
+        function acceptFiles(fileList) {
+            if (!fileList || !fileList.length) {
+                return;
+            }
+            var maxTsv = 10;
+            var mdFiles = [];
+            var tsvFiles = [];
+            for (var i = 0; i < fileList.length; i++) {
+                var lower = (fileList[i].name || '').toLowerCase();
+                if (lower.slice(-3) === '.md') {
+                    mdFiles.push(fileList[i]);
+                } else if (lower.slice(-4) === '.tsv') {
+                    tsvFiles.push(fileList[i]);
+                }
+            }
+            if (!mdFiles.length && !tsvFiles.length) {
+                window.alert('Use one .md (flow) and/or .tsv (DA1) catalog files.');
+                return;
+            }
+            if (mdFiles.length > 1) {
+                window.alert('Only one .md flow file per upload — never two .md files.');
+                return;
+            }
+            if (tsvFiles.length > maxTsv) {
+                window.alert('At most ' + maxTsv + ' DA1 .tsv catalogs per upload. Use the DA1 tab for larger bulk work.');
+                return;
+            }
+            if (tsvFiles.length > 5) {
+                if (!window.confirm('Upload ' + tsvFiles.length + ' DA1 catalogs to this flow?')) {
+                    return;
+                }
+            }
+            var ok = mdFiles.concat(tsvFiles);
+            try {
+                var dt = new DataTransfer();
+                ok.forEach(function (f) { dt.items.add(f); });
+                input.files = dt.files;
+                showNames(input.files);
+            } catch (e) {
+                showNames(ok);
+            }
+            // Drop is the action: one .md → Create new flow immediately (optional .tsv rides along).
+            // TSV-only still needs Apply (targets current flow).
+            if (mdFiles.length === 1 && btnCreate) {
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit(btnCreate);
+                } else {
+                    btnCreate.click();
+                }
+            }
+        }
+        function onDrag(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        ['dragenter', 'dragover'].forEach(function (ev) {
+            zone.addEventListener(ev, function (e) {
+                onDrag(e);
+                zone.classList.add('is-dragover');
+            });
+        });
+        ['dragleave', 'drop'].forEach(function (ev) {
+            zone.addEventListener(ev, function (e) {
+                onDrag(e);
+                zone.classList.remove('is-dragover');
+            });
+        });
+        zone.addEventListener('drop', function (e) {
+            var files = e.dataTransfer && e.dataTransfer.files;
+            if (files && files.length) {
+                acceptFiles(files);
+            }
+        });
+        zone.addEventListener('click', function () {
+            input.click();
+        });
+        zone.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                input.click();
+            }
+        });
+        input.addEventListener('click', function (e) {
+            e.stopPropagation();
+        });
+        input.addEventListener('change', function () {
+            if (input.files && input.files.length) {
+                showNames(input.files);
+            }
+        });
+
+        form.addEventListener('submit', function (e) {
+            var submitter = e.submitter || document.activeElement;
+            var act = (submitter && submitter.value) ? String(submitter.value) : 'create';
+            if (act !== 'create' && act !== 'apply') {
+                act = 'create';
+            }
+            if (act === 'apply' && btnApply && btnApply.disabled) {
+                e.preventDefault();
+                window.alert('Select a current flow in Switch Flow first.');
+                return;
+            }
+            var mdCount = 0;
+            var tsvCount = 0;
+            var maxTsv = 10;
+            if (input.files) {
+                for (var i = 0; i < input.files.length; i++) {
+                    var n = (input.files[i].name || '').toLowerCase();
+                    if (n.slice(-3) === '.md') { mdCount++; }
+                    if (n.slice(-4) === '.tsv') { tsvCount++; }
+                }
+            }
+            if (mdCount > 1) {
+                e.preventDefault();
+                window.alert('Only one .md flow file per upload — never two .md files.');
+                return;
+            }
+            if (tsvCount > maxTsv) {
+                e.preventDefault();
+                window.alert('At most ' + maxTsv + ' DA1 .tsv catalogs per upload.');
+                return;
+            }
+            if (tsvCount > 5 && !window.confirm('Upload ' + tsvCount + ' DA1 catalogs?')) {
+                e.preventDefault();
+                return;
+            }
+            if (act === 'create' && mdCount < 1) {
+                e.preventDefault();
+                window.alert('Create new flow needs one .md file (optional .tsv catalogs with it).');
+                return;
+            }
+            if (btnCreate) { btnCreate.disabled = true; }
+            if (btnApply) { btnApply.disabled = true; }
+        });
+
+        document.addEventListener('submit', function (event) {
+            var formEl = event.target.closest('form[data-confirm-message]');
+            if (!formEl) {
+                return;
+            }
+            if (!window.confirm(formEl.dataset.confirmMessage || 'Are you sure?')) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+        });
+    })();
+    <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
+    <?php endif; ?>
 
 </div>
 <?php flosc_tab_footer(); ?>

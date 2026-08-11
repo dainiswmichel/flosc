@@ -1095,8 +1095,6 @@ flosc_tab_header('💬', 'IVR Management');
     <a href="<?php echo esc_url($flosc_ivr_docs_url); ?>" class="flosc-docs-link">Docs</a>
 </div>
 
-</form>
-
 <!-- IVR System Status Panel -->
 <div class="flosc-diagnostics-panel flosc-ivr-panel">
     <h3 class="flosc-ivr-panel__title">

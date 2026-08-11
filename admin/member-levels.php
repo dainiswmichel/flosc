@@ -8,7 +8,7 @@
  * Sections:
  * 1. Level Registry — admin defines level slugs + display names
  * 2. Content Protection — assign categories, tags, posts, pages to levels
- * 3. Guest Access — free lessons, access duration, max chats / management
+ * 3. Guest Access — freeline count/mode, access duration, max chats / management
  *
  * Extracted from Lessons tab (v8.0.0 → v8.1.0) where content protection
  * and guest access were previously mixed with lesson group configuration.
@@ -199,11 +199,11 @@ $flosc_protected_items = $flosc_flow_settings['protected_content'] ?? [];
 </p>
 
 <?php
-// ─── 3. Guest Access, Free Lessons & Chats ──────────────────────────────────
+// ─── 3. Guest Access, Freeline & Chats ──────────────────────────────────────
 
-$flosc_free_lesson_mode       = $flosc_flow_settings['free_lesson_mode']       ?? 'fixed';
-$flosc_free_lesson_count      = $flosc_flow_settings['free_lesson_count']      ?? 1;
-$flosc_free_lesson_proportion = $flosc_flow_settings['free_lesson_proportion'] ?? '1/3';
+$flosc_free_content_item_mode       = $flosc_flow_settings['free_content_item_mode']       ?? 'fixed';
+$flosc_free_content_item_count      = $flosc_flow_settings['free_content_item_count']      ?? 1;
+$flosc_free_content_item_proportion = $flosc_flow_settings['free_content_item_proportion'] ?? '1/3';
 $flosc_guest_access_days      = $flosc_flow_settings['guest_access_days']      ?? 0;
 $flosc_guest_max_chats        = isset( $flosc_flow_settings['guest_max_chats'] )
 	? max( 0, intval( $flosc_flow_settings['guest_max_chats'] ) )
@@ -226,38 +226,38 @@ $flosc_chat_list_settings_url = add_query_arg(
 ?>
 
 <hr class="flosc-member-levels-divider">
-<h2>Guest Access, Free Lessons &amp; Chats</h2>
-<p>Configure free lessons, access duration, and how many saved chats guests may keep (a taste of membership). Visitors never get multi-chat management — only guests and members do.</p>
+<h2>Guest Access, Freeline &amp; Chats</h2>
+<p>Configure freeline item count, guest access duration, and how many saved chats guests may keep (a taste of membership). Visitors never get multi-chat management — only guests and members do. Primary freeline pool / exclude controls live on the Content tab.</p>
 
 <table class="form-table">
     <tr>
-        <th scope="row"><label for="flow_free_lesson_mode">Free Lesson Mode</label></th>
+        <th scope="row"><label for="flow_free_content_item_mode">Freeline selection mode</label></th>
         <td>
-            <select name="flow_free_lesson_mode" id="flow_free_lesson_mode">
-                <option value="fixed" <?php selected( $flosc_free_lesson_mode, 'fixed' ); ?>>Fixed Number</option>
-                <option value="proportion" <?php selected( $flosc_free_lesson_mode, 'proportion' ); ?>>Proportion of Missed</option>
+            <select name="flow_free_content_item_mode" id="flow_free_content_item_mode">
+                <option value="fixed" <?php selected( $flosc_free_content_item_mode, 'fixed' ); ?>>Fixed Number</option>
+                <option value="proportion" <?php selected( $flosc_free_content_item_mode, 'proportion' ); ?>>Proportion of Missed</option>
             </select>
-            <p class="description">How to calculate how many free lessons guests receive.</p>
+            <p class="description">How to calculate how many freeline content items guests receive.</p>
         </td>
     </tr>
-    <tr id="flow_free_lesson_count_row">
-        <th scope="row"><label for="flow_free_lesson_count">Free Lesson Count</label></th>
+    <tr id="flow_free_content_item_count_row">
+        <th scope="row"><label for="flow_free_content_item_count">Guest selection count</label></th>
         <td>
-            <input type="number" id="flow_free_lesson_count" name="flow_free_lesson_count" 
-                   value="<?php echo esc_attr( $flosc_free_lesson_count ); ?>" min="1" max="50" class="small-text">
-            <p class="description">Number of free lessons to give guests. (For "Fixed Number" mode)</p>
+            <input type="number" id="flow_free_content_item_count" name="flow_free_content_item_count" 
+                   value="<?php echo esc_attr( $flosc_free_content_item_count ); ?>" min="1" max="50" class="small-text">
+            <p class="description">Number of freeline items for guests (Fixed Number mode). Same setting as Content → Guest selection count.</p>
         </td>
     </tr>
-    <tr id="flow_free_lesson_proportion_row">
-        <th scope="row"><label for="flow_free_lesson_proportion">Free Lesson Proportion</label></th>
+    <tr id="flow_free_content_item_proportion_row">
+        <th scope="row"><label for="flow_free_content_item_proportion">Proportion of missed</label></th>
         <td>
-            <select name="flow_free_lesson_proportion" id="flow_free_lesson_proportion">
-                <option value="1/5" <?php selected( $flosc_free_lesson_proportion, '1/5' ); ?>>1/5 of missed lessons</option>
-                <option value="1/4" <?php selected( $flosc_free_lesson_proportion, '1/4' ); ?>>1/4 of missed lessons</option>
-                <option value="1/3" <?php selected( $flosc_free_lesson_proportion, '1/3' ); ?>>1/3 of missed lessons</option>
-                <option value="1/2" <?php selected( $flosc_free_lesson_proportion, '1/2' ); ?>>1/2 of missed lessons</option>
+            <select name="flow_free_content_item_proportion" id="flow_free_content_item_proportion">
+                <option value="1/5" <?php selected( $flosc_free_content_item_proportion, '1/5' ); ?>>1/5 of missed items</option>
+                <option value="1/4" <?php selected( $flosc_free_content_item_proportion, '1/4' ); ?>>1/4 of missed items</option>
+                <option value="1/3" <?php selected( $flosc_free_content_item_proportion, '1/3' ); ?>>1/3 of missed items</option>
+                <option value="1/2" <?php selected( $flosc_free_content_item_proportion, '1/2' ); ?>>1/2 of missed items</option>
             </select>
-            <p class="description">Proportion of missed quiz items to give as free lessons. (For "Proportion" mode)</p>
+            <p class="description">Proportion of missed quiz items to grant as freeline (Proportion mode).</p>
         </td>
     </tr>
     <tr>
@@ -265,7 +265,7 @@ $flosc_chat_list_settings_url = add_query_arg(
         <td>
             <input type="number" id="flow_guest_access_days" name="flow_guest_access_days" 
                    value="<?php echo esc_attr( $flosc_guest_access_days ); ?>" min="0" max="365" class="small-text"> days
-            <p class="description">How long guests can access their free lessons. Set to 0 for unlimited access.</p>
+            <p class="description">How long guests can access freeline items. Set to 0 for unlimited access.</p>
         </td>
     </tr>
     <tr>
@@ -420,16 +420,16 @@ jQuery(document).ready(function($) {
     // ─── Free lesson mode toggle ────────────────────────────────────
 
     function toggleFreeLessonFields() {
-        var mode = $('#flow_free_lesson_mode').val();
+        var mode = $('#flow_free_content_item_mode').val();
         if (mode === 'fixed') {
-            $('#flow_free_lesson_count_row').show();
-            $('#flow_free_lesson_proportion_row').hide();
+            $('#flow_free_content_item_count_row').show();
+            $('#flow_free_content_item_proportion_row').hide();
         } else {
-            $('#flow_free_lesson_count_row').hide();
-            $('#flow_free_lesson_proportion_row').show();
+            $('#flow_free_content_item_count_row').hide();
+            $('#flow_free_content_item_proportion_row').show();
         }
     }
     toggleFreeLessonFields();
-    $('#flow_free_lesson_mode').on('change', toggleFreeLessonFields);
+    $('#flow_free_content_item_mode').on('change', toggleFreeLessonFields);
 });
 <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>

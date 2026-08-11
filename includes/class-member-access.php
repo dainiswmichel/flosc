@@ -539,17 +539,17 @@ class FLOSC_Member_Access {
      * @param int $missed_count Number of missed quiz items
      * @return int Number of free lessons to grant
      */
-    public function calculate_free_lesson_count($missed_count) {
+    public function calculate_free_content_item_count($missed_count) {
         // v1.5.4: Read from per-flow settings via flow manager
         $flow_manager = FLOSC_Flow_Manager::instance();
-        $mode = $flow_manager->get_setting('flosc_free_lesson_mode', 'lessons', 'free_lesson_mode', 'fixed');
+        $mode = $flow_manager->get_setting('flosc_free_content_item_mode', 'lessons', 'free_content_item_mode', 'fixed');
 
         if ($mode === 'fixed') {
-            return intval($flow_manager->get_setting('flosc_free_lesson_count', 'lessons', 'free_lesson_count', 1));
+            return intval($flow_manager->get_setting('flosc_free_content_item_count', 'lessons', 'free_content_item_count', 1));
         }
 
         // Proportion mode
-        $proportion = $flow_manager->get_setting('flosc_free_lesson_proportion', 'lessons', 'free_lesson_proportion', '1/3');
+        $proportion = $flow_manager->get_setting('flosc_free_content_item_proportion', 'lessons', 'free_content_item_proportion', '1/3');
         $parts = explode('/', $proportion);
         
         if (count($parts) === 2) {
@@ -577,7 +577,7 @@ class FLOSC_Member_Access {
             return [];
         }
         
-        $count = $this->calculate_free_lesson_count(count($missed_post_ids));
+        $count = $this->calculate_free_content_item_count(count($missed_post_ids));
         
         // Shuffle and pick random lessons
         shuffle($missed_post_ids);

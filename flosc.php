@@ -308,6 +308,7 @@ function flosc_shipped_flow_display_name($ivr_filename_or_stem) {
     return $map[$stem] ?? '';
 }
 
+require_once FLOSC_PLUGIN_DIR . 'includes/content-item/flosc-content-item-keys.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-rest.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-admin.php';
 require_once FLOSC_PLUGIN_DIR . 'admin/settings-helper.php';
@@ -944,7 +945,7 @@ class FLOSC_Framework {
         require_once FLOSC_PLUGIN_DIR . 'includes/class-content-filter.php';
         require_once FLOSC_PLUGIN_DIR . 'includes/class-rag-manager.php';
         require_once FLOSC_PLUGIN_DIR . 'includes/class-access-validator.php'; // v9.1.7
-        require_once FLOSC_PLUGIN_DIR . 'includes/class-free-lesson-manager.php'; // v9.1.8
+        require_once FLOSC_PLUGIN_DIR . 'includes/class-free-content-item-manager.php'; // v9.1.8
         require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php'; // v9.1.8
         require_once FLOSC_PLUGIN_DIR . 'includes/class-content-protection.php'; // v1.0.1 - visibility tiers
         require_once FLOSC_PLUGIN_DIR . 'includes/class-bridge-data-manager.php'; // v1.0.2 - quiz state tracking
@@ -988,7 +989,7 @@ class FLOSC_Framework {
         $this->rag_manager = FLOSC_RAG_Manager::instance();
         
         // Initialize v9.1.8 systems
-        $this->free_lesson_manager = FLOSC_Free_Lesson_Manager::instance();
+        $this->free_lesson_manager = FLOSC_Free_Content_Item_Manager::instance();
         $this->member_access = FLOSC_Member_Access::instance();
         
         // Initialize SSO system (v1.4.0)
@@ -1415,7 +1416,7 @@ The Team',
         // Create "Default FLOSC Lessons" category
         $cat_id = wp_create_category('Default FLOSC Lessons');
         if ($cat_id && !is_wp_error($cat_id)) {
-            update_option('flosc_lessons_category', $cat_id);
+            update_option('flosc_content_item_category', $cat_id);
 
             // Auto-protect the category (hide from public by default)
             update_term_meta($cat_id, '_flosc_protected', 'yes');
@@ -1918,9 +1919,9 @@ The Team',
         // (instance content — not a hard-coded product brand).
         $category = '';
         if (function_exists('flosc_get_setting')) {
-            $category = sanitize_title((string) flosc_get_setting('lessons_category', ''));
+            $category = sanitize_title((string) flosc_get_setting('content_item_category', ''));
             if ($category === '') {
-                $category = sanitize_title((string) flosc_get_setting('free_lesson_pool_category', ''));
+                $category = sanitize_title((string) flosc_get_setting('free_content_item_pool_category', ''));
             }
         }
         if ($category === '') {
@@ -1973,9 +1974,9 @@ The Team',
         // Category: flow setting first, then legacy product slug so existing installs keep working.
         $category = '';
         if (function_exists('flosc_get_setting')) {
-            $category = sanitize_title((string) flosc_get_setting('lessons_category', ''));
+            $category = sanitize_title((string) flosc_get_setting('content_item_category', ''));
             if ($category === '') {
-                $category = sanitize_title((string) flosc_get_setting('free_lesson_pool_category', ''));
+                $category = sanitize_title((string) flosc_get_setting('free_content_item_pool_category', ''));
             }
         }
         if ($category === '') {
@@ -3221,11 +3222,17 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
      * @return mixed The setting value
      */
     public function get_setting($key, $default = '', $flow_id = null) {
+        if (function_exists('flosc_content_item_canonical_option_key')) {
+            $key = flosc_content_item_canonical_option_key($key);
+        }
         // Get flow context
         if ($flow_id !== null) {
             $flow = flosc_flows()->get_flow($flow_id);
         } else {
             $flow = $this->get_current_flow();
+        }
+        if (is_array($flow) && function_exists('flosc_normalize_content_item_flow_settings')) {
+            $flow = flosc_normalize_content_item_flow_settings($flow);
         }
         
         // Check flow-specific value first
@@ -3233,8 +3240,22 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
             return $flow[$key];
         }
         
-        // Fallback to global wp_option
-        return get_option('flosc_' . $key, $default);
+        // Fallback to global wp_option (canonical then legacy)
+        $val = get_option('flosc_' . $key, null);
+        if ($val !== null && $val !== false && $val !== '') {
+            return $val;
+        }
+        if (function_exists('flosc_content_item_option_key_map')) {
+            $map = flosc_content_item_option_key_map();
+            $old = $map[$key] ?? '';
+            if ($old !== '') {
+                $legacy = get_option('flosc_' . $old, null);
+                if ($legacy !== null && $legacy !== false && $legacy !== '') {
+                    return $legacy;
+                }
+            }
+        }
+        return $default;
     }
     
     public function is_flosc_request() {
@@ -3360,7 +3381,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
             }
 
             // Free lesson delivered
-            $free_lesson_delivered = get_user_meta($user->ID, '_flosc_free_lesson_delivered', true);
+            $free_lesson_delivered = get_user_meta($user->ID, '_flosc_free_content_item_delivered', true);
             $context['free_lesson_delivered'] = $free_lesson_delivered ? 'Yes' : 'No';
 
             // Membership / full access (authoritative). can_access('full') → is_member.
@@ -3441,7 +3462,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
         }
 
         // Frontend: if (this.user?.freeLessonDelivered) return 'offer';
-        $free_lesson_delivered = get_user_meta($user_id, '_flosc_free_lesson_delivered', true);
+        $free_lesson_delivered = get_user_meta($user_id, '_flosc_free_content_item_delivered', true);
         if ($free_lesson_delivered) {
             return 'offer';
         }
@@ -4110,8 +4131,8 @@ You are a GUIDE, not a teacher. Your job is to:
         $output .= "  - Member Levels: " . (empty($member_levels) ? '_none_' : implode(', ', $member_levels)) . "\n";
 
         // Free lesson
-        $free_lesson_delivered = get_user_meta($user_id, '_flosc_free_lesson_delivered', true);
-        $free_lesson_num = get_user_meta($user_id, '_flosc_free_lesson_number', true);
+        $free_lesson_delivered = get_user_meta($user_id, '_flosc_free_content_item_delivered', true);
+        $free_lesson_num = get_user_meta($user_id, '_flosc_free_content_item_number', true);
         $output .= "  - Free Lesson Delivered: " . ($free_lesson_delivered ? "Yes ({$free_lesson_delivered})" : 'No') . "\n";
         if ($free_lesson_num) {
             $output .= "  - Free Lesson Number: {$free_lesson_num}\n";
@@ -4718,7 +4739,7 @@ Example good response:
             // v1.0.5 TASK-101/102: Build quiz result and fire flosc_quiz_completed action
             // This triggers both Bridge Data Manager AND Free Lesson Manager
             // v3.0.0: quiz_id is critical — Free Lesson Manager uses it to resolve
-            // the correct lesson category via the flow's lesson_groups config.
+            // the correct lesson category via the flow's content_item_groups config.
             $quiz_result = [
                 'quiz_id' => $quiz_id,
                 'score' => $score,
@@ -4732,7 +4753,7 @@ Example good response:
             // Parse answers to determine correct/incorrect
             // NOTE: This is a generic fallback. Quiz types with their own grade() method
             // produce structured incorrect/missed arrays that the Free Lesson Manager
-            // checks first (see get_missed_lessons() in class-free-lesson-manager.php).
+            // checks first (see get_missed_lessons() in class-free-content-item-manager.php).
             $user_nums = array_filter(array_map('trim', is_array($answers) ? $answers : explode(',', $answers)), 'is_numeric');
             $expected_nums = ['1','2','3','4','5','6','7','8','9','10'];
             foreach ($expected_nums as $num) {
@@ -4745,8 +4766,8 @@ Example good response:
             
             // Fire the action — this triggers:
             // 1. FLOSC_Bridge_Data_Manager::handle_quiz_completion() — creates bridge data
-            // 2. FLOSC_Free_Lesson_Manager::handle_quiz_completion() — offers free lesson if score < 100
-            //    v3.0.0: Uses quiz_id to resolve category from lesson_groups
+            // 2. FLOSC_Free_Content_Item_Manager::handle_quiz_completion() — offers free lesson if score < 100
+            //    v3.0.0: Uses quiz_id to resolve category from content_item_groups
             do_action('flosc_quiz_completed', $quiz_result, $user_id);
             
             // Set justCompletedQuiz transient for IVR
@@ -5349,7 +5370,7 @@ Example good response:
 
             // Progress & Access Data — authoritative membership (same stack as get_simple_state).
             $ai_context['has_profile'] = $bridge_mgr->flosc_has_profile($user_id);
-            $ai_context['free_lesson_delivered'] = (bool) get_user_meta($user_id, '_flosc_free_lesson_delivered', true);
+            $ai_context['free_lesson_delivered'] = (bool) get_user_meta($user_id, '_flosc_free_content_item_delivered', true);
 
             $is_member = false;
             if ( isset( $eval_context['is_member'] ) ) {
@@ -5779,12 +5800,12 @@ Example good response:
             }
         }
 
-        // 1) lesson_groups with at least one non-empty category (Lessons tab).
+        // 1) content_item_groups with at least one non-empty category (Lessons tab).
         $groups = [];
-        if (!empty($settings['lesson_groups']) && is_array($settings['lesson_groups'])) {
-            $groups = $settings['lesson_groups'];
-        } elseif (is_array($flow) && !empty($flow['lesson_groups']) && is_array($flow['lesson_groups'])) {
-            $groups = $flow['lesson_groups'];
+        if (!empty($settings['content_item_groups']) && is_array($settings['content_item_groups'])) {
+            $groups = $settings['content_item_groups'];
+        } elseif (is_array($flow) && !empty($flow['content_item_groups']) && is_array($flow['content_item_groups'])) {
+            $groups = $flow['content_item_groups'];
         }
         foreach ($groups as $group) {
             if (!is_array($group)) {
@@ -5796,12 +5817,12 @@ Example good response:
             }
         }
 
-        // 2) Legacy single lessons_category / wp_category_id on the flow row.
+        // 2) Legacy single content_item_category / wp_category_id on the flow row.
         $cat = '';
-        if (!empty($settings['lessons_category'])) {
-            $cat = trim((string) $settings['lessons_category']);
+        if (!empty($settings['content_item_category'])) {
+            $cat = trim((string) $settings['content_item_category']);
         } elseif (is_array($flow)) {
-            $cat = trim((string) ($flow['lessons_category'] ?? ''));
+            $cat = trim((string) ($flow['content_item_category'] ?? ''));
             if ($cat === '' && !empty($flow['wp_category_id'])) {
                 $cat = (string) (int) $flow['wp_category_id'];
             }
@@ -5811,7 +5832,7 @@ Example good response:
         }
 
         // 3) Complimentary pool category (free lessons) configured for this flow.
-        $pool = sanitize_title((string) ($settings['free_lesson_pool_category'] ?? ''));
+        $pool = sanitize_title((string) ($settings['free_content_item_pool_category'] ?? ''));
         if ($pool !== '') {
             return true;
         }
@@ -6545,12 +6566,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
     
     /**
      * Get free lesson for logged-in user (v9.1.9)
-     * v1.4.9: Use deliver_free_lesson() to persist _flosc_free_lesson_delivered
+     * v1.4.9: Use deliver_free_lesson() to persist _flosc_free_content_item_delivered
      */
     public function get_free_lesson($request) {
         $user_id = get_current_user_id();
 
-        // Only flows with Lessons tab config (lesson_groups / category / pool) deliver lessons.
+        // Only flows with Lessons tab config (content_item_groups / category / pool) deliver lessons.
         $flow_raw = (string) ($request->get_param('flow_id') ?? $request->get_param('ivr_file') ?? '');
         if ($flow_raw === '') {
             $cf = $this->get_current_flow();
@@ -6567,10 +6588,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
             ], 404);
         }
 
-        $free_lesson_mgr = FLOSC_Free_Lesson_Manager::instance();
+        $free_lesson_mgr = FLOSC_Free_Content_Item_Manager::instance();
 
         // v1.4.9 FIX: Call deliver_free_lesson() instead of get_free_lesson()
-        // so _flosc_free_lesson_delivered is set and phase transitions to OFFER on reload
+        // so _flosc_free_content_item_delivered is set and phase transitions to OFFER on reload
         $result = $free_lesson_mgr->deliver_free_lesson($user_id, 'chat');
 
         if (!$result['success']) {
@@ -7883,21 +7904,21 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
             'flowTokens'          => $flow_token_balance,
             'flowId'              => $flow_id_for_tokens,
             // Free lessons only when this flow’s Lessons config serves lessons.
-            'freeLessonDelivered' => (bool) get_user_meta($user_id, '_flosc_free_lesson_delivered', true),
+            'freeLessonDelivered' => (bool) get_user_meta($user_id, '_flosc_free_content_item_delivered', true),
             'freeLessonsCount'    => (function () use ($user_id, $flow_stem) {
                 if (!$this->flosc_flow_serves_lessons($flow_stem)) {
                     return 0;
                 }
-                return count(get_user_meta($user_id, '_flosc_free_lesson_numbers', true) ?: []);
+                return count(get_user_meta($user_id, '_flosc_free_content_item_numbers', true) ?: []);
             })(),
             'freeLessons'         => (function () use ($user_id, $flow_stem) {
                 if (!$this->flosc_flow_serves_lessons($flow_stem)) {
                     return [];
                 }
-                if (!class_exists('FLOSC_Free_Lesson_Manager')) {
+                if (!class_exists('FLOSC_Free_Content_Item_Manager')) {
                     return [];
                 }
-                $raw = FLOSC_Free_Lesson_Manager::instance()->get_free_lessons($user_id);
+                $raw = FLOSC_Free_Content_Item_Manager::instance()->get_free_lessons($user_id);
                 if (empty($raw) || !is_array($raw)) {
                     return [];
                 }
@@ -8023,7 +8044,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
         $token_balance = $token_provider ? $token_provider->get_balance($user_id) : 0;
         
         // Get free lesson info
-        $free_lesson_num = get_user_meta($user_id, '_flosc_free_lesson_number', true);
+        $free_lesson_num = get_user_meta($user_id, '_flosc_free_content_item_number', true);
         
         return new WP_REST_Response([
             'success' => true,
@@ -8046,7 +8067,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
                 'last_score' => get_user_meta($user_id, '_flosc_last_quiz_score', true),
                 'completed_at' => get_user_meta($user_id, '_flosc_quiz_completed_at', true),
                 'free_lesson_number' => $free_lesson_num,
-                'free_lesson_delivered' => get_user_meta($user_id, '_flosc_free_lesson_delivered', true),
+                'free_lesson_delivered' => get_user_meta($user_id, '_flosc_free_content_item_delivered', true),
             ],
             'token_state' => [
                 'balance' => $token_balance,
@@ -8263,7 +8284,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
             $lessons = array();
         }
 
-        $free_lesson_id = absint( get_user_meta( $user_id, '_flosc_free_lesson_id', true ) );
+        $free_lesson_id = absint( get_user_meta( $user_id, '_flosc_free_content_item_id', true ) );
         $out            = array();
         foreach ( $lessons as $lesson ) {
             if ( ! is_array( $lesson ) ) {
@@ -8324,7 +8345,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
             );
         }
 
-        $free_lesson_id = absint( get_user_meta( $user_id, '_flosc_free_lesson_id', true ) );
+        $free_lesson_id = absint( get_user_meta( $user_id, '_flosc_free_content_item_id', true ) );
         $is_free_lesson = ( $free_lesson_id > 0 && $free_lesson_id === $lesson_id );
 
         if ( ! $this->lesson_manager->user_can_access( $user_id, $lesson_id, $is_free_lesson ) ) {
@@ -8344,8 +8365,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth: Transferred pr
             );
         }
 
-        if ( $is_free_lesson && ! get_user_meta( $user_id, '_flosc_free_lesson_delivered', true ) ) {
-            update_user_meta( $user_id, '_flosc_free_lesson_delivered', current_time( 'mysql' ) );
+        if ( $is_free_lesson && ! get_user_meta( $user_id, '_flosc_free_content_item_delivered', true ) ) {
+            update_user_meta( $user_id, '_flosc_free_content_item_delivered', current_time( 'mysql' ) );
         }
 
         return new WP_REST_Response(

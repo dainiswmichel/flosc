@@ -79,7 +79,7 @@ class floscApp {
             'is_visitor', 'is_guest', 'is_member', 'logged_in', 'has_profile',
             // Session state
             'first_show_session', 'first_message_after_quiz', 'first_message_after_login',
-            'first_message_after_purchase', 'first_message_after_free_lesson', 'returning_user', 'command',
+            'first_message_after_purchase', 'first_message_after_free_content_item', 'first_message_after_free_lesson', 'returning_user', 'command',
             // User info
             'user_id', 'name', 'email',
             // Quiz info
@@ -8927,7 +8927,7 @@ Purchased: ${ctx.purchased}
     }
     
     // v9.3.3: Store quiz score (localStorage + API)
-    // v3.0.2: Include quiz_id so server can resolve lesson category via lesson_groups
+    // v3.0.2: Include quiz_id so server can resolve lesson category via content_item_groups
     async storeQuizScore(result) {
         // Store in localStorage as backup
         const quizData = {
@@ -12225,6 +12225,7 @@ Purchased: ${ctx.purchased}
             this.log('FLOSC: Loading free lessons from config (' + configLessons.length + ' lessons)');
             this.hideTyping();
             this.ivr.context.lesson_viewed = true;
+            this.ivr.context.first_message_after_free_content_item = true;
             this.ivr.context.first_message_after_free_lesson = true;
             this._cachedFreeLessons = configLessons;
             this._renderFreeLessonCards(configLessons);
@@ -12263,7 +12264,8 @@ Purchased: ${ctx.purchased}
 
             if (data.success && lessons.length > 0) {
                 this.ivr.context.lesson_viewed = true;
-                this.ivr.context.first_message_after_free_lesson = true;
+                this.ivr.context.first_message_after_free_content_item = true;
+            this.ivr.context.first_message_after_free_lesson = true;
                 this._cachedFreeLessons = lessons;
                 this._renderFreeLessonCards(lessons);
                 this.ivr.phase = 'offer';

@@ -349,20 +349,20 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Input - " . wp_
         if (function_exists('flosc')) {
             $flow = flosc()->get_current_flow();
             if ($flow) {
-                if (!empty($flow['lesson_groups']) && is_array($flow['lesson_groups'])) {
-                    foreach ($flow['lesson_groups'] as $group) {
+                if (!empty($flow['content_item_groups']) && is_array($flow['content_item_groups'])) {
+                    foreach ($flow['content_item_groups'] as $group) {
                         if (!empty($group['category'])) {
                             $categories[] = $group['category'];
                         }
                     }
                 }
-                if (empty($categories) && !empty($flow['lessons_category'])) {
-                    $categories[] = $flow['lessons_category'];
+                if (empty($categories) && !empty($flow['content_item_category'])) {
+                    $categories[] = $flow['content_item_category'];
                 }
             }
         }
         if (empty($categories)) {
-            $global = get_option('flosc_lessons_category', '');
+            $global = get_option('flosc_content_item_category', '');
             if ($global !== '') {
                 $categories[] = $global;
             }

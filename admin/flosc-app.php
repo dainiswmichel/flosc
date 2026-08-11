@@ -987,7 +987,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                         $flosc_companion_source[$flosc_ck] = $flosc_cv;
                     }
                 }
-                foreach (['lessons_category', 'lesson_groups', 'slug', 'domain'] as $flosc_ck) {
+                foreach (['content_item_category', 'content_item_groups', 'slug', 'domain'] as $flosc_ck) {
                     if (!isset($flosc_companion_source[$flosc_ck]) && isset($flosc_current_flow[$flosc_ck])) {
                         $flosc_companion_source[$flosc_ck] = $flosc_current_flow[$flosc_ck];
                     }
@@ -1170,11 +1170,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'registrationUrl' => wp_registration_url(),
             'lessonsUrl' => home_url('/lessons/'),
             'checkoutUrl' => home_url('/checkout/'),
-            // Per-flow Lessons tab only — never fall back to global flosc_lessons_category.
+            // Per-flow Lessons tab only — never fall back to global flosc_content_item_category.
             'lessonsCategory' => (function () use ($flosc_current_flow, $flow_settings) {
-                $flosc_cat = trim((string) ($flow_settings['lessons_category'] ?? ''));
+                $flosc_cat = trim((string) ($flow_settings['content_item_category'] ?? ''));
                 if ($flosc_cat === '' && is_array($flosc_current_flow)) {
-                    $flosc_cat = trim((string) ($flosc_current_flow['lessons_category'] ?? ''));
+                    $flosc_cat = trim((string) ($flosc_current_flow['content_item_category'] ?? ''));
                 }
                 return $flosc_cat;
             })(),

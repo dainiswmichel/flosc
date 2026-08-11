@@ -445,7 +445,7 @@ class FLOSC_Flow_Manager {
                     'share_text'    => get_option('flosc_share_text', ''),
                 ),
                 'ivr_file'       => $ivr_file,
-                'wp_category_id' => intval(get_option('flosc_lessons_category', 0)),
+                'wp_category_id' => intval(get_option('flosc_content_item_category', 0)),
                 'created_at'     => current_time('mysql'),
                 'updated_at'     => current_time('mysql'),
             ),

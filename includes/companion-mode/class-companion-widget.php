@@ -333,7 +333,7 @@ class FLOSC_Companion_Widget {
         }
 
         // Check if we're on a lesson post
-        $lesson_category = get_option('flosc_lessons_category', '');
+        $lesson_category = get_option('flosc_content_item_category', '');
 
         if (is_singular('post') || is_singular('page')) {
             $post = get_queried_object();

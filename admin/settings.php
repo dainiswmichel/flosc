@@ -320,6 +320,9 @@ $flosc_flow_settings = get_option($flosc_settings_key, []);
 if (!is_array($flosc_flow_settings)) {
     $flosc_flow_settings = [];
 }
+if (function_exists('flosc_normalize_content_item_flow_settings')) {
+    $flosc_flow_settings = flosc_normalize_content_item_flow_settings($flosc_flow_settings, $flosc_settings_key);
+}
 
 // v1.3.5: Preserve underscores in default slug (don't use sanitize_title which converts to hyphens)
 $flosc_default_slug = strtolower(preg_replace('/[^a-z0-9_-]/i', '', pathinfo($flosc_selected_ivr, PATHINFO_FILENAME)));
@@ -1491,8 +1494,8 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         if (isset($flosc_new_settings['guest_access_days'])) {
             $flosc_new_settings['guest_access_days'] = max(0, min(365, intval($flosc_new_settings['guest_access_days'])));
         }
-        if (isset($flosc_new_settings['free_lesson_count'])) {
-            $flosc_new_settings['free_lesson_count'] = max(1, min(50, intval($flosc_new_settings['free_lesson_count'])));
+        if (isset($flosc_new_settings['free_content_item_count'])) {
+            $flosc_new_settings['free_content_item_count'] = max(1, min(50, intval($flosc_new_settings['free_content_item_count'])));
         }
 
         // Sync to term_meta while class-content-protection.php still reads term_meta.
@@ -1517,35 +1520,35 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         }
     }
 
-    // v3.0.0: Lessons tab — parse lesson_groups repeater
-    // Repeater fields are NOT flow_-prefixed (lesson_group_quiz[], lesson_group_category[])
+    // v3.0.0: Lessons tab — parse content_item_groups repeater
+    // Repeater fields are NOT flow_-prefixed (content_item_group_quiz[], content_item_group_category[])
     if (in_array($flosc_active_tab, ['lessons', 'content'], true)) {
-        $flosc_group_quizzes    = $flosc_post['lesson_group_quiz']     ?? [];
-        $flosc_group_categories = $flosc_post['lesson_group_category'] ?? [];
-        $flosc_lesson_groups = [];
+        $flosc_group_quizzes    = $flosc_post['content_item_group_quiz']     ?? [];
+        $flosc_group_categories = $flosc_post['content_item_group_category'] ?? [];
+        $flosc_content_item_groups = [];
         foreach ($flosc_group_categories as $flosc_i => $flosc_cat) {
             $flosc_cat = sanitize_text_field($flosc_cat);
             if ($flosc_cat === '') continue; // Skip rows with no category selected
             $flosc_quiz = sanitize_text_field($flosc_group_quizzes[$flosc_i] ?? '');
-            $flosc_lesson_groups[] = [
+            $flosc_content_item_groups[] = [
                 'quiz_id'  => $flosc_quiz,
                 'category' => $flosc_cat,
             ];
         }
-        // Only overwrite lesson_groups when the form actually submitted rows.
+        // Only overwrite content_item_groups when the form actually submitted rows.
         // An accidental save on an empty/wrong-flow form must not wipe existing config.
-        if (!empty($flosc_lesson_groups)) {
-            $flosc_new_settings['lesson_groups']    = $flosc_lesson_groups;
-            $flosc_new_settings['lessons_category'] = $flosc_lesson_groups[0]['category'];
+        if (!empty($flosc_content_item_groups)) {
+            $flosc_new_settings['content_item_groups']    = $flosc_content_item_groups;
+            $flosc_new_settings['content_item_category'] = $flosc_content_item_groups[0]['category'];
         }
         // Free-sample pool = WP category (often a child of the main lessons category)
-        if (isset($flosc_new_settings['free_lesson_pool_category'])) {
-            $flosc_new_settings['free_lesson_pool_category'] = sanitize_title(
-                (string) $flosc_new_settings['free_lesson_pool_category']
+        if (isset($flosc_new_settings['free_content_item_pool_category'])) {
+            $flosc_new_settings['free_content_item_pool_category'] = sanitize_title(
+                (string) $flosc_new_settings['free_content_item_pool_category']
             );
         }
-        if (isset($flosc_new_settings['free_lesson_never_free'])) {
-            $flosc_raw_nf = (string) $flosc_new_settings['free_lesson_never_free'];
+        if (isset($flosc_new_settings['exclude_items_from_freeline'])) {
+            $flosc_raw_nf = (string) $flosc_new_settings['exclude_items_from_freeline'];
             $flosc_parts = preg_split('/[\s,;]+/', $flosc_raw_nf) ?: [];
             $flosc_nums = [];
             foreach ($flosc_parts as $flosc_part) {
@@ -1554,13 +1557,13 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
                     $flosc_nums[] = $flosc_n;
                 }
             }
-            $flosc_new_settings['free_lesson_never_free'] = implode(', ', array_values(array_unique($flosc_nums)));
+            $flosc_new_settings['exclude_items_from_freeline'] = implode(', ', array_values(array_unique($flosc_nums)));
         }
-        if (isset($flosc_new_settings['free_lesson_guaranteed'])) {
-            $flosc_new_settings['free_lesson_guaranteed'] = max(0, intval($flosc_new_settings['free_lesson_guaranteed']));
+        if (isset($flosc_new_settings['free_content_item_guaranteed'])) {
+            $flosc_new_settings['free_content_item_guaranteed'] = max(0, intval($flosc_new_settings['free_content_item_guaranteed']));
         }
-        if (isset($flosc_new_settings['free_lesson_count'])) {
-            $flosc_new_settings['free_lesson_count'] = max(1, min(50, intval($flosc_new_settings['free_lesson_count'])));
+        if (isset($flosc_new_settings['free_content_item_count'])) {
+            $flosc_new_settings['free_content_item_count'] = max(1, min(50, intval($flosc_new_settings['free_content_item_count'])));
         }
         if (isset($flosc_new_settings['guest_access_days'])) {
             $flosc_new_settings['guest_access_days'] = max(0, min(365, intval($flosc_new_settings['guest_access_days'])));
@@ -1896,6 +1899,11 @@ if (function_exists('wp_add_inline_style')) {
         FLOSC Settings 
         <span class="flosc-settings-version">v<?php echo esc_html(FLOSC_VERSION); ?></span>
     </h1>
+
+    <?php
+    // Portability upload, import, delete, etc. use add_settings_error( 'flosc_settings', … ).
+    settings_errors( 'flosc_settings' );
+    ?>
     
     <?php if (isset($flosc_saved) || isset($flosc_get['saved'])): ?>
         <div id="flosc-save-feedback" class="notice notice-success is-dismissible" role="status" tabindex="-1">

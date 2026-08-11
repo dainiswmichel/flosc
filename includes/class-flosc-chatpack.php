@@ -708,7 +708,7 @@ class FLOSC_Chatpack {
             $user_id = $eval_context['user_id'];
             $bridge_mgr = FLOSC_Bridge_Data_Manager::instance();
             $has_profile = $bridge_mgr->flosc_has_profile($user_id);
-            $free_delivered = (bool) get_user_meta($user_id, '_flosc_free_lesson_delivered', true);
+            $free_delivered = (bool) get_user_meta($user_id, '_flosc_free_content_item_delivered', true);
             // Per-flow paid entitlement for AI context (not global _flosc_member_access).
             $flow_for_purchase = (string) ($eval_context['flow_id'] ?? '');
             $purchased = !empty($eval_context['is_member']) || !empty($eval_context['purchased']);

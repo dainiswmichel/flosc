@@ -36,6 +36,12 @@ $flosc_ui_docs_url = add_query_arg([
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-ui';
+$flosc_ui_docs_inventory_url = add_query_arg([
+    'page' => 'flosc-settings',
+    'ivr'  => $flosc_current_ivr,
+    'tab'  => 'documentation',
+    'doc'  => 'ref-admin',
+], admin_url('admin.php')) . '#inventory-ui-family';
 
 $flosc_standard_avatar_icons = ['👋', '💬', '⭐', '🎯', '🚀', '✅', '🔔', '📘', '🧠', '🛡️', '✨', '🔥'];
 $flosc_render_icon_palette = static function ($flosc_target_input_id) use ($flosc_standard_avatar_icons) {
@@ -59,10 +65,13 @@ $flosc_render_icon_palette = static function ($flosc_target_input_id) use ($flos
     <a href="<?php echo esc_url($flosc_ui_docs_url); ?>" class="flosc-ui-docs-link">Docs</a>
 </div>
 
-<h2 class="title">User Profile Bar</h2>
+<h2 class="title">
+    User Profile Bar
+    <a href="<?php echo esc_url($flosc_ui_docs_inventory_url); ?>" class="flosc-ui-docs-link">Docs</a>
+</h2>
 <p class="description">The profile bar appears at the bottom of the sidebar. Its avatar, name, badge, and labels change based on user state.</p>
 
-<h3 class="flosc-ui-section-title">Visitor State</h3>
+<h3 class="flosc-ui-section-title">Visitor State <a href="<?php echo esc_url($flosc_ui_docs_inventory_url); ?>" class="flosc-ui-docs-link">Docs</a></h3>
 <p class="description">Shown to users who are not logged in.</p>
 <table class="form-table">
     <tr>
@@ -138,7 +147,7 @@ $flosc_render_icon_palette = static function ($flosc_target_input_id) use ($flos
     </tr>
 </table>
 
-<h3 class="flosc-ui-section-title">Guest State</h3>
+<h3 class="flosc-ui-section-title">Guest State <a href="<?php echo esc_url($flosc_ui_docs_inventory_url); ?>" class="flosc-ui-docs-link">Docs</a></h3>
 <p class="description">Shown to logged-in users who have not purchased. Avatar and display name come from their WordPress account.</p>
 <table class="form-table">
     <tr>
@@ -216,7 +225,7 @@ $flosc_render_icon_palette = static function ($flosc_target_input_id) use ($flos
     </tr>
 </table>
 
-<h3 class="flosc-ui-section-title">Member State</h3>
+<h3 class="flosc-ui-section-title">Member State <a href="<?php echo esc_url($flosc_ui_docs_inventory_url); ?>" class="flosc-ui-docs-link">Docs</a></h3>
 <p class="description">Shown to logged-in users who have purchased. Avatar and name come from WordPress.</p>
 <table class="form-table">
     <tr>

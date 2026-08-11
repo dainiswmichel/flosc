@@ -24,6 +24,8 @@ $flosc_base_q = ['page' => 'flosc-settings', 'ivr' => $flosc_current_ivr];
 $flosc_tab_url = static function ($tab) use ($flosc_base_q) {
     return add_query_arg(array_merge($flosc_base_q, ['tab' => $tab]), admin_url('admin.php'));
 };
+$flosc_engagement_docs_url = add_query_arg(array_merge($flosc_base_q, ['tab' => 'documentation', 'doc' => 'ref-admin']), admin_url('admin.php')) . '#tab-engagement';
+$flosc_engagement_docs_inventory_url = add_query_arg(array_merge($flosc_base_q, ['tab' => 'documentation', 'doc' => 'ref-admin']), admin_url('admin.php')) . '#inventory-communication-family';
 
 // ── Default rule parameters (starter values only — floscAdmin edits these) ────
 $flosc_default_rules = [
@@ -370,7 +372,8 @@ $flosc_framework = class_exists('FLOSC_Framework') ? FLOSC_Framework::instance()
     <div class="flosc-flow-overview-header">
         <h2 class="flosc-flow-overview-title">
             <span>Engagement — when profiles behave, FLOSC responds</span>
-            <a href="<?php echo esc_url($flosc_tab_url('documentation')); ?>" class="flosc-docs-link">Docs</a>
+            <a href="<?php echo esc_url($flosc_engagement_docs_url); ?>" class="flosc-docs-link">Docs</a>
+            <a href="<?php echo esc_url($flosc_engagement_docs_inventory_url); ?>" class="flosc-docs-link">Parameter Docs</a>
         </h2>
         <p class="flosc-flow-overview-summary">
             <strong>This tab:</strong> parameters for <em>when</em> floscResponses fire (including <em>when</em> to send email)
@@ -574,7 +577,7 @@ $flosc_framework = class_exists('FLOSC_Framework') ? FLOSC_Framework::instance()
 
     <hr>
 
-    <h2>Profile activity</h2>
+    <h2>Profile activity <a href="<?php echo esc_url($flosc_engagement_docs_url); ?>" class="flosc-docs-link">Docs</a></h2>
     <p class="description">
         Who is on this floscFlow — people who registered here, last used it, or have activity on it.
         Monitor progress toward gated content.

@@ -124,7 +124,7 @@
 <p>Per-flow overrides stored in a WordPress option keyed as <code>flosc_flow_{ivr_slug}</code>. When a setting is read via <code>flosc_get_setting()</code>, flow-level settings take precedence over global settings. This is how two flows can have different AI models, quiz content, or brand colors without conflicts.</p>
 
 <h3 id="term-free-lesson">Free Lesson</h3>
-<p>One lesson delivered to a Guest (logged-in, non-purchased) user based on their quiz results. The free lesson is the most powerful conversion tool in the flow — it shows the quality of the content before asking for payment. Configured as a lesson group tied to quiz performance. <code>class-free-lesson-manager.php</code> handles delivery.</p>
+<p>One lesson delivered to a Guest (logged-in, non-purchased) user based on their quiz results. The free lesson is the most powerful conversion tool in the flow — it shows the quality of the content before asking for payment. Configured as a lesson group tied to quiz performance. <code>class-free-content-item-manager.php</code> handles delivery.</p>
 
 <h3 id="term-freeline">FREELINE Phase</h3>
 <p>The phase a visitor is in before logging in. The "freeline" gives the user something of value (the quiz) before asking for anything. IVR messages in the freeline phase are designed to generate interest and drive toward the Login phase.</p>

@@ -2,27 +2,87 @@
 
 <?php
 $flosc_ref_ivr = isset($selected_ivr) ? sanitize_file_name((string) $selected_ivr) : '';
+$flosc_ref_admin_doc_url = add_query_arg([
+  'page' => 'flosc-settings',
+  'ivr' => $flosc_ref_ivr,
+  'tab' => 'documentation',
+  'doc' => 'ref-admin',
+], admin_url('admin.php'));
 $flosc_feature_links = [
   'flow' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'flow'], admin_url('admin.php')),
   'identity' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'identity'], admin_url('admin.php')),
   'ivr-messages' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'ivr-messages'], admin_url('admin.php')),
   'autoprompts' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'autoprompts'], admin_url('admin.php')),
-  'member-levels' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'member-levels'], admin_url('admin.php')),
+  'content' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'content'], admin_url('admin.php')),
   'trajectories' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'trajectories'], admin_url('admin.php')),
   'offers' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'offers'], admin_url('admin.php')),
   'login' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'login'], admin_url('admin.php')),
   'style' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'style'], admin_url('admin.php')),
   'ui' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'ui'], admin_url('admin.php')),
   'ai' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'ai'], admin_url('admin.php')),
+  'token-management' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'token-management'], admin_url('admin.php')),
   'concierge' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'concierge'], admin_url('admin.php')),
   'quiz' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'quiz'], admin_url('admin.php')),
   'email' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'email'], admin_url('admin.php')),
-  'lessons' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'lessons'], admin_url('admin.php')),
+  'contact-form' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'contact-form'], admin_url('admin.php')),
   'payments' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'payments'], admin_url('admin.php')),
   'sso' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'sso'], admin_url('admin.php')),
+  'engagement' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'engagement'], admin_url('admin.php')),
   'chat-logs' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'chat-logs'], admin_url('admin.php')),
   'administration' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'administration'], admin_url('admin.php')),
   'da1' => add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'da1'], admin_url('admin.php')),
+];
+
+$flosc_tab_doc_anchors = [
+  'flow' => 'tab-flow',
+  'identity' => 'tab-identity',
+  'ivr-messages' => 'tab-ivr-messages',
+  'autoprompts' => 'visitor-autoprompts-intropanelshow-panel',
+  'content' => 'tab-content',
+  'trajectories' => 'admin-doc-pass2-links',
+  'offers' => 'tab-offers',
+  'login' => 'tab-login',
+  'style' => 'tab-style',
+  'ui' => 'tab-ui',
+  'ai' => 'tab-ai',
+  'token-management' => 'tab-token-management',
+  'concierge' => 'inventory-ai-family',
+  'quiz' => 'tab-quiz',
+  'email' => 'tab-email',
+  'contact-form' => 'tab-contact-form',
+  'payments' => 'tab-payments',
+  'sso' => 'tab-sso',
+  'engagement' => 'tab-engagement',
+  'chat-logs' => 'tab-chat-logs',
+  'administration' => 'tab-administration',
+  'documentation' => 'admin-doc-pass-order',
+  'da1' => 'tab-da1-dataset-template',
+];
+
+$flosc_tab_labels = [
+  'flow' => 'Flow',
+  'identity' => 'Identity',
+  'ivr-messages' => 'IVR Management',
+  'autoprompts' => 'AutoPrompts',
+  'content' => 'Content',
+  'trajectories' => 'Trajectories',
+  'offers' => 'Offers',
+  'login' => 'Register & Login',
+  'style' => 'Style & Nav',
+  'ui' => 'Profile Bar',
+  'ai' => 'AI',
+  'token-management' => 'Token Management',
+  'concierge' => 'Concierge',
+  'quiz' => 'Quiz',
+  'email' => 'Email',
+  'contact-form' => 'Contact Form',
+  'payments' => 'Payments',
+  'sso' => 'SSO',
+  'engagement' => 'Engagement',
+  'chat-logs' => 'Chat Logs',
+  'administration' => 'Administration',
+  'documentation' => 'Documentation',
+  'da1' => 'DA1',
 ];
 ?>
 
@@ -37,19 +97,21 @@ $flosc_feature_links = [
   <li><code>identity</code> — Product identity, branding fields, compliance text blocks</li>
   <li><code>ivr-messages</code> — IVR parser model, conditions/actions, message lifecycle</li>
   <li><code>autoprompts</code> — PromptPanel behavior by state (visitor/guest/member)</li>
-  <li><code>member-levels</code> — Level model and unlock logic</li>
+  <li><code>content</code> — Member levels, content groups, protection rules, and access structure</li>
   <li><code>trajectories</code> — Outcome trajectories and progression configuration</li>
   <li><code>offers</code> — Offer definitions, display modes, trigger mapping</li>
   <li><code>login</code> — Registration/login flows and guest-link behavior</li>
   <li><code>style</code> — Structured theme and chat style controls</li>
   <li><code>ui</code> — Navigation and presentation rules</li>
   <li><code>ai</code> — Provider configuration, knowledge files, feedback/praise</li>
+  <li><code>token-management</code> — Visitor/member token grants, costs, refill, and ledger-facing controls</li>
   <li><code>concierge</code> — Concierge prompt routing and assist behavior controls</li>
-  <li><code>quiz</code> — Quiz architecture, scoring model, lesson mapping</li>
+  <li><code>quiz</code> — Quiz architecture, scoring model, and content recommendation mapping</li>
   <li><code>email</code> — Email sequence, sender identity, placeholders</li>
-  <li><code>lessons</code> — Lesson source model and access filtering</li>
+  <li><code>contact-form</code> — Contact form routing, labels, and follow-up settings</li>
   <li><code>payments</code> — Stripe/PayPal/token and webhook boundaries</li>
   <li><code>sso</code> — OAuth provider setup, callback behavior, flow resolution</li>
+  <li><code>engagement</code> — Visitor/guest/member engagement thresholds, triggers, and state transitions</li>
   <li><code>chat-logs</code> — Logging model, ratings, operational usage</li>
   <li><code>administration</code> — Runtime controls, debug mode, operational tasks</li>
   <li><code>da1</code> — Catalog datasets, flow assignment, upload/export operations</li>
@@ -60,6 +122,26 @@ $flosc_feature_links = [
 <p>Each feature doc section must include a direct admin destination link format:</p>
 <pre><code>?page=flosc-settings&amp;tab={tab_id}</code></pre>
 <p>Each tab-level doc should also include reverse links back to key feature sections in this documentation.</p>
+
+<h3 id="admin-doc-jit-link-matrix">Tab Destination + Docs Anchor Matrix</h3>
+<p>Use these links in dashboard help text so admins can jump to the correct tab and the matching documentation anchor.</p>
+<table>
+  <tr><th>Tab</th><th>Feature Destination</th><th>Documentation Anchor</th></tr>
+  <?php foreach ($flosc_tab_doc_anchors as $flosc_tab_key => $flosc_anchor): ?>
+    <?php
+    $flosc_feature_url = isset($flosc_feature_links[$flosc_tab_key])
+      ? $flosc_feature_links[$flosc_tab_key]
+      : add_query_arg(['page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => $flosc_tab_key], admin_url('admin.php'));
+    $flosc_doc_url = $flosc_ref_admin_doc_url . '#' . sanitize_key((string) $flosc_anchor);
+    $flosc_label = $flosc_tab_labels[$flosc_tab_key] ?? $flosc_tab_key;
+    ?>
+    <tr>
+      <td><code><?php echo esc_html($flosc_tab_key); ?></code> (<?php echo esc_html($flosc_label); ?>)</td>
+      <td><a href="<?php echo esc_url($flosc_feature_url); ?>">Open tab</a></td>
+      <td><a href="<?php echo esc_url($flosc_doc_url); ?>">Open docs section</a></td>
+    </tr>
+  <?php endforeach; ?>
+</table>
 
 <h2 id="admin-doc-pass1-links">Pass 1 Bidirectional Links</h2>
 <p>These are the first tab-level framework links: documentation to feature, and feature back to documentation anchors.</p>
@@ -134,14 +216,14 @@ $flosc_feature_links = [
 <p>Use this shell pattern for each pass-1 section: feature destination link, one behavioral checkpoint, and one persistence or data-alignment check.</p>
 
 <h2 id="admin-doc-pass2-links">Pass 2 Bidirectional Links</h2>
-<p>These additions extend documented coverage to 6 tabs total.</p>
+<p>This pass extends coverage across Content, Offers, and Token Management.</p>
 
-<h3 id="tab-member-levels">Member Levels Tab</h3>
-<p><a href="<?php echo esc_url($flosc_feature_links['member-levels']); ?>">Open Feature: Member Levels tab</a></p>
-<p><strong>One further step:</strong> Create or confirm one level slug and then verify that slug appears as a selectable target in dependent tabs that grant or require levels.</p>
-<p><strong>Procedure Level:</strong> Confirm one member level slug, then check that the same slug is available wherever access levels are referenced.</p>
-<p><strong>Tech Ref Level:</strong> Member levels are used as access targets and grant values across offers, lessons, and gating logic.</p>
-<p><strong>Code Level:</strong> admin/member-levels.php edits the level data, and the access-control routines read the same slug values for permissions.</p>
+<h3 id="tab-content">Content Tab</h3>
+<p><a href="<?php echo esc_url($flosc_feature_links['content']); ?>">Open Feature: Content tab</a></p>
+<p><strong>One further step:</strong> Create or confirm one member level plus one content group, then verify both appear in the active flow summary and in dependent grant or gating controls.</p>
+<p><strong>Procedure Level:</strong> Confirm one member level slug, one content-group mapping, and one protection setting, then check that the same values appear in dependent tabs.</p>
+<p><strong>Tech Ref Level:</strong> The Content tab stores member levels, content-group mappings (internally keyed as <code>content_item_groups</code>), access gates, and protection rules used across protected content delivery and offer grants.</p>
+<p><strong>Code Level:</strong> admin/content.php edits the content structures, and access-control plus content-serving routines read the same stored arrays for permissions and delivery.</p>
 
 <h3 id="tab-offers">Offers Tab</h3>
 <p><strong>Payment processors (JIT):</strong> Each offer picks <code>paypal</code> or <code>stripe</code> (native — keys on Payments tab), <code>free</code>, or <code>redirect</code> (WooCommerce, Shopify, member sites, any checkout URL). FLOSC is not a full PSP; external carts redirect out, then you grant access via Access Code or member level.</p>
@@ -151,11 +233,18 @@ $flosc_feature_links = [
 <p><strong>Tech Ref Level:</strong> Offer records carry display formats, triggers, pricing, and level grants used by the checkout and content gates.</p>
 <p><strong>Code Level:</strong> admin/offers.php manages the offer editor, while the sale backend reads the stored offer definitions for rendering and payment flow.</p>
 
+<h3 id="tab-token-management">Token Management Tab</h3>
+<p><a href="<?php echo esc_url($flosc_feature_links['token-management']); ?>">Open Feature: Token Management tab</a></p>
+<p><strong>One further step:</strong> Change one token cost or grant setting, save, then verify the same effective value appears in token-facing runtime summaries or ledger-related UI for the active flow.</p>
+<p><strong>Procedure Level:</strong> Adjust one token setting, save it, and confirm the same value persists after reload for the selected flow.</p>
+<p><strong>Tech Ref Level:</strong> Token Management controls visitor and member token costs, grants, and flow-scoped balance behavior used by chat consumption and refill logic.</p>
+<p><strong>Code Level:</strong> admin/token-management.php renders the token controls, and the token ledger plus visitor-token traits read those stored values during runtime charging.</p>
+
 <h2 id="admin-doc-pass2-shell">Pass 2 Shell</h2>
 <p>For each added tab: link to the feature, record one runtime behavior check, and record one saved-state verification check.</p>
 
 <h2 id="admin-doc-pass3-links">Pass 3 Bidirectional Links</h2>
-<p>These additions extend documented coverage to 9 tabs total.</p>
+<p>This pass extends coverage across Register &amp; Login, Style, and UI navigation.</p>
 
 <h3 id="tab-login">Register &amp; Login Tab</h3>
 <p><a href="<?php echo esc_url($flosc_feature_links['login']); ?>">Open Feature: Register &amp; Login tab</a></p>
@@ -182,7 +271,7 @@ $flosc_feature_links = [
 <p>For each added tab: link to the feature, record one UI-behavior checkpoint, and record one saved-setting verification checkpoint.</p>
 
 <h2 id="admin-doc-pass4-links">Pass 4 Bidirectional Links</h2>
-<p>These additions extend documented coverage to 12 tabs total.</p>
+<p>This pass extends coverage across AI, Quiz, Email, and Contact Form.</p>
 
 <h3 id="tab-ai">AI Tab</h3>
 <p><a href="<?php echo esc_url($flosc_feature_links['ai']); ?>">Open Feature: AI tab</a></p>
@@ -205,18 +294,18 @@ $flosc_feature_links = [
 <p><strong>Tech Ref Level:</strong> Email settings control subject, body, sender identity, and placeholder values used by automation and notifications.</p>
 <p><strong>Code Level:</strong> admin/email.php renders the template editor, and the mail-sending code reads those saved placeholders at send time.</p>
 
+<h3 id="tab-contact-form">Contact Form Tab</h3>
+<p><a href="<?php echo esc_url($flosc_feature_links['contact-form']); ?>">Open Feature: Contact Form tab</a></p>
+<p><strong>One further step:</strong> Edit one label or destination field, save, then verify the same contact configuration remains visible and is still tied to the active flow after reload.</p>
+<p><strong>Procedure Level:</strong> Change one contact form field, save it, and confirm the same contact behavior settings persist for the selected flow.</p>
+<p><strong>Tech Ref Level:</strong> Contact Form settings control the contact capture copy, destinations, and follow-up behavior used when the flow collects direct outreach details.</p>
+<p><strong>Code Level:</strong> admin/contact-form.php renders the contact controls, and the submission handling code reads the same stored settings when processing outreach forms.</p>
+
 <h2 id="admin-doc-pass4-shell">Pass 4 Shell</h2>
 <p>For each added tab: link to the feature, record one provider or content behavior check, and record one save/reload verification check.</p>
 
 <h2 id="admin-doc-pass5-links">Pass 5 Bidirectional Links</h2>
-<p>These additions extend documented coverage to 15 tabs total.</p>
-
-<h3 id="tab-lessons">Lessons Tab</h3>
-<p><a href="<?php echo esc_url($flosc_feature_links['lessons']); ?>">Open Feature: Lessons tab</a></p>
-<p><strong>One further step:</strong> Review the lesson group/category mappings for the active flow and confirm the visible lesson structure matches the current content set.</p>
-<p><strong>Procedure Level:</strong> Review one lesson group, confirm the mapped category, and check that the visible lesson structure matches the current flow.</p>
-<p><strong>Tech Ref Level:</strong> Lesson visibility is driven by per-flow lesson groups, category protection metadata, and offer-granted access levels.</p>
-<p><strong>Code Level:</strong> admin/lessons.php builds the repeater UI and protection controls, while flow.php and post-access logic consume the saved lesson group settings.</p>
+<p>This pass extends coverage across Payments, SSO, and Engagement.</p>
 
 <h3 id="tab-payments">Payments Tab</h3>
 <p><a href="<?php echo esc_url($flosc_feature_links['payments']); ?>">Open Feature: Payments tab</a></p>
@@ -232,11 +321,18 @@ $flosc_feature_links = [
 <p><strong>Tech Ref Level:</strong> SSO uses per-flow provider credentials plus callback-state data to resolve the correct app URL after login.</p>
 <p><strong>Code Level:</strong> admin/sso.php renders the provider cards, and the callback handler in the SSO backend resolves redirects from stored flow state.</p>
 
+<h3 id="tab-engagement">Engagement Tab</h3>
+<p><a href="<?php echo esc_url($flosc_feature_links['engagement']); ?>">Open Feature: Engagement tab</a></p>
+<p><strong>One further step:</strong> Adjust one engagement threshold or action, save, then verify the same threshold remains stored and visible for the active flow after reload.</p>
+<p><strong>Procedure Level:</strong> Change one engagement rule, save it, and confirm the same rule remains associated with the selected flow.</p>
+<p><strong>Tech Ref Level:</strong> Engagement settings define when user behavior triggers prompts, access changes, or progression actions for visitor, guest, and member states.</p>
+<p><strong>Code Level:</strong> admin/engagement.php renders the controls, and the session or state-transition logic reads the stored thresholds and actions during runtime evaluation.</p>
+
 <h2 id="admin-doc-pass5-shell">Pass 5 Shell</h2>
 <p>For each added tab: link to the feature, record one configuration-behavior checkpoint, and record one active-flow verification checkpoint.</p>
 
 <h2 id="admin-doc-pass6-links">Pass 6 Bidirectional Links</h2>
-<p>These additions complete documented coverage to 17 tabs total.</p>
+<p>This pass completes the remaining operational tabs and final reconciliation steps.</p>
 
 <h3 id="tab-chat-logs">Chat Logs Tab</h3>
 <p><a href="<?php echo esc_url($flosc_feature_links['chat-logs']); ?>">Open Feature: Chat Logs tab</a></p>
@@ -262,6 +358,82 @@ $flosc_feature_links = [
   <li>Document external-service behavior, if any, with triggers and data flow.</li>
   <li>Add at least one direct help link to and from the relevant in-app feature.</li>
   <li>Mark done only after code match and link validation.</li>
+</ul>
+
+<h2 id="admin-parameter-inventory">Tab Parameter Inventory (Docs-First Coverage)</h2>
+<p>This inventory is derived from the current save pipeline in <code>admin/settings.php</code>. It keeps every tab and parameter family in one operator view before portability testing.</p>
+
+<h3 id="inventory-parameter-link-pattern">Parameter Link Pattern</h3>
+<p>For parameter-level help links, use this pair: feature destination to the tab plus docs destination to the exact parameter family anchor.</p>
+<ul>
+  <li><strong>Feature:</strong> <code>?page=flosc-settings&amp;ivr={flow_file}&amp;tab={tab_id}</code></li>
+  <li><strong>Docs:</strong> <code>?page=flosc-settings&amp;ivr={flow_file}&amp;tab=documentation&amp;doc=ref-admin#{parameter_anchor}</code></li>
+</ul>
+
+<h3 id="inventory-flow-family">Flow/Identity/IVR Family</h3>
+<p><strong>Parameter links:</strong> <a href="<?php echo esc_url($flosc_feature_links['flow']); ?>">Flow tab</a> · <a href="<?php echo esc_url($flosc_ref_admin_doc_url . '#inventory-flow-family'); ?>">Flow parameter docs</a></p>
+<ul>
+  <li><strong>flow:</strong> flow routing and lifecycle keys stored via generic <code>flow_*</code> post mapping.</li>
+  <li><strong>identity:</strong> identity bundle and public-policy content keys (name/title/tagline/domain/slug plus policy text fields).</li>
+  <li><strong>ivr-messages:</strong> IVR message arrays and file sync-managed message payload fields.</li>
+</ul>
+
+<h3 id="inventory-content-family">Content and Access Family</h3>
+<p><strong>Parameter links:</strong> <a href="<?php echo esc_url($flosc_feature_links['content']); ?>">Content tab</a> · <a href="<?php echo esc_url($flosc_ref_admin_doc_url . '#inventory-content-family'); ?>">Content parameter docs</a></p>
+<ul>
+  <li><strong>content:</strong> <code>member_levels</code>, <code>protected_content</code>, <code>content_item_groups</code>, <code>content_item_category</code>, <code>content_types</code>, free-lesson and guest access constraints.</li>
+  <li><strong>trajectories:</strong> trajectory and progression structures for content journey mapping.</li>
+  <li><strong>offers:</strong> offer records, pricing, processor mapping, and access grant metadata.</li>
+</ul>
+
+<h3 id="inventory-auth-family">Authentication and Access Family</h3>
+<p><strong>Parameter links:</strong> <a href="<?php echo esc_url($flosc_feature_links['login']); ?>">Login tab</a> · <a href="<?php echo esc_url($flosc_feature_links['sso']); ?>">SSO tab</a> · <a href="<?php echo esc_url($flosc_ref_admin_doc_url . '#inventory-auth-family'); ?>">Auth parameter docs</a></p>
+<ul>
+  <li><strong>login:</strong> guest-link and magic-link controls including <code>magic_access_links_enabled</code>, <code>guest_link_max_uses</code>, and <code>guest_link_window_days</code>.</li>
+  <li><strong>sso:</strong> provider enable toggles and provider credential fields (<code>sso_google_*</code>, <code>sso_apple_*</code>, <code>sso_facebook_*</code>, <code>sso_microsoft_*</code>, <code>sso_linkedin_*</code>).</li>
+  <li><strong>administration:</strong> operational toggles and runtime/admin control keys.</li>
+</ul>
+
+<h3 id="inventory-ai-family">AI and Prompt Family</h3>
+<p><strong>Parameter links:</strong> <a href="<?php echo esc_url($flosc_feature_links['ai']); ?>">AI tab</a> · <a href="<?php echo esc_url($flosc_feature_links['autoprompts']); ?>">AutoPrompts tab</a> · <a href="<?php echo esc_url($flosc_ref_admin_doc_url . '#inventory-ai-family'); ?>">AI/Prompt parameter docs</a></p>
+<ul>
+  <li><strong>ai:</strong> provider/model/prompt stack plus <code>ai_enable_ivr_context</code>, <code>ai_enable_content_access</code>, <code>ai_enable_chaining</code>.</li>
+  <li><strong>autoprompts:</strong> visitor/guest/member prompt panel rows and action/condition mappings.</li>
+  <li><strong>concierge:</strong> companion/concierge route targets, launcher behavior, contextual trigger rules, and display controls.</li>
+</ul>
+
+<h3 id="inventory-quiz-family">Quiz Family</h3>
+<p><strong>Parameter links:</strong> <a href="<?php echo esc_url($flosc_feature_links['quiz']); ?>">Quiz tab</a> · <a href="<?php echo esc_url($flosc_ref_admin_doc_url . '#inventory-quiz-family'); ?>">Quiz parameter docs</a></p>
+<ul>
+  <li><strong>quiz:</strong> quiz enablement and content fields including <code>enabled_quizzes</code>, quiz content blocks, and audio controls such as <code>audio_quiz_escape_after_phrase</code>.</li>
+  <li><strong>Optional by design:</strong> empty <code>enabled_quizzes</code> is valid. A flow can intentionally run with no quiz, and frontend guards must respect that state.</li>
+  <li><strong>email coupling:</strong> optional quiz-completion email behavior via <code>email_on_quiz_complete</code> and template followups.</li>
+</ul>
+
+<h3 id="inventory-token-family">Token and Payments Family</h3>
+<p><strong>Parameter links:</strong> <a href="<?php echo esc_url($flosc_feature_links['token-management']); ?>">Token Management tab</a> · <a href="<?php echo esc_url($flosc_feature_links['payments']); ?>">Payments tab</a> · <a href="<?php echo esc_url($flosc_ref_admin_doc_url . '#inventory-token-family'); ?>">Token/Payments parameter docs</a></p>
+<ul>
+  <li><strong>token-management:</strong> token economy fields (<code>tokens_*_numerator/denominator</code>, per-message cost, grants, caps, enforcement, visitor threshold messaging).</li>
+  <li><strong>product token grants:</strong> per-offer token settings synchronized into offer payload under <code>offers[*].tokens</code>.</li>
+  <li><strong>payments:</strong> processor enablement (<code>stripe_enabled</code>, <code>paypal_enabled</code>, <code>manual_payments_enabled</code>) and related credential fields.</li>
+</ul>
+
+<h3 id="inventory-communication-family">Communication and Engagement Family</h3>
+<p><strong>Parameter links:</strong> <a href="<?php echo esc_url($flosc_feature_links['email']); ?>">Email tab</a> · <a href="<?php echo esc_url($flosc_feature_links['contact-form']); ?>">Contact Form tab</a> · <a href="<?php echo esc_url($flosc_feature_links['engagement']); ?>">Engagement tab</a> · <a href="<?php echo esc_url($flosc_ref_admin_doc_url . '#inventory-communication-family'); ?>">Communication parameter docs</a></p>
+<ul>
+  <li><strong>email:</strong> sender/template fields, recurring follow-up arrays, and re-engagement toggles.</li>
+  <li><strong>contact-form:</strong> title/intro/submit/success/destination plus anti-abuse limits and form styling keys.</li>
+  <li><strong>engagement:</strong> <code>engagement_rules</code> array (audience, trigger, condition, action_chat, action_email, template, days) and legacy sync fields <code>email_reengagement_enabled</code> / <code>email_reengagement_days</code>.</li>
+</ul>
+
+<h3 id="inventory-ui-family">UI and Operations Family</h3>
+<p><strong>Parameter links:</strong> <a href="<?php echo esc_url($flosc_feature_links['style']); ?>">Style tab</a> · <a href="<?php echo esc_url($flosc_feature_links['ui']); ?>">Profile Bar tab</a> · <a href="<?php echo esc_url($flosc_feature_links['chat-logs']); ?>">Chat Logs tab</a> · <a href="<?php echo esc_url($flosc_feature_links['administration']); ?>">Administration tab</a> · <a href="<?php echo esc_url($flosc_feature_links['da1']); ?>">DA1 tab</a> · <a href="<?php echo esc_url($flosc_ref_admin_doc_url . '#inventory-ui-family'); ?>">UI/Ops parameter docs</a></p>
+<ul>
+  <li><strong>style:</strong> theme and presentation values consumed by frontend CSS/token rendering.</li>
+  <li><strong>ui:</strong> chat navigation labels, welcome strings, avatar/profile radius, and state presentation controls.</li>
+  <li><strong>chat-logs:</strong> log viewing/rating operational controls and log query behavior.</li>
+  <li><strong>documentation:</strong> docs topic selection and reference navigation state.</li>
+  <li><strong>da1:</strong> dataset catalog assignment, upload, export, and flow scope mappings.</li>
 </ul>
 
 <p class="skeleton-marker">This ordering is now the required workflow for documentation passes in FLOSC 8.0.1 planning and forward releases.</p>

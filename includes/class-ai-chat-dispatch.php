@@ -67,7 +67,7 @@ class FLOSC_AI_Chat_Dispatch {
         $lesson_search_section = '';
         if ( function_exists( 'flosc' ) ) {
             $flow = flosc()->get_current_flow();
-            if ( ! empty( $flow['lesson_groups'] ) ) {
+            if ( ! empty( $flow['content_item_groups'] ) ) {
                 $lesson_search_section  = "## Lesson Search Action Tags\n";
                 $lesson_search_section .= "When a **member** asks to find, browse, or see lessons about a specific sound, topic, or keyword, ";
                 $lesson_search_section .= "include an action tag at the END of your response on its own line.\n";

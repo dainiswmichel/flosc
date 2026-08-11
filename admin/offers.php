@@ -1486,7 +1486,7 @@ function flosc_render_offer_editor_v2($flosc_offer, $flosc_flow_key, $flosc_curr
                         <span class="flosc-cond-desc">First message after logging in</span>
                         <button type="button" class="flosc-condition-copy" data-condition="first_message_after_purchase"><code>first_message_after_purchase</code></button>
                         <span class="flosc-cond-desc">First message after completing a purchase</span>
-                        <button type="button" class="flosc-condition-copy" data-condition="first_message_after_free_lesson"><code>first_message_after_free_lesson</code></button>
+                        <button type="button" class="flosc-condition-copy" data-condition="first_message_after_free_content_item"><code>first_message_after_free_content_item</code></button>
                         <span class="flosc-cond-desc">First message after viewing free lesson</span>
                     </div>
                     

@@ -42,7 +42,13 @@ if [[ -d "$ROOT/vendor" ]]; then
 fi
 
 # Always write flosc.zip (overwrite). No timestamped / prod-* names.
-OUT_DIR="${FLOSC_ZIP_OUT_DIR:-$(cd .. && pwd)/zip-files}"
+# Operator install path: <project>/zip-files/flosc.zip (only zip we use).
+# From plugin root flosc/ → ../../../zip-files relative to repo root flosc_project_folder.
+if [[ -n "${FLOSC_ZIP_OUT_DIR:-}" ]]; then
+  OUT_DIR="${FLOSC_ZIP_OUT_DIR}"
+else
+  OUT_DIR="$(cd "$ROOT/../../.." && pwd)/zip-files"
+fi
 mkdir -p "$OUT_DIR"
 STAGE="$(mktemp -d "${TMPDIR:-/tmp}/flosc-dist.XXXXXX")"
 cleanup() { rm -rf "$STAGE"; }

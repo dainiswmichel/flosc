@@ -255,8 +255,9 @@ class FLOSC_Condition_Evaluator {
                 return !empty($this->context['first_message_after_login']);
             case 'first_message_after_purchase':
                 return !empty($this->context['first_message_after_purchase']);
+            case 'first_message_after_free_content_item':
             case 'first_message_after_free_lesson':
-                return !empty($this->context['first_message_after_free_lesson']);
+                return !empty($this->context['first_message_after_free_content_item']);
             
             // Access level conditions (v9.2.7)
             case 'is_visitor':
@@ -507,7 +508,7 @@ class FLOSC_Condition_Evaluator {
             'first_message_after_quiz' => false,
             'first_message_after_login' => false,
             'first_message_after_purchase' => false,
-            'first_message_after_free_lesson' => false,
+            'first_message_after_free_content_item' => false,
             // v1.0.4: Bridge data variables for IVR targeting (TASK-009)
             'in_bridge_state' => false,
             'has_quiz_profile' => false,
@@ -536,7 +537,13 @@ class FLOSC_Condition_Evaluator {
                 || get_user_meta($user_id, '_flosc_quiz_completed_at', true)
                 || get_user_meta($user_id, '_flosc_last_quiz_score', true) !== '';
             $context['purchased'] = (bool) get_user_meta($user_id, '_flosc_purchased', true);
-            $context['lesson_viewed'] = (bool) get_user_meta($user_id, '_flosc_free_lesson_delivered', true);
+            $flosc_fci_delivered = function_exists( 'flosc_content_item_get_user_meta' )
+                ? flosc_content_item_get_user_meta( $user_id, '_flosc_free_content_item_delivered', true )
+                : get_user_meta( $user_id, '_flosc_free_content_item_delivered', true );
+            $context['lesson_viewed'] = (bool) $flosc_fci_delivered;
+            $context['free_content_item_delivered'] = (bool) $flosc_fci_delivered;
+            // IVR alias (legacy condition variable name).
+            $context['free_lesson_delivered'] = (bool) $flosc_fci_delivered;
             $context['onboarded'] = (bool) get_user_meta($user_id, '_flosc_funnel_completed', true);
             $context['lessons_completed'] = intval(get_user_meta($user_id, '_flosc_lessons_completed', true));
             $context['returning_user'] = (bool) get_user_meta($user_id, '_flosc_last_visit', true);
@@ -562,17 +569,26 @@ class FLOSC_Condition_Evaluator {
             // v1.9.6: Phase — needed by FLOSC_User_Session for RAG handler
             $context['phase'] = flosc()->determine_flosc_phase();
             
-            // v1.9.6: Free lesson number — needed by RAG Access Controller to allow guest lesson access
-            $context['free_lesson_number'] = get_user_meta($user_id, '_flosc_free_lesson_number', true) ?: null;
-            $context['free_lesson_id'] = get_user_meta($user_id, '_flosc_free_lesson_id', true) ?: null;
-            // v1.9.6: Free lessons count — needed by IVR condition evaluation
-            if (class_exists('FLOSC_Free_Lesson_Manager')) {
-                $free_lesson_mgr = FLOSC_Free_Lesson_Manager::instance();
+            // Freeline content-item number/id (RAG guest access + IVR).
+            $flosc_fci_num = function_exists( 'flosc_content_item_get_user_meta' )
+                ? flosc_content_item_get_user_meta( $user_id, '_flosc_free_content_item_number', true )
+                : get_user_meta( $user_id, '_flosc_free_content_item_number', true );
+            $flosc_fci_id = function_exists( 'flosc_content_item_get_user_meta' )
+                ? flosc_content_item_get_user_meta( $user_id, '_flosc_free_content_item_id', true )
+                : get_user_meta( $user_id, '_flosc_free_content_item_id', true );
+            $context['free_content_item_number'] = $flosc_fci_num ? $flosc_fci_num : null;
+            $context['free_content_item_id']     = $flosc_fci_id ? $flosc_fci_id : null;
+            // Legacy IVR/RAG context keys.
+            $context['free_lesson_number'] = $context['free_content_item_number'];
+            $context['free_lesson_id']     = $context['free_content_item_id'];
+            if (class_exists('FLOSC_Free_Content_Item_Manager')) {
+                $free_lesson_mgr = FLOSC_Free_Content_Item_Manager::instance();
                 $free_lessons = $free_lesson_mgr->get_free_lessons($user_id);
-                $context['free_lessons_count'] = is_array($free_lessons) ? count($free_lessons) : ($context['free_lesson_number'] ? 1 : 0);
+                $context['free_content_items_count'] = is_array($free_lessons) ? count($free_lessons) : ($context['free_content_item_number'] ? 1 : 0);
             } else {
-                $context['free_lessons_count'] = $context['free_lesson_number'] ? 1 : 0;
+                $context['free_content_items_count'] = $context['free_content_item_number'] ? 1 : 0;
             }
+            $context['free_lessons_count'] = $context['free_content_items_count'];
             
             // Per-flow access_level for is_guest / is_visitor / is_member.
             // Global _flosc_member_access alone must not make a member on one
