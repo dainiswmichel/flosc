@@ -131,7 +131,11 @@ FLOSC stores data in your WordPress database, giving you full control. You're re
 
 = What happens if I deactivate FLOSC? =
 
-Your flow data and visitor records remain safely stored in WordPress. Simply reactivate FLOSC to resume operations. To permanently delete data, use the uninstall hook in plugin settings.
+Deactivating FLOSC leaves your flow settings, messages, and related data in the WordPress database so you can reactivate later.
+
+= What happens if I delete FLOSC? =
+
+Deleting the plugin from Plugins runs uninstall.php. That removes FLOSC options, FLOSC user/post/term meta, FLOSC custom tables, and FLOSC data under the uploads directory (for example flosc, flosc-users, flosc-temp, flosc-catalogs). WordPress then removes the plugin files.
 
 = How can I integrate my own AI provider? =
 
