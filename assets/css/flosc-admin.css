@@ -4904,9 +4904,13 @@
 .flosc-portability-file-panel__head {
     display: flex;
     align-items: baseline;
-    justify-content: space-between;
-    gap: 12px;
+    flex-wrap: wrap;
+    gap: 8px 12px;
     margin-bottom: 8px;
+}
+
+.flosc-portability-file-panel__head .button-link {
+    margin-left: auto;
 }
 
 .flosc-portability-file-list {

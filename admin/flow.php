@@ -722,10 +722,10 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
             <?php /* File input is NOT overlaid on the drop zone — overlay breaks drop attach in Chromium. */ ?>
             <input type="file" name="flosc_kit_files[]" id="flosc-ivr-file-input" class="flosc-portability-file-input-sr" accept=".md,.tsv,text/markdown,text/plain,text/tab-separated-values" multiple>
 
-            <div class="flosc-ivr-dropzone flosc-ivr-dropzone--kit" id="flosc-ivr-dropzone" tabindex="0" role="button" aria-controls="flosc-portability-file-list" aria-label="<?php echo esc_attr__('Drop flow files here or press Enter to choose files', 'flosc'); ?>">
+            <div class="flosc-ivr-dropzone flosc-ivr-dropzone--kit" id="flosc-ivr-dropzone" tabindex="0" role="button" aria-controls="flosc-portability-file-list" aria-label="<?php echo esc_attr__('Drop or click to select flow files', 'flosc'); ?>">
                 <div class="flosc-ivr-dropzone__ui">
-                    <strong class="flosc-ivr-dropzone__title"><?php echo esc_html__('Add flow files', 'flosc'); ?></strong>
-                    <span class="flosc-ivr-dropzone__hint"><?php echo esc_html__('Drop .md / .tsv here, or use Choose files. Then click Create or Apply.', 'flosc'); ?></span>
+                    <strong class="flosc-ivr-dropzone__title"><?php echo esc_html__('Drop files here or click to select', 'flosc'); ?></strong>
+                    <span class="flosc-ivr-dropzone__hint"><?php echo esc_html__('One .md + optional .tsv (max 10). Selected files appear below, then Create or Apply.', 'flosc'); ?></span>
                 </div>
             </div>
 
@@ -733,12 +733,9 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
                 <div class="flosc-portability-file-panel__head">
                     <strong><?php echo esc_html__('Selected files', 'flosc'); ?></strong>
                     <span class="description" id="flosc-portability-file-count"><?php echo esc_html__('None selected', 'flosc'); ?></span>
+                    <button type="button" class="button-link" id="flosc-portability-clear-files" disabled><?php echo esc_html__('Clear', 'flosc'); ?></button>
                 </div>
                 <ul class="flosc-portability-file-list" id="flosc-portability-file-list" aria-live="polite"></ul>
-                <div class="flosc-portability-file-panel__actions">
-                    <button type="button" class="button" id="flosc-portability-choose-files"><?php echo esc_html__('Choose files…', 'flosc'); ?></button>
-                    <button type="button" class="button" id="flosc-portability-clear-files" disabled><?php echo esc_html__('Clear', 'flosc'); ?></button>
-                </div>
             </div>
 
             <div class="flosc-flow-portability-actions-row">
@@ -750,7 +747,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
                 </button>
             </div>
             <p class="description">
-                <?php echo esc_html__('1) Select files (list below must show names). 2) Create = new flow from .md (+ optional .tsv). Apply = merge into current flow. One .md max; up to 10 .tsv.', 'flosc'); ?>
+                <?php echo esc_html__('Create = new flow from .md (+ optional .tsv). Apply = merge into current flow.', 'flosc'); ?>
             </p>
         </form>
 

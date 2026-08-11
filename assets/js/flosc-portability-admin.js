@@ -19,7 +19,6 @@
 		var input = document.getElementById('flosc-ivr-file-input');
 		var listEl = document.getElementById('flosc-portability-file-list');
 		var countEl = document.getElementById('flosc-portability-file-count');
-		var btnChoose = document.getElementById('flosc-portability-choose-files');
 		var btnClear = document.getElementById('flosc-portability-clear-files');
 		var btnCreate = document.getElementById('flosc-portability-btn-create');
 		var btnApply = document.getElementById('flosc-portability-btn-apply');
@@ -188,15 +187,15 @@
 			}
 		});
 
-		if (btnChoose) {
-			btnChoose.addEventListener('click', function () {
-				input.click();
+		if (btnClear) {
+			btnClear.addEventListener('click', function (e) {
+				e.preventDefault();
+				e.stopPropagation();
+				clearFiles();
 			});
 		}
-		if (btnClear) {
-			btnClear.addEventListener('click', clearFiles);
-		}
 
+		// One control: click zone → file picker; drop on zone → same list.
 		zone.addEventListener('click', function () {
 			input.click();
 		});
@@ -211,8 +210,6 @@
 			if (input.files && input.files.length) {
 				acceptFiles(input.files);
 			}
-			// Reset native value so the same path can be re-chosen after Clear.
-			// pendingFiles already holds File objects.
 		});
 
 		form.addEventListener('submit', function (e) {
@@ -229,13 +226,13 @@
 
 			if (!pendingFiles.length) {
 				e.preventDefault();
-				window.alert('Select files first (drop or Choose files), then Create or Apply.');
+				window.alert('Select files first (drop or click the box), then Create or Apply.');
 				return;
 			}
 
 			if (!syncInputFromPending()) {
 				e.preventDefault();
-				window.alert('Could not attach files to the upload field. Try Choose files… then Create again.');
+				window.alert('Could not attach files to the upload field. Click the box to select files again, then Create.');
 				return;
 			}
 
