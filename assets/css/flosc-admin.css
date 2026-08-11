@@ -514,115 +514,155 @@
     min-width: 180px;
 }
 
-.flosc-portability-kit-form .flosc-ivr-dropzone {
-    margin-top: 4px;
-}
+/* ==========================================================================
+   Portability kit dropzone (.flosc-dropzone--kit)
+   States: idle → hover/focus → is-dragover → is-has-file
+   ========================================================================== */
 
-/* —— Portability kit dropzone (idle / hover / drag / staged) —— */
-.flosc-portability-kit-form .flosc-ivr-dropzone--kit {
-    display: flex;
-    align-items: center;
-    min-height: 112px;
-    margin-top: 8px;
-    border: 2px dashed #8c8f94;
-    border-radius: 10px;
-    background: #fff;
-    background-image: none;
-    box-shadow: none;
-    transition:
-        border-color 0.12s ease,
-        background-color 0.12s ease,
-        box-shadow 0.12s ease,
-        transform 0.12s ease;
-}
+.flosc-portability-kit-form .flosc-dropzone--kit {
+    --flosc-dz-border: #8c8f94;
+    --flosc-dz-bg: #ffffff;
+    --flosc-dz-fg: #1d2327;
+    --flosc-dz-muted: #646970;
+    --flosc-dz-accent: #2271b1;
+    --flosc-dz-accent-deep: #0a4b78;
+    --flosc-dz-active-bg: #c5dff5;
+    --flosc-dz-ring: rgba(34, 113, 177, 0.4);
+    --flosc-dz-ok: #00a32a;
+    --flosc-dz-ok-bg: #edfaef;
 
-.flosc-portability-kit-form .flosc-ivr-dropzone--kit:hover,
-.flosc-portability-kit-form .flosc-ivr-dropzone--kit:focus {
-    border-color: #2271b1;
-    background: #f0f6fc;
-    outline: none;
-}
-
-/* Page is mid file-drag: invite toward the zone even before pointer enters it */
-.flosc-portability-kit-form.is-file-dragging .flosc-ivr-dropzone--kit:not(.is-dragover) {
-    border-color: #72aee6;
-    background: #f6faff;
-    box-shadow: 0 0 0 1px #72aee6;
-}
-
-/* Pointer over drop target — unmistakable active state */
-.flosc-portability-kit-form .flosc-ivr-dropzone--kit.is-dragover {
-    border: 2px solid #135e96 !important;
-    border-style: solid !important;
-    background: #b8d9f5 !important;
-    box-shadow:
-        0 0 0 3px rgba(19, 94, 150, 0.45),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.55);
-    transform: scale(1.01);
-}
-
-.flosc-portability-kit-form .flosc-ivr-dropzone--kit.is-dragover .flosc-ivr-dropzone__glyph {
-    color: #0a4b78;
-    transform: translateY(-2px);
-}
-
-.flosc-portability-kit-form .flosc-ivr-dropzone--kit.is-dragover .flosc-ivr-dropzone__title {
-    color: #0a4b78;
-    font-size: 14px;
-}
-
-.flosc-portability-kit-form .flosc-ivr-dropzone--kit.is-dragover .flosc-ivr-dropzone__hint {
-    color: #1d4f7a;
-}
-
-.flosc-portability-kit-form .flosc-ivr-dropzone--kit.is-has-file:not(.is-dragover) {
-    border-style: solid;
-    border-color: #00a32a;
-    background: #edfaef;
-}
-
-.flosc-portability-kit-form .flosc-ivr-dropzone__glyph {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
-    margin-bottom: 2px;
-    color: #646970;
-    transition: color 0.12s ease, transform 0.12s ease;
+    min-height: 128px;
+    margin: 8px 0 0;
+    padding: 0;
+    border: 2px dashed var(--flosc-dz-border);
+    border-radius: 12px;
+    background: var(--flosc-dz-bg);
+    color: var(--flosc-dz-fg);
+    cursor: pointer;
+    outline: none;
+    transition:
+        border-color 0.15s ease,
+        background-color 0.15s ease,
+        box-shadow 0.15s ease,
+        color 0.15s ease;
 }
 
-.flosc-portability-kit-form .flosc-ivr-dropzone--kit:hover .flosc-ivr-dropzone__glyph,
-.flosc-portability-kit-form .flosc-ivr-dropzone--kit:focus .flosc-ivr-dropzone__glyph {
-    color: #2271b1;
+.flosc-portability-kit-form .flosc-dropzone--kit:hover {
+    border-color: var(--flosc-dz-accent);
+    background: #f0f6fc;
 }
 
-.flosc-portability-kit-form .flosc-ivr-dropzone__ui {
-    width: 100%;
-    align-items: center;
-    text-align: center;
-    padding: 18px 20px;
-    gap: 6px;
+.flosc-portability-kit-form .flosc-dropzone--kit:focus,
+.flosc-portability-kit-form .flosc-dropzone--kit:focus-visible {
+    border-color: var(--flosc-dz-accent);
+    background: #f0f6fc;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--flosc-dz-accent);
 }
 
-.flosc-portability-kit-form .flosc-ivr-dropzone__title {
-    font-size: 13px;
-    font-weight: 600;
-    line-height: 1.3;
-    color: #1d2327;
+/* Active drop target — must be unmistakable (solid border + saturated fill + ring) */
+.flosc-portability-kit-form .flosc-dropzone--kit.is-dragover,
+.flosc-portability-kit-form.is-dragover .flosc-dropzone--kit {
+    border-style: solid;
+    border-color: var(--flosc-dz-accent-deep);
+    background: var(--flosc-dz-active-bg);
+    box-shadow:
+        0 0 0 4px var(--flosc-dz-ring),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+    color: var(--flosc-dz-accent-deep);
 }
 
-.flosc-portability-kit-form .flosc-ivr-dropzone__hint {
-    max-width: 36em;
-    font-size: 12px;
-    line-height: 1.4;
-    color: #646970;
+.flosc-portability-kit-form .flosc-dropzone--kit.is-dragover .flosc-dropzone__glyph,
+.flosc-portability-kit-form.is-dragover .flosc-dropzone--kit .flosc-dropzone__glyph {
+    color: var(--flosc-dz-accent-deep);
+    transform: translateY(-3px) scale(1.06);
 }
 
-/* While dragging files anywhere, slightly mute the rest of the portability form */
-html.flosc-portability-dragging .flosc-portability-kit-form .flosc-flow-portability-actions-row {
-    opacity: 0.55;
+.flosc-portability-kit-form .flosc-dropzone--kit.is-dragover .flosc-dropzone__title,
+.flosc-portability-kit-form.is-dragover .flosc-dropzone--kit .flosc-dropzone__title {
+    color: var(--flosc-dz-accent-deep);
+}
+
+.flosc-portability-kit-form .flosc-dropzone--kit.is-dragover .flosc-dropzone__hint,
+.flosc-portability-kit-form.is-dragover .flosc-dropzone--kit .flosc-dropzone__hint {
+    color: #1d4f7a;
+}
+
+/* Files staged (after drop / picker) */
+.flosc-portability-kit-form .flosc-dropzone--kit.is-has-file:not(.is-dragover) {
+    border-style: solid;
+    border-color: var(--flosc-dz-ok);
+    background: var(--flosc-dz-ok-bg);
+}
+
+.flosc-portability-kit-form .flosc-dropzone--kit.is-has-file:not(.is-dragover) .flosc-dropzone__glyph {
+    color: var(--flosc-dz-ok);
+}
+
+/* Visually hidden file input (a11y + programmatic assign; not an overlay) */
+.flosc-portability-kit-form .flosc-dropzone__input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    opacity: 0;
     pointer-events: none;
+}
+
+.flosc-portability-kit-form .flosc-dropzone__surface {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    padding: 22px 24px;
+    text-align: center;
+    pointer-events: none; /* clicks hit zone; DnD targets zone */
+}
+
+.flosc-portability-kit-form .flosc-dropzone__glyph {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    color: var(--flosc-dz-muted);
+    transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.flosc-portability-kit-form .flosc-dropzone--kit:hover .flosc-dropzone__glyph,
+.flosc-portability-kit-form .flosc-dropzone--kit:focus .flosc-dropzone__glyph {
+    color: var(--flosc-dz-accent);
+}
+
+.flosc-portability-kit-form .flosc-dropzone__title {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--flosc-dz-fg);
+}
+
+.flosc-portability-kit-form .flosc-dropzone__title--active {
+    color: var(--flosc-dz-accent-deep);
+}
+
+.flosc-portability-kit-form .flosc-dropzone__hint {
+    display: block;
+    max-width: 36em;
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.45;
+    color: var(--flosc-dz-muted);
 }
 
 .flosc-ivr-file-actions--table-toolbar {

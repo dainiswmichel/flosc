@@ -721,22 +721,39 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
 
             <?php
             /*
-             * Native file input covers the zone (opacity 0): click + OS drop both set files.
-             * JS capture-prevents browser open/download; is-dragover via rect hit-test.
+             * Visually-hidden file input + clickable drop surface.
+             * DnD + highlight: assets/js/flosc-portability-admin.js (drag depth counter).
              */
             ?>
-            <div class="flosc-ivr-dropzone flosc-ivr-dropzone--kit" id="flosc-ivr-dropzone" tabindex="0" role="button" aria-controls="flosc-portability-file-list" aria-label="<?php echo esc_attr__('Drop or click to select flow files', 'flosc'); ?>">
-                <input type="file" name="flosc_kit_files[]" id="flosc-ivr-file-input" class="flosc-ivr-dropzone__input flosc-portability-zone-input" accept=".md,.tsv,text/markdown,text/plain,text/tab-separated-values" multiple>
-                <div class="flosc-ivr-dropzone__ui">
-                    <span class="flosc-ivr-dropzone__glyph" aria-hidden="true">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
+            <div
+                class="flosc-dropzone flosc-dropzone--kit"
+                id="flosc-ivr-dropzone"
+                tabindex="0"
+                role="button"
+                aria-controls="flosc-portability-file-list"
+                aria-describedby="flosc-dropzone-hint"
+                aria-label="<?php echo esc_attr__('Drop or click to select flow files', 'flosc'); ?>"
+            >
+                <input
+                    type="file"
+                    name="flosc_kit_files[]"
+                    id="flosc-ivr-file-input"
+                    class="flosc-dropzone__input"
+                    accept=".md,.tsv,text/markdown,text/plain,text/tab-separated-values"
+                    multiple
+                    tabindex="-1"
+                    aria-hidden="true"
+                >
+                <div class="flosc-dropzone__surface">
+                    <span class="flosc-dropzone__glyph" aria-hidden="true">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
                             <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
                             <path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </span>
-                    <strong class="flosc-ivr-dropzone__title flosc-ivr-dropzone__title--idle"><?php echo esc_html__('Drop files here or click to select', 'flosc'); ?></strong>
-                    <strong class="flosc-ivr-dropzone__title flosc-ivr-dropzone__title--drag" hidden><?php echo esc_html__('Release to stage these files', 'flosc'); ?></strong>
-                    <span class="flosc-ivr-dropzone__hint"><?php echo esc_html__('One .md + optional .tsv (max 10). Selected files appear below, then Create or Apply.', 'flosc'); ?></span>
+                    <span id="flosc-dropzone-title-idle" class="flosc-dropzone__title"><?php echo esc_html__('Drop files here or click to select', 'flosc'); ?></span>
+                    <span id="flosc-dropzone-title-drag" class="flosc-dropzone__title flosc-dropzone__title--active" hidden><?php echo esc_html__('Release to stage these files', 'flosc'); ?></span>
+                    <span id="flosc-dropzone-hint" class="flosc-dropzone__hint"><?php echo esc_html__('One .md + optional .tsv (max 10). Selected files appear below, then Create or Apply.', 'flosc'); ?></span>
                 </div>
             </div>
 
@@ -824,17 +841,8 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
     </div>
 
     <?php
-    // Portability kit JS: external file (cache-busted). Confirm dialogs for table forms stay inline.
-    $flosc_port_js = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
-    if ( file_exists( $flosc_port_js ) ) {
-        wp_enqueue_script(
-            'flosc-portability-admin',
-            FLOSC_PLUGIN_URL . 'assets/js/flosc-portability-admin.js',
-            array( 'flosc-admin' ),
-            (string) filemtime( $flosc_port_js ),
-            true
-        );
-    }
+    // flosc-portability-admin.js is enqueued on admin_enqueue_scripts (flow tab).
+    // Table delete/duplicate confirm stays on flosc-admin handle.
     ob_start();
     ?>
     (function () {

@@ -835,6 +835,21 @@ trait FLOSC_Admin_Trait {
             }
         }
 
+        // Flow Portability kit picker (list-then-Create/Apply). Must enqueue here so
+        // the handle is registered before admin footer print — not mid-template.
+        if ( $flosc_tab === 'flow' ) {
+            $flosc_port_js = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
+            if ( file_exists( $flosc_port_js ) ) {
+                wp_enqueue_script(
+                    'flosc-portability-admin',
+                    FLOSC_PLUGIN_URL . 'assets/js/flosc-portability-admin.js',
+                    array( 'flosc-admin' ),
+                    (string) filemtime( $flosc_port_js ),
+                    true
+                );
+            }
+        }
+
         if ($flosc_tab === 'email') {
             $flosc_email_css_path = FLOSC_PLUGIN_DIR . 'assets/css/flosc-email.css';
             if (file_exists($flosc_email_css_path)) {
