@@ -719,12 +719,23 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
             <input type="hidden" name="flosc_upload_redirect_view" value="all">
             <input type="hidden" name="flosc_working_ivr" value="<?php echo esc_attr($flosc_selected_ivr); ?>">
 
-            <div class="flosc-ivr-dropzone flosc-ivr-dropzone--kit" id="flosc-ivr-dropzone" tabindex="0" role="button" aria-label="<?php echo esc_attr__('Drop .md and optional .tsv files here', 'flosc'); ?>">
+            <div class="flosc-ivr-dropzone flosc-ivr-dropzone--kit" id="flosc-ivr-dropzone" tabindex="0" role="region" aria-label="<?php echo esc_attr__('Select flow files', 'flosc'); ?>">
                 <input type="file" name="flosc_kit_files[]" id="flosc-ivr-file-input" class="flosc-ivr-dropzone__input" accept=".md,.tsv,text/markdown,text/plain,text/tab-separated-values" multiple>
                 <div class="flosc-ivr-dropzone__ui">
-                    <strong class="flosc-ivr-dropzone__title"><?php echo esc_html__('Drop flow file(s) here', 'flosc'); ?></strong>
-                    <span class="flosc-ivr-dropzone__hint"><?php echo esc_html__('Drop one .md (+ optional .tsv) to create a new flow. Or use the buttons below.', 'flosc'); ?></span>
-                    <span class="flosc-ivr-dropzone__file" id="flosc-ivr-dropzone-filename" hidden></span>
+                    <strong class="flosc-ivr-dropzone__title"><?php echo esc_html__('Add flow files', 'flosc'); ?></strong>
+                    <span class="flosc-ivr-dropzone__hint"><?php echo esc_html__('Drag and drop here, or choose files. One .md + optional .tsv (max 10). Then Create or Apply.', 'flosc'); ?></span>
+                </div>
+            </div>
+
+            <div class="flosc-portability-file-panel" id="flosc-portability-file-panel">
+                <div class="flosc-portability-file-panel__head">
+                    <strong><?php echo esc_html__('Selected files', 'flosc'); ?></strong>
+                    <span class="description" id="flosc-portability-file-count"><?php echo esc_html__('None selected', 'flosc'); ?></span>
+                </div>
+                <ul class="flosc-portability-file-list" id="flosc-portability-file-list" aria-live="polite"></ul>
+                <div class="flosc-portability-file-panel__actions">
+                    <button type="button" class="button" id="flosc-portability-choose-files"><?php echo esc_html__('Choose files…', 'flosc'); ?></button>
+                    <button type="button" class="button" id="flosc-portability-clear-files" disabled><?php echo esc_html__('Clear', 'flosc'); ?></button>
                 </div>
             </div>
 
@@ -737,7 +748,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
                 </button>
             </div>
             <p class="description">
-                <?php echo esc_html__('Create = clean slate from the .md. Apply = merge into the current flow (other settings stay). One .md max; up to 10 .tsv per drop (each added to the flow’s catalog list). More than 10 catalogs: use the DA1 tab.', 'flosc'); ?>
+                <?php echo esc_html__('1) Select files. 2) Create = new flow from the .md (optional .tsv catalogs). Apply = merge into the current flow. One .md max; up to 10 .tsv.', 'flosc'); ?>
             </p>
         </form>
 
@@ -807,30 +818,97 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
         var form = document.getElementById('flosc-ivr-dropzone-upload-form');
         var zone = document.getElementById('flosc-ivr-dropzone');
         var input = document.getElementById('flosc-ivr-file-input');
-        var nameEl = document.getElementById('flosc-ivr-dropzone-filename');
+        var listEl = document.getElementById('flosc-portability-file-list');
+        var countEl = document.getElementById('flosc-portability-file-count');
+        var btnChoose = document.getElementById('flosc-portability-choose-files');
+        var btnClear = document.getElementById('flosc-portability-clear-files');
         var btnCreate = document.getElementById('flosc-portability-btn-create');
         var btnApply = document.getElementById('flosc-portability-btn-apply');
-        if (!form || !zone || !input) {
+        if (!form || !zone || !input || !listEl) {
             return;
         }
-        function showNames(fileList) {
-            if (!nameEl) {
-                return;
+
+        function formatSize(bytes) {
+            var n = parseInt(bytes, 10) || 0;
+            if (n < 1024) {
+                return n + ' B';
             }
-            var names = [];
-            for (var i = 0; i < fileList.length; i++) {
-                names.push(fileList[i].name);
+            if (n < 1024 * 1024) {
+                return (n / 1024).toFixed(1) + ' KB';
             }
-            if (names.length) {
-                nameEl.hidden = false;
-                nameEl.textContent = names.join(', ');
+            return (n / (1024 * 1024)).toFixed(2) + ' MB';
+        }
+
+        function renderList() {
+            var files = input.files;
+            listEl.innerHTML = '';
+            var n = files ? files.length : 0;
+            if (countEl) {
+                countEl.textContent = n ? (n + (n === 1 ? ' file' : ' files')) : 'None selected';
+            }
+            if (btnClear) {
+                btnClear.disabled = n === 0;
+            }
+            if (n) {
                 zone.classList.add('is-has-file');
             } else {
-                nameEl.hidden = true;
-                nameEl.textContent = '';
                 zone.classList.remove('is-has-file');
             }
+            if (!n) {
+                return;
+            }
+            for (var i = 0; i < n; i++) {
+                var f = files[i];
+                var li = document.createElement('li');
+                li.className = 'flosc-portability-file-list__item';
+                var name = document.createElement('code');
+                name.textContent = f.name || '(unnamed)';
+                var meta = document.createElement('span');
+                meta.className = 'description';
+                meta.textContent = formatSize(f.size);
+                li.appendChild(name);
+                li.appendChild(document.createTextNode(' '));
+                li.appendChild(meta);
+                listEl.appendChild(li);
+            }
         }
+
+        function setInputFiles(fileArray) {
+            if (typeof DataTransfer === 'undefined') {
+                window.alert('This browser cannot attach dropped files. Use Choose files… instead.');
+                return false;
+            }
+            try {
+                var dt = new DataTransfer();
+                for (var i = 0; i < fileArray.length; i++) {
+                    dt.items.add(fileArray[i]);
+                }
+                input.files = dt.files;
+            } catch (err) {
+                window.alert('Could not attach files to the form. Use Choose files… instead.');
+                return false;
+            }
+            if (!input.files || input.files.length !== fileArray.length) {
+                window.alert('File selection did not attach to the upload field. Use Choose files… instead.');
+                return false;
+            }
+            renderList();
+            return true;
+        }
+
+        function clearFiles() {
+            if (typeof DataTransfer !== 'undefined') {
+                try {
+                    input.files = new DataTransfer().files;
+                } catch (e1) {
+                    input.value = '';
+                }
+            } else {
+                input.value = '';
+            }
+            renderList();
+        }
+
         function acceptFiles(fileList) {
             if (!fileList || !fileList.length) {
                 return;
@@ -859,29 +937,13 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
                 return;
             }
             if (tsvFiles.length > 5) {
-                if (!window.confirm('Upload ' + tsvFiles.length + ' DA1 catalogs to this flow?')) {
+                if (!window.confirm('Select ' + tsvFiles.length + ' DA1 catalogs?')) {
                     return;
                 }
             }
-            var ok = mdFiles.concat(tsvFiles);
-            try {
-                var dt = new DataTransfer();
-                ok.forEach(function (f) { dt.items.add(f); });
-                input.files = dt.files;
-                showNames(input.files);
-            } catch (e) {
-                showNames(ok);
-            }
-            // Drop is the action: one .md → Create new flow immediately (optional .tsv rides along).
-            // TSV-only still needs Apply (targets current flow).
-            if (mdFiles.length === 1 && btnCreate) {
-                if (typeof form.requestSubmit === 'function') {
-                    form.requestSubmit(btnCreate);
-                } else {
-                    btnCreate.click();
-                }
-            }
+            setInputFiles(mdFiles.concat(tsvFiles));
         }
+
         function onDrag(e) {
             e.preventDefault();
             e.stopPropagation();
@@ -904,7 +966,20 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
                 acceptFiles(files);
             }
         });
-        zone.addEventListener('click', function () {
+        if (btnChoose) {
+            btnChoose.addEventListener('click', function () {
+                input.click();
+            });
+        }
+        if (btnClear) {
+            btnClear.addEventListener('click', function () {
+                clearFiles();
+            });
+        }
+        zone.addEventListener('click', function (e) {
+            if (e.target === input) {
+                return;
+            }
             input.click();
         });
         zone.addEventListener('keydown', function (e) {
@@ -918,7 +993,9 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
         });
         input.addEventListener('change', function () {
             if (input.files && input.files.length) {
-                showNames(input.files);
+                acceptFiles(input.files);
+            } else {
+                renderList();
             }
         });
 
@@ -943,6 +1020,11 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
                     if (n.slice(-4) === '.tsv') { tsvCount++; }
                 }
             }
+            if (!mdCount && !tsvCount) {
+                e.preventDefault();
+                window.alert('Select files first (Choose files… or drop), then Create or Apply.');
+                return;
+            }
             if (mdCount > 1) {
                 e.preventDefault();
                 window.alert('Only one .md flow file per upload — never two .md files.');
@@ -959,7 +1041,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
             }
             if (act === 'create' && mdCount < 1) {
                 e.preventDefault();
-                window.alert('Create new flow needs one .md file (optional .tsv catalogs with it).');
+                window.alert('Create new flow needs one .md file (optional .tsv with it).');
                 return;
             }
             if (btnCreate) { btnCreate.disabled = true; }
@@ -976,6 +1058,8 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
                 event.stopPropagation();
             }
         });
+
+        renderList();
     })();
     <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
     <?php endif; ?>
