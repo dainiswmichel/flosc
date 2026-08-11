@@ -4842,17 +4842,23 @@
     background: #edfaef;
 }
 
-.flosc-ivr-dropzone__input {
+/* Full-zone native file input: click + OS file drop (opacity 0, on top of label UI). */
+.flosc-ivr-dropzone__input,
+.flosc-portability-zone-input {
     position: absolute;
     inset: 0;
+    z-index: 2;
     width: 100%;
     height: 100%;
+    margin: 0;
+    padding: 0;
     opacity: 0;
     cursor: pointer;
     font-size: 0;
+    border: 0;
 }
 
-/* Screen-reader / off-panel file input — must NOT cover the drop zone. */
+/* Keep legacy sr-only class harmless if referenced elsewhere. */
 .flosc-portability-file-input-sr {
     position: absolute;
     width: 1px;
@@ -4866,6 +4872,8 @@
 }
 
 .flosc-ivr-dropzone__ui {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: flex-start;

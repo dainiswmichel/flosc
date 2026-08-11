@@ -719,10 +719,14 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
             <input type="hidden" name="flosc_upload_redirect_view" value="all">
             <input type="hidden" name="flosc_working_ivr" value="<?php echo esc_attr($flosc_selected_ivr); ?>">
 
-            <?php /* File input is NOT overlaid on the drop zone — overlay breaks drop attach in Chromium. */ ?>
-            <input type="file" name="flosc_kit_files[]" id="flosc-ivr-file-input" class="flosc-portability-file-input-sr" accept=".md,.tsv,text/markdown,text/plain,text/tab-separated-values" multiple>
-
+            <?php
+            /*
+             * Native file input covers the zone (opacity 0): click + OS drop both set files.
+             * JS also capture-prevents browser open/download on drop (see flosc-portability-admin.js).
+             */
+            ?>
             <div class="flosc-ivr-dropzone flosc-ivr-dropzone--kit" id="flosc-ivr-dropzone" tabindex="0" role="button" aria-controls="flosc-portability-file-list" aria-label="<?php echo esc_attr__('Drop or click to select flow files', 'flosc'); ?>">
+                <input type="file" name="flosc_kit_files[]" id="flosc-ivr-file-input" class="flosc-ivr-dropzone__input flosc-portability-zone-input" accept=".md,.tsv,text/markdown,text/plain,text/tab-separated-values" multiple>
                 <div class="flosc-ivr-dropzone__ui">
                     <strong class="flosc-ivr-dropzone__title"><?php echo esc_html__('Drop files here or click to select', 'flosc'); ?></strong>
                     <span class="flosc-ivr-dropzone__hint"><?php echo esc_html__('One .md + optional .tsv (max 10). Selected files appear below, then Create or Apply.', 'flosc'); ?></span>

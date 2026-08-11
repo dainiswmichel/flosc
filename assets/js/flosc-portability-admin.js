@@ -1,6 +1,10 @@
 /**
  * Flow Portability kit picker: drop/choose → list → Create/Apply submit.
- * pendingFiles is source of truth; input.files is synced only for POST.
+ * pendingFiles is source of truth; input.files is synced for POST.
+ *
+ * Chromium: file drops must preventDefault on dragover (capture) or the
+ * browser opens/downloads the file and dataTransfer never reaches the page.
+ * Zone uses a full-size opacity-0 file input so native drop + click both work.
  */
 (function () {
 	'use strict';
@@ -11,6 +15,47 @@
 		} else {
 			fn();
 		}
+	}
+
+	/**
+	 * @param {DragEvent|Event} e
+	 * @return {boolean}
+	 */
+	function isFileDrag(e) {
+		var dt = e.dataTransfer;
+		if (!dt || !dt.types) {
+			return false;
+		}
+		var types = dt.types;
+		if (typeof types.includes === 'function') {
+			return types.includes('Files');
+		}
+		if (typeof types.contains === 'function') {
+			return types.contains('Files');
+		}
+		var i;
+		for (i = 0; i < types.length; i++) {
+			if (types[i] === 'Files' || types[i] === 'application/x-moz-file') {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @param {FileList|File[]|null|undefined} fileList
+	 * @return {File[]}
+	 */
+	function toFileArray(fileList) {
+		if (!fileList || !fileList.length) {
+			return [];
+		}
+		var out = [];
+		var i;
+		for (i = 0; i < fileList.length; i++) {
+			out.push(fileList[i]);
+		}
+		return out;
 	}
 
 	ready(function () {
@@ -52,7 +97,8 @@
 				btnClear.disabled = n === 0;
 			}
 			zone.classList.toggle('is-has-file', n > 0);
-			for (var i = 0; i < n; i++) {
+			var i;
+			for (i = 0; i < n; i++) {
 				var f = pendingFiles[i];
 				var li = document.createElement('li');
 				li.className = 'flosc-portability-file-list__item';
@@ -74,17 +120,18 @@
 		 */
 		function syncInputFromPending() {
 			if (typeof DataTransfer === 'undefined') {
-				return false;
+				return !!(input.files && input.files.length === pendingFiles.length && pendingFiles.length > 0);
 			}
 			try {
 				var dt = new DataTransfer();
-				for (var i = 0; i < pendingFiles.length; i++) {
+				var i;
+				for (i = 0; i < pendingFiles.length; i++) {
 					dt.items.add(pendingFiles[i]);
 				}
 				input.files = dt.files;
-				return input.files && input.files.length === pendingFiles.length;
+				return !!(input.files && input.files.length === pendingFiles.length);
 			} catch (err) {
-				return false;
+				return !!(input.files && input.files.length > 0 && pendingFiles.length > 0);
 			}
 		}
 
@@ -102,21 +149,22 @@
 		}
 
 		/**
-		 * @param {FileList|File[]} fileList
+		 * @param {FileList|File[]|null|undefined} fileList
 		 */
 		function acceptFiles(fileList) {
-			if (!fileList || !fileList.length) {
+			var files = toFileArray(fileList);
+			if (!files.length) {
 				return;
 			}
 			var mdFiles = [];
 			var tsvFiles = [];
 			var i;
-			for (i = 0; i < fileList.length; i++) {
-				var lower = (fileList[i].name || '').toLowerCase();
+			for (i = 0; i < files.length; i++) {
+				var lower = (files[i].name || '').toLowerCase();
 				if (lower.slice(-3) === '.md') {
-					mdFiles.push(fileList[i]);
+					mdFiles.push(files[i]);
 				} else if (lower.slice(-4) === '.tsv') {
-					tsvFiles.push(fileList[i]);
+					tsvFiles.push(files[i]);
 				}
 			}
 			if (!mdFiles.length && !tsvFiles.length) {
@@ -134,57 +182,107 @@
 			if (tsvFiles.length > 5 && !window.confirm('Select ' + tsvFiles.length + ' DA1 catalogs?')) {
 				return;
 			}
-			// Replace selection with validated set (standard picker UX).
 			pendingFiles = mdFiles.concat(tsvFiles);
 			renderList();
-			// Best-effort early sync (required again on submit).
 			syncInputFromPending();
 		}
 
-		function preventDrag(e) {
+		/**
+		 * @param {DragEvent} e
+		 */
+		function takeDroppedFiles(e) {
 			e.preventDefault();
-			e.stopPropagation();
+			if (typeof e.stopPropagation === 'function') {
+				e.stopPropagation();
+			}
+			zone.classList.remove('is-dragover');
+			var files = e.dataTransfer && e.dataTransfer.files;
+			if (files && files.length) {
+				acceptFiles(files);
+			}
 		}
+
+		/**
+		 * @param {Event} e
+		 * @return {boolean}
+		 */
+		function eventInsideForm(e) {
+			var t = e.target;
+			if (!t) {
+				return false;
+			}
+			if (t === form || t === zone || t === input) {
+				return true;
+			}
+			if (typeof form.contains === 'function' && t.nodeType === 1 && form.contains(t)) {
+				return true;
+			}
+			return false;
+		}
+
+		// Capture phase: cancel browser open/download of dropped files over this form.
+		document.addEventListener(
+			'dragover',
+			function (e) {
+				if (!isFileDrag(e) || !eventInsideForm(e)) {
+					return;
+				}
+				e.preventDefault();
+				if (e.dataTransfer) {
+					e.dataTransfer.dropEffect = 'copy';
+				}
+			},
+			true
+		);
+
+		document.addEventListener(
+			'drop',
+			function (e) {
+				if (!isFileDrag(e) || !eventInsideForm(e)) {
+					return;
+				}
+				takeDroppedFiles(e);
+			},
+			true
+		);
 
 		['dragenter', 'dragover'].forEach(function (ev) {
 			zone.addEventListener(ev, function (e) {
-				preventDrag(e);
+				if (!isFileDrag(e)) {
+					return;
+				}
+				e.preventDefault();
 				if (e.dataTransfer) {
 					e.dataTransfer.dropEffect = 'copy';
 				}
 				zone.classList.add('is-dragover');
 			});
+			form.addEventListener(ev, function (e) {
+				if (!isFileDrag(e)) {
+					return;
+				}
+				e.preventDefault();
+				if (e.dataTransfer) {
+					e.dataTransfer.dropEffect = 'copy';
+				}
+			});
 		});
 
 		zone.addEventListener('dragleave', function (e) {
-			preventDrag(e);
-			// Only clear highlight when leaving the zone itself.
-			if (e.target === zone) {
-				zone.classList.remove('is-dragover');
-			}
-		});
-
-		zone.addEventListener('drop', function (e) {
-			preventDrag(e);
-			zone.classList.remove('is-dragover');
-			var files = e.dataTransfer && e.dataTransfer.files;
-			if (files && files.length) {
-				acceptFiles(files);
-			}
-		});
-
-		// Also accept drops on the whole form panel (list area).
-		form.addEventListener('dragover', preventDrag);
-		form.addEventListener('drop', function (e) {
-			if (e.target === input) {
+			var rel = e.relatedTarget;
+			if (rel && zone.contains(rel)) {
 				return;
 			}
-			preventDrag(e);
 			zone.classList.remove('is-dragover');
-			var files = e.dataTransfer && e.dataTransfer.files;
-			if (files && files.length) {
-				acceptFiles(files);
+		});
+
+		// Bubble drop (backup if capture path skipped).
+		zone.addEventListener('drop', takeDroppedFiles);
+		form.addEventListener('drop', function (e) {
+			if (!isFileDrag(e)) {
+				return;
 			}
+			takeDroppedFiles(e);
 		});
 
 		if (btnClear) {
@@ -195,20 +293,18 @@
 			});
 		}
 
-		// One control: click zone → file picker; drop on zone → same list.
-		zone.addEventListener('click', function () {
-			input.click();
+		// Native input covers zone (opacity 0): click + native drop both set input.files.
+		input.addEventListener('change', function () {
+			if (input.files && input.files.length) {
+				acceptFiles(input.files);
+			}
 		});
+
+		// Keyboard: zone is focusable; open picker.
 		zone.addEventListener('keydown', function (e) {
 			if (e.key === 'Enter' || e.key === ' ') {
 				e.preventDefault();
 				input.click();
-			}
-		});
-
-		input.addEventListener('change', function () {
-			if (input.files && input.files.length) {
-				acceptFiles(input.files);
 			}
 		});
 
@@ -222,6 +318,11 @@
 				e.preventDefault();
 				window.alert('Select a current flow in Switch Flow first.');
 				return;
+			}
+
+			// Prefer staged list; fall back to whatever is on the native input.
+			if (!pendingFiles.length && input.files && input.files.length) {
+				acceptFiles(input.files);
 			}
 
 			if (!pendingFiles.length) {
