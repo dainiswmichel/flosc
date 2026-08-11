@@ -835,8 +835,28 @@ trait FLOSC_Admin_Trait {
             }
         }
 
-        // Portability kit JS is printed next to the Portability markup in admin/flow.php
-        // (must bind with the form; footer-only enqueue left native Choose Files + empty list).
+        // Flow Portability kit: dedicated CSS (zone styles) + JS (list/DnD).
+        if ( $flosc_tab === 'flow' ) {
+            $flosc_port_css = FLOSC_PLUGIN_DIR . 'assets/css/flosc-portability-admin.css';
+            $flosc_port_js  = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
+            if ( file_exists( $flosc_port_css ) ) {
+                wp_enqueue_style(
+                    'flosc-portability-admin',
+                    FLOSC_PLUGIN_URL . 'assets/css/flosc-portability-admin.css',
+                    array( 'flosc-admin' ),
+                    (string) filemtime( $flosc_port_css )
+                );
+            }
+            if ( file_exists( $flosc_port_js ) ) {
+                wp_enqueue_script(
+                    'flosc-portability-admin',
+                    FLOSC_PLUGIN_URL . 'assets/js/flosc-portability-admin.js',
+                    array(),
+                    (string) filemtime( $flosc_port_js ),
+                    true
+                );
+            }
+        }
 
         if ($flosc_tab === 'email') {
             $flosc_email_css_path = FLOSC_PLUGIN_DIR . 'assets/css/flosc-email.css';

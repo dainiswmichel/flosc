@@ -720,36 +720,37 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
             <input type="hidden" name="flosc_working_ivr" value="<?php echo esc_attr($flosc_selected_ivr); ?>">
 
             <?php
-            /* One drop surface: covering file input + label UI. JS: flosc-portability-admin.js */
+            /*
+             * One drop surface. File input uses WP core .screen-reader-text (always in admin)
+             * so native “Choose Files” never paints. Label provides click target; JS does DnD.
+             */
             ?>
             <div
                 class="flosc-dropzone flosc-dropzone--kit"
                 id="flosc-ivr-dropzone"
-                tabindex="0"
-                role="button"
                 aria-controls="flosc-portability-file-list"
-                aria-describedby="flosc-dropzone-hint"
-                aria-label="<?php echo esc_attr__('Drop or click to select flow files', 'flosc'); ?>"
             >
                 <input
                     type="file"
                     name="flosc_kit_files[]"
                     id="flosc-ivr-file-input"
-                    class="flosc-dropzone__file"
+                    class="screen-reader-text"
                     accept=".md,.tsv,text/markdown,text/plain,text/tab-separated-values"
                     multiple
                 >
-                <div class="flosc-dropzone__surface" aria-hidden="true">
-                    <span class="flosc-dropzone__glyph">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
-                            <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-                            <path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
+                <label class="flosc-dropzone__label" for="flosc-ivr-file-input">
+                    <span class="flosc-dropzone__surface">
+                        <span class="flosc-dropzone__glyph" aria-hidden="true">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
+                                <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M4 14v4a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
+                        <span id="flosc-dropzone-title-idle" class="flosc-dropzone__title"><?php echo esc_html__('Drop files here or click to select', 'flosc'); ?></span>
+                        <span id="flosc-dropzone-title-drag" class="flosc-dropzone__title flosc-dropzone__title--active" hidden><?php echo esc_html__('Release to stage these files', 'flosc'); ?></span>
+                        <span id="flosc-dropzone-hint" class="flosc-dropzone__hint"><?php echo esc_html__('One .md + optional .tsv (max 10). Selected files appear below, then Create or Apply.', 'flosc'); ?></span>
                     </span>
-                    <span id="flosc-dropzone-title-idle" class="flosc-dropzone__title"><?php echo esc_html__('Drop files here or click to select', 'flosc'); ?></span>
-                    <span id="flosc-dropzone-title-drag" class="flosc-dropzone__title flosc-dropzone__title--active" hidden><?php echo esc_html__('Release to stage these files', 'flosc'); ?></span>
-                    <span id="flosc-dropzone-hint" class="flosc-dropzone__hint"><?php echo esc_html__('One .md + optional .tsv (max 10). Selected files appear below, then Create or Apply.', 'flosc'); ?></span>
-                </div>
+                </label>
             </div>
 
             <div class="flosc-portability-file-panel" id="flosc-portability-file-panel">
@@ -836,18 +837,26 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
     </div>
 
     <?php
-    // Kit picker JS: print immediately after Portability markup so change/list
-    // always binds (footer enqueue alone was leaving native “Choose Files” + empty list).
-    $flosc_port_js_path = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
-    if ( file_exists( $flosc_port_js_path ) ) {
-        $flosc_port_js_ver = (string) filemtime( $flosc_port_js_path );
-        $flosc_port_js_url = add_query_arg(
-            'ver',
-            rawurlencode( $flosc_port_js_ver ),
-            FLOSC_PLUGIN_URL . 'assets/js/flosc-portability-admin.js'
+    // Kit CSS/JS are enqueued on admin_enqueue_scripts (tab=flow) in flosc-admin.php.
+    // Late enqueue here if that early path missed this request.
+    $flosc_port_css = FLOSC_PLUGIN_DIR . 'assets/css/flosc-portability-admin.css';
+    $flosc_port_js  = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
+    if ( file_exists( $flosc_port_css ) && ! wp_style_is( 'flosc-portability-admin', 'enqueued' ) ) {
+        wp_enqueue_style(
+            'flosc-portability-admin',
+            FLOSC_PLUGIN_URL . 'assets/css/flosc-portability-admin.css',
+            array( 'flosc-admin' ),
+            (string) filemtime( $flosc_port_css )
         );
-        // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- admin Portability partial; must run with markup.
-        echo '<script src="' . esc_url( $flosc_port_js_url ) . '" id="flosc-portability-admin-js"></script>' . "\n";
+    }
+    if ( file_exists( $flosc_port_js ) && ! wp_script_is( 'flosc-portability-admin', 'enqueued' ) ) {
+        wp_enqueue_script(
+            'flosc-portability-admin',
+            FLOSC_PLUGIN_URL . 'assets/js/flosc-portability-admin.js',
+            array(),
+            (string) filemtime( $flosc_port_js ),
+            true
+        );
     }
     // Table delete/duplicate confirm only.
     ob_start();

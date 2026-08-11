@@ -1,6 +1,6 @@
 /**
  * Flow Portability — single kit drop zone.
- * Stages files into #flosc-portability-file-list, then Create/Apply.
+ * Input is WP .screen-reader-text; label is click target; zone handles DnD + list.
  */
 (function () {
 	'use strict';
@@ -108,20 +108,16 @@
 			if (depth === 0) {
 				zone.classList.toggle('is-has-file', n > 0);
 			}
-
 			var i;
 			for (i = 0; i < n; i++) {
 				var f = pending[i];
 				var li = document.createElement('li');
 				li.className = 'flosc-portability-file-list__item';
-
 				var code = document.createElement('code');
 				code.textContent = f.name || '(unnamed)';
-
 				var meta = document.createElement('span');
 				meta.className = 'description';
 				meta.textContent = formatBytes(f.size);
-
 				li.appendChild(code);
 				li.appendChild(document.createTextNode(' '));
 				li.appendChild(meta);
@@ -134,7 +130,6 @@
 			if (!files.length) {
 				return;
 			}
-
 			var md = [];
 			var tsv = [];
 			var i;
@@ -146,7 +141,6 @@
 					tsv.push(files[i]);
 				}
 			}
-
 			if (!md.length && !tsv.length) {
 				window.alert('Use one .md (flow) and/or .tsv (DA1) catalog files.');
 				return;
@@ -162,7 +156,6 @@
 			if (tsv.length > 5 && !window.confirm('Select ' + tsv.length + ' DA1 catalogs?')) {
 				return;
 			}
-
 			pending = md.concat(tsv);
 			setInputFiles(input, pending);
 			render();
@@ -177,22 +170,7 @@
 			render();
 		}
 
-		// Zone is the only interactive surface (input is clipped + pointer-events:none).
-		zone.addEventListener('click', function (e) {
-			if (e.target === input) {
-				return;
-			}
-			e.preventDefault();
-			input.click();
-		});
-
-		zone.addEventListener('keydown', function (e) {
-			if (e.key === 'Enter' || e.key === ' ') {
-				e.preventDefault();
-				input.click();
-			}
-		});
-
+		/* Click: native via <label for="…">. DnD: zone. */
 		zone.addEventListener('dragenter', function (e) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -217,7 +195,6 @@
 		zone.addEventListener('dragleave', function (e) {
 			e.preventDefault();
 			e.stopPropagation();
-			// Leaving to a child still inside zone: keep highlight.
 			var rel = e.relatedTarget;
 			if (rel && zone.contains(rel)) {
 				return;
@@ -248,7 +225,6 @@
 			stage(input.files);
 		}
 
-		// Prevent browser open/download when files are dropped on this admin page.
 		window.addEventListener('dragover', function (e) {
 			e.preventDefault();
 		});
