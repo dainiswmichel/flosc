@@ -131,15 +131,24 @@ class FLOSC_DA1_Compositions {
             return [];
         }
 
+        /*
+         * A flow reads the catalogs attributed to it on the DA1 tab, in the stored
+         * order — that order is the flow's catalog priority. Nothing is substituted
+         * when the list is empty: there is no default catalog, so a flow with no
+         * attribution contributes no composition rows and the caller falls through
+         * to its own handling. The v8.0.0 migration in flosc.php wrote the previously
+         * implied attributions down, so removing the substitution changed no site's
+         * effective behaviour.
+         */
         $assignments = get_option('flosc_da1_flow_catalogs', []);
-        $catalog_keys = ['default'];
+        $catalog_keys = [];
         if (is_array($assignments) && $ivr_file !== '' && !empty($assignments[$ivr_file]) && is_array($assignments[$ivr_file])) {
             $catalog_keys = array_values(array_unique(array_filter(array_map(function($key) {
                 return preg_replace('/[^a-z0-9._-]/i', '', strtolower(trim((string) $key)));
             }, $assignments[$ivr_file]))));
         }
         if (empty($catalog_keys)) {
-            $catalog_keys = ['default'];
+            return [];
         }
 
         $flow_scope_tokens = [];

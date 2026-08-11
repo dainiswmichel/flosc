@@ -48,10 +48,8 @@ if (!wp_mkdir_p($flosc_catalog_dir)) {
     return;
 }
 
-$flosc_sample_catalog_path = FLOSC_PLUGIN_DIR . 'sample-data/flosc_da1_catalog_default.tsv';
 $flosc_catalog_index_option = 'flosc_da1_catalogs';
 $flosc_catalog_assign_option = 'flosc_da1_flow_catalogs';
-$flosc_default_catalog_key = 'default';
 
 $flosc_required_columns = [
     'Row Key',
@@ -84,7 +82,8 @@ $flosc_base_payload_columns = [
 
 $flosc_control_defaults = [
     'Parent Key' => '',
-    'Catalog Key' => $flosc_default_catalog_key,
+    // apply_defaults() always writes the open catalog's key over this.
+    'Catalog Key' => '',
     'Record Type' => 'work',
     'Flow Scope' => 'all',
     'VGM' => 'Visitor Guest Member',
@@ -463,27 +462,140 @@ function flosc_da1_read_uploaded_tmp( $tmp_name ) {
 	return $flosc_da1_fs->read_contents( $tmp_name );
 }
 
+/**
+ * A catalog's description — free text the operator writes, never its identity.
+ *
+ * Stored under 'description'. Entries written before descriptions existed used
+ * 'label', so that is read as a fallback and rewritten as 'description' on the
+ * next save. Empty is a legitimate answer: a catalog is identified by its
+ * filename, so a description is optional.
+ *
+ * @param array $catalog One entry from the catalog index.
+ * @return string
+ */
+function flosc_da1_catalog_description($catalog) {
+    if (!is_array($catalog)) {
+        return '';
+    }
+    if (isset($catalog['description']) && $catalog['description'] !== '') {
+        return (string) $catalog['description'];
+    }
+    if (isset($catalog['label']) && $catalog['label'] !== '') {
+        return (string) $catalog['label'];
+    }
+    return '';
+}
+
+/**
+ * Catalog .tsv files actually present in the catalogs folder, keyed by catalog key.
+ *
+ * A catalog key is produced by flosc_da1_slugify(), whose charset is [a-z0-9_-] —
+ * no dots. That single rule separates real catalogs from their backup siblings:
+ * flosc_da1_catalog_default.tsv is a catalog, while
+ * flosc_da1_catalog_default.backup-2026-07-02.tsv carries a dot in the key
+ * position and is a copy. Listing copies as catalogs would invite editing a
+ * backup by mistake, so they are skipped.
+ *
+ * @param string $catalog_dir Absolute path to the catalogs folder.
+ * @return array<string,string> key => filename.
+ */
+function flosc_da1_catalog_files_on_disk($catalog_dir) {
+    $found = [];
+    $paths = glob(trailingslashit($catalog_dir) . 'flosc_da1_catalog_*.tsv');
+    if (!is_array($paths)) {
+        return $found;
+    }
+    foreach ($paths as $flosc_da1_path) {
+        $flosc_da1_name = basename($flosc_da1_path);
+        if (!preg_match('/^flosc_da1_catalog_([a-z0-9_-]+)\.tsv$/', $flosc_da1_name, $flosc_da1_m)) {
+            continue;
+        }
+        $flosc_da1_disk_key = $flosc_da1_m[1];
+        if (!isset($found[$flosc_da1_disk_key])) {
+            $found[$flosc_da1_disk_key] = $flosc_da1_name;
+        }
+    }
+    return $found;
+}
+
+/**
+ * Number of data rows in a catalog, or null when it cannot be counted cheaply.
+ *
+ * Counting by newline would be wrong: flosc_da1_tsv_cell() quotes cells that
+ * contain a newline rather than escaping them, so one record can span several
+ * lines. The real parser is used instead, and files past a sane ceiling report
+ * null rather than being parsed just to render one number.
+ *
+ * @param string $path        Absolute catalog path.
+ * @param string $catalog_dir Absolute path to the catalogs folder.
+ * @return int|null
+ */
+function flosc_da1_catalog_row_count($path, $catalog_dir) {
+    if (!file_exists($path)) {
+        return null;
+    }
+    $flosc_da1_size = filesize($path);
+    if ($flosc_da1_size === false || $flosc_da1_size > 2097152) {
+        return null;
+    }
+    $flosc_da1_body = flosc_da1_read_catalog_file($path, $catalog_dir);
+    if (is_wp_error($flosc_da1_body) || !is_string($flosc_da1_body) || $flosc_da1_body === '') {
+        return null;
+    }
+    $flosc_da1_parsed = flosc_da1_parse_tsv($flosc_da1_body);
+    if (!is_array($flosc_da1_parsed) || count($flosc_da1_parsed) < 1) {
+        return null;
+    }
+    // First parsed row is the header.
+    return max(0, count($flosc_da1_parsed) - 1);
+}
+
 $flosc_da1_catalogs = get_option($flosc_catalog_index_option, []);
 if (!is_array($flosc_da1_catalogs)) {
     $flosc_da1_catalogs = [];
 }
-if (!isset($flosc_da1_catalogs[$flosc_default_catalog_key])) {
-    $flosc_da1_catalogs[$flosc_default_catalog_key] = [
-        'label' => 'Default Catalog',
-        'key' => $flosc_default_catalog_key,
-        'filename' => 'flosc_da1_catalog_default.tsv',
-        'created_at' => current_time('mysql'),
-    ];
-}
-
-$flosc_da1_requested_catalog_key = $flosc_default_catalog_key;
+$flosc_da1_requested_catalog_key = '';
 if (isset($flosc_da1_post['catalog'])) {
     $flosc_da1_requested_catalog_key = flosc_da1_normalize_key(sanitize_text_field((string) $flosc_da1_post['catalog']));
 } elseif (isset($flosc_da1_get['catalog'])) {
     $flosc_da1_requested_catalog_key = flosc_da1_normalize_key(sanitize_text_field((string) $flosc_da1_get['catalog']));
 }
+/*
+ * A catalog is a .tsv file in the catalogs folder. The index option only carries
+ * optional presentation — a label, when someone has given one — so discovery reads
+ * the folder and treats anything found there as real, whether the option knows
+ * about it or not. Files with no index entry are marked so the UI can offer to
+ * record a label rather than pretending they are unregistered.
+ */
+$flosc_da1_disk_catalogs = flosc_da1_catalog_files_on_disk($flosc_catalog_dir);
+foreach ($flosc_da1_disk_catalogs as $flosc_da1_disk_key => $flosc_da1_disk_name) {
+    if (!isset($flosc_da1_catalogs[$flosc_da1_disk_key])) {
+        // Found on disk with nothing recorded about it: no description invented.
+        $flosc_da1_catalogs[$flosc_da1_disk_key] = [
+            'description' => '',
+            'key' => $flosc_da1_disk_key,
+            'filename' => $flosc_da1_disk_name,
+            'created_at' => '',
+        ];
+    }
+}
+ksort($flosc_da1_catalogs);
+
+/*
+ * DA1 has two views, matching the Flow tab's vocabulary so one URL habit works
+ * across tabs: "single" edits the rows of one catalog, "all" manages every
+ * catalog and which flows each one serves.
+ */
+$flosc_da1_view_raw = isset($flosc_da1_get['view']) ? sanitize_key((string) $flosc_da1_get['view']) : '';
+$flosc_da1_view = ($flosc_da1_view_raw === 'all') ? 'all' : 'single';
+
+/*
+ * With no catalog named in the URL, open the first one there is. No catalog is
+ * privileged — this is alphabetical order, not a designated default.
+ */
 if ($flosc_da1_requested_catalog_key === '' || !isset($flosc_da1_catalogs[$flosc_da1_requested_catalog_key])) {
-    $flosc_da1_requested_catalog_key = $flosc_default_catalog_key;
+    $flosc_da1_catalog_keys = array_keys($flosc_da1_catalogs);
+    $flosc_da1_requested_catalog_key = $flosc_da1_catalog_keys === [] ? '' : (string) $flosc_da1_catalog_keys[0];
 }
 
 $flosc_da1_notice_success = '';
@@ -519,7 +631,7 @@ if (isset($flosc_da1_post['flosc_da1_create_catalog'])) {
         $flosc_da1_notice_error = 'Catalog key already exists.';
     } else {
         $flosc_da1_catalogs[$flosc_da1_key] = [
-            'label' => $flosc_da1_label !== '' ? $flosc_da1_label : ucwords(str_replace(['-', '_'], ' ', $flosc_da1_key)),
+            'description' => $flosc_da1_label,
             'key' => $flosc_da1_key,
             'filename' => 'flosc_da1_catalog_' . $flosc_da1_key . '.tsv',
             'created_at' => current_time('mysql'),
@@ -544,16 +656,150 @@ if (isset($flosc_da1_post['flosc_da1_assign_catalogs']) && $flosc_da1_selected_i
             $flosc_da1_clean[] = $flosc_da1_k;
         }
     }
-    if (empty($flosc_da1_clean)) {
-        $flosc_da1_clean[] = $flosc_default_catalog_key;
-    }
     $flosc_da1_flow_assignments[$flosc_da1_selected_ivr] = $flosc_da1_clean;
     update_option($flosc_catalog_assign_option, $flosc_da1_flow_assignments, false);
     $flosc_da1_notice_success = 'Flow catalog assignment saved.';
 }
 
+/*
+ * Attachment matrix from the all-catalogs view: one row per catalog, one checkbox
+ * per flow. The stored shape stays exactly as the runtime expects it —
+ * flosc_da1_flow_catalogs[ flow file ] = ordered list of catalog keys, read by
+ * FLOSC_DA1_Compositions::load_rows_for_flow() — so this screen edits membership
+ * without inventing a second source of truth.
+ *
+ * Two properties are deliberate. Existing order is preserved, because the order of
+ * a flow's list is its catalog priority and this screen has no opinion about
+ * priority: retained keys keep their position and newly checked ones are appended.
+ * And only the catalogs actually rendered are considered, so a key that was not on
+ * screen is never silently dropped from a flow.
+ */
+if (isset($flosc_da1_post['flosc_da1_attach_flows'])) {
+    check_admin_referer('flosc_da1_catalog_manage');
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to assign DA1 catalogs.', 'flosc'));
+    }
+
+    $flosc_da1_rendered_catalogs = [];
+    if (isset($flosc_da1_post['flosc_da1_rendered_catalogs']) && is_array($flosc_da1_post['flosc_da1_rendered_catalogs'])) {
+        foreach ($flosc_da1_post['flosc_da1_rendered_catalogs'] as $flosc_da1_rc) {
+            $flosc_da1_rc_key = flosc_da1_normalize_key(sanitize_text_field((string) $flosc_da1_rc));
+            if ($flosc_da1_rc_key !== '' && isset($flosc_da1_catalogs[$flosc_da1_rc_key]) && !in_array($flosc_da1_rc_key, $flosc_da1_rendered_catalogs, true)) {
+                $flosc_da1_rendered_catalogs[] = $flosc_da1_rc_key;
+            }
+        }
+    }
+
+    $flosc_da1_known_flows = (isset($flosc_ivr_files) && is_array($flosc_ivr_files)) ? $flosc_ivr_files : [];
+    $flosc_da1_rendered_flows = [];
+    if (isset($flosc_da1_post['flosc_da1_rendered_flows']) && is_array($flosc_da1_post['flosc_da1_rendered_flows'])) {
+        foreach ($flosc_da1_post['flosc_da1_rendered_flows'] as $flosc_da1_rf) {
+            $flosc_da1_rf_file = sanitize_file_name((string) $flosc_da1_rf);
+            if ($flosc_da1_rf_file !== '' && in_array($flosc_da1_rf_file, $flosc_da1_known_flows, true) && !in_array($flosc_da1_rf_file, $flosc_da1_rendered_flows, true)) {
+                $flosc_da1_rendered_flows[] = $flosc_da1_rf_file;
+            }
+        }
+    }
+
+    $flosc_da1_checked = (isset($flosc_da1_post['flosc_da1_attach']) && is_array($flosc_da1_post['flosc_da1_attach']))
+        ? $flosc_da1_post['flosc_da1_attach']
+        : [];
+
+    foreach ($flosc_da1_rendered_flows as $flosc_da1_flow_file) {
+        // Which of the rendered catalogs the operator ticked for this flow.
+        $flosc_da1_wanted = [];
+        foreach ($flosc_da1_rendered_catalogs as $flosc_da1_cat_key_in) {
+            if (!isset($flosc_da1_checked[$flosc_da1_cat_key_in]) || !is_array($flosc_da1_checked[$flosc_da1_cat_key_in])) {
+                continue;
+            }
+            foreach ($flosc_da1_checked[$flosc_da1_cat_key_in] as $flosc_da1_checked_flow) {
+                if (sanitize_file_name((string) $flosc_da1_checked_flow) === $flosc_da1_flow_file) {
+                    $flosc_da1_wanted[] = $flosc_da1_cat_key_in;
+                    break;
+                }
+            }
+        }
+
+        $flosc_da1_existing = [];
+        if (isset($flosc_da1_flow_assignments[$flosc_da1_flow_file]) && is_array($flosc_da1_flow_assignments[$flosc_da1_flow_file])) {
+            foreach ($flosc_da1_flow_assignments[$flosc_da1_flow_file] as $flosc_da1_ex) {
+                $flosc_da1_ex_key = flosc_da1_normalize_key((string) $flosc_da1_ex);
+                if ($flosc_da1_ex_key !== '' && !in_array($flosc_da1_ex_key, $flosc_da1_existing, true)) {
+                    $flosc_da1_existing[] = $flosc_da1_ex_key;
+                }
+            }
+        }
+
+        $flosc_da1_next = [];
+        foreach ($flosc_da1_existing as $flosc_da1_ex_key) {
+            if (!in_array($flosc_da1_ex_key, $flosc_da1_rendered_catalogs, true)) {
+                // Not on screen, so not this screen's business — carry it through.
+                $flosc_da1_next[] = $flosc_da1_ex_key;
+                continue;
+            }
+            if (in_array($flosc_da1_ex_key, $flosc_da1_wanted, true)) {
+                $flosc_da1_next[] = $flosc_da1_ex_key;
+            }
+        }
+        foreach ($flosc_da1_wanted as $flosc_da1_add_key) {
+            if (!in_array($flosc_da1_add_key, $flosc_da1_next, true)) {
+                $flosc_da1_next[] = $flosc_da1_add_key;
+            }
+        }
+
+        $flosc_da1_flow_assignments[$flosc_da1_flow_file] = array_values($flosc_da1_next);
+    }
+
+    update_option($flosc_catalog_assign_option, $flosc_da1_flow_assignments, false);
+
+    /*
+     * Descriptions ride along with the same Save. Writing one is also what records
+     * a catalog that was only ever a file on disk: the index exists to hold the
+     * description, so there is no separate "register this catalog" step.
+     */
+    if (isset($flosc_da1_post['flosc_da1_description']) && is_array($flosc_da1_post['flosc_da1_description'])) {
+        $flosc_da1_index_save = get_option($flosc_catalog_index_option, []);
+        if (!is_array($flosc_da1_index_save)) {
+            $flosc_da1_index_save = [];
+        }
+        $flosc_da1_disk_now = flosc_da1_catalog_files_on_disk($flosc_catalog_dir);
+
+        foreach ($flosc_da1_post['flosc_da1_description'] as $flosc_da1_desc_key => $flosc_da1_desc_val) {
+            $flosc_da1_dk = flosc_da1_normalize_key(sanitize_text_field((string) $flosc_da1_desc_key));
+            if ($flosc_da1_dk === '' || !in_array($flosc_da1_dk, $flosc_da1_rendered_catalogs, true)) {
+                continue;
+            }
+            $flosc_da1_desc = sanitize_text_field((string) $flosc_da1_desc_val);
+
+            if ($flosc_da1_desc === '') {
+                // Cleared description: drop the entry rather than store an empty one.
+                unset($flosc_da1_index_save[$flosc_da1_dk]);
+                continue;
+            }
+
+            $flosc_da1_existing_entry = isset($flosc_da1_index_save[$flosc_da1_dk]) && is_array($flosc_da1_index_save[$flosc_da1_dk])
+                ? $flosc_da1_index_save[$flosc_da1_dk]
+                : [];
+            unset($flosc_da1_existing_entry['label']);
+
+            $flosc_da1_index_save[$flosc_da1_dk] = array_merge($flosc_da1_existing_entry, [
+                'description' => $flosc_da1_desc,
+                'key' => $flosc_da1_dk,
+                'filename' => $flosc_da1_disk_now[$flosc_da1_dk] ?? ('flosc_da1_catalog_' . $flosc_da1_dk . '.tsv'),
+            ]);
+            if (!isset($flosc_da1_index_save[$flosc_da1_dk]['created_at']) || $flosc_da1_index_save[$flosc_da1_dk]['created_at'] === '') {
+                $flosc_da1_index_save[$flosc_da1_dk]['created_at'] = current_time('mysql');
+            }
+        }
+
+        update_option($flosc_catalog_index_option, $flosc_da1_index_save, false);
+    }
+
+    $flosc_da1_notice_success = __('Catalog descriptions and attributions saved.', 'flosc');
+}
+
 $flosc_da1_catalog_path = flosc_da1_catalog_file($flosc_catalog_dir, $flosc_da1_requested_catalog_key);
-$flosc_da1_selected_catalog_label = $flosc_da1_catalogs[$flosc_da1_requested_catalog_key]['label'] ?? $flosc_da1_requested_catalog_key;
+$flosc_da1_selected_catalog_label = flosc_da1_catalog_description($flosc_da1_catalogs[$flosc_da1_requested_catalog_key] ?? []);
 
 if (isset($flosc_da1_post['flosc_da1_upload_catalog'])) {
     check_admin_referer('flosc_da1_catalog_manage');
@@ -603,12 +849,6 @@ if (isset($flosc_da1_post['da1_save_catalog'])) {
     }
 }
 
-if ( ! file_exists( $flosc_da1_catalog_path ) && $flosc_da1_requested_catalog_key === $flosc_default_catalog_key ) {
-	$flosc_da1_sample_content = flosc_da1_read_shipped_sample( $flosc_sample_catalog_path );
-	if ( is_string( $flosc_da1_sample_content ) && trim( $flosc_da1_sample_content ) !== '' ) {
-		flosc_da1_write_catalog_file( $flosc_da1_catalog_path, $flosc_da1_sample_content, $flosc_catalog_dir );
-	}
-}
 
 $flosc_da1_columns = [];
 $flosc_da1_rows = [];
@@ -840,7 +1080,9 @@ if (empty($flosc_da1_rows)) {
     }
 }
 
-$flosc_da1_flow_assigned = $flosc_da1_selected_ivr !== '' && isset($flosc_da1_flow_assignments[$flosc_da1_selected_ivr]) ? implode(',', (array) $flosc_da1_flow_assignments[$flosc_da1_selected_ivr]) : $flosc_default_catalog_key;
+$flosc_da1_flow_assigned = ($flosc_da1_selected_ivr !== '' && isset($flosc_da1_flow_assignments[$flosc_da1_selected_ivr]))
+    ? implode(',', (array) $flosc_da1_flow_assignments[$flosc_da1_selected_ivr])
+    : '';
 $flosc_da1_export_url = add_query_arg([
     'page' => 'flosc-settings',
     'tab' => 'da1',
@@ -861,6 +1103,50 @@ if (!empty($flosc_identity_view)) {
     $flosc_da1_form_action_args['view'] = $flosc_identity_view;
 }
 $flosc_da1_form_action = add_query_arg($flosc_da1_form_action_args, admin_url('admin.php'));
+
+/*
+ * View toggle targets. Both keep the open catalog and the current flow in the URL
+ * so switching view never loses the operator's place.
+ */
+$flosc_da1_view_url = function ($flosc_da1_target_view) use ($flosc_da1_requested_catalog_key, $flosc_da1_selected_ivr) {
+    $flosc_da1_args = [
+        'page' => 'flosc-settings',
+        'tab' => 'da1',
+        'catalog' => $flosc_da1_requested_catalog_key,
+        'view' => $flosc_da1_target_view,
+    ];
+    if ($flosc_da1_selected_ivr !== '') {
+        $flosc_da1_args['ivr'] = $flosc_da1_selected_ivr;
+    }
+    return add_query_arg($flosc_da1_args, admin_url('admin.php'));
+};
+
+/*
+ * Which flows use each catalog — the reverse of the stored per-flow lists, built
+ * once so the all-catalogs table can render a row per catalog without re-scanning
+ * the assignments for every checkbox.
+ */
+$flosc_da1_flows_by_catalog = [];
+foreach ($flosc_da1_flow_assignments as $flosc_da1_assigned_flow => $flosc_da1_assigned_keys) {
+    if (!is_array($flosc_da1_assigned_keys)) {
+        continue;
+    }
+    $flosc_da1_assigned_flow = sanitize_file_name((string) $flosc_da1_assigned_flow);
+    foreach ($flosc_da1_assigned_keys as $flosc_da1_assigned_key) {
+        $flosc_da1_ak = flosc_da1_normalize_key((string) $flosc_da1_assigned_key);
+        if ($flosc_da1_ak === '') {
+            continue;
+        }
+        if (!isset($flosc_da1_flows_by_catalog[$flosc_da1_ak])) {
+            $flosc_da1_flows_by_catalog[$flosc_da1_ak] = [];
+        }
+        if (!in_array($flosc_da1_assigned_flow, $flosc_da1_flows_by_catalog[$flosc_da1_ak], true)) {
+            $flosc_da1_flows_by_catalog[$flosc_da1_ak][] = $flosc_da1_assigned_flow;
+        }
+    }
+}
+
+$flosc_da1_all_flows = (isset($flosc_ivr_files) && is_array($flosc_ivr_files)) ? $flosc_ivr_files : [];
 
 if ( isset( $flosc_da1_get['da1_export'] ) && (string) $flosc_da1_get['da1_export'] === '1' ) {
 	$flosc_da1_nonce = sanitize_text_field( (string) ( $flosc_da1_get['_wpnonce'] ?? '' ) );
@@ -898,69 +1184,279 @@ if ( isset( $flosc_da1_get['da1_export'] ) && (string) $flosc_da1_get['da1_expor
 
     <div class="flosc-da1-header">
         <div>
-            <h2 class="flosc-da1-title">DA1 Catalog</h2>
+            <h2 class="flosc-da1-title"><?php echo esc_html($flosc_da1_view === 'all' ? 'DA1 Catalogs' : 'DA1 Catalog'); ?></h2>
             <p class="flosc-da1-meta">
-                <?php echo esc_html($flosc_da1_selected_catalog_label); ?>
-                &mdash;
-                <code class="flosc-da1-filename"><?php echo esc_html(basename($flosc_da1_catalog_path)); ?></code>
+                <?php if ($flosc_da1_view === 'all'): ?>
+                    <?php
+                    /*
+                     * Two counts, two plural decisions. One _n() cannot serve both —
+                     * choosing its form from the flow count is what produced
+                     * "1 catalogs across 8 flows".
+                     */
+                    $flosc_da1_count_catalogs = count($flosc_da1_catalogs);
+                    $flosc_da1_count_flows = count($flosc_da1_all_flows);
+                    echo esc_html(sprintf(
+                        /* translators: 1: catalog count phrase, 2: flow count phrase */
+                        __('%1$s across %2$s', 'flosc'),
+                        sprintf(
+                            /* translators: %d: number of catalogs */
+                            _n('%d catalog', '%d catalogs', $flosc_da1_count_catalogs, 'flosc'),
+                            $flosc_da1_count_catalogs
+                        ),
+                        sprintf(
+                            /* translators: %d: number of flows */
+                            _n('%d flow', '%d flows', $flosc_da1_count_flows, 'flosc'),
+                            $flosc_da1_count_flows
+                        )
+                    ));
+                    ?>
+                <?php else: ?>
+                    <?php if ($flosc_da1_selected_catalog_label !== ''): ?>
+                        <?php echo esc_html($flosc_da1_selected_catalog_label); ?>
+                        &mdash;
+                    <?php endif; ?>
+                    <code class="flosc-da1-filename"><?php echo esc_html(basename($flosc_da1_catalog_path)); ?></code>
+                <?php endif; ?>
             </p>
         </div>
         <div class="flosc-da1-actions-top">
-            <a href="<?php echo esc_url($flosc_da1_export_url); ?>" class="button">Export TSV</a>
-            <button type="button" class="button button-primary da1-save-trigger" data-form-id="da1-catalog-form">Save Catalog</button>
+            <?php // View toggle mirrors the Flow tab: one catalog's rows, or every catalog and its flows. ?>
+            <span class="flosc-da1-view-toggle">
+                <a href="<?php echo esc_url($flosc_da1_view_url('single')); ?>" class="button <?php echo esc_attr($flosc_da1_view === 'single' ? 'button-primary' : ''); ?>"><?php echo esc_html__('Single catalog', 'flosc'); ?></a>
+                <a href="<?php echo esc_url($flosc_da1_view_url('all')); ?>" class="button <?php echo esc_attr($flosc_da1_view === 'all' ? 'button-primary' : ''); ?>"><?php echo esc_html__('All catalogs', 'flosc'); ?></a>
+            </span>
+            <?php if ($flosc_da1_view === 'single'): ?>
+                <a href="<?php echo esc_url($flosc_da1_export_url); ?>" class="button">Export TSV</a>
+                <button type="button" class="button button-primary da1-save-trigger" data-form-id="da1-catalog-form">Save Catalog</button>
+            <?php endif; ?>
         </div>
     </div>
 
+    <?php
+    /*
+     * Toolbar. Every tool is a row in one grid — label column, control column,
+     * action column — so the labels line up and each row reads left to right
+     * instead of each form inventing its own alignment.
+     */
+    ?>
     <div class="flosc-da1-catalog-tools">
-        <form method="get" action="<?php echo esc_url(admin_url('admin.php')); ?>" class="flosc-da1-tool-form">
-            <input type="hidden" name="page" value="flosc-settings">
-            <input type="hidden" name="tab" value="da1">
-            <?php if ($flosc_da1_selected_ivr !== ''): ?>
-                <input type="hidden" name="ivr" value="<?php echo esc_attr($flosc_da1_selected_ivr); ?>">
-            <?php endif; ?>
-            <label for="flosc-da1-catalog-select"><strong>Catalog</strong></label>
-            <select id="flosc-da1-catalog-select" name="catalog">
-                <?php foreach ($flosc_da1_catalogs as $flosc_da1_cat_key => $flosc_cat): ?>
-                    <option value="<?php echo esc_attr($flosc_da1_cat_key); ?>" <?php selected($flosc_da1_cat_key, $flosc_da1_requested_catalog_key); ?>>
-                        <?php echo esc_html(($flosc_cat['label'] ?? $flosc_da1_cat_key) . ' [' . $flosc_da1_cat_key . ']'); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-            <button type="submit" class="button">Open</button>
-        </form>
+        <?php if ($flosc_da1_view === 'single'): ?>
+            <form method="get" action="<?php echo esc_url(admin_url('admin.php')); ?>" class="flosc-da1-tool-form">
+                <input type="hidden" name="page" value="flosc-settings">
+                <input type="hidden" name="tab" value="da1">
+                <input type="hidden" name="view" value="single">
+                <?php if ($flosc_da1_selected_ivr !== ''): ?>
+                    <input type="hidden" name="ivr" value="<?php echo esc_attr($flosc_da1_selected_ivr); ?>">
+                <?php endif; ?>
+                <label class="flosc-da1-tool-label" for="flosc-da1-catalog-select"><?php echo esc_html__('Catalog', 'flosc'); ?></label>
+                <div class="flosc-da1-tool-controls">
+                    <select id="flosc-da1-catalog-select" name="catalog">
+                        <?php foreach ($flosc_da1_catalogs as $flosc_da1_cat_key => $flosc_cat): ?>
+                            <option value="<?php echo esc_attr($flosc_da1_cat_key); ?>" <?php selected($flosc_da1_cat_key, $flosc_da1_requested_catalog_key); ?>>
+                                <?php
+                                $flosc_da1_opt_desc = flosc_da1_catalog_description($flosc_cat);
+                                echo esc_html($flosc_da1_opt_desc !== ''
+                                    ? $flosc_da1_opt_desc . ' — ' . ($flosc_cat['filename'] ?? ($flosc_da1_cat_key . '.tsv'))
+                                    : (string) ($flosc_cat['filename'] ?? $flosc_da1_cat_key));
+                                ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="flosc-da1-tool-action">
+                    <button type="submit" class="button"><?php echo esc_html__('Open', 'flosc'); ?></button>
+                </div>
+            </form>
+
+            <form method="post" enctype="multipart/form-data" class="flosc-da1-tool-form">
+                <?php wp_nonce_field('flosc_da1_catalog_manage'); ?>
+                <input type="hidden" name="flosc_da1_upload_catalog" value="1">
+                <label class="flosc-da1-tool-label" for="flosc-da1-upload-file"><?php echo esc_html__('Replace rows', 'flosc'); ?></label>
+                <div class="flosc-da1-tool-controls">
+                    <input type="file" id="flosc-da1-upload-file" name="flosc_da1_upload_file" accept=".tsv,text/tab-separated-values,text/plain">
+                    <span class="description"><?php
+                    /* translators: %s: catalog key the upload replaces */
+                    printf(esc_html__('Replaces the rows of %s.', 'flosc'), '<code>' . esc_html($flosc_da1_requested_catalog_key) . '</code>');
+                    ?></span>
+                </div>
+                <div class="flosc-da1-tool-action">
+                    <button type="submit" class="button"><?php echo esc_html__('Upload TSV', 'flosc'); ?></button>
+                </div>
+            </form>
+
+            <?php
+            $flosc_da1_this_catalog_flows = $flosc_da1_flows_by_catalog[$flosc_da1_requested_catalog_key] ?? [];
+            ?>
+            <div class="flosc-da1-tool-form flosc-da1-tool-form--static">
+                <span class="flosc-da1-tool-label"><?php echo esc_html__('Attributed to', 'flosc'); ?></span>
+                <div class="flosc-da1-tool-controls">
+                    <?php if (empty($flosc_da1_this_catalog_flows)): ?>
+                        <span class="description"><?php echo esc_html__('Not attributed to any flow yet.', 'flosc'); ?></span>
+                    <?php else: ?>
+                        <span class="flosc-da1-flow-chips">
+                            <?php foreach ($flosc_da1_this_catalog_flows as $flosc_da1_used_flow): ?>
+                                <code class="flosc-da1-flow-chip"><?php echo esc_html($flosc_da1_used_flow); ?></code>
+                            <?php endforeach; ?>
+                        </span>
+                    <?php endif; ?>
+                </div>
+                <div class="flosc-da1-tool-action">
+                    <a href="<?php echo esc_url($flosc_da1_view_url('all')); ?>" class="button"><?php echo esc_html__('Edit attributions', 'flosc'); ?></a>
+                </div>
+            </div>
+        <?php endif; ?>
 
         <form method="post" class="flosc-da1-tool-form">
             <?php wp_nonce_field('flosc_da1_catalog_manage'); ?>
             <input type="hidden" name="flosc_da1_create_catalog" value="1">
-            <label><strong>Create Catalog</strong></label>
-            <input type="text" name="flosc_new_catalog_label" placeholder="Label (e.g. Music Core)">
-            <input type="text" name="flosc_new_catalog_key" placeholder="Key (e.g. music_core)">
-            <button type="submit" class="button">Create</button>
+            <label class="flosc-da1-tool-label" for="flosc-da1-new-label"><?php echo esc_html__('New catalog', 'flosc'); ?></label>
+            <div class="flosc-da1-tool-controls">
+                <input type="text" id="flosc-da1-new-label" name="flosc_new_catalog_label" placeholder="<?php echo esc_attr__('Description (e.g. Music Core)', 'flosc'); ?>">
+                <input type="text" name="flosc_new_catalog_key" placeholder="<?php echo esc_attr__('File name (e.g. music_core)', 'flosc'); ?>">
+                <span class="description"><?php echo esc_html__('Creates flosc_da1_catalog_<file name>.tsv', 'flosc'); ?></span>
+            </div>
+            <div class="flosc-da1-tool-action">
+                <button type="submit" class="button"><?php echo esc_html__('Create', 'flosc'); ?></button>
+            </div>
         </form>
-
-        <form method="post" enctype="multipart/form-data" class="flosc-da1-tool-form">
-            <?php wp_nonce_field('flosc_da1_catalog_manage'); ?>
-            <input type="hidden" name="flosc_da1_upload_catalog" value="1">
-            <label><strong>Upload TSV</strong></label>
-            <input type="file" name="flosc_da1_upload_file" accept=".tsv,text/tab-separated-values,text/plain">
-            <button type="submit" class="button">Upload to Current Catalog</button>
-        </form>
-
-        <?php if ($flosc_da1_selected_ivr !== ''): ?>
-            <form method="post" class="flosc-da1-tool-form">
-                <?php wp_nonce_field('flosc_da1_catalog_manage'); ?>
-                <input type="hidden" name="flosc_da1_assign_catalogs" value="1">
-                <label><strong>Flow Catalogs for <?php echo esc_html($flosc_da1_selected_ivr); ?></strong></label>
-                <input type="text" name="flosc_flow_catalogs" value="<?php echo esc_attr($flosc_da1_flow_assigned); ?>" class="flosc-da1-flow-catalogs-input">
-                <span class="description">Comma-separated catalog keys, ordered by priority.</span>
-                <button type="submit" class="button">Save Assignment</button>
-            </form>
-        <?php endif; ?>
     </div>
 
+    <?php if ($flosc_da1_view === 'all'): ?>
+        <?php
+        /*
+         * One row per catalog, one column per flow. Ticking a box attaches that
+         * catalog to that flow; the stored order (a flow's catalog priority) is
+         * left alone by the handler.
+         */
+        ?>
+        <form method="post" class="flosc-da1-manage-form">
+            <?php wp_nonce_field('flosc_da1_catalog_manage'); ?>
+            <input type="hidden" name="flosc_da1_attach_flows" value="1">
+
+            <?php if (empty($flosc_da1_all_flows)): ?>
+                <p class="description"><?php echo esc_html__('No flows exist yet, so there is nothing to attribute catalogs to.', 'flosc'); ?></p>
+            <?php else: ?>
+                <?php
+                /*
+                 * What this screen showed, declared before the table. The handler
+                 * treats these two lists as its scope: a flow or catalog absent
+                 * here is left exactly as it was, so an unchecked box means
+                 * "detach" only for rows that were actually on screen.
+                 *
+                 * They live outside the table on purpose — a hidden input placed in
+                 * tbody outside a tr is hoisted out of the table by the parser and
+                 * can land outside the form.
+                 */
+                ?>
+                <?php foreach ($flosc_da1_all_flows as $flosc_da1_rf_out): ?>
+                    <input type="hidden" name="flosc_da1_rendered_flows[]" value="<?php echo esc_attr($flosc_da1_rf_out); ?>">
+                <?php endforeach; ?>
+                <?php foreach (array_keys($flosc_da1_catalogs) as $flosc_da1_rc_out): ?>
+                    <input type="hidden" name="flosc_da1_rendered_catalogs[]" value="<?php echo esc_attr($flosc_da1_rc_out); ?>">
+                <?php endforeach; ?>
+
+                <div class="flosc-da1-manage-wrap">
+                    <table class="widefat striped flosc-da1-manage-table">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="flosc-da1-manage-col-catalog"><?php echo esc_html__('Catalog', 'flosc'); ?></th>
+                                <th scope="col" class="flosc-da1-manage-col-num"><?php echo esc_html__('Rows', 'flosc'); ?></th>
+                                <th scope="col" class="flosc-da1-manage-col-num"><?php echo esc_html__('Size', 'flosc'); ?></th>
+                                <?php foreach ($flosc_da1_all_flows as $flosc_da1_head_flow): ?>
+                                    <th scope="col" class="flosc-da1-manage-col-flow">
+                                        <span class="flosc-da1-manage-flow-name"><?php echo esc_html(pathinfo($flosc_da1_head_flow, PATHINFO_FILENAME)); ?></span>
+                                    </th>
+                                <?php endforeach; ?>
+                                <th scope="col" class="flosc-da1-manage-col-actions"><?php echo esc_html__('Actions', 'flosc'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($flosc_da1_catalogs as $flosc_da1_row_key => $flosc_da1_row_cat): ?>
+                            <?php
+                            $flosc_da1_row_path = flosc_da1_catalog_file($flosc_catalog_dir, $flosc_da1_row_key);
+                            $flosc_da1_row_exists = file_exists($flosc_da1_row_path);
+                            $flosc_da1_row_rows = $flosc_da1_row_exists ? flosc_da1_catalog_row_count($flosc_da1_row_path, $flosc_catalog_dir) : null;
+                            $flosc_da1_row_size = $flosc_da1_row_exists ? filesize($flosc_da1_row_path) : false;
+                            $flosc_da1_row_used = $flosc_da1_flows_by_catalog[$flosc_da1_row_key] ?? [];
+                            $flosc_da1_row_open_args = [
+                                'page' => 'flosc-settings',
+                                'tab' => 'da1',
+                                'catalog' => $flosc_da1_row_key,
+                                'view' => 'single',
+                            ];
+                            if ($flosc_da1_selected_ivr !== '') {
+                                $flosc_da1_row_open_args['ivr'] = $flosc_da1_selected_ivr;
+                            }
+                            ?>
+                            <tr>
+                                <td class="flosc-da1-manage-col-catalog">
+                                    <?php
+                                    /*
+                                     * The filename is the catalog's identity, so it is stated plainly and
+                                     * cannot be edited here. The description is free text the operator owns,
+                                     * editable in place and saved with the attributions below.
+                                     */
+                                    ?>
+                                    <code class="flosc-da1-manage-file"><?php echo esc_html(basename($flosc_da1_row_path)); ?></code>
+                                    <?php if (!$flosc_da1_row_exists): ?>
+                                        <span class="flosc-da1-badge flosc-da1-badge--missing"><?php echo esc_html__('file missing', 'flosc'); ?></span>
+                                    <?php endif; ?>
+                                    <label class="screen-reader-text" for="flosc-da1-desc-<?php echo esc_attr($flosc_da1_row_key); ?>">
+                                        <?php echo esc_html__('Catalog description', 'flosc'); ?>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        class="flosc-da1-manage-desc"
+                                        id="flosc-da1-desc-<?php echo esc_attr($flosc_da1_row_key); ?>"
+                                        name="flosc_da1_description[<?php echo esc_attr($flosc_da1_row_key); ?>]"
+                                        value="<?php echo esc_attr(flosc_da1_catalog_description($flosc_da1_row_cat)); ?>"
+                                        placeholder="<?php echo esc_attr__('Describe this catalog', 'flosc'); ?>"
+                                    >
+                                </td>
+                                <td class="flosc-da1-manage-col-num"><?php echo esc_html($flosc_da1_row_rows === null ? '—' : number_format_i18n($flosc_da1_row_rows)); ?></td>
+                                <td class="flosc-da1-manage-col-num"><?php echo esc_html($flosc_da1_row_size === false ? '—' : size_format($flosc_da1_row_size)); ?></td>
+                                <?php foreach ($flosc_da1_all_flows as $flosc_da1_cell_flow): ?>
+                                    <td class="flosc-da1-manage-col-flow">
+                                        <label class="flosc-da1-manage-check">
+                                            <input
+                                                type="checkbox"
+                                                name="flosc_da1_attach[<?php echo esc_attr($flosc_da1_row_key); ?>][]"
+                                                value="<?php echo esc_attr($flosc_da1_cell_flow); ?>"
+                                                <?php checked(in_array($flosc_da1_cell_flow, $flosc_da1_row_used, true)); ?>
+                                            >
+                                            <span class="screen-reader-text">
+                                                <?php echo esc_html(sprintf(
+                                                    /* translators: 1: catalog key, 2: flow file */
+                                                    __('Attribute %1$s to %2$s', 'flosc'),
+                                                    $flosc_da1_row_key,
+                                                    $flosc_da1_cell_flow
+                                                )); ?>
+                                            </span>
+                                        </label>
+                                    </td>
+                                <?php endforeach; ?>
+                                <td class="flosc-da1-manage-col-actions">
+                                    <a href="<?php echo esc_url(add_query_arg($flosc_da1_row_open_args, admin_url('admin.php'))); ?>" class="button button-small"><?php echo esc_html__('Edit rows', 'flosc'); ?></a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p class="flosc-da1-manage-submit">
+                    <button type="submit" class="button button-primary"><?php echo esc_html__('Save attributions', 'flosc'); ?></button>
+                    <span class="description"><?php echo esc_html__('A flow with nothing ticked contributes no DA1 rows.', 'flosc'); ?></span>
+                </p>
+            <?php endif; ?>
+        </form>
+    <?php endif; ?>
+
+    <?php if ($flosc_da1_view === 'single'): ?>
     <form id="da1-catalog-form" method="post" action="<?php echo esc_url($flosc_da1_form_action); ?>">
         <input type="hidden" name="page" value="flosc-settings">
         <input type="hidden" name="tab" value="da1">
+        <input type="hidden" name="view" value="single">
         <input type="hidden" name="catalog" value="<?php echo esc_attr($flosc_da1_requested_catalog_key); ?>">
         <?php if ($flosc_da1_selected_ivr !== ''): ?>
             <input type="hidden" name="ivr" value="<?php echo esc_attr($flosc_da1_selected_ivr); ?>">
@@ -1018,8 +1514,17 @@ if ( isset( $flosc_da1_get['da1_export'] ) && (string) $flosc_da1_get['da1_expor
             <button type="button" class="button button-primary button-large da1-save-trigger" data-form-id="da1-catalog-form">Save Catalog</button>
         </div>
     </form>
+    <?php endif; ?>
 </div>
 
+<?php
+/*
+ * Row-editor behaviour. Bound to #da1-catalog-form and #da1-table, so it is only
+ * emitted for the single-catalog view — the all-catalogs view renders neither, and
+ * the script dereferences the form directly when wiring Save.
+ */
+if ($flosc_da1_view === 'single'):
+?>
 <?php ob_start(); ?>
 (function () {
     var COLUMNS = <?php echo wp_json_encode(array_values($flosc_da1_columns)); ?>;
@@ -1333,3 +1838,4 @@ if ( isset( $flosc_da1_get['da1_export'] ) && (string) $flosc_da1_get['da1_expor
 })();
 <?php
 wp_add_inline_script('flosc-admin', ob_get_clean());
+endif;

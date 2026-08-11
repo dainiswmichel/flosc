@@ -835,8 +835,19 @@ trait FLOSC_Admin_Trait {
             }
         }
 
-        // Flow Portability kit: dedicated CSS (zone styles) + JS (list/DnD).
-        if ( $flosc_tab === 'flow' ) {
+        /*
+         * Flow Portability kit drop zone: dedicated stylesheet (the whole zone,
+         * staged-file panel and action row) plus its vanilla-JS staging script.
+         * These two files are the only owners of that UI, and this enqueue is the
+         * only place they are delivered — admin/flow.php prints no asset tags.
+         *
+         * The zone markup only renders on the "all" view of the Flow tab, so the
+         * view is read here and the assets are skipped on the single-flow view.
+         */
+        $flosc_view_raw = filter_input( INPUT_GET, 'view', FILTER_UNSAFE_RAW );
+        $flosc_view     = is_string( $flosc_view_raw ) ? sanitize_key( wp_unslash( $flosc_view_raw ) ) : '';
+
+        if ( $flosc_tab === 'flow' && $flosc_view === 'all' ) {
             $flosc_port_css = FLOSC_PLUGIN_DIR . 'assets/css/flosc-portability-admin.css';
             $flosc_port_js  = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
             if ( file_exists( $flosc_port_css ) ) {
@@ -1038,6 +1049,32 @@ trait FLOSC_Admin_Trait {
         // IVR new-flow upload: must redirect before admin chrome (Set-as-default class of bug).
         // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in handler
         if (!empty($post['flosc_upload_ivr_file']) && !empty($_FILES['ivr_file_upload'])) {
+            if (!function_exists('flosc_admin_handle_ivr_file_upload')) {
+                require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
+            }
+            flosc_admin_handle_ivr_file_upload();
+            // Success exits inside handler. Failure: continue so the settings page can show errors.
+            return;
+        }
+
+        /*
+         * Flow Portability kit drop zone (Create new flow / Apply to current flow).
+         * Same reason as the upload above: the handler ends a successful run with
+         * wp_safe_redirect(), so it has to run here rather than from the Flow
+         * template, where headers are already sent.
+         *
+         * The clicked button carries the intent, so the button value alone decides
+         * the route. Also requiring $_FILES would let a drop that arrived without
+         * its files — an oversized post, or a submission with nothing staged —
+         * fall straight through to a silent page reload, instead of reaching the
+         * handler and being named. Nonce (flosc_portability_kit) and the
+         * manage_options capability are verified inside the handler.
+         */
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in handler
+        $kit_action = isset($post['flosc_portability_submit'])
+            ? sanitize_key((string) $post['flosc_portability_submit'])
+            : '';
+        if (in_array($kit_action, ['create', 'apply'], true)) {
             if (!function_exists('flosc_admin_handle_ivr_file_upload')) {
                 require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
             }

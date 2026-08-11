@@ -54,11 +54,17 @@ $flosc_flow_all_url = add_query_arg([
 
 $flosc_available_ivr_files = [];
 if ($flosc_flow_view === 'all') {
-    if (!function_exists('flosc_admin_handle_ivr_file_upload')) {
-        require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
-    }
-    flosc_admin_handle_ivr_file_upload();
-
+    /*
+     * The kit upload itself runs on admin_init, in
+     * FLOSC_Admin::maybe_process_flosc_settings_post(). It has to: a successful
+     * upload ends in wp_safe_redirect(), which needs headers that are already
+     * sent by the time this template renders. Validation failures record
+     * add_settings_error() during that same request, so the notices below and
+     * settings_errors() in admin/settings.php still show them.
+     *
+     * What is left here is reading the post-redirect query flags and turning
+     * them into success notices.
+     */
     if (isset($flosc_get['flosc_ivr_uploaded']) && '1' === (string) $flosc_get['flosc_ivr_uploaded']) {
         $flosc_up_name = isset($flosc_get['ivr']) ? sanitize_file_name((string) $flosc_get['ivr']) : '';
         add_settings_error(
@@ -682,6 +688,27 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
     ?>
 
     <?php if ($flosc_flow_view === 'all'): ?>
+        <?php
+        /*
+         * HTML forbids nested forms, and this template renders inside
+         * #flosc-settings-form (opened in admin/settings.php). A second <form> start
+         * tag is discarded by the parser, and the next </form> closes the outer form
+         * instead — so the Portability form would lose its id, its
+         * enctype="multipart/form-data" and its own nonce, and the kit would post
+         * through the settings form with no multipart encoding and therefore no
+         * files. Closing the settings form here makes the Portability form and the
+         * file-table action forms siblings of it rather than children.
+         *
+         * Save Settings in admin/settings.php stays bound through
+         * form="flosc-settings-form", and the shared flag keeps that file from
+         * printing a second </form>. Same mechanism as admin/ai-configuration.php.
+         * This view carries no flow_* settings fields, so nothing is orphaned.
+         */
+        if (empty($GLOBALS['flosc_settings_form_closed_early'])) {
+            echo '</form>';
+            $GLOBALS['flosc_settings_form_closed_early'] = true;
+        }
+    ?>
     <div class="flosc-info-box flosc-ivr-info-box">
         <h3 class="flosc-flow-portability-title">
             <span><?php echo esc_html__('Flow Portability', 'flosc'); ?></span>
@@ -714,34 +741,37 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
         </ul>
 
         <?php
-        // Stylesheet BEFORE markup so the file input never paints “Choose Files”.
-        $flosc_port_css = FLOSC_PLUGIN_DIR . 'assets/css/flosc-portability-admin.css';
-        if ( file_exists( $flosc_port_css ) ) {
-            $flosc_port_css_url = add_query_arg(
-                'ver',
-                rawurlencode( (string) filemtime( $flosc_port_css ) ),
-                FLOSC_PLUGIN_URL . 'assets/css/flosc-portability-admin.css'
-            );
-            // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet
-            echo '<link rel="stylesheet" href="' . esc_url( $flosc_port_css_url ) . '" id="flosc-portability-admin-css" />' . "\n";
-        }
+        /*
+         * The kit stylesheet and script are enqueued for this screen in
+         * FLOSC_Admin::enqueue_admin_assets() — handle 'flosc-portability-admin'.
+         * Nothing is printed here, so the page has one copy of each asset and
+         * the drop zone is fully styled before the browser paints the form.
+         */
         ?>
-        <form method="post" action="<?php echo esc_url($flosc_flow_all_url); ?>" enctype="multipart/form-data" class="flosc-ivr-upload-form flosc-portability-kit-form" id="flosc-ivr-dropzone-upload-form">
+        <form method="post" action="<?php echo esc_url($flosc_flow_all_url); ?>" enctype="multipart/form-data" class="flosc-portability-kit-form" id="flosc-kit-upload-form">
             <?php wp_nonce_field('flosc_portability_kit'); ?>
             <input type="hidden" name="flosc_upload_redirect_tab" value="flow">
             <input type="hidden" name="flosc_upload_redirect_view" value="all">
             <input type="hidden" name="flosc_working_ivr" value="<?php echo esc_attr($flosc_selected_ivr); ?>">
 
-            <div class="flosc-dropzone flosc-dropzone--kit" id="flosc-ivr-dropzone" aria-controls="flosc-portability-file-list">
+            <div class="flosc-dropzone flosc-dropzone--kit" id="flosc-kit-dropzone" aria-controls="flosc-portability-file-list">
+                <?php
+                /*
+                 * The file input carries the multipart payload and stays in the tab
+                 * order; the stylesheet hides it from view. The label below covers the
+                 * whole zone, so a click anywhere in the box opens the picker without a
+                 * second control and without the browser's native file-picker button.
+                 */
+                ?>
                 <input
                     type="file"
                     name="flosc_kit_files[]"
-                    id="flosc-ivr-file-input"
+                    id="flosc-kit-file-input"
                     class="flosc-sr-only screen-reader-text"
                     accept=".md,.tsv,text/markdown,text/plain,text/tab-separated-values"
                     multiple
                 >
-                <label class="flosc-dropzone__label" for="flosc-ivr-file-input">
+                <label class="flosc-dropzone__label" for="flosc-kit-file-input">
                     <span class="flosc-dropzone__surface">
                         <span class="flosc-dropzone__glyph" aria-hidden="true">
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false">
@@ -840,17 +870,6 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
     </div>
 
     <?php
-    // Kit JS after markup (CSS already linked above the form).
-    $flosc_port_js = FLOSC_PLUGIN_DIR . 'assets/js/flosc-portability-admin.js';
-    if ( file_exists( $flosc_port_js ) ) {
-        $flosc_port_js_url = add_query_arg(
-            'ver',
-            rawurlencode( (string) filemtime( $flosc_port_js ) ),
-            FLOSC_PLUGIN_URL . 'assets/js/flosc-portability-admin.js'
-        );
-        // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript
-        echo '<script src="' . esc_url( $flosc_port_js_url ) . '" id="flosc-portability-admin-js"></script>' . "\n";
-    }
     // Table delete/duplicate confirm only.
     ob_start();
     ?>

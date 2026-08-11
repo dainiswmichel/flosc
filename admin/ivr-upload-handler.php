@@ -238,7 +238,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 		$submit_raw = isset( $_POST['flosc_portability_submit'] )
 			? sanitize_key( (string) wp_unslash( $_POST['flosc_portability_submit'] ) )
 			: '';
-		$is_kit     = in_array( $submit_raw, array( 'create', 'apply', '1' ), true );
+		$is_kit     = in_array( $submit_raw, array( 'create', 'apply' ), true );
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing
 		$is_legacy = ! empty( $_POST['flosc_upload_ivr_file'] ) && ! empty( $_FILES['ivr_file_upload']['name'] );
 
@@ -258,15 +258,10 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 			wp_die( esc_html__( 'You do not have permission to upload flow files.', 'flosc' ) );
 		}
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		// The clicked button is the only source of intent, already narrowed to
+		// create|apply by the $is_kit test above. Create is the safe default: it
+		// writes a new flow rather than merging into an existing one.
 		$action = $submit_raw;
-		if ( '1' === $action || $action === '' ) {
-			// Fallback: hidden field if present.
-			// phpcs:ignore WordPress.Security.NonceVerification.Missing
-			$action = isset( $_POST['flosc_portability_action'] )
-				? sanitize_key( (string) wp_unslash( $_POST['flosc_portability_action'] ) )
-				: 'create';
-		}
 		if ( ! in_array( $action, array( 'create', 'apply' ), true ) ) {
 			$action = 'create';
 		}

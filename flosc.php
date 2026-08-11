@@ -1102,6 +1102,44 @@ class FLOSC_Framework {
             update_option('flosc_menus_v800', true);
         }
 
+        /*
+         * v8.0.0: DA1 catalogs are files, not a "default catalog" concept.
+         *
+         * load_rows_for_flow() used to substitute the catalog key 'default' for any
+         * flow with no assignment, which meant a site could serve DA1 rows without
+         * ever recording which catalog a flow uses. That substitution is gone, so
+         * this writes down what it was already resolving to: every flow that has no
+         * assignment yet is pinned to the catalog files currently on disk that it
+         * was effectively reading. Effective behaviour is unchanged; it is simply
+         * stated instead of inferred.
+         */
+        if (!get_option('flosc_da1_explicit_catalogs_v800')) {
+            $flosc_da1_assign = get_option('flosc_da1_flow_catalogs', []);
+            if (!is_array($flosc_da1_assign)) {
+                $flosc_da1_assign = [];
+            }
+
+            $flosc_da1_uploads = wp_upload_dir();
+            $flosc_da1_dir = trailingslashit((string) ($flosc_da1_uploads['basedir'] ?? '')) . 'flosc-catalogs';
+            $flosc_da1_legacy_file = $flosc_da1_dir . '/flosc_da1_catalog_default.tsv';
+
+            // Only pin when the file the old fallback pointed at actually exists.
+            if (file_exists($flosc_da1_legacy_file) && function_exists('flosc_data_dir')) {
+                $flosc_da1_flow_files = glob(trailingslashit(flosc_data_dir()) . '*.md');
+                if (is_array($flosc_da1_flow_files)) {
+                    foreach ($flosc_da1_flow_files as $flosc_da1_flow_path) {
+                        $flosc_da1_flow_name = basename($flosc_da1_flow_path);
+                        if (!isset($flosc_da1_assign[$flosc_da1_flow_name])) {
+                            $flosc_da1_assign[$flosc_da1_flow_name] = ['default'];
+                        }
+                    }
+                    update_option('flosc_da1_flow_catalogs', $flosc_da1_assign, false);
+                }
+            }
+
+            update_option('flosc_da1_explicit_catalogs_v800', true);
+        }
+
         // v8.0.0: Upgrade is the profile-bar feature button — strip purchase rows from guest/member menus.
         if (!get_option('flosc_menus_upgrade_btn_v800')) {
             foreach (['flosc_guest_menu_items', 'flosc_member_menu_items'] as $_menu_key) {

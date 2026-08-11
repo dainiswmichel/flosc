@@ -1,15 +1,23 @@
 /**
- * Flow Portability — single kit drop zone.
- * Input is WP .screen-reader-text; label is click target; zone handles DnD + list.
+ * Flow Portability kit drop zone — admin only.
+ *
+ * One drop surface, no second picker, and no submit on selection. Files chosen
+ * by click or dropped from the desktop are held in `pending`, listed with their
+ * sizes under "Selected files", and written back onto the file input through a
+ * DataTransfer so Create / Apply post them as flosc_kit_files[].
+ *
+ * Two roles are deliberately split: the <label for="…"> owns clicking (the
+ * browser opens the picker natively, so no click handler is needed), and the
+ * zone element owns drag-and-drop. Nothing here binds a click, which is why the
+ * two cannot fight over the same gesture.
+ *
+ * Delivery: wp_enqueue_script( 'flosc-portability-admin' ) in
+ * includes/flosc-admin.php. Markup: admin/flow.php, Flow tab, view=all.
  */
 (function () {
 	'use strict';
 
-	if (window.floscPortabilityBound) {
-		return;
-	}
-	window.floscPortabilityBound = true;
-
+	/* Mirrors the .tsv ceiling enforced in admin/ivr-upload-handler.php. */
 	var MAX_TSV = 10;
 
 	function onReady(fn) {
@@ -62,9 +70,9 @@
 	}
 
 	onReady(function () {
-		var form = document.getElementById('flosc-ivr-dropzone-upload-form');
-		var zone = document.getElementById('flosc-ivr-dropzone');
-		var input = document.getElementById('flosc-ivr-file-input');
+		var form = document.getElementById('flosc-kit-upload-form');
+		var zone = document.getElementById('flosc-kit-dropzone');
+		var input = document.getElementById('flosc-kit-file-input');
 		var listEl = document.getElementById('flosc-portability-file-list');
 		var countEl = document.getElementById('flosc-portability-file-count');
 		var btnClear = document.getElementById('flosc-portability-clear-files');
@@ -82,6 +90,7 @@
 		/** @type {File[]} */
 		var pending = [];
 		var depth = 0;
+		var submitting = false;
 
 		function setDrag(active) {
 			zone.classList.toggle('is-dragover', !!active);
@@ -170,7 +179,6 @@
 			render();
 		}
 
-		/* Click: native via <label for="…">. DnD: zone. */
 		zone.addEventListener('dragenter', function (e) {
 			e.preventDefault();
 			e.stopPropagation();
@@ -280,12 +288,28 @@
 				window.alert('Create new flow needs one .md file (optional .tsv with it).');
 				return;
 			}
-			if (btnCreate) {
-				btnCreate.disabled = true;
+			/*
+			 * Guard against a second submission without disabling the buttons yet.
+			 * The browser builds the form's entry list after this event returns, and
+			 * a disabled control contributes nothing to it — so disabling the clicked
+			 * button here would strip flosc_portability_submit from the post, leaving
+			 * the handler with no create/apply intent and the page reloading in
+			 * silence. Deferring to the next tick lets the button serialize first,
+			 * and the flag blocks a double click in the meantime.
+			 */
+			if (submitting) {
+				e.preventDefault();
+				return;
 			}
-			if (btnApply) {
-				btnApply.disabled = true;
-			}
+			submitting = true;
+			window.setTimeout(function () {
+				if (btnCreate) {
+					btnCreate.disabled = true;
+				}
+				if (btnApply) {
+					btnApply.disabled = true;
+				}
+			}, 0);
 		});
 
 		render();
