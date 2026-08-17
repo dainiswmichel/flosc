@@ -177,3 +177,63 @@ if ( ! function_exists( 'flosc_get_provider_api_key' ) ) {
 		return isset( $all[ $provider ]['api_key'] ) ? trim( (string) $all[ $provider ]['api_key'] ) : '';
 	}
 }
+
+if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
+	/**
+	 * admin-post.php?action=flosc_save_available_providers
+	 *
+	 * @return void
+	 */
+	function flosc_admin_save_available_providers() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to manage AI providers.', 'flosc' ) );
+		}
+		check_admin_referer( 'flosc_save_available_providers' );
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified above.
+		$posted = isset( $_POST['avail_api_key'] ) && is_array( $_POST['avail_api_key'] ) ? wp_unslash( $_POST['avail_api_key'] ) : array();
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$clear  = isset( $_POST['avail_clear'] ) && is_array( $_POST['avail_clear'] ) ? wp_unslash( $_POST['avail_clear'] ) : array();
+
+		$all = flosc_available_providers_get_all();
+		foreach ( flosc_available_provider_slugs() as $slug ) {
+			if ( ! empty( $clear[ $slug ] ) ) {
+				$all[ $slug ]['api_key']    = '';
+				$all[ $slug ]['updated_at'] = '';
+				continue;
+			}
+			$new = isset( $posted[ $slug ] ) ? trim( (string) $posted[ $slug ] ) : '';
+			if ( $new !== '' ) {
+				$all[ $slug ]['api_key']    = $new;
+				$all[ $slug ]['updated_at'] = current_time( 'mysql' );
+			}
+			// blank password field = keep existing
+		}
+		flosc_available_providers_save_all( $all );
+
+		set_transient(
+			'flosc_ai_all_notice_' . get_current_user_id(),
+			array(
+				'message' => __( 'Available providers saved.', 'flosc' ),
+				'type'    => 'success',
+			),
+			60
+		);
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$ivr = isset( $_POST['flosc_return_ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_POST['flosc_return_ivr'] ) ) : '';
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page' => 'flosc-settings',
+					'tab'  => 'ai',
+					'view' => 'all',
+					'ivr'  => $ivr,
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+	add_action( 'admin_post_flosc_save_available_providers', 'flosc_admin_save_available_providers' );
+}

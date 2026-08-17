@@ -262,12 +262,22 @@ class FLOSC_AI_Chat_Dispatch {
      * v1.9.2: Added FLOSC framework description to prevent identity hallucination
      */
     private function build_identity_prompt($context = []) {
-        // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
-        $name = flosc_get_setting('ai_personality_name', flosc_get_setting('product_name', 'FLOSC'));
-        $role = flosc_get_setting('ai_personality_role', 'AI assistant');
-        $traits = flosc_get_setting('ai_personality_traits', 'Helpful, friendly, and professional.');
-        $mission = flosc_get_setting('ai_mission', 'Help users achieve their goals.');
-        $boundaries = flosc_get_setting('ai_boundaries', '');
+        // Personality: attached library entry (one per flow) wins when set; else flow bag.
+        $name = function_exists( 'flosc_personality_library_resolve_field' )
+            ? flosc_personality_library_resolve_field( 'ai_personality_name', flosc_get_setting( 'product_name', 'FLOSC' ) )
+            : flosc_get_setting( 'ai_personality_name', flosc_get_setting( 'product_name', 'FLOSC' ) );
+        $role = function_exists( 'flosc_personality_library_resolve_field' )
+            ? flosc_personality_library_resolve_field( 'ai_personality_role', 'AI assistant' )
+            : flosc_get_setting( 'ai_personality_role', 'AI assistant' );
+        $traits = function_exists( 'flosc_personality_library_resolve_field' )
+            ? flosc_personality_library_resolve_field( 'ai_personality_traits', 'Helpful, friendly, and professional.' )
+            : flosc_get_setting( 'ai_personality_traits', 'Helpful, friendly, and professional.' );
+        $mission = function_exists( 'flosc_personality_library_resolve_field' )
+            ? flosc_personality_library_resolve_field( 'ai_mission', 'Help users achieve their goals.' )
+            : flosc_get_setting( 'ai_mission', 'Help users achieve their goals.' );
+        $boundaries = function_exists( 'flosc_personality_library_resolve_field' )
+            ? flosc_personality_library_resolve_field( 'ai_boundaries', '' )
+            : flosc_get_setting( 'ai_boundaries', '' );
         $product_name = flosc_get_setting('product_name', '');
         $product_tagline = flosc_get_setting('product_tagline', '');
 
@@ -450,9 +460,15 @@ class FLOSC_AI_Chat_Dispatch {
         }
 
         // Off-topic handling: only included if floscAdmin configured it
-        $topic_scope = flosc_get_setting('ai_topic_scope', '');
-        $off_topic_message = flosc_get_setting('ai_off_topic_message', '');
-        $off_topic_links = flosc_get_setting('ai_off_topic_links', '');
+        $topic_scope = function_exists( 'flosc_personality_library_resolve_field' )
+            ? flosc_personality_library_resolve_field( 'ai_topic_scope', '' )
+            : flosc_get_setting( 'ai_topic_scope', '' );
+        $off_topic_message = function_exists( 'flosc_personality_library_resolve_field' )
+            ? flosc_personality_library_resolve_field( 'ai_off_topic_message', '' )
+            : flosc_get_setting( 'ai_off_topic_message', '' );
+        $off_topic_links = function_exists( 'flosc_personality_library_resolve_field' )
+            ? flosc_personality_library_resolve_field( 'ai_off_topic_links', '' )
+            : flosc_get_setting( 'ai_off_topic_links', '' );
 
         if ($topic_scope || $off_topic_message || $off_topic_links) {
             $prompt .= "## Topic Boundaries\n";

@@ -17,12 +17,59 @@ flosc_tab_header('🤖', 'AI');
 
 $flosc_flow_settings = $GLOBALS['flosc_current_settings'] ?? [];
 $flosc_current_ivr   = $GLOBALS['flosc_current_ivr'] ?? '';
+$flosc_get           = isset( $GLOBALS['flosc_get'] ) && is_array( $GLOBALS['flosc_get'] ) ? $GLOBALS['flosc_get'] : wp_unslash( $_GET ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+$flosc_ai_view       = isset( $flosc_get['view'] ) ? sanitize_key( (string) $flosc_get['view'] ) : 'single';
+if ( ! in_array( $flosc_ai_view, array( 'single', 'all' ), true ) ) {
+	$flosc_ai_view = 'single';
+}
+$flosc_ai_single_url = add_query_arg(
+	array(
+		'page' => 'flosc-settings',
+		'tab'  => 'ai',
+		'view' => 'single',
+		'ivr'  => $flosc_current_ivr,
+	),
+	admin_url( 'admin.php' )
+);
+$flosc_ai_all_url = add_query_arg(
+	array(
+		'page' => 'flosc-settings',
+		'tab'  => 'ai',
+		'view' => 'all',
+		'ivr'  => $flosc_current_ivr,
+	),
+	admin_url( 'admin.php' )
+);
 $flosc_ai_docs_url = add_query_arg([
     'page' => 'flosc-settings',
     'ivr'  => $flosc_current_ivr,
     'tab'  => 'documentation',
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-ai';
+
+// Close main settings form for All Flows view (sibling forms for pool + personalities).
+if ( 'all' === $flosc_ai_view ) {
+	if ( empty( $GLOBALS['flosc_settings_form_closed_early'] ) ) {
+		echo '</form>';
+		$GLOBALS['flosc_settings_form_closed_early'] = true;
+	}
+	?>
+<div class="flosc-docs-link-wrap">
+	<a href="<?php echo esc_url( $flosc_ai_docs_url ); ?>" class="flosc-docs-link"><?php echo esc_html__( 'Docs', 'flosc' ); ?></a>
+</div>
+<div class="flosc-ivr-actions-row flosc-margin-bottom-16">
+	<a href="<?php echo esc_url( $flosc_ai_single_url ); ?>" class="button <?php echo esc_attr( 'single' === $flosc_ai_view ? 'button-primary' : '' ); ?>">
+		<?php echo esc_html__( 'This flow: AI settings', 'flosc' ); ?>
+	</a>
+	<a href="<?php echo esc_url( $flosc_ai_all_url ); ?>" class="button <?php echo esc_attr( 'all' === $flosc_ai_view ? 'button-primary' : '' ); ?>">
+		<?php echo esc_html__( 'All Flows AI API Management', 'flosc' ); ?>
+	</a>
+</div>
+	<?php
+	require FLOSC_PLUGIN_DIR . 'admin/ai-all-flows.php';
+	return;
+}
+
 $flosc_base_prompt = $flosc_flow_settings['ai_base_prompt'] ?? '';
 $flosc_ai_provider = $flosc_flow_settings['ai_provider'] ?? 'ivr';
 $flosc_ai_openai_model = $flosc_flow_settings['ai_openai_model'] ?? 'gpt-4o-mini';
@@ -42,6 +89,9 @@ $flosc_enable_chaining = $flosc_flow_settings['ai_enable_chaining'] ?? false;
 $flosc_chain_provider_1 = $flosc_flow_settings['ai_chain_provider_1'] ?? '';
 $flosc_chain_provider_2 = $flosc_flow_settings['ai_chain_provider_2'] ?? '';
 $flosc_chain_provider_3 = $flosc_flow_settings['ai_chain_provider_3'] ?? '';
+$flosc_personality_id   = sanitize_key( (string) ( $flosc_flow_settings['personality_library_id'] ?? '' ) );
+$flosc_personas         = function_exists( 'flosc_personality_library_get_all' ) ? flosc_personality_library_get_all() : array();
+$flosc_avail            = function_exists( 'flosc_available_providers_get_all' ) ? flosc_available_providers_get_all() : array();
 
 // Risk / setup notices — read directly from flow settings (get_current_flow() is null in admin context).
 // No calendar-age nags for lesson catalog (stable catalogs can be fine for years).
@@ -72,65 +122,62 @@ if (!empty($flosc_product_name) && empty($flosc_product_tag)) {
     <a href="<?php echo esc_url($flosc_ai_docs_url); ?>" class="flosc-docs-link">Docs</a>
 </div>
 
+<div class="flosc-ivr-actions-row flosc-margin-bottom-16">
+	<a href="<?php echo esc_url( $flosc_ai_single_url ); ?>" class="button button-primary">
+		<?php echo esc_html__( 'This flow: AI settings', 'flosc' ); ?>
+	</a>
+	<a href="<?php echo esc_url( $flosc_ai_all_url ); ?>" class="button">
+		<?php echo esc_html__( 'All Flows AI API Management', 'flosc' ); ?>
+	</a>
+</div>
+
 <!-- Styles in assets/css/flosc-admin.css (AI Configuration section) -->
 
 <div class="flosc-ai-config">
 
-<?php
-// floscAvailableProviders status (install pool — keys available to any floscFlow).
-$flosc_avail = function_exists( 'flosc_available_providers_get_all' ) ? flosc_available_providers_get_all() : array();
-$flosc_avail_labels = array(
-	'anthropic'  => 'Anthropic',
-	'openai'     => 'OpenAI',
-	'xai'        => 'xAI',
-	'assemblyai' => 'AssemblyAI',
-);
-?>
-
-<h2><?php echo esc_html__( 'AI Configuration', 'flosc' ); ?></h2>
+<h2><?php echo esc_html__( 'This flow: AI settings', 'flosc' ); ?></h2>
 <p class="description flosc-ai-intro">
-	<?php echo esc_html__( 'floscFlowAiPolicy for this flow: which provider(s) to use, models, tuning, and chain order. Keys you save are promoted into floscAvailableProviders (install pool) so other flows may attach the same provider without re-pasting.', 'flosc' ); ?>
+	<?php echo esc_html__( 'Attach one personality and choose which available AI providers this floscFlow uses. Configure install-wide keys and the personality library under All Flows AI API Management. APIs can be chained; personalities cannot.', 'flosc' ); ?>
 </p>
 
-<div class="flosc-banner flosc-banner--info flosc-margin-bottom-20">
-	<p class="flosc-text-zero-margin">
-		<strong><?php echo esc_html__( 'floscAvailableProviders (install)', 'flosc' ); ?>:</strong>
-		<?php
-		$flosc_avail_bits = array();
-		foreach ( $flosc_avail_labels as $flosc_slug => $flosc_lab ) {
-			$has = ! empty( $flosc_avail[ $flosc_slug ]['api_key'] );
-			$flosc_avail_bits[] = $flosc_lab . ( $has ? ' ✓' : ' —' );
-		}
-		echo esc_html( implode( ' · ', $flosc_avail_bits ) );
-		?>
-	</p>
-	<p class="description flosc-text-zero-margin">
-		<?php echo esc_html__( '✓ = key available to any floscFlow. Attach below via floscFlowAiPolicy (primary provider + optional chain). Runtime resolves: this flow’s key first, then the install pool.', 'flosc' ); ?>
-	</p>
-</div>
+<?php
+$flosc_avail_bits = array();
+foreach ( array( 'anthropic' => 'Anthropic', 'openai' => 'OpenAI', 'xai' => 'xAI', 'assemblyai' => 'AssemblyAI' ) as $flosc_slug => $flosc_lab ) {
+	$flosc_avail_bits[] = $flosc_lab . ( ! empty( $flosc_avail[ $flosc_slug ]['api_key'] ) ? ' ✓' : ' —' );
+}
+?>
+<p class="description">
+	<strong><?php echo esc_html__( 'Install keys available:', 'flosc' ); ?></strong>
+	<?php echo esc_html( implode( ' · ', $flosc_avail_bits ) ); ?>
+	— <a href="<?php echo esc_url( $flosc_ai_all_url ); ?>"><?php echo esc_html__( 'Manage', 'flosc' ); ?></a>
+</p>
 
-<!-- Quick Start Guide -->
-<div class="flosc-ai-quickstart">
-    <h3><?php echo esc_html__( 'Quick start', 'flosc' ); ?></h3>
-    <ol>
-        <li><?php echo esc_html__( 'Choose primary provider (or IVR-only).', 'flosc' ); ?></li>
-        <li><?php echo esc_html__( 'Paste an API key if this flow should store/promote one (or rely on the install pool).', 'flosc' ); ?></li>
-        <li><?php echo esc_html__( 'Optional: enable chaining and order providers (floscFlowAiPolicy).', 'flosc' ); ?></li>
-        <li><?php echo esc_html__( 'Set floscFlowPersonality fields (name, role, traits, base prompt).', 'flosc' ); ?></li>
-        <li><?php echo esc_html__( 'Test connection, then Save Settings.', 'flosc' ); ?></li>
-    </ol>
-</div>
-
-<div class="flosc-banner flosc-banner--info">
-    <strong><?php echo esc_html__( 'Layers:', 'flosc' ); ?></strong>
-	<?php echo esc_html__( 'floscFlowIvr = scripted pairs; floscFlowPersonality = how it speaks; floscFlowAiPolicy = provider attach + chain; floscFlowJourneyWiring = levels/offers/content pointers (other tabs).', 'flosc' ); ?>
-</div>
+<!-- Personality attach (exactly one) -->
+<h3 class="flosc-ai-section-heading"><?php echo esc_html__( 'Personality (one per flow)', 'flosc' ); ?></h3>
+<table class="form-table">
+	<tr>
+		<th scope="row"><label for="flow_personality_library_id"><?php echo esc_html__( 'Attached personality', 'flosc' ); ?></label></th>
+		<td>
+			<select name="flow_personality_library_id" id="flow_personality_library_id">
+				<option value="" <?php selected( $flosc_personality_id, '' ); ?>><?php echo esc_html__( 'Custom on this flow only (fields below)', 'flosc' ); ?></option>
+				<?php foreach ( $flosc_personas as $flosc_pid => $flosc_p ) : ?>
+				<option value="<?php echo esc_attr( $flosc_pid ); ?>" <?php selected( $flosc_personality_id, $flosc_pid ); ?>>
+					<?php echo esc_html( $flosc_p['label'] !== '' ? $flosc_p['label'] : $flosc_pid ); ?>
+				</option>
+				<?php endforeach; ?>
+			</select>
+			<p class="description">
+				<?php echo esc_html__( 'Library entries are managed under All Flows AI API Management → Personalities. One personality only — not chained.', 'flosc' ); ?>
+			</p>
+		</td>
+	</tr>
+</table>
 
 <!-- ============================================ -->
-<!-- SECTION 1: PROVIDER SELECTION (AiPolicy) -->
+<!-- SECTION 1: PROVIDER SELECTION -->
 <!-- ============================================ -->
 <h3 class="flosc-ai-section-heading">
-    <?php echo esc_html__( 'floscFlowAiPolicy — primary provider', 'flosc' ); ?>
+    <?php echo esc_html__( 'Primary AI Provider', 'flosc' ); ?>
 </h3>
 
 <table class="form-table">
@@ -309,9 +356,9 @@ $flosc_avail_labels = array(
     </tr>
 </table>
 
-<!-- Provider Chaining -->
+<!-- Provider Chaining (APIs only — not personalities) -->
 <h3 class="flosc-ai-section-heading">
-    floscFlowAiPolicy — provider chaining (optional)
+    <?php echo esc_html__( 'Provider chaining (optional)', 'flosc' ); ?>
 </h3>
 <p class="description">
     Send each user message through multiple AI providers sequentially. Provider 1 responds first, then Provider 2 sees that response as context and refines it. Useful for cross-checking or combining strengths of different models.
@@ -398,7 +445,7 @@ $flosc_avail_labels = array(
 
 <!-- Base System Prompt -->
 <h3 class="flosc-ai-section-heading">
-    floscFlowPersonality — voice (optional base prompt)
+    <?php echo esc_html__( 'Personality details (used when Custom, or as library overrides are empty)', 'flosc' ); ?>
 </h3>
 
 <table class="form-table">
@@ -700,7 +747,7 @@ jQuery(document).ready(function($) {
 <!-- SECTION: AI PERSONALITY (Fix 12 / Fix 15) -->
 <!-- ============================================ -->
 <hr class="flosc-section-divider" id="flosc-personality-section">
-<h3 class="flosc-ai-section-heading"><?php echo esc_html__( 'floscFlowPersonality', 'flosc' ); ?></h3>
+<h3 class="flosc-ai-section-heading"><?php echo esc_html__( 'Personality fields', 'flosc' ); ?></h3>
 <p class="description">Define who your AI is and how it interacts with users. These fields are injected into every AI system prompt.</p>
 
 <table class="form-table">

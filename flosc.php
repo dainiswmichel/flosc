@@ -83,6 +83,7 @@ if (!function_exists('flosc_log')) {
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/class-flosc-filesystem.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/flosc-data-paths.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-available-providers.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/flosc-personality-library.php';
 
 // v1.2.9: Auto-flush permalinks on activation
 register_activation_hook(__FILE__, 'flosc_activation_flush');

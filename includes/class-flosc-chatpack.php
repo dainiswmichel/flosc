@@ -441,16 +441,23 @@ class FLOSC_Chatpack {
         $identity = FLOSC_Framework::instance()->get_floscflow_identity();
         $product_name = $identity['name'] ?? '';
         $product_tagline = $identity['tagline'] ?? '';
-        // Fix 12: Read from canonical keys (ai_personality_*) with legacy fallbacks
-        $ai_name    = flosc_get_setting('ai_personality_name',   flosc_get_setting('ai_name',   'AI Assistant'));
-        $ai_role    = flosc_get_setting('ai_personality_role',   flosc_get_setting('ai_role',   'friendly learning assistant'));
-        $ai_traits  = flosc_get_setting('ai_personality_traits', flosc_get_setting('ai_traits', 'helpful, encouraging, knowledgeable'));
-        $ai_mission = flosc_get_setting('ai_mission', '');
-        $ai_boundaries = flosc_get_setting('ai_boundaries', '');
-        $ai_topic_scope    = flosc_get_setting('ai_topic_scope', '');
-        $ai_off_topic      = flosc_get_setting('ai_off_topic_message', '');
-        $ai_referral_links = flosc_get_setting('ai_off_topic_links', '');
-        $ai_base_prompt    = flosc_get_setting('ai_base_prompt', '');
+        // Fix 12: Library attach (one personality) or flow bag / legacy keys.
+        $res = function_exists( 'flosc_personality_library_resolve_field' ) ? 'flosc_personality_library_resolve_field' : null;
+        $ai_name    = $res
+            ? call_user_func( $res, 'ai_personality_name', flosc_get_setting( 'ai_name', 'AI Assistant' ) )
+            : flosc_get_setting( 'ai_personality_name', flosc_get_setting( 'ai_name', 'AI Assistant' ) );
+        $ai_role    = $res
+            ? call_user_func( $res, 'ai_personality_role', flosc_get_setting( 'ai_role', 'friendly learning assistant' ) )
+            : flosc_get_setting( 'ai_personality_role', flosc_get_setting( 'ai_role', 'friendly learning assistant' ) );
+        $ai_traits  = $res
+            ? call_user_func( $res, 'ai_personality_traits', flosc_get_setting( 'ai_traits', 'helpful, encouraging, knowledgeable' ) )
+            : flosc_get_setting( 'ai_personality_traits', flosc_get_setting( 'ai_traits', 'helpful, encouraging, knowledgeable' ) );
+        $ai_mission = $res ? call_user_func( $res, 'ai_mission', '' ) : flosc_get_setting( 'ai_mission', '' );
+        $ai_boundaries = $res ? call_user_func( $res, 'ai_boundaries', '' ) : flosc_get_setting( 'ai_boundaries', '' );
+        $ai_topic_scope    = $res ? call_user_func( $res, 'ai_topic_scope', '' ) : flosc_get_setting( 'ai_topic_scope', '' );
+        $ai_off_topic      = $res ? call_user_func( $res, 'ai_off_topic_message', '' ) : flosc_get_setting( 'ai_off_topic_message', '' );
+        $ai_referral_links = $res ? call_user_func( $res, 'ai_off_topic_links', '' ) : flosc_get_setting( 'ai_off_topic_links', '' );
+        $ai_base_prompt    = $res ? call_user_func( $res, 'ai_base_prompt', '' ) : flosc_get_setting( 'ai_base_prompt', '' );
         $site_url = function_exists('get_bloginfo') ? get_bloginfo('url') : '';
 
         // Fix 11a: Natural orientation brief — context and energy BEFORE the rules

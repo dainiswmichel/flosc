@@ -7,7 +7,7 @@
 <p>Identifiers use the <code>flosc_</code> / <code>floscFlow</code> prefix. These layers separate concerns:</p>
 <ul>
 	<li><strong>floscFlowConfiguration</strong> — whole durable definition of one floscFlow (umbrella).</li>
-	<li><strong>floscFlowPersonality</strong> — how the assistant speaks (name, role, traits, base prompt, boundaries).</li>
+	<li><strong>floscFlowPersonality</strong> — how the assistant speaks (name, role, traits, base prompt, boundaries). Install library of personalities; each floscFlow attaches exactly one (no personality chaining).</li>
 	<li><strong>floscFlowIvr</strong> — scripted input→output pairs only (not the whole product).</li>
 	<li><strong>floscFlowJourneyWiring</strong> — levels, offers, access codes, freeline structure, content category/tag pointers.</li>
 	<li><strong>floscFlowAiPolicy</strong> — which providers/models/chain this flow uses (provider ids and tuning; no secret key material in portable files).</li>
