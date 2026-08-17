@@ -1352,13 +1352,13 @@ foreach ( $flosc_acc_templates as $flosc_acc_t ) {
 	$flosc_acc_defaults_filled[] = $flosc_acc_expand( $flosc_acc_t, $flosc_acc_var_map );
 }
 
-// Saved suite: newline-joined (legacy) or re-split; repair if no newlines but looks like many sentences.
+// Saved suite: prefer templates with {placeholders}. Expanded-only legacy saves map back to templates when they match.
 $flosc_acc_saved_raw = (string) ( $flosc_flow_settings['ai_accuracy_test_questions'] ?? '' );
 $flosc_acc_saved_lines = array();
 if ( trim( $flosc_acc_saved_raw ) !== '' ) {
 	if ( strpos( $flosc_acc_saved_raw, "\n" ) === false && strpos( $flosc_acc_saved_raw, "\r" ) === false ) {
-		// Likely mangled one-line save — fall back to expanded defaults.
-		$flosc_acc_saved_lines = $flosc_acc_defaults_filled;
+		// Mangled one-line save — use content-agnostic templates.
+		$flosc_acc_saved_lines = $flosc_acc_templates;
 	} else {
 		$flosc_acc_saved_lines = array_values(
 			array_filter(
@@ -1370,21 +1370,39 @@ if ( trim( $flosc_acc_saved_raw ) !== '' ) {
 		);
 	}
 }
-$flosc_acc_edit_lines = $flosc_acc_saved_lines !== array() ? $flosc_acc_saved_lines : $flosc_acc_defaults_filled;
-// Pad/truncate to template count for stable row UI (extras kept if admin added more).
+// Edit fields hold templates (with {vars}). If a saved line equals the expanded default, show the template instead.
+$flosc_acc_edit_lines = array();
+if ( $flosc_acc_saved_lines === array() ) {
+	$flosc_acc_edit_lines = $flosc_acc_templates;
+} else {
+	foreach ( $flosc_acc_saved_lines as $flosc_acc_si => $flosc_acc_line ) {
+		$flosc_acc_tpl_i = $flosc_acc_templates[ $flosc_acc_si ] ?? '';
+		$flosc_acc_filled_i = $flosc_acc_defaults_filled[ $flosc_acc_si ] ?? '';
+		if ( $flosc_acc_tpl_i !== '' && ( $flosc_acc_line === $flosc_acc_filled_i || $flosc_acc_line === $flosc_acc_expand( $flosc_acc_tpl_i, $flosc_acc_var_map ) ) ) {
+			$flosc_acc_edit_lines[] = $flosc_acc_tpl_i;
+		} else {
+			$flosc_acc_edit_lines[] = $flosc_acc_line;
+		}
+	}
+}
 $flosc_acc_row_count = max( count( $flosc_acc_templates ), count( $flosc_acc_edit_lines ) );
 while ( count( $flosc_acc_edit_lines ) < $flosc_acc_row_count ) {
-	$flosc_acc_edit_lines[] = '';
+	$idx = count( $flosc_acc_edit_lines );
+	$flosc_acc_edit_lines[] = $flosc_acc_templates[ $idx ] ?? '';
 }
 $flosc_acc_line_count = max( 1, count( array_filter( $flosc_acc_edit_lines ) ) );
 ?>
 <hr class="flosc-section-divider" id="flosc-accuracy-test">
 <h3 class="flosc-ai-section-heading"><?php echo esc_html__( 'Provider accuracy test', 'flosc' ); ?></h3>
 <p class="description">
-	<?php echo esc_html__( 'Multi-turn chat against this floscFlow’s AI. Each row shows the content-agnostic default (with {variables}) and an editable sentence for this run. Variables expand from Identity, topic scope, and site name.', 'flosc' ); ?>
+	<?php echo esc_html__( 'Edit each template using the variables below. The user input that will be sent to the AI is previewed under each row (variables expanded). Save Settings keeps your templates.', 'flosc' ); ?>
 </p>
 
-<div class="flosc-acc-var-chips" aria-label="<?php echo esc_attr__( 'Variables for this flow', 'flosc' ); ?>">
+<div class="flosc-acc-var-chips" aria-label="<?php echo esc_attr__( 'Variables you can use in templates', 'flosc' ); ?>">
+	<p class="description flosc-acc-var-intro">
+		<strong><?php echo esc_html__( 'Variables you can use:', 'flosc' ); ?></strong>
+		<?php echo esc_html__( 'Type these in the template box. Values for this flow:', 'flosc' ); ?>
+	</p>
 	<span class="flosc-acc-var-chip"><code>{flow_name}</code> = <?php echo esc_html( $flosc_acc_flow_name ); ?></span>
 	<span class="flosc-acc-var-chip"><code>{tagline}</code> = <?php echo esc_html( $flosc_acc_tagline ); ?></span>
 	<span class="flosc-acc-var-chip"><code>{topic_scope}</code> = <?php echo esc_html( $flosc_acc_scope ); ?></span>
@@ -1396,45 +1414,42 @@ $flosc_acc_line_count = max( 1, count( array_filter( $flosc_acc_edit_lines ) ) )
 	<?php
 	for ( $flosc_acc_i = 0; $flosc_acc_i < $flosc_acc_row_count; $flosc_acc_i++ ) :
 		$flosc_acc_tpl = $flosc_acc_templates[ $flosc_acc_i ] ?? '';
-		$flosc_acc_def = isset( $flosc_acc_defaults_filled[ $flosc_acc_i ] )
-			? $flosc_acc_defaults_filled[ $flosc_acc_i ]
-			: $flosc_acc_expand( $flosc_acc_tpl, $flosc_acc_var_map );
-		$flosc_acc_val = $flosc_acc_edit_lines[ $flosc_acc_i ] ?? $flosc_acc_def;
+		$flosc_acc_val = $flosc_acc_edit_lines[ $flosc_acc_i ] ?? $flosc_acc_tpl;
+		// Prefer template with placeholders in the edit box.
+		if ( $flosc_acc_val === '' && $flosc_acc_tpl !== '' ) {
+			$flosc_acc_val = $flosc_acc_tpl;
+		}
+		$flosc_acc_preview = $flosc_acc_expand( $flosc_acc_val, $flosc_acc_var_map );
 		?>
 	<div class="flosc-acc-row" data-acc-index="<?php echo esc_attr( (string) $flosc_acc_i ); ?>">
 		<div class="flosc-acc-row__num" aria-hidden="true"><?php echo esc_html( (string) ( $flosc_acc_i + 1 ) ); ?></div>
 		<div class="flosc-acc-row__body">
-			<label class="screen-reader-text" for="flosc_acc_q_<?php echo esc_attr( (string) $flosc_acc_i ); ?>">
-				<?php
-				echo esc_html(
-					sprintf(
-						/* translators: %d: question number */
-						__( 'Test question %d', 'flosc' ),
-						$flosc_acc_i + 1
-					)
-				);
-				?>
+			<label for="flosc_acc_q_<?php echo esc_attr( (string) $flosc_acc_i ); ?>">
+				<strong><?php echo esc_html__( 'Template (edit with variables)', 'flosc' ); ?></strong>
 			</label>
 			<textarea
 				id="flosc_acc_q_<?php echo esc_attr( (string) $flosc_acc_i ); ?>"
-				class="large-text flosc-acc-row__input"
+				class="large-text code flosc-acc-row__input"
 				rows="2"
 				data-acc-template="<?php echo esc_attr( $flosc_acc_tpl ); ?>"
-				data-acc-default-filled="<?php echo esc_attr( $flosc_acc_def ); ?>"
 			><?php echo esc_textarea( $flosc_acc_val ); ?></textarea>
 			<p class="description flosc-acc-row__default">
-				<strong><?php echo esc_html__( 'Default:', 'flosc' ); ?></strong>
+				<strong><?php echo esc_html__( 'Default template:', 'flosc' ); ?></strong>
 				<code class="flosc-acc-row__template"><?php echo esc_html( $flosc_acc_tpl !== '' ? $flosc_acc_tpl : '—' ); ?></code>
 			</p>
+			<p class="flosc-acc-row__preview-wrap">
+				<strong><?php echo esc_html__( 'User input (sent to AI):', 'flosc' ); ?></strong>
+				<span class="flosc-acc-row__preview"><?php echo esc_html( $flosc_acc_preview ); ?></span>
+			</p>
 			<p class="flosc-acc-row__actions">
-				<button type="button" class="button button-small flosc-acc-reset-row"><?php echo esc_html__( 'Reset row', 'flosc' ); ?></button>
+				<button type="button" class="button button-small flosc-acc-reset-row"><?php echo esc_html__( 'Reset row to default template', 'flosc' ); ?></button>
 			</p>
 		</div>
 	</div>
 	<?php endfor; ?>
 </div>
 
-<?php // Hidden field keeps Save Settings compatibility (newline-joined suite). ?>
+<?php // Hidden field: save templates (with {vars}) newline-joined. ?>
 <textarea
 	id="flow_ai_accuracy_test_questions"
 	name="flow_ai_accuracy_test_questions"
@@ -1447,9 +1462,9 @@ $flosc_acc_line_count = max( 1, count( array_filter( $flosc_acc_edit_lines ) ) )
 
 <div id="flosc-accuracy-test-ui" class="flosc-margin-top-12">
 	<div class="flosc-ai-accuracy-controls">
-		<button type="button" class="button button-secondary" id="flosc-accuracy-reset-defaults"><?php echo esc_html__( 'Reset all to defaults', 'flosc' ); ?></button>
+		<button type="button" class="button button-secondary" id="flosc-accuracy-reset-defaults"><?php echo esc_html__( 'Reset all to default templates', 'flosc' ); ?></button>
 		<button type="button" id="flosc-run-accuracy-test" class="button button-primary"><?php echo esc_html__( '▶ Run multi-turn provider test', 'flosc' ); ?></button>
-		<span class="description"><?php echo esc_html__( 'Save Settings on this page to keep edits. Run expands any remaining {placeholders} from the chips above.', 'flosc' ); ?></span>
+		<span class="description"><?php echo esc_html__( 'Save Settings keeps templates. Run sends the expanded user input from each row.', 'flosc' ); ?></span>
 		<span id="flosc-test-progress" class="flosc-ai-progress flosc-hidden">
 			<?php echo esc_html__( 'Running… message', 'flosc' ); ?>
 			<span id="flosc-test-msg-num">0</span>/<span id="flosc-test-msg-total"><?php echo esc_html( (string) $flosc_acc_line_count ); ?></span>
@@ -1461,8 +1476,8 @@ $flosc_acc_line_count = max( 1, count( array_filter( $flosc_acc_edit_lines ) ) )
 			<thead>
 				<tr>
 					<th class="flosc-width-5">#</th>
-					<th class="flosc-width-35"><?php echo esc_html__( 'Message', 'flosc' ); ?></th>
-					<th class="flosc-width-45"><?php echo esc_html__( 'Response', 'flosc' ); ?></th>
+					<th class="flosc-width-35"><?php echo esc_html__( 'User input', 'flosc' ); ?></th>
+					<th class="flosc-width-45"><?php echo esc_html__( 'AI response', 'flosc' ); ?></th>
 					<th class="flosc-width-8"><?php echo esc_html__( 'Tokens In', 'flosc' ); ?></th>
 					<th class="flosc-width-7"><?php echo esc_html__( 'OK?', 'flosc' ); ?></th>
 				</tr>
@@ -1486,6 +1501,13 @@ jQuery(document).ready(function($) {
 		});
 		return out;
 	}
+	function floscAccRefreshPreviews() {
+		var map = floscAccVarMap();
+		$('#flosc-accuracy-rows .flosc-acc-row').each(function() {
+			var t = $(this).find('.flosc-acc-row__input').val() || '';
+			$(this).find('.flosc-acc-row__preview').text(floscAccExpand(t, map));
+		});
+	}
 	function floscSyncAccuracyHidden() {
 		var lines = [];
 		$('#flosc-accuracy-rows .flosc-acc-row__input').each(function() {
@@ -1494,6 +1516,7 @@ jQuery(document).ready(function($) {
 		});
 		$('#flow_ai_accuracy_test_questions').val(lines.join('\n'));
 		$('#flosc-test-msg-total').text(Math.max(1, lines.length));
+		floscAccRefreshPreviews();
 	}
 	function floscParseAccuracyQuestions() {
 		floscSyncAccuracyHidden();
@@ -1512,18 +1535,13 @@ jQuery(document).ready(function($) {
 		var $row = $(this).closest('.flosc-acc-row');
 		var $inp = $row.find('.flosc-acc-row__input');
 		var tpl = $inp.attr('data-acc-template') || '';
-		var filled = $inp.attr('data-acc-default-filled') || floscAccExpand(tpl, floscAccVarMap());
-		$inp.val(filled);
+		$inp.val(tpl);
 		floscSyncAccuracyHidden();
 	});
 
 	$('#flosc-accuracy-reset-defaults').on('click', function() {
 		$('#flosc-accuracy-rows .flosc-acc-row__input').each(function() {
-			var filled = $(this).attr('data-acc-default-filled') || '';
-			if (!filled) {
-				filled = floscAccExpand($(this).attr('data-acc-template') || '', floscAccVarMap());
-			}
-			$(this).val(filled);
+			$(this).val($(this).attr('data-acc-template') || '');
 		});
 		floscSyncAccuracyHidden();
 	});

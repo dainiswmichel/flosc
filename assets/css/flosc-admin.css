@@ -6030,6 +6030,31 @@
 .flosc-acc-row__actions {
 	margin: 0;
 }
+.flosc-acc-var-intro {
+	width: 100%;
+	margin: 0 0 4px;
+}
+.flosc-acc-row__preview-wrap {
+	margin: 8px 0 6px;
+	padding: 8px 10px;
+	background: #f0f6fc;
+	border: 1px solid #c5d9ed;
+	border-radius: 6px;
+	font-size: 13px;
+	line-height: 1.45;
+}
+.flosc-acc-row__preview {
+	display: block;
+	margin-top: 4px;
+	color: #1d2327;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+label[for^="flosc_acc_q_"] {
+	display: block;
+	margin-bottom: 4px;
+	font-size: 13px;
+}
 
 .flosc-ai-progress {
     color: #666;
