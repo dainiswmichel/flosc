@@ -1095,7 +1095,7 @@ class FLOSC_AI_Chat_Dispatch {
      */
     private function openai_request($message, $system_prompt, $context = [], $test_mode = false) {
         // v1.9.0: Use flosc_get_setting() — reads flow settings first
-        $api_key = flosc_get_setting('openai_api_key', '');
+        $api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'openai' ) : flosc_get_setting( 'openai_api_key', '' );
 
         if (empty($api_key)) {
             if ($test_mode) {
@@ -1198,7 +1198,7 @@ class FLOSC_AI_Chat_Dispatch {
      */
     private function anthropic_request($message, $system_prompt, $context = [], $test_mode = false) {
         // v1.9.0: Use flosc_get_setting() — reads flow settings first
-        $api_key = flosc_get_setting('anthropic_api_key', '');
+        $api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'anthropic' ) : flosc_get_setting( 'anthropic_api_key', '' );
 
         if (empty($api_key)) {
             if ($test_mode) {
@@ -1300,7 +1300,7 @@ class FLOSC_AI_Chat_Dispatch {
      */
     private function xai_request($message, $system_prompt, $context = [], $test_mode = false) {
         // v1.9.0: Use flosc_get_setting() — reads flow settings first
-        $api_key = flosc_get_setting('xai_api_key', '');
+        $api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'xai' ) : flosc_get_setting( 'xai_api_key', '' );
 
         if (empty($api_key)) {
             if ($test_mode) {
@@ -1434,7 +1434,7 @@ class FLOSC_AI_Chat_Dispatch {
      * On first message the hash is extracted and stored alongside the response_id.
      */
     private function openai_responses_request($message, $system_prompt, $session_id, $is_first, $test_mode = false) {
-        $api_key = flosc_get_setting('openai_api_key', '');
+        $api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'openai' ) : flosc_get_setting( 'openai_api_key', '' );
         if (empty($api_key)) {
             if ($test_mode) return new WP_Error('openai_no_api_key', 'No OpenAI API key configured.');
             return null;

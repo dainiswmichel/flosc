@@ -117,9 +117,13 @@ $flosc_email_templates = [
     ''              => '— none —',
     'reengagement'  => 'Re-engagement (Email tab template)',
     'guest_welcome' => 'Guest welcome',
-    'guest_day10'   => 'Guest sequence · early window (Email keys guest_day10_*)',
-    'guest_day20'   => 'Guest sequence · mid window (guest_day20_*)',
-    'guest_day28'   => 'Guest sequence · late window (guest_day28_*)',
+    'guest_followup_1' => 'Guest follow-up 1 (early window)',
+    'guest_followup_2' => 'Guest follow-up 2 (mid window)',
+    'guest_followup_3' => 'Guest follow-up 3 (late window)',
+    // Legacy template ids (still resolve via dual-read in email senders).
+    'guest_day10'   => 'Guest follow-up 1 (legacy id)',
+    'guest_day20'   => 'Guest follow-up 2 (legacy id)',
+    'guest_day28'   => 'Guest follow-up 3 (legacy id)',
 ];
 
 /**

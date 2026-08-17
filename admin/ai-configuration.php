@@ -43,13 +43,10 @@ $flosc_chain_provider_1 = $flosc_flow_settings['ai_chain_provider_1'] ?? '';
 $flosc_chain_provider_2 = $flosc_flow_settings['ai_chain_provider_2'] ?? '';
 $flosc_chain_provider_3 = $flosc_flow_settings['ai_chain_provider_3'] ?? '';
 
-// Fix 9: Risk condition notices — read directly from flow settings (get_current_flow() is null in admin context)
+// Risk / setup notices — read directly from flow settings (get_current_flow() is null in admin context).
+// No calendar-age nags for lesson catalog (stable catalogs can be fine for years).
 $flosc_product_name = $flosc_flow_settings['identity']['name'] ?? $flosc_flow_settings['name'] ?? '';
 $flosc_product_tag  = $flosc_flow_settings['identity']['tagline'] ?? $flosc_flow_settings['tagline'] ?? '';
-$flosc_catalog_file  = function_exists('flosc_resolve_lesson_catalog_path')
-    ? flosc_resolve_lesson_catalog_path()
-    : (function_exists('flosc_config_file') ? flosc_config_file('lesson_catalog.md') : '');
-$flosc_catalog_age   = ($flosc_catalog_file && file_exists($flosc_catalog_file)) ? (time() - filemtime($flosc_catalog_file)) : PHP_INT_MAX;
 $flosc_notices = [];
 if ((float) $flosc_ai_temperature > 0.5) {
     $flosc_notices[] = '<strong>Temperature ' . esc_html($flosc_ai_temperature) . ' increases fabrication risk.</strong> Recommended: 0.3';
@@ -58,12 +55,7 @@ if (empty($flosc_product_name)) {
     $flosc_notices[] = '<strong>Product name not configured.</strong> AI has no identity and will hallucinate.';
 }
 if (!empty($flosc_product_name) && empty($flosc_product_tag)) {
-    $flosc_notices[] = '<strong>Product tagline not configured.</strong> AI cannot verify its own product acronym and will guess.';
-}
-if ($flosc_catalog_age > 7 * DAY_IN_SECONDS) {
-    $flosc_regen_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_regenerate_lesson_catalog'), 'flosc_regen_catalog');
-    $flosc_age_msg = ($flosc_catalog_age === PHP_INT_MAX) ? 'Lesson catalog has never been generated.' : 'Lesson catalog is more than 7 days old.';
-    $flosc_notices[] = $flosc_age_msg . ' <a href="' . esc_url($flosc_regen_url) . '" class="button button-small">Regenerate Now</a>';
+    $flosc_notices[] = 'Reminder: The Product Tagline for this floscFlow is empty. You can set a short tagline on the Identity tab to improve how accurately AI describes this flow in chat.';
 }
 ?>
 <?php if (!empty($flosc_notices)): ?>
@@ -84,36 +76,61 @@ if ($flosc_catalog_age > 7 * DAY_IN_SECONDS) {
 
 <div class="flosc-ai-config">
 
-<h2>🤖 AI Configuration</h2>
+<?php
+// floscAvailableProviders status (install pool — keys available to any floscFlow).
+$flosc_avail = function_exists( 'flosc_available_providers_get_all' ) ? flosc_available_providers_get_all() : array();
+$flosc_avail_labels = array(
+	'anthropic'  => 'Anthropic',
+	'openai'     => 'OpenAI',
+	'xai'        => 'xAI',
+	'assemblyai' => 'AssemblyAI',
+);
+?>
+
+<h2><?php echo esc_html__( 'AI Configuration', 'flosc' ); ?></h2>
 <p class="description flosc-ai-intro">
-    Connect your FLOSC flow to AI providers (OpenAI, Anthropic, xAI) or use IVR-only mode (scripted responses, no API costs).
+	<?php echo esc_html__( 'floscFlowAiPolicy for this flow: which provider(s) to use, models, tuning, and chain order. Keys you save are promoted into floscAvailableProviders (install pool) so other flows may attach the same provider without re-pasting.', 'flosc' ); ?>
 </p>
+
+<div class="flosc-banner flosc-banner--info flosc-margin-bottom-20">
+	<p class="flosc-text-zero-margin">
+		<strong><?php echo esc_html__( 'floscAvailableProviders (install)', 'flosc' ); ?>:</strong>
+		<?php
+		$flosc_avail_bits = array();
+		foreach ( $flosc_avail_labels as $flosc_slug => $flosc_lab ) {
+			$has = ! empty( $flosc_avail[ $flosc_slug ]['api_key'] );
+			$flosc_avail_bits[] = $flosc_lab . ( $has ? ' ✓' : ' —' );
+		}
+		echo esc_html( implode( ' · ', $flosc_avail_bits ) );
+		?>
+	</p>
+	<p class="description flosc-text-zero-margin">
+		<?php echo esc_html__( '✓ = key available to any floscFlow. Attach below via floscFlowAiPolicy (primary provider + optional chain). Runtime resolves: this flow’s key first, then the install pool.', 'flosc' ); ?>
+	</p>
+</div>
 
 <!-- Quick Start Guide -->
 <div class="flosc-ai-quickstart">
-    <h3>📋 Quick Start Guide</h3>
+    <h3><?php echo esc_html__( 'Quick start', 'flosc' ); ?></h3>
     <ol>
-        <li><strong>Choose your AI provider</strong> below (or keep "IVR" for scripted mode)</li>
-        <li><strong>Get your API key</strong> by clicking the provider's link</li>
-        <li><strong>Paste your API key</strong> into the password field</li>
-        <li><strong>Click "Test Connection"</strong> to verify it works</li>
-        <li><strong>Customize your AI's personality</strong> in the Base System Prompt (optional)</li>
-        <li><strong>Save Settings</strong> at the bottom of this page</li>
+        <li><?php echo esc_html__( 'Choose primary provider (or IVR-only).', 'flosc' ); ?></li>
+        <li><?php echo esc_html__( 'Paste an API key if this flow should store/promote one (or rely on the install pool).', 'flosc' ); ?></li>
+        <li><?php echo esc_html__( 'Optional: enable chaining and order providers (floscFlowAiPolicy).', 'flosc' ); ?></li>
+        <li><?php echo esc_html__( 'Set floscFlowPersonality fields (name, role, traits, base prompt).', 'flosc' ); ?></li>
+        <li><?php echo esc_html__( 'Test connection, then Save Settings.', 'flosc' ); ?></li>
     </ol>
-    <p class="flosc-ai-tip">
-        💡 <strong>Tip:</strong> Use the Provider Accuracy Test (below) to determine which provider gives the most reliable responses for your installation.
-    </p>
 </div>
 
 <div class="flosc-banner flosc-banner--info">
-    <strong>💡 How It Works:</strong> When you select an AI provider and add your API key, FLOSC automatically provides IVR context and enforces content boundaries — all guided by your IVR configuration. The settings below let you fine-tune this behavior.
+    <strong><?php echo esc_html__( 'Layers:', 'flosc' ); ?></strong>
+	<?php echo esc_html__( 'floscFlowIvr = scripted pairs; floscFlowPersonality = how it speaks; floscFlowAiPolicy = provider attach + chain; floscFlowJourneyWiring = levels/offers/content pointers (other tabs).', 'flosc' ); ?>
 </div>
 
 <!-- ============================================ -->
-<!-- SECTION 1: PROVIDER SELECTION -->
+<!-- SECTION 1: PROVIDER SELECTION (AiPolicy) -->
 <!-- ============================================ -->
 <h3 class="flosc-ai-section-heading">
-    🔌 Step 1: Choose Your AI Provider
+    <?php echo esc_html__( 'floscFlowAiPolicy — primary provider', 'flosc' ); ?>
 </h3>
 
 <table class="form-table">
@@ -294,7 +311,7 @@ if ($flosc_catalog_age > 7 * DAY_IN_SECONDS) {
 
 <!-- Provider Chaining -->
 <h3 class="flosc-ai-section-heading">
-    🔗 Step 2c: Provider Chaining (Optional)
+    floscFlowAiPolicy — provider chaining (optional)
 </h3>
 <p class="description">
     Send each user message through multiple AI providers sequentially. Provider 1 responds first, then Provider 2 sees that response as context and refines it. Useful for cross-checking or combining strengths of different models.
@@ -310,7 +327,7 @@ if ($flosc_catalog_age > 7 * DAY_IN_SECONDS) {
         </th>
         <td>
             <p class="description">
-                When enabled, responses pass through multiple providers in order. Each provider sees the previous provider's response. Requires API keys configured for each chained provider.
+                <?php echo esc_html__( 'When enabled, responses pass through providers in order. Each later provider receives the previous reply as assistant history (same user message and system prompt). Each hop needs a key on this flow or in floscAvailableProviders.', 'flosc' ); ?>
             </p>
         </td>
     </tr>
@@ -381,7 +398,7 @@ if ($flosc_catalog_age > 7 * DAY_IN_SECONDS) {
 
 <!-- Base System Prompt -->
 <h3 class="flosc-ai-section-heading">
-    🎨 Step 4: Customize AI Personality (Optional)
+    floscFlowPersonality — voice (optional base prompt)
 </h3>
 
 <table class="form-table">
@@ -683,7 +700,7 @@ jQuery(document).ready(function($) {
 <!-- SECTION: AI PERSONALITY (Fix 12 / Fix 15) -->
 <!-- ============================================ -->
 <hr class="flosc-section-divider" id="flosc-personality-section">
-<h3 class="flosc-ai-section-heading">🧠 AI Personality & Identity</h3>
+<h3 class="flosc-ai-section-heading"><?php echo esc_html__( 'floscFlowPersonality', 'flosc' ); ?></h3>
 <p class="description">Define who your AI is and how it interacts with users. These fields are injected into every AI system prompt.</p>
 
 <table class="form-table">
@@ -768,6 +785,273 @@ jQuery(document).ready(function($) {
         </td>
     </tr>
 </table>
+
+<!-- ============================================ -->
+<!-- SECTION: SITE CONTENT INDEX -->
+<!-- ============================================ -->
+<?php
+$flosc_sci_ivr   = (string) ( $GLOBALS['flosc_current_ivr'] ?? '' );
+$flosc_sci_stem  = sanitize_key( pathinfo( $flosc_sci_ivr, PATHINFO_FILENAME ) );
+$flosc_sci_index = class_exists( 'FLOSC_Site_Content_Index' ) ? FLOSC_Site_Content_Index::instance() : null;
+$flosc_sci_doc   = $flosc_sci_index ? $flosc_sci_index->load( $flosc_sci_stem ) : array( 'built_at' => '', 'posts' => array() );
+$flosc_sci_posts = is_array( $flosc_sci_doc['posts'] ?? null ) ? $flosc_sci_doc['posts'] : array();
+$flosc_sci_slugs = $flosc_sci_index ? $flosc_sci_index->resolve_category_slugs( $flosc_sci_stem ) : array();
+$flosc_sci_count = count( $flosc_sci_posts );
+$flosc_sci_excl  = 0;
+foreach ( $flosc_sci_posts as $flosc_sci_row ) {
+	if ( ! empty( $flosc_sci_row['excluded'] ) ) {
+		++$flosc_sci_excl;
+	}
+}
+$flosc_sci_in_flow = $flosc_sci_index ? (int) $flosc_sci_index->count_in_flow_category( $flosc_sci_stem ) : 0;
+
+// Notices (transient preferred).
+$flosc_sci_notice = get_transient( 'flosc_site_index_notice_' . get_current_user_id() );
+if ( is_array( $flosc_sci_notice ) ) {
+	delete_transient( 'flosc_site_index_notice_' . get_current_user_id() );
+}
+$flosc_sci_action = is_array( $flosc_sci_notice ) ? sanitize_key( (string) ( $flosc_sci_notice['action'] ?? '' ) ) : ( isset( $flosc_get['site_index_action'] ) ? sanitize_key( (string) $flosc_get['site_index_action'] ) : '' );
+$flosc_sci_err    = is_array( $flosc_sci_notice ) ? sanitize_text_field( (string) ( $flosc_sci_notice['message'] ?? '' ) ) : ( isset( $flosc_get['site_index_error'] ) ? sanitize_text_field( rawurldecode( (string) $flosc_get['site_index_error'] ) ) : '' );
+$flosc_sci_msg    = '';
+if ( $flosc_sci_action === 'rebuilt' ) {
+	$flosc_sci_msg = $flosc_sci_err !== '' ? $flosc_sci_err : __( 'Site content index rebuilt.', 'flosc' );
+} elseif ( $flosc_sci_action === 'excluded' ) {
+	$flosc_sci_msg = __( 'Post excluded from the index.', 'flosc' );
+} elseif ( $flosc_sci_action === 'included' ) {
+	$flosc_sci_msg = __( 'Post included in the index again.', 'flosc' );
+} elseif ( $flosc_sci_action === 'keywords' ) {
+	$flosc_sci_msg = __( 'Keywords saved.', 'flosc' );
+} elseif ( $flosc_sci_action === 'reindexed' ) {
+	$flosc_sci_msg = __( 'Post reindexed.', 'flosc' );
+} elseif ( $flosc_sci_action === 'error' ) {
+	$flosc_sci_msg = $flosc_sci_err !== '' ? $flosc_sci_err : __( 'Site index action failed.', 'flosc' );
+}
+?>
+<hr class="flosc-section-divider" id="flosc-site-index-section">
+<h3 class="flosc-ai-section-heading"><?php echo esc_html__( 'Site content index', 'flosc' ); ?></h3>
+<p class="description">
+	<?php echo esc_html__( 'Indexes published posts across the site into a reference library. Chat pulls only matching posts when useful — never the whole library on every message. Set this flow’s content category on the Content tab for freeline, guest, and member product scope.', 'flosc' ); ?>
+</p>
+
+<?php if ( $flosc_sci_msg !== '' ) : ?>
+	<div class="notice <?php echo esc_attr( $flosc_sci_action === 'error' ? 'notice-error' : 'notice-success' ); ?> inline flosc-margin-bottom-15"><p><?php echo esc_html( $flosc_sci_msg ); ?></p></div>
+<?php endif; ?>
+
+<div class="flosc-card-soft flosc-margin-bottom-20">
+	<table class="form-table flosc-form-table-reset" role="presentation">
+		<tr>
+			<th scope="row"><?php echo esc_html__( 'Index scope', 'flosc' ); ?></th>
+			<td>
+				<strong><?php echo esc_html__( 'Whole site', 'flosc' ); ?></strong>
+				<span class="description"> — <?php echo esc_html__( 'published posts (capped for safety; exclusions supported).', 'flosc' ); ?></span>
+			</td>
+		</tr>
+		<tr>
+			<th scope="row"><?php echo esc_html__( 'This flow’s category', 'flosc' ); ?></th>
+			<td>
+				<?php if ( ! empty( $flosc_sci_slugs ) ) : ?>
+					<code><?php echo esc_html( implode( ', ', $flosc_sci_slugs ) ); ?></code>
+					<?php if ( $flosc_sci_count > 0 ) : ?>
+						<p class="description">
+							<?php
+							echo esc_html(
+								sprintf(
+									/* translators: %d: posts in this flow category that appear in the site index */
+									__( '%d indexed post(s) are in this flow’s category (freeline / sell slice).', 'flosc' ),
+									(int) $flosc_sci_in_flow
+								)
+							);
+							?>
+						</p>
+					<?php endif; ?>
+				<?php else : ?>
+					<span class="description"><?php echo esc_html__( 'Not set. Optional for indexing; set on the Content tab so this flow freelines and sells the right topic.', 'flosc' ); ?></span>
+				<?php endif; ?>
+				<p class="description">
+					<a href="<?php echo esc_url( admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( $flosc_sci_ivr ) . '&tab=content' ) ); ?>"><?php echo esc_html__( 'Content tab', 'flosc' ); ?></a>
+				</p>
+			</td>
+		</tr>
+		<tr>
+			<th scope="row"><?php echo esc_html__( 'Status', 'flosc' ); ?></th>
+			<td>
+				<?php if ( ! empty( $flosc_sci_doc['built_at'] ) ) : ?>
+					<span class="flosc-text-green">✓ <?php echo esc_html__( 'Built', 'flosc' ); ?></span>
+					<span class="description flosc-margin-left-8"><?php echo esc_html( (string) $flosc_sci_doc['built_at'] ); ?></span>
+				<?php else : ?>
+					<span class="description"><?php echo esc_html__( 'Not built yet — use Build below.', 'flosc' ); ?></span>
+				<?php endif; ?>
+				<p class="description">
+					<?php
+					echo esc_html(
+						sprintf(
+							/* translators: 1: indexed count 2: excluded count */
+							__( '%1$d posts in site index (%2$d excluded).', 'flosc' ),
+							(int) $flosc_sci_count,
+							(int) $flosc_sci_excl
+						)
+					);
+					?>
+				</p>
+			</td>
+		</tr>
+		<tr>
+			<th scope="row"><?php echo esc_html__( 'Rebuild', 'flosc' ); ?></th>
+			<td>
+				<?php if ( empty( $GLOBALS['flosc_settings_form_closed_early'] ) ) : ?>
+					<?php
+					echo '</form>';
+					$GLOBALS['flosc_settings_form_closed_early'] = true;
+					?>
+				<?php endif; ?>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="flosc-inline-form">
+					<?php wp_nonce_field( 'flosc_site_index_rebuild' ); ?>
+					<input type="hidden" name="action" value="flosc_site_index_rebuild">
+					<input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr( $flosc_sci_ivr ); ?>">
+					<button type="submit" class="button button-primary">
+						<?php echo esc_html__( 'Build / rebuild site index', 'flosc' ); ?>
+					</button>
+				</form>
+				<p class="description"><?php echo esc_html__( 'Stores full post text for lookup. Chat still retrieves only matches (access-aware). Manual keywords and exclusions are kept across rebuilds.', 'flosc' ); ?></p>
+			</td>
+		</tr>
+	</table>
+</div>
+
+<?php if ( $flosc_sci_count > 0 ) : ?>
+	<div class="card flosc-margin-bottom-20 flosc-site-index-card">
+		<h4 class="flosc-card-title-reset"><?php echo esc_html__( 'Indexed posts (site library)', 'flosc' ); ?></h4>
+		<p class="description flosc-site-index-table-hint">
+			<?php
+			echo esc_html(
+				sprintf(
+					/* translators: %d: number of indexed posts */
+					__( 'Showing %d posts.', 'flosc' ),
+					(int) $flosc_sci_count
+				)
+			);
+			?>
+		</p>
+		<div class="flosc-site-index-table-wrap">
+		<table class="widefat striped flosc-site-index-table">
+			<thead>
+				<tr>
+					<th><?php echo esc_html__( 'ID', 'flosc' ); ?></th>
+					<th><?php echo esc_html__( 'Title', 'flosc' ); ?></th>
+					<th><?php echo esc_html__( 'Categories', 'flosc' ); ?></th>
+					<th><?php echo esc_html__( 'Access', 'flosc' ); ?></th>
+					<th><?php echo esc_html__( 'Status', 'flosc' ); ?></th>
+					<th><?php echo esc_html__( 'Keywords', 'flosc' ); ?></th>
+					<th><?php echo esc_html__( 'Snippet', 'flosc' ); ?></th>
+					<th><?php echo esc_html__( 'Actions', 'flosc' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+			<?php
+			// Sort by title for stable admin scan.
+			$flosc_sci_sorted = $flosc_sci_posts;
+			uasort(
+				$flosc_sci_sorted,
+				static function ( $a, $b ) {
+					return strcasecmp( (string) ( $a['title'] ?? '' ), (string) ( $b['title'] ?? '' ) );
+				}
+			);
+			foreach ( $flosc_sci_sorted as $flosc_sci_row ) :
+				$flosc_sci_pid   = (int) ( $flosc_sci_row['post_id'] ?? 0 );
+				$flosc_sci_title = (string) ( $flosc_sci_row['title'] ?? '' );
+				$flosc_sci_acc   = (string) ( $flosc_sci_row['access'] ?? 'member' );
+				$flosc_sci_is_ex = ! empty( $flosc_sci_row['excluded'] );
+				$flosc_sci_kw    = (string) ( $flosc_sci_row['keywords'] ?? '' );
+				$flosc_sci_snip  = (string) ( $flosc_sci_row['snippet'] ?? '' );
+				$flosc_sci_mod   = (string) ( $flosc_sci_row['modified'] ?? '' );
+				$flosc_sci_cats  = isset( $flosc_sci_row['categories'] ) && is_array( $flosc_sci_row['categories'] ) ? $flosc_sci_row['categories'] : array();
+				$flosc_sci_edit  = $flosc_sci_pid ? get_edit_post_link( $flosc_sci_pid, 'raw' ) : '';
+				$flosc_sci_stale = false;
+				if ( $flosc_sci_pid && $flosc_sci_mod !== '' ) {
+					$flosc_sci_wp = get_post( $flosc_sci_pid );
+					if ( $flosc_sci_wp && $flosc_sci_wp->post_modified_gmt > $flosc_sci_mod ) {
+						$flosc_sci_stale = true;
+					}
+				}
+				$flosc_sci_in_this_flow = false;
+				if ( ! empty( $flosc_sci_slugs ) && ! empty( $flosc_sci_cats ) ) {
+					foreach ( $flosc_sci_slugs as $flosc_sci_slug_one ) {
+						if ( in_array( $flosc_sci_slug_one, $flosc_sci_cats, true ) ) {
+							$flosc_sci_in_this_flow = true;
+							break;
+						}
+					}
+				}
+				$flosc_sci_status_label = $flosc_sci_is_ex ? __( 'Excluded', 'flosc' ) : ( $flosc_sci_stale ? __( 'Stale', 'flosc' ) : __( 'Indexed', 'flosc' ) );
+				if ( $flosc_sci_in_this_flow && ! $flosc_sci_is_ex ) {
+					$flosc_sci_status_label .= ' · ' . __( 'this flow', 'flosc' );
+				}
+				?>
+				<tr class="<?php echo $flosc_sci_is_ex ? 'flosc-site-index-row-excluded' : ''; ?>">
+					<td class="flosc-site-index-id"><code><?php echo esc_html( (string) $flosc_sci_pid ); ?></code></td>
+					<td class="flosc-site-index-title">
+						<?php if ( $flosc_sci_edit ) : ?>
+							<a href="<?php echo esc_url( $flosc_sci_edit ); ?>"><?php echo esc_html( $flosc_sci_title ); ?></a>
+						<?php else : ?>
+							<?php echo esc_html( $flosc_sci_title ); ?>
+						<?php endif; ?>
+					</td>
+					<td class="flosc-site-index-cats">
+						<?php if ( empty( $flosc_sci_cats ) ) : ?>
+							<span class="description">—</span>
+						<?php else : ?>
+							<?php foreach ( $flosc_sci_cats as $flosc_sci_cat_slug ) : ?>
+								<code class="flosc-site-index-cat"><?php echo esc_html( (string) $flosc_sci_cat_slug ); ?></code>
+							<?php endforeach; ?>
+						<?php endif; ?>
+					</td>
+					<td><?php echo esc_html( $flosc_sci_acc ); ?></td>
+					<td><?php echo esc_html( $flosc_sci_status_label ); ?></td>
+					<td>
+						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="flosc-site-index-kw-form">
+							<?php wp_nonce_field( 'flosc_site_index_keywords' ); ?>
+							<input type="hidden" name="action" value="flosc_site_index_keywords">
+							<input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr( $flosc_sci_ivr ); ?>">
+							<input type="hidden" name="post_id" value="<?php echo esc_attr( (string) $flosc_sci_pid ); ?>">
+							<input type="text" name="keywords_manual" class="regular-text" value="<?php echo esc_attr( (string) ( $flosc_sci_row['keywords_manual'] ?? '' ) ); ?>" placeholder="<?php echo esc_attr( $flosc_sci_kw ); ?>" title="<?php echo esc_attr( $flosc_sci_kw ); ?>">
+							<button type="submit" class="button button-small"><?php echo esc_html__( 'Save', 'flosc' ); ?></button>
+						</form>
+						<p class="description flosc-site-index-kw-preview"><?php echo esc_html( wp_html_excerpt( $flosc_sci_kw, 120, '…' ) ); ?></p>
+					</td>
+					<td class="flosc-site-index-snippet-cell"><span class="flosc-site-index-snippet"><?php echo esc_html( $flosc_sci_snip ); ?></span></td>
+					<td class="flosc-site-index-actions">
+						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="flosc-inline-form">
+							<?php wp_nonce_field( 'flosc_site_index_reindex_one' ); ?>
+							<input type="hidden" name="action" value="flosc_site_index_reindex_one">
+							<input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr( $flosc_sci_ivr ); ?>">
+							<input type="hidden" name="post_id" value="<?php echo esc_attr( (string) $flosc_sci_pid ); ?>">
+							<button type="submit" class="button button-small"><?php echo esc_html__( 'Reindex', 'flosc' ); ?></button>
+						</form>
+						<?php if ( $flosc_sci_is_ex ) : ?>
+							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="flosc-inline-form">
+								<?php wp_nonce_field( 'flosc_site_index_include' ); ?>
+								<input type="hidden" name="action" value="flosc_site_index_include">
+								<input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr( $flosc_sci_ivr ); ?>">
+								<input type="hidden" name="post_id" value="<?php echo esc_attr( (string) $flosc_sci_pid ); ?>">
+								<button type="submit" class="button button-small"><?php echo esc_html__( 'Include', 'flosc' ); ?></button>
+							</form>
+						<?php else : ?>
+							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="flosc-inline-form">
+								<?php wp_nonce_field( 'flosc_site_index_exclude' ); ?>
+								<input type="hidden" name="action" value="flosc_site_index_exclude">
+								<input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr( $flosc_sci_ivr ); ?>">
+								<input type="hidden" name="post_id" value="<?php echo esc_attr( (string) $flosc_sci_pid ); ?>">
+								<button type="submit" class="button button-small"><?php echo esc_html__( 'Exclude', 'flosc' ); ?></button>
+							</form>
+						<?php endif; ?>
+					</td>
+				</tr>
+			<?php endforeach; ?>
+			</tbody>
+		</table>
+		</div><!-- .flosc-site-index-table-wrap -->
+	</div>
+<?php endif; ?>
 
 <!-- ============================================ -->
 <!-- SECTION: KNOWLEDGE BASE (Fix 15) -->
@@ -963,149 +1247,251 @@ if (empty($GLOBALS['flosc_settings_form_closed_early'])) {
 <?php endif; ?>
 
 <!-- ============================================ -->
-<!-- SECTION: PROVIDER ACCURACY TEST (Fix 14) -->
+<!-- SECTION: PROVIDER ACCURACY TEST -->
 <!-- ============================================ -->
+<?php
+$flosc_acc_flow_name = (string) ( $flosc_flow_settings['identity']['name'] ?? $flosc_flow_settings['name'] ?? '' );
+if ( $flosc_acc_flow_name === '' ) {
+	$flosc_acc_flow_name = (string) ( $GLOBALS['flosc_current_ivr'] ?? 'this floscFlow' );
+	$flosc_acc_flow_name = pathinfo( $flosc_acc_flow_name, PATHINFO_FILENAME );
+	$flosc_acc_flow_name = $flosc_acc_flow_name !== '' ? $flosc_acc_flow_name : 'this floscFlow';
+}
+$flosc_acc_tagline = (string) ( $flosc_flow_settings['identity']['tagline'] ?? $flosc_flow_settings['tagline'] ?? '' );
+if ( $flosc_acc_tagline === '' ) {
+	$flosc_acc_tagline = __( '(no tagline set)', 'flosc' );
+}
+$flosc_acc_scope = trim( (string) ( $flosc_flow_settings['ai_topic_scope'] ?? '' ) );
+if ( $flosc_acc_scope === '' ) {
+	$flosc_acc_scope = __( '(topic scope not set on this AI tab)', 'flosc' );
+}
+$flosc_acc_site = (string) get_bloginfo( 'name' );
+if ( $flosc_acc_site === '' ) {
+	$flosc_acc_site = (string) wp_parse_url( home_url(), PHP_URL_HOST );
+}
+if ( $flosc_acc_site === '' ) {
+	$flosc_acc_site = 'this site';
+}
+
+/**
+ * Default multi-turn probes with {placeholders}, filled for this flow.
+ *
+ * @param string $flow_name
+ * @param string $tagline
+ * @param string $topic_scope
+ * @param string $site_name
+ * @return string[]
+ */
+$flosc_acc_default_lines = static function ( $flow_name, $tagline, $topic_scope, $site_name ) {
+	// Parameterized probes: ask for flow identity facts the model should get from this flow's context.
+	// floscAdmins can edit further on the AI tab after Save.
+	$templates = array(
+		'Hello — what is the name of this floscFlow, and who are you in this chat?',
+		'What is the product or flow name you represent here? (Expected name: {flow_name}.)',
+		'What does the Product Tagline for this floscFlow mean or convey? (Configured tagline: {tagline}.)',
+		'In your own words, what is {flow_name} for, and who is it meant to help?',
+		'What topics or tasks are you authorized to handle on {flow_name}? (Topic scope note: {topic_scope}.)',
+		'How does {flow_name} relate to {site_name}?',
+		'What should a first-time visitor do next on {flow_name}?',
+		'Stay in character for {flow_name}: state your role in one or two sentences.',
+		'If someone asks for details you do not have about {flow_name}, what do you do instead of inventing them?',
+		'Summarize {flow_name}: name, purpose, and how you help — based on this conversation.',
+	);
+	$map = array(
+		'{flow_name}'   => $flow_name,
+		'{tagline}'     => $tagline,
+		'{topic_scope}' => $topic_scope,
+		'{site_name}'   => $site_name,
+	);
+	$out = array();
+	foreach ( $templates as $t ) {
+		$out[] = str_replace( array_keys( $map ), array_values( $map ), $t );
+	}
+	return $out;
+};
+
+$flosc_acc_defaults_filled = $flosc_acc_default_lines( $flosc_acc_flow_name, $flosc_acc_tagline, $flosc_acc_scope, $flosc_acc_site );
+$flosc_acc_defaults_text   = implode( "\n", $flosc_acc_defaults_filled );
+$flosc_acc_saved           = trim( (string) ( $flosc_flow_settings['ai_accuracy_test_questions'] ?? '' ) );
+$flosc_acc_textarea_value  = $flosc_acc_saved !== '' ? $flosc_acc_saved : $flosc_acc_defaults_text;
+$flosc_acc_line_count      = max( 1, count( array_filter( array_map( 'trim', preg_split( '/\r\n|\r|\n/', $flosc_acc_textarea_value ) ?: array() ) ) ) );
+?>
 <hr class="flosc-section-divider" id="flosc-accuracy-test">
-<h3 class="flosc-ai-section-heading">🧪 Provider Accuracy Test</h3>
-<p class="description">Run a 10-message test sequence to evaluate how faithfully any configured provider maintains acronym definitions and product knowledge across a full session. Tests mid-session drift (the hallucination pattern this sprint fixes).</p>
+<h3 class="flosc-ai-section-heading"><?php echo esc_html__( 'Provider accuracy test', 'flosc' ); ?></h3>
+<p class="description">
+	<?php echo esc_html__( 'Multi-turn chat against this floscFlow’s AI. Default questions are filled with this flow’s name, tagline, topic scope, and site name. Edit the list (one question per line), save settings, then run the test.', 'flosc' ); ?>
+</p>
+<p class="description">
+	<?php
+	echo esc_html(
+		sprintf(
+			/* translators: 1: flow name 2: site name */
+			__( 'This flow: %1$s · Site: %2$s', 'flosc' ),
+			$flosc_acc_flow_name,
+			$flosc_acc_site
+		)
+	);
+	?>
+</p>
+
+<table class="form-table flosc-form-table-reset" role="presentation">
+	<tr>
+		<th scope="row">
+			<label for="flow_ai_accuracy_test_questions"><?php echo esc_html__( 'Test questions', 'flosc' ); ?></label>
+		</th>
+		<td>
+			<textarea
+				id="flow_ai_accuracy_test_questions"
+				name="flow_ai_accuracy_test_questions"
+				form="flosc-settings-form"
+				rows="12"
+				class="large-text code"
+				data-flosc-accuracy-defaults="<?php echo esc_attr( $flosc_acc_defaults_text ); ?>"
+			><?php echo esc_textarea( $flosc_acc_textarea_value ); ?></textarea>
+			<p class="description">
+				<?php echo esc_html__( 'One question per line. Placeholders available when you reset defaults: {flow_name}, {tagline}, {topic_scope}, {site_name} (defaults below are already filled for this flow).', 'flosc' ); ?>
+			</p>
+			<p>
+				<button type="button" class="button button-secondary" id="flosc-accuracy-reset-defaults"><?php echo esc_html__( 'Reset to parameterized defaults', 'flosc' ); ?></button>
+				<span class="description flosc-margin-left-8"><?php echo esc_html__( 'Then click Save Settings to keep them.', 'flosc' ); ?></span>
+			</p>
+		</td>
+	</tr>
+</table>
 
 <div id="flosc-accuracy-test-ui">
-    <div class="flosc-ai-accuracy-controls">
-        <button type="button" id="flosc-run-accuracy-test" class="button button-secondary">▶ Run 10-Message Accuracy Test</button>
-        <span id="flosc-test-progress" class="flosc-ai-progress flosc-hidden">Running... message <span id="flosc-test-msg-num">0</span>/10</span>
-    </div>
+	<div class="flosc-ai-accuracy-controls">
+		<button type="button" id="flosc-run-accuracy-test" class="button button-secondary"><?php echo esc_html__( '▶ Run multi-turn provider test', 'flosc' ); ?></button>
+		<span id="flosc-test-progress" class="flosc-ai-progress flosc-hidden">
+			<?php echo esc_html__( 'Running… message', 'flosc' ); ?>
+			<span id="flosc-test-msg-num">0</span>/<span id="flosc-test-msg-total"><?php echo esc_html( (string) $flosc_acc_line_count ); ?></span>
+		</span>
+	</div>
 
-    <div id="flosc-accuracy-results" class="flosc-hidden">
-        <table class="widefat flosc-margin-bottom-12">
-            <thead>
-                <tr>
-                    <th class="flosc-width-5">#</th>
-                    <th class="flosc-width-35">Message</th>
-                    <th class="flosc-width-45">Response</th>
-                    <th class="flosc-width-8">Tokens In</th>
-                    <th class="flosc-width-7">Pass?</th>
-                </tr>
-            </thead>
-            <tbody id="flosc-accuracy-tbody"></tbody>
-        </table>
-        <div id="flosc-accuracy-summary" class="flosc-ai-summary"></div>
-    </div>
+	<div id="flosc-accuracy-results" class="flosc-hidden">
+		<table class="widefat flosc-margin-bottom-12">
+			<thead>
+				<tr>
+					<th class="flosc-width-5">#</th>
+					<th class="flosc-width-35"><?php echo esc_html__( 'Message', 'flosc' ); ?></th>
+					<th class="flosc-width-45"><?php echo esc_html__( 'Response', 'flosc' ); ?></th>
+					<th class="flosc-width-8"><?php echo esc_html__( 'Tokens In', 'flosc' ); ?></th>
+					<th class="flosc-width-7"><?php echo esc_html__( 'OK?', 'flosc' ); ?></th>
+				</tr>
+			</thead>
+			<tbody id="flosc-accuracy-tbody"></tbody>
+		</table>
+		<div id="flosc-accuracy-summary" class="flosc-ai-summary"></div>
+	</div>
 </div>
 
 <?php ob_start(); ?>
 jQuery(document).ready(function($) {
-    var testMessages = [
-        "Hello, I'm new here. What is this?",
-        "What does FLOSC stand for?",
-        "Tell me about this product",
-        "What lessons are available for me?",
-        "What does the product name stand for?",
-        "How many lessons are there in total?",
-        "What is lesson 25 about?",
-        "What makes this different from other pronunciation programs?",
-        "Who created this program?",
-        "What does FLOSC stand for again?"
-    ];
-    var testProbes = [
-        'identity',
-        'flosc_acronym',
-        'product_knowledge',
-        'lesson_inventory',
-        'product_acronym',
-        'lesson_count',
-        'specific_lesson',
-        'marketing_claims',
-        'attribution',
-        'mid_session_drift'
-    ];
+	function floscParseAccuracyQuestions() {
+		var raw = $('#flow_ai_accuracy_test_questions').val() || '';
+		return raw.split(/\r\n|\r|\n/).map(function(line) {
+			return $.trim(line);
+		}).filter(function(line) {
+			return line.length > 0;
+		});
+	}
 
-    $('#flosc-run-accuracy-test').on('click', function() {
-        var $btn = $(this);
-        $btn.prop('disabled', true);
-        $('#flosc-test-progress').show();
-        $('#flosc-accuracy-results').hide();
-        $('#flosc-accuracy-tbody').empty();
-        $('#flosc-accuracy-summary').empty();
+	$('#flosc-accuracy-reset-defaults').on('click', function() {
+		var def = $('#flow_ai_accuracy_test_questions').attr('data-flosc-accuracy-defaults') || '';
+		$('#flow_ai_accuracy_test_questions').val(def);
+	});
 
-        var history = [];
-        var totalTokensIn = 0;
-        var passes = 0;
-        var feedback = 0;
+	$('#flosc-run-accuracy-test').on('click', function() {
+		var testMessages = floscParseAccuracyQuestions();
+		if (!testMessages.length) {
+			window.alert(<?php echo wp_json_encode( __( 'Add at least one test question (one per line).', 'flosc' ) ); ?>);
+			return;
+		}
 
-        function runMessage(idx) {
-            if (idx >= testMessages.length) {
-                // Show summary
-                var summaryHtml = '<strong>Session Summary:</strong> '
-                    + passes + '/' + testMessages.length + ' pass | '
-                    + 'Total input tokens: ' + totalTokensIn + ' | '
-                    + 'Feedback triggered: ' + feedback;
-                $('#flosc-accuracy-summary').html(summaryHtml);
-                $('#flosc-accuracy-results').show();
-                $('#flosc-test-progress').hide();
-                $btn.prop('disabled', false);
-                return;
-            }
-            $('#flosc-test-msg-num').text(idx + 1);
+		var $btn = $(this);
+		$btn.prop('disabled', true);
+		$('#flosc-test-msg-total').text(testMessages.length);
+		$('#flosc-test-progress').show();
+		$('#flosc-accuracy-results').hide();
+		$('#flosc-accuracy-tbody').empty();
+		$('#flosc-accuracy-summary').empty();
 
-            $.ajax({
-                url: ajaxurl,
-                type: 'POST',
-                data: {
-                    action: 'flosc_accuracy_test_message',
-                    nonce: '<?php echo esc_attr(wp_create_nonce('flosc_accuracy_test')); ?>',
-                    ivr: '<?php echo esc_js($GLOBALS['flosc_current_ivr'] ?? ''); ?>',
-                    message: testMessages[idx],
-                    message_index: idx,
-                    history: JSON.stringify(history)
-                },
-                success: function(resp) {
-                    var r = resp.data || {};
-                    var response_text = r.response || '(no response)';
-                    var tokens_in = r.tokens_in || 0;
-                    var pass = r.pass !== false;
-                    var corrected = r.corrected || false;
+		var history = [];
+		var totalTokensIn = 0;
+		var passes = 0;
+		var feedback = 0;
 
-                    totalTokensIn += tokens_in;
-                    if (pass) passes++;
-                    if (corrected) feedback++;
+		function runMessage(idx) {
+			if (idx >= testMessages.length) {
+				var summaryHtml = '<strong>Session Summary:</strong> '
+					+ passes + '/' + testMessages.length + ' completed without hard fail | '
+					+ 'Total input tokens: ' + totalTokensIn + ' | '
+					+ 'Flags: ' + feedback;
+				$('#flosc-accuracy-summary').html(summaryHtml);
+				$('#flosc-accuracy-results').show();
+				$('#flosc-test-progress').hide();
+				$btn.prop('disabled', false);
+				return;
+			}
+			$('#flosc-test-msg-num').text(idx + 1);
 
-                    var passCell = pass
-                        ? '<td class="flosc-pass-status flosc-pass-status--pass">✓</td>'
-                        : '<td class="flosc-pass-status flosc-pass-status--fail">✗</td>';
-                    if (corrected) passCell = '<td class="flosc-pass-status flosc-pass-status--corrected">⚡</td>';
+			$.ajax({
+				url: ajaxurl,
+				type: 'POST',
+				data: {
+					action: 'flosc_accuracy_test_message',
+					nonce: <?php echo wp_json_encode( wp_create_nonce( 'flosc_accuracy_test' ) ); ?>,
+					ivr: <?php echo wp_json_encode( (string) ( $GLOBALS['flosc_current_ivr'] ?? '' ) ); ?>,
+					message: testMessages[idx],
+					message_index: idx,
+					history: JSON.stringify(history)
+				},
+				success: function(resp) {
+					var r = resp.data || {};
+					var response_text = r.response || '(no response)';
+					var tokens_in = r.tokens_in || 0;
+					var pass = r.pass !== false;
+					var corrected = r.corrected || false;
 
-                    var snippet = response_text.length > 200
-                        ? response_text.substring(0, 200) + '…'
-                        : response_text;
+					totalTokensIn += tokens_in;
+					if (pass) passes++;
+					if (corrected) feedback++;
 
-                    $('#flosc-accuracy-tbody').append(
-                        '<tr>'
-                        + '<td>' + (idx+1) + '</td>'
-                        + '<td class="flosc-text-12">' + $('<div>').text(testMessages[idx]).html() + '</td>'
-                        + '<td class="flosc-text-12">' + $('<div>').text(snippet).html() + '</td>'
-                        + '<td>' + tokens_in + '</td>'
-                        + passCell
-                        + '</tr>'
-                    );
+					var passCell = pass
+						? '<td class="flosc-pass-status flosc-pass-status--pass">✓</td>'
+						: '<td class="flosc-pass-status flosc-pass-status--fail">✗</td>';
+					if (corrected) passCell = '<td class="flosc-pass-status flosc-pass-status--corrected">⚡</td>';
 
-                    // Add to history for next message
-                    history.push({role: 'user', content: testMessages[idx]});
-                    history.push({role: 'assistant', content: response_text});
+					var snippet = response_text.length > 200
+						? response_text.substring(0, 200) + '…'
+						: response_text;
 
-                    runMessage(idx + 1);
-                },
-                error: function() {
-                    $('#flosc-accuracy-tbody').append(
-                        '<tr><td>' + (idx+1) + '</td><td>' + $('<div>').text(testMessages[idx]).html() + '</td><td colspan="3" class="flosc-request-failed">Request failed</td></tr>'
-                    );
-                    runMessage(idx + 1);
-                }
-            });
-        }
+					$('#flosc-accuracy-tbody').append(
+						'<tr>'
+						+ '<td>' + (idx + 1) + '</td>'
+						+ '<td class="flosc-text-12">' + $('<div>').text(testMessages[idx]).html() + '</td>'
+						+ '<td class="flosc-text-12">' + $('<div>').text(snippet).html() + '</td>'
+						+ '<td>' + tokens_in + '</td>'
+						+ passCell
+						+ '</tr>'
+					);
 
-        runMessage(0);
-    });
+					history.push({ role: 'user', content: testMessages[idx] });
+					history.push({ role: 'assistant', content: response_text });
+
+					runMessage(idx + 1);
+				},
+				error: function() {
+					$('#flosc-accuracy-tbody').append(
+						'<tr><td>' + (idx + 1) + '</td><td>' + $('<div>').text(testMessages[idx]).html() + '</td><td colspan="3" class="flosc-request-failed">Request failed</td></tr>'
+					);
+					runMessage(idx + 1);
+				}
+			});
+		}
+
+		runMessage(0);
+	});
 });
-<?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
+<?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
 
 </div><!-- .flosc-ai-config -->

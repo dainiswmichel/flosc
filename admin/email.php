@@ -273,83 +273,87 @@ $flosc_render_email_series(
 </p>
 
 <?php
-// Product-neutral defaults. Use {app_name} / {team_name} from Identity — never hardcode a brand for all flows.
-$flosc_guest_emails = [
-    'guest_welcome' => [
-        'label'           => 'Welcome Email',
-        'timing'          => 'Sent immediately on first login for this flow',
-        'default_subject' => 'Welcome to {app_name} — your guest access is ready',
-        'default_body'    => "Hi {name}!\n\nWelcome to {app_name}!\n\nYou've been given complimentary guest access. During this time you can take the quiz, review your results, and explore free content.\n\nContinue here: {chat_url}\n\n— The {team_name}",
-    ],
-    'guest_day10' => [
-        'label'           => 'Day 10 Check-In',
-        'timing'          => 'Sent in day window if not yet upgraded',
-        'default_subject' => 'How is your {app_name} experience going?',
-        'default_body'    => "Hi {name}!\n\nYou're into your complimentary {app_name} guest access — we hope you're finding it useful.\n\nYou still have {days_remaining} days remaining. Continue here: {chat_url}\n\nReady to unlock everything? Upgrade: {upgrade_url}\n\n— The {team_name}",
-        'default_min_day' => 10,
-        'default_max_day' => 12,
-    ],
-    'guest_day20' => [
-        'label'           => 'Day 20 — Progress Check',
-        'timing'          => 'Sent in day window if not yet upgraded',
-        'default_subject' => 'You have {days_remaining} days of {app_name} access remaining',
-        'default_body'    => "Hi {name}!\n\nYou're well into your complimentary {app_name} guest access.\n\nVisit your profile: {profile_url}\n\nYou have {days_remaining} days remaining. Upgrade for full access: {upgrade_url}\n\n— The {team_name}",
-        'default_min_day' => 20,
-        'default_max_day' => 22,
-    ],
-    'guest_day28' => [
-        'label'           => 'Day 28 — Final Notice',
-        'timing'          => 'Sent in day window if not yet upgraded',
-        'default_subject' => '{days_remaining} days left for your guest access',
-        'default_body'    => "Hi {name}!\n\nWe would love to welcome you as a full member of {app_name}.\n\nYour guest access expires in {days_remaining} days. If you do not upgrade, guest account information, recordings, and quiz scores may be removed from our servers.\n\nUpgrade to keep your data: {upgrade_url}\n\n— The {team_name}",
-        'default_min_day' => 28,
-        'default_max_day' => 30,
-    ],
-];
-foreach ($flosc_guest_emails as $flosc_key => $flosc_cfg):
-?>
+// Product-neutral guest sequence: welcome + follow-up slots (keys guest_followup_N_*).
+// Day numbers are only default window values — editable per flow, not baked into key names.
+$flosc_guest_emails = array(
+	'guest_welcome' => array(
+		'label'           => __( 'Welcome Email', 'flosc' ),
+		'timing'          => __( 'Sent immediately on first login for this flow', 'flosc' ),
+		'default_subject' => 'Welcome to {app_name} — your guest access is ready',
+		'default_body'    => "Hi {name}!\n\nWelcome to {app_name}!\n\nYou've been given complimentary guest access. During this time you can take the quiz, review your results, and explore free content.\n\nContinue here: {chat_url}\n\n— The {team_name}",
+		'is_followup'     => false,
+	),
+);
+if ( function_exists( 'flosc_guest_followup_slots' ) ) {
+	foreach ( flosc_guest_followup_slots() as $flosc_slot_id => $flosc_slot_meta ) {
+		$flosc_guest_emails[ $flosc_slot_id ] = array(
+			'label'           => (string) ( $flosc_slot_meta['label'] ?? $flosc_slot_id ),
+			'timing'          => (string) ( $flosc_slot_meta['timing'] ?? '' ),
+			'default_subject' => (string) ( $flosc_slot_meta['default_subject'] ?? '' ),
+			'default_body'    => (string) ( $flosc_slot_meta['default_body'] ?? '' ),
+			'default_min_day' => (int) ( $flosc_slot_meta['default_min_day'] ?? 0 ),
+			'default_max_day' => (int) ( $flosc_slot_meta['default_max_day'] ?? 0 ),
+			'is_followup'     => true,
+		);
+	}
+}
+foreach ( $flosc_guest_emails as $flosc_key => $flosc_cfg ) :
+	$flosc_is_followup = ! empty( $flosc_cfg['is_followup'] );
+	$flosc_subj_val    = $flosc_is_followup && function_exists( 'flosc_guest_followup_get' )
+		? flosc_guest_followup_get( $flosc_flow_settings, $flosc_key, 'subject', $flosc_cfg['default_subject'] )
+		: ( $flosc_flow_settings[ $flosc_key . '_subject' ] ?? $flosc_cfg['default_subject'] );
+	$flosc_body_val    = $flosc_is_followup && function_exists( 'flosc_guest_followup_get' )
+		? flosc_guest_followup_get( $flosc_flow_settings, $flosc_key, 'body', $flosc_cfg['default_body'] )
+		: ( $flosc_flow_settings[ $flosc_key . '_body' ] ?? $flosc_cfg['default_body'] );
+	?>
 <hr class="flosc-email-hr-divider">
-<h4 class="flosc-email-section-subtitle"><?php echo esc_html($flosc_cfg['label']); ?></h4>
-<p class="description flosc-email-subdesc"><?php echo esc_html($flosc_cfg['timing']); ?></p>
+<h4 class="flosc-email-section-subtitle"><?php echo esc_html( $flosc_cfg['label'] ); ?></h4>
+<p class="description flosc-email-subdesc"><?php echo esc_html( $flosc_cfg['timing'] ); ?></p>
 <table class="form-table flosc-form-table-reset">
-    <tr>
-        <th scope="row"><label>Subject</label></th>
-        <td>
-            <input type="text" name="flow_<?php echo esc_attr($flosc_key); ?>_subject"
-                   value="<?php echo esc_attr($flosc_flow_settings[$flosc_key . '_subject'] ?? $flosc_cfg['default_subject']); ?>"
-                   class="large-text">
-        </td>
-    </tr>
-    <tr>
-        <th scope="row"><label>Body</label></th>
-        <td>
-            <textarea name="flow_<?php echo esc_attr($flosc_key); ?>_body" rows="8" class="large-text code"><?php
-                echo esc_textarea($flosc_flow_settings[$flosc_key . '_body'] ?? $flosc_cfg['default_body']);
-            ?></textarea>
-        </td>
-    </tr>
-    <?php if ($flosc_key !== 'guest_welcome'): ?>
-    <tr>
-        <th scope="row"><label>Send Window (days)</label></th>
-        <td>
-            <?php
-            $flosc_min_key = $flosc_key . '_min_day';
-            $flosc_max_key = $flosc_key . '_max_day';
-            $flosc_min_default = (int) ($flosc_cfg['default_min_day'] ?? 0);
-            $flosc_max_default = (int) ($flosc_cfg['default_max_day'] ?? $flosc_min_default);
-            ?>
-            <label class="flosc-email-inline-label-right">From day
-                <input type="number" min="0" max="365" class="small-text" name="flow_<?php echo esc_attr($flosc_min_key); ?>"
-                       value="<?php echo esc_attr((int) ($flosc_flow_settings[$flosc_min_key] ?? $flosc_min_default)); ?>">
-            </label>
-            <label>to day
-                <input type="number" min="0" max="365" class="small-text" name="flow_<?php echo esc_attr($flosc_max_key); ?>"
-                       value="<?php echo esc_attr((int) ($flosc_flow_settings[$flosc_max_key] ?? $flosc_max_default)); ?>">
-            </label>
-            <p class="description flosc-margin-top-6">Per-flow control: set Day10 to Day9 by changing this window (for example 9 to 11).</p>
-        </td>
-    </tr>
-    <?php endif; ?>
+	<tr>
+		<th scope="row"><label><?php echo esc_html__( 'Subject', 'flosc' ); ?></label></th>
+		<td>
+			<input type="text" name="flow_<?php echo esc_attr( $flosc_key ); ?>_subject"
+				value="<?php echo esc_attr( (string) $flosc_subj_val ); ?>"
+				class="large-text">
+		</td>
+	</tr>
+	<tr>
+		<th scope="row"><label><?php echo esc_html__( 'Body', 'flosc' ); ?></label></th>
+		<td>
+			<textarea name="flow_<?php echo esc_attr( $flosc_key ); ?>_body" rows="8" class="large-text code"><?php
+				echo esc_textarea( (string) $flosc_body_val );
+			?></textarea>
+		</td>
+	</tr>
+	<?php if ( $flosc_is_followup ) : ?>
+	<tr>
+		<th scope="row"><label><?php echo esc_html__( 'Send window (days since registration)', 'flosc' ); ?></label></th>
+		<td>
+			<?php
+			$flosc_min_key     = $flosc_key . '_min_day';
+			$flosc_max_key     = $flosc_key . '_max_day';
+			$flosc_min_default = (int) ( $flosc_cfg['default_min_day'] ?? 0 );
+			$flosc_max_default = (int) ( $flosc_cfg['default_max_day'] ?? $flosc_min_default );
+			$flosc_min_val     = function_exists( 'flosc_guest_followup_get' )
+				? (int) flosc_guest_followup_get( $flosc_flow_settings, $flosc_key, 'min_day', $flosc_min_default )
+				: (int) ( $flosc_flow_settings[ $flosc_min_key ] ?? $flosc_min_default );
+			$flosc_max_val     = function_exists( 'flosc_guest_followup_get' )
+				? (int) flosc_guest_followup_get( $flosc_flow_settings, $flosc_key, 'max_day', $flosc_max_default )
+				: (int) ( $flosc_flow_settings[ $flosc_max_key ] ?? $flosc_max_default );
+			?>
+			<label class="flosc-email-inline-label-right"><?php echo esc_html__( 'From day', 'flosc' ); ?>
+				<input type="number" min="0" max="365" class="small-text" name="flow_<?php echo esc_attr( $flosc_min_key ); ?>"
+					value="<?php echo esc_attr( (string) $flosc_min_val ); ?>">
+			</label>
+			<label><?php echo esc_html__( 'to day', 'flosc' ); ?>
+				<input type="number" min="0" max="365" class="small-text" name="flow_<?php echo esc_attr( $flosc_max_key ); ?>"
+					value="<?php echo esc_attr( (string) $flosc_max_val ); ?>">
+			</label>
+			<p class="description flosc-margin-top-6"><?php echo esc_html__( 'Change these numbers for this floscFlow — they are not fixed in the software. Defaults are only starting points.', 'flosc' ); ?></p>
+		</td>
+	</tr>
+	<?php endif; ?>
 </table>
 <?php endforeach; ?>
 

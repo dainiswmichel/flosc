@@ -213,7 +213,7 @@ if ( ! function_exists( 'flosc_get_user_ids_for_meta' ) ) {
 				)
 			);
 		}
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- end bulk usermeta lookups block
 		if ( ! is_array( $ids ) ) {
 			$ids = array();
 		}

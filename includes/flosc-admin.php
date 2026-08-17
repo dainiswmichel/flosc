@@ -1083,6 +1083,16 @@ trait FLOSC_Admin_Trait {
             return;
         }
 
+        // Pack list actions (import staged WXR, remove WXR, unlink media).
+        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified in handler
+        if (!empty($post['flosc_portability_pack_action'])) {
+            if (!function_exists('flosc_admin_handle_portability_pack_actions')) {
+                require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
+            }
+            flosc_admin_handle_portability_pack_actions();
+            return;
+        }
+
         $redirect_post_keys = [
             'flosc_save',
             'flosc_toggle_trajectory_post',
@@ -1174,11 +1184,11 @@ trait FLOSC_Admin_Trait {
             'page' => 'flosc-settings',
             'tab'  => $tab,
         ];
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- admin redirect copies sanitized GET routing keys only
         if (!empty($_GET['ivr'])) {
             $args['ivr'] = sanitize_file_name(wp_unslash((string) $_GET['ivr']));
         }
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- admin redirect copies sanitized GET routing keys only
         if (!empty($_GET['view'])) {
             $view = sanitize_text_field(wp_unslash((string) $_GET['view']));
             if (in_array($view, ['single', 'all'], true)) {
@@ -1193,9 +1203,9 @@ trait FLOSC_Admin_Trait {
         }
 
         // Fallback: paint Settings with the requested tab (no blank exit).
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- admin redirect copies sanitized GET routing keys only
         $_GET['page'] = 'flosc-settings';
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- admin redirect copies sanitized GET routing keys only
         $_GET['tab'] = $tab;
         $this->render_admin_page();
     }

@@ -227,19 +227,43 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Input - " . wp_
      */
     private function search_posts($keywords, $limit, $access_level, $category_id = 0) {
 
-        // Build search args
+        // Prefer the site content index when built for this flow (full bodies, selective).
+        if ( class_exists( 'FLOSC_Site_Content_Index' ) ) {
+            $index = FLOSC_Site_Content_Index::instance();
+            $stem  = '';
+            if ( function_exists( 'flosc' ) ) {
+                $flow = flosc()->get_current_flow();
+                if ( is_array( $flow ) && ! empty( $flow['ivr_file'] ) ) {
+                    $stem = $index->stem_from_ivr( (string) $flow['ivr_file'] );
+                } elseif ( is_array( $flow ) && ! empty( $flow['id'] ) ) {
+                    $stem = sanitize_key( (string) $flow['id'] );
+                }
+            }
+            if ( $stem === '' && ! empty( $GLOBALS['flosc_current_ivr'] ) ) {
+                $stem = $index->stem_from_ivr( (string) $GLOBALS['flosc_current_ivr'] );
+            }
+            if ( $stem !== '' ) {
+                $doc = $index->load( $stem );
+                if ( ! empty( $doc['posts'] ) ) {
+                    $from_index = $index->search( $stem, (string) $keywords, (string) $access_level, (int) $limit );
+                    if ( is_string( $from_index ) && $from_index !== '' ) {
+                        return $from_index;
+                    }
+                }
+            }
+        }
+
+        // Fallback: live WordPress search in the flow category.
         $args = [
             's' => $keywords,
             'posts_per_page' => $limit,
             'post_status' => 'publish'
         ];
 
-        // Add category filter if specified
         if ($category_id > 0) {
             $args['cat'] = $category_id;
         }
-        
-        // Also support searching by lesson number (e.g., "1", "2", "10")
+
         if (is_numeric($keywords) && $keywords >= 1 && $keywords <= 10) {
             unset($args['s']);
             $pids = function_exists( 'flosc_get_post_ids_for_meta' )
@@ -251,40 +275,39 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Input - " . wp_
             $args['post__in'] = $pids;
             $args['orderby']  = 'post__in';
         }
-        
+
         $posts = get_posts($args);
-        
+
         if (empty($posts)) {
             return "No posts found for: {$keywords}";
         }
-        
-        $results = "**Found " . count($posts) . " lessons:**\n\n";
-        
+
+        $results = "**Found " . count($posts) . " posts:**\n\n";
+
         foreach ($posts as $post) {
-            
-            // Get lesson number and access level from meta
+
             $lesson_num = get_post_meta($post->ID, '_flosc_lesson_number', true);
             $required_access = get_post_meta($post->ID, '_flosc_access_level', true) ?: 'member';
-            
+
             $lesson_label = $lesson_num ? "Lesson {$lesson_num}: " : "";
-            
-            // Check if user has access to this post
+
             if (!$this->content_filter->has_access($required_access, $access_level)) {
                 $results .= "**{$lesson_label}{$post->post_title}** 🔒\n";
                 $results .= "Access: " . ucfirst($required_access) . " required\n\n";
                 continue;
             }
-            
-            // Filter content by access level
+
+            // Full post body (access-filtered), not excerpt-only.
             $content = $this->content_filter->filter_post_content($post->post_content, $access_level);
-            $excerpt = $this->content_filter->get_excerpt($content, 40);
-            
-            // Build result
+            $content = wp_strip_all_tags( (string) $content );
+            $content = preg_replace( '/\s+/u', ' ', $content );
+            $content = is_string( $content ) ? trim( $content ) : '';
+
             $results .= "**{$lesson_label}{$post->post_title}**\n";
-            $results .= "ID: {$post->ID} | URL: " . get_permalink($post->ID) . "\n";
-            $results .= "{$excerpt}\n\n";
+            $results .= "ID: {$post->ID} | URL: " . get_permalink($post->ID) . "\n\n";
+            $results .= $content . "\n\n---\n\n";
         }
-        
+
         return $results;
     }
     

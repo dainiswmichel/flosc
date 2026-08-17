@@ -308,7 +308,7 @@ class FLOSC_Email {
     }
 
     /**
-     * Send due day10/day20/day28 follow-up emails for a single SSO guest user.
+     * Send due guest follow-up emails for a single guest user (slot-based windows).
      */
     public function send_due_guest_followups_for_user($user_id) {
         $user = get_userdata($user_id);
@@ -323,75 +323,53 @@ class FLOSC_Email {
 
         $days_elapsed = (int) floor((time() - strtotime($user->user_registered)) / DAY_IN_SECONDS);
         $sent = get_user_meta($user->ID, '_flosc_guest_emails_sent', true) ?: [];
+        if (!is_array($sent)) {
+            $sent = [];
+        }
         $settings = $this->flosc->get_flow_settings_for_user($user->ID);
-        // Per-flow guest window — never hardcode 30 days for all flows.
+        if (!is_array($settings)) {
+            $settings = [];
+        }
+        // Per-flow guest window — never hardcode access length for all flows.
         $guest_window = max(0, (int) ($settings['guest_access_days'] ?? 0));
         $days_remaining = ($guest_window > 0)
             ? max(0, $guest_window - $days_elapsed)
             : 0;
         $updated = false;
 
-        $schedule = [
-            'day10' => [
-                'min' => (int) ($settings['guest_day10_min_day'] ?? 10),
-                'max' => (int) ($settings['guest_day10_max_day'] ?? 12),
-            ],
-            'day20' => [
-                'min' => (int) ($settings['guest_day20_min_day'] ?? 20),
-                'max' => (int) ($settings['guest_day20_max_day'] ?? 22),
-            ],
-            'day28' => [
-                'min' => (int) ($settings['guest_day28_min_day'] ?? 28),
-                'max' => (int) ($settings['guest_day28_max_day'] ?? 30),
-            ],
-        ];
+        if (!function_exists('flosc_guest_followup_slots')) {
+            return;
+        }
 
-        foreach ($schedule as $schedule_key => $window) {
-            $min_day = max(0, min(365, (int) ($window['min'] ?? 0)));
-            $max_day = max(0, min(365, (int) ($window['max'] ?? $min_day)));
+        foreach (flosc_guest_followup_slots() as $slot_id => $meta) {
+            if (function_exists('flosc_guest_followup_was_sent') && flosc_guest_followup_was_sent($sent, $slot_id)) {
+                continue;
+            }
+
+            $min_day = (int) flosc_guest_followup_get($settings, $slot_id, 'min_day', (int) ($meta['default_min_day'] ?? 0));
+            $max_day = (int) flosc_guest_followup_get($settings, $slot_id, 'max_day', (int) ($meta['default_max_day'] ?? $min_day));
+            $min_day = max(0, min(365, $min_day));
+            $max_day = max(0, min(365, $max_day));
             if ($max_day < $min_day) {
                 $max_day = $min_day;
             }
-            $schedule[$schedule_key] = ['min' => $min_day, 'max' => $max_day];
-        }
 
-        $templates = [
-            'day10' => [
-                'subject_key' => 'guest_day10_subject',
-                'body_key'    => 'guest_day10_body',
-                'default_sub' => 'How is your {app_name} experience going?',
-                'default_body'=> "Hi {name}!\n\nYou're 10 days into your complimentary {app_name} guest access — we hope you're enjoying it.\n\nYou have {days_remaining} days remaining. Continue here: {chat_url}\n\nReady to unlock everything? Upgrade: {upgrade_url}\n\n— The {team_name}",
-            ],
-            'day20' => [
-                'subject_key' => 'guest_day20_subject',
-                'body_key'    => 'guest_day20_body',
-                'default_sub' => 'You have {days_remaining} days of {app_name} access remaining',
-                'default_body'=> "Hi {name}!\n\nYou're two-thirds of the way through your complimentary {app_name} guest access — we hope it has been valuable.\n\nYou have {days_remaining} days remaining. Continue here: {chat_url}\n\nUpgrade for full access: {upgrade_url}\n\n— The {team_name}",
-            ],
-            'day28' => [
-                'subject_key' => 'guest_day28_subject',
-                'body_key'    => 'guest_day28_body',
-                'default_sub' => '{days_remaining} days left for your guest access',
-                'default_body'=> "Hi {name}!\n\nWe would love to welcome you as a full member of {app_name}.\n\nYour guest access expires in {days_remaining} days. If you do not upgrade, your guest account information, recordings, and quiz scores may be removed from our servers.\n\nWe wish you the very best in your learning journey, whatever you decide.\n\nUpgrade to keep your data: {upgrade_url}\n\n— The {team_name}",
-            ],
-        ];
-
-        foreach ($schedule as $key => $window) {
-            if ($days_elapsed >= $window['min'] && $days_elapsed <= $window['max'] && !in_array($key, $sent, true)) {
-                $tpl     = $templates[$key];
-                $subject = $settings[$tpl['subject_key']] ?? $tpl['default_sub'];
-                $body    = $settings[$tpl['body_key']]    ?? $tpl['default_body'];
-                $subject = $this->replace_guest_email_placeholders($subject, $user, $days_remaining);
-                $body    = $this->replace_guest_email_placeholders($body,    $user, $days_remaining);
-                $this->send_email_throttled(
-                    $user->user_email,
-                    $subject,
-                    $body,
-                    $this->get_flosc_mail_headers('', (int) $user->ID, false)
-                );
-                $sent[]  = $key;
-                $updated = true;
+            if ($days_elapsed < $min_day || $days_elapsed > $max_day) {
+                continue;
             }
+
+            $subject = (string) flosc_guest_followup_get($settings, $slot_id, 'subject', (string) ($meta['default_subject'] ?? ''));
+            $body    = (string) flosc_guest_followup_get($settings, $slot_id, 'body', (string) ($meta['default_body'] ?? ''));
+            $subject = $this->replace_guest_email_placeholders($subject, $user, $days_remaining);
+            $body    = $this->replace_guest_email_placeholders($body, $user, $days_remaining);
+            $this->send_email_throttled(
+                $user->user_email,
+                $subject,
+                $body,
+                $this->get_flosc_mail_headers('', (int) $user->ID, false)
+            );
+            $sent[]  = $slot_id;
+            $updated = true;
         }
 
         if ($updated) {
@@ -650,7 +628,7 @@ The {product_name} Team";
     /**
      * Reliability guard for SSO email sequence.
      * - Ensures welcome email exists once for SSO-created users
-     * - Sends any due day10/day20/day28 follow-up emails
+     * - Sends any due guest follow-up emails (slot windows)
      */
     public function maybe_run_sso_email_sequence_for_user($user_id) {
         $user_id = (int) $user_id;

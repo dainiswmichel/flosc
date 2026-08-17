@@ -3,7 +3,26 @@
 <h1 id="glossary">Part 5: Glossary</h1>
 <p>Every FLOSC-specific term defined once. When a term appears in the codebase or documentation, its definition is here.</p>
 
+<h2 id="glossary-namespace">floscFlow namespace (product layers)</h2>
+<p>Identifiers use the <code>flosc_</code> / <code>floscFlow</code> prefix. These layers separate concerns:</p>
+<ul>
+	<li><strong>floscFlowConfiguration</strong> — whole durable definition of one floscFlow (umbrella).</li>
+	<li><strong>floscFlowPersonality</strong> — how the assistant speaks (name, role, traits, base prompt, boundaries).</li>
+	<li><strong>floscFlowIvr</strong> — scripted input→output pairs only (not the whole product).</li>
+	<li><strong>floscFlowJourneyWiring</strong> — levels, offers, access codes, freeline structure, content category/tag pointers.</li>
+	<li><strong>floscFlowAiPolicy</strong> — which providers/models/chain this flow uses (provider ids and tuning; no secret key material in portable files).</li>
+	<li><strong>floscFlowContent</strong> — materials: posts (WXR), media, DA1 catalog rows.</li>
+	<li><strong>floscFlowRuntime</strong> — this turn only (visitor/guest/member, phase, page context).</li>
+	<li><strong>floscAvailableProviders</strong> — install pool of API credentials available to any current or future floscFlow; each flow attaches via floscFlowAiPolicy.</li>
+	<li><strong>floscSiteContentIndex</strong> — site-wide published-post index for selective retrieval (not a per-flow category dump).</li>
+	<li><strong>floscDa1Catalogs</strong> — DA1 catalog files on the install; assignment to a flow is separate.</li>
+</ul>
+<p>Portable Settings YAML may include personality, IVR, journey wiring, and AI policy <em>ids</em> — never API key strings. Keys resolve: flow bag first, then floscAvailableProviders.</p>
+
 <h2 id="glossary-a">A</h2>
+
+<h3 id="term-available-providers">Available Providers (floscAvailableProviders)</h3>
+<p>Install-scoped credential pool. A key the floscAdmin configures becomes available to all floscFlows on that install. Attachment (primary provider, chain order) is per flow via floscFlowAiPolicy. Option: <code>flosc_available_providers</code>.</p>
 
 <h3 id="term-access-controller">Access Controller</h3>
 <p><code>class-flosc-rag-access-controller.php</code>. The class that decides what content the AI is permitted to deliver to the current user. Enforces lesson access rules: visitors get nothing, guests get the free lesson, members get all lessons.</p>

@@ -86,34 +86,33 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
     <link rel="apple-touch-icon" sizes="180x180" href="<?php echo esc_url($flosc_favicon_180); ?>">
 
     <?php
-    // Companion embed flag early: critical CSS must run before flosc-layout.css so the
-    // 512×512 default chat logo never paints full-size for one frame (FOUC).
+    // Companion embed: FOUC guard via wp_add_inline_style on flosc-layout (same handle as
+    // theme vars below). Hides chrome and caps logos when ?flosc_companion is present.
     $flosc_is_companion_embed = ( null !== filter_input( INPUT_GET, 'flosc_companion' ) );
-    if ( $flosc_is_companion_embed ) :
-        ?>
-    <style id="flosc-companion-embed-critical">
-        /* Hide full-page chrome immediately; layout CSS keeps the same rules. */
-        body.flosc-companion-embed .flosc-sidebar,
-        body.flosc-companion-embed .flosc-sidebar-overlay,
-        body.flosc-companion-embed #flosc_app_sidebar_toggle,
-        body.flosc-companion-embed .flosc-header,
-        body.flosc-companion-embed .mobile-menu-btn,
-        body.flosc-companion-embed .logo-mobile,
-        body.flosc-companion-embed .landing-state {
-            display: none !important;
-        }
-        /* Hard-cap brand images if anything is still painted before rules cascade. */
-        body.flosc-companion-embed img.logo-img,
-        body.flosc-companion-embed img.logo-mobile__img,
-        body.flosc-companion-embed img.landing-icon {
-            width: 32px !important;
-            height: 32px !important;
-            max-width: 32px !important;
-            max-height: 32px !important;
-            object-fit: contain !important;
-        }
-    </style>
-    <?php endif; ?>
+    if ( $flosc_is_companion_embed ) {
+        $flosc_companion_critical_css = '
+body.flosc-companion-embed .flosc-sidebar,
+body.flosc-companion-embed .flosc-sidebar-overlay,
+body.flosc-companion-embed #flosc_app_sidebar_toggle,
+body.flosc-companion-embed .flosc-header,
+body.flosc-companion-embed .mobile-menu-btn,
+body.flosc-companion-embed .logo-mobile,
+body.flosc-companion-embed .landing-state {
+	display: none !important;
+}
+body.flosc-companion-embed img.logo-img,
+body.flosc-companion-embed img.logo-mobile__img,
+body.flosc-companion-embed img.landing-icon {
+	width: 32px !important;
+	height: 32px !important;
+	max-width: 32px !important;
+	max-height: 32px !important;
+	object-fit: contain !important;
+}
+';
+        wp_add_inline_style( 'flosc-layout', $flosc_companion_critical_css );
+    }
+    ?>
     
     <!-- Dynamic Primary Color -->
     <?php // §12: dynamic CSS vars attached to the enqueued flosc-chat handle (prints in <head> via wp_head) instead of an inline <style> tag. ?>

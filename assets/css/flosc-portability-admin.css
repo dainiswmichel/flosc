@@ -239,3 +239,123 @@
 .flosc-flow-portability-primary-btn {
 	min-width: 180px;
 }
+
+/* ==========================================================================
+   Personality vs data set (labels + section chrome)
+   ========================================================================== */
+
+.flosc-portability-split {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 12px;
+	margin: 12px 0 14px;
+}
+
+@media screen and (min-width: 782px) {
+	.flosc-portability-split {
+		grid-template-columns: 1fr 1fr;
+	}
+}
+
+.flosc-portability-split__card {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 12px 14px;
+	border-radius: 8px;
+	border: 1px solid #c3c4c7;
+	background: #fff;
+}
+
+.flosc-portability-split__card--personality {
+	border-color: #c5b3e6;
+	background: #f7f3fc;
+}
+
+.flosc-portability-split__card--dataset {
+	border-color: #b5d4a8;
+	background: #f3faf0;
+}
+
+.flosc-portability-split__heading {
+	margin: 0 0 6px;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.3;
+	color: #1d2327;
+}
+
+.flosc-portability-split__body {
+	margin: 0 0 8px;
+	font-size: 12px;
+	line-height: 1.45;
+	color: #3c434a;
+}
+
+.flosc-portability-split__meta {
+	margin: 0;
+	font-size: 12px;
+	line-height: 1.5;
+	color: #50575e;
+}
+
+.flosc-portability-chip {
+	display: inline-block;
+	margin: 0 4px 2px 0;
+	padding: 1px 8px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 1.6;
+	vertical-align: middle;
+	white-space: nowrap;
+}
+
+.flosc-portability-chip--personality {
+	color: #5b2c8a;
+	background: #e9ddf7;
+	border: 1px solid #c5b3e6;
+}
+
+.flosc-portability-chip--dataset {
+	color: #1e4620;
+	background: #d6edd0;
+	border: 1px solid #8ec58a;
+}
+
+.flosc-portability-section {
+	margin: 18px 0 8px;
+	padding: 12px 14px 14px;
+	border-radius: 8px;
+	border: 1px solid #dcdcde;
+	background: #fcfcfc;
+}
+
+.flosc-portability-section--personality {
+	border-color: #d4c4ef;
+	background: #fbf9fe;
+}
+
+.flosc-portability-section--dataset {
+	border-color: #c5e0bc;
+	background: #f8fcf6;
+}
+
+.flosc-portability-section__title-block {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 2px;
+	min-width: 0;
+}
+
+.flosc-portability-section__title-block .description {
+	margin: 0;
+}
+
+.flosc-portability-section .flosc-ivr-file-actions--table-toolbar {
+	margin-top: 0;
+}
+
+.flosc-portability-file-list__item .flosc-portability-chip {
+	flex: 0 0 auto;
+}

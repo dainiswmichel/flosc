@@ -5062,6 +5062,12 @@
     align-items: center;
 }
 
+/* Inline action forms in admin tables (site index, portability, etc.). */
+.flosc-inline-form {
+    display: inline;
+    margin: 0;
+}
+
 .flosc-ivr-inline-form {
     display: inline;
     margin: 0;
@@ -7182,4 +7188,108 @@
 }
 .flosc-login-desc-mt {
 	margin-top: 6px;
+}
+
+/* Site content index table (AI tab) — tall scroll + wide enough to read */
+.flosc-site-index-card {
+	max-width: none;
+}
+.flosc-site-index-table-hint {
+	margin: 0 0 8px;
+}
+.flosc-site-index-table-wrap {
+	max-height: 28rem;
+	overflow: auto;
+	border: 1px solid #c3c4c7;
+	background: #fff;
+	-webkit-overflow-scrolling: touch;
+}
+.flosc-site-index-table-wrap .flosc-site-index-table {
+	margin: 0;
+	/* Prefer full readable width; horizontal scroll if viewport is narrow */
+	min-width: 72rem;
+	width: 100%;
+	table-layout: fixed;
+}
+.flosc-site-index-table-wrap thead th {
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	background: #f6f7f7;
+	box-shadow: 0 1px 0 #c3c4c7;
+}
+.flosc-site-index-table th,
+.flosc-site-index-table td {
+	vertical-align: top;
+	padding: 10px 10px;
+}
+.flosc-site-index-id {
+	width: 4.5rem;
+	white-space: nowrap;
+}
+.flosc-site-index-title {
+	width: 18%;
+	word-break: normal;
+	overflow-wrap: anywhere;
+}
+.flosc-site-index-title a {
+	text-decoration: none;
+}
+.flosc-site-index-cats {
+	width: 14%;
+}
+.flosc-site-index-cat {
+	display: inline-block;
+	margin: 0 4px 4px 0;
+	padding: 2px 6px;
+	font-size: 11px;
+	line-height: 1.35;
+	white-space: nowrap;
+	word-break: keep-all;
+	background: #f0f0f1;
+	border-radius: 3px;
+}
+.flosc-site-index-table th:nth-child(4),
+.flosc-site-index-table td:nth-child(4) {
+	width: 5.5rem;
+	white-space: nowrap;
+}
+.flosc-site-index-table th:nth-child(5),
+.flosc-site-index-table td:nth-child(5) {
+	width: 7rem;
+}
+.flosc-site-index-table th:nth-child(6),
+.flosc-site-index-table td:nth-child(6) {
+	width: 16%;
+}
+.flosc-site-index-table th:nth-child(7),
+.flosc-site-index-table td:nth-child(7) {
+	width: 22%;
+}
+.flosc-site-index-table th:nth-child(8),
+.flosc-site-index-table td:nth-child(8) {
+	width: 9rem;
+	white-space: nowrap;
+}
+.flosc-site-index-kw-form {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	align-items: center;
+}
+.flosc-site-index-kw-form .regular-text {
+	max-width: none;
+	width: 100%;
+	min-width: 8rem;
+}
+.flosc-site-index-snippet {
+	display: block;
+	max-width: none;
+	line-height: 1.4;
+	color: #50575e;
+	word-break: normal;
+	overflow-wrap: anywhere;
+}
+.flosc-site-index-row-excluded {
+	opacity: 0.65;
 }

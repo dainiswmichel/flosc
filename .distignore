@@ -31,10 +31,12 @@ assets/css/ivr-admin.css
 
 # Site/deployment-specific IVR configs — private, not shipped.
 # Keep shipped default IVR files in ai_configuration_files/ for fresh installs.
+# Ship: flosc_default_ivr.md, flosc_default_friendly_ivr.md, flosc_default_technical_ivr.md
 ai_configuration_files/dainis_net_ivr.md
 ai_configuration_files/lesaep_com_ivr.md
 ai_configuration_files/simplified_solfeggio_ivr.md
 ai_configuration_files/flosc_ai_ivr.md
+ai_configuration_files/flosc_default_br3nda_emotional_support_ivr.md
 
 # Workspace-only plans and scratch (documentation ships — see flosc_documentation/ + admin/docs/)
 sample-data/

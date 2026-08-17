@@ -81,7 +81,7 @@ class FLOSC_STT_Dispatch {
      */
     private function assemblyai_transcribe($audio_path, $options = []) {
         // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
-        $api_key = flosc_get_setting('assemblyai_api_key', '');
+        $api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'assemblyai' ) : flosc_get_setting( 'assemblyai_api_key', '' );
         
         if (empty($api_key)) {
             return new WP_Error('no_api_key', __('AssemblyAI API key not configured', 'flosc'));
@@ -172,7 +172,7 @@ class FLOSC_STT_Dispatch {
      */
     private function openai_whisper_transcribe($audio_path, $options = []) {
         // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
-        $api_key = flosc_get_setting('openai_api_key', '');
+        $api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'openai' ) : flosc_get_setting( 'openai_api_key', '' );
         
         if (empty($api_key)) {
             return new WP_Error('no_api_key', __('OpenAI API key not configured', 'flosc'));

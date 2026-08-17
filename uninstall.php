@@ -69,7 +69,7 @@ function flosc_uninstall_delete_meta_table_prefix( $table, $prefix ) {
 		return;
 	}
 	// Table name from $wpdb->* only — not user input.
-	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table/identifier from $wpdb->prefix + hardcoded suffix only
 	$wpdb->query(
 		$wpdb->prepare(
 			"DELETE FROM {$table} WHERE meta_key LIKE %s",
@@ -108,7 +108,7 @@ $flosc_tables = array(
 );
 foreach ( $flosc_tables as $flosc_table ) {
 	// Identifier only from $wpdb->prefix + fixed suffix.
-	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table/identifier from $wpdb->prefix + hardcoded suffix only
 	$wpdb->query( "DROP TABLE IF EXISTS `{$flosc_table}`" );
 }
 
@@ -155,11 +155,11 @@ function flosc_uninstall_rm_rf( $dir ) {
 		} elseif ( function_exists( 'wp_delete_file' ) ) {
 			wp_delete_file( $path );
 		} else {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- uninstall fallback when WP_Filesystem rmdir unavailable
 			@unlink( $path );
 		}
 	}
-	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir
+	// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_rmdir -- uninstall fallback when WP_Filesystem rmdir unavailable
 	@rmdir( $dir );
 }
 

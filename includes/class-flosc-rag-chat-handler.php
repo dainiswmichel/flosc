@@ -252,7 +252,7 @@ class FLOSC_RAG_Chat_Handler {
         }
 
         // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
-        $flosc_api_key = flosc_get_setting('anthropic_api_key', '');
+        $flosc_api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'anthropic' ) : flosc_get_setting( 'anthropic_api_key', '' );
 
         if (empty($flosc_api_key)) {
             return null; // No key — let handle_chat() fall through to dispatch

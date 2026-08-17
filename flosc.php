@@ -4,7 +4,7 @@
  * Plugin URI: https://flosc.ai
  * Description: (F)reeline --> (L)ogin --> (O)ffer --> (S)ale --> (C)ontent: try-before-you-buy WordPress journeys.
  * Version: 8.0.0
- * Requires at least: 7.0
+ * Requires at least: 7.0.4
  * Requires PHP: 7.4
  * Author: Dainis W. Michel
  * Author URI: https://dainis.net
@@ -82,6 +82,7 @@ if (!function_exists('flosc_log')) {
 // Domain: filesystem helpers then path helpers (write gate needs FLOSC_Filesystem).
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/class-flosc-filesystem.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/flosc-data-paths.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/flosc-available-providers.php';
 
 // v1.2.9: Auto-flush permalinks on activation
 register_activation_hook(__FILE__, 'flosc_activation_flush');
@@ -300,10 +301,9 @@ function flosc_shipped_flow_display_name($ivr_filename_or_stem) {
         $stem = sanitize_key((string) $ivr_filename_or_stem);
     }
     $map = [
-        'flosc_default_br3nda_emotional_support_ivr' => 'Br3nda',
-        'flosc_default_technical_ivr'                  => 'Tech Agent',
-        'flosc_default_friendly_ivr'                   => 'Friendly Guide',
-        'flosc_default_ivr'                            => 'FLOSC Starter',
+        'flosc_default_technical_ivr' => 'Tech Agent',
+        'flosc_default_friendly_ivr'  => 'Friendly Guide',
+        'flosc_default_ivr'           => 'FLOSC Starter',
     ];
     return $map[$stem] ?? '';
 }
@@ -321,6 +321,7 @@ require_once FLOSC_PLUGIN_DIR . 'includes/chat-turn/trait-flosc-chat-turn.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/companion-mode/class-flosc-companion-mode.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/full-page-mode/class-flosc-full-page-mode.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/first-party-authentication/class-flosc-first-party-authentication.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/email/flosc-guest-followup-slots.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/email/class-flosc-email.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/sale/class-flosc-checkout-rest.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/tokens/class-flosc-token-ledger.php';
@@ -944,6 +945,10 @@ class FLOSC_Framework {
         require_once FLOSC_PLUGIN_DIR . 'includes/class-user-access-manager.php';
         require_once FLOSC_PLUGIN_DIR . 'includes/class-content-filter.php';
         require_once FLOSC_PLUGIN_DIR . 'includes/class-rag-manager.php';
+        require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-site-content-index.php';
+        if ( function_exists( 'flosc_site_content_index' ) ) {
+            flosc_site_content_index(); // Register admin-post handlers for site index.
+        }
         require_once FLOSC_PLUGIN_DIR . 'includes/class-access-validator.php'; // v9.1.7
         require_once FLOSC_PLUGIN_DIR . 'includes/class-free-content-item-manager.php'; // v9.1.8
         require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php'; // v9.1.8
@@ -2323,16 +2328,12 @@ The Team',
             wp_send_json_error(['message' => 'Chatpack or AI dispatch not available.']);
         }
 
+        // Neutral visitor-style context — do not fake IPA/lesson quiz state (that skewed every flow toward "lessons product").
         $eval_context = [
-            'access_level'    => 'member',
-            'user_name'       => 'Test User',
-            'is_admin'        => true,
-            'user_id'         => get_current_user_id(),
-            'quiz_taken'      => true,
-            'quiz_score'      => 72,
-            'ipa_quiz_score'  => 72,
-            'ipa_quiz_tier'   => 'Intermediate',
-            'ipa_weakest_sounds' => ['/θ/', '/ð/', '/r/', '/æ/', '/ʌ/'],
+            'access_level' => 'visitor',
+            'user_name'    => 'Test User',
+            'is_admin'     => true,
+            'user_id'      => get_current_user_id(),
         ];
 
         $flosc_hash   = FLOSC_Chatpack::generate_flosc_hash();
@@ -4344,7 +4345,7 @@ Example good response:
 
         // Get AI configuration
         // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
-        $api_key = flosc_get_setting('anthropic_api_key', '');
+        $api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'anthropic' ) : flosc_get_setting( 'anthropic_api_key', '' );
         
         if (empty($api_key)) {
             return "Anthropic API key not configured. Add it in FLOSC Settings → AI Configuration.";

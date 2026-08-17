@@ -656,9 +656,13 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         // AI knowledge
         'ai_personality_traits', 'ai_mission', 'ai_context_awareness', 'ai_freeline_restrictions', 'ai_member_access', 'ai_boundaries',
         'ai_topic_scope', 'ai_off_topic_message', 'ai_off_topic_links',
+        'ai_accuracy_test_questions',
         // Email
         'email_body',
-        'guest_welcome_body', 'guest_day10_body', 'guest_day20_body', 'guest_day28_body',
+        // Guest email bodies — follow-up slots are guest_followup_N_body (legacy guest_day*_body still accepted).
+        'guest_welcome_body',
+        'guest_followup_1_body', 'guest_followup_2_body', 'guest_followup_3_body',
+        'guest_day10_body', 'guest_day20_body', 'guest_day28_body',
         // Payments
         'manual_payment_instructions',
         // Identity policy pages
@@ -740,7 +744,9 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         $flosc_r_aemail = (array) ($flosc_post['engagement_rule_action_email'] ?? []);
         $flosc_rules_out = [];
         $flosc_allow_trig = ['chat_open', 'return_login', 'inactive_days', 'days_since_registration', 'profile_incomplete'];
-        $flosc_allow_tpl  = ['', 'reengagement', 'guest_welcome', 'guest_day10', 'guest_day20', 'guest_day28'];
+        $flosc_allow_tpl  = function_exists( 'flosc_guest_followup_template_ids' )
+            ? flosc_guest_followup_template_ids()
+            : [ '', 'reengagement', 'guest_welcome', 'guest_followup_1', 'guest_followup_2', 'guest_followup_3', 'guest_day10', 'guest_day20', 'guest_day28' ];
         foreach ($flosc_r_ids as $flosc_ri => $flosc_rid) {
             $flosc_rid = sanitize_key((string) $flosc_rid);
             if ($flosc_rid === '') {
@@ -1818,6 +1824,11 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
 
     // Save flow settings (ALL tabs now per-flow)
     update_option($flosc_settings_key, $flosc_new_settings);
+
+    // floscAvailableProviders: non-empty keys on this flow become available install-wide.
+    if ( function_exists( 'flosc_available_providers_promote_from_flow' ) ) {
+        flosc_available_providers_promote_from_flow( $flosc_new_settings );
+    }
 
     // Post/Redirect/Get so save feedback is deterministic and browser back/refresh
     // does not resubmit the form.

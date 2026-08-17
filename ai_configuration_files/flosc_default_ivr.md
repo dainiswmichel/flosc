@@ -4,7 +4,6 @@
 # Character defaults (use these as live examples instead):
 # - flosc_default_technical_ivr.md
 # - flosc_default_friendly_ivr.md
-# - flosc_default_br3nda_emotional_support_ivr.md
 
 ---
 

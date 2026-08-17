@@ -1,15 +1,15 @@
 /**
  * Flow Portability kit drop zone — admin only.
  *
- * One drop surface, no second picker, and no submit on selection. Files chosen
- * by click or dropped from the desktop are held in `pending`, listed with their
- * sizes under "Selected files", and written back onto the file input through a
+ * One drop surface. Files chosen by click or drop are held in `pending`, listed
+ * under "Selected files", and written back onto the file input through a
  * DataTransfer so Create / Apply post them as flosc_kit_files[].
  *
- * Two roles are deliberately split: the <label for="…"> owns clicking (the
- * browser opens the picker natively, so no click handler is needed), and the
- * zone element owns drag-and-drop. Nothing here binds a click, which is why the
- * two cannot fight over the same gesture.
+ * Allowed pack pieces:
+ * - one .md (IVR + settings)
+ * - up to 10 .tsv (DA1 catalogs)
+ * - up to 5 .xml (WXR content)
+ * - up to 10 media (pdf/images/audio)
  *
  * Delivery: wp_enqueue_script( 'flosc-portability-admin' ) in
  * includes/flosc-admin.php. Markup: admin/flow.php, Flow tab, view=all.
@@ -17,8 +17,23 @@
 (function () {
 	'use strict';
 
-	/* Mirrors the .tsv ceiling enforced in admin/ivr-upload-handler.php. */
 	var MAX_TSV = 10;
+	var MAX_WXR = 5;
+	var MAX_MEDIA = 10;
+	var MEDIA_EXT = {
+		pdf: 1,
+		jpg: 1,
+		jpeg: 1,
+		png: 1,
+		gif: 1,
+		webp: 1,
+		mp3: 1,
+		mp4: 1,
+		m4a: 1,
+		wav: 1,
+		ogg: 1,
+		webm: 1
+	};
 
 	function onReady(fn) {
 		if (document.readyState === 'loading') {
@@ -50,6 +65,22 @@
 			return (n / 1024).toFixed(1) + ' KB';
 		}
 		return (n / 1048576).toFixed(2) + ' MB';
+	}
+
+	function roleOf(ext) {
+		if (ext === 'md') {
+			return { label: 'Personality', kind: 'personality' };
+		}
+		if (ext === 'tsv') {
+			return { label: 'Data · catalog', kind: 'dataset' };
+		}
+		if (ext === 'xml') {
+			return { label: 'Data · posts', kind: 'dataset' };
+		}
+		if (MEDIA_EXT[ext]) {
+			return { label: 'Data · media', kind: 'dataset' };
+		}
+		return null;
 	}
 
 	function setInputFiles(input, files) {
@@ -122,6 +153,16 @@
 				var f = pending[i];
 				var li = document.createElement('li');
 				li.className = 'flosc-portability-file-list__item';
+				var role = roleOf(extOf(f.name));
+				if (role) {
+					var chip = document.createElement('span');
+					chip.className =
+						'flosc-portability-chip flosc-portability-chip--' +
+						role.kind;
+					chip.textContent = role.label;
+					li.appendChild(chip);
+					li.appendChild(document.createTextNode(' '));
+				}
 				var code = document.createElement('code');
 				code.textContent = f.name || '(unnamed)';
 				var meta = document.createElement('span');
@@ -141,6 +182,9 @@
 			}
 			var md = [];
 			var tsv = [];
+			var wxr = [];
+			var media = [];
+			var bad = [];
 			var i;
 			for (i = 0; i < files.length; i++) {
 				var e = extOf(files[i].name);
@@ -148,24 +192,48 @@
 					md.push(files[i]);
 				} else if (e === 'tsv') {
 					tsv.push(files[i]);
+				} else if (e === 'xml') {
+					wxr.push(files[i]);
+				} else if (MEDIA_EXT[e]) {
+					media.push(files[i]);
+				} else {
+					bad.push(files[i].name || '(unnamed)');
 				}
 			}
-			if (!md.length && !tsv.length) {
-				window.alert('Use one .md (flow) and/or .tsv (DA1) catalog files.');
+			if (bad.length) {
+				window.alert(
+					'Unsupported: ' +
+						bad.join(', ') +
+						'. Personality: .md. Data set: .tsv, .xml (WXR), or media (PDF/images/audio).'
+				);
+				return;
+			}
+			if (!md.length && !tsv.length && !wxr.length && !media.length) {
+				window.alert(
+					'Personality: .md. Data set: .tsv, .xml (WXR), and/or media (PDF/images/audio).'
+				);
 				return;
 			}
 			if (md.length > 1) {
-				window.alert('Only one .md flow file per upload.');
+				window.alert('Only one personality (.md) file per upload.');
 				return;
 			}
 			if (tsv.length > MAX_TSV) {
 				window.alert('At most ' + MAX_TSV + ' DA1 .tsv catalogs per upload.');
 				return;
 			}
+			if (wxr.length > MAX_WXR) {
+				window.alert('At most ' + MAX_WXR + ' WXR (.xml) files per upload.');
+				return;
+			}
+			if (media.length > MAX_MEDIA) {
+				window.alert('At most ' + MAX_MEDIA + ' media files per upload.');
+				return;
+			}
 			if (tsv.length > 5 && !window.confirm('Select ' + tsv.length + ' DA1 catalogs?')) {
 				return;
 			}
-			pending = md.concat(tsv);
+			pending = md.concat(tsv, wxr, media);
 			setInputFiles(input, pending);
 			render();
 		}
@@ -285,17 +353,16 @@
 			}
 			if (act === 'create' && mdCount < 1) {
 				e.preventDefault();
-				window.alert('Create new flow needs one .md file (optional .tsv with it).');
+				window.alert(
+					'Create new flow needs one personality (.md). Data set files are optional with it.'
+				);
 				return;
 			}
 			/*
 			 * Guard against a second submission without disabling the buttons yet.
 			 * The browser builds the form's entry list after this event returns, and
 			 * a disabled control contributes nothing to it — so disabling the clicked
-			 * button here would strip flosc_portability_submit from the post, leaving
-			 * the handler with no create/apply intent and the page reloading in
-			 * silence. Deferring to the next tick lets the button serialize first,
-			 * and the flag blocks a double click in the meantime.
+			 * button here would strip flosc_portability_submit from the post.
 			 */
 			if (submitting) {
 				e.preventDefault();

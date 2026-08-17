@@ -83,13 +83,21 @@ if ($flosc_flow_view === 'all') {
     if (isset($flosc_get['flosc_portability_done']) && '1' === (string) $flosc_get['flosc_portability_done']) {
         $flosc_port_notice = get_transient('flosc_portability_notice_' . get_current_user_id());
         delete_transient('flosc_portability_notice_' . get_current_user_id());
-        if (is_string($flosc_port_notice) && $flosc_port_notice !== '') {
-            add_settings_error('flosc_settings', 'portability_done', esc_html($flosc_port_notice), 'success');
+        $flosc_port_msg  = '';
+        $flosc_port_type = 'success';
+        if ( is_array( $flosc_port_notice ) ) {
+            $flosc_port_msg  = isset( $flosc_port_notice['message'] ) ? (string) $flosc_port_notice['message'] : '';
+            $flosc_port_type = ( isset( $flosc_port_notice['type'] ) && 'error' === $flosc_port_notice['type'] ) ? 'error' : 'success';
+        } elseif ( is_string( $flosc_port_notice ) && $flosc_port_notice !== '' ) {
+            $flosc_port_msg = $flosc_port_notice;
+        }
+        if ( $flosc_port_msg !== '' ) {
+            add_settings_error( 'flosc_settings', 'portability_done', esc_html( $flosc_port_msg ), $flosc_port_type );
         } else {
             add_settings_error(
                 'flosc_settings',
                 'portability_done',
-                esc_html__('Portability upload finished.', 'flosc'),
+                esc_html__( 'Portability upload finished.', 'flosc' ),
                 'success'
             );
         }
@@ -715,8 +723,33 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
             <a href="<?php echo esc_url($flosc_portability_docs_url); ?>" class="flosc-docs-link"><?php echo esc_html__('Docs', 'flosc'); ?></a>
         </h3>
         <p class="flosc-ivr-info-box__lead">
-            <?php echo esc_html__('Manage all flow files here. Drop an .md (IVR + Settings YAML) and optionally a .tsv (DA1) together. Choose Create new flow or Apply to current flow.', 'flosc'); ?>
+            <?php echo esc_html__( 'Portability for floscFlowConfiguration: floscFlowIvr + journey wiring (Settings YAML) in .md; floscFlowContent as .tsv / WXR / media. floscFlowPersonality and floscFlowAiPolicy (no secrets) can live in YAML; API keys stay in floscAvailableProviders.', 'flosc' ); ?>
         </p>
+
+        <div class="flosc-portability-split" role="group" aria-label="<?php echo esc_attr__( 'Configuration layers', 'flosc' ); ?>">
+            <div class="flosc-portability-split__card flosc-portability-split__card--personality">
+                <h4 class="flosc-portability-split__heading"><?php echo esc_html__( 'floscFlowIvr + wiring', 'flosc' ); ?></h4>
+                <p class="flosc-portability-split__body">
+                    <?php echo esc_html__( 'Scripted input→output pairs and journey wiring (levels, offers, pointers). Optional floscFlowPersonality fields in Settings YAML. File: .md', 'flosc' ); ?>
+                </p>
+                <p class="flosc-portability-split__meta">
+                    <span class="flosc-portability-chip flosc-portability-chip--personality"><?php echo esc_html__( '.md', 'flosc' ); ?></span>
+                    <?php echo esc_html__( 'Create needs .md. Apply merges into the current floscFlow.', 'flosc' ); ?>
+                </p>
+            </div>
+            <div class="flosc-portability-split__card flosc-portability-split__card--dataset">
+                <h4 class="flosc-portability-split__heading"><?php echo esc_html__( 'floscFlowContent', 'flosc' ); ?></h4>
+                <p class="flosc-portability-split__body">
+                    <?php echo esc_html__( 'Materials: posts (WXR), media (PDF and files), DA1 catalogs (.tsv). Pointed at by journey wiring; not the AI voice.', 'flosc' ); ?>
+                </p>
+                <p class="flosc-portability-split__meta">
+                    <span class="flosc-portability-chip flosc-portability-chip--dataset"><?php echo esc_html__( '.tsv', 'flosc' ); ?></span>
+                    <span class="flosc-portability-chip flosc-portability-chip--dataset"><?php echo esc_html__( '.xml WXR', 'flosc' ); ?></span>
+                    <span class="flosc-portability-chip flosc-portability-chip--dataset"><?php echo esc_html__( 'PDF / media', 'flosc' ); ?></span>
+                    <?php echo esc_html__( 'Apply attaches content to the current floscFlow (or Create with a .md in the same drop).', 'flosc' ); ?>
+                </p>
+            </div>
+        </div>
 
         <div class="flosc-flow-portability-target">
             <div class="flosc-flow-portability-target__line">
@@ -724,19 +757,34 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
                 <code><?php echo esc_html($flosc_selected_ivr ?: '(none — use Switch Flow)'); ?></code>
             </div>
             <p class="flosc-flow-portability-target__hint">
-                <?php echo esc_html__('Switch Flow above picks the current flow. Create always makes a new flow. Apply merges file values into the current flow; other settings stay. Secrets never come from files.', 'flosc'); ?>
+                <?php echo esc_html__('Switch Flow picks which flow receives Apply. Personality (.md) and data set files can travel together; secrets never come from files.', 'flosc'); ?>
             </p>
         </div>
 
         <ul class="flosc-flow-portability-checklist">
-            <li><strong><?php echo esc_html__('IVR + Settings YAML (.md):', 'flosc'); ?></strong> <?php echo esc_html__('Create or Apply from drop zone (or Apply from the file table).', 'flosc'); ?></li>
-            <li><strong><?php echo esc_html__('DA1 (.tsv):', 'flosc'); ?></strong> <?php echo esc_html__('Optional; up to 10 per drop, each added to the flow’s catalog list (confirm if more than 5).', 'flosc'); ?></li>
-            <li><strong><?php echo esc_html__('Content posts:', 'flosc'); ?></strong> <?php echo esc_html__('WXR via Tools → Import (not this drop zone).', 'flosc'); ?>
-                <a href="<?php echo esc_url($flosc_base_url . 'content'); ?>"><?php echo esc_html__('Content tab', 'flosc'); ?></a>
+            <li>
+                <strong><?php echo esc_html__( 'Personality (.md):', 'flosc' ); ?></strong>
+                <?php echo esc_html__( 'Creates the flow or merges voice/settings. Listed under AI personalities below.', 'flosc' ); ?>
             </li>
-            <li><strong><?php echo esc_html__('DA1 tab:', 'flosc'); ?></strong>
-                <a href="<?php echo esc_url($flosc_base_url . 'da1'); ?>"><?php echo esc_html__('Open DA1', 'flosc'); ?></a>
-                <?php echo esc_html__('for catalog editing after upload.', 'flosc'); ?>
+            <li>
+                <strong><?php echo esc_html__( 'Data — catalogs (.tsv):', 'flosc' ); ?></strong>
+                <?php echo esc_html__( 'Up to 10; assigned to this flow’s data set.', 'flosc' ); ?>
+                <a href="<?php echo esc_url( $flosc_base_url . 'da1' ); ?>"><?php echo esc_html__( 'DA1', 'flosc' ); ?></a>
+            </li>
+            <li>
+                <strong><?php echo esc_html__( 'Data — posts (WXR .xml):', 'flosc' ); ?></strong>
+                <?php echo esc_html__( 'Staged on the data set list; Import posts or Tools → Import loads WordPress content.', 'flosc' ); ?>
+                <a href="<?php echo esc_url( admin_url( 'import.php' ) ); ?>"><?php echo esc_html__( 'Tools → Import', 'flosc' ); ?></a>
+            </li>
+            <li>
+                <strong><?php echo esc_html__( 'Data — media:', 'flosc' ); ?></strong>
+                <?php echo esc_html__( 'PDF / images / audio into Media Library, tracked on this flow’s data set.', 'flosc' ); ?>
+                <a href="<?php echo esc_url( admin_url( 'upload.php' ) ); ?>"><?php echo esc_html__( 'Media Library', 'flosc' ); ?></a>
+            </li>
+            <li>
+                <strong><?php echo esc_html__( 'After posts exist:', 'flosc' ); ?></strong>
+                <a href="<?php echo esc_url( $flosc_base_url . 'content' ); ?>"><?php echo esc_html__( 'Content tab', 'flosc' ); ?></a>
+                <?php echo esc_html__( 'wires category/tag targets — that is data wiring, not personality.', 'flosc' ); ?>
             </li>
         </ul>
 
@@ -768,7 +816,7 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
                     name="flosc_kit_files[]"
                     id="flosc-kit-file-input"
                     class="flosc-sr-only screen-reader-text"
-                    accept=".md,.tsv,text/markdown,text/plain,text/tab-separated-values"
+                    accept=".md,.tsv,.xml,.pdf,.jpg,.jpeg,.png,.gif,.webp,.mp3,.mp4,.m4a,.wav,.ogg,.webm,text/markdown,text/plain,text/tab-separated-values,text/xml,application/xml,application/pdf,image/*,audio/*,video/mp4"
                     multiple
                 >
                 <label class="flosc-dropzone__label" for="flosc-kit-file-input">
@@ -781,14 +829,14 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
                         </span>
                         <span id="flosc-dropzone-title-idle" class="flosc-dropzone__title"><?php echo esc_html__('Drop files here or click to select', 'flosc'); ?></span>
                         <span id="flosc-dropzone-title-drag" class="flosc-dropzone__title flosc-dropzone__title--active" hidden><?php echo esc_html__('Release to stage these files', 'flosc'); ?></span>
-                        <span id="flosc-dropzone-hint" class="flosc-dropzone__hint"><?php echo esc_html__('One .md + optional .tsv (max 10). Selected files appear below, then Create or Apply.', 'flosc'); ?></span>
+                        <span id="flosc-dropzone-hint" class="flosc-dropzone__hint"><?php echo esc_html__('Personality: one .md. Data set: .tsv (max 10), WXR .xml (max 5), media (max 10). Then Create or Apply.', 'flosc'); ?></span>
                     </span>
                 </label>
             </div>
 
             <div class="flosc-portability-file-panel" id="flosc-portability-file-panel">
                 <div class="flosc-portability-file-panel__head">
-                    <strong><?php echo esc_html__('Selected files', 'flosc'); ?></strong>
+                    <strong><?php echo esc_html__('Selected files (personality + data)', 'flosc'); ?></strong>
                     <span class="description" id="flosc-portability-file-count"><?php echo esc_html__('None selected', 'flosc'); ?></span>
                     <button type="button" class="button-link" id="flosc-portability-clear-files" disabled><?php echo esc_html__('Clear', 'flosc'); ?></button>
                 </div>
@@ -804,12 +852,188 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
                 </button>
             </div>
             <p class="description">
-                <?php echo esc_html__('Create = new flow from .md (+ optional .tsv). Apply = merge into current flow.', 'flosc'); ?>
+                <?php echo esc_html__('Create = new flow from personality (.md); data files in the same drop attach as that flow’s data set. Apply = merge personality and/or attach data to the current flow.', 'flosc'); ?>
             </p>
         </form>
 
+        <?php
+        if ( ! function_exists( 'flosc_portability_get_pack_assets' ) ) {
+            require_once FLOSC_PLUGIN_DIR . 'admin/ivr-upload-handler.php';
+        }
+        $flosc_pack_assets = function_exists( 'flosc_portability_get_pack_assets' )
+            ? flosc_portability_get_pack_assets( $flosc_selected_ivr )
+            : array(
+                'wxr'      => array(),
+                'media'    => array(),
+                'catalogs' => array(),
+            );
+        $flosc_da1_index = get_option( 'flosc_da1_catalogs', array() );
+        if ( ! is_array( $flosc_da1_index ) ) {
+            $flosc_da1_index = array();
+        }
+        $flosc_pack_has_rows = ( $flosc_selected_ivr !== '' )
+            && (
+                ! empty( $flosc_pack_assets['catalogs'] )
+                || ! empty( $flosc_pack_assets['wxr'] )
+                || ! empty( $flosc_pack_assets['media'] )
+            );
+        ?>
+        <div class="flosc-portability-section flosc-portability-section--dataset">
         <div class="flosc-ivr-file-actions flosc-ivr-file-actions--table-toolbar">
-            <strong><?php echo esc_html__('Managed flow files', 'flosc'); ?></strong>
+            <div class="flosc-portability-section__title-block">
+                <strong><?php echo esc_html__( 'Data set for current flow', 'flosc' ); ?></strong>
+                <span class="description"><?php echo esc_html__( 'Catalogs, posts (WXR), and media only — not the AI voice.', 'flosc' ); ?></span>
+            </div>
+            <a href="<?php echo esc_url($flosc_flow_all_url); ?>" class="button button-small"><?php echo esc_html__('Refresh list', 'flosc'); ?></a>
+        </div>
+        <?php if ( $flosc_selected_ivr === '' ) : ?>
+            <p class="description"><?php echo esc_html__( 'Select a flow in Switch Flow to see its data set (catalogs, WXR, media).', 'flosc' ); ?></p>
+        <?php elseif ( ! $flosc_pack_has_rows ) : ?>
+            <p class="description"><?php echo esc_html__( 'No data set files on this flow yet. Drop .tsv / WXR / media above (Apply), or Create with a .md plus data files.', 'flosc' ); ?></p>
+        <?php else : ?>
+        <table class="widefat striped flosc-ivr-file-table flosc-pack-assets-table">
+            <thead>
+                <tr>
+                    <th><?php echo esc_html__( 'Data type', 'flosc' ); ?></th>
+                    <th><?php echo esc_html__( 'File / asset', 'flosc' ); ?></th>
+                    <th class="flosc-ivr-col-status"><?php echo esc_html__( 'Status', 'flosc' ); ?></th>
+                    <th class="flosc-ivr-col-actions"><?php echo esc_html__( 'Actions', 'flosc' ); ?></th>
+                </tr>
+            </thead>
+            <tbody>
+            <?php foreach ( $flosc_pack_assets['catalogs'] as $flosc_pack_cat_key ) :
+                $flosc_pack_cat_key = sanitize_key( (string) $flosc_pack_cat_key );
+                if ( $flosc_pack_cat_key === '' ) {
+                    continue;
+                }
+                $flosc_pack_cat_label = isset( $flosc_da1_index[ $flosc_pack_cat_key ]['label'] )
+                    ? (string) $flosc_da1_index[ $flosc_pack_cat_key ]['label']
+                    : $flosc_pack_cat_key;
+                $flosc_pack_cat_file = isset( $flosc_da1_index[ $flosc_pack_cat_key ]['filename'] )
+                    ? (string) $flosc_da1_index[ $flosc_pack_cat_key ]['filename']
+                    : ( 'flosc_da1_catalog_' . $flosc_pack_cat_key . '.tsv' );
+                $flosc_da1_url = add_query_arg(
+                    array(
+                        'page'        => 'flosc-settings',
+                        'tab'         => 'da1',
+                        'ivr'         => $flosc_selected_ivr,
+                        'catalog_key' => $flosc_pack_cat_key,
+                    ),
+                    admin_url( 'admin.php' )
+                );
+                ?>
+                <tr>
+                    <td><span class="flosc-portability-chip flosc-portability-chip--dataset"><?php echo esc_html__( 'Catalog', 'flosc' ); ?></span></td>
+                    <td>
+                        <code><?php echo esc_html( $flosc_pack_cat_file ); ?></code>
+                        <span class="description"> · <?php echo esc_html( $flosc_pack_cat_label ); ?></span>
+                    </td>
+                    <td><?php echo esc_html__( 'Assigned', 'flosc' ); ?></td>
+                    <td>
+                        <a href="<?php echo esc_url( $flosc_da1_url ); ?>" class="button button-small"><?php echo esc_html__( 'Open DA1', 'flosc' ); ?></a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            <?php foreach ( $flosc_pack_assets['wxr'] as $flosc_pack_wxr ) :
+                if ( ! is_array( $flosc_pack_wxr ) ) {
+                    continue;
+                }
+                $flosc_wxr_name   = isset( $flosc_pack_wxr['filename'] ) ? sanitize_file_name( (string) $flosc_pack_wxr['filename'] ) : '';
+                $flosc_wxr_status = isset( $flosc_pack_wxr['status'] ) ? sanitize_key( (string) $flosc_pack_wxr['status'] ) : 'staged';
+                $flosc_wxr_url    = isset( $flosc_pack_wxr['url'] ) ? (string) $flosc_pack_wxr['url'] : '';
+                $flosc_wxr_path_ok = ! empty( $flosc_pack_wxr['path'] ) && is_string( $flosc_pack_wxr['path'] ) && file_exists( $flosc_pack_wxr['path'] );
+                if ( $flosc_wxr_name === '' ) {
+                    continue;
+                }
+                $flosc_status_label = ( 'imported' === $flosc_wxr_status )
+                    ? __( 'Imported', 'flosc' )
+                    : ( $flosc_wxr_path_ok ? __( 'Staged — ready to import', 'flosc' ) : __( 'Missing on disk', 'flosc' ) );
+                ?>
+                <tr>
+                    <td><span class="flosc-portability-chip flosc-portability-chip--dataset"><?php echo esc_html__( 'Posts (WXR)', 'flosc' ); ?></span></td>
+                    <td><code><?php echo esc_html( $flosc_wxr_name ); ?></code></td>
+                    <td><?php echo esc_html( $flosc_status_label ); ?></td>
+                    <td>
+                        <div class="flosc-ivr-file-action-group">
+                            <?php if ( $flosc_wxr_url !== '' ) : ?>
+                                <a href="<?php echo esc_url( $flosc_wxr_url ); ?>" class="button button-small" download><?php echo esc_html__( 'Download', 'flosc' ); ?></a>
+                            <?php endif; ?>
+                            <?php if ( $flosc_wxr_path_ok && 'imported' !== $flosc_wxr_status ) : ?>
+                            <form method="post" action="<?php echo esc_url( $flosc_flow_all_url ); ?>" class="flosc-ivr-inline-form">
+                                <?php wp_nonce_field( 'flosc_portability_pack' ); ?>
+                                <input type="hidden" name="flosc_working_ivr" value="<?php echo esc_attr( $flosc_selected_ivr ); ?>">
+                                <input type="hidden" name="flosc_pack_filename" value="<?php echo esc_attr( $flosc_wxr_name ); ?>">
+                                <input type="hidden" name="flosc_portability_pack_action" value="import_wxr">
+                                <button type="submit" class="button button-small button-primary"><?php echo esc_html__( 'Import posts', 'flosc' ); ?></button>
+                            </form>
+                            <?php endif; ?>
+                            <a href="<?php echo esc_url( admin_url( 'import.php' ) ); ?>" class="button button-small"><?php echo esc_html__( 'Tools → Import', 'flosc' ); ?></a>
+                            <form method="post" action="<?php echo esc_url( $flosc_flow_all_url ); ?>" class="flosc-ivr-inline-form flosc-ivr-inline-form--warn" data-confirm-message="<?php echo esc_attr__( 'Remove this WXR from the pack list? Staged file on disk will be deleted.', 'flosc' ); ?>">
+                                <?php wp_nonce_field( 'flosc_portability_pack' ); ?>
+                                <input type="hidden" name="flosc_working_ivr" value="<?php echo esc_attr( $flosc_selected_ivr ); ?>">
+                                <input type="hidden" name="flosc_pack_filename" value="<?php echo esc_attr( $flosc_wxr_name ); ?>">
+                                <input type="hidden" name="flosc_portability_pack_action" value="remove_wxr">
+                                <button type="submit" class="button button-small"><?php echo esc_html__( 'Remove', 'flosc' ); ?></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            <?php foreach ( $flosc_pack_assets['media'] as $flosc_pack_media ) :
+                if ( ! is_array( $flosc_pack_media ) ) {
+                    continue;
+                }
+                $flosc_media_id   = isset( $flosc_pack_media['attachment_id'] ) ? (int) $flosc_pack_media['attachment_id'] : 0;
+                $flosc_media_name = isset( $flosc_pack_media['filename'] ) ? (string) $flosc_pack_media['filename'] : '';
+                $flosc_media_url  = isset( $flosc_pack_media['url'] ) ? (string) $flosc_pack_media['url'] : '';
+                if ( $flosc_media_id > 0 && $flosc_media_url === '' ) {
+                    $flosc_media_url = (string) wp_get_attachment_url( $flosc_media_id );
+                }
+                if ( $flosc_media_id <= 0 && $flosc_media_name === '' ) {
+                    continue;
+                }
+                $flosc_edit_media = $flosc_media_id > 0 ? get_edit_post_link( $flosc_media_id, 'raw' ) : '';
+                $flosc_media_alive = $flosc_media_id > 0 && get_post( $flosc_media_id );
+                ?>
+                <tr>
+                    <td><span class="flosc-portability-chip flosc-portability-chip--dataset"><?php echo esc_html__( 'Media', 'flosc' ); ?></span></td>
+                    <td>
+                        <code><?php echo esc_html( $flosc_media_name !== '' ? $flosc_media_name : ( 'attachment:' . $flosc_media_id ) ); ?></code>
+                    </td>
+                    <td><?php echo esc_html( $flosc_media_alive ? __( 'In Media Library', 'flosc' ) : __( 'Missing attachment', 'flosc' ) ); ?></td>
+                    <td>
+                        <div class="flosc-ivr-file-action-group">
+                            <?php if ( $flosc_media_url !== '' ) : ?>
+                                <a href="<?php echo esc_url( $flosc_media_url ); ?>" class="button button-small" target="_blank" rel="noopener noreferrer"><?php echo esc_html__( 'View', 'flosc' ); ?></a>
+                            <?php endif; ?>
+                            <?php if ( $flosc_edit_media ) : ?>
+                                <a href="<?php echo esc_url( $flosc_edit_media ); ?>" class="button button-small"><?php echo esc_html__( 'Edit media', 'flosc' ); ?></a>
+                            <?php endif; ?>
+                            <form method="post" action="<?php echo esc_url( $flosc_flow_all_url ); ?>" class="flosc-ivr-inline-form flosc-ivr-inline-form--warn" data-confirm-message="<?php echo esc_attr__( 'Unlink this media from the pack list? The file stays in the Media Library.', 'flosc' ); ?>">
+                                <?php wp_nonce_field( 'flosc_portability_pack' ); ?>
+                                <input type="hidden" name="flosc_working_ivr" value="<?php echo esc_attr( $flosc_selected_ivr ); ?>">
+                                <input type="hidden" name="flosc_pack_attachment_id" value="<?php echo esc_attr( (string) $flosc_media_id ); ?>">
+                                <input type="hidden" name="flosc_portability_pack_action" value="remove_media">
+                                <button type="submit" class="button button-small"><?php echo esc_html__( 'Unlink', 'flosc' ); ?></button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <p class="description">
+            <?php echo esc_html__( 'This list is the data set only. Import posts needs the WordPress Importer for one-click import; Tools → Import works with a downloaded WXR. Personality files are in the table below.', 'flosc' ); ?>
+        </p>
+        <?php endif; ?>
+        </div><!-- .flosc-portability-section--dataset -->
+
+        <div class="flosc-portability-section flosc-portability-section--personality">
+        <div class="flosc-ivr-file-actions flosc-ivr-file-actions--table-toolbar">
+            <div class="flosc-portability-section__title-block">
+                <strong><?php echo esc_html__( 'AI personalities (IVR flows)', 'flosc' ); ?></strong>
+                <span class="description"><?php echo esc_html__( 'Voice and freeline .md files — not catalogs, posts, or media.', 'flosc' ); ?></span>
+            </div>
             <a href="<?php echo esc_url($flosc_flow_all_url); ?>" class="button button-small"><?php echo esc_html__('Refresh list', 'flosc'); ?></a>
         </div>
 
@@ -865,8 +1089,9 @@ function flosc_flow_card( $letter, $flosc_phase_name, $subtitle, $rows ) {
             </tbody>
         </table>
         <p class="description flosc-flow-portability-actions-help">
-            <?php echo esc_html__('Table Apply: merge that managed file into the current flow (same merge rules as the drop zone).', 'flosc'); ?>
+            <?php echo esc_html__( 'Table Apply: merge that personality (.md) into the current flow (same merge rules as the drop zone). Data set files are managed in the Data set table above.', 'flosc' ); ?>
         </p>
+        </div><!-- .flosc-portability-section--personality -->
     </div>
 
     <?php

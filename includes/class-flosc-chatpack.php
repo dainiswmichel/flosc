@@ -408,7 +408,7 @@ class FLOSC_Chatpack {
                 $site_host = 'this site';
             }
             $section .= "- Use the exact off-topic reply ONLY when the user is treating this as a general AI resource (for example: \"what is the capital of France\") and the question is not about {$site_host} content\n";
-            $section .= "- Exact off-topic reply: \"I know I am still learning, but your comment seems off-topic, and I am only authorized to communicate about {$site_host} topics. I could be wrong, and i am sorry if I am, but could you make sure to keep your inquiries {$site_host}-related?\"\n";
+            $section .= "- Exact off-topic reply: \"That's outside what I cover here on {$site_host}. Ask me something about this site or what I can help you with, and I'll stay on that.\"\n";
         }
 
         return $section;
@@ -527,34 +527,30 @@ class FLOSC_Chatpack {
         // Written as both positive (DO) and negative (NEVER) for maximum compliance.
         $section .= "\n**ABSOLUTE RULES — violation of any rule is a critical failure:**\n\n";
 
-        $section .= "1. ACRONYMS: The ONLY acronym expansions you may state are the ones defined above. "
-            . "FLOSC = Freeline, Login, Offer, Sale, Content. ";
+        $section .= "1. NAMES & ACRONYMS: Only expand or define names/acronyms when this prompt (or verified site context) gives the expansion. ";
+        $section .= "FLOSC (the software framework) = Freeline, Login, Offer, Sale, Content — only when relevant to the software, not as this flow's forced topic. ";
         if ($product_name && $product_tagline) {
-            $section .= "{$product_name} = {$product_tagline}. ";
+            $section .= "This flow's product line: {$product_name} — {$product_tagline}. ";
+        } elseif ($product_name) {
+            $section .= "This flow's name: {$product_name}. ";
         }
-        $section .= "If someone asks what ANY word or name stands for and the exact expansion is not present "
-            . "IN THIS PROMPT, state only the verified expansions you do have and direct them to the official profile/source link. "
-            . "NEVER guess or invent an acronym expansion.\n\n";
+        $section .= "If you do not have a verified expansion for a name, say so briefly and offer a useful next step — NEVER invent an expansion.\n\n";
 
-        $section .= "2. NO FABRICATION: Never invent, fabricate, or guess ANY of the following:\n";
-        $section .= "   - Quiz questions, words, phrases, or pronunciation exercises\n";
-        $section .= "   - Statistics, student counts, success rates, or social proof\n";
-        $section .= "   - Lesson content, lesson titles, or course structure\n";
-        $section .= "   - Features, capabilities, or tools that aren't described in this prompt\n";
-        $section .= "   - Prices, discounts, or offers not defined in your context\n";
-        $section .= "   If exact detail is unavailable, give the best verified answer from this prompt and offer the official source link or next best concrete step.\n";
-        $section .= "   For uncertainty or gated-content boundaries, use calibrated wording such as: \"I'm still learning, and I could be wrong, but...\" or \"I'm still being trained, and I could be wrong, but...\" before the verified boundary statement.\n";
-        $section .= "   Avoid robotic disclaimers like \"not configured in my system\". Keep the tone human, clear, and helpful.\n\n";
+        $section .= "2. NO FABRICATION: Never invent facts not present in this prompt or verified tools/context:\n";
+        $section .= "   - Lesson/course inventories, lesson numbers, or curricula (unless this flow actually provides them)\n";
+        $section .= "   - Statistics, social proof, or unverified claims\n";
+        $section .= "   - Features, prices, offers, or contact details not in context\n";
+        $section .= "   If you lack a detail, stay in character, answer what you can from verified context, and offer a concrete next step (e.g. how to reach the host, what to ask next). Do NOT default to timid hedging phrases.\n";
+        $section .= "   NEVER open with stock lines like \"I'm still learning, and I could be wrong, but...\" or \"I'm still being trained...\" — that is not this assistant's voice.\n";
+        $section .= "   Keep tone human, confident where context allows, clear when declining to invent.\n\n";
 
-        $section .= "3. STAY IN YOUR LANE: You are a chat assistant. You do NOT administer quizzes. "
-            . "The quiz is a separate audio-recording system on the page. If the user is taking a quiz, "
-            . "do not pretend to be part of it, do not suggest words to say, and do not simulate quiz behavior.\n\n";
+        $section .= "3. STAY IN YOUR LANE: Follow this flow's identity and IVR/mission. You are not a generic lessons bot unless this flow is configured for lessons. "
+            . "You do NOT administer quizzes as the quiz engine; do not simulate quiz administration.\n\n";
 
-        $section .= "4. CONTENT ACCESS: Never share lesson content, member materials, or paid content "
-            . "with visitors who haven't purchased.\n\n";
+        $section .= "4. CONTENT ACCESS: Never share paid or member-only materials with visitors who are not entitled to them.\n\n";
 
-        $section .= "5. HONESTY OVER HELPFULNESS: Only state what is verified in this prompt and avoid speculation. "
-            . "A wrong answer is worse than a scoped answer. Never fill gaps with plausible-sounding inventions.\n";
+        $section .= "5. HONESTY OVER INVENTION: Prefer verified context over speculation. "
+            . "A scoped, in-character answer is better than a plausible fabrication.\n";
 
         // Fix 12: Topic scope + referral links (admin-configured, were collected but never injected)
         if ($ai_topic_scope) {
