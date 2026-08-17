@@ -13,17 +13,18 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <p>Each entry is a flow option key. <strong>Portable: yes</strong> means the value may travel in the flow IVR file under <code>## Settings (YAML)</code>. Secrets never appear in the pack.</p>
 <p><strong>Admin link format:</strong> <code>?page=flosc-settings&amp;tab={tab_id}</code></p>
 <h2 id="settings-secrets">Secrets (not portable)</h2>
+<p>Prefer install-wide keys under <strong>AI → All Flows AI API Management</strong> (<code>floscAvailableProviders</code>). Flow-local key fields below remain optional overrides. None of these ever appear in Settings YAML or portable packs.</p>
 <ul>
-<li><code>anthropic_api_key</code> — configure on the target site only; never export into Settings YAML.</li>
-<li><code>assemblyai_api_key</code> — configure on the target site only; never export into Settings YAML.</li>
+<li><code>anthropic_api_key</code> — Available Providers or flow override; never export into Settings YAML.</li>
+<li><code>assemblyai_api_key</code> — Available Providers or flow override; never export into Settings YAML.</li>
 <li><code>flosc_cncrg_password</code> — configure on the target site only; never export into Settings YAML.</li>
 <li><code>message_individual_password</code> — configure on the target site only; never export into Settings YAML.</li>
-<li><code>openai_api_key</code> — configure on the target site only; never export into Settings YAML.</li>
+<li><code>openai_api_key</code> — Available Providers or flow override; never export into Settings YAML.</li>
 <li><code>paypal_secret</code> — configure on the target site only; never export into Settings YAML.</li>
 <li><code>stripe_live_sk</code> — configure on the target site only; never export into Settings YAML.</li>
 <li><code>stripe_test_sk</code> — configure on the target site only; never export into Settings YAML.</li>
 <li><code>stripe_webhook_secret</code> — configure on the target site only; never export into Settings YAML.</li>
-<li><code>xai_api_key</code> — configure on the target site only; never export into Settings YAML.</li>
+<li><code>xai_api_key</code> — Available Providers or flow override; never export into Settings YAML.</li>
 </ul>
 <h2 id="settings-portable-index">Portable fields by tab</h2>
 <h3 id="settings-tab-flow">Flow <code>flow</code></h3>
@@ -1830,11 +1831,17 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Portable:</strong> yes (Settings YAML)</li>
 <li><strong>Admin tab:</strong> AI</li>
 </ul>
-<h4 id="field-ai_enable_chaining"><code>ai_enable_chaining</code></h4>
-<p>AI / STT configuration for this flow (non-secret fields only in portable packs). Stored as <code>ai_enable_chaining</code>.</p>
+<h4 id="field-ai_accuracy_test_questions"><code>ai_accuracy_test_questions</code></h4>
+<p>Newline-separated accuracy-test <em>templates</em> (preferred) using placeholders <code>{flow_name}</code>, <code>{tagline}</code>, <code>{topic_scope}</code>, <code>{site_name}</code>. Each line is a userMessage template; at run time FLOSC expands it to the userInput sent to the AI. Results store the assistantMessage (AI response) per turn. Stored as <code>ai_accuracy_test_questions</code>.</p>
 <ul>
 <li><strong>Portable:</strong> yes (Settings YAML)</li>
-<li><strong>Admin tab:</strong> AI</li>
+<li><strong>Admin tab:</strong> AI → This flow: AI settings → Accuracy test</li>
+</ul>
+<h4 id="field-ai_enable_chaining"><code>ai_enable_chaining</code></h4>
+<p>When true, this flow may hop through <code>ai_chain_provider_*</code> after the primary provider — still one floscTurn (one userMessage in, one final assistantMessage out). Personalities never chain. Stored as <code>ai_enable_chaining</code>.</p>
+<ul>
+<li><strong>Portable:</strong> yes (Settings YAML)</li>
+<li><strong>Admin tab:</strong> AI → This flow: AI settings</li>
 </ul>
 <h4 id="field-ai_enable_content_access"><code>ai_enable_content_access</code></h4>
 <p>AI / STT configuration for this flow (non-secret fields only in portable packs). Stored as <code>ai_enable_content_access</code>.</p>
@@ -1890,11 +1897,17 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Portable:</strong> yes (Settings YAML)</li>
 <li><strong>Admin tab:</strong> AI</li>
 </ul>
+<h4 id="field-personality_library_id"><code>personality_library_id</code></h4>
+<p>Install personality library entry id attached to this floscFlow. Empty string means custom fields on this flow only. Exactly one personality per flow — not a chain. Library entries themselves live on the install (All Flows AI API Management), not as secrets. Stored as <code>personality_library_id</code>.</p>
+<ul>
+<li><strong>Portable:</strong> yes (Settings YAML) — id only; target install must already have that library entry or use custom fields</li>
+<li><strong>Admin tab:</strong> AI → This flow: AI settings → Attached personality</li>
+</ul>
 <h4 id="field-ai_personality_name"><code>ai_personality_name</code></h4>
-<p>AI / STT configuration for this flow (non-secret fields only in portable packs). Stored as <code>ai_personality_name</code>.</p>
+<p>Display name for the assistant when using custom-on-this-flow personality (or as portable snapshot of name). Prefer attaching a library personality when the same voice is shared across flows. Stored as <code>ai_personality_name</code>.</p>
 <ul>
 <li><strong>Portable:</strong> yes (Settings YAML)</li>
-<li><strong>Admin tab:</strong> AI</li>
+<li><strong>Admin tab:</strong> AI → This flow (custom fields) or All Flows → Personalities library</li>
 </ul>
 <h4 id="field-ai_personality_role"><code>ai_personality_role</code></h4>
 <p>AI / STT configuration for this flow (non-secret fields only in portable packs). Stored as <code>ai_personality_role</code>.</p>

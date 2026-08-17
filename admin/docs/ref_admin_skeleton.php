@@ -103,7 +103,7 @@ $flosc_tab_labels = [
   <li><code>login</code> — Registration/login flows and guest-link behavior</li>
   <li><code>style</code> — Structured theme and chat style controls</li>
   <li><code>ui</code> — Navigation and presentation rules</li>
-  <li><code>ai</code> — Provider configuration, knowledge files, feedback/praise</li>
+  <li><code>ai</code> — Dual view: This flow (attach personality, primary provider, chain, accuracy tests) + All Flows AI API Management (install keys + personality library)</li>
   <li><code>token-management</code> — Visitor/member token grants, costs, refill, and ledger-facing controls</li>
   <li><code>concierge</code> — Concierge prompt routing and assist behavior controls</li>
   <li><code>quiz</code> — Quiz architecture, scoring model, and content recommendation mapping</li>
@@ -150,8 +150,18 @@ $flosc_tab_labels = [
 <p><a href="<?php echo esc_url($flosc_feature_links['flow']); ?>">Open Feature: Flow tab</a></p>
 <p><strong>One further step:</strong> After reviewing the phase snapshot, open one phase editor and verify that the count shown in Flow matches what is configured in that destination tab.</p>
 <p><strong>Procedure Level:</strong> Open one phase card, compare it against the destination tab, and confirm the count is still aligned.</p>
-<p><strong>Tech Ref Level:</strong> The Flow tab reads live counts from the current flow settings and presents the Freeline-to-Content path in one summary view.</p>
+<p><strong>Tech Ref Level:</strong> The Flow tab reads live counts from the current flow settings and presents the Freeline-to-Content path in one summary view. Portability (below) moves personality + data packs without shipping secrets.</p>
 <p><strong>Code Level:</strong> admin/flow.php renders the overview cards, and each edit button links to the matching tab for the same flow data.</p>
+
+<h4 id="tab-flow-portability">Flow Portability (Create / Apply packs)</h4>
+<p>Portability separates <strong>personality</strong> (how the assistant speaks — typically an IVR <code>.md</code> with optional Settings YAML) from <strong>data</strong> (DA1 TSV, WXR posts, media). API key strings never travel in packs; they stay in <code>floscAvailableProviders</code> on the install (or a flow-local override).</p>
+<ul>
+  <li><strong>Create</strong> — drop or select a personality <code>.md</code> (plus optional data files) to create a <em>new</em> floscFlow; data in the same drop attaches as that flow’s data set.</li>
+  <li><strong>Apply</strong> — merge personality and/or attach data into the <em>current</em> floscFlow (same merge rules as the drop zone).</li>
+  <li><strong>Settings YAML</strong> (inside the IVR <code>.md</code>) may carry journey wiring and AI policy <em>ids</em> (provider slug, chain order, <code>personality_library_id</code>) — never secret key material.</li>
+</ul>
+<p><strong>Procedure Level:</strong> Prefer Create for a green-field product; use Apply when updating the selected flow. After import, open <strong>AI → All Flows AI API Management</strong> on the target install to ensure keys exist, then <strong>This flow: AI settings</strong> to attach primary provider and personality.</p>
+<p><strong>Code Level:</strong> admin/flow.php portability UI; portable field list in Documentation → Flow Settings Fields.</p>
 
 <h3 id="tab-identity">Identity Tab</h3>
 <p><a href="<?php echo esc_url($flosc_feature_links['identity']); ?>">Open Feature: Identity tab</a></p>
@@ -170,7 +180,7 @@ $flosc_tab_labels = [
 <h4 id="tab-ivr-messages-all-flows-fields">All Flows File Management field guide</h4>
 <p><strong>Flow Label:</strong> The human-readable flow name pulled from the flow settings bundle, usually from the identity name field, and used only for display.</p>
 <p><strong>Flow Key (internal):</strong> The WordPress option key that stores the per-flow settings bundle, typically the <code>flosc_flow_*</code> record used by the admin and runtime loaders.</p>
-<p><strong>AI Provider:</strong> The provider slug stored in the flow settings, resolved from the flow option first and then from the global AI default if the flow has no explicit provider value.</p>
+<p><strong>AI Provider:</strong> The primary provider slug stored on this flow (<code>ai_provider</code>). API credentials resolve flow key first, then floscAvailableProviders (AI → All Flows AI API Management). Not the same as “which model” — model fields are separate per provider.</p>
 <p><strong>Messages:</strong> The count of parsed message entries currently available for that IVR file, taken from the parser output after the markdown file is read.</p>
 <p><strong>Phases:</strong> The per-phase message count snapshot for Freeline, Login, Offer, Sale, and Content, built from the parser's phase arrays.</p>
 <p><strong>Modified:</strong> The file modification timestamp from the resolved IVR file path on disk, not a database timestamp.</p>
@@ -274,11 +284,59 @@ $flosc_tab_labels = [
 <p>This pass extends coverage across AI, Quiz, Email, and Contact Form.</p>
 
 <h3 id="tab-ai">AI Tab</h3>
-<p><a href="<?php echo esc_url($flosc_feature_links['ai']); ?>">Open Feature: AI tab</a></p>
-<p><strong>One further step:</strong> Select one AI provider and adjust one model or behavior setting, save, then verify the provider-specific section remains consistent after reload.</p>
-<p><strong>Procedure Level:</strong> Pick one provider, save one setting, and reload to confirm the same provider section stays visible.</p>
-<p><strong>Tech Ref Level:</strong> The AI tab stores provider selection, model text, and feedback or praise content in the flow settings bundle.</p>
-<p><strong>Code Level:</strong> admin/ai-configuration.php controls the form, and the prompt-building backend reads the saved provider and feedback settings.</p>
+<?php
+$flosc_ai_all_url = add_query_arg(
+	array(
+		'page' => 'flosc-settings',
+		'ivr'  => $flosc_ref_ivr,
+		'tab'  => 'ai',
+		'view' => 'all',
+	),
+	admin_url( 'admin.php' )
+);
+$flosc_ai_single_url = add_query_arg(
+	array(
+		'page' => 'flosc-settings',
+		'ivr'  => $flosc_ref_ivr,
+		'tab'  => 'ai',
+		'view' => 'single',
+	),
+	admin_url( 'admin.php' )
+);
+?>
+<p><a href="<?php echo esc_url( $flosc_ai_single_url ); ?>">Open Feature: This flow — AI settings</a>
+· <a href="<?php echo esc_url( $flosc_ai_all_url ); ?>">Open Feature: All Flows AI API Management</a></p>
+
+<p>The AI tab is a <strong>dual view</strong> (same pattern as IVR Management single vs all-flows). Top buttons switch between them.</p>
+
+<h4 id="tab-ai-all-flows">All Flows AI API Management (<code>view=all</code>)</h4>
+<p><strong>Install-wide — not per-flow secrets.</strong></p>
+<ol>
+  <li><strong>Available Providers (floscAvailableProviders)</strong> — paste Anthropic / OpenAI / xAI / AssemblyAI keys once. Status shows which keys are available to any current or future floscFlow. Leave a password field blank to keep the key on file.</li>
+  <li><strong>Personalities library</strong> — define reusable personalities (label, name, role, traits, base prompt fields). Each floscFlow attaches <em>exactly one</em>. Personalities are never chained; only APIs chain.</li>
+</ol>
+<p><strong>Procedure Level:</strong> Keys first on a new install, then library entries, then switch to This flow to attach. Saving pool or library uses dedicated forms (not the main flow settings Save).</p>
+<p><strong>Code Level:</strong> admin/ai-all-flows.php; options via flosc-available-providers.php and flosc-personality-library.php.</p>
+
+<h4 id="tab-ai-this-flow">This flow: AI settings (<code>view=single</code>, default)</h4>
+<p><strong>Per-flow attachment and tuning.</strong></p>
+<ol>
+  <li><strong>Attached personality</strong> — select a library id, or “Custom on this flow only” and edit fields on this screen. One personality only.</li>
+  <li><strong>Primary AI Provider</strong> — <code>ivr</code> (scripted only) or anthropic / openai / xai. Key resolution: flow-local key if set, else floscAvailableProviders.</li>
+  <li><strong>API chain</strong> (optional) — ordered provider hops for one visitor turn. Intermediate hops are internal; the visitor still sees one userMessage → one assistantMessage. Each hop needs a key (flow or available pool). Personalities do not chain.</li>
+  <li><strong>Models, temperature, phase prompts, knowledge files, STT</strong> — remaining per-flow AI policy on the same screen.</li>
+  <li><strong>Accuracy test</strong> — up to ten template rows (placeholders <code>{flow_name}</code>, <code>{tagline}</code>, <code>{topic_scope}</code>, <code>{site_name}</code>). Editor stores templates; “User input (sent to AI)” preview shows the expanded userMessage. Results pair userMessage with assistantMessage (AI response). Ten completed rows = ten turns. See Glossary → Chat turns and messages.</li>
+</ol>
+<p><strong>One further step:</strong> Confirm Install keys available (✓) on This flow; if a needed provider shows —, open All Flows AI API Management and set the key. Attach one personality, pick primary provider, save, then run one accuracy-test row and confirm user input / AI response columns.</p>
+<p><strong>Procedure Level:</strong> Never expect portable YAML to install secrets. After Create/Apply on Flow, re-check available keys and personality attach on the target site.</p>
+<p><strong>Tech Ref Level:</strong> Flow bag stores <code>personality_library_id</code>, <code>ai_provider</code>, chain fields, models, prompts, <code>ai_accuracy_test_questions</code> (newline templates). Install options: <code>flosc_available_providers</code>, personality library option. Prompt assembly and dispatch read resolved personality + key.</p>
+<p><strong>Code Level:</strong> admin/ai-configuration.php (single + view switch); admin/ai-all-flows.php (all); dispatch/chatpack resolve keys and personality at runtime.</p>
+
+<p><strong>Related docs:</strong>
+<a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'documentation', 'doc' => 'ref-ai-config' ), admin_url( 'admin.php' ) ) ); ?>">AI Configuration Guide</a>
+· <a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'documentation', 'doc' => 'glossary' ), admin_url( 'admin.php' ) ) ); ?>#glossary-turns">Glossary: turns &amp; messages</a>
+· <a href="<?php echo esc_url( add_query_arg( array( 'page' => 'flosc-settings', 'ivr' => $flosc_ref_ivr, 'tab' => 'documentation', 'doc' => 'glossary' ), admin_url( 'admin.php' ) ) ); ?>#term-available-providers">Available Providers</a>
+</p>
 
 <h3 id="tab-quiz">Quiz Tab</h3>
 <p><a href="<?php echo esc_url($flosc_feature_links['quiz']); ?>">Open Feature: Quiz tab</a></p>
@@ -395,10 +453,12 @@ $flosc_tab_labels = [
 </ul>
 
 <h3 id="inventory-ai-family">AI and Prompt Family</h3>
-<p><strong>Parameter links:</strong> <a href="<?php echo esc_url($flosc_feature_links['ai']); ?>">AI tab</a> · <a href="<?php echo esc_url($flosc_feature_links['autoprompts']); ?>">AutoPrompts tab</a> · <a href="<?php echo esc_url($flosc_ref_admin_doc_url . '#inventory-ai-family'); ?>">AI/Prompt parameter docs</a></p>
+<p><strong>Parameter links:</strong> <a href="<?php echo esc_url($flosc_feature_links['ai']); ?>">AI tab</a> · <a href="<?php echo esc_url($flosc_feature_links['autoprompts']); ?>">AutoPrompts tab</a> · <a href="<?php echo esc_url($flosc_ref_admin_doc_url . '#inventory-ai-family'); ?>">AI/Prompt parameter docs</a> · <a href="<?php echo esc_url( $flosc_ref_admin_doc_url . '#tab-ai' ); ?>">AI dual-view procedures</a></p>
 <ul>
-  <li><strong>ai:</strong> provider/model/prompt stack plus <code>ai_enable_ivr_context</code>, <code>ai_enable_content_access</code>, <code>ai_enable_chaining</code>.</li>
-  <li><strong>autoprompts:</strong> visitor/guest/member prompt panel rows and action/condition mappings.</li>
+  <li><strong>ai (this flow):</strong> <code>personality_library_id</code>, <code>ai_provider</code>, model/temperature/max tokens, phase prompts, <code>ai_enable_ivr_context</code>, <code>ai_enable_content_access</code>, <code>ai_enable_chaining</code> + <code>ai_chain_provider_*</code>, STT keys policy, <code>ai_accuracy_test_questions</code> (template lines), custom personality fields when not attached to library.</li>
+  <li><strong>ai (install, All Flows view):</strong> <code>flosc_available_providers</code> (secret keys — not portable); personality library entries (install option — attach via id on each flow).</li>
+  <li><strong>Key resolve order:</strong> flow bag key first, then floscAvailableProviders for that provider slug.</li>
+  <li><strong>autoprompts:</strong> visitor/guest/member prompt panel rows and action/condition mappings (each pill’s sent text is a userMessage / userInput).</li>
   <li><strong>concierge:</strong> companion/concierge route targets, launcher behavior, contextual trigger rules, and display controls.</li>
 </ul>
 

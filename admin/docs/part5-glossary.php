@@ -19,10 +19,66 @@
 </ul>
 <p>Portable Settings YAML may include personality, IVR, journey wiring, and AI policy <em>ids</em> — never API key strings. Keys resolve: flow bag first, then floscAvailableProviders.</p>
 
+<h2 id="glossary-turns">Chat turns and messages (flosc namespace)</h2>
+<p>These identifiers live in the same flosc conversation namespace as <code>floscTurn</code>, <code>floscFlow*</code>, and related product terms. In docs and conceptual maps the short camelCase forms are enough (<code>userMessage</code>, <code>assistantMessage</code>). Where a fully qualified symbol is needed, prefix with <code>flosc</code> / <code>flosc_</code> (e.g. <code>floscUserMessage</code>, <code>flosc_assistant_message</code>). floscAdmin UI may use plain English (“User input”, “AI response”) — those labels still map 1:1 to the terms below.</p>
+
+<h3 id="term-flosc-turn">floscTurn (turn)</h3>
+<p><strong>One turn</strong> = one user-side message followed by one assistant-side message that answers it. Order is fixed: the human goes first; the assistant replies. A multi-turn session is an ordered list of turns. Provider chaining (API₁ → API₂) is still <em>one</em> turn from the visitor’s view: one user message in, one final assistant message out; intermediate provider hops are internal steps, not extra turns. Funnel stages stay <strong>phase</strong> (Freeline, Login, Offer, Sale, Content) — never call a phase a “turn.”</p>
+
+<h3 id="term-user-message">userMessage / userInput</h3>
+<p><strong>userMessage</strong> is the preferred name for what the human sent (chat box, autoprompt, accuracy-test row, etc.). <strong>userInput</strong> is the same object when emphasizing that the user went first — what was typed or submitted before any assistant output. Both are valid in the namespace; they are synonyms, not two different fields. Prefer <strong>userMessage</strong> in logs and results tables so it pairs cleanly with assistantMessage.</p>
+
+<h3 id="term-assistant-message">assistantMessage / assistantResponse / assistantResponseMessage</h3>
+<p><strong>assistantMessage</strong> is the preferred name for what FLOSC returned for that userMessage (AI model output or IVR-scripted reply). Because it is always the reply <em>to</em> a userMessage, these are also valid names for the same object:</p>
+<ul>
+	<li><strong>assistantResponse</strong> — stresses causality (response to the userMessage)</li>
+	<li><strong>assistantResponseMessage</strong> — same idea, explicit that the response is still a message in the turn</li>
+</ul>
+<p>All three refer to one side of the turn — not three roles. Prefer <strong>assistantMessage</strong> in structured data; <strong>AI response</strong> is fine in floscAdmin UI copy.</p>
+
+<h3 id="term-message-pair">Message vs response (quick map)</h3>
+<table class="widefat striped" style="max-width:42rem">
+	<thead>
+		<tr>
+			<th>Role</th>
+			<th>Preferred term</th>
+			<th>Also OK (same object)</th>
+			<th>When the synonym fits</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>Human (goes first)</td>
+			<td><code>userMessage</code></td>
+			<td><code>userInput</code></td>
+			<td>Emphasizing typed/submitted input that starts the turn</td>
+		</tr>
+		<tr>
+			<td>System / AI / IVR (replies)</td>
+			<td><code>assistantMessage</code></td>
+			<td><code>assistantResponse</code>, <code>assistantResponseMessage</code></td>
+			<td>Emphasizing that this is the answer to a userMessage</td>
+		</tr>
+		<tr>
+			<td>Pair</td>
+			<td><code>floscTurn</code> / turn</td>
+			<td>exchange, Q&amp;A pair</td>
+			<td>One user-side + one assistant-side unit</td>
+		</tr>
+	</tbody>
+</table>
+<p><strong>Accuracy tests:</strong> each row’s expanded text is the <strong>userMessage</strong> / userInput (sent to the AI). The model output column is the <strong>assistantMessage</strong> / assistantResponse. Ten completed rows = ten turns.</p>
+
 <h2 id="glossary-a">A</h2>
 
 <h3 id="term-available-providers">Available Providers (floscAvailableProviders)</h3>
-<p>Install-scoped credential pool. A key the floscAdmin configures becomes available to all floscFlows on that install. Attachment (primary provider, chain order) is per flow via floscFlowAiPolicy. Option: <code>flosc_available_providers</code>.</p>
+<p>Install-scoped credential pool. A key the floscAdmin configures under <strong>AI → All Flows AI API Management</strong> becomes available to all floscFlows on that install. Attachment (primary provider, chain order) is per flow on <strong>This flow: AI settings</strong> via floscFlowAiPolicy. Option: <code>flosc_available_providers</code>. Never portable in Settings YAML.</p>
+
+<h3 id="term-accuracy-test">Accuracy test</h3>
+<p>Admin suite on <strong>AI → This flow: AI settings</strong>: template rows with placeholders (<code>{flow_name}</code>, <code>{tagline}</code>, <code>{topic_scope}</code>, <code>{site_name}</code>). Expanded text is the userMessage sent to the model; each result column is the assistantMessage. One completed row = one floscTurn. Stored as <code>ai_accuracy_test_questions</code>.</p>
+
+<h3 id="term-personality-library">Personality library</h3>
+<p>Install-scoped reusable floscFlowPersonality definitions (label, name, role, traits, prompts). Managed under All Flows AI API Management → Personalities. Each floscFlow attaches exactly one via <code>personality_library_id</code>, or uses custom fields on that flow only. Personalities do not chain; only API providers chain.</p>
 
 <h3 id="term-access-controller">Access Controller</h3>
 <p><code>class-flosc-rag-access-controller.php</code>. The class that decides what content the AI is permitted to deliver to the current user. Enforces lesson access rules: visitors get nothing, guests get the free lesson, members get all lessons.</p>
@@ -37,7 +93,7 @@
 <p>A verification mechanism that checks whether the AI "knows" what FLOSC product it is operating for. The <code>check_admin_introspection()</code> method builds an <code>adminVerification</code> object (IVR file name, app slug, product name, tagline, domain) included in the FLOSC_USER config object sent to the JavaScript client. Used as a self-consistency check.</p>
 
 <h3 id="term-ai-provider">AI Provider</h3>
-<p>One of: <code>anthropic</code>, <code>openai</code>, <code>xai</code>, or <code>ivr</code>. Configurable per flow from the admin AI Configuration tab. When set to <code>ivr</code>, no external AI API is called — all responses come from the IVR script. When set to an AI provider, IVR still runs first and AI only handles unmatched messages.</p>
+<p>One of: <code>anthropic</code>, <code>openai</code>, <code>xai</code>, or <code>ivr</code>. Primary selection is per flow on <strong>AI → This flow: AI settings</strong>. Credentials usually come from floscAvailableProviders (All Flows AI API Management). When set to <code>ivr</code>, no external AI API is called — all responses come from the IVR script. When set to an AI provider, IVR still runs first and AI only handles unmatched messages. Optional chain hops use additional providers for the same turn.</p>
 
 <h3 id="term-anthropic">Anthropic (Claude)</h3>
 <p>The default AI provider for FLOSC. Uses the Claude API. Model is configurable (claude-sonnet-4-6, claude-opus-4-6, etc.). API key stored in WordPress options, never exposed to the client. All prompts are assembled server-side before the API call.</p>
@@ -74,7 +130,10 @@
 <p>The server-side class that processes a chat message through the full pipeline: IVR evaluation → AI fallback → response validation → tool execution → response formatting. <code>class-flosc-rag-chat-handler.php</code> is the primary implementation.</p>
 
 <h3 id="term-chat-log">Chat Log</h3>
-<p>A record of a single user message + assistant response stored in the custom <code>flosc_chat_logs</code> database table. Includes: message text, response text, user phase, timestamp, and a rating field (-10 to +10) that admins can set from the Chat Logs admin page.</p>
+<p>A record of a single floscTurn (userMessage + assistantMessage) stored in the custom <code>flosc_chat_logs</code> database table. Includes: message text, response text, user phase, timestamp, and a rating field (-10 to +10) that admins can set from the Chat Logs admin page.</p>
+
+<h3 id="term-api-chain">API chain (provider chaining)</h3>
+<p>Optional ordered hops across AI providers for a single floscTurn. Configured on This flow: AI settings when <code>ai_enable_chaining</code> is on. Intermediate hops are internal assistant history; the visitor still sees one userMessage and one final assistantMessage. Requires a key per hop (flow or Available Providers). Distinct from personality — personalities do not chain.</p>
 
 <h3 id="term-chat-style-preset">Chat Style Preset</h3>
 <p>A named structured theme for the chat interface. Presets such as Auto, Light, and Dark set the baseline surface, while the admin's structured controls refine bubble geometry, accent color, font, and scale. The result is the FLOSC Signature Template: consistent, guided, and not a freeform style override.</p>

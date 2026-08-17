@@ -27,6 +27,42 @@ if (empty($GLOBALS['flosc_suppress_tab_header'])) {
 </p>
 
 <!-- ============================================ -->
+<!-- SECTION 0: WHERE FLOSCADMIN CONFIGURES AI -->
+<!-- ============================================ -->
+<div class="flosc-guide-section">
+    <h3>Where floscAdmin configures AI (streamlined dual view)</h3>
+    <p>The <strong>AI</strong> admin tab has two views. Use the buttons at the top of the tab to switch.</p>
+    <table class="widefat striped" style="max-width:48rem">
+        <thead>
+            <tr>
+                <th>View</th>
+                <th>Scope</th>
+                <th>What you do there</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>All Flows AI API Management</strong></td>
+                <td>Whole WordPress install</td>
+                <td>Paste provider API keys once (Available Providers). Maintain the Personalities library. Keys and library entries are available to every floscFlow.</td>
+            </tr>
+            <tr>
+                <td><strong>This flow: AI settings</strong></td>
+                <td>Selected floscFlow only</td>
+                <td>Attach <em>one</em> personality. Choose primary provider and optional API chain. Models, phase prompts, knowledge files, accuracy-test templates.</td>
+            </tr>
+        </tbody>
+    </table>
+    <ul>
+        <li><strong>APIs can chain</strong> (provider₁ → provider₂ still one visitor turn). <strong>Personalities cannot</strong> — one attach per flow.</li>
+        <li><strong>Secrets stay on the install</strong> — portable Flow packs and Settings YAML never include API key strings. After Create/Apply on the Flow tab, open All Flows AI API Management on the target site if keys are missing.</li>
+        <li><strong>Key resolve order:</strong> flow-local key (if any) → then Available Providers for that provider.</li>
+        <li><strong>Conversation terms:</strong> each accuracy-test or chat exchange is a <code>floscTurn</code> = <code>userMessage</code> (or userInput) + <code>assistantMessage</code> (or assistantResponse). Full map in Documentation → Glossary → Chat turns and messages.</li>
+    </ul>
+    <p class="description">Detailed admin procedures: Documentation → Admin Pages Reference → <strong>AI Tab</strong>.</p>
+</div>
+
+<!-- ============================================ -->
 <!-- SECTION 1: HOW FLOSC WORKS WITH AI -->
 <!-- ============================================ -->
 <div class="flosc-guide-section">
@@ -46,10 +82,11 @@ if (empty($GLOBALS['flosc_suppress_tab_header'])) {
     <h4>How It Works:</h4>
     <ol>
         <li><strong>You upload your content</strong> — WordPress posts in a configured category, knowledge files, quiz questions</li>
-        <li><strong>You configure the AI's personality</strong> — System prompts, role, mission, boundaries</li>
+        <li><strong>You configure the AI's personality</strong> — once in the Personalities library (All Flows view), then attach that entry on This flow — or keep custom fields on this flow only</li>
+        <li><strong>You attach providers</strong> — keys under All Flows AI API Management; primary provider + optional chain on This flow</li>
         <li><strong>FLOSC injects your content into AI context</strong> — Every time a user asks a question, AI receives:
             <ul>
-                <li>Your system prompt and instructions</li>
+                <li>Your system prompt and instructions (from attached personality + phase prompts)</li>
                 <li>Available lessons from your WordPress category</li>
                 <li>User's current progress (quiz scores, lessons completed)</li>
                 <li>Session history (Multipass — what they did in previous sessions)</li>
@@ -72,7 +109,12 @@ if (empty($GLOBALS['flosc_suppress_tab_header'])) {
     <p>For AI to effectively guide users through your content, it needs to understand:</p>
 
     <h4>1. WHO the AI Is (Identity & Personality)</h4>
-    <p>Configure in: <strong>AI Configuration tab → Base System Prompt</strong></p>
+    <p>Configure in:</p>
+    <ul>
+        <li><strong>AI → All Flows AI API Management → Personalities</strong> — reusable library entries for the whole install</li>
+        <li><strong>AI → This flow: AI settings → Attached personality</strong> — pick one library entry, or “Custom on this flow only”</li>
+        <li>Custom / attached fields include name, role, traits, mission, base system prompt, and boundaries</li>
+    </ul>
     <ul>
         <li><strong>Name:</strong> What should users call the AI? ("Coach Sarah", "Professor Theory", "Your Fitness Guide")</li>
         <li><strong>Role:</strong> What is the AI's function? ("pronunciation coach", "music theory instructor", "programming tutor")</li>
@@ -368,7 +410,7 @@ Content: [Your full lesson text, images, audio embeds, etc.]
         <li>Don't: Upsell (they already purchased), restrict access</li>
     </ul>
 
-    <p>Configure phase-specific prompts in: <strong>AI Configuration tab → Phase-Specific Instructions</strong></p>
+    <p>Configure phase-specific prompts in: <strong>AI → This flow: AI settings → Phase-Specific Instructions</strong></p>
 </div>
 
 <!-- ============================================ -->
@@ -503,16 +545,32 @@ Content: [Your full lesson text, images, audio embeds, etc.]
 
     <h4>AI doesn't know about my lessons</h4>
     <ul>
-        <li>✓ Check: Flow Settings → Content → WordPress Category is set correctly</li>
-        <li>✓ Check: Your lessons are published (not draft) and in the correct category</li>
-        <li>✓ Check: AI Configuration → Content Access is enabled</li>
+        <li>✓ Check: Content tab → WordPress category / content wiring for this floscFlow</li>
+        <li>✓ Check: Lessons are published (not draft) and in the correct category</li>
+        <li>✓ Check: AI → This flow → Content Access is enabled</li>
     </ul>
 
     <h4>AI gives generic responses, not personalized</h4>
     <ul>
-        <li>✓ Check: Base System Prompt is specific about domain and role</li>
-        <li>✓ Check: Phase-Specific Instructions are configured</li>
+        <li>✓ Check: Attached personality (or custom fields) has a specific name, role, and base prompt</li>
+        <li>✓ Check: Phase-specific instructions on This flow: AI settings</li>
         <li>✓ Check: AI Response Mode is set to "Enhanced" not "Strict IVR"</li>
+    </ul>
+
+    <h4>Provider errors or empty AI replies</h4>
+    <ul>
+        <li>✓ Check: AI → All Flows AI API Management — key status for the primary (and chain) provider(s)</li>
+        <li>✓ Check: This flow shows Install keys available with ✓ for that provider</li>
+        <li>✓ Check: Primary provider is not left on “IVR Only” if you expect model replies</li>
+        <li>✓ Optional: flow-local key override exists and is valid (still never put keys in portable packs)</li>
+    </ul>
+
+    <h4>Accuracy test looks wrong</h4>
+    <ul>
+        <li>✓ Edit the <em>template</em> row (placeholders like <code>{flow_name}</code>), not a one-off expanded blob</li>
+        <li>✓ Confirm “User input (sent to AI)” preview matches what you intend as the userMessage</li>
+        <li>✓ Results: user input column = userMessage; AI response column = assistantMessage</li>
+        <li>✓ Identity / tagline / topic scope on Identity and AI fields fill the placeholders for this flow</li>
     </ul>
 
     <h4>AI doesn't remember previous sessions (Multipass not working)</h4>
@@ -537,12 +595,14 @@ Content: [Your full lesson text, images, audio embeds, etc.]
     <h3>🚀 Next Steps</h3>
 
     <ol class="flosc-guide-next-steps-list">
-        <li><strong>Configure your WordPress category</strong> — Flow Settings → Content → Select category with your lessons</li>
-        <li><strong>Write your system prompt</strong> — Use templates above, customize for your domain</li>
-        <li><strong>Set up API keys</strong> — AI Configuration → Provider Connection → Add your OpenAI/Anthropic/xAI key</li>
-        <li><strong>Configure phase-specific prompts</strong> — AI Configuration → Phase-Specific Instructions</li>
-        <li><strong>Test the flow</strong> — Open site in incognito, take quiz, verify AI responses</li>
-        <li><strong>Monitor and refine</strong> — Check actual conversations, adjust prompts based on user experience</li>
+        <li><strong>Configure your WordPress category</strong> — Content tab → select category with your lessons</li>
+        <li><strong>Set up API keys once</strong> — AI → All Flows AI API Management → Available Providers</li>
+        <li><strong>Add or edit a personality</strong> — same All Flows view → Personalities library</li>
+        <li><strong>Attach on this flow</strong> — AI → This flow: AI settings → one personality + primary provider (optional chain)</li>
+        <li><strong>Phase-specific prompts</strong> — still on This flow: AI settings</li>
+        <li><strong>Accuracy test</strong> — run template rows; confirm userMessage / assistantMessage pairs look right</li>
+        <li><strong>Live test</strong> — open the public flow, send one chat turn, verify assistant response</li>
+        <li><strong>Monitor and refine</strong> — Chat Logs + accuracy retests; adjust personality or prompts from results</li>
     </ol>
 
     <p class="flosc-guide-next-steps-note">
