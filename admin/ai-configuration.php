@@ -1298,6 +1298,9 @@ if (empty($GLOBALS['flosc_settings_form_closed_early'])) {
 <!-- ============================================ -->
 <?php
 $flosc_acc_flow_name = (string) ( $flosc_flow_settings['identity']['name'] ?? $flosc_flow_settings['name'] ?? '' );
+if ( $flosc_acc_flow_name === '' && function_exists( 'flosc_personality_library_resolve_field' ) ) {
+	$flosc_acc_flow_name = (string) flosc_personality_library_resolve_field( 'ai_personality_name', '' );
+}
 if ( $flosc_acc_flow_name === '' ) {
 	$flosc_acc_flow_name = (string) ( $GLOBALS['flosc_current_ivr'] ?? 'this floscFlow' );
 	$flosc_acc_flow_name = pathinfo( $flosc_acc_flow_name, PATHINFO_FILENAME );
@@ -1308,8 +1311,11 @@ if ( $flosc_acc_tagline === '' ) {
 	$flosc_acc_tagline = __( '(no tagline set)', 'flosc' );
 }
 $flosc_acc_scope = trim( (string) ( $flosc_flow_settings['ai_topic_scope'] ?? '' ) );
+if ( $flosc_acc_scope === '' && function_exists( 'flosc_personality_library_resolve_field' ) ) {
+	$flosc_acc_scope = trim( (string) flosc_personality_library_resolve_field( 'ai_topic_scope', '' ) );
+}
 if ( $flosc_acc_scope === '' ) {
-	$flosc_acc_scope = __( '(topic scope not set on this AI tab)', 'flosc' );
+	$flosc_acc_scope = __( '(topic scope not set)', 'flosc' );
 }
 $flosc_acc_site = (string) get_bloginfo( 'name' );
 if ( $flosc_acc_site === '' ) {
@@ -1319,95 +1325,131 @@ if ( $flosc_acc_site === '' ) {
 	$flosc_acc_site = 'this site';
 }
 
-/**
- * Default multi-turn probes with {placeholders}, filled for this flow.
- *
- * @param string $flow_name
- * @param string $tagline
- * @param string $topic_scope
- * @param string $site_name
- * @return string[]
- */
-$flosc_acc_default_lines = static function ( $flow_name, $tagline, $topic_scope, $site_name ) {
-	// Parameterized probes: ask for flow identity facts the model should get from this flow's context.
-	// floscAdmins can edit further on the AI tab after Save.
-	$templates = array(
-		'Hello — what is the name of this floscFlow, and who are you in this chat?',
-		'What is the product or flow name you represent here? (Expected name: {flow_name}.)',
-		'What does the Product Tagline for this floscFlow mean or convey? (Configured tagline: {tagline}.)',
-		'In your own words, what is {flow_name} for, and who is it meant to help?',
-		'What topics or tasks are you authorized to handle on {flow_name}? (Topic scope note: {topic_scope}.)',
-		'How does {flow_name} relate to {site_name}?',
-		'What should a first-time visitor do next on {flow_name}?',
-		'Stay in character for {flow_name}: state your role in one or two sentences.',
-		'If someone asks for details you do not have about {flow_name}, what do you do instead of inventing them?',
-		'Summarize {flow_name}: name, purpose, and how you help — based on this conversation.',
-	);
-	$map = array(
-		'{flow_name}'   => $flow_name,
-		'{tagline}'     => $tagline,
-		'{topic_scope}' => $topic_scope,
-		'{site_name}'   => $site_name,
-	);
-	$out = array();
-	foreach ( $templates as $t ) {
-		$out[] = str_replace( array_keys( $map ), array_values( $map ), $t );
-	}
-	return $out;
+// Content-agnostic templates (placeholders). Expanded for this flow for defaults / Reset.
+$flosc_acc_templates = array(
+	'Hello — what is the name of this floscFlow, and who are you in this chat?',
+	'What is the product or flow name you represent here? (Expected name: {flow_name}.)',
+	'What does the Product Tagline for this floscFlow mean or convey? (Configured tagline: {tagline}.)',
+	'In your own words, what is {flow_name} for, and who is it meant to help?',
+	'What topics or tasks are you authorized to handle on {flow_name}? (Topic scope note: {topic_scope}.)',
+	'How does {flow_name} relate to {site_name}?',
+	'What should a first-time visitor do next on {flow_name}?',
+	'Stay in character for {flow_name}: state your role in one or two sentences.',
+	'If someone asks for details you do not have about {flow_name}, what do you do instead of inventing them?',
+	'Summarize {flow_name}: name, purpose, and how you help — based on this conversation.',
+);
+$flosc_acc_var_map = array(
+	'{flow_name}'   => $flosc_acc_flow_name,
+	'{tagline}'     => $flosc_acc_tagline,
+	'{topic_scope}' => $flosc_acc_scope,
+	'{site_name}'   => $flosc_acc_site,
+);
+$flosc_acc_expand = static function ( $text, $map ) {
+	return str_replace( array_keys( $map ), array_values( $map ), (string) $text );
 };
+$flosc_acc_defaults_filled = array();
+foreach ( $flosc_acc_templates as $flosc_acc_t ) {
+	$flosc_acc_defaults_filled[] = $flosc_acc_expand( $flosc_acc_t, $flosc_acc_var_map );
+}
 
-$flosc_acc_defaults_filled = $flosc_acc_default_lines( $flosc_acc_flow_name, $flosc_acc_tagline, $flosc_acc_scope, $flosc_acc_site );
-$flosc_acc_defaults_text   = implode( "\n", $flosc_acc_defaults_filled );
-$flosc_acc_saved           = trim( (string) ( $flosc_flow_settings['ai_accuracy_test_questions'] ?? '' ) );
-$flosc_acc_textarea_value  = $flosc_acc_saved !== '' ? $flosc_acc_saved : $flosc_acc_defaults_text;
-$flosc_acc_line_count      = max( 1, count( array_filter( array_map( 'trim', preg_split( '/\r\n|\r|\n/', $flosc_acc_textarea_value ) ?: array() ) ) ) );
+// Saved suite: newline-joined (legacy) or re-split; repair if no newlines but looks like many sentences.
+$flosc_acc_saved_raw = (string) ( $flosc_flow_settings['ai_accuracy_test_questions'] ?? '' );
+$flosc_acc_saved_lines = array();
+if ( trim( $flosc_acc_saved_raw ) !== '' ) {
+	if ( strpos( $flosc_acc_saved_raw, "\n" ) === false && strpos( $flosc_acc_saved_raw, "\r" ) === false ) {
+		// Likely mangled one-line save — fall back to expanded defaults.
+		$flosc_acc_saved_lines = $flosc_acc_defaults_filled;
+	} else {
+		$flosc_acc_saved_lines = array_values(
+			array_filter(
+				array_map( 'trim', preg_split( '/\r\n|\r|\n/', $flosc_acc_saved_raw ) ?: array() ),
+				static function ( $l ) {
+					return $l !== '';
+				}
+			)
+		);
+	}
+}
+$flosc_acc_edit_lines = $flosc_acc_saved_lines !== array() ? $flosc_acc_saved_lines : $flosc_acc_defaults_filled;
+// Pad/truncate to template count for stable row UI (extras kept if admin added more).
+$flosc_acc_row_count = max( count( $flosc_acc_templates ), count( $flosc_acc_edit_lines ) );
+while ( count( $flosc_acc_edit_lines ) < $flosc_acc_row_count ) {
+	$flosc_acc_edit_lines[] = '';
+}
+$flosc_acc_line_count = max( 1, count( array_filter( $flosc_acc_edit_lines ) ) );
 ?>
 <hr class="flosc-section-divider" id="flosc-accuracy-test">
 <h3 class="flosc-ai-section-heading"><?php echo esc_html__( 'Provider accuracy test', 'flosc' ); ?></h3>
 <p class="description">
-	<?php echo esc_html__( 'Multi-turn chat against this floscFlow’s AI. Default questions are filled with this flow’s name, tagline, topic scope, and site name. Edit the list (one question per line), save settings, then run the test.', 'flosc' ); ?>
+	<?php echo esc_html__( 'Multi-turn chat against this floscFlow’s AI. Each row shows the content-agnostic default (with {variables}) and an editable sentence for this run. Variables expand from Identity, topic scope, and site name.', 'flosc' ); ?>
 </p>
-<p class="description">
+
+<div class="flosc-acc-var-chips" aria-label="<?php echo esc_attr__( 'Variables for this flow', 'flosc' ); ?>">
+	<span class="flosc-acc-var-chip"><code>{flow_name}</code> = <?php echo esc_html( $flosc_acc_flow_name ); ?></span>
+	<span class="flosc-acc-var-chip"><code>{tagline}</code> = <?php echo esc_html( $flosc_acc_tagline ); ?></span>
+	<span class="flosc-acc-var-chip"><code>{topic_scope}</code> = <?php echo esc_html( $flosc_acc_scope ); ?></span>
+	<span class="flosc-acc-var-chip"><code>{site_name}</code> = <?php echo esc_html( $flosc_acc_site ); ?></span>
+</div>
+
+<div id="flosc-accuracy-rows" class="flosc-acc-rows"
+	data-flosc-acc-map="<?php echo esc_attr( wp_json_encode( $flosc_acc_var_map ) ); ?>">
 	<?php
-	echo esc_html(
-		sprintf(
-			/* translators: 1: flow name 2: site name */
-			__( 'This flow: %1$s · Site: %2$s', 'flosc' ),
-			$flosc_acc_flow_name,
-			$flosc_acc_site
-		)
-	);
-	?>
-</p>
-
-<table class="form-table flosc-form-table-reset" role="presentation">
-	<tr>
-		<th scope="row">
-			<label for="flow_ai_accuracy_test_questions"><?php echo esc_html__( 'Test questions', 'flosc' ); ?></label>
-		</th>
-		<td>
+	for ( $flosc_acc_i = 0; $flosc_acc_i < $flosc_acc_row_count; $flosc_acc_i++ ) :
+		$flosc_acc_tpl = $flosc_acc_templates[ $flosc_acc_i ] ?? '';
+		$flosc_acc_def = isset( $flosc_acc_defaults_filled[ $flosc_acc_i ] )
+			? $flosc_acc_defaults_filled[ $flosc_acc_i ]
+			: $flosc_acc_expand( $flosc_acc_tpl, $flosc_acc_var_map );
+		$flosc_acc_val = $flosc_acc_edit_lines[ $flosc_acc_i ] ?? $flosc_acc_def;
+		?>
+	<div class="flosc-acc-row" data-acc-index="<?php echo esc_attr( (string) $flosc_acc_i ); ?>">
+		<div class="flosc-acc-row__num" aria-hidden="true"><?php echo esc_html( (string) ( $flosc_acc_i + 1 ) ); ?></div>
+		<div class="flosc-acc-row__body">
+			<label class="screen-reader-text" for="flosc_acc_q_<?php echo esc_attr( (string) $flosc_acc_i ); ?>">
+				<?php
+				echo esc_html(
+					sprintf(
+						/* translators: %d: question number */
+						__( 'Test question %d', 'flosc' ),
+						$flosc_acc_i + 1
+					)
+				);
+				?>
+			</label>
 			<textarea
-				id="flow_ai_accuracy_test_questions"
-				name="flow_ai_accuracy_test_questions"
-				form="flosc-settings-form"
-				rows="12"
-				class="large-text code"
-				data-flosc-accuracy-defaults="<?php echo esc_attr( $flosc_acc_defaults_text ); ?>"
-			><?php echo esc_textarea( $flosc_acc_textarea_value ); ?></textarea>
-			<p class="description">
-				<?php echo esc_html__( 'One question per line. Placeholders available when you reset defaults: {flow_name}, {tagline}, {topic_scope}, {site_name} (defaults below are already filled for this flow).', 'flosc' ); ?>
+				id="flosc_acc_q_<?php echo esc_attr( (string) $flosc_acc_i ); ?>"
+				class="large-text flosc-acc-row__input"
+				rows="2"
+				data-acc-template="<?php echo esc_attr( $flosc_acc_tpl ); ?>"
+				data-acc-default-filled="<?php echo esc_attr( $flosc_acc_def ); ?>"
+			><?php echo esc_textarea( $flosc_acc_val ); ?></textarea>
+			<p class="description flosc-acc-row__default">
+				<strong><?php echo esc_html__( 'Default:', 'flosc' ); ?></strong>
+				<code class="flosc-acc-row__template"><?php echo esc_html( $flosc_acc_tpl !== '' ? $flosc_acc_tpl : '—' ); ?></code>
 			</p>
-			<p>
-				<button type="button" class="button button-secondary" id="flosc-accuracy-reset-defaults"><?php echo esc_html__( 'Reset to parameterized defaults', 'flosc' ); ?></button>
-				<span class="description flosc-margin-left-8"><?php echo esc_html__( 'Then click Save Settings to keep them.', 'flosc' ); ?></span>
+			<p class="flosc-acc-row__actions">
+				<button type="button" class="button button-small flosc-acc-reset-row"><?php echo esc_html__( 'Reset row', 'flosc' ); ?></button>
 			</p>
-		</td>
-	</tr>
-</table>
+		</div>
+	</div>
+	<?php endfor; ?>
+</div>
 
-<div id="flosc-accuracy-test-ui">
+<?php // Hidden field keeps Save Settings compatibility (newline-joined suite). ?>
+<textarea
+	id="flow_ai_accuracy_test_questions"
+	name="flow_ai_accuracy_test_questions"
+	form="flosc-settings-form"
+	class="flosc-sr-only screen-reader-text"
+	rows="1"
+	aria-hidden="true"
+	tabindex="-1"
+><?php echo esc_textarea( implode( "\n", array_filter( array_map( 'trim', $flosc_acc_edit_lines ) ) ) ); ?></textarea>
+
+<div id="flosc-accuracy-test-ui" class="flosc-margin-top-12">
 	<div class="flosc-ai-accuracy-controls">
-		<button type="button" id="flosc-run-accuracy-test" class="button button-secondary"><?php echo esc_html__( '▶ Run multi-turn provider test', 'flosc' ); ?></button>
+		<button type="button" class="button button-secondary" id="flosc-accuracy-reset-defaults"><?php echo esc_html__( 'Reset all to defaults', 'flosc' ); ?></button>
+		<button type="button" id="flosc-run-accuracy-test" class="button button-primary"><?php echo esc_html__( '▶ Run multi-turn provider test', 'flosc' ); ?></button>
+		<span class="description"><?php echo esc_html__( 'Save Settings on this page to keep edits. Run expands any remaining {placeholders} from the chips above.', 'flosc' ); ?></span>
 		<span id="flosc-test-progress" class="flosc-ai-progress flosc-hidden">
 			<?php echo esc_html__( 'Running… message', 'flosc' ); ?>
 			<span id="flosc-test-msg-num">0</span>/<span id="flosc-test-msg-total"><?php echo esc_html( (string) $flosc_acc_line_count ); ?></span>
@@ -1433,24 +1475,65 @@ $flosc_acc_line_count      = max( 1, count( array_filter( array_map( 'trim', pre
 
 <?php ob_start(); ?>
 jQuery(document).ready(function($) {
-	function floscParseAccuracyQuestions() {
-		var raw = $('#flow_ai_accuracy_test_questions').val() || '';
-		return raw.split(/\r\n|\r|\n/).map(function(line) {
-			return $.trim(line);
-		}).filter(function(line) {
-			return line.length > 0;
+	function floscAccVarMap() {
+		var raw = $('#flosc-accuracy-rows').attr('data-flosc-acc-map') || '{}';
+		try { return JSON.parse(raw); } catch (e) { return {}; }
+	}
+	function floscAccExpand(text, map) {
+		var out = String(text || '');
+		$.each(map || {}, function(k, v) {
+			out = out.split(k).join(v);
 		});
+		return out;
+	}
+	function floscSyncAccuracyHidden() {
+		var lines = [];
+		$('#flosc-accuracy-rows .flosc-acc-row__input').each(function() {
+			var t = $.trim($(this).val() || '');
+			if (t) { lines.push(t); }
+		});
+		$('#flow_ai_accuracy_test_questions').val(lines.join('\n'));
+		$('#flosc-test-msg-total').text(Math.max(1, lines.length));
+	}
+	function floscParseAccuracyQuestions() {
+		floscSyncAccuracyHidden();
+		var map = floscAccVarMap();
+		var msgs = [];
+		$('#flosc-accuracy-rows .flosc-acc-row__input').each(function() {
+			var t = $.trim($(this).val() || '');
+			if (t) { msgs.push(floscAccExpand(t, map)); }
+		});
+		return msgs;
 	}
 
-	$('#flosc-accuracy-reset-defaults').on('click', function() {
-		var def = $('#flow_ai_accuracy_test_questions').attr('data-flosc-accuracy-defaults') || '';
-		$('#flow_ai_accuracy_test_questions').val(def);
+	$('#flosc-accuracy-rows').on('input change', '.flosc-acc-row__input', floscSyncAccuracyHidden);
+
+	$('#flosc-accuracy-rows').on('click', '.flosc-acc-reset-row', function() {
+		var $row = $(this).closest('.flosc-acc-row');
+		var $inp = $row.find('.flosc-acc-row__input');
+		var tpl = $inp.attr('data-acc-template') || '';
+		var filled = $inp.attr('data-acc-default-filled') || floscAccExpand(tpl, floscAccVarMap());
+		$inp.val(filled);
+		floscSyncAccuracyHidden();
 	});
+
+	$('#flosc-accuracy-reset-defaults').on('click', function() {
+		$('#flosc-accuracy-rows .flosc-acc-row__input').each(function() {
+			var filled = $(this).attr('data-acc-default-filled') || '';
+			if (!filled) {
+				filled = floscAccExpand($(this).attr('data-acc-template') || '', floscAccVarMap());
+			}
+			$(this).val(filled);
+		});
+		floscSyncAccuracyHidden();
+	});
+
+	floscSyncAccuracyHidden();
 
 	$('#flosc-run-accuracy-test').on('click', function() {
 		var testMessages = floscParseAccuracyQuestions();
 		if (!testMessages.length) {
-			window.alert(<?php echo wp_json_encode( __( 'Add at least one test question (one per line).', 'flosc' ) ); ?>);
+			window.alert(<?php echo wp_json_encode( __( 'Add at least one test question.', 'flosc' ) ); ?>);
 			return;
 		}
 
