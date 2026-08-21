@@ -60,7 +60,6 @@ if ( 'all' === $flosc_ai_view ) {
 	return;
 }
 
-$flosc_base_prompt = $flosc_flow_settings['ai_base_prompt'] ?? '';
 $flosc_ai_provider = $flosc_flow_settings['ai_provider'] ?? 'ivr';
 $flosc_ai_openai_model = $flosc_flow_settings['ai_openai_model'] ?? 'gpt-4o-mini';
 $flosc_ai_anthropic_model = $flosc_flow_settings['ai_anthropic_model'] ?? 'claude-sonnet-4-5-20250929';
@@ -148,7 +147,7 @@ foreach ( $flosc_key_catalog as $flosc_slug => $flosc_meta ) {
 		<th scope="row"><label for="flow_personality_library_id"><?php echo esc_html__( 'Attached personality', 'flosc' ); ?></label></th>
 		<td>
 			<select name="flow_personality_library_id" id="flow_personality_library_id">
-				<option value="" <?php selected( $flosc_personality_id, '' ); ?>><?php echo esc_html__( 'Custom on this flow only (fields below)', 'flosc' ); ?></option>
+				<option value="" <?php selected( $flosc_personality_id, '' ); ?>><?php echo esc_html__( 'No attached personality', 'flosc' ); ?></option>
 				<?php foreach ( $flosc_personas as $flosc_pid => $flosc_p ) : ?>
 				<option value="<?php echo esc_attr( $flosc_pid ); ?>" <?php selected( $flosc_personality_id, $flosc_pid ); ?>>
 					<?php echo esc_html( $flosc_p['label'] !== '' ? $flosc_p['label'] : $flosc_pid ); ?>
@@ -197,8 +196,14 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
             </select>
             <p class="description">
                 <strong>IVR:</strong> Uses your configured messages only (no AI, no costs).<br>
-                <strong>AI Providers:</strong> Enable conversational AI with retrieval-augmented generation (RAG) powered by your IVR configuration and knowledge base.
+                <strong>OpenAI, Anthropic, Gemini:</strong> Chat goes through <code>wp_ai_client_prompt()</code>. Activate the official plugin for each provider you Test. This flow still attaches only one. Paste the API key in FLOSC — not in Settings → Connectors.<br>
+                <strong>xAI:</strong> No official WordPress provider plugin yet; FLOSC calls xAI directly.
             </p>
+            <?php
+            if ( class_exists( 'FLOSC_WP_AI_Client' ) ) {
+                echo wp_kses_post( FLOSC_WP_AI_Client::plugin_status_table_html() );
+            }
+            ?>
         </td>
     </tr>
 </table>
@@ -365,7 +370,7 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
                 <?php endforeach; ?>
             </select>
             <p class="description">
-                Model ID sent to <code>generativelanguage.googleapis.com</code>. Default: <code>gemini-2.5-flash</code>.
+                Model ID preferred through AI Provider for Google. Default: <code>gemini-2.5-flash</code>.
                 Catalog: <a href="https://ai.google.dev/gemini-api/docs/models" target="_blank" rel="noopener noreferrer">Gemini models</a>.
             </p>
         </td>
@@ -496,32 +501,6 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
         <span>Testing connection to AI provider...</span>
     </div>
 </div>
-</div>
-</details>
-
-<details class="flosc-ai-acc">
-<summary class="flosc-ai-acc__summary">
-	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Custom personality fields', 'flosc' ); ?></span>
-	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Used when Attached personality is Custom on this flow only.', 'flosc' ); ?></span>
-</summary>
-<div class="flosc-ai-acc__body">
-
-<!-- Base System Prompt -->
-<h3 class="flosc-ai-section-heading">
-    <?php echo esc_html__( 'Personality details (used when Custom, or as library overrides are empty)', 'flosc' ); ?>
-</h3>
-
-<table class="form-table">
-    <tr>
-        <th scope="row"><label for="flow_ai_base_prompt">Base System Prompt</label></th>
-        <td>
-            <textarea id="flow_ai_base_prompt" name="flow_ai_base_prompt" rows="16" class="large-text flosc-ai-prompt-textarea" placeholder="<?php echo esc_attr__( 'Used only when Attached personality is Custom on this flow. Prefer Design → save to the library → attach that id.', 'flosc' ); ?>"><?php echo esc_textarea($flosc_base_prompt); ?></textarea>
-            <p class="description">
-                <?php echo esc_html__( 'Custom-on-this-flow only. When a library personality is attached, that row’s compiled profile is the voice. FLOSC still adds flow facts (product, phase, IVR, session).', 'flosc' ); ?>
-            </p>
-        </td>
-    </tr>
-</table>
 </div>
 </details>
 
@@ -840,105 +819,6 @@ jQuery(document).ready(function($) {
 </div>
 </details>
 
-<details class="flosc-ai-acc">
-<summary class="flosc-ai-acc__summary">
-	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Custom field list', 'flosc' ); ?></span>
-	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Name, role, traits, and scope when not using a library profile.', 'flosc' ); ?></span>
-</summary>
-<div class="flosc-ai-acc__body">
-
-<!-- ============================================ -->
-<!-- SECTION: AI PERSONALITY (Fix 12 / Fix 15) -->
-<!-- ============================================ -->
-<hr class="flosc-section-divider" id="flosc-personality-fields">
-<h3 class="flosc-ai-section-heading"><?php echo esc_html__( 'Personality fields', 'flosc' ); ?></h3>
-<p class="description">Define who your AI is and how it interacts with users. These fields are injected into every AI system prompt.</p>
-
-<table class="form-table">
-    <tr>
-        <th scope="row"><label for="flow_ai_personality_name">AI Name</label></th>
-        <td>
-            <input type="text" id="flow_ai_personality_name" name="flow_ai_personality_name"
-                   value="<?php echo esc_attr($flosc_flow_settings['ai_personality_name'] ?? ($flosc_flow_settings['ai_name'] ?? '')); ?>"
-                   class="regular-text" placeholder="e.g. Course Coach">
-            <p class="description">What users call the AI.</p>
-        </td>
-    </tr>
-    <tr>
-        <th scope="row"><label for="flow_ai_personality_role">AI Role</label></th>
-        <td>
-            <input type="text" id="flow_ai_personality_role" name="flow_ai_personality_role"
-                   value="<?php echo esc_attr($flosc_flow_settings['ai_personality_role'] ?? ($flosc_flow_settings['ai_role'] ?? '')); ?>"
-                   class="large-text" placeholder="e.g. pronunciation coach and learning guide">
-        </td>
-    </tr>
-    <tr>
-        <th scope="row"><label for="flow_ai_personality_traits">Personality Traits</label></th>
-        <td>
-            <textarea id="flow_ai_personality_traits" name="flow_ai_personality_traits" rows="3" class="large-text"><?php
-                echo esc_textarea($flosc_flow_settings['ai_personality_traits'] ?? ($flosc_flow_settings['ai_traits'] ?? ''));
-            ?></textarea>
-            <p class="description">Tone and approach. e.g. "Encouraging, patient, specific, action-oriented."</p>
-        </td>
-    </tr>
-    <tr>
-        <th scope="row"><label for="flow_ai_mission">Mission Statement</label></th>
-        <td>
-            <textarea id="flow_ai_mission" name="flow_ai_mission" rows="3" class="large-text"><?php
-                echo esc_textarea($flosc_flow_settings['ai_mission'] ?? '');
-            ?></textarea>
-            <p class="description">Core purpose in your own words. Injected into the orientation brief.</p>
-        </td>
-    </tr>
-    <tr>
-        <th scope="row"><label for="flow_ai_boundaries">Boundaries & Limitations</label></th>
-        <td>
-            <textarea id="flow_ai_boundaries" name="flow_ai_boundaries" rows="3" class="large-text"><?php
-                echo esc_textarea($flosc_flow_settings['ai_boundaries'] ?? '');
-            ?></textarea>
-            <p class="description">What the AI should refuse to do. e.g. "Never diagnose speech impediments. Never guarantee specific results."</p>
-        </td>
-    </tr>
-    <tr>
-        <th scope="row"><label for="flow_ai_topic_scope">Topic Scope</label></th>
-        <td>
-            <textarea id="flow_ai_topic_scope" name="flow_ai_topic_scope" rows="2" class="large-text"><?php
-                echo esc_textarea($flosc_flow_settings['ai_topic_scope'] ?? '');
-            ?></textarea>
-            <p class="description">What topics the AI covers. e.g. "Stay within English pronunciation and phonetics."</p>
-        </td>
-    </tr>
-    <tr>
-        <th scope="row"><label for="flow_ai_off_topic_message">Off-Topic Response</label></th>
-        <td>
-            <textarea id="flow_ai_off_topic_message" name="flow_ai_off_topic_message" rows="2" class="large-text"><?php
-                echo esc_textarea($flosc_flow_settings['ai_off_topic_message'] ?? '');
-            ?></textarea>
-            <p class="description">How the AI redirects off-topic questions.</p>
-        </td>
-    </tr>
-    <tr>
-        <th scope="row"><label for="flow_fallback_phrase">Fallback Phrase</label></th>
-        <td>
-            <textarea id="flow_fallback_phrase" name="flow_fallback_phrase" rows="2" class="large-text"><?php
-                echo esc_textarea($flosc_flow_settings['fallback_phrase'] ?? '');
-            ?></textarea>
-            <p class="description">Shown &mdash; repeated &mdash; when this flow has no IVR configured in the database. No AI, no persona; its appearance tells you the flow isn't set up yet. Leave blank to use the built-in default.</p>
-        </td>
-    </tr>
-    <tr>
-        <th scope="row"><label for="flow_ai_off_topic_links">Referral Links</label></th>
-        <td>
-            <textarea id="flow_ai_off_topic_links" name="flow_ai_off_topic_links" rows="3" class="large-text"><?php
-                echo esc_textarea($flosc_flow_settings['ai_off_topic_links'] ?? '');
-            ?></textarea>
-            <p class="description">External resources to recommend when users need help outside your scope. One per line. Use affiliate links where applicable.</p>
-        </td>
-    </tr>
-</table>
-</div>
-</details>
-
 <!-- ============================================ -->
 <!-- SECTION: SITE CONTENT INDEX -->
 <!-- ============================================ -->
@@ -1215,45 +1095,43 @@ if ( $flosc_sci_action === 'rebuilt' ) {
 </div>
 </details>
 
-<details class="flosc-ai-acc" id="flosc-kb-section">
+<details class="flosc-ai-acc" id="flosc-kb-section" open>
 <summary class="flosc-ai-acc__summary">
 	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Knowledge Base', 'flosc' ); ?></span>
-	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Markdown files injected into the AI knowledge base.', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Attached on the Knowledge Base tab.', 'flosc' ); ?></span>
 </summary>
 <div class="flosc-ai-acc__body">
 <hr class="flosc-section-divider">
-<h3 class="flosc-ai-section-heading">📚 Knowledge Base</h3>
-<p class="description">Upload markdown files containing lesson catalogs, FAQs, product info, and teaching guidelines. These files are injected into the AI knowledge base on every session.</p>
-
+<h3 class="flosc-ai-section-heading"><?php echo esc_html__( 'Knowledge Base', 'flosc' ); ?></h3>
 <?php
-// KB action notices: prefer one-shot user transient (set by handlers); fall back to query arg
-// already present on $flosc_get from settings.php (no re-read of $_GET here).
-$flosc_kb_notice = get_transient( 'flosc_kb_notice_' . get_current_user_id() );
-if ( is_array( $flosc_kb_notice ) ) {
-	delete_transient( 'flosc_kb_notice_' . get_current_user_id() );
-	$flosc_kb_action = sanitize_key( (string) ( $flosc_kb_notice['action'] ?? '' ) );
-	$flosc_kb_error  = sanitize_text_field( (string) ( $flosc_kb_notice['error'] ?? '' ) );
-} else {
-	// $flosc_get is prepared by admin/settings.php before this file is included.
-	$flosc_kb_action = isset( $flosc_get['kb_action'] ) ? sanitize_key( (string) $flosc_get['kb_action'] ) : '';
-	$flosc_kb_error  = isset( $flosc_get['kb_error'] ) ? sanitize_text_field( urldecode( (string) $flosc_get['kb_error'] ) ) : '';
-}
-$flosc_kb_msg = '';
-if ( $flosc_kb_action === 'uploaded' ) {
-	$flosc_kb_msg = 'File uploaded successfully.';
-} elseif ( $flosc_kb_action === 'deleted' ) {
-	$flosc_kb_msg = 'File deleted.';
-} elseif ( $flosc_kb_action === 'toggled' ) {
-	$flosc_kb_msg = 'Access level updated.';
-} elseif ( $flosc_kb_action === 'saved' ) {
-	$flosc_kb_msg = 'File saved.';
-} elseif ( $flosc_kb_action === 'error' ) {
-	$flosc_kb_msg = $flosc_kb_error !== '' ? $flosc_kb_error : 'An error occurred.';
-}
-if ( $flosc_kb_msg !== '' ) :
-	$flosc_kb_notice_class = ( $flosc_kb_action === 'error' ) ? 'notice-error' : 'notice-success';
-	?>
-<div class="notice <?php echo esc_attr( $flosc_kb_notice_class ); ?> inline flosc-margin-bottom-15"><p><?php echo esc_html( $flosc_kb_msg ); ?></p></div>
+$flosc_kb_tab_url = add_query_arg(
+	array(
+		'page' => 'flosc-settings',
+		'ivr'  => $flosc_current_ivr,
+		'tab'  => 'knowledge-base',
+		'view' => 'single',
+	),
+	admin_url( 'admin.php' )
+);
+$flosc_kb_stem = sanitize_key( pathinfo( (string) $flosc_current_ivr, PATHINFO_FILENAME ) );
+$flosc_kb_ids  = function_exists( 'flosc_flow_knowledge_base_ids' ) ? flosc_flow_knowledge_base_ids( $flosc_kb_stem ) : array();
+?>
+<p class="description">
+	<?php echo esc_html__( 'Markdown knowledge bases this flow may inject into chat, gated by Visitor / Guest / Member. Upload and attach them on the Knowledge Base tab.', 'flosc' ); ?>
+	<a href="<?php echo esc_url( $flosc_kb_tab_url ); ?>"><?php echo esc_html__( 'Open Knowledge Base tab', 'flosc' ); ?></a>
+</p>
+<?php if ( $flosc_kb_ids === array() ) : ?>
+<p class="description"><?php echo esc_html__( 'None attached to this flow.', 'flosc' ); ?></p>
+<?php else : ?>
+<ul>
+	<?php
+	foreach ( $flosc_kb_ids as $flosc_kb_aid ) :
+		$flosc_kb_row = function_exists( 'flosc_knowledge_base_get' ) ? flosc_knowledge_base_get( $flosc_kb_aid ) : null;
+		$flosc_kb_lab = is_array( $flosc_kb_row ) ? (string) ( $flosc_kb_row['label'] ?? $flosc_kb_aid ) : $flosc_kb_aid;
+		?>
+	<li><code><?php echo esc_html( $flosc_kb_aid ); ?></code> — <?php echo esc_html( $flosc_kb_lab ); ?></li>
+	<?php endforeach; ?>
+</ul>
 <?php endif; ?>
 
 <?php
@@ -1279,137 +1157,8 @@ $flosc_regen_url      = wp_nonce_url(admin_url('admin-post.php?action=flosc_rege
     </div>
     <a href="<?php echo esc_url($flosc_regen_url); ?>" class="button button-secondary">Regenerate Lesson Catalog</a>
 </div>
-
-<?php
-// Per-flow basket: list ONLY this flow's own uploaded files. Each flow's folder is
-// physically separate, so another flow's files can never appear here (no bleed).
-$flosc_flow_stem = sanitize_key(pathinfo($GLOBALS['flosc_current_ivr'] ?? '', PATHINFO_FILENAME));
-$flosc_kb_dir    = function_exists('flosc_flow_kb_dir') ? flosc_flow_kb_dir($flosc_flow_stem) : '';
-$flosc_kb_files  = [];
-if ($flosc_kb_dir && is_dir($flosc_kb_dir)) {
-    foreach (glob($flosc_kb_dir . '*.{md,txt}', GLOB_BRACE) ?: [] as $flosc_fp) {
-        $flosc_kb_files[] = basename($flosc_fp);
-    }
-}
-sort($flosc_kb_files);
-
-$flosc_editing_kb_file = isset($flosc_get['kb_edit']) ? sanitize_file_name($flosc_get['kb_edit']) : '';
-$flosc_editing_kb_content = '';
-$flosc_editing_kb_path = ($flosc_editing_kb_file && $flosc_kb_dir) ? $flosc_kb_dir . $flosc_editing_kb_file : '';
-if ($flosc_editing_kb_path && file_exists($flosc_editing_kb_path)) {
-    $flosc_editing_kb_content = flosc_fs_get_contents($flosc_editing_kb_path);
-}
-?>
-
-<?php
-// HTML forbids nested forms. Close the main settings form before KB upload/edit forms.
-// Save Settings uses form="flosc-settings-form" so it still posts provider/key fields above.
-if (empty($GLOBALS['flosc_settings_form_closed_early'])) {
-    echo '</form>';
-    $GLOBALS['flosc_settings_form_closed_early'] = true;
-}
-?>
-
-<!-- Upload form (sibling of main settings form — not nested) -->
-<div class="card flosc-card-max-700">
-    <h4 class="flosc-card-title-reset">Upload Knowledge File</h4>
-    <form method="post" enctype="multipart/form-data" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-        <?php wp_nonce_field('flosc_kb_upload', 'flosc_kb_upload_nonce'); ?>
-        <input type="hidden" name="action" value="flosc_kb_upload">
-        <input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr($GLOBALS['flosc_current_ivr'] ?? ''); ?>">
-        <table class="form-table flosc-form-table-reset">
-            <tr>
-            <th scope="row" class="flosc-th-pad-top-8"><label for="kb_file_upload">File</label></th>
-                <td>
-                    <input type="file" name="orientation_file" id="kb_file_upload" accept=".md,.txt" required>
-                    <p class="description">.md or .txt files only.</p>
-                </td>
-            </tr>
-            <tr>
-                <th scope="row" class="flosc-th-pad-top-8"><label for="kb_access_level">Access Level</label></th>
-                <td>
-                    <select name="file_access_level" id="kb_access_level">
-                        <option value="visitor">Visitor — everyone, including pre-login</option>
-                        <option value="guest">Guest — logged-in users</option>
-                        <option value="member">Member — full access (through to Content)</option>
-                    </select>
-                    <p class="description">Tiers are cumulative: a Guest file is also seen by Members; a Visitor file is seen by all.</p>
-                </td>
-            </tr>
-        </table>
-        <div class="flosc-margin-top-10">
-            <button type="submit" class="button button-secondary">Upload File</button>
-        </div>
-    </form>
 </div>
-
-<!-- File list -->
-<?php if (!empty($flosc_kb_files)): ?>
-<table class="widefat flosc-table-full">
-    <thead>
-        <tr>
-            <th class="flosc-width-35">Filename</th>
-            <th class="flosc-width-15">Access</th>
-            <th class="flosc-width-10">Size</th>
-            <th class="flosc-width-15">Modified</th>
-            <th class="flosc-width-25">Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-    <?php foreach ($flosc_kb_files as $flosc_kbf):
-        $flosc_fp = $flosc_kb_dir . $flosc_kbf;
-        $flosc_kbf_access = $flosc_flow_settings['knowledge_access_' . md5($flosc_kbf)] ?? 'visitor';
-        if ($flosc_kbf_access === 'public')  $flosc_kbf_access = 'visitor';
-        if ($flosc_kbf_access === 'members') $flosc_kbf_access = 'member';
-        $flosc_kbf_badge = [
-            'visitor' => ['Visitor', 'flosc-inline-badge flosc-inline-badge--visitor'],
-            'guest'   => ['Guest', 'flosc-inline-badge flosc-inline-badge--guest'],
-            'member'  => ['Member', 'flosc-inline-badge flosc-inline-badge--member'],
-        ][$flosc_kbf_access] ?? ['Visitor', 'flosc-inline-badge flosc-inline-badge--visitor'];
-        $flosc_toggle_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_kb_toggle&kb_file=' . rawurlencode($flosc_kbf) . '&return_ivr=' . rawurlencode($GLOBALS['flosc_current_ivr'] ?? '')), 'flosc_kb_toggle_' . $flosc_kbf);
-        $flosc_delete_url = wp_nonce_url(admin_url('admin-post.php?action=flosc_kb_delete&kb_file=' . rawurlencode($flosc_kbf) . '&return_ivr=' . rawurlencode($GLOBALS['flosc_current_ivr'] ?? '')), 'flosc_kb_delete_' . $flosc_kbf);
-        $flosc_edit_url   = admin_url('admin.php?page=flosc-settings&ivr=' . rawurlencode($GLOBALS['flosc_current_ivr'] ?? '') . '&tab=ai&kb_edit=' . rawurlencode($flosc_kbf) . '#flosc-kb-section');
-    ?>
-        <tr>
-            <td>
-                <strong><?php echo esc_html($flosc_kbf); ?></strong>
-                <?php if ($flosc_editing_kb_file === $flosc_kbf): ?><span class="flosc-text-blue flosc-margin-left-6">← editing</span><?php endif; ?>
-            </td>
-            <td>
-                <span class="<?php echo esc_attr($flosc_kbf_badge[1]); ?>"><?php echo esc_html($flosc_kbf_badge[0]); ?></span>
-            </td>
-            <td><?php echo file_exists($flosc_fp) ? esc_html(size_format(filesize($flosc_fp))) : '—'; ?></td>
-            <td><?php echo file_exists($flosc_fp) ? esc_html(human_time_diff(filemtime($flosc_fp), current_time('timestamp')) . ' ago') : '—'; ?></td>
-            <td>
-                <a href="<?php echo esc_url($flosc_edit_url); ?>" class="button button-small"><?php echo $flosc_editing_kb_file === $flosc_kbf ? 'Editing...' : 'Edit'; ?></a>
-                <a href="<?php echo esc_url($flosc_toggle_url); ?>" class="button button-small">Toggle Access</a>
-                <a href="<?php echo esc_url($flosc_delete_url); ?>" class="button button-small flosc-ai-kb-delete" data-confirm-message="Delete <?php echo esc_attr($flosc_kbf); ?>? Cannot be undone.">Delete</a>
-            </td>
-        </tr>
-    <?php endforeach; ?>
-    </tbody>
-</table>
-<?php else: ?>
-<p class="flosc-text-muted-italic">No knowledge files yet. Upload your first file above.</p>
-<?php endif; ?>
-
-<!-- File editor (if editing) -->
-<?php if ($flosc_editing_kb_file): ?>
-<div class="card flosc-card-max-full">
-    <h4 class="flosc-card-title-reset">Editing: <?php echo esc_html($flosc_editing_kb_file); ?></h4>
-    <form method="post" action="<?php echo esc_url(admin_url('admin-post.php')); ?>">
-        <?php wp_nonce_field('flosc_kb_save_edit', 'flosc_kb_save_edit_nonce'); ?>
-        <input type="hidden" name="action" value="flosc_kb_save_edit">
-        <input type="hidden" name="editing_file" value="<?php echo esc_attr($flosc_editing_kb_file); ?>">
-        <input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr($GLOBALS['flosc_current_ivr'] ?? ''); ?>">
-        <textarea name="file_content" rows="30" class="large-text code flosc-code-textarea"><?php echo esc_textarea($flosc_editing_kb_content); ?></textarea>
-        <div class="flosc-margin-top-10">
-            <button type="submit" class="button button-primary">Save File</button>
-            <a href="<?php echo esc_url(admin_url('admin.php?page=flosc-settings&ivr=' . rawurlencode($GLOBALS['flosc_current_ivr'] ?? '') . '&tab=ai#flosc-kb-section')); ?>" class="button flosc-margin-left-8">Cancel</a>
-        </div>
-    </form>
-</div>
-<?php endif; ?>
+</details>
 
 <!-- ============================================ -->
 <!-- SECTION: PROVIDER ACCURACY TEST -->
@@ -1507,8 +1256,8 @@ if ( $flosc_acc_saved_lines === array() ) {
 }
 $flosc_acc_row_count = max( count( $flosc_acc_templates ), count( $flosc_acc_edit_lines ) );
 while ( count( $flosc_acc_edit_lines ) < $flosc_acc_row_count ) {
-	$idx = count( $flosc_acc_edit_lines );
-	$flosc_acc_edit_lines[] = $flosc_acc_templates[ $idx ] ?? '';
+	$flosc_idx = count( $flosc_acc_edit_lines );
+	$flosc_acc_edit_lines[] = $flosc_acc_templates[ $flosc_idx ] ?? '';
 }
 $flosc_acc_line_count = max( 1, count( array_filter( $flosc_acc_edit_lines ) ) );
 ?>

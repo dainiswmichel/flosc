@@ -35,8 +35,13 @@ if ( is_array( $flosc_ai_all_notice ) ) {
 
 <div class="flosc-info-box flosc-margin-bottom-20">
 	<p class="flosc-text-zero-margin">
-		<?php echo esc_html__( 'Install API keys here. Chat: Anthropic, OpenAI, xAI, Gemini. Speech-to-text: AssemblyAI (and OpenAI Whisper on This flow). Author a personality in Personality Designer. Attach one personality and one chat API on This flow.', 'flosc' ); ?>
+		<?php echo esc_html__( 'Install API keys here. Chat: Anthropic, OpenAI, xAI, Gemini. OpenAI, Anthropic, and Gemini chat use the WordPress 7.0 AI Client — register the official plugin for each of those you will Test. Speech-to-text: AssemblyAI (and OpenAI Whisper on This flow). Author a personality in Personality Designer. Attach one personality and one chat API on This flow.', 'flosc' ); ?>
 	</p>
+	<?php
+	if ( class_exists( 'FLOSC_WP_AI_Client' ) ) {
+		echo wp_kses_post( FLOSC_WP_AI_Client::plugin_status_table_html() );
+	}
+	?>
 </div>
 
 <details class="flosc-ai-acc">
@@ -56,8 +61,8 @@ if ( is_array( $flosc_ai_all_notice ) ) {
 
 		<table class="form-table" role="presentation">
 			<?php foreach ( $flosc_provider_meta as $flosc_slug => $flosc_meta ) :
-				$row = $flosc_avail[ $flosc_slug ] ?? array();
-				$has = ! empty( $row['api_key'] );
+				$flosc_row = $flosc_avail[ $flosc_slug ] ?? array();
+				$flosc_has = ! empty( $flosc_row['api_key'] );
 				?>
 			<tr>
 				<th scope="row">
@@ -71,11 +76,11 @@ if ( is_array( $flosc_ai_all_notice ) ) {
 						name="avail_api_key[<?php echo esc_attr( $flosc_slug ); ?>]"
 						value=""
 						autocomplete="new-password"
-						placeholder="<?php echo $has ? esc_attr__( '•••• key on file — leave blank to keep', 'flosc' ) : esc_attr__( 'Paste API key', 'flosc' ); ?>"
+						placeholder="<?php echo $flosc_has ? esc_attr__( '•••• key on file — leave blank to keep', 'flosc' ) : esc_attr__( 'Paste API key', 'flosc' ); ?>"
 					>
 					<p class="description">
 						<?php
-						echo $has
+						echo $flosc_has
 							? esc_html__( 'Status: available for any floscFlow.', 'flosc' )
 							: esc_html__( 'Status: not set.', 'flosc' );
 						?>
@@ -84,7 +89,7 @@ if ( is_array( $flosc_ai_all_notice ) ) {
 						<?php endif; ?>
 						— <?php echo esc_html( $flosc_meta['hint'] ); ?>
 					</p>
-					<?php if ( $has ) : ?>
+					<?php if ( $flosc_has ) : ?>
 					<label>
 						<input type="checkbox" name="avail_clear[<?php echo esc_attr( $flosc_slug ); ?>]" value="1">
 						<?php echo esc_html__( 'Clear this key from the install pool', 'flosc' ); ?>

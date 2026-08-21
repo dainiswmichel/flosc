@@ -92,6 +92,15 @@ trait FLOSC_Admin_Trait {
             [$this, 'redirect_to_content_tab']
         );
 
+        add_submenu_page(
+            'flosc-settings',
+            'Knowledge Base',
+            'Knowledge Base',
+            'manage_options',
+            'flosc-knowledge-base',
+            [$this, 'redirect_to_knowledge_base_tab']
+        );
+
         // Trajectories
         add_submenu_page(
             'flosc-settings',
@@ -986,6 +995,7 @@ trait FLOSC_Admin_Trait {
             'flosc-content'           => 'content',
             'flosc-member-levels'     => 'content',
             'flosc-lessons'           => 'content',
+            'flosc-knowledge-base'    => 'knowledge-base',
             'flosc-trajectories'      => 'trajectories',
             'flosc-offers'            => 'offers',
             'flosc-login'             => 'login',
@@ -1196,13 +1206,11 @@ trait FLOSC_Admin_Trait {
             'page' => 'flosc-settings',
             'tab'  => $tab,
         ];
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- admin redirect copies sanitized GET routing keys only
-        if (!empty($_GET['ivr'])) {
-            $args['ivr'] = sanitize_file_name(wp_unslash((string) $_GET['ivr']));
+        if (!empty($GLOBALS['flosc_current_ivr'])) {
+            $args['ivr'] = sanitize_file_name((string) $GLOBALS['flosc_current_ivr']);
         }
-        // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- admin redirect copies sanitized GET routing keys only
-        if (!empty($_GET['view'])) {
-            $view = sanitize_text_field(wp_unslash((string) $_GET['view']));
+        if (!empty($GLOBALS['flosc_settings_view'])) {
+            $view = sanitize_key((string) $GLOBALS['flosc_settings_view']);
             if (in_array($view, ['single', 'all'], true)) {
                 $args['view'] = $view;
             }
@@ -1247,6 +1255,10 @@ trait FLOSC_Admin_Trait {
 
     public function redirect_to_content_tab() {
         $this->redirect_to_settings_tab('content');
+    }
+
+    public function redirect_to_knowledge_base_tab() {
+        $this->redirect_to_settings_tab('knowledge-base');
     }
 
     public function redirect_to_member_levels_tab() {
@@ -1670,8 +1682,8 @@ trait FLOSC_Admin_Trait {
         if ($header_icon === '' && function_exists('flosc_get_chatlogo_url')) {
             $header_icon = flosc_get_chatlogo_url();
         }
-        $product_name = function_exists( 'flosc_visitor_assistant_name' )
-            ? sanitize_text_field( flosc_visitor_assistant_name() )
+        $product_name = function_exists( 'flosc_personality_name' )
+            ? sanitize_text_field( flosc_personality_name() )
             : '';
         if ( $product_name === '' && function_exists( 'flosc' ) && method_exists( flosc(), 'get_floscflow_identity' ) ) {
             $id = flosc()->get_floscflow_identity();

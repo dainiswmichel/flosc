@@ -83,7 +83,9 @@ if (!function_exists('flosc_log')) {
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/class-flosc-filesystem.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/flosc-data-paths.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-available-providers.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-wp-ai-client.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-personality-library.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/flosc-knowledge-bases.php';
 
 // v1.2.9: Auto-flush permalinks on activation
 register_activation_hook(__FILE__, 'flosc_activation_flush');
@@ -1315,6 +1317,7 @@ class FLOSC_Framework {
         add_action('admin_post_flosc_kb_delete',    [$this, 'handle_kb_delete']);
         add_action('admin_post_flosc_kb_toggle',    [$this, 'handle_kb_toggle']);
         add_action('admin_post_flosc_kb_save_edit', [$this, 'handle_kb_save_edit']);
+        add_action('admin_post_flosc_kb_create',    [$this, 'handle_kb_create']);
 
         // Fix 14: Provider Accuracy Test AJAX
         add_action('wp_ajax_flosc_accuracy_test_message', [$this, 'ajax_accuracy_test_message']);
@@ -1999,7 +2002,7 @@ The Team',
         check_admin_referer('flosc_flush_permalinks');
 
         if (!current_user_can('manage_options')) {
-            wp_die('Unauthorized');
+            wp_die(esc_html__('You do not have permission to manage knowledge bases.', 'flosc'));
         }
 
         flush_rewrite_rules();
@@ -2016,7 +2019,7 @@ The Team',
         check_admin_referer('flosc_flush_v129');
 
         if (!current_user_can('manage_options')) {
-            wp_die('Unauthorized');
+            wp_die(esc_html__('You do not have permission to manage knowledge bases.', 'flosc'));
         }
 
         flush_rewrite_rules();
@@ -2212,7 +2215,6 @@ The Team',
     // ─────────────────────────────────────────────────────────
 
     private function kb_return_url($ivr, $action, $error = '') {
-        // One-shot admin notice via transient (avoids relying on GET-only status params).
         $uid = get_current_user_id();
         if ( $uid > 0 ) {
             set_transient(
@@ -2224,80 +2226,145 @@ The Team',
                 MINUTE_IN_SECONDS
             );
         }
-        return admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( (string) $ivr ) . '&tab=ai#flosc-kb-section' );
+        return admin_url( 'admin.php?page=flosc-settings&ivr=' . rawurlencode( (string) $ivr ) . '&tab=knowledge-base&view=single' );
+    }
+
+    /**
+     * Resolve knowledge base id from request; fall back to this flow's stem (legacy folder).
+     *
+     * @param string $ivr   Current IVR filename.
+     * @param string $kb_id Posted/get kb id.
+     * @return string
+     */
+    private function kb_request_id( $ivr, $kb_id ) {
+        $kb_id = sanitize_key( (string) $kb_id );
+        if ( $kb_id !== '' ) {
+            return $kb_id;
+        }
+        return sanitize_key( pathinfo( (string) $ivr, PATHINFO_FILENAME ) );
     }
 
     public function handle_kb_upload() {
         $post = wp_unslash($_POST);
         check_admin_referer('flosc_kb_upload', 'flosc_kb_upload_nonce');
-        if (!current_user_can('manage_options')) wp_die('Unauthorized');
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('You do not have permission to manage knowledge bases.', 'flosc'));
+        }
 
-        $ivr = sanitize_file_name($post['flosc_return_ivr'] ?? '');
-        $flow_stem = sanitize_key(pathinfo($ivr, PATHINFO_FILENAME));
-        // Per-flow basket: this flow's uploads land in its own folder only.
-        $kb_dir = flosc_flow_kb_dir($flow_stem);
+        $ivr   = sanitize_file_name($post['flosc_return_ivr'] ?? '');
+        $kb_id = $this->kb_request_id($ivr, $post['kb_id'] ?? '');
+        if ($kb_id === '' || !function_exists('flosc_knowledge_base_dir')) {
+            wp_safe_redirect($this->kb_return_url($ivr, 'error', 'No knowledge base selected.'));
+            exit;
+        }
+        if (function_exists('flosc_knowledge_base_put') && !flosc_knowledge_base_get($kb_id)) {
+            flosc_knowledge_base_put(array('id' => $kb_id, 'label' => $kb_id, 'access' => array()));
+        }
+
+        $kb_dir = flosc_knowledge_base_dir($kb_id);
         if ('' === $kb_dir) {
             wp_safe_redirect($this->kb_return_url($ivr, 'error', 'The FLOSC uploads storage directory is unavailable. Uploads folder permissions need attention before knowledge files can be saved.'));
             exit;
         }
 
-        if (empty($_FILES['orientation_file']['name'])) {
+        $bucket = array(
+            'name'     => array(),
+            'type'     => array(),
+            'tmp_name' => array(),
+            'error'    => array(),
+            'size'     => array(),
+        );
+        if (isset($_FILES['orientation_file']) && is_array($_FILES['orientation_file'])) {
+            $bucket['name'] = isset($_FILES['orientation_file']['name'])
+                ? array_map('sanitize_file_name', (array) wp_unslash($_FILES['orientation_file']['name']))
+                : array();
+            $bucket['type'] = isset($_FILES['orientation_file']['type'])
+                ? array_map('sanitize_mime_type', (array) wp_unslash($_FILES['orientation_file']['type']))
+                : array();
+            $bucket['tmp_name'] = isset($_FILES['orientation_file']['tmp_name'])
+                ? array_map('sanitize_text_field', (array) wp_unslash($_FILES['orientation_file']['tmp_name']))
+                : array();
+            $bucket['error'] = isset($_FILES['orientation_file']['error'])
+                ? array_map('absint', (array) wp_unslash($_FILES['orientation_file']['error']))
+                : array();
+            $bucket['size'] = isset($_FILES['orientation_file']['size'])
+                ? array_map('absint', (array) wp_unslash($_FILES['orientation_file']['size']))
+                : array();
+        }
+        $names = $bucket['name'];
+        if (!is_array($names)) {
+            $names = array($names);
+            foreach (array('type', 'tmp_name', 'error', 'size') as $flosc_file_key) {
+                if (isset($bucket[$flosc_file_key]) && !is_array($bucket[$flosc_file_key])) {
+                    $bucket[$flosc_file_key] = array($bucket[$flosc_file_key]);
+                }
+            }
+        }
+        if ($names === array() || (count($names) === 1 && (string) $names[0] === '')) {
             wp_safe_redirect($this->kb_return_url($ivr, 'error', 'No file selected.'));
             exit;
         }
 
-        $filename = sanitize_file_name($_FILES['orientation_file']['name']);
-        $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-        if (!in_array($ext, ['md', 'txt'], true)) {
-            wp_safe_redirect($this->kb_return_url($ivr, 'error', 'Only .md and .txt files are supported.'));
-            exit;
-        }
+        $access = in_array($post['file_access_level'] ?? '', array('visitor', 'guest', 'member'), true)
+            ? $post['file_access_level']
+            : 'visitor';
 
-        if (!isset($_FILES['orientation_file']['size']) || $_FILES['orientation_file']['size'] > 500000) {
-            wp_safe_redirect($this->kb_return_url($ivr, 'error', 'File too large (max 500 KB).'));
-            exit;
-        }
-
-        $target = $kb_dir . $filename;
         if (!function_exists('wp_handle_upload')) {
             require_once ABSPATH . 'wp-admin/includes/file.php';
         }
-
-        $upload_overrides = [
+        $upload_overrides = array(
             'test_form' => false,
-            'mimes'     => ['md' => 'text/markdown', 'txt' => 'text/plain'],
-        ];
-        $handled_upload = wp_handle_upload($_FILES['orientation_file'], $upload_overrides);
+            'mimes'     => array('md' => 'text/markdown', 'txt' => 'text/plain'),
+        );
 
-        if (isset($handled_upload['error'])) {
-            wp_safe_redirect($this->kb_return_url($ivr, 'error', 'Upload failed: ' . $handled_upload['error']));
-            exit;
-        }
-
-        // Pass 5: write only via uploads gate (never plugin dir). Target is under flosc_flow_kb_dir().
-        $uploaded_body = (!empty($handled_upload['file']) && is_readable($handled_upload['file']))
-            ? flosc_fs_get_contents($handled_upload['file'])
-            : false;
-        if (false === $uploaded_body || !function_exists('flosc_write_data_file') || !flosc_write_data_file($target, $uploaded_body)) {
-            if (!empty($handled_upload['file'])) {
-                $this->delete_file_safely($handled_upload['file']);
+        $ok = 0;
+        $err = '';
+        foreach ($names as $i => $raw_name) {
+            $filename = sanitize_file_name((string) $raw_name);
+            $ext      = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            if ($filename === '' || !in_array($ext, array('md', 'txt'), true)) {
+                $err = 'Only .md and .txt files are supported.';
+                continue;
             }
-            wp_safe_redirect($this->kb_return_url($ivr, 'error', 'Upload failed. Check directory permissions.'));
-            exit;
+            $size = isset($bucket['size'][$i]) ? (int) $bucket['size'][$i] : 0;
+            if ($size > 500000) {
+                $err = 'File too large (max 500 KB).';
+                continue;
+            }
+            $one = array(
+                'name'     => $filename,
+                'type'     => isset($bucket['type'][$i]) ? (string) $bucket['type'][$i] : '',
+                'tmp_name' => isset($bucket['tmp_name'][$i]) ? (string) $bucket['tmp_name'][$i] : '',
+                'error'    => isset($bucket['error'][$i]) ? (int) $bucket['error'][$i] : UPLOAD_ERR_NO_FILE,
+                'size'     => $size,
+            );
+            $handled_upload = wp_handle_upload($one, $upload_overrides);
+            if (isset($handled_upload['error'])) {
+                $err = 'Upload failed: ' . $handled_upload['error'];
+                continue;
+            }
+            $target = $kb_dir . $filename;
+            $uploaded_body = (!empty($handled_upload['file']) && is_readable($handled_upload['file']))
+                ? flosc_fs_get_contents($handled_upload['file'])
+                : false;
+            if (false === $uploaded_body || !function_exists('flosc_write_data_file') || !flosc_write_data_file($target, $uploaded_body)) {
+                if (!empty($handled_upload['file'])) {
+                    $this->delete_file_safely($handled_upload['file']);
+                }
+                $err = 'Upload failed. Check directory permissions.';
+                continue;
+            }
+            $this->delete_file_safely($handled_upload['file']);
+            if (function_exists('flosc_knowledge_base_set_file_access')) {
+                flosc_knowledge_base_set_file_access($kb_id, $filename, $access);
+            }
+            $ok++;
         }
 
-        $this->delete_file_safely($handled_upload['file']);
-
-        // Save access tier (visitor = everyone incl. pre-login; guest = logged-in;
-        // member = full FLOSC access through to Content). Tiers are cumulative.
-        $access = in_array($post['file_access_level'] ?? '', ['visitor', 'guest', 'member'], true)
-            ? $post['file_access_level']
-            : 'visitor';
-        $settings_key = 'flosc_flow_' . $flow_stem;
-        $flow_settings = get_option($settings_key, []);
-        $flow_settings['knowledge_access_' . md5($filename)] = $access;
-        update_option($settings_key, $flow_settings);
-
+        if ($ok === 0) {
+            wp_safe_redirect($this->kb_return_url($ivr, 'error', $err !== '' ? $err : 'Upload failed.'));
+            exit;
+        }
         wp_safe_redirect($this->kb_return_url($ivr, 'uploaded'));
         exit;
     }
@@ -2306,12 +2373,13 @@ The Team',
         $get  = wp_unslash($_GET);
         $ivr  = sanitize_file_name($get['return_ivr'] ?? '');
         $file = sanitize_file_name($get['kb_file'] ?? '');
-        check_admin_referer('flosc_kb_delete_' . $file);
-        if (!current_user_can('manage_options')) wp_die('Unauthorized');
+        $kb_id = $this->kb_request_id($ivr, $get['kb_id'] ?? '');
+        check_admin_referer('flosc_kb_delete_' . $kb_id . '_' . $file);
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('You do not have permission to manage knowledge bases.', 'flosc'));
+        }
 
-        // Delete only from this flow's own basket — never touches another flow's files.
-        $flow_stem = sanitize_key(pathinfo($ivr, PATHINFO_FILENAME));
-        $kb_dir = flosc_flow_kb_dir($flow_stem);
+        $kb_dir = function_exists('flosc_knowledge_base_dir') ? flosc_knowledge_base_dir($kb_id) : '';
         if ('' === $kb_dir) {
             wp_safe_redirect($this->kb_return_url($ivr, 'error', 'The FLOSC uploads storage directory is unavailable.'));
             exit;
@@ -2328,21 +2396,20 @@ The Team',
         $get  = wp_unslash($_GET);
         $ivr  = sanitize_file_name($get['return_ivr'] ?? '');
         $file = sanitize_file_name($get['kb_file'] ?? '');
-        check_admin_referer('flosc_kb_toggle_' . $file);
-        if (!current_user_can('manage_options')) wp_die('Unauthorized');
+        $kb_id = $this->kb_request_id($ivr, $get['kb_id'] ?? '');
+        check_admin_referer('flosc_kb_toggle_' . $kb_id . '_' . $file);
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('You do not have permission to manage knowledge bases.', 'flosc'));
+        }
 
-        $settings_key  = 'flosc_flow_' . sanitize_key(pathinfo($ivr, PATHINFO_FILENAME));
-        $flow_settings = get_option($settings_key, []);
-        $meta_key      = 'knowledge_access_' . md5($file);
-        $current       = $flow_settings[$meta_key] ?? 'visitor';
-        // Legacy public/members values map onto the three tiers.
-        if ($current === 'public')  $current = 'visitor';
-        if ($current === 'members') $current = 'member';
-        // Cycle Visitor → Guest → Member → Visitor.
-        $cycle = ['visitor' => 'guest', 'guest' => 'member', 'member' => 'visitor'];
-        $flow_settings[$meta_key] = $cycle[$current] ?? 'visitor';
-        update_option($settings_key, $flow_settings);
-
+        $current = function_exists('flosc_knowledge_base_file_access')
+            ? flosc_knowledge_base_file_access($kb_id, $file)
+            : 'visitor';
+        $cycle = array('visitor' => 'guest', 'guest' => 'member', 'member' => 'visitor');
+        $next  = $cycle[$current] ?? 'visitor';
+        if (function_exists('flosc_knowledge_base_set_file_access')) {
+            flosc_knowledge_base_set_file_access($kb_id, $file, $next);
+        }
         wp_safe_redirect($this->kb_return_url($ivr, 'toggled'));
         exit;
     }
@@ -2350,13 +2417,14 @@ The Team',
     public function handle_kb_save_edit() {
         $post = wp_unslash($_POST);
         check_admin_referer('flosc_kb_save_edit', 'flosc_kb_save_edit_nonce');
-        if (!current_user_can('manage_options')) wp_die('Unauthorized');
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('You do not have permission to manage knowledge bases.', 'flosc'));
+        }
 
-        $ivr  = sanitize_file_name($post['flosc_return_ivr'] ?? '');
-        $file = sanitize_file_name($post['editing_file'] ?? '');
-        // Edit within this flow's own basket only.
-        $flow_stem = sanitize_key(pathinfo($ivr, PATHINFO_FILENAME));
-        $kb_dir = flosc_flow_kb_dir($flow_stem);
+        $ivr   = sanitize_file_name($post['flosc_return_ivr'] ?? '');
+        $file  = sanitize_file_name($post['editing_file'] ?? '');
+        $kb_id = $this->kb_request_id($ivr, $post['kb_id'] ?? '');
+        $kb_dir = function_exists('flosc_knowledge_base_dir') ? flosc_knowledge_base_dir($kb_id) : '';
         $target = $kb_dir . $file;
 
         if (!$file || '' === $kb_dir || !file_exists($target)) {
@@ -2371,6 +2439,32 @@ The Team',
         }
 
         wp_safe_redirect($this->kb_return_url($ivr, 'saved'));
+        exit;
+    }
+
+    public function handle_kb_create() {
+        $post = wp_unslash($_POST);
+        check_admin_referer('flosc_kb_create', 'flosc_kb_create_nonce');
+        if (!current_user_can('manage_options')) {
+            wp_die(esc_html__('You do not have permission to manage knowledge bases.', 'flosc'));
+        }
+        $ivr   = sanitize_file_name($post['flosc_return_ivr'] ?? '');
+        $label = sanitize_text_field((string) ($post['kb_label'] ?? ''));
+        if ($label === '') {
+            wp_safe_redirect($this->kb_return_url($ivr, 'error', 'Name is required.'));
+            exit;
+        }
+        $id = sanitize_key($label);
+        if ($id === '') {
+            $id = 'kb_' . wp_generate_password(8, false, false);
+        }
+        if (function_exists('flosc_knowledge_base_get') && flosc_knowledge_base_get($id)) {
+            $id = $id . '_' . wp_generate_password(4, false, false);
+        }
+        if (function_exists('flosc_knowledge_base_put')) {
+            flosc_knowledge_base_put(array('id' => $id, 'label' => $label, 'access' => array()));
+        }
+        wp_safe_redirect($this->kb_return_url($ivr, 'created'));
         exit;
     }
 
@@ -4436,9 +4530,8 @@ Example good response:
     }
     
     /**
-     * Call AI with RAG tools (conversation loop)
-        * Anthropic API implementation with tool calling.
-     * NOTE: This method only supports Anthropic's API format for tool calling.
+     * Call AI with RAG tools (conversation loop).
+     * Anthropic only, through wp_ai_client_prompt() + function declarations.
      */
     private function call_ai_with_rag($message, $system_prompt, $tools, $user_context) {
         
@@ -4455,141 +4548,47 @@ Example good response:
         if (empty($api_key)) {
             return "Anthropic API key not configured. Add it in FLOSC Settings → AI Configuration.";
         }
+
+        if ( ! class_exists( 'FLOSC_WP_AI_Client' ) || ! FLOSC_WP_AI_Client::is_provider_registered( 'anthropic' ) ) {
+            $plugin_name = class_exists( 'FLOSC_WP_AI_Client' ) ? FLOSC_WP_AI_Client::plugin_name( 'anthropic' ) : 'AI Provider for Anthropic';
+            $plugin_url  = class_exists( 'FLOSC_WP_AI_Client' ) ? FLOSC_WP_AI_Client::plugin_directory_url( 'anthropic' ) : 'https://wordpress.org/plugins/ai-provider-for-anthropic/';
+            return "RAG tools require {$plugin_name}. Install it from {$plugin_url}, then try again.";
+        }
         
-        // v1.8.7: Use per-flow model key
         $model = flosc_get_setting('ai_anthropic_model', 'claude-sonnet-4-5-20250929');
-        
-        // Conversation loop allows multiple tool calls per user request.
-        
-        $messages = [
-            [
-                'role' => 'user',
-                'content' => $message
-            ]
-        ];
-        
-        $max_iterations = 5; // Prevent infinite loops
-        
-        for ($i = 0; $i < $max_iterations; $i++) {
-            
-            // Call Anthropic API
-            $response = wp_remote_post('https://api.anthropic.com/v1/messages', [
-                'headers' => [
-                    'x-api-key' => $api_key,
-                    'anthropic-version' => '2023-06-01',
-                    'content-type' => 'application/json',
-                ],
-                'body' => wp_json_encode([
-                    'model' => $model,
-                    'max_tokens' => 2000,
-                    'system' => $system_prompt,
-                    'tools' => $tools,
-                    'messages' => $messages,
-                ]),
-                'timeout' => 30,
-            ]);
-            
-            if (is_wp_error($response)) {
-                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG Error: " . $response->get_error_message());
-                return "Sorry, I'm having trouble connecting. Please try again.";
-            }
-            
-            $body = json_decode(wp_remote_retrieve_body($response), true);
-            
-            if (!isset($body['content'])) {
-                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Invalid API response - " . wp_json_encode($body));
-                return "Sorry, I encountered an error. Please try again.";
-            }
-            
-            $stop_reason = $body['stop_reason'] ?? 'end_turn';
-            
-            // Check if AI is done or wants to use tools
-            if ($stop_reason === 'end_turn') {
-                // AI is done - extract and return text response
-                return $this->extract_text_from_response($body['content']);
-            }
-            
-            if ($stop_reason === 'tool_use') {
-                // AI wants to use tools!
-                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: AI requested tool use");
-                
-                // Add AI's response to conversation
-                $messages[] = [
-                    'role' => 'assistant',
-                    'content' => $body['content']
-                ];
-                
-                // Execute tools and add results
-                $tool_results = $this->execute_tools_from_response(
-                    $body['content'],
-                    $user_context['access_level']
+        $access_level = $user_context['access_level'] ?? 'visitor';
+
+        $result = FLOSC_WP_AI_Client::generate_with_tools(
+            array(
+                'provider'      => 'anthropic',
+                'message'       => $message,
+                'system_prompt' => $system_prompt,
+                'history'       => array(),
+                'model'         => (string) $model,
+                'max_tokens'    => 2000,
+                'tools'         => is_array( $tools ) ? $tools : array(),
+            ),
+            function ( $tool_name, $tool_input, $tool_id ) use ( $access_level ) {
+                unset( $tool_id );
+                return $this->rag_manager->execute_tool(
+                    $tool_name,
+                    is_array( $tool_input ) ? $tool_input : array(),
+                    $access_level
                 );
-                
-                $messages[] = [
-                    'role' => 'user',
-                    'content' => $tool_results
-                ];
-                
-                // Continue loop - AI will process tool results
-                continue;
             }
-            
-            // Unexpected stop reason
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Unexpected stop reason: {$stop_reason}");
-            break;
-        }
-        
-        // If we hit max iterations
-        return "I encountered an issue processing your request. Please try again.";
-    }
-    
-    /**
-     * Extract text response from AI content blocks
-     */
-    private function extract_text_from_response($content_blocks) {
-        $text = '';
-        
-        foreach ($content_blocks as $block) {
-            if ($block['type'] === 'text') {
-                $text .= $block['text'];
+        );
+
+        if ( is_wp_error( $result ) ) {
+            if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+                flosc_log( 'FLOSC RAG Error: ' . $result->get_error_message() );
             }
+            return "Sorry, I'm having trouble connecting. Please try again.";
         }
-        
-        return $text;
+
+        $text = isset( $result['text'] ) ? (string) $result['text'] : '';
+        return $text !== '' ? $text : "I encountered an issue processing your request. Please try again.";
     }
-    
-    /**
-     * Execute tools requested by AI
-     */
-    private function execute_tools_from_response($content_blocks, $access_level) {
-        
-        $tool_results = [];
-        
-        foreach ($content_blocks as $block) {
-            if ($block['type'] === 'tool_use') {
-                
-                $tool_name = $block['name'];
-                $tool_input = $block['input'];
-                $tool_use_id = $block['id'];
-                
-                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Executing tool '{$tool_name}' with input: " . wp_json_encode($tool_input));
-                
-                // Execute the tool
-                $result = $this->rag_manager->execute_tool($tool_name, $tool_input, $access_level);
-                
-                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Tool result length: " . strlen($result) . " chars");
-                
-                // Format result for AI
-                $tool_results[] = [
-                    'type' => 'tool_result',
-                    'tool_use_id' => $tool_use_id,
-                    'content' => $result
-                ];
-            }
-        }
-        
-        return $tool_results;
-    }
+
     /**
      * Handle quiz submission
      * 
@@ -4979,9 +4978,9 @@ Example good response:
         $identity = $this->get_floscflow_identity();
         $offering_title = trim((string) ($identity['title'] ?? ''));
         $offering_tagline = trim((string) ($identity['tagline'] ?? ''));
-        $assistant_name = function_exists('flosc_visitor_assistant_name')
-            ? flosc_visitor_assistant_name()
-            : trim((string) ($identity['name'] ?? ''));
+        $assistant_name = function_exists('flosc_personality_name')
+            ? flosc_personality_name()
+            : ( function_exists('flosc_visitor_assistant_name') ? flosc_visitor_assistant_name() : '' );
         if ($assistant_name === '') {
             $assistant_name = 'our course';
         }
@@ -9620,9 +9619,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 'provider' => 'ivr',
                 'message'  => "Provider is IVR (scripted only). No external API call was made.\n\n"
                     . "1. Primary AI Provider → Anthropic, OpenAI, xAI Grok, or Gemini\n"
-                    . "2. Paste the API key for that provider\n"
-                    . "3. Click Save Settings (bottom of this page)\n"
-                    . "4. Confirm the URL has saved=1, then Test again\n\n"
+                    . "2. For OpenAI / Anthropic / Gemini, activate that official AI Provider plugin\n"
+                    . "3. Paste the API key for that provider in FLOSC\n"
+                    . "4. Click Save Settings (bottom of this page)\n"
+                    . "5. Confirm the URL has saved=1, then Test again\n\n"
                     . "Expected success line: Provider: xai (or openai / anthropic / gemini), not ivr.",
             ]);
         }
@@ -9646,10 +9646,10 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             : '';
 
         $endpoint = [
-            'openai'    => 'https://api.openai.com/v1/chat/completions',
-            'anthropic' => 'https://api.anthropic.com/v1/messages',
-            'xai'       => 'https://api.x.ai/v1/chat/completions',
-            'gemini'    => 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
+            'openai'    => 'wp_ai_client_prompt() → AI Provider for OpenAI',
+            'anthropic' => 'wp_ai_client_prompt() → AI Provider for Anthropic',
+            'xai'       => 'FLOSC hop → xAI chat completions',
+            'gemini'    => 'wp_ai_client_prompt() → AI Provider for Google',
         ];
         $endpoint_url = $endpoint[$provider] ?? '';
 

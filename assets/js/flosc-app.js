@@ -427,7 +427,7 @@ class floscApp {
             if (!this._restoredVisitorMessages && this.config.guestLinkRemaining !== null && this.config.guestLinkRemaining !== undefined) {
                 const days = this.config.guestDaysRemaining;
                 const upgradeUrl = this.config.guestLinkUpgradeUrl || '#';
-                const productLabel = String(this.config?.productName || this.config?.identity?.name || '').trim() || 'this program';
+                const productLabel = String(this.config?.personalityName || this.config?.productName || '').trim() || 'this program';
                 const defaultGuestLinkName = `Complimentary ${productLabel} Guest Access Link`;
                 const daysStr = (days !== null && days !== undefined)
                     ? ` You have <strong>${days}</strong> day${days !== 1 ? 's' : ''} of guest access remaining — we hope you are enjoying your complimentary guest access! <a href="${upgradeUrl}">Upgrade for full access here.</a>`
@@ -1531,7 +1531,7 @@ class floscApp {
             session_minutes: 0,
             
             // Identity info (from FLOSC_CONFIG, set by floscAdmin)
-            product_name: this.config.productName || this.config.personalityName || this.config.identity?.name || 'this program',
+            product_name: this.config.personalityName || this.config.productName || 'this program',
             title: (this.config.identity && this.config.identity.title) ? this.config.identity.title : '',
             tagline: (this.config.identity && this.config.identity.tagline) ? this.config.identity.tagline : '',
             price: this.config.identity?.price || '',
@@ -1931,7 +1931,7 @@ class floscApp {
             // If no IVR welcome found and no AI, show hardcoded fallback
             if (!welcomeShown) {
                 this.log('FLOSC: Using fallback welcome');
-                const productName = this.config.productName || this.config.personalityName || this.config.identity?.name || 'FLOSC';
+                const productName = this.config.personalityName || this.config.productName || 'FLOSC';
                 const fallbackWelcome = this.state === 'visitor'
                     ? `Hi! Welcome to ${productName}. How can I help you today?`
                     : `Welcome back, ${this.ivr.context.name}! How can I help you today?`;
@@ -2838,7 +2838,7 @@ class floscApp {
             return baseContent;
         }
 
-        const safeProductName = productName || this.config.productName || this.config.personalityName || this.config.identity?.name || 'FLOSC';
+        const safeProductName = productName || this.config.personalityName || this.config.productName || 'FLOSC';
         return `${baseContent}\n<div class="flosc-welcome-badge-wrap"><img src="${badgeUrl}" alt="${safeProductName}" class="flosc-welcome-badge"></div>`;
     }
 
@@ -2849,7 +2849,7 @@ class floscApp {
      * Falls back to IVR content (or hardcoded) if the API call fails.
      */
     async _generateAIWelcome(ivrWelcomeMsg) {
-        const productName = this.config.productName || this.config.personalityName || this.config.identity?.name || 'FLOSC';
+        const productName = this.config.personalityName || this.config.productName || 'FLOSC';
         const badgeUrl = this._getValidBadgeUrl();
         const badge = badgeUrl ? `<div class="flosc-welcome-badge-wrap"><img src="${badgeUrl}" alt="${productName}" class="flosc-welcome-badge"></div>` : '';
         // Flow-neutral welcome: no "badge" and no learning-specific framing (those
@@ -2924,7 +2924,7 @@ class floscApp {
 
         const isWelcomeMessage = !!(msg && msg.name && String(msg.name).includes('welcome'));
         if (this.state === 'visitor' && isWelcomeMessage && !/flosc-welcome-badge/i.test(content)) {
-            const productName = this.config.productName || this.config.personalityName || this.config.identity?.name || 'FLOSC';
+            const productName = this.config.personalityName || this.config.productName || 'FLOSC';
             const badgeUrl = this._getValidBadgeUrl();
             if (badgeUrl) {
                 content += `\n<div class="flosc-welcome-badge-wrap"><img src="${badgeUrl}" alt="${productName}" class="flosc-welcome-badge"></div>`;
@@ -3266,7 +3266,7 @@ class floscApp {
 
     /** Short denial when this flow has no quiz. */
     denyQuizOnThisFlow(message = '') {
-        const name = String(this.config?.productName || this.config?.identity?.name || 'this chat').trim();
+        const name = String(this.config?.personalityName || this.config?.productName || 'this chat').trim();
         const msg = `${name} doesn’t include a quiz — I can help with other questions here.`;
         this.addMessage('assistant', msg, false);
         if (message) {
@@ -3297,7 +3297,7 @@ class floscApp {
 
     /** Short denial when a non-lesson flow receives a lesson ask. */
     denyLessonsOnThisFlow(message = '') {
-        const name = String(this.config?.productName || this.config?.identity?.name || 'this chat').trim();
+        const name = String(this.config?.personalityName || this.config?.productName || 'this chat').trim();
         const msg = `${name} doesn’t include lessons — I can help with other questions here.`;
         this.addMessage('assistant', msg, false);
         if (message) {
@@ -4644,8 +4644,8 @@ class floscApp {
             case 'logout': {
                 // Brand-neutral: product name from flow Identity params, never hard-coded brand.
                 const productLabel = String(
-                    this.config?.productName
-                    || this.config?.identity?.name
+                    this.config?.personalityName
+                    || this.config?.productName
                     || this.config?.appName
                     || ''
                 ).trim();
@@ -5573,7 +5573,7 @@ class floscApp {
             escapeHatchShown: false,
         };
 
-        const productForQuiz = String(this.config?.productName || this.config?.identity?.name || '').trim();
+        const productForQuiz = String(this.config?.personalityName || this.config?.productName || '').trim();
         this.quiz = {
             active: true,
             // Flow-configured only — never invent a product quiz id when unset.
@@ -6130,7 +6130,7 @@ class floscApp {
 
                     if (action === 'buy') {
                         this.addMessage('assistant', "Let\u2019s get you set up with full access. \uD83C\uDF89");
-                        const productForAuth = String(this.config?.productName || this.config?.identity?.name || '').trim();
+                        const productForAuth = String(this.config?.personalityName || this.config?.productName || '').trim();
                         this.config.authEscapeTitle = productForAuth
                             ? `Create Your ${productForAuth} Account`
                             : 'Create Your Account';
@@ -6959,7 +6959,7 @@ class floscApp {
         const configKey = modal?.dataset?.configKey || 'authModal';
         const loadingText = this.config[configKey + 'LoadingText'] || 'Sending link...';
         const buttonText = this.config[configKey + 'ButtonText'] || 'Continue with Email';
-        const productForLink = String(this.config?.productName || this.config?.identity?.name || '').trim();
+        const productForLink = String(this.config?.personalityName || this.config?.productName || '').trim();
         const defaultGuestLinkName = productForLink
             ? `Complimentary ${productForLink} Guest Access Link`
             : 'Complimentary Guest Access Link';
@@ -7735,7 +7735,7 @@ class floscApp {
         );
 
         if (hasAssessment) {
-            const quizProduct = String(this.config?.productName || this.config?.identity?.name || 'This flow').trim();
+            const quizProduct = String(this.config?.personalityName || this.config?.productName || 'This flow').trim();
             const html = `
                 <div class="flosc-quiz-topics">
                     <h3>${this.escapeHtml(quizProduct)} — Sample topics (replace in Quiz admin)</h3>
@@ -11686,7 +11686,7 @@ Purchased: ${ctx.purchased}
             || 'there'
         ).trim() || 'there';
         const email = String(this.user?.email || this.config.userEmail || '');
-        const flowName = String(this.config.flowDisplayName || this.config.productName || 'FLOSC');
+        const flowName = String(this.config.flowDisplayName || 'FLOSC');
         const map = {
             '{NickName}': nick,
             '{name}': nick,
@@ -13163,9 +13163,8 @@ Purchased: ${ctx.purchased}
 
                         // Welcome message from flow identity + plan pricing (not brand hardcodes).
                         const productName = (result.product_name
-                            || this.config.productName
                             || this.config.personalityName
-                            || this.config.identity?.name
+                            || this.config.productName
                             || 'your membership').trim();
                         const planLabel = selectedPlan === 'yearly'
                             ? (container.dataset.floscYearlyLabel || result.amount || 'yearly')

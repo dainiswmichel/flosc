@@ -1324,73 +1324,73 @@
       personality_name: (state.soul && state.soul.name) || "",
 
       anthropic: {
-        api: "POST https://api.anthropic.com/v1/messages",
+        api: "POST /v1/messages",
         field: "system",
         structure: "Top-level string, separate from messages array",
         system: text
       },
       openai: {
-        api: "POST https://api.openai.com/v1/responses",
+        api: "POST /v1/responses",
         field: "instructions",
         structure: "Top-level string, separate from input",
         instructions: text
       },
       xai: {
-        api: "POST https://api.x.ai/v1/responses",
+        api: "POST /v1/responses",
         field: "input[].role=system",
         structure: "System message item in input array",
         input: [{ role: "system", content: text }]
       },
       gemini: {
-        api: "POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+        api: "POST /v1beta/models/{model}:generateContent",
         field: "systemInstruction",
         structure: "Top-level object with parts array, separate from contents",
         systemInstruction: { parts: [{ text: text }] }
       },
       mistral: {
-        api: "POST https://api.mistral.ai/v1/chat/completions",
+        api: "POST /v1/chat/completions",
         field: "messages[].role=system",
         structure: "First item in messages array",
         messages: [{ role: "system", content: text }]
       },
       cohere: {
-        api: "POST https://api.cohere.ai/v2/chat",
+        api: "POST /v2/chat",
         field: "messages[].role=system",
         structure: "First item in messages array (v2 API)",
         messages: [{ role: "system", content: text }]
       },
       meta_together: {
-        api: "POST https://api.together.ai/v1/chat/completions",
+        api: "POST /v1/chat/completions",
         field: "messages[].role=system",
         structure: "First item in messages array (OpenAI-compatible)",
         messages: [{ role: "system", content: text }]
       },
       meta_fireworks: {
-        api: "POST https://api.fireworks.ai/inference/v1/chat/completions",
+        api: "POST /v1/chat/completions",
         field: "messages[].role=system",
         structure: "First item in messages array (OpenAI-compatible)",
         messages: [{ role: "system", content: text }]
       },
       aws_bedrock: {
-        api: "POST https://bedrock-runtime.{region}.amazonaws.com/model/{modelId}/invoke",
+        api: "POST /model/{modelId}/invoke (Bedrock runtime)",
         field: "system",
         structure: "Top-level string, separate from messages (Claude on Bedrock)",
         system: text
       },
       azure_openai: {
-        api: "POST https://{resource}.openai.azure.com/openai/deployments/{deployment}/chat/completions?api-version={ver}",
+        api: "POST /openai/deployments/{deployment}/chat/completions?api-version={ver}",
         field: "messages[].role=system",
         structure: "First item in messages array. Use role 'developer' for o1+ models.",
         messages: [{ role: "system", content: text }]
       },
       openrouter: {
-        api: "POST https://openrouter.ai/api/v1/chat/completions",
+        api: "POST /api/v1/chat/completions",
         field: "messages[].role=system",
         structure: "First item in messages array (OpenAI-compatible)",
         messages: [{ role: "system", content: text }]
       },
       perplexity: {
-        api: "POST https://api.perplexity.ai/chat/completions",
+        api: "POST /chat/completions",
         field: "messages[].role=system",
         structure: "First item in messages array (Sonar / Chat Completions API)",
         messages: [{ role: "system", content: text }]
@@ -1871,7 +1871,7 @@
         field("label", "Library label", "", "input") +
         field("version", "Profile version", "", "input") +
         "</div>" +
-        field("name", "Name", "who answers the identity probe", "input") +
+        field("name", "Name", "chat header; this personality introduces itself as this name", "input") +
         field("role", "Role", "one function, not a trait salad", "textarea") +
         field("identity_lock", "Identity lock", "", "textarea") +
         field("identity_probe_yes", "If asked “Is this [name]?”", "", "input") +

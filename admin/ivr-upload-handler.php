@@ -55,45 +55,60 @@ if ( ! function_exists( 'flosc_portability_collect_kit_files' ) ) {
 	/**
 	 * Normalize multi or single file upload into list of {name,tmp,error,size,ext}.
 	 *
+	 * @param array<string,mixed> $files Uploaded files from the nonce-verified handler.
 	 * @return array<int,array<string,mixed>>
 	 */
-	function flosc_portability_collect_kit_files() {
-		$out = array();
+	function flosc_portability_collect_kit_files( $files ) {
+		$out   = array();
+		$files = is_array( $files ) ? $files : array();
 
-		// Multi: flosc_kit_files[] (PHP may give string for a single file).
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- caller verifies nonce.
-		if ( ! empty( $_FILES['flosc_kit_files']['name'] ) ) {
-			$names = $_FILES['flosc_kit_files']['name'];
-			$tmps  = $_FILES['flosc_kit_files']['tmp_name'] ?? array();
-			$errs  = $_FILES['flosc_kit_files']['error'] ?? array();
-			$sizes = $_FILES['flosc_kit_files']['size'] ?? array();
-			if ( ! is_array( $names ) ) {
-				$names = array( $names );
-				$tmps  = array( $tmps );
-				$errs  = array( $errs );
-				$sizes = array( $sizes );
+		$flosc_kit_names = isset( $files['flosc_kit_files']['name'] )
+			? map_deep( wp_unslash( $files['flosc_kit_files']['name'] ), 'sanitize_file_name' )
+			: array();
+		if ( ! empty( $flosc_kit_names ) ) {
+			$flosc_kit_tmps  = isset( $files['flosc_kit_files']['tmp_name'] )
+				? map_deep( wp_unslash( $files['flosc_kit_files']['tmp_name'] ), 'sanitize_text_field' )
+				: array();
+			$flosc_kit_errs  = isset( $files['flosc_kit_files']['error'] )
+				? map_deep( wp_unslash( $files['flosc_kit_files']['error'] ), 'absint' )
+				: array();
+			$flosc_kit_sizes = isset( $files['flosc_kit_files']['size'] )
+				? map_deep( wp_unslash( $files['flosc_kit_files']['size'] ), 'absint' )
+				: array();
+			if ( ! is_array( $flosc_kit_names ) ) {
+				$flosc_kit_names = array( $flosc_kit_names );
+				$flosc_kit_tmps  = array( $flosc_kit_tmps );
+				$flosc_kit_errs  = array( $flosc_kit_errs );
+				$flosc_kit_sizes = array( $flosc_kit_sizes );
 			}
-			foreach ( $names as $i => $name ) {
+			foreach ( $flosc_kit_names as $flosc_kit_i => $flosc_kit_name ) {
 				$out[] = array(
-					'name'  => isset( $name ) ? wp_unslash( (string) $name ) : '',
-					'tmp'   => (string) ( $tmps[ $i ] ?? '' ),
-					'error' => (int) ( $errs[ $i ] ?? UPLOAD_ERR_NO_FILE ),
-					'size'  => (int) ( $sizes[ $i ] ?? 0 ),
-					'ext'   => strtolower( (string) pathinfo( (string) $name, PATHINFO_EXTENSION ) ),
+					'name'  => (string) $flosc_kit_name,
+					'tmp'   => (string) ( $flosc_kit_tmps[ $flosc_kit_i ] ?? '' ),
+					'error' => (int) ( $flosc_kit_errs[ $flosc_kit_i ] ?? UPLOAD_ERR_NO_FILE ),
+					'size'  => (int) ( $flosc_kit_sizes[ $flosc_kit_i ] ?? 0 ),
+					'ext'   => strtolower( (string) pathinfo( (string) $flosc_kit_name, PATHINFO_EXTENSION ) ),
 				);
 			}
 			return $out;
 		}
 
-		// Legacy single: ivr_file_upload
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- caller verifies nonce.
-		if ( ! empty( $_FILES['ivr_file_upload']['name'] ) ) {
+		$flosc_single_name = isset( $files['ivr_file_upload']['name'] )
+			? sanitize_file_name( wp_unslash( (string) $files['ivr_file_upload']['name'] ) )
+			: '';
+		if ( $flosc_single_name !== '' ) {
 			$out[] = array(
-				'name'  => wp_unslash( (string) $_FILES['ivr_file_upload']['name'] ),
-				'tmp'   => (string) ( $_FILES['ivr_file_upload']['tmp_name'] ?? '' ),
-				'error' => (int) ( $_FILES['ivr_file_upload']['error'] ?? UPLOAD_ERR_NO_FILE ),
-				'size'  => (int) ( $_FILES['ivr_file_upload']['size'] ?? 0 ),
-				'ext'   => strtolower( (string) pathinfo( (string) $_FILES['ivr_file_upload']['name'], PATHINFO_EXTENSION ) ),
+				'name'  => $flosc_single_name,
+				'tmp'   => isset( $files['ivr_file_upload']['tmp_name'] )
+					? sanitize_text_field( wp_unslash( (string) $files['ivr_file_upload']['tmp_name'] ) )
+					: '',
+				'error' => isset( $files['ivr_file_upload']['error'] )
+					? absint( $files['ivr_file_upload']['error'] )
+					: UPLOAD_ERR_NO_FILE,
+				'size'  => isset( $files['ivr_file_upload']['size'] )
+					? absint( $files['ivr_file_upload']['size'] )
+					: 0,
+				'ext'   => strtolower( (string) pathinfo( $flosc_single_name, PATHINFO_EXTENSION ) ),
 			);
 		}
 
@@ -598,6 +613,7 @@ if ( ! function_exists( 'flosc_portability_run_wxr_import' ) ) {
 		}
 
 		if ( ! defined( 'WP_LOAD_IMPORTERS' ) ) {
+			// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedConstantFound -- WordPress core importer bootstrap flag.
 			define( 'WP_LOAD_IMPORTERS', true );
 		}
 		if ( ! function_exists( 'wordpress_importer_init' ) && function_exists( 'get_plugins' ) ) {
@@ -793,7 +809,7 @@ if ( ! function_exists( 'flosc_admin_handle_ivr_file_upload' ) ) {
 		$max_media = 10;
 		$media_ext = flosc_portability_allowed_media_ext();
 
-		$files      = flosc_portability_collect_kit_files();
+		$files      = flosc_portability_collect_kit_files( $_FILES );
 		$md         = null;
 		$tsv_list   = array();
 		$wxr_list   = array();

@@ -25,7 +25,7 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * **Offer Sequencing** - Show payment offers at the ideal moment in the visitor journey
 * **DA1 Catalogs** - Attach structured TSV catalogs to flows so floscAdmins can serve curated, flow-scoped datasets without hard-coding project-specific content
 * **Locally Stored** - All visitor data stays in your WordPress database by default
-* **AI-Ready** - Bring-your-own-key chat with Anthropic, OpenAI, xAI, or Gemini (or IVR scripted only). Speech-to-text: AssemblyAI, OpenAI Whisper, or a custom endpoint.
+* **AI-Ready** - Bring-your-own-key chat with Anthropic, OpenAI, xAI, or Gemini (or IVR scripted only). OpenAI, Anthropic, and Gemini chat use the WordPress 7.0 AI Client — install the official provider plugin for the agent this flow attaches. Speech-to-text: AssemblyAI, OpenAI Whisper, or a custom endpoint.
 * **WordPress Native** - Built as a standard WordPress plugin; no external platform required
 
 = Included Features =
@@ -52,7 +52,7 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 = How It Works =
 
 1. **Configure IVR Messages** - Expanding on interactive voice response (IVR) automated telephone system technology, in which callers receive and provide information by using voice or menu inputs, floscAdmins define chatbot conversational input-response flows: welcome messages, quiz questions, conditional branches, offers, and content unlock paths -- all while drawing from your WordPress content and configurable content database. 
-2. **Set Up Your AI Provider** - Add your own provider API key (Anthropic, OpenAI, xAI, or Gemini) for natural conversational responses.
+2. **Set Up Your AI Provider** - Attach Anthropic, OpenAI, xAI, or Gemini, paste your own API key, and (for OpenAI / Anthropic / Gemini) install that provider's official WordPress plugin. IVR stays scripted with no plugin.
 3. **Build Your Flow** - Create quizzes, define conditions, add payment offers, and unlock content pages
 4. **Publish** - Visitors access the flow and experience your full conversational sales journey on your WordPress site
 5. **Review Results** - Track quiz completions, offer views, and conversions directly in WordPress
@@ -61,7 +61,7 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 
 * Requires WordPress 7.0.4+ (see header Requires at least)
 * No external services required for core functionality (flows run locally)
-* BYOK AI integration (Anthropic, OpenAI, xAI, Gemini) plus IVR scripted mode
+* BYOK AI: one WordPress AI Client (`wp_ai_client_prompt()`), plus official provider plugins for OpenAI, Anthropic, and Google. xAI has no official plugin yet (FLOSC hop). IVR is scripted and calls none of them.
 * Payment integration
 * REST API for programmatic access
 * Unlimited FloscFlows; a single FLOSC install can serve chatbots across multiple domains
@@ -83,6 +83,7 @@ FLOSC is free software, released under the GNU General Public License, version 3
 3. Navigate to **Settings → FLOSC** to configure your first flow
 4. Review the pre-loaded example flows to see how flows are structured
 5. Create your first visitor page and embed your flow
+6. If a flow uses OpenAI, Anthropic, or Gemini chat, install only that provider's official plugin: [AI Provider for OpenAI](https://wordpress.org/plugins/ai-provider-for-openai/), [AI Provider for Anthropic](https://wordpress.org/plugins/ai-provider-for-anthropic/), or [AI Provider for Google](https://wordpress.org/plugins/ai-provider-for-google/). IVR-only and xAI flows do not need those plugins.
 
 = First Run Setup =
 
@@ -90,7 +91,7 @@ After activating:
 1. Go to **Settings → FLOSC → IVR Messages** to review example conversations
 2. Create a new page and select a flow from the page editor
 3. Publish the page and visit it as a visitor to test your flow
-4. Add your own AI provider key in **Settings → FLOSC → AI Provider** for conversational responses
+4. Add your own AI provider key in **Settings → FLOSC → AI**. For OpenAI, Anthropic, or Gemini, also activate the matching official AI Provider plugin. Paste the key in FLOSC (this flow or All Flows), not in Settings → Connectors.
 
 == Frequently Asked Questions ==
 
@@ -98,7 +99,7 @@ After activating:
 
 No. FLOSC flows run entirely on your WordPress site by default. Your visitor data stays in your database.
 
-Optional: You can bring your own AI provider key (Anthropic, OpenAI, xAI, or Gemini) for conversational responses. Speech-to-text uses AssemblyAI, OpenAI Whisper, or a custom endpoint.
+Optional: You can bring your own AI provider key (Anthropic, OpenAI, xAI, or Gemini) for conversational responses. OpenAI, Anthropic, and Gemini chat go through the WordPress AI Client and the matching official AI Provider plugin. Speech-to-text uses AssemblyAI, OpenAI Whisper, or a custom endpoint.
 
 Without an AI API, the chatbot is a lot like a phone Interactive Voice Response (IVR) system. Instead of "callers," the chatbot has visitors, provides info, and users can input info that the IVR structure knows how to respond to. 
 
@@ -152,39 +153,50 @@ Deleting the plugin from Plugins runs uninstall.php. That removes FLOSC options,
 
 In Settings → FLOSC → AI:
 1. Choose your chat provider: Anthropic, OpenAI, xAI, Gemini, or IVR (scripted only)
-2. Paste your API key (BYOK — you maintain your own account), or save it under All Flows AI API Management
-3. Test the connection
-4. FLOSC will route conversational responses through that provider, using this flow’s attached personality profile as system text
+2. If you chose OpenAI, Anthropic, or Gemini, install and activate only that provider's official WordPress plugin (AI Provider for OpenAI, AI Provider for Anthropic, or AI Provider for Google). You do not need all three.
+3. Paste your API key (BYOK — you maintain your own account), or save it under All Flows AI API Management
+4. Test the connection
+5. FLOSC routes OpenAI, Anthropic, and Gemini through the one WordPress AI Client (the matching official plugin owns vendor HTTP), and xAI through FLOSC’s own hop, using this flow’s attached personality as system text
+
+= Is there one WordPress AI Client or three? =
+
+One client. WordPress 7.0 ships a single AI Client (`wp_ai_client_prompt()`). It does not bundle vendors. Three official plugins register with that one client: AI Provider for OpenAI, AI Provider for Anthropic, and AI Provider for Google. FLOSC calls the client; those plugins own the vendor HTTP. A flow attaches one provider. A developer testing all three activates all three plugins. IVR uses none. xAI is still a FLOSC hop because WordPress has no official xAI plugin.
+
+= Do I have to install all three official AI Provider plugins? =
+
+No. Install only the plugin for the provider this flow attaches. IVR-only sites need none of them. xAI has no official WordPress provider plugin yet.
+
+= Where do I put the API key — FLOSC or Settings → Connectors? =
+
+Put it in FLOSC (this flow's AI tab, or All Flows AI API Management). FLOSC binds that key onto the WordPress AI Client for the prompt. Do not rely on Settings → Connectors for FLOSC chat.
 
 
 == External Services ==
 
 FLOSC core flow logic runs locally in WordPress. The services below power specific FLOSC features. When those features are enabled, calling these services is intentional and required for full functionality.
 
-1. OpenAI (for AI chat and OpenAI Whisper speech-to-text)
-Endpoint examples: https://api.openai.com/v1/chat/completions, https://api.openai.com/v1/responses, https://api.openai.com/v1/audio/transcriptions
-Purpose: generate real-time AI chat responses and transcribe audio when OpenAI Whisper is selected as the STT provider.
-Data sent: visitor prompt text, conversation context, model parameters, and uploaded audio payloads for transcription.
+1. OpenAI (via WordPress AI Client + AI Provider for OpenAI, and FLOSC Whisper STT)
+Chat: when this flow attaches OpenAI, FLOSC sends prompts through `wp_ai_client_prompt()` to the official AI Provider for OpenAI plugin, which communicates with OpenAI. FLOSC does not call OpenAI chat endpoints itself.
+Whisper: when OpenAI Whisper is selected as the STT provider, FLOSC transcribes audio at https://api.openai.com/v1/audio/transcriptions (the official OpenAI provider plugin does not implement transcription).
+Data sent: visitor prompt text, conversation context, and model parameters for chat; uploaded audio payloads for Whisper.
 Service terms: https://openai.com/policies/terms-of-use
 Privacy policy: https://openai.com/policies/privacy-policy
 
-2. Anthropic (for AI chat responses)
-Endpoint: https://api.anthropic.com/v1/messages
-Purpose: generate real-time AI chat responses when Anthropic is selected as the AI provider.
-Data sent: visitor prompt text, conversation context, and model parameters.
+2. Anthropic (via WordPress AI Client + AI Provider for Anthropic)
+When this flow attaches Anthropic, FLOSC sends prompts (including RAG tool declarations) through `wp_ai_client_prompt()` to the official AI Provider for Anthropic plugin, which communicates with Anthropic. FLOSC does not call Anthropic endpoints itself.
+Data sent: visitor prompt text, conversation context, model parameters, and tool results when RAG is active.
 Service terms: https://www.anthropic.com/legal/consumer-terms
 Privacy policy: https://www.anthropic.com/legal/privacy
 
 3. xAI (for AI chat responses)
 Endpoint: https://api.x.ai/v1/chat/completions
-Purpose: generate real-time AI chat responses when xAI/Grok is selected as the AI provider.
+Purpose: generate real-time AI chat responses when xAI/Grok is selected as the AI provider. There is no official WordPress xAI provider plugin yet, so this hop is FLOSC-owned.
 Data sent: visitor prompt text, conversation context, and model parameters.
 Service terms: https://x.ai/legal/terms-of-service
 Privacy policy: https://x.ai/legal/privacy-policy
 
-4. Google Gemini (for AI chat responses)
-Endpoint example: https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
-Purpose: generate real-time AI chat responses when Gemini is selected as the AI provider. The compiled personality profile is sent as systemInstruction.
+4. Google Gemini (via WordPress AI Client + AI Provider for Google)
+When this flow attaches Gemini, FLOSC sends prompts through `wp_ai_client_prompt()` to the official AI Provider for Google plugin, which communicates with Google. FLOSC does not call Gemini generateContent itself. The compiled personality profile is sent as the system instruction.
 Data sent: visitor prompt text, conversation context, and model parameters.
 Service terms: https://developers.google.com/terms
 Privacy policy: https://policies.google.com/privacy
@@ -291,7 +303,8 @@ Production-ready 8.x release with guided IVR flows, offer gating, BYOK AI suppor
 = 8.0.0 =
 * Initial stable 8.0.0 release for WordPress 7.0.4+ and PHP 7.4+
 * Guided flow architecture with IVR routes, quiz branching, and offer/content gating
-* Optional integrations for AI providers (BYOK), payment providers (including Stripe, PayPal, and ClickBank), and social sign-in providers
+* Optional BYOK chat: one WordPress AI Client; official provider plugins for OpenAI, Anthropic, and Google; FLOSC hop for xAI; IVR scripted
+* Payment providers (including Stripe, PayPal, and ClickBank) and social sign-in
 * Included admin documentation updates for WordPress.org submission
 
 == Code standard ==

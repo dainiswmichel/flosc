@@ -14,9 +14,7 @@ if (!defined('ABSPATH')) exit;
 wp_enqueue_media();
 
 // Parent settings.php defines $flow_settings; never assume it when included alone.
-if (!isset($flow_settings) || !is_array($flow_settings)) {
-    $flow_settings = [];
-}
+$flosc_flow_settings = (isset($flow_settings) && is_array($flow_settings)) ? $flow_settings : [];
 
 $flosc_profile_bar = get_option('flosc_profile_bar', [
     'visitor' => ['name' => 'Visitor', 'badge' => 'Hope you enjoy our chat :-)', 'icon' => '👋', 'icon_url' => '', 'avatar_radius' => '8px', 'show_upgrade' => true, 'upgrade_label' => 'Upgrade'],
@@ -24,7 +22,7 @@ $flosc_profile_bar = get_option('flosc_profile_bar', [
     'member'  => ['name' => '', 'badge' => 'Member', 'icon' => '', 'icon_url' => '', 'avatar_radius' => '8px', 'show_upgrade' => false, 'upgrade_label' => 'Upgrade'],
 ]);
 
-$flosc_legacy_avatar_radius = $flow_settings['avatar_radius'] ?? '8px';
+$flosc_legacy_avatar_radius = $flosc_flow_settings['avatar_radius'] ?? '8px';
 $flosc_profile_bar['visitor']['avatar_radius'] = $flosc_profile_bar['visitor']['avatar_radius'] ?? $flosc_legacy_avatar_radius;
 $flosc_profile_bar['guest']['avatar_radius'] = $flosc_profile_bar['guest']['avatar_radius'] ?? '8px';
 $flosc_profile_bar['member']['avatar_radius'] = $flosc_profile_bar['member']['avatar_radius'] ?? '8px';

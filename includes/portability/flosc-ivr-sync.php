@@ -449,6 +449,7 @@ function flosc_portable_settings_bootstrap_allowlist() {
         'ai_personality_role',
         'ai_personality_traits',
         'personality_library_id',
+        'knowledge_base_ids',
         'ai_prompt_content',
         'ai_prompt_freeline',
         'ai_prompt_login',

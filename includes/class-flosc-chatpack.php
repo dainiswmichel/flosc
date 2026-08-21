@@ -454,9 +454,11 @@ class FLOSC_Chatpack {
             : trim( (string) ( $identity['tagline'] ?? '' ) );
         // Fix 12: Library attach (one personality) or flow bag / legacy keys.
         $res = function_exists( 'flosc_personality_library_resolve_field' ) ? 'flosc_personality_library_resolve_field' : null;
-        $ai_name    = $res
-            ? call_user_func( $res, 'ai_personality_name', flosc_get_setting( 'ai_name', 'AI Assistant' ) )
-            : flosc_get_setting( 'ai_personality_name', flosc_get_setting( 'ai_name', 'AI Assistant' ) );
+        $ai_name    = function_exists( 'flosc_personality_name' )
+            ? flosc_personality_name()
+            : ( $res
+                ? call_user_func( $res, 'ai_personality_name', 'AI Assistant' )
+                : flosc_get_setting( 'ai_personality_name', 'AI Assistant' ) );
         $ai_role    = $res
             ? call_user_func( $res, 'ai_personality_role', flosc_get_setting( 'ai_role', 'friendly learning assistant' ) )
             : flosc_get_setting( 'ai_personality_role', flosc_get_setting( 'ai_role', 'friendly learning assistant' ) );
@@ -1230,11 +1232,7 @@ class FLOSC_Chatpack {
      * Access-filtered: visitors get public files, members get everything.
      */
     private static function load_knowledge_files($eval_context) {
-        // FLOW ISOLATION: each flow draws ONLY on its own physically-separate basket
-        // (flosc_flow_kb_dir(<flow_stem>)). It can never read another flow's folder, so
-        // a file uploaded to one flow never bleeds into another. A flow with an empty
-        // basket loads no KB; lesson catalogs (if any) come from get_available_lessons(),
-        // which is already flow-scoped.
+        // Attached knowledge bases only (knowledge_base_ids). VGM per file.
         $flow_stem = '';
         if (function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'get_current_flow')) {
             $flow = flosc()->get_current_flow();
@@ -1242,49 +1240,10 @@ class FLOSC_Chatpack {
                 $flow_stem = sanitize_key((string) $flow['id']);
             }
         }
-        if ($flow_stem === '' || !function_exists('flosc_flow_kb_dir')) {
+        if ($flow_stem === '' || !function_exists('flosc_knowledge_bases_prompt_text')) {
             return '';
         }
-
-        $kb_dir = flosc_flow_kb_dir($flow_stem);
-        if (!$kb_dir || !is_dir($kb_dir)) {
-            return '';
-        }
-
-        // Cumulative tiers: a file is included when its tier is at or below the user's.
-        // visitor (pre-login) < guest (logged-in) < member (full access through Content).
-        $rank       = ['visitor' => 0, 'guest' => 1, 'member' => 2];
         $user_level = $eval_context['access_level'] ?? 'visitor';
-        $user_rank  = $rank[$user_level] ?? 0;
-
-        $flow_settings = get_option('flosc_flow_' . $flow_stem, []);
-        $kb_limit = (int) flosc_get_setting('ai_kb_file_limit', 10000);
-        if ($kb_limit < 1000) {
-            $kb_limit = 10000; // safety floor
-        }
-
-        $content = '';
-        foreach (glob($kb_dir . '*.{md,txt}', GLOB_BRACE) ?: [] as $path) {
-            $filename = basename($path);
-
-            $file_access = $flow_settings['knowledge_access_' . md5($filename)] ?? 'visitor';
-            // Legacy public/members values map onto the three tiers.
-            if ($file_access === 'public')  $file_access = 'visitor';
-            if ($file_access === 'members') $file_access = 'member';
-            if (($rank[$file_access] ?? 0) > $user_rank) {
-                continue; // user's tier is not high enough for this file
-            }
-
-            $file_content = flosc_fs_get_contents($path);
-            if ($file_content === false || $file_content === '') {
-                continue;
-            }
-            if (strlen($file_content) > $kb_limit) {
-                $file_content = substr($file_content, 0, $kb_limit) . "\n[...truncated]";
-            }
-            $content .= "### {$filename}\n{$file_content}\n\n";
-        }
-
-        return $content;
+        return flosc_knowledge_bases_prompt_text($flow_stem, $user_level);
     }
 }

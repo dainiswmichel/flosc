@@ -829,6 +829,20 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
             }
         }
     }
+    if ($flosc_active_tab === 'knowledge-base' && $flosc_identity_view === 'single') {
+        if (!isset($flosc_post['flow_knowledge_base_ids']) || !is_array($flosc_post['flow_knowledge_base_ids'])) {
+            $flosc_new_settings['knowledge_base_ids'] = array();
+        } else {
+            $flosc_kb_ids = array();
+            foreach ($flosc_post['flow_knowledge_base_ids'] as $flosc_kb_posted) {
+                $flosc_kb_one = sanitize_key((string) $flosc_kb_posted);
+                if ($flosc_kb_one !== '' && !in_array($flosc_kb_one, $flosc_kb_ids, true)) {
+                    $flosc_kb_ids[] = $flosc_kb_one;
+                }
+            }
+            $flosc_new_settings['knowledge_base_ids'] = $flosc_kb_ids;
+        }
+    }
     if ($flosc_active_tab === 'email') {
         foreach (['email_on_quiz_complete', 'email_reengagement_enabled', 'email_weekly_summary'] as $flosc_cb) {
             if (!isset($flosc_post["flow_{$flosc_cb}"])) {
@@ -2084,6 +2098,7 @@ if (function_exists('wp_add_inline_style')) {
             'content': 'Content',
             'member-levels': 'Content',
             'lessons': 'Content',
+            'knowledge-base': 'Knowledge Base',
             'trajectories': 'Trajectories',
             'offers': 'Offers',
             'login': 'Register and Login',
@@ -2119,6 +2134,7 @@ if (function_exists('wp_add_inline_style')) {
             'ivr-messages'  => 'IVR Management',
             'autoprompts'   => 'AutoPrompt Panel',
             'content'       => 'Content',
+            'knowledge-base'=> 'Knowledge Base',
             'trajectories'  => 'Trajectories',
             'offers'        => 'Offers',
             'login'         => 'Register & Login',
@@ -2438,12 +2454,12 @@ if (function_exists('wp_add_inline_style')) {
                             </div>
                             
                             <div class="flosc-flow-field">
-                                <label class="flosc-flow-field__label"><?php echo esc_html__( 'floscFlow name', 'flosc' ); ?></label>
+                                <label class="flosc-flow-field__label"><?php echo esc_html__( 'Flow Name', 'flosc' ); ?></label>
                                 <input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>name" 
                                        value="<?php echo esc_attr($flosc_settings['name'] ?? ''); ?>"
                                         placeholder="<?php echo esc_attr__( 'e.g., dainis.net chat', 'flosc' ); ?>"
                                        class="flosc-flow-input">
-                                <p class="flosc-flow-field__hint"><?php echo esc_html__( 'Operator name (Switch Flow dropdown). Not shown to site visitors.', 'flosc' ); ?></p>
+                                <p class="flosc-flow-field__hint"><?php echo esc_html__( 'This is the name of this floscFlow, shown in the “Switch Flow” pull-down menu.', 'flosc' ); ?></p>
                             </div>
                             
                             <div class="flosc-flow-field">
@@ -2669,32 +2685,14 @@ if (function_exists('wp_add_inline_style')) {
                         </td>
                     </tr>
                     <tr>
-                        <th><label for="flow_name"><?php echo esc_html__( 'floscFlow name', 'flosc' ); ?></label></th>
+                        <th><label for="flow_name"><?php echo esc_html__( 'Flow Name', 'flosc' ); ?></label></th>
                         <td>
                             <input type="text" id="flow_name" name="flow_name" class="regular-text"
                                    value="<?php echo esc_attr($flosc_fi['name'] ?? ''); ?>"
                                 placeholder="<?php echo esc_attr__( 'e.g., dainis.net chat', 'flosc' ); ?>">
                             <p class="description">
-                                <?php echo esc_html__( 'Operator name for this floscFlow (Switch Flow dropdown). Not shown to site visitors.', 'flosc' ); ?>
+                                <?php echo esc_html__( 'This is the name of this floscFlow, shown in the “Switch Flow” pull-down menu.', 'flosc' ); ?>
                             </p>
-                            <?php
-                            $flosc_visitor_name_preview = function_exists( 'flosc_visitor_assistant_name' )
-                                ? flosc_visitor_assistant_name()
-                                : '';
-                            if ( $flosc_visitor_name_preview !== '' ) :
-                                ?>
-                            <p class="description">
-                                <?php
-                                echo esc_html(
-                                    sprintf(
-                                        /* translators: %s: attached personality name */
-                                        __( 'Visitors see the attached personality in chat: %s', 'flosc' ),
-                                        $flosc_visitor_name_preview
-                                    )
-                                );
-                                ?>
-                            </p>
-                            <?php endif; ?>
                         </td>
                     </tr>
                     <tr>
@@ -2885,17 +2883,17 @@ if (function_exists('wp_add_inline_style')) {
         <?php elseif ($flosc_active_tab === 'token-management'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/token-management.php'; ?>
         <?php elseif ($flosc_active_tab === 'ai-knowledge'): ?>
-            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . rawurlencode($flosc_selected_ivr) . '&tab=ai#flosc-kb-section'); ?>
+            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . rawurlencode($flosc_selected_ivr) . '&tab=knowledge-base&view=single'); ?>
             <?php wp_add_inline_script('flosc-admin', 'window.location.replace(' . wp_json_encode($flosc_redirect_url) . ');'); ?>
-            <p>Redirecting to <a href="<?php echo esc_url($flosc_redirect_url); ?>">Knowledge Base in AI tab</a>&hellip;</p>
+            <p>Redirecting to <a href="<?php echo esc_url($flosc_redirect_url); ?>">Knowledge Base</a>&hellip;</p>
         <?php elseif ($flosc_active_tab === 'ai-guide'): ?>
             <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . rawurlencode($flosc_selected_ivr) . '&tab=documentation&doc=ref-ai-config'); ?>
             <?php wp_add_inline_script('flosc-admin', 'window.location.replace(' . wp_json_encode($flosc_redirect_url) . ');'); ?>
             <p>Redirecting to <a href="<?php echo esc_url($flosc_redirect_url); ?>">AI Configuration Guide in Documentation</a>&hellip;</p>
         <?php elseif ($flosc_active_tab === 'knowledge'): ?>
-            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . rawurlencode($flosc_selected_ivr) . '&tab=ai#flosc-kb-section'); ?>
+            <?php $flosc_redirect_url = admin_url('admin.php?page=flosc-settings&ivr=' . rawurlencode($flosc_selected_ivr) . '&tab=knowledge-base&view=single'); ?>
             <?php wp_add_inline_script('flosc-admin', 'window.location.replace(' . wp_json_encode($flosc_redirect_url) . ');'); ?>
-            <p>Redirecting to <a href="<?php echo esc_url($flosc_redirect_url); ?>">Knowledge Base in AI tab</a>&hellip;</p>
+            <p>Redirecting to <a href="<?php echo esc_url($flosc_redirect_url); ?>">Knowledge Base</a>&hellip;</p>
             
         <?php elseif ($flosc_active_tab === 'quiz'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/quiz.php'; ?>
@@ -2908,6 +2906,9 @@ if (function_exists('wp_add_inline_style')) {
             
         <?php elseif (in_array($flosc_active_tab, ['content', 'member-levels', 'lessons'], true)): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/content.php'; ?>
+
+        <?php elseif ($flosc_active_tab === 'knowledge-base'): ?>
+            <?php include FLOSC_PLUGIN_DIR . 'admin/knowledge-base.php'; ?>
             
         <?php elseif ($flosc_active_tab === 'autoprompts'): ?>
             <?php include FLOSC_PLUGIN_DIR . 'admin/autoprompts.php'; ?>

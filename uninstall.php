@@ -68,11 +68,10 @@ function flosc_uninstall_delete_meta_table_prefix( $table, $prefix ) {
 	if ( $table === '' || $prefix === '' ) {
 		return;
 	}
-	// Table name from $wpdb->* only — not user input.
-	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table/identifier from $wpdb->prefix + hardcoded suffix only
 	$wpdb->query(
 		$wpdb->prepare(
-			"DELETE FROM {$table} WHERE meta_key LIKE %s",
+			'DELETE FROM %i WHERE meta_key LIKE %s',
+			$table,
 			$wpdb->esc_like( $prefix ) . '%'
 		)
 	);
@@ -107,9 +106,7 @@ $flosc_tables = array(
 	$wpdb->prefix . 'flosc_lessons',
 );
 foreach ( $flosc_tables as $flosc_table ) {
-	// Identifier only from $wpdb->prefix + fixed suffix.
-	// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- table/identifier from $wpdb->prefix + hardcoded suffix only
-	$wpdb->query( "DROP TABLE IF EXISTS `{$flosc_table}`" );
+	$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $flosc_table ) );
 }
 
 if ( function_exists( 'wp_clear_scheduled_hook' ) ) {
@@ -167,9 +164,9 @@ function flosc_uninstall_rm_rf( $dir ) {
 // Includes flosc-catalogs (DA1 TSV files) with other FLOSC-managed upload trees.
 $flosc_uploads = wp_upload_dir( null, false );
 if ( empty( $flosc_uploads['error'] ) && ! empty( $flosc_uploads['basedir'] ) ) {
-	$base = trailingslashit( $flosc_uploads['basedir'] );
+	$flosc_base = trailingslashit( $flosc_uploads['basedir'] );
 	foreach ( array( 'flosc', 'flosc-users', 'flosc-temp', 'flosc-catalogs' ) as $flosc_subdir ) {
-		$flosc_dir = $base . $flosc_subdir;
+		$flosc_dir = $flosc_base . $flosc_subdir;
 		if ( is_dir( $flosc_dir ) ) {
 			flosc_uninstall_rm_rf( $flosc_dir );
 		}

@@ -263,9 +263,11 @@ class FLOSC_AI_Chat_Dispatch {
      */
     private function build_identity_prompt($context = []) {
         // Personality: attached library entry (one per flow) wins when set; else flow bag.
-        $name = function_exists( 'flosc_personality_library_resolve_field' )
-            ? flosc_personality_library_resolve_field( 'ai_personality_name', flosc_get_setting( 'product_name', 'FLOSC' ) )
-            : flosc_get_setting( 'ai_personality_name', flosc_get_setting( 'product_name', 'FLOSC' ) );
+        $name = function_exists( 'flosc_personality_name' )
+            ? flosc_personality_name()
+            : ( function_exists( 'flosc_personality_library_resolve_field' )
+                ? flosc_personality_library_resolve_field( 'ai_personality_name', 'FLOSC' )
+                : flosc_get_setting( 'ai_personality_name', 'FLOSC' ) );
         $role = function_exists( 'flosc_personality_library_resolve_field' )
             ? flosc_personality_library_resolve_field( 'ai_personality_role', 'AI assistant' )
             : flosc_get_setting( 'ai_personality_role', 'AI assistant' );
@@ -589,42 +591,11 @@ class FLOSC_AI_Chat_Dispatch {
                 $flow_stem = sanitize_key((string) $flow['id']);
             }
         }
-        if ($flow_stem === '' || !function_exists('flosc_flow_kb_dir')) {
+        if ($flow_stem === '' || !function_exists('flosc_knowledge_bases_prompt_text')) {
             return '';
         }
-
-        $kb_dir = flosc_flow_kb_dir($flow_stem);
-        if (!$kb_dir || !is_dir($kb_dir)) {
-            return '';
-        }
-
-        // Cumulative tiers (visitor < guest < member). Prefer an explicit access level;
-        // otherwise fall back conservatively so member-only files never leak to a guest.
-        $rank       = ['visitor' => 0, 'guest' => 1, 'member' => 2];
         $user_level = $context['access_level'] ?? (!empty($context['logged_in']) ? 'guest' : 'visitor');
-        $user_rank  = $rank[$user_level] ?? 0;
-
-        $flow_settings = get_option('flosc_flow_' . $flow_stem, []);
-        $content = '';
-
-        foreach (glob($kb_dir . '*.{md,txt}', GLOB_BRACE) ?: [] as $filepath) {
-            $file = basename($filepath);
-
-            $file_access = $flow_settings['knowledge_access_' . md5($file)] ?? 'visitor';
-            // Legacy public/members values map onto the three tiers.
-            if ($file_access === 'public')  $file_access = 'visitor';
-            if ($file_access === 'members') $file_access = 'member';
-            if (($rank[$file_access] ?? 0) > $user_rank) {
-                continue; // user's tier is not high enough for this file
-            }
-
-            $file_content = flosc_fs_get_contents($filepath);
-            if ($file_content) {
-                $content .= "\n\n### {$file}\n" . $file_content;
-            }
-        }
-
-        return $content;
+        return flosc_knowledge_bases_prompt_text($flow_stem, $user_level);
     }
 
     /**
@@ -809,9 +780,9 @@ class FLOSC_AI_Chat_Dispatch {
      */
     private function get_default_base_prompt() {
         $identity = $this->get_floscflow_identity();
-        $assistant = function_exists( 'flosc_visitor_assistant_name' )
-            ? flosc_visitor_assistant_name()
-            : (string) ( $identity['name'] ?? 'FLOSC' );
+        $assistant = function_exists( 'flosc_personality_name' )
+            ? flosc_personality_name()
+            : 'FLOSC';
         $offering = function_exists( 'flosc_flow_offering_title' )
             ? flosc_flow_offering_title()
             : trim( (string) ( $identity['title'] ?? '' ) );
@@ -863,11 +834,6 @@ class FLOSC_AI_Chat_Dispatch {
 
         if ($chaining_enabled) {
             $response = $this->get_chained_response($message, $system_prompt, $context);
-        } elseif ($provider === 'openai' && !$test_mode && $this->use_responses_api()) {
-            // Fix 13: OpenAI Responses API — stateful context, no history resend
-            $session_id = $context[0]['session_id'] ?? null; // session_id passed in context if available
-            $is_first   = empty($context) || ($context[0]['role'] ?? '') !== 'assistant';
-            $response = $this->openai_responses_request($message, $system_prompt, $session_id, $is_first, $test_mode);
         } else {
             $response = $this->call_provider($provider, $message, $system_prompt, $context, $test_mode);
         }
@@ -1012,7 +978,7 @@ class FLOSC_AI_Chat_Dispatch {
     }
 
     /**
-     * v1.9.0: Route to a single provider by name
+     * One hop: IVR locally; OpenAI/Anthropic/Gemini via WordPress AI Client; xAI via FLOSC HTTP.
      */
     private function call_provider($provider, $message, $system_prompt, $context, $test_mode) {
         switch ($provider) {
@@ -1145,208 +1111,71 @@ class FLOSC_AI_Chat_Dispatch {
     }
     
     /**
-     * OpenAI Chat Completions
+     * OpenAI, Anthropic, and Gemini chat: WordPress 7.0 AI Client.
+     * Official provider plugins own the vendor HTTP. FLOSC binds this flow's key.
      */
-    private function openai_request($message, $system_prompt, $context = [], $test_mode = false) {
-        // v1.9.0: Use flosc_get_setting() — reads flow settings first
-        $api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'openai' ) : flosc_get_setting( 'openai_api_key', '' );
-
-        if (empty($api_key)) {
-            if ($test_mode) {
-                return new WP_Error(
-                    'openai_no_api_key',
-                    "No OpenAI API key configured.\n\n📝 Next steps:\n1. Go to https://platform.openai.com/api-keys\n2. Sign up or log in to your OpenAI account\n3. Click 'Create new secret key'\n4. Copy the key (starts with sk-proj-...)\n5. Paste it in the 'OpenAI API Key' field above\n6. Click 'Save AI Configuration'\n7. Try testing again!"
-                );
-            }
-            // v1.9.3: Return null — caller decides fallback, not dispatch
-            return null;
+    private function wp_ai_chat_request($provider, $message, $system_prompt, $context = [], $test_mode = false) {
+        $model_keys = array(
+            'openai'    => array('ai_openai_model', 'gpt-4o-mini'),
+            'anthropic' => array('ai_anthropic_model', 'claude-sonnet-4-5-20250929'),
+            'gemini'    => array('ai_gemini_model', 'gemini-2.5-flash'),
+        );
+        $model_pair = isset($model_keys[$provider]) ? $model_keys[$provider] : array('ai_openai_model', 'gpt-4o-mini');
+        $model = (string) flosc_get_setting($model_pair[0], $model_pair[1]);
+        if ($model === '') {
+            $model = $model_pair[1];
         }
-
-        $messages = [];
-
-        if ($system_prompt) {
-            $messages[] = ['role' => 'system', 'content' => $system_prompt];
-        }
-
-        // Add context messages
-        foreach ($context as $ctx) {
-            $messages[] = [
-                'role' => $ctx['role'],
-                'content' => $ctx['content'],
-            ];
-        }
-
-        $messages[] = ['role' => 'user', 'content' => $message];
-
-        // v1.8.7: Per-flow model, temperature, max_tokens
-        $model = flosc_get_setting('ai_openai_model', 'gpt-4o-mini');
         $temperature = (float) flosc_get_setting('ai_temperature', '0.3');
         $max_tokens = (int) flosc_get_setting('ai_max_tokens', '500');
 
-        $response = wp_remote_post('https://api.openai.com/v1/chat/completions', [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $api_key,
-                'Content-Type' => 'application/json',
-            ],
-            'body' => wp_json_encode([
-                'model' => $model,
-                'messages' => $messages,
-                'max_tokens' => $max_tokens,
-                'temperature' => $temperature,
-            ]),
-            'timeout' => 30,
-        ]);
-
-        if (is_wp_error($response)) {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC OpenAI Error: ' . $response->get_error_message());
+        if (!class_exists('FLOSC_WP_AI_Client')) {
             if ($test_mode) {
-                return new WP_Error(
-                    'openai_connection_error',
-                    "Could not connect to OpenAI API.\n\n❌ Error: " . $response->get_error_message() . "\n\n📝 Next steps:\n1. Check your internet connection\n2. Verify OpenAI services are operational: https://status.openai.com\n3. Try again in a few moments"
-                );
+                return new WP_Error('flosc_wp_ai_missing_core', 'FLOSC WordPress AI Client wrapper is not loaded.');
             }
-            return null; // v1.9.3: No silent IVR substitution
+            return null;
         }
 
-        $body = json_decode(wp_remote_retrieve_body($response), true);
+        $result = FLOSC_WP_AI_Client::generate(array(
+            'provider'      => $provider,
+            'message'       => $message,
+            'system_prompt' => $system_prompt,
+            'history'       => is_array($context) ? $context : array(),
+            'model'         => $model,
+            'temperature'   => $temperature,
+            'max_tokens'    => $max_tokens,
+            'test_mode'     => $test_mode,
+        ));
 
-        if (isset($body['error'])) {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC OpenAI API Error: ' . $body['error']['message']);
-            if ($test_mode) {
-                $error_msg = $body['error']['message'] ?? 'Unknown error';
-
-                $help_text = "\n\n📝 Next steps:\n";
-
-                if (strpos($error_msg, 'invalid') !== false || strpos($error_msg, 'Incorrect') !== false) {
-                    $help_text .= "1. Your API key appears to be invalid\n";
-                    $help_text .= "2. Go to https://platform.openai.com/api-keys\n";
-                    $help_text .= "3. Create a new API key\n";
-                    $help_text .= "4. Replace the old key with the new one above\n";
-                    $help_text .= "5. Make sure you copied the entire key (starts with sk-proj-...)";
-                } elseif (strpos($error_msg, 'quota') !== false || strpos($error_msg, 'insufficient') !== false) {
-                    $help_text .= "1. You've exceeded your OpenAI usage quota\n";
-                    $help_text .= "2. Go to https://platform.openai.com/settings/organization/billing\n";
-                    $help_text .= "3. Add a payment method or increase your quota\n";
-                    $help_text .= "4. Wait for quota to reset or upgrade your plan";
-                } else {
-                    $help_text .= "1. Check the error message above for details\n";
-                    $help_text .= "2. Verify your API key at https://platform.openai.com/api-keys\n";
-                    $help_text .= "3. Check OpenAI status: https://status.openai.com";
-                }
-
-                return new WP_Error(
-                    'openai_api_error',
-                    "OpenAI API Error: " . $error_msg . $help_text
-                );
+        if (is_wp_error($result)) {
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
+                flosc_log('FLOSC WP AI Client (' . $provider . '): ' . $result->get_error_message());
             }
-            return null; // v1.9.3: No silent IVR substitution
+            if ($test_mode) {
+                return $result;
+            }
+            return null;
         }
 
-        $this->capture_billing_meta('openai', $model, $body['usage'] ?? [], $body);
+        $used_model = (string) ($result['model'] ?? $model);
+        $usage = isset($result['usage']) && is_array($result['usage']) ? $result['usage'] : array();
+        $this->capture_billing_meta($provider, $used_model, $usage, array());
 
-        return $body['choices'][0]['message']['content'] ?? null;
+        $text = isset($result['text']) ? (string) $result['text'] : '';
+        return $text !== '' ? $text : null;
+    }
+
+    /**
+     * OpenAI chat via WordPress AI Client + AI Provider for OpenAI.
+     */
+    private function openai_request($message, $system_prompt, $context = [], $test_mode = false) {
+        return $this->wp_ai_chat_request('openai', $message, $system_prompt, $context, $test_mode);
     }
     
     /**
-     * Anthropic Claude
+     * Anthropic Claude via WordPress AI Client + AI Provider for Anthropic.
      */
     private function anthropic_request($message, $system_prompt, $context = [], $test_mode = false) {
-        // v1.9.0: Use flosc_get_setting() — reads flow settings first
-        $api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'anthropic' ) : flosc_get_setting( 'anthropic_api_key', '' );
-
-        if (empty($api_key)) {
-            if ($test_mode) {
-                return new WP_Error(
-                    'anthropic_no_api_key',
-                    "No Anthropic API key configured.\n\n📝 Next steps:\n1. Go to https://console.anthropic.com/settings/keys\n2. Sign up or log in to your Anthropic account\n3. Click 'Create Key'\n4. Copy the key (starts with sk-ant-...)\n5. Paste it in the 'Anthropic API Key' field above\n6. Click 'Save AI Configuration'\n7. Try testing again!\n\n💡 Anthropic offers $5 free credit to start."
-                );
-            }
-            return null; // v1.9.3: No silent IVR substitution
-        }
-
-        $messages = [];
-
-        foreach ($context as $ctx) {
-            $messages[] = [
-                'role' => $ctx['role'],
-                'content' => $ctx['content'],
-            ];
-        }
-
-        $messages[] = ['role' => 'user', 'content' => $message];
-
-        // v1.8.7: Per-flow model + max_tokens
-        $model = flosc_get_setting('ai_anthropic_model', 'claude-sonnet-4-5-20250929');
-        $max_tokens = (int) flosc_get_setting('ai_max_tokens', '500');
-
-        $body = [
-            'model' => $model,
-            'max_tokens' => $max_tokens,
-            'messages' => $messages,
-        ];
-
-        if ($system_prompt) {
-            $body['system'] = $system_prompt;
-        }
-
-        $response = wp_remote_post('https://api.anthropic.com/v1/messages', [
-            'headers' => [
-                'x-api-key' => $api_key,
-                'anthropic-version' => '2023-06-01',
-                'Content-Type' => 'application/json',
-            ],
-            'body' => wp_json_encode($body),
-            'timeout' => 30,
-        ]);
-
-        if (is_wp_error($response)) {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC Anthropic Error: ' . $response->get_error_message());
-            if ($test_mode) {
-                return new WP_Error(
-                    'anthropic_connection_error',
-                    "Could not connect to Anthropic API.\n\n❌ Error: " . $response->get_error_message() . "\n\n📝 Next steps:\n1. Check your internet connection\n2. Verify Anthropic services are operational\n3. Try again in a few moments"
-                );
-            }
-            return null; // v1.9.3: No silent IVR substitution
-        }
-
-        $data = json_decode(wp_remote_retrieve_body($response), true);
-
-        if (isset($data['error'])) {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC Anthropic API Error: ' . $data['error']['message']);
-            if ($test_mode) {
-                $error_msg = $data['error']['message'] ?? 'Unknown error';
-
-                $help_text = "\n\n📝 Next steps:\n";
-
-                if (strpos($error_msg, 'authentication') !== false || strpos($error_msg, 'invalid') !== false) {
-                    $help_text .= "1. Your API key appears to be invalid\n";
-                    $help_text .= "2. Go to https://console.anthropic.com/settings/keys\n";
-                    $help_text .= "3. Create a new API key\n";
-                    $help_text .= "4. Replace the old key with the new one above\n";
-                    $help_text .= "5. Make sure you copied the entire key (starts with sk-ant-...)";
-                } elseif (strpos($error_msg, 'credit') !== false || strpos($error_msg, 'quota') !== false) {
-                    $help_text .= "1. You've run out of credits or exceeded your quota\n";
-                    $help_text .= "2. Go to https://console.anthropic.com/settings/billing\n";
-                    $help_text .= "3. Add a payment method or purchase more credits\n";
-                    $help_text .= "4. Anthropic provides $5 free credit for new accounts";
-                } else {
-                    $help_text .= "1. Check the error message above for details\n";
-                    $help_text .= "2. Verify your API key at https://console.anthropic.com/settings/keys\n";
-                    $help_text .= "3. Check your account status and billing";
-                }
-
-                return new WP_Error(
-                    'anthropic_api_error',
-                    "Anthropic API Error: " . $error_msg . $help_text
-                );
-            }
-            return null; // v1.9.3: No silent IVR substitution
-        }
-
-        $this->capture_billing_meta('anthropic', $model, $data['usage'] ?? [], $data);
-
-        return $data['content'][0]['text'] ?? null;
+        return $this->wp_ai_chat_request('anthropic', $message, $system_prompt, $context, $test_mode);
     }
     
     /**
@@ -1466,270 +1295,12 @@ class FLOSC_AI_Chat_Dispatch {
     }
 
     /**
-     * Google Gemini generateContent. Personality rides in systemInstruction.
+     * Gemini chat via WordPress AI Client + AI Provider for Google.
      */
     private function gemini_request($message, $system_prompt, $context = [], $test_mode = false) {
-        $api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'gemini' ) : flosc_get_setting( 'gemini_api_key', '' );
-
-        if (empty($api_key)) {
-            if ($test_mode) {
-                return new WP_Error(
-                    'gemini_no_api_key',
-                    "No Gemini API key configured.\n\n📝 Next steps:\n1. Go to https://aistudio.google.com/apikey\n2. Create an API key\n3. Paste it under All Flows AI API Management or this flow’s Gemini field\n4. Click Save Settings\n5. Try testing again!"
-                );
-            }
-            return null;
-        }
-
-        $model = (string) flosc_get_setting('ai_gemini_model', 'gemini-2.5-flash');
-        if ($model === '') {
-            $model = 'gemini-2.5-flash';
-        }
-        $temperature = (float) flosc_get_setting('ai_temperature', '0.3');
-        $max_tokens = (int) flosc_get_setting('ai_max_tokens', '500');
-
-        $contents = [];
-        if (is_array($context)) {
-            foreach ($context as $ctx) {
-                if (!is_array($ctx)) {
-                    continue;
-                }
-                $text = (string) ($ctx['content'] ?? '');
-                if ($text === '') {
-                    continue;
-                }
-                $role = (isset($ctx['role']) && $ctx['role'] === 'assistant') ? 'model' : 'user';
-                $last = $contents ? $contents[count($contents) - 1] : null;
-                if ($last && $last['role'] === $role) {
-                    $contents[count($contents) - 1]['parts'][0]['text'] .= "\n" . $text;
-                } else {
-                    $contents[] = [
-                        'role'  => $role,
-                        'parts' => [['text' => $text]],
-                    ];
-                }
-            }
-        }
-        $contents[] = [
-            'role'  => 'user',
-            'parts' => [['text' => (string) $message]],
-        ];
-        if (isset($contents[0]['role']) && $contents[0]['role'] !== 'user') {
-            array_unshift($contents, [
-                'role'  => 'user',
-                'parts' => [['text' => '.']],
-            ]);
-        }
-
-        $body = [
-            'contents'         => $contents,
-            'generationConfig' => [
-                'temperature'     => $temperature,
-                'maxOutputTokens' => $max_tokens,
-            ],
-        ];
-        if ($system_prompt) {
-            $body['systemInstruction'] = [
-                'parts' => [['text' => (string) $system_prompt]],
-            ];
-        }
-
-        $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent';
-        $response = wp_remote_post($url, [
-            'headers' => [
-                'Content-Type'   => 'application/json',
-                'x-goog-api-key' => $api_key,
-            ],
-            'body'    => wp_json_encode($body),
-            'timeout' => 30,
-        ]);
-
-        if (is_wp_error($response)) {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC Gemini Error: ' . $response->get_error_message());
-            if ($test_mode) {
-                return new WP_Error(
-                    'gemini_connection_error',
-                    "Could not connect to Gemini API.\n\n❌ Error: " . $response->get_error_message() . "\n\n📝 Next steps:\n1. Check your internet connection\n2. Verify Gemini API status\n3. Try again in a few moments"
-                );
-            }
-            return null;
-        }
-
-        $data = json_decode(wp_remote_retrieve_body($response), true);
-        if (!is_array($data)) {
-            if ($test_mode) {
-                return new WP_Error('gemini_api_error', 'Gemini API returned an unreadable response.');
-            }
-            return null;
-        }
-
-        if (isset($data['error'])) {
-            $error_msg = is_array($data['error']) ? (string) ($data['error']['message'] ?? 'Unknown error') : (string) $data['error'];
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC Gemini API Error: ' . $error_msg);
-            if ($test_mode) {
-                $help_text = "\n\n📝 Next steps:\n";
-                if (stripos($error_msg, 'api key') !== false || stripos($error_msg, 'permission') !== false || stripos($error_msg, 'unauthenticated') !== false) {
-                    $help_text .= "1. Your API key appears to be invalid\n";
-                    $help_text .= "2. Go to https://aistudio.google.com/apikey\n";
-                    $help_text .= "3. Create a new key and replace it on All Flows or this flow\n";
-                    $help_text .= "4. Save Settings, then Test again";
-                } else {
-                    $help_text .= "1. Check the error message above\n";
-                    $help_text .= "2. Confirm the model ID is current\n";
-                    $help_text .= "3. Docs: https://ai.google.dev/gemini-api/docs/models";
-                }
-                return new WP_Error('gemini_api_error', 'Gemini API Error: ' . $error_msg . $help_text);
-            }
-            return null;
-        }
-
-        $usage_meta = is_array($data['usageMetadata'] ?? null) ? $data['usageMetadata'] : [];
-        $this->capture_billing_meta(
-            'gemini',
-            $model,
-            [
-                'prompt_tokens'     => intval($usage_meta['promptTokenCount'] ?? 0),
-                'completion_tokens' => intval($usage_meta['candidatesTokenCount'] ?? 0),
-                'total_tokens'      => intval($usage_meta['totalTokenCount'] ?? 0),
-            ],
-            $data
-        );
-
-        $text = '';
-        if (!empty($data['candidates'][0]['content']['parts']) && is_array($data['candidates'][0]['content']['parts'])) {
-            foreach ($data['candidates'][0]['content']['parts'] as $part) {
-                if (is_array($part) && isset($part['text'])) {
-                    $text .= (string) $part['text'];
-                }
-            }
-        }
-        return $text !== '' ? $text : null;
-    }
-    
-    /**
-     * Fix 13: Check whether the OpenAI Responses API path is enabled.
-     * Off by default — enable via ai_openai_use_responses_api setting after testing.
-     */
-    private function use_responses_api() {
-        return (bool) flosc_get_setting('ai_openai_use_responses_api', false);
+        return $this->wp_ai_chat_request('gemini', $message, $system_prompt, $context, $test_mode);
     }
 
-    /**
-     * Fix 13: OpenAI Responses API — stateful session management.
-     *
-     * Message 1: send full chatpack as `instructions`, receive response.id.
-     * Messages 2+: send only previous_response_id + new message. OpenAI holds
-     * full context server-side. No history resend, no anchor definitions needed.
-     *
-     * response_id storage:
-     *   - Logged-in users: user meta _flosc_openai_response_id_{session_hash}
-     *   - Visitors:        transient flosc_oai_rid_{session_hash}
-     *
-     * Session hash is derived from the system_prompt (includes FLOSC-SESSION hash).
-     * On first message the hash is extracted and stored alongside the response_id.
-     */
-    private function openai_responses_request($message, $system_prompt, $session_id, $is_first, $test_mode = false) {
-        $api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'openai' ) : flosc_get_setting( 'openai_api_key', '' );
-        if (empty($api_key)) {
-            if ($test_mode) return new WP_Error('openai_no_api_key', 'No OpenAI API key configured.');
-            return null;
-        }
-
-        $model      = flosc_get_setting('ai_openai_model', 'gpt-4o-mini');
-        $max_tokens = (int) flosc_get_setting('ai_max_tokens', '500');
-
-        // Derive a session key for response_id storage
-        $session_key = $session_id
-            ? 'sess_' . md5($session_id)
-            : 'sess_' . md5($system_prompt);
-
-        $user_id          = get_current_user_id();
-        $stored_resp_id   = null;
-        $meta_key         = '_flosc_openai_response_id_' . $session_key;
-        $transient_key    = 'flosc_oai_rid_' . $session_key;
-
-        if (!$is_first) {
-            $stored_resp_id = $user_id
-                ? get_user_meta($user_id, $meta_key, true)
-                : get_transient($transient_key);
-        }
-
-        // Build request body
-        if ($stored_resp_id) {
-            // Subsequent message — reference stored response
-            $body = [
-                'model'                => $model,
-                'previous_response_id' => $stored_resp_id,
-                'input'                => $message,
-                'max_output_tokens'    => $max_tokens,
-            ];
-        } else {
-            // First message (or no stored ID) — send full chatpack as instructions
-            $body = [
-                'model'             => $model,
-                'instructions'      => $system_prompt,
-                'input'             => $message,
-                'max_output_tokens' => $max_tokens,
-                'store'             => true,
-            ];
-        }
-
-        $response = wp_remote_post('https://api.openai.com/v1/responses', [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $api_key,
-                'Content-Type'  => 'application/json',
-            ],
-            'body'    => wp_json_encode($body),
-            'timeout' => 30,
-        ]);
-
-        if (is_wp_error($response)) {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC OpenAI Responses Error: ' . $response->get_error_message());
-            if ($test_mode) return new WP_Error('openai_responses_error', $response->get_error_message());
-            return null;
-        }
-
-        $data = json_decode(wp_remote_retrieve_body($response), true);
-
-        if (isset($data['error'])) {
-            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC OpenAI Responses API Error: ' . $data['error']['message']);
-            if ($test_mode) return new WP_Error('openai_responses_api_error', $data['error']['message']);
-            return null;
-        }
-
-        // Store new response_id for subsequent calls
-        $new_response_id = $data['id'] ?? null;
-        if ($new_response_id) {
-            if ($user_id) {
-                update_user_meta($user_id, $meta_key, $new_response_id);
-            } else {
-                set_transient($transient_key, $new_response_id, HOUR_IN_SECONDS);
-            }
-        }
-
-        // Extract text from response
-        $text = '';
-        if (!empty($data['output'])) {
-            foreach ($data['output'] as $item) {
-                if (($item['type'] ?? '') === 'message' && !empty($item['content'])) {
-                    foreach ($item['content'] as $content) {
-                        if (($content['type'] ?? '') === 'output_text') {
-                            $text .= $content['text'] ?? '';
-                        }
-                    }
-                }
-            }
-        }
-
-        $this->capture_billing_meta('openai', $model, $data['usage'] ?? [], $data);
-
-        return $text ?: null;
-    }
-
-    /**
-     * Fix 1: Validate AI response — correct wrong acronym expansions mechanically.
-     * Runs on every response before caching. Logs every feedback.
-     */
     private function validate_ai_response($response) {
         if (empty($response)) return $response;
         $feedback_log = [];
@@ -1775,12 +1346,9 @@ class FLOSC_AI_Chat_Dispatch {
         if ( ! is_array( $fw_id ) ) {
             $fw_id = [];
         }
-        $assistant = function_exists( 'flosc_visitor_assistant_name' )
-            ? flosc_visitor_assistant_name()
+        $assistant = function_exists( 'flosc_personality_name' )
+            ? flosc_personality_name()
             : '';
-        if ( $assistant === '' ) {
-            $assistant = (string) ( $fw_id['name'] ?? flosc_get_setting( 'product_name', 'FLOSC App' ) );
-        }
 
         return [
             'name' => $assistant !== '' ? $assistant : 'FLOSC App',

@@ -3,9 +3,9 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-$flosc_visitor_name = function_exists( 'flosc_visitor_assistant_name' )
-    ? flosc_visitor_assistant_name()
-    : (string) ( $identity['name'] ?? 'FLOSC' );
+$flosc_visitor_name = function_exists( 'flosc_personality_name' )
+    ? flosc_personality_name()
+    : ( function_exists( 'flosc_visitor_assistant_name' ) ? flosc_visitor_assistant_name() : 'FLOSC' );
 if ( $flosc_visitor_name === '' ) {
     $flosc_visitor_name = 'FLOSC';
 }
@@ -1138,10 +1138,13 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 return 'capture';
             })(),
             'identity' => $identity,
-            // Convenience alias for JS (logout goodbye, companion labels) — from Identity params.
+            // personalityName = Designer Name (chat header). flowDisplayName = Identity Flow Name (Switch Flow).
+            // productName is an alias of personalityName so older JS does not read identity.name as the speaker.
             'productName' => $flosc_visitor_name,
             'personalityName' => $flosc_visitor_name,
-            'flowDisplayName' => is_array($identity) ? (string) ($identity['name'] ?? '') : '',
+            'flowDisplayName' => function_exists( 'flosc_flow_name' )
+                ? flosc_flow_name()
+                : ( is_array( $identity ) ? (string) ( $identity['name'] ?? '' ) : '' ),
             'offers' => array_values($offers),
             'appUrl' => $flosc_app_url,
             // Dock/collapse handoff when companion mode is companion|both and enabled.

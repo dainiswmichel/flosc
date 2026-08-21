@@ -238,12 +238,12 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                 <?php $flosc_identity = $flosc_flow['identity'] ?? []; ?>
                 <table class="form-table">
                     <tr>
-                        <th scope="row"><label for="floscflow_name"><?php echo esc_html__( 'floscFlow name', 'flosc' ); ?></label></th>
+                        <th scope="row"><label for="floscflow_name"><?php echo esc_html__( 'Flow Name', 'flosc' ); ?></label></th>
                         <td>
                             <input type="text" id="floscflow_name" name="floscflow_name" 
                                    value="<?php echo esc_attr($flosc_identity['name'] ?? ''); ?>" 
                                    class="regular-text" required>
-                            <p class="description"><?php echo esc_html__( 'Operator name for this floscFlow (dropdown). Visitors see the attached personality name in chat.', 'flosc' ); ?></p>
+                            <p class="description"><?php echo esc_html__( 'This is the name of this floscFlow, shown in the “Switch Flow” pull-down menu.', 'flosc' ); ?></p>
                         </td>
                     </tr>
                     

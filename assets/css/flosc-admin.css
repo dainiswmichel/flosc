@@ -7611,3 +7611,14 @@ label[for^="flosc_acc_q_"] {
 	margin-top: 8px;
 	max-width: 40rem;
 }
+.flosc-kb-dropzone {
+	border: 2px dashed #c3c4c7;
+	border-radius: 6px;
+	padding: 16px;
+	background: #f6f7f7;
+	max-width: 40rem;
+}
+.flosc-kb-dropzone.is-drag {
+	border-color: #2271b1;
+	background: #f0f6fc;
+}

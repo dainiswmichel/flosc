@@ -93,22 +93,25 @@
 <p>A verification mechanism that checks whether the AI "knows" what FLOSC offering it is operating for. The <code>check_admin_introspection()</code> method builds an <code>adminVerification</code> object (IVR file name, app slug, offering title, tagline, domain) included in the FLOSC_USER config object sent to the JavaScript client. Used as a self-consistency check.</p>
 
 <h3 id="term-ai-provider">AI Provider</h3>
-<p>Primary chat selection per flow on <strong>AI → This flow: AI settings</strong>. Slugs: <code>ivr</code>, <code>anthropic</code>, <code>openai</code>, <code>xai</code>, <code>gemini</code>. Credentials usually come from floscAvailableProviders (All Flows AI API Management). When set to <code>ivr</code>, no external AI API is called — all responses come from the IVR script. When set to an AI provider, IVR still runs first and AI only handles unmatched messages. The compiled personality profile is sent as that API’s system field. Optional chain hops use additional chat providers for the same turn. Speech-to-text is a separate setting (<code>assemblyai</code>, <code>openai</code> Whisper, or <code>custom</code>).</p>
+<p>Primary chat selection per flow on <strong>AI → This flow: AI settings</strong>. Slugs: <code>ivr</code>, <code>anthropic</code>, <code>openai</code>, <code>xai</code>, <code>gemini</code>. There is one WordPress AI Client (<code>wp_ai_client_prompt()</code>). OpenAI, Anthropic, and Gemini register with that client through their official plugins. xAI has no official plugin; FLOSC calls xAI. IVR calls none. Credentials come from floscAvailableProviders (All Flows) or this flow. IVR still runs first; AI handles unmatched messages. Personality is the system instruction. Speech-to-text is separate (AssemblyAI, OpenAI Whisper, or custom).</p>
+
+<h3 id="term-wordpress-ai-client">WordPress AI Client</h3>
+<p>The single core API in WordPress 7.0. FLOSC calls <code>wp_ai_client_prompt()</code>. It is not three clients. Official plugins AI Provider for OpenAI, AI Provider for Anthropic, and AI Provider for Google register providers on that one client and own vendor HTTP. FLOSC binds the FLOSC BYOK key onto the registry for the prompt and does not read Settings → Connectors.</p>
 
 <h3 id="term-anthropic">Anthropic (Claude)</h3>
-<p>FLOSC chat provider. Uses the Claude Messages API. The compiled personality profile is the top-level <code>system</code> string. Model is configurable. API key stored in WordPress options, never exposed to the client. All prompts are assembled server-side before the API call.</p>
+<p>FLOSC chat provider via the WordPress AI Client and AI Provider for Anthropic. Personality is the system instruction. Key in FLOSC (All Flows or this flow). Requires that official plugin to be registered.</p>
 
 <h3 id="term-openai">OpenAI</h3>
-<p>FLOSC chat provider (Chat Completions; optional Responses API). Personality profile rides as <code>messages[].role=system</code> or <code>instructions</code>. OpenAI Whisper is also an STT option on This flow. API key in the install pool or flow bag.</p>
+<p>FLOSC chat provider via the WordPress AI Client and AI Provider for OpenAI. Personality is the system instruction. OpenAI Whisper STT is still a FLOSC hop (the official plugin does not implement transcription). Key in FLOSC.</p>
 
 <h3 id="term-xai">xAI (Grok)</h3>
-<p>FLOSC chat provider. Chat Completions at <code>api.x.ai</code>. Personality profile rides as <code>messages[].role=system</code>.</p>
+<p>FLOSC chat provider. No official WordPress provider plugin yet. Chat Completions at <code>api.x.ai</code>. Personality rides as <code>messages[].role=system</code>.</p>
 
 <h3 id="term-gemini">Gemini</h3>
-<p>FLOSC chat provider. Google AI Studio / Gemini generateContent. Personality profile rides as <code>systemInstruction.parts[].text</code>.</p>
+<p>FLOSC chat provider via the WordPress AI Client and AI Provider for Google (WordPress provider id <code>google</code>). Personality is the system instruction. Key in FLOSC. Requires that official plugin to be registered.</p>
 
 <h3 id="term-personality-packs">Personality profile field maps</h3>
-<p>One compiled Markdown profile. FLOSC HTTP chat uses Anthropic, OpenAI, xAI, and Gemini. The workshop also maps that same profile for Mistral, Cohere, Together (Meta), Fireworks (Meta), AWS Bedrock, Azure OpenAI, OpenRouter, and Perplexity (field shapes only — not extra FLOSC HTTP adapters, and no provider-pack picker in FLOSC).</p>
+<p>One compiled Markdown profile. Chat send path: WordPress AI Client for Anthropic, OpenAI, and Gemini; FLOSC HTTP for xAI. The workshop also maps that same profile for Mistral, Cohere, Together (Meta), Fireworks (Meta), AWS Bedrock, Azure OpenAI, OpenRouter, and Perplexity (field shapes only — not extra FLOSC HTTP adapters, and no provider-pack picker in FLOSC).</p>
 <p>Current pocket-by-pocket intricacies are dated <strong>MTS 26_08m_20d</strong> and listed on the Personality Designer file panel (and in <code>flosc_provider_intricacies()</code>). Re-date that snapshot when a vendor moves the field. Sampling stays on This flow, not in the soul.</p>
 
 <h3 id="term-app-slug">App Slug</h3>

@@ -166,6 +166,7 @@ class FLOSC_STT_Dispatch {
         return new WP_Error('timeout', __('Transcription timed out', 'flosc'));
     }
     
+    
     /**
      * OpenAI Whisper
      * Cost: ~$0.006/minute = $0.001 per 10s recording

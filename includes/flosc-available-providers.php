@@ -59,13 +59,13 @@ if ( ! function_exists( 'flosc_install_provider_catalog' ) ) {
 			'anthropic'  => array(
 				'label' => __( 'Anthropic', 'flosc' ),
 				'kind'  => 'chat',
-				'hint'  => __( 'Chat — Claude API keys. Personality field: system.', 'flosc' ),
+				'hint'  => __( 'Chat — Claude API keys via AI Provider for Anthropic. Personality field: system.', 'flosc' ),
 				'url'   => 'https://console.anthropic.com/settings/keys',
 			),
 			'openai'     => array(
 				'label' => __( 'OpenAI', 'flosc' ),
 				'kind'  => 'chat',
-				'hint'  => __( 'Chat — OpenAI API keys. Personality field: system / instructions. Also Whisper STT.', 'flosc' ),
+				'hint'  => __( 'Chat — OpenAI API keys via AI Provider for OpenAI. Personality field: system / instructions. Whisper STT stays a FLOSC hop.', 'flosc' ),
 				'url'   => 'https://platform.openai.com/api-keys',
 			),
 			'xai'        => array(
@@ -77,7 +77,7 @@ if ( ! function_exists( 'flosc_install_provider_catalog' ) ) {
 			'gemini'     => array(
 				'label' => __( 'Gemini', 'flosc' ),
 				'kind'  => 'chat',
-				'hint'  => __( 'Chat — Google AI Studio keys. Personality field: systemInstruction.', 'flosc' ),
+				'hint'  => __( 'Chat — Google AI Studio keys via AI Provider for Google. Personality field: systemInstruction.', 'flosc' ),
 				'url'   => 'https://aistudio.google.com/apikey',
 			),
 			'assemblyai' => array(
@@ -119,62 +119,62 @@ if ( ! function_exists( 'flosc_personality_pack_catalog' ) ) {
 			'anthropic'      => array(
 				'label' => __( 'Anthropic', 'flosc' ),
 				'field' => 'system',
-				'api'   => 'POST https://api.anthropic.com/v1/messages',
+				'api'   => 'POST /v1/messages',
 			),
 			'openai'         => array(
 				'label' => __( 'OpenAI', 'flosc' ),
 				'field' => 'instructions / messages[].role=system',
-				'api'   => 'POST https://api.openai.com/v1/chat/completions',
+				'api'   => 'POST /v1/chat/completions',
 			),
 			'xai'            => array(
 				'label' => __( 'xAI', 'flosc' ),
 				'field' => 'messages[].role=system',
-				'api'   => 'POST https://api.x.ai/v1/chat/completions',
+				'api'   => 'POST /v1/chat/completions',
 			),
 			'gemini'         => array(
 				'label' => __( 'Gemini', 'flosc' ),
 				'field' => 'systemInstruction',
-				'api'   => 'POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
+				'api'   => 'POST /v1beta/models/{model}:generateContent',
 			),
 			'mistral'        => array(
 				'label' => __( 'Mistral', 'flosc' ),
 				'field' => 'messages[].role=system',
-				'api'   => 'POST https://api.mistral.ai/v1/chat/completions',
+				'api'   => 'POST /v1/chat/completions',
 			),
 			'cohere'         => array(
 				'label' => __( 'Cohere', 'flosc' ),
 				'field' => 'messages[].role=system',
-				'api'   => 'POST https://api.cohere.ai/v2/chat',
+				'api'   => 'POST /v2/chat',
 			),
 			'meta_together'  => array(
 				'label' => __( 'Together (Meta)', 'flosc' ),
 				'field' => 'messages[].role=system',
-				'api'   => 'POST https://api.together.ai/v1/chat/completions',
+				'api'   => 'POST /v1/chat/completions',
 			),
 			'meta_fireworks' => array(
 				'label' => __( 'Fireworks (Meta)', 'flosc' ),
 				'field' => 'messages[].role=system',
-				'api'   => 'POST https://api.fireworks.ai/inference/v1/chat/completions',
+				'api'   => 'POST /v1/chat/completions',
 			),
 			'aws_bedrock'    => array(
 				'label' => __( 'AWS Bedrock', 'flosc' ),
 				'field' => 'system',
-				'api'   => 'POST https://bedrock-runtime.{region}.amazonaws.com/model/{modelId}/invoke',
+				'api'   => 'POST /model/{modelId}/invoke (Bedrock runtime)',
 			),
 			'azure_openai'   => array(
 				'label' => __( 'Azure OpenAI', 'flosc' ),
 				'field' => 'messages[].role=system',
-				'api'   => 'POST https://{resource}.openai.azure.com/openai/deployments/{deployment}/chat/completions',
+				'api'   => 'POST /openai/deployments/{deployment}/chat/completions',
 			),
 			'openrouter'     => array(
 				'label' => __( 'OpenRouter', 'flosc' ),
 				'field' => 'messages[].role=system',
-				'api'   => 'POST https://openrouter.ai/api/v1/chat/completions',
+				'api'   => 'POST /api/v1/chat/completions',
 			),
 			'perplexity'     => array(
 				'label' => __( 'Perplexity', 'flosc' ),
 				'field' => 'messages[].role=system',
-				'api'   => 'POST https://api.perplexity.ai/chat/completions',
+				'api'   => 'POST /chat/completions',
 			),
 		);
 	}
@@ -229,13 +229,13 @@ if ( ! function_exists( 'flosc_provider_intricacies' ) ) {
 				'xai'       => array(
 					'label'  => __( 'xAI Grok', 'flosc' ),
 					'wants'  => __( 'Chat Completions (OpenAI-shaped): messages role system. Vendor docs also show a Responses-style input system item — FLOSC talks Chat Completions. Retired Grok-2 slugs 404; remap to a live ID.', 'flosc' ),
-					'path'   => __( 'POST https://api.x.ai/v1/chat/completions · personality → messages.system', 'flosc' ),
+					'path'   => __( 'POST /v1/chat/completions · personality → messages.system', 'flosc' ),
 					'models' => __( 'FLOSC default grok-4.5. Vendor flagship on this MTS is grok-4.6 — switch on This flow if your key is on 4.6 only.', 'flosc' ),
 				),
 				'gemini'    => array(
 					'label'  => __( 'Google Gemini', 'flosc' ),
 					'wants'  => __( 'REST generateContent: systemInstruction parts text (text only). Conversation is contents with roles user and model — never assistant. First content must be user. Key in x-goog-api-key. Temperature lives in generationConfig, not in the personality.', 'flosc' ),
-					'path'   => __( 'POST generativelanguage.googleapis.com generateContent · personality → systemInstruction', 'flosc' ),
+					'path'   => __( 'POST generateContent · personality → systemInstruction', 'flosc' ),
 					'models' => __( 'FLOSC default gemini-2.5-flash. 2.5 Pro / Flash-Lite also listed. Gemini 3.x uses thinking_level; do not stuff chain-of-thought into the soul to fake it.', 'flosc' ),
 				),
 				'ivr'       => array(
@@ -477,10 +477,14 @@ if ( ! function_exists( 'flosc_admin_save_available_providers' ) ) {
 		}
 		check_admin_referer( 'flosc_save_available_providers' );
 
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified above.
-		$posted = isset( $_POST['avail_api_key'] ) && is_array( $_POST['avail_api_key'] ) ? wp_unslash( $_POST['avail_api_key'] ) : array();
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing
-		$clear  = isset( $_POST['avail_clear'] ) && is_array( $_POST['avail_clear'] ) ? wp_unslash( $_POST['avail_clear'] ) : array();
+		$posted = array();
+		if ( isset( $_POST['avail_api_key'] ) && is_array( $_POST['avail_api_key'] ) ) {
+			$posted = array_map( 'sanitize_text_field', wp_unslash( $_POST['avail_api_key'] ) );
+		}
+		$clear = array();
+		if ( isset( $_POST['avail_clear'] ) && is_array( $_POST['avail_clear'] ) ) {
+			$clear = array_map( 'sanitize_text_field', wp_unslash( $_POST['avail_clear'] ) );
+		}
 
 		$all = flosc_available_providers_get_all();
 		foreach ( flosc_available_provider_slugs() as $slug ) {

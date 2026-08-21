@@ -248,132 +248,81 @@ class FLOSC_RAG_Chat_Handler {
      */
     private function flosc_execute_rag_loop($flosc_message, $flosc_system_prompt, $flosc_history, $flosc_tools, $flosc_user_session) {
 
-        // v1.9.1: This RAG handler only supports Anthropic's tool-calling API.
+        // RAG tool-calling is Anthropic-only, through the WordPress AI Client.
         // If the provider isn't Anthropic, return null so handle_chat() falls through to dispatch.
         $flosc_provider = flosc_get_setting('ai_provider', 'ivr');
         if ($flosc_provider !== 'anthropic') {
             return null;
         }
 
-        // v1.9.0: Use flosc_get_setting() — reads flow settings first (where admin UI saves)
         $flosc_api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'anthropic' ) : flosc_get_setting( 'anthropic_api_key', '' );
 
         if (empty($flosc_api_key)) {
             return null; // No key — let handle_chat() fall through to dispatch
         }
 
-        // v1.8.7: Per-flow model selection (consistent with ai-chat-dispatch)
-        $flosc_model = flosc_get_setting('ai_anthropic_model', 'claude-sonnet-4-5-20250929');
-        // RAG needs more tokens for tool-use loops — use 4x the configured chat max, floor 2000
-        $flosc_max_tokens = max(2000, (int) flosc_get_setting('ai_max_tokens', '500') * 4);
-
-        // Build messages array with history
-        $flosc_messages = $flosc_history;
-        $flosc_messages[] = [
-            'role' => 'user',
-            'content' => $flosc_message
-        ];
-
-        $flosc_max_iterations = 5;
-        $flosc_total_input_tokens = 0;
-        $flosc_total_output_tokens = 0;
-        $flosc_total_real_millicents = 0;
-
-        for ($i = 0; $i < $flosc_max_iterations; $i++) {
-
-            $flosc_response = wp_remote_post('https://api.anthropic.com/v1/messages', [
-                'headers' => [
-                    'x-api-key' => $flosc_api_key,
-                    'anthropic-version' => '2023-06-01',
-                    'content-type' => 'application/json',
-                ],
-                'body' => wp_json_encode([
-                    'model' => $flosc_model,
-                    'max_tokens' => $flosc_max_tokens,
-                    'system' => $flosc_system_prompt,
-                    'tools' => $flosc_tools,
-                    'messages' => $flosc_messages,
-                ]),
-                'timeout' => 30,
-            ]);
-
-            if (is_wp_error($flosc_response)) {
-                return "Sorry, I'm having trouble connecting. Please try again.";
-            }
-
-            $flosc_raw_body = wp_remote_retrieve_body($flosc_response);
-            $flosc_body = json_decode($flosc_raw_body, true);
-
-            // Capture billing on every Anthropic round-trip (tool-use loops can
-            // involve multiple calls). This keeps debit math aligned with real usage.
-            $flosc_usage = is_array($flosc_body['usage'] ?? null) ? $flosc_body['usage'] : [];
-            $flosc_input_tokens = max(0, intval($flosc_usage['input_tokens'] ?? 0));
-            $flosc_output_tokens = max(0, intval($flosc_usage['output_tokens'] ?? 0));
-            $flosc_total_input_tokens += $flosc_input_tokens;
-            $flosc_total_output_tokens += $flosc_output_tokens;
-
-            $flosc_rates = $this->flosc_resolve_anthropic_price_per_1m((string) $flosc_model);
-            $flosc_input_cost = ($flosc_input_tokens * $flosc_rates['input']) / 1000000;
-            $flosc_output_cost = ($flosc_output_tokens * $flosc_rates['output']) / 1000000;
-            $flosc_round_real_millicents = max(0, intval(ceil($flosc_input_cost + $flosc_output_cost)));
-            $flosc_total_real_millicents += $flosc_round_real_millicents;
-
-            $this->flosc_last_billing_meta = [
-                'provider' => 'anthropic',
-                'model' => (string) $flosc_model,
-                'usage' => [
-                    'input_tokens' => $flosc_total_input_tokens,
-                    'output_tokens' => $flosc_total_output_tokens,
-                    'total_tokens' => ($flosc_total_input_tokens + $flosc_total_output_tokens),
-                ],
-                'real_millicents' => max(0, intval($flosc_total_real_millicents)),
-                'source' => ($flosc_total_real_millicents > 0) ? 'token_rates' : 'none',
-            ];
-
-            if (!isset($flosc_body['content'])) {
-                // v1.9.6: Log the actual API error instead of silently swallowing it
-                $flosc_http_code = wp_remote_retrieve_response_code($flosc_response);
-                $flosc_error_msg = $flosc_body['error']['message'] ?? 'No content in response';
-                $flosc_error_type = $flosc_body['error']['type'] ?? 'unknown';
-                if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: API error on iteration {$i} — HTTP {$flosc_http_code}, type: {$flosc_error_type}, message: {$flosc_error_msg}");
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Response body (first 500 chars): " . substr($flosc_raw_body, 0, 500));
-                }
-                return "Sorry, I encountered an error. Please try again.";
-            }
-
-            $flosc_stop_reason = $flosc_body['stop_reason'] ?? 'end_turn';
-
-            if ($flosc_stop_reason === 'end_turn') {
-                // AI is done
-                return $this->flosc_extract_text_from_response($flosc_body['content']);
-            }
-
-            if ($flosc_stop_reason === 'tool_use') {
-                // AI wants to use tools
-                $flosc_messages[] = [
-                    'role' => 'assistant',
-                    'content' => $flosc_body['content']
-                ];
-
-                // Execute tools
-                $flosc_tool_results = $this->flosc_execute_tools_from_response(
-                    $flosc_body['content'],
-                    $flosc_user_session
-                );
-
-                $flosc_messages[] = [
-                    'role' => 'user',
-                    'content' => $flosc_tool_results
-                ];
-
-                continue;
-            }
-
-            break;
+        if ( ! class_exists( 'FLOSC_WP_AI_Client' ) || ! FLOSC_WP_AI_Client::is_provider_registered( 'anthropic' ) ) {
+            return null;
         }
 
-        return "I encountered an issue processing your request. Please try again.";
+        $flosc_model = flosc_get_setting('ai_anthropic_model', 'claude-sonnet-4-5-20250929');
+        $flosc_max_tokens = max(2000, (int) flosc_get_setting('ai_max_tokens', '500') * 4);
+
+        $flosc_result = FLOSC_WP_AI_Client::generate_with_tools(
+            array(
+                'provider'      => 'anthropic',
+                'message'       => $flosc_message,
+                'system_prompt' => $flosc_system_prompt,
+                'history'       => is_array( $flosc_history ) ? $flosc_history : array(),
+                'model'         => (string) $flosc_model,
+                'max_tokens'    => $flosc_max_tokens,
+                'tools'         => is_array( $flosc_tools ) ? $flosc_tools : array(),
+            ),
+            function ( $flosc_name, $flosc_input, $flosc_id ) {
+                unset( $flosc_id );
+                $flosc_out = $this->flosc_access_controller->flosc_execute_tool(
+                    $flosc_name,
+                    is_array( $flosc_input ) ? $flosc_input : array()
+                );
+                if ( is_array( $flosc_out ) ) {
+                    $flosc_out = $flosc_out['flosc_user_facing_message']
+                        ?? $flosc_out['flosc_reason']
+                        ?? wp_json_encode( $flosc_out );
+                }
+                return (string) $flosc_out;
+            }
+        );
+
+        if ( is_wp_error( $flosc_result ) ) {
+            if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+                flosc_log( 'FLOSC RAG: ' . $flosc_result->get_error_message() );
+            }
+            return "Sorry, I'm having trouble connecting. Please try again.";
+        }
+
+        $flosc_usage = isset( $flosc_result['usage'] ) && is_array( $flosc_result['usage'] ) ? $flosc_result['usage'] : array();
+        $flosc_input_tokens = max( 0, intval( $flosc_usage['prompt_tokens'] ?? $flosc_usage['input_tokens'] ?? 0 ) );
+        $flosc_output_tokens = max( 0, intval( $flosc_usage['completion_tokens'] ?? $flosc_usage['output_tokens'] ?? 0 ) );
+        $flosc_used_model = (string) ( $flosc_result['model'] ?? $flosc_model );
+        $flosc_rates = $this->flosc_resolve_anthropic_price_per_1m( $flosc_used_model );
+        $flosc_input_cost = ( $flosc_input_tokens * $flosc_rates['input'] ) / 1000000;
+        $flosc_output_cost = ( $flosc_output_tokens * $flosc_rates['output'] ) / 1000000;
+        $flosc_total_real_millicents = max( 0, intval( ceil( $flosc_input_cost + $flosc_output_cost ) ) );
+
+        $this->flosc_last_billing_meta = array(
+            'provider' => 'anthropic',
+            'model'    => $flosc_used_model,
+            'usage'    => array(
+                'input_tokens'  => $flosc_input_tokens,
+                'output_tokens' => $flosc_output_tokens,
+                'total_tokens'  => ( $flosc_input_tokens + $flosc_output_tokens ),
+            ),
+            'real_millicents' => $flosc_total_real_millicents,
+            'source'          => ( $flosc_total_real_millicents > 0 ) ? 'token_rates' : 'none',
+        );
+
+        $flosc_text = isset( $flosc_result['text'] ) ? (string) $flosc_result['text'] : '';
+        return $flosc_text !== '' ? $flosc_text : "I encountered an issue processing your request. Please try again.";
     }
 
     /**
@@ -404,66 +353,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC RAG: Response body (
             'input' => max(0, intval($seed['input'] ?? 0)),
             'output' => max(0, intval($seed['output'] ?? 0)),
         ];
-    }
-
-    /**
-     * Extract text from AI response
-     *
-     * @param array $flosc_content_blocks
-     * @return string
-     */
-    private function flosc_extract_text_from_response($flosc_content_blocks) {
-        $flosc_text = '';
-
-        foreach ($flosc_content_blocks as $flosc_block) {
-            if ($flosc_block['type'] === 'text') {
-                $flosc_text .= $flosc_block['text'];
-            }
-        }
-
-        return $flosc_text;
-    }
-
-    /**
-     * Execute tools from AI response
-     *
-     * @param array $flosc_content_blocks
-     * @param FLOSC_User_Session $flosc_user_session
-     * @return array Tool results
-     */
-    private function flosc_execute_tools_from_response($flosc_content_blocks, $flosc_user_session) {
-        $flosc_tool_results = [];
-
-        foreach ($flosc_content_blocks as $flosc_block) {
-            if ($flosc_block['type'] === 'tool_use') {
-                $flosc_tool_name = $flosc_block['name'];
-                $flosc_tool_input = $flosc_block['input'];
-                $flosc_tool_use_id = $flosc_block['id'];
-
-                // CRITICAL: Execute via Access Controller (not RAG manager directly!)
-                // This enforces deny-by-default security
-                $flosc_result = $this->flosc_access_controller->flosc_execute_tool(
-                    $flosc_tool_name,
-                    $flosc_tool_input
-                );
-
-                // v1.9.6: Anthropic requires tool_result content to be a string.
-                // Access controller denial returns an array — stringify it.
-                if (is_array($flosc_result)) {
-                    $flosc_result = $flosc_result['flosc_user_facing_message']
-                        ?? $flosc_result['flosc_reason']
-                        ?? wp_json_encode($flosc_result);
-                }
-
-                $flosc_tool_results[] = [
-                    'type' => 'tool_result',
-                    'tool_use_id' => $flosc_tool_use_id,
-                    'content' => (string) $flosc_result
-                ];
-            }
-        }
-
-        return $flosc_tool_results;
     }
 
     /**

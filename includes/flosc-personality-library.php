@@ -229,15 +229,38 @@ if ( ! function_exists( 'flosc_personality_library_resolve_field' ) ) {
 	}
 }
 
-if ( ! function_exists( 'flosc_visitor_assistant_name' ) ) {
+if ( ! function_exists( 'flosc_flow_name' ) ) {
 	/**
-	 * Public-facing name site visitors see (chat header, composer, companion).
-	 * That is the attached personality, not the floscFlow operator name.
+	 * Flow Name (Identity). Switch Flow pull-down only. Not the chat header.
 	 *
 	 * @param string|null $flow_id Optional flow stem.
 	 * @return string
 	 */
-	function flosc_visitor_assistant_name( $flow_id = null ) {
+	function flosc_flow_name( $flow_id = null ) {
+		$name = '';
+		if ( function_exists( 'flosc_get_setting' ) ) {
+			$name = trim( (string) flosc_get_setting( 'name', '', $flow_id ) );
+		}
+		if ( $name === '' && $flow_id === null && function_exists( 'flosc' ) ) {
+			$inst = flosc();
+			if ( is_object( $inst ) && method_exists( $inst, 'get_floscflow_identity' ) ) {
+				$id   = $inst->get_floscflow_identity();
+				$name = is_array( $id ) ? trim( (string) ( $id['name'] ?? '' ) ) : '';
+			}
+		}
+		return $name;
+	}
+}
+
+if ( ! function_exists( 'flosc_personality_name' ) ) {
+	/**
+	 * Personality Name. Chat header, composer, landing H1, compiled “You are {name}.”
+	 * Attached library row only — never Flow Name.
+	 *
+	 * @param string|null $flow_id Optional flow stem.
+	 * @return string
+	 */
+	function flosc_personality_name( $flow_id = null ) {
 		$name = '';
 		if ( function_exists( 'flosc_personality_library_resolve_field' ) ) {
 			$name = trim( (string) flosc_personality_library_resolve_field( 'ai_personality_name', '', $flow_id ) );
@@ -245,17 +268,19 @@ if ( ! function_exists( 'flosc_visitor_assistant_name' ) ) {
 		if ( $name === '' && function_exists( 'flosc_get_setting' ) ) {
 			$name = trim( (string) flosc_get_setting( 'ai_personality_name', '', $flow_id ) );
 		}
-		if ( $name === '' && function_exists( 'flosc_get_setting' ) ) {
-			$name = trim( (string) flosc_get_setting( 'name', '', $flow_id ) );
-		}
-		if ( $name === '' && function_exists( 'flosc' ) ) {
-			$inst = flosc();
-			if ( is_object( $inst ) && method_exists( $inst, 'get_floscflow_identity' ) ) {
-				$id   = $inst->get_floscflow_identity();
-				$name = is_array( $id ) ? trim( (string) ( $id['name'] ?? '' ) ) : '';
-			}
-		}
 		return $name !== '' ? $name : 'FLOSC';
+	}
+}
+
+if ( ! function_exists( 'flosc_visitor_assistant_name' ) ) {
+	/**
+	 * Alias of flosc_personality_name().
+	 *
+	 * @param string|null $flow_id Optional flow stem.
+	 * @return string
+	 */
+	function flosc_visitor_assistant_name( $flow_id = null ) {
+		return flosc_personality_name( $flow_id );
 	}
 }
 

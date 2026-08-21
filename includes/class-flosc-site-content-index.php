@@ -696,9 +696,8 @@ class FLOSC_Site_Content_Index {
 	/**
 	 * @return string
 	 */
-	private function ivr_from_request() {
-		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by caller.
-		$ivr = isset( $_REQUEST['flosc_return_ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_REQUEST['flosc_return_ivr'] ) ) : '';
+	private function ivr_from_request( $request ) {
+		$ivr = isset( $request['flosc_return_ivr'] ) ? sanitize_file_name( (string) $request['flosc_return_ivr'] ) : '';
 		return $ivr;
 	}
 
@@ -730,7 +729,7 @@ class FLOSC_Site_Content_Index {
 	public function handle_rebuild() {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_rebuild' );
-		$ivr  = $this->ivr_from_request();
+		$ivr  = $this->ivr_from_request( wp_unslash( $_POST ) );
 		$stem = $this->stem_from_ivr( $ivr );
 		$result = $this->rebuild( $stem );
 		if ( empty( $result['ok'] ) ) {
@@ -753,7 +752,7 @@ class FLOSC_Site_Content_Index {
 	public function handle_exclude() {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_exclude' );
-		$ivr = $this->ivr_from_request();
+		$ivr = $this->ivr_from_request( wp_unslash( $_POST ) );
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer in this method before read
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 		$stem    = $this->stem_from_ivr( $ivr );
@@ -769,7 +768,7 @@ class FLOSC_Site_Content_Index {
 	public function handle_include() {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_include' );
-		$ivr = $this->ivr_from_request();
+		$ivr = $this->ivr_from_request( wp_unslash( $_POST ) );
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer in this method before read
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 		$stem    = $this->stem_from_ivr( $ivr );
@@ -785,7 +784,7 @@ class FLOSC_Site_Content_Index {
 	public function handle_keywords() {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_keywords' );
-		$ivr = $this->ivr_from_request();
+		$ivr = $this->ivr_from_request( wp_unslash( $_POST ) );
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer in this method before read
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer in this method before read
@@ -803,7 +802,7 @@ class FLOSC_Site_Content_Index {
 	public function handle_reindex_one() {
 		$this->require_admin();
 		check_admin_referer( 'flosc_site_index_reindex_one' );
-		$ivr = $this->ivr_from_request();
+		$ivr = $this->ivr_from_request( wp_unslash( $_POST ) );
 		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by check_admin_referer in this method before read
 		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
 		$stem    = $this->stem_from_ivr( $ivr );
