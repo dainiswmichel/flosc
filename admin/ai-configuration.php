@@ -22,15 +22,12 @@ $flosc_ai_view       = isset( $flosc_get['view'] ) ? sanitize_key( (string) $flo
 if ( ! in_array( $flosc_ai_view, array( 'single', 'all' ), true ) ) {
 	$flosc_ai_view = 'single';
 }
-$flosc_ai_single_url = add_query_arg(
-	array(
-		'page' => 'flosc-settings',
-		'tab'  => 'ai',
-		'view' => 'single',
-		'ivr'  => $flosc_current_ivr,
-	),
-	admin_url( 'admin.php' )
-);
+$flosc_personality_id = sanitize_key( (string) ( $flosc_flow_settings['personality_library_id'] ?? '' ) );
+if ( $flosc_personality_id === '' && function_exists( 'flosc_personality_library_id_for_flow' ) ) {
+	$flosc_personality_id = flosc_personality_library_id_for_flow(
+		sanitize_key( pathinfo( (string) $flosc_current_ivr, PATHINFO_FILENAME ) )
+	);
+}
 $flosc_ai_all_url = add_query_arg(
 	array(
 		'page' => 'flosc-settings',
@@ -47,7 +44,7 @@ $flosc_ai_docs_url = add_query_arg([
     'doc'  => 'ref-admin',
 ], admin_url('admin.php')) . '#tab-ai';
 
-// Close main settings form for All Flows view (sibling forms for pool + personalities).
+// Close main settings form for All Flows (sibling forms).
 if ( 'all' === $flosc_ai_view ) {
 	if ( empty( $GLOBALS['flosc_settings_form_closed_early'] ) ) {
 		echo '</form>';
@@ -57,15 +54,8 @@ if ( 'all' === $flosc_ai_view ) {
 <div class="flosc-docs-link-wrap">
 	<a href="<?php echo esc_url( $flosc_ai_docs_url ); ?>" class="flosc-docs-link"><?php echo esc_html__( 'Docs', 'flosc' ); ?></a>
 </div>
-<div class="flosc-ivr-actions-row flosc-margin-bottom-16">
-	<a href="<?php echo esc_url( $flosc_ai_single_url ); ?>" class="button <?php echo esc_attr( 'single' === $flosc_ai_view ? 'button-primary' : '' ); ?>">
-		<?php echo esc_html__( 'This flow: AI settings', 'flosc' ); ?>
-	</a>
-	<a href="<?php echo esc_url( $flosc_ai_all_url ); ?>" class="button <?php echo esc_attr( 'all' === $flosc_ai_view ? 'button-primary' : '' ); ?>">
-		<?php echo esc_html__( 'All Flows AI API Management', 'flosc' ); ?>
-	</a>
-</div>
 	<?php
+	flosc_render_ai_tab_nav( $flosc_ai_view, $flosc_current_ivr );
 	require FLOSC_PLUGIN_DIR . 'admin/ai-all-flows.php';
 	return;
 }
@@ -75,6 +65,7 @@ $flosc_ai_provider = $flosc_flow_settings['ai_provider'] ?? 'ivr';
 $flosc_ai_openai_model = $flosc_flow_settings['ai_openai_model'] ?? 'gpt-4o-mini';
 $flosc_ai_anthropic_model = $flosc_flow_settings['ai_anthropic_model'] ?? 'claude-sonnet-4-5-20250929';
 $flosc_ai_xai_model = $flosc_flow_settings['ai_xai_model'] ?? 'grok-4.5';
+$flosc_ai_gemini_model = $flosc_flow_settings['ai_gemini_model'] ?? 'gemini-2.5-flash';
 // Retired xAI slugs no longer resolve on api.x.ai — surface current default in the UI.
 $flosc_xai_legacy_models = ['grok-2-latest', 'grok-2', 'grok-2-1212', 'grok-beta', 'grok-vision-beta'];
 if (in_array($flosc_ai_xai_model, $flosc_xai_legacy_models, true)) {
@@ -89,23 +80,22 @@ $flosc_enable_chaining = $flosc_flow_settings['ai_enable_chaining'] ?? false;
 $flosc_chain_provider_1 = $flosc_flow_settings['ai_chain_provider_1'] ?? '';
 $flosc_chain_provider_2 = $flosc_flow_settings['ai_chain_provider_2'] ?? '';
 $flosc_chain_provider_3 = $flosc_flow_settings['ai_chain_provider_3'] ?? '';
-$flosc_personality_id   = sanitize_key( (string) ( $flosc_flow_settings['personality_library_id'] ?? '' ) );
 $flosc_personas         = function_exists( 'flosc_personality_library_get_all' ) ? flosc_personality_library_get_all() : array();
 $flosc_avail            = function_exists( 'flosc_available_providers_get_all' ) ? flosc_available_providers_get_all() : array();
 
 // Risk / setup notices — read directly from flow settings (get_current_flow() is null in admin context).
 // No calendar-age nags for lesson catalog (stable catalogs can be fine for years).
-$flosc_product_name = $flosc_flow_settings['identity']['name'] ?? $flosc_flow_settings['name'] ?? '';
-$flosc_product_tag  = $flosc_flow_settings['identity']['tagline'] ?? $flosc_flow_settings['tagline'] ?? '';
+$flosc_product_name = trim( (string) ( $flosc_flow_settings['identity']['title'] ?? $flosc_flow_settings['title'] ?? '' ) );
+$flosc_product_tag  = trim( (string) ( $flosc_flow_settings['identity']['tagline'] ?? $flosc_flow_settings['tagline'] ?? '' ) );
 $flosc_notices = [];
 if ((float) $flosc_ai_temperature > 0.5) {
     $flosc_notices[] = '<strong>Temperature ' . esc_html($flosc_ai_temperature) . ' increases fabrication risk.</strong> Recommended: 0.3';
 }
-if (empty($flosc_product_name)) {
-    $flosc_notices[] = '<strong>Product name not configured.</strong> AI has no identity and will hallucinate.';
+if ( $flosc_product_name === '' ) {
+    $flosc_notices[] = '<strong>Offering Title is empty.</strong> Set Title on the Identity tab so the AI can describe this flow’s public offering.';
 }
-if (!empty($flosc_product_name) && empty($flosc_product_tag)) {
-    $flosc_notices[] = 'Reminder: The Product Tagline for this floscFlow is empty. You can set a short tagline on the Identity tab to improve how accurately AI describes this flow in chat.';
+if ( $flosc_product_name !== '' && $flosc_product_tag === '' ) {
+    $flosc_notices[] = 'Reminder: Tagline is empty. Set a one-line expansion of the Title on the Identity tab so the AI describes this offering accurately.';
 }
 ?>
 <?php if (!empty($flosc_notices)): ?>
@@ -122,14 +112,7 @@ if (!empty($flosc_product_name) && empty($flosc_product_tag)) {
     <a href="<?php echo esc_url($flosc_ai_docs_url); ?>" class="flosc-docs-link">Docs</a>
 </div>
 
-<div class="flosc-ivr-actions-row flosc-margin-bottom-16">
-	<a href="<?php echo esc_url( $flosc_ai_single_url ); ?>" class="button button-primary">
-		<?php echo esc_html__( 'This flow: AI settings', 'flosc' ); ?>
-	</a>
-	<a href="<?php echo esc_url( $flosc_ai_all_url ); ?>" class="button">
-		<?php echo esc_html__( 'All Flows AI API Management', 'flosc' ); ?>
-	</a>
-</div>
+<?php flosc_render_ai_tab_nav( 'single', $flosc_current_ivr ); ?>
 
 <!-- Styles in assets/css/flosc-admin.css (AI Configuration section) -->
 
@@ -137,12 +120,14 @@ if (!empty($flosc_product_name) && empty($flosc_product_tag)) {
 
 <h2><?php echo esc_html__( 'This flow: AI settings', 'flosc' ); ?></h2>
 <p class="description flosc-ai-intro">
-	<?php echo esc_html__( 'Attach one personality and choose which available AI providers this floscFlow uses. Configure install-wide keys and the personality library under All Flows AI API Management. APIs can be chained; personalities cannot.', 'flosc' ); ?>
+	<?php echo esc_html__( 'Attach one personality and one chat API. Chat APIs: Anthropic, OpenAI, xAI, Gemini (or IVR scripted only). Speech-to-text: AssemblyAI, OpenAI Whisper, or a custom endpoint. Install-wide keys live under All Flows AI API Management. APIs can be chained; personalities cannot.', 'flosc' ); ?>
 </p>
 
 <?php
 $flosc_avail_bits = array();
-foreach ( array( 'anthropic' => 'Anthropic', 'openai' => 'OpenAI', 'xai' => 'xAI', 'assemblyai' => 'AssemblyAI' ) as $flosc_slug => $flosc_lab ) {
+$flosc_key_catalog = function_exists( 'flosc_install_provider_catalog' ) ? flosc_install_provider_catalog() : array();
+foreach ( $flosc_key_catalog as $flosc_slug => $flosc_meta ) {
+	$flosc_lab = isset( $flosc_meta['label'] ) ? (string) $flosc_meta['label'] : $flosc_slug;
 	$flosc_avail_bits[] = $flosc_lab . ( ! empty( $flosc_avail[ $flosc_slug ]['api_key'] ) ? ' ✓' : ' —' );
 }
 ?>
@@ -152,8 +137,12 @@ foreach ( array( 'anthropic' => 'Anthropic', 'openai' => 'OpenAI', 'xai' => 'xAI
 	— <a href="<?php echo esc_url( $flosc_ai_all_url ); ?>"><?php echo esc_html__( 'Manage', 'flosc' ); ?></a>
 </p>
 
-<!-- Personality attach (exactly one) -->
-<h3 class="flosc-ai-section-heading"><?php echo esc_html__( 'Personality (one per flow)', 'flosc' ); ?></h3>
+<details class="flosc-ai-acc" id="flosc-personality-section" open>
+<summary class="flosc-ai-acc__summary">
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Attached personality', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Attach one library voice here, then attach this flow’s API.', 'flosc' ); ?></span>
+</summary>
+<div class="flosc-ai-acc__body">
 <table class="form-table">
 	<tr>
 		<th scope="row"><label for="flow_personality_library_id"><?php echo esc_html__( 'Attached personality', 'flosc' ); ?></label></th>
@@ -167,11 +156,26 @@ foreach ( array( 'anthropic' => 'Anthropic', 'openai' => 'OpenAI', 'xai' => 'xAI
 				<?php endforeach; ?>
 			</select>
 			<p class="description">
-				<?php echo esc_html__( 'Library entries are managed under All Flows AI API Management → Personalities. One personality only — not chained.', 'flosc' ); ?>
+				<?php echo esc_html__( 'This flow’s personality. The designer below is this same library row. Save Settings after changing the select.', 'flosc' ); ?>
 			</p>
+			<p id="flosc-personality-attach-note" class="description flosc-hidden" role="status"></p>
 		</td>
 	</tr>
 </table>
+</div>
+</details>
+<?php
+if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
+	flosc_render_personality_designer_accordion( $flosc_personality_id, (string) $flosc_current_ivr );
+}
+?>
+
+<details class="flosc-ai-acc" open>
+<summary class="flosc-ai-acc__summary">
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Provider, keys, and test', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'This flow’s API. Install-wide keys live under All Flows.', 'flosc' ); ?></span>
+</summary>
+<div class="flosc-ai-acc__body">
 
 <!-- ============================================ -->
 <!-- SECTION 1: PROVIDER SELECTION -->
@@ -189,6 +193,7 @@ foreach ( array( 'anthropic' => 'Anthropic', 'openai' => 'OpenAI', 'xai' => 'xAI
                 <option value="anthropic" <?php selected($flosc_ai_provider, 'anthropic'); ?>>Anthropic Claude (Recommended for FLOSC)</option>
                 <option value="openai" <?php selected($flosc_ai_provider, 'openai'); ?>>OpenAI (Fast & Affordable)</option>
                 <option value="xai" <?php selected($flosc_ai_provider, 'xai'); ?>>xAI Grok</option>
+                <option value="gemini" <?php selected($flosc_ai_provider, 'gemini'); ?>>Google Gemini</option>
             </select>
             <p class="description">
                 <strong>IVR:</strong> Uses your configured messages only (no AI, no costs).<br>
@@ -322,6 +327,52 @@ foreach ( array( 'anthropic' => 'Anthropic', 'openai' => 'OpenAI', 'xai' => 'xAI
 </table>
 </div>
 
+<!-- Gemini -->
+<div class="flosc-ai-provider-section" data-provider="gemini">
+<table class="form-table">
+    <tr>
+        <th scope="row">
+            <label for="flow_gemini_api_key"><strong>Gemini API Key</strong></label>
+        </th>
+        <td>
+            <input type="password" id="flow_gemini_api_key" name="flow_gemini_api_key" value="<?php echo esc_attr( function_exists('flosc_admin_secret_input_value') ? flosc_admin_secret_input_value( $flosc_flow_settings['gemini_api_key'] ?? '' ) : ( current_user_can('manage_options') ? (string) ( $flosc_flow_settings['gemini_api_key'] ?? '' ) : '' ) ); ?>" class="regular-text flosc-ai-key-input" placeholder="AIza...">
+            <p class="description">
+                <a href="https://aistudio.google.com/apikey" target="_blank" class="button button-secondary flosc-ai-key-link">
+                    Get Your Gemini API Key Here
+                </a><br>
+                <span class="flosc-ai-key-desc">Google AI Studio keys. Install-wide keys also live under All Flows.</span>
+            </p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_ai_gemini_model">Gemini Model</label></th>
+        <td>
+            <select name="flow_ai_gemini_model" id="flow_ai_gemini_model" class="flosc-ai-model-select">
+                <?php
+                $flosc_gemini_model_options = [
+                    'gemini-2.5-flash'      => 'Gemini 2.5 Flash (Recommended)',
+                    'gemini-2.5-pro'        => 'Gemini 2.5 Pro',
+                    'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash-Lite',
+                    'gemini-2.0-flash'      => 'Gemini 2.0 Flash (legacy)',
+                ];
+                $flosc_gemini_known = array_keys($flosc_gemini_model_options);
+                if ($flosc_ai_gemini_model !== '' && !in_array($flosc_ai_gemini_model, $flosc_gemini_known, true)) {
+                    $flosc_gemini_model_options[$flosc_ai_gemini_model] = $flosc_ai_gemini_model . ' (saved custom ID)';
+                }
+                foreach ($flosc_gemini_model_options as $flosc_g_id => $flosc_g_label) :
+                    ?>
+                <option value="<?php echo esc_attr($flosc_g_id); ?>" <?php selected($flosc_ai_gemini_model, $flosc_g_id); ?>><?php echo esc_html($flosc_g_label); ?></option>
+                <?php endforeach; ?>
+            </select>
+            <p class="description">
+                Model ID sent to <code>generativelanguage.googleapis.com</code>. Default: <code>gemini-2.5-flash</code>.
+                Catalog: <a href="https://ai.google.dev/gemini-api/docs/models" target="_blank" rel="noopener noreferrer">Gemini models</a>.
+            </p>
+        </td>
+    </tr>
+</table>
+</div>
+
 <!-- IVR-only notice -->
 <div class="flosc-ai-provider-section flosc-banner flosc-banner--info" data-provider="ivr">
     <strong>IVR-Only Mode:</strong> No API key needed. Your IVR messages handle all responses. Switch to an AI provider above to enable conversational AI.
@@ -390,6 +441,7 @@ foreach ( array( 'anthropic' => 'Anthropic', 'openai' => 'OpenAI', 'xai' => 'xAI
                     <option value="openai" <?php selected($flosc_chain_provider_1, 'openai'); ?>>OpenAI</option>
                     <option value="anthropic" <?php selected($flosc_chain_provider_1, 'anthropic'); ?>>Anthropic Claude</option>
                     <option value="xai" <?php selected($flosc_chain_provider_1, 'xai'); ?>>xAI Grok</option>
+                    <option value="gemini" <?php selected($flosc_chain_provider_1, 'gemini'); ?>>Google Gemini</option>
                 </select>
                 <span class="description">Generates the initial response.</span>
             </td>
@@ -402,6 +454,7 @@ foreach ( array( 'anthropic' => 'Anthropic', 'openai' => 'OpenAI', 'xai' => 'xAI
                     <option value="openai" <?php selected($flosc_chain_provider_2, 'openai'); ?>>OpenAI</option>
                     <option value="anthropic" <?php selected($flosc_chain_provider_2, 'anthropic'); ?>>Anthropic Claude</option>
                     <option value="xai" <?php selected($flosc_chain_provider_2, 'xai'); ?>>xAI Grok</option>
+                    <option value="gemini" <?php selected($flosc_chain_provider_2, 'gemini'); ?>>Google Gemini</option>
                 </select>
                 <span class="description">Reviews and refines Provider 1's response.</span>
             </td>
@@ -414,6 +467,7 @@ foreach ( array( 'anthropic' => 'Anthropic', 'openai' => 'OpenAI', 'xai' => 'xAI
                     <option value="openai" <?php selected($flosc_chain_provider_3, 'openai'); ?>>OpenAI</option>
                     <option value="anthropic" <?php selected($flosc_chain_provider_3, 'anthropic'); ?>>Anthropic Claude</option>
                     <option value="xai" <?php selected($flosc_chain_provider_3, 'xai'); ?>>xAI Grok</option>
+                    <option value="gemini" <?php selected($flosc_chain_provider_3, 'gemini'); ?>>Google Gemini</option>
                 </select>
                 <span class="description">Optional third pass. Leave as "None" for 2-provider chain.</span>
             </td>
@@ -442,6 +496,15 @@ foreach ( array( 'anthropic' => 'Anthropic', 'openai' => 'OpenAI', 'xai' => 'xAI
         <span>Testing connection to AI provider...</span>
     </div>
 </div>
+</div>
+</details>
+
+<details class="flosc-ai-acc">
+<summary class="flosc-ai-acc__summary">
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Custom personality fields', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Used when Attached personality is Custom on this flow only.', 'flosc' ); ?></span>
+</summary>
+<div class="flosc-ai-acc__body">
 
 <!-- Base System Prompt -->
 <h3 class="flosc-ai-section-heading">
@@ -452,13 +515,22 @@ foreach ( array( 'anthropic' => 'Anthropic', 'openai' => 'OpenAI', 'xai' => 'xAI
     <tr>
         <th scope="row"><label for="flow_ai_base_prompt">Base System Prompt</label></th>
         <td>
-            <textarea id="flow_ai_base_prompt" name="flow_ai_base_prompt" rows="6" class="large-text flosc-ai-prompt-textarea" placeholder="Define your AI's personality and behavior here. Example: You are a friendly coach who helps users improve their skills..."><?php echo esc_textarea($flosc_base_prompt); ?></textarea>
+            <textarea id="flow_ai_base_prompt" name="flow_ai_base_prompt" rows="16" class="large-text flosc-ai-prompt-textarea" placeholder="<?php echo esc_attr__( 'Used only when Attached personality is Custom on this flow. Prefer Design → save to the library → attach that id.', 'flosc' ); ?>"><?php echo esc_textarea($flosc_base_prompt); ?></textarea>
             <p class="description">
-                Define your AI's core personality and behavior. FLOSC automatically adds phase-specific instructions on top of this base prompt. Leave blank to use the AI Knowledge tab settings only.
+                <?php echo esc_html__( 'Custom-on-this-flow only. When a library personality is attached, that row’s compiled profile is the voice. FLOSC still adds flow facts (product, phase, IVR, session).', 'flosc' ); ?>
             </p>
         </td>
     </tr>
 </table>
+</div>
+</details>
+
+<details class="flosc-ai-acc">
+<summary class="flosc-ai-acc__summary">
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Response, context, and phases', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'How this flow talks across Freeline, Login, Offer, Sale, Content.', 'flosc' ); ?></span>
+</summary>
+<div class="flosc-ai-acc__body">
 
 <!-- AI Response Mode -->
 <h3 class="flosc-ai-section-heading flosc-ai-phase-section">
@@ -583,6 +655,8 @@ foreach ( array( 'anthropic' => 'Anthropic', 'openai' => 'OpenAI', 'xai' => 'xAI
         </td>
     </tr>
 </table>
+</div>
+</details>
 
 <?php ob_start(); ?>
 jQuery(document).ready(function($) {
@@ -600,6 +674,20 @@ jQuery(document).ready(function($) {
     }
     $('#flow_ai_provider').on('change', updateProviderSections);
     updateProviderSections();
+
+    var attachSel = $('#flow_personality_library_id');
+    var attachNote = $('#flosc-personality-attach-note');
+    var attachSaved = attachSel.val();
+    attachSel.on('change', function () {
+        if (!attachNote.length) {
+            return;
+        }
+        if (attachSel.val() === attachSaved) {
+            attachNote.addClass('flosc-hidden').text('');
+            return;
+        }
+        attachNote.removeClass('flosc-hidden').text('Save Settings to load this personality in the designer below.');
+    });
 
     // --- Chaining toggle ---
     $('#flow_ai_enable_chaining').on('change', function() {
@@ -694,6 +782,13 @@ jQuery(document).ready(function($) {
 });
 <?php wp_add_inline_script('flosc-admin', ob_get_clean()); ?>
 
+<details class="flosc-ai-acc">
+<summary class="flosc-ai-acc__summary">
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Speech-to-text', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Only needed for audio quizzes.', 'flosc' ); ?></span>
+</summary>
+<div class="flosc-ai-acc__body">
+
 <!-- Speech-to-Text Configuration -->
 <hr class="flosc-ai-stt-divider">
 
@@ -742,11 +837,20 @@ jQuery(document).ready(function($) {
 <div class="flosc-banner flosc-banner--info flosc-ai-footer-reminder">
     <strong>💡 Remember:</strong> After adding your API keys, click <strong>"Save Settings"</strong> at the bottom of this page, then use the <strong>"Test AI Connection"</strong> button above to verify everything works!
 </div>
+</div>
+</details>
+
+<details class="flosc-ai-acc">
+<summary class="flosc-ai-acc__summary">
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Custom field list', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Name, role, traits, and scope when not using a library profile.', 'flosc' ); ?></span>
+</summary>
+<div class="flosc-ai-acc__body">
 
 <!-- ============================================ -->
 <!-- SECTION: AI PERSONALITY (Fix 12 / Fix 15) -->
 <!-- ============================================ -->
-<hr class="flosc-section-divider" id="flosc-personality-section">
+<hr class="flosc-section-divider" id="flosc-personality-fields">
 <h3 class="flosc-ai-section-heading"><?php echo esc_html__( 'Personality fields', 'flosc' ); ?></h3>
 <p class="description">Define who your AI is and how it interacts with users. These fields are injected into every AI system prompt.</p>
 
@@ -832,6 +936,8 @@ jQuery(document).ready(function($) {
         </td>
     </tr>
 </table>
+</div>
+</details>
 
 <!-- ============================================ -->
 <!-- SECTION: SITE CONTENT INDEX -->
@@ -874,7 +980,13 @@ if ( $flosc_sci_action === 'rebuilt' ) {
 	$flosc_sci_msg = $flosc_sci_err !== '' ? $flosc_sci_err : __( 'Site index action failed.', 'flosc' );
 }
 ?>
-<hr class="flosc-section-divider" id="flosc-site-index-section">
+<details class="flosc-ai-acc" id="flosc-site-index-section"<?php echo $flosc_sci_msg !== '' ? ' open' : ''; ?>>
+<summary class="flosc-ai-acc__summary">
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Site content index', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Posts this flow’s chat may cite.', 'flosc' ); ?></span>
+</summary>
+<div class="flosc-ai-acc__body">
+<hr class="flosc-section-divider">
 <h3 class="flosc-ai-section-heading"><?php echo esc_html__( 'Site content index', 'flosc' ); ?></h3>
 <p class="description">
 	<?php echo esc_html__( 'Indexes published posts across the site into a reference library. Chat pulls only matching posts when useful — never the whole library on every message. Set this flow’s content category on the Content tab for freeline, guest, and member product scope.', 'flosc' ); ?>
@@ -1100,10 +1212,16 @@ if ( $flosc_sci_action === 'rebuilt' ) {
 	</div>
 <?php endif; ?>
 
-<!-- ============================================ -->
-<!-- SECTION: KNOWLEDGE BASE (Fix 15) -->
-<!-- ============================================ -->
-<hr class="flosc-section-divider" id="flosc-kb-section">
+</div>
+</details>
+
+<details class="flosc-ai-acc" id="flosc-kb-section">
+<summary class="flosc-ai-acc__summary">
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Knowledge Base', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Markdown files injected into the AI knowledge base.', 'flosc' ); ?></span>
+</summary>
+<div class="flosc-ai-acc__body">
+<hr class="flosc-section-divider">
 <h3 class="flosc-ai-section-heading">📚 Knowledge Base</h3>
 <p class="description">Upload markdown files containing lesson catalogs, FAQs, product info, and teaching guidelines. These files are injected into the AI knowledge base on every session.</p>
 
@@ -1298,15 +1416,16 @@ if (empty($GLOBALS['flosc_settings_form_closed_early'])) {
 <!-- ============================================ -->
 <?php
 $flosc_acc_flow_name = (string) ( $flosc_flow_settings['identity']['name'] ?? $flosc_flow_settings['name'] ?? '' );
-if ( $flosc_acc_flow_name === '' && function_exists( 'flosc_personality_library_resolve_field' ) ) {
-	$flosc_acc_flow_name = (string) flosc_personality_library_resolve_field( 'ai_personality_name', '' );
-}
 if ( $flosc_acc_flow_name === '' ) {
 	$flosc_acc_flow_name = (string) ( $GLOBALS['flosc_current_ivr'] ?? 'this floscFlow' );
 	$flosc_acc_flow_name = pathinfo( $flosc_acc_flow_name, PATHINFO_FILENAME );
 	$flosc_acc_flow_name = $flosc_acc_flow_name !== '' ? $flosc_acc_flow_name : 'this floscFlow';
 }
-$flosc_acc_tagline = (string) ( $flosc_flow_settings['identity']['tagline'] ?? $flosc_flow_settings['tagline'] ?? '' );
+$flosc_acc_title = trim( (string) ( $flosc_flow_settings['identity']['title'] ?? $flosc_flow_settings['title'] ?? '' ) );
+if ( $flosc_acc_title === '' ) {
+	$flosc_acc_title = __( '(no title set)', 'flosc' );
+}
+$flosc_acc_tagline = trim( (string) ( $flosc_flow_settings['identity']['tagline'] ?? $flosc_flow_settings['tagline'] ?? '' ) );
 if ( $flosc_acc_tagline === '' ) {
 	$flosc_acc_tagline = __( '(no tagline set)', 'flosc' );
 }
@@ -1327,19 +1446,20 @@ if ( $flosc_acc_site === '' ) {
 
 // Content-agnostic templates (placeholders). Expanded for this flow for defaults / Reset.
 $flosc_acc_templates = array(
-	'Hello — what is the name of this floscFlow, and who are you in this chat?',
-	'What is the product or flow name you represent here? (Expected name: {flow_name}.)',
-	'What does the Product Tagline for this floscFlow mean or convey? (Configured tagline: {tagline}.)',
-	'In your own words, what is {flow_name} for, and who is it meant to help?',
-	'What topics or tasks are you authorized to handle on {flow_name}? (Topic scope note: {topic_scope}.)',
-	'How does {flow_name} relate to {site_name}?',
-	'What should a first-time visitor do next on {flow_name}?',
-	'Stay in character for {flow_name}: state your role in one or two sentences.',
-	'If someone asks for details you do not have about {flow_name}, what do you do instead of inventing them?',
-	'Summarize {flow_name}: name, purpose, and how you help — based on this conversation.',
+	'Hello — what is the name of this floscFlow ({flow_name}), and who are you in this chat?',
+	'What is the public offering title you represent here? (Expected title: {title}.)',
+	'What does the Tagline for this offering mean or convey? (Configured tagline: {tagline}.)',
+	'In your own words, what is {title} for, and who is it meant to help?',
+	'What topics or tasks are you authorized to handle for {title}? (Topic scope note: {topic_scope}.)',
+	'How does {title} relate to {site_name}?',
+	'What should a first-time visitor do next on {title}?',
+	'Stay in character for {title}: state your role in one or two sentences.',
+	'If someone asks for details you do not have about {title}, what do you do instead of inventing them?',
+	'Summarize this offering: title {title}, tagline {tagline}, and how you help — based on this conversation.',
 );
 $flosc_acc_var_map = array(
 	'{flow_name}'   => $flosc_acc_flow_name,
+	'{title}'       => $flosc_acc_title,
 	'{tagline}'     => $flosc_acc_tagline,
 	'{topic_scope}' => $flosc_acc_scope,
 	'{site_name}'   => $flosc_acc_site,
@@ -1392,7 +1512,16 @@ while ( count( $flosc_acc_edit_lines ) < $flosc_acc_row_count ) {
 }
 $flosc_acc_line_count = max( 1, count( array_filter( $flosc_acc_edit_lines ) ) );
 ?>
-<hr class="flosc-section-divider" id="flosc-accuracy-test">
+</div>
+</details>
+
+<details class="flosc-ai-acc" id="flosc-accuracy-test">
+<summary class="flosc-ai-acc__summary">
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Provider accuracy test', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Run template questions against this flow’s API.', 'flosc' ); ?></span>
+</summary>
+<div class="flosc-ai-acc__body">
+<hr class="flosc-section-divider">
 <h3 class="flosc-ai-section-heading"><?php echo esc_html__( 'Provider accuracy test', 'flosc' ); ?></h3>
 <p class="description">
 	<?php echo esc_html__( 'Edit each template using the variables below. The user input that will be sent to the AI is previewed under each row (variables expanded). Save Settings keeps your templates.', 'flosc' ); ?>
@@ -1404,6 +1533,7 @@ $flosc_acc_line_count = max( 1, count( array_filter( $flosc_acc_edit_lines ) ) )
 		<?php echo esc_html__( 'Type these in the template box. Values for this flow:', 'flosc' ); ?>
 	</p>
 	<span class="flosc-acc-var-chip"><code>{flow_name}</code> = <?php echo esc_html( $flosc_acc_flow_name ); ?></span>
+	<span class="flosc-acc-var-chip"><code>{title}</code> = <?php echo esc_html( $flosc_acc_title ); ?></span>
 	<span class="flosc-acc-var-chip"><code>{tagline}</code> = <?php echo esc_html( $flosc_acc_tagline ); ?></span>
 	<span class="flosc-acc-var-chip"><code>{topic_scope}</code> = <?php echo esc_html( $flosc_acc_scope ); ?></span>
 	<span class="flosc-acc-var-chip"><code>{site_name}</code> = <?php echo esc_html( $flosc_acc_site ); ?></span>
@@ -1641,5 +1771,7 @@ jQuery(document).ready(function($) {
 	});
 });
 <?php wp_add_inline_script( 'flosc-admin', ob_get_clean() ); ?>
+</div>
+</details>
 
 </div><!-- .flosc-ai-config -->

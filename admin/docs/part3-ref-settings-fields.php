@@ -140,7 +140,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Identity</li>
 </ul>
 <h4 id="field-name"><code>name</code></h4>
-<p>Display name for the flow.</p>
+<p>Operator floscFlow name (Switch Flow dropdown). Not shown to site visitors. Visitors see the attached personality name in chat. Stored as <code>identity.name</code>.</p>
 <ul>
 <li><strong>Portable:</strong> yes (Settings YAML)</li>
 <li><strong>Admin tab:</strong> Identity</li>
@@ -176,7 +176,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Identity</li>
 </ul>
 <h4 id="field-tagline"><code>tagline</code></h4>
-<p>Short tagline for the flow identity.</p>
+<p>One-line expansion of the offering Title. Visitors see it under the Title. The AI uses it as the offering’s short description. Not the FLOSC acronym (Freeline, Login, Offer, Sale, Content) and not the personality. Stored as <code>identity.tagline</code>.</p>
 <ul>
 <li><strong>Portable:</strong> yes (Settings YAML)</li>
 <li><strong>Admin tab:</strong> Identity</li>
@@ -188,7 +188,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Identity</li>
 </ul>
 <h4 id="field-title"><code>title</code></h4>
-<p>Title used in UI / identity contexts.</p>
+<p>Public offering name. Visitors see it under the personality on the landing screen and as the browser-tab suffix. Chatpack and accuracy tests send it to the AI as this flow’s offering — not the operator floscFlow name and not the personality. Stored as <code>identity.title</code>.</p>
 <ul>
 <li><strong>Portable:</strong> yes (Settings YAML)</li>
 <li><strong>Admin tab:</strong> Identity</li>
@@ -1832,7 +1832,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> AI</li>
 </ul>
 <h4 id="field-ai_accuracy_test_questions"><code>ai_accuracy_test_questions</code></h4>
-<p>Newline-separated accuracy-test <em>templates</em> (preferred) using placeholders <code>{flow_name}</code>, <code>{tagline}</code>, <code>{topic_scope}</code>, <code>{site_name}</code>. Each line is a userMessage template; at run time FLOSC expands it to the userInput sent to the AI. Results store the assistantMessage (AI response) per turn. Stored as <code>ai_accuracy_test_questions</code>.</p>
+<p>Newline-separated accuracy-test <em>templates</em> (preferred) using placeholders <code>{flow_name}</code> (operator floscFlow name), <code>{title}</code> (public offering), <code>{tagline}</code> (one-line expansion of Title), <code>{topic_scope}</code>, <code>{site_name}</code>. Each line is a userMessage template; at run time FLOSC expands it to the userInput sent to the AI. Results store the assistantMessage (AI response) per turn. Stored as <code>ai_accuracy_test_questions</code>.</p>
 <ul>
 <li><strong>Portable:</strong> yes (Settings YAML)</li>
 <li><strong>Admin tab:</strong> AI → This flow: AI settings → Accuracy test</li>
@@ -1898,7 +1898,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> AI</li>
 </ul>
 <h4 id="field-personality_library_id"><code>personality_library_id</code></h4>
-<p>Install personality library entry id attached to this floscFlow. Empty string means custom fields on this flow only. Exactly one personality per flow — not a chain. Library entries themselves live on the install (All Flows AI API Management), not as secrets. Stored as <code>personality_library_id</code>.</p>
+<p>Install personality library entry id attached to this floscFlow. Empty string means custom fields on this flow only. Exactly one personality per flow — not a chain. Library entries themselves live on the install (All Flows AI API Management → Personalities, plus Personality Designer). YAML carries the id only — never the compiled profile or workshop JSON. Stored as <code>personality_library_id</code>.</p>
 <ul>
 <li><strong>Portable:</strong> yes (Settings YAML) — id only; target install must already have that library entry or use custom fields</li>
 <li><strong>Admin tab:</strong> AI → This flow: AI settings → Attached personality</li>
@@ -1952,7 +1952,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> AI</li>
 </ul>
 <h4 id="field-ai_provider"><code>ai_provider</code></h4>
-<p>AI / STT configuration for this flow (non-secret fields only in portable packs). Stored as <code>ai_provider</code>.</p>
+<p>Primary chat API for this floscFlow. Slugs: <code>ivr</code> (scripted, no external chat API), <code>anthropic</code>, <code>openai</code>, <code>xai</code>, <code>gemini</code>. The compiled personality profile is sent as that API’s system field. Not STT — see <code>stt_provider</code>. Stored as <code>ai_provider</code>.</p>
 <ul>
 <li><strong>Portable:</strong> yes (Settings YAML)</li>
 <li><strong>Admin tab:</strong> AI</li>
@@ -2054,7 +2054,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> AI</li>
 </ul>
 <h4 id="field-stt_provider"><code>stt_provider</code></h4>
-<p>AI / STT configuration for this flow (non-secret fields only in portable packs). Stored as <code>stt_provider</code>.</p>
+<p>Speech-to-text for this flow. Slugs: <code>assemblyai</code>, <code>openai</code> (Whisper), <code>custom</code>. Not a chat personality. Stored as <code>stt_provider</code>.</p>
 <ul>
 <li><strong>Portable:</strong> yes (Settings YAML)</li>
 <li><strong>Admin tab:</strong> AI</li>

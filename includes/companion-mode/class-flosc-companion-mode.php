@@ -99,7 +99,9 @@ class FLOSC_Companion_Mode {
 
         // Brand / product identity — header icon + assistant name (not hard-coded FLOSC/emoji).
         $identity = $this->flosc->get_floscflow_identity();
-        $product_name = sanitize_text_field((string) ($identity['name'] ?? ''));
+        $product_name = function_exists( 'flosc_visitor_assistant_name' )
+            ? sanitize_text_field( flosc_visitor_assistant_name() )
+            : sanitize_text_field((string) ($identity['name'] ?? ''));
         if ($product_name === '') {
             $product_name = sanitize_text_field((string) flosc_get_setting('product_name', 'FLOSC'));
         }

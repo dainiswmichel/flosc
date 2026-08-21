@@ -1531,7 +1531,9 @@ class floscApp {
             session_minutes: 0,
             
             // Identity info (from FLOSC_CONFIG, set by floscAdmin)
-            product_name: this.config.identity?.name || 'this program',
+            product_name: this.config.productName || this.config.personalityName || this.config.identity?.name || 'this program',
+            title: (this.config.identity && this.config.identity.title) ? this.config.identity.title : '',
+            tagline: (this.config.identity && this.config.identity.tagline) ? this.config.identity.tagline : '',
             price: this.config.identity?.price || '',
             discount_price: this.config.identity?.discount_price || '',
             customer_count: this.config.identity?.customer_count || '',
@@ -1929,7 +1931,7 @@ class floscApp {
             // If no IVR welcome found and no AI, show hardcoded fallback
             if (!welcomeShown) {
                 this.log('FLOSC: Using fallback welcome');
-                const productName = this.config.identity?.name || 'FLOSC';
+                const productName = this.config.productName || this.config.personalityName || this.config.identity?.name || 'FLOSC';
                 const fallbackWelcome = this.state === 'visitor'
                     ? `Hi! Welcome to ${productName}. How can I help you today?`
                     : `Welcome back, ${this.ivr.context.name}! How can I help you today?`;
@@ -2836,7 +2838,7 @@ class floscApp {
             return baseContent;
         }
 
-        const safeProductName = productName || this.config.identity?.name || 'FLOSC';
+        const safeProductName = productName || this.config.productName || this.config.personalityName || this.config.identity?.name || 'FLOSC';
         return `${baseContent}\n<div class="flosc-welcome-badge-wrap"><img src="${badgeUrl}" alt="${safeProductName}" class="flosc-welcome-badge"></div>`;
     }
 
@@ -2847,7 +2849,7 @@ class floscApp {
      * Falls back to IVR content (or hardcoded) if the API call fails.
      */
     async _generateAIWelcome(ivrWelcomeMsg) {
-        const productName = this.config.identity?.name || 'FLOSC';
+        const productName = this.config.productName || this.config.personalityName || this.config.identity?.name || 'FLOSC';
         const badgeUrl = this._getValidBadgeUrl();
         const badge = badgeUrl ? `<div class="flosc-welcome-badge-wrap"><img src="${badgeUrl}" alt="${productName}" class="flosc-welcome-badge"></div>` : '';
         // Flow-neutral welcome: no "badge" and no learning-specific framing (those
@@ -2896,11 +2898,13 @@ class floscApp {
             const msgEl = this.addMessage('assistant', finalContent, true);
             if (msgEl && ivrMsg.name) msgEl.setAttribute('data-message-name', ivrMsg.name);
         } else {
-            // Brand-neutral: tagline from Identity params when present.
+            // Brand-neutral: Title then Tagline from Identity (offering), not operator flow name.
+            const offeringTitle = String(this.config?.identity?.title || '').trim();
             const tagline = String(this.config?.identity?.tagline || '').trim();
+            const offeringBits = [offeringTitle, tagline].filter(Boolean).join(' ');
             const fallback = this.state === 'visitor'
-                ? (tagline
-                    ? `Welcome to ${productName}. ${tagline}\n${badge}`
+                ? (offeringBits
+                    ? `Welcome to ${productName}. ${offeringBits}\n${badge}`
                     : `Welcome to ${productName}.\n${badge}\nHow can I help you today?`)
                 : `Welcome back!\n${badge}\nHow can I help you today?`;
             this.addMessage('assistant', fallback, true);
@@ -2920,7 +2924,7 @@ class floscApp {
 
         const isWelcomeMessage = !!(msg && msg.name && String(msg.name).includes('welcome'));
         if (this.state === 'visitor' && isWelcomeMessage && !/flosc-welcome-badge/i.test(content)) {
-            const productName = this.config.identity?.name || 'FLOSC';
+            const productName = this.config.productName || this.config.personalityName || this.config.identity?.name || 'FLOSC';
             const badgeUrl = this._getValidBadgeUrl();
             if (badgeUrl) {
                 content += `\n<div class="flosc-welcome-badge-wrap"><img src="${badgeUrl}" alt="${productName}" class="flosc-welcome-badge"></div>`;
@@ -4472,6 +4476,8 @@ class floscApp {
             .replace(/{name}/g, ctx.name || 'there')
             .replace(/{score}/g, ctx.score || '0')
             .replace(/{product_name}/g, ctx.product_name || 'the course')
+            .replace(/{title}/g, ctx.title || ctx.product_name || 'the course')
+            .replace(/{tagline}/g, ctx.tagline || '')
             .replace(/{price}/g, ctx.price || '')
             .replace(/{discount_price}/g, ctx.discount_price || '')
             .replace(/{timer_remaining}/g, ctx.timer_remaining || '60:00')
@@ -13157,8 +13163,9 @@ Purchased: ${ctx.purchased}
 
                         // Welcome message from flow identity + plan pricing (not brand hardcodes).
                         const productName = (result.product_name
-                            || this.config.identity?.name
                             || this.config.productName
+                            || this.config.personalityName
+                            || this.config.identity?.name
                             || 'your membership').trim();
                         const planLabel = selectedPlan === 'yearly'
                             ? (container.dataset.floscYearlyLabel || result.amount || 'yearly')

@@ -85,6 +85,7 @@ if (isset($_POST['flosc_save_flow']) && wp_verify_nonce(sanitize_text_field(wp_u
         'status' => sanitize_key(wp_unslash($_POST['flow_status'] ?? 'draft')),
         'identity' => [
             'name' => sanitize_text_field(wp_unslash($_POST['floscflow_name'] ?? '')),
+            'title' => sanitize_text_field(wp_unslash($_POST['floscflow_title'] ?? '')),
             'tagline' => sanitize_text_field(wp_unslash($_POST['floscflow_tagline'] ?? '')),
             'chatlogo_url' => esc_url_raw(wp_unslash($_POST['floscflow_chatlogo'] ?? '')),
             'favicon_url' => esc_url_raw(wp_unslash($_POST['floscflow_favicon'] ?? '')),
@@ -237,21 +238,34 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                 <?php $flosc_identity = $flosc_flow['identity'] ?? []; ?>
                 <table class="form-table">
                     <tr>
-                        <th scope="row"><label for="floscflow_name">App Name</label></th>
+                        <th scope="row"><label for="floscflow_name"><?php echo esc_html__( 'floscFlow name', 'flosc' ); ?></label></th>
                         <td>
                             <input type="text" id="floscflow_name" name="floscflow_name" 
                                    value="<?php echo esc_attr($flosc_identity['name'] ?? ''); ?>" 
                                    class="regular-text" required>
+                            <p class="description"><?php echo esc_html__( 'Operator name for this floscFlow (dropdown). Visitors see the attached personality name in chat.', 'flosc' ); ?></p>
                         </td>
                     </tr>
                     
                     <tr>
-                        <th scope="row"><label for="floscflow_tagline">Tagline</label></th>
+                        <th scope="row"><label for="floscflow_title"><?php echo esc_html__( 'Title', 'flosc' ); ?></label></th>
+                        <td>
+                            <input type="text" id="floscflow_title" name="floscflow_title"
+                                   value="<?php echo esc_attr($flosc_identity['title'] ?? ''); ?>"
+                                   class="large-text"
+                                   placeholder="<?php echo esc_attr__( 'e.g., Standard American English Pronunciation', 'flosc' ); ?>">
+                            <p class="description"><?php echo esc_html__( 'Public offering name. Visitors see it under the personality. The AI uses it as this flow’s offering.', 'flosc' ); ?></p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row"><label for="floscflow_tagline"><?php echo esc_html__( 'Tagline', 'flosc' ); ?></label></th>
                         <td>
                             <input type="text" id="floscflow_tagline" name="floscflow_tagline" 
                                    value="<?php echo esc_attr($flosc_identity['tagline'] ?? ''); ?>" 
                                    class="large-text" 
-                                   placeholder="Your AI-powered learning companion">
+                                   placeholder="<?php echo esc_attr__( 'e.g., Clear spoken English, taught in conversation', 'flosc' ); ?>">
+                            <p class="description"><?php echo esc_html__( 'One-line expansion of the Title. Not the FLOSC acronym, not the personality.', 'flosc' ); ?></p>
                         </td>
                     </tr>
                     

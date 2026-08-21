@@ -72,13 +72,13 @@
 <h2 id="glossary-a">A</h2>
 
 <h3 id="term-available-providers">Available Providers (floscAvailableProviders)</h3>
-<p>Install-scoped credential pool. A key the floscAdmin configures under <strong>AI → All Flows AI API Management</strong> becomes available to all floscFlows on that install. Attachment (primary provider, chain order) is per flow on <strong>This flow: AI settings</strong> via floscFlowAiPolicy. Option: <code>flosc_available_providers</code>. Never portable in Settings YAML.</p>
+<p>Install-scoped credential pool. Keys: <strong>Anthropic, OpenAI, xAI, Gemini</strong> (chat) and <strong>AssemblyAI</strong> (speech-to-text). A key the floscAdmin configures under <strong>AI → All Flows AI API Management</strong> becomes available to all floscFlows on that install. Attachment (primary provider, chain order) is per flow on <strong>This flow: AI settings</strong> via floscFlowAiPolicy. Option: <code>flosc_available_providers</code>. Never portable in Settings YAML.</p>
 
 <h3 id="term-accuracy-test">Accuracy test</h3>
-<p>Admin suite on <strong>AI → This flow: AI settings</strong>: template rows with placeholders (<code>{flow_name}</code>, <code>{tagline}</code>, <code>{topic_scope}</code>, <code>{site_name}</code>). Expanded text is the userMessage sent to the model; each result column is the assistantMessage. One completed row = one floscTurn. Stored as <code>ai_accuracy_test_questions</code>.</p>
+<p>Admin suite on <strong>AI → This flow: AI settings</strong>: template rows with placeholders (<code>{flow_name}</code> operator floscFlow name, <code>{title}</code> public offering, <code>{tagline}</code> one-line expansion of Title, <code>{topic_scope}</code>, <code>{site_name}</code>). Expanded text is the userMessage sent to the model; each result column is the assistantMessage. One completed row = one floscTurn. Stored as <code>ai_accuracy_test_questions</code>.</p>
 
 <h3 id="term-personality-library">Personality library</h3>
-<p>Install-scoped reusable floscFlowPersonality definitions (label, name, role, traits, prompts). Managed under All Flows AI API Management → Personalities. Each floscFlow attaches exactly one via <code>personality_library_id</code>, or uses custom fields on that flow only. Personalities do not chain; only API providers chain.</p>
+<p>Install-scoped reusable floscFlowPersonality rows (label plus compiled profile and optional workshop JSON). Authored in Personality Designer; listed under All Flows AI API Management → Personalities. Each floscFlow attaches exactly one via <code>personality_library_id</code>, or uses custom fields on that flow only. Personalities do not chain; only API providers chain.</p>
 
 <h3 id="term-access-controller">Access Controller</h3>
 <p><code>class-flosc-rag-access-controller.php</code>. The class that decides what content the AI is permitted to deliver to the current user. Enforces lesson access rules: visitors get nothing, guests get the free lesson, members get all lessons.</p>
@@ -90,13 +90,26 @@
 <p><code>includes/sale/class-access-manager.php</code>. Grants and revokes member access after a successful purchase. Updates user meta, logs the transaction, triggers post-purchase hooks.</p>
 
 <h3 id="term-admin-introspection">Admin Introspection</h3>
-<p>A verification mechanism that checks whether the AI "knows" what FLOSC product it is operating for. The <code>check_admin_introspection()</code> method builds an <code>adminVerification</code> object (IVR file name, app slug, product name, tagline, domain) included in the FLOSC_USER config object sent to the JavaScript client. Used as a self-consistency check.</p>
+<p>A verification mechanism that checks whether the AI "knows" what FLOSC offering it is operating for. The <code>check_admin_introspection()</code> method builds an <code>adminVerification</code> object (IVR file name, app slug, offering title, tagline, domain) included in the FLOSC_USER config object sent to the JavaScript client. Used as a self-consistency check.</p>
 
 <h3 id="term-ai-provider">AI Provider</h3>
-<p>One of: <code>anthropic</code>, <code>openai</code>, <code>xai</code>, or <code>ivr</code>. Primary selection is per flow on <strong>AI → This flow: AI settings</strong>. Credentials usually come from floscAvailableProviders (All Flows AI API Management). When set to <code>ivr</code>, no external AI API is called — all responses come from the IVR script. When set to an AI provider, IVR still runs first and AI only handles unmatched messages. Optional chain hops use additional providers for the same turn.</p>
+<p>Primary chat selection per flow on <strong>AI → This flow: AI settings</strong>. Slugs: <code>ivr</code>, <code>anthropic</code>, <code>openai</code>, <code>xai</code>, <code>gemini</code>. Credentials usually come from floscAvailableProviders (All Flows AI API Management). When set to <code>ivr</code>, no external AI API is called — all responses come from the IVR script. When set to an AI provider, IVR still runs first and AI only handles unmatched messages. The compiled personality profile is sent as that API’s system field. Optional chain hops use additional chat providers for the same turn. Speech-to-text is a separate setting (<code>assemblyai</code>, <code>openai</code> Whisper, or <code>custom</code>).</p>
 
 <h3 id="term-anthropic">Anthropic (Claude)</h3>
-<p>The default AI provider for FLOSC. Uses the Claude API. Model is configurable (claude-sonnet-4-6, claude-opus-4-6, etc.). API key stored in WordPress options, never exposed to the client. All prompts are assembled server-side before the API call.</p>
+<p>FLOSC chat provider. Uses the Claude Messages API. The compiled personality profile is the top-level <code>system</code> string. Model is configurable. API key stored in WordPress options, never exposed to the client. All prompts are assembled server-side before the API call.</p>
+
+<h3 id="term-openai">OpenAI</h3>
+<p>FLOSC chat provider (Chat Completions; optional Responses API). Personality profile rides as <code>messages[].role=system</code> or <code>instructions</code>. OpenAI Whisper is also an STT option on This flow. API key in the install pool or flow bag.</p>
+
+<h3 id="term-xai">xAI (Grok)</h3>
+<p>FLOSC chat provider. Chat Completions at <code>api.x.ai</code>. Personality profile rides as <code>messages[].role=system</code>.</p>
+
+<h3 id="term-gemini">Gemini</h3>
+<p>FLOSC chat provider. Google AI Studio / Gemini generateContent. Personality profile rides as <code>systemInstruction.parts[].text</code>.</p>
+
+<h3 id="term-personality-packs">Personality profile field maps</h3>
+<p>One compiled Markdown profile. FLOSC HTTP chat uses Anthropic, OpenAI, xAI, and Gemini. The workshop also maps that same profile for Mistral, Cohere, Together (Meta), Fireworks (Meta), AWS Bedrock, Azure OpenAI, OpenRouter, and Perplexity (field shapes only — not extra FLOSC HTTP adapters, and no provider-pack picker in FLOSC).</p>
+<p>Current pocket-by-pocket intricacies are dated <strong>MTS 26_08m_20d</strong> and listed on the Personality Designer file panel (and in <code>flosc_provider_intricacies()</code>). Re-date that snapshot when a vendor moves the field. Sampling stays on This flow, not in the soul.</p>
 
 <h3 id="term-app-slug">App Slug</h3>
 <p>The URL segment at which the FLOSC app lives, e.g. <code>learn</code> makes the app accessible at <code>yoursite.com/learn</code>. Configurable per flow. WordPress rewrite rules redirect this slug to the virtual page rendered by <code>render_flosc_app()</code>. Changing the slug triggers an automatic permalink flush.</p>
@@ -193,7 +206,7 @@
 <p>The JavaScript user object passed to the frontend alongside FLOSC_CONFIG. Contains: user ID, display name, email, state (visitor/guest/member), purchased flag, access level, token balance, free lesson delivered flag, quiz answers, and the adminVerification object for admin users.</p>
 
 <h3 id="term-flow">Flow</h3>
-<p>One independent FLOSC product instance. A flow has its own IVR file, AI configuration, quiz settings, offer set, branding (name, tagline, emoji, colors, logo), domain mapping, and app slug. Multiple flows can run from one WordPress installation. Stored in the <code>flosc_flows</code> WordPress option.</p>
+<p>One independent FLOSC product instance. A flow has its own IVR file, AI configuration, quiz settings, offer set, branding (operator floscFlow name, public offering Title, Tagline, colors, logo), domain mapping, and app slug. Visitors see the attached personality, then Title, then Tagline. Multiple flows can run from one WordPress installation. Stored in the <code>flosc_flows</code> WordPress option.</p>
 
 <h3 id="term-flow-manager">Flow Manager</h3>
 <p><code>class-flow-manager.php</code>. Manages CRUD operations for flows. Provides <code>get_all_flows()</code>, <code>get_flow()</code>, <code>get_flow_by_slug()</code>, <code>get_flow_by_domain()</code>, and the user-flow access control logic.</p>
@@ -391,7 +404,7 @@
 <p>Social login via OAuth2 providers. FLOSC supports Google, Apple, Facebook, Microsoft, and LinkedIn. When a user authenticates via SSO, FLOSC looks up their linked WordPress account (by email or linked provider ID) or creates a new one. Handled by the SSO system in <code>includes/sso/</code>.</p>
 
 <h3 id="term-stt">STT (Speech-to-Text)</h3>
-<p>Audio transcription service that converts recorded pronunciation to text for comparison with expected pronunciation. FLOSC supports AssemblyAI, OpenAI Whisper, and a custom provider slot. Required for the Audio Quiz type. STT is not yet integrated in the MVP — the Audio Quiz type exists in the deck but cannot be enabled until the STT pipeline is wired.</p>
+<p>Audio transcription. FLOSC STT providers: <strong>AssemblyAI</strong>, <strong>OpenAI Whisper</strong>, and a <strong>custom endpoint</strong>. Selected on This flow: AI settings (<code>stt_provider</code>). AssemblyAI keys also live in the install pool. STT is not a chat personality.</p>
 
 <h3 id="term-stripe">Stripe</h3>
 <p>The primary payment processor for FLOSC. Supports one-time payments via Payment Intents, subscriptions via Stripe Subscriptions, and webhook-based purchase confirmation. Requires a Stripe publishable key (sent to frontend) and secret key (server-side only). Test mode and live mode use different key pairs.</p>

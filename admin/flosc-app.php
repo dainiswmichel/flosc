@@ -3,6 +3,13 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+$flosc_visitor_name = function_exists( 'flosc_visitor_assistant_name' )
+    ? flosc_visitor_assistant_name()
+    : (string) ( $identity['name'] ?? 'FLOSC' );
+if ( $flosc_visitor_name === '' ) {
+    $flosc_visitor_name = 'FLOSC';
+}
+
 // v9.0.8: Chat styling data attributes (font, theme, preset, scale)
 $flosc_chat_font   = get_option('flosc_chat_style_font', 'system');
 $flosc_chat_theme  = get_option('flosc_chat_style_theme', 'default');
@@ -67,7 +74,7 @@ ICON & BUTTON CHECKLIST (verify all work before deployment):
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="robots" content="noindex, nofollow">
-    <title><?php echo esc_html($identity['name'] ?: 'FLOSC App'); ?><?php echo !empty($identity['title']) ? ' - ' . esc_html($identity['title']) : ''; ?></title>
+    <title><?php echo esc_html($flosc_visitor_name); ?><?php echo !empty($identity['title']) ? ' - ' . esc_html($identity['title']) : ''; ?></title>
     
     <!-- v8.0.0: Favicon — per-flow favicon_url, falls back to bundled default.
          Generic unsized <link rel="icon"> listed FIRST for Safari compatibility
@@ -200,8 +207,8 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
     <aside class="flosc-sidebar" id="flosc_app_sidebar">
         <div class="sidebar-header">
             <div class="logo">
-                <img src="<?php echo esc_url(flosc_get_chatlogo_url()); ?>" alt="<?php echo esc_attr($identity['name']); ?>" class="logo-img" width="32" height="32" decoding="async">
-                <span class="logo-text"><?php echo esc_html($identity['name'] ?: 'FLOSC'); ?></span>
+                <img src="<?php echo esc_url(flosc_get_chatlogo_url()); ?>" alt="<?php echo esc_attr($flosc_visitor_name); ?>" class="logo-img" width="32" height="32" decoding="async">
+                <span class="logo-text"><?php echo esc_html($flosc_visitor_name); ?></span>
             </div>
             <div class="sidebar-header-actions">
                 <button class="sidebar-action-btn" id="flosc_app_restart_chat" title="Restart chat" aria-label="Restart chat">
@@ -494,7 +501,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
                 </button>
                 <div class="logo-mobile">
                     <img src="<?php echo esc_url(flosc_get_chatlogo_url()); ?>" alt="" class="logo-mobile__img" width="28" height="28" decoding="async">
-                    <?php echo esc_html($identity['name'] ?: 'FLOSC'); ?>
+                    <?php echo esc_html($flosc_visitor_name); ?>
                 </div>
             </div>
 
@@ -543,7 +550,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
                     $flosc_landing_logo = function_exists('flosc_get_chatlogo_url') ? flosc_get_chatlogo_url() : (FLOSC_PLUGIN_URL . 'assets/img/flosc-icon.png');
                     ?>
                         <img src="<?php echo esc_url($flosc_landing_logo); ?>" alt="" class="landing-icon" width="36" height="36" decoding="async">
-                    <span class="landing-title"><?php echo esc_html($identity['name'] ?: 'FLOSC'); ?></span>
+                    <span class="landing-title"><?php echo esc_html($flosc_visitor_name); ?></span>
                     <?php if (!empty($identity['title'])): ?>
                         <span class="landing-subtitle"><?php echo esc_html($identity['title']); ?></span>
                     <?php endif; ?>
@@ -586,7 +593,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
             <div class="flosc_input_composer_inner">
                 <textarea
                     id="flosc_input_chat_field"
-                    placeholder="Message <?php echo esc_attr($identity['name'] ?: 'FLOSC'); ?>..."
+                    placeholder="Message <?php echo esc_attr($flosc_visitor_name); ?>..."
                     rows="1"
                     aria-label="Message input"
                 ></textarea>
@@ -741,7 +748,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
     <div class="flosc-modal-overlay" id="flosc_modal_share">
         <div class="flosc-modal">
             <div class="flosc-modal-header">
-                <h3>Share <?php echo esc_html($identity['name'] ?: 'FLOSC'); ?></h3>
+                <h3>Share <?php echo esc_html($flosc_visitor_name); ?></h3>
                 <button class="flosc-modal-close" id="shareModalClose" aria-label="Close">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -852,7 +859,7 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
     <div class="flosc-modal-overlay" id="flosc_modal_login_gate">
         <div class="flosc-modal">
             <div class="flosc-modal-header">
-                <h3>Continue with <?php echo esc_html($identity['name'] ?: 'FLOSC'); ?></h3>
+                <h3>Continue with <?php echo esc_html($flosc_visitor_name); ?></h3>
                 <button class="flosc-modal-close" id="loginGateModalClose" aria-label="Close">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -1132,7 +1139,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             })(),
             'identity' => $identity,
             // Convenience alias for JS (logout goodbye, companion labels) — from Identity params.
-            'productName' => is_array($identity) ? (string) ($identity['name'] ?? '') : '',
+            'productName' => $flosc_visitor_name,
+            'personalityName' => $flosc_visitor_name,
+            'flowDisplayName' => is_array($identity) ? (string) ($identity['name'] ?? '') : '',
             'offers' => array_values($offers),
             'appUrl' => $flosc_app_url,
             // Dock/collapse handoff when companion mode is companion|both and enabled.
@@ -1629,9 +1638,6 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                     $v = stripslashes_deep($v);
                 }
                 return $v;
-            })(),
-            'flowDisplayName' => (function () use ($identity) {
-                return (string) ($identity['name'] ?? 'FLOSC');
             })(),
         ]); ?>;
         window.FLOSC_USER = <?php echo wp_json_encode($user_data); ?>;

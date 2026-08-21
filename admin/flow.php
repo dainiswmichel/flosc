@@ -504,12 +504,15 @@ $flosc_diagnostics_flow_name = trim((string) ($flosc_flow_settings['identity']['
 $flosc_diagnostics_flow_label = $flosc_diagnostics_flow_name !== '' ? $flosc_diagnostics_flow_name : ($flosc_selected_ivr ?: 'this flow');
 
 $flosc_ai_provider   = $flosc_flow_settings['ai_provider'] ?? 'ivr';
-$flosc_ai_labels     = [
-    'ivr'       => 'IVR / Scripted only',
-    'anthropic' => 'Anthropic Claude',
-    'openai'    => 'OpenAI',
-    'xai'       => 'xAI Grok',
-];
+$flosc_ai_labels     = function_exists( 'flosc_chat_provider_labels' )
+    ? flosc_chat_provider_labels()
+    : [
+        'ivr'       => 'IVR / Scripted only',
+        'anthropic' => 'Anthropic Claude',
+        'openai'    => 'OpenAI',
+        'xai'       => 'xAI Grok',
+        'gemini'    => 'Google Gemini',
+    ];
 $flosc_ai_label = $flosc_ai_labels[ $flosc_ai_provider ] ?? ucfirst( $flosc_ai_provider );
 if ( $flosc_ai_provider === 'anthropic' ) {
     $flosc_ai_model  = $flosc_flow_settings['ai_model'] ?? flosc_get_setting( 'ai_model', 'claude-sonnet-4-6' );

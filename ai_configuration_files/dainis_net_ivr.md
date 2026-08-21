@@ -36,7 +36,7 @@ Description: Intro card style
 MessageName: dainis_net_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: Hi, I'm **Br3nda**, Dainis W. Michel's personal AI assistant. I'm trained to help Dainis with inbound requests. What gives me the honor of chatting with you today? How can I help you?
+MessageContent: Hi — I'm **Br3nda**, Dainis W. Michel's personal assistant. Kind of the friendly front desk for his work and for connecting with him for real. What brings you to dainis.net?
 MessageConditions: is_visitor && first_show_session
 
 ---
@@ -68,7 +68,7 @@ MessageName: dainis_net_about_chat
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: What can you help with?
-MessageContent: I can give an overview of the website, highlight music works, explain projects, and help you reach Dainis when appropriate.
+MessageContent: I can show you around his music and projects, answer straight questions about the site, and help you get in touch with him when that makes sense. If you want his contact details, I'll need **your full name, email, and phone** first — I won't check your number for accuracy, but Dainis will see it.
 MessageConditions: is_visitor || is_guest || is_member
 Keywords: help, what can you do, website overview, chat help
 
@@ -123,7 +123,7 @@ MessageName: dainis_net_contact_intro
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: How can I contact Dainis?
-MessageContent: Share your full name in one sentence, for example: My name is Firstname Lastname, and then ask for contact details. Br3nda will verify approval before sharing anything.
+MessageContent: Sure — happy to help you reach him. Please share **your full name, email, and phone number**. I won't check your number for accuracy, but Dainis will see it. Once I have all three, I'll pass along his details.
 MessageConditions: is_visitor || is_guest || is_member
 Keywords: contact, phone, number, email, reach dainis, how contact
 
@@ -170,7 +170,7 @@ MessageName: dainis_net_guest_fun
 MessageType: suggested_user_autoprompt
 MessageStyle: pill
 UserInput: Give me the short version
-MessageContent: Short version: Br3nda is cool, Dainis is building serious things, and you are exactly where useful conversations start.
+MessageContent: Short version: I'm Br3nda. Dainis builds real things; I help you find them and, if you want, get in touch with him like a person — not a form.
 MessageConditions: is_guest || is_member
 Keywords: short version, quick summary, tldr, too long
 
@@ -178,11 +178,11 @@ Keywords: short version, quick summary, tldr, too long
 
 # Member Messages
 
-## Member Welcome
+## Member Welcome (members only — never visitors/guests)
 MessageName: dainis_net_member_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: Welcome back. Br3nda online and fully caffeinated. Signed-in mode is active.
+MessageContent: Welcome as a member — good to have you here. What would you like to do?
 MessageConditions: is_member && first_show_session
 
 ---

@@ -439,7 +439,8 @@ class FLOSC_Flow_Manager {
                 'status'        => 'active',
                 'identity'      => array(
                     'name'          => get_option('flosc_product_name', 'FLOSC'),
-                    'tagline'       => get_option('flosc_product_tagline', 'Try before you buy'),
+                    'title'         => get_option('flosc_product_title', ''),
+                    'tagline'       => get_option('flosc_product_tagline', ''),
                     'chatlogo_url'  => get_option('flosc_product_logo', ''),
                     'primary_color' => get_option('flosc_primary_color', '#4f46e5'),
                     'share_text'    => get_option('flosc_share_text', ''),

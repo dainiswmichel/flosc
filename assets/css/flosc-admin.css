@@ -7393,3 +7393,221 @@ label[for^="flosc_acc_q_"] {
 .flosc-site-index-row-excluded {
 	opacity: 0.65;
 }
+
+.flosc-personality-builder-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 12px;
+	margin: 8px 0 16px;
+}
+.flosc-ai-acc--designer .flosc-personality-builder-toolbar {
+	position: sticky;
+	top: 32px;
+	z-index: 3;
+	margin: 0 0 12px;
+	padding: 8px 0;
+	background: #edf8f0;
+	border-bottom: 1px solid #c3c4c7;
+}
+.flosc-ai-acc--designer .flosc-personality-workshop {
+	border: 1px solid #c9b48b;
+	border-radius: 8px;
+	overflow: hidden;
+}
+.flosc-ai-acc--designer .flosc-personality-workshop .app {
+	padding: 0 4px 12px;
+}
+.flosc-personality-workshop .flosc-provider-intricacies {
+	margin: 10px 0 12px;
+	padding: 8px 10px 10px;
+	border: 1px solid var(--line, #c9b48b);
+	border-radius: 10px;
+	background: #fffdf6;
+	font-family: "Segoe UI", system-ui, sans-serif;
+	font-size: 13px;
+	line-height: 1.45;
+	color: #132117;
+}
+.flosc-personality-workshop .flosc-provider-intricacies > summary {
+	cursor: pointer;
+	font-weight: 700;
+}
+.flosc-personality-workshop .flosc-provider-intricacies h4 {
+	margin: 10px 0 4px;
+	font-size: 13px;
+}
+.flosc-personality-workshop .flosc-provider-intricacies ul {
+	margin: 0 0 8px;
+	padding-left: 1.2em;
+}
+.flosc-personality-workshop .flosc-provider-intricacies li {
+	margin: 0 0 6px;
+}
+.flosc-personality-builder-toolbar label {
+	font-weight: 600;
+}
+.flosc-personality-builder-toolbar select {
+	max-width: 18rem;
+}
+.flosc-personality-workshop {
+	margin: 0 0 20px;
+	overflow: visible;
+}
+.flosc-personality-workshop.is-hosted .foot {
+	display: none;
+}
+.flosc-personality-workshop.is-hosted #savePanel {
+	display: block;
+}
+.flosc-personality-workshop.is-hosted #savePanel pre.out {
+	max-height: min(70vh, 640px);
+}
+.flosc-personality-workshop .layout {
+	grid-template-columns: minmax(280px, 0.95fr) minmax(340px, 1.05fr);
+	margin-top: 0;
+}
+@media (max-width: 800px) {
+	.flosc-personality-workshop .layout {
+		grid-template-columns: 1fr;
+	}
+}
+.flosc-personality-workshop h1,
+.flosc-personality-workshop h2,
+.flosc-personality-workshop h3 {
+	color: var(--ink, #132117);
+}
+.flosc-personality-workshop .panel h2 {
+	padding: 12px 14px;
+	margin: 0;
+}
+.flosc-personality-workshop a {
+	color: inherit;
+}
+.flosc-personality-inventory {
+	margin: 0 0 16px;
+}
+.flosc-personality-inventory th,
+.flosc-personality-inventory td {
+	vertical-align: middle;
+}
+.flosc-personality-inventory .regular-text {
+	max-width: 16rem;
+}
+.flosc-margin-top-16 {
+	margin-top: 16px;
+}
+.flosc-personality-builder-status {
+	font-weight: 600;
+}
+.flosc-personality-builder-status.is-ok {
+	color: #1e7e34;
+}
+.flosc-personality-builder-status.is-err {
+	color: #b32d2e;
+}
+.flosc-personality-workshop .app {
+	max-width: none;
+	padding: 8px 12px 24px;
+}
+
+/* AI tab accordions */
+.flosc-ai-acc {
+	border: 1px solid #c3c4c7;
+	border-radius: 8px;
+	background: #fff;
+	margin: 0 0 14px;
+}
+.flosc-ai-acc > .flosc-ai-acc__summary {
+	list-style: none;
+	cursor: pointer;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 12px;
+	align-items: baseline;
+	padding: 12px 14px;
+	font-size: 15px;
+	font-weight: 600;
+	line-height: 1.3;
+	background: #f6f7f7;
+	border-radius: 8px;
+}
+.flosc-ai-acc[open] > .flosc-ai-acc__summary {
+	border-bottom: 1px solid #c3c4c7;
+	border-radius: 8px 8px 0 0;
+}
+.flosc-ai-acc > .flosc-ai-acc__summary::-webkit-details-marker,
+.flosc-ai-acc > .flosc-ai-acc__summary::marker {
+	display: none;
+	content: "";
+}
+.flosc-ai-acc > .flosc-ai-acc__summary::before {
+	content: "▸";
+	display: inline-block;
+	width: 1em;
+	color: #50575e;
+	font-weight: 700;
+}
+.flosc-ai-acc[open] > .flosc-ai-acc__summary::before {
+	content: "▾";
+}
+.flosc-ai-acc__title {
+	flex: 0 1 auto;
+}
+.flosc-ai-acc__hint {
+	flex: 1 1 12rem;
+	font-weight: 400;
+	font-size: 13px;
+	color: #646970;
+}
+.flosc-ai-acc__body {
+	padding: 8px 16px 16px;
+}
+.flosc-ai-acc__body > .flosc-ai-section-heading,
+.flosc-ai-acc__body > h2,
+.flosc-ai-acc__body > h3 {
+	margin-top: 16px;
+}
+.flosc-ai-acc__body > .flosc-ai-section-heading:first-child,
+.flosc-ai-acc__body > h2:first-child,
+.flosc-ai-acc__body > h3:first-child,
+.flosc-ai-acc__body > .flosc-section-divider:first-child,
+.flosc-ai-acc__body > .flosc-ai-stt-divider:first-child {
+	margin-top: 8px;
+}
+.flosc-ai-acc--designer {
+	border-color: #1d4d32;
+	border-left-width: 4px;
+}
+.flosc-ai-acc--designer > .flosc-ai-acc__summary {
+	background: #edf8f0;
+}
+.flosc-ai-acc--designer .flosc-ai-acc__title {
+	color: #14532d;
+}
+.flosc-ai-acc--row {
+	margin: 0 0 10px;
+}
+.flosc-ai-acc--row > .flosc-ai-acc__summary {
+	background: #fff;
+	padding: 10px 12px;
+	font-size: 14px;
+}
+.flosc-ai-acc--row .flosc-ai-acc__actions {
+	margin-left: auto;
+}
+.flosc-ai-config .flosc-ai-acc .flosc-ai-section-heading {
+	border-bottom-color: #c3c4c7;
+	margin-top: 16px;
+}
+.flosc-ai-acc__body .form-table td > select,
+.flosc-ai-config .form-table td > select {
+	display: block;
+	max-width: min(100%, 28rem);
+}
+.flosc-ai-acc__body .form-table td > .description,
+.flosc-ai-config .form-table td > .description {
+	display: block;
+	margin-top: 8px;
+	max-width: 40rem;
+}

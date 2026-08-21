@@ -1890,7 +1890,7 @@ $flosc_total_count = count($flosc_messages);
                         <th>Chatbot Response Content</th>
                         <td>
                             <textarea name="message_content" rows="4" class="large-text"><?php echo esc_textarea($flosc_msg['content'] ?? ''); ?></textarea>
-                            <p class="description">Variables: {name}, {score}, {product_name}, {price}</p>
+                            <p class="description">Variables: {name}, {score}, {product_name}, {title}, {tagline}, {price}</p>
                         </td>
                     </tr>
                     <tr>

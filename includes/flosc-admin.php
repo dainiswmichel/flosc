@@ -303,9 +303,11 @@ trait FLOSC_Admin_Trait {
             'flosc_openai_api_key' => 'secret',
             'flosc_anthropic_api_key' => 'secret',
             'flosc_xai_api_key' => 'secret',
+            'flosc_gemini_api_key' => 'secret',
             'flosc_ai_openai_model' => 'text',
             'flosc_ai_anthropic_model' => 'text',
             'flosc_ai_xai_model' => 'text',
+            'flosc_ai_gemini_model' => 'text',
             'flosc_ai_temperature' => 'text',
             'flosc_ai_max_tokens' => 'text',
             'flosc_stt_provider' => 'text',
@@ -819,9 +821,19 @@ trait FLOSC_Admin_Trait {
             );
         }
 
+        $flosc_tab_raw  = filter_input( INPUT_GET, 'tab', FILTER_UNSAFE_RAW );
+        $flosc_tab      = is_string( $flosc_tab_raw ) ? sanitize_key( wp_unslash( $flosc_tab_raw ) ) : '';
+        $flosc_page_raw = filter_input( INPUT_GET, 'page', FILTER_UNSAFE_RAW );
+        $flosc_page     = is_string( $flosc_page_raw ) ? sanitize_key( wp_unslash( $flosc_page_raw ) ) : '';
+        $flosc_view_raw = filter_input( INPUT_GET, 'view', FILTER_UNSAFE_RAW );
+        $flosc_view     = is_string( $flosc_view_raw ) ? sanitize_key( wp_unslash( $flosc_view_raw ) ) : '';
+        if ( $flosc_page === 'flosc-settings' && $flosc_tab === 'ai' && $flosc_view !== 'all' ) {
+            if ( function_exists( 'flosc_enqueue_personality_builder_assets' ) ) {
+                flosc_enqueue_personality_builder_assets();
+            }
+        }
+
         // Dedicated AutoPrompts admin runtime (externalized from inline tab template JS).
-        $flosc_tab_raw = filter_input( INPUT_GET, 'tab', FILTER_UNSAFE_RAW );
-        $flosc_tab     = is_string( $flosc_tab_raw ) ? sanitize_key( wp_unslash( $flosc_tab_raw ) ) : '';
         if ($flosc_tab === 'autoprompts') {
             $flosc_autoprompts_js_path = FLOSC_PLUGIN_DIR . 'assets/js/flosc-autoprompts-admin.js';
             if (file_exists($flosc_autoprompts_js_path)) {
@@ -1658,10 +1670,12 @@ trait FLOSC_Admin_Trait {
         if ($header_icon === '' && function_exists('flosc_get_chatlogo_url')) {
             $header_icon = flosc_get_chatlogo_url();
         }
-        $product_name = '';
-        if (function_exists('flosc') && method_exists(flosc(), 'get_floscflow_identity')) {
+        $product_name = function_exists( 'flosc_visitor_assistant_name' )
+            ? sanitize_text_field( flosc_visitor_assistant_name() )
+            : '';
+        if ( $product_name === '' && function_exists( 'flosc' ) && method_exists( flosc(), 'get_floscflow_identity' ) ) {
             $id = flosc()->get_floscflow_identity();
-            $product_name = sanitize_text_field((string) ($id['name'] ?? ''));
+            $product_name = sanitize_text_field( (string) ( $id['name'] ?? '' ) );
         }
 
         wp_enqueue_style(

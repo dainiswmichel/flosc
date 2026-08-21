@@ -110,7 +110,7 @@ MessageName: friendly_intro_ai_api
 MessageType: suggested_user_autoprompt
 MessageStyle: card
 UserInput: Make me smarter (AI API)!! 🧠✨
-MessageContent: Yesss brain upgrade time!! 🧠✨ This chat is mostly IVR-style buttons until your floscAdmin configures a preferred AI API under **Settings → AI** (OpenAI, Anthropic, xAI, etc. — BYOK: paste key, test, save). Then free-form gets much more intelligent responses and I can actually *think* with you 😄💕
+MessageContent: Yesss brain upgrade time!! 🧠✨ This chat is mostly IVR-style buttons until your floscAdmin configures a preferred AI API under **Settings → AI** (Anthropic, OpenAI, xAI, or Gemini — BYOK: paste key, test, save). Then free-form gets much more intelligent responses and I can actually *think* with you 😄💕
 MessageConditions: is_visitor || is_guest || is_member
 Keywords: ai, api, openai, anthropic, grok, xai, smarter, intelligent, configure ai, byok
 

@@ -165,9 +165,9 @@ $flosc_tab_labels = [
 
 <h3 id="tab-identity">Identity Tab</h3>
 <p><a href="<?php echo esc_url($flosc_feature_links['identity']); ?>">Open Feature: Identity tab</a></p>
-<p><strong>One further step:</strong> Confirm the flow name, title, and slug together, then open the generated flow URL to verify public-facing identity output.</p>
-<p><strong>Procedure Level:</strong> Check the name, title, and slug together, then open the public URL to confirm the branding is correct.</p>
-<p><strong>Tech Ref Level:</strong> Identity settings supply the public-facing name, title, tagline, and slug used throughout the flow.</p>
+<p><strong>One further step:</strong> Confirm the operator floscFlow name (dropdown only), Title (public offering), Tagline (one-line expansion of Title), and slug together, then open the generated flow URL. Visitors should see the attached personality, then Title, then Tagline — not the operator name and not the FLOSC acronym as the tagline.</p>
+<p><strong>Procedure Level:</strong> Check floscFlow name, Title, Tagline, and slug together, then open the public URL to confirm the branding is correct.</p>
+<p><strong>Tech Ref Level:</strong> Identity splits four layers: <code>identity.name</code> is the operator floscFlow name; the attached personality is the visitor-facing speaker; <code>identity.title</code> is the public offering; <code>identity.tagline</code> is the offering one-liner. Chatpack sends Title + Tagline as offering facts. FLOSC (the software) remains Freeline, Login, Offer, Sale, Content.</p>
 <p><strong>Code Level:</strong> The identity editor lives in admin/settings.php, and the frontend shell reads those fields when building labels and links.</p>
 
 <h3 id="tab-ivr-messages">IVR Management Tab</h3>
@@ -312,7 +312,7 @@ $flosc_ai_single_url = add_query_arg(
 <h4 id="tab-ai-all-flows">All Flows AI API Management (<code>view=all</code>)</h4>
 <p><strong>Install-wide — not per-flow secrets.</strong></p>
 <ol>
-  <li><strong>Available Providers (floscAvailableProviders)</strong> — paste Anthropic / OpenAI / xAI / AssemblyAI keys once. Status shows which keys are available to any current or future floscFlow. Leave a password field blank to keep the key on file.</li>
+  <li><strong>Available Providers (floscAvailableProviders)</strong> — paste Anthropic / OpenAI / xAI / Gemini (chat) and AssemblyAI (STT) keys once. Status shows which keys are available to any current or future floscFlow. Leave a password field blank to keep the key on file.</li>
   <li><strong>Personalities library</strong> — define reusable personalities (label, name, role, traits, base prompt fields). Each floscFlow attaches <em>exactly one</em>. Personalities are never chained; only APIs chain.</li>
 </ol>
 <p><strong>Procedure Level:</strong> Keys first on a new install, then library entries, then switch to This flow to attach. Saving pool or library uses dedicated forms (not the main flow settings Save).</p>
@@ -322,10 +322,10 @@ $flosc_ai_single_url = add_query_arg(
 <p><strong>Per-flow attachment and tuning.</strong></p>
 <ol>
   <li><strong>Attached personality</strong> — select a library id, or “Custom on this flow only” and edit fields on this screen. One personality only.</li>
-  <li><strong>Primary AI Provider</strong> — <code>ivr</code> (scripted only) or anthropic / openai / xai. Key resolution: flow-local key if set, else floscAvailableProviders.</li>
+  <li><strong>Primary AI Provider</strong> — <code>ivr</code> (scripted only) or <code>anthropic</code> / <code>openai</code> / <code>xai</code> / <code>gemini</code>. Key resolution: flow-local key if set, else floscAvailableProviders. STT is separate: AssemblyAI, OpenAI Whisper, or custom.</li>
   <li><strong>API chain</strong> (optional) — ordered provider hops for one visitor turn. Intermediate hops are internal; the visitor still sees one userMessage → one assistantMessage. Each hop needs a key (flow or available pool). Personalities do not chain.</li>
   <li><strong>Models, temperature, phase prompts, knowledge files, STT</strong> — remaining per-flow AI policy on the same screen.</li>
-  <li><strong>Accuracy test</strong> — up to ten template rows (placeholders <code>{flow_name}</code>, <code>{tagline}</code>, <code>{topic_scope}</code>, <code>{site_name}</code>). Editor stores templates; “User input (sent to AI)” preview shows the expanded userMessage. Results pair userMessage with assistantMessage (AI response). Ten completed rows = ten turns. See Glossary → Chat turns and messages.</li>
+  <li><strong>Accuracy test</strong> — up to ten template rows (placeholders <code>{flow_name}</code> operator name, <code>{title}</code> offering, <code>{tagline}</code> one-liner, <code>{topic_scope}</code>, <code>{site_name}</code>). Editor stores templates; “User input (sent to AI)” preview shows the expanded userMessage. Results pair userMessage with assistantMessage (AI response). Ten completed rows = ten turns. See Glossary → Chat turns and messages.</li>
 </ol>
 <p><strong>One further step:</strong> Confirm Install keys available (✓) on This flow; if a needed provider shows —, open All Flows AI API Management and set the key. Attach one personality, pick primary provider, save, then run one accuracy-test row and confirm user input / AI response columns.</p>
 <p><strong>Procedure Level:</strong> Never expect portable YAML to install secrets. After Create/Apply on Flow, re-check available keys and personality attach on the target site.</p>
@@ -432,7 +432,7 @@ $flosc_ai_single_url = add_query_arg(
 <p><strong>Parameter links:</strong> <a href="<?php echo esc_url($flosc_feature_links['flow']); ?>">Flow tab</a> · <a href="<?php echo esc_url($flosc_ref_admin_doc_url . '#inventory-flow-family'); ?>">Flow parameter docs</a></p>
 <ul>
   <li><strong>flow:</strong> flow routing and lifecycle keys stored via generic <code>flow_*</code> post mapping.</li>
-  <li><strong>identity:</strong> identity bundle and public-policy content keys (name/title/tagline/domain/slug plus policy text fields).</li>
+  <li><strong>identity:</strong> identity bundle and public-policy content keys (operator <code>name</code>, public offering <code>title</code>, one-line <code>tagline</code>, domain/slug plus policy text fields).</li>
   <li><strong>ivr-messages:</strong> IVR message arrays and file sync-managed message payload fields.</li>
 </ul>
 

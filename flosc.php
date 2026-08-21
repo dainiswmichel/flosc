@@ -309,6 +309,96 @@ function flosc_shipped_flow_display_name($ivr_filename_or_stem) {
     return $map[$stem] ?? '';
 }
 
+/**
+ * Shipped IVR files that are personality flavors, not product journeys.
+ * They belong in the Personalities library, not in Switch Flow.
+ *
+ * @param string $ivr_filename_or_stem Filename or stem.
+ * @return bool
+ */
+function flosc_is_shipped_personality_sample_ivr( $ivr_filename_or_stem ) {
+    $stem = sanitize_key( pathinfo( basename( (string) $ivr_filename_or_stem ), PATHINFO_FILENAME ) );
+    if ( $stem === '' ) {
+        $stem = sanitize_key( (string) $ivr_filename_or_stem );
+    }
+    $samples = array(
+        'flosc_default_ivr',
+        'flosc_default_friendly_ivr',
+        'flosc_default_technical_ivr',
+        'flosc_default_br3nda_emotional_support_ivr',
+    );
+    return in_array( $stem, $samples, true );
+}
+
+/**
+ * Seed library id for a shipped personality-sample IVR, if any.
+ *
+ * @param string $ivr_filename_or_stem Filename or stem.
+ * @return string
+ */
+function flosc_shipped_personality_sample_library_id( $ivr_filename_or_stem ) {
+    $stem = sanitize_key( pathinfo( basename( (string) $ivr_filename_or_stem ), PATHINFO_FILENAME ) );
+    $map  = array(
+        'flosc_default_ivr'            => 'starter',
+        'flosc_default_friendly_ivr'   => 'friendly',
+        'flosc_default_technical_ivr'  => 'tech',
+    );
+    return $map[ $stem ] ?? '';
+}
+
+/**
+ * Product journey → library personality. Br3nda’s flow uses the Br3nda soul.
+ *
+ * @param string $ivr_filename_or_stem Filename or stem.
+ * @return string Library id or empty.
+ */
+function flosc_implied_personality_library_id( $ivr_filename_or_stem ) {
+    $stem = sanitize_key( pathinfo( basename( (string) $ivr_filename_or_stem ), PATHINFO_FILENAME ) );
+    if ( $stem === '' ) {
+        $stem = sanitize_key( (string) $ivr_filename_or_stem );
+    }
+    $map = array(
+        'dainis_net_ivr' => 'br3nda',
+        'dainis_net'     => 'br3nda',
+    );
+    $id = isset( $map[ $stem ] ) ? $map[ $stem ] : flosc_shipped_personality_sample_library_id( $stem );
+    return sanitize_key( (string) apply_filters( 'flosc_implied_personality_library_id', $id, $stem ) );
+}
+
+/**
+ * Switch Flow lists journeys. Drop personality-sample IVRs when real flows exist.
+ *
+ * @param array<int,string> $files IVR filenames.
+ * @param string            $keep  Filename to keep even if it is a sample (currently selected).
+ * @return array<int,string>
+ */
+function flosc_filter_switch_flow_ivr_files( $files, $keep = '' ) {
+    if ( ! is_array( $files ) ) {
+        return array();
+    }
+    $keep    = basename( (string) $keep );
+    $real    = array();
+    $samples = array();
+    foreach ( $files as $file ) {
+        $file = basename( (string) $file );
+        if ( $file === '' ) {
+            continue;
+        }
+        if ( function_exists( 'flosc_is_shipped_personality_sample_ivr' ) && flosc_is_shipped_personality_sample_ivr( $file ) ) {
+            $samples[] = $file;
+        } else {
+            $real[] = $file;
+        }
+    }
+    if ( $real === array() ) {
+        return array_values( array_unique( $files ) );
+    }
+    if ( $keep !== '' && in_array( $keep, $samples, true ) && ! in_array( $keep, $real, true ) ) {
+        $real[] = $keep;
+    }
+    return array_values( array_unique( $real ) );
+}
+
 require_once FLOSC_PLUGIN_DIR . 'includes/content-item/flosc-content-item-keys.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-rest.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-admin.php';
@@ -3275,7 +3365,19 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
             $flow = flosc_normalize_content_item_flow_settings($flow);
         }
         
-        // Check flow-specific value first
+        // Nested identity (name / title / tagline / logos) is canonical after Identity save.
+        if (
+            $flow
+            && isset($flow['identity'])
+            && is_array($flow['identity'])
+            && array_key_exists($key, $flow['identity'])
+            && $flow['identity'][$key] !== ''
+            && $flow['identity'][$key] !== null
+        ) {
+            return $flow['identity'][$key];
+        }
+
+        // Flat flow key (seed / older bags that have not been nested yet).
         if ($flow && isset($flow[$key]) && $flow[$key] !== '' && $flow[$key] !== null) {
             return $flow[$key];
         }
@@ -3467,7 +3569,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
 
         // 4. Flow identity info
         $identity = $this->get_floscflow_identity();
-        $context['product_name'] = $identity['name'];
+        $context['product_name'] = trim((string) ($identity['title'] ?? ''));
+        $context['offering_title'] = trim((string) ($identity['title'] ?? ''));
+        $context['offering_tagline'] = trim((string) ($identity['tagline'] ?? ''));
 
         return $context;
     }
@@ -4872,12 +4976,24 @@ Example good response:
      * v1.0.9: Substitute variables in message content
      */
     private function substitute_ivr_variables($content, $context) {
+        $identity = $this->get_floscflow_identity();
+        $offering_title = trim((string) ($identity['title'] ?? ''));
+        $offering_tagline = trim((string) ($identity['tagline'] ?? ''));
+        $assistant_name = function_exists('flosc_visitor_assistant_name')
+            ? flosc_visitor_assistant_name()
+            : trim((string) ($identity['name'] ?? ''));
+        if ($assistant_name === '') {
+            $assistant_name = 'our course';
+        }
+
         $replacements = [
             '{name}' => $context['user_name'] ?? 'there',
             '{score}' => $context['quiz_score'] ?? '0',
             '{correct_items}' => $context['correct_items'] ?? '',
             '{missed_items}' => $context['missed_items'] ?? '',
-            '{product_name}' => get_option('flosc_product_name', 'our course'),
+            '{product_name}' => $assistant_name,
+            '{title}' => $offering_title !== '' ? $offering_title : $assistant_name,
+            '{tagline}' => $offering_tagline,
             '{price}' => get_option('flosc_main_price', '$100'),
             '{discount_price}' => get_option('flosc_discount_price', '$25'),
             '{timer_remaining}' => $context['timer_remaining'] ?? '60 minutes',
@@ -5348,7 +5464,9 @@ Example good response:
         $ai_context = [
             'flosc_version' => FLOSC_VERSION,
             'flow_id' => $flow_id,
-            'product_name' => $identity['name'] ?? '',
+            'product_name' => trim((string) ($identity['title'] ?? '')),
+            'offering_title' => trim((string) ($identity['title'] ?? '')),
+            'offering_tagline' => trim((string) ($identity['tagline'] ?? '')),
         ];
 
         // User Identity
@@ -9427,7 +9545,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 'success' => false,
                 'provider' => 'ivr',
                 'error_code' => 'ivr_not_external_api',
-                'message' => 'Provider is IVR (scripted only). No external API call was made. Select OpenAI, Anthropic, or xAI, Save Settings, then test again.',
+                'message' => 'Provider is IVR (scripted only). No external API call was made. Select Anthropic, OpenAI, xAI, or Gemini, Save Settings, then test again.',
             ], 200);
         }
 
@@ -9501,11 +9619,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             wp_send_json_error([
                 'provider' => 'ivr',
                 'message'  => "Provider is IVR (scripted only). No external API call was made.\n\n"
-                    . "1. Primary AI Provider → OpenAI, Anthropic, or xAI Grok\n"
+                    . "1. Primary AI Provider → Anthropic, OpenAI, xAI Grok, or Gemini\n"
                     . "2. Paste the API key for that provider\n"
                     . "3. Click Save Settings (bottom of this page)\n"
                     . "4. Confirm the URL has saved=1, then Test again\n\n"
-                    . "Expected success line: Provider: xai (or openai / anthropic), not ivr.",
+                    . "Expected success line: Provider: xai (or openai / anthropic / gemini), not ivr.",
             ]);
         }
 
@@ -9514,18 +9632,14 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'openai'    => 'ai_openai_model',
             'anthropic' => 'ai_anthropic_model',
             'xai'       => 'ai_xai_model',
-        ];
-        $key_setting_key = [
-            'openai'    => 'openai_api_key',
-            'anthropic' => 'anthropic_api_key',
-            'xai'       => 'xai_api_key',
+            'gemini'    => 'ai_gemini_model',
         ];
         $configured_model = isset($model_setting_key[$provider])
             ? (string) flosc_get_setting($model_setting_key[$provider], '')
             : '';
-        $key_raw = isset($key_setting_key[$provider])
-            ? (string) flosc_get_setting($key_setting_key[$provider], '')
-            : '';
+        $key_raw = function_exists( 'flosc_get_provider_api_key' )
+            ? (string) flosc_get_provider_api_key( $provider )
+            : (string) flosc_get_setting( $provider . '_api_key', '' );
         $key_present = ($key_raw !== '');
         $key_suffix  = $key_present && strlen($key_raw) >= 4
             ? substr($key_raw, -4)
@@ -9535,6 +9649,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'openai'    => 'https://api.openai.com/v1/chat/completions',
             'anthropic' => 'https://api.anthropic.com/v1/messages',
             'xai'       => 'https://api.x.ai/v1/chat/completions',
+            'gemini'    => 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent',
         ];
         $endpoint_url = $endpoint[$provider] ?? '';
 

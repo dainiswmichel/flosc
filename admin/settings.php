@@ -259,6 +259,15 @@ if (!empty($flosc_files)) {
 // so the same flow file can appear twice. Keep one entry per filename.
 $flosc_ivr_files = array_values( array_unique( $flosc_ivr_files ) );
 
+$flosc_get_early = isset( $_GET ) && is_array( $_GET ) ? wp_unslash( $_GET ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+$flosc_keep_ivr  = isset( $flosc_get_early['ivr'] ) ? sanitize_file_name( (string) $flosc_get_early['ivr'] ) : '';
+if ( $flosc_keep_ivr === '' && is_user_logged_in() ) {
+    $flosc_keep_ivr = sanitize_file_name( (string) get_user_meta( get_current_user_id(), '_flosc_admin_default_ivr', true ) );
+}
+if ( function_exists( 'flosc_filter_switch_flow_ivr_files' ) ) {
+    $flosc_ivr_files = flosc_filter_switch_flow_ivr_files( $flosc_ivr_files, $flosc_keep_ivr );
+}
+
 // Delegated floscEditors only see the flows they were assigned to.
 $flosc_is_site_admin = current_user_can('manage_options');
 if (!$flosc_is_site_admin) {
@@ -319,6 +328,13 @@ $flosc_settings_key = flosc_resolve_flow_option_key_for_ivr($flosc_selected_ivr)
 $flosc_flow_settings = get_option($flosc_settings_key, []);
 if (!is_array($flosc_flow_settings)) {
     $flosc_flow_settings = [];
+}
+if ( function_exists( 'flosc_personality_library_promote_custom_flow_voices' ) ) {
+    flosc_personality_library_promote_custom_flow_voices();
+    $flosc_promoted = get_option( $flosc_settings_key, array() );
+    if ( is_array( $flosc_promoted ) ) {
+        $flosc_flow_settings = $flosc_promoted;
+    }
 }
 if (function_exists('flosc_normalize_content_item_flow_settings')) {
     $flosc_flow_settings = flosc_normalize_content_item_flow_settings($flosc_flow_settings, $flosc_settings_key);
@@ -694,6 +710,8 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
                 || substr($flosc_setting_key, -5) === '_body'; // email bodies (guest/member/newsletter) — preserve newlines
             if (in_array($flosc_setting_key, $flosc_identity_html_keys, true)) {
                 $flosc_new_settings[$flosc_setting_key] = wp_kses_post($flosc_value);
+            } elseif ($flosc_setting_key === 'ai_base_prompt' && function_exists('flosc_sanitize_personality_profile_text')) {
+                $flosc_new_settings[$flosc_setting_key] = flosc_sanitize_personality_profile_text(is_string($flosc_value) ? $flosc_value : '');
             } elseif ($flosc_is_textarea) {
                 $flosc_new_settings[$flosc_setting_key] = sanitize_textarea_field($flosc_value);
             } elseif (is_array($flosc_value)) {
@@ -2420,29 +2438,30 @@ if (function_exists('wp_add_inline_style')) {
                             </div>
                             
                             <div class="flosc-flow-field">
-                                <label class="flosc-flow-field__label">Name</label>
+                                <label class="flosc-flow-field__label"><?php echo esc_html__( 'floscFlow name', 'flosc' ); ?></label>
                                 <input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>name" 
                                        value="<?php echo esc_attr($flosc_settings['name'] ?? ''); ?>"
-                                        placeholder="e.g., FLOSC Flow"
+                                        placeholder="<?php echo esc_attr__( 'e.g., dainis.net chat', 'flosc' ); ?>"
                                        class="flosc-flow-input">
+                                <p class="flosc-flow-field__hint"><?php echo esc_html__( 'Operator name (Switch Flow dropdown). Not shown to site visitors.', 'flosc' ); ?></p>
                             </div>
                             
                             <div class="flosc-flow-field">
-                                <label class="flosc-flow-field__label">Title</label>
+                                <label class="flosc-flow-field__label"><?php echo esc_html__( 'Title', 'flosc' ); ?></label>
                                 <input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>title" 
                                        value="<?php echo esc_attr($flosc_settings['title'] ?? ''); ?>"
-                                       placeholder="e.g., Learn Excellent Standard American English Pronunciation"
+                                       placeholder="<?php echo esc_attr__( 'e.g., Standard American English Pronunciation', 'flosc' ); ?>"
                                        class="flosc-flow-input">
-                                <p class="flosc-flow-field__hint">Description shown under the name</p>
+                                <p class="flosc-flow-field__hint"><?php echo esc_html__( 'Public offering name. Shown under the personality; sent to the AI as this flow’s offering.', 'flosc' ); ?></p>
                             </div>
                             
                             <div class="flosc-flow-field">
-                                <label class="flosc-flow-field__label">Tagline</label>
+                                <label class="flosc-flow-field__label"><?php echo esc_html__( 'Tagline', 'flosc' ); ?></label>
                                 <input type="text" name="<?php echo esc_attr( $flosc_prefix ); ?>tagline" 
                                        value="<?php echo esc_attr($flosc_settings['tagline'] ?? ''); ?>"
-                                       placeholder="e.g., Freeline → Login → Offer → Sale → Content"
+                                       placeholder="<?php echo esc_attr__( 'e.g., Clear spoken English, taught in conversation', 'flosc' ); ?>"
                                        class="flosc-flow-input">
-                                <p class="flosc-flow-field__hint">Short tagline shown below the title (leave empty to hide)</p>
+                                <p class="flosc-flow-field__hint"><?php echo esc_html__( 'One-line expansion of the Title. Not the FLOSC acronym, not the personality. Leave empty to hide.', 'flosc' ); ?></p>
                             </div>
                         </div>
                         
@@ -2650,30 +2669,54 @@ if (function_exists('wp_add_inline_style')) {
                         </td>
                     </tr>
                     <tr>
-                        <th><label for="flow_name">Name</label></th>
+                        <th><label for="flow_name"><?php echo esc_html__( 'floscFlow name', 'flosc' ); ?></label></th>
                         <td>
                             <input type="text" id="flow_name" name="flow_name" class="regular-text"
                                    value="<?php echo esc_attr($flosc_fi['name'] ?? ''); ?>"
-                                placeholder="e.g., FLOSC Flow">
-                            <p class="description">Display name shown in the chat header.</p>
+                                placeholder="<?php echo esc_attr__( 'e.g., dainis.net chat', 'flosc' ); ?>">
+                            <p class="description">
+                                <?php echo esc_html__( 'Operator name for this floscFlow (Switch Flow dropdown). Not shown to site visitors.', 'flosc' ); ?>
+                            </p>
+                            <?php
+                            $flosc_visitor_name_preview = function_exists( 'flosc_visitor_assistant_name' )
+                                ? flosc_visitor_assistant_name()
+                                : '';
+                            if ( $flosc_visitor_name_preview !== '' ) :
+                                ?>
+                            <p class="description">
+                                <?php
+                                echo esc_html(
+                                    sprintf(
+                                        /* translators: %s: attached personality name */
+                                        __( 'Visitors see the attached personality in chat: %s', 'flosc' ),
+                                        $flosc_visitor_name_preview
+                                    )
+                                );
+                                ?>
+                            </p>
+                            <?php endif; ?>
                         </td>
                     </tr>
                     <tr>
-                        <th><label for="flow_title">Title</label></th>
+                        <th><label for="flow_title"><?php echo esc_html__( 'Title', 'flosc' ); ?></label></th>
                         <td>
                             <input type="text" id="flow_title" name="flow_title" class="regular-text"
                                    value="<?php echo esc_attr($flosc_fi['title'] ?? ''); ?>"
-                                   placeholder="e.g., Learn Excellent Standard American English Pronunciation">
-                            <p class="description">Description shown under the name.</p>
+                                   placeholder="<?php echo esc_attr__( 'e.g., Standard American English Pronunciation', 'flosc' ); ?>">
+                            <p class="description">
+                                <?php echo esc_html__( 'Public offering name. Visitors see it under the personality on the landing screen and as the browser-tab suffix. The AI uses it as this flow’s offering — not the floscFlow name and not the personality.', 'flosc' ); ?>
+                            </p>
                         </td>
                     </tr>
                     <tr>
-                        <th><label for="flow_tagline">Tagline</label></th>
+                        <th><label for="flow_tagline"><?php echo esc_html__( 'Tagline', 'flosc' ); ?></label></th>
                         <td>
                             <input type="text" id="flow_tagline" name="flow_tagline" class="regular-text"
                                    value="<?php echo esc_attr($flosc_fi['tagline'] ?? ''); ?>"
-                                   placeholder="e.g., Freeline → Login → Offer → Sale → Content">
-                            <p class="description">Short tagline shown below the title. Leave empty to hide.</p>
+                                   placeholder="<?php echo esc_attr__( 'e.g., Clear spoken English, taught in conversation', 'flosc' ); ?>">
+                            <p class="description">
+                                <?php echo esc_html__( 'One-line expansion of the Title. Visitors see it under the Title. The AI uses it as the offering’s short description. Not the FLOSC acronym, not the personality. Leave empty to hide.', 'flosc' ); ?>
+                            </p>
                         </td>
                     </tr>
                     <tr>
@@ -2715,7 +2758,7 @@ if (function_exists('wp_add_inline_style')) {
                                      alt="" id="flosc_chatlogo_preview"
                                      class="flosc-flow-media-preview flosc-flow-media-preview--chatlogo<?php echo empty($flosc_fi['chatlogo_url']) ? ' flosc-hidden' : ''; ?>">
                             </div>
-                            <p class="description">Image shown in the chat header beside the name. Wider/rectangular formats welcome.</p>
+                            <p class="description"><?php echo esc_html__( 'Image shown in the chat header beside the personality name. Wider/rectangular formats welcome.', 'flosc' ); ?></p>
                         </td>
                     </tr>
                     <tr>

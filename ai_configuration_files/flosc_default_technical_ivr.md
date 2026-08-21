@@ -32,7 +32,7 @@ MessageName: tech_intro_ai_api
 MessageType: suggested_user_autoprompt
 MessageStyle: card
 UserInput: How do I enable AI chat?
-MessageContent: This is just IVR-style copy until AI is connected. Configure your preferred AI API under Settings → AI (OpenAI, Anthropic, xAI, etc. — BYOK: paste key, test, save) for much more intelligent free-form technical answers.
+MessageContent: This is just IVR-style copy until AI is connected. Configure your preferred AI API under Settings → AI (Anthropic, OpenAI, xAI, or Gemini — BYOK: paste key, test, save) for much more intelligent free-form technical answers.
 MessageConditions: is_visitor || is_guest || is_member
 Keywords: ai, api, openai, anthropic, grok, xai, byok, enable ai, configure ai
 

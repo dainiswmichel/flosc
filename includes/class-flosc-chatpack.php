@@ -251,12 +251,19 @@ class FLOSC_Chatpack {
         // These live only in message 1's full chatpack. Conversation history carries
         // what was *said*, not what the system prompt *instructed*. By message 2 the
         // definitions are gone from authoritative context unless we anchor them here.
-        $identity    = FLOSC_Framework::instance()->get_floscflow_identity();
-        $prod_name   = $identity['name'] ?? '';
-        $prod_tag    = $identity['tagline'] ?? '';
-        $anchor_line = "FLOSC = Freeline, Login, Offer, Sale, Content. (Fixed — never changes.)";
-        if ($prod_name && $prod_tag) {
-            $anchor_line .= "\n{$prod_name} = {$prod_tag}. (Fixed — never changes.)";
+        $identity         = FLOSC_Framework::instance()->get_floscflow_identity();
+        $offering_title   = function_exists( 'flosc_flow_offering_title' )
+            ? flosc_flow_offering_title()
+            : trim( (string) ( $identity['title'] ?? '' ) );
+        $offering_tagline = function_exists( 'flosc_flow_offering_tagline' )
+            ? flosc_flow_offering_tagline()
+            : trim( (string) ( $identity['tagline'] ?? '' ) );
+        $anchor_line      = "FLOSC = Freeline, Login, Offer, Sale, Content. (Fixed — never changes.)";
+        if ( $offering_title !== '' ) {
+            $anchor_line .= "\nOffering title: {$offering_title}. (Fixed — do not invent another.)";
+        }
+        if ( $offering_tagline !== '' ) {
+            $anchor_line .= "\nTagline: {$offering_tagline}. (Fixed — one-line description of the title, not an acronym expansion.)";
         }
 
         $sections[] = "## FLOSC SESSION CONTINUE\n"
@@ -439,8 +446,12 @@ class FLOSC_Chatpack {
      */
     private static function build_identity_section() {
         $identity = FLOSC_Framework::instance()->get_floscflow_identity();
-        $product_name = $identity['name'] ?? '';
-        $product_tagline = $identity['tagline'] ?? '';
+        $product_name = function_exists( 'flosc_flow_offering_title' )
+            ? flosc_flow_offering_title()
+            : trim( (string) ( $identity['title'] ?? '' ) );
+        $product_tagline = function_exists( 'flosc_flow_offering_tagline' )
+            ? flosc_flow_offering_tagline()
+            : trim( (string) ( $identity['tagline'] ?? '' ) );
         // Fix 12: Library attach (one personality) or flow bag / legacy keys.
         $res = function_exists( 'flosc_personality_library_resolve_field' ) ? 'flosc_personality_library_resolve_field' : null;
         $ai_name    = $res
@@ -459,38 +470,67 @@ class FLOSC_Chatpack {
         $ai_referral_links = $res ? call_user_func( $res, 'ai_off_topic_links', '' ) : flosc_get_setting( 'ai_off_topic_links', '' );
         $ai_base_prompt    = $res ? call_user_func( $res, 'ai_base_prompt', '' ) : flosc_get_setting( 'ai_base_prompt', '' );
         $site_url = function_exists('get_bloginfo') ? get_bloginfo('url') : '';
+        $compiled_profile = function_exists( 'flosc_personality_compiled_profile' )
+            ? flosc_personality_compiled_profile()
+            : trim( (string) $ai_base_prompt );
 
-        // Fix 11a: Natural orientation brief — context and energy BEFORE the rules
         $section = "## 1. IDENTITY\n\n";
 
-        $section .= "You are {$ai_name}, the AI facilitator";
-        if ($product_name) {
-            $section .= " for {$product_name}";
-        }
-        if ($site_url) {
-            $section .= " on {$site_url}";
-        }
-        $section .= ".\n\n";
+        if ( $compiled_profile !== '' ) {
+            $section .= "This chat is on a FLOSC flow";
+            if ( $product_name ) {
+                $section .= " for {$product_name}";
+            }
+            if ( $site_url ) {
+                $section .= " at {$site_url}";
+            }
+            $section .= ".\n";
+            $section .= "FLOSC = Freeline, Login, Offer, Sale, Content (the software). ";
+            $section .= "Do not invent another expansion.\n";
+            if ( $product_name && $product_tagline ) {
+                $section .= "This flow's public offering: {$product_name} — {$product_tagline}. Use these as the verified title and tagline. The tagline is a one-line description of the title, not an acronym expansion. Do not invent another title or tagline.\n";
+            } elseif ( $product_name ) {
+                $section .= "This flow's public offering title is {$product_name}. No tagline is configured. Do not invent a tagline or an acronym expansion.\n";
+            } elseif ( $product_tagline ) {
+                $section .= "This flow's tagline is {$product_tagline}. No offering title is configured. Do not invent a title.\n";
+            } else {
+                $section .= "This flow has no offering Title or Tagline configured. If asked what this flow offers, say the operator has not set them yet. Do not invent them.\n";
+            }
+            $section .= "\n## Personality\n";
+            $section .= "The following profile is who you are. Speak as this person. Do not describe how you were made.\n\n";
+            $section .= $compiled_profile . "\n";
+        } else {
+            $section .= "You are {$ai_name}, the AI facilitator";
+            if ($product_name) {
+                $section .= " for {$product_name}";
+            }
+            if ($site_url) {
+                $section .= " on {$site_url}";
+            }
+            $section .= ".\n\n";
 
-        $section .= "This is a FLOSC installation. FLOSC = Freeline, Login, Offer, Sale, Content — "
-            . "a 5-phase journey from first visit to long-term membership.";
-        if ($product_name && $product_tagline) {
-            $section .= " This installation focuses on {$product_name} ({$product_tagline}).";
-        }
-        $section .= "\n";
-        if ($ai_mission) {
-            $section .= $ai_mission . "\n";
-        }
+            $section .= "This is a FLOSC installation. FLOSC = Freeline, Login, Offer, Sale, Content — "
+                . "a 5-phase journey from first visit to long-term membership.";
+            if ($product_name && $product_tagline) {
+                $section .= " This installation's public offering is {$product_name} ({$product_tagline}).";
+            } elseif ($product_name) {
+                $section .= " This installation's public offering is {$product_name}.";
+            }
+            $section .= "\n";
+            if ($ai_mission) {
+                $section .= $ai_mission . "\n";
+            }
 
-        $section .= "\n**YOUR ENERGY IS ENCOURAGEMENT.** This is the through-line of every interaction:\n";
-        $section .= "- A visitor showing up → spark curiosity, make them want to find out where they stand\n";
-        $section .= "- A visitor taking the quiz → they took action, honor that\n";
-        $section .= "- Seeing quiz results → celebrate what they discovered about themselves\n";
-        $section .= "- Considering the offer → \"you're this close — here's the path\"\n";
-        $section .= "- Making the purchase → celebrate the decision to invest in themselves\n";
-        $section .= "- Every lesson completed → acknowledge the win, no matter how small\n";
-        $section .= "- Continued learning → track progress, make it visible, keep momentum alive\n\n";
-        $section .= "Your job is to move each user forward — one phase, one step, one win at a time.\n\n";
+            $section .= "\n**YOUR ENERGY IS ENCOURAGEMENT.** This is the through-line of every interaction:\n";
+            $section .= "- A visitor showing up → spark curiosity, make them want to find out where they stand\n";
+            $section .= "- A visitor taking the quiz → they took action, honor that\n";
+            $section .= "- Seeing quiz results → celebrate what they discovered about themselves\n";
+            $section .= "- Considering the offer → \"you're this close — here's the path\"\n";
+            $section .= "- Making the purchase → celebrate the decision to invest in themselves\n";
+            $section .= "- Every lesson completed → acknowledge the win, no matter how small\n";
+            $section .= "- Continued learning → track progress, make it visible, keep momentum alive\n\n";
+            $section .= "Your job is to move each user forward — one phase, one step, one win at a time.\n\n";
+        }
 
         $section .= "--- EXACT DEFINITIONS (do not paraphrase or invent) ---\n\n";
 
@@ -499,35 +539,37 @@ class FLOSC_Chatpack {
             . "FLOSC is a white-label WordPress plugin framework. "
             . "That is ALL it stands for. Do not expand it any other way.\n\n";
 
-        // Product info (floscAdmin-configured)
+        // Offering info (floscAdmin-configured Title + Tagline — not operator flow name, not personality)
         if ($product_name) {
-            $section .= "**This Site's Product:** {$product_name}";
+            $section .= "**This Site's Offering Title:** {$product_name}\n";
             if ($product_tagline) {
-                $section .= " = {$product_tagline}";
-            }
-            $section .= "\n";
-            // Spell out the acronym rule explicitly for the product name
-            if ($product_tagline) {
-                $section .= "When asked what {$product_name} stands for, the ONLY correct answer is: \"{$product_tagline}\". "
-                    . "Do not invent any other expansion.\n";
+                $section .= "**Tagline:** {$product_tagline}\n";
+                $section .= "When asked what this flow offers, use the Title and Tagline above. "
+                    . "The tagline describes the title; it is not what the title \"stands for\" as an acronym. "
+                    . "Do not invent another title or tagline.\n";
             } else {
-                $section .= "If you do not know what {$product_name} stands for, say \"I'm not sure of the exact expansion — "
-                    . "the site administrator hasn't configured that yet.\" Do NOT guess.\n";
+                $section .= "No tagline is configured. Do not invent one or treat the title as an acronym.\n";
             }
         } else {
-            $section .= "**This Site's Product:** Not yet configured by the floscAdmin.\n";
+            $section .= "**This Site's Offering Title:** Not yet configured by the floscAdmin.\n";
+            if ($product_tagline) {
+                $section .= "**Tagline:** {$product_tagline}\n";
+            }
         }
 
-        // AI persona (floscAdmin-configured)
-        $section .= "\n**Your Persona:**\n";
-        $section .= "- Name: {$ai_name}\n";
-        $section .= "- Role: {$ai_role}\n";
-        $section .= "- Traits: {$ai_traits}\n";
-        if ($ai_mission) {
-            $section .= "- Mission: {$ai_mission}\n";
-        }
-        if ($ai_boundaries) {
-            $section .= "- Boundaries: {$ai_boundaries}\n";
+        if ( $compiled_profile === '' ) {
+            $section .= "\n**Your Persona:**\n";
+            $section .= "- Name: {$ai_name}\n";
+            $section .= "- Role: {$ai_role}\n";
+            $section .= "- Traits: {$ai_traits}\n";
+            if ($ai_mission) {
+                $section .= "- Mission: {$ai_mission}\n";
+            }
+            if ($ai_boundaries) {
+                $section .= "- Boundaries: {$ai_boundaries}\n";
+            }
+        } elseif ( $ai_boundaries ) {
+            $section .= "\n**Boundaries (this flow):** " . $ai_boundaries . "\n";
         }
 
         // Hard rules (non-configurable safety rails)
@@ -537,9 +579,9 @@ class FLOSC_Chatpack {
         $section .= "1. NAMES & ACRONYMS: Only expand or define names/acronyms when this prompt (or verified site context) gives the expansion. ";
         $section .= "FLOSC (the software framework) = Freeline, Login, Offer, Sale, Content — only when relevant to the software, not as this flow's forced topic. ";
         if ($product_name && $product_tagline) {
-            $section .= "This flow's product line: {$product_name} — {$product_tagline}. ";
+            $section .= "This flow's offering: {$product_name} — {$product_tagline}. ";
         } elseif ($product_name) {
-            $section .= "This flow's name: {$product_name}. ";
+            $section .= "This flow's offering title: {$product_name}. ";
         }
         $section .= "If you do not have a verified expansion for a name, say so briefly and offer a useful next step — NEVER invent an expansion.\n\n";
 
@@ -570,8 +612,7 @@ class FLOSC_Chatpack {
             $section .= "**Recommended External Resources:** " . $ai_referral_links . "\n";
         }
 
-        // Optional advanced override from FloscAdmin
-        if ($ai_base_prompt) {
+        if ( $compiled_profile === '' && $ai_base_prompt ) {
             $section .= "\n**FloscAdmin Advanced Override:**\n" . $ai_base_prompt . "\n";
         }
 

@@ -4,7 +4,7 @@ Donate link: https://dainis.net/donate/
 Tags: leads, sales, access, ai, chatbot
 Requires at least: 7.0.4
 Requires PHP: 7.4
-Tested up to: 7.0.4
+Tested up to: 7.1
 Stable tag: 8.0.0
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
@@ -25,7 +25,7 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * **Offer Sequencing** - Show payment offers at the ideal moment in the visitor journey
 * **DA1 Catalogs** - Attach structured TSV catalogs to flows so floscAdmins can serve curated, flow-scoped datasets without hard-coding project-specific content
 * **Locally Stored** - All visitor data stays in your WordPress database by default
-* **AI-Ready** - Integration with your own AI provider (OpenAI, Anthropic, Grok, etc.) for conversational responses via Bring-Your-Own-Key
+* **AI-Ready** - Bring-your-own-key chat with Anthropic, OpenAI, xAI, or Gemini (or IVR scripted only). Speech-to-text: AssemblyAI, OpenAI Whisper, or a custom endpoint.
 * **WordPress Native** - Built as a standard WordPress plugin; no external platform required
 
 = Included Features =
@@ -36,6 +36,7 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * Content unlock and offer gating
 * Local storage in WordPress database
 * Bring-Your-Own-Key AI provider setup
+* Personality Designer — visual workshop for authoring a reusable voice (wellsprings, density, morph, spectrograph); save to the install library and attach one personality per flow
 * Pre-configured example flows for pronunciation, music, and other use cases
 
 = Use Cases =
@@ -51,7 +52,7 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 = How It Works =
 
 1. **Configure IVR Messages** - Expanding on interactive voice response (IVR) automated telephone system technology, in which callers receive and provide information by using voice or menu inputs, floscAdmins define chatbot conversational input-response flows: welcome messages, quiz questions, conditional branches, offers, and content unlock paths -- all while drawing from your WordPress content and configurable content database. 
-2. **Set Up Your AI Provider** - Add your own provider API key (for example OpenAI, Anthropic, or xAI) for natural conversational responses.
+2. **Set Up Your AI Provider** - Add your own provider API key (Anthropic, OpenAI, xAI, or Gemini) for natural conversational responses.
 3. **Build Your Flow** - Create quizzes, define conditions, add payment offers, and unlock content pages
 4. **Publish** - Visitors access the flow and experience your full conversational sales journey on your WordPress site
 5. **Review Results** - Track quiz completions, offer views, and conversions directly in WordPress
@@ -60,7 +61,7 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 
 * Requires WordPress 7.0.4+ (see header Requires at least)
 * No external services required for core functionality (flows run locally)
-* BYOK AI integration (bring your own provider key, including OpenAI, Anthropic, and xAI)
+* BYOK AI integration (Anthropic, OpenAI, xAI, Gemini) plus IVR scripted mode
 * Payment integration
 * REST API for programmatic access
 * Unlimited FloscFlows; a single FLOSC install can serve chatbots across multiple domains
@@ -97,7 +98,7 @@ After activating:
 
 No. FLOSC flows run entirely on your WordPress site by default. Your visitor data stays in your database.
 
-Optional: You can bring your own AI provider key (for example OpenAI, Anthropic, or xAI) for conversational responses.
+Optional: You can bring your own AI provider key (Anthropic, OpenAI, xAI, or Gemini) for conversational responses. Speech-to-text uses AssemblyAI, OpenAI Whisper, or a custom endpoint.
 
 Without an AI API, the chatbot is a lot like a phone Interactive Voice Response (IVR) system. Instead of "callers," the chatbot has visitors, provides info, and users can input info that the IVR structure knows how to respond to. 
 
@@ -112,6 +113,16 @@ Yes. FLOSC is theme-agnostic and works with any WordPress theme. Flows are embed
 = How many flows can I create? =
 
 As many as you like. FLOSC has no flow limit — the full plugin is free and runs unlimited FloscFlows (FLOSC chatbots), and a single FLOSC install can serve those chatbots across multiple domains. Install FLOSC on as many WordPress sites as you wish. Paid options cover services like human support, installation, profitability consulting, and managed AI credits — not the number of flows.
+
+= What is the Personality Designer? =
+
+An admin workshop for authoring an AI personality (wellsprings, density sequence, morph, spectrograph, trajectories). Saving writes a compiled profile and a workshop file into the install personality library. Each flow attaches exactly one library personality, then attaches that flow's chat API. Personalities are not chained. There is no provider-pack picker in FLOSC.
+
+FLOSC chat APIs that receive the compiled profile as system text: Anthropic (`system`), OpenAI (`system` / `instructions`), xAI (`system`), Gemini (`systemInstruction`). IVR is scripted and does not call an AI API.
+
+The same compiled profile is also mapped for these API field shapes (export/accommodation, not extra FLOSC HTTP adapters): Anthropic, OpenAI, xAI, Gemini, Mistral, Cohere, Together (Meta), Fireworks (Meta), AWS Bedrock, Azure OpenAI, OpenRouter, Perplexity.
+
+Current per-provider pocket rules are dated MTS 26_08m_20d on the Personality Designer (What each API wants for this personality). Re-date when a vendor moves the field. Sampling is flow policy, not personality.
 
 = What are DA1 Catalogs? =
 
@@ -139,11 +150,11 @@ Deleting the plugin from Plugins runs uninstall.php. That removes FLOSC options,
 
 = How can I integrate my own AI provider? =
 
-In Settings → FLOSC → AI Provider:
-1. Choose your provider (for example OpenAI, Anthropic, or xAI)
-2. Paste your API key (BYOK - you maintain your own account)
+In Settings → FLOSC → AI:
+1. Choose your chat provider: Anthropic, OpenAI, xAI, Gemini, or IVR (scripted only)
+2. Paste your API key (BYOK — you maintain your own account), or save it under All Flows AI API Management
 3. Test the connection
-4. FLOSC will route conversational responses through your provider
+4. FLOSC will route conversational responses through that provider, using this flow’s attached personality profile as system text
 
 
 == External Services ==
@@ -171,83 +182,90 @@ Data sent: visitor prompt text, conversation context, and model parameters.
 Service terms: https://x.ai/legal/terms-of-service
 Privacy policy: https://x.ai/legal/privacy-policy
 
-4. AssemblyAI (for speech-to-text in audio quiz flows)
+4. Google Gemini (for AI chat responses)
+Endpoint example: https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
+Purpose: generate real-time AI chat responses when Gemini is selected as the AI provider. The compiled personality profile is sent as systemInstruction.
+Data sent: visitor prompt text, conversation context, and model parameters.
+Service terms: https://developers.google.com/terms
+Privacy policy: https://policies.google.com/privacy
+
+5. AssemblyAI (for speech-to-text in audio quiz flows)
 Endpoint examples: https://api.assemblyai.com/v2/upload, https://api.assemblyai.com/v2/transcript
 Purpose: transcribe visitor audio so pronunciation and audio quiz logic can run.
 Data sent: uploaded audio and transcription request metadata.
 Service terms: https://www.assemblyai.com/terms
 Privacy policy: https://www.assemblyai.com/privacy-policy
 
-5. Custom STT endpoint (for self-hosted or third-party speech-to-text)
+6. Custom STT endpoint (for self-hosted or third-party speech-to-text)
 Endpoint: user-configured in FLOSC settings
 Purpose: send audio transcription requests to an endpoint specified by the site administrator.
 Data sent: uploaded audio payload.
 Service terms: determined by the configured endpoint provider.
 Privacy policy: determined by the configured endpoint provider.
 
-6. PayPal (for checkout and subscription flows)
+7. PayPal (for checkout and subscription flows)
 Endpoint examples: https://api-m.paypal.com, https://api-m.sandbox.paypal.com, https://www.paypal.com/sdk/js (browser PayPal JS SDK when a PayPal client ID is configured)
 Purpose: create and validate payment and subscription transactions; load the PayPal JS SDK only on checkout screens that need it.
 Data sent: order/subscription identifiers, amount/currency, and payment status data needed to complete transactions. Card/wallet data is handled by PayPal when used — not stored by FLOSC.
 Service terms: https://www.paypal.com/us/legalhub/paypal/useragreement-full
 Privacy policy: https://www.paypal.com/us/legalhub/privacy-full
 
-7. Stripe (for checkout and subscription flows)
+8. Stripe (for checkout and subscription flows)
 Endpoint examples: https://api.stripe.com/v1, https://js.stripe.com (browser Elements/Checkout SDK when Stripe is enabled)
 Purpose: process payment intents, subscriptions, and payment-related webhook events; load Stripe.js only on checkout screens that need it.
 Data sent: payment metadata (amount, currency, customer and transaction identifiers) required to complete transactions. Card data is handled by Stripe.js / Stripe servers when used — not stored by FLOSC.
 Service terms: https://stripe.com/legal
 Privacy policy: https://stripe.com/privacy
 
-8. ClickBank (for redirect checkout and INS/IPN fulfillment)
+9. ClickBank (for redirect checkout and INS/IPN fulfillment)
 Endpoint examples: https://VENDOR.pay.clickbank.net/?cbitems=ITEM (live seller payment link), https://sandbox.clickbank.net/checkout/order/hop.php (sandbox)
 Purpose: route buyers to ClickBank checkout; grant access only after Instant Notification Service (INS v6+/v8 encrypted JSON) or verified legacy IPN — never on redirect alone.
 Data sent: transaction identifiers, product item numbers (cbitems), receipt fields, and customer identity fields provided by ClickBank INS/IPN.
 Service terms: https://support.clickbank.com/en/articles/10535340-clickbank-terms-of-sale
 Privacy policy: https://support.clickbank.com/en/articles/10535346-clickbank-privacy-policy
 
-9. Google OAuth (for social login)
+10. Google OAuth (for social login)
 Endpoint examples: https://accounts.google.com/o/oauth2/v2/auth, https://oauth2.googleapis.com/token, https://www.googleapis.com/oauth2/v2/userinfo
 Purpose: authenticate users who choose Google single sign-on.
 Data sent: OAuth authorization data and account profile fields returned by Google for authentication.
 Service terms: https://policies.google.com/terms
 Privacy policy: https://policies.google.com/privacy
 
-10. Facebook OAuth (for social login)
+11. Facebook OAuth (for social login)
 Endpoint examples: https://www.facebook.com/v19.0/dialog/oauth, https://graph.facebook.com/v19.0/oauth/access_token, https://graph.facebook.com/v19.0/me
 Purpose: authenticate users who choose Facebook single sign-on.
 Data sent: OAuth authorization data and profile fields returned by Meta Graph API for authentication.
 Service terms: https://www.facebook.com/terms.php
 Privacy policy: https://www.facebook.com/privacy/policy/
 
-11. Apple Sign In (for social login)
+12. Apple Sign In (for social login)
 Endpoint examples: https://appleid.apple.com/auth/authorize, https://appleid.apple.com/auth/token
 Purpose: authenticate users who choose Apple single sign-on.
 Data sent: OAuth/OpenID authorization data and account profile fields returned by Apple for authentication.
 Service terms: https://developer.apple.com/support/terms/
 Privacy policy: https://www.apple.com/legal/privacy/
 
-12. Microsoft OAuth (for social login)
+13. Microsoft OAuth (for social login)
 Endpoint examples: https://login.microsoftonline.com/common/oauth2/v2.0/authorize, https://login.microsoftonline.com/common/oauth2/v2.0/token, https://graph.microsoft.com/v1.0/me
 Purpose: authenticate users who choose Microsoft single sign-on.
 Data sent: OAuth authorization data and account profile fields returned by Microsoft Graph for authentication.
 Service terms: https://www.microsoft.com/servicesagreement
 Privacy policy: https://privacy.microsoft.com/privacystatement
 
-13. LinkedIn OAuth (for social login)
+14. LinkedIn OAuth (for social login)
 Endpoint examples: https://www.linkedin.com/oauth/v2/authorization, https://www.linkedin.com/oauth/v2/accessToken, https://api.linkedin.com/v2/userinfo
 Purpose: authenticate users who choose LinkedIn single sign-on.
 Data sent: OAuth/OpenID authorization data and account profile fields returned by LinkedIn for authentication.
 Service terms: https://www.linkedin.com/legal/user-agreement
 Privacy policy: https://www.linkedin.com/legal/privacy-policy
 
-14. Flow-configured external quiz or pronunciation scoring provider
+15. Flow-configured external quiz or pronunciation scoring provider
 Endpoint examples: https://api.yourdomain.tld/analyze, https://api.yourdomain.tld/analyze-phrase, https://api.yourdomain.tld/finalize-session, https://api.yourdomain.tld/session/{id}
 Purpose: score quiz submissions and finalize/retrieve session scoring data for flows that use an external scoring provider.
 Data sent: quiz audio, answer payloads, and session-finalization data required by the configured provider. FLOSC also sends request-signing headers: X-FLOSC-Site, X-FLOSC-MTS (UTC Michel timestamp), and X-FLOSC-Signature (HMAC-SHA256 over payload_json + newline + mts + newline + site).
 Configuration note: floscAdmins can configure a per-flow external scoring endpoint. If a flow uses an external scoring provider, quiz audio and related scoring payloads may be sent to that provider. Audio playback conversion dispatch is optional and flow-scoped through the Audio Conversion Provider setting (none|external).
 
-15. Amazon product search links (optional affiliate offers)
+16. Amazon product search links (optional affiliate offers)
 Endpoint examples: https://www.amazon.com/s (search results URL with affiliate tag when Amazon affiliate is enabled)
 Purpose: generate outbound search links so visitors can find products; FLOSC does not call Amazon Product Advertising API by default.
 Data sent: search keywords and the site's Amazon associate tag in the query string when the visitor follows the link.

@@ -12,29 +12,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 $flosc_current_ivr = $GLOBALS['flosc_current_ivr'] ?? '';
 $flosc_avail       = function_exists( 'flosc_available_providers_get_all' ) ? flosc_available_providers_get_all() : array();
 $flosc_personas    = function_exists( 'flosc_personality_library_get_all' ) ? flosc_personality_library_get_all() : array();
+$flosc_attached_pid = '';
+if ( function_exists( 'flosc_personality_library_id_for_flow' ) ) {
+	$flosc_attached_pid = flosc_personality_library_id_for_flow(
+		sanitize_key( pathinfo( (string) $flosc_current_ivr, PATHINFO_FILENAME ) )
+	);
+}
 
-$flosc_provider_meta = array(
-	'anthropic'  => array(
-		'label' => 'Anthropic',
-		'hint'  => 'Claude API keys',
-		'url'   => 'https://console.anthropic.com/settings/keys',
-	),
-	'openai'     => array(
-		'label' => 'OpenAI',
-		'hint'  => 'OpenAI API keys',
-		'url'   => 'https://platform.openai.com/api-keys',
-	),
-	'xai'        => array(
-		'label' => 'xAI',
-		'hint'  => 'Grok API keys',
-		'url'   => 'https://console.x.ai/',
-	),
-	'assemblyai' => array(
-		'label' => 'AssemblyAI',
-		'hint'  => 'Speech-to-text (audio quizzes)',
-		'url'   => 'https://www.assemblyai.com/app/account',
-	),
-);
+$flosc_provider_meta = function_exists( 'flosc_install_provider_catalog' ) ? flosc_install_provider_catalog() : array();
 
 // Notices after PRG.
 $flosc_ai_all_notice = get_transient( 'flosc_ai_all_notice_' . get_current_user_id() );
@@ -50,15 +35,16 @@ if ( is_array( $flosc_ai_all_notice ) ) {
 
 <div class="flosc-info-box flosc-margin-bottom-20">
 	<p class="flosc-text-zero-margin">
-		<?php echo esc_html__( 'Configure API keys once for this FLOSC install. Any floscFlow can attach them. Personalities are listed here; each flow attaches exactly one (no personality chaining — only APIs chain).', 'flosc' ); ?>
+		<?php echo esc_html__( 'Install API keys here. Chat: Anthropic, OpenAI, xAI, Gemini. Speech-to-text: AssemblyAI (and OpenAI Whisper on This flow). Author a personality in Personality Designer. Attach one personality and one chat API on This flow.', 'flosc' ); ?>
 	</p>
 </div>
 
-<!-- ========== All Flows AI API Management ========== -->
-<div class="flosc-info-box flosc-margin-bottom-20">
-	<h3 class="flosc-flow-portability-title">
-		<span><?php echo esc_html__( 'All Flows AI API Management', 'flosc' ); ?></span>
-	</h3>
+<details class="flosc-ai-acc">
+<summary class="flosc-ai-acc__summary">
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Install API keys', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'One pool for every floscFlow. Attach a provider on This flow.', 'flosc' ); ?></span>
+</summary>
+<div class="flosc-ai-acc__body">
 	<p class="description">
 		<?php echo esc_html__( 'Keys saved here are available to every current and future floscFlow. On a flow’s AI screen, choose primary provider and optional API chain — that is attachment, not a second secret store.', 'flosc' ); ?>
 	</p>
@@ -113,95 +99,64 @@ if ( is_array( $flosc_ai_all_notice ) ) {
 		</p>
 	</form>
 </div>
+</details>
 
-<!-- ========== Personalities library ========== -->
-<div class="flosc-info-box">
-	<h3 class="flosc-flow-portability-title">
-		<span><?php echo esc_html__( 'All Flows: Personalities', 'flosc' ); ?></span>
-	</h3>
-	<p class="description">
-		<?php echo esc_html__( 'Library of voices. Each floscFlow attaches exactly one. Personalities are never chained — only AI APIs chain on the flow’s AI screen.', 'flosc' ); ?>
-	</p>
-
+<details class="flosc-ai-acc flosc-ai-acc--designer" id="flosc-personality-library" open>
+<summary class="flosc-ai-acc__summary">
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Personalities', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Inventory. Design is this flow’s attached row.', 'flosc' ); ?></span>
+</summary>
+<div class="flosc-ai-acc__body">
 	<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 		<?php wp_nonce_field( 'flosc_save_personality_library' ); ?>
 		<input type="hidden" name="action" value="flosc_save_personality_library">
 		<input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr( $flosc_current_ivr ); ?>">
 
-		<?php
-		$flosc_i = 0;
-		foreach ( $flosc_personas as $flosc_pid => $flosc_p ) :
-			$flosc_i++;
-			?>
-		<div class="flosc-card-soft flosc-margin-bottom-16">
-			<h4 class="flosc-card-title-reset">
-				<?php echo esc_html( $flosc_p['label'] !== '' ? $flosc_p['label'] : $flosc_pid ); ?>
-				<code class="description"><?php echo esc_html( $flosc_pid ); ?></code>
-			</h4>
-			<input type="hidden" name="persona[<?php echo esc_attr( (string) $flosc_i ); ?>][id]" value="<?php echo esc_attr( $flosc_pid ); ?>">
-			<table class="form-table" role="presentation">
+		<table class="widefat striped flosc-personality-inventory">
+			<thead>
 				<tr>
-					<th scope="row"><label><?php echo esc_html__( 'Label', 'flosc' ); ?></label></th>
+					<th scope="col"><?php echo esc_html__( 'Label', 'flosc' ); ?></th>
+					<th scope="col"><?php echo esc_html__( 'Id', 'flosc' ); ?></th>
+					<th scope="col"><?php echo esc_html__( 'Status', 'flosc' ); ?></th>
+					<th scope="col"><?php echo esc_html__( 'Design', 'flosc' ); ?></th>
+					<th scope="col"><?php echo esc_html__( 'Remove', 'flosc' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+			<?php
+			$flosc_i = 0;
+			foreach ( $flosc_personas as $flosc_pid => $flosc_p ) :
+				$flosc_i++;
+				$flosc_on_file = ! empty( $flosc_p['workshop_json'] ) || ! empty( $flosc_p['ai_base_prompt'] );
+				?>
+				<tr>
 					<td>
+						<input type="hidden" name="persona[<?php echo esc_attr( (string) $flosc_i ); ?>][id]" value="<?php echo esc_attr( $flosc_pid ); ?>">
 						<input type="text" class="regular-text" name="persona[<?php echo esc_attr( (string) $flosc_i ); ?>][label]" value="<?php echo esc_attr( $flosc_p['label'] ); ?>">
 					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label><?php echo esc_html__( 'AI name', 'flosc' ); ?></label></th>
+					<td><code><?php echo esc_html( $flosc_pid ); ?></code></td>
+					<td><?php echo $flosc_on_file ? esc_html__( 'On file', 'flosc' ) : esc_html__( 'Empty', 'flosc' ); ?></td>
 					<td>
-						<input type="text" class="regular-text" name="persona[<?php echo esc_attr( (string) $flosc_i ); ?>][ai_personality_name]" value="<?php echo esc_attr( $flosc_p['ai_personality_name'] ); ?>">
+						<?php if ( current_user_can( 'manage_options' ) && $flosc_pid === $flosc_attached_pid ) : ?>
+						<a class="button button-primary" href="<?php echo esc_url( flosc_personality_builder_url( $flosc_pid, $flosc_current_ivr ) ); ?>">
+							<?php echo esc_html__( 'Design this flow', 'flosc' ); ?>
+						</a>
+						<?php else : ?>
+						<span class="description"><?php echo esc_html__( 'Attach on This flow', 'flosc' ); ?></span>
+						<?php endif; ?>
 					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label><?php echo esc_html__( 'Role', 'flosc' ); ?></label></th>
-					<td>
-						<input type="text" class="large-text" name="persona[<?php echo esc_attr( (string) $flosc_i ); ?>][ai_personality_role]" value="<?php echo esc_attr( $flosc_p['ai_personality_role'] ); ?>">
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label><?php echo esc_html__( 'Traits', 'flosc' ); ?></label></th>
-					<td>
-						<textarea class="large-text" rows="2" name="persona[<?php echo esc_attr( (string) $flosc_i ); ?>][ai_personality_traits]"><?php echo esc_textarea( $flosc_p['ai_personality_traits'] ); ?></textarea>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label><?php echo esc_html__( 'Mission', 'flosc' ); ?></label></th>
-					<td>
-						<textarea class="large-text" rows="2" name="persona[<?php echo esc_attr( (string) $flosc_i ); ?>][ai_mission]"><?php echo esc_textarea( $flosc_p['ai_mission'] ); ?></textarea>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label><?php echo esc_html__( 'Boundaries', 'flosc' ); ?></label></th>
-					<td>
-						<textarea class="large-text" rows="3" name="persona[<?php echo esc_attr( (string) $flosc_i ); ?>][ai_boundaries]"><?php echo esc_textarea( $flosc_p['ai_boundaries'] ); ?></textarea>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label><?php echo esc_html__( 'Topic scope', 'flosc' ); ?></label></th>
-					<td>
-						<textarea class="large-text" rows="2" name="persona[<?php echo esc_attr( (string) $flosc_i ); ?>][ai_topic_scope]"><?php echo esc_textarea( $flosc_p['ai_topic_scope'] ); ?></textarea>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><label><?php echo esc_html__( 'Base system prompt', 'flosc' ); ?></label></th>
-					<td>
-						<textarea class="large-text code" rows="4" name="persona[<?php echo esc_attr( (string) $flosc_i ); ?>][ai_base_prompt]"><?php echo esc_textarea( $flosc_p['ai_base_prompt'] ); ?></textarea>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"><?php echo esc_html__( 'Remove', 'flosc' ); ?></th>
 					<td>
 						<label>
 							<input type="checkbox" name="persona_delete[<?php echo esc_attr( $flosc_pid ); ?>]" value="1">
-							<?php echo esc_html__( 'Delete this personality from the library', 'flosc' ); ?>
+							<?php echo esc_html__( 'Delete', 'flosc' ); ?>
 						</label>
 					</td>
 				</tr>
-			</table>
-		</div>
-		<?php endforeach; ?>
+			<?php endforeach; ?>
+			</tbody>
+		</table>
 
-		<div class="flosc-card-soft flosc-margin-bottom-16">
+		<div class="flosc-card-soft flosc-margin-bottom-16 flosc-margin-top-16">
 			<h4 class="flosc-card-title-reset"><?php echo esc_html__( 'Add personality', 'flosc' ); ?></h4>
 			<table class="form-table" role="presentation">
 				<tr>
@@ -213,7 +168,7 @@ if ( is_array( $flosc_ai_all_notice ) ) {
 					<td><input type="text" class="regular-text" id="new_persona_label" name="new_persona_label" placeholder="e.g. Support host"></td>
 				</tr>
 			</table>
-			<p class="description"><?php echo esc_html__( 'Creates an empty entry; edit fields above after save.', 'flosc' ); ?></p>
+			<p class="description"><?php echo esc_html__( 'Adds an empty row. Open Design to author it, then attach it on This flow.', 'flosc' ); ?></p>
 		</div>
 
 		<p>
@@ -221,3 +176,4 @@ if ( is_array( $flosc_ai_all_notice ) ) {
 		</p>
 	</form>
 </div>
+</details>

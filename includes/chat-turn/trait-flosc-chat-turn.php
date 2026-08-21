@@ -705,7 +705,7 @@ trait FLOSC_Chat_Turn_Trait {
 
             if ($ai_available) {
                 // v1.9.1: RAG handler only supports Anthropic's tool-calling API.
-                // For other providers (OpenAI, xAI), use the dispatch class which
+                // For other providers (OpenAI, xAI, Gemini), use the dispatch class which
                 // already knows how to call each provider's API correctly.
                 //
                 // Declared here (not only inside the RAG branch below) so the

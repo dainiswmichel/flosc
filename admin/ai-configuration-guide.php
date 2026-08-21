@@ -111,9 +111,10 @@ if (empty($GLOBALS['flosc_suppress_tab_header'])) {
     <h4>1. WHO the AI Is (Identity & Personality)</h4>
     <p>Configure in:</p>
     <ul>
-        <li><strong>AI → All Flows AI API Management → Personalities</strong> — reusable library entries for the whole install</li>
+        <li><strong>AI → All Flows AI API Management → Personalities</strong> — reusable library entries for the whole install. Use <strong>Design</strong> on a row to author the compiled profile.</li>
         <li><strong>AI → This flow: AI settings → Attached personality</strong> — pick one library entry, or “Custom on this flow only”</li>
-        <li>Custom / attached fields include name, role, traits, mission, base system prompt, and boundaries</li>
+        <li>Operator path: design → save to the library → attach that id → attach this flow’s API. FLOSC does not pick provider packs.</li>
+        <li>Custom / attached fields include name, role, traits, mission, compiled personality profile, and boundaries</li>
     </ul>
     <ul>
         <li><strong>Name:</strong> What should users call the AI? ("Coach Sarah", "Professor Theory", "Your Fitness Guide")</li>

@@ -1,7 +1,7 @@
 <?php
 /**
  * FLOSC AI Chat Dispatch
- * Supports: IVR (Scripted), OpenAI, Anthropic, xAI
+ * Supports: IVR (scripted), Anthropic, OpenAI, xAI, Gemini.
  */
 
 if (!defined('ABSPATH')) exit;
@@ -278,34 +278,55 @@ class FLOSC_AI_Chat_Dispatch {
         $boundaries = function_exists( 'flosc_personality_library_resolve_field' )
             ? flosc_personality_library_resolve_field( 'ai_boundaries', '' )
             : flosc_get_setting( 'ai_boundaries', '' );
-        $product_name = flosc_get_setting('product_name', '');
-        $product_tagline = flosc_get_setting('product_tagline', '');
+        $product_name = function_exists( 'flosc_flow_offering_title' )
+            ? flosc_flow_offering_title()
+            : flosc_get_setting( 'title', '' );
+        $product_tagline = function_exists( 'flosc_flow_offering_tagline' )
+            ? flosc_flow_offering_tagline()
+            : flosc_get_setting( 'tagline', '' );
 
         $prompt = "# Your Identity\n\n";
 
         // v1.9.2: FLOSC Framework Identity — prevents AI from hallucinating
-        // what FLOSC is or what it teaches. The product is configured by the site admin.
+        // what FLOSC is or what it teaches. The offering is Title + Tagline on Identity.
         $prompt .= "## CRITICAL: What FLOSC Is\n";
         $prompt .= "FLOSC is a **white-label WordPress plugin framework** for selling knowledge-based products online. ";
         $prompt .= "The letters F-L-O-S-C stand for the 5 sales funnel phases: **Freeline, Login, Offer, Sale, Content**. ";
         $prompt .= "FLOSC is NOT a school, course, or educational institution itself — it is the SOFTWARE that powers the site.\n\n";
         $prompt .= "**NEVER invent or guess what FLOSC stands for.** It is always: Freeline, Login, Offer, Sale, Content.\n";
-        $prompt .= "**NEVER invent what this site teaches.** Only describe the product using the information below.\n\n";
+        $prompt .= "**NEVER invent what this site offers.** Only describe the offering using the Title and Tagline below.\n\n";
 
-        // v1.9.2: Product identity (what the admin's site actually sells)
+        // Offering (Identity Title + Tagline — not operator flow name, not personality)
         if ($product_name) {
-            $prompt .= "## This Site's Product\n";
-            $prompt .= "**Product Name:** {$product_name}\n";
+            $prompt .= "## This Site's Offering\n";
+            $prompt .= "**Title:** {$product_name}\n";
             if ($product_tagline) {
                 $prompt .= "**Tagline:** {$product_tagline}\n";
             }
-            $prompt .= "You are the assistant for **{$product_name}**. ";
-            $prompt .= "Refer to this product by name when users ask what this site offers.\n\n";
+            $prompt .= "When users ask what this site offers, use this Title and Tagline. ";
+            $prompt .= "The tagline is a one-line description of the title, not an acronym expansion. ";
+            $prompt .= "You are the attached personality speaking for this offering.\n\n";
         } else {
-            $prompt .= "## This Site's Product\n";
-            $prompt .= "The site administrator has not yet configured a product name. ";
-            $prompt .= "If users ask what this site teaches, say: 'The site is still being set up. ";
+            $prompt .= "## This Site's Offering\n";
+            $prompt .= "The site administrator has not yet configured an offering Title. ";
+            if ($product_tagline) {
+                $prompt .= "Configured tagline: {$product_tagline}. ";
+            }
+            $prompt .= "If users ask what this site offers, say: 'The offering title has not been set yet. ";
             $prompt .= "Please check back soon or ask the administrator for details.'\n\n";
+        }
+
+        $compiled_profile = function_exists( 'flosc_personality_compiled_profile' )
+            ? flosc_personality_compiled_profile()
+            : '';
+        if ( $compiled_profile !== '' ) {
+            $prompt .= "## Personality\n";
+            $prompt .= "The following profile is who you are. Speak as this person. Do not describe how you were made.\n\n";
+            $prompt .= $compiled_profile . "\n";
+            if ( $boundaries ) {
+                $prompt .= "\n## Boundaries\n{$boundaries}";
+            }
+            return $prompt;
         }
 
         $prompt .= "## Your Persona\n";
@@ -788,7 +809,18 @@ class FLOSC_AI_Chat_Dispatch {
      */
     private function get_default_base_prompt() {
         $identity = $this->get_floscflow_identity();
-        return "You are the {$identity['name']} AI assistant. Your mission is to help users learn and improve through personalized guidance and encouragement. Be helpful, friendly, specific, and action-oriented. Always reference the user's quiz results and progress when available.";
+        $assistant = function_exists( 'flosc_visitor_assistant_name' )
+            ? flosc_visitor_assistant_name()
+            : (string) ( $identity['name'] ?? 'FLOSC' );
+        $offering = function_exists( 'flosc_flow_offering_title' )
+            ? flosc_flow_offering_title()
+            : trim( (string) ( $identity['title'] ?? '' ) );
+        $line = "You are {$assistant}, the AI assistant";
+        if ( $offering !== '' ) {
+            $line .= " for {$offering}";
+        }
+        $line .= ". Your mission is to help users learn and improve through personalized guidance and encouragement. Be helpful, friendly, specific, and action-oriented. Always reference the user's quiz results and progress when available.";
+        return $line;
     }
 
     /**
@@ -987,6 +1019,7 @@ class FLOSC_AI_Chat_Dispatch {
             case 'openai':    return $this->openai_request($message, $system_prompt, $context, $test_mode);
             case 'anthropic': return $this->anthropic_request($message, $system_prompt, $context, $test_mode);
             case 'xai':       return $this->xai_request($message, $system_prompt, $context, $test_mode);
+            case 'gemini':    return $this->gemini_request($message, $system_prompt, $context, $test_mode);
             case 'ivr':       return $this->ivr_response($message); // Explicit IVR mode — correct
             default:
                 // v1.9.3: Unknown/misconfigured provider — return null, not silent IVR
@@ -1046,7 +1079,12 @@ class FLOSC_AI_Chat_Dispatch {
     private function ivr_response($message) {
         $message_lower = strtolower($message);
         $identity = $this->get_floscflow_identity();
-        $name = $identity['name'] ?: 'this app';
+        $name = function_exists( 'flosc_visitor_assistant_name' )
+            ? flosc_visitor_assistant_name()
+            : (string) ( $identity['name'] ?? '' );
+        if ( $name === '' ) {
+            $name = 'this app';
+        }
 
         // Connection test pattern
         if (preg_match('/connection.*test/i', $message_lower)) {
@@ -1426,6 +1464,147 @@ class FLOSC_AI_Chat_Dispatch {
 
         return $body['choices'][0]['message']['content'] ?? null;
     }
+
+    /**
+     * Google Gemini generateContent. Personality rides in systemInstruction.
+     */
+    private function gemini_request($message, $system_prompt, $context = [], $test_mode = false) {
+        $api_key = function_exists( 'flosc_get_provider_api_key' ) ? flosc_get_provider_api_key( 'gemini' ) : flosc_get_setting( 'gemini_api_key', '' );
+
+        if (empty($api_key)) {
+            if ($test_mode) {
+                return new WP_Error(
+                    'gemini_no_api_key',
+                    "No Gemini API key configured.\n\n📝 Next steps:\n1. Go to https://aistudio.google.com/apikey\n2. Create an API key\n3. Paste it under All Flows AI API Management or this flow’s Gemini field\n4. Click Save Settings\n5. Try testing again!"
+                );
+            }
+            return null;
+        }
+
+        $model = (string) flosc_get_setting('ai_gemini_model', 'gemini-2.5-flash');
+        if ($model === '') {
+            $model = 'gemini-2.5-flash';
+        }
+        $temperature = (float) flosc_get_setting('ai_temperature', '0.3');
+        $max_tokens = (int) flosc_get_setting('ai_max_tokens', '500');
+
+        $contents = [];
+        if (is_array($context)) {
+            foreach ($context as $ctx) {
+                if (!is_array($ctx)) {
+                    continue;
+                }
+                $text = (string) ($ctx['content'] ?? '');
+                if ($text === '') {
+                    continue;
+                }
+                $role = (isset($ctx['role']) && $ctx['role'] === 'assistant') ? 'model' : 'user';
+                $last = $contents ? $contents[count($contents) - 1] : null;
+                if ($last && $last['role'] === $role) {
+                    $contents[count($contents) - 1]['parts'][0]['text'] .= "\n" . $text;
+                } else {
+                    $contents[] = [
+                        'role'  => $role,
+                        'parts' => [['text' => $text]],
+                    ];
+                }
+            }
+        }
+        $contents[] = [
+            'role'  => 'user',
+            'parts' => [['text' => (string) $message]],
+        ];
+        if (isset($contents[0]['role']) && $contents[0]['role'] !== 'user') {
+            array_unshift($contents, [
+                'role'  => 'user',
+                'parts' => [['text' => '.']],
+            ]);
+        }
+
+        $body = [
+            'contents'         => $contents,
+            'generationConfig' => [
+                'temperature'     => $temperature,
+                'maxOutputTokens' => $max_tokens,
+            ],
+        ];
+        if ($system_prompt) {
+            $body['systemInstruction'] = [
+                'parts' => [['text' => (string) $system_prompt]],
+            ];
+        }
+
+        $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($model) . ':generateContent';
+        $response = wp_remote_post($url, [
+            'headers' => [
+                'Content-Type'   => 'application/json',
+                'x-goog-api-key' => $api_key,
+            ],
+            'body'    => wp_json_encode($body),
+            'timeout' => 30,
+        ]);
+
+        if (is_wp_error($response)) {
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC Gemini Error: ' . $response->get_error_message());
+            if ($test_mode) {
+                return new WP_Error(
+                    'gemini_connection_error',
+                    "Could not connect to Gemini API.\n\n❌ Error: " . $response->get_error_message() . "\n\n📝 Next steps:\n1. Check your internet connection\n2. Verify Gemini API status\n3. Try again in a few moments"
+                );
+            }
+            return null;
+        }
+
+        $data = json_decode(wp_remote_retrieve_body($response), true);
+        if (!is_array($data)) {
+            if ($test_mode) {
+                return new WP_Error('gemini_api_error', 'Gemini API returned an unreadable response.');
+            }
+            return null;
+        }
+
+        if (isset($data['error'])) {
+            $error_msg = is_array($data['error']) ? (string) ($data['error']['message'] ?? 'Unknown error') : (string) $data['error'];
+            if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC Gemini API Error: ' . $error_msg);
+            if ($test_mode) {
+                $help_text = "\n\n📝 Next steps:\n";
+                if (stripos($error_msg, 'api key') !== false || stripos($error_msg, 'permission') !== false || stripos($error_msg, 'unauthenticated') !== false) {
+                    $help_text .= "1. Your API key appears to be invalid\n";
+                    $help_text .= "2. Go to https://aistudio.google.com/apikey\n";
+                    $help_text .= "3. Create a new key and replace it on All Flows or this flow\n";
+                    $help_text .= "4. Save Settings, then Test again";
+                } else {
+                    $help_text .= "1. Check the error message above\n";
+                    $help_text .= "2. Confirm the model ID is current\n";
+                    $help_text .= "3. Docs: https://ai.google.dev/gemini-api/docs/models";
+                }
+                return new WP_Error('gemini_api_error', 'Gemini API Error: ' . $error_msg . $help_text);
+            }
+            return null;
+        }
+
+        $usage_meta = is_array($data['usageMetadata'] ?? null) ? $data['usageMetadata'] : [];
+        $this->capture_billing_meta(
+            'gemini',
+            $model,
+            [
+                'prompt_tokens'     => intval($usage_meta['promptTokenCount'] ?? 0),
+                'completion_tokens' => intval($usage_meta['candidatesTokenCount'] ?? 0),
+                'total_tokens'      => intval($usage_meta['totalTokenCount'] ?? 0),
+            ],
+            $data
+        );
+
+        $text = '';
+        if (!empty($data['candidates'][0]['content']['parts']) && is_array($data['candidates'][0]['content']['parts'])) {
+            foreach ($data['candidates'][0]['content']['parts'] as $part) {
+                if (is_array($part) && isset($part['text'])) {
+                    $text .= (string) $part['text'];
+                }
+            }
+        }
+        return $text !== '' ? $text : null;
+    }
     
     /**
      * Fix 13: Check whether the OpenAI Responses API path is enabled.
@@ -1589,9 +1768,24 @@ class FLOSC_AI_Chat_Dispatch {
     private function get_floscflow_identity() {
         $currency = flosc_get_setting('currency', 'EUR');
         $symbols = ['EUR' => '€', 'USD' => '$', 'GBP' => '£'];
-        
+        $fw_id = [];
+        if ( function_exists( 'flosc' ) && is_object( flosc() ) && method_exists( flosc(), 'get_floscflow_identity' ) ) {
+            $fw_id = flosc()->get_floscflow_identity();
+        }
+        if ( ! is_array( $fw_id ) ) {
+            $fw_id = [];
+        }
+        $assistant = function_exists( 'flosc_visitor_assistant_name' )
+            ? flosc_visitor_assistant_name()
+            : '';
+        if ( $assistant === '' ) {
+            $assistant = (string) ( $fw_id['name'] ?? flosc_get_setting( 'product_name', 'FLOSC App' ) );
+        }
+
         return [
-            'name' => flosc_get_setting('product_name', 'FLOSC App'),
+            'name' => $assistant !== '' ? $assistant : 'FLOSC App',
+            'title' => trim( (string) ( $fw_id['title'] ?? flosc_get_setting( 'title', '' ) ) ),
+            'tagline' => trim( (string) ( $fw_id['tagline'] ?? flosc_get_setting( 'tagline', '' ) ) ),
             'price' => flosc_get_setting('product_price', ''),
             'currency_symbol' => $symbols[$currency] ?? $currency,
         ];
