@@ -50,6 +50,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         </div>
         <span class="sequence-key">Drag to place · expand to edit</span>
       </div>
+      <h3 id="editorTitle" class="screen-reader-text"></h3>
       <div class="file-seq" id="editor"></div>
     </section>
   </section>

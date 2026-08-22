@@ -2260,7 +2260,8 @@
       parts.push(tribRowHtml(item.t));
     });
     parts.push("</div></div>");
-    document.getElementById("editorTitle").textContent = "Personality aspect sequence · least dense → most dense";
+    var editorTitleEl = document.getElementById("editorTitle");
+    if (editorTitleEl) editorTitleEl.textContent = "Personality aspect sequence · least dense → most dense";
     document.getElementById("editor").innerHTML = parts.join("");
     document.getElementById("editor").querySelectorAll("details[data-open-key]").forEach(function (d) {
       d.addEventListener("toggle", function () {
