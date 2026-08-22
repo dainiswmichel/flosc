@@ -95,6 +95,18 @@
     });
   }
 
+  function filterPalette() {
+    var input = document.getElementById("paletteSearch");
+    var query = input ? String(input.value || "").toLowerCase().trim() : "";
+    document.querySelectorAll("#cols .trib").forEach(function (item) {
+      item.hidden = !!query && item.textContent.toLowerCase().indexOf(query) === -1;
+    });
+    document.querySelectorAll("#cols .col").forEach(function (category) {
+      var visible = category.querySelectorAll(".trib:not([hidden])").length;
+      category.hidden = !!query && visible === 0;
+    });
+  }
+
   function pinLibraryRow(api) {
     if (!api || !api.state || !api.state.soul) {
       return;
@@ -218,6 +230,10 @@
       save.addEventListener("click", saveToLibrary);
     }
     hideProviderPacks();
+    var paletteSearch = document.getElementById("paletteSearch");
+    if (paletteSearch) {
+      paletteSearch.addEventListener("input", filterPalette);
+    }
     if (wp.personaId) {
       bootWorkshop();
     }

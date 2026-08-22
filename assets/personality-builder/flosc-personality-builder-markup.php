@@ -3,59 +3,67 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 ?>
-<div class="app">
+<div class="app flosc-admin-builder">
 
-  <header class="top">
+  <header class="top flosc-admin-builder__header">
     <div>
-      <h1>floscPersonality Builder · v33</h1>
-      <p>This page is the workshop. A <strong>workshop file</strong> saves every knob so you can open it later and keep designing. A <strong>personality profile</strong> is the written personality — paste it into an API or upload it in Claude, ChatGPT, or Grok.</p>
+      <h1>Personality profile</h1>
+      <p>Build the personality by selecting aspects, placing them on the density sequence, and defining how the AI expresses them.</p>
       <div class="meta">
-        <span class="chip">v33</span>
-        <span class="chip">workshop file · every knob</span>
-        <span class="chip">personality profile · what the AI reads</span>
+        <span class="chip">Aspect palette</span>
+        <span class="chip">Density-ordered profile</span>
+        <span class="chip">Provider-ready output</span>
       </div>
     </div>
-    <div class="toolbar">
-      <select id="preset" class="btn" title="Library: templates and bundled personalities"></select>
-      <span class="save-state" id="saveState" title="Always on. This browser only.">Saved</span>
-      <button type="button" class="btn" id="btnImport">Import workshop file</button>
-      <button type="button" class="btn" id="btnImportProfile">Import personality profile</button>
+    <div class="toolbar flosc-admin-builder__tools">
+      <select id="preset" class="btn" title="Choose a starting personality profile"></select>
+      <span class="save-state" id="saveState" title="Saved in this browser until saved to the FLOSC library.">Saved</span>
+      <button type="button" class="btn" id="btnImport">Import workshop state</button>
+      <button type="button" class="btn" id="btnImportProfile">Import profile</button>
     </div>
-    <p class="preset-where">Open/import files here. Downloads and copied outputs are kept at the bottom of the page.</p>
+    <p class="preset-where">Use a palette aspect as an ingredient. Included aspects define this personality.</p>
     <p class="preset-where" id="presetWhere"></p>
   </header>
 
-  <div class="layout">
-    <section class="panel">
-      <h2>Wellsprings</h2>
+  <section class="builder-workspace" aria-label="Personality builder">
+    <section class="panel palette-panel" aria-labelledby="palette-title">
+      <div class="panel-heading">
+        <div>
+          <h2 id="palette-title">Aspect palette</h2>
+          <p class="panel-subtitle">Available directions to add to this personality.</p>
+        </div>
+        <button type="button" class="btn ghost" id="btnAddCategory">+ Category</button>
+      </div>
       <div class="pad">
-        <div class="density-label"><span>Wellspring families</span></div>
-        <div class="note">Pick aspects here. You build them on the right, least dense at the top.</div>
-        <label class="chip" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:8px">
-          <input type="checkbox" id="hideOff"> Hide inactive wellsprings
-        </label>
-        <button type="button" class="btn ghost" id="btnAddCategory">+ category</button>
-        <span class="small-note">Categories are part of this workshop and can be renamed.</span>
+        <label class="palette-filter"><span class="screen-reader-text">Filter palette</span><input type="search" id="paletteSearch" placeholder="Search aspects"></label>
+        <label class="chip palette-toggle"><input type="checkbox" id="hideOff"> Hide inactive aspects</label>
+        <p class="small-note">Add an aspect with its Add control, or drag it into the sequence. Categories can be renamed.</p>
         <div id="cols" class="cols"></div>
       </div>
     </section>
 
-    <aside class="panel">
-      <h2 id="editorTitle">Personality aspect sequence · least dense → most dense</h2>
+    <section class="panel sequence-panel" aria-labelledby="sequence-title">
+      <div class="panel-heading">
+        <div>
+          <h2 id="sequence-title">Included aspects</h2>
+          <p class="panel-subtitle">The personality being built, from least dense to most dense.</p>
+        </div>
+        <span class="sequence-key">Drag to place · expand to edit</span>
+      </div>
       <div class="file-seq" id="editor"></div>
-    </aside>
-  </div>
+    </section>
+  </section>
 
   <div class="traj-pair">
   <section class="panel" id="trajPanel">
     <h2>Trajectories · desired outcome</h2>
     <div class="pad" id="trajMount"></div>
   </section>
-  <section class="panel" id="spec" style="margin-top:0;border-radius:0">
+  <section class="panel spec-panel" id="spec">
     <h2>Spectrograph</h2>
     <div class="pad">
       <p class="note">Hue is a frequency tag — peaks stay themselves, they are not blended into one colour. Density (ink) is not hue.</p>
-      <label class="field"><span style="font-family:var(--ui);font-size:0.78rem;font-weight:700">Content plate · the paper (not a hue)</span>
+      <label class="field"><span class="field-label">Content plate · the paper (not a hue)</span>
         <textarea class="spec-plate-in" id="contentPlate" placeholder="e.g. Expert information on hydropower: turbines, head, flow — not a personality, the subject matter."></textarea>
       </label>
       <div class="spec-views">
@@ -70,30 +78,26 @@ if ( ! defined( 'ABSPATH' ) ) {
     </div>
   </section>
   <section class="panel viz-below" id="vizBelow">
-    <h2>Figure · morph <em>not a stack</em></h2>
+    <h2>Visual summary</h2>
     <div class="pad">
-      <p class="note">Active 2D shapes morph by Gain into one outline. Active 3D shapes do the same as a volume silhouette. Hue stays a tag. Density is ink on that figure. Trajectory phrases are the intended impact on the future — not a geometric shape.</p>
-      <div class="viz-grid">
+      <p class="note">Read-only interpretation of the configured aspects. It shows density, gain, and hue; it does not replace the builder above.</p>
+      <div class="viz-grid viz-grid--2d">
         <div class="viz-card">
-          <h3>2D morph</h3>
+          <h3>2D aspect form</h3>
           <div id="viz2d"></div>
         </div>
-        <div class="viz-card">
-          <h3>3D morph</h3>
-          <div id="viz3d"></div>
-        </div>
       </div>
-      <div class="density-label" style="margin-top:12px"><span>Ingredients</span><span>each shape stays itself until morph</span></div>
+      <div class="density-label viz-ingredients-heading"><span>Included ingredients</span><span>shape identity remains visible</span></div>
       <div class="viz-ings" id="vizIngredients"></div>
       <div class="viz-phrases" id="vizTrajectories"></div>
     </div>
   </section>
   </div>
 
-  <section class="panel" style="margin-top:14px" id="savePanel">
-    <h2>HTML AI personality preview and extracted outputs</h2>
+  <section class="panel save-panel" id="savePanel">
+    <h2>Provider output</h2>
     <div class="pad">
-      <p class="note">This preview is the personality layer. The workshop stores every design control; the Markdown profile is generated from the same compiled personality. FLOSC chat uses that profile as system text.</p>
+      <p class="note">The canonical personality stays the same while FLOSC prepares provider-appropriate output. IVR supplies content and access constraints; this profile supplies expression.</p>
       <p class="figure-readout" id="flosc-provider-accommodation">
         <?php
         $flosc_pack_list = function_exists( 'flosc_personality_pack_label_list' )
@@ -109,40 +113,38 @@ if ( ! defined( 'ABSPATH' ) ) {
           flosc_render_provider_intricacies_html();
       }
       ?>
-      <div class="tabs">
-        <button type="button" class="btn primary" data-out="prompt">Markdown profile</button>
-        <button type="button" class="btn" data-out="providers" hidden>Provider packs</button>
-        <button type="button" class="btn" data-out="spec">Workshop state</button>
-        <button type="button" class="btn" data-out="lint">Lint</button>
-        <label class="chip" style="display:inline-flex;align-items:center;gap:6px">
+      <div class="tabs output-tabs">
+        <button type="button" class="btn primary" data-out="prompt">Canonical profile</button>
+        <button type="button" class="btn" data-out="providers" hidden>Provider output</button>
+        <button type="button" class="btn" data-out="spec">Builder state</button>
+        <button type="button" class="btn" data-out="lint">Validation</button>
+        <label class="chip">
           <input type="checkbox" id="includeComments" checked>
-          Include authoring comments in exported profile
+          Include authoring notes
         </label>
       </div>
-      <p class="figure-readout" style="margin:0 0 8px">Authoring comments are <code>&lt;!-- floscComment --&gt;</code> notes (works, character). They are not rules.</p>
+      <p class="figure-readout output-note">Authoring notes describe sources and character context. They are not active rules.</p>
       <div class="stats" id="stats"></div>
       <div id="lintMount"></div>
       <pre class="out" id="out"></pre>
-      <div class="toolbar" style="justify-content:flex-start;margin-top:12px">
-        <span class="small-note">Export / copy</span>
-        <button type="button" class="btn primary" id="btnViewPreview">View HTML preview</button>
-        <button type="button" class="btn" id="btnExportPreview">Download HTML preview</button>
-        <button type="button" class="btn" id="btnExportWorkshop">Download workshop file</button>
-        <button type="button" class="btn" id="btnExportMd">Download personality profile</button>
+      <div class="toolbar export-toolbar">
+        <span class="small-note">Export</span>
+        <button type="button" class="btn primary" id="btnViewPreview">View profile preview</button>
+        <button type="button" class="btn" id="btnExportPreview">Download preview</button>
+        <button type="button" class="btn" id="btnExportWorkshop">Download builder state</button>
+        <button type="button" class="btn" id="btnExportMd">Download profile</button>
         <button type="button" class="btn" id="btnExportProviders" hidden>Download provider packs</button>
         <button type="button" class="btn primary" id="btnCopy">Copy this file</button>
       </div>
     </div>
   </section>
 
-  <footer class="foot">
-    Import at the top. Download / copy at the bottom.
-  </footer>
+  <footer class="foot">Save the personality to the FLOSC library after reviewing the profile and validation output.</footer>
 </div>
 
 <dialog id="tribDialog">
   <form method="dialog" id="tribForm">
-    <h3 style="margin:0 0 10px">Add wellspring</h3>
+    <h3 class="dialog-title">Add wellspring</h3>
     <div class="field"><label for="newColInput">Category</label><input type="text" id="newColInput" list="categoryOptions" required placeholder="Choose or write a category"><datalist id="categoryOptions"></datalist></div>
     <div class="field"><label>Name</label><input type="text" id="newName" required placeholder="e.g. Christian world-view"></div>
     <div class="field"><label>Instruction (compiles when this source is on)</label><textarea id="newInject" required placeholder="e.g. Frequently quote the New Testament, KJV."></textarea></div>
@@ -156,7 +158,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <input type="file" id="fileInProfile" accept=".md,.txt,text/markdown,text/plain" hidden>
 <dialog id="categoryDialog">
   <form method="dialog" id="categoryForm">
-    <h3 style="margin:0 0 10px">Add wellspring category</h3>
+    <h3 class="dialog-title">Add wellspring category</h3>
     <div class="field"><label for="categoryLabel">Category name</label><input id="categoryLabel" required placeholder="e.g. Craft, Memory, Ethics"></div>
     <div class="field"><label for="categoryHint">Short description</label><input id="categoryHint" placeholder="What belongs here?"></div>
     <div class="toolbar"><button class="btn ghost" value="cancel">Cancel</button><button class="btn primary" value="ok">Add category</button></div>
