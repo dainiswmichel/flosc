@@ -817,3 +817,33 @@
     .flosc-personality-workshop .builder-workspace{ grid-template-columns: 1fr; }
     .flosc-personality-workshop .sequence-key{ white-space: normal; text-align: right; }
   }
+
+  /* Final cascade guard: legacy workshop chrome must not tint the admin surface. */
+  .flosc-personality-workshop:has(.flosc-admin-builder),
+  .flosc-personality-workshop:has(.flosc-admin-builder) .app{
+    background: #fff !important;
+    background-image: none !important;
+    color: #1d2327 !important;
+  }
+  .flosc-personality-workshop:has(.flosc-admin-builder) header.top,
+  .flosc-personality-workshop:has(.flosc-admin-builder) .panel,
+  .flosc-personality-workshop:has(.flosc-admin-builder) .panel h2,
+  .flosc-personality-workshop:has(.flosc-admin-builder) .panel-heading,
+  .flosc-personality-workshop:has(.flosc-admin-builder) .col > summary,
+  .flosc-personality-workshop:has(.flosc-admin-builder) .acc > summary{
+    background: #fff !important;
+    color: #1d2327 !important;
+    box-shadow: none !important;
+  }
+  .flosc-personality-workshop:has(.flosc-admin-builder) .panel-heading,
+  .flosc-personality-workshop:has(.flosc-admin-builder) .panel h2{
+    background: #f6f7f7 !important;
+  }
+  .flosc-personality-workshop:has(.flosc-admin-builder) .col > summary:hover,
+  .flosc-personality-workshop:has(.flosc-admin-builder) .acc > summary:hover{
+    background: #f0f0f1 !important;
+  }
+  .flosc-personality-workshop:has(.flosc-admin-builder) .note{
+    background: #f0f6fc !important;
+    border-left-color: #2271b1 !important;
+  }
