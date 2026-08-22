@@ -551,14 +551,41 @@ if ( ! function_exists( 'flosc_personality_builder_request_context' ) ) {
 	/**
 	 * Persona and IVR from the designer admin request.
 	 *
+	 * Mirrors the fallback chain in admin/settings.php ($_GET ivr → user default ivr →
+	 * first available flow file) so the assets enqueued here always match the flow the
+	 * AI tab actually renders, even when the URL carries no ivr param.
+	 *
 	 * @return array{persona:string,ivr:string}
 	 */
 	function flosc_personality_builder_request_context() {
+		$ivr_files = array();
+		if ( function_exists( 'flosc_config_glob' ) ) {
+			$found = flosc_config_glob( array( '*_ivr.md', 'ivr*.md' ) );
+			sort( $found );
+			foreach ( $found as $file ) {
+				$name = basename( (string) $file );
+				if ( strpos( $name, 'backup' ) === false ) {
+					$ivr_files[] = $name;
+				}
+			}
+			$ivr_files = array_values( array_unique( $ivr_files ) );
+		}
+
 		$ivr_raw = filter_input( INPUT_GET, 'ivr', FILTER_UNSAFE_RAW );
 		$ivr     = is_string( $ivr_raw ) ? sanitize_file_name( wp_unslash( $ivr_raw ) ) : '';
-		if ( $ivr === '' && function_exists( 'get_current_user_id' ) ) {
-			$ivr = sanitize_file_name( (string) get_user_meta( get_current_user_id(), '_flosc_admin_default_ivr', true ) );
+		if ( $ivr !== '' && ! empty( $ivr_files ) && ! in_array( $ivr, $ivr_files, true ) ) {
+			$ivr = '';
 		}
+		if ( $ivr === '' && function_exists( 'get_current_user_id' ) ) {
+			$user_default = sanitize_file_name( (string) get_user_meta( get_current_user_id(), '_flosc_admin_default_ivr', true ) );
+			if ( $user_default !== '' && ( empty( $ivr_files ) || in_array( $user_default, $ivr_files, true ) ) ) {
+				$ivr = $user_default;
+			}
+		}
+		if ( $ivr === '' && ! empty( $ivr_files ) ) {
+			$ivr = $ivr_files[0];
+		}
+
 		$persona = '';
 		if ( $ivr !== '' && function_exists( 'flosc_personality_library_id_for_flow' ) ) {
 			$persona = flosc_personality_library_id_for_flow( sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) ) );
