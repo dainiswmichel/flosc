@@ -848,6 +848,55 @@
     border-left-color: #2271b1 !important;
   }
 
+  /* The density axis is structural: palette | vertical meter | included aspects. */
+  .flosc-personality-workshop .app.flosc-admin-builder .sequence-panel .file-seq{
+    min-height: 520px;
+  }
+  .flosc-personality-workshop .app.flosc-admin-builder .sequence-panel .seq-den{
+    grid-template-columns: 64px minmax(0, 1fr);
+    gap: 12px;
+    align-items: start;
+  }
+  .flosc-personality-workshop .app.flosc-admin-builder .sequence-panel .seq-den-rail{
+    position: sticky;
+    top: 12px;
+    min-height: 520px;
+    padding: 8px 4px;
+    border: 1px solid #c3c4c7;
+    background: #f6f7f7;
+  }
+  .flosc-personality-workshop .app.flosc-admin-builder .sequence-panel .rail-body,
+  .flosc-personality-workshop .app.flosc-admin-builder .sequence-panel .den-rail{
+    min-height: 460px;
+  }
+  .flosc-personality-workshop .app.flosc-admin-builder .sequence-panel .den-rail{
+    width: 30px;
+    background: linear-gradient(#fff, #1d2327);
+  }
+  .flosc-personality-workshop .app.flosc-admin-builder .sequence-panel .rail-bands span{
+    color: #50575e;
+    letter-spacing: 0;
+  }
+  .flosc-personality-workshop .app.flosc-admin-builder .sequence-panel .band-lab{
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    padding: 5px 0;
+    background: #fff;
+  }
+  @media (max-width: 800px){
+    .flosc-personality-workshop .app.flosc-admin-builder .sequence-panel .seq-den{
+      grid-template-columns: 56px minmax(0, 1fr);
+    }
+    .flosc-personality-workshop .app.flosc-admin-builder .sequence-panel .seq-den-rail{
+      min-height: 360px;
+    }
+    .flosc-personality-workshop .app.flosc-admin-builder .sequence-panel .rail-body,
+    .flosc-personality-workshop .app.flosc-admin-builder .sequence-panel .den-rail{
+      min-height: 300px;
+    }
+  }
+
   .flosc-personality-workshop:has(.flosc-admin-builder) *{
     letter-spacing: normal;
   }
