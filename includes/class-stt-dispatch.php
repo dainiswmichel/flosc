@@ -202,6 +202,7 @@ class FLOSC_STT_Dispatch {
         
         $body .= "--{$boundary}--\r\n";
         
+        // phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- the official AI Provider for OpenAI plugin does not implement transcription, so Whisper STT is FLOSC-owned. Service declared in readme.txt External Services.
         $response = wp_remote_post('https://api.openai.com/v1/audio/transcriptions', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $api_key,

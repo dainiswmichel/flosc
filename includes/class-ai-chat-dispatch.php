@@ -1230,6 +1230,7 @@ class FLOSC_AI_Chat_Dispatch {
         $temperature = (float) flosc_get_setting('ai_temperature', '0.3');
         $max_tokens = (int) flosc_get_setting('ai_max_tokens', '500');
 
+        // phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- WordPress has no official xAI provider plugin yet, so Grok chat is FLOSC-owned. Service declared in readme.txt External Services.
         $response = wp_remote_post('https://api.x.ai/v1/chat/completions', [
             'headers' => [
                 'Authorization' => 'Bearer ' . $api_key,
