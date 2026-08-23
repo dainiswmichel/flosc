@@ -148,26 +148,9 @@ class FLOSC_RAG_Chat_Handler {
 
         $flosc_prompt = $flosc_persona_prompts[$flosc_user_type] ?? $flosc_persona_prompts['flosc_visitor'];
 
-        // Offering: Identity Title + Tagline (not operator flow name, not personality).
-        $flosc_product_name = function_exists( 'flosc_flow_offering_title' )
-            ? flosc_flow_offering_title()
-            : flosc_get_setting( 'title', '' );
-        $flosc_product_tagline = function_exists( 'flosc_flow_offering_tagline' )
-            ? flosc_flow_offering_tagline()
-            : flosc_get_setting( 'tagline', '' );
-
         $flosc_prompt .= "\n\n**CRITICAL IDENTITY RULES:**\n";
         $flosc_prompt .= "FLOSC is a white-label WordPress plugin framework. The letters stand for: Freeline, Login, Offer, Sale, Content (the 5 funnel phases).\n";
-        $flosc_prompt .= "NEVER invent what FLOSC stands for. NEVER invent what this site offers.\n";
-        if ($flosc_product_name) {
-            $flosc_prompt .= "This site's offering title: **{$flosc_product_name}**";
-            if ($flosc_product_tagline) {
-                $flosc_prompt .= " — {$flosc_product_tagline}";
-            }
-            $flosc_prompt .= ". The tagline is a one-line description of the title, not an acronym expansion.\n";
-        } else {
-            $flosc_prompt .= "The offering Title has not been configured yet. If asked what this site offers, say 'The offering title has not been set yet — please check back soon.'\n";
-        }
+        $flosc_prompt .= "NEVER invent facts about this floscFlow. Use the attached personality and current flow context.\n";
 
         $flosc_prompt .= "\n**CURRENT CONTEXT:**\n";
         $flosc_prompt .= "Flow: {$flosc_flow['flosc_name']}\n";

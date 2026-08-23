@@ -3664,8 +3664,8 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
         // 4. Flow identity info
         $identity = $this->get_floscflow_identity();
         $context['product_name'] = trim((string) ($identity['title'] ?? ''));
-        $context['offering_title'] = trim((string) ($identity['title'] ?? ''));
-        $context['offering_tagline'] = trim((string) ($identity['tagline'] ?? ''));
+        $context['public_title'] = trim((string) ($identity['title'] ?? ''));
+        $context['public_tagline'] = trim((string) ($identity['tagline'] ?? ''));
 
         return $context;
     }
@@ -4976,8 +4976,8 @@ Example good response:
      */
     private function substitute_ivr_variables($content, $context) {
         $identity = $this->get_floscflow_identity();
-        $offering_title = trim((string) ($identity['title'] ?? ''));
-        $offering_tagline = trim((string) ($identity['tagline'] ?? ''));
+        $public_title = trim((string) ($identity['title'] ?? ''));
+        $public_tagline = trim((string) ($identity['tagline'] ?? ''));
         $assistant_name = function_exists('flosc_personality_name')
             ? flosc_personality_name()
             : ( function_exists('flosc_visitor_assistant_name') ? flosc_visitor_assistant_name() : '' );
@@ -4991,8 +4991,8 @@ Example good response:
             '{correct_items}' => $context['correct_items'] ?? '',
             '{missed_items}' => $context['missed_items'] ?? '',
             '{product_name}' => $assistant_name,
-            '{title}' => $offering_title !== '' ? $offering_title : $assistant_name,
-            '{tagline}' => $offering_tagline,
+            '{title}' => $public_title !== '' ? $public_title : $assistant_name,
+            '{tagline}' => $public_tagline,
             '{price}' => get_option('flosc_main_price', '$100'),
             '{discount_price}' => get_option('flosc_discount_price', '$25'),
             '{timer_remaining}' => $context['timer_remaining'] ?? '60 minutes',
@@ -5464,8 +5464,8 @@ Example good response:
             'flosc_version' => FLOSC_VERSION,
             'flow_id' => $flow_id,
             'product_name' => trim((string) ($identity['title'] ?? '')),
-            'offering_title' => trim((string) ($identity['title'] ?? '')),
-            'offering_tagline' => trim((string) ($identity['tagline'] ?? '')),
+            'public_title' => trim((string) ($identity['title'] ?? '')),
+            'public_tagline' => trim((string) ($identity['tagline'] ?? '')),
         ];
 
         // User Identity

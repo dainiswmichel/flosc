@@ -251,20 +251,7 @@ class FLOSC_Chatpack {
         // These live only in message 1's full chatpack. Conversation history carries
         // what was *said*, not what the system prompt *instructed*. By message 2 the
         // definitions are gone from authoritative context unless we anchor them here.
-        $identity         = FLOSC_Framework::instance()->get_floscflow_identity();
-        $offering_title   = function_exists( 'flosc_flow_offering_title' )
-            ? flosc_flow_offering_title()
-            : trim( (string) ( $identity['title'] ?? '' ) );
-        $offering_tagline = function_exists( 'flosc_flow_offering_tagline' )
-            ? flosc_flow_offering_tagline()
-            : trim( (string) ( $identity['tagline'] ?? '' ) );
         $anchor_line      = "FLOSC = Freeline, Login, Offer, Sale, Content. (Fixed — never changes.)";
-        if ( $offering_title !== '' ) {
-            $anchor_line .= "\nOffering title: {$offering_title}. (Fixed — do not invent another.)";
-        }
-        if ( $offering_tagline !== '' ) {
-            $anchor_line .= "\nTagline: {$offering_tagline}. (Fixed — one-line description of the title, not an acronym expansion.)";
-        }
 
         $sections[] = "## FLOSC SESSION CONTINUE\n"
             . "FLOSC-HASH: {$flosc_hash}\n"
@@ -445,13 +432,6 @@ class FLOSC_Chatpack {
      * Reads from floscAdmin-configurable settings.
      */
     private static function build_identity_section() {
-        $identity = FLOSC_Framework::instance()->get_floscflow_identity();
-        $product_name = function_exists( 'flosc_flow_offering_title' )
-            ? flosc_flow_offering_title()
-            : trim( (string) ( $identity['title'] ?? '' ) );
-        $product_tagline = function_exists( 'flosc_flow_offering_tagline' )
-            ? flosc_flow_offering_tagline()
-            : trim( (string) ( $identity['tagline'] ?? '' ) );
         // Fix 12: Library attach (one personality) or flow bag / legacy keys.
         $res = function_exists( 'flosc_personality_library_resolve_field' ) ? 'flosc_personality_library_resolve_field' : null;
         $ai_name    = function_exists( 'flosc_personality_name' )
@@ -480,32 +460,17 @@ class FLOSC_Chatpack {
 
         if ( $compiled_profile !== '' ) {
             $section .= "This chat is on a FLOSC flow";
-            if ( $product_name ) {
-                $section .= " for {$product_name}";
-            }
             if ( $site_url ) {
                 $section .= " at {$site_url}";
             }
             $section .= ".\n";
             $section .= "FLOSC = Freeline, Login, Offer, Sale, Content (the software). ";
             $section .= "Do not invent another expansion.\n";
-            if ( $product_name && $product_tagline ) {
-                $section .= "This flow's public offering: {$product_name} — {$product_tagline}. Use these as the verified title and tagline. The tagline is a one-line description of the title, not an acronym expansion. Do not invent another title or tagline.\n";
-            } elseif ( $product_name ) {
-                $section .= "This flow's public offering title is {$product_name}. No tagline is configured. Do not invent a tagline or an acronym expansion.\n";
-            } elseif ( $product_tagline ) {
-                $section .= "This flow's tagline is {$product_tagline}. No offering title is configured. Do not invent a title.\n";
-            } else {
-                $section .= "This flow has no offering Title or Tagline configured. If asked what this flow offers, say the operator has not set them yet. Do not invent them.\n";
-            }
             $section .= "\n## Personality\n";
             $section .= "The following profile is who you are. Speak as this person. Do not describe how you were made.\n\n";
             $section .= $compiled_profile . "\n";
         } else {
             $section .= "You are {$ai_name}, the AI facilitator";
-            if ($product_name) {
-                $section .= " for {$product_name}";
-            }
             if ($site_url) {
                 $section .= " on {$site_url}";
             }
@@ -513,11 +478,6 @@ class FLOSC_Chatpack {
 
             $section .= "This is a FLOSC installation. FLOSC = Freeline, Login, Offer, Sale, Content — "
                 . "a 5-phase journey from first visit to long-term membership.";
-            if ($product_name && $product_tagline) {
-                $section .= " This installation's public offering is {$product_name} ({$product_tagline}).";
-            } elseif ($product_name) {
-                $section .= " This installation's public offering is {$product_name}.";
-            }
             $section .= "\n";
             if ($ai_mission) {
                 $section .= $ai_mission . "\n";
@@ -541,24 +501,6 @@ class FLOSC_Chatpack {
             . "FLOSC is a white-label WordPress plugin framework. "
             . "That is ALL it stands for. Do not expand it any other way.\n\n";
 
-        // Offering info (floscAdmin-configured Title + Tagline — not operator flow name, not personality)
-        if ($product_name) {
-            $section .= "**This Site's Offering Title:** {$product_name}\n";
-            if ($product_tagline) {
-                $section .= "**Tagline:** {$product_tagline}\n";
-                $section .= "When asked what this flow offers, use the Title and Tagline above. "
-                    . "The tagline describes the title; it is not what the title \"stands for\" as an acronym. "
-                    . "Do not invent another title or tagline.\n";
-            } else {
-                $section .= "No tagline is configured. Do not invent one or treat the title as an acronym.\n";
-            }
-        } else {
-            $section .= "**This Site's Offering Title:** Not yet configured by the floscAdmin.\n";
-            if ($product_tagline) {
-                $section .= "**Tagline:** {$product_tagline}\n";
-            }
-        }
-
         if ( $compiled_profile === '' ) {
             $section .= "\n**Your Persona:**\n";
             $section .= "- Name: {$ai_name}\n";
@@ -580,11 +522,6 @@ class FLOSC_Chatpack {
 
         $section .= "1. NAMES & ACRONYMS: Only expand or define names/acronyms when this prompt (or verified site context) gives the expansion. ";
         $section .= "FLOSC (the software framework) = Freeline, Login, Offer, Sale, Content — only when relevant to the software, not as this flow's forced topic. ";
-        if ($product_name && $product_tagline) {
-            $section .= "This flow's offering: {$product_name} — {$product_tagline}. ";
-        } elseif ($product_name) {
-            $section .= "This flow's offering title: {$product_name}. ";
-        }
         $section .= "If you do not have a verified expansion for a name, say so briefly and offer a useful next step — NEVER invent an expansion.\n\n";
 
         $section .= "2. NO FABRICATION: Never invent facts not present in this prompt or verified tools/context:\n";

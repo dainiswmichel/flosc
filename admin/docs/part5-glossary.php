@@ -75,7 +75,7 @@
 <p>Install-scoped credential pool. Keys: <strong>Anthropic, OpenAI, xAI, Gemini</strong> (chat) and <strong>AssemblyAI</strong> (speech-to-text). A key the floscAdmin configures under <strong>AI → All Flows AI API Management</strong> becomes available to all floscFlows on that install. Attachment (primary provider, chain order) is per flow on <strong>This flow: AI settings</strong> via floscFlowAiPolicy. Option: <code>flosc_available_providers</code>. Never portable in Settings YAML.</p>
 
 <h3 id="term-accuracy-test">Accuracy test</h3>
-<p>Admin suite on <strong>AI → This flow: AI settings</strong>: template rows with placeholders (<code>{flow_name}</code> operator floscFlow name, <code>{title}</code> public offering, <code>{tagline}</code> one-line expansion of Title, <code>{topic_scope}</code>, <code>{site_name}</code>). Expanded text is the userMessage sent to the model; each result column is the assistantMessage. One completed row = one floscTurn. Stored as <code>ai_accuracy_test_questions</code>.</p>
+<p>Admin suite on <strong>AI → This flow: AI settings</strong>: template rows with placeholders (<code>{flow_name}</code> operator floscFlow name, <code>{title}</code> Public Title, <code>{tagline}</code> one-line expansion of Title, <code>{topic_scope}</code>, <code>{site_name}</code>). Expanded text is the userMessage sent to the model; each result column is the assistantMessage. One completed row = one floscTurn. Stored as <code>ai_accuracy_test_questions</code>.</p>
 
 <h3 id="term-personality-library">Personality library</h3>
 <p>Install-scoped reusable floscFlowPersonality rows (label plus compiled profile and optional workshop JSON). Authored in Personality Designer; listed under All Flows AI API Management → Personalities. Each floscFlow attaches exactly one via <code>personality_library_id</code>, or uses custom fields on that flow only. Personalities do not chain; only API providers chain.</p>
@@ -90,7 +90,7 @@
 <p><code>includes/sale/class-access-manager.php</code>. Grants and revokes member access after a successful purchase. Updates user meta, logs the transaction, triggers post-purchase hooks.</p>
 
 <h3 id="term-admin-introspection">Admin Introspection</h3>
-<p>A verification mechanism that checks whether the AI "knows" what FLOSC offering it is operating for. The <code>check_admin_introspection()</code> method builds an <code>adminVerification</code> object (IVR file name, app slug, offering title, tagline, domain) included in the FLOSC_USER config object sent to the JavaScript client. Used as a self-consistency check.</p>
+<p>A verification mechanism that checks whether the AI "knows" what FLOSC flow description it is operating for. The <code>check_admin_introspection()</code> method builds an <code>adminVerification</code> object (IVR file name, app slug, public title, tagline, domain) included in the FLOSC_USER config object sent to the JavaScript client. Used as a self-consistency check.</p>
 
 <h3 id="term-ai-provider">AI Provider</h3>
 <p>Primary chat selection per flow on <strong>AI → This flow: AI settings</strong>. Slugs: <code>ivr</code>, <code>anthropic</code>, <code>openai</code>, <code>xai</code>, <code>gemini</code>. There is one WordPress AI Client (<code>wp_ai_client_prompt()</code>). OpenAI, Anthropic, and Gemini register with that client through their official plugins. xAI has no official plugin; FLOSC calls xAI. IVR calls none. Credentials come from floscAvailableProviders (All Flows) or this flow. IVR still runs first; AI handles unmatched messages. Personality is the system instruction. Speech-to-text is separate (AssemblyAI, OpenAI Whisper, or custom).</p>
@@ -209,7 +209,7 @@
 <p>The JavaScript user object passed to the frontend alongside FLOSC_CONFIG. Contains: user ID, display name, email, state (visitor/guest/member), purchased flag, access level, token balance, free lesson delivered flag, quiz answers, and the adminVerification object for admin users.</p>
 
 <h3 id="term-flow">Flow</h3>
-<p>One independent FLOSC product instance. A flow has its own IVR file, AI configuration, quiz settings, offer set, branding (operator floscFlow name, public offering Title, Tagline, colors, logo), domain mapping, and app slug. Visitors see the attached personality, then Title, then Tagline. Multiple flows can run from one WordPress installation. Stored in the <code>flosc_flows</code> WordPress option.</p>
+<p>One independent FLOSC product instance. A flow has its own IVR file, AI configuration, quiz settings, offer set, branding (operator floscFlow name, public Public Title, Tagline, colors, logo), domain mapping, and app slug. Visitors see the attached personality, then Title, then Tagline. Multiple flows can run from one WordPress installation. Stored in the <code>flosc_flows</code> WordPress option.</p>
 
 <h3 id="term-flow-manager">Flow Manager</h3>
 <p><code>class-flow-manager.php</code>. Manages CRUD operations for flows. Provides <code>get_all_flows()</code>, <code>get_flow()</code>, <code>get_flow_by_slug()</code>, <code>get_flow_by_domain()</code>, and the user-flow access control logic.</p>

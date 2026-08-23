@@ -2468,7 +2468,7 @@ if (function_exists('wp_add_inline_style')) {
                                        value="<?php echo esc_attr($flosc_settings['title'] ?? ''); ?>"
                                        placeholder="<?php echo esc_attr__( 'e.g., Standard American English Pronunciation', 'flosc' ); ?>"
                                        class="flosc-flow-input">
-                                <p class="flosc-flow-field__hint"><?php echo esc_html__( 'Public offering name. Shown under the personality; sent to the AI as this flow’s offering.', 'flosc' ); ?></p>
+                                <p class="flosc-flow-field__hint"><?php echo esc_html__( 'Public flow description name. Shown under the personality; sent to the AI as this flow’s flow description.', 'flosc' ); ?></p>
                             </div>
                             
                             <div class="flosc-flow-field">
@@ -2702,7 +2702,7 @@ if (function_exists('wp_add_inline_style')) {
                                    value="<?php echo esc_attr($flosc_fi['title'] ?? ''); ?>"
                                    placeholder="<?php echo esc_attr__( 'e.g., Standard American English Pronunciation', 'flosc' ); ?>">
                             <p class="description">
-                                <?php echo esc_html__( 'Public offering name. Visitors see it under the personality on the landing screen and as the browser-tab suffix. The AI uses it as this flow’s offering — not the floscFlow name and not the personality.', 'flosc' ); ?>
+                                <?php echo esc_html__( 'Public flow description name. Visitors see it under the personality on the landing screen and as the browser-tab suffix. The AI uses it as this flow’s flow description — not the floscFlow name and not the personality.', 'flosc' ); ?>
                             </p>
                         </td>
                     </tr>
@@ -2713,7 +2713,7 @@ if (function_exists('wp_add_inline_style')) {
                                    value="<?php echo esc_attr($flosc_fi['tagline'] ?? ''); ?>"
                                    placeholder="<?php echo esc_attr__( 'e.g., Clear spoken English, taught in conversation', 'flosc' ); ?>">
                             <p class="description">
-                                <?php echo esc_html__( 'One-line expansion of the Title. Visitors see it under the Title. The AI uses it as the offering’s short description. Not the FLOSC acronym, not the personality. Leave empty to hide.', 'flosc' ); ?>
+                                <?php echo esc_html__( 'One-line expansion of the Title. Visitors see it under the Title. The AI uses it as the flow description’s short description. Not the FLOSC acronym, not the personality. Leave empty to hide.', 'flosc' ); ?>
                             </p>
                         </td>
                     </tr>

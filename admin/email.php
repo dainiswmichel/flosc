@@ -143,7 +143,7 @@ $flosc_render_email_series = function ($prefix, $flow_settings, $welcome_default
         <td><input type="text" id="flow_newsletter_optin_text" name="flow_newsletter_optin_text"
                    value="<?php echo esc_attr($flosc_flow_settings['newsletter_optin_text'] ?? 'Enter your email to subscribe to our newsletter:'); ?>"
                    class="large-text">
-            <p class="description">Shown by the chatbot when offering the newsletter sign-up.</p></td>
+            <p class="description">Shown by the chatbot when presenting the newsletter sign-up.</p></td>
     </tr>
 </table>
 <?php

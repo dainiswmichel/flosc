@@ -87,17 +87,9 @@ $flosc_avail            = function_exists( 'flosc_available_providers_get_all' )
 
 // Risk / setup notices — read directly from flow settings (get_current_flow() is null in admin context).
 // No calendar-age nags for lesson catalog (stable catalogs can be fine for years).
-$flosc_product_name = trim( (string) ( $flosc_flow_settings['identity']['title'] ?? $flosc_flow_settings['title'] ?? '' ) );
-$flosc_product_tag  = trim( (string) ( $flosc_flow_settings['identity']['tagline'] ?? $flosc_flow_settings['tagline'] ?? '' ) );
 $flosc_notices = [];
 if ((float) $flosc_ai_temperature > 0.5) {
     $flosc_notices[] = '<strong>Temperature ' . esc_html($flosc_ai_temperature) . ' increases fabrication risk.</strong> Recommended: 0.3';
-}
-if ( $flosc_product_name === '' ) {
-    $flosc_notices[] = '<strong>Offering Title is empty.</strong> Set Title on the Identity tab so the AI can describe this flow’s public offering.';
-}
-if ( $flosc_product_name !== '' && $flosc_product_tag === '' ) {
-    $flosc_notices[] = 'Reminder: Tagline is empty. Set a one-line expansion of the Title on the Identity tab so the AI describes this offering accurately.';
 }
 ?>
 <?php if (!empty($flosc_notices)): ?>
@@ -1174,13 +1166,7 @@ if ( $flosc_acc_flow_name === '' ) {
 	$flosc_acc_flow_name = $flosc_acc_flow_name !== '' ? $flosc_acc_flow_name : 'this floscFlow';
 }
 $flosc_acc_title = trim( (string) ( $flosc_flow_settings['identity']['title'] ?? $flosc_flow_settings['title'] ?? '' ) );
-if ( $flosc_acc_title === '' ) {
-	$flosc_acc_title = __( '(no title set)', 'flosc' );
-}
 $flosc_acc_tagline = trim( (string) ( $flosc_flow_settings['identity']['tagline'] ?? $flosc_flow_settings['tagline'] ?? '' ) );
-if ( $flosc_acc_tagline === '' ) {
-	$flosc_acc_tagline = __( '(no tagline set)', 'flosc' );
-}
 $flosc_acc_scope = trim( (string) ( $flosc_flow_settings['ai_topic_scope'] ?? '' ) );
 if ( $flosc_acc_scope === '' && function_exists( 'flosc_personality_library_resolve_field' ) ) {
 	$flosc_acc_scope = trim( (string) flosc_personality_library_resolve_field( 'ai_topic_scope', '' ) );
@@ -1199,15 +1185,14 @@ if ( $flosc_acc_site === '' ) {
 // Content-agnostic templates (placeholders). Expanded for this flow for defaults / Reset.
 $flosc_acc_templates = array(
 	'Hello — what is the name of this floscFlow ({flow_name}), and who are you in this chat?',
-	'What is the public offering title you represent here? (Expected title: {title}.)',
-	'What does the Tagline for this offering mean or convey? (Configured tagline: {tagline}.)',
-	'In your own words, what is {title} for, and who is it meant to help?',
-	'What topics or tasks are you authorized to handle for {title}? (Topic scope note: {topic_scope}.)',
-	'How does {title} relate to {site_name}?',
-	'What should a first-time visitor do next on {title}?',
-	'Stay in character for {title}: state your role in one or two sentences.',
-	'If someone asks for details you do not have about {title}, what do you do instead of inventing them?',
-	'Summarize this offering: title {title}, tagline {tagline}, and how you help — based on this conversation.',
+	'Who are you in this chat, and what role do you serve for the current floscFlow?',
+	'What topics or tasks are you authorized to handle? (Topic scope note: {topic_scope}.)',
+	'How does this floscFlow relate to {site_name}?',
+	'What should a first-time visitor do next in this chat?',
+	'Stay in character: state your role in one or two sentences.',
+	'If someone asks for details you do not have, what do you do instead of inventing them?',
+	'How do you help visitors while remaining accurate and in character?',
+	'Summarize this floscFlow, your role, and your authorized topics based on this conversation.',
 );
 $flosc_acc_var_map = array(
 	'{flow_name}'   => $flosc_acc_flow_name,

@@ -2898,13 +2898,13 @@ class floscApp {
             const msgEl = this.addMessage('assistant', finalContent, true);
             if (msgEl && ivrMsg.name) msgEl.setAttribute('data-message-name', ivrMsg.name);
         } else {
-            // Brand-neutral: Title then Tagline from Identity (offering), not operator flow name.
-            const offeringTitle = String(this.config?.identity?.title || '').trim();
+            // Brand-neutral: Title then Tagline from Identity (flow description), not operator flow name.
+            const publicTitle = String(this.config?.identity?.title || '').trim();
             const tagline = String(this.config?.identity?.tagline || '').trim();
-            const offeringBits = [offeringTitle, tagline].filter(Boolean).join(' ');
+            const publicBits = [publicTitle, tagline].filter(Boolean).join(' ');
             const fallback = this.state === 'visitor'
-                ? (offeringBits
-                    ? `Welcome to ${productName}. ${offeringBits}\n${badge}`
+                ? (publicBits
+                    ? `Welcome to ${productName}. ${publicBits}\n${badge}`
                     : `Welcome to ${productName}.\n${badge}\nHow can I help you today?`)
                 : `Welcome back!\n${badge}\nHow can I help you today?`;
             this.addMessage('assistant', fallback, true);

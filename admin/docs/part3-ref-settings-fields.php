@@ -176,7 +176,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Identity</li>
 </ul>
 <h4 id="field-tagline"><code>tagline</code></h4>
-<p>One-line expansion of the offering Title. Visitors see it under the Title. The AI uses it as the offering’s short description. Not the FLOSC acronym (Freeline, Login, Offer, Sale, Content) and not the personality. Stored as <code>identity.tagline</code>.</p>
+<p>One-line expansion of the Public Title. Visitors see it under the Title. The AI uses it as the flow description’s short description. Not the FLOSC acronym (Freeline, Login, Offer, Sale, Content) and not the personality. Stored as <code>identity.tagline</code>.</p>
 <ul>
 <li><strong>Portable:</strong> yes (Settings YAML)</li>
 <li><strong>Admin tab:</strong> Identity</li>
@@ -188,7 +188,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> Identity</li>
 </ul>
 <h4 id="field-title"><code>title</code></h4>
-<p>Public offering name. Visitors see it under the personality on the landing screen and as the browser-tab suffix. Chatpack and accuracy tests send it to the AI as this flow’s offering — not the operator floscFlow name and not the personality. Stored as <code>identity.title</code>.</p>
+<p>Public flow description name. Visitors see it under the personality on the landing screen and as the browser-tab suffix. Chatpack and accuracy tests send it to the AI as this flow’s flow description — not the operator floscFlow name and not the personality. Stored as <code>identity.title</code>.</p>
 <ul>
 <li><strong>Portable:</strong> yes (Settings YAML)</li>
 <li><strong>Admin tab:</strong> Identity</li>
@@ -1832,7 +1832,7 @@ if (!isset($flosc_feature_links) || !is_array($flosc_feature_links)) { $flosc_fe
 <li><strong>Admin tab:</strong> AI</li>
 </ul>
 <h4 id="field-ai_accuracy_test_questions"><code>ai_accuracy_test_questions</code></h4>
-<p>Newline-separated accuracy-test <em>templates</em> (preferred) using placeholders <code>{flow_name}</code> (operator floscFlow name), <code>{title}</code> (public offering), <code>{tagline}</code> (one-line expansion of Title), <code>{topic_scope}</code>, <code>{site_name}</code>. Each line is a userMessage template; at run time FLOSC expands it to the userInput sent to the AI. Results store the assistantMessage (AI response) per turn. Stored as <code>ai_accuracy_test_questions</code>.</p>
+<p>Newline-separated accuracy-test <em>templates</em> (preferred) using placeholders <code>{flow_name}</code> (operator floscFlow name), <code>{title}</code> (Public Title), <code>{tagline}</code> (one-line expansion of Title), <code>{topic_scope}</code>, <code>{site_name}</code>. Each line is a userMessage template; at run time FLOSC expands it to the userInput sent to the AI. Results store the assistantMessage (AI response) per turn. Stored as <code>ai_accuracy_test_questions</code>.</p>
 <ul>
 <li><strong>Portable:</strong> yes (Settings YAML)</li>
 <li><strong>Admin tab:</strong> AI → This flow: AI settings → Accuracy test</li>

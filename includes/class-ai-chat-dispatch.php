@@ -280,42 +280,31 @@ class FLOSC_AI_Chat_Dispatch {
         $boundaries = function_exists( 'flosc_personality_library_resolve_field' )
             ? flosc_personality_library_resolve_field( 'ai_boundaries', '' )
             : flosc_get_setting( 'ai_boundaries', '' );
-        $product_name = function_exists( 'flosc_flow_offering_title' )
-            ? flosc_flow_offering_title()
+        $product_name = function_exists( 'flosc_flow_public_title' )
+            ? flosc_flow_public_title()
             : flosc_get_setting( 'title', '' );
-        $product_tagline = function_exists( 'flosc_flow_offering_tagline' )
-            ? flosc_flow_offering_tagline()
+        $product_tagline = function_exists( 'flosc_flow_public_tagline' )
+            ? flosc_flow_public_tagline()
             : flosc_get_setting( 'tagline', '' );
 
         $prompt = "# Your Identity\n\n";
 
         // v1.9.2: FLOSC Framework Identity — prevents AI from hallucinating
-        // what FLOSC is or what it teaches. The offering is Title + Tagline on Identity.
+        // what FLOSC is or what it teaches.
         $prompt .= "## CRITICAL: What FLOSC Is\n";
         $prompt .= "FLOSC is a **white-label WordPress plugin framework** for selling knowledge-based products online. ";
         $prompt .= "The letters F-L-O-S-C stand for the 5 sales funnel phases: **Freeline, Login, Offer, Sale, Content**. ";
         $prompt .= "FLOSC is NOT a school, course, or educational institution itself — it is the SOFTWARE that powers the site.\n\n";
         $prompt .= "**NEVER invent or guess what FLOSC stands for.** It is always: Freeline, Login, Offer, Sale, Content.\n";
-        $prompt .= "**NEVER invent what this site offers.** Only describe the offering using the Title and Tagline below.\n\n";
+        $prompt .= "**NEVER invent facts about this floscFlow.** Use only configured flow settings and the attached personality profile.\n\n";
 
-        // Offering (Identity Title + Tagline — not operator flow name, not personality)
         if ($product_name) {
-            $prompt .= "## This Site's Offering\n";
-            $prompt .= "**Title:** {$product_name}\n";
+            $prompt .= "## Configured Flow Title\n";
+            $prompt .= "{$product_name}\n";
             if ($product_tagline) {
-                $prompt .= "**Tagline:** {$product_tagline}\n";
+                $prompt .= "Configured Flow Tagline: {$product_tagline}\n";
             }
-            $prompt .= "When users ask what this site offers, use this Title and Tagline. ";
-            $prompt .= "The tagline is a one-line description of the title, not an acronym expansion. ";
-            $prompt .= "You are the attached personality speaking for this offering.\n\n";
-        } else {
-            $prompt .= "## This Site's Offering\n";
-            $prompt .= "The site administrator has not yet configured an offering Title. ";
-            if ($product_tagline) {
-                $prompt .= "Configured tagline: {$product_tagline}. ";
-            }
-            $prompt .= "If users ask what this site offers, say: 'The offering title has not been set yet. ";
-            $prompt .= "Please check back soon or ask the administrator for details.'\n\n";
+            $prompt .= "Use these configured flow values only when relevant. Do not announce configuration status or direct visitors to the administrator.\n\n";
         }
 
         $compiled_profile = function_exists( 'flosc_personality_compiled_profile' )
@@ -783,12 +772,12 @@ class FLOSC_AI_Chat_Dispatch {
         $assistant = function_exists( 'flosc_personality_name' )
             ? flosc_personality_name()
             : 'FLOSC';
-        $offering = function_exists( 'flosc_flow_offering_title' )
-            ? flosc_flow_offering_title()
+        $public_title = function_exists( 'flosc_flow_public_title' )
+            ? flosc_flow_public_title()
             : trim( (string) ( $identity['title'] ?? '' ) );
         $line = "You are {$assistant}, the AI assistant";
-        if ( $offering !== '' ) {
-            $line .= " for {$offering}";
+        if ( $public_title !== '' ) {
+            $line .= " for {$public_title}";
         }
         $line .= ". Your mission is to help users learn and improve through personalized guidance and encouragement. Be helpful, friendly, specific, and action-oriented. Always reference the user's quiz results and progress when available.";
         return $line;

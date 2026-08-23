@@ -7,7 +7,7 @@
 
 <p>Anyone selling something online runs into the same wall: you have to convince a stranger to trust you — with money, or at least an email address — before they've experienced anything real. The usual answer is a "free trial" that still gates everything worth having behind a signup form, plus a marketing page full of promises.</p>
 
-<p>FLOSC is built on a different bet: <strong>let the visitor experience the thing first, then ask.</strong> Give value before the form, before the offer, before the sale. If what you're offering is good, the experience does the convincing.</p>
+<p>FLOSC is built on a different bet: <strong>let the visitor experience the thing first, then ask.</strong> Give value before the form, before the offer, before the sale. If the experience is good, it does the convincing.</p>
 
 <p>That bet doesn't care what you're selling. The structure is the same whether the visitor is sampling a poet's work, taking a lesson, getting a piece of analysis, or being qualified as an enterprise lead. FLOSC is a try-before-you-buy framework for everyone from your local poet to the world's largest corporations. The content is yours; FLOSC is the shape of the journey around it.</p>
 

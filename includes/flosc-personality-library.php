@@ -284,15 +284,15 @@ if ( ! function_exists( 'flosc_visitor_assistant_name' ) ) {
 	}
 }
 
-if ( ! function_exists( 'flosc_flow_offering_title' ) ) {
+if ( ! function_exists( 'flosc_flow_public_title' ) ) {
 	/**
-	 * Public offering title for this floscFlow (landing under the personality, browser-tab suffix, AI facts).
+	 * Public public title for this floscFlow (landing under the personality, browser-tab suffix, AI facts).
 	 * Not the operator floscFlow name and not the personality name.
 	 *
 	 * @param string|null $flow_id Optional flow stem.
 	 * @return string
 	 */
-	function flosc_flow_offering_title( $flow_id = null ) {
+	function flosc_flow_public_title( $flow_id = null ) {
 		$title = '';
 		if ( function_exists( 'flosc_get_setting' ) ) {
 			$title = trim( (string) flosc_get_setting( 'title', '', $flow_id ) );
@@ -308,14 +308,14 @@ if ( ! function_exists( 'flosc_flow_offering_title' ) ) {
 	}
 }
 
-if ( ! function_exists( 'flosc_flow_offering_tagline' ) ) {
+if ( ! function_exists( 'flosc_flow_public_tagline' ) ) {
 	/**
-	 * One-line expansion of the offering Title. Not the FLOSC acronym, not the personality.
+	 * One-line expansion of the Public Title. Not the FLOSC acronym, not the personality.
 	 *
 	 * @param string|null $flow_id Optional flow stem.
 	 * @return string
 	 */
-	function flosc_flow_offering_tagline( $flow_id = null ) {
+	function flosc_flow_public_tagline( $flow_id = null ) {
 		$tagline = '';
 		if ( function_exists( 'flosc_get_setting' ) ) {
 			$tagline = trim( (string) flosc_get_setting( 'tagline', '', $flow_id ) );
