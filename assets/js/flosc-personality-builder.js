@@ -2983,6 +2983,10 @@
     return;
   }
 
+  /* Fail loudly, not silently: any exception in the binding block or first
+     render() below would otherwise abort this IIFE before window.floscBuilder
+     is assigned — leaving #cols/#editor empty with nothing in the console. */
+  try {
   document.getElementById("cols").addEventListener("click", onTribClick);
   document.getElementById("editor").addEventListener("click", onTribClick);
   document.getElementById("cols").addEventListener("change", onTribChange);
@@ -3511,6 +3515,13 @@
   });
 
   render();
+
+  } catch (e) {
+    if (window.console && console.error) {
+      console.error("[FLOSC Personality Builder] init/render failed — panels may stay empty. First error:", e);
+    }
+  }
+
   window.floscBuilder = {
     compilePrompt: compilePrompt,
     promptFile: promptFile,
