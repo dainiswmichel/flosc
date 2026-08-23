@@ -80,6 +80,9 @@ $flosc_chain_provider_1 = $flosc_flow_settings['ai_chain_provider_1'] ?? '';
 $flosc_chain_provider_2 = $flosc_flow_settings['ai_chain_provider_2'] ?? '';
 $flosc_chain_provider_3 = $flosc_flow_settings['ai_chain_provider_3'] ?? '';
 $flosc_personas         = function_exists( 'flosc_personality_library_get_all' ) ? flosc_personality_library_get_all() : array();
+$flosc_personality_label = isset( $flosc_personas[ $flosc_personality_id ]['label'] ) && $flosc_personas[ $flosc_personality_id ]['label'] !== ''
+	? (string) $flosc_personas[ $flosc_personality_id ]['label']
+	: $flosc_personality_id;
 $flosc_avail            = function_exists( 'flosc_available_providers_get_all' ) ? flosc_available_providers_get_all() : array();
 
 // Risk / setup notices — read directly from flow settings (get_current_flow() is null in admin context).
@@ -138,8 +141,8 @@ foreach ( $flosc_key_catalog as $flosc_slug => $flosc_meta ) {
 
 <details class="flosc-ai-acc" id="flosc-personality-section" open>
 <summary class="flosc-ai-acc__summary">
-	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Attached personality', 'flosc' ); ?></span>
-	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Attach one library voice here, then attach this flow’s API.', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Attached personality', 'flosc' ); ?> <?php echo esc_html( $flosc_personality_label ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Choose from the dropdown list to attach an AI personality to this flow’s API.', 'flosc' ); ?></span>
 </summary>
 <div class="flosc-ai-acc__body">
 <table class="form-table">
