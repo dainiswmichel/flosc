@@ -1030,9 +1030,13 @@ if ( ! function_exists( 'flosc_enqueue_personality_builder_assets' ) ) {
 		$ctx     = function_exists( 'flosc_personality_builder_request_context' ) ? flosc_personality_builder_request_context() : array();
 		$persona = isset( $ctx['persona'] ) ? (string) $ctx['persona'] : '';
 		$ivr     = isset( $ctx['ivr'] ) ? (string) $ctx['ivr'] : '';
-		if ( $persona === '' ) {
-			return;
-		}
+		// Do NOT bail when persona resolves empty. The accordion markup renders
+		// regardless (its persona comes from the current flow's saved settings —
+		// a DIFFERENT resolution than this request-context re-derivation, and the
+		// two can disagree). Bailing here shipped a page with full static markup
+		// but no CSS and no JS: empty #cols/#editor panels and a silent console.
+		// With an empty persona the boot JSON still builds a valid default entry
+		// and the save bridge refuses gracefully, so loading assets is always safe.
 
 		$css_path = FLOSC_PLUGIN_DIR . 'assets/css/flosc-personality-builder.css';
 		$js_path  = FLOSC_PLUGIN_DIR . 'assets/js/flosc-personality-builder.js';
