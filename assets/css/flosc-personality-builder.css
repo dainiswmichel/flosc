@@ -1,34 +1,34 @@
 /* FLOSC Personality Designer workshop. Scoped to .flosc-personality-workshop. */
 
 .flosc-personality-workshop{
-    --ink: #132117;
-    --ink-soft: #3d4d41;
-    --paper: #f4efe3;
-    --paper-2: #e8e0cd;
-    --card: #fffaf0;
-    --line: #c9b48b;
-    --line-strong: #a89062;
-    --accent: #bf5b04;
-    --accent-2: #14532d;
-    --accent-2-deep: #0b3a1d;
-    --good: #166534;
-    --warn: #92400e;
-    --bad: #9f1239;
-    --off: #8a8476;
-    --shadow: rgba(19, 33, 23, 0.14);
+    /* WP-admin palette. This stylesheet only loads in wp-admin (the standalone
+       DA1 workshop HTML carries its own inline styles), so the tokens are the
+       admin look — no cream base + override layer needed. */
+    --ink: #1d2327;
+    --ink-soft: #50575e;
+    --paper: #f0f0f1;
+    --paper-2: #f0f0f1;
+    --card: #ffffff;
+    --line: #c3c4c7;
+    --line-strong: #8c8f94;
+    --accent: #dba617;
+    --accent-2: #2271b1;
+    --accent-2-deep: #135e96;
+    --good: #008a20;
+    --warn: #996800;
+    --bad: #d63638;
+    --off: #8c8f94;
+    --shadow: rgba(0, 0, 0, 0.04);
     --mono: "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
-    --sans: "Iowan Old Style", Palatino, "Palatino Linotype", "Book Antiqua", Georgia, serif;
-    --ui: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+    --ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
   }
   .flosc-personality-workshop, .flosc-personality-workshop *{ box-sizing: border-box; }
   .flosc-personality-workshop{ margin: 0; padding: 0; }
   .flosc-personality-workshop{
     font-family: var(--sans);
     color: var(--ink);
-    background:
-      radial-gradient(900px 420px at 8% -10%, #ffe0b8 0%, transparent 58%),
-      radial-gradient(800px 380px at 96% -8%, #cfeedd 0%, transparent 55%),
-      linear-gradient(180deg, var(--paper), var(--paper-2));
+    background: #f0f0f1;
     min-height: 0;
   }
   .flosc-personality-workshop button, .flosc-personality-workshop input, .flosc-personality-workshop select, .flosc-personality-workshop textarea{ font: inherit; }
@@ -39,7 +39,7 @@
     display: flex; flex-wrap: wrap; gap: 12px 20px;
     align-items: flex-start; justify-content: space-between;
     border: 1px solid var(--line);
-    background: linear-gradient(135deg, #fff7e4, #f4edd6 70%);
+    background: #ffffff;
     border-radius: 16px;
     padding: 16px 18px;
     box-shadow: 0 8px 22px var(--shadow);
@@ -48,7 +48,7 @@
   .flosc-personality-workshop header.top p{ margin: 6px 0 0; max-width: 72ch; color: var(--ink-soft); }
   .flosc-personality-workshop .meta{ display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .flosc-personality-workshop .chip{
-    border: 1px solid var(--line); background: #fff9ea;
+    border: 1px solid var(--line); background: #f6f7f7;
     border-radius: 999px; padding: 3px 10px; font-family: var(--ui); font-size: 0.78rem;
   }
   .flosc-personality-workshop .toolbar{
@@ -64,9 +64,9 @@
     font-size: 0.86rem;
     font-weight: 600;
   }
-  .flosc-personality-workshop .btn:hover{ background: #fff6df; }
-  .flosc-personality-workshop .btn.primary{ background: var(--accent-2); color: #f4fff7; border-color: var(--accent-2-deep); }
-  .flosc-personality-workshop .btn.primary:hover{ background: #176b38; }
+  .flosc-personality-workshop .btn:hover{ background: #f6f7f7; }
+  .flosc-personality-workshop .btn.primary{ background: var(--accent-2); color: #ffffff; border-color: var(--accent-2-deep); }
+  .flosc-personality-workshop .btn.primary:hover{ background: #135e96; }
   .flosc-personality-workshop .btn.ghost{ background: transparent; }
   .flosc-personality-workshop .btn.danger{ color: var(--bad); border-color: #e8b4c0; }
   .flosc-personality-workshop .save-state{
@@ -76,12 +76,12 @@
     color: var(--accent-2);
     padding: 6px 10px;
     border-radius: 999px;
-    border: 1px solid #b7d7c2;
-    background: #edf8f0;
+    border: 1px solid #00a32a;
+    background: #f0f6fc;
     min-width: 8.5rem;
     text-align: center;
   }
-  .flosc-personality-workshop .save-state.saving{ background: #fff3d6; color: #92400e; border-color: #e4c37a; }
+  .flosc-personality-workshop .save-state.saving{ background: #fcf9e8; color: #996800; border-color: #dba617; }
   .flosc-personality-workshop .preset-where{
     width: 100%;
     margin: 8px 0 0;
@@ -90,7 +90,7 @@
     color: var(--ink-soft);
   }
   .flosc-personality-workshop .preset-where code{ font-size: 0.86em; }
-  .flosc-personality-workshop .save-state.flash, .flosc-personality-workshop .save-state.saved{ background: #14532d; color: #f4fff7; border-color: #14532d; }
+  .flosc-personality-workshop .save-state.flash, .flosc-personality-workshop .save-state.saved{ background: #008a20; color: #ffffff; border-color: #008a20; }
   .flosc-personality-workshop .layout{
     display: grid;
     grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
@@ -110,7 +110,7 @@
     margin: 0;
     padding: 12px 14px;
     border-bottom: 1px solid var(--line);
-    background: #fff5de;
+    background: #f6f7f7;
     border-radius: 14px 14px 0 0;
     font-size: 1.02rem;
   }
@@ -140,7 +140,7 @@
     background: #fff;
     resize: vertical;
   }
-  .flosc-personality-workshop .trib.off .trib-inject{ background: #f6f1e4; }
+  .flosc-personality-workshop .trib.off .trib-inject{ background: #f6f7f7; }
   .flosc-personality-workshop .trib .excerpt-lab{
     display: block;
     margin-top: 6px;
@@ -154,7 +154,7 @@
   .flosc-personality-workshop .col{
     border: 1px solid var(--line);
     border-radius: 12px;
-    background: #fffdf6;
+    background: #ffffff;
     min-height: 0;
     display: flex; flex-direction: column;
   }
@@ -162,27 +162,27 @@
     list-style: none;
     padding: 8px 28px 8px 9px;
     border-bottom: 1px solid transparent;
-    background: #f7edd3;
+    background: #f6f7f7;
     border-radius: 12px;
     cursor: pointer;
     position: relative;
   }
   .flosc-personality-workshop .col[open] > summary{ border-radius: 12px 12px 0 0; border-bottom-color: var(--line); }
-  .flosc-personality-workshop .col.sel > summary{ background: #d8f0e0; box-shadow: inset 3px 0 0 var(--accent-2); }
-  .flosc-personality-workshop .col > summary:hover{ background: #efe0b8; }
+  .flosc-personality-workshop .col.sel > summary{ background: #f0f6fc; box-shadow: inset 3px 0 0 var(--accent-2); }
+  .flosc-personality-workshop .col > summary:hover{ background: #f0f0f1; }
   .flosc-personality-workshop .col > summary::-webkit-details-marker, .flosc-personality-workshop .col > summary::marker{ display: none; content: ""; }
   .flosc-personality-workshop .col summary strong{ display: block; font-size: 0.86rem; }
   .flosc-personality-workshop .col summary .fam-hint{ display: block; font-size: 0.72rem; color: var(--ink-soft); margin-top: 2px; font-weight: 400; }
   .flosc-personality-workshop .col .list{ padding: 6px; display: flex; flex-direction: column; gap: 5px; flex: 1; max-height: 540px; overflow: auto; }
   .flosc-personality-workshop .col:not([open]) .list, .flosc-personality-workshop .col:not([open]) .add-trib{ display: none; }
   .flosc-personality-workshop .trib{
-    border: 1px solid #e4d4b0;
+    border: 1px solid #c3c4c7;
     border-radius: 9px;
     padding: 6px 7px 5px;
     background: #fff;
     cursor: pointer;
   }
-  .flosc-personality-workshop .trib.sel{ border-color: var(--accent-2); background: #edf8f0; box-shadow: inset 3px 0 0 var(--accent-2); }
+  .flosc-personality-workshop .trib.sel{ border-color: var(--accent-2); background: #f0f6fc; box-shadow: inset 3px 0 0 var(--accent-2); }
   .flosc-personality-workshop .drag-handle{
     cursor: grab;
     color: var(--off);
@@ -195,10 +195,10 @@
     user-select: none;
   }
   .flosc-personality-workshop .trib.dragging, .flosc-personality-workshop .acc.dragging{ opacity: 0.4; }
-  .flosc-personality-workshop .drop-aim{ outline: 2px dashed var(--accent-2); background: #e8f6ee !important; }
+  .flosc-personality-workshop .drop-aim{ outline: 2px dashed var(--accent-2); background: #f0f6fc !important; }
   .flosc-personality-workshop .drop-line{ box-shadow: inset 0 3px 0 var(--accent); }
-  .flosc-personality-workshop .trib.off{ opacity: 0.48; background: #f6f1e4; }
-  .flosc-personality-workshop .trib.cond{ border-color: #d4a017; background: #fff8e1; opacity: 1; }
+  .flosc-personality-workshop .trib.off{ opacity: 0.48; background: #f6f7f7; }
+  .flosc-personality-workshop .trib.cond{ border-color: #dba617; background: #fcf9e8; opacity: 1; }
   .flosc-personality-workshop .trib-top{
     display: grid;
     grid-template-columns: 22px 18px minmax(0, 1fr);
@@ -248,7 +248,7 @@
     width: 100%;
   }
   .flosc-personality-workshop .stage:hover{ border-color: var(--accent); }
-  .flosc-personality-workshop .stage.active{ border-color: var(--accent-2); background: #edf8f0; box-shadow: inset 3px 0 0 var(--accent-2); }
+  .flosc-personality-workshop .stage.active{ border-color: var(--accent-2); background: #f0f6fc; box-shadow: inset 3px 0 0 var(--accent-2); }
   .flosc-personality-workshop .dot{
     width: 10px; height: 10px; border-radius: 50%;
     background: var(--line-strong); justify-self: center;
@@ -283,7 +283,7 @@
   @media (max-width: 720px) { .flosc-personality-workshop .params{ grid-template-columns: 1fr 1fr; } }
   .flosc-personality-workshop .note{
     border-left: 4px solid var(--accent-2);
-    background: #f0fdf4;
+    background: #f0f6fc;
     padding: 8px 10px;
     border-radius: 0 8px 8px 0;
     font-size: 0.86rem;
@@ -301,7 +301,7 @@
   .flosc-personality-workshop .tabs button{ border-radius: 999px; }
   .flosc-personality-workshop pre.out{
     margin: 0;
-    background: #132117;
+    background: #1d2327;
     color: #e7f5ea;
     border-radius: 10px;
     padding: 12px;
@@ -347,7 +347,7 @@
     font-family: var(--ui);
     font-size: 0.86rem;
     font-weight: 700;
-    background: #fff5de;
+    background: #f6f7f7;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -399,8 +399,8 @@
     .flosc-personality-workshop .file-seq, .flosc-personality-workshop .brief .brief-body{ max-height: none; overflow: visible; }
   }
   .flosc-personality-workshop .acc > summary::-webkit-details-marker, .flosc-personality-workshop .acc > summary::marker{ display: none; content: ""; }
-  .flosc-personality-workshop .acc[open] > summary, .flosc-personality-workshop .acc.open > .acc-head{ background: #edf8f0; }
-  .flosc-personality-workshop .acc.group > summary{ background: #f3e6c4; font-size: 0.8rem; letter-spacing: 0.04em; text-transform: uppercase; }
+  .flosc-personality-workshop .acc[open] > summary, .flosc-personality-workshop .acc.open > .acc-head{ background: #f0f6fc; }
+  .flosc-personality-workshop .acc.group > summary{ background: #f0f0f1; font-size: 0.8rem; letter-spacing: 0.04em; text-transform: uppercase; }
   .flosc-personality-workshop .acc .acc-body, .flosc-personality-workshop .acc[open] > summary ~ *{
     display: block;
     padding: 10px 10px 12px;
@@ -414,7 +414,7 @@
   .flosc-personality-workshop .acc-nest{ padding: 6px 6px 8px; }
   .flosc-personality-workshop .teach{
     border: 1px solid var(--line);
-    background: #f4faf6;
+    background: #f6f7f7;
     border-radius: 8px;
     padding: 8px 10px;
     margin: 0 0 10px;
@@ -433,7 +433,7 @@
     margin: 12px 0 0;
     border: 1px solid var(--line);
     border-radius: 12px;
-    background: #fffdf6;
+    background: #ffffff;
     padding: 10px 12px 12px;
   }
   .flosc-personality-workshop .spec h3{ margin: 0 0 6px; font-size: 0.95rem; }
@@ -446,7 +446,7 @@
   }
   .flosc-personality-workshop .spec-cols .bar i{
     position: absolute; bottom: 2px; font-style: normal; font-size: 9px;
-    color: #132117; text-shadow: 0 0 3px #fff; writing-mode: vertical-rl; transform: rotate(180deg);
+    color: #1d2327; text-shadow: 0 0 3px #fff; writing-mode: vertical-rl; transform: rotate(180deg);
     max-height: 68px; overflow: hidden;
   }
   .flosc-personality-workshop .spec-blend{ height: 72px; }
@@ -455,10 +455,10 @@
     padding: 8px 10px; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.45);
     font-family: var(--ui); font-size: 0.85rem;
   }
-  .flosc-personality-workshop .spec-calc.light{ color: #132117; text-shadow: none; }
+  .flosc-personality-workshop .spec-calc.light{ color: #1d2327; text-shadow: none; }
   .flosc-personality-workshop .brief{
     border: 2px solid var(--accent);
-    background: #fffdf8;
+    background: #ffffff;
     border-radius: 16px;
     margin-bottom: 14px;
     box-shadow: 0 4px 14px var(--shadow);
@@ -470,19 +470,19 @@
     font-family: var(--ui);
     font-weight: 700;
     font-size: 1.02rem;
-    background: #fff3d6;
+    background: #f6f7f7;
     border-radius: 14px;
     position: relative;
     display: block;
   }
-  .flosc-personality-workshop .brief > summary:hover{ background: #ffe8b8; }
+  .flosc-personality-workshop .brief > summary:hover{ background: #f0f0f1; }
   .flosc-personality-workshop .brief[open] > summary{ border-radius: 14px 14px 0 0; border-bottom: 1px solid var(--line); }
   .flosc-personality-workshop .brief > summary::-webkit-details-marker, .flosc-personality-workshop .brief > summary::marker{ display: none; content: ""; }
   .flosc-personality-workshop .brief .brief-body{ padding: 12px 16px 18px; font-size: 0.92rem; line-height: 1.5; max-width: 92ch; max-height: min(42vh, 380px); overflow: auto; }
   .flosc-personality-workshop .brief h3{ margin: 16px 0 6px; font-size: 1rem; color: var(--accent-2); }
   .flosc-personality-workshop .brief table{ width: 100%; border-collapse: collapse; font-size: 0.84rem; margin: 8px 0 12px; }
   .flosc-personality-workshop .brief th, .flosc-personality-workshop .brief td{ border: 1px solid var(--line); padding: 5px 7px; vertical-align: top; text-align: left; }
-  .flosc-personality-workshop .brief th{ background: #fff5de; }
+  .flosc-personality-workshop .brief th{ background: #f6f7f7; }
   .flosc-personality-workshop .brief .ask{
     border-left: 4px solid var(--accent);
     background: #fff7ed;
@@ -493,7 +493,7 @@
   .flosc-personality-workshop .spec-excl .chip{ opacity: 0.85; }
   .flosc-personality-workshop .spec-paper{
     min-height: 88px; padding: 10px 12px; background: #ffffff;
-    color: #132117; font-size: 0.9rem; line-height: 1.45; position: relative;
+    color: #1d2327; font-size: 0.9rem; line-height: 1.45; position: relative;
     border: 1px solid #d4d4d4;
     box-shadow: 0 1px 0 #fff inset;
   }
@@ -510,7 +510,7 @@
     padding: 2px 8px; font-family: var(--ui); font-size: 0.68rem;
   }
   .flosc-personality-workshop .seg button.on{ background: var(--accent-2); color: #fff; border-color: var(--accent-2); }
-  .flosc-personality-workshop .seg.binding button[data-val="must"].on{ background: #0b3a1d; }
+  .flosc-personality-workshop .seg.binding button[data-val="must"].on{ background: #135e96; }
   .flosc-personality-workshop .seg.binding button[data-val="dam"].on{ background: var(--bad); border-color: var(--bad); }
   .flosc-personality-workshop .param-row{ display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 8px 0 6px; }
   .flosc-personality-workshop .param-group > span{
@@ -549,20 +549,38 @@
     transform: rotate(225deg);
   }
   .flosc-personality-workshop .den-row{ display: flex; gap: 10px; align-items: flex-start; margin: 8px 0; }
-  .flosc-personality-workshop .den-vert{
-    writing-mode: vertical-lr;
-    direction: ltr;
-    appearance: slider-vertical;
-    -webkit-appearance: slider-vertical;
-    width: 22px;
+  /* Vertical density control: a normal horizontal range physically rotated 90°,
+     so 0 (range min, left) lands at the TOP and 100 at the BOTTOM. This renders
+     identically in every browser inside wp-admin — unlike writing-mode /
+     appearance:slider-vertical, which are inconsistent and were the source of
+     the sideways/broken density slider. Do not invert values in JS to
+     compensate: the rotation *is* the mapping. */
+  .flosc-personality-workshop .den-slider-wrap{
+    position: relative;
+    flex: 0 0 24px;
+    width: 24px;
     height: 140px;
+  }
+  .flosc-personality-workshop input[type="range"].den-vert{
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 140px;
+    height: 24px;
+    margin: 0;
     padding: 0;
-    accent-color: #132117;
+    transform: translate(-50%, -50%) rotate(90deg);
+    transform-origin: center;
+    writing-mode: initial;
+    direction: ltr;
+    appearance: auto;
+    -webkit-appearance: auto;
+    accent-color: #1d2327;
   }
   .flosc-personality-workshop .den-lab{ font-family: var(--ui); font-size: 0.68rem; color: var(--ink-soft); }
   .flosc-personality-workshop .den-lab b{ color: var(--ink); }
   .flosc-personality-workshop .den-swatch{
-    display: inline-block; width: 18px; height: 18px; border: 1px solid #132117;
+    display: inline-block; width: 18px; height: 18px; border: 1px solid #1d2327;
     vertical-align: -3px; margin-right: 6px; flex-shrink: 0;
     box-shadow: inset 0 0 0 1px #fff;
   }
@@ -616,14 +634,14 @@
     width: 28px;
     height: 100%;
     min-height: 280px;
-    border: 1px solid #132117;
+    border: 1px solid #1d2327;
     border-radius: 6px;
     background: linear-gradient(#ffffff, #000000);
     overflow: hidden;
   }
   .flosc-personality-workshop .den-rail i{
     position: absolute; left: -2px; right: -2px; height: 3px;
-    background: #14532d; border-radius: 1px;
+    background: #2271b1; border-radius: 1px;
     transform: translateY(-1px);
   }
   .flosc-personality-workshop .den-rail i.zero{ background: #bf5b04; height: 4px; }
@@ -640,7 +658,7 @@
   .flosc-personality-workshop .viz-card{
     border: 1px solid var(--line);
     border-radius: 12px;
-    background: #fffdf8;
+    background: #ffffff;
     padding: 10px 12px 12px;
     min-width: 0;
   }
