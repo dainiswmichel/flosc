@@ -107,6 +107,20 @@ if ((float) $flosc_ai_temperature > 0.5) {
 </div>
 
 <?php flosc_render_ai_tab_nav( 'single', $flosc_current_ivr ); ?>
+<?php
+/* Fail-closed visibility: if this flow has no resolvable personality
+   profile, the chat refuses unpersonified answers — tell the admin why. */
+$flosc_admin_stem    = sanitize_key( pathinfo( (string) $flosc_current_ivr, PATHINFO_FILENAME ) );
+$flosc_admin_profile = ( $flosc_admin_stem !== '' && function_exists( 'flosc_personality_compiled_profile' ) )
+	? trim( (string) flosc_personality_compiled_profile( $flosc_admin_stem ) )
+	: '';
+if ( $flosc_admin_profile === '' ) :
+	?>
+<div class="notice notice-error" style="margin:8px 0 16px">
+	<p><strong><?php esc_html_e( 'Personality not configured.', 'flosc' ); ?></strong>
+	<?php echo esc_html__( 'This flow refuses AI replies until a personality loads — visitors see a setup notice instead of answers. Attach one above (applies instantly), or write a custom profile and save.', 'flosc' ); ?></p>
+</div>
+<?php endif; ?>
 
 <!-- Styles in assets/css/flosc-admin.css (AI Configuration section) -->
 
@@ -153,6 +167,15 @@ foreach ( $flosc_key_catalog as $flosc_slug => $flosc_meta ) {
 				<?php echo esc_html__( 'This flow’s personality. Choosing here attaches it immediately and reloads the designer below.', 'flosc' ); ?>
 			</p>
 			<p id="flosc-personality-attach-note" class="description flosc-hidden" role="status"></p>
+		</td>
+	</tr>
+	<tr>
+		<th scope="row"><label for="flow_ai_brand_facts"><?php echo esc_html__( 'Product facts', 'flosc' ); ?></label></th>
+		<td>
+			<textarea name="flow_ai_brand_facts" id="flow_ai_brand_facts" rows="5" class="large-text code" placeholder="<?php echo esc_attr__( 'e.g. FLOSC always stands for Freeline, Login, Offer, Sale, Content.', 'flosc' ); ?>"><?php echo esc_textarea( (string) ( $GLOBALS['flosc_current_settings']['ai_brand_facts'] ?? '' ) ); ?></textarea>
+			<p class="description">
+				<?php echo esc_html__( 'Optional. Hard guarantees about what this product is — injected verbatim into every AI prompt. Leave empty for none; nothing is assumed on your behalf.', 'flosc' ); ?>
+			</p>
 		</td>
 	</tr>
 </table>

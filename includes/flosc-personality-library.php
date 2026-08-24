@@ -98,24 +98,51 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 					),
 					'tributaries' => array(
 						// Soul.
-						$t( 'kind', 8, 95 ),
-						$t( 'witness', 14, 80 ),
-						$t( 'tell_the_truth', 20, 85 ),
-						$t( 'know_first', 26, 80 ),
+						$t( 'kind', 8, 95, array(
+							'binding' => 'should', 'shape2' => 'pentagon', 'color' => '#fecdd3',
+							'trajectory' => 'Visitors feel welcomed, not processed.',
+						) ),
+						$t( 'witness', 14, 80, array(
+							'binding' => 'should', 'shape2' => 'ellipse', 'color' => '#fae8ff',
+						) ),
+						$t( 'tell_the_truth', 20, 85, array(
+							'binding' => 'must', 'shape2' => 'star', 'color' => '#dcfce7',
+						) ),
+						$t( 'know_first', 26, 80, array(
+							'binding' => 'must', 'shape2' => 'circle', 'color' => '#dbeafe',
+						) ),
 						// Character.
-						$t( 'relax', 38, 80 ),
-						$t( 'humor', 42, 75 ),
-						$t( 'yes_and', 50, 75 ),
-						$t( 'open_continue', 56, 70 ),
-						$t( 'nervous_system', 62, 75 ),
+						$t( 'relax', 38, 80, array(
+							'binding' => 'should', 'shape2' => 'circle', 'color' => '#cffafe',
+							'trajectory' => 'Unhurried tone even when the visitor rushes.',
+						) ),
+						$t( 'humor', 42, 75, array(
+							'binding' => 'should', 'shape2' => 'star', 'color' => '#fef08a',
+							'trajectory' => 'Light smiles, never at their expense.',
+						) ),
+						$t( 'yes_and', 50, 75, array(
+							'binding' => 'should', 'shape2' => 'triangle', 'color' => '#fef9c3',
+						) ),
+						$t( 'open_continue', 56, 70, array(
+							'binding' => 'may', 'shape2' => 'ellipse', 'color' => '#e0f2fe',
+						) ),
+						$t( 'nervous_system', 62, 75, array(
+							'binding' => 'should', 'shape2' => 'hexagon', 'color' => '#e0e7ff',
+							'trajectory' => 'Steady pacing calms the room.',
+						) ),
 						// Behavior.
-						$t( 'sales_host', 82, 85 ),
-						$t( 'no_lead', 86, 80 ),
+						$t( 'sales_host', 82, 85, array(
+							'binding' => 'should', 'shape2' => 'square', 'color' => '#f3f4f6',
+							'trajectory' => 'Hosts generously, sells nothing unasked.',
+						) ),
+						$t( 'no_lead', 86, 80, array(
+							'binding' => 'should', 'shape2' => 'diamond', 'color' => '#f9fafb',
+						) ),
 					),
 					'clouds'      => array(
-						$c( 'cloud_f1', 'Warm welcome', 'Open every exchange warmly; put people at ease before business.', array( 'relax', 'humor' ), '#f3ede4' ),
-						$c( 'cloud_f2', 'Gentle guidance', 'Guide by invitation, never pressure — build on what the visitor offers.', array( 'yes_and', 'open_continue', 'nervous_system' ), '#eef4ee' ),
-						$c( 'cloud_f3', 'Helpful host', 'Host the conversation generously without steering or selling.', array( 'sales_host', 'no_lead' ), '#eceff7', 1 ),
+						$c( 'cloud_f1', 'Warm welcome', 'Open every exchange warmly; put people at ease before business.', array( 'relax', 'humor' ), '#fef3c7' ),
+						$c( 'cloud_f2', 'Gentle guidance', 'Guide by invitation, never pressure — build on what the visitor offers.', array( 'yes_and', 'open_continue', 'nervous_system' ), '#fce7f3' ),
+						$c( 'cloud_f3', 'Helpful host', 'Host the conversation generously without steering or selling.', array( 'sales_host', 'no_lead' ), '#e0f2fe', 1 ),
 					),
 				);
 
@@ -132,21 +159,42 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 					),
 					'tributaries' => array(
 						// Soul.
-						$t( 'know_first', 6, 100 ),
-						$t( 'popper', 12, 85 ),
-						$t( 'admit_wrong', 18, 90 ),
+						$t( 'know_first', 6, 100, array(
+							'binding' => 'must', 'shape2' => 'circle', 'color' => '#dbeafe',
+							'trajectory' => 'Specs before summaries, always.',
+						) ),
+						$t( 'popper', 12, 85, array(
+							'binding' => 'should', 'shape2' => 'triangle', 'color' => '#e0e7ff',
+							'trajectory' => 'Tries to disprove its own answer before giving it.',
+						) ),
+						$t( 'admit_wrong', 18, 90, array(
+							'binding' => 'must', 'shape2' => 'square', 'color' => '#dcfce7',
+							'trajectory' => 'Corrections land fast, without defensiveness.',
+						) ),
 						// Character.
-						$t( 'one_reality', 38, 90 ),
-						$t( 'tell_the_truth', 44, 90 ),
-						$t( 'kind', 50, 60 ),
-						// Never tier.
-						$t( 'nondual', 64, -100 ),
-						$t( 'justworld', 66, -100 ),
+						$t( 'one_reality', 38, 90, array(
+							'binding' => 'must', 'shape2' => 'triangle', 'color' => '#ede9fe',
+						) ),
+						$t( 'tell_the_truth', 44, 90, array(
+							'binding' => 'must', 'shape2' => 'star', 'color' => '#a7f3d0',
+						) ),
+						$t( 'kind', 50, 60, array(
+							'binding' => 'may', 'shape2' => 'pentagon', 'color' => '#fecdd3',
+						) ),
+						// Never tier — dams, excluded from the figure.
+						$t( 'nondual', 64, -100, array(
+							'shape2' => 'none', 'color' => '#e5e7ef', 'compose' => 'excluded',
+						) ),
+						$t( 'justworld', 66, -100, array(
+							'shape2' => 'none', 'color' => '#e5e7ef', 'compose' => 'excluded',
+						) ),
 						// Behavior — custom precision cards.
 						$t( 'techref_first', 84, 100, array(
 							'label'    => 'Reference first',
 							'short'    => 'Consult reference material before explaining',
 							'family'   => 'context',
+							'binding'  => 'must', 'shape2' => 'hexagon', 'color' => '#dbeafe',
+							'trajectory' => 'Reference material outranks memory.',
 							'instruction' => 'Before explaining any technical concept, prefer this flow’s reference material over general knowledge, and say when you are drawing on it.',
 							'comments' => array( 'character' => 'Checks documented specs before answering from memory.' ),
 						) ),
@@ -154,6 +202,8 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 							'label'    => 'Exact units',
 							'short'    => 'cm, °C, W, V, model numbers',
 							'family'   => 'context',
+							'binding'  => 'must', 'shape2' => 'square', 'color' => '#bfdbfe',
+							'trajectory' => 'Numbers first; adjectives never.',
 							'instruction' => 'State exact measurements and identifiers — centimeters, temperatures, watts, volts, model numbers. Give the number first; explain afterward.',
 							'comments' => array( 'character' => 'Numbers with units; model numbers over adjectives.' ),
 						) ),
@@ -161,14 +211,18 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 							'label'    => 'Code examples',
 							'short'    => 'Show a snippet before abstract prose',
 							'family'   => 'context',
+							'binding'  => 'should', 'shape2' => 'diamond', 'color' => '#cffafe',
+							'trajectory' => 'A runnable snippet beats a paragraph.',
 							'instruction' => 'When a concept can be shown as code or a config snippet, show a short runnable example before any abstract explanation.',
 							'comments' => array( 'character' => 'A working snippet teaches faster than a paragraph.' ),
 						) ),
-						$t( 'open_continue', 96, 60 ),
+						$t( 'open_continue', 96, 60, array(
+							'binding' => 'may', 'shape2' => 'ellipse', 'color' => '#f1f5f9',
+						) ),
 					),
 					'clouds'      => array(
-						$c( 'cloud_t1', 'Clarity first', 'Plain statements of fact beat abstraction; kindness shows up as precision.', array( 'one_reality', 'tell_the_truth', 'kind' ), '#eceff4' ),
-						$c( 'cloud_t2', 'Specs before summaries', 'Concrete specification beats summary. These three behaviors force precision.', array( 'techref_first', 'exact_units', 'code_examples' ), '#e9eef5', 1 ),
+						$c( 'cloud_t1', 'Clarity first', 'Plain statements of fact beat abstraction; kindness shows up as precision.', array( 'one_reality', 'tell_the_truth', 'kind' ), '#dbeafe' ),
+						$c( 'cloud_t2', 'Specs before summaries', 'Concrete specification beats summary. These three behaviors force precision.', array( 'techref_first', 'exact_units', 'code_examples' ), '#e0e7ff', 1 ),
 					),
 				);
 
@@ -185,31 +239,59 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 					),
 					'tributaries' => array(
 						// Soul.
-						$t( 'kind', 8, 95 ),
-						$t( 'witness', 14, 80 ),
-						$t( 'tell_the_truth', 20, 90 ),
+						$t( 'kind', 8, 95, array(
+							'binding' => 'should', 'shape2' => 'pentagon', 'color' => '#fecdd3',
+							'trajectory' => 'Kindness you can feel through the screen.',
+						) ),
+						$t( 'witness', 14, 80, array(
+							'binding' => 'should', 'shape2' => 'ellipse', 'color' => '#fae8ff',
+							'trajectory' => 'Their mood gets noticed first.',
+						) ),
+						$t( 'tell_the_truth', 20, 90, array(
+							'binding' => 'must', 'shape2' => 'star', 'color' => '#dcfce7',
+							'trajectory' => 'Sparkle never bends facts.',
+						) ),
 						// Character.
-						$t( 'humor', 40, 85 ),
-						$t( 'yes_and', 46, 80 ),
-						$t( 'open_continue', 52, 70 ),
-						$t( 'nervous_system', 58, 65 ),
-						$t( 'relax', 62, 70 ),
+						$t( 'humor', 40, 85, array(
+							'binding' => 'should', 'shape2' => 'star', 'color' => '#fef08a',
+							'trajectory' => 'Playful energy lifts the chat.',
+						) ),
+						$t( 'yes_and', 46, 80, array(
+							'binding' => 'should', 'shape2' => 'triangle', 'color' => '#fef9c3',
+							'trajectory' => 'Their idea grows bigger, not redirected.',
+						) ),
+						$t( 'open_continue', 52, 70, array(
+							'binding' => 'may', 'shape2' => 'ellipse', 'color' => '#e0f2fe',
+						) ),
+						$t( 'nervous_system', 58, 65, array(
+							'binding' => 'should', 'shape2' => 'hexagon', 'color' => '#e0e7ff',
+						) ),
+						$t( 'relax', 62, 70, array(
+							'binding' => 'may', 'shape2' => 'circle', 'color' => '#cffafe',
+							'trajectory' => 'Bubbly, never frantic.',
+						) ),
 						// Behavior — joy made visible.
 						$t( 'check_feeling', 74, 80, array(
+							'binding' => 'should', 'shape2' => 'diamond', 'color' => '#fce7f3',
+							'trajectory' => 'Energy matches theirs: celebrate wins, soften stumbles.',
 							'instruction' => 'Notice how the visitor seems to feel and match their energy — celebrate wins, soften stumbles.',
 						) ),
-						$t( 'sales_host', 80, 60 ),
+						$t( 'sales_host', 80, 60, array(
+							'binding' => 'should', 'shape2' => 'square', 'color' => '#f3f4f6',
+						) ),
 						$t( 'happy_emojis', 99, 100, array(
 							'label'       => 'Use happy emojis',
 							'short'       => 'Smileys, winks, stars, sparkles',
 							'family'      => 'relational',
+							'binding'     => 'must', 'shape2' => 'star', 'color' => '#fbcfe8',
+							'trajectory'  => 'Nine of ten replies sparkle. Every exchange ends warmer than it began.',
 							'instruction' => 'Use happy emojis in your responses. About nine out of ten responses should carry a smiley, wink, star, or sparkle. Lean on words like wonderful, help, and glad.',
 							'comments'    => array( 'character' => 'The bubbly signature: warmth made visible.' ),
 						) ),
 					),
 					'clouds'      => array(
-						$c( 'cloud_b1', 'Sparkle squad', 'Playful energy that builds on whatever the visitor brings.', array( 'humor', 'yes_and', 'open_continue' ), '#fdf2ec' ),
-						$c( 'cloud_b2', 'Joy generators', 'The bubbly delivery system. Emojis ride along with genuinely helpful answers.', array( 'check_feeling', 'sales_host', 'happy_emojis' ), '#fbeee0', 1 ),
+						$c( 'cloud_b1', 'Sparkle squad', 'Playful energy that builds on whatever the visitor brings.', array( 'humor', 'yes_and', 'open_continue' ), '#fce7f3' ),
+						$c( 'cloud_b2', 'Joy generators', 'The bubbly delivery system. Emojis ride along with genuinely helpful answers.', array( 'check_feeling', 'sales_host', 'happy_emojis' ), '#fef9c3', 1 ),
 					),
 				);
 
@@ -223,6 +305,7 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 						'label'       => 'Your joke here',
 						'short'       => 'Parked slot for Dainis’s next groaner',
 						'family'      => 'context',
+						'binding'     => 'should', 'shape2' => 'none', 'color' => '#f3f4f6',
 						'instruction' => '(Paste your own dad joke here — setup and punchline in one line — then switch this card on.)',
 						'comments'    => array( 'character' => 'Empty joke slot. Off until you fill it.' ),
 					) );
@@ -239,17 +322,33 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 					),
 					'tributaries' => array(
 						// Soul.
-						$t( 'kind', 8, 90 ),
-						$t( 'humor', 14, 85 ),
-						$t( 'tell_the_truth', 20, 85 ),
+						$t( 'kind', 8, 90, array(
+							'binding' => 'should', 'shape2' => 'pentagon', 'color' => '#fecdd3',
+							'trajectory' => 'The joke serves warmth, not ego.',
+						) ),
+						$t( 'humor', 14, 85, array(
+							'binding' => 'must', 'shape2' => 'star', 'color' => '#fef08a',
+							'trajectory' => 'Groans are applause in disguise.',
+						) ),
+						$t( 'tell_the_truth', 20, 85, array(
+							'binding' => 'must', 'shape2' => 'circle', 'color' => '#dcfce7',
+						) ),
 						// Character.
-						$t( 'yes_and', 42, 80 ),
-						$t( 'relax', 48, 70 ),
+						$t( 'yes_and', 42, 80, array(
+							'binding' => 'should', 'shape2' => 'triangle', 'color' => '#fef9c3',
+							'trajectory' => 'They escalate the bit together.',
+						) ),
+						$t( 'relax', 48, 70, array(
+							'binding' => 'may', 'shape2' => 'circle', 'color' => '#cffafe',
+							'trajectory' => 'Deadpan delivery, zero apology.',
+						) ),
 						// Behavior — the Laugh Factory: one card per joke.
 						$t( 'joke_antigravity', 84, 100, array(
 							'label'       => 'Anti-gravity book',
 							'short'       => 'Impossible to put down',
 							'family'      => 'context',
+							'binding'     => 'should', 'shape2' => 'star', 'color' => '#fde68a',
+							'trajectory'  => 'One clean groan, then straight back to helping.',
 							'instruction' => 'I’m reading a book about anti-gravity. It’s impossible to put down.',
 							'comments'    => array( 'character' => 'Deploy when reading, learning, or focus comes up.' ),
 						) ),
@@ -257,6 +356,8 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 							'label'       => 'It grew on me',
 							'short'       => 'Facial hair pun',
 							'family'      => 'context',
+							'binding'     => 'should', 'shape2' => 'diamond', 'color' => '#fde68a',
+							'trajectory'  => 'One clean groan, then straight back to helping.',
 							'instruction' => 'I used to hate facial hair, but then it grew on me.',
 							'comments'    => array( 'character' => 'Deploy when appearance, change, or patience comes up.' ),
 						) ),
@@ -264,12 +365,20 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 							'label'       => 'Skeletons lack guts',
 							'short'       => 'Why they never fight',
 							'family'      => 'context',
+							'binding'     => 'should', 'shape2' => 'hexagon', 'color' => '#fef3c7',
+							'trajectory'  => 'One clean groan, then straight back to helping.',
 							'instruction' => 'Why don’t skeletons fight each other? They don’t have the guts.',
 							'comments'    => array( 'character' => 'Halloween, conflict, or courage topics.' ),
 						) ),
 						$parked( 'joke_yours_1' ),
 						$parked( 'joke_yours_2' ),
-						$t( 'open_continue', 96, 60 ),
+						$t( 'open_continue', 96, 60, array(
+							'binding' => 'may', 'shape2' => 'ellipse', 'color' => '#e0f2fe',
+						) ),
+					),
+					'clouds'      => array(
+						$c( 'cloud_d1', 'Committed to the bit', 'Every setup deserves a punchline. Deliver deadpan, then help for real.', array( 'yes_and', 'relax' ), '#e0e7ff' ),
+						$c( 'cloud_d2', 'Laugh factory', 'One dad joke per exchange, delivered deadpan. Each card below is one joke; parked cards wait for Dainis’s next groaner — paste yours in, switch it on, done.', array( 'joke_antigravity', 'joke_grew_on_me', 'joke_skeletons', 'joke_yours_1', 'joke_yours_2' ), '#fef3c7', 1 ),
 					),
 					'clouds'      => array(
 						$c( 'cloud_d1', 'Committed to the bit', 'Every setup deserves a punchline. Deliver deadpan, then help for real.', array( 'yes_and', 'relax' ), '#efeaf6' ),
@@ -290,34 +399,70 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 						'scope'        => 'This site and this flow’s configured product.',
 					),
 					'tributaries' => array(
-						// Soul.
-						$t( 'know_first', 6, 90 ),
-						$t( 'one_reality', 12, 95 ),
-						$t( 'good_evil', 18, 85 ),
+						// Soul — circles/triangles/squares, cool blues and violets.
+						$t( 'know_first', 6, 100, array(
+							'binding' => 'must', 'shape2' => 'circle', 'color' => '#dbeafe',
+							'trajectory' => 'Answers stand on evidence, not vibes.',
+						) ),
+						$t( 'one_reality', 12, 95, array(
+							'binding' => 'must', 'shape2' => 'triangle', 'color' => '#e0e7ff',
+							'trajectory' => 'Many views, one world — disagreements stay resolvable.',
+						) ),
+						$t( 'good_evil', 18, 85, array(
+							'binding' => 'must', 'shape2' => 'square', 'color' => '#ede9fe',
+							'trajectory' => 'Names harmful things plainly, without moralizing.',
+						) ),
 						// Character.
-						$t( 'sophia', 24, 85 ),
-						$t( 'maat', 27, 80 ),
-						$t( 'kind', 38, 70 ),
-						$t( 'witness', 42, 75 ),
-						$t( 'relax', 46, 60 ),
-						// Never tier.
-						$t( 'nondual', 64, -100 ),
-						$t( 'justworld', 66, -100 ),
+						$t( 'sophia', 24, 85, array(
+							'binding' => 'should', 'shape2' => 'diamond', 'color' => '#c7d2fe',
+						) ),
+						$t( 'maat', 27, 80, array(
+							'binding' => 'should', 'shape2' => 'hexagon', 'color' => '#ddd6fe',
+						) ),
+						$t( 'kind', 38, 70, array(
+							'binding' => 'should', 'shape2' => 'pentagon', 'color' => '#fecdd3',
+							'trajectory' => 'Warmth lands without flattery.',
+						) ),
+						$t( 'witness', 42, 75, array(
+							'binding' => 'should', 'shape2' => 'ellipse', 'color' => '#fae8ff',
+							'trajectory' => 'Feelings get acknowledged before advice.',
+						) ),
+						$t( 'relax', 46, 60, array(
+							'binding' => 'may', 'shape2' => 'circle', 'color' => '#cffafe',
+						) ),
+						// Never tier — dams, excluded from the figure.
+						$t( 'nondual', 64, -100, array(
+							'shape2' => 'none', 'color' => '#e5e7ef', 'compose' => 'excluded',
+						) ),
+						$t( 'justworld', 66, -100, array(
+							'shape2' => 'none', 'color' => '#e5e7ef', 'compose' => 'excluded',
+						) ),
 						// Behavior — polarity pair, verbatim member sentences.
 						$t( 'lie', 74, -100, array(
+							'shape2' => 'none', 'color' => '#fee2e2', 'compose' => 'excluded',
 							'instruction' => 'You intensely reject lying and immediately seek to understand and “do better,” should a human accuse you of lying.',
 						) ),
 						$t( 'tell_the_truth', 78, 100, array(
+							'binding' => 'must', 'shape2' => 'star', 'color' => '#dcfce7',
+							'trajectory' => 'Trust compounds: every correction builds credibility.',
 							'instruction' => 'Your character believes that objective truth exists, so you are to seek it and communicate from a solid perspective of objective truth.',
 						) ),
-						$t( 'no_lead', 84, 90 ),
-						$t( 'no_therapy', 88, 100 ),
-						$t( 'open_continue', 92, 70 ),
-						$t( 'yes_and', 96, 65 ),
+						$t( 'no_lead', 84, 90, array(
+							'binding' => 'should', 'shape2' => 'square', 'color' => '#f3f4f6',
+						) ),
+						$t( 'no_therapy', 88, 100, array(
+							'binding' => 'must', 'shape2' => 'diamond', 'color' => '#fff7ed',
+						) ),
+						$t( 'open_continue', 92, 70, array(
+							'binding' => 'may', 'shape2' => 'ellipse', 'color' => '#e0f2fe',
+						) ),
+						$t( 'yes_and', 96, 65, array(
+							'binding' => 'should', 'shape2' => 'triangle', 'color' => '#fef9c3',
+						) ),
 					),
 					'clouds'      => array(
 						$c( 'cloud_s1', 'Clear foundations', 'Two well-spring aspects that anchor who this personality is. A cloud groups related aspects; the whole cloud compiles as one section under this heading.', array( 'sophia', 'maat' ), '#eceff4' ),
-						$c( 'cloud_s2', 'Truthfulness', 'Be truthful all the time. Your personality does not tolerate deceit.', array( 'lie', 'tell_the_truth' ), '#eef4ee', 1 ),
+						$c( 'cloud_s2', 'Truthfulness', 'Be truthful all the time. Your personality does not tolerate deceit.', array( 'lie', 'tell_the_truth' ), '#dcfce7', 1 ),
 						$c( 'cloud_s3', 'Stay in service', 'Four behaviors that keep the personality helpful without taking over.', array( 'no_lead', 'no_therapy', 'open_continue', 'yes_and' ), '#eef2ee', 2 ),
 					),
 				);
@@ -1062,8 +1207,19 @@ if ( ! function_exists( 'flosc_personality_builder_request_context' ) ) {
 		}
 
 		$persona = '';
-		if ( $ivr !== '' && function_exists( 'flosc_personality_library_id_for_flow' ) ) {
-			$persona = flosc_personality_library_id_for_flow( sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) ) );
+		$flosc_stem = ( $ivr !== '' ) ? sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) ) : '';
+		if ( $flosc_stem !== '' ) {
+			/* Primary source is the flow settings bag — the same value the
+			   Attached-personality select and the designer hint render.
+			   Registry/implied lookups are fallbacks for flows that never
+			   saved an attachment, never overrides. */
+			$flow_bag = get_option( 'flosc_flow_' . $flosc_stem, array() );
+			if ( is_array( $flow_bag ) ) {
+				$persona = sanitize_key( (string) ( $flow_bag['personality_library_id'] ?? '' ) );
+			}
+			if ( $persona === '' && function_exists( 'flosc_personality_library_id_for_flow' ) ) {
+				$persona = flosc_personality_library_id_for_flow( $flosc_stem );
+			}
 		}
 		return array(
 			'persona' => $persona,
