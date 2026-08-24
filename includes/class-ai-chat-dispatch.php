@@ -289,14 +289,18 @@ class FLOSC_AI_Chat_Dispatch {
 
         $prompt = "# Your Identity\n\n";
 
-        // v1.9.2: FLOSC Framework Identity — prevents AI from hallucinating
-        // what FLOSC is or what it teaches.
-        $prompt .= "## CRITICAL: What FLOSC Is\n";
-        $prompt .= "FLOSC is a **white-label WordPress plugin framework** for selling knowledge-based products online. ";
-        $prompt .= "The letters F-L-O-S-C stand for the 5 sales funnel phases: **Freeline, Login, Offer, Sale, Content**. ";
-        $prompt .= "FLOSC is NOT a school, course, or educational institution itself — it is the SOFTWARE that powers the site.\n\n";
-        $prompt .= "**NEVER invent or guess what FLOSC stands for.** It is always: Freeline, Login, Offer, Sale, Content.\n";
-        $prompt .= "**NEVER invent facts about this floscFlow.** Use only configured flow settings and the attached personality profile.\n\n";
+        // v8.0.1: Content-agnostic. Nothing about the product is hardcoded
+        // here. Admins write optional Product facts on the AI tab; those are
+        // injected verbatim. Empty means none — never invent substitutes.
+        $brand_facts = trim( (string) ( function_exists( 'flosc_get_setting' )
+            ? flosc_get_setting( 'ai_brand_facts', '' )
+            : '' ) );
+        if ( $brand_facts !== '' ) {
+            $prompt .= "## Product facts\n";
+            $prompt .= "Configured facts about this product. These override any guess you could make. Never invent or substitute expansions, categories, or claims.\n\n";
+            $prompt .= $brand_facts . "\n\n";
+        }
+        $prompt .= "**NEVER invent facts about this flow.** Use only configured flow settings and the attached personality profile.\n\n";
 
         if ($product_name) {
             $prompt .= "## Configured Flow Title\n";

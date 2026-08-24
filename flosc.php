@@ -349,22 +349,16 @@ function flosc_shipped_personality_sample_library_id( $ivr_filename_or_stem ) {
 }
 
 /**
- * Product journey → library personality. Br3nda’s flow uses the Br3nda soul.
+ * Library personality implied by a shipped sample IVR, if any. Real flows
+ * carry their attachment in the per-flow settings bag — never hardcode
+ * flow→personality pairs here.
  *
  * @param string $ivr_filename_or_stem Filename or stem.
  * @return string Library id or empty.
  */
 function flosc_implied_personality_library_id( $ivr_filename_or_stem ) {
-    $stem = sanitize_key( pathinfo( basename( (string) $ivr_filename_or_stem ), PATHINFO_FILENAME ) );
-    if ( $stem === '' ) {
-        $stem = sanitize_key( (string) $ivr_filename_or_stem );
-    }
-    $map = array(
-        'dainis_net_ivr' => 'br3nda',
-        'dainis_net'     => 'br3nda',
-    );
-    $id = isset( $map[ $stem ] ) ? $map[ $stem ] : flosc_shipped_personality_sample_library_id( $stem );
-    return sanitize_key( (string) apply_filters( 'flosc_implied_personality_library_id', $id, $stem ) );
+    $id = flosc_shipped_personality_sample_library_id( $ivr_filename_or_stem );
+    return sanitize_key( (string) apply_filters( 'flosc_implied_personality_library_id', $id, $ivr_filename_or_stem ) );
 }
 
 /**
@@ -3452,6 +3446,18 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
         // Get flow context
         if ($flow_id !== null) {
             $flow = flosc_flows()->get_flow($flow_id);
+            if (!$flow) {
+                // IVR-file flows live outside the flows registry; read their
+                // settings bag through the same builder the runtime uses.
+                $flosc_ivr_candidates = array_unique(array(basename((string) $flow_id), basename((string) $flow_id) . '.md'));
+                $flosc_ivr_files = array_map('basename', (array) flosc_config_glob(['*_ivr.md', 'ivr*.md']));
+                foreach ($flosc_ivr_candidates as $flosc_ivr_candidate) {
+                    if ($flosc_ivr_candidate !== '' && in_array($flosc_ivr_candidate, $flosc_ivr_files, true)) {
+                        $flow = $this->build_flow_from_ivr_file($flosc_ivr_candidate);
+                        break;
+                    }
+                }
+            }
         } else {
             $flow = $this->get_current_flow();
         }
@@ -5686,6 +5692,21 @@ Example good response:
 
         // v04_04: Build context for phase-aware AI
         $ai_context = $this->build_ai_context($context);
+
+        // v8.0.1: Fail closed — never serve unpersonified answers. An empty
+        // personality profile is misconfiguration, not a content fallback;
+        // admins see the error on the AI tab until it is fixed.
+        $flosc_persona_profile = function_exists( 'flosc_personality_compiled_profile' )
+            ? flosc_personality_compiled_profile()
+            : '';
+        if ( trim( (string) $flosc_persona_profile ) === '' ) {
+            error_log( 'FLOSC: flow "' . ( $flow_id ?? 'current' ) . '" refused an AI reply — no personality profile is configured.' );
+            return new WP_Error(
+                'persona_missing',
+                __( 'This assistant is being set up. Please check back soon.', 'flosc' ),
+                array( 'status' => 503 )
+            );
+        }
 
         // v04_04: Build system prompt (base + phase-specific + context)
         $phase = $ai_context['phase'] ?? '';

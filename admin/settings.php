@@ -664,6 +664,8 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
     // v1.5.0: Keys that contain multiline content (stored in flow settings via flow_ prefix)
     $flosc_textarea_flow_keys = [
         'sso_apple_private_key',
+        // AI tab: brand facts are a multiline prompt injection — keep newlines.
+        'ai_brand_facts',
         // Companion targeting
         'companion_target_include', 'companion_target_exclude', 'companion_trigger_suppress_path_patterns',
         // AI configuration
