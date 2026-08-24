@@ -45,6 +45,74 @@ if ( ! function_exists( 'flosc_personality_library_field_keys' ) ) {
 	}
 }
 
+if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
+	/**
+	 * FLOSC Starter workshop: every band populated, one raincloud and one
+	 * pool, so a fresh install demonstrates the density sequence end to end.
+	 *
+	 * @return array<string,mixed>
+	 */
+	function flosc_personality_library_default_workshop() {
+		$on = static function ( $id, $density ) {
+			return array(
+				'id'          => $id,
+				'on'          => true,
+				'state'       => 'on',
+				'gain'        => 55,
+				'density'     => $density,
+				'instruction' => '',
+			);
+		};
+		return array(
+			'soul'        => array(
+				'id'           => 'starter',
+				'label'        => 'FLOSC Starter',
+				'name'         => 'FLOSC Assistant',
+				'role'         => 'Neutral guide for this site’s FLOSC flow',
+				'goals'        => 'Help visitors understand and use this flow.',
+				'prohibitions' => 'Do not invent products, prices, or contact details.',
+				'scope'        => 'This site and this flow’s configured product.',
+			),
+			'tributaries' => array(
+				// Soul · density band ≈ 0–33.
+				$on( 'sophia', 6 ),
+				$on( 'maat', 14 ),
+				$on( 'know_first', 22 ),
+				$on( 'witness', 30 ),
+				// Character · density band ≈ 34–66.
+				$on( 'kind', 38 ),
+				$on( 'humor', 44 ),
+				$on( 'deborah', 50 ),
+				$on( 'relax', 58 ),
+				// Behavior · density band ≈ 67–100.
+				$on( 'no_fabricate', 70 ),
+				$on( 'lie', 74 ),
+				$on( 'admit_wrong', 78 ),
+				$on( 'good_evil', 82 ),
+				$on( 'no_lead', 88 ),
+			),
+			'clouds'      => array(
+				array(
+					'id'          => 'cloud_1',
+					'name'        => 'Warm clarity',
+					'color'       => '#eef4ee',
+					'explanation' => 'Kindness that stays truthful — warmth without flattery.',
+					'cols'        => 2,
+					'members'     => array( 'humor', 'deborah' ),
+				),
+				array(
+					'id'          => 'cloud_2',
+					'name'        => 'Never deceive',
+					'color'       => '#e8f1ee',
+					'explanation' => 'Honesty behaviors held together as one promise.',
+					'cols'        => 2,
+					'members'     => array( 'no_fabricate', 'lie', 'admit_wrong', 'good_evil' ),
+				),
+			),
+		);
+	}
+}
+
 if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
 	/**
 	 * Seed entries for a fresh install.
@@ -66,7 +134,7 @@ if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
 				'ai_off_topic_message'   => '',
 				'ai_off_topic_links'     => '',
 				'ai_fallback_phrase'     => '',
-				'workshop_json'          => '',
+				'workshop_json'          => wp_json_encode( flosc_personality_library_default_workshop() ),
 			),
 			'friendly' => array(
 				'id'                     => 'friendly',

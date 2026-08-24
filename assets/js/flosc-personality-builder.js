@@ -45,9 +45,9 @@
     return n >= DENSITY_BANDS.behavior ? "behavior" : n >= DENSITY_BANDS.character ? "character" : "soul";
   }
   const STAGE_BANDS = {
-    soul: { label: "Soul", hint: "density band ≈ 0–33 · less dense, fully real" },
-    character: { label: "Character", hint: "density band ≈ 34–66" },
-    behavior: { label: "Behavior", hint: "density band ≈ 67–100 · more dense" }
+    soul: { label: "Soul", hint: "density band ≈ 0–33 · less dense, fully real. Create aspect clouds below." },
+    character: { label: "Character", hint: "density band ≈ 34–66. Create aspect rainclouds below." },
+    behavior: { label: "Behavior", hint: "density band ≈ 67–100 · more dense. Create aspect pools below." }
   };
   const STAGES = [
     { id: "identity", band: "soul", label: "Soul · identity", hint: "Who remains, under probe", density: 6 },
@@ -2252,7 +2252,7 @@
       if (band && band !== lastBand) {
         lastBand = band;
         const meta = STAGE_BANDS[band] || { label: band, hint: "" };
-        parts.push('<div class="band-lab">' + esc(meta.label) + "<span>" + esc(meta.hint) + "</span></div>");
+        parts.push('<div class="band-lab">' + esc(meta.label) + ' <span>' + esc(meta.hint) + "</span></div>");
       }
       if (item.kind === "stage") {
         const st = item.st;
