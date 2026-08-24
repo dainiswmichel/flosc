@@ -1606,16 +1606,6 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Could not save that personality.', 'flosc' ) ), 500 );
 		}
 
-		/* Mirror the designer tree into WordPress-native storage: the
-		   taxonomy and topic posts are the same objects the canvas shows.
-		   Sync is additive; a failed mirror never fails the save itself. */
-		if ( $fields['workshop_json'] !== '' && function_exists( 'flosc_personality_sync_tree' ) ) {
-			$shop = json_decode( $fields['workshop_json'], true );
-			if ( is_array( $shop ) ) {
-				flosc_personality_sync_tree( $id, $shop );
-			}
-		}
-
 		wp_send_json_success(
 			array(
 				'message' => __( 'Personality saved to the FLOSC library.', 'flosc' ),
@@ -1729,20 +1719,6 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 			$decoded = json_decode( (string) $entry['workshop_json'], true );
 			if ( is_array( $decoded ) ) {
 				$workshop = $decoded;
-				/* A stored tree outranks a legacy flat genome: when this
-				   personality has been mirrored into terms/posts, hand the
-				   designer the tree it saved. */
-				if ( function_exists( 'flosc_personality_read_tree_overlay' ) ) {
-					$overlay = flosc_personality_read_tree_overlay( $persona_id );
-					if ( is_array( $overlay ) ) {
-						if ( ! empty( $overlay['containers'] ) && empty( $workshop['containers'] ) ) {
-							$workshop['containers'] = $overlay['containers'];
-						}
-						if ( ! empty( $overlay['placement'] ) && empty( $workshop['placement'] ) ) {
-							$workshop['placement'] = $overlay['placement'];
-						}
-					}
-				}
 			}
 		}
 		return array(

@@ -1372,7 +1372,12 @@ $flosc_acc_line_count = max( 1, count( array_filter( $flosc_acc_edit_lines ) ) )
 <div id="flosc-accuracy-test-ui" class="flosc-margin-top-12">
 	<div class="flosc-ai-accuracy-controls">
 		<button type="button" class="button button-secondary" id="flosc-accuracy-reset-defaults"><?php echo esc_html__( 'Reset all to default templates', 'flosc' ); ?></button>
-		<button type="button" id="flosc-run-accuracy-test" class="button button-primary"><?php echo esc_html__( '▶ Run multi-turn provider test', 'flosc' ); ?></button>
+		<?php
+		$flosc_accuracy_personality_label = $flosc_personality_label !== ''
+			? $flosc_personality_label
+			: __( 'selected personality', 'flosc' );
+		?>
+		<button type="button" id="flosc-run-accuracy-test" class="button button-primary"><?php echo esc_html( sprintf( __( '▶ Run multi-turn provider test using %s', 'flosc' ), $flosc_accuracy_personality_label ) ); ?></button>
 		<span class="description"><?php echo esc_html__( 'Save Settings keeps templates. Run sends the expanded user input from each row.', 'flosc' ); ?></span>
 		<span id="flosc-test-progress" class="flosc-ai-progress flosc-hidden">
 			<?php echo esc_html__( 'Running… message', 'flosc' ); ?>

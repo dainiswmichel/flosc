@@ -85,7 +85,6 @@ require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/flosc-data-paths.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-available-providers.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-wp-ai-client.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-personality-library.php';
-require_once FLOSC_PLUGIN_DIR . 'includes/flosc-personality-storage.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-knowledge-bases.php';
 
 // v1.2.9: Auto-flush permalinks on activation
@@ -5701,10 +5700,12 @@ Example good response:
             ? flosc_personality_compiled_profile()
             : '';
         if ( trim( (string) $flosc_persona_profile ) === '' ) {
-            error_log( 'FLOSC: flow "' . ( $flow_id ?? 'current' ) . '" refused an AI reply — no personality profile is configured.' );
+            if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+                flosc_log( 'FLOSC: flow "' . ( $flow_id ?? 'current' ) . '" refused an AI reply — no personality profile is configured.' );
+            }
             return new WP_Error(
                 'persona_missing',
-                __( 'This assistant is being set up. Please check back soon.', 'flosc' ),
+                __( 'This assistant is unavailable.', 'flosc' ),
                 array( 'status' => 503 )
             );
         }

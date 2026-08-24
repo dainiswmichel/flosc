@@ -3723,7 +3723,7 @@
   });
   document.getElementById("btnExportMd").addEventListener("click", function () {
     const id = (state.soul.id || state.soul.name || "personality").replace(/[^\w.-]+/g, "_");
-    downloadBlob(id + "_soul.md", promptFile(), "text/markdown");
+    downloadBlob(id + "-soul.md", promptFile(), "text/markdown");
   });
   document.getElementById("btnExportMdDesign").addEventListener("click", function () {
     const id = (state.soul.id || state.soul.name || "personality").replace(/[^\w.-]+/g, "_");
