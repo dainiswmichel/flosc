@@ -1888,7 +1888,7 @@
   }
 
   function samp(id, label, step) {
-    const v = state.sampling[id];
+    const v = (state.sampling || EMPTY_SAMPLING)[id];
     return '<div class="field"><label>' + label + '</label><input type="number" step="' + (step || "0.1") + '" data-samp="' + id + '" value="' + esc(v) + '"></div>';
   }
 
@@ -3084,7 +3084,10 @@
     }
     if (spec.content_plate && state.soul) state.soul.content_plate = spec.content_plate;
     if (Array.isArray(spec.trajectories) && state.soul) state.soul.trajectories = spec.trajectories;
-    if (spec.sampling) state.sampling = Object.assign({}, EMPTY_SAMPLING, spec.sampling);
+    /* Sampling always re-defaults over EMPTY_SAMPLING: a state restored from an
+       older autosave (pre-sampling era) used to reach render as undefined and
+       crash samp() with "reading 'temperature'", silently killing the import. */
+    state.sampling = Object.assign({}, EMPTY_SAMPLING, state.sampling || {}, spec.sampling || {});
     if (spec.sampling_recommendation) state.sampling = Object.assign({}, state.sampling, spec.sampling_recommendation);
     if (spec.recommended_flow_ai) state.sampling = Object.assign({}, state.sampling, spec.recommended_flow_ai);
     if (Array.isArray(spec.families) && spec.families.length) {
