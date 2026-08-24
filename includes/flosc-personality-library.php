@@ -1109,7 +1109,11 @@ if ( ! function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 	<?php if ( $persona_id !== '' ) : ?>
 	<p class="flosc-personality-builder-toolbar">
 		<button type="button" class="button button-primary" id="flosc-personality-builder-save">
-			<?php echo esc_html__( 'Save to FLOSC library', 'flosc' ); ?>
+			<?php
+			echo $label !== ''
+				? esc_html( sprintf( /* translators: %s: personality name */ __( 'Save changes to %s', 'flosc' ), $label ) )
+				: esc_html__( 'Save to FLOSC library', 'flosc' );
+			?>
 		</button>
 		<span id="flosc-personality-builder-status" class="flosc-personality-builder-status" role="status" aria-live="polite"></span>
 	</p>

@@ -254,7 +254,7 @@ $flosc_categories = get_categories(['hide_empty' => false]);
                                    value="<?php echo esc_attr($flosc_identity['title'] ?? ''); ?>"
                                    class="large-text"
                                    placeholder="<?php echo esc_attr__( 'e.g., Standard American English Pronunciation', 'flosc' ); ?>">
-                            <p class="description"><?php echo esc_html__( 'Public flow description name. Visitors see it under the personality. The AI uses it as this flow’s flow description.', 'flosc' ); ?></p>
+                            <p class="description"><?php echo esc_html__( 'Public title. Visitors see it under the personality. The AI uses it as this flow’s flow description.', 'flosc' ); ?></p>
                         </td>
                     </tr>
 

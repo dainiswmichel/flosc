@@ -197,6 +197,15 @@
   .flosc-personality-workshop .trib.dragging, .flosc-personality-workshop .acc.dragging{ opacity: 0.4; }
   .flosc-personality-workshop .drop-aim{ outline: 2px dashed var(--accent-2); background: #f0f6fc !important; }
   .flosc-personality-workshop .drop-line{ box-shadow: inset 0 3px 0 var(--accent); }
+  /* Density-tinted titlebars: the ground IS the density (white → ink).
+     .ink-light rows sit on dark grounds, so every child flips to light. */
+  .flosc-personality-workshop .row-sum{ transition: background-color 120ms ease; }
+  .flosc-personality-workshop .row-sum.ink-light .drag-handle{ color: #f2f2f2; }
+  .flosc-personality-workshop .row-sum.ink-light .meta-bit{ color: #ececec; border-color: rgba(255,255,255,.45); background: transparent; }
+  .flosc-personality-workshop .row-sum.ink-light .gain-mark{ background: rgba(255,255,255,.38); }
+  .flosc-personality-workshop .row-gap{ height: 0; margin: 0; overflow: hidden; transition: height 120ms ease; }
+  .flosc-personality-workshop .drag-active .row-gap{ height: 14px; }
+  .flosc-personality-workshop .row-gap.drop-line{ background: #f0f6fc; }
   .flosc-personality-workshop .trib.off{ opacity: 0.48; background: #f6f7f7; }
   .flosc-personality-workshop .trib.cond{ border-color: #dba617; background: #fcf9e8; opacity: 1; }
   .flosc-personality-workshop .trib-top{
@@ -551,10 +560,10 @@
   .flosc-personality-workshop .den-row{ display: flex; gap: 10px; align-items: flex-start; margin: 8px 0; }
   /* Vertical density control: a normal horizontal range physically rotated 90°,
      so 0 (range min, left) lands at the TOP and 100 at the BOTTOM. This renders
-     identically in every browser inside wp-admin — unlike writing-mode /
-     appearance:slider-vertical, which are inconsistent and were the source of
-     the sideways/broken density slider. Do not invert values in JS to
-     compensate: the rotation *is* the mapping. */
+     identically in every browser inside wp-admin — unlike writing-mode or the
+     vendor vertical-slider appearance values, which are inconsistent and were
+     the source of the sideways/broken density slider. Do not invert values in
+     JS to compensate: the rotation *is* the mapping. */
   .flosc-personality-workshop .den-slider-wrap{
     position: relative;
     flex: 0 0 24px;

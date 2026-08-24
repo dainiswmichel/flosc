@@ -37,9 +37,16 @@
       document.head.appendChild(style);
     }
   }
+  /* Band floors: a density belongs to the highest band whose floor it
+     has reached. Soul from 0, character from 34, behavior from 67. */
+  const DENSITY_BANDS = { soul: 0, character: 34, behavior: 67 };
+  function bandOfDensity(d) {
+    const n = Math.max(0, Math.min(100, Number(d) || 0));
+    return n >= DENSITY_BANDS.behavior ? "behavior" : n >= DENSITY_BANDS.character ? "character" : "soul";
+  }
   const STAGE_BANDS = {
     soul: { label: "Soul", hint: "density band ≈ 0–33 · less dense, fully real" },
-    character: { label: "Character", hint: "density band ≈ 33–67" },
+    character: { label: "Character", hint: "density band ≈ 34–66" },
     behavior: { label: "Behavior", hint: "density band ≈ 67–100 · more dense" }
   };
   const STAGES = [
@@ -906,6 +913,15 @@
     const v = Math.round(255 - (n / 100) * 255);
     return "rgb(" + v + "," + v + "," + v + ")";
   }
+  /* Ink for a density-tinted ground, chosen on the fly.
+     WCAG relative-luminance crossover ≈ 0.179 (~46% sRGB gray):
+     lighter grounds take dark ink, darker grounds take white ink,
+     so text never lands grey on grey. */
+  function densityInk(d) {
+    const c = 1 - Math.max(0, Math.min(100, Number(d) || 0)) / 100;
+    const lin = c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    return lin > 0.179 ? "#ffffff" : "#1d2327";
+  }
   function inferMerge(id, st, binding) {
     if (binding === "dam" || (st && st.weight < 0)) return "excluded";
     if (st && st.merge === "excluded") return "excluded";
@@ -1244,6 +1260,26 @@
   function cloudOfTrib(id) {
     return cloudList().find(function (c) { return c.members.indexOf(id) >= 0; }) || null;
   }
+
+  /* Start a cloud that holds this one aspect. Further aspects join by
+     dropping onto the cloud's ground. */
+  function cloudStart(id) {
+    if (!id || cloudOfTrib(id)) return;
+    const taken = {};
+    cloudList().forEach(function (c) { taken[c.id] = true; });
+    let n = cloudList().length + 1;
+    while (taken["cloud_" + n]) n++;
+    cloudList().push({
+      id: "cloud_" + n,
+      name: "Cloud " + n,
+      color: "#eef4ee",
+      explanation: "",
+      cols: 2,
+      members: [id]
+    });
+    persistSoft();
+    render();
+  }
   function cloudDensity(c) {
     const ds = c.members.map(function (id) { return tribState(id).density; });
     return ds.length ? Math.min.apply(null, ds) : 0;
@@ -1266,25 +1302,6 @@
     const still = cloudById(cloudId);
     if (still) still.members.push(tribId);
   }
-  function cloudMake(anchorId, dropId) {
-    if (!anchorId || !dropId || anchorId === dropId) return;
-    const host = cloudOfTrib(anchorId);
-    if (host) { cloudJoin(host.id, dropId); return; }
-    cloudLeave(dropId);
-    const taken = {};
-    cloudList().forEach(function (c) { taken[c.id] = true; });
-    let n = cloudList().length + 1;
-    while (taken["cloud_" + n]) n++;
-    cloudList().push({
-      id: "cloud_" + n,
-      name: "Cloud " + n,
-      color: "#eef4ee",
-      explanation: "",
-      cols: 2,
-      members: [anchorId, dropId]
-    });
-  }
-
   function estimateTokens(text) {
     return Math.ceil((text || "").length / 4);
   }
@@ -2074,7 +2091,7 @@
     const repo = t.repo || null;
     if (!ch && !works.length && !links.length && !repo) return "";
     let h = '<div class="teach">';
-    if (ch) h += '<p><strong>Comment · character (not active).</strong> ' + esc(ch) + "</p>";
+    if (ch) h += '<p><strong>Character note (background reference · never compiles).</strong> ' + esc(ch) + "</p>";
     if (works.length) h += "<p><strong>Comment · main works.</strong> " + works.map(esc).join("; ") + "</p>";
     if (links.length) {
       h += "<p><strong>Comment · resources.</strong> " + links.map(function (l) {
@@ -2106,7 +2123,8 @@
       '<p class="figure-readout"><strong>How to name it:</strong> name the behavior positively. <em>Truth-telling +50</em> means reinforce truthfulness, so it supports “do not lie.” Use <em>Lying -100</em> when you want a dam against lying. Negative Gain suppresses the named behavior; it never reverses the instruction.</p>' +
       '<label class="excerpt-lab">Aspect explanation · plain text meaning of this aspect</label>' +
       '<textarea class="traj-phrase" data-cloud="' + t.id + '" placeholder="e.g. do not lie">' + esc(st.cloud || "") + "</textarea>" +
-      '<p class="figure-readout">This explains the single aspect in plain words. For example, “do not lie” explains “tell the truth.” To group related aspects, drop one onto the right edge of another — that makes a cloud, and the cloud gets its own name and explanation.</p>' +
+      '<p class="figure-readout">This explains the single aspect in plain words. For example, “do not lie” explains “tell the truth.” To group related aspects, start a cloud below, then drop further aspects onto that cloud. Aspects are never drop targets — only clouds, pools, and bands accept drops.</p>' +
+      '<button type="button" class="btn ghost" data-cloud-new="' + t.id + '"' + (cloudOfTrib(t.id) ? " disabled" : "") + '>Start a cloud with this aspect</button>' +
       '<p class="figure-readout">' + esc(gainMeaning(t)) + '. Negative Gain never means “perform the opposite.” For example, <em>Lying</em> −100 means do not lie.</p>' +
       '<div class="den-row"><div class="den-slider-wrap"><input class="den-vert" type="range" min="0" max="100" step="any" data-density="' + t.id + '" value="' + st.density + '" title="Density: 0 at top (white / least dense) to 100 at bottom (black / ink). Not Gain."></div>' +
       '<div class="den-lab"><span class="den-swatch" style="background:' + densityGray(st.density) + '"></span><b>Density <input type="number" min="0" max="100" step="any" data-density-num="' + t.id + '" value="' + formatDensity(st.density) + '" style="width:7.5rem"></b>' +
@@ -2165,36 +2183,35 @@
     const sel = isFocus("trib", t.id);
     const w = Math.max(-100, Math.min(100, Number(st.weight) || 0));
     const frac = (w + 100) / 200;
-    return '<details class="acc' + (sel ? " sel" : "") + '"' + (open ? " open" : "") + ' data-acc="trib:' + t.id + '" data-open-key="trib:' + t.id + '" data-drag-trib="' + t.id + '" data-drop-before="' + t.id + '">' +
-      '<summary class="row-sum" title="Gain ' + st.weight + ' · marker at far left is -100, centre is 0, far right is 100">' +
+    const bg = densityGray(st.density);
+    const ink = densityInk(st.density);
+    const light = ink === "#ffffff";
+    return '<details class="acc' + (sel ? " sel" : "") + '"' + (open ? " open" : "") + ' data-acc="trib:' + t.id + '" data-open-key="trib:' + t.id + '" data-drag-trib="' + t.id + '">' +
+      '<summary class="row-sum' + (light ? " ink-light" : "") + '" style="background:' + bg + ';color:' + ink + '" title="Density ' + formatDensity(st.density) + ' · gain ' + st.weight + ' · marker at far left is -100, centre is 0, far right is 100">' +
       '<span class="gain-mark" style="left:calc((100% - 10px) * ' + frac.toFixed(4) + ')"></span>' +
-      '<span class="drag-handle" title="Drag between rows for density · drop on the right edge of another aspect to make a cloud" draggable="true" data-drag-trib="' + t.id + '">\u22ee\u22ee</span>' +
-      '<span class="den-swatch" style="background:' + densityGray(st.density) + '"></span>' +
+      '<span class="drag-handle" title="Drag to reorder by density · drop between rows or onto a cloud. Aspects are not drop targets." draggable="true" data-drag-trib="' + t.id + '">\u22ee\u22ee</span>' +
       '<span class="row-lab">' + esc(t.label) + '</span>' +
       '<span class="meta-bit ' + (st.on ? "on-dot" : "off-dot") + '">' + rungLabel(t.id) + " \u00b7 " + (st.on ? "G" + st.weight + " \u00b7 " + st.binding + " \u00b7 " + st.shape2 + "/" + st.shape3 : "off") + (st.trajectory ? " \u00b7 traj" : "") + "</span></summary>" +
       '<div class="acc-body">' + wellspringEditor(t) + "</div></details>";
   }
 
-  /* One cloud: coloured ground, name, explanation, members in a grid. */
+  /* One cloud: coloured ground, name, explanation, members in one
+     vertical list (density order). */
   function cloudBlockHtml(c) {
     const members = c.members.map(function (id) {
       return allTribs().find(function (x) { return x.id === id; });
     }).filter(Boolean);
-    const cols = Math.max(1, Math.min(4, Number(c.cols) || 2));
     const color = c.color || "#eef4ee";
     return '<div class="cloud" data-drop-cloud="' + c.id + '" style="--cloud-bg:' + esc(color) + '">' +
       '<div class="cloud-head">' +
       '<input class="cloud-name" data-cloud-name="' + c.id + '" value="' + esc(c.name || "") + '" placeholder="Name this cloud">' +
       '<input type="color" data-cloud-color="' + c.id + '" value="' + esc(color) + '" title="Cloud background">' +
-      '<select data-cloud-cols="' + c.id + '" title="Aspects per row">' +
-      [1, 2, 3, 4].map(function (n) { return '<option value="' + n + '"' + (cols === n ? " selected" : "") + ">" + n + " across</option>"; }).join("") +
-      "</select>" +
       '<span class="meta-bit">' + members.length + " aspects \u00b7 d" + formatDensity(cloudDensity(c)) + "</span>" +
       '<button type="button" class="btn ghost" data-cloud-dissolve="' + c.id + '">Dissolve</button>' +
       "</div>" +
-      '<label class="excerpt-lab">Cloud explanation \u00b7 what this group of aspects means</label>' +
+      '<label class="excerpt-lab">Cloud explanation · what this group of aspects means</label>' +
       '<textarea class="traj-phrase" data-cloud-exp="' + c.id + '" placeholder="e.g. This personality never lies or manipulates and always tells the truth.">' + esc(c.explanation || "") + "</textarea>" +
-      '<div class="cloud-grid" style="grid-template-columns:repeat(' + cols + ',minmax(0,1fr))">' +
+      '<div class="cloud-grid" style="grid-template-columns:minmax(0,1fr)">' +
       members.map(tribRowHtml).join("") +
       "</div></div>";
   }
@@ -2231,7 +2248,7 @@
     });
     let lastBand = "";
     seq.forEach(function (item) {
-      const band = item.kind === "stage" ? item.st.band : (item.density < 33 ? "soul" : item.density < 67 ? "character" : "behavior");
+      const band = item.kind === "stage" ? item.st.band : bandOfDensity(item.density);
       if (band && band !== lastBand) {
         lastBand = band;
         const meta = STAGE_BANDS[band] || { label: band, hint: "" };
@@ -2257,8 +2274,11 @@
         parts.push(cloudBlockHtml(item.c));
         return;
       }
+      /* Insertion gap: the only drop target between aspects on this side. */
+      parts.push('<div class="row-gap" data-drop-before="' + item.t.id + '"></div>');
       parts.push(tribRowHtml(item.t));
     });
+    parts.push('<div class="row-gap" data-drop-end="1"></div>');
     parts.push("</div></div>");
     var editorTitleEl = document.getElementById("editorTitle");
     if (editorTitleEl) editorTitleEl.textContent = "Personality aspect sequence · least dense → most dense";
@@ -2716,6 +2736,13 @@
   }
 
   function onTribClick(e) {
+    const cloudNew = e.target.closest("[data-cloud-new]");
+    if (cloudNew) {
+      e.preventDefault();
+      e.stopPropagation();
+      cloudStart(cloudNew.getAttribute("data-cloud-new"));
+      return;
+    }
     const dissolve = e.target.closest("[data-cloud-dissolve]");
     if (dissolve) {
       e.preventDefault();
@@ -2847,11 +2874,6 @@
     if (e.target.matches("[data-cloud-color]")) {
       const c = cloudById(e.target.getAttribute("data-cloud-color"));
       if (c) { c.color = e.target.value; persistSoft(); render(); }
-      return;
-    }
-    if (e.target.matches("[data-cloud-cols]")) {
-      const c = cloudById(e.target.getAttribute("data-cloud-cols"));
-      if (c) { c.cols = Number(e.target.value) || 2; persistSoft(); render(); }
       return;
     }
     if (e.target.matches("[data-cloud]")) {
@@ -3115,7 +3137,7 @@
     const layers = ["soul", "character", "behavior"].map(function (band) {
       const items = active.filter(function (t) {
         const density = Number(tribState(t.id).density) || 0;
-        const itemBand = density < 33 ? "soul" : density < 67 ? "character" : "behavior";
+        const itemBand = bandOfDensity(density);
         return itemBand === band;
       });
       const rows = [];
@@ -3438,6 +3460,7 @@
     if (!h) return;
     const id = h.getAttribute("data-drag-trib");
     state._drag = id;
+    app.classList.add("drag-active");
     e.dataTransfer.setData("text/plain", id);
     e.dataTransfer.effectAllowed = "move";
     const card = h.closest("[data-drag-trib]");
@@ -3445,16 +3468,14 @@
   });
   app.addEventListener("dragend", function () {
     state._drag = null;
+    app.classList.remove("drag-active");
     document.querySelectorAll(".dragging, .drop-aim, .drop-line, .drop-beside").forEach(function (n) {
       n.classList.remove("dragging", "drop-aim", "drop-line", "drop-beside");
     });
   });
-  /* Right-hand slice of a row means "sit beside this one", which makes a cloud.
-     Anywhere else on the row keeps the old meaning: insert before it. */
-  function besideZone(e, el) {
-    const r = el.getBoundingClientRect();
-    return e.clientX > r.left + r.width * 0.62;
-  }
+  /* Drop targets are containers and row gaps only. An aspect is never a
+     drop target: drops land between rows, on a cloud's ground, on a
+     palette column, or on the density list. */
   app.addEventListener("dragover", function (e) {
     if (!state._drag) return;
     const before = e.target.closest("[data-drop-before]");
@@ -3468,7 +3489,7 @@
       n.classList.remove("drop-aim", "drop-line", "drop-beside");
     });
     if (before && before.getAttribute("data-drop-before") !== state._drag) {
-      before.classList.add(besideZone(e, before) ? "drop-beside" : "drop-line");
+      before.classList.add("drop-line");
     } else if (cloudEl) cloudEl.classList.add("drop-aim");
     else if (col) col.classList.add("drop-aim");
   });
@@ -3485,13 +3506,6 @@
       : null;
     const id = state._drag;
     state._drag = null;
-    /* Beside an aspect: make a cloud from the two, or join the one it is in. */
-    if (before && beforeId && besideZone(e, before)) {
-      cloudMake(beforeId, id);
-      persistSoft();
-      render();
-      return;
-    }
     /* On a cloud's own ground: join it. */
     if (cloudEl && !before) {
       cloudJoin(cloudEl.getAttribute("data-drop-cloud"), id);
@@ -3545,7 +3559,6 @@
     morphReadout: morphReadout,
     morphHint: morphHint,
     cloudList: cloudList,
-    cloudMake: cloudMake,
     cloudJoin: cloudJoin,
     cloudLeave: cloudLeave,
     importSpec: importSpec,
