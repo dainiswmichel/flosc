@@ -44,12 +44,12 @@
     const n = Math.max(0, Math.min(100, Number(d) || 0));
     return n >= DENSITY_BANDS.behavior ? "behavior" : n >= DENSITY_BANDS.character ? "character" : "soul";
   }
-  const STAGE_BANDS = {
+  const BAND_META = {
     soul: { label: "Soul", hint: "density band ≈ 0–33 · less dense, fully real. Create aspect clouds below." },
     character: { label: "Character", hint: "density band ≈ 34–66. Create aspect rainclouds below." },
     behavior: { label: "Behavior", hint: "density band ≈ 67–100 · more dense. Create aspect pools below." }
   };
-  const STAGES = [
+  const SOUL_LAYERS = [
     { id: "identity", band: "soul", label: "Soul · identity", hint: "Who remains, under probe", density: 6 },
     { id: "goals", band: "soul", label: "Soul · purpose", hint: "What this conversation is for", density: 12 },
     { id: "rules", band: "soul", label: "Soul · rules & scope", hint: "Invariants, defaults, who is served", density: 18 },
@@ -782,13 +782,13 @@
 
   const state = {
     preset: "brenda",
-    stage: "identity",
+    layer: "identity",
     custom: [],
     categories: deepClone(DEFAULT_COLUMNS),
     outTab: "prompt",
     hideOff: false,
-    focus: { kind: "stage", id: "identity" },
-    open: { "stage:identity": true },
+    focus: { kind: "layer", id: "identity" },
+    open: { "layer:identity": true },
     tribOrder: {},
     includeComments: true,
     specView: "cols",
@@ -807,8 +807,8 @@
     state.trib = deepClone(p.trib);
     state.custom = [];
     state.clouds = [];
-    state.focus = { kind: "stage", id: "identity" };
-    state.open = { "stage:identity": true };
+    state.focus = { kind: "layer", id: "identity" };
+    state.open = { "layer:identity": true };
     state.tribOrder = defaultOrder();
     state.denOrder = [];
   }
@@ -1897,7 +1897,7 @@
   }
 
   function editorHtml() {
-    const id = state.stage;
+    const id = state.layer;
     if (id === "identity") {
       return '<div class="note">Heading and description stay in the UI. Only Specifics compile.</div>' +
         '<div class="idline">' +
@@ -2090,9 +2090,9 @@
       state.open["trib:" + id] = true;
     } else if (kind === "col") {
       state.open["col:" + id] = true;
-    } else if (kind === "stage") {
-      state.stage = id;
-      state.open["stage:" + id] = true;
+    } else if (kind === "layer") {
+      state.layer = id;
+      state.open["layer:" + id] = true;
     }
     render();
     requestAnimationFrame(function () {
@@ -2255,32 +2255,32 @@
       }
       seq.push({ kind: "trib", density: tribState(t.id).density, t: t });
     });
-    STAGES.forEach(function (st) {
-      seq.push({ kind: "stage", density: st.density, st: st, band: st.band });
+    SOUL_LAYERS.forEach(function (st) {
+      seq.push({ kind: "layer", density: st.density, st: st, band: st.band });
     });
-    const kindRank = { stage: 0, cloud: 1, trib: 2 };
+    const kindRank = { layer: 0, cloud: 1, trib: 2 };
     seq.sort(function (a, b) {
       if (a.density !== b.density) return a.density - b.density;
       return (kindRank[a.kind] || 9) - (kindRank[b.kind] || 9);
     });
     let lastBand = "";
     seq.forEach(function (item) {
-      const band = item.kind === "stage" ? item.st.band : bandOfDensity(item.density);
+      const band = item.kind === "layer" ? item.st.band : bandOfDensity(item.density);
       if (band && band !== lastBand) {
         lastBand = band;
-        const meta = STAGE_BANDS[band] || { label: band, hint: "" };
+        const meta = BAND_META[band] || { label: band, hint: "" };
         parts.push('<div class="band-lab">' + esc(meta.label) + ' <span>' + esc(meta.hint) + "</span></div>");
       }
-      if (item.kind === "stage") {
+      if (item.kind === "layer") {
         const st = item.st;
-        const open = isOpen("stage:" + st.id) || isFocus("stage", st.id);
-        const sel = isFocus("stage", st.id);
-        const prev = state.stage;
-        state.stage = st.id;
+        const open = isOpen("layer:" + st.id) || isFocus("layer", st.id);
+        const sel = isFocus("layer", st.id);
+        const prev = state.layer;
+        state.layer = st.id;
         const body = editorHtml();
-        state.stage = prev;
+        state.layer = prev;
         parts.push(
-          '<details class="acc' + (sel ? " sel" : "") + '"' + (open ? " open" : "") + ' data-acc="stage:' + st.id + '" data-open-key="stage:' + st.id + '">' +
+          '<details class="acc' + (sel ? " sel" : "") + '"' + (open ? " open" : "") + ' data-acc="layer:' + st.id + '" data-open-key="layer:' + st.id + '">' +
           "<summary><span class=\"row-lab\">" + esc(st.label) + "</span>" +
           '<span class="meta-bit">d' + st.density + " · " + esc(st.hint) + "</span></summary>" +
           '<div class="acc-body">' + body + "</div></details>"
@@ -2579,6 +2579,8 @@
     return d + " Z";
   }
   function renderSpec() {
+    /* specStage is the pigment-preview display surface (a theater stage),
+       unrelated to the SOUL_LAYERS skeleton despite the word. */
     const stage = document.getElementById("specStage");
     const excl = document.getElementById("specExcl");
     if (!stage) return;
@@ -3172,9 +3174,9 @@
 
   const spineEl = document.getElementById("spine");
   if (spineEl) spineEl.addEventListener("click", function (e) {
-    const b = e.target.closest("[data-stage]");
+    const b = e.target.closest("[data-layer]");
     if (!b) return;
-    focusItem("stage", b.getAttribute("data-stage"));
+    focusItem("layer", b.getAttribute("data-layer"));
   });
 
   document.getElementById("editor").addEventListener("focusin", function () {});
@@ -3478,7 +3480,17 @@
         state.denOrder = parsed.denOrder || [];
         if (parsed.denPlace) state.denPlace = parsed.denPlace;
         if (typeof parsed.includeComments === "boolean") state.includeComments = parsed.includeComments;
-        if (parsed.open && typeof parsed.open === "object") state.open = Object.assign({}, state.open, parsed.open);
+        if (parsed.open && typeof parsed.open === "object") {
+          /* Autosaves from before the layers rename used open-keys like
+             "stage:<id>"; normalize them so old drafts reopen expanded. */
+          Object.keys(parsed.open).forEach(function (k) {
+            if (k.indexOf("stage:") === 0) {
+              parsed.open["layer:" + k.slice(6)] = parsed.open[k];
+              delete parsed.open[k];
+            }
+          });
+          state.open = Object.assign({}, state.open, parsed.open);
+        }
       }
     }
   } catch (e) {}
