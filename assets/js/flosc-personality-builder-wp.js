@@ -119,10 +119,35 @@
     }
   }
 
+  /* Loud diagnostics: the silent catch here once swallowed real failures and
+     swapped them for a blank preset. Every bail-out now names itself in the
+     console and, where present, in the on-page status line. */
+  function bootDiag(kind, detail) {
+    var msg = "[flosc designer] " + kind + (detail ? ": " + detail : "");
+    if (window.console && console.error) console.error(msg);
+    setStatus(msg, false);
+  }
+  window.floscDesignerDebug = function () {
+    var cols = document.getElementById("cols");
+    return {
+      hasBoot: !!window.floscPersonalityWp,
+      personaId: wp && wp.personaId,
+      workshopTribCount: wp && wp.workshop && wp.workshop.tributaries ? wp.workshop.tributaries.length : null,
+      apiType: typeof window.floscBuilder,
+      importType: window.floscBuilder ? typeof window.floscBuilder.importSpec : null,
+      colsDuplicates: document.querySelectorAll("#cols").length,
+      cardsInCols: cols ? cols.querySelectorAll(".trib").length : -1
+    };
+  };
+
   function bootWorkshop() {
     var api = builderApi();
     if (!api) {
+      bootDiag("builder API missing", "window.floscBuilder not found");
       return;
+    }
+    if (!wp.workshop) {
+      bootDiag("boot data carries no workshop", "personaId=" + wp.personaId + " — falling back to blank preset");
     }
     if (wp.workshop && typeof api.importSpec === "function") {
       try {
@@ -131,9 +156,18 @@
         if (typeof api.render === "function") {
           api.render();
         }
+        var colsNow = document.getElementById("cols");
+        var cardCount = colsNow ? colsNow.querySelectorAll(".trib").length : -1;
+        var activeCount = wp.workshop.tributaries ? wp.workshop.tributaries.filter(function (t) { return t.on !== false && t.state !== "off"; }).length : -1;
+        if (cardCount < 1) {
+          bootDiag("import ran but canvas is empty", "cards=" + cardCount + " expected>=" + activeCount);
+        } else {
+          if (window.console && console.info) console.info("[flosc designer] imported " + wp.personaId + " — " + cardCount + " cards on canvas");
+          setStatus("Loaded " + (wp.entry && wp.entry.label ? wp.entry.label : wp.personaId) + " (" + cardCount + " aspects)", true);
+        }
         return;
       } catch (e) {
-        /* fall through */
+        bootDiag("importSpec threw", e && e.message ? e.message + " @ " + (e.stack || "").split("\n")[1] : String(e));
       }
     }
     if (typeof api.applyPreset === "function") {
