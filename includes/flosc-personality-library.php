@@ -1286,6 +1286,52 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 	add_action( 'wp_ajax_flosc_save_personality_design', 'flosc_ajax_save_personality_design' );
 }
 
+if ( ! function_exists( 'flosc_ajax_attach_personality' ) ) {
+	/**
+	 * AJAX: attach (or clear) a library personality on one flow, immediately.
+	 * Writes the same option the generic settings saver writes, so Save
+	 * Settings stays a working manual fallback.
+	 *
+	 * @return void
+	 */
+	function flosc_ajax_attach_personality() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to change this flow.', 'flosc' ) ), 403 );
+		}
+		check_ajax_referer( 'flosc_attach_personality', 'nonce' );
+
+		$ivr     = isset( $_POST['ivr'] ) ? sanitize_file_name( wp_unslash( (string) $_POST['ivr'] ) ) : '';
+		$persona = isset( $_POST['persona'] ) ? sanitize_key( wp_unslash( (string) $_POST['persona'] ) ) : '';
+		if ( $ivr === '' ) {
+			wp_send_json_error( array( 'message' => __( 'Missing flow.', 'flosc' ) ), 400 );
+		}
+
+		$option_key = 'flosc_flow_' . sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) );
+		$settings   = get_option( $option_key, array() );
+		if ( ! is_array( $settings ) ) {
+			$settings = array();
+		}
+		$settings['personality_library_id'] = $persona;
+		update_option( $option_key, $settings );
+
+		$label = '';
+		if ( $persona !== '' && function_exists( 'flosc_personality_library_get' ) ) {
+			$entry = flosc_personality_library_get( $persona );
+			if ( is_array( $entry ) && isset( $entry['label'] ) ) {
+				$label = (string) $entry['label'];
+			}
+		}
+
+		wp_send_json_success(
+			array(
+				'persona' => $persona,
+				'label'   => $label,
+			)
+		);
+	}
+	add_action( 'wp_ajax_flosc_attach_personality', 'flosc_ajax_attach_personality' );
+}
+
 if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 	/**
 	 * Config object injected into the designer page.

@@ -150,7 +150,7 @@ foreach ( $flosc_key_catalog as $flosc_slug => $flosc_meta ) {
 				<?php endforeach; ?>
 			</select>
 			<p class="description">
-				<?php echo esc_html__( 'This flow’s personality. The designer below is this same library row. Save Settings after changing the select.', 'flosc' ); ?>
+				<?php echo esc_html__( 'This flow’s personality. Choosing here attaches it immediately and reloads the designer below.', 'flosc' ); ?>
 			</p>
 			<p id="flosc-personality-attach-note" class="description flosc-hidden" role="status"></p>
 		</td>
@@ -652,15 +652,34 @@ jQuery(document).ready(function($) {
     var attachSel = $('#flow_personality_library_id');
     var attachNote = $('#flosc-personality-attach-note');
     var attachSaved = attachSel.val();
+    var floscAttach = {
+        nonce: '<?php echo esc_js( wp_create_nonce('flosc_attach_personality') ); ?>',
+        ivr: '<?php echo esc_js( $GLOBALS['flosc_current_ivr'] ?? '' ); ?>',
+        fallback: '<?php echo esc_js( __( 'Could not attach automatically — scroll down and click Save Settings.', 'flosc' ) ); ?>'
+    };
     attachSel.on('change', function () {
-        if (!attachNote.length) {
+        var nextVal = attachSel.val();
+        var nextLabel = attachSel.find('option:selected').text().trim();
+        if (!attachNote.length || nextVal === attachSaved) {
             return;
         }
-        if (attachSel.val() === attachSaved) {
-            attachNote.addClass('flosc-hidden').text('');
-            return;
-        }
-        attachNote.removeClass('flosc-hidden').text('Save Settings to load this personality in the designer below.');
+        attachNote.removeClass('flosc-hidden').text('<?php echo esc_js( __( 'Attaching…', 'flosc' ) ); ?>');
+        $.post(ajaxurl, {
+            action: 'flosc_attach_personality',
+            nonce: floscAttach.nonce,
+            ivr: floscAttach.ivr,
+            persona: nextVal
+        }).done(function (res) {
+            if (res && res.success) {
+                attachSaved = nextVal;
+                attachNote.text((nextLabel ? '<?php echo esc_js( __( 'Attached', 'flosc' ) ); ?> ' + nextLabel : '<?php echo esc_js( __( 'Attachment cleared', 'flosc' ) ); ?>') + '. Reloading…');
+                window.location.reload();
+            } else {
+                attachNote.text(floscAttach.fallback);
+            }
+        }).fail(function () {
+            attachNote.text(floscAttach.fallback);
+        });
     });
 
     // --- Chaining toggle ---
