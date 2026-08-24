@@ -3319,8 +3319,10 @@
     }
     if (Array.isArray(spec.tributaries)) {
       spec.tributaries.forEach(function (t) {
-        const family = t.family || t.col || "worldview";
         const known = CATALOG.some(function (c) { return c.id === t.id; });
+        /* No explicit family → known cards keep their catalog column; only
+           unknown cards need a home, and they default to worldview. */
+        const family = t.family || t.col || (known ? "" : "worldview");
         if (!known) {
           state.custom.push({
             id: t.id, col: family, label: t.label || t.id,
