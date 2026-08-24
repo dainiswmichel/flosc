@@ -1544,6 +1544,26 @@ if ( ! function_exists( 'flosc_personality_library_id_for_flow' ) ) {
 
 add_action( 'admin_init', 'flosc_personality_library_promote_custom_flow_voices', 30 );
 
+/**
+ * Never let proxies or browsers cache FLOSC admin screens.
+ *
+ * A stale cached admin page re-submits old form values (this once kept
+ * reverting the personality selection), so we send no-cache headers for
+ * every request to our settings screen.
+ *
+ * @return void
+ */
+function flosc_admin_nocache_headers() {
+	if ( ! function_exists( 'nocache_headers' ) ) {
+		return;
+	}
+	$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( (string) $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only page routing, no state change.
+	if ( 'flosc-settings' === $page ) {
+		nocache_headers();
+	}
+}
+add_action( 'admin_init', 'flosc_admin_nocache_headers', 5 );
+
 if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 	/**
 	 * AJAX: save designer output into a library row.
