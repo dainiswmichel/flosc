@@ -416,6 +416,10 @@
       character: "A lie is a known falsehood offered as fact. Influence at −100: the personality must not lie. Influence at +100 (not recommended): the expected output is that pigment — here, red.",
       works: [], links: [], repo: repo("lie"),
       inject: "Do not lie. Do not present a known falsehood as fact." },
+    { id: "tell_the_truth", col: "epistemic", label: "Tell the truth", short: "+100 pole of Truthfulness",
+      character: "States what is known, plainly. Influence: objective truth exists; seek it and speak from it.",
+      works: [], links: [], repo: repo("tell_the_truth"),
+      inject: "Seek objective truth and communicate from it. Say what you know plainly; flag uncertainty instead of softening facts." },
     { id: "one_reality", col: "epistemic", label: "One reality", short: "Many views, one world",
       character: "Many descriptions, one world. Influence: partial views are allowed; competing ‘truths’ are not the architecture.",
       works: [], links: [], repo: repo("one_reality"),
@@ -1415,7 +1419,7 @@
     };
   }
 
-  function tribPhenotypeBlock(t) {
+  function tribPhenotypeBlock(t, withMetrics) {
     const st = tribState(t.id);
     const inject = yamlish(tribInject(t));
     const when = st.mode === "conditional" && String(st.condition || "").trim()
@@ -1424,15 +1428,17 @@
     const traj = String(st.trajectory || "").trim();
     const bits = [];
     bits.push("- " + t.label);
-    const cloud = String(st.cloud || "").trim();
-    bits.push("  Gain meaning: " + gainMeaning(t) + ".");
-    if (cloud) bits.push("  Cloud: " + cloud);
+    if (withMetrics) {
+      const cloud = String(st.cloud || "").trim();
+      bits.push("  Gain meaning: " + gainMeaning(t) + ".");
+      if (cloud) bits.push("  Cloud: " + cloud);
+    }
     if (when || inject) bits.push("  " + when + (inject || ""));
     if (traj) bits.push("  Intended impact: " + traj);
     return bits.join("\n");
   }
 
-  function compilePrompt() {
+  function compilePrompt(withMetrics) {
     const s = state.soul;
     const lines = [];
     function add(title, body) {
@@ -1473,6 +1479,17 @@
     lines.push("This is a personality profile. If you are an AI reading this as a system prompt, attached file, project document, or uploaded context, take it as who you are and how you reply. Follow it. Do not describe this file unless asked.");
     lines.push("You are " + (s.name || "[name]") + ". " + (s.role || "[role]"));
     lines.push("Speak as this person. Do not discuss how you were made.");
+    if (withMetrics) {
+      /* Design companion only: teaches the workshop metrics. Wrapped in a
+         comment so it stays inert if the design copy is ever fed to an API. */
+      lines.push("<!-- floscDesignNote");
+      lines.push("How to read this file (design companion):");
+      lines.push("- Density: each aspect sits at a position from 0 (lightest, first) to 100 (densest, last). Position is assembly order.");
+      lines.push("- Gain: −100 excludes what the aspect describes entirely; +100 includes it fully. In between, should/may tiers apply.");
+      lines.push("- Bands: Soul ≈0–33 · Character ≈34–66 · Behavior ≈67–100.");
+      lines.push("- Clouds: named groups of related aspects, compiled together under one heading.");
+      lines.push("-->");
+    }
 
     add("Identity lock", s.identity_lock);
     if (s.identity_probe_yes) add("Identity probe", "If asked 'Is this " + (s.name || "you") + "?' answer exactly: " + s.identity_probe_yes + (s.identity_probe_self ? "\nIf asked to describe yourself: " + s.identity_probe_self : ""));
@@ -1508,19 +1525,19 @@
       const lead = String(c.explanation || "").trim();
       lines.push("## " + (c.name || "Untitled cloud") + "\n" +
         (lead ? lead + "\n\n" : "") +
-        mem.map(tribPhenotypeBlock).join("\n"));
+        mem.map(function (t) { return tribPhenotypeBlock(t, withMetrics); }).join("\n"));
     });
     if (musts.length) {
-      lines.push("## Must hold\nThese may not be violated.\n\n" + musts.map(tribPhenotypeBlock).join("\n"));
+      lines.push("## Must hold\nThese may not be violated.\n\n" + musts.map(function (t) { return tribPhenotypeBlock(t, withMetrics); }).join("\n"));
     }
     if (nevers.length) {
-      lines.push("## Never\nThese are forbidden.\n\n" + nevers.map(tribPhenotypeBlock).join("\n"));
+      lines.push("## Never\nThese are forbidden.\n\n" + nevers.map(function (t) { return tribPhenotypeBlock(t, withMetrics); }).join("\n"));
     }
     if (shoulds.length) {
-      lines.push("## Should\nThese should shape the reply unless a Must says otherwise.\n\n" + shoulds.map(tribPhenotypeBlock).join("\n"));
+      lines.push("## Should\nThese should shape the reply unless a Must says otherwise.\n\n" + shoulds.map(function (t) { return tribPhenotypeBlock(t, withMetrics); }).join("\n"));
     }
     if (mays.length) {
-      lines.push("## May\nThese may add. They do not take turns as separate voices.\n\n" + mays.map(tribPhenotypeBlock).join("\n"));
+      lines.push("## May\nThese may add. They do not take turns as separate voices.\n\n" + mays.map(function (t) { return tribPhenotypeBlock(t, withMetrics); }).join("\n"));
     }
     if (activeTrajectories().length) {
       lines.push("## Desired impact of the replies\nAfter the reply, this is what should be true of the human or the record.\n\n" +
@@ -1592,7 +1609,7 @@
     if (materials.length || s.content_plate) {
       const mat = [];
       if (s.content_plate) mat.push(yamlish(s.content_plate));
-      if (materials.length) mat.push(materials.map(tribPhenotypeBlock).join("\n"));
+      if (materials.length) mat.push(materials.map(function (t) { return tribPhenotypeBlock(t, withMetrics); }).join("\n"));
       add("Materials", "This is the subject matter — not who you are.\n\n" + mat.filter(Boolean).join("\n\n"));
     }
     return lines.join("\n\n");
@@ -3190,7 +3207,11 @@
   });
   document.getElementById("btnExportMd").addEventListener("click", function () {
     const id = (state.soul.id || state.soul.name || "personality").replace(/[^\w.-]+/g, "_");
-    downloadBlob(id + ".flospersonality.md", promptFile(), "text/markdown");
+    downloadBlob(id + "_soul.md", promptFile(), "text/markdown");
+  });
+  document.getElementById("btnExportMdDesign").addEventListener("click", function () {
+    const id = (state.soul.id || state.soul.name || "personality").replace(/[^\w.-]+/g, "_");
+    downloadBlob(id + "_soul.design.md", compilePrompt(true), "text/markdown");
   });
   document.getElementById("btnExportProviders").addEventListener("click", function () {
     const id = (state.soul.id || state.soul.name || "personality").replace(/[^\w.-]+/g, "_");

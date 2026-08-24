@@ -156,17 +156,6 @@ foreach ( $flosc_key_catalog as $flosc_slug => $flosc_meta ) {
 		</td>
 	</tr>
 </table>
-<script>
-(function () {
-	var sel = document.getElementById('flow_personality_library_id');
-	var note = document.getElementById('flosc-personality-attach-note');
-	if (!sel || !note) return;
-	sel.addEventListener('change', function () {
-		note.textContent = <?php echo wp_json_encode( __( 'Selection noted — scroll down and click Save Settings to load this personality into the designer.', 'flosc' ) ); ?>;
-		note.classList.remove('flosc-hidden');
-	});
-})();
-</script>
 </div>
 </details>
 <?php

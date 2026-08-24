@@ -133,7 +133,8 @@ if ( ! defined( 'ABSPATH' ) ) {
         <button type="button" class="btn primary" id="btnViewPreview">View profile preview</button>
         <button type="button" class="btn" id="btnExportPreview">Download preview</button>
         <button type="button" class="btn" id="btnExportWorkshop">Download builder state</button>
-        <button type="button" class="btn" id="btnExportMd">Download profile</button>
+        <button type="button" class="btn" id="btnExportMd">Download soul.md</button>
+        <button type="button" class="btn" id="btnExportMdDesign" title="Same document plus a legend explaining density, gain, bands, and clouds.">Download design copy</button>
         <button type="button" class="btn" id="btnExportProviders" hidden>Download provider packs</button>
         <button type="button" class="btn primary" id="btnCopy">Copy this file</button>
       </div>
