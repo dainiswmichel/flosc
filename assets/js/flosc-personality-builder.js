@@ -3025,6 +3025,127 @@
   /* Fail loudly, not silently: any exception in the binding block or first
      render() below would otherwise abort this IIFE before window.floscBuilder
      is assigned — leaving #cols/#editor empty with nothing in the console. */
+  /* Importers live at IIFE top level: declaring them inside the init try-block
+     meant any wiring failure left window.floscBuilder.importSpec undefined. */
+  function importPersonalityProfile(md, filename) {
+    const text = String(md || "");
+    if (!text.trim()) return;
+    const nameLine = text.match(/^#\s*(?:Personality profile:\s*)?(.+)$/m);
+    const name = nameLine ? nameLine[1].trim() : (filename || "imported").replace(/\.(md|txt)$/i, "");
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "imported";
+    function section(title) {
+      const re = new RegExp("##\\s*" + title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*\\n([\\s\\S]*?)(?=\\n##\\s|$)");
+      const m = text.match(re);
+      return m ? m[1].trim() : "";
+    }
+    const you = text.match(/^You are\s+(.+?)\.\s*(.+)$/m);
+    state.soul = Object.assign({}, EMPTY_SOUL, state.soul, {
+      id: slug,
+      name: you ? you[1].trim() : name,
+      label: name,
+      role: you ? you[2].trim() : (state.soul.role || ""),
+      identity_lock: section("Identity lock"),
+      goals: section("Goals"),
+      core_values: section("Core values"),
+      prohibitions: section("Prohibitions"),
+      interaction_policy: section("Interaction policy"),
+      scope: section("Scope"),
+      character: section("Character"),
+      cadence: section("Cadence"),
+      tone: section("Tone")
+    });
+    state.preset = "blank";
+    persistSoft();
+    render();
+  }
+
+  function importSpec(spec) {
+    if (!spec || typeof spec !== "object" || Array.isArray(spec)) throw new Error("The selected file is not a workshop JSON object.");
+    state.trib = {};
+    state.custom = [];
+    state.clouds = Array.isArray(spec.clouds) ? spec.clouds : [];
+    state.tribOrder = {};
+    state.denOrder = [];
+    if (spec.soul) state.soul = Object.assign({}, EMPTY_SOUL, spec.soul);
+    else if (spec.personality && spec.personality.name) {
+      state.soul = Object.assign({}, EMPTY_SOUL, spec.soul || {}, {
+        id: spec.personality.id || "",
+        name: spec.personality.name || "",
+        label: spec.personality.label || spec.personality.name || "",
+        role: spec.personality.role || ""
+      });
+    } else if (spec.flosc_library_entry) {
+      const e = spec.flosc_library_entry;
+      state.soul = Object.assign({}, EMPTY_SOUL, {
+        id: e.id, label: e.label, name: e.ai_personality_name, role: e.ai_personality_role,
+        goals: e.ai_mission, prohibitions: e.ai_boundaries, scope: e.ai_topic_scope,
+        off_topic_message: e.ai_off_topic_message
+      });
+    }
+    if (spec.content_plate && state.soul) state.soul.content_plate = spec.content_plate;
+    if (Array.isArray(spec.trajectories) && state.soul) state.soul.trajectories = spec.trajectories;
+    if (spec.sampling) state.sampling = Object.assign({}, EMPTY_SAMPLING, spec.sampling);
+    if (spec.sampling_recommendation) state.sampling = Object.assign({}, state.sampling, spec.sampling_recommendation);
+    if (spec.recommended_flow_ai) state.sampling = Object.assign({}, state.sampling, spec.recommended_flow_ai);
+    if (Array.isArray(spec.families) && spec.families.length) {
+      const importedCategories = spec.families.map(function (category) {
+        return { id: category.id, label: category.label || category.id, hint: category.hint || "" };
+      }).filter(function (category) { return category.id; });
+      state.categories = isLegacyTaxonomy(importedCategories) || isNeutralDefault(importedCategories) ? deepClone(DEFAULT_COLUMNS) : importedCategories;
+    } else if (Array.isArray(spec.categories) && spec.categories.length) {
+      const importedCategories = spec.categories.map(function (category) {
+        return { id: category.id, label: category.label || category.id, hint: category.hint || "" };
+      }).filter(function (category) { return category.id; });
+      state.categories = isLegacyTaxonomy(importedCategories) || isNeutralDefault(importedCategories) ? deepClone(DEFAULT_COLUMNS) : importedCategories;
+    }
+    if (Array.isArray(spec.tributaries)) {
+      spec.tributaries.forEach(function (t) {
+        const known = CATALOG.some(function (c) { return c.id === t.id; });
+        /* No explicit family → known cards keep their catalog column; only
+           unknown cards need a home, and they default to worldview. */
+        const family = t.family || t.col || (known ? "" : "worldview");
+        if (!known) {
+          state.custom.push({
+            id: t.id, col: family, label: t.label || t.id,
+            short: t.short || "", inject: t.instruction || t.inject || ""
+          });
+        }
+        const comments = t.comments || {};
+        state.trib[t.id] = {
+          on: t.on != null ? !!t.on : (t.state ? t.state !== "off" : false),
+          mode: t.state || t.mode || (t.on ? "on" : "off"),
+          weight: t.gain != null ? t.gain : (t.weight == null ? 50 : t.weight),
+          condition: t.condition || "",
+          inject: t.instruction || t.inject || "",
+          col: family,
+          role: t.role || "",
+          color: t.hue || t.color || "",
+          binding: t.binding || "",
+          shape2: t.shape_2d || t.shape2 || "",
+          shape3: t.shape_3d || t.shape3 || "",
+          merge: (t.compose === "stack" || t.compose === "contains" || t.merge === "stack" || t.merge === "contains")
+            ? "morph" : (t.compose || t.merge || ""),
+          density: t.density == null ? "" : t.density,
+          trajectory: t.trajectory || "",
+          cloud: t.cloud || ""
+        };
+        if (!known && comments.character) {
+          const last = state.custom[state.custom.length - 1];
+          if (last && last.id === t.id) last.character = comments.character;
+        }
+      });
+    }
+    if (spec.family_order) state.tribOrder = spec.family_order;
+    else if (spec.tribOrder) state.tribOrder = spec.tribOrder;
+    else state.tribOrder = defaultOrder();
+    if (spec.density && Array.isArray(spec.density.order)) state.denOrder = spec.density.order;
+    if (spec.density && spec.density.drop_between) state.denPlace = spec.density.drop_between;
+    if (typeof spec.includeComments === "boolean") state.includeComments = spec.includeComments;
+    state.preset = "blank";
+    persistSoft();
+    render();
+  }
+
   try {
   document.getElementById("cols").addEventListener("click", onTribClick);
   document.getElementById("editor").addEventListener("click", onTribClick);
@@ -3246,124 +3367,7 @@
     this.value = "";
   });
 
-  function importPersonalityProfile(md, filename) {
-    const text = String(md || "");
-    if (!text.trim()) return;
-    const nameLine = text.match(/^#\s*(?:Personality profile:\s*)?(.+)$/m);
-    const name = nameLine ? nameLine[1].trim() : (filename || "imported").replace(/\.(md|txt)$/i, "");
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "imported";
-    function section(title) {
-      const re = new RegExp("##\\s*" + title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*\\n([\\s\\S]*?)(?=\\n##\\s|$)");
-      const m = text.match(re);
-      return m ? m[1].trim() : "";
-    }
-    const you = text.match(/^You are\s+(.+?)\.\s*(.+)$/m);
-    state.soul = Object.assign({}, EMPTY_SOUL, state.soul, {
-      id: slug,
-      name: you ? you[1].trim() : name,
-      label: name,
-      role: you ? you[2].trim() : (state.soul.role || ""),
-      identity_lock: section("Identity lock"),
-      goals: section("Goals"),
-      core_values: section("Core values"),
-      prohibitions: section("Prohibitions"),
-      interaction_policy: section("Interaction policy"),
-      scope: section("Scope"),
-      character: section("Character"),
-      cadence: section("Cadence"),
-      tone: section("Tone")
-    });
-    state.preset = "blank";
-    persistSoft();
-    render();
-  }
 
-  function importSpec(spec) {
-    if (!spec || typeof spec !== "object" || Array.isArray(spec)) throw new Error("The selected file is not a workshop JSON object.");
-    state.trib = {};
-    state.custom = [];
-    state.clouds = Array.isArray(spec.clouds) ? spec.clouds : [];
-    state.tribOrder = {};
-    state.denOrder = [];
-    if (spec.soul) state.soul = Object.assign({}, EMPTY_SOUL, spec.soul);
-    else if (spec.personality && spec.personality.name) {
-      state.soul = Object.assign({}, EMPTY_SOUL, spec.soul || {}, {
-        id: spec.personality.id || "",
-        name: spec.personality.name || "",
-        label: spec.personality.label || spec.personality.name || "",
-        role: spec.personality.role || ""
-      });
-    } else if (spec.flosc_library_entry) {
-      const e = spec.flosc_library_entry;
-      state.soul = Object.assign({}, EMPTY_SOUL, {
-        id: e.id, label: e.label, name: e.ai_personality_name, role: e.ai_personality_role,
-        goals: e.ai_mission, prohibitions: e.ai_boundaries, scope: e.ai_topic_scope,
-        off_topic_message: e.ai_off_topic_message
-      });
-    }
-    if (spec.content_plate && state.soul) state.soul.content_plate = spec.content_plate;
-    if (Array.isArray(spec.trajectories) && state.soul) state.soul.trajectories = spec.trajectories;
-    if (spec.sampling) state.sampling = Object.assign({}, EMPTY_SAMPLING, spec.sampling);
-    if (spec.sampling_recommendation) state.sampling = Object.assign({}, state.sampling, spec.sampling_recommendation);
-    if (spec.recommended_flow_ai) state.sampling = Object.assign({}, state.sampling, spec.recommended_flow_ai);
-    if (Array.isArray(spec.families) && spec.families.length) {
-      const importedCategories = spec.families.map(function (category) {
-        return { id: category.id, label: category.label || category.id, hint: category.hint || "" };
-      }).filter(function (category) { return category.id; });
-      state.categories = isLegacyTaxonomy(importedCategories) || isNeutralDefault(importedCategories) ? deepClone(DEFAULT_COLUMNS) : importedCategories;
-    } else if (Array.isArray(spec.categories) && spec.categories.length) {
-      const importedCategories = spec.categories.map(function (category) {
-        return { id: category.id, label: category.label || category.id, hint: category.hint || "" };
-      }).filter(function (category) { return category.id; });
-      state.categories = isLegacyTaxonomy(importedCategories) || isNeutralDefault(importedCategories) ? deepClone(DEFAULT_COLUMNS) : importedCategories;
-    }
-    if (Array.isArray(spec.tributaries)) {
-      spec.tributaries.forEach(function (t) {
-        const known = CATALOG.some(function (c) { return c.id === t.id; });
-        /* No explicit family → known cards keep their catalog column; only
-           unknown cards need a home, and they default to worldview. */
-        const family = t.family || t.col || (known ? "" : "worldview");
-        if (!known) {
-          state.custom.push({
-            id: t.id, col: family, label: t.label || t.id,
-            short: t.short || "", inject: t.instruction || t.inject || ""
-          });
-        }
-        const comments = t.comments || {};
-        state.trib[t.id] = {
-          on: t.on != null ? !!t.on : (t.state ? t.state !== "off" : false),
-          mode: t.state || t.mode || (t.on ? "on" : "off"),
-          weight: t.gain != null ? t.gain : (t.weight == null ? 50 : t.weight),
-          condition: t.condition || "",
-          inject: t.instruction || t.inject || "",
-          col: family,
-          role: t.role || "",
-          color: t.hue || t.color || "",
-          binding: t.binding || "",
-          shape2: t.shape_2d || t.shape2 || "",
-          shape3: t.shape_3d || t.shape3 || "",
-          merge: (t.compose === "stack" || t.compose === "contains" || t.merge === "stack" || t.merge === "contains")
-            ? "morph" : (t.compose || t.merge || ""),
-          density: t.density == null ? "" : t.density,
-          trajectory: t.trajectory || "",
-          cloud: t.cloud || ""
-        };
-        if (!known && comments.character) {
-          const last = state.custom[state.custom.length - 1];
-          if (last && last.id === t.id) last.character = comments.character;
-        }
-      });
-    }
-    if (spec.family_order) state.tribOrder = spec.family_order;
-    else if (spec.tribOrder) state.tribOrder = spec.tribOrder;
-    else state.tribOrder = defaultOrder();
-    if (spec.density && Array.isArray(spec.density.order)) state.denOrder = spec.density.order;
-    if (spec.density && spec.density.drop_between) state.denPlace = spec.density.drop_between;
-    if (typeof spec.includeComments === "boolean") state.includeComments = spec.includeComments;
-    state.preset = "blank";
-    persistSoft();
-    render();
-  }
 
   function openAdd(col) {
     const d = document.getElementById("tribDialog");
