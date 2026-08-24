@@ -1290,6 +1290,9 @@ while ( count( $flosc_acc_edit_lines ) < $flosc_acc_row_count ) {
 	$flosc_acc_edit_lines[] = $flosc_acc_templates[ $flosc_idx ] ?? '';
 }
 $flosc_acc_line_count = max( 1, count( array_filter( $flosc_acc_edit_lines ) ) );
+$flosc_accuracy_personality_label = $flosc_personality_label !== ''
+	? $flosc_personality_label
+	: __( 'the selected personality', 'flosc' );
 ?>
 </div>
 </details>
@@ -1297,7 +1300,7 @@ $flosc_acc_line_count = max( 1, count( array_filter( $flosc_acc_edit_lines ) ) )
 <details class="flosc-ai-acc" id="flosc-accuracy-test">
 <summary class="flosc-ai-acc__summary">
 	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Provider accuracy test', 'flosc' ); ?></span>
-	<span class="flosc-ai-acc__hint"><?php echo esc_html__( 'Run template questions against this flow’s API.', 'flosc' ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php echo esc_html( sprintf( __( 'Use %s to run template questions against this flow’s API.', 'flosc' ), $flosc_accuracy_personality_label ) ); ?></span>
 </summary>
 <div class="flosc-ai-acc__body">
 <hr class="flosc-section-divider">
