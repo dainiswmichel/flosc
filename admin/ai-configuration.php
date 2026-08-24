@@ -1227,14 +1227,15 @@ if ( $flosc_acc_site === '' ) {
 // Content-agnostic templates (placeholders). Expanded for this flow for defaults / Reset.
 $flosc_acc_templates = array(
 	'Hello — what is the name of this floscFlow ({flow_name}), and who are you in this chat?',
-	'Who are you in this chat, and what role do you serve for the current floscFlow?',
+	'What does the Title of this floscFlow ({title}) mean?',
+	'What does the Tagline of this floscFlow ({tagline}) mean or convey?',
+	'In your own words, what is this floscFlow for, and who is it meant to help?',
 	'What topics or tasks are you authorized to handle? (Topic scope note: {topic_scope}.)',
 	'How does this floscFlow relate to {site_name}?',
 	'What should a first-time visitor do next in this chat?',
 	'Stay in character: state your role in one or two sentences.',
-	'If someone asks for details you do not have, what do you do instead of inventing them?',
-	'How do you help visitors while remaining accurate and in character?',
-	'Summarize this floscFlow, your role, and your authorized topics based on this conversation.',
+	'If someone asks for details you do not have about this floscFlow, what do you do instead of inventing them?',
+	'What is this floscFlow about: title {title}, tagline {tagline}, and how you help? Based on the title and tagline, what is going on here?',
 );
 $flosc_acc_var_map = array(
 	'{flow_name}'   => $flosc_acc_flow_name,
