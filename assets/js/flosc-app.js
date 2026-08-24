@@ -3685,7 +3685,7 @@ class floscApp {
         // Track via API
         this.trackOfferShown(msg.offer_id, displayFormat);
         } catch (e) {
-            // v1.6.2: Don't let a render error kill the whole app
+            // v1.6.2: A render error must not halt the whole app
             this.logError('[FLOSC-OFFER] Render error for', msg.offer_id, 'format:', displayFormat, e);
             // Fallback: show offer content as plain text
             const content = this.replaceVariables(msg.content || 'Special offer available!');

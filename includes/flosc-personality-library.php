@@ -376,10 +376,8 @@ if ( ! function_exists( 'flosc_personality_library_default_workshop' ) ) {
 							'binding' => 'may', 'shape2' => 'ellipse', 'color' => '#e0f2fe',
 						) ),
 					),
-					'clouds'      => array(
-						$c( 'cloud_d1', 'Committed to the bit', 'Every setup deserves a punchline. Deliver deadpan, then help for real.', array( 'yes_and', 'relax' ), '#e0e7ff' ),
-						$c( 'cloud_d2', 'Laugh factory', 'One dad joke per exchange, delivered deadpan. Each card below is one joke; parked cards wait for Dainis’s next groaner — paste yours in, switch it on, done.', array( 'joke_antigravity', 'joke_grew_on_me', 'joke_skeletons', 'joke_yours_1', 'joke_yours_2' ), '#fef3c7', 1 ),
-					),
+					/* One clouds key only: a duplicate key here used to make
+					   PHP's last-one-wins silently drop the first block. */
 					'clouds'      => array(
 						$c( 'cloud_d1', 'Committed to the bit', 'Every setup deserves a punchline. Deliver deadpan, then help for real.', array( 'yes_and', 'relax' ), '#efeaf6' ),
 						$c( 'cloud_d2', 'Laugh factory', 'One dad joke per exchange, delivered deadpan. Each card below is one joke; parked cards wait for Dainis’s next groaner — paste yours in, switch it on, done.', array( 'joke_antigravity', 'joke_grew_on_me', 'joke_skeletons', 'joke_yours_1', 'joke_yours_2' ), '#f4efe8', 1 ),
@@ -1608,6 +1606,16 @@ if ( ! function_exists( 'flosc_ajax_save_personality_design' ) ) {
 			wp_send_json_error( array( 'message' => __( 'Could not save that personality.', 'flosc' ) ), 500 );
 		}
 
+		/* Mirror the designer tree into WordPress-native storage: the
+		   taxonomy and topic posts are the same objects the canvas shows.
+		   Sync is additive; a failed mirror never fails the save itself. */
+		if ( $fields['workshop_json'] !== '' && function_exists( 'flosc_personality_sync_tree' ) ) {
+			$shop = json_decode( $fields['workshop_json'], true );
+			if ( is_array( $shop ) ) {
+				flosc_personality_sync_tree( $id, $shop );
+			}
+		}
+
 		wp_send_json_success(
 			array(
 				'message' => __( 'Personality saved to the FLOSC library.', 'flosc' ),
@@ -1721,6 +1729,20 @@ if ( ! function_exists( 'flosc_personality_builder_boot_json' ) ) {
 			$decoded = json_decode( (string) $entry['workshop_json'], true );
 			if ( is_array( $decoded ) ) {
 				$workshop = $decoded;
+				/* A stored tree outranks a legacy flat genome: when this
+				   personality has been mirrored into terms/posts, hand the
+				   designer the tree it saved. */
+				if ( function_exists( 'flosc_personality_read_tree_overlay' ) ) {
+					$overlay = flosc_personality_read_tree_overlay( $persona_id );
+					if ( is_array( $overlay ) ) {
+						if ( ! empty( $overlay['containers'] ) && empty( $workshop['containers'] ) ) {
+							$workshop['containers'] = $overlay['containers'];
+						}
+						if ( ! empty( $overlay['placement'] ) && empty( $workshop['placement'] ) ) {
+							$workshop['placement'] = $overlay['placement'];
+						}
+					}
+				}
 			}
 		}
 		return array(

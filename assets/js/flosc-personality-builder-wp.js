@@ -146,9 +146,7 @@
       bootDiag("builder API missing", "window.floscBuilder not found");
       return;
     }
-    if (!wp.workshop) {
-      bootDiag("boot data carries no workshop", "personaId=" + wp.personaId + " — falling back to blank preset");
-    }
+    var hasProfile = !!(wp.entry && wp.entry.profile);
     if (wp.workshop && typeof api.importSpec === "function") {
       try {
         api.importSpec(wp.workshop);
@@ -197,6 +195,9 @@
     pinLibraryRow(api);
     if (typeof api.render === "function") {
       api.render();
+    }
+    if (hasProfile) {
+      setStatus("Loaded " + (wp.entry && wp.entry.label ? wp.entry.label : wp.personaId) + " profile", true);
     }
   }
 
