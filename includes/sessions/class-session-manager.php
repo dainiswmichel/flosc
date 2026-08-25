@@ -214,6 +214,39 @@ class FLOSC_Session_Manager {
     }
 
     /**
+     * Load a session by id for the current user, regardless of destination flow.
+     * Replacement security boundary: the session must belong to this WordPress user.
+     * Sidebar listing stays flow-filtered; history/handoff restore may cross floscDomains.
+     *
+     * @param int      $session_id
+     * @param int|null $user_id
+     * @return array|null
+     */
+    public function get_flosc_session_by_id($session_id, $user_id = null) {
+        $session_id = absint($session_id);
+        if (!$user_id) {
+            $user_id = get_current_user_id();
+        }
+        $user_id = absint($user_id);
+        if ($session_id <= 0 || $user_id <= 0) {
+            return null;
+        }
+
+        $sessions = get_user_meta($user_id, $this->flosc_session_meta_key, true);
+        if (!is_array($sessions)) {
+            return null;
+        }
+
+        foreach ($sessions as $session) {
+            if ((int) ($session['id'] ?? 0) === $session_id) {
+                return $session;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Add message to session.
      *
      * @param int         $session_id
@@ -243,12 +276,9 @@ class FLOSC_Session_Manager {
             if ((int) ($session['id'] ?? 0) !== (int) $session_id) {
                 continue;
             }
-            if (!$this->session_belongs_to_flow($session, $stem, $user_id)) {
-                return false;
-            }
-
-            // Backfill flow_id on legacy sessions when we know the flow.
-            if (empty($session['flow_id'])) {
+            // Keep the existing session even when the destination floscDomain/flow
+            // differs. Sidebar listing stays flow-filtered; this append is the live journey.
+            if (empty($session['flow_id']) && $stem !== '') {
                 $session['flow_id'] = $stem;
             }
 

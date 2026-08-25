@@ -210,6 +210,23 @@ trait FLOSC_Chat_Turn_Trait {
         // Now: Backend determines phase from user meta (is_member, funnel_completed, etc.)
         // Frontend context['phase'] is accepted only as a hint if backend can't determine.
         $phase = $this->determine_flosc_phase();
+        if (is_user_logged_in() && $flow_id !== '' && $this->sale_manager && method_exists($this->sale_manager, 'access')) {
+            $phase_user = get_current_user_id();
+            $flow_member = (bool) $this->sale_manager->access()->is_member($phase_user, $flow_id);
+            if ($flow_member) {
+                $phase = 'content';
+            } elseif ($phase === 'content') {
+                $funnel_complete = get_user_meta($phase_user, '_flosc_funnel_completed', true);
+                $free_delivered  = get_user_meta($phase_user, '_flosc_free_content_item_delivered', true);
+                if ($funnel_complete) {
+                    $phase = 'sale';
+                } elseif ($free_delivered) {
+                    $phase = 'offer';
+                } else {
+                    $phase = 'login';
+                }
+            }
+        }
         
         // v1.1.0: Start with frontend context, then OVERRIDE with authoritative backend values
         // This prevents frontend from spoofing logged_in, user_id, etc.
@@ -221,6 +238,7 @@ trait FLOSC_Chat_Turn_Trait {
         $eval_context['phase'] = $phase;
         $eval_context['message_count'] = intval($context['message_count'] ?? 0);
         $eval_context['last_message'] = $message;
+        $eval_context['flow_id'] = $flow_id;
         
         if (is_user_logged_in()) {
             $user_id = get_current_user_id();
@@ -241,6 +259,8 @@ trait FLOSC_Chat_Turn_Trait {
             // "purchased" for AI/IVR: entitlement (full access), not only _flosc_purchased meta.
             // Actual commerce flag remains on FLOSC_USER.purchased for frontend messaging.
             $eval_context['purchased']    = $eval_context['is_member'];
+            $eval_context['state']        = $simple_state;
+            $eval_context['hasAccess']    = $eval_context['is_member'];
 
             if (!empty($flow_id)) {
                 $this->record_user_flow_usage($user_id, $flow_id, 'chat');
@@ -249,6 +269,8 @@ trait FLOSC_Chat_Turn_Trait {
             $eval_context['access_level'] = 'visitor';
             $eval_context['is_member']    = false;
             $eval_context['purchased']    = false;
+            $eval_context['state']        = 'visitor';
+            $eval_context['hasAccess']    = false;
         }
 
         // v8.0.0: Track page/post ID for chat logs; inject body only on page-intent messages.
@@ -490,9 +512,9 @@ trait FLOSC_Chat_Turn_Trait {
         $chatpack_user_id = $eval_context['user_id'] ?? 0;
         $chatpack_flosc_hash = FLOSC_Chatpack::generate_flosc_hash();
         $chatpack_session_hash = FLOSC_Chatpack::generate_session_hash($chatpack_flosc_hash, $chatpack_user_id, $session_id);
-        $chatpack_pair_number = FLOSC_Chatpack::count_message_pairs($session_id, $chatpack_user_id, $flow_id) + 1;
+        $chatpack_pair_number = FLOSC_Chatpack::count_message_pairs($session_id, $chatpack_user_id, $flow_id, $session_id_raw) + 1;
         $chatpack_is_first = ($chatpack_pair_number === 1);
-        $chatpack_conv_history = FLOSC_Chatpack::load_conversation_history($session_id, $chatpack_user_id, 10, $flow_id);
+        $chatpack_conv_history = FLOSC_Chatpack::load_conversation_history($session_id, $chatpack_user_id, 10, $flow_id, $session_id_raw);
         $flosc_prior_opening_block = '';
         
         // v2.0.7: For visitors (no session/user), use frontend-provided conversation history.
@@ -645,6 +667,7 @@ trait FLOSC_Chat_Turn_Trait {
         }
         $visitor_balance_before = null;
         $visitor_charge_result = null;
+        $visitor_reservation = null;
         $user_charge_result = null;
         $user_balance_after_charge = null;
         $billing_meta = [];
@@ -660,13 +683,8 @@ trait FLOSC_Chat_Turn_Trait {
                         'error' => __('Token limit reached. Add more tokens to continue.', 'flosc'),
                     ], 403);
                 }
-            } elseif ($session_id > 0) {
-                $visitor_balance_before = $this->flosc_get_visitor_session_token_balance($flow_id, $session_id, $token_provider);
-                $min_cost = max(0, intval($this->flosc_get_ai_query_token_cost($flow_id, $token_provider)));
-                // Visitor behavior: allow one final turn while balance is still
-                // positive, then deplete to zero on charge. Block only once
-                // balance has reached zero.
-                if ($min_cost > 0 && $visitor_balance_before <= 0) {
+            } else {
+                if ($session_id <= 0) {
                     return new WP_REST_Response([
                         'success' => false,
                         'error' => $this->flosc_get_visitor_token_depleted_message($flow_id),
@@ -674,9 +692,22 @@ trait FLOSC_Chat_Turn_Trait {
                         'visitor_tokens_depleted' => true,
                     ], 403);
                 }
+                $min_cost = max(0, intval($this->flosc_get_ai_query_token_cost($flow_id, $token_provider)));
+                $request_id = substr(hash('sha256', (string) $session_id . '|' . microtime(true) . '|' . wp_rand()), 0, 12);
+                $visitor_reservation = $this->flosc_reserve_visitor_tokens($flow_id, $session_id, $min_cost, $request_id, $token_provider);
+                if (empty($visitor_reservation['reserved'])) {
+                    return new WP_REST_Response([
+                        'success' => false,
+                        'error' => $this->flosc_get_visitor_token_depleted_message($flow_id),
+                        'error_code' => 'visitor_tokens_depleted',
+                        'visitor_tokens_depleted' => true,
+                    ], 403);
+                }
+                $visitor_balance_before = intval($visitor_reservation['balance_after'] ?? 0) + intval($visitor_reservation['amount'] ?? 0);
             }
         }
 
+        try {
         if ($response_message && $ai_available) {
             // IVR matched AND AI is configured — AI interprets the IVR guidance
             // v1.9.2: Chatpack — unified prompt with session tracking + conversation history
@@ -786,6 +817,13 @@ trait FLOSC_Chat_Turn_Trait {
                     'phase_change' => null,
                 ];
             }
+        }
+        } catch (\Throwable $flosc_provider_error) {
+            if (!empty($visitor_reservation['id'])) {
+                $this->flosc_settle_visitor_reservation($visitor_reservation['id'], $token_provider, []);
+                $visitor_reservation = null;
+            }
+            throw $flosc_provider_error;
         }
 
         // Reputation guard: never return self-undermining hedge language.
@@ -901,6 +939,16 @@ trait FLOSC_Chat_Turn_Trait {
                     ], 403);
                 }
                 $user_balance_after_charge = intval($user_charge_result['balance_after'] ?? 0);
+            } elseif (!empty($visitor_reservation['id'])) {
+                $visitor_charge_result = $this->flosc_settle_visitor_reservation($visitor_reservation['id'], $token_provider, $billing_meta);
+                if (!$visitor_charge_result['charged']) {
+                    return new WP_REST_Response([
+                        'success' => false,
+                        'error' => $this->flosc_get_visitor_token_depleted_message($flow_id),
+                        'error_code' => 'visitor_tokens_depleted',
+                        'visitor_tokens_depleted' => true,
+                    ], 403);
+                }
             } elseif ($session_id > 0) {
                 $visitor_charge_result = $this->flosc_charge_visitor_session_tokens($flow_id, $session_id, $token_provider, $billing_meta);
                 if (!$visitor_charge_result['charged']) {

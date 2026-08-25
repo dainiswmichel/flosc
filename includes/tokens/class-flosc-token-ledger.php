@@ -193,6 +193,123 @@ class FLOSC_Token_Ledger {
     }
 
     /**
+     * Deduct the configured per-turn gate before the provider call.
+     *
+     * This is a concurrency hold using flosc_get_ai_query_token_cost() (often 1),
+     * not a hold of the eventual millicent-derived debit. A later settle applies
+     * the actual charge up to remaining balance. A provider attempt keeps the
+     * hold (same policy as the previous post-call debit-on-attempt).
+     *
+     * @param string $flow_id
+     * @param int    $session_id
+     * @param int    $estimated_cost
+     * @param string $request_id
+     * @param object $token_provider
+     * @return array{reserved:bool,id:string,amount:int,balance_after:int}
+     */
+    public function reserve_visitor_tokens($flow_id, $session_id, $estimated_cost, $request_id, $token_provider) {
+        $session_id = absint($session_id);
+        $estimated_cost = max(0, intval($estimated_cost));
+        $request_id = sanitize_key((string) $request_id);
+        if ($session_id <= 0 || $request_id === '' || !$token_provider) {
+            return ['reserved' => false, 'id' => '', 'amount' => 0, 'balance_after' => 0];
+        }
+
+        $lock = 'flosc_vtok_lock_' . $session_id;
+        $lock_payload = $request_id . '|' . time();
+        $got = add_option($lock, $lock_payload, '', 'no');
+        if (!$got) {
+            global $wpdb;
+            $stale_before = time() - 30;
+            $updated = (int) $wpdb->query(
+                $wpdb->prepare(
+                    "UPDATE {$wpdb->options}
+                     SET option_value = %s
+                     WHERE option_name = %s
+                       AND CAST(SUBSTRING_INDEX(option_value, '|', -1) AS UNSIGNED) > 0
+                       AND CAST(SUBSTRING_INDEX(option_value, '|', -1) AS UNSIGNED) < %d",
+                    $lock_payload,
+                    $lock,
+                    $stale_before
+                )
+            );
+            $got = ($updated === 1);
+            if (!$got) {
+                return ['reserved' => false, 'id' => '', 'amount' => 0, 'balance_after' => 0];
+            }
+        }
+
+        $balance = $this->flosc_get_visitor_session_token_balance($flow_id, $session_id, $token_provider);
+        if ($balance <= 0) {
+            delete_option($lock);
+            return ['reserved' => false, 'id' => '', 'amount' => 0, 'balance_after' => $balance];
+        }
+
+        $amount = ($estimated_cost > 0) ? min($estimated_cost, $balance) : 0;
+        if ($amount > 0) {
+            $this->flosc_set_visitor_session_token_balance($flow_id, $session_id, $balance - $amount);
+        }
+
+        $reservation = [
+            'id' => $request_id,
+            'flow_id' => (string) $flow_id,
+            'session_id' => $session_id,
+            'amount' => $amount,
+            'balance_before' => $balance,
+        ];
+        set_transient('flosc_vtok_res_' . $request_id, $reservation, 15 * MINUTE_IN_SECONDS);
+        delete_option($lock);
+
+        return [
+            'reserved' => true,
+            'id' => $request_id,
+            'amount' => $amount,
+            'balance_after' => $balance - $amount,
+        ];
+    }
+
+    /**
+     * Adjust a visitor reservation to actual provider billing.
+     *
+     * @param string $reservation_id
+     * @param object $token_provider
+     * @param array  $billing_meta
+     * @return array{charged:bool,charge_tokens:int,balance_after:int}
+     */
+    public function settle_visitor_reservation($reservation_id, $token_provider, $billing_meta = []) {
+        $reservation_id = sanitize_key((string) $reservation_id);
+        $reservation = get_transient('flosc_vtok_res_' . $reservation_id);
+        delete_transient('flosc_vtok_res_' . $reservation_id);
+        if (!is_array($reservation) || !$token_provider) {
+            return ['charged' => false, 'charge_tokens' => 0, 'balance_after' => 0];
+        }
+
+        $actual = max(0, intval($this->flosc->flosc_resolve_chat_charge_tokens(
+            $reservation['flow_id'],
+            $token_provider,
+            is_array($billing_meta) ? $billing_meta : []
+        )));
+        $prepaid = intval($reservation['amount'] ?? 0);
+        $session_id = absint($reservation['session_id'] ?? 0);
+        $flow_id = (string) ($reservation['flow_id'] ?? '');
+        $current = $this->flosc_get_visitor_session_token_balance($flow_id, $session_id, $token_provider);
+
+        if ($actual > $prepaid) {
+            $extra = min($actual - $prepaid, $current);
+            $current = $this->flosc_set_visitor_session_token_balance($flow_id, $session_id, $current - $extra);
+        } elseif ($actual < $prepaid) {
+            $refund = $prepaid - $actual;
+            $current = $this->flosc_set_visitor_session_token_balance($flow_id, $session_id, $current + $refund);
+        }
+
+        return [
+            'charged' => true,
+            'charge_tokens' => $actual,
+            'balance_after' => $current,
+        ];
+    }
+
+    /**
      * Compact token display formatter for profile-bar labels.
      * <= 9999 stays full (e.g. 5000). >= 10000 uses compact suffixes.
      */

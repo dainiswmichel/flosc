@@ -39,6 +39,8 @@
         browsingContext: null,
         lastIframeContextSignature: '',
         lastTokenUpdateTs: 0,
+        lastHandoffPayload: null,
+        lastHandoffIframeSrc: '',
         _initialized: false,
         _eventsBound: false,
 
@@ -913,14 +915,29 @@
             });
         },
 
+        cachedHandoffIfCurrent: function() {
+            var src = this.iframe && this.iframe.src ? String(this.iframe.src) : '';
+            if (!src || src !== String(this.lastHandoffIframeSrc || '')) {
+                return {};
+            }
+            var cached = this.lastHandoffPayload;
+            if (!cached || typeof cached !== 'object') {
+                return {};
+            }
+            var cachedSid = String(cached.sessionId || cached.session_id || '').trim();
+            var live = this.continuityParams && typeof this.continuityParams === 'object'
+                ? this.continuityParams
+                : {};
+            var liveSid = String(live.flosc_session_id || live.flosc_visitor_session || '').trim();
+            if (liveSid && cachedSid && liveSid !== cachedSid) {
+                return {};
+            }
+            return cached;
+        },
+
         requestHandoffPayloadFromIframe: function() {
             var self = this;
             return new Promise(function(resolve) {
-                if (!self.iframe || !self.iframe.contentWindow) {
-                    resolve({});
-                    return;
-                }
-
                 var settled = false;
                 var done = function(payload) {
                     if (settled) {
@@ -928,7 +945,14 @@
                     }
                     settled = true;
                     window.removeEventListener('message', onMessage);
-                    resolve(payload && typeof payload === 'object' ? payload : {});
+                    if (payload && typeof payload === 'object' && (payload.sessionId || payload.session_id)) {
+                        self.lastHandoffPayload = payload;
+                        self.lastHandoffIframeSrc = self.iframe && self.iframe.src ? String(self.iframe.src) : '';
+                    }
+                    var fallback = self.cachedHandoffIfCurrent();
+                    resolve(payload && typeof payload === 'object' && (payload.sessionId || payload.session_id)
+                        ? payload
+                        : fallback);
                 };
 
                 var onMessage = function(event) {
@@ -953,25 +977,37 @@
                     done(data.payload);
                 };
 
-                window.addEventListener('message', onMessage);
+                var ask = function() {
+                    if (!self.iframe || !self.iframe.contentWindow) {
+                        done(self.cachedHandoffIfCurrent());
+                        return;
+                    }
+                    window.addEventListener('message', onMessage);
+                    var targetOrigin = '*';
+                    try {
+                        targetOrigin = new URL(self.iframe.src || self.config.appUrl, window.location.origin).origin;
+                    } catch (e) {
+                        targetOrigin = '*';
+                    }
+                    try {
+                        self.iframe.contentWindow.postMessage({ type: 'flosc_companion_request_session_handoff' }, targetOrigin);
+                    } catch (e) {
+                        done(self.cachedHandoffIfCurrent());
+                        return;
+                    }
+                    window.setTimeout(function() {
+                        done(self.cachedHandoffIfCurrent());
+                    }, 2000);
+                };
 
-                var targetOrigin = '*';
-                try {
-                    targetOrigin = new URL(self.iframe.src || self.config.appUrl, window.location.origin).origin;
-                } catch (e) {
-                    targetOrigin = '*';
-                }
-
-                try {
-                    self.iframe.contentWindow.postMessage({ type: 'flosc_companion_request_session_handoff' }, targetOrigin);
-                } catch (e) {
-                    done({});
+                if (!self.iframe || !self.iframe.src) {
+                    if (typeof self.open === 'function') {
+                        self.open();
+                    }
+                    window.setTimeout(ask, 300);
                     return;
                 }
-
-                window.setTimeout(function() {
-                    done({});
-                }, 450);
+                ask();
             });
         },
 
@@ -1357,6 +1393,11 @@
         setPanelMode: function(mode) {
             mode = String(mode || 'panel').toLowerCase();
 
+            // Resize changes chrome only. Never rebuild iframe.src here.
+            if (this.iframe && this.iframe.src) {
+                this.deliverBrowsingContextToIframe();
+            }
+
             this.container.classList.remove('is-panel', 'is-expanded', 'is-fullscreen');
 
             if (mode === 'fullscreen') {
@@ -1498,6 +1539,9 @@
                     if (handoffPayload && typeof handoffPayload === 'object') {
                         var sid = String(handoffPayload.sessionId || handoffPayload.session_id || '').trim();
                         var kind = String(handoffPayload.kind || '').toLowerCase();
+                        if (sid) {
+                            self.lastHandoffPayload = handoffPayload;
+                        }
                         // Guest/member: server session id. Visitor: client session + optional message pack.
                         if (!sid) {
                             // nothing to attach
@@ -1506,11 +1550,11 @@
                             var handoffObj = {
                                 kind: 'visitor',
                                 sessionId: sid.slice(0, 80),
-                                messages: Array.isArray(handoffPayload.messages) ? handoffPayload.messages.slice(-50) : []
+                                messages: Array.isArray(handoffPayload.messages) ? handoffPayload.messages.slice(-10) : []
                             };
                             try {
                                 var packed = btoa(unescape(encodeURIComponent(JSON.stringify(handoffObj))));
-                                if (packed && packed.length <= 6000) {
+                                if (packed && packed.length <= 8000) {
                                     target.searchParams.set('flosc_handoff', packed);
                                 }
                             } catch (e) {

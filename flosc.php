@@ -859,6 +859,14 @@ class FLOSC_Framework {
         return $this->token_ledger->flosc_charge_visitor_session_tokens($flow_id, $session_id, $token_provider, $billing_meta);
     }
 
+    public function flosc_reserve_visitor_tokens($flow_id, $session_id, $estimated_cost, $request_id, $token_provider) {
+        return $this->token_ledger->reserve_visitor_tokens($flow_id, $session_id, $estimated_cost, $request_id, $token_provider);
+    }
+
+    public function flosc_settle_visitor_reservation($reservation_id, $token_provider, $billing_meta = []) {
+        return $this->token_ledger->settle_visitor_reservation($reservation_id, $token_provider, $billing_meta);
+    }
+
     public function flosc_format_token_display($value) {
         return $this->token_ledger->flosc_format_token_display($value);
     }
@@ -3879,16 +3887,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
      * Build transient key for visitor session token balance.
      */
     public function flosc_visitor_token_transient_key($flow_id, $session_id) {
-        $flow_id = sanitize_key((string) $flow_id);
-        if ($flow_id === '') {
-            $flow_id = 'default';
-        }
-        // v8.0.0+: Versioned + wallet-scoped keyspace so stale balances from
-        // older token-economy cycles and prior guest-grant regimes never
-        // override the current visitor wallet baseline.
-        $namespace = 'v3';
-        $wallet_initial = max(0, intval($this->flosc_get_visitor_wallet_initial_amount((string) $flow_id, null)));
-        return 'flosc_vtok_' . $namespace . '_' . $flow_id . '_w' . $wallet_initial . '_' . absint($session_id);
+        unset($flow_id);
+        $namespace = 'v4j';
+        return 'flosc_vtok_' . $namespace . '_' . absint($session_id);
     }
 
 

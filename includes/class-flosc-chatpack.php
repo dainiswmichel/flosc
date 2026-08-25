@@ -114,16 +114,30 @@ class FLOSC_Chatpack {
      * @param int $user_id WordPress user ID
      * @return int Number of completed pairs before this message
      */
-    public static function count_message_pairs($session_id, $user_id, $flow_id = '') {
-        if (!$session_id || !$user_id) {
+    public static function count_message_pairs($session_id, $user_id, $flow_id = '', $session_id_raw = '') {
+        if (!$session_id) {
             return 0;
         }
 
-        $session_manager = new FLOSC_Session_Manager();
-        $session = $session_manager->get_flosc_session($session_id, $user_id, $flow_id);
+        if ($user_id) {
+            $session_manager = new FLOSC_Session_Manager();
+            $session = $session_manager->get_flosc_session($session_id, $user_id, $flow_id);
+            if (!$session || empty($session['messages'])) {
+                $session = $session_manager->get_flosc_session_by_id($session_id, $user_id);
+            }
 
-        if (!$session || empty($session['messages'])) {
-            return 0;
+            if (!$session || empty($session['messages'])) {
+                return 0;
+            }
+        } else {
+            if (!class_exists('FLOSC_Chat_Logger')) {
+                return 0;
+            }
+            $turns = FLOSC_Chat_Logger::instance()->flosc_get_session_turns((int) $session_id, 50, (string) $session_id_raw);
+            $user_messages = array_filter($turns, function ($msg) {
+                return ($msg['role'] ?? '') === 'user';
+            });
+            return count($user_messages);
         }
 
         // Count user messages (each has a paired assistant response)
@@ -143,33 +157,54 @@ class FLOSC_Chatpack {
      * @param int $max_messages Maximum messages to return (default 10)
      * @return array Messages in [role, content] format for AI API
      */
-    public static function load_conversation_history($session_id, $user_id, $max_messages = 10, $flow_id = '') {
-        if (!$session_id || !$user_id) {
+    public static function load_conversation_history($session_id, $user_id, $max_messages = 10, $flow_id = '', $session_id_raw = '') {
+        $session_id = absint($session_id);
+        $max_messages = max(1, intval($max_messages));
+        if ($session_id <= 0) {
             return [];
         }
 
-        $session_manager = new FLOSC_Session_Manager();
-        $session = $session_manager->get_flosc_session($session_id, $user_id, $flow_id);
-
-        if (!$session || empty($session['messages'])) {
-            return [];
-        }
-
-        return array_slice(array_map(function ($msg) {
-            $content = (string) ($msg['content'] ?? '');
-            $src = is_array($msg['meta'] ?? null)
-                ? sanitize_key((string) ($msg['meta']['source'] ?? ''))
-                : '';
-            // Surface admin engagement inserts so the model knows they were admin-written.
-            if ($src === 'engagement_admin' && $content !== ''
-                && strpos($content, '[Admin engagement message]') === false) {
-                $content = '[Admin engagement message] ' . $content;
+        $map_messages = static function ($messages, $max_messages) {
+            if (!is_array($messages) || $messages === []) {
+                return [];
             }
-            return [
-                'role'    => $msg['role'],
-                'content' => $content,
-            ];
-        }, $session['messages']), -$max_messages);
+            return array_slice(array_map(function ($msg) {
+                $content = (string) ($msg['content'] ?? '');
+                $src = is_array($msg['meta'] ?? null)
+                    ? sanitize_key((string) ($msg['meta']['source'] ?? ''))
+                    : '';
+                if ($src === 'engagement_admin' && $content !== ''
+                    && strpos($content, '[Admin engagement message]') === false) {
+                    $content = '[Admin engagement message] ' . $content;
+                }
+                return [
+                    'role'    => $msg['role'] ?? 'user',
+                    'content' => $content,
+                ];
+            }, $messages), -$max_messages);
+        };
+
+        if ($user_id) {
+            $session_manager = new FLOSC_Session_Manager();
+            $session = $session_manager->get_flosc_session($session_id, $user_id, $flow_id);
+            if (!$session || empty($session['messages'])) {
+                $session = $session_manager->get_flosc_session_by_id($session_id, $user_id);
+            }
+            if ($session && !empty($session['messages'])) {
+                return $map_messages($session['messages'], $max_messages);
+            }
+            return [];
+        }
+
+        if (!class_exists('FLOSC_Chat_Logger')) {
+            return [];
+        }
+        $turns = FLOSC_Chat_Logger::instance()->flosc_get_session_turns(
+            $session_id,
+            (int) ceil($max_messages / 2),
+            (string) $session_id_raw
+        );
+        return $map_messages($turns, $max_messages);
     }
 
     /**
@@ -204,7 +239,7 @@ class FLOSC_Chatpack {
         $sections[] = self::build_header($flosc_hash, $session_hash, $pair_number, $flow_id);
 
         // ── 1. FLOSC IDENTITY ───────────────────────────────
-        $sections[] = self::build_identity_section();
+        $sections[] = self::build_identity_section((string) $flow_id);
 
         // ── 2. WORDPRESS ENVIRONMENT ────────────────────────
         $sections[] = self::build_wordpress_section();
@@ -268,7 +303,14 @@ class FLOSC_Chatpack {
         // a generic FLOSC voice, i.e. one flow bleeding into another. The identity
         // section is flow-scoped, so re-sending it on every turn keeps each chatbot
         // firmly inside its own flow. (Cheap insurance; flow isolation is the point.)
-        $sections[] = self::build_identity_section();
+        $sections[] = self::build_identity_section((string) ($eval_context['flow_id'] ?? ''));
+        $followup_flow = (string) ($eval_context['flow_id'] ?? '');
+        $sections[] = self::build_user_section($eval_context);
+        $sections[] = self::build_flow_section($phase, $eval_context, $followup_flow);
+        $kb_section = self::build_knowledge_section($eval_context);
+        if ($kb_section !== '') {
+            $sections[] = $kb_section;
+        }
 
         // ── SESSION CONTINUITY (mandatory) ──────────────────
         // The session ID owns the conversation; the display surface (full page vs
@@ -431,29 +473,30 @@ class FLOSC_Chatpack {
      * Section 1: FLOSC Identity — what FLOSC is, product info, AI persona.
      * Reads from floscAdmin-configurable settings.
      */
-    private static function build_identity_section() {
+    private static function build_identity_section($flow_id = '') {
+        $flow_id = ($flow_id !== null && $flow_id !== '') ? $flow_id : null;
         // Fix 12: Library attach (one personality) or flow bag / legacy keys.
         $res = function_exists( 'flosc_personality_library_resolve_field' ) ? 'flosc_personality_library_resolve_field' : null;
         $ai_name    = function_exists( 'flosc_personality_name' )
-            ? flosc_personality_name()
+            ? flosc_personality_name( $flow_id )
             : ( $res
-                ? call_user_func( $res, 'ai_personality_name', 'AI Assistant' )
-                : flosc_get_setting( 'ai_personality_name', 'AI Assistant' ) );
+                ? call_user_func( $res, 'ai_personality_name', 'AI Assistant', $flow_id )
+                : flosc_get_setting( 'ai_personality_name', 'AI Assistant', $flow_id ) );
         $ai_role    = $res
-            ? call_user_func( $res, 'ai_personality_role', flosc_get_setting( 'ai_role', 'friendly learning assistant' ) )
-            : flosc_get_setting( 'ai_personality_role', flosc_get_setting( 'ai_role', 'friendly learning assistant' ) );
+            ? call_user_func( $res, 'ai_personality_role', flosc_get_setting( 'ai_role', 'friendly learning assistant', $flow_id ), $flow_id )
+            : flosc_get_setting( 'ai_personality_role', flosc_get_setting( 'ai_role', 'friendly learning assistant', $flow_id ), $flow_id );
         $ai_traits  = $res
-            ? call_user_func( $res, 'ai_personality_traits', flosc_get_setting( 'ai_traits', 'helpful, encouraging, knowledgeable' ) )
-            : flosc_get_setting( 'ai_personality_traits', flosc_get_setting( 'ai_traits', 'helpful, encouraging, knowledgeable' ) );
-        $ai_mission = $res ? call_user_func( $res, 'ai_mission', '' ) : flosc_get_setting( 'ai_mission', '' );
-        $ai_boundaries = $res ? call_user_func( $res, 'ai_boundaries', '' ) : flosc_get_setting( 'ai_boundaries', '' );
-        $ai_topic_scope    = $res ? call_user_func( $res, 'ai_topic_scope', '' ) : flosc_get_setting( 'ai_topic_scope', '' );
-        $ai_off_topic      = $res ? call_user_func( $res, 'ai_off_topic_message', '' ) : flosc_get_setting( 'ai_off_topic_message', '' );
-        $ai_referral_links = $res ? call_user_func( $res, 'ai_off_topic_links', '' ) : flosc_get_setting( 'ai_off_topic_links', '' );
-        $ai_base_prompt    = $res ? call_user_func( $res, 'ai_base_prompt', '' ) : flosc_get_setting( 'ai_base_prompt', '' );
+            ? call_user_func( $res, 'ai_personality_traits', flosc_get_setting( 'ai_traits', 'helpful, encouraging, knowledgeable', $flow_id ), $flow_id )
+            : flosc_get_setting( 'ai_personality_traits', flosc_get_setting( 'ai_traits', 'helpful, encouraging, knowledgeable', $flow_id ), $flow_id );
+        $ai_mission = $res ? call_user_func( $res, 'ai_mission', '', $flow_id ) : flosc_get_setting( 'ai_mission', '', $flow_id );
+        $ai_boundaries = $res ? call_user_func( $res, 'ai_boundaries', '', $flow_id ) : flosc_get_setting( 'ai_boundaries', '', $flow_id );
+        $ai_topic_scope    = $res ? call_user_func( $res, 'ai_topic_scope', '', $flow_id ) : flosc_get_setting( 'ai_topic_scope', '', $flow_id );
+        $ai_off_topic      = $res ? call_user_func( $res, 'ai_off_topic_message', '', $flow_id ) : flosc_get_setting( 'ai_off_topic_message', '', $flow_id );
+        $ai_referral_links = $res ? call_user_func( $res, 'ai_off_topic_links', '', $flow_id ) : flosc_get_setting( 'ai_off_topic_links', '', $flow_id );
+        $ai_base_prompt    = $res ? call_user_func( $res, 'ai_base_prompt', '', $flow_id ) : flosc_get_setting( 'ai_base_prompt', '', $flow_id );
         $site_url = function_exists('get_bloginfo') ? get_bloginfo('url') : '';
         $compiled_profile = function_exists( 'flosc_personality_compiled_profile' )
-            ? flosc_personality_compiled_profile()
+            ? flosc_personality_compiled_profile( $flow_id )
             : trim( (string) $ai_base_prompt );
 
         $section = "## 1. IDENTITY\n\n";
@@ -819,6 +862,11 @@ class FLOSC_Chatpack {
             $section .= $kb_content;
         }
 
+        $section .= "\n**CONFIGURED CONTENT CATALOG RULE:**\n";
+        $section .= "- You may name, link, or recommend a content item only when that item's id, title, and URL appear in this prompt's knowledge-base files for the current flow.\n";
+        $section .= "- If the user asks for an item that is not listed, give general in-scope guidance and say that no matching configured content item is available. Do not invent a title, id, or URL.\n";
+        $section .= "- Access: visitor/guest/member filtering has already been applied. Do not reveal member-only titles to a visitor or guest.\n";
+
         return $section;
     }
 
@@ -934,14 +982,10 @@ class FLOSC_Chatpack {
         $weakest_sounds = $eval_context['ipa_weakest_sounds'] ?? [];
         if (empty($weakest_sounds)) return '';
 
-        // Catalog path from neutral resolver (lesson_catalog.md).
-        $catalog_path = function_exists('flosc_resolve_lesson_catalog_path')
-            ? flosc_resolve_lesson_catalog_path()
-            : (function_exists('flosc_config_file') ? flosc_config_file('lesson_catalog.md') : '');
-        if (!$catalog_path || !file_exists($catalog_path)) return '';
-
-        $catalog = flosc_fs_get_contents($catalog_path);
-        if (!$catalog) return '';
+        $catalog = self::load_knowledge_files($eval_context);
+        if ($catalog === '') {
+            return '';
+        }
 
         $recommendations = [];
         foreach (array_slice($weakest_sounds, 0, 5) as $sound) {
@@ -1026,16 +1070,19 @@ class FLOSC_Chatpack {
 
             case 'sale':
             case 'content':
-                // Fix 11b: Include server-generated recommendations when available
                 $recs_block = self::build_personalized_recommendations($eval_context);
+                $is_member = !empty($eval_context['is_member']);
+                $member_line = $is_member
+                    ? "User is a member of this flow with the access granted by that entitlement.\n"
+                    : "User is not a member of this flow. Do not share member-only content or claim full access.\n";
                 return "**CURRENT PHASE INSTRUCTIONS ({$phase}):**\n"
-                    . "User is a paying member with full access.\n"
+                    . $member_line
                     . "- DO: Be their supportive learning coach\n"
                     . "- DO: When asked what to work on, use the Personalized Lesson Recommendations below as your starting point\n"
                     . "- DO: If the user describes a pronunciation difficulty, cross-reference it with their known weak sounds and the recommended lessons\n"
                     . "- DO: Celebrate progress and milestones — every lesson completed is a win worth acknowledging\n"
-                    . "- DO: Answer detailed content questions\n"
-                    . "- Full access to all lessons and materials\n"
+                    . "- DO: Answer detailed content questions that this access level is allowed to receive\n"
+                    . ($is_member ? "- Full access to this flow's permitted materials\n" : "- Do not invent or unlock member-only materials\n")
                     . $recs_block;
 
             default:
@@ -1169,9 +1216,8 @@ class FLOSC_Chatpack {
      * Access-filtered: visitors get public files, members get everything.
      */
     private static function load_knowledge_files($eval_context) {
-        // Attached knowledge bases only (knowledge_base_ids). VGM per file.
-        $flow_stem = '';
-        if (function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'get_current_flow')) {
+        $flow_stem = sanitize_key((string) ($eval_context['flow_id'] ?? ''));
+        if ($flow_stem === '' && function_exists('flosc') && is_object(flosc()) && method_exists(flosc(), 'get_current_flow')) {
             $flow = flosc()->get_current_flow();
             if (is_array($flow) && !empty($flow['id'])) {
                 $flow_stem = sanitize_key((string) $flow['id']);
@@ -1181,6 +1227,9 @@ class FLOSC_Chatpack {
             return '';
         }
         $user_level = $eval_context['access_level'] ?? 'visitor';
+        if (!in_array($user_level, ['visitor', 'guest', 'member'], true)) {
+            $user_level = 'visitor';
+        }
         return flosc_knowledge_bases_prompt_text($flow_stem, $user_level);
     }
 }

@@ -318,6 +318,17 @@ class floscApp {
                 if (this.currentSession?.id) {
                     this.rememberActiveChatSessionId(this.currentSession.id);
                 }
+                const restoredMsgs = Array.isArray(this.currentSession?.messages) ? this.currentSession.messages : [];
+                if (restoredMsgs.length === 0) {
+                    try {
+                        const visitorStored = JSON.parse(this.readVisitorJourneyItem('flosc_visitor_messages') || '[]');
+                        if (Array.isArray(visitorStored) && visitorStored.length > 0) {
+                            this.restoreVisitorMessages();
+                        }
+                    } catch (e) {
+                        // Ignore visitor replay failures after rehydrate.
+                    }
+                }
             }
 
             this.freeLessonDelivered = this.user?.freeLessonDelivered || false;
@@ -349,7 +360,7 @@ class floscApp {
                 // (which also suppresses the opening greeting, since the chat won't be empty).
                 let hasStoredVisitorHistory = false;
                 try {
-                    const stored = JSON.parse(localStorage.getItem(this.flowStorageKey('flosc_visitor_messages')) || '[]');
+                    const stored = JSON.parse(this.readVisitorJourneyItem('flosc_visitor_messages') || '[]');
                     hasStoredVisitorHistory = Array.isArray(stored) && stored.length > 0;
                 } catch (e) {
                     hasStoredVisitorHistory = false;
@@ -357,7 +368,7 @@ class floscApp {
 
                 if (this.ivr.context.first_show_session && !hasStoredVisitorHistory) {
                     this.log('[FLOSC] First session - no stored history, starting fresh');
-                    try { localStorage.removeItem(this.flowStorageKey('flosc_visitor_messages')); } catch(e) { this.logWarn('FLOSC: Could not clear visitor messages', e); }
+                    try { this.removeVisitorJourneyItem('flosc_visitor_messages'); } catch(e) { this.logWarn('FLOSC: Could not clear visitor messages', e); }
                     this._restoredVisitorMessages = false;
                 } else {
                     this.log('[FLOSC] Continuing session - restoring visitor messages');
@@ -1063,6 +1074,49 @@ class floscApp {
         return String(base) + '__' + flow;
     }
 
+    /**
+     * One visitor journey across configured floscDomains and companion sizes.
+     * Quiz/offer keys stay flow-scoped via flowStorageKey().
+     */
+    visitorJourneyKey(base) {
+        return String(base);
+    }
+
+    readVisitorJourneyItem(base) {
+        const journeyKey = this.visitorJourneyKey(base);
+        try {
+            let val = localStorage.getItem(journeyKey);
+            if (val) {
+                return val;
+            }
+            const legacy = localStorage.getItem(this.flowStorageKey(base));
+            if (legacy) {
+                localStorage.setItem(journeyKey, legacy);
+                return legacy;
+            }
+        } catch (e) {
+            // Ignore storage failures.
+        }
+        return null;
+    }
+
+    writeVisitorJourneyItem(base, value) {
+        try {
+            localStorage.setItem(this.visitorJourneyKey(base), String(value));
+        } catch (e) {
+            // Ignore storage failures.
+        }
+    }
+
+    removeVisitorJourneyItem(base) {
+        try {
+            localStorage.removeItem(this.visitorJourneyKey(base));
+            localStorage.removeItem(this.flowStorageKey(base));
+        } catch (e) {
+            // Ignore storage failures.
+        }
+    }
+
     /** localStorage key: active guest/member chat session on this origin (chat host). */
     getActiveChatSessionStorageKey() {
         return this.flowStorageKey('flosc_active_chat_session');
@@ -1130,9 +1184,10 @@ class floscApp {
                 messages: []
             };
             try {
-                const messages = JSON.parse(localStorage.getItem(this.flowStorageKey('flosc_visitor_messages')) || '[]');
+                const messages = JSON.parse(this.readVisitorJourneyItem('flosc_visitor_messages') || '[]');
                 if (Array.isArray(messages) && messages.length > 0) {
-                    payload.messages = messages.slice(-50).map((msg) => {
+                    // URL pack is last 10 for size. localStorage still keeps up to 50 for UI restore.
+                    payload.messages = messages.slice(-10).map((msg) => {
                         if (!msg || typeof msg !== 'object') {
                             return null;
                         }
@@ -1240,11 +1295,7 @@ class floscApp {
                     const effectiveSid = payloadSid || sid;
                     if (effectiveSid) {
                         this._visitorSessionId = effectiveSid.slice(0, 80);
-                        try {
-                            localStorage.setItem(this.flowStorageKey('flosc_visitor_session'), this._visitorSessionId);
-                        } catch (e) {
-                            // Ignore storage failures.
-                        }
+                        this.writeVisitorJourneyItem('flosc_visitor_session', this._visitorSessionId);
                     }
 
                     const msgs = Array.isArray(payload.messages) ? payload.messages : [];
@@ -1264,22 +1315,14 @@ class floscApp {
                             };
                         }).filter(Boolean);
                         if (compact.length > 0) {
-                            try {
-                                localStorage.setItem(this.flowStorageKey('flosc_visitor_messages'), JSON.stringify(compact));
-                            } catch (e) {
-                                // Ignore storage failures.
-                            }
+                            this.writeVisitorJourneyItem('flosc_visitor_messages', JSON.stringify(compact));
                         }
                     }
 
                 }
             } else if (sid) {
                 this._visitorSessionId = sid.slice(0, 80);
-                try {
-                    localStorage.setItem(this.flowStorageKey('flosc_visitor_session'), this._visitorSessionId);
-                } catch (e) {
-                    // Ignore storage failures.
-                }
+                this.writeVisitorJourneyItem('flosc_visitor_session', this._visitorSessionId);
             }
 
             this.consumeSessionHandoffQueryParams();
@@ -1327,11 +1370,16 @@ class floscApp {
             }
 
             this.log('[FLOSC] Restoring logged-in session from handoff/memory:', sessionId);
-            const ok = await this.loadSession(sessionId);
+            let ok = await this.loadSession(sessionId);
+            if (!ok) {
+                this.rememberActiveChatSessionId(sessionId);
+                ok = await this.loadSession(sessionId);
+            }
             if (ok && this.currentSession?.id) {
                 this.rememberActiveChatSessionId(this.currentSession.id);
                 return true;
             }
+            this.rememberActiveChatSessionId(sessionId);
         } catch (e) {
             this.logWarn('[FLOSC] Could not apply user session handoff:', e);
         }
@@ -1355,8 +1403,11 @@ class floscApp {
             if (sid) {
                 url.searchParams.set('flosc_visitor_session', sid.slice(0, 80));
             }
-            const packed = this.encodeSessionHandoffPayload(payload);
-            if (packed && packed.length <= 6000) {
+            const packed = this.encodeSessionHandoffPayload({
+                ...payload,
+                messages: Array.isArray(payload.messages) ? payload.messages.slice(-10) : []
+            });
+            if (packed && packed.length <= 8000) {
                 url.searchParams.set('flosc_handoff', packed);
             }
             return;
@@ -1432,7 +1483,7 @@ class floscApp {
         // preserve continuity and avoid restart-like greetings.
         if (this.state === 'visitor') {
             try {
-                const messages = JSON.parse(localStorage.getItem(this.flowStorageKey('flosc_visitor_messages')) || '[]');
+                const messages = JSON.parse(this.readVisitorJourneyItem('flosc_visitor_messages') || '[]');
                 if (Array.isArray(messages) && messages.length > 0) {
                     return '';
                 }
@@ -1591,10 +1642,10 @@ class floscApp {
         }
 
         try {
-            let id = localStorage.getItem(this.flowStorageKey('flosc_visitor_session'));
+            let id = this.readVisitorJourneyItem('flosc_visitor_session');
             if (!id) {
                 id = this._mintOpaqueVisitorSessionId();
-                localStorage.setItem(this.flowStorageKey('flosc_visitor_session'), id);
+                this.writeVisitorJourneyItem('flosc_visitor_session', id);
             }
             this._visitorSessionId = id;
             this._persistVisitorSessionCookie(id);
@@ -1816,8 +1867,10 @@ class floscApp {
         // v8.0.9: RULE #1 - If chat is empty, ALWAYS show welcome. Period.
         // This is idempotent and defensive - check DOM, not localStorage
         const existingMessages = this.chatMessages?.querySelectorAll('.message, .flosc-message') || [];
+        const hasRestoredSession = !!(this._restoredVisitorMessages
+            || (Array.isArray(this.currentSession?.messages) && this.currentSession.messages.length > 0));
         
-        if (existingMessages.length === 0) {
+        if (existingMessages.length === 0 && !hasRestoredSession) {
             this.log('FLOSC: Chat is empty - showing welcome message');
             
             // v1.4.7: Check URL params for contextual greeting (e.g., ?from=lesson&title=...)
@@ -9180,12 +9233,12 @@ Purchased: ${ctx.purchased}
         // restart begins a genuinely new conversation with its own concierge desk.
         if (this.state === 'visitor') {
             const previousTokenKey = this.getVisitorTokenStorageKey();
-            localStorage.removeItem(this.flowStorageKey('flosc_visitor_messages'));
+            this.removeVisitorJourneyItem('flosc_visitor_messages');
             localStorage.removeItem(this.flowStorageKey('flosc_quiz_result'));
             localStorage.removeItem(previousTokenKey);
-            const freshVisitorSessionId = String(Date.now());
+            const freshVisitorSessionId = this._mintOpaqueVisitorSessionId();
             this._visitorSessionId = freshVisitorSessionId;
-            try { localStorage.setItem(this.flowStorageKey('flosc_visitor_session'), freshVisitorSessionId); } catch (e) {}
+            this.writeVisitorJourneyItem('flosc_visitor_session', freshVisitorSessionId);
 
             this.visitorDepletedState.awaitingContactDetails = false;
             this.visitorDepletedState.inputLocked = false;
@@ -11260,7 +11313,25 @@ Purchased: ${ctx.purchased}
 
         // Auto-create session on first message for logged-in users (server enforces guest max).
         // Hard rule: create sessions only from explicit user send/new-chat flows.
+        // Never mint a second chat when a handoff or remembered session id exists.
         if (this.state !== 'visitor' && !this.currentSession && !isSystemGenerated && allowSessionAutoCreate) {
+            const rememberedId = this.readRememberedActiveChatSessionId();
+            let urlSessionId = '';
+            try {
+                urlSessionId = String(new URLSearchParams(window.location.search || '').get('flosc_session_id') || '').trim();
+            } catch (e) {
+                urlSessionId = '';
+            }
+            const existingId = rememberedId || urlSessionId;
+            if (existingId) {
+                const restored = await this.loadSession(existingId);
+                if (restored && this.currentSession?.id) {
+                    this.rememberActiveChatSessionId(this.currentSession.id);
+                }
+            }
+        }
+        if (this.state !== 'visitor' && !this.currentSession && !isSystemGenerated && allowSessionAutoCreate
+            && !this.readRememberedActiveChatSessionId()) {
             try {
                 const sessionRes = await this.authFetch(this.config.apiUrl + '/sessions' + this.sessionsQuery(), {
                     method: 'POST',
@@ -11300,7 +11371,10 @@ Purchased: ${ctx.purchased}
             // Logged-in users use their server session; visitors use a persistent
             // local session id so the concierge desk has a stable, per-conversation
             // key (and restartChat() can mint a new one for a fresh conversation).
-            session_id: this.currentSession?.id || (this.state === 'visitor' ? this.getVisitorSessionId() : undefined),
+            session_id: this.currentSession?.id
+                || (this.state === 'visitor' ? this.getVisitorSessionId() : undefined)
+                || this.readRememberedActiveChatSessionId()
+                || undefined,
             context: this.ivr.context,
             // v1.3.7: Flow context for multi-flow support
             flow_id: this.config.flowId,
@@ -11321,7 +11395,7 @@ Purchased: ${ctx.purchased}
         // This prevents AI from repeating itself and enables conversation-awareness.
         if (this.state === 'visitor') {
             try {
-                const visitorMsgs = JSON.parse(localStorage.getItem(this.flowStorageKey('flosc_visitor_messages')) || '[]');
+                const visitorMsgs = JSON.parse(this.readVisitorJourneyItem('flosc_visitor_messages') || '[]');
                 // Send last 10 messages (5 pairs) to keep payload small
                 payload.visitor_history = visitorMsgs.slice(-10).map(m => ({
                     role: m.role,
@@ -11408,7 +11482,7 @@ Purchased: ${ctx.purchased}
             if (role === 'user' && /^\s*\[SYSTEM:/i.test(contentStr)) {
                 return;
             }
-            const messages = JSON.parse(localStorage.getItem(this.flowStorageKey('flosc_visitor_messages')) || '[]');
+            const messages = JSON.parse(this.readVisitorJourneyItem('flosc_visitor_messages') || '[]');
             const entry = { role, content, timestamp: Date.now() };
             if (meta && typeof meta === 'object') {
                 entry.meta = {
@@ -11418,7 +11492,7 @@ Purchased: ${ctx.purchased}
             }
             messages.push(entry);
             if (messages.length > 50) messages.shift();
-            localStorage.setItem(this.flowStorageKey('flosc_visitor_messages'), JSON.stringify(messages));
+            this.writeVisitorJourneyItem('flosc_visitor_messages', JSON.stringify(messages));
         } catch (e) {
             this.logWarn('FLOSC: Could not save visitor message', e);
         }
@@ -11426,7 +11500,7 @@ Purchased: ${ctx.purchased}
     
     restoreVisitorMessages() {
         try {
-            const messages = JSON.parse(localStorage.getItem(this.flowStorageKey('flosc_visitor_messages')) || '[]');
+            const messages = JSON.parse(this.readVisitorJourneyItem('flosc_visitor_messages') || '[]');
             const normalizedMessages = [];
             let pendingStartupAssistant = null;
             let seenUserMessage = false;
@@ -13091,7 +13165,7 @@ Purchased: ${ctx.purchased}
                             this.config.authToken = result.auth_token;
                             localStorage.setItem('flosc_auth_token', result.auth_token);
                             // Clear visitor message cache — they're a member now
-                            localStorage.removeItem(this.flowStorageKey('flosc_visitor_messages'));
+                            this.removeVisitorJourneyItem('flosc_visitor_messages');
                         }
 
                         // Update local user state so IVR conditions reflect purchase
@@ -13375,7 +13449,7 @@ Purchased: ${ctx.purchased}
                             if (result.auth_token) {
                                 this.config.authToken = result.auth_token;
                                 localStorage.setItem('flosc_auth_token', result.auth_token);
-                                localStorage.removeItem(this.flowStorageKey('flosc_visitor_messages'));
+                                this.removeVisitorJourneyItem('flosc_visitor_messages');
                             }
 
                             const displayName = result.user_display_name || result.user_email || 'Member';

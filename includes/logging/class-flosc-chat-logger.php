@@ -218,6 +218,94 @@ class FLOSC_Chat_Logger {
     }
 
     /**
+     * Load recent turns for one session the current request is allowed to see.
+     *
+     * Visitor rows require the opaque client session string (not a short numeric
+     * guess) and a matching hashed visitor IP already stored on that session.
+     * Logged-in rows require the current WordPress user to own the session.
+     * Destination flow is not required so floscDomain visits keep the transcript.
+     *
+     * @param int    $session_id     Normalized session id.
+     * @param int    $max_pairs      Max user/assistant pairs (each pair is two roles).
+     * @param string $session_id_raw Client-supplied session string.
+     * @return array<int,array{role:string,content:string}>
+     */
+    public function flosc_get_session_turns($session_id, $max_pairs = 10, $session_id_raw = '') {
+        global $wpdb;
+
+        $session_id = absint($session_id);
+        $max_pairs  = max(1, min(50, absint($max_pairs)));
+        $raw        = trim((string) $session_id_raw);
+        if ($session_id <= 0) {
+            return [];
+        }
+        if ($raw === '' || (ctype_digit($raw) && strlen($raw) <= 9)) {
+            return [];
+        }
+        if (!$this->flosc_current_request_owns_session($session_id)) {
+            return [];
+        }
+
+        $this->flosc_ensure_table();
+        $limit = $max_pairs;
+        $user_id = get_current_user_id();
+
+        if ($user_id > 0) {
+            $rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT user_message, ai_response FROM %i
+                     WHERE session_id = %d AND user_id = %d
+                     ORDER BY id DESC
+                     LIMIT %d",
+                    $this->table_name,
+                    $session_id,
+                    $user_id,
+                    $limit
+                ),
+                ARRAY_A
+            );
+        } else {
+            $visitor_ip = $this->flosc_get_hashed_ip();
+            $rows = $wpdb->get_results(
+                $wpdb->prepare(
+                    "SELECT user_message, ai_response FROM %i
+                     WHERE session_id = %d AND user_id = 0 AND visitor_ip = %s
+                     ORDER BY id DESC
+                     LIMIT %d",
+                    $this->table_name,
+                    $session_id,
+                    $visitor_ip,
+                    $limit
+                ),
+                ARRAY_A
+            );
+        }
+        if (!is_array($rows) || $rows === []) {
+            return [];
+        }
+
+        $rows = array_reverse($rows);
+        $out  = [];
+        foreach ($rows as $row) {
+            $user = trim((string) ($row['user_message'] ?? ''));
+            $ai   = trim((string) ($row['ai_response'] ?? ''));
+            if ($user !== '') {
+                $out[] = [
+                    'role'    => 'user',
+                    'content' => $user,
+                ];
+            }
+            if ($ai !== '') {
+                $out[] = [
+                    'role'    => 'assistant',
+                    'content' => $ai,
+                ];
+            }
+        }
+        return $out;
+    }
+
+    /**
      * Log a chat exchange.
      *
      * @param array $data {
@@ -231,12 +319,6 @@ class FLOSC_Chat_Logger {
      *     @type array  $chain_detail   Provider names if chaining was used
      *     @type string $response_source How the response was generated (ivr, ai, ai+ivr, rag, fallback)
      *     @type int    $response_time_ms Response time in milliseconds
-    *     @type string $billing_source Billing source classification (provider_cost, token_rates, none)
-    *     @type string $billing_model  Model name reported by provider
-    *     @type int    $billing_input_tokens Provider-reported input tokens
-    *     @type int    $billing_output_tokens Provider-reported output tokens
-    *     @type int    $billing_total_tokens Provider-reported total tokens
-    *     @type int    $billing_real_millicents Real usage cost in millicents
      * }
      * @return int|false Insert ID on success, false on failure
      */

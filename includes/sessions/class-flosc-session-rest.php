@@ -73,6 +73,9 @@ class FLOSC_Session_Rest {
             $user_id,
             $flow_stem
         );
+        if ( ! is_array( $session ) && method_exists( $this->flosc->sessions(), 'get_flosc_session_by_id' ) ) {
+            $session = $this->flosc->sessions()->get_flosc_session_by_id( $session_id, $user_id );
+        }
 
         if ( ! is_array( $session ) ) {
             // Same status for missing, wrong user, wrong flow — no disclosure.

@@ -803,7 +803,13 @@ if ( ! function_exists( 'flosc_personality_library_save_all' ) ) {
 				}
 				$val = isset( $row[ $fk ] ) ? (string) $row[ $fk ] : '';
 				if ( 'ai_base_prompt' === $fk ) {
-					$entry[ $fk ] = flosc_sanitize_personality_profile_text( $val );
+					$incoming = array_key_exists( $fk, $row ) ? trim( (string) $row[ $fk ] ) : '';
+					if ( $incoming === '' ) {
+						$entry[ $fk ] = isset( $prior['ai_base_prompt'] ) ? (string) $prior['ai_base_prompt'] : '';
+					} else {
+						$entry[ $fk ] = flosc_sanitize_personality_profile_text( (string) $row[ $fk ] );
+					}
+					continue;
 				} elseif ( in_array( $fk, array( 'ai_mission', 'ai_boundaries', 'ai_topic_scope', 'ai_off_topic_message', 'ai_off_topic_links' ), true ) ) {
 					$entry[ $fk ] = sanitize_textarea_field( $val );
 				} else {
