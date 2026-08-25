@@ -380,8 +380,11 @@ class FLOSC_First_Party_Authentication {
             $token = sanitize_text_field(wp_unslash($_SERVER['HTTP_X_FLOSC_TOKEN']));
         }
 
-        // Fall back to cookie (page loads)
-        if (empty($token) && !empty($_COOKIE['flosc_auth_token'])) {
+        // Fall back to the cookie for page loads. REST requests must present
+        // the explicit X-FLOSC-Token header so a browser cookie does not
+        // silently become a REST authentication credential.
+        $is_rest_request = defined('REST_REQUEST') && REST_REQUEST;
+        if (!$is_rest_request && empty($token) && !empty($_COOKIE['flosc_auth_token'])) {
             $token = sanitize_text_field(wp_unslash($_COOKIE['flosc_auth_token']));
         }
 
