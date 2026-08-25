@@ -1301,7 +1301,10 @@ $flosc_accuracy_personality_label = $flosc_personality_label !== ''
 <details class="flosc-ai-acc" id="flosc-accuracy-test">
 <summary class="flosc-ai-acc__summary">
 	<span class="flosc-ai-acc__title"><?php echo esc_html__( 'Provider accuracy test', 'flosc' ); ?></span>
-	<span class="flosc-ai-acc__hint"><?php echo esc_html( sprintf( __( 'Use %s to run template questions against this flow’s API.', 'flosc' ), $flosc_accuracy_personality_label ) ); ?></span>
+	<span class="flosc-ai-acc__hint"><?php
+	/* translators: %s: selected personality label. */
+	echo esc_html( sprintf( __( 'Use %s to run template questions against this flow’s API.', 'flosc' ), $flosc_accuracy_personality_label ) );
+	?></span>
 </summary>
 <div class="flosc-ai-acc__body">
 <hr class="flosc-section-divider">
@@ -1381,7 +1384,10 @@ $flosc_accuracy_personality_label = $flosc_personality_label !== ''
 			? $flosc_personality_label
 			: __( 'selected personality', 'flosc' );
 		?>
-		<button type="button" id="flosc-run-accuracy-test" class="button button-primary"><?php echo esc_html( sprintf( __( '▶ Run multi-turn provider test using %s', 'flosc' ), $flosc_accuracy_personality_label ) ); ?></button>
+		<button type="button" id="flosc-run-accuracy-test" class="button button-primary"><?php
+		/* translators: %s: selected personality label. */
+		echo esc_html( sprintf( __( '▶ Run multi-turn provider test using %s', 'flosc' ), $flosc_accuracy_personality_label ) );
+		?></button>
 		<span class="description"><?php echo esc_html__( 'Save Settings keeps templates. Run sends the expanded user input from each row.', 'flosc' ); ?></span>
 		<span id="flosc-test-progress" class="flosc-ai-progress flosc-hidden">
 			<?php echo esc_html__( 'Running… message', 'flosc' ); ?>
