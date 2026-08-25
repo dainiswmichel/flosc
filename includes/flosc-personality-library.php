@@ -1154,17 +1154,6 @@ if ( ! function_exists( 'flosc_personality_compiled_profile' ) ) {
 	}
 }
 
-if ( ! function_exists( 'flosc_personality_builder_asset_url' ) ) {
-	/**
-	 * Standalone workshop HTML (DA1). FLOSC admin renders the markup in-page.
-	 *
-	 * @return string
-	 */
-	function flosc_personality_builder_asset_url() {
-		return FLOSC_PLUGIN_URL . 'assets/personality-builder/flosc-personality-builder.html';
-	}
-}
-
 if ( ! function_exists( 'flosc_personality_builder_request_context' ) ) {
 	/**
 	 * Persona and IVR from the designer admin request.
