@@ -458,12 +458,42 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
             return $result;
         }
 
+        // Limit the nonce short-circuit to FLOSC REST routes. A FLOSC token
+        // must not alter authentication for unrelated WordPress endpoints.
+        if (!$this->is_flosc_rest_request()) {
+            return $result;
+        }
+
         // If FLOSC token was used, signal "auth succeeded" to skip nonce check
         if ($this->flosc_token_auth_used) {
             return true;
         }
 
         return $result;
+    }
+
+    /**
+     * Determine whether the current REST request belongs to FLOSC.
+     *
+     * @return bool
+     */
+    private function is_flosc_rest_request() {
+        $route = '';
+        if (function_exists('rest_get_server')) {
+            $server = rest_get_server();
+            if (is_object($server) && method_exists($server, 'get_current_request')) {
+                $request = $server->get_current_request();
+                if (is_object($request) && method_exists($request, 'get_route')) {
+                    $route = (string) $request->get_route();
+                }
+            }
+        }
+
+        if ($route === '' && isset($GLOBALS['wp']->query_vars['rest_route'])) {
+            $route = (string) $GLOBALS['wp']->query_vars['rest_route'];
+        }
+
+        return (bool) preg_match('#^/flosc/v1(?:/|$)#', $route);
     }
 
 }
