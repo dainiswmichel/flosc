@@ -373,6 +373,10 @@
                 }
                 if (data.type === 'flosc_companion_context_request') {
                     self.deliverBrowsingContextToIframe();
+                    return;
+                }
+                if (data.type === 'flosc_companion_auth_navigate') {
+                    self.navigateTopLevelForAuth(data.authUrl);
                 }
             });
         },
@@ -901,6 +905,22 @@
                 }, targetOrigin);
             } catch (e) {
                 // Ignore cross-window messaging failures.
+            }
+        },
+
+        // Only the flow's own authorize endpoint may move the host page, and the parent
+        // supplies redirect_to so the visitor returns to the page they were reading.
+        navigateTopLevelForAuth: function(rawAuthUrl) {
+            try {
+                var appOrigin = new URL(this.config.appUrl, window.location.origin).origin;
+                var authUrl = new URL(String(rawAuthUrl || ''), appOrigin);
+                if (!/^https?:$/.test(authUrl.protocol) || authUrl.origin !== appOrigin) {
+                    return;
+                }
+                authUrl.searchParams.set('redirect_to', window.location.href);
+                window.location.href = authUrl.toString();
+            } catch (e) {
+                // Ignore malformed auth handoffs.
             }
         },
 

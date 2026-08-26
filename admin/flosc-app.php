@@ -982,6 +982,27 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
                 $flosc_rest_base = $flosc_scheme . $flosc_current_host . '/' . $flosc_rest_prefix . '/flosc/v1';
             }
 
+            $flosc_ajax_url = admin_url('admin-ajax.php');
+            $flosc_logout_url = wp_logout_url(
+                flosc_get_setting('logout_redirect_url', $flosc_app_url)
+            );
+            if (defined('FLOSC_CUSTOM_DOMAIN_ACTIVE') && FLOSC_CUSTOM_DOMAIN_ACTIVE) {
+                $flosc_request_host = strtolower(sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'] ?? '')));
+                $flosc_flow_domain = strtolower(preg_replace('#^https?://#', '', trim((string) ($flosc_current_flow['custom_domain'] ?? ''))));
+                $flosc_flow_domain = rtrim($flosc_flow_domain, '/');
+                if ($flosc_request_host === $flosc_flow_domain || $flosc_request_host === 'www.' . $flosc_flow_domain) {
+                    $flosc_same_host_base = (is_ssl() ? 'https://' : 'http://') . $flosc_request_host;
+                    $flosc_ajax_url = $flosc_same_host_base . '/wp-admin/admin-ajax.php';
+                    $flosc_logout_parts = wp_parse_url(html_entity_decode($flosc_logout_url));
+                    if (!empty($flosc_logout_parts['path'])) {
+                        $flosc_logout_url = $flosc_same_host_base . $flosc_logout_parts['path'];
+                        if (!empty($flosc_logout_parts['query'])) {
+                            $flosc_logout_url .= '?' . $flosc_logout_parts['query'];
+                        }
+                    }
+                }
+            }
+
             // Companion params: prefer $flow_settings option, fall back to current flow merge.
             $flosc_companion_source = is_array($flow_settings) ? $flow_settings : [];
             if (empty($flosc_companion_source) && !empty($flosc_current_flow) && is_array($flosc_current_flow)) {
@@ -1169,14 +1190,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             ],
             'companionStateKey' => $flosc_companion_state_key,
             'companionStateStorage' => $flosc_companion_state_storage,
-            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'ajaxUrl' => $flosc_ajax_url,
             'logoutNonce' => wp_create_nonce('flosc_logout'),
             'profileUrl' => ($flosc_user && function_exists('bp_core_get_user_domain')) ? bp_core_get_user_domain($flosc_user->ID) : admin_url('profile.php'),
             'dashboardUrl' => admin_url(),
             'loginUrl' => wp_login_url($flosc_app_url),
-            'logoutUrl' => wp_logout_url(
-                flosc_get_setting('logout_redirect_url', $flosc_app_url)
-            ),
+            'logoutUrl' => $flosc_logout_url,
             'registerUrl' => wp_registration_url(),
             'registrationUrl' => wp_registration_url(),
             'lessonsUrl' => home_url('/lessons/'),

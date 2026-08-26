@@ -3318,6 +3318,29 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
      * @return array|null Flow config or null when this request is not a FLOSC app route.
      */
     public function detect_flow_from_request_route() {
+        // A custom-domain host owns its flow even when a shared-host rewrite
+        // supplies a different flosc_ivr value for paths such as /chat.
+        $current_host = strtolower(sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'] ?? '')));
+        if ($current_host !== '') {
+            $ivr_files = array_unique(array_map('basename', flosc_config_glob(['*_ivr.md', 'ivr*.md'])));
+            foreach ($ivr_files as $filename) {
+                if (strpos($filename, 'backup') !== false) {
+                    continue;
+                }
+
+                $flow = $this->build_flow_from_ivr_file($filename);
+                if (!$flow || ($flow['status'] ?? 'active') !== 'active' || empty($flow['custom_domain'])) {
+                    continue;
+                }
+
+                $domain = strtolower(preg_replace('#^https?://#', '', trim($flow['custom_domain'])));
+                $domain = rtrim($domain, '/');
+                if ($current_host === $domain || $current_host === 'www.' . $domain) {
+                    return $flow;
+                }
+            }
+        }
+
         // v1.3.6: Check flosc_ivr query var FIRST (set by rewrite rules)
         // v1.8.8 FIX: $wp_query doesn't exist during plugins_loaded — guard it
         global $wp_query;

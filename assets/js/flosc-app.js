@@ -4718,6 +4718,15 @@ class floscApp {
                         window.location.href = targetUrl || (this.config.appUrl || '/');
                     }, 2000);
                 };
+                const clearClientAuth = () => {
+                    this.authToken = '';
+                    this.config.authToken = '';
+                    try {
+                        localStorage.removeItem('flosc_auth_token');
+                    } catch (e) {
+                        this.logWarn('[FLOSC Auth] Could not clear browser auth token:', e);
+                    }
+                };
 
                 fetch(ajaxLogoutUrl, {
                     method: 'POST',
@@ -4740,9 +4749,11 @@ class floscApp {
                         const target = (payload.data && payload.data.redirect)
                             ? payload.data.redirect
                             : (this.config.appUrl || '/');
+                        clearClientAuth();
                         redirectAfterLogout(target);
                     })
                     .catch(() => {
+                        clearClientAuth();
                         this.addMessage(
                             'assistant',
                             'I could not confirm logout through chat. Redirecting you to secure logout now...'
@@ -7229,10 +7240,36 @@ class floscApp {
             this.logWarn('[FLOSC SSO] Could not stash quiz data before redirect:', e);
         }
 
+        // Providers refuse to render consent inside a frame, so companion mode asks
+        // the parent to run the whole OAuth hop at top level and supply its own return URL.
+        if (this.isCompanionEmbed()) {
+            let targetOrigin = '*';
+            try {
+                if (document.referrer) {
+                    const ref = new URL(document.referrer, window.location.origin);
+                    if (/^https?:$/.test(ref.protocol)) {
+                        targetOrigin = ref.origin;
+                    }
+                }
+                window.parent.postMessage({
+                    type: 'flosc_companion_auth_navigate',
+                    authUrl: authUrl,
+                }, targetOrigin);
+                return;
+            } catch (e) {
+                this.logWarn('[FLOSC SSO] Companion top-level handoff failed; continuing in frame:', e);
+            }
+        }
+
         const redirectTo = window.location.href;
         const separator = authUrl.includes('?') ? '&' : '?';
         const fullAuthUrl = `${authUrl}${separator}redirect_to=${encodeURIComponent(redirectTo)}`;
         window.location.href = fullAuthUrl;
+    }
+
+    isCompanionEmbed() {
+        return window.self !== window.top
+            && document.body.classList.contains('flosc-companion-embed');
     }
 
     /**
@@ -8712,7 +8749,20 @@ Purchased: ${ctx.purchased}
                 el.value = String(el.value || '').replace(/[^0-9,]/g, '');
             });
         }
-        
+
+        // Header auth controls sit outside the messages root, so they need their
+        // own delegation — the chatMessages dispatcher deliberately ignores them.
+        if (!document.body.dataset.floscHeaderActionBound) {
+            document.body.dataset.floscHeaderActionBound = '1';
+            document.body.addEventListener('click', (e) => {
+                const el = e.target?.closest?.('[data-flosc-action="perform-ivr-action"]');
+                if (!el) return;
+                e.preventDefault();
+                const ivrAction = el.getAttribute('data-ivr-action') || '';
+                if (ivrAction) this.performIVRAction(ivrAction);
+            });
+        }
+
         if (this.shareBtn) {
             this.shareBtn.addEventListener('click', () => this.openShareModal());
         }
