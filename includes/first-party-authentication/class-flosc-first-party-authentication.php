@@ -209,8 +209,37 @@ class FLOSC_First_Party_Authentication {
         // v1.9.8: FloscAdmin-configured destination URL (empty = use app_url)
         // v10.0.0: Per-flow login_destination is resolved first; global
         // flosc_login_destination remains the fallback via get_setting().
-        $configured_dest = flosc_get_setting('login_destination', '');
-        $dest_url = !empty($configured_dest) ? $configured_dest : $app_url;
+        // Slice 2: explicit login_destination wins first; then multi-flow
+        // routing per login_destination_mode; else single-flow app URL.
+        $explicit_dest = flosc_get_setting('login_destination', '');
+        if ($explicit_dest !== '') {
+            $dest_url = esc_url_raw($explicit_dest);
+        } else {
+            $dest_user_id = ($user instanceof WP_User) ? (int) $user->ID : 0;
+            $flow_count = 0;
+            // is_callable() is visibility-aware: the builder is private, so a
+            // cross-class call is intentionally skipped (no fatal) until the
+            // method becomes callable. Multi-flow routing stays inert meanwhile.
+            if ($dest_user_id > 0 && is_callable(array($this->flosc, 'flosc_build_user_flow_statuses'))) {
+                $rows = $this->flosc->flosc_build_user_flow_statuses($dest_user_id);
+                $flow_count = is_array($rows) ? count($rows) : 0;
+            }
+            if ($flow_count > 1) {
+                $mode = flosc_get_setting('login_destination_mode', 'auto');
+                if ($mode === 'core_profile') {
+                    $dest_url = admin_url('profile.php');
+                } elseif ($mode === 'custom_url') {
+                    $accounts = flosc_get_setting('login_destination_accounts_url', '');
+                    $dest_url = $accounts !== '' ? esc_url_raw($accounts) : admin_url('profile.php');
+                } elseif (function_exists('bp_core_get_user_domain') && $dest_user_id) {
+                    $dest_url = bp_core_get_user_domain($dest_user_id);
+                } else {
+                    $dest_url = admin_url('profile.php');
+                }
+            } else {
+                $dest_url = $app_url;
+            }
+        }
 
         // Check 1: If requested redirect is already to FLOSC app, allow it
         if (!empty($requested_redirect_to) && strpos($requested_redirect_to, '/' . $app_slug) !== false) {
@@ -502,45 +531,33 @@ class FLOSC_First_Party_Authentication {
      * @return string
      */
     private function resolve_logout_destination() {
-        // 1. Current flow per-flow destination.
-        $flow_dest = flosc_get_setting('logout_destination', '');
-        if ($flow_dest !== '') {
-            return esc_url_raw($flow_dest);
-        }
+        $mode = flosc_get_setting('logout_destination_mode', 'entry_flow');
+        $fallback = flosc_get_setting('logout_destination_fallback', '');
 
-        // 2. Entry-flow recall — the flow the visitor entered the FLOSC ecosystem
-        // via. Cleared on logout by clear_flosc_auth_token().
         $entry_flow = '';
         if (!empty($_COOKIE['flosc_entry_flow'])) {
             $entry_flow = sanitize_key((string) wp_unslash($_COOKIE['flosc_entry_flow']));
         }
+
+        if ($mode === 'fallback') {
+            return $fallback !== '' ? esc_url_raw($fallback) : $this->flosc->get_app_url();
+        }
+
+        if ($mode === 'flow') {
+            $flow_dest = flosc_get_setting('logout_destination', '');
+            return $flow_dest !== '' ? esc_url_raw($flow_dest) : $this->flosc->get_app_url();
+        }
+
+        // entry_flow (default)
         if ($entry_flow !== '') {
-            $recall_dest = flosc_get_setting('logout_destination', '', $entry_flow);
-            if ($recall_dest !== '') {
-                return esc_url_raw($recall_dest);
+            $recall = flosc_get_setting('logout_destination', '', $entry_flow);
+            if ($recall !== '') {
+                return esc_url_raw($recall);
             }
+            return $this->flosc->get_app_url();
         }
 
-        // 3. Legacy global destination.
-        $legacy = flosc_get_setting('logout_redirect_url', '');
-        if ($legacy !== '') {
-            return esc_url_raw($legacy);
-        }
-
-        // 4. A usable /thank-you/ page, if present (brand-agnostic farewell page).
-        $thank_you_url = '';
-        if (function_exists('get_page_by_path')) {
-            $thank_you_page = get_page_by_path('thank-you');
-            if ($thank_you_page instanceof WP_Post) {
-                $thank_you_url = get_permalink($thank_you_page);
-            }
-        }
-        if ($thank_you_url) {
-            return esc_url_raw((string) $thank_you_url);
-        }
-
-        // 5. Home.
-        return home_url();
+        return $fallback !== '' ? esc_url_raw($fallback) : $this->flosc->get_app_url();
     }
 
     /**

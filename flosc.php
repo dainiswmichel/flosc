@@ -5077,7 +5077,7 @@ Example good response:
     /**
      * Build per-flow status rows for the logged-in user.
      */
-    private function flosc_build_user_flow_statuses($user_id, $current_stem = '') {
+    public function flosc_build_user_flow_statuses($user_id, $current_stem = '') {
         $user_id = absint($user_id);
         if ($user_id <= 0) {
             return [];

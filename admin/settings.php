@@ -756,11 +756,17 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         if (isset($flosc_new_settings['login_destination']) && $flosc_new_settings['login_destination'] !== '') {
             update_option('flosc_login_destination', esc_url_raw($flosc_new_settings['login_destination']));
         }
-        foreach (['login_destination', 'logout_destination'] as $flosc_url_key) {
+        foreach (['login_destination', 'logout_destination', 'login_destination_accounts_url', 'logout_destination_fallback'] as $flosc_url_key) {
             if (isset($flosc_new_settings[$flosc_url_key])) {
                 $flosc_new_settings[$flosc_url_key] = esc_url_raw($flosc_new_settings[$flosc_url_key]);
             }
         }
+        $flosc_mode_login = sanitize_key((string) ($flosc_new_settings['login_destination_mode'] ?? 'auto'));
+        $flosc_new_settings['login_destination_mode'] = in_array($flosc_mode_login, array('auto', 'buddyboss_profile', 'core_profile', 'custom_url'), true)
+            ? $flosc_mode_login : 'auto';
+        $flosc_mode_logout = sanitize_key((string) ($flosc_new_settings['logout_destination_mode'] ?? 'entry_flow'));
+        $flosc_new_settings['logout_destination_mode'] = in_array($flosc_mode_logout, array('entry_flow', 'fallback', 'flow'), true)
+            ? $flosc_mode_logout : 'entry_flow';
         if (isset($flosc_new_settings['logout_farewell_message'])) {
             $flosc_new_settings['logout_farewell_message'] = sanitize_textarea_field($flosc_new_settings['logout_farewell_message']);
         }

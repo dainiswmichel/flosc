@@ -409,6 +409,11 @@ class FLOSC_Companion_Mode {
             );
         }
 
+        $companion_config['takeoverWpAuth'] = (
+            flosc_get_setting('takeover_wp_auth', '') !== ''
+            && filter_var((string) flosc_get_setting('takeover_wp_auth', ''), FILTER_VALIDATE_BOOLEAN)
+        );
+
         wp_add_inline_script('flosc-companion', sprintf(
             'FloscCompanion.init(%s);',
             wp_json_encode($companion_config)

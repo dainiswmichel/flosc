@@ -394,6 +394,56 @@ $flosc_signup_action = $flosc_flow_settings['header_signup_action'] ?? 'open_log
         </td>
     </tr>
     <tr>
+        <th scope="row"><label for="flow_login_destination_mode">Login destination mode</label></th>
+        <td>
+            <select id="flow_login_destination_mode" name="flow_login_destination_mode">
+                <option value="auto" <?php selected(($flosc_flow_settings['login_destination_mode'] ?? 'auto'), 'auto'); ?>>auto</option>
+                <option value="buddyboss_profile" <?php selected(($flosc_flow_settings['login_destination_mode'] ?? ''), 'buddyboss_profile'); ?>>buddyboss_profile</option>
+                <option value="core_profile" <?php selected(($flosc_flow_settings['login_destination_mode'] ?? ''), 'core_profile'); ?>>core_profile</option>
+                <option value="custom_url" <?php selected(($flosc_flow_settings['login_destination_mode'] ?? ''), 'custom_url'); ?>>custom_url</option>
+            </select>
+            <p class="description">
+                Where a <strong>multi-flow member</strong> is sent after login. Empty
+                <code>login_destination</code> + single flow = this flow's FLOSC app URL.
+            </p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_login_destination_accounts_url">Login destination accounts URL</label></th>
+        <td>
+            <input type="url" id="flow_login_destination_accounts_url" name="flow_login_destination_accounts_url"
+                   class="large-text" value="<?php echo esc_attr($flosc_flow_settings['login_destination_accounts_url'] ?? ''); ?>">
+            <p class="description">
+                Custom accounts hub used when <code>login_destination_mode = custom_url</code>.
+            </p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_logout_destination_mode">Logout destination mode</label></th>
+        <td>
+            <select id="flow_logout_destination_mode" name="flow_logout_destination_mode">
+                <option value="entry_flow" <?php selected(($flosc_flow_settings['logout_destination_mode'] ?? 'entry_flow'), 'entry_flow'); ?>>entry_flow</option>
+                <option value="fallback" <?php selected(($flosc_flow_settings['logout_destination_mode'] ?? ''), 'fallback'); ?>>fallback</option>
+                <option value="flow" <?php selected(($flosc_flow_settings['logout_destination_mode'] ?? ''), 'flow'); ?>>flow</option>
+            </select>
+            <p class="description">
+                Overrides how the logout destination is resolved. Default
+                <code>entry_flow</code> recalls the flow the visitor entered via.
+            </p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_logout_destination_fallback">Logout destination fallback</label></th>
+        <td>
+            <input type="url" id="flow_logout_destination_fallback" name="flow_logout_destination_fallback"
+                   class="large-text" value="<?php echo esc_attr($flosc_flow_settings['logout_destination_fallback'] ?? ''); ?>">
+            <p class="description">
+                Used by <code>logout_destination_mode = fallback</code>, or when no entry
+                flow is known and no destination is set.
+            </p>
+        </td>
+    </tr>
+    <tr>
         <th scope="row"><label for="flow_logout_farewell_message">Logout farewell message</label></th>
         <td>
             <textarea id="flow_logout_farewell_message" name="flow_logout_farewell_message"
