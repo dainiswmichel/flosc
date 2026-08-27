@@ -325,9 +325,8 @@ class floscApp {
                 // Logged-in: server sessions are the source of truth. Prefer explicit
                 // collapse/expand session id, then remembered active id, then last session.
                 this.log('[FLOSC] Loading sessions...');
-                await this.loadSessions();
-
                 const restoredHandoff = await this.applyUserSessionHandoffFromUrl();
+                await this.loadSessions();
                 if (!restoredHandoff && this.currentSession === null) {
                     await this.restoreLastSession();
                 }
@@ -1227,7 +1226,20 @@ class floscApp {
         // Logged-in: server session is source of truth (chat logs on the user).
         const serverId = String(this.currentSession?.id || this.readRememberedActiveChatSessionId() || '').trim();
         if (!serverId) {
-            return { kind: 'user', sessionId: '', messages: [] };
+            const visitorFallback = {
+                kind: 'visitor',
+                sessionId: String(this.getVisitorSessionId() || '').slice(0, 80),
+                messages: []
+            };
+            try {
+                const messages = JSON.parse(this.readVisitorJourneyItem('flosc_visitor_messages') || '[]');
+                if (Array.isArray(messages) && messages.length > 0) {
+                    visitorFallback.messages = messages.slice(-10);
+                }
+            } catch (e) {
+                visitorFallback.messages = [];
+            }
+            return visitorFallback;
         }
         this.rememberActiveChatSessionId(serverId);
         return {
@@ -1295,12 +1307,13 @@ class floscApp {
      * Apply visitor continuity params from the URL (anonymous diligence path).
      */
     applyVisitorSessionHandoffFromUrl() {
-        if (this.state !== 'visitor') {
-            return;
-        }
-
         try {
             const params = new URLSearchParams(window.location.search || '');
+            const serverSid = String(params.get('flosc_session_id') || '').trim();
+            if (this.state !== 'visitor' && serverSid) {
+                return;
+            }
+
             const sid = String(params.get('flosc_visitor_session') || '').trim();
             const encoded = String(params.get('flosc_handoff') || '').trim();
 
@@ -11931,6 +11944,7 @@ Purchased: ${ctx.purchased}
                 return;
             }
             this.currentSession = data.session;
+            this.rememberActiveChatSessionId(data.session?.id);
         } catch (e) {
             this.logWarn('FLOSC: create session error', e);
             this.addMessage('assistant', 'Could not start a new chat right now. Please try again.', false);

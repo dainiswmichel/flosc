@@ -409,15 +409,85 @@ class FLOSC_Companion_Mode {
             );
         }
 
-        $companion_config['takeoverWpAuth'] = (
-            flosc_get_setting('takeover_wp_auth', '') !== ''
-            && filter_var((string) flosc_get_setting('takeover_wp_auth', ''), FILTER_VALIDATE_BOOLEAN)
-        );
+        $companion_config = array_merge($companion_config, $this->get_host_auth_config($flow_id));
 
         wp_add_inline_script('flosc-companion', sprintf(
             'FloscCompanion.init(%s);',
             wp_json_encode($companion_config)
         ));
+    }
+
+    /**
+     * Host-page Register/Log-In modal (theme Sign-in button). Not in-chat.
+     *
+     * @param string $flow_id Current flow id.
+     * @return array
+     */
+    private function get_host_auth_config($flow_id) {
+        $flow_id = sanitize_key((string) $flow_id);
+        $sso_providers = [];
+        if (class_exists('\FLOSC\SSO\SSO_Manager') && $flow_id !== '') {
+            $sso_manager = \FLOSC\SSO\SSO_Manager::get_instance();
+            $bag = get_option('flosc_flow_' . $flow_id, []);
+            if (!is_array($bag)) {
+                $bag = [];
+            }
+            $scheme = is_ssl() ? 'https://' : 'http://';
+            $host = isset($_SERVER['HTTP_HOST'])
+                ? sanitize_text_field(wp_unslash((string) $_SERVER['HTTP_HOST']))
+                : '';
+            foreach (['google', 'facebook', 'apple', 'microsoft', 'linkedin'] as $pid) {
+                $enabled = !empty($bag['sso_' . $pid . '_enabled']);
+                $client_id = (string) ($bag['sso_' . $pid . '_client_id'] ?? '');
+                $client_secret = (string) ($bag['sso_' . $pid . '_client_secret'] ?? '');
+                if (!$enabled || $client_id === '' || $client_secret === '') {
+                    continue;
+                }
+                $provider = $sso_manager->get_provider($pid);
+                if (!$provider) {
+                    continue;
+                }
+                if (defined('FLOSC_CUSTOM_DOMAIN_ACTIVE') && FLOSC_CUSTOM_DOMAIN_ACTIVE && $host !== '') {
+                    $auth_url = $scheme . $host . '/' . rest_get_url_prefix() . '/flosc/v1/sso/authorize/' . $pid;
+                } else {
+                    $auth_url = rest_url('flosc/v1/sso/authorize/' . $pid);
+                }
+                $auth_url = add_query_arg('flow_id', rawurlencode($flow_id), $auth_url);
+                $sso_providers[] = [
+                    'id' => $pid,
+                    'name' => $provider->get_name(),
+                    'icon' => $provider->get_icon(),
+                    'colors' => $provider->get_button_colors(),
+                    'authUrl' => $auth_url,
+                ];
+            }
+        }
+
+        $rest_base = rest_url('flosc/v1');
+        if (defined('FLOSC_CUSTOM_DOMAIN_ACTIVE') && FLOSC_CUSTOM_DOMAIN_ACTIVE) {
+            $host = isset($_SERVER['HTTP_HOST'])
+                ? sanitize_text_field(wp_unslash((string) $_SERVER['HTTP_HOST']))
+                : '';
+            if ($host !== '') {
+                $scheme = is_ssl() ? 'https://' : 'http://';
+                $rest_base = $scheme . $host . '/' . rest_get_url_prefix() . '/flosc/v1';
+            }
+        }
+
+        return [
+            'isLoggedIn' => is_user_logged_in(),
+            'restUrl' => trailingslashit($rest_base),
+            'nonce' => wp_create_nonce('wp_rest'),
+            'ssoProviders' => $sso_providers,
+            'authTitle' => sanitize_text_field((string) flosc_get_setting('auth_login_modal_title', 'Log In or Create an Account')),
+            'authSubtitle' => sanitize_text_field((string) flosc_get_setting('auth_login_modal_subtitle', 'Sign in to access your lessons and progress.')),
+            'authButtonText' => sanitize_text_field((string) flosc_get_setting('auth_login_modal_button_text', 'Continue with Email')),
+            'authSsoDivider' => sanitize_text_field((string) flosc_get_setting('auth_login_modal_sso_divider', 'or continue with')),
+            'authEmailLabel' => sanitize_text_field((string) flosc_get_setting('auth_login_modal_email_label', 'Email Address')),
+            'authEmailPlaceholder' => sanitize_text_field((string) flosc_get_setting('auth_login_modal_email_placeholder', 'you@example.com')),
+            'authLoadingText' => sanitize_text_field((string) flosc_get_setting('auth_login_modal_loading_text', 'Sending link...')),
+            'authTermsText' => sanitize_text_field((string) flosc_get_setting('auth_login_modal_terms_text', 'By continuing, you agree to our Terms of Service and Privacy Policy.')),
+        ];
     }
 
     /**

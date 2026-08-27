@@ -280,8 +280,32 @@
             }
             this._eventsBound = true;
 
+            document.addEventListener('click', function(e) {
+                if (self.config.isLoggedIn) {
+                    return;
+                }
+                if (e.target && e.target.closest && e.target.closest('#flosc-host-auth-modal')) {
+                    return;
+                }
+                var anchor = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+                if (!anchor) {
+                    return;
+                }
+                if (!self.isThemeLoginHref(anchor.getAttribute('href') || '')) {
+                    return;
+                }
+                e.preventDefault();
+                e.stopPropagation();
+                self.openHostAuthModal();
+            }, true);
+
             // Keyboard: Escape to close
             document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && document.getElementById('flosc-host-auth-modal')) {
+                    e.preventDefault();
+                    self.closeHostAuthModal();
+                    return;
+                }
                 if (!self.container) {
                     return;
                 }
@@ -909,6 +933,227 @@
             }
         },
 
+        isThemeLoginHref: function(href) {
+            var raw = String(href || '').trim();
+            if (!raw) {
+                return false;
+            }
+            try {
+                var url = new URL(raw, window.location.origin);
+                var path = String(url.pathname || '').toLowerCase();
+                if (path.indexOf('wp-login.php') === -1) {
+                    return false;
+                }
+                var action = String(url.searchParams.get('action') || 'login').toLowerCase();
+                if (['lostpassword', 'retrievepassword', 'rp', 'resetpass', 'logout'].indexOf(action) !== -1) {
+                    return false;
+                }
+                return true;
+            } catch (e) {
+                return raw.indexOf('wp-login.php') !== -1 && raw.indexOf('lostpassword') === -1;
+            }
+        },
+
+        getHostVisitorSessionId: function() {
+            try {
+                var id = String(localStorage.getItem('flosc_visitor_session') || '').trim();
+                if (id) {
+                    return id.slice(0, 80);
+                }
+            } catch (e) {
+                // Ignore.
+            }
+            var minted = 'v_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+            try {
+                localStorage.setItem('flosc_visitor_session', minted);
+            } catch (e2) {
+                // Ignore.
+            }
+            return minted;
+        },
+
+        openHostAuthModal: function() {
+            var self = this;
+            this.closeHostAuthModal();
+            var title = this.escapeHtml(String(this.config.authTitle || 'Log In or Create an Account'));
+            var subtitle = this.escapeHtml(String(this.config.authSubtitle || ''));
+            var buttonText = this.escapeHtml(String(this.config.authButtonText || 'Continue with Email'));
+            var emailLabel = this.escapeHtml(String(this.config.authEmailLabel || 'Email Address'));
+            var emailPlaceholder = this.escapeHtml(String(this.config.authEmailPlaceholder || 'you@example.com'));
+            var termsText = this.escapeHtml(String(this.config.authTermsText || ''));
+            var ssoDivider = this.escapeHtml(String(this.config.authSsoDivider || 'or continue with'));
+            var providers = Array.isArray(this.config.ssoProviders) ? this.config.ssoProviders : [];
+            var ssoHtml = '';
+            if (providers.length) {
+                ssoHtml = '<div class="flosc-auth-divider"><span>' + ssoDivider + '</span></div><div class="flosc-sso-buttons">';
+                providers.forEach(function(p) {
+                    if (!p || !p.authUrl) {
+                        return;
+                    }
+                    var colors = p.colors && typeof p.colors === 'object' ? p.colors : {};
+                    ssoHtml += '<button type="button" class="flosc-sso-btn" data-auth-url="' + self.escapeHtml(String(p.authUrl)) + '"'
+                        + ' style="background:' + self.escapeHtml(String(colors.background || '#fff')) + ';color:' + self.escapeHtml(String(colors.text || '#111')) + '">'
+                        + '<span class="flosc-sso-icon">' + (p.icon || '') + '</span>'
+                        + '<span class="flosc-sso-label">' + self.escapeHtml(String(p.name || p.id || '')) + '</span>'
+                        + '</button>';
+                });
+                ssoHtml += '</div>';
+            }
+            var wrap = document.createElement('div');
+            wrap.id = 'flosc-host-auth-modal';
+            wrap.className = 'flosc-auth-modal-overlay';
+            wrap.innerHTML = '<div class="flosc-auth-modal" role="dialog" aria-modal="true">'
+                + '<button class="flosc-auth-close" type="button" aria-label="Close">&times;</button>'
+                + '<div class="flosc-auth-header"><h2>' + title + '</h2><p>' + subtitle + '</p></div>'
+                + '<form class="flosc-auth-form" id="flosc-host-auth-form">'
+                + '<div class="flosc-auth-field"><label for="flosc-host-auth-email">' + emailLabel + '</label>'
+                + '<input type="email" id="flosc-host-auth-email" placeholder="' + emailPlaceholder + '" required></div>'
+                + '<button type="submit" class="flosc-auth-submit">' + buttonText + '</button></form>'
+                + ssoHtml
+                + '<p class="flosc-auth-terms">' + termsText + '</p>'
+                + '<p class="flosc-auth-status" id="flosc-host-auth-status" hidden></p>'
+                + '</div>';
+            document.body.appendChild(wrap);
+            wrap.addEventListener('click', function(e) {
+                if (e.target === wrap) {
+                    self.closeHostAuthModal();
+                }
+            });
+            var closeBtn = wrap.querySelector('.flosc-auth-close');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', function() {
+                    self.closeHostAuthModal();
+                });
+            }
+            var form = wrap.querySelector('#flosc-host-auth-form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    self.submitHostEmailAuth();
+                });
+            }
+            wrap.querySelectorAll('.flosc-sso-btn').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    self.navigateTopLevelForAuth(btn.getAttribute('data-auth-url'));
+                });
+            });
+            var emailInput = document.getElementById('flosc-host-auth-email');
+            if (emailInput) {
+                emailInput.focus();
+            }
+        },
+
+        closeHostAuthModal: function() {
+            var modal = document.getElementById('flosc-host-auth-modal');
+            if (modal && modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+        },
+
+        submitHostEmailAuth: function() {
+            var self = this;
+            var emailEl = document.getElementById('flosc-host-auth-email');
+            var statusEl = document.getElementById('flosc-host-auth-status');
+            var submitBtn = document.querySelector('#flosc-host-auth-modal .flosc-auth-submit');
+            var email = emailEl ? String(emailEl.value || '').trim() : '';
+            var restUrl = String(this.config.restUrl || '');
+            if (!email || !restUrl) {
+                return;
+            }
+            var loadingText = String(this.config.authLoadingText || 'Sending link...');
+            var buttonText = String(this.config.authButtonText || 'Continue with Email');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = loadingText;
+            }
+            var body = {
+                email: email,
+                flow_id: String(this.config.flowId || ''),
+                visitor_session_id: this.getHostVisitorSessionId(),
+                redirect_to: window.location.href
+            };
+            try {
+                var flow = String(this.config.flowId || 'default').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80);
+                var stored = localStorage.getItem('flosc_quiz_result__' + flow) || localStorage.getItem('flosc_quiz_result');
+                if (stored) {
+                    var parsed = JSON.parse(stored);
+                    if (parsed && typeof parsed === 'object') {
+                        body.quiz_data = parsed;
+                        if (parsed.sessionId) {
+                            body.session_id = parsed.sessionId;
+                        }
+                        if (parsed.tempId) {
+                            body.temp_id = parsed.tempId;
+                        }
+                    }
+                }
+            } catch (e) {
+                // Quiz payload is optional.
+            }
+            fetch(restUrl.replace(/\/?$/, '/') + 'register-email', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': String(this.config.nonce || '')
+                },
+                body: JSON.stringify(body)
+            }).then(function(res) {
+                return res.json().then(function(data) {
+                    return { ok: res.ok, data: data };
+                });
+            }).then(function(out) {
+                var data = out.data || {};
+                if (!out.ok || !data.success) {
+                    throw new Error(data.message || 'Could not send login link');
+                }
+                if (statusEl) {
+                    statusEl.hidden = false;
+                    statusEl.textContent = data.message || 'Check your email and click the verification link to activate your account.';
+                }
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = buttonText;
+                }
+            }).catch(function(err) {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = buttonText;
+                }
+                if (statusEl) {
+                    statusEl.hidden = false;
+                    statusEl.textContent = (err && err.message) ? err.message : 'Registration failed.';
+                }
+            });
+        },
+
+        continuityFallbackPayload: function() {
+            var flow = String(this.config.flowId || 'default').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80) || 'default';
+            var remembered = '';
+            var visitorSid = '';
+            var messages = [];
+            try {
+                remembered = String(localStorage.getItem('flosc_active_chat_session__' + flow) || '').trim();
+                visitorSid = String(localStorage.getItem('flosc_visitor_session') || '').trim();
+                var raw = localStorage.getItem('flosc_visitor_messages');
+                if (raw) {
+                    var parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) {
+                        messages = parsed;
+                    }
+                }
+            } catch (e) {
+                // Ignore storage failures.
+            }
+            if (remembered) {
+                return { kind: 'user', sessionId: remembered, messages: [] };
+            }
+            if (visitorSid || messages.length) {
+                return { kind: 'visitor', sessionId: visitorSid, messages: messages };
+            }
+            return {};
+        },
+
         // Only the flow's own authorize endpoint may move the host page, and the parent
         // supplies redirect_to so the visitor returns to the page they were reading.
         navigateTopLevelForAuth: function(rawAuthUrl) {
@@ -934,6 +1179,16 @@
                     self.postBrowsingContextToIframe();
                 }, delayMs);
             });
+        },
+
+        isUsableHandoffPayload: function(payload) {
+            if (!payload || typeof payload !== 'object') {
+                return false;
+            }
+            if (String(payload.sessionId || payload.session_id || '').trim()) {
+                return true;
+            }
+            return Array.isArray(payload.messages) && payload.messages.length > 0;
         },
 
         cachedHandoffIfCurrent: function() {
@@ -966,14 +1221,18 @@
                     }
                     settled = true;
                     window.removeEventListener('message', onMessage);
-                    if (payload && typeof payload === 'object' && (payload.sessionId || payload.session_id)) {
-                        self.lastHandoffPayload = payload;
+                    var usable = self.isUsableHandoffPayload(payload) ? payload : null;
+                    if (!usable && self.isUsableHandoffPayload(self.cachedHandoffIfCurrent())) {
+                        usable = self.cachedHandoffIfCurrent();
+                    }
+                    if (!usable) {
+                        usable = self.continuityFallbackPayload();
+                    }
+                    if (self.isUsableHandoffPayload(usable)) {
+                        self.lastHandoffPayload = usable;
                         self.lastHandoffIframeSrc = self.iframe && self.iframe.src ? String(self.iframe.src) : '';
                     }
-                    var fallback = self.cachedHandoffIfCurrent();
-                    resolve(payload && typeof payload === 'object' && (payload.sessionId || payload.session_id)
-                        ? payload
-                        : fallback);
+                    resolve(usable);
                 };
 
                 var onMessage = function(event) {
@@ -982,8 +1241,8 @@
                     }
 
                     try {
-                        var appOrigin = new URL(self.config.appUrl, window.location.origin).origin;
-                        if (String(event.origin || '') !== appOrigin) {
+                        var expectedOrigin = new URL(self.iframe.src || self.config.appUrl, window.location.origin).origin;
+                        if (String(event.origin || '') !== expectedOrigin) {
                             return;
                         }
                     } catch (e) {
@@ -1017,7 +1276,7 @@
                         return;
                     }
                     window.setTimeout(function() {
-                        done(self.cachedHandoffIfCurrent());
+                        done(self.cachedHandoffIfCurrent() || self.continuityFallbackPayload());
                     }, 2000);
                 };
 
@@ -1557,6 +1816,9 @@
                         target.searchParams.set('flosc_context_url', window.location.href);
                     }
 
+                    if (!self.isUsableHandoffPayload(handoffPayload)) {
+                        handoffPayload = self.continuityFallbackPayload();
+                    }
                     if (handoffPayload && typeof handoffPayload === 'object') {
                         var sid = String(handoffPayload.sessionId || handoffPayload.session_id || '').trim();
                         var kind = String(handoffPayload.kind || '').toLowerCase();
@@ -1564,9 +1826,13 @@
                             self.lastHandoffPayload = handoffPayload;
                         }
                         // Guest/member: server session id. Visitor: client session + optional message pack.
-                        if (!sid) {
+                        if (!sid && Array.isArray(handoffPayload.messages) && handoffPayload.messages.length) {
+                            kind = 'visitor';
+                            sid = String(handoffPayload.sessionId || handoffPayload.session_id || '').trim();
+                        }
+                        if (!sid && kind !== 'visitor') {
                             // nothing to attach
-                        } else if (kind === 'visitor') {
+                        } else if (kind === 'visitor' || (!sid && Array.isArray(handoffPayload.messages))) {
                             target.searchParams.set('flosc_visitor_session', sid.slice(0, 80));
                             var handoffObj = {
                                 kind: 'visitor',
@@ -1595,7 +1861,7 @@
 
             this.requestHandoffPayloadFromIframe()
                 .then(navigate)
-                .catch(function() { navigate({}); });
+                .catch(function() { navigate(self.continuityFallbackPayload()); });
         },
 
         escapeHtml: function(str) {
