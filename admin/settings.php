@@ -745,6 +745,25 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
         if (isset($flosc_new_settings['guest_link_window_days'])) {
             $flosc_new_settings['guest_link_window_days'] = max(1, min(365, intval($flosc_new_settings['guest_link_window_days'])));
         }
+
+        // v10.0.0: WP native-auth takeover + login/logout destinations (per-flow).
+        // Checkboxes omit their POST key when unchecked — persist '' explicitly.
+        if (!isset($flosc_post['flow_takeover_wp_auth'])) {
+            $flosc_new_settings['takeover_wp_auth'] = '';
+        }
+        // Store the global fallback option (non-flow) so non-BuddyBoss installs
+        // have a working default without an IVR-flow settings bag.
+        if (isset($flosc_new_settings['login_destination']) && $flosc_new_settings['login_destination'] !== '') {
+            update_option('flosc_login_destination', esc_url_raw($flosc_new_settings['login_destination']));
+        }
+        foreach (['login_destination', 'logout_destination'] as $flosc_url_key) {
+            if (isset($flosc_new_settings[$flosc_url_key])) {
+                $flosc_new_settings[$flosc_url_key] = esc_url_raw($flosc_new_settings[$flosc_url_key]);
+            }
+        }
+        if (isset($flosc_new_settings['logout_farewell_message'])) {
+            $flosc_new_settings['logout_farewell_message'] = sanitize_textarea_field($flosc_new_settings['logout_farewell_message']);
+        }
     }
     if ($flosc_active_tab === 'engagement') {
         if (isset($flosc_new_settings['guest_access_days'])) {

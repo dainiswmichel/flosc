@@ -250,6 +250,22 @@ class floscApp {
     async init() {
         this.log('[FLOSC] Initializing app...');
 
+        // v10.0.0: Record the entry flow in a host-global cookie (first visit only)
+        // so logout can recall the per-flow logout destination. Server mirrors this
+        // via set_entry_flow_cookie(); this keeps it correct even if JS is earliest.
+        try {
+            if (!document.cookie.split(';').some(c => c.trim().startsWith('flosc_entry_flow='))) {
+                const entryFlow = String(
+                    this.config?.flowId || this.config?.ivrFile || this.config?.companionFlowId || ''
+                ).trim().replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80);
+                if (entryFlow) {
+                    document.cookie = `flosc_entry_flow=${encodeURIComponent(entryFlow)};path=/;max-age=604800;SameSite=Lax`;
+                }
+            }
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not set entry flow cookie:', e);
+        }
+
         // Continuity before restore: visitors (client handoff) and guest/member (server session id).
         this.applyVisitorSessionHandoffFromUrl();
 
@@ -4695,17 +4711,24 @@ class floscApp {
                 window.location.href = this.config.dashboardUrl || '/wp-admin/';
                 break;
             case 'logout': {
-                // Brand-neutral: product name from flow Identity params, never hard-coded brand.
+                // Brand-neutral: product name comes from flow Identity params, never hard-coded.
                 const productLabel = String(
                     this.config?.personalityName
                     || this.config?.productName
                     || this.config?.appName
                     || ''
                 ).trim();
-                const goodbye = productLabel
-                    ? `See you later — thanks for learning with ${productLabel}!`
-                    : 'See you later!';
-                this.addMessage('assistant', goodbye);
+                // v10.0.0: Admin-configurable farewell message (per-flow). Falls back
+                // to a neutral default built from the product name.
+                let farewell = String(this.config?.logoutFarewell || '').trim();
+                if (farewell) {
+                    farewell = farewell.replace(/\{product_name\}/g, productLabel);
+                } else {
+                    farewell = productLabel
+                        ? `See you later — thanks for learning with ${productLabel}!`
+                        : 'See you later!';
+                }
+                this.addMessage('assistant', farewell);
                 const ajaxLogoutUrl = this.config.ajaxUrl || '/wp-admin/admin-ajax.php';
                 const serverLogoutUrl = this.config.logoutUrl || (this.config.appUrl || '/');
                 const logoutBody = new URLSearchParams({
@@ -8591,7 +8614,7 @@ Purchased: ${ctx.purchased}
     }
 
     /**
-     * v1.7.1: Refresh WP REST nonce (fixes "Cookie check failed" after long sessions)
+     * v1.7.1: Refresh WP REST nonce (resolves "Cookie check failed" after long sessions)
      * v3.0.0: Uses authFetch() so nonce refresh works across domains too.
      */
     async refreshNonce() {

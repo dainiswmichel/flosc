@@ -207,7 +207,9 @@ class FLOSC_First_Party_Authentication {
         // v1.4.9: Use flow-aware URL so custom domains redirect correctly
         $app_url = $this->flosc->get_app_url();
         // v1.9.8: FloscAdmin-configured destination URL (empty = use app_url)
-        $configured_dest = get_option('flosc_login_destination', '');
+        // v10.0.0: Per-flow login_destination is resolved first; global
+        // flosc_login_destination remains the fallback via get_setting().
+        $configured_dest = flosc_get_setting('login_destination', '');
         $dest_url = !empty($configured_dest) ? $configured_dest : $app_url;
 
         // Check 1: If requested redirect is already to FLOSC app, allow it
@@ -272,6 +274,77 @@ class FLOSC_First_Party_Authentication {
         
         // Otherwise, let WooCommerce handle it normally
         return $redirect;
+    }
+
+    /**
+     * v10.0.0: Takeover WordPress native auth surfaces.
+     *
+     * Hooks into 'login_url' and (via takeover_wp_auth's register disable) routes
+     * WP's native login/registration destinations into the FLOSC app so the site
+     * exposes a SINGLE auth surface (no BuddyBoss double buttons / wp-login.php).
+     *
+     * Per-flow admin control: the flow setting 'takeover_wp_auth' (checkbox) turns
+     * this on. When on, the native login screen is redirected to the flow's app URL
+     * (which itself auto-opens the FLOSC Register-Or-LogIn modal via ?flosc_open_login=1).
+     *
+     * @param string $url    Current URL.
+     * @param string $redirect Requested redirect_to (unused; FLOSC owns the funnel).
+     * @param bool   $force_reauth Unused.
+     * @return string
+     */
+    public function takeover_wp_auth_url($url, $redirect = '', $force_reauth = false) {
+        if (!$this->is_takeover_enabled()) {
+            return $url;
+        }
+
+        // Never break the password-reset surface. WP's lost-password screen is a
+        // distinct surface; we only take over the SIGN-IN entry point, not recovery.
+        if (defined('WP_CLI') && WP_CLI) {
+            return $url;
+        }
+
+        // Keep a direct escape hatch for admins who must hit wp-login.php
+        // (e.g. an expired interactive session forces a deliberate re-auth).
+        // FLOSC's own auth still works for those users via the normal login path,
+        // but we must not loop the admin back into a modal that can't complete
+        // a re-login from a non-FLOSC-context screen.
+        $in_admin = (is_admin() && !wp_doing_ajax()) || (function_exists('wp_get_referer') && strpos((string) wp_get_referer(), '/wp-admin/') !== false);
+        if ($in_admin || $force_reauth) {
+            return $url;
+        }
+
+        // Open the FLOSC Register/Log-in modal IN PLACE (email + SSO) rather than
+        // navigating the user away to the full-page app. We point at the current
+        // front-end page URL with ?flosc_open_login=1, which flosc-app.js consumes
+        // to auto-open the combined auth modal without a cross-page jump.
+        return add_query_arg('flosc_open_login', '1', $this->get_front_current_url());
+    }
+
+    /**
+     * Current front-end page URL (no query args) for in-place auth modals.
+     * Returns the flow app URL as a safe fallback if a front-end URL cannot be
+     * determined (e.g. an odd CLI/server setup).
+     *
+     * @return string
+     */
+    private function get_front_current_url() {
+        if ($this->is_takeover_enabled() && !is_admin() && !empty($_SERVER['REQUEST_URI'])) {
+            $request_path = explode('?', sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])), 2)[0];
+            if ($request_path !== '' && $request_path !== false) {
+                return home_url($request_path);
+            }
+        }
+        return $this->flosc->get_app_url();
+    }
+
+    /**
+     * Whether the current flow has WP native auth takeover enabled.
+     *
+     * @return bool
+     */
+    private function is_takeover_enabled() {
+        $setting = flosc_get_setting('takeover_wp_auth', '');
+        return $setting !== '' && filter_var((string) $setting, FILTER_VALIDATE_BOOLEAN);
     }
 
     /**
@@ -398,7 +471,7 @@ class FLOSC_First_Party_Authentication {
             $this->flosc_token_auth_used = true;
 
             if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) {
-if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenticated user {$validated_user_id} via token (cookie auth bypassed)");
+                flosc_log("FLOSC Auth Token: Authenticated user {$validated_user_id} via token (cookie auth bypassed)");
             }
             return $validated_user_id;
         }
@@ -413,12 +486,93 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
         check_ajax_referer('flosc_logout', 'nonce');
 
         wp_logout();
-        $redirect = flosc_get_setting('logout_redirect_url', home_url());
-        wp_send_json_success(['redirect' => $redirect]);
+        wp_send_json_success(['redirect' => $this->resolve_logout_destination()]);
     }
 
     /**
-     * Action: wp_logout — Clear FLOSC auth token cookie.
+     * v10.0.0: Resolve the logout redirect destination.
+     *
+     * Priority (first match wins):
+     * 1. Current flow's per-flow 'logout_destination'
+     * 2. Entry-flow recall ('flosc_entry_flow' cookie) -> that flow's destination
+     * 3. Legacy global 'logout_redirect_url'
+     * 4. '/thank-you/' page when it exists (clear, brand-agnostic farewell)
+     * 5. Home URL
+     *
+     * @return string
+     */
+    private function resolve_logout_destination() {
+        // 1. Current flow per-flow destination.
+        $flow_dest = flosc_get_setting('logout_destination', '');
+        if ($flow_dest !== '') {
+            return esc_url_raw($flow_dest);
+        }
+
+        // 2. Entry-flow recall — the flow the visitor entered the FLOSC ecosystem
+        // via. Cleared on logout by clear_flosc_auth_token().
+        $entry_flow = '';
+        if (!empty($_COOKIE['flosc_entry_flow'])) {
+            $entry_flow = sanitize_key((string) wp_unslash($_COOKIE['flosc_entry_flow']));
+        }
+        if ($entry_flow !== '') {
+            $recall_dest = flosc_get_setting('logout_destination', '', $entry_flow);
+            if ($recall_dest !== '') {
+                return esc_url_raw($recall_dest);
+            }
+        }
+
+        // 3. Legacy global destination.
+        $legacy = flosc_get_setting('logout_redirect_url', '');
+        if ($legacy !== '') {
+            return esc_url_raw($legacy);
+        }
+
+        // 4. A usable /thank-you/ page, if present (brand-agnostic farewell page).
+        $thank_you_url = '';
+        if (function_exists('get_page_by_path')) {
+            $thank_you_page = get_page_by_path('thank-you');
+            if ($thank_you_page instanceof WP_Post) {
+                $thank_you_url = get_permalink($thank_you_page);
+            }
+        }
+        if ($thank_you_url) {
+            return esc_url_raw((string) $thank_you_url);
+        }
+
+        // 5. Home.
+        return home_url();
+    }
+
+    /**
+     * v10.0.0: Remember the entry flow so logout can recall it (per-flow logout
+     * destination). Single-session, host-global (not flow-scoped), cleared on logout.
+     *
+     * @param string $flow_id Normalized flow id/stem.
+     */
+    public function set_entry_flow_cookie($flow_id) {
+        if (headers_sent()) {
+            return;
+        }
+        $flow_id = sanitize_key((string) $flow_id);
+        if ($flow_id === '') {
+            return;
+        }
+        // First visit only — don't overwrite the original entry flow mid-session.
+        if (!empty($_COOKIE['flosc_entry_flow'])) {
+            return;
+        }
+        setcookie('flosc_entry_flow', $flow_id, [
+            'expires'  => time() + WEEK_IN_SECONDS,
+            'path'     => '/',
+            'domain'   => '',
+            'secure'   => is_ssl(),
+            'httponly' => false,
+            'samesite' => 'Lax',
+        ]);
+    }
+
+    /**
+     * Action: wp_logout — Clear FLOSC auth token + entry-flow recall cookies.
      */
     public function clear_flosc_auth_token() {
         if (headers_sent()) {
@@ -432,6 +586,17 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC Auth Token: Authenti
             'domain'   => '',
             'secure'   => is_ssl(),
             'httponly'  => true,
+            'samesite' => 'Lax',
+        ]);
+
+        // v10.0.0: Entry-flow recall is single-session state; wipe it on logout so
+        // a later login starts a fresh entry-flow journey.
+        setcookie('flosc_entry_flow', '', [
+            'expires'  => time() - YEAR_IN_SECONDS,
+            'path'     => '/',
+            'domain'   => '',
+            'secure'   => is_ssl(),
+            'httponly' => false,
             'samesite' => 'Lax',
         ]);
     }

@@ -343,6 +343,69 @@ $flosc_signup_action = $flosc_flow_settings['header_signup_action'] ?? 'open_log
 
 <hr>
 
+<h2>Login &amp; Logout Destinations</h2>
+<p class="description">
+    Route WordPress native auth surfaces to FLOSC and control where users land after
+    login/logout. All settings are <strong>per floscFlow</strong>; leave blank to fall back
+    to the flow's FLOSC app URL (login) / the <code>Logout</code> destination (configured below).
+    These override the <em>global-context</em> legacy <code>flosc_login_destination</code> behavior.
+</p>
+<table class="form-table">
+    <tr>
+        <th scope="row">Take over WP native auth</th>
+        <td>
+            <label>
+                <input type="checkbox" name="flow_takeover_wp_auth" value="1"
+                    <?php checked(!empty($flosc_flow_settings['takeover_wp_auth'])); ?>>
+                Route the WordPress <strong>Sign in</strong> (header/theme) and
+                <code>wp-login.php</code> / registration surfaces to this flow's
+                FLOSC app — single auth surface, no BuddyBoss double buttons.
+            </label>
+            <p class="description">
+                When on, WP-native login/register links point at the flow app URL
+                (<code>?flosc_open_login=1</code> auto-opens the FLOSC modal). Leave off
+                to keep WordPress's default auth pages.
+            </p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_login_destination">Login destination</label></th>
+        <td>
+            <input type="url" id="flow_login_destination" name="flow_login_destination"
+                   value="<?php echo esc_attr($flosc_flow_settings['login_destination'] ?? ''); ?>"
+                   class="large-text" placeholder="https://...">
+            <p class="description">
+                Where a user is redirected <strong>after login</strong>. Empty = this flow's
+                FLOSC app URL (default behavior).
+            </p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_logout_destination">Logout destination</label></th>
+        <td>
+            <input type="url" id="flow_logout_destination" name="flow_logout_destination"
+                   value="<?php echo esc_attr($flosc_flow_settings['logout_destination'] ?? ''); ?>"
+                   class="large-text" placeholder="https://...">
+            <p class="description">
+                Where a user is redirected <strong>after logout</strong>. Empty =
+                <code>wp_logout_url</code> home fallback. If the visitor entered via a
+                specific flow, its destination is used (entry-flow recall).
+            </p>
+        </td>
+    </tr>
+    <tr>
+        <th scope="row"><label for="flow_logout_farewell_message">Logout farewell message</label></th>
+        <td>
+            <textarea id="flow_logout_farewell_message" name="flow_logout_farewell_message"
+                      class="large-text" rows="2"><?php echo esc_textarea($flosc_flow_settings['logout_farewell_message'] ?? 'Thank you for visiting the {product_name} ecosystem — we look forward to seeing you again!'); ?></textarea>
+            <p class="description">
+                Shown briefly after logout (chat area) before the redirect. Placeholder:
+                <code>{product_name}</code>. Leave empty to show nothing.
+            </p>
+        </td>
+    </tr>
+</table>
+
 <?php
 // ─── Guest Access Link (MagicLink) ─────────────────────────────────────────
 // Neutral product defaults. Never hardcode a site-specific brand name here —

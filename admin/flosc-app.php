@@ -891,6 +891,12 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
             : 'flosc_default_technical_ivr.md';
         $flosc_flow_id = $flosc_current_flow['id'] ?? '';
 
+        // v10.0.0: Record the entry flow (first visit only) so logout can recall
+        // the per-flow logout destination. Non-blocking; idempotent server-side.
+        if ($flosc_flow_id !== '' && method_exists(flosc(), 'set_entry_flow_cookie')) {
+            flosc()->set_entry_flow_cookie($flosc_flow_id);
+        }
+
         // Flow bag runtime first, IVR file only as empty-bag fallback.
         $flosc_ivr_config = flosc_resolve_flow_runtime($flosc_flow_id, $flosc_ivr_filename);
 
@@ -983,9 +989,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             }
 
             $flosc_ajax_url = admin_url('admin-ajax.php');
-            $flosc_logout_url = wp_logout_url(
-                flosc_get_setting('logout_redirect_url', $flosc_app_url)
-            );
+            // v10.0.0: Resolve logout destination per-flow, then legacy, then flow app URL.
+            $flosc_logout_dest = flosc_get_setting('logout_destination', '');
+            if ($flosc_logout_dest === '') {
+                $flosc_logout_dest = flosc_get_setting('logout_redirect_url', $flosc_app_url);
+            }
+            $flosc_logout_url = wp_logout_url($flosc_logout_dest);
             if (defined('FLOSC_CUSTOM_DOMAIN_ACTIVE') && FLOSC_CUSTOM_DOMAIN_ACTIVE) {
                 $flosc_request_host = strtolower(sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'] ?? '')));
                 $flosc_flow_domain = strtolower(preg_replace('#^https?://#', '', trim((string) ($flosc_current_flow['custom_domain'] ?? ''))));
@@ -1192,6 +1201,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             'companionStateStorage' => $flosc_companion_state_storage,
             'ajaxUrl' => $flosc_ajax_url,
             'logoutNonce' => wp_create_nonce('flosc_logout'),
+            'logoutFarewell' => flosc_get_setting('logout_farewell_message', ''),
             'profileUrl' => ($flosc_user && function_exists('bp_core_get_user_domain')) ? bp_core_get_user_domain($flosc_user->ID) : admin_url('profile.php'),
             'dashboardUrl' => admin_url(),
             'loginUrl' => wp_login_url($flosc_app_url),
