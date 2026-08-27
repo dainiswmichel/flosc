@@ -989,11 +989,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC v1.5.0: IVR config l
             }
 
             $flosc_ajax_url = admin_url('admin-ajax.php');
-            // v10.0.0: Resolve logout destination per-flow, then legacy, then flow app URL.
-            $flosc_logout_dest = flosc_get_setting('logout_destination', '');
-            if ($flosc_logout_dest === '') {
-                $flosc_logout_dest = flosc_get_setting('logout_redirect_url', $flosc_app_url);
-            }
+            $flosc_logout_dest = method_exists(flosc(), 'get_logout_redirect_url')
+                ? flosc()->get_logout_redirect_url()
+                : flosc_get_setting('logout_redirect_url', $flosc_app_url);
             $flosc_logout_url = wp_logout_url($flosc_logout_dest);
             if (defined('FLOSC_CUSTOM_DOMAIN_ACTIVE') && FLOSC_CUSTOM_DOMAIN_ACTIVE) {
                 $flosc_request_host = strtolower(sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'] ?? '')));

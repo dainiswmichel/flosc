@@ -277,64 +277,83 @@ class FLOSC_First_Party_Authentication {
     }
 
     /**
-     * v10.0.0: Takeover WordPress native auth surfaces.
+     * Take over WordPress/BuddyBoss generated login and registration URLs.
      *
-     * Hooks into 'login_url' and (via takeover_wp_auth's register disable) routes
-     * WP's native login/registration destinations into the FLOSC app so the site
-     * exposes a SINGLE auth surface (no BuddyBoss double buttons / wp-login.php).
+     * When the current flow has takeover_wp_auth on, header/theme Sign-in and
+     * Register links (wp_login_url / wp_registration_url) point at this flow's
+     * FLOSC app URL with ?flosc_open_login=1. flosc-app.js on that page opens
+     * the combined Register-or-Log-In modal. Direct wp-login.php remains
+     * reachable as an admin backup; lost-password uses lostpassword_url, which
+     * this filter does not touch.
      *
-     * Per-flow admin control: the flow setting 'takeover_wp_auth' (checkbox) turns
-     * this on. When on, the native login screen is redirected to the flow's app URL
-     * (which itself auto-opens the FLOSC Register-Or-LogIn modal via ?flosc_open_login=1).
-     *
-     * @param string $url    Current URL.
-     * @param string $redirect Requested redirect_to (unused; FLOSC owns the funnel).
-     * @param bool   $force_reauth Unused.
+     * @param string $url          Current login or registration URL.
+     * @param string $redirect     Requested redirect_to (unused; FLOSC owns the funnel).
+     * @param bool   $force_reauth Leave WordPress login alone for a forced re-auth.
      * @return string
      */
     public function takeover_wp_auth_url($url, $redirect = '', $force_reauth = false) {
-        if (!$this->is_takeover_enabled()) {
+        if ($this->should_skip_wp_auth_takeover($force_reauth)) {
             return $url;
         }
 
-        // Never break the password-reset surface. WP's lost-password screen is a
-        // distinct surface; we only take over the SIGN-IN entry point, not recovery.
-        if (defined('WP_CLI') && WP_CLI) {
+        $app_url = $this->flosc->get_app_url();
+        if (!is_string($app_url) || $app_url === '') {
             return $url;
         }
 
-        // Keep a direct escape hatch for admins who must hit wp-login.php
-        // (e.g. an expired interactive session forces a deliberate re-auth).
-        // FLOSC's own auth still works for those users via the normal login path,
-        // but we must not loop the admin back into a modal that can't complete
-        // a re-login from a non-FLOSC-context screen.
-        $in_admin = (is_admin() && !wp_doing_ajax()) || (function_exists('wp_get_referer') && strpos((string) wp_get_referer(), '/wp-admin/') !== false);
-        if ($in_admin || $force_reauth) {
-            return $url;
-        }
-
-        // Open the FLOSC Register/Log-in modal IN PLACE (email + SSO) rather than
-        // navigating the user away to the full-page app. We point at the current
-        // front-end page URL with ?flosc_open_login=1, which flosc-app.js consumes
-        // to auto-open the combined auth modal without a cross-page jump.
-        return add_query_arg('flosc_open_login', '1', $this->get_front_current_url());
+        return add_query_arg('flosc_open_login', '1', $app_url);
     }
 
     /**
-     * Current front-end page URL (no query args) for in-place auth modals.
-     * Returns the flow app URL as a safe fallback if a front-end URL cannot be
-     * determined (e.g. an odd CLI/server setup).
+     * Take over WordPress/BuddyBoss generated logout URLs on the front end.
+     *
+     * Must not call wp_logout_url() — that filter is how this method is reached.
+     *
+     * @param string $logout_url Current logout URL.
+     * @param string $redirect   Requested redirect (ignored; FLOSC destination wins).
+     * @return string
+     */
+    public function takeover_wp_logout_url($logout_url, $redirect = '') {
+        if ($this->should_skip_wp_auth_takeover(false)) {
+            return $logout_url;
+        }
+
+        return $this->build_front_logout_url($this->resolve_logout_destination());
+    }
+
+    /**
+     * Public logout redirect used by both AJAX logout and FLOSC_CONFIG.logoutUrl.
      *
      * @return string
      */
-    private function get_front_current_url() {
-        if ($this->is_takeover_enabled() && !is_admin() && !empty($_SERVER['REQUEST_URI'])) {
-            $request_path = explode('?', sanitize_text_field(wp_unslash($_SERVER['REQUEST_URI'])), 2)[0];
-            if ($request_path !== '' && $request_path !== false) {
-                return home_url($request_path);
-            }
+    public function get_logout_redirect_url() {
+        return $this->resolve_logout_destination();
+    }
+
+    /**
+     * True when generated WP auth links must stay on WordPress (admin, CLI, re-auth).
+     *
+     * @param bool $force_reauth From the login_url filter.
+     * @return bool
+     */
+    private function should_skip_wp_auth_takeover($force_reauth = false) {
+        if (!$this->is_takeover_enabled()) {
+            return true;
         }
-        return $this->flosc->get_app_url();
+        if (defined('WP_CLI') && WP_CLI) {
+            return true;
+        }
+        if ($force_reauth) {
+            return true;
+        }
+        if (is_admin() && !wp_doing_ajax()) {
+            return true;
+        }
+        $referer = function_exists('wp_get_referer') ? (string) wp_get_referer() : '';
+        if ($referer !== '' && strpos($referer, '/wp-admin/') !== false) {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -345,6 +364,37 @@ class FLOSC_First_Party_Authentication {
     private function is_takeover_enabled() {
         $setting = flosc_get_setting('takeover_wp_auth', '');
         return $setting !== '' && filter_var((string) $setting, FILTER_VALIDATE_BOOLEAN);
+    }
+
+    /**
+     * Same-host wp-login.php?action=logout URL with the log-out nonce.
+     *
+     * @param string $redirect Post-logout location.
+     * @return string
+     */
+    public function build_front_logout_url($redirect) {
+        $redirect = esc_url_raw((string) $redirect);
+        $login_base = site_url('wp-login.php', 'login');
+
+        if (defined('FLOSC_CUSTOM_DOMAIN_ACTIVE') && FLOSC_CUSTOM_DOMAIN_ACTIVE) {
+            $host = strtolower(sanitize_text_field(wp_unslash($_SERVER['HTTP_HOST'] ?? '')));
+            $flow = method_exists($this->flosc, 'get_current_flow') ? $this->flosc->get_current_flow() : null;
+            $flow_domain = '';
+            if (is_array($flow) && !empty($flow['custom_domain'])) {
+                $flow_domain = strtolower(preg_replace('#^https?://#', '', trim((string) $flow['custom_domain'])));
+                $flow_domain = rtrim($flow_domain, '/');
+            }
+            if ($host !== '' && $flow_domain !== '' && ($host === $flow_domain || $host === 'www.' . $flow_domain)) {
+                $login_base = (is_ssl() ? 'https://' : 'http://') . $host . '/wp-login.php';
+            }
+        }
+
+        $args = array('action' => 'logout');
+        if ($redirect !== '') {
+            $args['redirect_to'] = $redirect;
+        }
+
+        return wp_nonce_url(add_query_arg($args, $login_base), 'log-out');
     }
 
     /**
