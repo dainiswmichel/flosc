@@ -1316,10 +1316,6 @@ class FLOSC_Framework {
         add_filter('login_redirect', [$this, 'handle_login_redirect'], 999, 3);
         add_filter('woocommerce_login_redirect', [$this, 'handle_woocommerce_login_redirect'], 999, 2);
 
-        // Take over WP/BuddyBoss generated Sign-in, Register, and front-end
-        // logout links when the current flow has takeover_wp_auth on. Priority
-        // 999 is after BuddyBoss/theme so FLOSC has the last word. wp-login.php
-        // remains a direct backup; lost-password is a different filter.
         add_filter('login_url', [$this, 'takeover_wp_auth_url'], 999, 3);
         add_filter('register_url', [$this, 'take_over_wp_registration_url'], 999);
         add_filter('logout_url', [$this, 'takeover_wp_logout_url'], 999, 2);

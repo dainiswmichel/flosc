@@ -195,29 +195,18 @@ class FLOSC_First_Party_Authentication {
     }
 
     /**
-     * v9.5.7: Redirect users to FLOSC app after login
-     * v1.0.0: ONLY redirect if user was on FLOSC app or has pre-login quiz score
-     * v1.4.9: Use get_app_url() for custom domain support (the flow domain, flosc.ai)
-     *
-     * IMPORTANT: This function does NOT hijack normal WordPress logins.
-     * Only redirects to FLOSC app when there's a clear FLOSC context.
+     * login_redirect: login_destination or get_app_url() when the request is FLOSC.
+     * wp-login.php / wp-admin logins keep $redirect_to.
      */
     public function handle_login_redirect($redirect_to, $requested_redirect_to, $user) {
-        $app_slug = get_option('flosc_app_slug', 'flosc');
-        // v1.4.9: Use flow-aware URL so custom domains redirect correctly
         $app_url = $this->flosc->get_app_url();
-        // v1.9.8: FloscAdmin-configured destination URL (empty = use app_url)
-        // v10.0.0: Per-flow login_destination is resolved first; global
-        // flosc_login_destination remains the fallback via get_setting().
         $configured_dest = flosc_get_setting('login_destination', '');
-        $dest_url = !empty($configured_dest) ? $configured_dest : $app_url;
+        $dest_url = $configured_dest !== '' ? $configured_dest : $app_url;
 
-        // Check 1: If requested redirect is already to FLOSC app, allow it
-        if (!empty($requested_redirect_to) && strpos($requested_redirect_to, '/' . $app_slug) !== false) {
-            return $requested_redirect_to;
+        if (!empty($requested_redirect_to) && $this->url_is_flosc_app($requested_redirect_to)) {
+            return $dest_url;
         }
 
-        // v1.4.9: Also check if requested redirect is to a custom domain flow
         if (!empty($requested_redirect_to)) {
             $flows = get_option('flosc_flows', []);
             foreach ($flows as $flow) {
@@ -227,68 +216,36 @@ class FLOSC_First_Party_Authentication {
             }
         }
 
-        // Check 2: If user has a pre-login quiz score cookie, redirect to configured destination
         $score_data = $this->flosc->get_signed_cookie('flosc_prelogin_score');
         if ($score_data && isset($score_data['score'])) {
             return $dest_url;
         }
 
-        // Check 3: If referrer was the FLOSC app, redirect to configured destination
         $referer = wp_get_referer();
-        if ($referer) {
-            // Check slug-based URL
-            if (strpos($referer, '/' . $app_slug) !== false) {
-                return $dest_url;
-            }
-            // v1.4.9: Check custom domain referrers
-            $referer_host = wp_parse_url($referer, PHP_URL_HOST);
-            if ($referer_host) {
-                $current_flow = $this->flosc->get_current_flow();
-                if ($current_flow && !empty($current_flow['custom_domain'])) {
-                    $flow_domain = strtolower(preg_replace('#^https?://#', '', trim($current_flow['custom_domain'])));
-                    if (strtolower($referer_host) === $flow_domain) {
-                        return $dest_url;
-                    }
-                }
-            }
+        if ($referer && $this->url_is_flosc_app($referer)) {
+            return $dest_url;
         }
 
-        // Otherwise, respect WordPress's default redirect behavior
-        // This allows normal WordPress posts/pages to work properly
         return $redirect_to;
     }
 
     /**
-     * v9.5.7: Handle WooCommerce-specific login redirect
-     * v1.0.0: ONLY redirect to FLOSC app if there's FLOSC context
-     * v1.4.9: Custom domain support
+     * woocommerce_login_redirect: get_app_url() when referer is the FLOSC app.
      */
     public function handle_woocommerce_login_redirect($redirect, $user) {
-        $app_slug = get_option('flosc_app_slug', 'flosc');
-
-        // Only redirect if referrer was FLOSC app
         $referer = wp_get_referer();
-        if ($referer && strpos($referer, '/' . $app_slug) !== false) {
+        if ($referer && $this->url_is_flosc_app($referer)) {
             return $this->flosc->get_app_url();
         }
-        
-        // Otherwise, let WooCommerce handle it normally
         return $redirect;
     }
 
     /**
-     * Take over WordPress/BuddyBoss generated login and registration URLs.
+     * login_url / register_url → get_app_url()?flosc_open_login=1 when takeover_wp_auth is on.
      *
-     * When the current flow has takeover_wp_auth on, header/theme Sign-in and
-     * Register links (wp_login_url / wp_registration_url) point at this flow's
-     * FLOSC app URL with ?flosc_open_login=1. flosc-app.js on that page opens
-     * the combined Register-or-Log-In modal. Direct wp-login.php remains
-     * reachable as an admin backup; lost-password uses lostpassword_url, which
-     * this filter does not touch.
-     *
-     * @param string $url          Current login or registration URL.
-     * @param string $redirect     Requested redirect_to (unused; FLOSC owns the funnel).
-     * @param bool   $force_reauth Leave WordPress login alone for a forced re-auth.
+     * @param string $url
+     * @param string $redirect
+     * @param bool   $force_reauth
      * @return string
      */
     public function takeover_wp_auth_url($url, $redirect = '', $force_reauth = false) {
@@ -305,12 +262,11 @@ class FLOSC_First_Party_Authentication {
     }
 
     /**
-     * Take over WordPress/BuddyBoss generated logout URLs on the front end.
+     * logout_url → wp-login.php?action=logout on the current flow host.
+     * Does not call wp_logout_url() (this method is that filter).
      *
-     * Must not call wp_logout_url() — that filter is how this method is reached.
-     *
-     * @param string $logout_url Current logout URL.
-     * @param string $redirect   Requested redirect (ignored; FLOSC destination wins).
+     * @param string $logout_url
+     * @param string $redirect
      * @return string
      */
     public function takeover_wp_logout_url($logout_url, $redirect = '') {
@@ -322,8 +278,6 @@ class FLOSC_First_Party_Authentication {
     }
 
     /**
-     * Public logout redirect used by both AJAX logout and FLOSC_CONFIG.logoutUrl.
-     *
      * @return string
      */
     public function get_logout_redirect_url() {
@@ -331,9 +285,7 @@ class FLOSC_First_Party_Authentication {
     }
 
     /**
-     * True when generated WP auth links must stay on WordPress (admin, CLI, re-auth).
-     *
-     * @param bool $force_reauth From the login_url filter.
+     * @param bool $force_reauth
      * @return bool
      */
     private function should_skip_wp_auth_takeover($force_reauth = false) {
@@ -357,8 +309,6 @@ class FLOSC_First_Party_Authentication {
     }
 
     /**
-     * Whether the current flow has WP native auth takeover enabled.
-     *
      * @return bool
      */
     private function is_takeover_enabled() {
@@ -367,9 +317,38 @@ class FLOSC_First_Party_Authentication {
     }
 
     /**
-     * Same-host wp-login.php?action=logout URL with the log-out nonce.
+     * True when $url is get_app_url(), its path, flosc_open_login, or flosc_app_slug.
      *
-     * @param string $redirect Post-logout location.
+     * @param string $url
+     * @return bool
+     */
+    private function url_is_flosc_app($url) {
+        $url = (string) $url;
+        if ($url === '') {
+            return false;
+        }
+        if (strpos($url, 'flosc_open_login=') !== false) {
+            return true;
+        }
+
+        $app_url = (string) $this->flosc->get_app_url();
+        $app_path = untrailingslashit((string) wp_parse_url($app_url, PHP_URL_PATH));
+        $url_path = untrailingslashit((string) wp_parse_url($url, PHP_URL_PATH));
+        $app_host = strtolower((string) wp_parse_url($app_url, PHP_URL_HOST));
+        $url_host = strtolower((string) wp_parse_url($url, PHP_URL_HOST));
+        $hosts_ok = ($app_host === '' || $url_host === '' || $app_host === $url_host);
+        if ($hosts_ok && $app_path !== '' && $url_path !== '' && ($url_path === $app_path || strpos($url_path . '/', $app_path . '/') === 0)) {
+            return true;
+        }
+
+        $slug = (string) get_option('flosc_app_slug', 'flosc');
+        return $slug !== '' && strpos($url, '/' . $slug) !== false;
+    }
+
+    /**
+     * wp-login.php?action=logout&redirect_to=…&_wpnonce=… on HTTP_HOST when that host is the flow domain.
+     *
+     * @param string $redirect
      * @return string
      */
     public function build_front_logout_url($redirect) {
@@ -540,26 +519,17 @@ class FLOSC_First_Party_Authentication {
     }
 
     /**
-     * v10.0.0: Resolve the logout redirect destination.
-     *
-     * Priority (first match wins):
-     * 1. Current flow's per-flow 'logout_destination'
-     * 2. Entry-flow recall ('flosc_entry_flow' cookie) -> that flow's destination
-     * 3. Legacy global 'logout_redirect_url'
-     * 4. '/thank-you/' page when it exists (clear, brand-agnostic farewell)
-     * 5. Home URL
+     * logout_destination (current flow, then flosc_entry_flow cookie), then
+     * logout_redirect_url, then get_page_by_path('thank-you'), then home_url().
      *
      * @return string
      */
     private function resolve_logout_destination() {
-        // 1. Current flow per-flow destination.
         $flow_dest = flosc_get_setting('logout_destination', '');
         if ($flow_dest !== '') {
             return esc_url_raw($flow_dest);
         }
 
-        // 2. Entry-flow recall — the flow the visitor entered the FLOSC ecosystem
-        // via. Cleared on logout by clear_flosc_auth_token().
         $entry_flow = '';
         if (!empty($_COOKIE['flosc_entry_flow'])) {
             $entry_flow = sanitize_key((string) wp_unslash($_COOKIE['flosc_entry_flow']));
@@ -571,33 +541,26 @@ class FLOSC_First_Party_Authentication {
             }
         }
 
-        // 3. Legacy global destination.
         $legacy = flosc_get_setting('logout_redirect_url', '');
         if ($legacy !== '') {
             return esc_url_raw($legacy);
         }
 
-        // 4. A usable /thank-you/ page, if present (brand-agnostic farewell page).
-        $thank_you_url = '';
         if (function_exists('get_page_by_path')) {
             $thank_you_page = get_page_by_path('thank-you');
             if ($thank_you_page instanceof WP_Post) {
-                $thank_you_url = get_permalink($thank_you_page);
+                $permalink = get_permalink($thank_you_page);
+                if ($permalink) {
+                    return esc_url_raw((string) $permalink);
+                }
             }
         }
-        if ($thank_you_url) {
-            return esc_url_raw((string) $thank_you_url);
-        }
 
-        // 5. Home.
         return home_url();
     }
 
     /**
-     * v10.0.0: Remember the entry flow so logout can recall it (per-flow logout
-     * destination). Single-session, host-global (not flow-scoped), cleared on logout.
-     *
-     * @param string $flow_id Normalized flow id/stem.
+     * @param string $flow_id
      */
     public function set_entry_flow_cookie($flow_id) {
         if (headers_sent()) {
