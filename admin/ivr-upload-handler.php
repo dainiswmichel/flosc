@@ -118,10 +118,13 @@ if ( ! function_exists( 'flosc_portability_collect_kit_files' ) ) {
 
 if ( ! function_exists( 'flosc_portability_write_uploads_file' ) ) {
 	/**
-	 * FLOSC_Filesystem::write_file_safely() for a path under wp-content/uploads.
+	 * Write a file that already sits under wp-content/uploads.
 	 *
-	 * @param string $path
-	 * @param string $content
+	 * Single write chokepoint for this handler: FLOSC_Filesystem refuses
+	 * plugin-directory targets. Callers must not fall back to PHP file writes.
+	 *
+	 * @param string $path    Absolute path under uploads.
+	 * @param string $content File body.
 	 * @return bool
 	 */
 	function flosc_portability_write_uploads_file( $path, $content ) {
@@ -335,6 +338,8 @@ if ( ! function_exists( 'flosc_portability_pack_dir' ) ) {
 		if ( ! wp_mkdir_p( $base ) ) {
 			return '';
 		}
+		// Block directory listing. Do not write Deny-from-all here: pack files
+		// are addressed by URL for admin download of staged WXR.
 		$silence = "<?php\n// Silence is golden.\n";
 		if ( ! file_exists( $base . '/index.php' ) ) {
 			flosc_portability_write_uploads_file( $base . '/index.php', $silence );
