@@ -4786,6 +4786,7 @@ class floscApp {
                     this.authToken = '';
                     this.config.authToken = '';
                     this.currentSession = null;
+                    this._visitorSessionId = null;
 
                     try {
                         localStorage.removeItem('flosc_auth_token');
@@ -4799,17 +4800,18 @@ class floscApp {
                         this.logWarn('[FLOSC Auth] Could not clear active chat session key:', e);
                     }
 
-                    // The transcript is the leak, and it goes. The anonymous visitor
-                    // id stays: it is a device-level free-tier meter that predates this
-                    // login, carries no account data, and identifies nobody. Wiping it
-                    // would hand every logout a fresh full grant -- a farm, not a reset
-                    // -- and would treat someone who has already engaged as a brand new
-                    // arrival. What must never survive is the account's balance; the
-                    // companion drops its cached wallet in handleLogoutComplete().
+                    // Clean slate: the device keeps nothing. Transcript and anonymous
+                    // visitor id both go, so the next opener is a new visitor in every
+                    // sense -- not because anything was detected about them, but because
+                    // nothing was kept. A returning member gets their history back the
+                    // ordinary way, by logging in again; it lives on the account, not
+                    // here. The cost is that a new visitor id draws a fresh token grant,
+                    // which is bounded by per-flow spend limits, not by device state.
                     try {
                         this.removeVisitorJourneyItem('flosc_visitor_messages');
+                        this.removeVisitorJourneyItem('flosc_visitor_session');
                     } catch (e) {
-                        this.logWarn('[FLOSC Auth] Could not clear visitor transcript:', e);
+                        this.logWarn('[FLOSC Auth] Could not clear visitor journey keys:', e);
                     }
                 };
 
