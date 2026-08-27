@@ -28,7 +28,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Auth-cookie inventory (remaining justified paths when MagicLink OFF):
  * - SSO OAuth success → log_user_in + short-lived flosc_login_token (cross-domain).
- * - User registration + email verification (no cookie on verify by design).
+ * - User registration + email verification (cookie set when the user clicks the verify URL).
  * - Purchase-driven wp_create_user after payment/IPN proof (PayPal/ClickBank).
  * - Post-purchase instant cookie / emailed login token: default OFF
  *   (flosc_post_purchase_instant_login / flosc_post_purchase_login_token).
@@ -170,6 +170,11 @@ trait FLOSC_Magic_Link_Trait {
             }
             // Consume token only after successful activation.
             delete_transient($transient_key);
+            wp_set_current_user($user_id);
+            wp_set_auth_cookie($user_id, true);
+            if (method_exists($this, 'generate_flosc_auth_token') && method_exists($this, 'set_flosc_auth_cookie')) {
+                $this->set_flosc_auth_cookie($this->generate_flosc_auth_token($user_id));
+            }
             $flow_id = sanitize_key((string) ($payload['flow_id'] ?? ''));
             $dest = $this->get_guest_link_base_url($flow_id);
             if ($dest === '') {

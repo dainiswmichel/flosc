@@ -151,6 +151,7 @@
             this.applyMotionMode();
             this.syncViewportCssVars();
             this.bindEvents();
+            this.openHostAuthModalFromQuery();
             this.applyHandoffRequest();
             this.restoreNavigationStateIfNeeded();
             this.restoreOpenStateIfNeeded();
@@ -940,6 +941,9 @@
             }
             try {
                 var url = new URL(raw, window.location.origin);
+                if (url.searchParams.has('flosc_open_login')) {
+                    return true;
+                }
                 var path = String(url.pathname || '').toLowerCase();
                 if (path.indexOf('wp-login.php') === -1) {
                     return false;
@@ -970,6 +974,23 @@
                 // Ignore.
             }
             return minted;
+        },
+
+        openHostAuthModalFromQuery: function() {
+            if (this.config.isLoggedIn) {
+                return;
+            }
+            try {
+                var url = new URL(window.location.href);
+                if (!url.searchParams.has('flosc_open_login')) {
+                    return;
+                }
+                url.searchParams.delete('flosc_open_login');
+                window.history.replaceState({}, document.title, url.toString());
+            } catch (e) {
+                return;
+            }
+            this.openHostAuthModal();
         },
 
         openHostAuthModal: function() {
