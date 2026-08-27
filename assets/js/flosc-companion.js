@@ -644,6 +644,15 @@
                     // Storage unavailable in this context.
                 }
 
+                // A logged-out reader must never be shown the member or guest balance.
+                // Drop the cached wallet so the panel repaints from the visitor wallet
+                // the server issues, not the account's last known number.
+                try {
+                    window.sessionStorage.removeItem(self.getTokenCacheKey());
+                } catch (e) {
+                    // Storage unavailable, or the key was never written.
+                }
+
                 // An explicit non-app destination is a deliberate farewell page and is
                 // honoured. Otherwise stay put and repaint, so the theme header stops
                 // showing a signed-in member without yanking the reader off the page
