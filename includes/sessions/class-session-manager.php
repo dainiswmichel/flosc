@@ -146,7 +146,7 @@ class FLOSC_Session_Manager {
      * @param string $flow_id Flow stem for isolation.
      * @return array
      */
-    public function flosc_create_session($user_id, $title = 'New Chat', $flow_id = '') {
+    public function flosc_create_session($user_id, $title = 'New Chat', $flow_id = '', $seed_messages = array()) {
 
         $stem = $this->resolve_flow_stem($flow_id);
         if ($stem === '') {
@@ -165,7 +165,7 @@ class FLOSC_Session_Manager {
         $session = [
             'id'         => $session_id,
             'title'      => $title,
-            'messages'   => [],
+            'messages'   => $this->normalize_seed_messages($seed_messages),
             'created_at' => $now,
             'updated_at' => $now,
             'flow_id'    => $stem,
@@ -175,6 +175,55 @@ class FLOSC_Session_Manager {
         update_user_meta($user_id, $this->flosc_session_meta_key, $sessions);
 
         return $session;
+    }
+
+    /**
+     * Normalize client-supplied seed messages for a newly created session.
+     *
+     * Used when a visitor authenticates mid-conversation: the turns they already
+     * had are written into the session created for their account, so the thread
+     * is not stranded on the device. Anything malformed is dropped, never stored.
+     *
+     * @param mixed $seed_messages Raw messages from the request.
+     * @return array Normalized message rows (most recent 50).
+     */
+    private function normalize_seed_messages($seed_messages) {
+        if (!is_array($seed_messages) || empty($seed_messages)) {
+            return [];
+        }
+
+        $now = current_time('mysql');
+        $out = [];
+
+        foreach (array_slice($seed_messages, -50) as $raw) {
+            if (!is_array($raw)) {
+                continue;
+            }
+
+            $role = sanitize_key((string) ($raw['role'] ?? ''));
+            if ($role !== 'user' && $role !== 'assistant') {
+                continue;
+            }
+
+            $content = wp_kses_post((string) ($raw['content'] ?? ''));
+            $content = trim($content);
+            if ($content === '') {
+                continue;
+            }
+            if (function_exists('mb_substr')) {
+                $content = mb_substr($content, 0, 4000);
+            } else {
+                $content = substr($content, 0, 4000);
+            }
+
+            $out[] = [
+                'role'      => $role,
+                'content'   => $content,
+                'timestamp' => $now,
+            ];
+        }
+
+        return $out;
     }
 
     /**

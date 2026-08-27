@@ -148,7 +148,31 @@ class FLOSC_Session_Rest {
             }
         }
 
-        $session = $this->flosc->sessions()->flosc_create_session($user_id, $title, $flow_stem);
+        // v10.1.0: A visitor who authenticates mid-conversation hands over the turns
+        // they already had, so the thread lands on the account instead of being
+        // stranded on the device. Absent param = previous behaviour, unchanged.
+        $seed_messages = $request->get_param('messages');
+        $seed_messages = is_array($seed_messages) ? $seed_messages : [];
+
+        if (!empty($seed_messages)) {
+            $first_user_line = '';
+            foreach ($seed_messages as $seed_row) {
+                if (!is_array($seed_row) || ($seed_row['role'] ?? '') !== 'user') {
+                    continue;
+                }
+                $first_user_line = trim(wp_strip_all_tags((string) ($seed_row['content'] ?? '')));
+                if ($first_user_line !== '') {
+                    break;
+                }
+            }
+            if ($first_user_line !== '') {
+                $title = function_exists('mb_substr')
+                    ? mb_substr($first_user_line, 0, 60)
+                    : substr($first_user_line, 0, 60);
+            }
+        }
+
+        $session = $this->flosc->sessions()->flosc_create_session($user_id, $title, $flow_stem, $seed_messages);
         if (!$session) {
             return new WP_REST_Response([
                 'success' => false,

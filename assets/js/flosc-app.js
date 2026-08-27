@@ -4750,17 +4750,61 @@ class floscApp {
                 });
 
                 const redirectAfterLogout = (targetUrl) => {
+                    // v10.1.0: In companion mode the iframe must not navigate itself —
+                    // that leaves the bubble open on a stale document showing the
+                    // previous account holder's conversation. Hand the teardown to
+                    // the parent, which closes the bubble and repaints the host.
+                    if (window.self !== window.top) {
+                        try {
+                            let targetOrigin = '*';
+                            if (document.referrer) {
+                                const ref = new URL(document.referrer, window.location.origin);
+                                if (/^https?:$/.test(ref.protocol)) {
+                                    targetOrigin = ref.origin;
+                                }
+                            }
+                            window.parent.postMessage({
+                                type: 'flosc_companion_logout_complete',
+                                redirect: String(targetUrl || '')
+                            }, targetOrigin);
+                            return;
+                        } catch (e) {
+                            this.logWarn('[FLOSC Auth] Could not hand logout to companion parent:', e);
+                        }
+                    }
+
                     setTimeout(() => {
                         window.location.href = targetUrl || (this.config.appUrl || '/');
                     }, 2000);
                 };
+
+                // v10.1.0: Logout is a teardown, not a relabel. Every device-held
+                // trace of this person goes, so the next opener starts as a genuinely
+                // new visitor. Nothing here recognises anyone: a returning member gets
+                // their history back the ordinary way, by logging in again.
                 const clearClientAuth = () => {
                     this.authToken = '';
                     this.config.authToken = '';
+                    this.currentSession = null;
+                    this._visitorSessionId = null;
+
                     try {
                         localStorage.removeItem('flosc_auth_token');
                     } catch (e) {
                         this.logWarn('[FLOSC Auth] Could not clear browser auth token:', e);
+                    }
+
+                    try {
+                        localStorage.removeItem(this.getActiveChatSessionStorageKey());
+                    } catch (e) {
+                        this.logWarn('[FLOSC Auth] Could not clear active chat session key:', e);
+                    }
+
+                    try {
+                        this.removeVisitorJourneyItem('flosc_visitor_messages');
+                        this.removeVisitorJourneyItem('flosc_visitor_session');
+                    } catch (e) {
+                        this.logWarn('[FLOSC Auth] Could not clear visitor journey keys:', e);
                     }
                 };
 
@@ -8513,6 +8557,7 @@ Purchased: ${ctx.purchased}
         if (!user || !(user.id || user.ID)) {
             return;
         }
+        const previousState = this.state;
         this.user = user;
         window.FLOSC_USER = user;
         this.state = this.resolveAppUserState(user, stateHint || user.state);
@@ -8525,6 +8570,120 @@ Purchased: ${ctx.purchased}
             this.user.tokens = tokens;
             this.user.tokenBalance = tokens;
             this.user.flowTokens = user.flowTokens ?? tokens;
+        }
+
+        // v10.1.0: Leaving visitor is a journey event, not just a repaint.
+        this.onAuthStateGained(previousState);
+    }
+
+    /**
+     * v10.1.0: Fires once, when this browser stops being a visitor.
+     *
+     * Login is a phase boundary: the reader has crossed out of Freeline. Before
+     * this, ivr.phase only ever advanced when a free lesson was delivered, so a
+     * signed-in guest stayed in 'freeline' and no offer was ever scheduled.
+     *
+     * Every step is guarded — a failure here leaves prior behaviour untouched.
+     *
+     * @param {string} previousState State before the auth shell was applied.
+     */
+    onAuthStateGained(previousState) {
+        if (previousState !== 'visitor' || this.state === 'visitor') {
+            return;
+        }
+
+        try {
+            if (this.ivr && this.ivr.phase === 'freeline') {
+                this.ivr.phase = 'offer';
+                if (this.ivr.context) {
+                    this.ivr.context.just_authenticated = true;
+                    this.ivr.context.account_state = this.state;
+                }
+            }
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not advance phase on auth:', e);
+        }
+
+        // Give the conversation somewhere durable to live before anything clears it.
+        void this.persistThreadOnAuth();
+
+        // No-op until a floscAdmin configures an offer with reveal_event "login".
+        try {
+            this._scheduleOffersForEvent('login');
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not schedule login offers:', e);
+        }
+    }
+
+    /**
+     * v10.1.0: Write the visitor's existing turns into a real session the moment
+     * there is an account to hold them.
+     *
+     * Without this, a signed-in guest can hold an entire conversation with
+     * currentSession === null: the sidebar reads "No chats yet" beside a full
+     * transcript, and chat-log rows are written with session_id 0. Refusals
+     * (guest chat cap, nonce, network) are logged and ignored — the reader's
+     * conversation is never interrupted.
+     */
+    async persistThreadOnAuth() {
+        if (this.state === 'visitor' || this.currentSession?.id) {
+            return;
+        }
+
+        let pending = [];
+        try {
+            const stored = JSON.parse(this.readVisitorJourneyItem('flosc_visitor_messages') || '[]');
+            if (Array.isArray(stored)) {
+                pending = stored
+                    .filter((m) => m && (m.role === 'user' || m.role === 'assistant') && m.content)
+                    .slice(-50)
+                    .map((m) => ({ role: m.role, content: String(m.content).slice(0, 4000) }));
+            }
+        } catch (e) {
+            this.logWarn('[FLOSC] Could not read visitor thread for persistence:', e);
+        }
+
+        if (!pending.length) {
+            return;
+        }
+
+        try {
+            await this.refreshNonce?.();
+            const response = await this.authFetch(this.config.apiUrl + '/sessions' + this.sessionsQuery(), {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-WP-Nonce': this.config.nonce,
+                },
+                body: JSON.stringify({
+                    flow_id: this.config.flowId || '',
+                    messages: pending,
+                }),
+            });
+
+            const data = await response.json();
+            const sessionId = parseInt(data?.session?.id, 10);
+            if (!Number.isFinite(sessionId) || sessionId <= 0) {
+                this.logWarn('[FLOSC] Thread not persisted on auth:', data?.code || response.status);
+                return;
+            }
+
+            this.currentSession = Object.assign({}, this.currentSession || {}, data.session);
+            this.rememberActiveChatSessionId(sessionId);
+
+            // Migrated, so drop the device copy. Without this a reload with no
+            // currentSession would persist the same turns into a second session.
+            try {
+                this.removeVisitorJourneyItem('flosc_visitor_messages');
+            } catch (eClear) {
+                this.logWarn('[FLOSC] Could not clear migrated visitor thread:', eClear);
+            }
+
+            await this.loadSessions?.();
+            this.log('[FLOSC] Visitor thread persisted to session', sessionId);
+        } catch (e) {
+            this.logWarn('[FLOSC] Thread not persisted on auth:', e);
         }
     }
 

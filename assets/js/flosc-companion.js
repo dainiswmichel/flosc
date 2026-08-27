@@ -402,6 +402,10 @@
                 }
                 if (data.type === 'flosc_companion_auth_navigate') {
                     self.navigateTopLevelForAuth(data.authUrl);
+                    return;
+                }
+                if (data.type === 'flosc_companion_logout_complete') {
+                    self.handleLogoutComplete(data.redirect);
                 }
             });
         },
@@ -600,6 +604,61 @@
             this.updateLauncherA11y();
             this.saveOpenState(false);
             this.saveNavigationState();
+        },
+
+        /**
+         * v10.1.0: The chat iframe finished logging out and handed the teardown here.
+         *
+         * Logout returns the reader to the page they were reading, with the bubble
+         * closed and nothing of the previous account holder left behind. Relabelling
+         * the panel is not resetting it, so the frame is destroyed outright: the next
+         * open builds a new one as a genuinely new visitor.
+         *
+         * @param {string} redirect Optional destination configured by the floscAdmin.
+         */
+        handleLogoutComplete: function(redirect) {
+            var self = this;
+            var target = String(redirect || '');
+
+            // Let the farewell finish being read before the panel goes.
+            window.setTimeout(function() {
+                try {
+                    self.close();
+                } catch (e) {
+                    // Panel may already be closed.
+                }
+
+                try {
+                    if (self.iframe) {
+                        self.iframe.src = '';
+                    }
+                    self.continuityParams = {};
+                    self.lastIframeContextSignature = '';
+                } catch (e) {
+                    // Frame already gone.
+                }
+
+                try {
+                    window.sessionStorage.removeItem('flosc_handoff_pack');
+                } catch (e) {
+                    // Storage unavailable in this context.
+                }
+
+                // An explicit non-app destination is a deliberate farewell page and is
+                // honoured. Otherwise stay put and repaint, so the theme header stops
+                // showing a signed-in member without yanking the reader off the page
+                // they were reading.
+                try {
+                    if (target && typeof self.isAppUrl === 'function' && !self.isAppUrl(target)) {
+                        window.location.href = target;
+                        return;
+                    }
+                } catch (e) {
+                    // Fall through to a plain reload.
+                }
+
+                window.location.reload();
+            }, 2000);
         },
 
         getNavigationStateKey: function() {
