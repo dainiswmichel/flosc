@@ -356,12 +356,11 @@
                     return;
                 }
                 var href = String(anchor.getAttribute('href') || '');
-                if (href.indexOf('wp-login') === -1 && href.indexOf('flosc_open_login=1') === -1) {
+                if (href.indexOf('wp-login') === -1 && href.indexOf('flosc_open_login') === -1) {
                     return;
                 }
                 e.preventDefault();
-                // Strip any flosc_open_login=1 already on the host URL so the modal is
-                // not re-triggered by a full page reload on browsers that keep the param.
+                e.stopPropagation();
                 try {
                     var cur = new URL(window.location.href);
                     if (cur.searchParams.has('flosc_open_login')) {
@@ -372,7 +371,7 @@
                     // Ignore URL parsing failures; proceed to open the modal.
                 }
                 self.requestOpenAuthModalInIframe();
-            });
+            }, true);
 
             var syncViewport = function() {
                 if (!self.container) {
@@ -569,7 +568,8 @@
             }
         },
 
-        open: function() {
+        open: function(opts) {
+            opts = opts || {};
             var shouldOpenFullscreen = !!(this.config.allowFullscreen && this.config.defaultFullscreen);
 
             this.captureCurrentSiteContext();
@@ -592,6 +592,15 @@
             if (!this.iframe.src) {
                 this.lastIframeContextSignature = signature;
                 var iframeSrc = this.buildIframeUrl();
+                if (iframeSrc && opts.openLogin) {
+                    try {
+                        var loginUrl = new URL(iframeSrc, window.location.origin);
+                        loginUrl.searchParams.set('flosc_open_login', '1');
+                        iframeSrc = loginUrl.toString();
+                    } catch (e) {
+                        iframeSrc += (iframeSrc.indexOf('?') === -1 ? '?' : '&') + 'flosc_open_login=1';
+                    }
+                }
                 if (iframeSrc) {
                     this.iframe.src = iframeSrc;
                 }
@@ -991,20 +1000,20 @@
                 fallback();
                 return;
             }
+            // Cold iframe: put flosc_open_login on the iframe URL. flosc-app.js
+            // opens the modal at the end of init() after the IVR fetch; a
+            // postMessage on iframe "load" arrives before bindEvents() and is dropped.
             if (!self.iframe.src) {
                 if (typeof self.open === 'function') {
-                    self.open();
+                    self.open({ openLogin: true });
                 }
-                var once = function() {
-                    self.iframe.removeEventListener('load', once);
-                    post();
-                };
-                self.iframe.addEventListener('load', once);
-                window.setTimeout(function() {
-                    self.iframe.removeEventListener('load', once);
-                    post();
-                }, 2000);
+                if (!self.iframe.src) {
+                    fallback();
+                }
                 return;
+            }
+            if (typeof self.open === 'function') {
+                self.open();
             }
             post();
         },
