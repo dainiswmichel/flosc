@@ -544,14 +544,6 @@ class FLOSC_Framework {
         return $this->first_party_auth->takeover_wp_auth_url($url);
     }
 
-    public function takeover_wp_logout_url($logout_url, $redirect = '') {
-        return $this->first_party_auth->takeover_wp_logout_url($logout_url, $redirect);
-    }
-
-    public function get_logout_redirect_url() {
-        return $this->first_party_auth->get_logout_redirect_url();
-    }
-
     public function generate_flosc_auth_token($user_id, $ttl = DAY_IN_SECONDS) {
         return $this->first_party_auth->generate_flosc_auth_token($user_id, $ttl);
     }
@@ -1316,13 +1308,13 @@ class FLOSC_Framework {
         add_filter('login_redirect', [$this, 'handle_login_redirect'], 999, 3);
         add_filter('woocommerce_login_redirect', [$this, 'handle_woocommerce_login_redirect'], 999, 2);
 
-        // Take over WP/BuddyBoss generated Sign-in, Register, and front-end
-        // logout links when the current flow has takeover_wp_auth on. Priority
-        // 999 is after BuddyBoss/theme so FLOSC has the last word. wp-login.php
-        // remains a direct backup; lost-password is a different filter.
+        // v10.0.0: Takeover WP native auth surfaces — route the Sign-in/register
+        // surfaces to the FLOSC app (single auth surface) per-flow when
+        // 'takeover_wp_auth' is enabled. login_url covers the header Sign-in
+        // button; register_url covers the WP registration screen. Priority 999
+        // places it after BuddyBoss/theme overrides so FLOSC has the last word.
         add_filter('login_url', [$this, 'takeover_wp_auth_url'], 999, 3);
         add_filter('register_url', [$this, 'take_over_wp_registration_url'], 999);
-        add_filter('logout_url', [$this, 'takeover_wp_logout_url'], 999, 2);
 
         // Admin post handler for flush permalinks (v9.5.1)
         add_action('admin_post_flosc_flush_permalinks', [$this, 'handle_flush_permalinks']);
