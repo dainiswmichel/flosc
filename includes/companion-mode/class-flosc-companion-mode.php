@@ -768,7 +768,7 @@ class FLOSC_Companion_Mode {
     /**
      * Resolve companion iframe app URL from floscAdmin parameters only.
      *
-     * Priority matches the pre-nest-fix order (session integrity / same chat surface):
+     * Priority matches the pre-nest order (session integrity / same chat surface):
      * 1) companion_chat_app_url (explicit Companion chat URL field)
      * 2) hub defaults chat_app (same-origin flow slug when available)
      * 3) companion_flow_slug / flow slug on this WordPress site

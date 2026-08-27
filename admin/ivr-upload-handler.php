@@ -116,6 +116,26 @@ if ( ! function_exists( 'flosc_portability_collect_kit_files' ) ) {
 	}
 }
 
+if ( ! function_exists( 'flosc_portability_write_uploads_file' ) ) {
+	/**
+	 * Write a file that already sits under wp-content/uploads.
+	 *
+	 * Single write chokepoint for this handler: FLOSC_Filesystem refuses
+	 * plugin-directory targets. Callers must not fall back to PHP file writes.
+	 *
+	 * @param string $path    Absolute path under uploads.
+	 * @param string $content File body.
+	 * @return bool
+	 */
+	function flosc_portability_write_uploads_file( $path, $content ) {
+		if ( ! class_exists( 'FLOSC_Filesystem' ) ) {
+			return false;
+		}
+		$fs = new FLOSC_Filesystem();
+		return (bool) $fs->write_file_safely( $path, (string) $content );
+	}
+}
+
 if ( ! function_exists( 'flosc_portability_ingest_da1_tsv' ) ) {
 	/**
 	 * Store uploaded DA1 TSV and assign catalog to a flow IVR filename.
@@ -174,25 +194,12 @@ if ( ! function_exists( 'flosc_portability_ingest_da1_tsv' ) ) {
 		$written = false;
 		if ( function_exists( 'flosc_da1_write_catalog_file' ) ) {
 			$res = flosc_da1_write_catalog_file( $path, (string) $body, $catalog_dir );
-			$written = ! is_wp_error( $res );
 			if ( is_wp_error( $res ) ) {
 				return $res;
 			}
-		} elseif ( function_exists( 'flosc_write_data_file' ) ) {
-			// Not under flosc_data_dir — write via filesystem class if possible.
-			$fs = null;
-			if ( class_exists( 'FLOSC_Filesystem' ) ) {
-				$fs = new FLOSC_Filesystem();
-			}
-			if ( $fs && method_exists( $fs, 'write_file_safely' ) ) {
-				$written = (bool) $fs->write_file_safely( $path, (string) $body );
-			} else {
-				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- DA1 catalog under uploads/flosc-catalogs after is_uploaded_file.
-				$written = false !== file_put_contents( $path, (string) $body );
-			}
+			$written = true;
 		} else {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- DA1 catalog under uploads/flosc-catalogs after is_uploaded_file.
-			$written = false !== file_put_contents( $path, (string) $body );
+			$written = flosc_portability_write_uploads_file( $path, (string) $body );
 		}
 
 		if ( ! $written ) {
@@ -331,18 +338,18 @@ if ( ! function_exists( 'flosc_portability_pack_dir' ) ) {
 		if ( ! wp_mkdir_p( $base ) ) {
 			return '';
 		}
-		// Block directory listing (same pattern as flosc data dir).
+		// Block directory listing. Do not write Deny-from-all here: pack files
+		// are addressed by URL for admin download of staged WXR.
+		$silence = "<?php\n// Silence is golden.\n";
 		if ( ! file_exists( $base . '/index.php' ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- writes under wp_upload_dir pack/catalog paths only
-			file_put_contents( $base . '/index.php', "<?php\n// Silence is golden.\n" );
+			flosc_portability_write_uploads_file( $base . '/index.php', $silence );
 		}
 		$dir = trailingslashit( $base ) . $stem;
 		if ( ! wp_mkdir_p( $dir ) ) {
 			return '';
 		}
 		if ( ! file_exists( $dir . '/index.php' ) ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- writes under wp_upload_dir pack/catalog paths only
-			file_put_contents( $dir . '/index.php', "<?php\n// Silence is golden.\n" );
+			flosc_portability_write_uploads_file( $dir . '/index.php', $silence );
 		}
 		return $dir;
 	}
@@ -431,17 +438,7 @@ if ( ! function_exists( 'flosc_portability_ingest_wxr' ) ) {
 		}
 		$path = trailingslashit( $pack_dir ) . $filename;
 
-		$written = false;
-		if ( class_exists( 'FLOSC_Filesystem' ) ) {
-			$fs = new FLOSC_Filesystem();
-			if ( method_exists( $fs, 'write_file_safely' ) ) {
-				$written = (bool) $fs->write_file_safely( $path, (string) $body );
-			}
-		}
-		if ( ! $written ) {
-			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- writes under wp_upload_dir pack/catalog paths only
-			$written = false !== file_put_contents( $path, (string) $body );
-		}
+		$written = flosc_portability_write_uploads_file( $path, (string) $body );
 		if ( ! $written ) {
 			return new WP_Error( 'flosc_wxr_write', __( 'Could not store the WXR file.', 'flosc' ) );
 		}
