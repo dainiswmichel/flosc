@@ -8694,11 +8694,6 @@ Purchased: ${ctx.purchased}
                     return;
                 }
 
-                if (data.type === 'flosc_open_auth_modal') {
-                    this.showLoginModal();
-                    return;
-                }
-
                 if (data.type !== 'flosc_companion_context' || typeof data.payload !== 'object') {
                     return;
                 }

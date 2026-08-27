@@ -151,16 +151,6 @@
             this.applyMotionMode();
             this.syncViewportCssVars();
             this.bindEvents();
-            try {
-                var bootUrl = new URL(window.location.href);
-                if (bootUrl.searchParams.has('flosc_open_login')) {
-                    bootUrl.searchParams.delete('flosc_open_login');
-                    window.history.replaceState({}, '', bootUrl.toString());
-                    this.requestOpenAuthModalInIframe();
-                }
-            } catch (err) {
-                // Host URL could not be parsed; click intercept still handles Sign-in.
-            }
             this.applyHandoffRequest();
             this.restoreNavigationStateIfNeeded();
             this.restoreOpenStateIfNeeded();
@@ -343,35 +333,6 @@
                 }
                 self.saveNavigationState();
             });
-
-            // Slice 1: Intercept native WordPress Sign-in / registration links and open
-            // the FLOSC auth modal in the companion iframe (no page navigation). Only
-            // active when the admin setting takeover_wp_auth is enabled.
-            document.addEventListener('click', function(e) {
-                if (!self.config.takeoverWpAuth) {
-                    return;
-                }
-                var anchor = e.target && e.target.closest ? e.target.closest('a[href]') : null;
-                if (!anchor) {
-                    return;
-                }
-                var href = String(anchor.getAttribute('href') || '');
-                if (href.indexOf('wp-login') === -1 && href.indexOf('flosc_open_login') === -1) {
-                    return;
-                }
-                e.preventDefault();
-                e.stopPropagation();
-                try {
-                    var cur = new URL(window.location.href);
-                    if (cur.searchParams.has('flosc_open_login')) {
-                        cur.searchParams.delete('flosc_open_login');
-                        window.history.replaceState({}, '', cur.toString());
-                    }
-                } catch (err) {
-                    // Ignore URL parsing failures; proceed to open the modal.
-                }
-                self.requestOpenAuthModalInIframe();
-            }, true);
 
             var syncViewport = function() {
                 if (!self.container) {
@@ -592,15 +553,6 @@
             if (!this.iframe.src) {
                 this.lastIframeContextSignature = signature;
                 var iframeSrc = this.buildIframeUrl();
-                if (iframeSrc && opts.openLogin) {
-                    try {
-                        var loginUrl = new URL(iframeSrc, window.location.origin);
-                        loginUrl.searchParams.set('flosc_open_login', '1');
-                        iframeSrc = loginUrl.toString();
-                    } catch (e) {
-                        iframeSrc += (iframeSrc.indexOf('?') === -1 ? '?' : '&') + 'flosc_open_login=1';
-                    }
-                }
                 if (iframeSrc) {
                     this.iframe.src = iframeSrc;
                 }
@@ -971,51 +923,6 @@
             } catch (e) {
                 // Ignore malformed auth handoffs.
             }
-        },
-
-        // Slice 1: Ask the companion iframe (which loads the full FLOSC app) to open
-        // its existing Register/Log-In modal in place. Email/SSO stay in the iframe —
-        // no auth logic is duplicated here.
-        requestOpenAuthModalInIframe: function() {
-            var self = this;
-            var fallback = function() {
-                var app = String(self.config.appUrl || '');
-                if (app) {
-                    window.location.href = app + (app.indexOf('?') === -1 ? '?' : '&') + 'flosc_open_login=1';
-                }
-            };
-            var post = function() {
-                if (!self.iframe || !self.iframe.contentWindow || !self.iframe.src) {
-                    fallback();
-                    return;
-                }
-                try {
-                    var origin = new URL(self.iframe.src, window.location.origin).origin;
-                    self.iframe.contentWindow.postMessage({ type: 'flosc_open_auth_modal' }, origin);
-                } catch (e) {
-                    fallback();
-                }
-            };
-            if (!self.iframe) {
-                fallback();
-                return;
-            }
-            // Cold iframe: put flosc_open_login on the iframe URL. flosc-app.js
-            // opens the modal at the end of init() after the IVR fetch; a
-            // postMessage on iframe "load" arrives before bindEvents() and is dropped.
-            if (!self.iframe.src) {
-                if (typeof self.open === 'function') {
-                    self.open({ openLogin: true });
-                }
-                if (!self.iframe.src) {
-                    fallback();
-                }
-                return;
-            }
-            if (typeof self.open === 'function') {
-                self.open();
-            }
-            post();
         },
 
         deliverBrowsingContextToIframe: function() {
