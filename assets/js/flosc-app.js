@@ -8601,7 +8601,11 @@ Purchased: ${ctx.purchased}
 
         try {
             if (this.ivr && this.ivr.phase === 'freeline') {
-                this.ivr.phase = 'offer';
+                // Where they land depends on what they became. A guest has an
+                // account but no entitlement, so they are the Offer phase. A member
+                // already bought: pitching them what they own is wrong, and they
+                // should be reading with ai_prompt_content, not ai_prompt_offer.
+                this.ivr.phase = (this.state === 'member') ? 'content' : 'offer';
                 if (this.ivr.context) {
                     this.ivr.context.just_authenticated = true;
                     this.ivr.context.account_state = this.state;
