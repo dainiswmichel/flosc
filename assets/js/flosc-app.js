@@ -8567,8 +8567,19 @@ Purchased: ${ctx.purchased}
                     }
 
                     // Prevent duplicate wrappers when a message is re-rendered.
-                    const existingWrap = a.parentElement
-                        ? Array.from(a.parentElement.querySelectorAll('.flosc-oembed-wrap')).find(function(node) {
+                    // v10.1.0: scope the check to the whole message, not just the
+                    // anchor's immediate parent. A redraw -- restoring a thread after
+                    // a companion/full-page handoff, or re-rendering on resize --
+                    // rebuilds the anchor as a fresh node with no floscEmbedded flag,
+                    // and the earlier wrapper often sits in a sibling paragraph where
+                    // a parentElement-scoped lookup cannot see it. That produced two
+                    // players for one link, which for a TikTok music post reads as the
+                    // song caption printed twice.
+                    const dedupeScope = (typeof a.closest === 'function'
+                        ? a.closest('.message-text, .flosc-message-text, .message-content, .message')
+                        : null) || a.parentElement;
+                    const existingWrap = dedupeScope
+                        ? Array.from(dedupeScope.querySelectorAll('.flosc-oembed-wrap')).find(function(node) {
                             return String(node.dataset.oembedUrl || '') === normalizedUrl;
                         })
                         : null;
