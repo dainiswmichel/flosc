@@ -8582,12 +8582,70 @@ Purchased: ${ctx.purchased}
                     wrap.dataset.oembedUrl = normalizedUrl;
                     wrap.innerHTML = html;
                     a.insertAdjacentElement('afterend', wrap);
+                    // innerHTML never executes <script>. Providers that return a
+                    // blockquote plus a loader script (TikTok, Instagram) stay as
+                    // raw fallback markup without this -- which is why a TikTok link
+                    // rendered the whole caption as text instead of a player.
+                    self._activateOembedLoaderScripts(wrap);
                     a.dataset.floscEmbedded = 'done';
                     if (self.chatMessages) self.chatMessages.scrollTop = self.chatMessages.scrollHeight;
                 })
                 .catch(function () {
                     delete a.dataset.floscEmbedded;
                 });
+        });
+    }
+
+    /**
+     * v10.1.0: Re-create provider loader scripts so the browser runs them.
+     *
+     * wp_oembed_get() only answers for providers on WordPress core's allow-list,
+     * and several of them (TikTok, Instagram) return a blockquote that a loader
+     * script upgrades into a player. Assigning that markup via innerHTML leaves
+     * the script inert, so the reader is shown the blockquote's fallback text --
+     * for a TikTok music post, the entire song caption.
+     *
+     * Only external https scripts whose host is one of the providers we embed are
+     * re-created. Inline script from an oEmbed response is discarded outright:
+     * nothing legitimate needs it, and executing arbitrary third-party inline JS
+     * inside the chat is not a trade worth making.
+     *
+     * @param {HTMLElement} wrap The inserted oEmbed wrapper.
+     */
+    _activateOembedLoaderScripts(wrap) {
+        if (!wrap || typeof wrap.querySelectorAll !== 'function') {
+            return;
+        }
+
+        const allowedHosts = [
+            'www.tiktok.com',
+            'platform.twitter.com',
+            'www.instagram.com',
+            'platform.instagram.com',
+            'embed.music.apple.com',
+            'w.soundcloud.com'
+        ];
+
+        wrap.querySelectorAll('script').forEach((original) => {
+            const src = String(original.getAttribute('src') || '').trim();
+            let host = '';
+            try {
+                host = src ? new URL(src, window.location.origin).host : '';
+            } catch (e) {
+                host = '';
+            }
+
+            if (!/^https:\/\//i.test(src) || allowedHosts.indexOf(host) === -1) {
+                original.remove();
+                return;
+            }
+
+            const fresh = document.createElement('script');
+            fresh.src = src;
+            fresh.async = true;
+            if (original.parentNode) {
+                original.parentNode.replaceChild(fresh, original);
+            }
         });
     }
 
