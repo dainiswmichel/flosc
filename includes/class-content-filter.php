@@ -82,8 +82,13 @@ class flosc_content_filter {
             require_once FLOSC_PLUGIN_DIR . 'includes/class-member-access.php';
             $member_access = FLOSC_Member_Access::instance();
 
-            // Get current user's access level (visitor/guest/member)
-            $access_level = $member_access->get_access_level(get_current_user_id());
+            // Get current user's access level (visitor/guest/member) for the flow
+            // that owns this page. Membership is per-flow: buying Piano4America
+            // does not unlock a gated post on another flow's domain. Without a
+            // flow id, is_member() falls through to the legacy global
+            // _flosc_member_access marker, which grants every flow at once.
+            $flow_id = $this->resolve_gate_flow_id();
+            $access_level = $member_access->get_access_level(get_current_user_id(), $flow_id);
 
             // Apply filtering using existing method
             return $this->filter_post_content($content, $access_level);
@@ -94,7 +99,37 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log('FLOSC Content Filter error
             return $content;
         }
     }
-    
+
+    /**
+     * Resolve the flow that owns the page currently being filtered.
+     *
+     * A flow owns a host (custom_domain in its *_ivr.md), so the flow the
+     * request resolved to is the flow this post belongs to. Returns the same
+     * shape grant_member_access() stores, so the stem derived here matches the
+     * stem written at purchase time.
+     *
+     * Returns null when the request resolves to no flow (a plain WordPress page
+     * on a host no flow claims). Passing null keeps the pre-existing behaviour
+     * for those pages rather than gating on a flow we cannot name.
+     *
+     * @return string|null Flow ivr file / id, or null when unresolvable.
+     */
+    private function resolve_gate_flow_id() {
+        if (!function_exists('flosc') || !is_object(flosc()) || !method_exists(flosc(), 'get_current_flow')) {
+            return null;
+        }
+
+        $flow = flosc()->get_current_flow();
+        if (!is_array($flow)) {
+            return null;
+        }
+
+        $flow_id = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '');
+        $flow_id = trim($flow_id);
+
+        return ($flow_id === '') ? null : $flow_id;
+    }
+
     /**
      * Filter markdown content by access level
      * Looks for ### ACCESS LEVEL: VISITOR/GUEST/MEMBER markers
