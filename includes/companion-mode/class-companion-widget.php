@@ -216,23 +216,33 @@ class FLOSC_Companion_Widget {
         $css_path = FLOSC_PLUGIN_DIR . 'assets/css/flosc-companion.css';
         $js_path  = FLOSC_PLUGIN_DIR . 'assets/js/flosc-companion.js';
 
+        // Cache-buster: use the file's modification time, not FLOSC_VERSION.
+        // FLOSC_VERSION only changes on a release, so an edited companion asset
+        // keeps serving from the browser cache until the version string moves.
+        // class-flosc-companion-mode.php already enqueues this same handle with
+        // filemtime(); the two enqueues have to agree or whichever runs first wins
+        // with a stale ?ver=. filemtime() returns false on failure — fall back to
+        // the version string in that case.
+
         // Companion CSS — standalone, no dependencies on FLOSC layout/theme
         if (file_exists($css_path)) {
+            $css_ver = filemtime($css_path);
             wp_enqueue_style(
                 'flosc-companion',
                 FLOSC_PLUGIN_URL . 'assets/css/flosc-companion.css',
                 [],
-                defined('FLOSC_VERSION') ? FLOSC_VERSION : '8.0.0'
+                $css_ver ? $css_ver : (defined('FLOSC_VERSION') ? FLOSC_VERSION : '8.0.0')
             );
         }
 
         // Companion JS — standalone, no dependencies on flosc-app.js
         if (file_exists($js_path)) {
+            $js_ver = filemtime($js_path);
             wp_enqueue_script(
                 'flosc-companion',
                 FLOSC_PLUGIN_URL . 'assets/js/flosc-companion.js',
                 [],
-                defined('FLOSC_VERSION') ? FLOSC_VERSION : '8.0.0',
+                $js_ver ? $js_ver : (defined('FLOSC_VERSION') ? FLOSC_VERSION : '8.0.0'),
                 true // footer
             );
         }
