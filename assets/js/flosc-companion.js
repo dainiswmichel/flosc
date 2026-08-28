@@ -272,6 +272,7 @@
             if (this.iframe) {
                 this.iframe.addEventListener('load', function() {
                     self.deliverBrowsingContextToIframe();
+                    self.watchFrameHealth();
                 });
             }
 
@@ -402,6 +403,11 @@
                 }
                 if (data.type === 'flosc_companion_auth_navigate') {
                     self.navigateTopLevelForAuth(data.authUrl);
+                    return;
+                }
+                if (data.type === 'flosc_app_ready') {
+                    self._frameAlive = true;
+                    window.clearTimeout(self._frameHealthTimer);
                     return;
                 }
                 if (data.type === 'flosc_companion_logout_complete') {
@@ -604,6 +610,8 @@
             // context updates go via postMessage only. First src includes
             // continuityParams (session_id / visitor / handoff pack).
             if (!this.iframe.src) {
+                this._frameAlive = false;
+                this._frameRecovered = false;
                 this.lastIframeContextSignature = signature;
                 var iframeSrc = this.buildIframeUrl();
                 if (iframeSrc) {
@@ -628,6 +636,53 @@
             this.updateLauncherA11y();
             this.saveOpenState(false);
             this.saveNavigationState();
+        },
+
+        /**
+         * v10.1.0: Confirm the frame that just loaded is actually the FLOSC app.
+         *
+         * A 414, a 500 or any other error page fires 'load' exactly like the app
+         * does, so the reader was shown raw server output inside a branded panel
+         * with no way back. The app announces itself on boot; silence means the
+         * frame is not the app, and we rebuild it once without the continuity
+         * params that are the likeliest cause of an over-long request.
+         *
+         * Rebuilds at most once per open, so a genuinely down backend cannot put
+         * the panel in a reload loop.
+         */
+        watchFrameHealth: function() {
+            var self = this;
+            window.clearTimeout(this._frameHealthTimer);
+
+            if (this._frameAlive || this._frameRecovered) {
+                return;
+            }
+
+            this._frameHealthTimer = window.setTimeout(function() {
+                if (self._frameAlive || self._frameRecovered || !self.iframe) {
+                    return;
+                }
+                self._frameRecovered = true;
+
+                // Drop everything that could have inflated the request, then rebuild.
+                self.continuityParams = {};
+                self.lastIframeContextSignature = '';
+                try {
+                    window.sessionStorage.removeItem('flosc_handoff_pack');
+                } catch (e) {
+                    // Storage unavailable in this context.
+                }
+
+                try {
+                    self.iframe.src = '';
+                    var retryUrl = self.buildIframeUrl();
+                    if (retryUrl) {
+                        self.iframe.src = retryUrl;
+                    }
+                } catch (e) {
+                    // Nothing further we can do from here.
+                }
+            }, 4000);
         },
 
         /**

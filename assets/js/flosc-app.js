@@ -250,6 +250,27 @@ class floscApp {
     async init() {
         this.log('[FLOSC] Initializing app...');
 
+        // v10.1.0: Tell the companion parent this frame really is the FLOSC app.
+        // An HTTP error page satisfies the iframe 'load' event just as happily as
+        // the app does, which is how a reader ended up looking at a raw nginx 414
+        // inside a branded chat panel. Silence now means "not the app", and the
+        // parent rebuilds the frame. Sent first so a slow IVR fetch never reads
+        // as a failure.
+        if (window.self !== window.top) {
+            try {
+                let readyOrigin = '*';
+                if (document.referrer) {
+                    const ref = new URL(document.referrer, window.location.origin);
+                    if (/^https?:$/.test(ref.protocol)) {
+                        readyOrigin = ref.origin;
+                    }
+                }
+                window.parent.postMessage({ type: 'flosc_app_ready' }, readyOrigin);
+            } catch (e) {
+                // No parent access; the health check will rebuild once and stop.
+            }
+        }
+
         // v10.0.0: Record the entry flow in a host-global cookie (first visit only)
         // so logout can recall the per-flow logout destination. Server mirrors this
         // via set_entry_flow_cookie(); this keeps it correct even if JS is earliest.
