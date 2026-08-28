@@ -1305,10 +1305,16 @@
             var flow = String(this.config.flowId || 'default').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80) || 'default';
             var remembered = '';
             var visitorSid = '';
+            var journeyId = '';
             var messages = [];
             try {
                 remembered = String(localStorage.getItem('flosc_active_chat_session__' + flow) || '').trim();
                 visitorSid = String(localStorage.getItem('flosc_visitor_session') || '').trim();
+                // Chat Logs group by this, and it outlives the session id, so it has
+                // to travel with the handoff or the thread forks at the boundary.
+                journeyId = String(localStorage.getItem('flosc_journey_id') || '')
+                    .replace(/[^A-Za-z0-9_-]/g, '')
+                    .slice(0, 64);
                 var raw = localStorage.getItem('flosc_visitor_messages');
                 if (raw) {
                     var parsed = JSON.parse(raw);
@@ -1320,10 +1326,10 @@
                 // Ignore storage failures.
             }
             if (remembered) {
-                return { kind: 'user', sessionId: remembered, messages: [] };
+                return { kind: 'user', sessionId: remembered, journeyId: journeyId, messages: [] };
             }
             if (visitorSid || messages.length) {
-                return { kind: 'visitor', sessionId: visitorSid, messages: messages };
+                return { kind: 'visitor', sessionId: visitorSid, journeyId: journeyId, messages: messages };
             }
             return {};
         },
@@ -2011,6 +2017,11 @@
                             var handoffObj = {
                                 kind: 'visitor',
                                 sessionId: sid.slice(0, 80),
+                                // Re-encoding here drops anything not named, so carry
+                                // the journey id through explicitly.
+                                journeyId: String(handoffPayload.journeyId || handoffPayload.journey_id || '')
+                                    .replace(/[^A-Za-z0-9_-]/g, '')
+                                    .slice(0, 64),
                                 messages: Array.isArray(handoffPayload.messages) ? handoffPayload.messages.slice(-10) : []
                             };
                             try {

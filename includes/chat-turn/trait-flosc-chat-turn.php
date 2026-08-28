@@ -18,6 +18,12 @@ trait FLOSC_Chat_Turn_Trait {
         $message = sanitize_text_field($request->get_param('message'));
         $session_id_raw = sanitize_text_field((string) ($request->get_param('session_id') ?? ''));
         $session_id = $this->flosc_normalize_session_id($session_id_raw);
+        // Opaque per-conversation id minted in the browser and kept across login.
+        // session_id changes at that moment (hashed visitor id -> numeric session
+        // id), so without this the chat log splits one conversation into two.
+        $journey_id = class_exists('FLOSC_Chat_Logger')
+            ? FLOSC_Chat_Logger::flosc_sanitize_journey_id($request->get_param('journey_id'))
+            : '';
         $context = $request->get_param('context') ?? [];
         if (is_array($context)) {
             if (isset($context['browsing_page_url'])) {
@@ -343,6 +349,7 @@ trait FLOSC_Chat_Turn_Trait {
                     'phase'           => $phase,
                     'user_id'         => 0,
                     'session_id'      => $session_id,
+                    'journey_id'      => $journey_id,
                     'user_message'    => $contact_log_message,
                     'ai_response'     => $thank_you_message,
                     'provider'        => 'ivr',
@@ -411,6 +418,7 @@ trait FLOSC_Chat_Turn_Trait {
                 'phase'           => $phase,
                 'user_id'         => 0,
                 'session_id'      => $session_id,
+                'journey_id'      => $journey_id,
                 'user_message'    => $contact_log_message,
                 'ai_response'     => $thank_you_message,
                 'provider'        => 'ivr',
@@ -458,6 +466,7 @@ trait FLOSC_Chat_Turn_Trait {
                 'phase'           => $phase,
                 'user_id'         => 0,
                 'session_id'      => $session_id,
+                'journey_id'      => $journey_id,
                 'user_message'    => $contact_details,
                 'ai_response'     => $thank_you_message,
                 'provider'        => 'ivr',
@@ -903,6 +912,7 @@ trait FLOSC_Chat_Turn_Trait {
             'phase'           => $phase,
             'user_id'         => is_user_logged_in() ? get_current_user_id() : 0,
             'session_id'      => $session_id ?? 0,
+            'journey_id'      => $journey_id,
             'user_message'    => $message,
             'ai_response'     => $response_message['content'],
             'provider'        => $flosc_provider_used,
@@ -1065,6 +1075,9 @@ trait FLOSC_Chat_Turn_Trait {
         $flow_stem = sanitize_key(pathinfo($ivr_file, PATHINFO_FILENAME));
         $session_id_raw = sanitize_text_field((string) ($request->get_param('session_id') ?? ''));
         $session_id = $this->flosc_normalize_session_id($session_id_raw);
+        $journey_id = class_exists('FLOSC_Chat_Logger')
+            ? FLOSC_Chat_Logger::flosc_sanitize_journey_id($request->get_param('journey_id'))
+            : '';
         $user_context = $this->user_access_manager->get_user_context();
         $phase = sanitize_key((string) ($user_context['phase'] ?? 'content'));
 
@@ -1108,6 +1121,7 @@ trait FLOSC_Chat_Turn_Trait {
                                 'phase'           => $phase,
                                 'user_id'         => is_user_logged_in() ? get_current_user_id() : 0,
                                 'session_id'      => $session_id,
+                                'journey_id'      => $journey_id,
                                 'user_message'    => $message,
                                 'ai_response'     => $concierge_message,
                                 'provider'        => 'concierge',
@@ -1189,6 +1203,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC SECURITY: Violations
             'phase'           => $phase,
             'user_id'         => is_user_logged_in() ? get_current_user_id() : 0,
             'session_id'      => $session_id,
+            'journey_id'      => $journey_id,
             'user_message'    => $message,
             'ai_response'     => $safe_rag_response,
             'provider'        => flosc_get_setting('ai_provider', 'rag'),

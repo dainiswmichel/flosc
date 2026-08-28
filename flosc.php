@@ -6280,6 +6280,9 @@ Example good response:
         }
 
         $session_id = absint($request->get_param('session_id'));
+        // Opaque per-conversation id the browser keeps across login, so client-UI
+        // turns logged before someone signs in group with the ones after.
+        $journey_id = FLOSC_Chat_Logger::flosc_sanitize_journey_id($request->get_param('journey_id'));
         $phase = sanitize_text_field((string) ($request->get_param('phase') ?? 'content'));
         $provider = sanitize_text_field((string) ($request->get_param('provider') ?? 'client'));
         $source = sanitize_text_field((string) ($request->get_param('response_source') ?? 'client_ui'));
@@ -6313,6 +6316,7 @@ Example good response:
             'phase'            => $phase !== '' ? $phase : 'content',
             'user_id'          => $user_id,
             'session_id'       => $session_id,
+            'journey_id'       => $journey_id,
             'user_message'     => $user_message,
             'ai_response'      => $ai_response,
             'provider'         => $provider !== '' ? $provider : 'client',

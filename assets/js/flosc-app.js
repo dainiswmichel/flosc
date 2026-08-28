@@ -1241,6 +1241,10 @@ class floscApp {
             const payload = {
                 kind: 'visitor',
                 sessionId: String(this.getVisitorSessionId() || '').slice(0, 80),
+                // Carried across the handoff so a conversation that moves between
+                // floscDomains (different origins, so different localStorage) stays
+                // one thread in Chat Logs.
+                journeyId: String(this.getJourneyId() || '').slice(0, 64),
                 messages: []
             };
             try {
@@ -1274,6 +1278,7 @@ class floscApp {
             const visitorFallback = {
                 kind: 'visitor',
                 sessionId: String(this.getVisitorSessionId() || '').slice(0, 80),
+                journeyId: String(this.getJourneyId() || '').slice(0, 64),
                 messages: []
             };
             try {
@@ -1290,6 +1295,7 @@ class floscApp {
         return {
             kind: 'user',
             sessionId: serverId.slice(0, 80),
+            journeyId: String(this.getJourneyId() || '').slice(0, 64),
             messages: []
         };
     }
@@ -1370,6 +1376,16 @@ class floscApp {
             if (encoded) {
                 const payload = this.decodeSessionHandoffPayload(encoded);
                 if (payload && typeof payload === 'object') {
+                    // Adopt the originating page's journey before anything logs a
+                    // turn here, so the thread continues instead of forking.
+                    const payloadJourney = String(payload.journeyId || '')
+                        .replace(/[^A-Za-z0-9_-]/g, '')
+                        .slice(0, 64);
+                    if (payloadJourney) {
+                        this._journeyId = payloadJourney;
+                        this.writeVisitorJourneyItem('flosc_journey_id', payloadJourney);
+                    }
+
                     const payloadSid = String(payload.sessionId || '').trim();
                     const effectiveSid = payloadSid || sid;
                     if (effectiveSid) {
@@ -1743,6 +1759,52 @@ class floscApp {
             this._persistVisitorSessionCookie(this._visitorSessionId);
             return this._visitorSessionId;
         }
+    }
+
+    /**
+     * Opaque id for one conversation, from first message to logout.
+     *
+     * session_id is not stable across the journey: a visitor sends the opaque
+     * flosc_visitor_session id, which the server hashes into an int, and the
+     * moment they log in the client switches to this.currentSession.id (a small
+     * numeric user-meta session id). Chat Logs group by session_id, so one
+     * conversation used to break into two threads at login, and client-UI turns
+     * (free lesson list, offer card, gate denial) sent session_id 0 and landed in
+     * a shared bucket with every other visitor's.
+     *
+     * This id is minted once, stored under its own key, and sent on every logged
+     * turn before and after login, so the whole conversation stays one thread.
+     * Kept separate from flosc_visitor_session on purpose: reading that one mints
+     * a visitor session cookie and a visitor token grant as a side effect, which
+     * a logged-in member must not get.
+     *
+     * Cleared by clearClientAuth() (logout) and restartChat(), so the next
+     * conversation is a new journey.
+     */
+    getJourneyId() {
+        if (this._journeyId) {
+            return this._journeyId;
+        }
+        try {
+            let id = this.readVisitorJourneyItem('flosc_journey_id');
+            if (!id) {
+                id = this._mintOpaqueVisitorSessionId();
+                this.writeVisitorJourneyItem('flosc_journey_id', id);
+            }
+            this._journeyId = String(id).slice(0, 64);
+            return this._journeyId;
+        } catch (e) {
+            // Storage unavailable: keep a stable id for this page lifetime so the
+            // turns logged on this page still group together.
+            this._journeyId = String(this._mintOpaqueVisitorSessionId()).slice(0, 64);
+            return this._journeyId;
+        }
+    }
+
+    /** Start a new journey: the next logged turn opens a fresh Chat Logs thread. */
+    resetJourneyId() {
+        this._journeyId = null;
+        this.removeVisitorJourneyItem('flosc_journey_id');
     }
 
     /**
@@ -4867,6 +4929,10 @@ class floscApp {
                     try {
                         this.removeVisitorJourneyItem('flosc_visitor_messages');
                         this.removeVisitorJourneyItem('flosc_visitor_session');
+                        // Ends the Chat Logs thread too: whoever opens the widget
+                        // next starts a new conversation, not a continuation of the
+                        // one that just logged out.
+                        this.resetJourneyId();
                     } catch (e) {
                         this.logWarn('[FLOSC Auth] Could not clear visitor journey keys:', e);
                     }
@@ -9606,6 +9672,10 @@ Purchased: ${ctx.purchased}
         this._adminPollToken = '';
         this._adminSince = 0;
 
+        // New conversation means a new Chat Logs thread, for visitors and for
+        // logged-in users alike (the visitor branch below only resets visitor state).
+        this.resetJourneyId();
+
         // Clear session tracking (use same pattern as buildIVRContext)
         const sessionKey = 'flosc_session_' + this.getSessionKey();
         localStorage.removeItem(sessionKey);
@@ -11757,6 +11827,8 @@ Purchased: ${ctx.purchased}
                 || (this.state === 'visitor' ? this.getVisitorSessionId() : undefined)
                 || this.readRememberedActiveChatSessionId()
                 || undefined,
+            // Stable across login, unlike session_id — keeps Chat Logs one thread.
+            journey_id: this.getJourneyId(),
             context: this.ivr.context,
             // v1.3.7: Flow context for multi-flow support
             flow_id: this.config.flowId,
@@ -12771,6 +12843,10 @@ Purchased: ${ctx.purchased}
                     user_message: userMessage || '',
                     ai_response: aiResponse || '',
                     session_id: this.currentSession?.id || 0,
+                    // A visitor has no currentSession, so session_id is 0 here and
+                    // these turns used to pile into one shared bucket. journey_id
+                    // files them under the conversation they actually belong to.
+                    journey_id: this.getJourneyId(),
                     flow_id: this.config.flowId || '',
                     phase: this.ivr?.phase || meta.phase || 'content',
                     provider: meta.provider || 'client',
