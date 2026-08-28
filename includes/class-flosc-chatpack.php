@@ -758,6 +758,14 @@ class FLOSC_Chatpack {
      * Section 4: Flow Context — current phase and phase-specific instructions.
      */
     private static function build_flow_section($phase, $eval_context, $flow_id = null) {
+        // build_followup_chatpack() hands us $eval_context['flow_id'] cast to a
+        // string, which is '' when the turn carries no flow. Settings lookups
+        // treat '' as "a flow named empty string" and skip the flow bag entirely,
+        // so normalize it back to null and keep the get_current_flow() fallback.
+        if ($flow_id === '') {
+            $flow_id = null;
+        }
+
         $section = "## 4. FLOW CONTEXT\n\n";
 
         $is_admin = $eval_context['is_admin'] ?? false;
@@ -794,8 +802,11 @@ class FLOSC_Chatpack {
         // Phase-specific instructions
         $section .= "\n" . self::get_phase_instructions($phase, $eval_context, $flow_id);
 
-        // Access-level instructions (floscAdmin-configurable via ai_prompt_{phase})
-        $phase_prompt = flosc_get_setting("ai_prompt_{$phase}", '');
+        // Access-level instructions (floscAdmin-configurable via ai_prompt_{phase}).
+        // Pass $flow_id: without it flosc_get_setting() falls back to
+        // get_current_flow(), so a turn on one flow could be handed another
+        // flow's phase instructions.
+        $phase_prompt = flosc_get_setting("ai_prompt_{$phase}", '', $flow_id);
         if ($phase_prompt) {
             $section .= "\n**FloscAdmin Phase Instructions:**\n" . $phase_prompt . "\n";
         }
@@ -1109,7 +1120,7 @@ class FLOSC_Chatpack {
      * Accepts either a map (phase_outcomes[phase]) or per-phase keys.
      */
     private static function get_phase_outcomes($phase, $eval_context = [], $flow_id = null) {
-        $raw_map = flosc_get_setting('phase_outcomes', []);
+        $raw_map = flosc_get_setting('phase_outcomes', [], $flow_id);
         if (is_array($raw_map) && isset($raw_map[$phase])) {
             $parsed = self::normalize_outcomes($raw_map[$phase]);
             if (!empty($parsed)) {
@@ -1124,7 +1135,7 @@ class FLOSC_Chatpack {
             "behaviors_{$phase}",
         ];
         foreach ($candidate_keys as $key) {
-            $raw = flosc_get_setting($key, '');
+            $raw = flosc_get_setting($key, '', $flow_id);
             $parsed = self::normalize_outcomes($raw);
             if (!empty($parsed)) {
                 return $parsed;
