@@ -795,6 +795,21 @@ function flosc_render_chat_session($flosc_s) {
         $t   = flosc_format_mts_utc((string) ($r['timestamp'] ?? ''));
         $src = (string) ($r['response_source'] ?? '');
 
+        // VGM state change — a divider, not a message. It has no speaker, so it
+        // gets no u-/b-/a- sequence number and does not count as a turn.
+        //   +G  account created just now      G  signed in, account already existed
+        //   +M  became a member just now      M  signed in, already a member here
+        if ($src === 'state_change') {
+            $thread .= '<div class="flosc-msg flosc-msg-state" title="row ' . $rid . '">'
+                . '<span class="flosc-msg-state-rule" aria-hidden="true"></span>'
+                . '<span class="flosc-msg-state-label">' . esc_html(trim($ar)) . '</span>'
+                . '<span class="flosc-msg-state-t">' . esc_html($t) . '</span>'
+                . '<span class="flosc-msg-state-rule" aria-hidden="true"></span>'
+                . '</div>';
+            $shown++;
+            continue;
+        }
+
         // Admin-joined human message — pale green, "Name (admin)" (italic), letter 'a'.
         if ($src === 'admin') {
             $a_seq++;

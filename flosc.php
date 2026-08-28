@@ -855,6 +855,62 @@ class FLOSC_Framework {
         return $this->token_ledger->apply_member_token_grant_on_access($user_id, $purchase_data);
     }
 
+    /**
+     * Chat Logs journey mark: this account came into existence just now.
+     *
+     * Hooked to WordPress core's user_register. Observes only -- it queues a note
+     * on the user that the next logged chat turn writes into their thread as "+G".
+     * Nothing about registration itself is changed or intercepted.
+     *
+     * The account is not flow-specific, so the mark is queued account-wide and is
+     * redeemed by whichever flow the person is chatting on.
+     *
+     * @param int $user_id Newly created user.
+     * @return void
+     */
+    public function flosc_mark_journey_account_created($user_id) {
+        if (!class_exists('FLOSC_Chat_Logger')) {
+            return;
+        }
+        FLOSC_Chat_Logger::flosc_queue_journey_mark((int) $user_id, '+G', '');
+    }
+
+    /**
+     * Chat Logs journey mark: this user became a member of a flow just now.
+     *
+     * Hooked to flosc_member_access_granted, which every purchase path reaches via
+     * grant_member_access(). Observes only -- the entitlement is already written by
+     * the time this runs.
+     *
+     * Membership is per-flow, so the mark is queued against the flow's stem and is
+     * only redeemed by a turn on that flow. Two callers fire this action with
+     * different second arguments -- an array of purchase data, and a plain string
+     * reason -- so accept both and fall back to the current flow when no flow id
+     * is carried.
+     *
+     * @param int          $user_id
+     * @param array|string $purchase_data Purchase payload, or a reason string.
+     * @return void
+     */
+    public function flosc_mark_journey_member_granted($user_id, $purchase_data = []) {
+        if (!class_exists('FLOSC_Chat_Logger')) {
+            return;
+        }
+
+        $flow_raw = '';
+        if (is_array($purchase_data)) {
+            $flow_raw = (string) ($purchase_data['flow_id'] ?? '');
+        }
+        if ($flow_raw === '') {
+            $flow = $this->get_current_flow();
+            if (is_array($flow)) {
+                $flow_raw = (string) ($flow['ivr_file'] ?? $flow['ivr'] ?? $flow['id'] ?? '');
+            }
+        }
+
+        FLOSC_Chat_Logger::flosc_queue_journey_mark((int) $user_id, '+M', $flow_raw);
+    }
+
     public function flosc_user_should_receive_guest_tokens($user_id, $flow_id = '') {
         return $this->token_ledger->flosc_user_should_receive_guest_tokens($user_id, $flow_id);
     }
@@ -1294,6 +1350,14 @@ class FLOSC_Framework {
         add_action('flosc_member_access_granted', [$this, 'dispatch_member_welcome_email'], 10, 2);
         // G→M additive token grant (remaining + member_token_grant), once per flow
         add_action('flosc_member_access_granted', [$this, 'apply_member_token_grant_on_access'], 15, 2);
+        // Chat Logs journey marks. These only observe -- they queue a note that the
+        // next logged turn turns into a row -- so no auth or purchase path changes.
+        // WordPress fires user_register from wp_insert_user(), which every FLOSC
+        // account-creation path goes through (wp_create_user() calls it), so one
+        // listener covers first-party registration, SSO linking, MagicLink and the
+        // purchase-driven creates without touching any of them.
+        add_action('user_register', [$this, 'flosc_mark_journey_account_created'], 20, 1);
+        add_action('flosc_member_access_granted', [$this, 'flosc_mark_journey_member_granted'], 20, 2);
         // Newsletter opt-in profile checkbox (optional lead-gen)
         add_action('show_user_profile', [$this, 'render_newsletter_profile_field']);
         add_action('edit_user_profile', [$this, 'render_newsletter_profile_field']);

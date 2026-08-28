@@ -281,6 +281,7 @@ class FLOSC_Chat_Logger {
                 $wpdb->prepare(
                     "SELECT user_message, ai_response FROM %i
                      WHERE session_id = %d AND user_id = %d
+                       AND response_source <> 'state_change'
                      ORDER BY id DESC
                      LIMIT %d",
                     $this->table_name,
@@ -296,6 +297,7 @@ class FLOSC_Chat_Logger {
                 $wpdb->prepare(
                     "SELECT user_message, ai_response FROM %i
                      WHERE session_id = %d AND user_id = 0 AND visitor_ip = %s
+                       AND response_source <> 'state_change'
                      ORDER BY id DESC
                      LIMIT %d",
                     $this->table_name,
@@ -331,6 +333,205 @@ class FLOSC_Chat_Logger {
         return $out;
     }
 
+    // ──────────────────────────────────────────────────────────────
+    // Journey marks — VGM state changes as rows in the thread
+    // ──────────────────────────────────────────────────────────────
+
+    /**
+     * Meta key holding acquisition marks waiting to be written into a thread.
+     *
+     * @return string
+     */
+    private static function flosc_journey_marks_meta_key() {
+        return '_flosc_journey_marks_pending';
+    }
+
+    /**
+     * Normalize a flow id to the stem the log table and the grant meta both use.
+     *
+     * @param string $flow_id
+     * @return string Stem, or '' when there is no flow.
+     */
+    public static function flosc_journey_flow_stem($flow_id) {
+        $stem = sanitize_key(pathinfo(basename((string) $flow_id), PATHINFO_FILENAME));
+        if ($stem === '') {
+            $stem = sanitize_key((string) $flow_id);
+        }
+        return $stem;
+    }
+
+    /**
+     * Record that a user acquired something, to be written into their thread later.
+     *
+     * The acquisition events fire where the browser is not present -- a PayPal IPN,
+     * a ClickBank postback, an OAuth callback -- so the journey id is unknown at
+     * that moment. Parking the mark on the user and redeeming it on their next
+     * logged turn is what lets the row land in the right thread, in order, without
+     * guessing from timestamps.
+     *
+     * One-shot per user per (mark, flow): you can only become a guest once, and a
+     * member of any one flow once, so a re-grant or a renewal must not queue a
+     * second "+M".
+     *
+     * @param int    $user_id
+     * @param string $mark    '+G' or '+M'.
+     * @param string $flow_id Flow the acquisition belongs to. '' = account-wide.
+     * @return void
+     */
+    public static function flosc_queue_journey_mark($user_id, $mark, $flow_id = '') {
+        $user_id = (int) $user_id;
+        $mark    = in_array($mark, ['+G', '+M'], true) ? $mark : '';
+        if ($user_id <= 0 || $mark === '') {
+            return;
+        }
+
+        $stem = self::flosc_journey_flow_stem($flow_id);
+
+        // One-shot guard. Kept as its own meta key rather than scanning the queue,
+        // because the queue is emptied as soon as the marks are written.
+        $once_key = '_flosc_journey_marked_' . ($mark === '+M' ? 'm' : 'g') . ($stem !== '' ? '_' . $stem : '');
+        if (get_user_meta($user_id, $once_key, true)) {
+            return;
+        }
+        update_user_meta($user_id, $once_key, time());
+
+        $queue = get_user_meta($user_id, self::flosc_journey_marks_meta_key(), true);
+        if (!is_array($queue)) {
+            $queue = [];
+        }
+        $queue[] = ['mark' => $mark, 'flow' => $stem];
+        // Bounded: a runaway producer must not grow user meta without limit.
+        if (count($queue) > 10) {
+            $queue = array_slice($queue, -10);
+        }
+        update_user_meta($user_id, self::flosc_journey_marks_meta_key(), $queue);
+    }
+
+    /**
+     * Write any VGM state-change rows this turn should be preceded by.
+     *
+     * Two things can produce a mark, and they mean different things:
+     *
+     *   Acquisition  -- the account or the entitlement came into existence just
+     *                   now. Queued by flosc_queue_journey_mark() from the events
+     *                   themselves (user_register, flosc_member_access_granted),
+     *                   so it is a fact, not an inference. Written as +G / +M.
+     *
+     *   Recognition  -- nothing was acquired; someone who already had an account
+     *                   signed in and the system recognized them. There is no
+     *                   event for this, but the thread itself is the evidence: the
+     *                   previous row in this journey was written with user_id 0
+     *                   and this one is not. Written as G / M.
+     *
+     * @param array $data The turn about to be logged (flow_id, user_id, journey_id, phase).
+     * @return void
+     */
+    private function flosc_write_journey_marks($data) {
+        global $wpdb;
+
+        $journey_id = self::flosc_sanitize_journey_id($data['journey_id'] ?? '');
+        $user_id    = intval($data['user_id'] ?? 0);
+        if ($journey_id === '' || $user_id <= 0) {
+            // A visitor has nothing to transition from yet, and a thread with no
+            // journey id has nowhere to put the row.
+            return;
+        }
+
+        $flow_id = sanitize_text_field((string) ($data['flow_id'] ?? ''));
+        $stem    = self::flosc_journey_flow_stem($flow_id);
+
+        // Previous row of THIS conversation, to see whether the signer-in just
+        // crossed out of visitor.
+        $previous = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT user_id FROM %i WHERE journey_id = %s ORDER BY id DESC LIMIT 1",
+                $this->table_name,
+                $journey_id
+            ),
+            ARRAY_A
+        );
+        $has_previous  = is_array($previous);
+        $crossed_from_visitor = $has_previous && intval($previous['user_id']) === 0;
+
+        // Redeem acquisition marks for this flow (or account-wide ones).
+        $queue = get_user_meta($user_id, self::flosc_journey_marks_meta_key(), true);
+        $queue = is_array($queue) ? $queue : [];
+        $marks = [];
+        $keep  = [];
+        foreach ($queue as $entry) {
+            if (!is_array($entry)) {
+                continue;
+            }
+            $entry_flow = (string) ($entry['flow'] ?? '');
+            if ($entry_flow === '' || $entry_flow === $stem) {
+                $marks[] = (string) ($entry['mark'] ?? '');
+            } else {
+                $keep[] = $entry;
+            }
+        }
+        $marks = array_values(array_filter($marks, static function ($m) {
+            return in_array($m, ['+G', '+M'], true);
+        }));
+
+        if (empty($marks) && !$crossed_from_visitor) {
+            return;
+        }
+
+        if ($marks !== [] || $queue !== $keep) {
+            if ($keep === []) {
+                delete_user_meta($user_id, self::flosc_journey_marks_meta_key());
+            } else {
+                update_user_meta($user_id, self::flosc_journey_marks_meta_key(), $keep);
+            }
+        }
+
+        // Nothing was acquired, so this is a recognition: they already had the
+        // account, and possibly the entitlement, before this conversation began.
+        if (empty($marks)) {
+            $level = 'guest';
+            if (class_exists('FLOSC_Member_Access')) {
+                $level = FLOSC_Member_Access::instance()->get_access_level($user_id, $flow_id !== '' ? $flow_id : null);
+            }
+            $marks[] = ($level === 'member') ? 'M' : 'G';
+        }
+
+        // Where they came from. Only 'V' is directly evidenced; otherwise they were
+        // already signed in on this thread, which for an unqueued +M means guest.
+        $from = '';
+        if ($crossed_from_visitor) {
+            $from = 'V';
+        } elseif ($has_previous) {
+            $from = 'G';
+        }
+
+        $phase = sanitize_text_field((string) ($data['phase'] ?? 'content'));
+
+        foreach ($marks as $mark) {
+            $wpdb->insert(
+                $this->table_name,
+                [
+                    'timestamp'       => current_time('mysql'),
+                    'flow_id'         => $flow_id,
+                    'phase'           => $phase,
+                    'user_id'         => $user_id,
+                    'session_id'      => intval($data['session_id'] ?? 0),
+                    'journey_id'      => $journey_id,
+                    'visitor_ip'      => '',
+                    'user_message'    => '',
+                    'ai_response'     => ($from !== '' ? $from . ' → ' : '') . $mark,
+                    'provider'        => 'flosc',
+                    'chain_detail'    => '',
+                    'response_source' => 'state_change',
+                    'response_time_ms'=> 0,
+                ],
+                ['%s', '%s', '%s', '%d', '%d', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%d']
+            );
+            // Only the first mark of a batch carries the "came from" side; a
+            // +G immediately followed by +M reads as V → +G then +M.
+            $from = '';
+        }
+    }
+
     /**
      * Log a chat exchange.
      *
@@ -354,6 +555,11 @@ class FLOSC_Chat_Logger {
 
         // Ensure table exists (lightweight check — cached after first call)
         $this->flosc_ensure_table();
+
+        // Any VGM state change goes in FIRST, so the marker sits above the turn
+        // that triggered it. Done here rather than at each call site so every path
+        // that logs a turn -- /chat, /chat-rag, /chat-log -- is covered by one hook.
+        $this->flosc_write_journey_marks($data);
 
         $visitor_ip = '';
         if (empty($data['user_id'])) {
@@ -858,7 +1064,10 @@ class FLOSC_Chat_Logger {
             if ((string) $r['timestamp'] < $sessions[$k]['first_ts']) {
                 $sessions[$k]['first_ts'] = (string) $r['timestamp'];
             }
-            if (strncmp((string) $r['user_message'], '[SYSTEM:', 8) !== 0) {
+            // A state-change divider has no speaker, and the auto-welcome's
+            // "[SYSTEM: …]" prompt is machinery, so neither counts as a message.
+            $is_marker = ((string) ($r['response_source'] ?? '') === 'state_change');
+            if (!$is_marker && strncmp((string) $r['user_message'], '[SYSTEM:', 8) !== 0) {
                 $sessions[$k]['turns']++;
             }
         }

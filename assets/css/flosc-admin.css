@@ -6926,6 +6926,35 @@ label[for^="flosc_acc_q_"] {
 .flosc-msg-id { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 10px; color: #9a9a9a; }
 /* Admin-joined human message: bot-side, pale green. */
 .flosc-msg-admin .flosc-msg-body { background: #e6f4ea; border: 1px solid #cdebd6; }
+/* VGM state change: a full-width divider between turns, not a speech bubble. */
+.flosc-msg-state {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 14px 0;
+}
+.flosc-msg-state-rule {
+    flex: 1 1 auto;
+    height: 1px;
+    background: #dcdcde;
+}
+.flosc-msg-state-label {
+    flex: 0 0 auto;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: #1d5c3a;
+    background: #eef7f1;
+    border: 1px solid #cdebd6;
+    border-radius: 10px;
+    padding: 2px 10px;
+}
+.flosc-msg-state-t {
+    flex: 0 0 auto;
+    font-size: 11px;
+    color: #999;
+}
 .flosc-admin-usage-report {
     padding: 10px 16px;
     border-top: 1px solid #f0f0f1;
