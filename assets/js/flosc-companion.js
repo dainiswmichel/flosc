@@ -422,6 +422,30 @@
             return 'flosc_companion_token_cache_' + flowId + '_' + appScope;
         },
 
+        /**
+         * v10.1.0: Park a handoff pack in sessionStorage instead of the address bar.
+         *
+         * The pack used to ride the URL as base64. At 8000 characters plus the
+         * context params it exceeded nginx's request-line limit and the chat frame
+         * rendered "414 Request-URI Too Large" to the reader. sessionStorage is
+         * shared with a same-origin frame and survives a same-tab navigation, so
+         * the URL now carries a one-character marker instead of a transcript.
+         *
+         * @param {string} encoded Base64 pack.
+         * @return {boolean} Whether it was stored.
+         */
+        stashHandoffPack: function(encoded) {
+            try {
+                if (!encoded) {
+                    return false;
+                }
+                window.sessionStorage.setItem('flosc_handoff_pack', String(encoded));
+                return true;
+            } catch (e) {
+                return false;
+            }
+        },
+
         readTokenCache: function() {
             try {
                 var raw = window.sessionStorage.getItem(this.getTokenCacheKey());
@@ -783,12 +807,18 @@
                         ? this.continuityParams
                         : {};
                     var parentParams = new URLSearchParams(window.location.search || '');
-                    ['flosc_session_id', 'flosc_visitor_session', 'flosc_handoff'].forEach(function(key) {
+                    // v10.1.0: identifiers only. The transcript never rides a URL.
+                    ['flosc_session_id', 'flosc_visitor_session'].forEach(function(key) {
                         var val = cont[key] || parentParams.get(key);
                         if (val) {
-                            url.searchParams.set(key, String(val).slice(0, key === 'flosc_handoff' ? 8000 : 120));
+                            url.searchParams.set(key, String(val).slice(0, 120));
                         }
                     });
+
+                    var carriedPack = cont.flosc_handoff || parentParams.get('flosc_handoff');
+                    if (carriedPack && this.stashHandoffPack(carriedPack)) {
+                        url.searchParams.set('flosc_handoff_ref', '1');
+                    }
                 } catch (eFwd) {
                     // Ignore parent URL parse failures.
                 }
@@ -1930,8 +1960,11 @@
                             };
                             try {
                                 var packed = btoa(unescape(encodeURIComponent(JSON.stringify(handoffObj))));
-                                if (packed && packed.length <= 8000) {
-                                    target.searchParams.set('flosc_handoff', packed);
+                                // v10.1.0: sessionStorage survives a same-tab, same-origin
+                                // navigation and has room for a real transcript. The URL
+                                // gets a marker, never the payload.
+                                if (packed && self.stashHandoffPack(packed)) {
+                                    target.searchParams.set('flosc_handoff_ref', '1');
                                 }
                             } catch (e) {
                                 // If encoding fails, continue with session id only.

@@ -1173,6 +1173,30 @@ class floscApp {
         }
     }
 
+    /**
+     * v10.1.0: Collect a handoff pack parked in sessionStorage.
+     *
+     * The pack used to travel as base64 in the query string. At 8000 characters
+     * plus the context params it exceeded nginx's request-line limit, and the
+     * reader was shown "414 Request-URI Too Large" inside the chat panel. The URL
+     * now carries only flosc_handoff_ref=1 and the payload waits here.
+     *
+     * Read-once: cleared as soon as it is taken, so a reload cannot replay it.
+     *
+     * @return {string} Base64 pack, or an empty string.
+     */
+    readStashedHandoffPack() {
+        try {
+            const raw = window.sessionStorage.getItem('flosc_handoff_pack');
+            if (raw) {
+                window.sessionStorage.removeItem('flosc_handoff_pack');
+            }
+            return String(raw || '');
+        } catch (e) {
+            return '';
+        }
+    }
+
     decodeSessionHandoffPayload(encoded) {
         try {
             if (!encoded) {
@@ -1286,7 +1310,7 @@ class floscApp {
         try {
             const url = new URL(window.location.href);
             let changed = false;
-            ['flosc_visitor_session', 'flosc_handoff', 'flosc_session_id'].forEach((key) => {
+            ['flosc_visitor_session', 'flosc_handoff', 'flosc_handoff_ref', 'flosc_session_id'].forEach((key) => {
                 if (url.searchParams.has(key)) {
                     url.searchParams.delete(key);
                     changed = true;
@@ -1315,7 +1339,12 @@ class floscApp {
             }
 
             const sid = String(params.get('flosc_visitor_session') || '').trim();
-            const encoded = String(params.get('flosc_handoff') || '').trim();
+            // Stash first; the query-string form stays supported so links already
+            // in flight when this shipped still restore their thread.
+            const stashed = (params.get('flosc_handoff_ref') === '1')
+                ? this.readStashedHandoffPack()
+                : '';
+            const encoded = stashed || String(params.get('flosc_handoff') || '').trim();
 
             if (encoded) {
                 const payload = this.decodeSessionHandoffPayload(encoded);
@@ -1436,8 +1465,15 @@ class floscApp {
                 ...payload,
                 messages: Array.isArray(payload.messages) ? payload.messages.slice(-10) : []
             });
-            if (packed && packed.length <= 8000) {
-                url.searchParams.set('flosc_handoff', packed);
+            // v10.1.0: park it, mark it. A transcript in the query string is what
+            // produced the 414 the reader used to see inside the panel.
+            if (packed) {
+                try {
+                    window.sessionStorage.setItem('flosc_handoff_pack', packed);
+                    url.searchParams.set('flosc_handoff_ref', '1');
+                } catch (e) {
+                    this.logWarn('[FLOSC] Could not stash handoff pack:', e);
+                }
             }
             return;
         }
