@@ -221,6 +221,18 @@ class FLOSC_Token_Ledger {
         if (!$got) {
             global $wpdb;
             $stale_before = time() - 30;
+            // Stale-lock steal. add_option() above is the atomic acquire (it returns
+            // false when the row already exists); this reclaims a lock whose holder
+            // died, and only when it is older than 30s. It must be one atomic
+            // conditional UPDATE: get_option() + update_option() is a race in which
+            // two requests both read the same stale lock and both believe they won,
+            // and WordPress exposes no compare-and-swap for options. $updated === 1
+            // is precisely how this request learns it took the lock.
+            //
+            // Caching is not applicable and would be harmful -- a lock is only a lock
+            // if the check reaches the database. Table is core wp_options, values are
+            // bound through prepare(), and the query runs only on lock contention.
+            // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- atomic lock steal; see above.
             $updated = (int) $wpdb->query(
                 $wpdb->prepare(
                     "UPDATE {$wpdb->options}
