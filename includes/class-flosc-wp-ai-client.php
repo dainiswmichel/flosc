@@ -519,6 +519,32 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+	 * Whether the installed provider plugin can actually use a model id.
+	 *
+	 * The ids a provider account can see and the ids the installed WordPress
+	 * provider plugin carries are two different lists, and only the second one
+	 * works here. This is the check FLOSC's own dispatch makes, exposed so the
+	 * admin can be shown the difference before choosing.
+	 *
+	 * @param string $flosc_provider FLOSC slug.
+	 * @param string $model_id       Model id.
+	 * @return bool
+	 */
+	public static function plugin_can_use_model( $flosc_provider, $model_id ) {
+		$wp_id = self::wordpress_provider_id( $flosc_provider );
+
+		if ( '' === $wp_id || '' === (string) $model_id ) {
+			return false;
+		}
+
+		if ( ! self::core_client_exists() || ! self::is_provider_registered( $flosc_provider ) ) {
+			return false;
+		}
+
+		return null !== self::pin_model( $wp_id, (string) $model_id );
+	}
+
+	/**
 	 * Exact model instance from the official plugin, or null if the id is not in its catalog.
 	 *
 	 * @param string $wp_id    WordPress provider id.

@@ -84,6 +84,7 @@ require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/class-flosc-filesystem.php'
 require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/flosc-data-paths.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-available-providers.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-wp-ai-client.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-model-catalog.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-personality-library.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-knowledge-bases.php';
 
@@ -1410,6 +1411,7 @@ class FLOSC_Framework {
 
         // v1.9.0: AI connection test AJAX
         add_action('wp_ajax_flosc_test_ai_connection', [$this, 'ajax_test_ai_connection']);
+        add_action('wp_ajax_flosc_fetch_ai_models', [$this, 'ajax_fetch_ai_models']);
 
         // Admin: send Guest Access Link to any email (Register & Login tab)
         add_action('wp_ajax_flosc_send_guest_link', [$this, 'ajax_send_guest_link']);
@@ -9670,6 +9672,42 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
      * v1.9.0: AJAX handler for AI connection test button in admin
      * Wraps handle_test_ai() for wp_ajax context
      */
+    /**
+     * Ask the selected provider which models this key can use, and say which
+     * of them the installed provider plugin can actually pin.
+     *
+     * @return void
+     */
+    public function ajax_fetch_ai_models() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Unauthorized', 'flosc')], 403);
+        }
+
+        check_ajax_referer('flosc_test_ai', 'nonce');
+
+        $post     = wp_unslash($_POST);
+        $provider = isset($post['provider']) ? sanitize_key($post['provider']) : '';
+        $ivr      = isset($post['ivr']) ? sanitize_file_name($post['ivr']) : '';
+
+        if ($ivr !== '') {
+            $GLOBALS['flosc_current_ivr'] = $ivr;
+        }
+
+        $api_key = function_exists('flosc_get_provider_api_key')
+            ? flosc_get_provider_api_key($provider)
+            : (string) flosc_get_setting($provider . '_api_key', '');
+
+        $result = flosc_fetch_model_catalog($provider, (string) $api_key);
+
+        if (is_wp_error($result)) {
+            wp_send_json_error([
+                'message' => $result->get_error_message(),
+            ]);
+        }
+
+        wp_send_json_success($result);
+    }
+
     public function ajax_test_ai_connection() {
         $post = wp_unslash($_POST);
         if (!current_user_can('manage_options')) {

@@ -278,6 +278,12 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
                     <option value="<?php echo esc_attr($flosc_a_id); ?>"><?php echo esc_html($flosc_a_label); ?></option>
                 <?php endforeach; ?>
             </datalist>
+            <p class="flosc-model-fetch-row">
+                <button type="button" class="button flosc-fetch-models" data-provider="anthropic" data-target="flow_ai_anthropic_model">
+                    <?php echo esc_html__( 'Fetch models this key can use', 'flosc' ); ?>
+                </button>
+                <span class="description flosc-model-fetch-status" data-for="flow_ai_anthropic_model"></span>
+            </p>
             <p class="description">The model id to use for this flow. Suggestions are offered, but any id the installed AI Provider for Anthropic plugin carries will work — type it in.</p>
         </td>
     </tr>
@@ -323,6 +329,12 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
                     <option value="<?php echo esc_attr($flosc_o_id); ?>"><?php echo esc_html($flosc_o_label); ?></option>
                 <?php endforeach; ?>
             </datalist>
+            <p class="flosc-model-fetch-row">
+                <button type="button" class="button flosc-fetch-models" data-provider="openai" data-target="flow_ai_openai_model">
+                    <?php echo esc_html__( 'Fetch models this key can use', 'flosc' ); ?>
+                </button>
+                <span class="description flosc-model-fetch-status" data-for="flow_ai_openai_model"></span>
+            </p>
             <p class="description">The model id to use for this flow. Suggestions are offered, but any id the installed AI Provider for OpenAI plugin carries will work — type it in.</p>
         </td>
     </tr>
@@ -749,6 +761,78 @@ jQuery(document).ready(function($) {
     // --- Chaining toggle ---
     $('#flow_ai_enable_chaining').on('change', function() {
         $('#flosc-chain-config').toggle(this.checked);
+    });
+
+    // --- Fetch the provider's model list ---
+    // Two lists matter and only one of them works here: what the API key can
+    // see at the provider, and what the installed WordPress AI Provider plugin
+    // carries. A model can be live at the provider and absent from the plugin's
+    // catalog — which is the failure that reads as a bad key and is not one.
+    // So the list is fetched from the provider and each id is marked with
+    // whether this site can actually use it.
+    $('.flosc-fetch-models').on('click', function () {
+        var $btn = $(this);
+        var provider = $btn.data('provider');
+        var targetId = $btn.data('target');
+        var $status = $('.flosc-model-fetch-status[data-for="' + targetId + '"]');
+        var $field = $('#' + targetId);
+
+        $btn.prop('disabled', true);
+        $status.removeClass('flosc-model-fetch-status--bad').text('Asking the provider…');
+
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'flosc_fetch_ai_models',
+                nonce: '<?php echo esc_js( wp_create_nonce('flosc_test_ai') ); ?>',
+                provider: provider,
+                ivr: '<?php echo esc_js( $GLOBALS['flosc_current_ivr'] ?? '' ); ?>'
+            },
+            success: function (response) {
+                if (!response || !response.success) {
+                    $status.addClass('flosc-model-fetch-status--bad')
+                        .text((response && response.data && response.data.message) || 'Could not fetch the list.');
+                    return;
+                }
+
+                var models = response.data.models || [];
+                var checked = !!response.data.checked;
+                var $list = $('#' + $field.attr('list'));
+                var usable = 0;
+
+                $list.empty();
+
+                models.forEach(function (m) {
+                    if (checked && !m.usable) { return; }
+                    usable++;
+                    $('<option>').attr('value', m.id).text(m.label || m.id).appendTo($list);
+                });
+
+                if (checked && usable === 0) {
+                    $status.addClass('flosc-model-fetch-status--bad').text(
+                        'Your key can see ' + models.length + ' models, but the installed provider plugin ' +
+                        'carries none of them. Update the provider plugin.'
+                    );
+                    return;
+                }
+
+                if (checked && usable < models.length) {
+                    $status.text(
+                        usable + ' of ' + models.length + ' models your key can see are also in the installed ' +
+                        'provider plugin. Only those work here, and only those are listed.'
+                    );
+                } else {
+                    $status.text(usable + ' models available. Click the field to choose one.');
+                }
+            },
+            error: function () {
+                $status.addClass('flosc-model-fetch-status--bad').text('Could not reach the server.');
+            },
+            complete: function () {
+                $btn.prop('disabled', false);
+            }
+        });
     });
 
     // --- Connection test ---
