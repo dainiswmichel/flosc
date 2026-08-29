@@ -808,6 +808,12 @@ jQuery(document).ready(function($) {
                         lines.push('Tokens: (provider did not return usage on this call)');
                     }
                     if (d.billing_source) { lines.push('Billing source: ' + d.billing_source); }
+                    if (d.model_configured && d.model && d.model_configured !== d.model) {
+                        lines.push('');
+                        lines.push('Note: "' + d.model_configured + '" is not in the installed provider plugin\'s catalog,');
+                        lines.push('so the provider answered with ' + d.model + ' instead. Pick a model the plugin offers,');
+                        lines.push('or update the provider plugin, to use the one you configured.');
+                    }
                     lines.push('Model reply: ' + (d.response || '(empty)'));
                     $flosc_status.html('<span class="flosc-pass-status flosc-pass-status--pass">✓ External API OK — key + model path verified</span>');
                     $details.text(lines.join('\n'));

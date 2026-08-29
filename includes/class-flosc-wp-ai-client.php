@@ -301,7 +301,8 @@ class FLOSC_WP_AI_Client {
 			return $bound;
 		}
 
-		$builder = self::make_builder( $args, $wp_id );
+		$model_resolved = true;
+		$builder        = self::make_builder( $args, $wp_id, $model_resolved );
 		if ( is_wp_error( $builder ) ) {
 			return $builder;
 		}
@@ -309,19 +310,44 @@ class FLOSC_WP_AI_Client {
 		$temperature = isset( $args['temperature'] ) ? (float) $args['temperature'] : 0.3;
 		$builder->using_temperature( $temperature );
 		if ( ! $builder->is_supported_for_text_generation() ) {
-			$builder = self::make_builder( $args, $wp_id );
+			$builder = self::make_builder( $args, $wp_id, $model_resolved );
 			if ( is_wp_error( $builder ) ) {
 				return $builder;
 			}
 		}
 
-		$plugin_name = self::plugin_name( $provider );
+		$plugin_name  = self::plugin_name( $provider );
+		$model_wanted = (string) ( $args['model'] ?? '' );
+		$substituted  = '';
+
+		// A model id the provider plugin does not carry cannot resolve, pinned
+		// or preferred, and the builder simply reports "not supported" — which
+		// reads like a key problem and is not one. Ask the provider for its own
+		// default instead, so a good key still connects, and say what happened.
+		if ( ! $model_resolved && ! $builder->is_supported_for_text_generation() ) {
+			$fallback_args                 = $args;
+			$fallback_args['ignore_model'] = true;
+			$fallback                      = self::make_builder( $fallback_args, $wp_id );
+
+			if ( ! is_wp_error( $fallback ) ) {
+				$fallback->using_temperature( $temperature );
+
+				if ( $fallback->is_supported_for_text_generation() ) {
+					$builder     = $fallback;
+					$substituted = $model_wanted;
+				}
+			}
+		}
 
 		if ( ! $builder->is_supported_for_text_generation() ) {
+			$catalog_note = $model_resolved
+				? ''
+				: sprintf( "\n\nThe model id \"%s\" is not in %s's catalog on this site.", $model_wanted, $plugin_name );
+
 			return new WP_Error(
 				'flosc_wp_ai_not_supported',
 				$test_mode
-					? "This prompt is not supported for text generation with {$plugin_name}.\n\n📝 Next steps:\n1. Confirm the plugin is activated\n2. Confirm the model id is in that provider’s catalog\n3. Test again"
+					? "This prompt is not supported for text generation with {$plugin_name}.{$catalog_note}\n\n📝 Next steps:\n1. Confirm the plugin is activated and up to date\n2. Choose a model the installed plugin offers\n3. Test again"
 					: 'This prompt is not supported by the active AI provider.'
 			);
 		}
@@ -337,7 +363,16 @@ class FLOSC_WP_AI_Client {
 			return $result;
 		}
 
-		return self::parse_result( $result, $provider, (string) ( $args['model'] ?? '' ) );
+		$parsed = self::parse_result( $result, $provider, (string) ( $args['model'] ?? '' ) );
+
+		// A model was swapped for the provider's default because the configured
+		// id is not in its catalog. Say so rather than let a test pass while
+		// quietly answering as something else.
+		if ( is_array( $parsed ) && '' !== $substituted ) {
+			$parsed['model_substituted'] = $substituted;
+		}
+
+		return $parsed;
 	}
 
 	/**
@@ -441,7 +476,8 @@ class FLOSC_WP_AI_Client {
 	 * @param string $wp_id WordPress provider id.
 	 * @return WP_AI_Client_Prompt_Builder|WP_Error
 	 */
-	private static function make_builder( $args, $wp_id ) {
+	private static function make_builder( $args, $wp_id, &$model_resolved = null ) {
+		$model_resolved = true;
 		$message   = (string) ( $args['message'] ?? '' );
 		$system    = (string) ( $args['system_prompt'] ?? '' );
 		$model     = (string) ( $args['model'] ?? '' );
@@ -466,11 +502,14 @@ class FLOSC_WP_AI_Client {
 
 		$builder->using_provider( $wp_id );
 
-		if ( $model !== '' ) {
+		if ( $model !== '' && empty( $args['ignore_model'] ) ) {
 			$pinned = self::pin_model( $wp_id, $model );
 			if ( $pinned ) {
 				$builder->using_model( $pinned );
 			} else {
+				// The provider plugin's catalog does not carry this id. Say so
+				// upward; a preference on an unknown model cannot resolve either.
+				$model_resolved = false;
 				$builder->using_model_preference( array( $wp_id, $model ) );
 			}
 		}
