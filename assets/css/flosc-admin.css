@@ -7717,3 +7717,5 @@ details.flosc-flow-block > summary.flosc-flow-block__header::after { content: '\
 details.flosc-flow-block[open] > summary.flosc-flow-block__header::after { transform: rotate(90deg); }
 details.flosc-flow-block > summary.flosc-flow-block__header:focus-visible { outline: 2px solid #2271b1; outline-offset: 2px; }
 details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin-bottom: 0; padding-bottom: 0; border-bottom: 0; }
+.flosc-ai-save-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 4px 0 0; padding-top: 12px; border-top: 1px solid #dcdcde; }
+.flosc-ai-save-row .description { margin: 0; }

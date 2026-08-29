@@ -496,6 +496,19 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
             </td>
         </tr>
     </table>
+
+    <?php
+    // Save where the work happens. The page's main Save button is far below,
+    // and a key typed here but not saved is invisible to the connection test.
+    // Bound to the settings form by id rather than nested inside it, because
+    // the AI tab closes that form early for its own sibling forms.
+    ?>
+    <p class="submit flosc-ai-save-row">
+        <button type="submit" name="flosc_save" value="1" form="flosc-settings-form" class="button button-primary">
+            <?php echo esc_html__( 'Save AI Settings', 'flosc' ); ?>
+        </button>
+        <span class="description"><?php echo esc_html__( 'Save before testing — the test reads saved settings, not what is on screen.', 'flosc' ); ?></span>
+    </p>
 </div>
 
 <!-- Connection Test -->
