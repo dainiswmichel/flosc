@@ -2185,13 +2185,19 @@ if (function_exists('wp_add_inline_style')) {
         if (!$flosc_can_view_administration) {
             unset($tabs['administration']);
         }
+        // Tabs that are global rather than per-flow do not carry the flow
+        // selection, so their URL never implies Switch Flow changes what they do.
+        $flosc_global_tabs = ['starter-packs'];
+
         foreach ($tabs as $flosc_tab_id => $flosc_tab_label):
-            $flosc_tab_url = add_query_arg([
-                'page' => 'flosc-settings',
-                'ivr' => $flosc_selected_ivr,
-                'tab' => $flosc_tab_id,
-                'view' => $flosc_identity_view,
-            ], admin_url('admin.php'));
+            $flosc_tab_args = ['page' => 'flosc-settings', 'tab' => $flosc_tab_id];
+
+            if (!in_array($flosc_tab_id, $flosc_global_tabs, true)) {
+                $flosc_tab_args['ivr']  = $flosc_selected_ivr;
+                $flosc_tab_args['view'] = $flosc_identity_view;
+            }
+
+            $flosc_tab_url = add_query_arg($flosc_tab_args, admin_url('admin.php'));
         ?>
             <a href="<?php echo esc_url($flosc_tab_url); ?>" 
                class="nav-tab <?php
