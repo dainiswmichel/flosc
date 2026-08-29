@@ -256,13 +256,29 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
     <tr>
         <th scope="row"><label for="flow_ai_anthropic_model">Anthropic Model</label></th>
         <td>
-            <select name="flow_ai_anthropic_model" id="flow_ai_anthropic_model" class="flosc-ai-model-select">
-                <option value="claude-sonnet-4-5-20250929" <?php selected($flosc_ai_anthropic_model, 'claude-sonnet-4-5-20250929'); ?>>Claude Sonnet 4.5 (Recommended)</option>
-                <option value="claude-haiku-4-5-20251001" <?php selected($flosc_ai_anthropic_model, 'claude-haiku-4-5-20251001'); ?>>Claude Haiku 4.5 (Fastest, cheapest)</option>
-                <option value="claude-opus-4-6" <?php selected($flosc_ai_anthropic_model, 'claude-opus-4-6'); ?>>Claude Opus 4.6 (Most capable)</option>
-                <option value="claude-3-5-sonnet-20241022" <?php selected($flosc_ai_anthropic_model, 'claude-3-5-sonnet-20241022'); ?>>Claude 3.5 Sonnet (Legacy)</option>
-            </select>
-            <p class="description">Choose which Claude model to use for this flow.</p>
+            <?php
+            // A typed field with suggestions, not a fixed list. Model ids change
+            // faster than any list shipped in a plugin, and the ids that work are
+            // the ones the installed provider plugin carries — so the operator
+            // must always be able to enter one FLOSC has never heard of.
+            $flosc_anthropic_model_options = [
+                'claude-sonnet-4-5-20250929' => 'Claude Sonnet 4.5',
+                'claude-haiku-4-5-20251001'  => 'Claude Haiku 4.5',
+                'claude-opus-4-6'            => 'Claude Opus 4.6',
+                'claude-3-5-sonnet-20241022' => 'Claude 3.5 Sonnet',
+            ];
+            ?>
+            <input type="text" name="flow_ai_anthropic_model" id="flow_ai_anthropic_model"
+                class="regular-text flosc-ai-model-select"
+                list="flosc-anthropic-model-list"
+                value="<?php echo esc_attr($flosc_ai_anthropic_model); ?>"
+                placeholder="claude-sonnet-4-5-20250929">
+            <datalist id="flosc-anthropic-model-list">
+                <?php foreach ($flosc_anthropic_model_options as $flosc_a_id => $flosc_a_label) : ?>
+                    <option value="<?php echo esc_attr($flosc_a_id); ?>"><?php echo esc_html($flosc_a_label); ?></option>
+                <?php endforeach; ?>
+            </datalist>
+            <p class="description">The model id to use for this flow. Suggestions are offered, but any id the installed AI Provider for Anthropic plugin carries will work — type it in.</p>
         </td>
     </tr>
 </table>
@@ -288,14 +304,26 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
     <tr>
         <th scope="row"><label for="flow_ai_openai_model">OpenAI Model</label></th>
         <td>
-            <select name="flow_ai_openai_model" id="flow_ai_openai_model" class="flosc-ai-model-select">
-                <option value="gpt-4o-mini" <?php selected($flosc_ai_openai_model, 'gpt-4o-mini'); ?>>GPT-4o-mini (Fast & affordable)</option>
-                <option value="gpt-4o" <?php selected($flosc_ai_openai_model, 'gpt-4o'); ?>>GPT-4o (More capable)</option>
-                <option value="gpt-4.1" <?php selected($flosc_ai_openai_model, 'gpt-4.1'); ?>>GPT-4.1 (Latest)</option>
-                <option value="gpt-4.1-mini" <?php selected($flosc_ai_openai_model, 'gpt-4.1-mini'); ?>>GPT-4.1 Mini (Latest affordable)</option>
-                <option value="gpt-4.1-nano" <?php selected($flosc_ai_openai_model, 'gpt-4.1-nano'); ?>>GPT-4.1 Nano (Cheapest)</option>
-            </select>
-            <p class="description">Choose which OpenAI model to use for this flow.</p>
+            <?php
+            $flosc_openai_model_options = [
+                'gpt-4o-mini'  => 'GPT-4o mini',
+                'gpt-4o'       => 'GPT-4o',
+                'gpt-4.1'      => 'GPT-4.1',
+                'gpt-4.1-mini' => 'GPT-4.1 mini',
+                'gpt-4.1-nano' => 'GPT-4.1 nano',
+            ];
+            ?>
+            <input type="text" name="flow_ai_openai_model" id="flow_ai_openai_model"
+                class="regular-text flosc-ai-model-select"
+                list="flosc-openai-model-list"
+                value="<?php echo esc_attr($flosc_ai_openai_model); ?>"
+                placeholder="gpt-4o-mini">
+            <datalist id="flosc-openai-model-list">
+                <?php foreach ($flosc_openai_model_options as $flosc_o_id => $flosc_o_label) : ?>
+                    <option value="<?php echo esc_attr($flosc_o_id); ?>"><?php echo esc_html($flosc_o_label); ?></option>
+                <?php endforeach; ?>
+            </datalist>
+            <p class="description">The model id to use for this flow. Suggestions are offered, but any id the installed AI Provider for OpenAI plugin carries will work — type it in.</p>
         </td>
     </tr>
 </table>
