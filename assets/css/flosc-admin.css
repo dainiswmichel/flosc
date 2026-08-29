@@ -7686,3 +7686,20 @@ label[for^="flosc_acc_q_"] {
 .flosc-sp-repair p { margin: 0 0 8px; }
 .flosc-sp-repair form { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .flosc-sp-repair .description { margin: 0; }
+
+/* ---------------------------------------------------------------
+ * Starter Packs — personality cards
+ * --------------------------------------------------------------- */
+.flosc-sp-section { margin: 26px 0 4px; font-size: 15px; }
+.flosc-sp-section-note { margin: 0 0 12px; max-width: 52rem; }
+.flosc-sp-extra { margin: 10px 0 0; max-width: 78rem; color: #646970; }
+.flosc-sp-voice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 12px; max-width: 78rem; }
+.flosc-sp-voice-card { background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 14px 16px 16px; display: flex; flex-direction: column; }
+.flosc-sp-voice-card.is-installed { border-color: #2c6349; background: #fbfdfc; }
+.flosc-sp-voice-card h4 { margin: 0 0 6px; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+.flosc-sp-dot { width: 9px; height: 9px; border-radius: 50%; background: #dcdcde; border: 1px solid #c3c4c7; flex: none; }
+.flosc-sp-voice-card.is-installed .flosc-sp-dot { background: #2c6349; border-color: #2c6349; }
+.flosc-sp-voice-role { margin: 0 0 6px; font-size: 13px; color: #50575e; }
+.flosc-sp-voice-traits { margin: 0 0 12px; font-size: 12px; color: #646970; font-style: italic; }
+.flosc-sp-voice-card form { margin-top: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.flosc-sp-voice-state { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; color: #2c6349; }

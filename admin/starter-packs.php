@@ -32,6 +32,8 @@ if ( isset( $_POST['flosc_sp_action'] ) || isset( $_POST['flosc_sp_slug'] ) ) {
 		$flosc_sp_notice = FLOSC_Starter_Packs::uninstall( $flosc_sp_slug );
 	} elseif ( 'repair' === $flosc_sp_action ) {
 		$flosc_sp_notice = FLOSC_Starter_Packs::repair( $flosc_sp_slug );
+	} elseif ( 'extract_personality' === $flosc_sp_action ) {
+		$flosc_sp_notice = FLOSC_Starter_Packs::install_personality( $flosc_sp_slug );
 	} elseif ( 'personality' === $flosc_sp_action ) {
 		$flosc_sp_personality = isset( $_POST['flosc_sp_personality'] )
 			? sanitize_key( wp_unslash( $_POST['flosc_sp_personality'] ) )
@@ -43,6 +45,7 @@ if ( isset( $_POST['flosc_sp_action'] ) || isset( $_POST['flosc_sp_slug'] ) ) {
 $flosc_sp_packs   = FLOSC_Starter_Packs::discover();
 $flosc_sp_state   = FLOSC_Starter_Packs::state();
 $flosc_sp_voices  = function_exists( 'flosc_personality_library_get_all' ) ? flosc_personality_library_get_all() : array();
+$flosc_sp_seeds   = FLOSC_Starter_Packs::personality_seeds();
 
 if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
 	/**
@@ -88,21 +91,70 @@ if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
 		</div>
 	<?php endif; ?>
 
-	<?php if ( ! empty( $flosc_sp_voices ) ) : ?>
-		<div class="flosc-sp-voices-shipped">
-			<h3><?php esc_html_e( 'Voices that ship with FLOSC', 'flosc' ); ?></h3>
-			<p class="description">
-				<?php esc_html_e( 'A personality is separate from any flow — one voice can curate any journey, and any content on this site. Install a pack, then switch its voice on the card and watch the same content get a different host.', 'flosc' ); ?>
-			</p>
-			<ul>
-				<?php foreach ( $flosc_sp_voices as $flosc_sp_v_id => $flosc_sp_v ) : ?>
-					<li>
-						<strong><?php echo esc_html( (string) ( $flosc_sp_v['label'] ?? $flosc_sp_v_id ) ); ?></strong>
-						<span><?php echo esc_html( (string) ( $flosc_sp_v['ai_personality_role'] ?? '' ) ); ?></span>
-					</li>
-				<?php endforeach; ?>
-			</ul>
+	<?php if ( ! empty( $flosc_sp_seeds ) ) : ?>
+		<h3 class="flosc-sp-section"><?php esc_html_e( 'Personalities', 'flosc' ); ?></h3>
+		<p class="description flosc-sp-section-note">
+			<?php esc_html_e( 'A personality is separate from any flow — one voice can curate any journey, and any content on this site. Extract the ones you want, then attach a voice to a flow and switch it whenever you like.', 'flosc' ); ?>
+		</p>
+
+		<div class="flosc-sp-voice-grid">
+			<?php
+			foreach ( $flosc_sp_seeds as $flosc_sp_seed_id => $flosc_sp_seed ) :
+				$flosc_sp_have = FLOSC_Starter_Packs::personality_is_installed( $flosc_sp_seed_id );
+				?>
+				<div class="flosc-sp-voice-card<?php echo $flosc_sp_have ? ' is-installed' : ''; ?>">
+					<h4>
+						<?php echo esc_html( (string) ( $flosc_sp_seed['label'] ?? $flosc_sp_seed_id ) ); ?>
+						<span class="flosc-sp-dot" aria-hidden="true"></span>
+						<span class="screen-reader-text">
+							<?php echo esc_html( $flosc_sp_have ? __( 'Installed', 'flosc' ) : __( 'Available', 'flosc' ) ); ?>
+						</span>
+					</h4>
+
+					<p class="flosc-sp-voice-role">
+						<?php echo esc_html( (string) ( $flosc_sp_seed['ai_personality_role'] ?? '' ) ); ?>
+					</p>
+
+					<?php if ( ! empty( $flosc_sp_seed['ai_personality_traits'] ) ) : ?>
+						<p class="flosc-sp-voice-traits"><?php echo esc_html( (string) $flosc_sp_seed['ai_personality_traits'] ); ?></p>
+					<?php endif; ?>
+
+					<form method="post"
+						<?php if ( $flosc_sp_have ) : ?>
+							onsubmit="return confirm('<?php echo esc_js( __( 'Replace this personality with the version FLOSC ships? Any edits you made to it will be lost.', 'flosc' ) ); ?>');"
+						<?php endif; ?>
+					>
+						<?php wp_nonce_field( 'flosc_starter_packs' ); ?>
+						<input type="hidden" name="flosc_sp_slug" value="<?php echo esc_attr( $flosc_sp_seed_id ); ?>">
+						<input type="hidden" name="flosc_sp_action" value="extract_personality">
+						<button type="submit" class="button<?php echo $flosc_sp_have ? '' : ' button-primary'; ?>">
+							<?php echo esc_html( $flosc_sp_have ? __( 'Re-extract', 'flosc' ) : __( 'Extract &amp; Install', 'flosc' ) ); ?>
+						</button>
+						<?php if ( $flosc_sp_have ) : ?>
+							<span class="flosc-sp-voice-state"><?php esc_html_e( 'Installed', 'flosc' ); ?></span>
+						<?php endif; ?>
+					</form>
+				</div>
+			<?php endforeach; ?>
 		</div>
+
+		<?php
+		$flosc_sp_extra = array_diff_key( (array) $flosc_sp_voices, (array) $flosc_sp_seeds );
+		if ( ! empty( $flosc_sp_extra ) ) :
+			?>
+			<p class="description flosc-sp-extra">
+				<?php esc_html_e( 'Also in your library, and untouched by anything on this page:', 'flosc' ); ?>
+				<?php
+				$flosc_sp_extra_labels = array();
+				foreach ( $flosc_sp_extra as $flosc_sp_x_id => $flosc_sp_x ) {
+					$flosc_sp_extra_labels[] = (string) ( $flosc_sp_x['label'] ?? $flosc_sp_x_id );
+				}
+				echo esc_html( implode( ', ', $flosc_sp_extra_labels ) );
+				?>
+			</p>
+		<?php endif; ?>
+
+		<h3 class="flosc-sp-section"><?php esc_html_e( 'Journeys', 'flosc' ); ?></h3>
 	<?php endif; ?>
 
 	<?php if ( empty( $flosc_sp_packs ) ) : ?>

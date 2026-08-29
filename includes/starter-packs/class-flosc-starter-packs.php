@@ -1337,6 +1337,82 @@ class FLOSC_Starter_Packs {
 	}
 
 	/* ------------------------------------------------------------------ *
+	 * Personalities
+	 * ------------------------------------------------------------------ */
+
+	/**
+	 * The personalities FLOSC ships, whether or not this site has them yet.
+	 *
+	 * @return array<string,array<string,string>>
+	 */
+	public static function personality_seeds() {
+		if ( ! function_exists( 'flosc_personality_library_defaults' ) ) {
+			return array();
+		}
+
+		$seeds = flosc_personality_library_defaults();
+
+		return is_array( $seeds ) ? $seeds : array();
+	}
+
+	/**
+	 * Whether this site's library already holds a shipped personality.
+	 *
+	 * @param string $id Personality id.
+	 * @return bool
+	 */
+	public static function personality_is_installed( $id ) {
+		if ( ! function_exists( 'flosc_personality_library_get' ) ) {
+			return false;
+		}
+
+		return null !== flosc_personality_library_get( sanitize_key( $id ) );
+	}
+
+	/**
+	 * Put a shipped personality into this site's library.
+	 *
+	 * Extracting one that is already there replaces it with the shipped
+	 * version — that is the point of re-extracting, and it is the one thing
+	 * on this page that overwrites an operator's own edits, so the button
+	 * that calls it says so.
+	 *
+	 * @param string $id Personality id.
+	 * @return array{ok:bool,message:string,detail:array<int,string>}
+	 */
+	public static function install_personality( $id ) {
+		$id    = sanitize_key( $id );
+		$seeds = self::personality_seeds();
+
+		if ( ! isset( $seeds[ $id ] ) ) {
+			return self::result( false, __( 'That personality does not ship with FLOSC.', 'flosc' ) );
+		}
+
+		if ( ! function_exists( 'flosc_personality_library_get_all' ) || ! function_exists( 'flosc_personality_library_save_all' ) ) {
+			return self::result( false, __( 'The personality library is unavailable.', 'flosc' ) );
+		}
+
+		$was_there = self::personality_is_installed( $id );
+		$library   = flosc_personality_library_get_all();
+		$library   = is_array( $library ) ? $library : array();
+
+		$library[ $id ] = $seeds[ $id ];
+
+		flosc_personality_library_save_all( $library );
+
+		$label = (string) ( $seeds[ $id ]['label'] ?? $id );
+
+		return self::result(
+			true,
+			$was_there
+				/* translators: %s: personality name. */
+				? sprintf( __( '%s replaced with the version FLOSC ships.', 'flosc' ), $label )
+				/* translators: %s: personality name. */
+				: sprintf( __( '%s added to your personality library.', 'flosc' ), $label )
+		);
+	}
+
+	/* ------------------------------------------------------------------ *
 	 * Uninstall
 	 * ------------------------------------------------------------------ */
 
