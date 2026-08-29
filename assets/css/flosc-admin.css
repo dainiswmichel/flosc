@@ -7673,3 +7673,10 @@ label[for^="flosc_acc_q_"] {
 .flosc-sp-next { margin: 0 0 14px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; }
 .flosc-sp-next li { margin: 0; }
 .flosc-sp-config { margin: 0 0 14px; padding: 10px 12px; background: #fcf9e8; border-left: 3px solid #dba617; font-size: 13px; color: #50575e; }
+.flosc-sp-voices-shipped { margin: 18px 0 4px; padding: 14px 18px; background: #f6f7f7; border: 1px solid #dcdcde; border-radius: 4px; max-width: 78rem; }
+.flosc-sp-voices-shipped h3 { margin: 0 0 6px; font-size: 14px; }
+.flosc-sp-voices-shipped .description { margin: 0 0 10px; max-width: 52rem; }
+.flosc-sp-voices-shipped ul { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr)); gap: 4px 20px; font-size: 13px; }
+.flosc-sp-voices-shipped li { margin: 0; }
+.flosc-sp-voices-shipped li strong { display: block; }
+.flosc-sp-voices-shipped li span { color: #646970; }

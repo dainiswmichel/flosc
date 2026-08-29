@@ -86,6 +86,23 @@ if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
 		</div>
 	<?php endif; ?>
 
+	<?php if ( ! empty( $flosc_sp_voices ) ) : ?>
+		<div class="flosc-sp-voices-shipped">
+			<h3><?php esc_html_e( 'Voices that ship with FLOSC', 'flosc' ); ?></h3>
+			<p class="description">
+				<?php esc_html_e( 'A personality is separate from any flow — one voice can curate any journey, and any content on this site. Install a pack, then switch its voice on the card and watch the same content get a different host.', 'flosc' ); ?>
+			</p>
+			<ul>
+				<?php foreach ( $flosc_sp_voices as $flosc_sp_v_id => $flosc_sp_v ) : ?>
+					<li>
+						<strong><?php echo esc_html( (string) ( $flosc_sp_v['label'] ?? $flosc_sp_v_id ) ); ?></strong>
+						<span><?php echo esc_html( (string) ( $flosc_sp_v['ai_personality_role'] ?? '' ) ); ?></span>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		</div>
+	<?php endif; ?>
+
 	<?php if ( empty( $flosc_sp_packs ) ) : ?>
 		<p><?php esc_html_e( 'No starter packs are available in this build.', 'flosc' ); ?></p>
 	<?php else : ?>

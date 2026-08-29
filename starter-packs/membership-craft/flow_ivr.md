@@ -7,7 +7,7 @@
 ## Settings (YAML)
 ```yaml
 name: "Membership Craft"
-personality_library_id: "tech"
+personality_library_id: "friendly"
 ai_enable_ivr_context: true
 ai_enable_content_access: true
 ai_topic_scope: "Running a membership site: pricing, churn, onboarding, content operations, community, growth, gating and the legal edges"

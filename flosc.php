@@ -341,7 +341,7 @@ function flosc_is_shipped_personality_sample_ivr( $ivr_filename_or_stem ) {
 function flosc_shipped_personality_sample_library_id( $ivr_filename_or_stem ) {
     $stem = sanitize_key( pathinfo( basename( (string) $ivr_filename_or_stem ), PATHINFO_FILENAME ) );
     $map  = array(
-        'flosc_default_ivr'            => 'starter',
+        'flosc_default_ivr'            => 'friendly',
         'flosc_default_friendly_ivr'   => 'friendly',
         'flosc_default_technical_ivr'  => 'tech',
     );
