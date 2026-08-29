@@ -436,7 +436,8 @@ class FLOSC_Starter_Packs {
 			return self::result( false, __( 'The pack category hierarchy could not be resolved.', 'flosc' ) ) + array( 'record' => array( 'category_ids' => $created ) );
 		}
 
-		$count = 0;
+		$count       = 0;
+		$per_category = array();
 
 		foreach ( $doc['posts'] as $entry ) {
 			if ( ! is_array( $entry ) || empty( $entry['title'] ) ) {
@@ -474,6 +475,11 @@ class FLOSC_Starter_Packs {
 
 			++$count;
 
+			if ( ! isset( $per_category[ $term_id ] ) ) {
+				$per_category[ $term_id ] = 0;
+			}
+			++$per_category[ $term_id ];
+
 			// The tier the runtime gates on, plus the starter pack's own record
 			// of what the WXR called it.
 			$access = sanitize_key( (string) ( $entry['access'] ?? 'member' ) );
@@ -506,6 +512,7 @@ class FLOSC_Starter_Packs {
 				'category_ids'  => $created,
 				'category_slug' => (string) ( $categories[0]['slug'] ?? '' ),
 				'post_count'    => $count,
+				'categories'    => self::describe_categories( $categories, $term_ids, $per_category ),
 			),
 		);
 	}
@@ -726,6 +733,98 @@ class FLOSC_Starter_Packs {
 
 		/* translators: %d: number of posts indexed. */
 		return sprintf( __( 'Content index rebuilt: %d posts the assistant can now retrieve.', 'flosc' ), (int) ( $result['count'] ?? 0 ) );
+	}
+
+	/**
+	 * Name, id and post count for each category a pack created.
+	 *
+	 * Categories holding nothing are dropped, so the card links only to places
+	 * that actually have posts in them.
+	 *
+	 * @param array<int,array<string,mixed>> $categories   Manifest categories.
+	 * @param array<string,int>              $term_ids     Slug to term id.
+	 * @param array<int,int>                 $per_category Term id to post count.
+	 * @return array<int,array<string,mixed>>
+	 */
+	private static function describe_categories( $categories, $term_ids, $per_category ) {
+		$out = array();
+
+		foreach ( $categories as $category ) {
+			$slug = sanitize_title( (string) ( $category['slug'] ?? '' ) );
+
+			if ( ! isset( $term_ids[ $slug ] ) ) {
+				continue;
+			}
+
+			$term_id = (int) $term_ids[ $slug ];
+			$count   = isset( $per_category[ $term_id ] ) ? (int) $per_category[ $term_id ] : 0;
+
+			if ( $count < 1 ) {
+				continue;
+			}
+
+			$out[] = array(
+				'id'    => $term_id,
+				'name'  => (string) ( $category['name'] ?? $slug ),
+				'slug'  => $slug,
+				'count' => $count,
+			);
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Point an installed pack's flow at a different personality.
+	 *
+	 * The whole journey is curated by whoever this names, so switching it is
+	 * the fastest way to see what FLOSC actually does. Only the flow this pack
+	 * installed is touched, and only with a personality the library really has.
+	 *
+	 * @param string $slug           Pack slug.
+	 * @param string $personality_id Personality library id.
+	 * @return array{ok:bool,message:string,detail:array<int,string>}
+	 */
+	public static function set_personality( $slug, $personality_id ) {
+		$slug  = sanitize_key( $slug );
+		$state = self::state();
+
+		if ( ! isset( $state[ $slug ]['flow_option'] ) ) {
+			return self::result( false, __( 'That starter pack is not installed.', 'flosc' ) );
+		}
+
+		$personality_id = sanitize_key( $personality_id );
+
+		if ( ! function_exists( 'flosc_personality_library_get' ) || null === flosc_personality_library_get( $personality_id ) ) {
+			return self::result( false, __( 'That personality is not in the library.', 'flosc' ) );
+		}
+
+		$flow_key = (string) $state[ $slug ]['flow_option'];
+
+		if ( 0 !== strpos( $flow_key, 'flosc_flow_' ) ) {
+			return self::result( false, __( 'That starter pack has no flow to change.', 'flosc' ) );
+		}
+
+		$bag = get_option( $flow_key, array() );
+
+		if ( ! is_array( $bag ) ) {
+			return self::result( false, __( 'That flow has no settings to change.', 'flosc' ) );
+		}
+
+		$bag['personality_library_id'] = $personality_id;
+		update_option( $flow_key, $bag, false );
+
+		$personality = flosc_personality_library_get( $personality_id );
+		$label       = (string) ( $personality['label'] ?? $personality_id );
+
+		return self::result(
+			true,
+			sprintf(
+				/* translators: %s: personality name. */
+				__( '%s is now curating this journey. Open the flow and talk to it.', 'flosc' ),
+				$label
+			)
+		);
 	}
 
 	/* ------------------------------------------------------------------ *

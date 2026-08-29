@@ -30,10 +30,37 @@ if ( isset( $_POST['flosc_sp_action'], $_POST['flosc_sp_slug'] ) ) {
 		$flosc_sp_notice = FLOSC_Starter_Packs::install( $flosc_sp_slug );
 	} elseif ( 'remove' === $flosc_sp_action ) {
 		$flosc_sp_notice = FLOSC_Starter_Packs::uninstall( $flosc_sp_slug );
+	} elseif ( 'personality' === $flosc_sp_action ) {
+		$flosc_sp_personality = isset( $_POST['flosc_sp_personality'] )
+			? sanitize_key( wp_unslash( $_POST['flosc_sp_personality'] ) )
+			: '';
+		$flosc_sp_notice = FLOSC_Starter_Packs::set_personality( $flosc_sp_slug, $flosc_sp_personality );
 	}
 }
 
-$flosc_sp_packs = FLOSC_Starter_Packs::discover();
+$flosc_sp_packs   = FLOSC_Starter_Packs::discover();
+$flosc_sp_state   = FLOSC_Starter_Packs::state();
+$flosc_sp_voices  = function_exists( 'flosc_personality_library_get_all' ) ? flosc_personality_library_get_all() : array();
+
+/**
+ * Admin URL for one FLOSC settings tab, optionally scoped to a flow.
+ *
+ * @param string $tab      Tab id as registered in admin/settings.php.
+ * @param string $ivr_file Flow file the tab should open against.
+ * @return string
+ */
+function flosc_sp_tab_url( $tab, $ivr_file = '' ) {
+	$args = array(
+		'page' => 'flosc-settings',
+		'tab'  => $tab,
+	);
+
+	if ( '' !== $ivr_file ) {
+		$args['ivr'] = $ivr_file;
+	}
+
+	return add_query_arg( $args, admin_url( 'admin.php' ) );
+}
 ?>
 
 <div class="flosc-starter-packs">
@@ -94,6 +121,79 @@ $flosc_sp_packs = FLOSC_Starter_Packs::discover();
 						</ul>
 					<?php endif; ?>
 
+					<?php
+					if ( $flosc_sp_installed ) :
+						$flosc_sp_record = isset( $flosc_sp_state[ $flosc_sp_pack['slug'] ] ) ? $flosc_sp_state[ $flosc_sp_pack['slug'] ] : array();
+						$flosc_sp_flow   = (string) ( $flosc_sp_record['flow_file'] ?? '' );
+						$flosc_sp_bag    = ! empty( $flosc_sp_record['flow_option'] ) ? get_option( (string) $flosc_sp_record['flow_option'], array() ) : array();
+						$flosc_sp_voice  = is_array( $flosc_sp_bag ) ? (string) ( $flosc_sp_bag['personality_library_id'] ?? '' ) : '';
+						?>
+
+						<?php if ( ! empty( $flosc_sp_voices ) && '' !== $flosc_sp_flow ) : ?>
+							<div class="flosc-sp-voice">
+								<form method="post">
+									<?php wp_nonce_field( 'flosc_starter_packs' ); ?>
+									<input type="hidden" name="flosc_sp_slug" value="<?php echo esc_attr( $flosc_sp_pack['slug'] ); ?>">
+									<input type="hidden" name="flosc_sp_action" value="personality">
+
+									<label for="flosc-sp-voice-<?php echo esc_attr( $flosc_sp_pack['slug'] ); ?>">
+										<?php esc_html_e( 'Curated by', 'flosc' ); ?>
+									</label>
+
+									<select name="flosc_sp_personality" id="flosc-sp-voice-<?php echo esc_attr( $flosc_sp_pack['slug'] ); ?>">
+										<?php foreach ( $flosc_sp_voices as $flosc_sp_voice_id => $flosc_sp_voice_row ) : ?>
+											<option value="<?php echo esc_attr( $flosc_sp_voice_id ); ?>" <?php selected( $flosc_sp_voice, $flosc_sp_voice_id ); ?>>
+												<?php echo esc_html( (string) ( $flosc_sp_voice_row['label'] ?? $flosc_sp_voice_id ) ); ?>
+											</option>
+										<?php endforeach; ?>
+									</select>
+
+									<button type="submit" class="button"><?php esc_html_e( 'Switch voice', 'flosc' ); ?></button>
+								</form>
+								<p class="description">
+									<?php esc_html_e( 'Same posts, same journey, different host. Switch, then open the flow and talk to it.', 'flosc' ); ?>
+								</p>
+							</div>
+						<?php endif; ?>
+
+						<ul class="flosc-sp-next">
+							<?php if ( '' !== $flosc_sp_flow ) : ?>
+								<li><a href="<?php echo esc_url( flosc_sp_tab_url( 'flow', $flosc_sp_flow ) ); ?>"><?php esc_html_e( 'Open the flow', 'flosc' ); ?></a></li>
+								<li><a href="<?php echo esc_url( flosc_sp_tab_url( 'ai', $flosc_sp_flow ) ); ?>"><?php esc_html_e( 'Connect AI', 'flosc' ); ?></a></li>
+								<li><a href="<?php echo esc_url( flosc_sp_tab_url( 'offers', $flosc_sp_flow ) ); ?>"><?php esc_html_e( 'Configure the offer', 'flosc' ); ?></a></li>
+							<?php endif; ?>
+
+							<?php if ( ! empty( $flosc_sp_record['catalog_key'] ) ) : ?>
+								<li><a href="<?php echo esc_url( flosc_sp_tab_url( 'da1' ) ); ?>"><?php esc_html_e( 'Open the DA1 catalog', 'flosc' ); ?></a></li>
+							<?php endif; ?>
+
+							<?php
+							if ( ! empty( $flosc_sp_record['categories'] ) && is_array( $flosc_sp_record['categories'] ) ) :
+								foreach ( $flosc_sp_record['categories'] as $flosc_sp_cat ) :
+									?>
+									<li>
+										<a href="<?php echo esc_url( admin_url( 'edit.php?cat=' . (int) $flosc_sp_cat['id'] ) ); ?>">
+											<?php
+											printf(
+												/* translators: 1: number of posts, 2: category name. */
+												esc_html__( '%1$d posts in %2$s', 'flosc' ),
+												(int) $flosc_sp_cat['count'],
+												esc_html( (string) $flosc_sp_cat['name'] )
+											);
+											?>
+										</a>
+									</li>
+									<?php
+								endforeach;
+							endif;
+							?>
+						</ul>
+
+						<?php if ( ! empty( $flosc_sp_pack['needs_configuration'] ) ) : ?>
+							<p class="flosc-sp-config"><?php echo esc_html( (string) $flosc_sp_pack['needs_configuration'] ); ?></p>
+						<?php endif; ?>
+					<?php endif; ?>
+
 					<form method="post" class="flosc-sp-actions"
 						<?php if ( $flosc_sp_installed ) : ?>
 							onsubmit="return confirm('<?php echo esc_js( __( 'Remove this starter pack and everything it created?', 'flosc' ) ); ?>');"
@@ -130,4 +230,11 @@ $flosc_sp_packs = FLOSC_Starter_Packs::discover();
 .flosc-sp-installs { margin: 0 0 16px; padding-left: 18px; font-size: 13px; color: #50575e; }
 .flosc-sp-installs li { margin-bottom: 3px; }
 .flosc-sp-actions { margin-top: auto; }
+.flosc-sp-voice { background: #f6f7f7; border: 1px solid #dcdcde; border-radius: 4px; padding: 12px 14px; margin: 0 0 14px; }
+.flosc-sp-voice form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.flosc-sp-voice label { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #646970; }
+.flosc-sp-voice .description { margin: 8px 0 0; }
+.flosc-sp-next { margin: 0 0 14px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; }
+.flosc-sp-next li { margin: 0; }
+.flosc-sp-config { margin: 0 0 14px; padding: 10px 12px; background: #fcf9e8; border-left: 3px solid #dba617; font-size: 13px; color: #50575e; }
 </style>
