@@ -5,7 +5,9 @@
       "name": "FLOSC DA1 Catalog Posts",
       "description": "Posts that pitch the Extremely Ordinary Instruction Manual Collection and the UberManual.",
       "parent": null,
-      "term_meta": {}
+      "term_meta": {
+        "_flosc_protected": "yes"
+      }
     }
   ],
   "posts": [
