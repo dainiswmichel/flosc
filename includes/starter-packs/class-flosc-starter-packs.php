@@ -1412,6 +1412,118 @@ class FLOSC_Starter_Packs {
 		);
 	}
 
+	/**
+	 * Flows currently curated by a personality.
+	 *
+	 * Disabling a voice a flow is using would leave that flow without a host,
+	 * so this is what stops it happening quietly.
+	 *
+	 * @param string $id Personality id.
+	 * @return array<int,string> Flow file names.
+	 */
+	public static function personality_in_use( $id ) {
+		$id  = sanitize_key( $id );
+		$out = array();
+
+		if ( '' === $id ) {
+			return $out;
+		}
+
+		// Prefer the admin's cached scan of flosc_flow_* rows when it is loaded.
+		if ( function_exists( 'flosc_get_flow_option_rows' ) ) {
+			$rows = flosc_get_flow_option_rows();
+
+			if ( is_array( $rows ) ) {
+				foreach ( $rows as $row ) {
+					$bag = maybe_unserialize( $row['option_value'] ?? '' );
+
+					if ( is_array( $bag ) && $id === sanitize_key( (string) ( $bag['personality_library_id'] ?? '' ) ) ) {
+						$out[] = (string) ( $bag['ivr_file'] ?? $bag['name'] ?? $row['option_name'] ?? '' );
+					}
+				}
+
+				return array_values( array_filter( array_unique( $out ) ) );
+			}
+		}
+
+		// Otherwise ask each flow file on disk for its settings row.
+		$files = function_exists( 'flosc_config_glob' ) ? flosc_config_glob( array( '*_ivr.md' ) ) : array();
+
+		foreach ( (array) $files as $file ) {
+			$stem = sanitize_key( pathinfo( basename( (string) $file ), PATHINFO_FILENAME ) );
+
+			if ( '' === $stem ) {
+				continue;
+			}
+
+			$bag = get_option( 'flosc_flow_' . $stem, array() );
+
+			if ( is_array( $bag ) && $id === sanitize_key( (string) ( $bag['personality_library_id'] ?? '' ) ) ) {
+				$out[] = basename( (string) $file );
+			}
+		}
+
+		return array_values( array_filter( array_unique( $out ) ) );
+	}
+
+	/**
+	 * Take a shipped personality back out of this site's library.
+	 *
+	 * Refuses while a flow is still using it, and names the flows, because
+	 * the alternative is a journey whose host silently disappears. Extracting
+	 * it again restores it exactly.
+	 *
+	 * @param string $id Personality id.
+	 * @return array{ok:bool,message:string,detail:array<int,string>}
+	 */
+	public static function remove_personality( $id ) {
+		$id    = sanitize_key( $id );
+		$seeds = self::personality_seeds();
+
+		if ( ! isset( $seeds[ $id ] ) ) {
+			return self::result( false, __( 'That personality does not ship with FLOSC, so this page will not remove it.', 'flosc' ) );
+		}
+
+		if ( ! self::personality_is_installed( $id ) ) {
+			return self::result( false, __( 'That personality is not in your library.', 'flosc' ) );
+		}
+
+		$label = (string) ( $seeds[ $id ]['label'] ?? $id );
+		$used  = self::personality_in_use( $id );
+
+		if ( ! empty( $used ) ) {
+			return self::result(
+				false,
+				sprintf(
+					/* translators: 1: personality name, 2: comma-separated flow names. */
+					__( '%1$s is still curating %2$s. Attach another voice to those flows first.', 'flosc' ),
+					$label,
+					implode( ', ', $used )
+				)
+			);
+		}
+
+		if ( ! function_exists( 'flosc_personality_library_get_all' ) || ! function_exists( 'flosc_personality_library_save_all' ) ) {
+			return self::result( false, __( 'The personality library is unavailable.', 'flosc' ) );
+		}
+
+		$library = flosc_personality_library_get_all();
+		$library = is_array( $library ) ? $library : array();
+
+		unset( $library[ $id ] );
+
+		flosc_personality_library_save_all( $library );
+
+		return self::result(
+			true,
+			sprintf(
+				/* translators: %s: personality name. */
+				__( '%s removed from your library. Extract it again whenever you want it back.', 'flosc' ),
+				$label
+			)
+		);
+	}
+
 	/* ------------------------------------------------------------------ *
 	 * Uninstall
 	 * ------------------------------------------------------------------ */

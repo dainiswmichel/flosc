@@ -34,6 +34,8 @@ if ( isset( $_POST['flosc_sp_action'] ) || isset( $_POST['flosc_sp_slug'] ) ) {
 		$flosc_sp_notice = FLOSC_Starter_Packs::repair( $flosc_sp_slug );
 	} elseif ( 'extract_personality' === $flosc_sp_action ) {
 		$flosc_sp_notice = FLOSC_Starter_Packs::install_personality( $flosc_sp_slug );
+	} elseif ( 'disable_personality' === $flosc_sp_action ) {
+		$flosc_sp_notice = FLOSC_Starter_Packs::remove_personality( $flosc_sp_slug );
 	} elseif ( 'personality' === $flosc_sp_action ) {
 		$flosc_sp_personality = isset( $_POST['flosc_sp_personality'] )
 			? sanitize_key( wp_unslash( $_POST['flosc_sp_personality'] ) )
@@ -97,7 +99,7 @@ if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
 	<?php if ( ! empty( $flosc_sp_seeds ) ) : ?>
 		<h3 class="flosc-sp-section"><?php esc_html_e( 'Personalities', 'flosc' ); ?></h3>
 		<p class="description flosc-sp-section-note">
-			<?php esc_html_e( 'A personality is separate from any flow — one voice can curate any journey, and any content on this site. Extract the ones you want, then attach a voice to a flow and switch it whenever you like.', 'flosc' ); ?>
+			<?php esc_html_e( 'A personality is separate from any flow — one voice can curate any journey, and any content on this site. Enable the ones you want, then attach a voice to a flow and switch it whenever you like. A voice that is curating a flow cannot be disabled until that flow has another.', 'flosc' ); ?>
 		</p>
 
 		<div class="flosc-sp-voice-grid">
@@ -110,7 +112,7 @@ if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
 						<?php echo esc_html( (string) ( $flosc_sp_seed['label'] ?? $flosc_sp_seed_id ) ); ?>
 						<span class="flosc-sp-dot" aria-hidden="true"></span>
 						<span class="screen-reader-text">
-							<?php echo esc_html( $flosc_sp_have ? __( 'Installed', 'flosc' ) : __( 'Available', 'flosc' ) ); ?>
+							<?php echo esc_html( $flosc_sp_have ? __( 'Enabled', 'flosc' ) : __( 'Disabled', 'flosc' ) ); ?>
 						</span>
 					</h4>
 
@@ -122,21 +124,48 @@ if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
 						<p class="flosc-sp-voice-traits"><?php echo esc_html( (string) $flosc_sp_seed['ai_personality_traits'] ); ?></p>
 					<?php endif; ?>
 
-					<form method="post"
-						<?php if ( $flosc_sp_have ) : ?>
-							onsubmit="return confirm('<?php echo esc_js( __( 'Replace this personality with the version FLOSC ships? Any edits you made to it will be lost.', 'flosc' ) ); ?>');"
+					<div class="flosc-sp-voice-actions">
+						<?php if ( ! $flosc_sp_have ) : ?>
+							<form method="post">
+								<?php wp_nonce_field( 'flosc_starter_packs' ); ?>
+								<input type="hidden" name="flosc_sp_slug" value="<?php echo esc_attr( $flosc_sp_seed_id ); ?>">
+								<input type="hidden" name="flosc_sp_action" value="extract_personality">
+								<button type="submit" class="button button-primary"><?php esc_html_e( 'Enable', 'flosc' ); ?></button>
+							</form>
+						<?php else : ?>
+							<span class="flosc-sp-voice-state"><?php esc_html_e( 'Enabled', 'flosc' ); ?></span>
+
+							<?php $flosc_sp_used = FLOSC_Starter_Packs::personality_in_use( $flosc_sp_seed_id ); ?>
+
+							<?php if ( empty( $flosc_sp_used ) ) : ?>
+								<form method="post">
+									<?php wp_nonce_field( 'flosc_starter_packs' ); ?>
+									<input type="hidden" name="flosc_sp_slug" value="<?php echo esc_attr( $flosc_sp_seed_id ); ?>">
+									<input type="hidden" name="flosc_sp_action" value="disable_personality">
+									<button type="submit" class="button button-link-delete"><?php esc_html_e( 'Disable', 'flosc' ); ?></button>
+								</form>
+							<?php else : ?>
+								<span class="flosc-sp-voice-used">
+									<?php
+									printf(
+										/* translators: %s: comma-separated flow names. */
+										esc_html__( 'curating %s', 'flosc' ),
+										esc_html( implode( ', ', $flosc_sp_used ) )
+									);
+									?>
+								</span>
+							<?php endif; ?>
+
+							<form method="post"
+								onsubmit="return confirm('<?php echo esc_js( __( 'Replace this personality with the version FLOSC ships? Any edits you made to it will be lost.', 'flosc' ) ); ?>');"
+							>
+								<?php wp_nonce_field( 'flosc_starter_packs' ); ?>
+								<input type="hidden" name="flosc_sp_slug" value="<?php echo esc_attr( $flosc_sp_seed_id ); ?>">
+								<input type="hidden" name="flosc_sp_action" value="extract_personality">
+								<button type="submit" class="button-link flosc-sp-reextract"><?php esc_html_e( 'Re-extract', 'flosc' ); ?></button>
+							</form>
 						<?php endif; ?>
-					>
-						<?php wp_nonce_field( 'flosc_starter_packs' ); ?>
-						<input type="hidden" name="flosc_sp_slug" value="<?php echo esc_attr( $flosc_sp_seed_id ); ?>">
-						<input type="hidden" name="flosc_sp_action" value="extract_personality">
-						<button type="submit" class="button<?php echo $flosc_sp_have ? '' : ' button-primary'; ?>">
-							<?php echo esc_html( $flosc_sp_have ? __( 'Re-extract', 'flosc' ) : __( 'Extract &amp; Install', 'flosc' ) ); ?>
-						</button>
-						<?php if ( $flosc_sp_have ) : ?>
-							<span class="flosc-sp-voice-state"><?php esc_html_e( 'Installed', 'flosc' ); ?></span>
-						<?php endif; ?>
-					</form>
+					</div>
 				</div>
 			<?php endforeach; ?>
 		</div>

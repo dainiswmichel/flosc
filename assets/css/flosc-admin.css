@@ -7701,6 +7701,9 @@ label[for^="flosc_acc_q_"] {
 .flosc-sp-voice-card.is-installed .flosc-sp-dot { background: #2c6349; border-color: #2c6349; }
 .flosc-sp-voice-role { margin: 0 0 6px; font-size: 13px; color: #50575e; }
 .flosc-sp-voice-traits { margin: 0 0 12px; font-size: 12px; color: #646970; font-style: italic; }
-.flosc-sp-voice-card form { margin-top: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.flosc-sp-voice-actions { margin-top: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.flosc-sp-voice-actions form { margin: 0; }
+.flosc-sp-voice-used { font-size: 12px; color: #646970; font-style: italic; }
+.flosc-sp-reextract { font-size: 12px; color: #646970; text-decoration: underline; }
 .flosc-sp-voice-state { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; color: #2c6349; }
 .flosc-sp-global-note { margin: 0 0 6px; max-width: 52rem; }
