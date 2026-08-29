@@ -404,6 +404,7 @@ require_once FLOSC_PLUGIN_DIR . 'includes/magic-link/class-flosc-magic-link-trai
 // FLOSC_Filesystem already required above (before flosc-data-paths.php).
 require_once FLOSC_PLUGIN_DIR . 'includes/request-guard/class-flosc-request-guard.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/da1/class-flosc-da1-catalogs.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/starter-packs/class-flosc-starter-packs.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/chat-turn/trait-flosc-chat-turn.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/companion-mode/class-flosc-companion-mode.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/full-page-mode/class-flosc-full-page-mode.php';

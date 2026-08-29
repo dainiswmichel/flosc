@@ -2180,6 +2180,7 @@ if (function_exists('wp_add_inline_style')) {
             'administration'=> 'Administration',
             'documentation' => '📖 Docs',
             'da1'           => 'DA1',
+            'starter-packs' => 'Starter Packs',
         ];
         if (!$flosc_can_view_administration) {
             unset($tabs['administration']);
@@ -2203,8 +2204,12 @@ if (function_exists('wp_add_inline_style')) {
         <?php endforeach; ?>
     </nav>
 
-    <?php if ($flosc_active_tab === 'da1'): ?>
-        <?php include FLOSC_PLUGIN_DIR . 'admin/da1.php'; ?>
+    <?php if ($flosc_active_tab === 'da1' || $flosc_active_tab === 'starter-packs'): ?>
+        <?php if ($flosc_active_tab === 'da1'): ?>
+            <?php include FLOSC_PLUGIN_DIR . 'admin/da1.php'; ?>
+        <?php else: ?>
+            <?php include FLOSC_PLUGIN_DIR . 'admin/starter-packs.php'; ?>
+        <?php endif; ?>
         <?php flosc_tab_footer(); ?>
 </div>
         <?php return; ?>
