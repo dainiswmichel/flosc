@@ -1,0 +1,21 @@
+{
+  "slug": "wordpress-content-membership",
+  "name": "WordPress Content Membership Journey",
+  "summary": "The classic membership site, working end to end. A hundred posts about running a membership site — fifteen open to visitors, twenty-five more to registered guests, sixty for members — with a journey that walks a stranger from the open shelf to the paid one.",
+  "conversion": "Membership — the sixty member-only posts",
+  "personality": "flosc_default_friendly",
+  "installs": [
+    "A flow: wordpress_content_membership_ivr.md",
+    "100 posts in the FLOSC Example Content category",
+    "Gated 15 visitor / 25 guest / 60 member"
+  ],
+  "flow": {
+    "file": "flow_ivr.md",
+    "install_as": "wordpress_content_membership_ivr.md"
+  },
+  "content": {
+    "file": "content.json",
+    "category": "FLOSC Example Content",
+    "category_slug": "flosc-example-content"
+  }
+}

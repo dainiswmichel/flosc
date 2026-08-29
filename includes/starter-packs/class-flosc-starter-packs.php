@@ -166,12 +166,13 @@ class FLOSC_Starter_Packs {
 			return self::result( false, __( 'That starter pack is already installed.', 'flosc' ) );
 		}
 
-		$record = array(
+		$record    = array(
 			'installed_at' => gmdate( 'c' ),
 			'name'         => (string) ( $pack['name'] ?? $pack['slug'] ),
 			'pack_slug'    => $pack['slug'],
 		);
-		$detail = array();
+		$detail    = array();
+		$flow_path = '';
 
 		// --- flow file ---
 		if ( ! empty( $pack['flow']['file'] ) ) {
@@ -200,6 +201,7 @@ class FLOSC_Starter_Packs {
 				return self::result( false, __( 'The flow file could not be written. Check folder permissions.', 'flosc' ) );
 			}
 
+			$flow_path           = $target;
 			$record['flow_file'] = basename( $target );
 			/* translators: %s: flow file name. */
 			$detail[] = sprintf( __( 'Flow installed: %s', 'flosc' ), basename( $target ) );
@@ -265,8 +267,32 @@ class FLOSC_Starter_Packs {
 			}
 		}
 
-		$state                      = self::state();
-		$state[ $pack['slug'] ]     = $record;
+		// --- register the flow ---
+		// Copying the markdown is not enough. A flow only exists once it has a
+		// per-flow option holding its messages, and the operator should not have
+		// to import it by hand after clicking install.
+		if ( '' !== $flow_path ) {
+			$registered = self::register_flow( $pack, $flow_path, (string) ( $record['category_slug'] ?? '' ) );
+
+			if ( ! $registered['ok'] ) {
+				self::rollback( $record );
+				return $registered;
+			}
+
+			$record['flow_option'] = $registered['record']['flow_option'];
+			$detail[]              = $registered['message'];
+		}
+
+		// --- content index ---
+		// The assistant retrieves posts from the site content index, and the
+		// index is a file that has to be built. Without this the pack installs
+		// a hundred posts the bot cannot see.
+		if ( ! empty( $record['post_count'] ) ) {
+			$detail[] = self::refresh_content_index();
+		}
+
+		$state                  = self::state();
+		$state[ $pack['slug'] ] = $record;
 		update_option( self::STATE_OPTION, $state, false );
 
 		return self::result(
@@ -383,6 +409,131 @@ class FLOSC_Starter_Packs {
 		);
 	}
 
+	/**
+	 * Give the copied flow file a per-flow option and import its messages.
+	 *
+	 * This is what the flow upload screen does after it writes a file, and it is
+	 * the difference between a flow that appears in the list and a flow that
+	 * actually answers. When the pack also installed posts, the flow is pointed
+	 * at their category so the assistant can find them.
+	 *
+	 * @param array<string,mixed> $pack          Manifest.
+	 * @param string              $flow_path     Absolute path of the installed flow file.
+	 * @param string              $category_slug Category the pack's posts landed in, if any.
+	 * @return array{ok:bool,message:string,detail:array<int,string>,record:array<string,mixed>}
+	 */
+	private static function register_flow( $pack, $flow_path, $category_slug = '' ) {
+		if ( ! function_exists( 'flosc_import_ivr_to_database' ) ) {
+			require_once FLOSC_PLUGIN_DIR . 'includes/portability/flosc-ivr-sync.php';
+		}
+
+		if ( ! function_exists( 'flosc_import_ivr_to_database' ) ) {
+			return self::result( false, __( 'The flow importer is unavailable, so the flow could not be registered.', 'flosc' ) ) + array( 'record' => array() );
+		}
+
+		$file_name = basename( $flow_path );
+		$stem      = sanitize_key( pathinfo( $file_name, PATHINFO_FILENAME ) );
+
+		if ( '' === $stem ) {
+			return self::result( false, __( 'The pack flow file has no usable name.', 'flosc' ) ) + array( 'record' => array() );
+		}
+
+		$flow_key = 'flosc_flow_' . $stem;
+
+		// The file check upstream cannot see a settings row left behind by a flow
+		// the operator deleted by hand. Refuse rather than overwrite it.
+		if ( null !== get_option( $flow_key, null ) ) {
+			return self::result(
+				false,
+				sprintf(
+					/* translators: %s: flow settings option name. */
+					__( 'Settings for a flow named %s already exist. Remove them first so nothing of yours is overwritten.', 'flosc' ),
+					$flow_key
+				)
+			) + array( 'record' => array() );
+		}
+
+		$bag = array(
+			'name'                        => (string) ( $pack['name'] ?? $stem ),
+			'slug'                        => $stem,
+			'status'                      => 'active',
+			'active_ivr_file'             => $file_name,
+			'ivr_file'                    => $file_name,
+			'companion_show_for_visitors' => 1,
+		);
+
+		// Point the flow at the posts this pack just created.
+		$category_slug = sanitize_title( (string) $category_slug );
+
+		if ( '' !== $category_slug ) {
+			$bag['content_item_category'] = $category_slug;
+			$bag['content_item_groups']   = array(
+				array(
+					'quiz_id'  => '',
+					'category' => $category_slug,
+				),
+			);
+		}
+
+		if ( function_exists( 'flosc_normalize_content_item_flow_settings' ) ) {
+			$bag = flosc_normalize_content_item_flow_settings( $bag );
+		}
+
+		update_option( $flow_key, $bag, false );
+
+		$import = flosc_import_ivr_to_database( false, $flow_path, $flow_key, 'replace' );
+
+		if ( empty( $import['success'] ) ) {
+			delete_option( $flow_key );
+
+			return self::result(
+				false,
+				sprintf(
+					/* translators: %s: reason the import failed. */
+					__( 'The pack flow could not be imported: %s', 'flosc' ),
+					(string) ( $import['message'] ?? __( 'Unknown error', 'flosc' ) )
+				)
+			) + array( 'record' => array() );
+		}
+
+		$count = isset( $import['stats']['incoming_count'] ) ? (int) $import['stats']['incoming_count'] : 0;
+
+		return array(
+			'ok'      => true,
+			'message' => sprintf(
+				/* translators: 1: number of messages, 2: flow file name. */
+				__( '%1$d flow messages imported for %2$s.', 'flosc' ),
+				$count,
+				$file_name
+			),
+			'detail'  => array(),
+			'record'  => array( 'flow_option' => $flow_key ),
+		);
+	}
+
+	/**
+	 * Rebuild the site content index so the assistant can see the pack's posts.
+	 *
+	 * Never fatal: a pack whose index did not build is still installed, and the
+	 * operator can rebuild it from the AI tab. Say so rather than failing.
+	 *
+	 * @return string One line of detail for the operator.
+	 */
+	private static function refresh_content_index() {
+		if ( ! class_exists( 'FLOSC_Site_Content_Index' ) ) {
+			return __( 'Content index not rebuilt — rebuild it from the AI tab so the assistant can see these posts.', 'flosc' );
+		}
+
+		$result = FLOSC_Site_Content_Index::instance()->rebuild();
+
+		if ( empty( $result['ok'] ) ) {
+			return (string) ( $result['message'] ?? __( 'The content index could not be rebuilt. Rebuild it from the AI tab.', 'flosc' ) );
+		}
+
+		/* translators: %d: number of posts indexed. */
+		return sprintf( __( 'Content index rebuilt: %d posts the assistant can now retrieve.', 'flosc' ), (int) ( $result['count'] ?? 0 ) );
+	}
+
 	/* ------------------------------------------------------------------ *
 	 * Uninstall
 	 * ------------------------------------------------------------------ */
@@ -402,6 +553,10 @@ class FLOSC_Starter_Packs {
 		}
 
 		$detail = self::rollback( $state[ $slug ] );
+
+		if ( ! empty( $state[ $slug ]['post_count'] ) ) {
+			$detail[] = self::refresh_content_index();
+		}
 
 		unset( $state[ $slug ] );
 		update_option( self::STATE_OPTION, $state, false );
@@ -453,6 +608,11 @@ class FLOSC_Starter_Packs {
 			}
 			/* translators: %s: flow file name. */
 			$detail[] = sprintf( __( 'Flow removed: %s', 'flosc' ), basename( (string) $record['flow_file'] ) );
+		}
+
+		if ( ! empty( $record['flow_option'] ) && 0 === strpos( (string) $record['flow_option'], 'flosc_flow_' ) ) {
+			delete_option( (string) $record['flow_option'] );
+			$detail[] = __( 'Flow settings and messages removed.', 'flosc' );
 		}
 
 		if ( ! empty( $record['catalog_file'] ) ) {

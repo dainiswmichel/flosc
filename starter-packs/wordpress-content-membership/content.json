@@ -1,0 +1,602 @@
+[
+  {
+    "title": "What a Membership Site Actually Sells",
+    "content": "A membership is not a folder of downloads with a password on it. A download is finished the moment it lands. A membership is a standing promise: something useful will keep arriving, and you will keep being the person it arrives from.\n\nThat distinction decides everything downstream — what you publish, how often, and why anyone stays past month three. If you cannot name what keeps arriving, you have a product, not a membership.",
+    "excerpt": "You are not selling files. You are selling the promise that more is coming.",
+    "access": "visitor"
+  },
+  {
+    "title": "The Three Tiers Almost Everyone Needs",
+    "content": "Public content is your argument. Registered content is your handshake. Paid content is your promise. Three tiers cover nearly every membership site ever built, and the sites that struggle are usually the ones that started with seven.\n\nFLOSC names these visitor, guest, and member. The names matter less than the discipline: every piece of content you publish belongs to exactly one of them, and you should be able to say why in one sentence.",
+    "excerpt": "Public, registered, paying. Most sites need exactly these and no more.",
+    "access": "visitor"
+  },
+  {
+    "title": "Give Away the What, Sell the How",
+    "content": "Publish the diagnosis freely. Charge for the treatment. Anyone can read that their email open rates are low; the sequence that fixes them is worth paying for.\n\nThis is not a trick. It is honest structure. The free tier has to be genuinely useful or nobody trusts the paid tier enough to buy it — and the paid tier has to be genuinely different or nobody stays.",
+    "excerpt": "The oldest working rule in gated content, and still the best one.",
+    "access": "visitor"
+  },
+  {
+    "title": "Why Most Membership Sites Die in Month Four",
+    "content": "Launch energy is real and it lasts about three months. Founding members are patient, the novelty is doing work, and your own enthusiasm covers a lot of gaps.\n\nMonth four is when the first renewal notices go out to people who have not logged in since week two. The sites that survive it are the ones that built a publishing rhythm before they needed one.",
+    "excerpt": "The launch carries you ninety days. Nothing carries you after that but cadence.",
+    "access": "visitor"
+  },
+  {
+    "title": "You Need Fewer Members Than You Think",
+    "content": "Two hundred members at ten a month is two thousand a month. Forty members at fifty a month is the same two thousand, with a fifth of the support load and far better conversations.\n\nRun that calculation before you choose a price, because it usually changes the price. Almost nobody needs a thousand members. Most people need eighty of the right ones.",
+    "excerpt": "Do the arithmetic before you build anything.",
+    "access": "visitor"
+  },
+  {
+    "title": "Free Trials Versus Free Tiers",
+    "content": "A free trial is a countdown: full access, then a decision. It converts well for products with a fast payoff, and badly for anything whose value takes a month to feel.\n\nA free tier has no ending. It is a permanent room with a visible door to a better one. It converts slower and holds longer. If your value compounds, choose the tier.",
+    "excerpt": "One has an ending. The other has a doorway. They are not interchangeable.",
+    "access": "visitor"
+  },
+  {
+    "title": "What to Publish Before You Charge Anything",
+    "content": "Nobody subscribes to a promise from a stranger. Publish twenty pieces of genuinely useful public work first — enough that someone can binge an afternoon and conclude you know the subject.\n\nThat archive is what makes the paid tier believable. It also tells you, before you have taken anyone's money, whether you can actually sustain a publishing rhythm.",
+    "excerpt": "Twenty pieces of public work. Then open the door.",
+    "access": "visitor"
+  },
+  {
+    "title": "The Login Wall Is a Conversation, Not a Gate",
+    "content": "The standard pattern is brutal: three paragraphs, then a wall, then a price. The reader was interested one second ago and is now annoyed.\n\nThe better pattern says what is behind the wall, why it is there, and what happens next — in the reader's language, at the moment they hit it. That is exactly the moment a conversational flow does its best work.",
+    "excerpt": "Most sites make it a slammed door. It does not have to be.",
+    "access": "visitor"
+  },
+  {
+    "title": "Pricing Is Positioning",
+    "content": "Five a month says newsletter. Fifty a month says professional tool. Five hundred a month says this replaces a consultant. The number is a category signal, and readers decode it instantly.\n\nSo pick the category first, then the number. Pricing upward from your costs almost always lands you in a category you did not mean to enter.",
+    "excerpt": "Your price tells people what kind of thing you are before they read a word.",
+    "access": "visitor"
+  },
+  {
+    "title": "Do Not Gate Your Best Argument",
+    "content": "Founders reliably put their sharpest work behind the wall because it feels most valuable. It is — which is exactly why locking it costs you the members it would have won.\n\nYour best public piece is your salesperson. Let it work. Gate the depth behind it: the templates, the walkthroughs, the specifics.",
+    "excerpt": "The piece that convinces people should be the one they can read.",
+    "access": "visitor"
+  },
+  {
+    "title": "Annual Plans Fix Churn Arithmetic",
+    "content": "Monthly billing gives every member twelve annual opportunities to reconsider. Annual billing gives them one, and hands you the cash up front to build with.\n\nTwo months free is the conventional discount and it works. Offer it at signup and again at the first renewal, which is the moment a happy member is most willing to commit.",
+    "excerpt": "One decision a year instead of twelve chances to leave.",
+    "access": "visitor"
+  },
+  {
+    "title": "Community Is a Feature With a Staffing Cost",
+    "content": "Community is the strongest retention feature there is and the most expensive to run. An empty forum actively signals that the membership is dying.\n\nIf you cannot commit to seeding and moderating it daily for the first six months, ship without it. You can add a community to a healthy membership. You cannot use one to rescue a quiet one.",
+    "excerpt": "A forum with nobody in it is worse than no forum.",
+    "access": "visitor"
+  },
+  {
+    "title": "Every Membership Needs an Obvious Next Step",
+    "content": "The most common failure in gated sites is not the gate — it is the dead end. A visitor reads something good, reaches the bottom, and finds nothing but a footer.\n\nEvery page for every tier should end pointing somewhere: the next piece, the signup, the upgrade, the conversation. Never a dead end, at any tier.",
+    "excerpt": "At any moment, the reader should know what to do next without asking.",
+    "access": "visitor"
+  },
+  {
+    "title": "The Welcome Email Is Half Your Retention",
+    "content": "The first email after signup does more retention work than anything you publish in month two. Most sites waste it on a receipt.\n\nSay what to read first, what arrives next and when, and how to reach a human. Three things. Send it immediately, and make it sound like a person wrote it.",
+    "excerpt": "Members decide how they feel about you in the first ten minutes.",
+    "access": "visitor"
+  },
+  {
+    "title": "Start With One Tier and Earn the Second",
+    "content": "Multiple tiers mean multiple content calendars, multiple upgrade paths, and a support inbox full of people asking which one they are on.\n\nLaunch with one paid tier. Add a second only when members ask for something the first does not cover — and they will tell you exactly what it is.",
+    "excerpt": "Complexity is a cost you pay every day.",
+    "access": "visitor"
+  },
+  {
+    "title": "Choosing Your Publishing Cadence",
+    "content": "Weekly beats daily if daily means you quit in June. Members forgive a slow rhythm and punish a broken one, because a broken rhythm makes them wonder whether the site is still alive.\n\nAnnounce the cadence publicly. That commitment is a feature — it tells members what they are buying — and it forces you to choose one you can actually sustain through a bad month.",
+    "excerpt": "Pick the slowest rhythm you can keep forever, then keep it.",
+    "access": "guest"
+  },
+  {
+    "title": "The Content Bank You Should Have Before Launch",
+    "content": "Launch week eats more time than you plan for. Support questions, billing edge cases, the one plugin conflict nobody caught — all of it lands the same week you promised your first member post.\n\nEight finished pieces in the drawer buy you that week back. They also prove to you that the format is repeatable before anyone has paid for it.",
+    "excerpt": "Eight weeks of finished material, in the drawer, before you sell anything.",
+    "access": "guest"
+  },
+  {
+    "title": "Writing an Excerpt That Sells the Locked Post",
+    "content": "A first paragraph is context. An excerpt is an argument. It should name the specific thing the reader gets and stop just before the payoff.\n\n\"How we cut refund requests by half\" earns a click. \"Some thoughts on refunds\" does not, and it is the same post.",
+    "excerpt": "The excerpt is your storefront. Most people paste the first paragraph.",
+    "access": "guest"
+  },
+  {
+    "title": "Onboarding Is a Sequence, Not a Page",
+    "content": "The welcome page gets read once, in a hurry, usually while the member is still deciding whether they trust you. Everything you crammed onto it is gone by Tuesday.\n\nSpread it over a sequence: day zero, welcome and one thing to read. Day three, the archive. Day seven, how to ask a question. Day fourteen, the thing members most often miss.",
+    "excerpt": "One welcome page cannot carry a new member through their first month.",
+    "access": "guest"
+  },
+  {
+    "title": "Pick the Payment Processor Before the Theme",
+    "content": "Themes are a weekend. Migrating live subscriptions between processors is weeks of careful work and a real risk of dropped charges.\n\nDecide first: who processes payments, who handles tax, what happens on a failed card, and how a member cancels without emailing you. Then think about fonts.",
+    "excerpt": "Money plumbing is harder to change later than anything visual.",
+    "access": "guest"
+  },
+  {
+    "title": "Dunning: The Money You Are Already Owed",
+    "content": "Between five and ten percent of monthly charges fail for reasons that have nothing to do with intent — expired cards, moved banks, travel blocks. Those members did not leave. Their card did.\n\nA retry schedule with three polite emails recovers most of them. It is the highest-return hour of work in the whole business.",
+    "excerpt": "Failed cards are the cheapest revenue you will ever recover.",
+    "access": "guest"
+  },
+  {
+    "title": "What Belongs in the Guest Tier",
+    "content": "The guest tier exists to convert, which means it has to deliver real value — a useful tool, a full article, a working template. Thin guest tiers convert worse than no guest tier at all.\n\nThe test: a guest should finish the month having gotten something real, and knowing precisely what they did not get.",
+    "excerpt": "Enough to be genuinely useful. Not enough to be sufficient.",
+    "access": "guest"
+  },
+  {
+    "title": "Email Is the Membership. The Site Is the Archive.",
+    "content": "Most members will never develop the habit of visiting your site unprompted. That is not a failure of your design; it is how attention works.\n\nSo the email is the product surface and the site is where it lives afterward. Write the email as the thing itself, not as a notification that a thing exists.",
+    "excerpt": "Members who only visit when you email them are normal, not a problem.",
+    "access": "guest"
+  },
+  {
+    "title": "Cancellation Should Take Two Clicks",
+    "content": "Retention flows that hide the cancel button work, briefly, and generate the angriest support tickets and worst public reviews you will ever receive.\n\nTwo clicks. One optional question about why. Then a clean goodbye that leaves the door open — a good number of them come back within a year.",
+    "excerpt": "Hard cancellation buys you one more month and costs you the referral.",
+    "access": "guest"
+  },
+  {
+    "title": "The One Metric Worth Watching Weekly",
+    "content": "Signups feel good and hide everything. Twenty new members with twenty-two cancellations is a shrinking business having a great week on paper.\n\nTrack joined minus left, weekly, on one line. It is the only number that tells you whether the thing is growing.",
+    "excerpt": "Not signups. Not traffic. Net member change.",
+    "access": "guest"
+  },
+  {
+    "title": "Repurposing Without Repeating Yourself",
+    "content": "A public essay, a member walkthrough, and a downloadable checklist can all come from one idea without any of them feeling like a rerun. What changes is depth and usable form.\n\nThis is how a solo operator sustains three tiers. Not three times the ideas — three treatments of the good ones.",
+    "excerpt": "The same idea can appear three times if the shape changes each time.",
+    "access": "guest"
+  },
+  {
+    "title": "Set Support Expectations in Writing",
+    "content": "\"We answer within two working days\" is a perfectly good promise, and easy to keep. What damages trust is an unstated expectation that you quietly miss.\n\nPut the response time where people look before they write, and then hold it. A kept modest promise beats a broken generous one every time.",
+    "excerpt": "Members are fine with slow. They are not fine with silent.",
+    "access": "guest"
+  },
+  {
+    "title": "Nobody Reads Your Navigation",
+    "content": "Members do not browse. They arrive from an email, read one thing, and leave. Your carefully organized menu is invisible to the people who matter most.\n\nSo the end of every piece is your real navigation. Put the next step there, specifically — a named piece, not \"browse the archive\".",
+    "excerpt": "They read the last sentence of what they just finished.",
+    "access": "guest"
+  },
+  {
+    "title": "The Archive Is an Asset, Once It Is Findable",
+    "content": "Depth only becomes a selling point when a member can reliably find the one thing they need at the moment they need it.\n\nCategories, decent search, and a curated \"start here\" path turn an archive from clutter into the reason someone renews.",
+    "excerpt": "Two hundred posts nobody can search is two hundred posts nobody reads.",
+    "access": "guest"
+  },
+  {
+    "title": "Founding Member Pricing, and Its Bill",
+    "content": "Discounted founding pricing creates urgency and rewards early trust, and both of those are real. The bill arrives later, when your best advocates are also your least profitable members.\n\nDecide in advance: locked forever, or locked for two years. Write it down at signup. Changing it afterwards is the fastest way to lose the people who believed first.",
+    "excerpt": "It works. It also comes due, on a date you should choose now.",
+    "access": "guest"
+  },
+  {
+    "title": "Ask New Members One Question",
+    "content": "One question, asked at the moment of signup while the reason is still fresh, gets answered far more often than any survey you send later.\n\nThe answers are your marketing copy, written by the people you are trying to reach, in their words.",
+    "excerpt": "\"What made you join today?\" Nothing else.",
+    "access": "guest"
+  },
+  {
+    "title": "Content Debt Is Real",
+    "content": "Publishing is a liability as well as an asset. Screenshots go stale, prices change, the plugin you recommended gets abandoned.\n\nBudget a maintenance day each quarter. An archive full of confidently wrong advice does more damage than a smaller archive that is right.",
+    "excerpt": "Every published page is a page you promised to keep true.",
+    "access": "guest"
+  },
+  {
+    "title": "Do Not Build a Custom Login",
+    "content": "Custom authentication is where small sites acquire large vulnerabilities. Password reset, session handling, brute-force protection, and the audit trail are all easy to get subtly wrong.\n\nUse the core system. Restyle the form all you like. Never reimplement what is underneath it.",
+    "excerpt": "WordPress already solved this, and solved it better than you will.",
+    "access": "guest"
+  },
+  {
+    "title": "Two Emails a Week Is Usually the Ceiling",
+    "content": "Frequency has a ceiling, and it is lower than most enthusiastic founders believe. The second weekly email typically performs; the third teaches people to filter you.\n\nIf you have more to say than two emails hold, the answer is a digest, not more sends.",
+    "excerpt": "Past that, unsubscribes climb faster than engagement.",
+    "access": "guest"
+  },
+  {
+    "title": "The Upgrade Prompt Belongs at the Moment of Value",
+    "content": "Sidebar upgrade boxes are furniture; readers stopped seeing them years ago. The prompt that works appears exactly where the reader just hit the edge of what they can see.\n\nSame offer, same price, different placement — and reliably several times the conversion.",
+    "excerpt": "Not in the sidebar. At the sentence where they wanted more.",
+    "access": "guest"
+  },
+  {
+    "title": "Write the Cancellation Email Before You Need It",
+    "content": "The message that goes out when someone leaves is worth drafting on a calm day. Thank them, confirm what happens to their access and their data, and say the door is open.\n\nNo guilt, no survey wall, no last-minute discount. That email decides whether they recommend you afterwards.",
+    "excerpt": "You will write it badly if you write it while upset.",
+    "access": "guest"
+  },
+  {
+    "title": "One Person Can Run This",
+    "content": "Solo memberships work at a scale that surprises people, provided the operator has not built something that needs constant custom attention.\n\nBoring plumbing, a fixed cadence, templated support answers. The interesting part should be the content, and nothing else.",
+    "excerpt": "But only if the systems are boring.",
+    "access": "guest"
+  },
+  {
+    "title": "Test the Signup on a Phone You Have Not Configured",
+    "content": "You are logged in, your card autofills, your browser trusts the site, and your cache hides three problems. Everyone else arrives cold on a phone.\n\nOnce a quarter, go through your own signup on a borrowed device with a real card. It is the most useful hour of testing available.",
+    "excerpt": "Your own laptop is the worst place to test signup.",
+    "access": "guest"
+  },
+  {
+    "title": "Say What Members Do Not Get",
+    "content": "Every membership has edges. Saying \"this does not include one-to-one review\" up front costs you a few signups and saves you the refunds, the arguments, and the reviews written by people who felt misled.\n\nClear limits are a mark of confidence. Vague promises read as evasion.",
+    "excerpt": "Honesty about limits removes the most expensive refunds.",
+    "access": "guest"
+  },
+  {
+    "title": "Your Second Month Is the Real Test",
+    "content": "Anyone can publish well in the first month. Month two arrives with a cold, an unrelated deadline, and a plugin update that breaks the archive.\n\nDesign your commitments for month two conditions, not month one energy. That is the rhythm you will actually be living in.",
+    "excerpt": "Month one is enthusiasm. Month two is the business.",
+    "access": "guest"
+  },
+  {
+    "title": "Reading a Churn Number Correctly",
+    "content": "Compounding is unkind. Five percent monthly leaves you roughly fifty-four percent of a cohort after twelve months. Eight percent leaves you under forty. Founders quote monthly churn because the number looks small.\n\nAlways convert to annual before you make a decision with it. The annual figure is the one that tells you whether growth is real or whether you are refilling a bucket.",
+    "excerpt": "Five percent monthly churn is not five percent. It is half your members a year.",
+    "access": "member"
+  },
+  {
+    "title": "Cohort Retention Beats Total Members",
+    "content": "Total membership is a blend of every decision you have ever made. It cannot tell you that the members who joined in March stay twice as long as the ones from June.\n\nGroup members by join month and track each group separately. When a cohort drops off a cliff, look at what changed the month they arrived — usually the acquisition channel or an onboarding edit.",
+    "excerpt": "The headline number hides which month you got worse.",
+    "access": "member"
+  },
+  {
+    "title": "The Ninety-Day Danger Window",
+    "content": "The member who cancels in month five usually stopped reading in month two. The cancellation is paperwork on a decision already made.\n\nSo intervene on reading, not on billing. A member who has not opened anything in three weeks is the one to reach — and a plain human email at that moment saves a surprising number.",
+    "excerpt": "Most cancellations are decided long before they are executed.",
+    "access": "member"
+  },
+  {
+    "title": "Win-Back Campaigns Actually Work",
+    "content": "Someone who paid you for four months has already crossed every hard barrier: they trust you, they know the value, their card worked. Compare that to a stranger.\n\nEmail lapsed members twice a year with what has changed since they left. Specifics, not nostalgia. Ten to twenty percent coming back is a normal result.",
+    "excerpt": "Former members convert better than cold traffic, by a wide margin.",
+    "access": "member"
+  },
+  {
+    "title": "The Exit Survey Question That Gets Answers",
+    "content": "Leaving members are done arguing and will not write you an essay on your shortcomings. Asking why invites either silence or politeness.\n\nAsking what they hoped for gets a real answer, because it lets them describe their own situation rather than critique yours. The gap between their hope and your product is the whole finding.",
+    "excerpt": "Not \"why are you leaving\". \"What were you hoping this would do for you?\"",
+    "access": "member"
+  },
+  {
+    "title": "Pause Beats Cancel",
+    "content": "Plenty of cancellations are situational — a busy quarter, a tight month, a project that ended. Those members do not want to leave; they want to stop paying for something they cannot use right now.\n\nOffering a pause converts a permanent loss into a temporary one, and pausing members return at rates that no win-back email touches.",
+    "excerpt": "A three-month pause keeps more members than any discount.",
+    "access": "member"
+  },
+  {
+    "title": "Discounting to Retain Trains Bad Behaviour",
+    "content": "A retention discount solves this month and creates a norm. Word travels, particularly in a community, and you end up with a tier of members who have learned that threatening to leave is a pricing negotiation.\n\nFix the reason instead. If the price is genuinely wrong for a segment, build a real lower tier rather than quietly discounting the loud ones.",
+    "excerpt": "The member who stayed for fifty percent off will ask again next year.",
+    "access": "member"
+  },
+  {
+    "title": "Engagement Scoring Without a Data Team",
+    "content": "Logins in the last thirty days, emails opened in the last thirty days, and any reply or comment ever. Score each member zero to three.\n\nEveryone at zero is churning next quarter and does not know it yet. Everyone at three is a testimonial, a case study, or a referral you have not asked for.",
+    "excerpt": "Three signals, one spreadsheet, once a month.",
+    "access": "member"
+  },
+  {
+    "title": "The Renewal Email Nobody Sends",
+    "content": "Most annual renewals arrive as a silent charge, and a silent charge on a card is how a happy member becomes an angry one.\n\nTwo weeks out, send a short list of what they actually read this year and what is coming next. Refund requests drop, and the honesty earns you goodwill you cannot buy.",
+    "excerpt": "Tell them what they got before you charge them again.",
+    "access": "member"
+  },
+  {
+    "title": "Involuntary Churn Is Usually Bigger Than Voluntary",
+    "content": "Cards expire, banks reissue, fraud rules fire. On many small memberships, failed payments account for more monthly losses than actual decisions to leave.\n\nIf you report both as one churn number, you will spend a quarter rewriting content when the fix was a retry schedule and a card-update email.",
+    "excerpt": "Count them separately or you will fix the wrong problem.",
+    "access": "member"
+  },
+  {
+    "title": "Raising Prices Without Losing Members",
+    "content": "The standard playbook works: existing members keep their price, new members pay the new one, and the change is announced a month ahead in plain language.\n\nApologising is the mistake. An apology tells members the new price is not justified, which invites the argument you were trying to avoid.",
+    "excerpt": "Grandfather everyone. Announce early. Never apologise.",
+    "access": "member"
+  },
+  {
+    "title": "Value Metric Pricing for Content",
+    "content": "Software prices per seat or per call. Content has no equivalent — reading twice as much costs you nothing extra, so metered pricing punishes your best members.\n\nPrice on depth and recency instead: the archive, the current material, the direct access. Those are real differences a member can feel.",
+    "excerpt": "Content memberships rarely have a good usage metric. Use access depth instead.",
+    "access": "member"
+  },
+  {
+    "title": "The Refund Policy That Reduces Refunds",
+    "content": "A generous, prominent refund policy raises conversion more than it raises refunds, and it does so in nearly every market anyone has measured.\n\nRestrictive policies produce chargebacks instead, which cost you the money anyway plus a fee and a mark against your processor account.",
+    "excerpt": "Thirty days, no questions, stated loudly.",
+    "access": "member"
+  },
+  {
+    "title": "Chargebacks Are Worse Than Refunds",
+    "content": "A chargeback costs the payment, a fee, and a ratio point with your processor. Enough of them and your account is reviewed or closed.\n\nAnyone threatening a dispute should be refunded that day, without argument, whatever the merits. Winning the argument is not worth the account.",
+    "excerpt": "Always refund a disputed charge before it becomes a dispute.",
+    "access": "member"
+  },
+  {
+    "title": "VAT, Sales Tax, and Digital Goods",
+    "content": "EU VAT on digital services follows the customer's location, with no small-seller threshold for cross-border sales. Several US states tax digital goods too, on their own rules.\n\nEither use a merchant of record who assumes this liability, or budget for a tax service. Discovering it two years in is an expensive way to learn it.",
+    "excerpt": "Digital subscriptions are taxed where the buyer is, not where you are.",
+    "access": "member"
+  },
+  {
+    "title": "Currency and Local Pricing",
+    "content": "Conversion drops measurably when a buyer has to translate the price themselves. Displaying local currency, even while settling in yours, recovers most of that.\n\nFull local pricing — different numbers per market — is a bigger commitment and best left until one market is clearly large enough to justify the operational cost.",
+    "excerpt": "Charging in one currency is fine. Displaying in one currency is not.",
+    "access": "member"
+  },
+  {
+    "title": "Lifetime Deals Are a Loan",
+    "content": "A lifetime plan is cash today in exchange for indefinite service. That can be exactly right for a launch runway, and disastrous as a standing offer.\n\nIf you run one, cap the number, name the cap publicly, and treat the money as capital rather than income — because the costs those members generate arrive every year afterwards.",
+    "excerpt": "You are borrowing revenue from a future you have to fund.",
+    "access": "member"
+  },
+  {
+    "title": "Free Users Have a Cost. Measure It.",
+    "content": "A free tier is a marketing expense, and like any expense it deserves a number. Support load in particular tends to arrive disproportionately from non-paying accounts.\n\nMeasure cost per free user and conversion to paid. If the ratio does not work, the answer is usually a thinner free tier, not a smaller one.",
+    "excerpt": "Support, hosting, and email all scale with people who pay nothing.",
+    "access": "member"
+  },
+  {
+    "title": "Annual Prepay Funds Your Development",
+    "content": "Annual plans are usually pitched as a retention device, and they are. The underrated part is cash flow: twelve months of revenue arriving today is what pays for the thing you wanted to build.\n\nPush annual hardest at signup and at the first renewal, and be honest with yourself that the money is deferred revenue, not profit.",
+    "excerpt": "The cash timing matters as much as the churn maths.",
+    "access": "member"
+  },
+  {
+    "title": "When to Add a Second Tier",
+    "content": "Second tiers built on speculation dilute the first one and double the work. Second tiers built on a repeated, specific request tend to work immediately.\n\nThe signal is not \"people want more\". It is twenty people asking for the same identifiable thing, ideally in the same words.",
+    "excerpt": "When a real group is asking for a real thing you are not selling.",
+    "access": "member"
+  },
+  {
+    "title": "The Editorial Calendar That Survives a Bad Month",
+    "content": "Quarterly themes give you direction, a month of finished material gives you slack, and a weekly publish keeps the rhythm visible. Each layer covers the failure of the one above it.\n\nSystems that require you to be at full capacity every week are not systems. They are a good month you have mistaken for a plan.",
+    "excerpt": "Plan a quarter, buffer a month, publish a week.",
+    "access": "member"
+  },
+  {
+    "title": "Batch Production Beats Daily Production",
+    "content": "Writing four pieces in one focused day is reliably faster than one piece on each of four days, because the setup cost — the research, the tone, the mental model — is paid once.\n\nBatch by type, not by topic. All the writing, then all the editing, then all the scheduling.",
+    "excerpt": "Context switching is the tax nobody budgets for.",
+    "access": "member"
+  },
+  {
+    "title": "Evergreen and Timely Need Different Homes",
+    "content": "Timely posts are valuable for three weeks and misleading after a year. Evergreen posts pay out for a decade. Filed together, the timely ones drag down trust in the whole archive.\n\nSeparate them structurally, and date-stamp the timely material clearly so a member can see at a glance what still applies.",
+    "excerpt": "Mixing them makes your archive rot faster than it should.",
+    "access": "member"
+  },
+  {
+    "title": "The Quarterly Archive Audit",
+    "content": "Go through everything older than a year with three buckets: still correct and worth promoting, correct but needs an update, or wrong and needs retiring with a note.\n\nThe note matters. Silently deleting is how a member ends up citing advice that no longer exists — and how search engines conclude your site is unstable.",
+    "excerpt": "One day, four times a year. Fix, retire, or promote.",
+    "access": "member"
+  },
+  {
+    "title": "Series Beat Standalone Posts for Retention",
+    "content": "A standalone post ends. A series creates an appointment, and appointments are what convert a reader into someone with a habit.\n\nThree to five parts is the sweet spot. Longer and the arc sags; shorter and it does not have time to build the expectation.",
+    "excerpt": "\"Part two next week\" is the cheapest retention mechanism there is.",
+    "access": "member"
+  },
+  {
+    "title": "Templates and Tools Outperform Essays",
+    "content": "The pieces members cite months later are almost always the ones with something usable attached: a checklist, a spreadsheet, a script, a worked example.\n\nOne usable artifact per month does more for renewals than four more essays, and it is usually less work.",
+    "excerpt": "Members save what they can use. They rarely save what they read.",
+    "access": "member"
+  },
+  {
+    "title": "Write the Member Question Down Verbatim",
+    "content": "Every question a member asks is a piece someone else needed and did not ask for. Keep the exact wording — it is also the search phrase.\n\nA month of logged questions is a quarter of confident content, and every piece has a guaranteed reader.",
+    "excerpt": "Your best content calendar is your support inbox.",
+    "access": "member"
+  },
+  {
+    "title": "Guest Contributors Are a Retention Tool",
+    "content": "Members drift when everything sounds the same, however good it is. A guest piece breaks the pattern and borrows a perspective you cannot fake.\n\nPay them properly and brief them tightly. An unbriefed guest post reads as filler, which costs you more than the gap it filled.",
+    "excerpt": "New voices reset attention without resetting trust.",
+    "access": "member"
+  },
+  {
+    "title": "Transcripts Make Audio and Video Findable",
+    "content": "Video and audio are strong for connection and weak for retrieval. A member who half-remembers a point from an episode has no way back to it.\n\nPublish transcripts. They cost little, they make the archive searchable, and a sizeable share of members prefer reading anyway.",
+    "excerpt": "An untranscribed hour of video is invisible to search and to skimmers.",
+    "access": "member"
+  },
+  {
+    "title": "Do Not Publish Through a Crisis",
+    "content": "Illness, bereavement, a move, a bad quarter — every long-running membership hits at least one. Publishing badly through it damages more than pausing honestly.\n\nA short, plain note about a two-week pause generates sympathy and almost no cancellations. Silence generates suspicion, and thin filler generates disappointment.",
+    "excerpt": "Say you are pausing. Members are fine with it.",
+    "access": "member"
+  },
+  {
+    "title": "Seeding a Community Without Faking It",
+    "content": "Communities do not start; they are started. Twenty invited people who already talk to you produce the first hundred posts, and those posts set the tone for everyone who arrives later.\n\nOpening a forum to your whole list on day one produces an empty room with a thousand witnesses.",
+    "excerpt": "Invite twenty people personally. Do not open the doors to everyone.",
+    "access": "member"
+  },
+  {
+    "title": "The First Rule of Moderation Is Speed",
+    "content": "Members read the room before they post. One unanswered hostile thread teaches every lurker what is tolerated here, and lurkers are most of your community.\n\nFast, visible, unapologetic moderation in the first six months is what buys you a self-moderating community later.",
+    "excerpt": "A bad thread left for a day becomes the culture.",
+    "access": "member"
+  },
+  {
+    "title": "Office Hours Beat a Forum for Small Memberships",
+    "content": "Small forums feel empty because they usually are. A fortnightly hour on a call with six people feels full, and produces the same connection with none of the dead-room signalling.\n\nRecord it, transcribe it, publish it to members. One hour becomes a month of content and a retention event at once.",
+    "excerpt": "Under two hundred members, live time outperforms asynchronous space.",
+    "access": "member"
+  },
+  {
+    "title": "Support Macros Are Not Impersonal",
+    "content": "Nobody with a billing problem wants prose. They want the fix, correctly, today. A well-written macro delivers that more reliably than you typing it fresh at eleven at night.\n\nWrite the macro carefully once, in your own voice, and always add one specific line about their situation.",
+    "excerpt": "A fast accurate answer beats a slow original one.",
+    "access": "member"
+  },
+  {
+    "title": "The Support Question You Answer Twice Is a Post",
+    "content": "One question is a person. Two is a pattern worth documenting. Three is a design problem you are paying for with your own hours, every week, indefinitely.\n\nTrack repeats explicitly. The fix is usually smaller than the accumulated support cost of not fixing it.",
+    "excerpt": "Second time, write the post. Third time, fix the product.",
+    "access": "member"
+  },
+  {
+    "title": "Member Directories Need Consent and an Exit",
+    "content": "A directory is a genuine benefit, and it is also a disclosure. Default-on directories create real harm for people with safety, professional, or immigration reasons to stay private.\n\nOpt in, granular fields, and a one-click removal that takes effect immediately. Never populate it automatically from billing data.",
+    "excerpt": "Some members are paying you precisely because they are not public.",
+    "access": "member"
+  },
+  {
+    "title": "Recognise Members in Public",
+    "content": "Naming the member whose question prompted a piece, or whose correction improved it, costs nothing and lands hard. It also demonstrates to everyone else that participation is noticed.\n\nAsk first. Some will decline, and their reasons are their own.",
+    "excerpt": "Attribution is free and it is the strongest loyalty tool you have.",
+    "access": "member"
+  },
+  {
+    "title": "When to Close a Community",
+    "content": "If a forum has been quiet for three months and you are not going to fund reviving it, close it deliberately: archive the content, say why, and point members to what replaces it.\n\nMembers respect a clear decision. What they lose faith in is a dead room left standing with their subscription attached to it.",
+    "excerpt": "An honest closure beats a slow death nobody mentions.",
+    "access": "member"
+  },
+  {
+    "title": "SEO for Gated Content Without Cloaking",
+    "content": "Serving full text to a crawler and a paywall to a person is cloaking, and it is a policy violation that eventually costs you the rankings you were buying.\n\nThe supported route is structured data that declares the paywalled section honestly. It is well documented, it works, and it does not put your traffic at risk.",
+    "excerpt": "Show search engines exactly what you show a logged-out human.",
+    "access": "member"
+  },
+  {
+    "title": "Your Best Acquisition Channel Is Probably One Channel",
+    "content": "Early memberships usually get almost everything from one source — a newsletter, one search cluster, one podcast circuit, one community. The other channels feel like progress and produce noise.\n\nAsk every new member where they came from. Then put your effort into the answer that keeps appearing.",
+    "excerpt": "Find it, then stop diversifying prematurely.",
+    "access": "member"
+  },
+  {
+    "title": "Referrals Work When the Reward Is Access",
+    "content": "Cash rewards attract people who want cash and produce members who do not read. Access rewards attract people who want more of your work and produce members who look like your best ones.\n\nA free month for both sides is the standard shape and it is standard because it works.",
+    "excerpt": "Give a free month, not cash.",
+    "access": "member"
+  },
+  {
+    "title": "Guest Appearances Convert Better Than Ads",
+    "content": "Borrowed trust converts at rates paid traffic cannot approach, because the recommendation is implicit and comes from someone the audience already chose to listen to.\n\nPrepare one specific, memorable landing point — a named free resource — rather than sending everyone to your home page.",
+    "excerpt": "An hour on someone else's platform beats a month of paid impressions.",
+    "access": "member"
+  },
+  {
+    "title": "The Free Resource That Feeds the Funnel",
+    "content": "A single free resource that people actually finish and recommend does more than a library of lead magnets nobody opens. It also becomes the thing others link to when they mention you.\n\nMake it complete on its own. A resource that is obviously a truncated advertisement teaches people to expect the same from the paid tier.",
+    "excerpt": "One genuinely excellent thing beats five adequate ones.",
+    "access": "member"
+  },
+  {
+    "title": "Waitlists Create Real Urgency Honestly",
+    "content": "Opening twice a year to a waitlist concentrates attention, makes onboarding cohort-based, and is entirely honest if the doors genuinely close.\n\nCountdown timers that reset on refresh are the other thing, and the people you most want as members are the ones most likely to notice.",
+    "excerpt": "Closed enrolment works. Fake scarcity does not.",
+    "access": "member"
+  },
+  {
+    "title": "Affiliates Need Rules Before They Need Rates",
+    "content": "Affiliates will use your brand name in ads, make claims you never made, and occasionally spam. Any of those can produce chargebacks or a policy strike against your account.\n\nPublish rules first: no brand bidding, no income claims, no unsolicited email. Then approve individually, at least at the start.",
+    "excerpt": "One bad affiliate can cost you a payment processor.",
+    "access": "member"
+  },
+  {
+    "title": "Public Metrics Are Marketing, With a Cost",
+    "content": "Transparent numbers build audience quickly and reliably. They also invite scrutiny, attract competitors to your exact niche, and become awkward in a bad year.\n\nIt is a legitimate strategy. Just decide it deliberately, and understand that stopping is itself a signal people will read.",
+    "excerpt": "Once you publish revenue, you have published it forever.",
+    "access": "member"
+  },
+  {
+    "title": "Gate at the Query, Not Just the Template",
+    "content": "Template-level checks are the most common mistake in homemade membership setups. The post still appears in RSS, in the REST API, in search results, and in any plugin that reads posts directly.\n\nFilter where content is retrieved, not where it is displayed, and then verify by hitting the REST endpoint while logged out.",
+    "excerpt": "Hiding content in the theme leaves it in the feed and the API.",
+    "access": "member"
+  },
+  {
+    "title": "Test Every Tier Logged Out, In Private Mode",
+    "content": "An administrator sees all content by definition, and cached assets plus a logged-in cookie hide most access bugs from the person most motivated to find them.\n\nKeep three throwaway accounts — one per tier — and check each one in a private window after any change to gating.",
+    "excerpt": "Your admin session lies to you about everything.",
+    "access": "member"
+  },
+  {
+    "title": "Caching and Membership Sites",
+    "content": "This is the single most damaging misconfiguration in the category, and it usually appears the week someone adds a performance plugin to a site that was working fine.\n\nExclude logged-in sessions from the page cache, and after any caching change, load a member URL in a private window to confirm what an anonymous visitor gets.",
+    "excerpt": "A cache that does not know about login will serve member content to strangers.",
+    "access": "member"
+  },
+  {
+    "title": "Protect Media Files, Not Only Pages",
+    "content": "Uploads are served directly by the web server and never touch your access checks. The page is gated; the file it links to is a public URL that will be shared.\n\nEither route downloads through a script that checks access, or store protected files outside the public uploads directory entirely.",
+    "excerpt": "A locked post with a public PDF link is not locked.",
+    "access": "member"
+  },
+  {
+    "title": "Back Up the Database Separately From the Files",
+    "content": "File backups restore your site. Database backups restore your business. Losing the members table is unrecoverable in a way that losing a theme never is.\n\nNightly database backups, stored somewhere other than the same server, and a restore you have actually tested at least once.",
+    "excerpt": "Members, subscriptions, and history all live in the database.",
+    "access": "member"
+  },
+  {
+    "title": "Staging Is Not Optional Once You Take Money",
+    "content": "Updating in production is defensible on a blog and indefensible on a site processing subscriptions. Checkout and login are exactly the paths that break quietly.\n\nUpdate on staging, run signup and login, then push. It adds twenty minutes and removes the worst class of outage.",
+    "excerpt": "A plugin update that breaks checkout costs real revenue every hour.",
+    "access": "member"
+  },
+  {
+    "title": "Log Access Denials, Not Just Errors",
+    "content": "A spike of denials on one URL usually means a member was promised something they cannot reach — a broken email link, a mis-tagged post, a tier boundary in the wrong place.\n\nLog the URL, the tier, and the time. Do not log anything you would not want to keep, and prune the file on a schedule.",
+    "excerpt": "Denials tell you where your gating is confusing or wrong.",
+    "access": "member"
+  },
+  {
+    "title": "Rate-Limit Login and Password Reset",
+    "content": "Every membership site is a list of email addresses known to have paid for something, which makes it a better target than an equivalent blog.\n\nRate-limit login attempts and password resets per IP and per account, and require strong passwords for anyone who can see paid content.",
+    "excerpt": "Membership sites are credential-stuffing targets by design.",
+    "access": "member"
+  },
+  {
+    "title": "Terms Members Can Actually Read",
+    "content": "Long unread terms are not protection; a judge or a payment processor is unimpressed by clauses your customer demonstrably never saw.\n\nSay what they get, what they pay, how it renews, how to cancel, and what happens to their access afterwards. Short, in your own voice, findable from the footer.",
+    "excerpt": "Plain terms reduce disputes more than long ones do.",
+    "access": "member"
+  },
+  {
+    "title": "Handle Data Requests Before You Get One",
+    "content": "A member exercising their data rights is entitled to a timely answer, and the deadline arrives whether or not you have a process.\n\nKnow now where personal data lives — WordPress, your processor, your email tool, your analytics — and write down the steps for export and deletion in each.",
+    "excerpt": "Export and deletion should take you minutes, not a weekend.",
+    "access": "member"
+  },
+  {
+    "title": "Deleting a Member Is Not Deleting Their Invoices",
+    "content": "These obligations coexist, and the resolution is standard: financial records are retained under a legal basis while the rest of the personal data is removed.\n\nSay so in your privacy notice, name the retention period, and then actually follow it.",
+    "excerpt": "Tax law requires records that data law lets people ask you to delete.",
+    "access": "member"
+  },
+  {
+    "title": "Accessibility Is a Retention Feature",
+    "content": "Contrast, keyboard navigation, real headings, captions, and text that resizes are not extras. Members with access needs rarely file a complaint; they simply leave.\n\nFix contrast and heading structure first. They are the cheapest changes and they help everyone reading on a phone in daylight.",
+    "excerpt": "Members who cannot read your site cancel and never explain why.",
+    "access": "member"
+  },
+  {
+    "title": "Say Which Third Parties See Member Data",
+    "content": "Payments, email, analytics, support, and any AI service in the chain all receive member data. Members are entitled to know which, and reviewers of any kind will ask.\n\nList them by name with links to their policies. It takes an afternoon and it answers the hardest question anyone will ask you.",
+    "excerpt": "Every integration is a disclosure you owe your members.",
+    "access": "member"
+  },
+  {
+    "title": "Write Down What Happens If You Stop",
+    "content": "Illness, burnout, a job, or simple loss of interest ends memberships regularly, and the members are the ones left holding an unusable subscription.\n\nDecide in advance: how much notice, whether the archive stays up, whether final months are refunded. Put it in the terms. It costs nothing now and it is the difference between a graceful close and a public mess.",
+    "excerpt": "Every membership ends. Most end badly because nobody planned it.",
+    "access": "member"
+  }
+]

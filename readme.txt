@@ -24,6 +24,7 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * **Content Gating** - Unlock premium content only after quiz completion or specific actions
 * **Offer Sequencing** - Show payment offers at the ideal moment in the visitor journey
 * **DA1 Catalogs** - Attach structured TSV catalogs to flows so floscAdmins can serve curated, flow-scoped datasets without hard-coding project-specific content
+* **Starter Packs** - Install a complete working journey in one click: a flow, the example posts it talks about, and the visitor / guest / member gating already wired
 * **Locally Stored** - All visitor data stays in your WordPress database by default
 * **AI-Ready** - Bring-your-own-key chat with Anthropic, OpenAI, xAI, or Gemini (or IVR scripted only). OpenAI, Anthropic, and Gemini chat use the WordPress 7.0 AI Client — install the official provider plugin for the agent this flow attaches. Speech-to-text: AssemblyAI, OpenAI Whisper, or a custom endpoint.
 * **WordPress Native** - Built as a standard WordPress plugin; no external platform required
@@ -48,6 +49,19 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 * **Community Membership** - Build engagement journeys that lead to membership signup and renewals
 * **Consulting Intake** - Conversational questionnaire that qualifies leads and captures intent before outreach
 * **Sample Content First** - From listen to a few songs first here, to read some of my poems, to try these free recipes, FLOSC allows you to give samples before selling.  
+
+= Starter Packs =
+
+A new install has nothing to say. A starter pack fixes that in one click, so you can see a journey work before you configure anything.
+
+Installing a pack creates a flow file in the FLOSC configuration folder, a WordPress category, and example posts inside it, each stamped with the access level it is gated at. Nothing is written to the plugin folder. A pack refuses rather than overwrites: if a flow file or category of the same name already exists, FLOSC tells you instead of replacing your work. Removing a pack deletes exactly what that pack created, found by its own stamp — never by title, date or category name.
+
+Two packs ship with FLOSC:
+
+* **WordPress Content Membership Journey** - 100 posts about running a membership site, gated 15 visitor / 25 guest / 60 member, with a flow that walks a stranger from the open shelf to the paid one
+* **DA1 Catalog Sales Journey** - a conversational catalog of fifty extremely ordinary instruction manuals, gated the same way, selling a compiled PDF
+
+Both are example content. Delete them, or take them apart and replace the subject with your own.
 
 = How It Works =
 
