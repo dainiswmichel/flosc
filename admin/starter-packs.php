@@ -19,12 +19,12 @@ if ( ! current_user_can( 'manage_options' ) ) {
 
 $flosc_sp_notice = array();
 
-// Handle install / remove.
-if ( isset( $_POST['flosc_sp_action'], $_POST['flosc_sp_slug'] ) ) {
+// Handle install / remove. Nonce first, then read anything from the request.
+if ( isset( $_POST['flosc_sp_action'] ) || isset( $_POST['flosc_sp_slug'] ) ) {
 	check_admin_referer( 'flosc_starter_packs' );
 
-	$flosc_sp_slug   = sanitize_key( wp_unslash( $_POST['flosc_sp_slug'] ) );
-	$flosc_sp_action = sanitize_key( wp_unslash( $_POST['flosc_sp_action'] ) );
+	$flosc_sp_slug   = isset( $_POST['flosc_sp_slug'] ) ? sanitize_key( wp_unslash( $_POST['flosc_sp_slug'] ) ) : '';
+	$flosc_sp_action = isset( $_POST['flosc_sp_action'] ) ? sanitize_key( wp_unslash( $_POST['flosc_sp_action'] ) ) : '';
 
 	if ( 'install' === $flosc_sp_action ) {
 		$flosc_sp_notice = FLOSC_Starter_Packs::install( $flosc_sp_slug );
@@ -42,24 +42,26 @@ $flosc_sp_packs   = FLOSC_Starter_Packs::discover();
 $flosc_sp_state   = FLOSC_Starter_Packs::state();
 $flosc_sp_voices  = function_exists( 'flosc_personality_library_get_all' ) ? flosc_personality_library_get_all() : array();
 
-/**
- * Admin URL for one FLOSC settings tab, optionally scoped to a flow.
- *
- * @param string $tab      Tab id as registered in admin/settings.php.
- * @param string $ivr_file Flow file the tab should open against.
- * @return string
- */
-function flosc_sp_tab_url( $tab, $ivr_file = '' ) {
-	$args = array(
-		'page' => 'flosc-settings',
-		'tab'  => $tab,
-	);
+if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
+	/**
+	 * Admin URL for one FLOSC settings tab, optionally scoped to a flow.
+	 *
+	 * @param string $tab      Tab id as registered in admin/settings.php.
+	 * @param string $ivr_file Flow file the tab should open against.
+	 * @return string
+	 */
+	function flosc_sp_tab_url( $tab, $ivr_file = '' ) {
+		$args = array(
+			'page' => 'flosc-settings',
+			'tab'  => $tab,
+		);
 
-	if ( '' !== $ivr_file ) {
-		$args['ivr'] = $ivr_file;
+		if ( '' !== $ivr_file ) {
+			$args['ivr'] = $ivr_file;
+		}
+
+		return add_query_arg( $args, admin_url( 'admin.php' ) );
 	}
-
-	return add_query_arg( $args, admin_url( 'admin.php' ) );
 }
 ?>
 
@@ -93,7 +95,7 @@ function flosc_sp_tab_url( $tab, $ivr_file = '' ) {
 			foreach ( $flosc_sp_packs as $flosc_sp_pack ) :
 				$flosc_sp_installed = FLOSC_Starter_Packs::is_installed( $flosc_sp_pack['slug'] );
 				?>
-				<div class="flosc-sp-card<?php echo $flosc_sp_installed ? ' is-installed' : ''; ?>">
+				<div class="<?php echo esc_attr( $flosc_sp_installed ? 'flosc-sp-card is-installed' : 'flosc-sp-card' ); ?>">
 
 					<h3>
 						<?php echo esc_html( (string) ( $flosc_sp_pack['name'] ?? $flosc_sp_pack['slug'] ) ); ?>
@@ -218,23 +220,4 @@ function flosc_sp_tab_url( $tab, $ivr_file = '' ) {
 	<?php endif; ?>
 </div>
 
-<style>
-.flosc-sp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr)); gap: 16px; margin-top: 18px; max-width: 78rem; }
-.flosc-sp-card { background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 18px 20px 20px; display: flex; flex-direction: column; }
-.flosc-sp-card.is-installed { border-color: #2c6349; }
-.flosc-sp-card h3 { margin: 0 0 8px; font-size: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.flosc-sp-badge { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; font-weight: 600; color: #2c6349; background: #e6f0ea; border: 1px solid #2c6349; border-radius: 3px; padding: 1px 6px; }
-.flosc-sp-summary { margin: 0 0 10px; color: #50575e; }
-.flosc-sp-conversion { margin: 0 0 12px; font-size: 13px; }
-.flosc-sp-conversion span { font-size: 11px; letter-spacing: .07em; text-transform: uppercase; color: #646970; font-weight: 600; margin-right: 6px; }
-.flosc-sp-installs { margin: 0 0 16px; padding-left: 18px; font-size: 13px; color: #50575e; }
-.flosc-sp-installs li { margin-bottom: 3px; }
-.flosc-sp-actions { margin-top: auto; }
-.flosc-sp-voice { background: #f6f7f7; border: 1px solid #dcdcde; border-radius: 4px; padding: 12px 14px; margin: 0 0 14px; }
-.flosc-sp-voice form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.flosc-sp-voice label { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #646970; }
-.flosc-sp-voice .description { margin: 8px 0 0; }
-.flosc-sp-next { margin: 0 0 14px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; }
-.flosc-sp-next li { margin: 0; }
-.flosc-sp-config { margin: 0 0 14px; padding: 10px 12px; background: #fcf9e8; border-left: 3px solid #dba617; font-size: 13px; color: #50575e; }
-</style>
+<?php // Starter Packs styles (.flosc-sp-*) live in assets/css/flosc-admin.css, enqueued on FLOSC admin pages. ?>

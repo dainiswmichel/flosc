@@ -191,7 +191,7 @@ class FLOSC_Starter_Packs {
 
 			wp_mkdir_p( dirname( $target ) );
 
-			if ( ! copy( $source, $target ) ) {
+			if ( ! self::place_file( $source, $target ) ) {
 				return self::result( false, __( 'The flow file could not be written. Check folder permissions.', 'flosc' ) );
 			}
 
@@ -249,7 +249,7 @@ class FLOSC_Starter_Packs {
 				);
 			}
 
-			if ( ! copy( $source, $target ) ) {
+			if ( ! self::place_file( $source, $target ) ) {
 				self::rollback( $record );
 				return self::result( false, __( 'The catalog file could not be written. Check folder permissions.', 'flosc' ) );
 			}
@@ -558,7 +558,7 @@ class FLOSC_Starter_Packs {
 			$file_name = wp_unique_filename( $uploads['path'], basename( $source ) );
 			$target    = trailingslashit( $uploads['path'] ) . $file_name;
 
-			if ( ! copy( $source, $target ) ) {
+			if ( ! self::place_file( $source, $target ) ) {
 				return array(
 					'ok'      => false,
 					'message' => __( 'A pack file could not be written to the uploads directory.', 'flosc' ),
@@ -594,6 +594,44 @@ class FLOSC_Starter_Packs {
 			'message' => sprintf( __( '%d product file(s) added to the media library.', 'flosc' ), count( $ids ) ),
 			'ids'     => $ids,
 		);
+	}
+
+	/**
+	 * Copy one file the pack ships into a writable FLOSC location.
+	 *
+	 * Never a raw copy(): reads the shipped file, then writes through the
+	 * plugin's own filesystem chokepoint, which refuses any path outside
+	 * uploads and goes through WP_Filesystem.
+	 *
+	 * @param string $source Absolute path of a file inside the plugin.
+	 * @param string $target Absolute path to write, under uploads.
+	 * @return bool Whether the file landed.
+	 */
+	private static function place_file( $source, $target ) {
+		if ( ! is_readable( $source ) ) {
+			return false;
+		}
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a file shipped inside the plugin.
+		$content = file_get_contents( $source );
+
+		if ( false === $content ) {
+			return false;
+		}
+
+		// The flow directory has its own guarded writer; everything else goes
+		// through the uploads-restricted one.
+		if ( function_exists( 'flosc_write_data_file' ) && 0 === strpos( $target, self::flow_dir() ) ) {
+			return (bool) flosc_write_data_file( $target, $content );
+		}
+
+		if ( ! class_exists( 'FLOSC_Filesystem' ) ) {
+			return false;
+		}
+
+		$fs = new FLOSC_Filesystem();
+
+		return (bool) $fs->write_file_safely( $target, $content );
 	}
 
 	/**
