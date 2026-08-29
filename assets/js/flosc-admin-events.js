@@ -186,3 +186,99 @@
         }
     });
 })();
+
+/*
+ * Accordion memory.
+ *
+ * FLOSC admin pages are built from <details> sections, some of which shipped
+ * with a hardcoded `open`. That meant a reload undid whatever tidying the
+ * operator had just done: a few sections sprang back open, others stayed shut,
+ * and which was which looked arbitrary.
+ *
+ * What an operator closes stays closed. What they open stays open. The state is
+ * remembered per page, per tab and per flow, so tidying one flow's AI settings
+ * does not rearrange another's. On a section's first visit — nothing remembered
+ * yet — the first one is open and the rest are closed.
+ *
+ * This is interface state, not FLOSC configuration, so it lives in the browser.
+ */
+(function () {
+    'use strict';
+
+    var STORE_PREFIX = 'floscAccordion:';
+
+    function scopeKey() {
+        var params = new URLSearchParams(window.location.search);
+        return STORE_PREFIX +
+            (params.get('page') || 'flosc') + ':' +
+            (params.get('tab') || 'default') + ':' +
+            (params.get('ivr') || 'all');
+    }
+
+    /* A key that survives reordering and translation: the element's own id when
+       it has one, otherwise its position among the sections on this page. */
+    function sectionKey(details, index) {
+        return details.id || ('section-' + index);
+    }
+
+    function read(key) {
+        try {
+            var raw = window.localStorage.getItem(key);
+            var parsed = raw ? JSON.parse(raw) : null;
+            return (parsed && typeof parsed === 'object') ? parsed : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function write(key, state) {
+        try {
+            window.localStorage.setItem(key, JSON.stringify(state));
+        } catch (e) {
+            /* Private browsing, or storage disabled. The page still works. */
+        }
+    }
+
+    function init() {
+        var sections = document.querySelectorAll('.flosc-admin details, .wrap details');
+
+        if (!sections.length) {
+            return;
+        }
+
+        var key = scopeKey();
+        var saved = read(key);
+        var state = saved || {};
+
+        Array.prototype.forEach.call(sections, function (details, index) {
+            var id = sectionKey(details, index);
+
+            if (saved && Object.prototype.hasOwnProperty.call(saved, id)) {
+                details.open = !!saved[id];
+            } else if (!saved) {
+                /* First visit to this page: first section open, rest closed. */
+                details.open = (index === 0);
+                state[id] = details.open;
+            } else {
+                /* A section added since the state was saved keeps its own default. */
+                state[id] = details.open;
+            }
+
+            details.addEventListener('toggle', function () {
+                state[id] = details.open;
+                write(key, state);
+            });
+        });
+
+        if (!saved) {
+            write(key, state);
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+

@@ -2426,10 +2426,12 @@ if (function_exists('wp_add_inline_style')) {
                     $flosc_status_badge_class = 'flosc-flow-status-badge' . ( $flosc_status_value === 'active' ? ' is-active' : ' is-draft' );
                 ?>
                 
-                <div class="<?php echo esc_attr( $flosc_flow_block_classes ); ?>">
+                <details class="<?php echo esc_attr( $flosc_flow_block_classes ); ?>" id="<?php echo esc_attr( 'flosc-flow-card-' . sanitize_key( pathinfo( $flosc_ivr_file, PATHINFO_FILENAME ) ) ); ?>" <?php if ( $flosc_is_current ) : ?>open<?php endif; ?>>
                     
-                    <!-- Flow Header with IVR file -->
-                    <div class="flosc-flow-block__header">
+                    <!-- Flow header. Doubles as the card's summary so a long list
+                         of flows reads as a list, and the accordion memory can
+                         keep each one the way the operator left it. -->
+                    <summary class="flosc-flow-block__header">
                         <div>
                             <h3 class="flosc-flow-block__title">
                                 <?php echo esc_html($flosc_settings['name'] ?? $flosc_ivr_file); ?>
@@ -2446,7 +2448,7 @@ if (function_exists('wp_add_inline_style')) {
                                 <?php echo esc_html(ucfirst($flosc_status_value)); ?>
                             </span>
                         </div>
-                    </div>
+                    </summary>
                     
                     <!-- URL Mapping Summary -->
                     <div class="flosc-flow-block__url-box">
@@ -2608,7 +2610,7 @@ if (function_exists('wp_add_inline_style')) {
                             Save <?php echo esc_html($flosc_settings['name'] ?? $flosc_ivr_file); ?>
                         </button>
                     </div>
-                </div>
+                </details>
                 
                 <?php endforeach; ?>
                 

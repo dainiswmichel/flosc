@@ -633,8 +633,16 @@ class FLOSC_Starter_Packs {
 			$term_id = isset( $term_ids[ $slug ] ) ? (int) $term_ids[ $slug ] : (int) reset( $term_ids );
 			$item    = isset( $entry['item'] ) ? (int) $entry['item'] : $count + 1;
 
+			// Already on the site and owned by this pack. Count it where it
+			// lives, so the card's per-category links stay truthful after an
+			// orphan is adopted.
 			if ( isset( $have[ $item ] ) ) {
 				++$count;
+
+				if ( ! isset( $per_category[ $term_id ] ) ) {
+					$per_category[ $term_id ] = 0;
+				}
+				++$per_category[ $term_id ];
 				continue;
 			}
 
