@@ -21,19 +21,14 @@ class FLOSC_Starter_Packs {
 	/** Post meta stamped on every post a pack creates. */
 	const POST_STAMP = '_flosc_starter_pack';
 
+	/** Post meta holding the pack's own item number, 1..N. */
+	const POST_ITEM_STAMP = '_flosc_starter_pack_item';
+
 	/** Term meta stamped on the category a pack creates. */
 	const TERM_STAMP = '_flosc_starter_pack';
 
 	/** Option holding what is currently installed. */
 	const STATE_OPTION = 'flosc_starter_packs_installed';
-
-	/**
-	 * Category the example posts land in unless a pack or the operator says
-	 * otherwise. Prefixed so it never collides with a category the site
-	 * already uses, and shared across packs so example content stays in one
-	 * recognisable place.
-	 */
-	const DEFAULT_CATEGORY_SLUG = 'flosc-example-content';
 
 	/**
 	 * Absolute path to the shipped packs directory.
@@ -151,11 +146,10 @@ class FLOSC_Starter_Packs {
 	 * Refuses rather than overwrites: if the flow file or the category already
 	 * exists, the operator is told instead of losing work they did themselves.
 	 *
-	 * @param string $slug          Pack slug.
-	 * @param string $category_slug Optional category slug for example posts.
+	 * @param string $slug Pack slug.
 	 * @return array{ok:bool,message:string,detail:array<int,string>}
 	 */
-	public static function install( $slug, $category_slug = '' ) {
+	public static function install( $slug ) {
 		$pack = self::get( $slug );
 
 		if ( null === $pack ) {
@@ -209,7 +203,7 @@ class FLOSC_Starter_Packs {
 
 		// --- category and posts ---
 		if ( ! empty( $pack['content']['file'] ) ) {
-			$installed = self::install_content( $pack, $category_slug );
+			$installed = self::install_content( $pack );
 
 			if ( ! $installed['ok'] ) {
 				self::rollback( $record );
@@ -288,6 +282,21 @@ class FLOSC_Starter_Packs {
 			}
 		}
 
+		// --- product files ---
+		if ( ! empty( $pack['assets'] ) ) {
+			$assets = self::install_assets( $pack );
+
+			if ( ! $assets['ok'] ) {
+				self::rollback( $record );
+				return self::result( false, $assets['message'] );
+			}
+
+			if ( ! empty( $assets['ids'] ) ) {
+				$record['attachment_ids'] = $assets['ids'];
+				$detail[]                 = $assets['message'];
+			}
+		}
+
 		// --- register the flow ---
 		// Copying the markdown is not enough. A flow only exists once it has a
 		// per-flow option holding its messages, and the operator should not have
@@ -330,11 +339,10 @@ class FLOSC_Starter_Packs {
 	/**
 	 * Create the pack's category and its posts.
 	 *
-	 * @param array<string,mixed> $pack          Manifest.
-	 * @param string              $category_slug Operator override, if any.
+	 * @param array<string,mixed> $pack Manifest.
 	 * @return array{ok:bool,message:string,detail:array<int,string>,record:array<string,mixed>}
 	 */
-	private static function install_content( $pack, $category_slug = '' ) {
+	private static function install_content( $pack ) {
 		$source = $pack['dir'] . basename( (string) $pack['content']['file'] );
 
 		if ( ! is_readable( $source ) ) {
@@ -342,91 +350,242 @@ class FLOSC_Starter_Packs {
 		}
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a file shipped inside the plugin.
-		$posts = json_decode( (string) file_get_contents( $source ), true );
+		$doc = json_decode( (string) file_get_contents( $source ), true );
 
-		if ( ! is_array( $posts ) || empty( $posts ) ) {
+		if ( ! is_array( $doc ) || empty( $doc['posts'] ) || ! is_array( $doc['posts'] ) ) {
 			return self::result( false, __( 'The pack content file could not be read.', 'flosc' ) ) + array( 'record' => array() );
 		}
 
-		// Operator override wins, then the pack's own preference, then the shared default.
-		$category_slug = sanitize_title( (string) $category_slug );
+		$categories = ( isset( $doc['categories'] ) && is_array( $doc['categories'] ) ) ? $doc['categories'] : array();
 
-		if ( '' === $category_slug ) {
-			$category_slug = sanitize_title( (string) ( $pack['content']['category_slug'] ?? self::DEFAULT_CATEGORY_SLUG ) );
+		if ( empty( $categories ) ) {
+			return self::result( false, __( 'The pack content file names no categories.', 'flosc' ) ) + array( 'record' => array() );
 		}
 
-		if ( '' === $category_slug ) {
-			$category_slug = self::DEFAULT_CATEGORY_SLUG;
+		// The flow references these category slugs by name, so they are the
+		// pack's to define. Refuse if any already exists rather than adopting
+		// a category the operator built for something else.
+		foreach ( $categories as $category ) {
+			$slug = sanitize_title( (string) ( $category['slug'] ?? '' ) );
+
+			if ( '' === $slug ) {
+				return self::result( false, __( 'The pack names a category with no slug.', 'flosc' ) ) + array( 'record' => array() );
+			}
+
+			if ( term_exists( $slug, 'category' ) ) {
+				return self::result(
+					false,
+					sprintf(
+						/* translators: %s: category slug. */
+						__( 'A category %s already exists. Rename or remove it first.', 'flosc' ),
+						$slug
+					)
+				) + array( 'record' => array() );
+			}
 		}
 
-		$category_name = (string) ( $pack['content']['category'] ?? 'FLOSC Example Content' );
+		// Parents before children, so a child can resolve its parent's id.
+		$term_ids   = array();
+		$created    = array();
+		$pending    = $categories;
+		$safety     = count( $categories ) + 1;
 
-		if ( term_exists( $category_slug, 'category' ) ) {
-			return self::result(
-				false,
-				sprintf(
-					/* translators: %s: category slug. */
-					__( 'A category %s already exists. Rename or remove it first.', 'flosc' ),
-					$category_slug
-				)
-			) + array( 'record' => array() );
+		while ( ! empty( $pending ) && $safety-- > 0 ) {
+			$still_pending = array();
+
+			foreach ( $pending as $category ) {
+				$slug   = sanitize_title( (string) $category['slug'] );
+				$parent = sanitize_title( (string) ( $category['parent'] ?? '' ) );
+
+				if ( '' !== $parent && ! isset( $term_ids[ $parent ] ) ) {
+					$still_pending[] = $category;
+					continue;
+				}
+
+				$term = wp_insert_term(
+					sanitize_text_field( (string) ( $category['name'] ?? $slug ) ),
+					'category',
+					array(
+						'slug'        => $slug,
+						'description' => sanitize_text_field( (string) ( $category['description'] ?? '' ) ),
+						'parent'      => '' !== $parent ? (int) $term_ids[ $parent ] : 0,
+					)
+				);
+
+				if ( is_wp_error( $term ) ) {
+					return self::result( false, $term->get_error_message() ) + array( 'record' => array( 'category_ids' => $created ) );
+				}
+
+				$term_id            = (int) $term['term_id'];
+				$term_ids[ $slug ]  = $term_id;
+				$created[]          = $term_id;
+
+				add_term_meta( $term_id, self::TERM_STAMP, $pack['slug'], true );
+
+				if ( ! empty( $category['term_meta'] ) && is_array( $category['term_meta'] ) ) {
+					foreach ( $category['term_meta'] as $meta_key => $meta_value ) {
+						add_term_meta( $term_id, sanitize_key( (string) $meta_key ), sanitize_text_field( (string) $meta_value ), true );
+					}
+				}
+			}
+
+			$pending = $still_pending;
 		}
 
-		$term = wp_insert_term( $category_name, 'category', array( 'slug' => $category_slug ) );
-
-		if ( is_wp_error( $term ) ) {
-			return self::result( false, $term->get_error_message() ) + array( 'record' => array() );
+		if ( ! empty( $pending ) ) {
+			return self::result( false, __( 'The pack category hierarchy could not be resolved.', 'flosc' ) ) + array( 'record' => array( 'category_ids' => $created ) );
 		}
 
-		$term_id = (int) $term['term_id'];
-		add_term_meta( $term_id, self::TERM_STAMP, $pack['slug'], true );
+		$count = 0;
 
-		$created = 0;
-
-		foreach ( $posts as $entry ) {
+		foreach ( $doc['posts'] as $entry ) {
 			if ( ! is_array( $entry ) || empty( $entry['title'] ) ) {
 				continue;
 			}
 
-			$post_id = wp_insert_post(
-				array(
-					'post_title'    => sanitize_text_field( (string) $entry['title'] ),
-					'post_content'  => wp_kses_post( (string) ( $entry['content'] ?? '' ) ),
-					'post_excerpt'  => sanitize_text_field( (string) ( $entry['excerpt'] ?? '' ) ),
-					'post_status'   => 'publish',
-					'post_type'     => 'post',
-					'post_category' => array( $term_id ),
-					'meta_input'    => array(
-						self::POST_STAMP => $pack['slug'],
-					),
+			$slug     = sanitize_title( (string) ( $entry['category'] ?? '' ) );
+			$term_id  = isset( $term_ids[ $slug ] ) ? (int) $term_ids[ $slug ] : (int) reset( $term_ids );
+			$item     = isset( $entry['item'] ) ? (int) $entry['item'] : $count + 1;
+			$post_arg = array(
+				'post_title'    => sanitize_text_field( (string) $entry['title'] ),
+				'post_content'  => wp_kses_post( (string) ( $entry['content'] ?? '' ) ),
+				'post_excerpt'  => sanitize_text_field( (string) ( $entry['excerpt'] ?? '' ) ),
+				'post_status'   => 'publish',
+				'post_type'     => 'post',
+				'post_category' => array( $term_id ),
+				'meta_input'    => array(
+					self::POST_STAMP        => $pack['slug'],
+					self::POST_ITEM_STAMP   => $item,
+					'_flosc_lesson_number'  => $item,
 				),
-				true
 			);
 
-			if ( ! is_wp_error( $post_id ) ) {
-				$created++;
+			$post_slug = sanitize_title( (string) ( $entry['slug'] ?? '' ) );
 
-				// Access level the journey gates this post at, when the pack says so.
-				if ( ! empty( $entry['access'] ) ) {
-					update_post_meta( $post_id, '_flosc_access_level', sanitize_key( (string) $entry['access'] ) );
-				}
+			if ( '' !== $post_slug ) {
+				$post_arg['post_name'] = $post_slug;
+			}
+
+			$post_id = wp_insert_post( $post_arg, true );
+
+			if ( is_wp_error( $post_id ) ) {
+				continue;
+			}
+
+			++$count;
+
+			// The tier the runtime gates on, plus the starter pack's own record
+			// of what the WXR called it.
+			$access = sanitize_key( (string) ( $entry['access'] ?? 'member' ) );
+
+			if ( ! in_array( $access, array( 'visitor', 'guest', 'member' ), true ) ) {
+				$access = 'member';
+			}
+
+			update_post_meta( $post_id, '_flosc_access_level', $access );
+
+			if ( ! empty( $entry['starter_access'] ) ) {
+				update_post_meta( $post_id, '_flosc_starter_access', sanitize_key( (string) $entry['starter_access'] ) );
+			}
+
+			if ( ! empty( $entry['protection_mode'] ) ) {
+				update_post_meta( $post_id, '_flosc_protection_mode', sanitize_key( (string) $entry['protection_mode'] ) );
 			}
 		}
 
 		return array(
 			'ok'      => true,
 			'message' => sprintf(
-				/* translators: 1: number of posts, 2: category name. */
-				__( '%1$d posts created in the %2$s category.', 'flosc' ),
-				$created,
-				$category_name
+				/* translators: 1: number of posts, 2: number of categories. */
+				__( '%1$d posts created across %2$d categories.', 'flosc' ),
+				$count,
+				count( $created )
 			),
 			'detail'  => array(),
 			'record'  => array(
-				'category_id'   => $term_id,
-				'category_slug' => $category_slug,
-				'post_count'    => $created,
+				'category_ids'  => $created,
+				'category_slug' => (string) ( $categories[0]['slug'] ?? '' ),
+				'post_count'    => $count,
 			),
+		);
+	}
+
+	/**
+	 * Copy a pack's product file into the media library.
+	 *
+	 * Sideloads from inside the plugin — never a remote fetch — so a pack's PDF
+	 * is present without the operator uploading it by hand.
+	 *
+	 * @param array<string,mixed> $pack Manifest.
+	 * @return array{ok:bool,message:string,ids:array<int,int>}
+	 */
+	private static function install_assets( $pack ) {
+		$ids = array();
+
+		if ( empty( $pack['assets'] ) || ! is_array( $pack['assets'] ) ) {
+			return array( 'ok' => true, 'message' => '', 'ids' => $ids );
+		}
+
+		$uploads = wp_upload_dir();
+
+		if ( ! empty( $uploads['error'] ) ) {
+			return array( 'ok' => false, 'message' => (string) $uploads['error'], 'ids' => $ids );
+		}
+
+		foreach ( $pack['assets'] as $asset ) {
+			if ( ! is_array( $asset ) || empty( $asset['file'] ) ) {
+				continue;
+			}
+
+			$source = $pack['dir'] . basename( (string) $asset['file'] );
+
+			if ( ! is_readable( $source ) ) {
+				return array(
+					'ok'      => false,
+					/* translators: %s: file name. */
+					'message' => sprintf( __( 'The pack is missing %s.', 'flosc' ), basename( (string) $asset['file'] ) ),
+					'ids'     => $ids,
+				);
+			}
+
+			$file_name = wp_unique_filename( $uploads['path'], basename( $source ) );
+			$target    = trailingslashit( $uploads['path'] ) . $file_name;
+
+			if ( ! copy( $source, $target ) ) {
+				return array(
+					'ok'      => false,
+					'message' => __( 'A pack file could not be written to the uploads directory.', 'flosc' ),
+					'ids'     => $ids,
+				);
+			}
+
+			$type    = wp_check_filetype( $file_name, null );
+			$post_id = wp_insert_attachment(
+				array(
+					'post_mime_type' => (string) ( $type['type'] ?? 'application/octet-stream' ),
+					'post_title'     => sanitize_text_field( (string) ( $asset['title'] ?? $file_name ) ),
+					'post_content'   => sanitize_text_field( (string) ( $asset['description'] ?? '' ) ),
+					'post_status'    => 'inherit',
+					'meta_input'     => array( self::POST_STAMP => $pack['slug'] ),
+				),
+				$target,
+				0,
+				true
+			);
+
+			if ( is_wp_error( $post_id ) ) {
+				wp_delete_file( $target );
+				return array( 'ok' => false, 'message' => $post_id->get_error_message(), 'ids' => $ids );
+			}
+
+			$ids[] = (int) $post_id;
+		}
+
+		return array(
+			'ok'      => true,
+			/* translators: %d: number of files. */
+			'message' => sprintf( __( '%d product file(s) added to the media library.', 'flosc' ), count( $ids ) ),
+			'ids'     => $ids,
 		);
 	}
 
@@ -609,6 +768,15 @@ class FLOSC_Starter_Packs {
 	private static function rollback( $record ) {
 		$detail = array();
 
+		if ( ! empty( $record['attachment_ids'] ) && is_array( $record['attachment_ids'] ) ) {
+			foreach ( $record['attachment_ids'] as $attachment_id ) {
+				wp_delete_attachment( (int) $attachment_id, true );
+			}
+
+			/* translators: %d: number of files removed. */
+			$detail[] = sprintf( __( '%d product file(s) removed.', 'flosc' ), count( $record['attachment_ids'] ) );
+		}
+
 		// Posts, found by their stamp rather than by title, date or category.
 		if ( ! empty( $record['pack_slug'] ) ) {
 			$slug  = (string) $record['pack_slug'];
@@ -631,9 +799,14 @@ class FLOSC_Starter_Packs {
 			$detail[] = sprintf( __( '%d posts removed.', 'flosc' ), count( (array) $found ) );
 		}
 
-		if ( ! empty( $record['category_id'] ) ) {
-			wp_delete_term( (int) $record['category_id'], 'category' );
-			$detail[] = __( 'Category removed.', 'flosc' );
+		// Children first, so a parent is never deleted out from under one.
+		if ( ! empty( $record['category_ids'] ) && is_array( $record['category_ids'] ) ) {
+			foreach ( array_reverse( $record['category_ids'] ) as $term_id ) {
+				wp_delete_term( (int) $term_id, 'category' );
+			}
+
+			/* translators: %d: number of categories removed. */
+			$detail[] = sprintf( __( '%d categories removed.', 'flosc' ), count( $record['category_ids'] ) );
 		}
 
 		if ( ! empty( $record['flow_file'] ) ) {

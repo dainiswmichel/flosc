@@ -1,104 +1,143 @@
-# DA1 Catalog Sales Journey — IVR Configuration
-# Purpose: a complete, working journey you can watch end to end, then take apart.
-# Subject: fifty instruction manuals for things that do not have instruction manuals.
-# Conversion: the UberManual — all fifty compiled into one PDF, $10.
-# Nothing here is specific to manuals. Swap the catalog and the journey still works.
+# DA1 Catalog Sales Journey
+# FLOSC Starter Pack
+# Demonstrates a content-agnostic DA1 catalog as a Freeline -> Guest -> Sale -> Member journey.
+# Existing personality reference only; no personality is bundled with this starter pack.
+
+## Settings (YAML)
+```yaml
+name: "DA1 Catalog Sales Journey"
+personality_library_id: "dadjokedan"
+ai_enable_ivr_context: true
+ai_enable_content_access: true
+ai_topic_scope: "The Extremely Ordinary Instruction Manual Collection"
+ai_base_prompt: "Help users explore the 50-item DA1 catalog called The Extremely Ordinary Instruction Manual Collection. Use the catalog's Dublin Core-compatible Title, Description, Subject, Identifier, Type, and Relation metadata to understand and recommend items. Respect VGM access at all times. Visitors can access Items 1, 11, 21, and 35. Guests can additionally access Items 2, 12, 22, and 36. Members can access all 50. Do not reveal protected catalog content to a lower access tier. When a visitor or Guest wants the complete collection, present the $10 USD UberManual offer. A successful purchase grants Member access to the full catalog; the compiled product is UberManual.pdf."
+companion_enabled: true
+companion_show_for_visitors: 1
+companion_greeting: "Welcome to the DA1 Catalog Sales Journey."
+offer_id: "dcsj_ubermanual"
+offer_name: "The UberManual"
+offer_type: "one-time"
+offer_price: 10
+offer_display_price: "$10"
+offer_currency: "USD"
+offer_processor: "paypal"
+offer_grants_level: "member"
+offer_active: 1
+```
 
 ---
 
-# Freeline Messages (visitors)
+# Freeline Messages
 
-## Welcome
-MessageName: da1_sales_welcome
+## DCSJ Welcome
+MessageName: dcsj_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: We wrote instruction manuals for fifty things that do not have instruction manuals. Opening a jar that has decided otherwise. Locating the end of the sticky tape. Four of them are open to you right now — ask me for one. (Configure an AI provider under Settings → AI and I get considerably better at this.)
+MessageContent: Welcome to the **DA1 Catalog Sales Journey**. This DA1 catalog contains **50 extremely ordinary instruction manuals**. Freeline access includes Items **1, 11, 21, and 35**. I know. Four manuals at once. Please try to remain calm.
 MessageConditions: is_visitor && first_show_session
 
 ---
 
-## Show me a manual
-MessageName: da1_sales_show_manual
+## Browse the Freeline Catalog
+MessageName: dcsj_browse_freeline
 MessageType: suggested_user_autoprompt
-MessageStyle: card
-UserInput: Show me one of these manuals
-MessageContent: Happily. Four are open to visitors — opening a stubborn jar, silencing a smoke alarm at 3 AM, explaining a board game rule you half remember, and one about a duvet cover. Which sounds most like your week?
+MessageStyle: pill
+UserInput: Show me the Freeline manuals
+MessageContent: Freeline Items **1, 11, 21, and 35** are available. Tell me which ordinary household problem deserves a disproportionate amount of documentation.
 MessageConditions: is_visitor || is_guest || is_member
-Keywords: manual, manuals, show me, catalog, browse, list
+Keywords: freeline, catalog, manuals, da1, public manuals
 
 ---
 
-## How many are there
-MessageName: da1_sales_count
+## Unlock Guest Samples
+MessageName: dcsj_login_prompt
 MessageType: suggested_user_autoprompt
-MessageStyle: card
-UserInput: How many manuals are there?
-MessageContent: Fifty in total. You can reach four. Guests reach eight. Members reach all fifty. It is the same catalog either way — what changes is how much of it I am allowed to show you.
+MessageStyle: pill
+UserInput: Unlock the Guest catalog samples
+Action: open_login_modal
+MessageContent: Guest access adds Items **2, 12, 22, and 36**, giving you eight catalog samples in total before the sales offer.
 MessageConditions: is_visitor
-Keywords: how many, count, total, number
+Keywords: guest, login, unlock, samples, catalog
 
 ---
 
-## What is the UberManual
-MessageName: da1_sales_ubermanual_visitor
-MessageType: suggested_user_autoprompt
-MessageStyle: card
-UserInput: What is the UberManual?
-MessageContent: All fifty manuals compiled into one PDF. Four hundred pages of procedure for things that need no procedure. We believe it is the most boring document ever assembled, and we mean that as a specification. Several people have an AI voice read it to them at bedtime. Nobody has finished chapter two.
-MessageConditions: is_visitor || is_guest || is_member
-Keywords: ubermanual, uber manual, pdf, buy, purchase, price
-
----
-
-# Guest Messages
+# Login Messages
 
 ## Guest Welcome
-MessageName: da1_sales_guest_welcome
+MessageName: dcsj_guest_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: You have eight manuals now instead of four. The new ones include emergency procedures for a jammed zipper, and refolding a road map — which we rate Advanced and mean it. Ask me for either.
+MessageContent: Guest access confirmed. You now have **8 sample manuals**: the four Freeline items plus Items **2, 12, 22, and 36**. If that has created an urgent need for all fifty, the situation is functioning as designed.
 MessageConditions: is_guest && first_show_session
 
 ---
 
-## What did I unlock
-MessageName: da1_sales_guest_unlocked
+## Browse Guest Samples
+MessageName: dcsj_browse_guest
 MessageType: suggested_user_autoprompt
-MessageStyle: card
-UserInput: What did I just unlock?
-MessageContent: Four more manuals. Jammed zippers, parallel parking without an audience, refolding a road map, and getting a fitted bin bag into a bin. Members reach the remaining forty-two, including the one about carrying a mattress upstairs alone, which ends by recommending you ask a friend.
+MessageStyle: pill
+UserInput: Show me another catalog sample
+MessageContent: Tell me what you are dealing with: sheets, wastebaskets, toilet paper, light switch covers, or another household matter of grave procedural importance.
 MessageConditions: is_guest
-Keywords: unlock, unlocked, what do i get, access, more
+Keywords: guest samples, sample manual, browse catalog, manuals
 
 ---
 
-# Member Messages
+# Offer Messages
 
-## Member Welcome
-MessageName: da1_sales_member_welcome
+## The UberManual Offer
+MessageName: dcsj_ubermanual_offer
+MessageType: offer
+MessageStyle: card
+OfferID: dcsj_ubermanual
+Price: 10.00
+DisplayFormat: card
+MessageContent: **The UberManual - $10 USD.** Get the compiled PDF containing **all 50 Extremely Ordinary Instruction Manuals**, and unlock Member access to the complete DA1 catalog. Fifty manuals. One PDF. Considerably more procedural certainty than most households require.
+MessageConditions: !purchased
+
+---
+
+## Show the UberManual
+MessageName: dcsj_show_ubermanual
+MessageType: suggested_user_autoprompt
+MessageStyle: pill
+UserInput: Show me the $10 UberManual
+Action: show_offer_dcsj_ubermanual
+MessageContent: The **$10 UberManual** compiles all 50 catalog items into one PDF and unlocks the complete Member catalog.
+MessageConditions: !purchased
+Keywords: ubermanual, buy, purchase, all 50, pdf, full catalog, $10
+
+---
+
+# Sale Messages
+
+## Purchase Complete
+MessageName: dcsj_purchase_complete
 MessageType: auto
 MessageStyle: card
-MessageContent: All fifty are open to you. Ask for any of them by name, or tell me what went wrong today and I will find the one that covers it.
-MessageConditions: is_member && first_show_session
+MessageContent: Purchase complete. **Member access is now active for all 50 DA1 catalog items.** The product for this starter journey is **UberManual.pdf**, the compiled collection of all fifty manuals.
+MessageConditions: is_member && first_message_after_purchase
 
 ---
 
-## Read me the boring one
-MessageName: da1_sales_member_ubermanual
-MessageType: suggested_user_autoprompt
-MessageStyle: card
-UserInput: Tell me about the UberManual
-MessageContent: Four hundred pages, fifty manuals, one PDF. Chapter one is about a jar. There is no narrative tension anywhere in it, which is the entire point — it is designed to be read aloud until you stop listening. If you want it, I can take you to the offer.
-MessageConditions: is_member || is_guest
-Keywords: ubermanual, uber manual, boring, sleep, audio, read to me
+# Content Messages
 
----
-
-## How was this built
-MessageName: da1_sales_member_howbuilt
+## Browse the Full DA1 Catalog
+MessageName: dcsj_browse_member
 MessageType: suggested_user_autoprompt
-MessageStyle: card
-UserInput: How was this journey built?
-MessageContent: A DA1 catalog of fifty rows, each tagged Freeline, Guest or Member. A flow that decides what I say at each stage. An offer at the end. Nothing in it is specific to manuals — swap the catalog for recipes, properties or courses and the same journey runs. That is what this pack is really demonstrating.
+MessageStyle: pill
+UserInput: Browse all 50 manuals
+MessageContent: All fifty catalog items are available. Give me a title, identifier, subject, or ordinary household problem and I will find the relevant manual.
 MessageConditions: is_member
-Keywords: how was this built, how does this work, flosc, journey, built
+Keywords: all manuals, full catalog, all 50, browse, da1
+
+---
+
+## Find a Particularly Serious Manual
+MessageName: dcsj_featured_manual
+MessageType: suggested_user_autoprompt
+MessageStyle: pill
+UserInput: Find me a ridiculously serious manual
+MessageContent: Excellent. I can search the full DA1 catalog by title, description, subject, or intent. We have procedures for fitted sheets, remote controls, crooked frames, hot beverages, and other areas of civilization that have gone dangerously under-documented.
+MessageConditions: is_member
+Keywords: serious manual, ridiculous, ordinary, find manual

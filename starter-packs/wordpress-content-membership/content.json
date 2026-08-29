@@ -1,602 +1,1139 @@
-[
-  {
-    "title": "What a Membership Site Actually Sells",
-    "content": "A membership is not a folder of downloads with a password on it. A download is finished the moment it lands. A membership is a standing promise: something useful will keep arriving, and you will keep being the person it arrives from.\n\nThat distinction decides everything downstream — what you publish, how often, and why anyone stays past month three. If you cannot name what keeps arriving, you have a product, not a membership.",
-    "excerpt": "You are not selling files. You are selling the promise that more is coming.",
-    "access": "visitor"
-  },
-  {
-    "title": "The Three Tiers Almost Everyone Needs",
-    "content": "Public content is your argument. Registered content is your handshake. Paid content is your promise. Three tiers cover nearly every membership site ever built, and the sites that struggle are usually the ones that started with seven.\n\nFLOSC names these visitor, guest, and member. The names matter less than the discipline: every piece of content you publish belongs to exactly one of them, and you should be able to say why in one sentence.",
-    "excerpt": "Public, registered, paying. Most sites need exactly these and no more.",
-    "access": "visitor"
-  },
-  {
-    "title": "Give Away the What, Sell the How",
-    "content": "Publish the diagnosis freely. Charge for the treatment. Anyone can read that their email open rates are low; the sequence that fixes them is worth paying for.\n\nThis is not a trick. It is honest structure. The free tier has to be genuinely useful or nobody trusts the paid tier enough to buy it — and the paid tier has to be genuinely different or nobody stays.",
-    "excerpt": "The oldest working rule in gated content, and still the best one.",
-    "access": "visitor"
-  },
-  {
-    "title": "Why Most Membership Sites Die in Month Four",
-    "content": "Launch energy is real and it lasts about three months. Founding members are patient, the novelty is doing work, and your own enthusiasm covers a lot of gaps.\n\nMonth four is when the first renewal notices go out to people who have not logged in since week two. The sites that survive it are the ones that built a publishing rhythm before they needed one.",
-    "excerpt": "The launch carries you ninety days. Nothing carries you after that but cadence.",
-    "access": "visitor"
-  },
-  {
-    "title": "You Need Fewer Members Than You Think",
-    "content": "Two hundred members at ten a month is two thousand a month. Forty members at fifty a month is the same two thousand, with a fifth of the support load and far better conversations.\n\nRun that calculation before you choose a price, because it usually changes the price. Almost nobody needs a thousand members. Most people need eighty of the right ones.",
-    "excerpt": "Do the arithmetic before you build anything.",
-    "access": "visitor"
-  },
-  {
-    "title": "Free Trials Versus Free Tiers",
-    "content": "A free trial is a countdown: full access, then a decision. It converts well for products with a fast payoff, and badly for anything whose value takes a month to feel.\n\nA free tier has no ending. It is a permanent room with a visible door to a better one. It converts slower and holds longer. If your value compounds, choose the tier.",
-    "excerpt": "One has an ending. The other has a doorway. They are not interchangeable.",
-    "access": "visitor"
-  },
-  {
-    "title": "What to Publish Before You Charge Anything",
-    "content": "Nobody subscribes to a promise from a stranger. Publish twenty pieces of genuinely useful public work first — enough that someone can binge an afternoon and conclude you know the subject.\n\nThat archive is what makes the paid tier believable. It also tells you, before you have taken anyone's money, whether you can actually sustain a publishing rhythm.",
-    "excerpt": "Twenty pieces of public work. Then open the door.",
-    "access": "visitor"
-  },
-  {
-    "title": "The Login Wall Is a Conversation, Not a Gate",
-    "content": "The standard pattern is brutal: three paragraphs, then a wall, then a price. The reader was interested one second ago and is now annoyed.\n\nThe better pattern says what is behind the wall, why it is there, and what happens next — in the reader's language, at the moment they hit it. That is exactly the moment a conversational flow does its best work.",
-    "excerpt": "Most sites make it a slammed door. It does not have to be.",
-    "access": "visitor"
-  },
-  {
-    "title": "Pricing Is Positioning",
-    "content": "Five a month says newsletter. Fifty a month says professional tool. Five hundred a month says this replaces a consultant. The number is a category signal, and readers decode it instantly.\n\nSo pick the category first, then the number. Pricing upward from your costs almost always lands you in a category you did not mean to enter.",
-    "excerpt": "Your price tells people what kind of thing you are before they read a word.",
-    "access": "visitor"
-  },
-  {
-    "title": "Do Not Gate Your Best Argument",
-    "content": "Founders reliably put their sharpest work behind the wall because it feels most valuable. It is — which is exactly why locking it costs you the members it would have won.\n\nYour best public piece is your salesperson. Let it work. Gate the depth behind it: the templates, the walkthroughs, the specifics.",
-    "excerpt": "The piece that convinces people should be the one they can read.",
-    "access": "visitor"
-  },
-  {
-    "title": "Annual Plans Fix Churn Arithmetic",
-    "content": "Monthly billing gives every member twelve annual opportunities to reconsider. Annual billing gives them one, and hands you the cash up front to build with.\n\nTwo months free is the conventional discount and it works. Offer it at signup and again at the first renewal, which is the moment a happy member is most willing to commit.",
-    "excerpt": "One decision a year instead of twelve chances to leave.",
-    "access": "visitor"
-  },
-  {
-    "title": "Community Is a Feature With a Staffing Cost",
-    "content": "Community is the strongest retention feature there is and the most expensive to run. An empty forum actively signals that the membership is dying.\n\nIf you cannot commit to seeding and moderating it daily for the first six months, ship without it. You can add a community to a healthy membership. You cannot use one to rescue a quiet one.",
-    "excerpt": "A forum with nobody in it is worse than no forum.",
-    "access": "visitor"
-  },
-  {
-    "title": "Every Membership Needs an Obvious Next Step",
-    "content": "The most common failure in gated sites is not the gate — it is the dead end. A visitor reads something good, reaches the bottom, and finds nothing but a footer.\n\nEvery page for every tier should end pointing somewhere: the next piece, the signup, the upgrade, the conversation. Never a dead end, at any tier.",
-    "excerpt": "At any moment, the reader should know what to do next without asking.",
-    "access": "visitor"
-  },
-  {
-    "title": "The Welcome Email Is Half Your Retention",
-    "content": "The first email after signup does more retention work than anything you publish in month two. Most sites waste it on a receipt.\n\nSay what to read first, what arrives next and when, and how to reach a human. Three things. Send it immediately, and make it sound like a person wrote it.",
-    "excerpt": "Members decide how they feel about you in the first ten minutes.",
-    "access": "visitor"
-  },
-  {
-    "title": "Start With One Tier and Earn the Second",
-    "content": "Multiple tiers mean multiple content calendars, multiple upgrade paths, and a support inbox full of people asking which one they are on.\n\nLaunch with one paid tier. Add a second only when members ask for something the first does not cover — and they will tell you exactly what it is.",
-    "excerpt": "Complexity is a cost you pay every day.",
-    "access": "visitor"
-  },
-  {
-    "title": "Choosing Your Publishing Cadence",
-    "content": "Weekly beats daily if daily means you quit in June. Members forgive a slow rhythm and punish a broken one, because a broken rhythm makes them wonder whether the site is still alive.\n\nAnnounce the cadence publicly. That commitment is a feature — it tells members what they are buying — and it forces you to choose one you can actually sustain through a bad month.",
-    "excerpt": "Pick the slowest rhythm you can keep forever, then keep it.",
-    "access": "guest"
-  },
-  {
-    "title": "The Content Bank You Should Have Before Launch",
-    "content": "Launch week eats more time than you plan for. Support questions, billing edge cases, the one plugin conflict nobody caught — all of it lands the same week you promised your first member post.\n\nEight finished pieces in the drawer buy you that week back. They also prove to you that the format is repeatable before anyone has paid for it.",
-    "excerpt": "Eight weeks of finished material, in the drawer, before you sell anything.",
-    "access": "guest"
-  },
-  {
-    "title": "Writing an Excerpt That Sells the Locked Post",
-    "content": "A first paragraph is context. An excerpt is an argument. It should name the specific thing the reader gets and stop just before the payoff.\n\n\"How we cut refund requests by half\" earns a click. \"Some thoughts on refunds\" does not, and it is the same post.",
-    "excerpt": "The excerpt is your storefront. Most people paste the first paragraph.",
-    "access": "guest"
-  },
-  {
-    "title": "Onboarding Is a Sequence, Not a Page",
-    "content": "The welcome page gets read once, in a hurry, usually while the member is still deciding whether they trust you. Everything you crammed onto it is gone by Tuesday.\n\nSpread it over a sequence: day zero, welcome and one thing to read. Day three, the archive. Day seven, how to ask a question. Day fourteen, the thing members most often miss.",
-    "excerpt": "One welcome page cannot carry a new member through their first month.",
-    "access": "guest"
-  },
-  {
-    "title": "Pick the Payment Processor Before the Theme",
-    "content": "Themes are a weekend. Migrating live subscriptions between processors is weeks of careful work and a real risk of dropped charges.\n\nDecide first: who processes payments, who handles tax, what happens on a failed card, and how a member cancels without emailing you. Then think about fonts.",
-    "excerpt": "Money plumbing is harder to change later than anything visual.",
-    "access": "guest"
-  },
-  {
-    "title": "Dunning: The Money You Are Already Owed",
-    "content": "Between five and ten percent of monthly charges fail for reasons that have nothing to do with intent — expired cards, moved banks, travel blocks. Those members did not leave. Their card did.\n\nA retry schedule with three polite emails recovers most of them. It is the highest-return hour of work in the whole business.",
-    "excerpt": "Failed cards are the cheapest revenue you will ever recover.",
-    "access": "guest"
-  },
-  {
-    "title": "What Belongs in the Guest Tier",
-    "content": "The guest tier exists to convert, which means it has to deliver real value — a useful tool, a full article, a working template. Thin guest tiers convert worse than no guest tier at all.\n\nThe test: a guest should finish the month having gotten something real, and knowing precisely what they did not get.",
-    "excerpt": "Enough to be genuinely useful. Not enough to be sufficient.",
-    "access": "guest"
-  },
-  {
-    "title": "Email Is the Membership. The Site Is the Archive.",
-    "content": "Most members will never develop the habit of visiting your site unprompted. That is not a failure of your design; it is how attention works.\n\nSo the email is the product surface and the site is where it lives afterward. Write the email as the thing itself, not as a notification that a thing exists.",
-    "excerpt": "Members who only visit when you email them are normal, not a problem.",
-    "access": "guest"
-  },
-  {
-    "title": "Cancellation Should Take Two Clicks",
-    "content": "Retention flows that hide the cancel button work, briefly, and generate the angriest support tickets and worst public reviews you will ever receive.\n\nTwo clicks. One optional question about why. Then a clean goodbye that leaves the door open — a good number of them come back within a year.",
-    "excerpt": "Hard cancellation buys you one more month and costs you the referral.",
-    "access": "guest"
-  },
-  {
-    "title": "The One Metric Worth Watching Weekly",
-    "content": "Signups feel good and hide everything. Twenty new members with twenty-two cancellations is a shrinking business having a great week on paper.\n\nTrack joined minus left, weekly, on one line. It is the only number that tells you whether the thing is growing.",
-    "excerpt": "Not signups. Not traffic. Net member change.",
-    "access": "guest"
-  },
-  {
-    "title": "Repurposing Without Repeating Yourself",
-    "content": "A public essay, a member walkthrough, and a downloadable checklist can all come from one idea without any of them feeling like a rerun. What changes is depth and usable form.\n\nThis is how a solo operator sustains three tiers. Not three times the ideas — three treatments of the good ones.",
-    "excerpt": "The same idea can appear three times if the shape changes each time.",
-    "access": "guest"
-  },
-  {
-    "title": "Set Support Expectations in Writing",
-    "content": "\"We answer within two working days\" is a perfectly good promise, and easy to keep. What damages trust is an unstated expectation that you quietly miss.\n\nPut the response time where people look before they write, and then hold it. A kept modest promise beats a broken generous one every time.",
-    "excerpt": "Members are fine with slow. They are not fine with silent.",
-    "access": "guest"
-  },
-  {
-    "title": "Nobody Reads Your Navigation",
-    "content": "Members do not browse. They arrive from an email, read one thing, and leave. Your carefully organized menu is invisible to the people who matter most.\n\nSo the end of every piece is your real navigation. Put the next step there, specifically — a named piece, not \"browse the archive\".",
-    "excerpt": "They read the last sentence of what they just finished.",
-    "access": "guest"
-  },
-  {
-    "title": "The Archive Is an Asset, Once It Is Findable",
-    "content": "Depth only becomes a selling point when a member can reliably find the one thing they need at the moment they need it.\n\nCategories, decent search, and a curated \"start here\" path turn an archive from clutter into the reason someone renews.",
-    "excerpt": "Two hundred posts nobody can search is two hundred posts nobody reads.",
-    "access": "guest"
-  },
-  {
-    "title": "Founding Member Pricing, and Its Bill",
-    "content": "Discounted founding pricing creates urgency and rewards early trust, and both of those are real. The bill arrives later, when your best advocates are also your least profitable members.\n\nDecide in advance: locked forever, or locked for two years. Write it down at signup. Changing it afterwards is the fastest way to lose the people who believed first.",
-    "excerpt": "It works. It also comes due, on a date you should choose now.",
-    "access": "guest"
-  },
-  {
-    "title": "Ask New Members One Question",
-    "content": "One question, asked at the moment of signup while the reason is still fresh, gets answered far more often than any survey you send later.\n\nThe answers are your marketing copy, written by the people you are trying to reach, in their words.",
-    "excerpt": "\"What made you join today?\" Nothing else.",
-    "access": "guest"
-  },
-  {
-    "title": "Content Debt Is Real",
-    "content": "Publishing is a liability as well as an asset. Screenshots go stale, prices change, the plugin you recommended gets abandoned.\n\nBudget a maintenance day each quarter. An archive full of confidently wrong advice does more damage than a smaller archive that is right.",
-    "excerpt": "Every published page is a page you promised to keep true.",
-    "access": "guest"
-  },
-  {
-    "title": "Do Not Build a Custom Login",
-    "content": "Custom authentication is where small sites acquire large vulnerabilities. Password reset, session handling, brute-force protection, and the audit trail are all easy to get subtly wrong.\n\nUse the core system. Restyle the form all you like. Never reimplement what is underneath it.",
-    "excerpt": "WordPress already solved this, and solved it better than you will.",
-    "access": "guest"
-  },
-  {
-    "title": "Two Emails a Week Is Usually the Ceiling",
-    "content": "Frequency has a ceiling, and it is lower than most enthusiastic founders believe. The second weekly email typically performs; the third teaches people to filter you.\n\nIf you have more to say than two emails hold, the answer is a digest, not more sends.",
-    "excerpt": "Past that, unsubscribes climb faster than engagement.",
-    "access": "guest"
-  },
-  {
-    "title": "The Upgrade Prompt Belongs at the Moment of Value",
-    "content": "Sidebar upgrade boxes are furniture; readers stopped seeing them years ago. The prompt that works appears exactly where the reader just hit the edge of what they can see.\n\nSame offer, same price, different placement — and reliably several times the conversion.",
-    "excerpt": "Not in the sidebar. At the sentence where they wanted more.",
-    "access": "guest"
-  },
-  {
-    "title": "Write the Cancellation Email Before You Need It",
-    "content": "The message that goes out when someone leaves is worth drafting on a calm day. Thank them, confirm what happens to their access and their data, and say the door is open.\n\nNo guilt, no survey wall, no last-minute discount. That email decides whether they recommend you afterwards.",
-    "excerpt": "You will write it badly if you write it while upset.",
-    "access": "guest"
-  },
-  {
-    "title": "One Person Can Run This",
-    "content": "Solo memberships work at a scale that surprises people, provided the operator has not built something that needs constant custom attention.\n\nBoring plumbing, a fixed cadence, templated support answers. The interesting part should be the content, and nothing else.",
-    "excerpt": "But only if the systems are boring.",
-    "access": "guest"
-  },
-  {
-    "title": "Test the Signup on a Phone You Have Not Configured",
-    "content": "You are logged in, your card autofills, your browser trusts the site, and your cache hides three problems. Everyone else arrives cold on a phone.\n\nOnce a quarter, go through your own signup on a borrowed device with a real card. It is the most useful hour of testing available.",
-    "excerpt": "Your own laptop is the worst place to test signup.",
-    "access": "guest"
-  },
-  {
-    "title": "Say What Members Do Not Get",
-    "content": "Every membership has edges. Saying \"this does not include one-to-one review\" up front costs you a few signups and saves you the refunds, the arguments, and the reviews written by people who felt misled.\n\nClear limits are a mark of confidence. Vague promises read as evasion.",
-    "excerpt": "Honesty about limits removes the most expensive refunds.",
-    "access": "guest"
-  },
-  {
-    "title": "Your Second Month Is the Real Test",
-    "content": "Anyone can publish well in the first month. Month two arrives with a cold, an unrelated deadline, and a plugin update that breaks the archive.\n\nDesign your commitments for month two conditions, not month one energy. That is the rhythm you will actually be living in.",
-    "excerpt": "Month one is enthusiasm. Month two is the business.",
-    "access": "guest"
-  },
-  {
-    "title": "Reading a Churn Number Correctly",
-    "content": "Compounding is unkind. Five percent monthly leaves you roughly fifty-four percent of a cohort after twelve months. Eight percent leaves you under forty. Founders quote monthly churn because the number looks small.\n\nAlways convert to annual before you make a decision with it. The annual figure is the one that tells you whether growth is real or whether you are refilling a bucket.",
-    "excerpt": "Five percent monthly churn is not five percent. It is half your members a year.",
-    "access": "member"
-  },
-  {
-    "title": "Cohort Retention Beats Total Members",
-    "content": "Total membership is a blend of every decision you have ever made. It cannot tell you that the members who joined in March stay twice as long as the ones from June.\n\nGroup members by join month and track each group separately. When a cohort drops off a cliff, look at what changed the month they arrived — usually the acquisition channel or an onboarding edit.",
-    "excerpt": "The headline number hides which month you got worse.",
-    "access": "member"
-  },
-  {
-    "title": "The Ninety-Day Danger Window",
-    "content": "The member who cancels in month five usually stopped reading in month two. The cancellation is paperwork on a decision already made.\n\nSo intervene on reading, not on billing. A member who has not opened anything in three weeks is the one to reach — and a plain human email at that moment saves a surprising number.",
-    "excerpt": "Most cancellations are decided long before they are executed.",
-    "access": "member"
-  },
-  {
-    "title": "Win-Back Campaigns Actually Work",
-    "content": "Someone who paid you for four months has already crossed every hard barrier: they trust you, they know the value, their card worked. Compare that to a stranger.\n\nEmail lapsed members twice a year with what has changed since they left. Specifics, not nostalgia. Ten to twenty percent coming back is a normal result.",
-    "excerpt": "Former members convert better than cold traffic, by a wide margin.",
-    "access": "member"
-  },
-  {
-    "title": "The Exit Survey Question That Gets Answers",
-    "content": "Leaving members are done arguing and will not write you an essay on your shortcomings. Asking why invites either silence or politeness.\n\nAsking what they hoped for gets a real answer, because it lets them describe their own situation rather than critique yours. The gap between their hope and your product is the whole finding.",
-    "excerpt": "Not \"why are you leaving\". \"What were you hoping this would do for you?\"",
-    "access": "member"
-  },
-  {
-    "title": "Pause Beats Cancel",
-    "content": "Plenty of cancellations are situational — a busy quarter, a tight month, a project that ended. Those members do not want to leave; they want to stop paying for something they cannot use right now.\n\nOffering a pause converts a permanent loss into a temporary one, and pausing members return at rates that no win-back email touches.",
-    "excerpt": "A three-month pause keeps more members than any discount.",
-    "access": "member"
-  },
-  {
-    "title": "Discounting to Retain Trains Bad Behaviour",
-    "content": "A retention discount solves this month and creates a norm. Word travels, particularly in a community, and you end up with a tier of members who have learned that threatening to leave is a pricing negotiation.\n\nFix the reason instead. If the price is genuinely wrong for a segment, build a real lower tier rather than quietly discounting the loud ones.",
-    "excerpt": "The member who stayed for fifty percent off will ask again next year.",
-    "access": "member"
-  },
-  {
-    "title": "Engagement Scoring Without a Data Team",
-    "content": "Logins in the last thirty days, emails opened in the last thirty days, and any reply or comment ever. Score each member zero to three.\n\nEveryone at zero is churning next quarter and does not know it yet. Everyone at three is a testimonial, a case study, or a referral you have not asked for.",
-    "excerpt": "Three signals, one spreadsheet, once a month.",
-    "access": "member"
-  },
-  {
-    "title": "The Renewal Email Nobody Sends",
-    "content": "Most annual renewals arrive as a silent charge, and a silent charge on a card is how a happy member becomes an angry one.\n\nTwo weeks out, send a short list of what they actually read this year and what is coming next. Refund requests drop, and the honesty earns you goodwill you cannot buy.",
-    "excerpt": "Tell them what they got before you charge them again.",
-    "access": "member"
-  },
-  {
-    "title": "Involuntary Churn Is Usually Bigger Than Voluntary",
-    "content": "Cards expire, banks reissue, fraud rules fire. On many small memberships, failed payments account for more monthly losses than actual decisions to leave.\n\nIf you report both as one churn number, you will spend a quarter rewriting content when the fix was a retry schedule and a card-update email.",
-    "excerpt": "Count them separately or you will fix the wrong problem.",
-    "access": "member"
-  },
-  {
-    "title": "Raising Prices Without Losing Members",
-    "content": "The standard playbook works: existing members keep their price, new members pay the new one, and the change is announced a month ahead in plain language.\n\nApologising is the mistake. An apology tells members the new price is not justified, which invites the argument you were trying to avoid.",
-    "excerpt": "Grandfather everyone. Announce early. Never apologise.",
-    "access": "member"
-  },
-  {
-    "title": "Value Metric Pricing for Content",
-    "content": "Software prices per seat or per call. Content has no equivalent — reading twice as much costs you nothing extra, so metered pricing punishes your best members.\n\nPrice on depth and recency instead: the archive, the current material, the direct access. Those are real differences a member can feel.",
-    "excerpt": "Content memberships rarely have a good usage metric. Use access depth instead.",
-    "access": "member"
-  },
-  {
-    "title": "The Refund Policy That Reduces Refunds",
-    "content": "A generous, prominent refund policy raises conversion more than it raises refunds, and it does so in nearly every market anyone has measured.\n\nRestrictive policies produce chargebacks instead, which cost you the money anyway plus a fee and a mark against your processor account.",
-    "excerpt": "Thirty days, no questions, stated loudly.",
-    "access": "member"
-  },
-  {
-    "title": "Chargebacks Are Worse Than Refunds",
-    "content": "A chargeback costs the payment, a fee, and a ratio point with your processor. Enough of them and your account is reviewed or closed.\n\nAnyone threatening a dispute should be refunded that day, without argument, whatever the merits. Winning the argument is not worth the account.",
-    "excerpt": "Always refund a disputed charge before it becomes a dispute.",
-    "access": "member"
-  },
-  {
-    "title": "VAT, Sales Tax, and Digital Goods",
-    "content": "EU VAT on digital services follows the customer's location, with no small-seller threshold for cross-border sales. Several US states tax digital goods too, on their own rules.\n\nEither use a merchant of record who assumes this liability, or budget for a tax service. Discovering it two years in is an expensive way to learn it.",
-    "excerpt": "Digital subscriptions are taxed where the buyer is, not where you are.",
-    "access": "member"
-  },
-  {
-    "title": "Currency and Local Pricing",
-    "content": "Conversion drops measurably when a buyer has to translate the price themselves. Displaying local currency, even while settling in yours, recovers most of that.\n\nFull local pricing — different numbers per market — is a bigger commitment and best left until one market is clearly large enough to justify the operational cost.",
-    "excerpt": "Charging in one currency is fine. Displaying in one currency is not.",
-    "access": "member"
-  },
-  {
-    "title": "Lifetime Deals Are a Loan",
-    "content": "A lifetime plan is cash today in exchange for indefinite service. That can be exactly right for a launch runway, and disastrous as a standing offer.\n\nIf you run one, cap the number, name the cap publicly, and treat the money as capital rather than income — because the costs those members generate arrive every year afterwards.",
-    "excerpt": "You are borrowing revenue from a future you have to fund.",
-    "access": "member"
-  },
-  {
-    "title": "Free Users Have a Cost. Measure It.",
-    "content": "A free tier is a marketing expense, and like any expense it deserves a number. Support load in particular tends to arrive disproportionately from non-paying accounts.\n\nMeasure cost per free user and conversion to paid. If the ratio does not work, the answer is usually a thinner free tier, not a smaller one.",
-    "excerpt": "Support, hosting, and email all scale with people who pay nothing.",
-    "access": "member"
-  },
-  {
-    "title": "Annual Prepay Funds Your Development",
-    "content": "Annual plans are usually pitched as a retention device, and they are. The underrated part is cash flow: twelve months of revenue arriving today is what pays for the thing you wanted to build.\n\nPush annual hardest at signup and at the first renewal, and be honest with yourself that the money is deferred revenue, not profit.",
-    "excerpt": "The cash timing matters as much as the churn maths.",
-    "access": "member"
-  },
-  {
-    "title": "When to Add a Second Tier",
-    "content": "Second tiers built on speculation dilute the first one and double the work. Second tiers built on a repeated, specific request tend to work immediately.\n\nThe signal is not \"people want more\". It is twenty people asking for the same identifiable thing, ideally in the same words.",
-    "excerpt": "When a real group is asking for a real thing you are not selling.",
-    "access": "member"
-  },
-  {
-    "title": "The Editorial Calendar That Survives a Bad Month",
-    "content": "Quarterly themes give you direction, a month of finished material gives you slack, and a weekly publish keeps the rhythm visible. Each layer covers the failure of the one above it.\n\nSystems that require you to be at full capacity every week are not systems. They are a good month you have mistaken for a plan.",
-    "excerpt": "Plan a quarter, buffer a month, publish a week.",
-    "access": "member"
-  },
-  {
-    "title": "Batch Production Beats Daily Production",
-    "content": "Writing four pieces in one focused day is reliably faster than one piece on each of four days, because the setup cost — the research, the tone, the mental model — is paid once.\n\nBatch by type, not by topic. All the writing, then all the editing, then all the scheduling.",
-    "excerpt": "Context switching is the tax nobody budgets for.",
-    "access": "member"
-  },
-  {
-    "title": "Evergreen and Timely Need Different Homes",
-    "content": "Timely posts are valuable for three weeks and misleading after a year. Evergreen posts pay out for a decade. Filed together, the timely ones drag down trust in the whole archive.\n\nSeparate them structurally, and date-stamp the timely material clearly so a member can see at a glance what still applies.",
-    "excerpt": "Mixing them makes your archive rot faster than it should.",
-    "access": "member"
-  },
-  {
-    "title": "The Quarterly Archive Audit",
-    "content": "Go through everything older than a year with three buckets: still correct and worth promoting, correct but needs an update, or wrong and needs retiring with a note.\n\nThe note matters. Silently deleting is how a member ends up citing advice that no longer exists — and how search engines conclude your site is unstable.",
-    "excerpt": "One day, four times a year. Fix, retire, or promote.",
-    "access": "member"
-  },
-  {
-    "title": "Series Beat Standalone Posts for Retention",
-    "content": "A standalone post ends. A series creates an appointment, and appointments are what convert a reader into someone with a habit.\n\nThree to five parts is the sweet spot. Longer and the arc sags; shorter and it does not have time to build the expectation.",
-    "excerpt": "\"Part two next week\" is the cheapest retention mechanism there is.",
-    "access": "member"
-  },
-  {
-    "title": "Templates and Tools Outperform Essays",
-    "content": "The pieces members cite months later are almost always the ones with something usable attached: a checklist, a spreadsheet, a script, a worked example.\n\nOne usable artifact per month does more for renewals than four more essays, and it is usually less work.",
-    "excerpt": "Members save what they can use. They rarely save what they read.",
-    "access": "member"
-  },
-  {
-    "title": "Write the Member Question Down Verbatim",
-    "content": "Every question a member asks is a piece someone else needed and did not ask for. Keep the exact wording — it is also the search phrase.\n\nA month of logged questions is a quarter of confident content, and every piece has a guaranteed reader.",
-    "excerpt": "Your best content calendar is your support inbox.",
-    "access": "member"
-  },
-  {
-    "title": "Guest Contributors Are a Retention Tool",
-    "content": "Members drift when everything sounds the same, however good it is. A guest piece breaks the pattern and borrows a perspective you cannot fake.\n\nPay them properly and brief them tightly. An unbriefed guest post reads as filler, which costs you more than the gap it filled.",
-    "excerpt": "New voices reset attention without resetting trust.",
-    "access": "member"
-  },
-  {
-    "title": "Transcripts Make Audio and Video Findable",
-    "content": "Video and audio are strong for connection and weak for retrieval. A member who half-remembers a point from an episode has no way back to it.\n\nPublish transcripts. They cost little, they make the archive searchable, and a sizeable share of members prefer reading anyway.",
-    "excerpt": "An untranscribed hour of video is invisible to search and to skimmers.",
-    "access": "member"
-  },
-  {
-    "title": "Do Not Publish Through a Crisis",
-    "content": "Illness, bereavement, a move, a bad quarter — every long-running membership hits at least one. Publishing badly through it damages more than pausing honestly.\n\nA short, plain note about a two-week pause generates sympathy and almost no cancellations. Silence generates suspicion, and thin filler generates disappointment.",
-    "excerpt": "Say you are pausing. Members are fine with it.",
-    "access": "member"
-  },
-  {
-    "title": "Seeding a Community Without Faking It",
-    "content": "Communities do not start; they are started. Twenty invited people who already talk to you produce the first hundred posts, and those posts set the tone for everyone who arrives later.\n\nOpening a forum to your whole list on day one produces an empty room with a thousand witnesses.",
-    "excerpt": "Invite twenty people personally. Do not open the doors to everyone.",
-    "access": "member"
-  },
-  {
-    "title": "The First Rule of Moderation Is Speed",
-    "content": "Members read the room before they post. One unanswered hostile thread teaches every lurker what is tolerated here, and lurkers are most of your community.\n\nFast, visible, unapologetic moderation in the first six months is what buys you a self-moderating community later.",
-    "excerpt": "A bad thread left for a day becomes the culture.",
-    "access": "member"
-  },
-  {
-    "title": "Office Hours Beat a Forum for Small Memberships",
-    "content": "Small forums feel empty because they usually are. A fortnightly hour on a call with six people feels full, and produces the same connection with none of the dead-room signalling.\n\nRecord it, transcribe it, publish it to members. One hour becomes a month of content and a retention event at once.",
-    "excerpt": "Under two hundred members, live time outperforms asynchronous space.",
-    "access": "member"
-  },
-  {
-    "title": "Support Macros Are Not Impersonal",
-    "content": "Nobody with a billing problem wants prose. They want the fix, correctly, today. A well-written macro delivers that more reliably than you typing it fresh at eleven at night.\n\nWrite the macro carefully once, in your own voice, and always add one specific line about their situation.",
-    "excerpt": "A fast accurate answer beats a slow original one.",
-    "access": "member"
-  },
-  {
-    "title": "The Support Question You Answer Twice Is a Post",
-    "content": "One question is a person. Two is a pattern worth documenting. Three is a design problem you are paying for with your own hours, every week, indefinitely.\n\nTrack repeats explicitly. The fix is usually smaller than the accumulated support cost of not fixing it.",
-    "excerpt": "Second time, write the post. Third time, fix the product.",
-    "access": "member"
-  },
-  {
-    "title": "Member Directories Need Consent and an Exit",
-    "content": "A directory is a genuine benefit, and it is also a disclosure. Default-on directories create real harm for people with safety, professional, or immigration reasons to stay private.\n\nOpt in, granular fields, and a one-click removal that takes effect immediately. Never populate it automatically from billing data.",
-    "excerpt": "Some members are paying you precisely because they are not public.",
-    "access": "member"
-  },
-  {
-    "title": "Recognise Members in Public",
-    "content": "Naming the member whose question prompted a piece, or whose correction improved it, costs nothing and lands hard. It also demonstrates to everyone else that participation is noticed.\n\nAsk first. Some will decline, and their reasons are their own.",
-    "excerpt": "Attribution is free and it is the strongest loyalty tool you have.",
-    "access": "member"
-  },
-  {
-    "title": "When to Close a Community",
-    "content": "If a forum has been quiet for three months and you are not going to fund reviving it, close it deliberately: archive the content, say why, and point members to what replaces it.\n\nMembers respect a clear decision. What they lose faith in is a dead room left standing with their subscription attached to it.",
-    "excerpt": "An honest closure beats a slow death nobody mentions.",
-    "access": "member"
-  },
-  {
-    "title": "SEO for Gated Content Without Cloaking",
-    "content": "Serving full text to a crawler and a paywall to a person is cloaking, and it is a policy violation that eventually costs you the rankings you were buying.\n\nThe supported route is structured data that declares the paywalled section honestly. It is well documented, it works, and it does not put your traffic at risk.",
-    "excerpt": "Show search engines exactly what you show a logged-out human.",
-    "access": "member"
-  },
-  {
-    "title": "Your Best Acquisition Channel Is Probably One Channel",
-    "content": "Early memberships usually get almost everything from one source — a newsletter, one search cluster, one podcast circuit, one community. The other channels feel like progress and produce noise.\n\nAsk every new member where they came from. Then put your effort into the answer that keeps appearing.",
-    "excerpt": "Find it, then stop diversifying prematurely.",
-    "access": "member"
-  },
-  {
-    "title": "Referrals Work When the Reward Is Access",
-    "content": "Cash rewards attract people who want cash and produce members who do not read. Access rewards attract people who want more of your work and produce members who look like your best ones.\n\nA free month for both sides is the standard shape and it is standard because it works.",
-    "excerpt": "Give a free month, not cash.",
-    "access": "member"
-  },
-  {
-    "title": "Guest Appearances Convert Better Than Ads",
-    "content": "Borrowed trust converts at rates paid traffic cannot approach, because the recommendation is implicit and comes from someone the audience already chose to listen to.\n\nPrepare one specific, memorable landing point — a named free resource — rather than sending everyone to your home page.",
-    "excerpt": "An hour on someone else's platform beats a month of paid impressions.",
-    "access": "member"
-  },
-  {
-    "title": "The Free Resource That Feeds the Funnel",
-    "content": "A single free resource that people actually finish and recommend does more than a library of lead magnets nobody opens. It also becomes the thing others link to when they mention you.\n\nMake it complete on its own. A resource that is obviously a truncated advertisement teaches people to expect the same from the paid tier.",
-    "excerpt": "One genuinely excellent thing beats five adequate ones.",
-    "access": "member"
-  },
-  {
-    "title": "Waitlists Create Real Urgency Honestly",
-    "content": "Opening twice a year to a waitlist concentrates attention, makes onboarding cohort-based, and is entirely honest if the doors genuinely close.\n\nCountdown timers that reset on refresh are the other thing, and the people you most want as members are the ones most likely to notice.",
-    "excerpt": "Closed enrolment works. Fake scarcity does not.",
-    "access": "member"
-  },
-  {
-    "title": "Affiliates Need Rules Before They Need Rates",
-    "content": "Affiliates will use your brand name in ads, make claims you never made, and occasionally spam. Any of those can produce chargebacks or a policy strike against your account.\n\nPublish rules first: no brand bidding, no income claims, no unsolicited email. Then approve individually, at least at the start.",
-    "excerpt": "One bad affiliate can cost you a payment processor.",
-    "access": "member"
-  },
-  {
-    "title": "Public Metrics Are Marketing, With a Cost",
-    "content": "Transparent numbers build audience quickly and reliably. They also invite scrutiny, attract competitors to your exact niche, and become awkward in a bad year.\n\nIt is a legitimate strategy. Just decide it deliberately, and understand that stopping is itself a signal people will read.",
-    "excerpt": "Once you publish revenue, you have published it forever.",
-    "access": "member"
-  },
-  {
-    "title": "Gate at the Query, Not Just the Template",
-    "content": "Template-level checks are the most common mistake in homemade membership setups. The post still appears in RSS, in the REST API, in search results, and in any plugin that reads posts directly.\n\nFilter where content is retrieved, not where it is displayed, and then verify by hitting the REST endpoint while logged out.",
-    "excerpt": "Hiding content in the theme leaves it in the feed and the API.",
-    "access": "member"
-  },
-  {
-    "title": "Test Every Tier Logged Out, In Private Mode",
-    "content": "An administrator sees all content by definition, and cached assets plus a logged-in cookie hide most access bugs from the person most motivated to find them.\n\nKeep three throwaway accounts — one per tier — and check each one in a private window after any change to gating.",
-    "excerpt": "Your admin session lies to you about everything.",
-    "access": "member"
-  },
-  {
-    "title": "Caching and Membership Sites",
-    "content": "This is the single most damaging misconfiguration in the category, and it usually appears the week someone adds a performance plugin to a site that was working fine.\n\nExclude logged-in sessions from the page cache, and after any caching change, load a member URL in a private window to confirm what an anonymous visitor gets.",
-    "excerpt": "A cache that does not know about login will serve member content to strangers.",
-    "access": "member"
-  },
-  {
-    "title": "Protect Media Files, Not Only Pages",
-    "content": "Uploads are served directly by the web server and never touch your access checks. The page is gated; the file it links to is a public URL that will be shared.\n\nEither route downloads through a script that checks access, or store protected files outside the public uploads directory entirely.",
-    "excerpt": "A locked post with a public PDF link is not locked.",
-    "access": "member"
-  },
-  {
-    "title": "Back Up the Database Separately From the Files",
-    "content": "File backups restore your site. Database backups restore your business. Losing the members table is unrecoverable in a way that losing a theme never is.\n\nNightly database backups, stored somewhere other than the same server, and a restore you have actually tested at least once.",
-    "excerpt": "Members, subscriptions, and history all live in the database.",
-    "access": "member"
-  },
-  {
-    "title": "Staging Is Not Optional Once You Take Money",
-    "content": "Updating in production is defensible on a blog and indefensible on a site processing subscriptions. Checkout and login are exactly the paths that break quietly.\n\nUpdate on staging, run signup and login, then push. It adds twenty minutes and removes the worst class of outage.",
-    "excerpt": "A plugin update that breaks checkout costs real revenue every hour.",
-    "access": "member"
-  },
-  {
-    "title": "Log Access Denials, Not Just Errors",
-    "content": "A spike of denials on one URL usually means a member was promised something they cannot reach — a broken email link, a mis-tagged post, a tier boundary in the wrong place.\n\nLog the URL, the tier, and the time. Do not log anything you would not want to keep, and prune the file on a schedule.",
-    "excerpt": "Denials tell you where your gating is confusing or wrong.",
-    "access": "member"
-  },
-  {
-    "title": "Rate-Limit Login and Password Reset",
-    "content": "Every membership site is a list of email addresses known to have paid for something, which makes it a better target than an equivalent blog.\n\nRate-limit login attempts and password resets per IP and per account, and require strong passwords for anyone who can see paid content.",
-    "excerpt": "Membership sites are credential-stuffing targets by design.",
-    "access": "member"
-  },
-  {
-    "title": "Terms Members Can Actually Read",
-    "content": "Long unread terms are not protection; a judge or a payment processor is unimpressed by clauses your customer demonstrably never saw.\n\nSay what they get, what they pay, how it renews, how to cancel, and what happens to their access afterwards. Short, in your own voice, findable from the footer.",
-    "excerpt": "Plain terms reduce disputes more than long ones do.",
-    "access": "member"
-  },
-  {
-    "title": "Handle Data Requests Before You Get One",
-    "content": "A member exercising their data rights is entitled to a timely answer, and the deadline arrives whether or not you have a process.\n\nKnow now where personal data lives — WordPress, your processor, your email tool, your analytics — and write down the steps for export and deletion in each.",
-    "excerpt": "Export and deletion should take you minutes, not a weekend.",
-    "access": "member"
-  },
-  {
-    "title": "Deleting a Member Is Not Deleting Their Invoices",
-    "content": "These obligations coexist, and the resolution is standard: financial records are retained under a legal basis while the rest of the personal data is removed.\n\nSay so in your privacy notice, name the retention period, and then actually follow it.",
-    "excerpt": "Tax law requires records that data law lets people ask you to delete.",
-    "access": "member"
-  },
-  {
-    "title": "Accessibility Is a Retention Feature",
-    "content": "Contrast, keyboard navigation, real headings, captions, and text that resizes are not extras. Members with access needs rarely file a complaint; they simply leave.\n\nFix contrast and heading structure first. They are the cheapest changes and they help everyone reading on a phone in daylight.",
-    "excerpt": "Members who cannot read your site cancel and never explain why.",
-    "access": "member"
-  },
-  {
-    "title": "Say Which Third Parties See Member Data",
-    "content": "Payments, email, analytics, support, and any AI service in the chain all receive member data. Members are entitled to know which, and reviewers of any kind will ask.\n\nList them by name with links to their policies. It takes an afternoon and it answers the hardest question anyone will ask you.",
-    "excerpt": "Every integration is a disclosure you owe your members.",
-    "access": "member"
-  },
-  {
-    "title": "Write Down What Happens If You Stop",
-    "content": "Illness, burnout, a job, or simple loss of interest ends memberships regularly, and the members are the ones left holding an unusable subscription.\n\nDecide in advance: how much notice, whether the archive stays up, whether final months are refunded. Put it in the terms. It costs nothing now and it is the difference between a graceful close and a public mess.",
-    "excerpt": "Every membership ends. Most end badly because nobody planned it.",
-    "access": "member"
-  }
-]
+{
+  "categories": [
+    {
+      "slug": "flosc-starter-100-content-items",
+      "name": "FLOSC Starter — 100 Content Items",
+      "description": "Parent category for the FLOSC 100 Content Items starter pack.",
+      "parent": null,
+      "term_meta": {}
+    },
+    {
+      "slug": "flosc-starter-freeline",
+      "name": "FLOSC Starter — Freeline",
+      "description": "Starter items 1–10. Public Freeline content.",
+      "parent": "flosc-starter-100-content-items",
+      "term_meta": {}
+    },
+    {
+      "slug": "flosc-starter-guests",
+      "name": "FLOSC Starter — Guests",
+      "description": "Starter items 11–30. Available to ordinary logged-in subscribers and members.",
+      "parent": "flosc-starter-100-content-items",
+      "term_meta": {
+        "_flosc_protected": "yes",
+        "_flosc_required_level": "subscriber"
+      }
+    },
+    {
+      "slug": "flosc-starter-members",
+      "name": "FLOSC Starter — Members",
+      "description": "Starter items 31–100. Protected member content.",
+      "parent": "flosc-starter-100-content-items",
+      "term_meta": {
+        "_flosc_protected": "yes"
+      }
+    }
+  ],
+  "posts": [
+    {
+      "title": "Content Item 001 — The Mysterious Second Sock",
+      "content": "<p><strong>Content Item 001</strong> · Freeline</p><p>This deliberately silly starter item considers <em>The Mysterious Second Sock</em> with far more seriousness than the subject requires.</p><p>The working conclusion is that everyday life contains an impressive number of tiny systems nobody formally documents.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Freeline. Item 1 of 100.",
+      "slug": "flosc-starter-content-001-the-mysterious-second-sock",
+      "item": 1,
+      "access": "visitor",
+      "starter_access": "freeline",
+      "protection_mode": "full",
+      "category": "flosc-starter-freeline"
+    },
+    {
+      "title": "Content Item 002 — A Field Guide to Refrigerator Magnets",
+      "content": "<p><strong>Content Item 002</strong> · Freeline</p><p>For demonstration purposes, we examine <em>A Field Guide to Refrigerator Magnets</em> as though it were a matter of modest institutional importance.</p><p>No certification is required. A clipboard may nevertheless improve the atmosphere.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Freeline. Item 2 of 100.",
+      "slug": "flosc-starter-content-002-a-field-guide-to-refrigerator-magnets",
+      "item": 2,
+      "access": "visitor",
+      "starter_access": "freeline",
+      "protection_mode": "full",
+      "category": "flosc-starter-freeline"
+    },
+    {
+      "title": "Content Item 003 — Why Toast Always Lands Butter-Side Down (Probably)",
+      "content": "<p><strong>Content Item 003</strong> · Freeline</p><p>Today’s unnecessarily specific topic is <em>Why Toast Always Lands Butter-Side Down (Probably)</em>.</p><p>The evidence is limited, the consequences are minor, and the starter content is functioning exactly as intended.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Freeline. Item 3 of 100.",
+      "slug": "flosc-starter-content-003-why-toast-always-lands-butter-side-down-probably",
+      "item": 3,
+      "access": "visitor",
+      "starter_access": "freeline",
+      "protection_mode": "full",
+      "category": "flosc-starter-freeline"
+    },
+    {
+      "title": "Content Item 004 — The Secret Life of Shopping Carts",
+      "content": "<p><strong>Content Item 004</strong> · Freeline</p><p>This content item offers a short and completely nonessential exploration of <em>The Secret Life of Shopping Carts</em>.</p><p>Readers are encouraged to proceed with confidence and an appropriate level of snack availability.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Freeline. Item 4 of 100.",
+      "slug": "flosc-starter-content-004-the-secret-life-of-shopping-carts",
+      "item": 4,
+      "access": "visitor",
+      "starter_access": "freeline",
+      "protection_mode": "full",
+      "category": "flosc-starter-freeline"
+    },
+    {
+      "title": "Content Item 005 — How Many Pillows Is Too Many Pillows?",
+      "content": "<p><strong>Content Item 005</strong> · Freeline</p><p>A small but determined body of starter-pack research has been devoted to <em>How Many Pillows Is Too Many Pillows?</em>.</p><p>Further investigation is possible, although nobody has requested funding.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Freeline. Item 5 of 100.",
+      "slug": "flosc-starter-content-005-how-many-pillows-is-too-many-pillows",
+      "item": 5,
+      "access": "visitor",
+      "starter_access": "freeline",
+      "protection_mode": "full",
+      "category": "flosc-starter-freeline"
+    },
+    {
+      "title": "Content Item 006 — An Appreciation of the Humble Paperclip",
+      "content": "<p><strong>Content Item 006</strong> · Freeline</p><p>In this installment, <em>An Appreciation of the Humble Paperclip</em> receives the full analytical treatment.</p><p>The result is approximately as useful as expected, which is part of the demonstration.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Freeline. Item 6 of 100.",
+      "slug": "flosc-starter-content-006-an-appreciation-of-the-humble-paperclip",
+      "item": 6,
+      "access": "visitor",
+      "starter_access": "freeline",
+      "protection_mode": "full",
+      "category": "flosc-starter-freeline"
+    },
+    {
+      "title": "Content Item 007 — A Brief History of Waiting for the Microwave",
+      "content": "<p><strong>Content Item 007</strong> · Freeline</p><p>We now turn to <em>A Brief History of Waiting for the Microwave</em>, an issue that has gone unaddressed by most major universities.</p><p>This post corrects that omission with several sentences and no measurable social consequence.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Freeline. Item 7 of 100.",
+      "slug": "flosc-starter-content-007-a-brief-history-of-waiting-for-the-microwave",
+      "item": 7,
+      "access": "visitor",
+      "starter_access": "freeline",
+      "protection_mode": "full",
+      "category": "flosc-starter-freeline"
+    },
+    {
+      "title": "Content Item 008 — The Great Kitchen Sponge Debate",
+      "content": "<p><strong>Content Item 008</strong> · Freeline</p><p>The subject of <em>The Great Kitchen Sponge Debate</em> is presented here in concise starter-content form.</p><p>If you can read this paragraph, FLOSC has successfully delivered this item at your current access level.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Freeline. Item 8 of 100.",
+      "slug": "flosc-starter-content-008-the-great-kitchen-sponge-debate",
+      "item": 8,
+      "access": "visitor",
+      "starter_access": "freeline",
+      "protection_mode": "full",
+      "category": "flosc-starter-freeline"
+    },
+    {
+      "title": "Content Item 009 — Notes on Chairs That Squeak",
+      "content": "<p><strong>Content Item 009</strong> · Freeline</p><p>This is a controlled test of content delivery disguised as an article about <em>Notes on Chairs That Squeak</em>.</p><p>The disguise is not especially convincing, but the content pipeline does not mind.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Freeline. Item 9 of 100.",
+      "slug": "flosc-starter-content-009-notes-on-chairs-that-squeak",
+      "item": 9,
+      "access": "visitor",
+      "starter_access": "freeline",
+      "protection_mode": "full",
+      "category": "flosc-starter-freeline"
+    },
+    {
+      "title": "Content Item 010 — The Surprisingly Complex World of Coat Hangers",
+      "content": "<p><strong>Content Item 010</strong> · Freeline</p><p>Few people wake up demanding information about <em>The Surprisingly Complex World of Coat Hangers</em>.</p><p>That makes it an excellent neutral specimen for testing a WordPress content library.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Freeline. Item 10 of 100.",
+      "slug": "flosc-starter-content-010-the-surprisingly-complex-world-of-coat-hangers",
+      "item": 10,
+      "access": "visitor",
+      "starter_access": "freeline",
+      "protection_mode": "full",
+      "category": "flosc-starter-freeline"
+    },
+    {
+      "title": "Content Item 011 — Proper Etiquette for Passing the Salt",
+      "content": "<p><strong>Content Item 011</strong> · Guest</p><p>This deliberately silly starter item considers <em>Proper Etiquette for Passing the Salt</em> with far more seriousness than the subject requires.</p><p>The working conclusion is that everyday life contains an impressive number of tiny systems nobody formally documents.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 11 of 100.",
+      "slug": "flosc-starter-content-011-proper-etiquette-for-passing-the-salt",
+      "item": 11,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 012 — A Taxonomy of Leftover Containers",
+      "content": "<p><strong>Content Item 012</strong> · Guest</p><p>For demonstration purposes, we examine <em>A Taxonomy of Leftover Containers</em> as though it were a matter of modest institutional importance.</p><p>No certification is required. A clipboard may nevertheless improve the atmosphere.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 12 of 100.",
+      "slug": "flosc-starter-content-012-a-taxonomy-of-leftover-containers",
+      "item": 12,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 013 — The Emotional Journey of a Forgotten Banana",
+      "content": "<p><strong>Content Item 013</strong> · Guest</p><p>Today’s unnecessarily specific topic is <em>The Emotional Journey of a Forgotten Banana</em>.</p><p>The evidence is limited, the consequences are minor, and the starter content is functioning exactly as intended.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 13 of 100.",
+      "slug": "flosc-starter-content-013-the-emotional-journey-of-a-forgotten-banana",
+      "item": 13,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 014 — Five Excellent Places to Put a Pencil",
+      "content": "<p><strong>Content Item 014</strong> · Guest</p><p>This content item offers a short and completely nonessential exploration of <em>Five Excellent Places to Put a Pencil</em>.</p><p>Readers are encouraged to proceed with confidence and an appropriate level of snack availability.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 14 of 100.",
+      "slug": "flosc-starter-content-014-five-excellent-places-to-put-a-pencil",
+      "item": 14,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 015 — An Introduction to Sock Drawer Diplomacy",
+      "content": "<p><strong>Content Item 015</strong> · Guest</p><p>A small but determined body of starter-pack research has been devoted to <em>An Introduction to Sock Drawer Diplomacy</em>.</p><p>Further investigation is possible, although nobody has requested funding.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 15 of 100.",
+      "slug": "flosc-starter-content-015-an-introduction-to-sock-drawer-diplomacy",
+      "item": 15,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 016 — Why Pens Disappear During Meetings",
+      "content": "<p><strong>Content Item 016</strong> · Guest</p><p>In this installment, <em>Why Pens Disappear During Meetings</em> receives the full analytical treatment.</p><p>The result is approximately as useful as expected, which is part of the demonstration.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 16 of 100.",
+      "slug": "flosc-starter-content-016-why-pens-disappear-during-meetings",
+      "item": 16,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 017 — The Case for Keeping One Good Cardboard Box",
+      "content": "<p><strong>Content Item 017</strong> · Guest</p><p>We now turn to <em>The Case for Keeping One Good Cardboard Box</em>, an issue that has gone unaddressed by most major universities.</p><p>This post corrects that omission with several sentences and no measurable social consequence.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 17 of 100.",
+      "slug": "flosc-starter-content-017-the-case-for-keeping-one-good-cardboard-box",
+      "item": 17,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 018 — How to Choose a Favorite Spoon",
+      "content": "<p><strong>Content Item 018</strong> · Guest</p><p>The subject of <em>How to Choose a Favorite Spoon</em> is presented here in concise starter-content form.</p><p>If you can read this paragraph, FLOSC has successfully delivered this item at your current access level.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 18 of 100.",
+      "slug": "flosc-starter-content-018-how-to-choose-a-favorite-spoon",
+      "item": 18,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 019 — The Sociology of Elevator Buttons",
+      "content": "<p><strong>Content Item 019</strong> · Guest</p><p>This is a controlled test of content delivery disguised as an article about <em>The Sociology of Elevator Buttons</em>.</p><p>The disguise is not especially convincing, but the content pipeline does not mind.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 19 of 100.",
+      "slug": "flosc-starter-content-019-the-sociology-of-elevator-buttons",
+      "item": 19,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 020 — A Beginner’s Guide to Looking Busy",
+      "content": "<p><strong>Content Item 020</strong> · Guest</p><p>Few people wake up demanding information about <em>A Beginner’s Guide to Looking Busy</em>.</p><p>That makes it an excellent neutral specimen for testing a WordPress content library.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 20 of 100.",
+      "slug": "flosc-starter-content-020-a-beginners-guide-to-looking-busy",
+      "item": 20,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 021 — The Last Ice Cube and Other Household Dramas",
+      "content": "<p><strong>Content Item 021</strong> · Guest</p><p>This deliberately silly starter item considers <em>The Last Ice Cube and Other Household Dramas</em> with far more seriousness than the subject requires.</p><p>The working conclusion is that everyday life contains an impressive number of tiny systems nobody formally documents.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 21 of 100.",
+      "slug": "flosc-starter-content-021-the-last-ice-cube-and-other-household-dramas",
+      "item": 21,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 022 — An Inquiry into Remote Control Migration",
+      "content": "<p><strong>Content Item 022</strong> · Guest</p><p>For demonstration purposes, we examine <em>An Inquiry into Remote Control Migration</em> as though it were a matter of modest institutional importance.</p><p>No certification is required. A clipboard may nevertheless improve the atmosphere.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 22 of 100.",
+      "slug": "flosc-starter-content-022-an-inquiry-into-remote-control-migration",
+      "item": 22,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 023 — Notes from the Land of Reusable Bags",
+      "content": "<p><strong>Content Item 023</strong> · Guest</p><p>Today’s unnecessarily specific topic is <em>Notes from the Land of Reusable Bags</em>.</p><p>The evidence is limited, the consequences are minor, and the starter content is functioning exactly as intended.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 23 of 100.",
+      "slug": "flosc-starter-content-023-notes-from-the-land-of-reusable-bags",
+      "item": 23,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 024 — A Practical Theory of Blanket Distribution",
+      "content": "<p><strong>Content Item 024</strong> · Guest</p><p>This content item offers a short and completely nonessential exploration of <em>A Practical Theory of Blanket Distribution</em>.</p><p>Readers are encouraged to proceed with confidence and an appropriate level of snack availability.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 24 of 100.",
+      "slug": "flosc-starter-content-024-a-practical-theory-of-blanket-distribution",
+      "item": 24,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 025 — Why Every Drawer Eventually Becomes a Junk Drawer",
+      "content": "<p><strong>Content Item 025</strong> · Guest</p><p>A small but determined body of starter-pack research has been devoted to <em>Why Every Drawer Eventually Becomes a Junk Drawer</em>.</p><p>Further investigation is possible, although nobody has requested funding.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 25 of 100.",
+      "slug": "flosc-starter-content-025-why-every-drawer-eventually-becomes-a-junk-drawer",
+      "item": 25,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 026 — The Unwritten Rules of Office Mugs",
+      "content": "<p><strong>Content Item 026</strong> · Guest</p><p>In this installment, <em>The Unwritten Rules of Office Mugs</em> receives the full analytical treatment.</p><p>The result is approximately as useful as expected, which is part of the demonstration.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 26 of 100.",
+      "slug": "flosc-starter-content-026-the-unwritten-rules-of-office-mugs",
+      "item": 26,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 027 — A Very Short Guide to Long Grocery Receipts",
+      "content": "<p><strong>Content Item 027</strong> · Guest</p><p>We now turn to <em>A Very Short Guide to Long Grocery Receipts</em>, an issue that has gone unaddressed by most major universities.</p><p>This post corrects that omission with several sentences and no measurable social consequence.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 27 of 100.",
+      "slug": "flosc-starter-content-027-a-very-short-guide-to-long-grocery-receipts",
+      "item": 27,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 028 — What Houseplants Think About on Tuesdays",
+      "content": "<p><strong>Content Item 028</strong> · Guest</p><p>The subject of <em>What Houseplants Think About on Tuesdays</em> is presented here in concise starter-content form.</p><p>If you can read this paragraph, FLOSC has successfully delivered this item at your current access level.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 28 of 100.",
+      "slug": "flosc-starter-content-028-what-houseplants-think-about-on-tuesdays",
+      "item": 28,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 029 — A Study of Keys That Are Definitely Here Somewhere",
+      "content": "<p><strong>Content Item 029</strong> · Guest</p><p>This is a controlled test of content delivery disguised as an article about <em>A Study of Keys That Are Definitely Here Somewhere</em>.</p><p>The disguise is not especially convincing, but the content pipeline does not mind.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 29 of 100.",
+      "slug": "flosc-starter-content-029-a-study-of-keys-that-are-definitely-here-somewhere",
+      "item": 29,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 030 — The Great Question of Which Tupperware Lid Fits",
+      "content": "<p><strong>Content Item 030</strong> · Guest</p><p>Few people wake up demanding information about <em>The Great Question of Which Tupperware Lid Fits</em>.</p><p>That makes it an excellent neutral specimen for testing a WordPress content library.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Guest. Item 30 of 100.",
+      "slug": "flosc-starter-content-030-the-great-question-of-which-tupperware-lid-fits",
+      "item": 30,
+      "access": "guest",
+      "starter_access": "guest",
+      "protection_mode": "protected",
+      "category": "flosc-starter-guests"
+    },
+    {
+      "title": "Content Item 031 — Advanced Methods for Avoiding the Squeaky Floorboard",
+      "content": "<p><strong>Content Item 031</strong> · Member</p><p>This deliberately silly starter item considers <em>Advanced Methods for Avoiding the Squeaky Floorboard</em> with far more seriousness than the subject requires.</p><p>The working conclusion is that everyday life contains an impressive number of tiny systems nobody formally documents.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 31 of 100.",
+      "slug": "flosc-starter-content-031-advanced-methods-for-avoiding-the-squeaky-floorboard",
+      "item": 31,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 032 — The Philosophy of the Last Clean Towel",
+      "content": "<p><strong>Content Item 032</strong> · Member</p><p>For demonstration purposes, we examine <em>The Philosophy of the Last Clean Towel</em> as though it were a matter of modest institutional importance.</p><p>No certification is required. A clipboard may nevertheless improve the atmosphere.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 32 of 100.",
+      "slug": "flosc-starter-content-032-the-philosophy-of-the-last-clean-towel",
+      "item": 32,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 033 — A Comprehensive Guide to Doing Nothing for Five Minutes",
+      "content": "<p><strong>Content Item 033</strong> · Member</p><p>Today’s unnecessarily specific topic is <em>A Comprehensive Guide to Doing Nothing for Five Minutes</em>.</p><p>The evidence is limited, the consequences are minor, and the starter content is functioning exactly as intended.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 33 of 100.",
+      "slug": "flosc-starter-content-033-a-comprehensive-guide-to-doing-nothing-for-five-minutes",
+      "item": 33,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 034 — Why One Light Bulb Is Always Different",
+      "content": "<p><strong>Content Item 034</strong> · Member</p><p>This content item offers a short and completely nonessential exploration of <em>Why One Light Bulb Is Always Different</em>.</p><p>Readers are encouraged to proceed with confidence and an appropriate level of snack availability.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 34 of 100.",
+      "slug": "flosc-starter-content-034-why-one-light-bulb-is-always-different",
+      "item": 34,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 035 — The Secret Career of the Spare Button",
+      "content": "<p><strong>Content Item 035</strong> · Member</p><p>A small but determined body of starter-pack research has been devoted to <em>The Secret Career of the Spare Button</em>.</p><p>Further investigation is possible, although nobody has requested funding.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 35 of 100.",
+      "slug": "flosc-starter-content-035-the-secret-career-of-the-spare-button",
+      "item": 35,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 036 — A Comparative Study of Grocery Store Baskets",
+      "content": "<p><strong>Content Item 036</strong> · Member</p><p>In this installment, <em>A Comparative Study of Grocery Store Baskets</em> receives the full analytical treatment.</p><p>The result is approximately as useful as expected, which is part of the demonstration.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 36 of 100.",
+      "slug": "flosc-starter-content-036-a-comparative-study-of-grocery-store-baskets",
+      "item": 36,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 037 — The Curious Case of the Half-Used Notebook",
+      "content": "<p><strong>Content Item 037</strong> · Member</p><p>We now turn to <em>The Curious Case of the Half-Used Notebook</em>, an issue that has gone unaddressed by most major universities.</p><p>This post corrects that omission with several sentences and no measurable social consequence.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 37 of 100.",
+      "slug": "flosc-starter-content-037-the-curious-case-of-the-half-used-notebook",
+      "item": 37,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 038 — The Science of Saying ‘I’ll Put This Somewhere Safe’",
+      "content": "<p><strong>Content Item 038</strong> · Member</p><p>The subject of <em>The Science of Saying ‘I’ll Put This Somewhere Safe’</em> is presented here in concise starter-content form.</p><p>If you can read this paragraph, FLOSC has successfully delivered this item at your current access level.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 38 of 100.",
+      "slug": "flosc-starter-content-038-the-science-of-saying-ill-put-this-somewhere-safe",
+      "item": 38,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 039 — A Beginner’s Guide to Pretending You Read the Instructions",
+      "content": "<p><strong>Content Item 039</strong> · Member</p><p>This is a controlled test of content delivery disguised as an article about <em>A Beginner’s Guide to Pretending You Read the Instructions</em>.</p><p>The disguise is not especially convincing, but the content pipeline does not mind.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 39 of 100.",
+      "slug": "flosc-starter-content-039-a-beginners-guide-to-pretending-you-read-the-instructions",
+      "item": 39,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 040 — Why Charging Cables Form Knots Overnight",
+      "content": "<p><strong>Content Item 040</strong> · Member</p><p>Few people wake up demanding information about <em>Why Charging Cables Form Knots Overnight</em>.</p><p>That makes it an excellent neutral specimen for testing a WordPress content library.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 40 of 100.",
+      "slug": "flosc-starter-content-040-why-charging-cables-form-knots-overnight",
+      "item": 40,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 041 — The Proper Ceremony for Opening a New Jar of Peanut Butter",
+      "content": "<p><strong>Content Item 041</strong> · Member</p><p>This deliberately silly starter item considers <em>The Proper Ceremony for Opening a New Jar of Peanut Butter</em> with far more seriousness than the subject requires.</p><p>The working conclusion is that everyday life contains an impressive number of tiny systems nobody formally documents.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 41 of 100.",
+      "slug": "flosc-starter-content-041-the-proper-ceremony-for-opening-a-new-jar-of-peanut-butter",
+      "item": 41,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 042 — A Short History of Chairs Used as Clothing Storage",
+      "content": "<p><strong>Content Item 042</strong> · Member</p><p>For demonstration purposes, we examine <em>A Short History of Chairs Used as Clothing Storage</em> as though it were a matter of modest institutional importance.</p><p>No certification is required. A clipboard may nevertheless improve the atmosphere.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 42 of 100.",
+      "slug": "flosc-starter-content-042-a-short-history-of-chairs-used-as-clothing-storage",
+      "item": 42,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 043 — The Great Refrigerator Door Stare",
+      "content": "<p><strong>Content Item 043</strong> · Member</p><p>Today’s unnecessarily specific topic is <em>The Great Refrigerator Door Stare</em>.</p><p>The evidence is limited, the consequences are minor, and the starter content is functioning exactly as intended.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 43 of 100.",
+      "slug": "flosc-starter-content-043-the-great-refrigerator-door-stare",
+      "item": 43,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 044 — How to Lose Your Glasses While Wearing Them",
+      "content": "<p><strong>Content Item 044</strong> · Member</p><p>This content item offers a short and completely nonessential exploration of <em>How to Lose Your Glasses While Wearing Them</em>.</p><p>Readers are encouraged to proceed with confidence and an appropriate level of snack availability.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 44 of 100.",
+      "slug": "flosc-starter-content-044-how-to-lose-your-glasses-while-wearing-them",
+      "item": 44,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 045 — A Formal Analysis of Crumbs in the Keyboard",
+      "content": "<p><strong>Content Item 045</strong> · Member</p><p>A small but determined body of starter-pack research has been devoted to <em>A Formal Analysis of Crumbs in the Keyboard</em>.</p><p>Further investigation is possible, although nobody has requested funding.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 45 of 100.",
+      "slug": "flosc-starter-content-045-a-formal-analysis-of-crumbs-in-the-keyboard",
+      "item": 45,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 046 — Why Pigeons Never Pay Parking Tickets",
+      "content": "<p><strong>Content Item 046</strong> · Member</p><p>Pigeons have shown no consistent interest in parking meters, license plates, municipal citation systems, or parallel parking.</p><p>This administrative loophole remains largely unaddressed.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 46 of 100.",
+      "slug": "flosc-starter-content-046-why-pigeons-never-pay-parking-tickets",
+      "item": 46,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 047 — The Forgotten Art of Rewinding a Garden Hose",
+      "content": "<p><strong>Content Item 047</strong> · Member</p><p>We now turn to <em>The Forgotten Art of Rewinding a Garden Hose</em>, an issue that has gone unaddressed by most major universities.</p><p>This post corrects that omission with several sentences and no measurable social consequence.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 47 of 100.",
+      "slug": "flosc-starter-content-047-the-forgotten-art-of-rewinding-a-garden-hose",
+      "item": 47,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 048 — How Many Tote Bags Can One Person Own?",
+      "content": "<p><strong>Content Item 048</strong> · Member</p><p>The subject of <em>How Many Tote Bags Can One Person Own?</em> is presented here in concise starter-content form.</p><p>If you can read this paragraph, FLOSC has successfully delivered this item at your current access level.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 48 of 100.",
+      "slug": "flosc-starter-content-048-how-many-tote-bags-can-one-person-own",
+      "item": 48,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 049 — The Social Hierarchy of Desk Pens",
+      "content": "<p><strong>Content Item 049</strong> · Member</p><p>This is a controlled test of content delivery disguised as an article about <em>The Social Hierarchy of Desk Pens</em>.</p><p>The disguise is not especially convincing, but the content pipeline does not mind.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 49 of 100.",
+      "slug": "flosc-starter-content-049-the-social-hierarchy-of-desk-pens",
+      "item": 49,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 050 — A Practical Guide to Choosing the Wrong Checkout Line",
+      "content": "<p><strong>Content Item 050</strong> · Member</p><p>Few people wake up demanding information about <em>A Practical Guide to Choosing the Wrong Checkout Line</em>.</p><p>That makes it an excellent neutral specimen for testing a WordPress content library.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 50 of 100.",
+      "slug": "flosc-starter-content-050-a-practical-guide-to-choosing-the-wrong-checkout-line",
+      "item": 50,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 051 — Why Every Home Has One Mystery Cable",
+      "content": "<p><strong>Content Item 051</strong> · Member</p><p>This deliberately silly starter item considers <em>Why Every Home Has One Mystery Cable</em> with far more seriousness than the subject requires.</p><p>The working conclusion is that everyday life contains an impressive number of tiny systems nobody formally documents.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 51 of 100.",
+      "slug": "flosc-starter-content-051-why-every-home-has-one-mystery-cable",
+      "item": 51,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 052 — The Annual Migration of Winter Gloves",
+      "content": "<p><strong>Content Item 052</strong> · Member</p><p>For demonstration purposes, we examine <em>The Annual Migration of Winter Gloves</em> as though it were a matter of modest institutional importance.</p><p>No certification is required. A clipboard may nevertheless improve the atmosphere.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 52 of 100.",
+      "slug": "flosc-starter-content-052-the-annual-migration-of-winter-gloves",
+      "item": 52,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 053 — A Study of Doorways You Walk Through and Forget Why",
+      "content": "<p><strong>Content Item 053</strong> · Member</p><p>Today’s unnecessarily specific topic is <em>A Study of Doorways You Walk Through and Forget Why</em>.</p><p>The evidence is limited, the consequences are minor, and the starter content is functioning exactly as intended.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 53 of 100.",
+      "slug": "flosc-starter-content-053-a-study-of-doorways-you-walk-through-and-forget-why",
+      "item": 53,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 054 — The Secret Life of the Bottom Kitchen Drawer",
+      "content": "<p><strong>Content Item 054</strong> · Member</p><p>This content item offers a short and completely nonessential exploration of <em>The Secret Life of the Bottom Kitchen Drawer</em>.</p><p>Readers are encouraged to proceed with confidence and an appropriate level of snack availability.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 54 of 100.",
+      "slug": "flosc-starter-content-054-the-secret-life-of-the-bottom-kitchen-drawer",
+      "item": 54,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 055 — Practical Uses for a Bowl That Is Slightly Too Small",
+      "content": "<p><strong>Content Item 055</strong> · Member</p><p>A small but determined body of starter-pack research has been devoted to <em>Practical Uses for a Bowl That Is Slightly Too Small</em>.</p><p>Further investigation is possible, although nobody has requested funding.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 55 of 100.",
+      "slug": "flosc-starter-content-055-practical-uses-for-a-bowl-that-is-slightly-too-small",
+      "item": 55,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 056 — An Investigation into Vanishing Teaspoons",
+      "content": "<p><strong>Content Item 056</strong> · Member</p><p>In this installment, <em>An Investigation into Vanishing Teaspoons</em> receives the full analytical treatment.</p><p>The result is approximately as useful as expected, which is part of the demonstration.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 56 of 100.",
+      "slug": "flosc-starter-content-056-an-investigation-into-vanishing-teaspoons",
+      "item": 56,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 057 — The Advanced Science of Pillow Flipping",
+      "content": "<p><strong>Content Item 057</strong> · Member</p><p>We now turn to <em>The Advanced Science of Pillow Flipping</em>, an issue that has gone unaddressed by most major universities.</p><p>This post corrects that omission with several sentences and no measurable social consequence.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 57 of 100.",
+      "slug": "flosc-starter-content-057-the-advanced-science-of-pillow-flipping",
+      "item": 57,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 058 — Why Laundry Baskets Are Never Truly Empty",
+      "content": "<p><strong>Content Item 058</strong> · Member</p><p>The subject of <em>Why Laundry Baskets Are Never Truly Empty</em> is presented here in concise starter-content form.</p><p>If you can read this paragraph, FLOSC has successfully delivered this item at your current access level.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 58 of 100.",
+      "slug": "flosc-starter-content-058-why-laundry-baskets-are-never-truly-empty",
+      "item": 58,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 059 — A Guide to Reading a Recipe After You Started Cooking",
+      "content": "<p><strong>Content Item 059</strong> · Member</p><p>This is a controlled test of content delivery disguised as an article about <em>A Guide to Reading a Recipe After You Started Cooking</em>.</p><p>The disguise is not especially convincing, but the content pipeline does not mind.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 59 of 100.",
+      "slug": "flosc-starter-content-059-a-guide-to-reading-a-recipe-after-you-started-cooking",
+      "item": 59,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 060 — The Noble Tradition of Keeping Empty Gift Bags",
+      "content": "<p><strong>Content Item 060</strong> · Member</p><p>Few people wake up demanding information about <em>The Noble Tradition of Keeping Empty Gift Bags</em>.</p><p>That makes it an excellent neutral specimen for testing a WordPress content library.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 60 of 100.",
+      "slug": "flosc-starter-content-060-the-noble-tradition-of-keeping-empty-gift-bags",
+      "item": 60,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 061 — How to Open a Package Without Destroying the Instructions",
+      "content": "<p><strong>Content Item 061</strong> · Member</p><p>This deliberately silly starter item considers <em>How to Open a Package Without Destroying the Instructions</em> with far more seriousness than the subject requires.</p><p>The working conclusion is that everyday life contains an impressive number of tiny systems nobody formally documents.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 61 of 100.",
+      "slug": "flosc-starter-content-061-how-to-open-a-package-without-destroying-the-instructions",
+      "item": 61,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 062 — Why One Grocery Bag Is Always Much Heavier",
+      "content": "<p><strong>Content Item 062</strong> · Member</p><p>For demonstration purposes, we examine <em>Why One Grocery Bag Is Always Much Heavier</em> as though it were a matter of modest institutional importance.</p><p>No certification is required. A clipboard may nevertheless improve the atmosphere.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 62 of 100.",
+      "slug": "flosc-starter-content-062-why-one-grocery-bag-is-always-much-heavier",
+      "item": 62,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 063 — The Important Difference Between ‘Clean’ and ‘Clean Enough’",
+      "content": "<p><strong>Content Item 063</strong> · Member</p><p>Today’s unnecessarily specific topic is <em>The Important Difference Between ‘Clean’ and ‘Clean Enough’</em>.</p><p>The evidence is limited, the consequences are minor, and the starter content is functioning exactly as intended.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 63 of 100.",
+      "slug": "flosc-starter-content-063-the-important-difference-between-clean-and-clean-enough",
+      "item": 63,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 064 — Notes on the Universal Chair Pile",
+      "content": "<p><strong>Content Item 064</strong> · Member</p><p>This content item offers a short and completely nonessential exploration of <em>Notes on the Universal Chair Pile</em>.</p><p>Readers are encouraged to proceed with confidence and an appropriate level of snack availability.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 64 of 100.",
+      "slug": "flosc-starter-content-064-notes-on-the-universal-chair-pile",
+      "item": 64,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 065 — A Study of Socks That Almost Match",
+      "content": "<p><strong>Content Item 065</strong> · Member</p><p>A small but determined body of starter-pack research has been devoted to <em>A Study of Socks That Almost Match</em>.</p><p>Further investigation is possible, although nobody has requested funding.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 65 of 100.",
+      "slug": "flosc-starter-content-065-a-study-of-socks-that-almost-match",
+      "item": 65,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 066 — The Strange Confidence of a Fresh Roll of Paper Towels",
+      "content": "<p><strong>Content Item 066</strong> · Member</p><p>In this installment, <em>The Strange Confidence of a Fresh Roll of Paper Towels</em> receives the full analytical treatment.</p><p>The result is approximately as useful as expected, which is part of the demonstration.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 66 of 100.",
+      "slug": "flosc-starter-content-066-the-strange-confidence-of-a-fresh-roll-of-paper-towels",
+      "item": 66,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 067 — Advanced Techniques in Avoiding Phone Calls",
+      "content": "<p><strong>Content Item 067</strong> · Member</p><p>We now turn to <em>Advanced Techniques in Avoiding Phone Calls</em>, an issue that has gone unaddressed by most major universities.</p><p>This post corrects that omission with several sentences and no measurable social consequence.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 67 of 100.",
+      "slug": "flosc-starter-content-067-advanced-techniques-in-avoiding-phone-calls",
+      "item": 67,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 068 — Why the Printer Knows When You’re in a Hurry",
+      "content": "<p><strong>Content Item 068</strong> · Member</p><p>The subject of <em>Why the Printer Knows When You’re in a Hurry</em> is presented here in concise starter-content form.</p><p>If you can read this paragraph, FLOSC has successfully delivered this item at your current access level.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 68 of 100.",
+      "slug": "flosc-starter-content-068-why-the-printer-knows-when-youre-in-a-hurry",
+      "item": 68,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 069 — A Field Guide to Things Kept ‘Just in Case’",
+      "content": "<p><strong>Content Item 069</strong> · Member</p><p>This is a controlled test of content delivery disguised as an article about <em>A Field Guide to Things Kept ‘Just in Case’</em>.</p><p>The disguise is not especially convincing, but the content pipeline does not mind.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 69 of 100.",
+      "slug": "flosc-starter-content-069-a-field-guide-to-things-kept-just-in-case",
+      "item": 69,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 070 — The Mystery of the Permanently Damp Dish Towel",
+      "content": "<p><strong>Content Item 070</strong> · Member</p><p>Few people wake up demanding information about <em>The Mystery of the Permanently Damp Dish Towel</em>.</p><p>That makes it an excellent neutral specimen for testing a WordPress content library.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 70 of 100.",
+      "slug": "flosc-starter-content-070-the-mystery-of-the-permanently-damp-dish-towel",
+      "item": 70,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 071 — How to Walk into a Room and Forget Everything",
+      "content": "<p><strong>Content Item 071</strong> · Member</p><p>This deliberately silly starter item considers <em>How to Walk into a Room and Forget Everything</em> with far more seriousness than the subject requires.</p><p>The working conclusion is that everyday life contains an impressive number of tiny systems nobody formally documents.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 71 of 100.",
+      "slug": "flosc-starter-content-071-how-to-walk-into-a-room-and-forget-everything",
+      "item": 71,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 072 — An Appreciation of the Good Scissors",
+      "content": "<p><strong>Content Item 072</strong> · Member</p><p>For demonstration purposes, we examine <em>An Appreciation of the Good Scissors</em> as though it were a matter of modest institutional importance.</p><p>No certification is required. A clipboard may nevertheless improve the atmosphere.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 72 of 100.",
+      "slug": "flosc-starter-content-072-an-appreciation-of-the-good-scissors",
+      "item": 72,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 073 — The Politics of Thermostat Adjustment",
+      "content": "<p><strong>Content Item 073</strong> · Member</p><p>Today’s unnecessarily specific topic is <em>The Politics of Thermostat Adjustment</em>.</p><p>The evidence is limited, the consequences are minor, and the starter content is functioning exactly as intended.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 73 of 100.",
+      "slug": "flosc-starter-content-073-the-politics-of-thermostat-adjustment",
+      "item": 73,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 074 — Why Nobody Wants the Last Cookie",
+      "content": "<p><strong>Content Item 074</strong> · Member</p><p>This content item offers a short and completely nonessential exploration of <em>Why Nobody Wants the Last Cookie</em>.</p><p>Readers are encouraged to proceed with confidence and an appropriate level of snack availability.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 74 of 100.",
+      "slug": "flosc-starter-content-074-why-nobody-wants-the-last-cookie",
+      "item": 74,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 075 — A Short Course in Staring into the Pantry",
+      "content": "<p><strong>Content Item 075</strong> · Member</p><p>A small but determined body of starter-pack research has been devoted to <em>A Short Course in Staring into the Pantry</em>.</p><p>Further investigation is possible, although nobody has requested funding.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 75 of 100.",
+      "slug": "flosc-starter-content-075-a-short-course-in-staring-into-the-pantry",
+      "item": 75,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 076 — The Fine Art of Moving Something from One Pile to Another",
+      "content": "<p><strong>Content Item 076</strong> · Member</p><p>In this installment, <em>The Fine Art of Moving Something from One Pile to Another</em> receives the full analytical treatment.</p><p>The result is approximately as useful as expected, which is part of the demonstration.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 76 of 100.",
+      "slug": "flosc-starter-content-076-the-fine-art-of-moving-something-from-one-pile-to-another",
+      "item": 76,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 077 — Why Batteries Live in Three Different Drawers",
+      "content": "<p><strong>Content Item 077</strong> · Member</p><p>We now turn to <em>Why Batteries Live in Three Different Drawers</em>, an issue that has gone unaddressed by most major universities.</p><p>This post corrects that omission with several sentences and no measurable social consequence.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 77 of 100.",
+      "slug": "flosc-starter-content-077-why-batteries-live-in-three-different-drawers",
+      "item": 77,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 078 — The Great Debate: Top Sheet or No Top Sheet",
+      "content": "<p><strong>Content Item 078</strong> · Member</p><p>The subject of <em>The Great Debate: Top Sheet or No Top Sheet</em> is presented here in concise starter-content form.</p><p>If you can read this paragraph, FLOSC has successfully delivered this item at your current access level.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 78 of 100.",
+      "slug": "flosc-starter-content-078-the-great-debate-top-sheet-or-no-top-sheet",
+      "item": 78,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 079 — Understanding the One Cabinet Nobody Likes",
+      "content": "<p><strong>Content Item 079</strong> · Member</p><p>This is a controlled test of content delivery disguised as an article about <em>Understanding the One Cabinet Nobody Likes</em>.</p><p>The disguise is not especially convincing, but the content pipeline does not mind.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 79 of 100.",
+      "slug": "flosc-starter-content-079-understanding-the-one-cabinet-nobody-likes",
+      "item": 79,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 080 — The Unexpected Importance of a Reliable Ladle",
+      "content": "<p><strong>Content Item 080</strong> · Member</p><p>Few people wake up demanding information about <em>The Unexpected Importance of a Reliable Ladle</em>.</p><p>That makes it an excellent neutral specimen for testing a WordPress content library.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 80 of 100.",
+      "slug": "flosc-starter-content-080-the-unexpected-importance-of-a-reliable-ladle",
+      "item": 80,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 081 — A Brief Guide to Owning Too Many Charging Bricks",
+      "content": "<p><strong>Content Item 081</strong> · Member</p><p>This deliberately silly starter item considers <em>A Brief Guide to Owning Too Many Charging Bricks</em> with far more seriousness than the subject requires.</p><p>The working conclusion is that everyday life contains an impressive number of tiny systems nobody formally documents.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 81 of 100.",
+      "slug": "flosc-starter-content-081-a-brief-guide-to-owning-too-many-charging-bricks",
+      "item": 81,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 082 — Why the Dishwasher Is Never Loaded the Same Way Twice",
+      "content": "<p><strong>Content Item 082</strong> · Member</p><p>For demonstration purposes, we examine <em>Why the Dishwasher Is Never Loaded the Same Way Twice</em> as though it were a matter of modest institutional importance.</p><p>No certification is required. A clipboard may nevertheless improve the atmosphere.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 82 of 100.",
+      "slug": "flosc-starter-content-082-why-the-dishwasher-is-never-loaded-the-same-way-twice",
+      "item": 82,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 083 — The Curious Economics of Buying More Storage Containers",
+      "content": "<p><strong>Content Item 083</strong> · Member</p><p>Today’s unnecessarily specific topic is <em>The Curious Economics of Buying More Storage Containers</em>.</p><p>The evidence is limited, the consequences are minor, and the starter content is functioning exactly as intended.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 83 of 100.",
+      "slug": "flosc-starter-content-083-the-curious-economics-of-buying-more-storage-containers",
+      "item": 83,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 084 — A Formal Theory of Where the Tape Went",
+      "content": "<p><strong>Content Item 084</strong> · Member</p><p>This content item offers a short and completely nonessential exploration of <em>A Formal Theory of Where the Tape Went</em>.</p><p>Readers are encouraged to proceed with confidence and an appropriate level of snack availability.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 84 of 100.",
+      "slug": "flosc-starter-content-084-a-formal-theory-of-where-the-tape-went",
+      "item": 84,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 085 — How to Remember a Password You Definitely Remembered Yesterday",
+      "content": "<p><strong>Content Item 085</strong> · Member</p><p>A small but determined body of starter-pack research has been devoted to <em>How to Remember a Password You Definitely Remembered Yesterday</em>.</p><p>Further investigation is possible, although nobody has requested funding.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 85 of 100.",
+      "slug": "flosc-starter-content-085-how-to-remember-a-password-you-definitely-remembered-yesterday",
+      "item": 85,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 086 — The Secret Society of Reusable Water Bottles",
+      "content": "<p><strong>Content Item 086</strong> · Member</p><p>In this installment, <em>The Secret Society of Reusable Water Bottles</em> receives the full analytical treatment.</p><p>The result is approximately as useful as expected, which is part of the demonstration.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 86 of 100.",
+      "slug": "flosc-starter-content-086-the-secret-society-of-reusable-water-bottles",
+      "item": 86,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 087 — Why Every Closet Has a Bag of Other Bags",
+      "content": "<p><strong>Content Item 087</strong> · Member</p><p>We now turn to <em>Why Every Closet Has a Bag of Other Bags</em>, an issue that has gone unaddressed by most major universities.</p><p>This post corrects that omission with several sentences and no measurable social consequence.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 87 of 100.",
+      "slug": "flosc-starter-content-087-why-every-closet-has-a-bag-of-other-bags",
+      "item": 87,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 088 — The Care and Feeding of a Household Junk Basket",
+      "content": "<p><strong>Content Item 088</strong> · Member</p><p>The subject of <em>The Care and Feeding of a Household Junk Basket</em> is presented here in concise starter-content form.</p><p>If you can read this paragraph, FLOSC has successfully delivered this item at your current access level.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 88 of 100.",
+      "slug": "flosc-starter-content-088-the-care-and-feeding-of-a-household-junk-basket",
+      "item": 88,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 089 — A Statistical Review of Dropped Toast",
+      "content": "<p><strong>Content Item 089</strong> · Member</p><p>This is a controlled test of content delivery disguised as an article about <em>A Statistical Review of Dropped Toast</em>.</p><p>The disguise is not especially convincing, but the content pipeline does not mind.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 89 of 100.",
+      "slug": "flosc-starter-content-089-a-statistical-review-of-dropped-toast",
+      "item": 89,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 090 — How to Keep a Pen Until It Actually Runs Out",
+      "content": "<p><strong>Content Item 090</strong> · Member</p><p>Few people wake up demanding information about <em>How to Keep a Pen Until It Actually Runs Out</em>.</p><p>That makes it an excellent neutral specimen for testing a WordPress content library.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 90 of 100.",
+      "slug": "flosc-starter-content-090-how-to-keep-a-pen-until-it-actually-runs-out",
+      "item": 90,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 091 — The Great Mystery of the Missing Measuring Cup",
+      "content": "<p><strong>Content Item 091</strong> · Member</p><p>This deliberately silly starter item considers <em>The Great Mystery of the Missing Measuring Cup</em> with far more seriousness than the subject requires.</p><p>The working conclusion is that everyday life contains an impressive number of tiny systems nobody formally documents.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 91 of 100.",
+      "slug": "flosc-starter-content-091-the-great-mystery-of-the-missing-measuring-cup",
+      "item": 91,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 092 — A Guide to Choosing the Chair With the Least Stuff on It",
+      "content": "<p><strong>Content Item 092</strong> · Member</p><p>For demonstration purposes, we examine <em>A Guide to Choosing the Chair With the Least Stuff on It</em> as though it were a matter of modest institutional importance.</p><p>No certification is required. A clipboard may nevertheless improve the atmosphere.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 92 of 100.",
+      "slug": "flosc-starter-content-092-a-guide-to-choosing-the-chair-with-the-least-stuff-on-it",
+      "item": 92,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 093 — Why One Drawer Refuses to Close Properly",
+      "content": "<p><strong>Content Item 093</strong> · Member</p><p>Today’s unnecessarily specific topic is <em>Why One Drawer Refuses to Close Properly</em>.</p><p>The evidence is limited, the consequences are minor, and the starter content is functioning exactly as intended.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 93 of 100.",
+      "slug": "flosc-starter-content-093-why-one-drawer-refuses-to-close-properly",
+      "item": 93,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 094 — The Ceremonial Folding of a Grocery Receipt",
+      "content": "<p><strong>Content Item 094</strong> · Member</p><p>This content item offers a short and completely nonessential exploration of <em>The Ceremonial Folding of a Grocery Receipt</em>.</p><p>Readers are encouraged to proceed with confidence and an appropriate level of snack availability.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 94 of 100.",
+      "slug": "flosc-starter-content-094-the-ceremonial-folding-of-a-grocery-receipt",
+      "item": 94,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 095 — The Unreasonable Satisfaction of a Fresh Trash Bag",
+      "content": "<p><strong>Content Item 095</strong> · Member</p><p>A small but determined body of starter-pack research has been devoted to <em>The Unreasonable Satisfaction of a Fresh Trash Bag</em>.</p><p>Further investigation is possible, although nobody has requested funding.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 95 of 100.",
+      "slug": "flosc-starter-content-095-the-unreasonable-satisfaction-of-a-fresh-trash-bag",
+      "item": 95,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 096 — A Beginner’s Guide to Finding the Light Switch in the Dark",
+      "content": "<p><strong>Content Item 096</strong> · Member</p><p>In this installment, <em>A Beginner’s Guide to Finding the Light Switch in the Dark</em> receives the full analytical treatment.</p><p>The result is approximately as useful as expected, which is part of the demonstration.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 96 of 100.",
+      "slug": "flosc-starter-content-096-a-beginners-guide-to-finding-the-light-switch-in-the-dark",
+      "item": 96,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 097 — Why We Keep Instruction Manuals for Things We No Longer Own",
+      "content": "<p><strong>Content Item 097</strong> · Member</p><p>We now turn to <em>Why We Keep Instruction Manuals for Things We No Longer Own</em>, an issue that has gone unaddressed by most major universities.</p><p>This post corrects that omission with several sentences and no measurable social consequence.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 97 of 100.",
+      "slug": "flosc-starter-content-097-why-we-keep-instruction-manuals-for-things-we-no-longer-own",
+      "item": 97,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 098 — Advanced Techniques for Carrying Too Much in One Trip",
+      "content": "<p><strong>Content Item 098</strong> · Member</p><p>The subject of <em>Advanced Techniques for Carrying Too Much in One Trip</em> is presented here in concise starter-content form.</p><p>If you can read this paragraph, FLOSC has successfully delivered this item at your current access level.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 98 of 100.",
+      "slug": "flosc-starter-content-098-advanced-techniques-for-carrying-too-much-in-one-trip",
+      "item": 98,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 099 — An Introduction to Saying ‘Where Did I Put That?’",
+      "content": "<p><strong>Content Item 099</strong> · Member</p><p>This is a controlled test of content delivery disguised as an article about <em>An Introduction to Saying ‘Where Did I Put That?’</em>.</p><p>The disguise is not especially convincing, but the content pipeline does not mind.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 99 of 100.",
+      "slug": "flosc-starter-content-099-an-introduction-to-saying-where-did-i-put-that",
+      "item": 99,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    },
+    {
+      "title": "Content Item 100 — The Final Content Item: Congratulations, You Found It",
+      "content": "<p><strong>Content Item 100</strong> · Member</p><p>You reached the final starter item. There is no hidden certificate, but this paragraph confirms that the full 100-item content library imported successfully.</p><p>BubblyBetty is expected to consider this a major event.</p>",
+      "excerpt": "A deliberately silly FLOSC starter post. Access tier: Member. Item 100 of 100.",
+      "slug": "flosc-starter-content-100-the-final-content-item-congratulations-you-found-it",
+      "item": 100,
+      "access": "member",
+      "starter_access": "member",
+      "protection_mode": "protected",
+      "category": "flosc-starter-members"
+    }
+  ]
+}

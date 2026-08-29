@@ -52,14 +52,16 @@ Instead of "Are you interested in buying?" FLOSC asks "What should I help you wi
 
 = Starter Packs =
 
-A new install has nothing to say. A starter pack fixes that in one click, so you can see a journey work before you configure anything.
+A new install has nothing to say. A starter pack fixes that in one click, so you can see a complete journey work before you configure anything.
 
-Installing a pack creates a flow file in the FLOSC configuration folder, a WordPress category, and example posts inside it, each stamped with the access level it is gated at. Nothing is written to the plugin folder. A pack refuses rather than overwrites: if a flow file or category of the same name already exists, FLOSC tells you instead of replacing your work. Removing a pack deletes exactly what that pack created, found by its own stamp — never by title, date or category name.
+Installing a pack creates a flow file in the FLOSC configuration folder, its categories, its example posts each stamped with the access level it is gated at, and — where the pack has one — its DA1 catalog and product file. Nothing is written to the plugin folder. A pack refuses rather than overwrites: if a flow file, a flow's settings, or a category of the same name already exists, FLOSC tells you instead of replacing your work. Removing a pack deletes exactly what that pack created, found by its own stamp — never by title, date or category name.
 
 Two packs ship with FLOSC:
 
-* **WordPress Content Membership Journey** - 100 posts about running a membership site, gated 15 visitor / 25 guest / 60 member, with a flow that walks a stranger from the open shelf to the paid one
-* **DA1 Catalog Sales Journey** - a conversational catalog of fifty extremely ordinary instruction manuals, gated the same way, selling a compiled PDF
+* **WordPress Content Membership Journey** - 100 deliberately silly WordPress posts gated as a real membership library: visitors read items 1-10, guests reach 1-30, members reach all 100. Curated by BubblyBetty. The journey sells membership; you set the price.
+* **DA1 Catalog Sales Journey** - 50 over-serious instruction manuals for ordinary household tasks, served as a content-agnostic DA1 catalog: 4 items for visitors, 8 for guests, all 50 for members. Curated by DadJokeDan. The journey sells the compiled UberManual PDF for $10.
+
+Each pack references a personality from the FLOSC library rather than bundling one, so you can swap the voice curating the journey at any time and watch the whole experience change.
 
 Both are example content. Delete them, or take them apart and replace the subject with your own.
 

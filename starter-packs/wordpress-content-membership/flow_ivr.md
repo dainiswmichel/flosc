@@ -1,138 +1,149 @@
-# WordPress Content Membership Journey — IVR Configuration
-# Purpose: the classic membership site, working end to end, in one install.
-# Subject: a hundred-post library about running a membership site.
-# Conversion: membership — the sixty member-only posts.
-# The library is self-referential on purpose. Install it, read it, then replace
-# it with your own subject. The journey does not care what the posts are about.
+# WordPress Content Membership Journey
+# FLOSC Starter Pack
+# Demonstrates WordPress posts as progressive Freeline -> Guest -> Member content.
+# Existing personality reference only; no personality is bundled with this starter pack.
+
+## Settings (YAML)
+```yaml
+name: "WordPress Content Membership Journey"
+personality_library_id: "bubblybetty"
+ai_enable_ivr_context: true
+ai_enable_content_access: true
+ai_topic_scope: "FLOSC WordPress Content Membership Journey starter library"
+ai_base_prompt: "Help visitors explore the 100 deliberately silly WordPress posts in this starter journey. Respect FLOSC access at all times. Visitors may access Items 1-10. Guests may access Items 1-30. Members may access all 100. Never reveal protected post content to a lower access tier. When a Guest wants more than the Guest collection, explain that Membership unlocks the complete 100-post library and surface the configured membership offer when appropriate."
+content_types:
+  0:
+    singular: "Content Item"
+    plural: "Content Items"
+content_item_groups:
+  0:
+    quiz_id: ""
+    category: "flosc-starter-freeline"
+  1:
+    quiz_id: ""
+    category: "flosc-starter-guests"
+  2:
+    quiz_id: ""
+    category: "flosc-starter-members"
+content_item_category: "flosc-starter-freeline"
+companion_enabled: true
+companion_show_for_visitors: 1
+companion_greeting: "Welcome to the WordPress Content Membership Journey."
+guest_access_days: 0
+```
 
 ---
 
-# Freeline Messages (visitors)
+# Freeline Messages
 
-## Welcome
-MessageName: membership_welcome
+## WCMJ Welcome
+MessageName: wcmj_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: This is a library of a hundred posts about running a membership site — and it is itself a membership site, so you are standing inside the example. Fifteen posts are open to you right now. Ask me what is in them. (Configure an AI provider under Settings → AI and I get considerably better at this.)
+MessageContent: 🎉 Welcome to the **WordPress Content Membership Journey**. This starter library contains **100 gloriously unnecessary WordPress posts**. Items **1-10** are open in the Freeline. Create or use a Guest login to unlock Items **11-30**. Membership unlocks the complete collection, Items **1-100**.
 MessageConditions: is_visitor && first_show_session
 
 ---
 
-## What is in here
-MessageName: membership_whats_here
+## Browse Freeline
+MessageName: wcmj_browse_freeline
 MessageType: suggested_user_autoprompt
-MessageStyle: card
-UserInput: What is in this library?
-MessageContent: A hundred posts on pricing, churn, onboarding, community, gating, tax, and the ways membership sites quietly fail. Fifteen are open to everyone, twenty-five more open when you register, and the remaining sixty are for members. Same library — what changes is how much of it I can show you.
+MessageStyle: pill
+UserInput: Show me the Freeline posts
+MessageContent: Absolutely. Items **1-10** are public. Pick a title and we can give it considerably more attention than it deserves.
 MessageConditions: is_visitor || is_guest || is_member
-Keywords: what is in here, library, posts, contents, about, topics
+Keywords: freeline, public, posts, content, items 1-10
 
 ---
 
-## What can I read now
-MessageName: membership_visitor_reading
+## Unlock Guest Posts
+MessageName: wcmj_login_prompt
 MessageType: suggested_user_autoprompt
-MessageStyle: card
-UserInput: What can I read right now?
-MessageContent: The open fifteen are the foundations — what a membership actually sells, why three tiers is usually the right number, why most sites die in month four, and the arithmetic that shows you need far fewer members than you think. Say the word and I will point you at one.
+MessageStyle: pill
+UserInput: Unlock the Guest posts
+Action: open_login_modal
+MessageContent: Guest access opens Items **11-30** while keeping the ten Freeline posts available too.
 MessageConditions: is_visitor
-Keywords: read now, free, open, available, what can i read, start
+Keywords: guest, login, unlock, items 11-30
 
 ---
 
-## Why is some of it locked
-MessageName: membership_why_locked
-MessageType: suggested_user_autoprompt
-MessageStyle: card
-UserInput: Why is some of it locked?
-MessageContent: Because that is the thing being demonstrated. The public posts make the argument, the registered posts extend it, and the member posts carry the detail — churn cohorts, dunning, VAT on digital goods, gating at the query rather than the template. If the wall annoys you slightly, good: that is the exact feeling this journey exists to handle well.
-MessageConditions: is_visitor || is_guest
-Keywords: locked, why locked, paywall, gate, wall, hidden, restricted
-
----
-
-## Register
-MessageName: membership_register_prompt
-MessageType: suggested_user_autoprompt
-MessageStyle: card
-UserInput: How do I get the rest?
-MessageContent: Registering is free and opens twenty-five more posts — cadence, onboarding sequences, dunning, excerpt writing, the metric worth watching weekly. Membership opens the remaining sixty. I can take you to either one.
-MessageConditions: is_visitor
-Keywords: register, sign up, join, account, get the rest, more
-
----
-
-# Guest Messages
+# Login Messages
 
 ## Guest Welcome
-MessageName: membership_guest_welcome
+MessageName: wcmj_guest_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: You have forty posts now instead of fifteen. The new ones are the operational ones — publishing cadence, the content bank you want before launch, why failed cards are the cheapest revenue you will ever recover, and where the upgrade prompt actually belongs. Ask me for any of it.
+MessageContent: 🎊 Guest access confirmed. You can now explore **Items 1-30**. That is thirty pieces of carefully organized nonsense. The remaining **70 posts** are reserved for Members.
 MessageConditions: is_guest && first_show_session
 
 ---
 
-## What did I unlock
-MessageName: membership_guest_unlocked
+## Explore Guest Library
+MessageName: wcmj_browse_guest
 MessageType: suggested_user_autoprompt
-MessageStyle: card
-UserInput: What did I just unlock?
-MessageContent: Twenty-five posts about running the thing day to day: choosing a cadence you can keep, writing an excerpt that sells a locked post, setting support expectations, and testing your own signup on a phone you have not configured. Members reach a further sixty, which is where churn cohorts, tax, and the technical gating posts live.
+MessageStyle: pill
+UserInput: Show me something from the Guest library
+MessageContent: You now have the Freeline plus Guest Items **11-30**. Tell me what sort of unnecessary topic sounds promising and I will find something suitably ridiculous.
 MessageConditions: is_guest
-Keywords: unlock, unlocked, what do i get, access, more
+Keywords: guest library, guest posts, items 11-30, browse
 
 ---
 
-## What is behind the member wall
-MessageName: membership_guest_member_preview
-MessageType: suggested_user_autoprompt
+# Offer Messages
+
+## Unlock All 100 Posts
+MessageName: wcmj_membership_offer
+MessageType: offer
 MessageStyle: card
-UserInput: What is behind the member wall?
-MessageContent: Sixty posts, in six groups. Retention and churn. Pricing and money, including VAT on digital goods and why chargebacks are worse than refunds. Content operations. Community and support. Growth. And the technical set — gating at the query rather than the template, caching, protecting media files, rate-limiting login. That last group is the one people tell us they wish they had read first.
-MessageConditions: is_guest
-Keywords: member, membership, behind the wall, whats in it, worth it, upgrade
+OfferID: wcmj_membership
+DisplayFormat: card
+MessageContent: **Membership unlocks all 100 WordPress posts.** You already have a sample of the library; Membership opens Items **31-100** as well, including the municipal mystery known as **Item 46 - Why Pigeons Never Pay Parking Tickets**.
+MessageConditions: is_guest && !purchased
 
 ---
 
-# Member Messages
+## Show Membership Offer
+MessageName: wcmj_show_membership
+MessageType: suggested_user_autoprompt
+MessageStyle: pill
+UserInput: Show me Membership access
+Action: show_offer_wcmj_membership
+MessageContent: Membership is the step from the 30-post Guest library to the complete **100-post collection**.
+MessageConditions: is_guest && !purchased
+Keywords: membership, upgrade, all posts, full access, unlock all
 
-## Member Welcome
-MessageName: membership_member_welcome
+---
+
+# Sale Messages
+
+## Membership Unlocked
+MessageName: wcmj_member_welcome
 MessageType: auto
 MessageStyle: card
-MessageContent: All hundred posts are open to you. Ask for anything by name, or describe the problem you are actually having — a member who stopped logging in, a price you are afraid to raise, a PDF you suspect is not really locked — and I will find the post that covers it.
-MessageConditions: is_member && first_show_session
+MessageContent: 🚨🎉 **ALL ONE HUNDRED.** Membership is active, so Items **1-100** are available. Somewhere in there is Item 46: **Why Pigeons Never Pay Parking Tickets**. Municipal accountability has finally reached the bird sector.
+MessageConditions: is_member && first_message_after_purchase
 
 ---
 
-## Where should I start
-MessageName: membership_member_start
+# Content Messages
+
+## Find the Pigeons
+MessageName: wcmj_pigeons
 MessageType: suggested_user_autoprompt
-MessageStyle: card
-UserInput: Where should I start?
-MessageContent: Three posts, in this order. Reading a churn number correctly, because five percent monthly is half your members a year. Gate at the query, not just the template, because that is the bug most sites are shipping right now. Then the ninety-day danger window, which explains why the cancellation you got today was decided in March.
+MessageStyle: pill
+UserInput: Take me to the pigeon investigation 🐦
+MessageContent: ITEM 46. 🐦🚗 Ask for **Content Item 046 - Why Pigeons Never Pay Parking Tickets**.
 MessageConditions: is_member
-Keywords: start, where to start, first, recommend, begin, order
+Keywords: pigeons, parking tickets, item 46
 
 ---
 
-## Check my gating
-MessageName: membership_member_gating
+## Browse Full Library
+MessageName: wcmj_browse_member
 MessageType: suggested_user_autoprompt
-MessageStyle: card
-UserInput: How do I check my own gating?
-MessageContent: Three tests, all of them free. Load a member URL in a private window. Hit your REST API logged out and search the response for a member title. Then copy a PDF link out of a locked post and open it with no session. Most sites pass the first and fail one of the other two. The technical posts walk through each fix.
+MessageStyle: pill
+UserInput: Browse all 100 posts
+MessageContent: The complete collection is open. Give me a number, a title, or an everyday subject and I will help you find a post.
 MessageConditions: is_member
-Keywords: gating, check, test, security, rest api, leak, locked
-
----
-
-## How was this built
-MessageName: membership_member_howbuilt
-MessageType: suggested_user_autoprompt
-MessageStyle: card
-UserInput: How was this journey built?
-MessageContent: A hundred posts in one category, each stamped visitor, guest or member. A flow that decides what I say at each stage. A login in the middle and an offer at the end. Nothing here is specific to membership advice — replace the posts with your own subject and the same journey runs unchanged. That is what this pack is really demonstrating.
-MessageConditions: is_member
-Keywords: how was this built, how does this work, flosc, journey, built
+Keywords: all posts, full library, all 100, browse
