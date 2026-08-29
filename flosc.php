@@ -1165,117 +1165,19 @@ class FLOSC_Framework {
         $this->sso_manager->init();
     }
     
-    /**
-     * Does this install actually need cross-domain authentication?
-     *
-     * True when any flow declares a custom domain, which is the only situation in
-     * which a WordPress auth cookie cannot reach the visitor: cookies are scoped to
-     * one host, and a floscDomain is a different host on the same install.
-     *
-     * Three places can carry a domain, and all three are options -- no file is read
-     * here, only the directory listing that names the per-flow option keys:
-     *
-     *   flosc_flows            the flows registry, key 'custom_domain'
-     *   flosc_flow_{stem}      per-IVR-file settings bag, key 'domain'
-     *   flosc_custom_domain    the legacy single-domain global
-     *
-     * FAILS OPEN. If anything needed to answer the question is unavailable, this
-     * returns true and the filters register as before. Guessing "no" would silently
-     * sign out every member on a floscDomain, so uncertainty must never disable
-     * authentication -- only a confident "no domains configured" may.
-     *
-     * Memoized per request: called once from init_hooks(), and the static keeps it
-     * that way if that ever changes.
-     *
-     * @return bool
-     */
-    private function flosc_needs_cross_domain_auth() {
-        static $needed = null;
-        if ($needed !== null) {
-            return $needed;
-        }
-
-        // Legacy single-domain global.
-        if (trim((string) get_option('flosc_custom_domain', '')) !== '') {
-            $needed = true;
-            return $needed;
-        }
-
-        // Flows registry.
-        $flows = get_option('flosc_flows', []);
-        if (is_array($flows)) {
-            foreach ($flows as $flow) {
-                if (is_array($flow) && trim((string) ($flow['custom_domain'] ?? '')) !== '') {
-                    $needed = true;
-                    return $needed;
-                }
-            }
-        }
-
-        // IVR-file flows keep their domain in flosc_flow_{stem}. The glob only lists
-        // filenames to derive those option keys; no IVR file is opened or parsed.
-        if (!function_exists('flosc_config_glob')) {
-            $needed = true; // Cannot enumerate — fail open.
-            return $needed;
-        }
-
-        $files = flosc_config_glob(['*_ivr.md', 'ivr*.md']);
-        if (!is_array($files)) {
-            $needed = true; // Cannot enumerate — fail open.
-            return $needed;
-        }
-
-        foreach (array_unique(array_map('basename', $files)) as $filename) {
-            if (strpos($filename, 'backup') !== false) {
-                continue;
-            }
-            $stem = sanitize_key(pathinfo($filename, PATHINFO_FILENAME));
-            if ($stem === '') {
-                continue;
-            }
-            $settings = get_option('flosc_flow_' . $stem, []);
-            if (!is_array($settings)) {
-                continue;
-            }
-            // build_flow_from_ivr_file() maps 'domain' onto 'custom_domain'; accept
-            // either so a bag saved in either shape is still recognised.
-            $domain = trim((string) ($settings['domain'] ?? ($settings['custom_domain'] ?? '')));
-            if ($domain !== '') {
-                $needed = true;
-                return $needed;
-            }
-        }
-
-        $needed = false;
-        return $needed;
-    }
-
     private function init_hooks() {
-        // FLOSC Auth Token — cross-domain authentication.
-        //
-        // These two filters exist for one reason: a WordPress auth cookie is scoped
-        // to one domain, so a member signed in on one floscDomain arrives at another
-        // with no cookie at all. Nothing in WordPress solves that, so a signed,
-        // short-lived FLOSC token stands in.
-        //
-        // A single-domain install never needs them: cookies work, the callback
-        // returns immediately, and the filters are dead weight. So they are only
-        // registered when at least one flow actually declares a custom domain.
-        // On a default install FLOSC does not attach to WordPress authentication
-        // at all -- there is nothing to read past, and nothing to reason about.
-        if ($this->flosc_needs_cross_domain_auth()) {
-            // Priority 20 runs AFTER WordPress's default cookie auth (priority 10).
-            // If cookies already authenticated the user, this is a no-op.
-            // If cookies failed (cross-domain), the FLOSC token takes over.
-            add_filter('determine_current_user', [$this, 'authenticate_flosc_token'], 20);
+        // v3.0.0: FLOSC Auth Token — cross-domain authentication
+        // Priority 20 runs AFTER WordPress's default cookie auth (priority 10).
+        // If cookies already authenticated the user, this is a no-op.
+        // If cookies failed (cross-domain), the FLOSC token takes over.
+        add_filter('determine_current_user', [$this, 'authenticate_flosc_token'], 20);
 
-            // Bypass WordPress's nonce check when FLOSC token auth was used.
-            // rest_cookie_check_errors (priority 100) checks the nonce when
-            // auth_cookie_malformed fires — which happens even when NO cookie is
-            // present. On cross-domain that would undo the token auth. Priority 99
-            // runs just before and short-circuits it.
-            add_filter('rest_authentication_errors', [$this, 'allow_flosc_token_auth'], 99);
-        }
+        // v3.0.0: Bypass WordPress nonce check when FLOSC token auth was used.
+        // WordPress's rest_cookie_check_errors (priority 100) checks the nonce when
+        // auth_cookie_malformed fires — which happens even when NO cookie is present.
+        // On cross-domain, this would undo our FLOSC token auth. Priority 99 runs
+        // just before and returns true to short-circuit the nonce check.
+        add_filter('rest_authentication_errors', [$this, 'allow_flosc_token_auth'], 99);
 
         // v3.0.0: Clear FLOSC auth token on logout
         add_action('wp_logout', [$this, 'clear_flosc_auth_token']);
