@@ -1539,6 +1539,11 @@ if ( isset( $flosc_da1_get['da1_export'] ) && (string) $flosc_da1_get['da1_expor
             <span class="description"><?php echo esc_html__('Payload fields are catalog-defined. DA1 preserves them without imposing a content schema.', 'flosc'); ?></span>
             <button type="button" class="button button-primary button-large da1-save-trigger" data-form-id="da1-catalog-form">Save Catalog</button>
         </div>
+
+        <p class="description flosc-da1-search-note">
+            <?php echo esc_html__( 'How rows get found: catalog search weights Title highest, then Item Type, then Subject, then Description, then any other payload field. A row is only findable by words it actually contains — flow Keywords lines do not reach catalog search.', 'flosc' ); ?>
+            <?php echo esc_html__( 'So put the words people will really type into a Subject column, including common names in other languages. A row titled only in Latvian will not answer an English question until the English name appears somewhere in the row.', 'flosc' ); ?>
+        </p>
     </form>
     <?php endif; ?>
 </div>
