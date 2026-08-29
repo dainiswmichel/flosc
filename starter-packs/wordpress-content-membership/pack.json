@@ -3,9 +3,9 @@
   "name": "WordPress Content Membership Journey",
   "summary": "The classic membership site, working end to end. A hundred posts about running a membership site — fifteen open to visitors, twenty-five more to registered guests, sixty for members — with a journey that walks a stranger from the open shelf to the paid one.",
   "conversion": "Membership — the sixty member-only posts",
-  "personality": "flosc_default_friendly",
+  "personality": "bubblybetty",
   "installs": [
-    "A flow: wordpress_content_membership_ivr.md",
+    "A flow: wordpress_content_membership_ivr.md, in BubblyBetty's voice",
     "100 posts in the FLOSC Example Content category",
     "Gated 15 visitor / 25 guest / 60 member"
   ],

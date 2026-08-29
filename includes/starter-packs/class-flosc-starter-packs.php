@@ -222,8 +222,18 @@ class FLOSC_Starter_Packs {
 
 		// --- DA1 catalog ---
 		if ( ! empty( $pack['catalog']['file'] ) ) {
-			$source    = $pack['dir'] . basename( (string) $pack['catalog']['file'] );
-			$file_name = basename( (string) ( $pack['catalog']['install_as'] ?? $pack['catalog']['file'] ) );
+			$source = $pack['dir'] . basename( (string) $pack['catalog']['file'] );
+
+			// The runtime resolves a catalog key to flosc_da1_catalog_{key}.tsv,
+			// so the file name is the convention, not a free choice.
+			$catalog_key = sanitize_key( (string) ( $pack['catalog']['key'] ?? pathinfo( basename( (string) $pack['catalog']['file'] ), PATHINFO_FILENAME ) ) );
+
+			if ( '' === $catalog_key ) {
+				self::rollback( $record );
+				return self::result( false, __( 'The pack catalog has no usable key.', 'flosc' ) );
+			}
+
+			$file_name = 'flosc_da1_catalog_' . $catalog_key . '.tsv';
 			$target    = self::catalog_dir() . $file_name;
 
 			if ( ! is_readable( $source ) ) {
@@ -251,19 +261,30 @@ class FLOSC_Starter_Packs {
 			}
 
 			$record['catalog_file'] = basename( $target );
+			$record['catalog_key']  = $catalog_key;
 			/* translators: %s: catalog file name. */
 			$detail[] = sprintf( __( 'Catalog installed: %s', 'flosc' ), basename( $target ) );
+
+			// Register it in the index the DA1 tab lists catalogs from, or the
+			// operator has a catalog the runtime can read and the admin cannot see.
+			$index = get_option( 'flosc_da1_catalogs', array() );
+			$index = is_array( $index ) ? $index : array();
+
+			$index[ $catalog_key ] = array(
+				'label'      => (string) ( $pack['catalog']['label'] ?? $catalog_key ),
+				'key'        => $catalog_key,
+				'filename'   => $file_name,
+				'created_at' => current_time( 'mysql' ),
+			);
+			update_option( 'flosc_da1_catalogs', $index, false );
 
 			// Assign the catalog to this pack's flow.
 			if ( ! empty( $record['flow_file'] ) ) {
 				$assignments = get_option( 'flosc_da1_flow_catalogs', array() );
 				$assignments = is_array( $assignments ) ? $assignments : array();
-				$catalog_key = pathinfo( basename( $target ), PATHINFO_FILENAME );
 
 				$assignments[ $record['flow_file'] ] = array( $catalog_key );
 				update_option( 'flosc_da1_flow_catalogs', $assignments, false );
-
-				$record['catalog_key'] = $catalog_key;
 			}
 		}
 
@@ -462,6 +483,20 @@ class FLOSC_Starter_Packs {
 			'companion_show_for_visitors' => 1,
 		);
 
+		// The pack names a voice from the shipped library. Reference it — never
+		// create or overwrite a personality record.
+		$personality = sanitize_key( (string) ( $pack['personality'] ?? '' ) );
+
+		if ( '' !== $personality && function_exists( 'flosc_personality_library_get' ) ) {
+			if ( null === flosc_personality_library_get( $personality ) ) {
+				$personality = '';
+			}
+		}
+
+		if ( '' !== $personality ) {
+			$bag['personality_library_id'] = $personality;
+		}
+
 		// Point the flow at the posts this pack just created.
 		$category_slug = sanitize_title( (string) $category_slug );
 
@@ -622,6 +657,14 @@ class FLOSC_Starter_Packs {
 			}
 			/* translators: %s: catalog file name. */
 			$detail[] = sprintf( __( 'Catalog removed: %s', 'flosc' ), basename( (string) $record['catalog_file'] ) );
+		}
+
+		if ( ! empty( $record['catalog_key'] ) ) {
+			$index = get_option( 'flosc_da1_catalogs', array() );
+			if ( is_array( $index ) && isset( $index[ $record['catalog_key'] ] ) ) {
+				unset( $index[ $record['catalog_key'] ] );
+				update_option( 'flosc_da1_catalogs', $index, false );
+			}
 		}
 
 		if ( ! empty( $record['flow_file'] ) ) {

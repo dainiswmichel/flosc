@@ -1,11 +1,11 @@
 {
   "slug": "da1-catalog-sales",
   "name": "DA1 Catalog Sales Journey",
-  "summary": "A conversational catalog of fifty extremely ordinary instruction manuals. Visitors browse four, guests browse eight, members reach all fifty \u2014 and the journey sells a compiled UberManual PDF.",
-  "conversion": "The UberManual \u2014 all 50 manuals as one PDF, $10",
-  "personality": "flosc_default_friendly",
+  "summary": "A conversational catalog of fifty extremely ordinary instruction manuals. Visitors browse four, guests browse eight, members reach all fifty — and the journey sells a compiled UberManual PDF.",
+  "conversion": "The UberManual — all 50 manuals as one PDF, $10",
+  "personality": "dadjokedan",
   "installs": [
-    "A flow: da1_catalog_sales_ivr.md",
+    "A flow: da1_catalog_sales_ivr.md, in DadJokeDan's voice",
     "A DA1 catalog of 50 items, gated Freeline / Guest / Member",
     "10 posts in the FLOSC DA1 Catalog Posts category, gated the same way",
     "The catalog assigned to the flow"
@@ -16,7 +16,8 @@
   },
   "catalog": {
     "file": "catalog.tsv",
-    "install_as": "ordinary-manuals.tsv"
+    "key": "ordinary_manuals",
+    "label": "The Extremely Ordinary Instruction Manual Collection"
   },
   "content": {
     "file": "content.json",
