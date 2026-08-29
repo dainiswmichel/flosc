@@ -324,12 +324,12 @@ class FLOSC_Starter_Packs {
 				return self::result( false, __( 'The pack is missing its flow file.', 'flosc' ) );
 			}
 
-			if ( file_exists( $target ) ) {
+			if ( file_exists( $target ) && ! self::owns_flow( $pack['slug'], $target ) ) {
 				return self::result(
 					false,
 					sprintf(
 						/* translators: %s: flow file name. */
-						__( 'A flow named %s already exists. Rename or remove it first so nothing of yours is overwritten.', 'flosc' ),
+						__( 'A flow named %s already exists on this site and was not created by this starter pack. Rename or remove it first so nothing of yours is overwritten.', 'flosc' ),
 						basename( $target )
 					)
 				);
@@ -383,13 +383,19 @@ class FLOSC_Starter_Packs {
 
 			wp_mkdir_p( self::catalog_dir() );
 
-			if ( file_exists( $target ) ) {
+			// A catalog file this pack owns is overwritten with the shipped one;
+			// a key the operator uses for their own catalog is a real conflict.
+			$index      = get_option( 'flosc_da1_catalogs', array() );
+			$index      = is_array( $index ) ? $index : array();
+			$foreign    = isset( $index[ $catalog_key ] ) && empty( $index[ $catalog_key ]['starter_pack_id'] );
+
+			if ( file_exists( $target ) && $foreign ) {
 				self::rollback( $record );
 				return self::result(
 					false,
 					sprintf(
 						/* translators: %s: catalog file name. */
-						__( 'A catalog named %s already exists. Rename or remove it first.', 'flosc' ),
+						__( 'A catalog named %s already exists on this site and was not created by this starter pack. Rename or remove it first.', 'flosc' ),
 						basename( $target )
 					)
 				);
@@ -411,10 +417,11 @@ class FLOSC_Starter_Packs {
 			$index = is_array( $index ) ? $index : array();
 
 			$index[ $catalog_key ] = array(
-				'label'      => (string) ( $pack['catalog']['label'] ?? $catalog_key ),
-				'key'        => $catalog_key,
-				'filename'   => $file_name,
-				'created_at' => current_time( 'mysql' ),
+				'label'           => (string) ( $pack['catalog']['label'] ?? $catalog_key ),
+				'key'             => $catalog_key,
+				'filename'        => $file_name,
+				'created_at'      => current_time( 'mysql' ),
+				'starter_pack_id' => $pack['slug'],
 			);
 			update_option( 'flosc_da1_catalogs', $index, false );
 
@@ -509,8 +516,11 @@ class FLOSC_Starter_Packs {
 		}
 
 		// The flow references these category slugs by name, so they are the
-		// pack's to define. Refuse if any already exists rather than adopting
-		// a category the operator built for something else.
+		// pack's to define. A category this pack already owns — left behind by
+		// a failed install or a half-finished removal — is adopted rather than
+		// treated as an obstacle. Only somebody else's category is a conflict.
+		$adopted = array();
+
 		foreach ( $categories as $category ) {
 			$slug = sanitize_title( (string) ( $category['slug'] ?? '' ) );
 
@@ -518,23 +528,41 @@ class FLOSC_Starter_Packs {
 				return self::result( false, __( 'The pack names a category with no slug.', 'flosc' ) ) + array( 'record' => array() );
 			}
 
-			if ( term_exists( $slug, 'category' ) ) {
-				return self::result(
-					false,
-					sprintf(
-						/* translators: %s: category slug. */
-						__( 'A category %s already exists. Rename or remove it first.', 'flosc' ),
-						$slug
-					)
-				) + array( 'record' => array() );
+			$existing = get_term_by( 'slug', $slug, 'category' );
+
+			if ( ! $existing || is_wp_error( $existing ) ) {
+				continue;
 			}
+
+			if ( $pack['slug'] === get_term_meta( (int) $existing->term_id, self::TERM_STAMP, true ) ) {
+				$adopted[ $slug ] = (int) $existing->term_id;
+				continue;
+			}
+
+			return self::result(
+				false,
+				sprintf(
+					/* translators: %s: category slug. */
+					__( 'A category %s already exists on this site and was not created by this starter pack. Rename or remove it first.', 'flosc' ),
+					$slug
+				)
+			) + array( 'record' => array() );
 		}
 
 		// Parents before children, so a child can resolve its parent's id.
-		$term_ids   = array();
-		$created    = array();
-		$pending    = $categories;
-		$safety     = count( $categories ) + 1;
+		$term_ids = $adopted;
+		$created  = array_values( $adopted );
+		$pending  = array();
+
+		foreach ( $categories as $category ) {
+			$slug = sanitize_title( (string) ( $category['slug'] ?? '' ) );
+
+			if ( ! isset( $term_ids[ $slug ] ) ) {
+				$pending[] = $category;
+			}
+		}
+
+		$safety = count( $pending ) + 1;
 
 		while ( ! empty( $pending ) && $safety-- > 0 ) {
 			$still_pending = array();
@@ -582,8 +610,19 @@ class FLOSC_Starter_Packs {
 			return self::result( false, __( 'The pack category hierarchy could not be resolved.', 'flosc' ) ) + array( 'record' => array( 'category_ids' => $created ) );
 		}
 
-		$count       = 0;
+		$count        = 0;
 		$per_category = array();
+		$have         = array();
+
+		if ( ! empty( $adopted ) ) {
+			foreach ( self::installed_post_ids( $pack['slug'] ) as $post_id ) {
+				$item = (int) get_post_meta( $post_id, self::POST_ITEM_STAMP, true );
+
+				if ( $item > 0 ) {
+					$have[ $item ] = true;
+				}
+			}
+		}
 
 		foreach ( $doc['posts'] as $entry ) {
 			if ( ! is_array( $entry ) || empty( $entry['title'] ) ) {
@@ -593,6 +632,12 @@ class FLOSC_Starter_Packs {
 			$slug    = sanitize_title( (string) ( $entry['category'] ?? '' ) );
 			$term_id = isset( $term_ids[ $slug ] ) ? (int) $term_ids[ $slug ] : (int) reset( $term_ids );
 			$item    = isset( $entry['item'] ) ? (int) $entry['item'] : $count + 1;
+
+			if ( isset( $have[ $item ] ) ) {
+				++$count;
+				continue;
+			}
+
 			$post_id = self::insert_pack_post( $pack['slug'], $entry, $term_id, $item );
 
 			if ( $post_id < 1 ) {
@@ -766,6 +811,33 @@ class FLOSC_Starter_Packs {
 	}
 
 	/**
+	 * Whether a flow file on disk belongs to this starter pack.
+	 *
+	 * A pack owns a flow when the flow's settings row says so, or when there is
+	 * no settings row at all — a bare file with nothing pointing at it is debris
+	 * from an install that did not finish, not somebody's work.
+	 *
+	 * @param string $pack_slug Pack slug.
+	 * @param string $path      Absolute path of the flow file.
+	 * @return bool
+	 */
+	private static function owns_flow( $pack_slug, $path ) {
+		$stem = sanitize_key( pathinfo( basename( $path ), PATHINFO_FILENAME ) );
+
+		if ( '' === $stem ) {
+			return false;
+		}
+
+		$bag = get_option( 'flosc_flow_' . $stem, null );
+
+		if ( ! is_array( $bag ) ) {
+			return true;
+		}
+
+		return sanitize_key( (string) $pack_slug ) === sanitize_key( (string) ( $bag['starter_pack_id'] ?? '' ) );
+	}
+
+	/**
 	 * Copy one file the pack ships into a writable FLOSC location.
 	 *
 	 * Never a raw copy(): reads the shipped file, then writes through the
@@ -836,8 +908,17 @@ class FLOSC_Starter_Packs {
 		$flow_key = 'flosc_flow_' . $stem;
 
 		// The file check upstream cannot see a settings row left behind by a flow
-		// the operator deleted by hand. Refuse rather than overwrite it.
-		if ( ! $allow_existing && null !== get_option( $flow_key, null ) ) {
+		// the operator deleted by hand. A row this pack owns is ours to rebuild;
+		// anything else is refused rather than overwritten.
+		$existing_bag = get_option( $flow_key, null );
+
+		if ( is_array( $existing_bag )
+			&& ! empty( $pack['slug'] )
+			&& sanitize_key( (string) $pack['slug'] ) === sanitize_key( (string) ( $existing_bag['starter_pack_id'] ?? '' ) ) ) {
+			$allow_existing = true;
+		}
+
+		if ( ! $allow_existing && null !== $existing_bag ) {
 			return self::result(
 				false,
 				sprintf(
@@ -856,6 +937,12 @@ class FLOSC_Starter_Packs {
 			'ivr_file'                    => $file_name,
 			'companion_show_for_visitors' => 1,
 		);
+
+		// Ownership, so a later install or repair can tell this flow apart from
+		// one the operator built themselves under the same name.
+		if ( ! empty( $pack['slug'] ) ) {
+			$bag['starter_pack_id'] = sanitize_key( (string) $pack['slug'] );
+		}
 
 		// The pack names a voice from the shipped library. Reference it — never
 		// create or overwrite a personality record.

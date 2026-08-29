@@ -225,6 +225,38 @@ class FLOSC_WP_AI_Client {
 	 * @return array|WP_Error { text, function_calls, model_message, usage, model, provider }
 	 */
 	public static function generate( $args ) {
+		// The provider plugins are third-party code reached through a builder
+		// that throws. Anything escaping this method becomes a WordPress fatal
+		// in the middle of a visitor's conversation, so nothing escapes it.
+		try {
+			return self::generate_inner( $args );
+		} catch ( Throwable $e ) {
+			$test_mode = is_array( $args ) && ! empty( $args['test_mode'] );
+
+			return new WP_Error(
+				'flosc_wp_ai_provider_exception',
+				$test_mode
+					? sprintf(
+						"The provider integration threw an error.\n\nProvider message:\n%s\n\n📝 Next steps:\n1. Confirm the provider plugin is activated and up to date\n2. Confirm the model id is in that provider's catalog\n3. Test again",
+						$e->getMessage()
+					)
+					: 'The AI provider could not answer that.',
+				array(
+					'exception' => get_class( $e ),
+					'detail'    => $e->getMessage(),
+				)
+			);
+		}
+	}
+
+	/**
+	 * The chat hop itself. Only ever called from generate(), which owns the
+	 * guarantee that no provider exception reaches WordPress.
+	 *
+	 * @param array $args See generate().
+	 * @return array|WP_Error
+	 */
+	private static function generate_inner( $args ) {
 		$args        = is_array( $args ) ? $args : array();
 		$provider    = sanitize_key( (string) ( $args['provider'] ?? '' ) );
 		$test_mode   = ! empty( $args['test_mode'] );

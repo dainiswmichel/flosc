@@ -206,9 +206,9 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
         <th scope="row"><label for="flow_ai_provider">Primary AI Provider</label></th>
         <td>
             <select name="flow_ai_provider" id="flow_ai_provider" class="flosc-ai-provider-select">
-                <option value="ivr" <?php selected($flosc_ai_provider, 'ivr'); ?>>IVR Only (Scripted Responses - Zero API Cost)</option>
-                <option value="anthropic" <?php selected($flosc_ai_provider, 'anthropic'); ?>>Anthropic Claude (Recommended for FLOSC)</option>
-                <option value="openai" <?php selected($flosc_ai_provider, 'openai'); ?>>OpenAI (Fast & Affordable)</option>
+                <option value="ivr" <?php selected($flosc_ai_provider, 'ivr'); ?>>IVR Only (Scripted Responses)</option>
+                <option value="anthropic" <?php selected($flosc_ai_provider, 'anthropic'); ?>>Anthropic Claude</option>
+                <option value="openai" <?php selected($flosc_ai_provider, 'openai'); ?>>OpenAI</option>
                 <option value="xai" <?php selected($flosc_ai_provider, 'xai'); ?>>xAI Grok</option>
                 <option value="gemini" <?php selected($flosc_ai_provider, 'gemini'); ?>>Google Gemini</option>
             </select>
@@ -711,12 +711,44 @@ jQuery(document).ready(function($) {
     });
 
     // --- Connection test ---
+    // The test runs against saved settings. Anything typed and not yet saved is
+    // invisible to it, so testing then would diagnose the old value and blame
+    // the provider for it. Remember what was on the page when it loaded, and
+    // stop the test if the operator has changed it since.
+    var floscSavedAi = {};
+    $('.flosc-ai-key-input, #flow_ai_provider, .flosc-ai-model-select').each(function () {
+        floscSavedAi[this.id] = $(this).val();
+    });
+
+    function floscUnsavedAiFields() {
+        var changed = [];
+        $('.flosc-ai-key-input, #flow_ai_provider, .flosc-ai-model-select').each(function () {
+            if (floscSavedAi[this.id] !== undefined && floscSavedAi[this.id] !== $(this).val()) {
+                var label = $('label[for="' + this.id + '"]').text().replace(/\s+/g, ' ').trim();
+                changed.push(label || this.id);
+            }
+        });
+        return changed;
+    }
+
     $('#test-ai-connection').on('click', function() {
         var $btn = $(this);
         var $loading = $('#test-loading');
         var $results = $('#test-results');
         var $flosc_status = $('#test-status');
         var $details = $('#test-details');
+
+        var unsaved = floscUnsavedAiFields();
+        if (unsaved.length) {
+            $results.show();
+            $flosc_status.html('<span class="flosc-pass-status flosc-pass-status--fail">\u2717 Unsaved AI settings</span>');
+            $details.text(
+                'These were changed but not saved yet:\n  ' + unsaved.join('\n  ') +
+                '\n\nThe test runs against saved settings, so it would test the old values and blame the provider for it.' +
+                '\n\nSave AI Settings, then Test again.'
+            );
+            return;
+        }
 
         $btn.prop('disabled', true);
         $loading.show();
@@ -770,17 +802,30 @@ jQuery(document).ready(function($) {
                     var ed = response.data || {};
                     var elines = [];
                     $flosc_status.html('<span class="flosc-pass-status flosc-pass-status--fail">✗ Connection Failed</span>');
-                    if (ed.provider) { elines.push('Provider: ' + ed.provider); }
-                    if (ed.model) { elines.push('Model: ' + ed.model); }
-                    if (ed.endpoint) { elines.push('Endpoint: ' + ed.endpoint); }
+                    // Report the layer that actually failed. Everything above the
+                    // failure is confirmed; only the last line is the diagnosis.
+                    elines.push('\u2713 FLOSC configuration loaded');
+                    if (ed.provider) { elines.push('\u2713 Provider selected: ' + ed.provider); }
                     if (ed.api_key_present === false) {
-                        elines.push('API key: missing in saved settings — Save Settings after paste');
-                    } else if (ed.api_key_present && ed.api_key_suffix) {
-                        elines.push('API key: present (…' + ed.api_key_suffix + ') — rejected by provider or wrong model');
+                        elines.push('\u2717 No API key in the saved settings');
+                        elines.push('');
+                        elines.push('Paste the key above, then Save Settings, then Test again. A key that is typed but not saved is not yet a key.');
+                    } else {
+                        if (ed.api_key_suffix) {
+                            elines.push('\u2713 API key saved (\u2026' + ed.api_key_suffix + ')');
+                        } else if (ed.api_key_present) {
+                            elines.push('\u2713 API key saved');
+                        }
+                        if (ed.model) { elines.push('\u2713 Model requested: ' + ed.model); }
+                        if (ed.endpoint) { elines.push('\u2713 Endpoint reached: ' + ed.endpoint); }
+                        elines.push('\u2717 The request was rejected before a reply came back');
+                        elines.push('');
+                        elines.push('What the provider integration said:');
                     }
-                    if (ed.flow_ivr) { elines.push('Flow: ' + ed.flow_ivr); }
-                    if (ed.response_time != null) { elines.push('Latency: ' + ed.response_time + ' ms'); }
                     elines.push(ed.message || 'Unknown error');
+                    if (ed.flow_ivr || ed.response_time != null) { elines.push(''); }
+                    if (ed.flow_ivr) { elines.push('Flow: ' + ed.flow_ivr); }
+                    if (ed.response_time != null) { elines.push('Round trip: ' + ed.response_time + ' ms'); }
                     $details.text(elines.join('\n'));
                 }
             },
