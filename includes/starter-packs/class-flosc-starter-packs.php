@@ -1435,10 +1435,21 @@ class FLOSC_Starter_Packs {
 
 			if ( is_array( $rows ) ) {
 				foreach ( $rows as $row ) {
-					$bag = maybe_unserialize( $row['option_value'] ?? '' );
+					$name = (string) ( $row['option_name'] ?? '' );
+
+					if ( 0 !== strpos( $name, 'flosc_flow_' ) ) {
+						continue;
+					}
+
+					$bag  = maybe_unserialize( $row['option_value'] ?? '' );
+					$stem = substr( $name, strlen( 'flosc_flow_' ) );
 
 					if ( is_array( $bag ) && $id === sanitize_key( (string) ( $bag['personality_library_id'] ?? '' ) ) ) {
-						$out[] = (string) ( $bag['ivr_file'] ?? $bag['name'] ?? $row['option_name'] ?? '' );
+						$label = self::flow_label( $stem, $bag );
+
+						if ( '' !== $label ) {
+							$out[] = $label;
+						}
 					}
 				}
 
@@ -1459,11 +1470,62 @@ class FLOSC_Starter_Packs {
 			$bag = get_option( 'flosc_flow_' . $stem, array() );
 
 			if ( is_array( $bag ) && $id === sanitize_key( (string) ( $bag['personality_library_id'] ?? '' ) ) ) {
-				$out[] = basename( (string) $file );
+				$label = self::flow_label( $stem, $bag );
+
+				if ( '' !== $label ) {
+					$out[] = $label;
+				}
 			}
 		}
 
 		return array_values( array_filter( array_unique( $out ) ) );
+	}
+
+	/**
+	 * A readable name for a flow, or empty if it does not hold a voice hostage.
+	 *
+	 * The personality samples FLOSC ships are demonstration pairings, not the
+	 * operator's own work — FLOSC already hides them from Switch Flow once a
+	 * real flow exists, so they must not block a voice from being disabled
+	 * either. Everything else gets named the way the operator would recognise
+	 * it, never as a raw option row.
+	 *
+	 * @param string              $stem Flow stem, without the flosc_flow_ prefix.
+	 * @param array<string,mixed> $bag  The flow's settings.
+	 * @return string
+	 */
+	private static function flow_label( $stem, $bag ) {
+		$stem = sanitize_key( (string) $stem );
+
+		if ( '' === $stem ) {
+			return '';
+		}
+
+		if ( function_exists( 'flosc_is_shipped_personality_sample_ivr' ) && flosc_is_shipped_personality_sample_ivr( $stem ) ) {
+			return '';
+		}
+
+		$name = trim( (string) ( $bag['name'] ?? '' ) );
+
+		if ( '' !== $name ) {
+			return $name;
+		}
+
+		$file = trim( (string) ( $bag['ivr_file'] ?? $bag['active_ivr_file'] ?? '' ) );
+
+		if ( '' !== $file ) {
+			return basename( $file );
+		}
+
+		if ( function_exists( 'flosc_portability_display_name_from_stem' ) ) {
+			$display = trim( (string) flosc_portability_display_name_from_stem( $stem ) );
+
+			if ( '' !== $display ) {
+				return $display;
+			}
+		}
+
+		return $stem . '.md';
 	}
 
 	/**
