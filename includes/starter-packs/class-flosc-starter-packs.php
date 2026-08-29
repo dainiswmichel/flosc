@@ -1587,6 +1587,153 @@ class FLOSC_Starter_Packs {
 	}
 
 	/* ------------------------------------------------------------------ *
+	 * Sample flows
+	 * ------------------------------------------------------------------ */
+
+	/**
+	 * The demonstration flows FLOSC ships, and whether this site runs them.
+	 *
+	 * These are read-only files inside the plugin. Enabling one gives it a
+	 * settings row and imports its messages; disabling removes that row and
+	 * leaves the file alone, so enabling again restores it exactly.
+	 *
+	 * @return array<string,array<string,mixed>>
+	 */
+	public static function sample_flows() {
+		$out    = array();
+		$shipped = FLOSC_PLUGIN_DIR . 'ai_configuration_files/';
+		$files   = glob( $shipped . '*_ivr.md' );
+
+		if ( ! is_array( $files ) ) {
+			return $out;
+		}
+
+		foreach ( $files as $file ) {
+			$stem = sanitize_key( pathinfo( basename( $file ), PATHINFO_FILENAME ) );
+
+			if ( '' === $stem ) {
+				continue;
+			}
+
+			if ( ! function_exists( 'flosc_is_shipped_personality_sample_ivr' ) || ! flosc_is_shipped_personality_sample_ivr( $stem ) ) {
+				continue;
+			}
+
+			$personality = function_exists( 'flosc_shipped_personality_sample_library_id' )
+				? (string) flosc_shipped_personality_sample_library_id( $stem )
+				: '';
+
+			$out[ $stem ] = array(
+				'stem'        => $stem,
+				'file'        => basename( $file ),
+				'path'        => $file,
+				'label'       => function_exists( 'flosc_portability_display_name_from_stem' )
+					? (string) flosc_portability_display_name_from_stem( $stem )
+					: $stem,
+				'personality' => $personality,
+				'enabled'     => self::sample_flow_is_enabled( $stem ),
+			);
+		}
+
+		ksort( $out );
+
+		return $out;
+	}
+
+	/**
+	 * Whether a shipped sample flow has a settings row with messages in it.
+	 *
+	 * @param string $stem Flow stem.
+	 * @return bool
+	 */
+	public static function sample_flow_is_enabled( $stem ) {
+		$stem = sanitize_key( $stem );
+
+		if ( '' === $stem ) {
+			return false;
+		}
+
+		$bag = get_option( 'flosc_flow_' . $stem, null );
+
+		return is_array( $bag ) && ! empty( $bag['flow_messages'] );
+	}
+
+	/**
+	 * Give a shipped sample flow a settings row and import its messages.
+	 *
+	 * @param string $stem Flow stem.
+	 * @return array{ok:bool,message:string,detail:array<int,string>}
+	 */
+	public static function enable_sample_flow( $stem ) {
+		$stem    = sanitize_key( $stem );
+		$samples = self::sample_flows();
+
+		if ( ! isset( $samples[ $stem ] ) ) {
+			return self::result( false, __( 'That sample flow does not ship with FLOSC.', 'flosc' ) );
+		}
+
+		$sample = $samples[ $stem ];
+
+		$registered = self::register_flow(
+			array(
+				'name'        => $sample['label'],
+				'slug'        => $stem,
+				'personality' => $sample['personality'],
+			),
+			$sample['path'],
+			'',
+			true
+		);
+
+		if ( ! $registered['ok'] ) {
+			return $registered;
+		}
+
+		return self::result(
+			true,
+			sprintf(
+				/* translators: %s: flow name. */
+				__( '%s is enabled. It will appear in Switch Flow.', 'flosc' ),
+				$sample['label']
+			),
+			array( $registered['message'] )
+		);
+	}
+
+	/**
+	 * Take a shipped sample flow out of this site.
+	 *
+	 * Only the settings row goes; the file belongs to the plugin and stays
+	 * where it is, so enabling again rebuilds the flow from the same source.
+	 *
+	 * @param string $stem Flow stem.
+	 * @return array{ok:bool,message:string,detail:array<int,string>}
+	 */
+	public static function disable_sample_flow( $stem ) {
+		$stem    = sanitize_key( $stem );
+		$samples = self::sample_flows();
+
+		if ( ! isset( $samples[ $stem ] ) ) {
+			return self::result( false, __( 'That sample flow does not ship with FLOSC.', 'flosc' ) );
+		}
+
+		if ( ! self::sample_flow_is_enabled( $stem ) ) {
+			return self::result( false, __( 'That sample flow is not enabled.', 'flosc' ) );
+		}
+
+		delete_option( 'flosc_flow_' . $stem );
+
+		return self::result(
+			true,
+			sprintf(
+				/* translators: %s: flow name. */
+				__( '%s is disabled. Enable it again whenever you want it back.', 'flosc' ),
+				$samples[ $stem ]['label']
+			)
+		);
+	}
+
+	/* ------------------------------------------------------------------ *
 	 * Uninstall
 	 * ------------------------------------------------------------------ */
 

@@ -36,6 +36,10 @@ if ( isset( $_POST['flosc_sp_action'] ) || isset( $_POST['flosc_sp_slug'] ) ) {
 		$flosc_sp_notice = FLOSC_Starter_Packs::install_personality( $flosc_sp_slug );
 	} elseif ( 'disable_personality' === $flosc_sp_action ) {
 		$flosc_sp_notice = FLOSC_Starter_Packs::remove_personality( $flosc_sp_slug );
+	} elseif ( 'enable_sample_flow' === $flosc_sp_action ) {
+		$flosc_sp_notice = FLOSC_Starter_Packs::enable_sample_flow( $flosc_sp_slug );
+	} elseif ( 'disable_sample_flow' === $flosc_sp_action ) {
+		$flosc_sp_notice = FLOSC_Starter_Packs::disable_sample_flow( $flosc_sp_slug );
 	} elseif ( 'personality' === $flosc_sp_action ) {
 		$flosc_sp_personality = isset( $_POST['flosc_sp_personality'] )
 			? sanitize_key( wp_unslash( $_POST['flosc_sp_personality'] ) )
@@ -48,6 +52,7 @@ $flosc_sp_packs   = FLOSC_Starter_Packs::discover();
 $flosc_sp_state   = FLOSC_Starter_Packs::state();
 $flosc_sp_voices  = function_exists( 'flosc_personality_library_get_all' ) ? flosc_personality_library_get_all() : array();
 $flosc_sp_seeds   = FLOSC_Starter_Packs::personality_seeds();
+$flosc_sp_samples = FLOSC_Starter_Packs::sample_flows();
 
 if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
 	/**
@@ -186,8 +191,61 @@ if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
 			</p>
 		<?php endif; ?>
 
-		<h3 class="flosc-sp-section"><?php esc_html_e( 'Journeys', 'flosc' ); ?></h3>
 	<?php endif; ?>
+
+	<?php if ( ! empty( $flosc_sp_samples ) ) : ?>
+		<h3 class="flosc-sp-section"><?php esc_html_e( 'Sample flows', 'flosc' ); ?></h3>
+		<p class="description flosc-sp-section-note">
+			<?php esc_html_e( 'Small demonstration flows that ship with FLOSC, each showing one voice at work. Their files belong to the plugin — disabling one removes it from this site and from Switch Flow, and enabling rebuilds it from the same source.', 'flosc' ); ?>
+		</p>
+
+		<div class="flosc-sp-voice-grid">
+			<?php foreach ( $flosc_sp_samples as $flosc_sp_sample ) : ?>
+				<div class="flosc-sp-voice-card<?php echo $flosc_sp_sample['enabled'] ? ' is-installed' : ''; ?>">
+					<h4>
+						<?php echo esc_html( (string) $flosc_sp_sample['label'] ); ?>
+						<span class="flosc-sp-dot" aria-hidden="true"></span>
+						<span class="screen-reader-text">
+							<?php echo esc_html( $flosc_sp_sample['enabled'] ? __( 'Enabled', 'flosc' ) : __( 'Disabled', 'flosc' ) ); ?>
+						</span>
+					</h4>
+
+					<p class="flosc-sp-voice-role"><?php echo esc_html( (string) $flosc_sp_sample['file'] ); ?></p>
+
+					<?php
+					if ( ! empty( $flosc_sp_sample['personality'] ) && isset( $flosc_sp_voices[ $flosc_sp_sample['personality'] ] ) ) :
+						?>
+						<p class="flosc-sp-voice-traits">
+							<?php
+							printf(
+								/* translators: %s: personality name. */
+								esc_html__( 'curated by %s', 'flosc' ),
+								esc_html( (string) ( $flosc_sp_voices[ $flosc_sp_sample['personality'] ]['label'] ?? $flosc_sp_sample['personality'] ) )
+							);
+							?>
+						</p>
+					<?php endif; ?>
+
+					<div class="flosc-sp-voice-actions">
+						<form method="post">
+							<?php wp_nonce_field( 'flosc_starter_packs' ); ?>
+							<input type="hidden" name="flosc_sp_slug" value="<?php echo esc_attr( (string) $flosc_sp_sample['stem'] ); ?>">
+							<?php if ( $flosc_sp_sample['enabled'] ) : ?>
+								<input type="hidden" name="flosc_sp_action" value="disable_sample_flow">
+								<span class="flosc-sp-voice-state"><?php esc_html_e( 'Enabled', 'flosc' ); ?></span>
+								<button type="submit" class="button button-link-delete"><?php esc_html_e( 'Disable', 'flosc' ); ?></button>
+							<?php else : ?>
+								<input type="hidden" name="flosc_sp_action" value="enable_sample_flow">
+								<button type="submit" class="button button-primary"><?php esc_html_e( 'Enable', 'flosc' ); ?></button>
+							<?php endif; ?>
+						</form>
+					</div>
+				</div>
+			<?php endforeach; ?>
+		</div>
+	<?php endif; ?>
+
+	<h3 class="flosc-sp-section"><?php esc_html_e( 'Journeys', 'flosc' ); ?></h3>
 
 	<?php if ( empty( $flosc_sp_packs ) ) : ?>
 		<p><?php esc_html_e( 'No starter packs are available in this build.', 'flosc' ); ?></p>
