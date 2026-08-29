@@ -55,7 +55,7 @@ $flosc_required_columns = [
     'Row Key',
     'Parent Key',
     'Catalog Key',
-    'Record Type',
+    'Item Type',
     'Flow Scope',
     'VGM',
     'Delivery Instruction',
@@ -64,35 +64,40 @@ $flosc_required_columns = [
     'Status',
 ];
 
-$flosc_base_payload_columns = [
-    'Date',
+/*
+ * Dublin Core compatibility vocabulary. These are recognized/suggested payload
+ * fields, not required columns and not injected into catalogs automatically.
+ * Catalogs may use any additional payload/parameter columns they need.
+ */
+$flosc_dublin_core_columns = [
     'Title',
+    'Creator',
+    'Subject',
     'Description',
-    'Lyrics',
-    'Media',
-    'Media Type',
-    'Notes',
-    'WP Post ID',
-    'WP Slug',
-    'Related Posts',
-    'Related Content Keys',
-    'Content Category',
-    'Content Subcategory',
+    'Publisher',
+    'Contributor',
+    'Date',
+    'Type',
+    'Format',
+    'Identifier',
+    'Source',
+    'Language',
+    'Relation',
+    'Coverage',
+    'Rights',
 ];
 
 $flosc_control_defaults = [
     'Parent Key' => '',
     // apply_defaults() always writes the open catalog's key over this.
     'Catalog Key' => '',
-    'Record Type' => 'work',
+    'Item Type' => 'item',
     'Flow Scope' => 'all',
     'VGM' => 'Visitor Guest Member',
     'Delivery Instruction' => 'intent match',
     'Delivery Rule' => 'preference',
-    'Fallback Order' => 'chatplayer > media-link > text',
+    'Fallback Order' => 'text',
     'Status' => 'active',
-    'Media Type' => 'chatplayer',
-    'Content Category' => 'music',
 ];
 
 // Prefer request arrays prepared by settings.php; avoid re-touching superglobals.
@@ -173,41 +178,49 @@ function flosc_da1_tsv_cell($value) {
     return $value;
 }
 
-function flosc_da1_normalize_columns($flosc_da1_columns, $required_columns, $base_payload_columns) {
-    $normalized = [];
-    $extras = [];
-    foreach ((array) $flosc_da1_columns as $c) {
-        $c = trim((string) $c);
-        if ($c === '') {
+function flosc_da1_normalize_columns($flosc_da1_columns, $required_columns) {
+    $payload_columns = [];
+
+    foreach ((array) $flosc_da1_columns as $flosc_da1_column) {
+        $flosc_da1_column = trim((string) $flosc_da1_column);
+        if ($flosc_da1_column === '') {
             continue;
         }
-        if ($c === 'Video' || $c === 'Recordings') {
-            $c = 'Media';
+
+        // Backward compatibility: old DA1 catalogs used Record Type.
+        if ($flosc_da1_column === 'Record Type') {
+            $flosc_da1_column = 'Item Type';
         }
-        if ($c === 'Social Media Links') {
-            $c = 'Related Posts';
-        }
-        if (!in_array($c, $required_columns, true) && !in_array($c, $base_payload_columns, true) && !in_array($c, $extras, true)) {
-            $extras[] = $c;
+
+        if (
+            !in_array($flosc_da1_column, $required_columns, true)
+            && !in_array($flosc_da1_column, $payload_columns, true)
+        ) {
+            $payload_columns[] = $flosc_da1_column;
         }
     }
 
-    foreach ($required_columns as $c) {
-        $normalized[] = $c;
-    }
-    foreach ($base_payload_columns as $c) {
-        if (!in_array($c, $normalized, true)) {
-            $normalized[] = $c;
+    return array_merge($required_columns, $payload_columns);
+}
+
+function flosc_da1_sanitize_payload_columns($value, $required_columns) {
+    $columns = preg_split('/[,\r\n]+/', (string) $value);
+    $clean = [];
+
+    foreach ((array) $columns as $column) {
+        $column = sanitize_text_field(trim((string) $column));
+        if ($column === '') {
+            continue;
+        }
+        if ($column === 'Record Type') {
+            $column = 'Item Type';
+        }
+        if (!in_array($column, $required_columns, true) && !in_array($column, $clean, true)) {
+            $clean[] = $column;
         }
     }
 
-    foreach ($extras as $c) {
-        if (!in_array($c, $normalized, true)) {
-            $normalized[] = $c;
-        }
-    }
-
-    return $normalized;
+    return $clean;
 }
 
 function flosc_da1_col_index_map($flosc_da1_columns) {
@@ -624,6 +637,13 @@ if (isset($flosc_da1_post['flosc_da1_create_catalog'])) {
     }
     $flosc_da1_label = sanitize_text_field((string) ($flosc_da1_post['flosc_new_catalog_label'] ?? ''));
     $flosc_da1_key_raw = sanitize_text_field((string) ($flosc_da1_post['flosc_new_catalog_key'] ?? ''));
+    $flosc_da1_payload_columns = flosc_da1_sanitize_payload_columns(
+        (string) ($flosc_da1_post['flosc_new_catalog_fields'] ?? 'Title, Description'),
+        $flosc_required_columns
+    );
+    if (empty($flosc_da1_payload_columns)) {
+        $flosc_da1_payload_columns = ['Title', 'Description'];
+    }
     $flosc_da1_key = flosc_da1_slugify($flosc_da1_key_raw !== '' ? $flosc_da1_key_raw : $flosc_da1_label);
     if ($flosc_da1_key === '') {
         $flosc_da1_notice_error = 'Catalog key is required.';
@@ -634,6 +654,7 @@ if (isset($flosc_da1_post['flosc_da1_create_catalog'])) {
             'description' => $flosc_da1_label,
             'key' => $flosc_da1_key,
             'filename' => 'flosc_da1_catalog_' . $flosc_da1_key . '.tsv',
+            'payload_columns' => $flosc_da1_payload_columns,
             'created_at' => current_time('mysql'),
         ];
         update_option($flosc_catalog_index_option, $flosc_da1_catalogs, false);
@@ -665,7 +686,7 @@ if (isset($flosc_da1_post['flosc_da1_assign_catalogs']) && $flosc_da1_selected_i
  * Attachment matrix from the all-catalogs view: one row per catalog, one checkbox
  * per flow. The stored shape stays exactly as the runtime expects it —
  * flosc_da1_flow_catalogs[ flow file ] = ordered list of catalog keys, read by
- * FLOSC_DA1_Compositions::load_rows_for_flow() — so this screen edits membership
+ * FLOSC_DA1_Catalogs::load_rows_for_flow() — so this screen edits membership
  * without inventing a second source of truth.
  *
  * Two properties are deliberate. Existing order is preserved, because the order of
@@ -852,6 +873,10 @@ if (isset($flosc_da1_post['da1_save_catalog'])) {
 
 $flosc_da1_columns = [];
 $flosc_da1_rows = [];
+$flosc_da1_catalog_meta = $flosc_da1_catalogs[$flosc_da1_requested_catalog_key] ?? [];
+$flosc_da1_new_payload_columns = isset($flosc_da1_catalog_meta['payload_columns']) && is_array($flosc_da1_catalog_meta['payload_columns'])
+    ? $flosc_da1_catalog_meta['payload_columns']
+    : ['Title', 'Description'];
 
 if (file_exists($flosc_da1_catalog_path)) {
     $flosc_da1_loaded_content = flosc_da1_read_catalog_file($flosc_da1_catalog_path, $flosc_catalog_dir);
@@ -861,10 +886,10 @@ if (file_exists($flosc_da1_catalog_path)) {
     } else {
         $flosc_da1_parsed = flosc_da1_parse_tsv((string) $flosc_da1_loaded_content);
     }
-    $flosc_da1_columns = flosc_da1_normalize_columns($flosc_da1_parsed[0] ?? [], $flosc_required_columns, $flosc_base_payload_columns);
+    $flosc_da1_columns = flosc_da1_normalize_columns($flosc_da1_parsed[0] ?? [], $flosc_required_columns);
     $flosc_da1_rows = array_slice($flosc_da1_parsed, 1);
 } else {
-    $flosc_da1_columns = flosc_da1_normalize_columns(['Date', 'Title', 'Description', 'Lyrics', 'Media', 'Notes'], $flosc_required_columns, $flosc_base_payload_columns);
+    $flosc_da1_columns = flosc_da1_normalize_columns($flosc_da1_new_payload_columns, $flosc_required_columns);
     $flosc_da1_rows = [];
 }
 
@@ -911,7 +936,7 @@ if (isset($flosc_da1_post['da1_save_catalog'])) {
         }
     }
     $flosc_da1_saved_columns = isset($flosc_post['da1_columns']) && is_array($flosc_post['da1_columns']) ? array_values(array_map('sanitize_text_field', $flosc_post['da1_columns'])) : $flosc_da1_columns;
-    $flosc_da1_saved_columns = flosc_da1_normalize_columns($flosc_da1_saved_columns, $flosc_required_columns, $flosc_base_payload_columns);
+    $flosc_da1_saved_columns = flosc_da1_normalize_columns($flosc_da1_saved_columns, $flosc_required_columns);
     $flosc_da1_saved_col_idx = flosc_da1_col_index_map($flosc_da1_saved_columns);
 
     foreach ($flosc_required_columns as $flosc_da1_req_col) {
@@ -929,7 +954,7 @@ if (isset($flosc_da1_post['da1_save_catalog'])) {
         $flosc_da1_required_value_columns = [
             'Row Key',
             'Catalog Key',
-            'Record Type',
+            'Item Type',
             'Flow Scope',
             'VGM',
             'Delivery Instruction',
@@ -944,8 +969,8 @@ if (isset($flosc_da1_post['da1_save_catalog'])) {
             $flosc_da1_row_values = [];
             foreach ($flosc_da1_saved_columns as $flosc_da1_ci => $flosc_da1_col) {
                 $flosc_da1_raw = isset($flosc_da1_row_post[$flosc_da1_ci]) ? (string) $flosc_da1_row_post[$flosc_da1_ci] : '';
-                $flosc_da1_is_multi = (bool) preg_match('/description|lyrics|media|notes/i', $flosc_da1_col);
-                $flosc_da1_val = $flosc_da1_is_multi ? sanitize_textarea_field($flosc_da1_raw) : sanitize_text_field($flosc_da1_raw);
+                $flosc_da1_is_payload = !in_array($flosc_da1_col, $flosc_required_columns, true);
+                $flosc_da1_val = $flosc_da1_is_payload ? sanitize_textarea_field($flosc_da1_raw) : sanitize_text_field($flosc_da1_raw);
                 $flosc_da1_val = str_replace(["\r\n", "\r"], "\n", $flosc_da1_val);
 
                 if ($flosc_da1_col === 'Status') {
@@ -1049,7 +1074,7 @@ if (isset($flosc_da1_post['da1_save_catalog'])) {
             } else {
                 $flosc_da1_notice_success = 'Catalog saved.';
                 $flosc_da1_parsed = flosc_da1_parse_tsv($flosc_da1_content);
-                $flosc_da1_columns = flosc_da1_normalize_columns($flosc_da1_parsed[0] ?? [], $flosc_required_columns, $flosc_base_payload_columns);
+                $flosc_da1_columns = flosc_da1_normalize_columns($flosc_da1_parsed[0] ?? [], $flosc_required_columns);
                 $flosc_da1_col_idx = flosc_da1_col_index_map($flosc_da1_columns);
                 $flosc_da1_rows = array_slice($flosc_da1_parsed, 1);
                 $flosc_da1_ncols = count($flosc_da1_columns);
@@ -1067,7 +1092,7 @@ if (isset($flosc_da1_post['da1_save_catalog'])) {
 
 $flosc_da1_multiline_idx = [];
 foreach ($flosc_da1_columns as $flosc_da1_ci => $flosc_da1_col) {
-    if (preg_match('/description|lyrics|media|notes/i', $flosc_da1_col)) {
+    if (!in_array($flosc_da1_col, $flosc_required_columns, true)) {
         $flosc_da1_multiline_idx[] = $flosc_da1_ci;
     }
 }
@@ -1312,8 +1337,9 @@ if ( isset( $flosc_da1_get['da1_export'] ) && (string) $flosc_da1_get['da1_expor
             <label class="flosc-da1-tool-label" for="flosc-da1-new-label"><?php echo esc_html__('New catalog', 'flosc'); ?></label>
             <div class="flosc-da1-tool-controls">
                 <input type="text" id="flosc-da1-new-label" name="flosc_new_catalog_label" placeholder="<?php echo esc_attr__('Description (e.g. Music Core)', 'flosc'); ?>">
-                <input type="text" name="flosc_new_catalog_key" placeholder="<?php echo esc_attr__('File name (e.g. music_core)', 'flosc'); ?>">
-                <span class="description"><?php echo esc_html__('Creates flosc_da1_catalog_<file name>.tsv', 'flosc'); ?></span>
+                <input type="text" name="flosc_new_catalog_key" placeholder="<?php echo esc_attr__('File name (e.g. works_catalog)', 'flosc'); ?>">
+                <input type="text" name="flosc_new_catalog_fields" value="Title, Description" placeholder="<?php echo esc_attr__('Payload fields, comma-separated', 'flosc'); ?>">
+                <span class="description"><?php echo esc_html__('Creates flosc_da1_catalog_<file name>.tsv. Dublin Core fields are supported but optional; custom fields are unrestricted.', 'flosc'); ?></span>
             </div>
             <div class="flosc-da1-tool-action">
                 <button type="submit" class="button"><?php echo esc_html__('Create', 'flosc'); ?></button>
@@ -1510,7 +1536,7 @@ if ( isset( $flosc_da1_get['da1_export'] ) && (string) $flosc_da1_get['da1_expor
 
         <div class="flosc-da1-actions-bottom">
             <button type="button" id="da1-add-entry-bottom" class="button">+ Add Entry</button>
-            <span class="description">Procedure: if a media URL was typed into Description, create + Child Entry on that row, paste URL into Media, set Media Type, then remove URL from Description.</span>
+            <span class="description"><?php echo esc_html__('Payload fields are catalog-defined. DA1 preserves them without imposing a content schema.', 'flosc'); ?></span>
             <button type="button" class="button button-primary button-large da1-save-trigger" data-form-id="da1-catalog-form">Save Catalog</button>
         </div>
     </form>
@@ -1628,7 +1654,7 @@ if ($flosc_da1_view === 'single'):
         var seed = {
             'Row Key': rowKey,
             'Parent Key': '',
-            'Record Type': 'work',
+            'Item Type': 'item',
             'Status': 'active',
             'VGM': 'Visitor Guest Member',
             'Flow Scope': 'all'
@@ -1659,16 +1685,13 @@ if ($flosc_da1_view === 'single'):
             'Row Key': nextChildKey(parentKey),
             'Parent Key': parentKey,
             'Catalog Key': data['Catalog Key'] || '',
-            'Record Type': data['Record Type'] && data['Record Type'] !== 'work' ? data['Record Type'] : 'item',
+            'Item Type': data['Item Type'] || 'item',
             'Flow Scope': data['Flow Scope'] || 'all',
             'VGM': data['VGM'] || 'Visitor Guest Member',
             'Delivery Instruction': data['Delivery Instruction'] || 'intent match',
             'Delivery Rule': data['Delivery Rule'] || 'preference',
-            'Fallback Order': data['Fallback Order'] || 'chatplayer > media-link > text',
-            'Status': 'active',
-            'Date': data['Date'] || '',
-            'Title': data['Title'] || '',
-            'Media Type': data['Media Type'] || 'chatplayer'
+            'Fallback Order': data['Fallback Order'] || 'text',
+            'Status': 'active'
         };
         var tr = makeRow(seed);
         document.getElementById('da1-tbody').appendChild(tr);

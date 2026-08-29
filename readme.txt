@@ -127,7 +127,7 @@ Current per-provider pocket rules are dated MTS 26_08m_20d on the Personality De
 
 = What are DA1 Catalogs? =
 
-DA1 Catalogs are structured TSV datasets managed by the floscAdmin. They let a FLOSC flow answer from curated rows of content, media, links, records, or fallback responses without hard-coding that data into plugin PHP. Catalogs are stored in the WordPress uploads directory and can be assigned to specific flows.
+DA1 provides a content-agnostic catalog structure with native compatibility for Dublin Core metadata and unrestricted catalog-specific parameters. A FLOSC flow can expose selected catalog items to Visitors, Guests, or Members and use the assigned catalog during the conversational journey without hard-coding project-specific content into plugin PHP. Catalogs are stored as TSV datasets in the WordPress uploads directory and can be assigned to specific flows.
 
 = Where does visitor data get stored? =
 

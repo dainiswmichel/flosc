@@ -403,7 +403,7 @@ require_once FLOSC_PLUGIN_DIR . 'includes/tokens/class-flosc-visitor-token-trait
 require_once FLOSC_PLUGIN_DIR . 'includes/magic-link/class-flosc-magic-link-trait.php';
 // FLOSC_Filesystem already required above (before flosc-data-paths.php).
 require_once FLOSC_PLUGIN_DIR . 'includes/request-guard/class-flosc-request-guard.php';
-require_once FLOSC_PLUGIN_DIR . 'includes/da1/class-flosc-da1-compositions.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/da1/class-flosc-da1-catalogs.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/chat-turn/trait-flosc-chat-turn.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/companion-mode/class-flosc-companion-mode.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/full-page-mode/class-flosc-full-page-mode.php';
@@ -432,7 +432,7 @@ class FLOSC_Framework {
     // Core components
     private $filesystem;
     private $request_guard;
-    private $da1_compositions;
+    private $da1_catalogs;
     private $companion_mode;
     private $full_page_mode;
     private $first_party_auth;
@@ -1084,7 +1084,7 @@ class FLOSC_Framework {
     private function load_dependencies() {
         $this->filesystem = new FLOSC_Filesystem();
         $this->request_guard = new FLOSC_Request_Guard();
-        $this->da1_compositions = new FLOSC_DA1_Compositions();
+        $this->da1_catalogs = new FLOSC_DA1_Catalogs();
         $this->companion_mode = new FLOSC_Companion_Mode($this);
         $this->full_page_mode = new FLOSC_Full_Page_Mode($this);
         $this->first_party_auth = new FLOSC_First_Party_Authentication($this);
@@ -3841,92 +3841,46 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
     
 
 
-    private function flosc_build_da1_composition_reply($message, $flow_id, $ivr_file) {
-        return $this->da1_compositions->build_composition_reply($message, $flow_id, $ivr_file);
+    private function flosc_build_da1_catalog_reply($message, $flow_id, $ivr_file, $access_level = 'visitor') {
+        return $this->da1_catalogs->build_catalog_reply($message, $flow_id, $ivr_file, $access_level);
     }
 
-    private function flosc_is_composition_query($message) {
-        return $this->da1_compositions->is_composition_query($message);
+    private function flosc_is_catalog_query($message, $flow_id = '', $ivr_file = '', $access_level = 'visitor') {
+        $rows = $this->da1_catalogs->load_rows_for_flow($flow_id, $ivr_file, $access_level);
+        $items = $this->da1_catalogs->extract_items($rows);
+        return $this->da1_catalogs->is_catalog_query($message, $items);
     }
 
-    private function flosc_da1_is_count_request($message) {
-        return $this->da1_compositions->is_count_request($message);
-    }
-
-    private function flosc_da1_is_full_list_request($message) {
-        return $this->da1_compositions->is_full_list_request($message);
-    }
-
-    private function flosc_da1_detect_batch_size($message) {
-        return $this->da1_compositions->detect_batch_size($message);
-    }
-
-    private function flosc_da1_get_works_list_url() {
-        return $this->da1_compositions->get_works_list_url();
-    }
-
-    private function flosc_load_da1_rows_for_flow($flow_id, $ivr_file) {
-        return $this->da1_compositions->load_rows_for_flow($flow_id, $ivr_file);
-    }
-
-    private function flosc_extract_da1_composition_items($rows) {
-        return $this->da1_compositions->extract_composition_items($rows);
-    }
-
-    private function flosc_da1_extract_primary_media_url($text) {
-        return $this->da1_compositions->extract_primary_media_url($text);
+    private function flosc_load_da1_rows_for_flow($flow_id, $ivr_file, $access_level = 'visitor') {
+        return $this->da1_catalogs->load_rows_for_flow($flow_id, $ivr_file, $access_level);
     }
 
     private function flosc_da1_parse_tsv_content($content) {
-        return $this->da1_compositions->parse_tsv_content($content);
+        return $this->da1_catalogs->parse_tsv_content($content);
     }
 
     private function flosc_shorten_text($text, $limit) {
-        return $this->da1_compositions->shorten_text($text, $limit);
+        return $this->da1_catalogs->shorten_text($text, $limit);
     }
 
     private function flosc_limit_chat_response_length($text) {
-        return $this->da1_compositions->limit_chat_response_length($text);
-    }
-
-
-    private function flosc_enforce_no_hedge_response($response_text, $user_message, $flow_id, $ivr_file, $phase, $eval_context) {
-        $response_text = trim((string) $response_text);
-
-        if ($response_text === '' || $this->flosc_contains_forbidden_hedge($response_text)) {
-            return $this->flosc_build_professional_replacement($user_message, $flow_id, $ivr_file, $phase, $eval_context);
-        }
-
-        return $response_text;
-    }
-
-    private function flosc_contains_forbidden_hedge($text) {
-        $text = (string) $text;
-        $patterns = [
-            '/\bi\s+don\'t\s+have\b[^\n]{0,160}\b(information|info|context|details|data|catalog|count|biography|bio|configured|system)\b/i',
-            '/\bi\s+do\s+not\s+have\b[^\n]{0,160}\b(information|info|context|details|data|catalog|count|biography|bio|configured|system)\b/i',
-            '/\bnot\s+configured\b[^\n]{0,80}\b(system|right\s+now)?\b/i',
-            '/\bconfigured\s+in\s+my\s+system\b/i',
-            '/\bmissing\s+(catalog|biography|bio|context|data)\b/i',
-        ];
-
-        foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $text)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->da1_catalogs->limit_chat_response_length($text);
     }
 
     private function flosc_build_professional_replacement($user_message, $flow_id, $ivr_file, $phase, $eval_context) {
         $user_message = (string) $user_message;
 
-        if ($this->flosc_is_composition_query($user_message)) {
-            $catalog_reply = $this->flosc_build_da1_composition_reply($user_message, $flow_id, $ivr_file);
-            if ($catalog_reply !== '') {
-                return $catalog_reply;
-            }
+        $flosc_da1_access_level = is_array($eval_context)
+            ? (string) ($eval_context['access_level'] ?? 'visitor')
+            : 'visitor';
+        $catalog_reply = $this->flosc_build_da1_catalog_reply(
+            $user_message,
+            $flow_id,
+            $ivr_file,
+            $flosc_da1_access_level
+        );
+        if ($catalog_reply !== '') {
+            return $catalog_reply;
         }
 
         if ($this->flosc_is_bio_query($user_message)) {
@@ -3964,7 +3918,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC: pull_pending_sessio
             return $default_response;
         }
 
-        return 'I can help with a direct answer. Ask for biography, resume link, catalog count, full works list, or 1 to 3 composition recommendations.';
+        return 'I can help with a direct answer. Ask about the catalog, a specific item, a creator, subject, category, tag, or a few recommendations.';
     }
 
     private function flosc_is_bio_query($message) {

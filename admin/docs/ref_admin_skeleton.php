@@ -190,17 +190,18 @@ $flosc_tab_labels = [
 
 <h3 id="tab-da1-dataset-template">DA1 Dataset Template (Submission Reference)</h3>
 <p><a href="<?php echo esc_url($flosc_feature_links['da1']); ?>">Open Feature: DA1 tab</a></p>
-<p><strong>Required control columns:</strong> <code>Row Key</code>, <code>Parent Key</code>, <code>Catalog Key</code>, <code>Record Type</code>, <code>Flow Scope</code>, <code>VGM</code>, <code>Delivery Instruction</code>, <code>Delivery Rule</code>, <code>Fallback Order</code>, <code>Status</code>.</p>
-<p><strong>Status values:</strong> Use <code>active</code> or <code>paused</code>. Parent <code>paused</code> means child rows should be treated as paused for serving.</p>
-<p><strong>Row model:</strong> Parent rows use integer keys like <code>85</code>. Child rows use decimal keys like <code>85.1</code>, <code>85.2</code>, and set <code>Parent Key</code> to <code>85</code>.</p>
+<p><strong>Definition:</strong> DA1 provides a content-agnostic catalog structure with native compatibility for Dublin Core metadata and unrestricted catalog-specific parameters.</p>
+<p><strong>Required control columns:</strong> <code>Row Key</code>, <code>Parent Key</code>, <code>Catalog Key</code>, <code>Item Type</code>, <code>Flow Scope</code>, <code>VGM</code>, <code>Delivery Instruction</code>, <code>Delivery Rule</code>, <code>Fallback Order</code>, <code>Status</code>.</p>
+<p><strong>Status values:</strong> Use <code>active</code> or <code>paused</code>. A paused parent also pauses its child rows for serving.</p>
+<p><strong>Row model:</strong> Parent items use integer keys like <code>85</code>. Child rows use decimal keys like <code>85.1</code>, <code>85.2</code>, and set <code>Parent Key</code> to <code>85</code>.</p>
 <p><strong>Flow Scope:</strong> Required. Use one or more flow keys comma-separated (for example <code>flow_a_ivr,flow_b_ivr</code>) or <code>all</code>.</p>
-<p><strong>VGM values:</strong> Use <code>visitor</code>, <code>guest</code>, <code>member</code>, or <code>all</code>.</p>
-<p><strong>Payload fields:</strong> Keep catalog content flexible. Recommended payload columns are <code>Date</code>, <code>Title</code>, <code>Description</code>, <code>Lyrics</code>, <code>Media</code>, <code>Media Type</code>, and <code>Notes</code>. Additional columns are allowed and preserved.</p>
+<p><strong>VGM values:</strong> Use any combination of <code>Visitor</code>, <code>Guest</code>, and <code>Member</code>, or <code>all</code>. Runtime serving enforces the field before payload reaches the conversation.</p>
+<p><strong>Dublin Core compatibility:</strong> DA1 recognizes the standard descriptive names <code>Title</code>, <code>Creator</code>, <code>Subject</code>, <code>Description</code>, <code>Publisher</code>, <code>Contributor</code>, <code>Date</code>, <code>Type</code>, <code>Format</code>, <code>Identifier</code>, <code>Source</code>, <code>Language</code>, <code>Relation</code>, <code>Coverage</code>, and <code>Rights</code>. They are optional.</p>
+<p><strong>Catalog-specific parameters:</strong> Any columns after the DA1 controls are payload. DA1 preserves them without imposing a content schema. For example, a musical-works catalog can add <code>Instrumentation</code> and <code>Duration</code>; a property catalog can add <code>Price</code>, <code>Bedrooms</code>, and <code>Area</code>.</p>
+<p><strong>Backward compatibility:</strong> Legacy TSV files using <code>Record Type</code> are accepted and normalized to <code>Item Type</code> when saved.</p>
 <p><strong>Catalog operations:</strong> DA1 supports create catalog, assign catalogs per flow, upload TSV, and export TSV. One flow can use multiple catalogs ordered by priority.</p>
-<pre><code>Row Key	Parent Key	Catalog Key	Record Type	Flow Scope	VGM	Delivery Instruction	Delivery Rule	Fallback Order	Status	Date	Title	Description	Lyrics	Media	Media Type	Notes
-85		music_core	work	flow_ivr	visitor	contextual match	preference	chatplayer &gt; media-link &gt; text	active	1996	Time Flies	Rock collaboration				Primary work row
-85.1	85	music_core	media	flow_ivr	visitor	contextual match	preference	chatplayer &gt; media-link &gt; text	active		Time Flies	Live version		https://example.com/youtube-link	youtube	Live performance
-85.2	85	music_core	media	flow_ivr	visitor	contextual match	preference	chatplayer &gt; media-link &gt; text	active		Time Flies	Short form clip		https://example.com/tiktok-link	tiktok	Social clip</code></pre>
+<pre><code>Row Key	Parent Key	Catalog Key	Item Type	Flow Scope	VGM	Delivery Instruction	Delivery Rule	Fallback Order	Status	Title	Creator	Description	Instrumentation	Duration
+85		works_core	musical work	flow_ivr	Visitor Guest Member	intent match	preference	text	active	Example Work	Example Creator	A catalog item described with Dublin Core-compatible and custom parameters.	Piano	12:30</code></pre>
 <h3 id="visitor-autoprompts-intropanelshow-panel">⚪ Visitor AutoPrompts — IntroPanelShow panel</h3>
 <p><a href="<?php echo esc_url($flosc_feature_links['autoprompts']); ?>">Open Feature: AutoPrompts tab (Visitor section)</a></p>
 <p><strong>One further step:</strong> Toggle the Visitor panel visibility once and save, then reload the tab to confirm the state persisted for the active flow.</p>
