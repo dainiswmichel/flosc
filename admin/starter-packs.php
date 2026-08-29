@@ -30,6 +30,8 @@ if ( isset( $_POST['flosc_sp_action'] ) || isset( $_POST['flosc_sp_slug'] ) ) {
 		$flosc_sp_notice = FLOSC_Starter_Packs::install( $flosc_sp_slug );
 	} elseif ( 'remove' === $flosc_sp_action ) {
 		$flosc_sp_notice = FLOSC_Starter_Packs::uninstall( $flosc_sp_slug );
+	} elseif ( 'repair' === $flosc_sp_action ) {
+		$flosc_sp_notice = FLOSC_Starter_Packs::repair( $flosc_sp_slug );
 	} elseif ( 'personality' === $flosc_sp_action ) {
 		$flosc_sp_personality = isset( $_POST['flosc_sp_personality'] )
 			? sanitize_key( wp_unslash( $_POST['flosc_sp_personality'] ) )
@@ -111,13 +113,21 @@ if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
 			<?php
 			foreach ( $flosc_sp_packs as $flosc_sp_pack ) :
 				$flosc_sp_installed = FLOSC_Starter_Packs::is_installed( $flosc_sp_pack['slug'] );
+				$flosc_sp_status    = FLOSC_Starter_Packs::status( $flosc_sp_pack['slug'] );
+				$flosc_sp_labels    = array(
+					'installed'           => __( 'Installed', 'flosc' ),
+					'needs_configuration' => __( 'Needs configuration', 'flosc' ),
+					'needs_repair'        => __( 'Needs repair', 'flosc' ),
+				);
 				?>
 				<div class="<?php echo esc_attr( $flosc_sp_installed ? 'flosc-sp-card is-installed' : 'flosc-sp-card' ); ?>">
 
 					<h3>
 						<?php echo esc_html( (string) ( $flosc_sp_pack['name'] ?? $flosc_sp_pack['slug'] ) ); ?>
-						<?php if ( $flosc_sp_installed ) : ?>
-							<span class="flosc-sp-badge"><?php esc_html_e( 'Installed', 'flosc' ); ?></span>
+						<?php if ( $flosc_sp_installed && isset( $flosc_sp_labels[ $flosc_sp_status['state'] ] ) ) : ?>
+							<span class="<?php echo esc_attr( 'flosc-sp-badge is-' . str_replace( '_', '-', $flosc_sp_status['state'] ) ); ?>">
+								<?php echo esc_html( $flosc_sp_labels[ $flosc_sp_status['state'] ] ); ?>
+							</span>
 						<?php endif; ?>
 					</h3>
 
@@ -207,6 +217,22 @@ if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
 							endif;
 							?>
 						</ul>
+
+						<?php if ( ! empty( $flosc_sp_status['missing'] ) ) : ?>
+							<div class="flosc-sp-repair">
+								<p>
+									<strong><?php esc_html_e( 'Missing since install:', 'flosc' ); ?></strong>
+									<?php echo esc_html( implode( ', ', $flosc_sp_status['missing'] ) ); ?>
+								</p>
+								<form method="post">
+									<?php wp_nonce_field( 'flosc_starter_packs' ); ?>
+									<input type="hidden" name="flosc_sp_slug" value="<?php echo esc_attr( $flosc_sp_pack['slug'] ); ?>">
+									<input type="hidden" name="flosc_sp_action" value="repair">
+									<button type="submit" class="button"><?php esc_html_e( 'Repair', 'flosc' ); ?></button>
+									<span class="description"><?php esc_html_e( 'Puts back only what is gone. Anything you edited is left alone.', 'flosc' ); ?></span>
+								</form>
+							</div>
+						<?php endif; ?>
 
 						<?php if ( ! empty( $flosc_sp_pack['needs_configuration'] ) ) : ?>
 							<p class="flosc-sp-config"><?php echo esc_html( (string) $flosc_sp_pack['needs_configuration'] ); ?></p>

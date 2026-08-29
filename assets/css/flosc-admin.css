@@ -7680,3 +7680,9 @@ label[for^="flosc_acc_q_"] {
 .flosc-sp-voices-shipped li { margin: 0; }
 .flosc-sp-voices-shipped li strong { display: block; }
 .flosc-sp-voices-shipped li span { color: #646970; }
+.flosc-sp-badge.is-needs-repair { color: #8a2424; background: #fcebea; border-color: #8a2424; }
+.flosc-sp-badge.is-needs-configuration { color: #8a6100; background: #fcf5e6; border-color: #dba617; }
+.flosc-sp-repair { margin: 0 0 14px; padding: 10px 12px; background: #fcebea; border-left: 3px solid #8a2424; font-size: 13px; }
+.flosc-sp-repair p { margin: 0 0 8px; }
+.flosc-sp-repair form { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.flosc-sp-repair .description { margin: 0; }

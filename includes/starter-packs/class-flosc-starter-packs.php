@@ -115,6 +115,152 @@ class FLOSC_Starter_Packs {
 	}
 
 	/**
+	 * What is actually on disk and in the database for a pack.
+	 *
+	 * The install record says what was created; this says what is still there.
+	 * An operator who deleted the flow, emptied the category, or lost the
+	 * catalog gets told which piece is gone rather than a badge that still
+	 * reads Installed.
+	 *
+	 * @param string $slug Pack slug.
+	 * @return array{state:string,missing:array<int,string>,present:array<int,string>}
+	 */
+	public static function status( $slug ) {
+		$slug  = sanitize_key( $slug );
+		$state = self::state();
+
+		if ( ! isset( $state[ $slug ] ) ) {
+			return array(
+				'state'   => 'not_installed',
+				'missing' => array(),
+				'present' => array(),
+			);
+		}
+
+		$pack   = self::get( $slug );
+		$record = $state[ $slug ];
+		$missing = array();
+		$present = array();
+
+		// The flow file, and the settings row that makes it a flow at all.
+		if ( ! empty( $record['flow_file'] ) ) {
+			$path = self::flow_dir() . basename( (string) $record['flow_file'] );
+
+			if ( file_exists( $path ) ) {
+				$present[] = (string) $record['flow_file'];
+			} else {
+				/* translators: %s: flow file name. */
+				$missing[] = sprintf( __( 'the flow file %s', 'flosc' ), basename( (string) $record['flow_file'] ) );
+			}
+		}
+
+		if ( ! empty( $record['flow_option'] ) ) {
+			$bag = get_option( (string) $record['flow_option'], null );
+
+			if ( is_array( $bag ) && ! empty( $bag['flow_messages'] ) ) {
+				$present[] = __( 'flow messages', 'flosc' );
+			} else {
+				$missing[] = __( 'the flow settings and its messages', 'flosc' );
+			}
+		}
+
+		// Categories, and whether the posts are still in them.
+		if ( ! empty( $record['categories'] ) && is_array( $record['categories'] ) ) {
+			foreach ( $record['categories'] as $category ) {
+				$term = get_term( (int) ( $category['id'] ?? 0 ), 'category' );
+
+				if ( ! $term || is_wp_error( $term ) ) {
+					/* translators: %s: category name. */
+					$missing[] = sprintf( __( 'the category %s', 'flosc' ), (string) ( $category['name'] ?? '' ) );
+				} else {
+					$present[] = (string) ( $category['name'] ?? '' );
+				}
+			}
+		}
+
+		$posts = self::installed_post_ids( $slug );
+		$want  = (int) ( $record['post_count'] ?? 0 );
+
+		if ( $want > 0 && count( $posts ) < $want ) {
+			$missing[] = sprintf(
+				/* translators: 1: number of posts found, 2: number expected. */
+				__( '%1$d of %2$d posts', 'flosc' ),
+				count( $posts ),
+				$want
+			);
+		} elseif ( $want > 0 ) {
+			/* translators: %d: number of posts. */
+			$present[] = sprintf( __( '%d posts', 'flosc' ), count( $posts ) );
+		}
+
+		// The DA1 catalog file and its place in the index.
+		if ( ! empty( $record['catalog_file'] ) ) {
+			$path = self::catalog_dir() . basename( (string) $record['catalog_file'] );
+
+			if ( file_exists( $path ) ) {
+				$present[] = (string) $record['catalog_file'];
+			} else {
+				/* translators: %s: catalog file name. */
+				$missing[] = sprintf( __( 'the catalog %s', 'flosc' ), basename( (string) $record['catalog_file'] ) );
+			}
+		}
+
+		// Product files the pack sideloaded.
+		if ( ! empty( $record['attachment_ids'] ) && is_array( $record['attachment_ids'] ) ) {
+			foreach ( $record['attachment_ids'] as $attachment_id ) {
+				if ( 'attachment' === get_post_type( (int) $attachment_id ) ) {
+					$present[] = __( 'product file', 'flosc' );
+				} else {
+					$missing[] = __( 'a product file', 'flosc' );
+				}
+			}
+		}
+
+		if ( ! empty( $missing ) ) {
+			return array(
+				'state'   => 'needs_repair',
+				'missing' => $missing,
+				'present' => $present,
+			);
+		}
+
+		if ( ! empty( $pack['needs_configuration'] ) ) {
+			return array(
+				'state'   => 'needs_configuration',
+				'missing' => array(),
+				'present' => $present,
+			);
+		}
+
+		return array(
+			'state'   => 'installed',
+			'missing' => array(),
+			'present' => $present,
+		);
+	}
+
+	/**
+	 * Post ids a pack owns, found by its stamp.
+	 *
+	 * @param string $slug Pack slug.
+	 * @return array<int,int>
+	 */
+	private static function installed_post_ids( $slug ) {
+		$found = get_posts(
+			array(
+				'post_type'   => 'post',
+				'post_status' => 'any',
+				'numberposts' => -1,
+				'fields'      => 'ids',
+				'meta_key'    => self::POST_STAMP, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Bounded, admin-only.
+				'meta_value'  => sanitize_key( $slug ), // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value -- See above.
+			)
+		);
+
+		return array_map( 'intval', (array) $found );
+	}
+
+	/**
 	 * Directory holding flow files.
 	 *
 	 * @return string
@@ -444,32 +590,12 @@ class FLOSC_Starter_Packs {
 				continue;
 			}
 
-			$slug     = sanitize_title( (string) ( $entry['category'] ?? '' ) );
-			$term_id  = isset( $term_ids[ $slug ] ) ? (int) $term_ids[ $slug ] : (int) reset( $term_ids );
-			$item     = isset( $entry['item'] ) ? (int) $entry['item'] : $count + 1;
-			$post_arg = array(
-				'post_title'    => sanitize_text_field( (string) $entry['title'] ),
-				'post_content'  => wp_kses_post( (string) ( $entry['content'] ?? '' ) ),
-				'post_excerpt'  => sanitize_text_field( (string) ( $entry['excerpt'] ?? '' ) ),
-				'post_status'   => 'publish',
-				'post_type'     => 'post',
-				'post_category' => array( $term_id ),
-				'meta_input'    => array(
-					self::POST_STAMP        => $pack['slug'],
-					self::POST_ITEM_STAMP   => $item,
-					'_flosc_lesson_number'  => $item,
-				),
-			);
+			$slug    = sanitize_title( (string) ( $entry['category'] ?? '' ) );
+			$term_id = isset( $term_ids[ $slug ] ) ? (int) $term_ids[ $slug ] : (int) reset( $term_ids );
+			$item    = isset( $entry['item'] ) ? (int) $entry['item'] : $count + 1;
+			$post_id = self::insert_pack_post( $pack['slug'], $entry, $term_id, $item );
 
-			$post_slug = sanitize_title( (string) ( $entry['slug'] ?? '' ) );
-
-			if ( '' !== $post_slug ) {
-				$post_arg['post_name'] = $post_slug;
-			}
-
-			$post_id = wp_insert_post( $post_arg, true );
-
-			if ( is_wp_error( $post_id ) ) {
+			if ( $post_id < 1 ) {
 				continue;
 			}
 
@@ -479,24 +605,6 @@ class FLOSC_Starter_Packs {
 				$per_category[ $term_id ] = 0;
 			}
 			++$per_category[ $term_id ];
-
-			// The tier the runtime gates on, plus the starter pack's own record
-			// of what the WXR called it.
-			$access = sanitize_key( (string) ( $entry['access'] ?? 'member' ) );
-
-			if ( ! in_array( $access, array( 'visitor', 'guest', 'member' ), true ) ) {
-				$access = 'member';
-			}
-
-			update_post_meta( $post_id, '_flosc_access_level', $access );
-
-			if ( ! empty( $entry['starter_access'] ) ) {
-				update_post_meta( $post_id, '_flosc_starter_access', sanitize_key( (string) $entry['starter_access'] ) );
-			}
-
-			if ( ! empty( $entry['protection_mode'] ) ) {
-				update_post_meta( $post_id, '_flosc_protection_mode', sanitize_key( (string) $entry['protection_mode'] ) );
-			}
 		}
 
 		return array(
@@ -597,6 +705,67 @@ class FLOSC_Starter_Packs {
 	}
 
 	/**
+	 * Create one post a pack owns, stamped so it can be found again.
+	 *
+	 * The stamp pair — pack slug and item number — is what makes install and
+	 * repair idempotent: a second run recognises what already exists instead
+	 * of duplicating it.
+	 *
+	 * @param string              $pack_slug Pack slug.
+	 * @param array<string,mixed> $entry     One entry from the pack's content file.
+	 * @param int                 $term_id   Category to file it under.
+	 * @param int                 $item      The pack's own item number.
+	 * @return int Post id, or 0 on failure.
+	 */
+	private static function insert_pack_post( $pack_slug, $entry, $term_id, $item ) {
+		$post_arg = array(
+			'post_title'    => sanitize_text_field( (string) $entry['title'] ),
+			'post_content'  => wp_kses_post( (string) ( $entry['content'] ?? '' ) ),
+			'post_excerpt'  => sanitize_text_field( (string) ( $entry['excerpt'] ?? '' ) ),
+			'post_status'   => 'publish',
+			'post_type'     => 'post',
+			'post_category' => array( (int) $term_id ),
+			'meta_input'    => array(
+				self::POST_STAMP       => $pack_slug,
+				self::POST_ITEM_STAMP  => (int) $item,
+				'_flosc_lesson_number' => (int) $item,
+			),
+		);
+
+		$post_slug = sanitize_title( (string) ( $entry['slug'] ?? '' ) );
+
+		if ( '' !== $post_slug ) {
+			$post_arg['post_name'] = $post_slug;
+		}
+
+		$post_id = wp_insert_post( $post_arg, true );
+
+		if ( is_wp_error( $post_id ) ) {
+			return 0;
+		}
+
+		// The tier the runtime gates on, plus the pack's own record of what it
+		// called that tier.
+		$access = sanitize_key( (string) ( $entry['access'] ?? 'member' ) );
+
+		if ( ! in_array( $access, array( 'visitor', 'guest', 'member' ), true ) ) {
+			$access = 'member';
+		}
+
+		update_post_meta( $post_id, '_flosc_access_level', $access );
+
+		if ( ! empty( $entry['starter_access'] ) ) {
+			update_post_meta( $post_id, '_flosc_starter_access', sanitize_key( (string) $entry['starter_access'] ) );
+		}
+
+		if ( ! empty( $entry['protection_mode'] ) ) {
+			update_post_meta( $post_id, '_flosc_protection_mode', sanitize_key( (string) $entry['protection_mode'] ) );
+		}
+
+		return (int) $post_id;
+	}
+
+	/**
 	 * Copy one file the pack ships into a writable FLOSC location.
 	 *
 	 * Never a raw copy(): reads the shipped file, then writes through the
@@ -645,9 +814,10 @@ class FLOSC_Starter_Packs {
 	 * @param array<string,mixed> $pack          Manifest.
 	 * @param string              $flow_path     Absolute path of the installed flow file.
 	 * @param string              $category_slug Category the pack's posts landed in, if any.
+	 * @param bool                $allow_existing Overwrite a settings row this pack already owns (repair only).
 	 * @return array{ok:bool,message:string,detail:array<int,string>,record:array<string,mixed>}
 	 */
-	private static function register_flow( $pack, $flow_path, $category_slug = '' ) {
+	private static function register_flow( $pack, $flow_path, $category_slug = '', $allow_existing = false ) {
 		if ( ! function_exists( 'flosc_import_ivr_to_database' ) ) {
 			require_once FLOSC_PLUGIN_DIR . 'includes/portability/flosc-ivr-sync.php';
 		}
@@ -667,7 +837,7 @@ class FLOSC_Starter_Packs {
 
 		// The file check upstream cannot see a settings row left behind by a flow
 		// the operator deleted by hand. Refuse rather than overwrite it.
-		if ( null !== get_option( $flow_key, null ) ) {
+		if ( ! $allow_existing && null !== get_option( $flow_key, null ) ) {
 			return self::result(
 				false,
 				sprintf(
@@ -863,6 +1033,307 @@ class FLOSC_Starter_Packs {
 				$label
 			)
 		);
+	}
+
+	/**
+	 * Put back only the pieces of an installed pack that have gone missing.
+	 *
+	 * Structural, not a reset. Content the operator edited is left exactly as
+	 * they left it; only components that no longer exist are recreated. A pack
+	 * with nothing missing is reported as such rather than rebuilt.
+	 *
+	 * @param string $slug Pack slug.
+	 * @return array{ok:bool,message:string,detail:array<int,string>}
+	 */
+	public static function repair( $slug ) {
+		$slug   = sanitize_key( $slug );
+		$status = self::status( $slug );
+
+		if ( 'not_installed' === $status['state'] ) {
+			return self::result( false, __( 'That starter pack is not installed, so there is nothing to repair.', 'flosc' ) );
+		}
+
+		if ( empty( $status['missing'] ) ) {
+			return self::result( true, __( 'Nothing to repair — every piece of this pack is present.', 'flosc' ) );
+		}
+
+		$pack = self::get( $slug );
+
+		if ( null === $pack ) {
+			return self::result( false, __( 'That starter pack is no longer available in this build.', 'flosc' ) );
+		}
+
+		$state  = self::state();
+		$record = $state[ $slug ];
+		$detail = array();
+
+		// --- flow file ---
+		if ( ! empty( $record['flow_file'] ) ) {
+			$target = self::flow_dir() . basename( (string) $record['flow_file'] );
+
+			if ( ! file_exists( $target ) ) {
+				$source = $pack['dir'] . basename( (string) $pack['flow']['file'] );
+
+				if ( ! self::place_file( $source, $target ) ) {
+					return self::result( false, __( 'The flow file could not be restored. Check folder permissions.', 'flosc' ) );
+				}
+
+				/* translators: %s: flow file name. */
+				$detail[] = sprintf( __( 'Flow file restored: %s', 'flosc' ), basename( $target ) );
+			}
+
+			// --- flow settings and messages ---
+			$bag = ! empty( $record['flow_option'] ) ? get_option( (string) $record['flow_option'], null ) : null;
+
+			if ( ! is_array( $bag ) || empty( $bag['flow_messages'] ) ) {
+				$registered = self::register_flow( $pack, $target, (string) ( $record['category_slug'] ?? '' ), true );
+
+				if ( ! $registered['ok'] ) {
+					return $registered;
+				}
+
+				$record['flow_option'] = $registered['record']['flow_option'];
+				$detail[]              = $registered['message'];
+			}
+		}
+
+		// --- categories and posts ---
+		$restored = self::repair_content( $pack, $record );
+
+		if ( ! $restored['ok'] ) {
+			return self::result( false, $restored['message'] );
+		}
+
+		if ( '' !== $restored['message'] ) {
+			$detail[] = $restored['message'];
+		}
+
+		if ( ! empty( $restored['record'] ) ) {
+			$record = array_merge( $record, $restored['record'] );
+		}
+
+		// --- catalog ---
+		if ( ! empty( $record['catalog_file'] ) ) {
+			$target = self::catalog_dir() . basename( (string) $record['catalog_file'] );
+
+			if ( ! file_exists( $target ) ) {
+				$source = $pack['dir'] . basename( (string) $pack['catalog']['file'] );
+
+				if ( ! self::place_file( $source, $target ) ) {
+					return self::result( false, __( 'The catalog file could not be restored. Check folder permissions.', 'flosc' ) );
+				}
+
+				/* translators: %s: catalog file name. */
+				$detail[] = sprintf( __( 'Catalog restored: %s', 'flosc' ), basename( $target ) );
+			}
+
+			// The index entry and the flow assignment, whether or not the file was missing.
+			if ( ! empty( $record['catalog_key'] ) ) {
+				$index = get_option( 'flosc_da1_catalogs', array() );
+				$index = is_array( $index ) ? $index : array();
+
+				if ( ! isset( $index[ $record['catalog_key'] ] ) ) {
+					$index[ $record['catalog_key'] ] = array(
+						'label'      => (string) ( $pack['catalog']['label'] ?? $record['catalog_key'] ),
+						'key'        => (string) $record['catalog_key'],
+						'filename'   => basename( (string) $record['catalog_file'] ),
+						'created_at' => current_time( 'mysql' ),
+					);
+					update_option( 'flosc_da1_catalogs', $index, false );
+					$detail[] = __( 'Catalog put back in the DA1 index.', 'flosc' );
+				}
+
+				if ( ! empty( $record['flow_file'] ) ) {
+					$assign = get_option( 'flosc_da1_flow_catalogs', array() );
+					$assign = is_array( $assign ) ? $assign : array();
+
+					if ( empty( $assign[ $record['flow_file'] ] ) ) {
+						$assign[ $record['flow_file'] ] = array( (string) $record['catalog_key'] );
+						update_option( 'flosc_da1_flow_catalogs', $assign, false );
+						$detail[] = __( 'Catalog reassigned to its flow.', 'flosc' );
+					}
+				}
+			}
+		}
+
+		// --- product files ---
+		$live = array();
+
+		foreach ( (array) ( $record['attachment_ids'] ?? array() ) as $attachment_id ) {
+			if ( 'attachment' === get_post_type( (int) $attachment_id ) ) {
+				$live[] = (int) $attachment_id;
+			}
+		}
+
+		if ( ! empty( $pack['assets'] ) && count( $live ) < count( (array) $pack['assets'] ) ) {
+			$assets = self::install_assets( $pack );
+
+			if ( $assets['ok'] ) {
+				$record['attachment_ids'] = array_values( array_unique( array_merge( $live, $assets['ids'] ) ) );
+				$detail[]                 = $assets['message'];
+			}
+		}
+
+		$state[ $slug ] = $record;
+		update_option( self::STATE_OPTION, $state, false );
+
+		if ( ! empty( $record['post_count'] ) ) {
+			$detail[] = self::refresh_content_index();
+		}
+
+		return self::result( true, __( 'Starter pack repaired.', 'flosc' ), $detail );
+	}
+
+	/**
+	 * Recreate any category or post a pack owns that is no longer there.
+	 *
+	 * Posts are matched on the pack slug plus the item number, so a post the
+	 * operator rewrote is recognised and left alone. Only genuinely absent
+	 * items are created again.
+	 *
+	 * @param array<string,mixed> $pack   Manifest.
+	 * @param array<string,mixed> $record Install record.
+	 * @return array{ok:bool,message:string,record:array<string,mixed>}
+	 */
+	private static function repair_content( $pack, $record ) {
+		if ( empty( $pack['content']['file'] ) ) {
+			return array( 'ok' => true, 'message' => '', 'record' => array() );
+		}
+
+		$source = $pack['dir'] . basename( (string) $pack['content']['file'] );
+
+		if ( ! is_readable( $source ) ) {
+			return array( 'ok' => false, 'message' => __( 'The pack is missing its content file.', 'flosc' ), 'record' => array() );
+		}
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a file shipped inside the plugin.
+		$doc = json_decode( (string) file_get_contents( $source ), true );
+
+		if ( ! is_array( $doc ) || empty( $doc['posts'] ) ) {
+			return array( 'ok' => false, 'message' => __( 'The pack content file could not be read.', 'flosc' ), 'record' => array() );
+		}
+
+		// Which categories still exist, by slug.
+		$term_ids = array();
+
+		foreach ( (array) ( $doc['categories'] ?? array() ) as $category ) {
+			$slug = sanitize_title( (string) ( $category['slug'] ?? '' ) );
+
+			if ( '' === $slug ) {
+				continue;
+			}
+
+			$existing = get_term_by( 'slug', $slug, 'category' );
+
+			if ( $existing && ! is_wp_error( $existing ) ) {
+				$term_ids[ $slug ] = (int) $existing->term_id;
+			}
+		}
+
+		$made_categories = 0;
+		$pending         = array();
+
+		foreach ( (array) ( $doc['categories'] ?? array() ) as $category ) {
+			$slug = sanitize_title( (string) ( $category['slug'] ?? '' ) );
+
+			if ( '' !== $slug && ! isset( $term_ids[ $slug ] ) ) {
+				$pending[] = $category;
+			}
+		}
+
+		$safety = count( $pending ) + 1;
+
+		while ( ! empty( $pending ) && $safety-- > 0 ) {
+			$still = array();
+
+			foreach ( $pending as $category ) {
+				$slug   = sanitize_title( (string) $category['slug'] );
+				$parent = sanitize_title( (string) ( $category['parent'] ?? '' ) );
+
+				if ( '' !== $parent && ! isset( $term_ids[ $parent ] ) ) {
+					$still[] = $category;
+					continue;
+				}
+
+				$term = wp_insert_term(
+					sanitize_text_field( (string) ( $category['name'] ?? $slug ) ),
+					'category',
+					array(
+						'slug'        => $slug,
+						'description' => sanitize_text_field( (string) ( $category['description'] ?? '' ) ),
+						'parent'      => '' !== $parent ? (int) $term_ids[ $parent ] : 0,
+					)
+				);
+
+				if ( is_wp_error( $term ) ) {
+					continue;
+				}
+
+				$term_id           = (int) $term['term_id'];
+				$term_ids[ $slug ] = $term_id;
+				++$made_categories;
+
+				add_term_meta( $term_id, self::TERM_STAMP, $pack['slug'], true );
+
+				foreach ( (array) ( $category['term_meta'] ?? array() ) as $meta_key => $meta_value ) {
+					add_term_meta( $term_id, sanitize_key( (string) $meta_key ), sanitize_text_field( (string) $meta_value ), true );
+				}
+			}
+
+			$pending = $still;
+		}
+
+		// Which item numbers this pack still has posts for.
+		$have = array();
+
+		foreach ( self::installed_post_ids( $pack['slug'] ) as $post_id ) {
+			$item = (int) get_post_meta( $post_id, self::POST_ITEM_STAMP, true );
+
+			if ( $item > 0 ) {
+				$have[ $item ] = true;
+			}
+		}
+
+		$made_posts   = 0;
+		$per_category = array();
+
+		foreach ( $doc['posts'] as $index => $entry ) {
+			if ( ! is_array( $entry ) || empty( $entry['title'] ) ) {
+				continue;
+			}
+
+			$item = isset( $entry['item'] ) ? (int) $entry['item'] : $index + 1;
+
+			if ( isset( $have[ $item ] ) ) {
+				continue;
+			}
+
+			$slug    = sanitize_title( (string) ( $entry['category'] ?? '' ) );
+			$term_id = isset( $term_ids[ $slug ] ) ? (int) $term_ids[ $slug ] : (int) reset( $term_ids );
+			$post_id = self::insert_pack_post( $pack['slug'], $entry, $term_id, $item );
+
+			if ( $post_id > 0 ) {
+				++$made_posts;
+
+				if ( ! isset( $per_category[ $term_id ] ) ) {
+					$per_category[ $term_id ] = 0;
+				}
+				++$per_category[ $term_id ];
+			}
+		}
+
+		$message = '';
+
+		if ( $made_categories > 0 || $made_posts > 0 ) {
+			$message = sprintf(
+				/* translators: 1: number of posts, 2: number of categories. */
+				__( 'Restored %1$d posts and %2$d categories.', 'flosc' ),
+				$made_posts,
+				$made_categories
+			);
+		}
+
+		return array( 'ok' => true, 'message' => $message, 'record' => array() );
 	}
 
 	/* ------------------------------------------------------------------ *
