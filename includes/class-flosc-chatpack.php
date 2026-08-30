@@ -303,7 +303,9 @@ class FLOSC_Chatpack {
         // a generic FLOSC voice, i.e. one flow bleeding into another. The identity
         // section is flow-scoped, so re-sending it on every turn keeps each chatbot
         // firmly inside its own flow. (Cheap insurance; flow isolation is the point.)
-        $sections[] = self::build_identity_section((string) ($eval_context['flow_id'] ?? ''));
+        // Full compiled profile (v5.7-scale) is first-turn only. Re-sending it
+        // on every visitor hop bills thousands of input tokens per turn.
+        $sections[] = self::build_identity_section((string) ($eval_context['flow_id'] ?? ''), true);
         $followup_flow = (string) ($eval_context['flow_id'] ?? '');
         $sections[] = self::build_user_section($eval_context);
         $sections[] = self::build_flow_section($phase, $eval_context, $followup_flow);
@@ -472,8 +474,11 @@ class FLOSC_Chatpack {
     /**
      * Section 1: FLOSC Identity — what FLOSC is, product info, AI persona.
      * Reads from floscAdmin-configurable settings.
+     *
+     * @param string $flow_id  Flow stem.
+     * @param bool   $compact  True on follow-ups: name/role/scope only, not the compiled profile.
      */
-    private static function build_identity_section($flow_id = '') {
+    private static function build_identity_section($flow_id = '', $compact = false) {
         $flow_id = ($flow_id !== null && $flow_id !== '') ? $flow_id : null;
         // Fix 12: Library attach (one personality) or flow bag / legacy keys.
         $res = function_exists( 'flosc_personality_library_resolve_field' ) ? 'flosc_personality_library_resolve_field' : null;
@@ -498,6 +503,43 @@ class FLOSC_Chatpack {
         $compiled_profile = function_exists( 'flosc_personality_compiled_profile' )
             ? flosc_personality_compiled_profile( $flow_id )
             : trim( (string) $ai_base_prompt );
+
+        $public_title = function_exists( 'flosc_flow_public_title' )
+            ? flosc_flow_public_title( $flow_id )
+            : '';
+        $public_tagline = function_exists( 'flosc_flow_public_tagline' )
+            ? flosc_flow_public_tagline( $flow_id )
+            : '';
+
+        if ( $compact ) {
+            $section  = "## 1. IDENTITY (continue — same person as the opening turn)\n\n";
+            $section .= "You are {$ai_name}";
+            if ( $ai_role ) {
+                $section .= " — {$ai_role}";
+            }
+            $section .= ".\n";
+            if ( $ai_traits ) {
+                $section .= "Traits: {$ai_traits}\n";
+            }
+            if ( $ai_mission ) {
+                $section .= "Mission: {$ai_mission}\n";
+            }
+            if ( $public_title !== '' ) {
+                $section .= "Public offering title: {$public_title}\n";
+            } else {
+                $section .= "Public offering title: none. Not a course catalog. Do not invent a product or lesson brand.\n";
+            }
+            if ( $public_tagline !== '' ) {
+                $section .= "Tagline: {$public_tagline}\n";
+            }
+            if ( $ai_topic_scope ) {
+                $section .= "Topic scope: {$ai_topic_scope}\n";
+            }
+            $section .= "FLOSC = Freeline, Login, Offer, Sale, Content only when the software is the topic.\n";
+            $section .= "Never invent facts, titles, URLs, prices, or contact details. Never guess.\n";
+            $section .= "The opening-turn profile (voice, prohibitions, contact gate) still applies. Do not leak Dainis contact details until name + email + phone are in this conversation.\n";
+            return $section;
+        }
 
         $section = "## 1. IDENTITY\n\n";
 
@@ -544,12 +586,6 @@ class FLOSC_Chatpack {
             . "FLOSC is a white-label WordPress plugin framework. "
             . "That is ALL it stands for. Do not expand it any other way.\n\n";
 
-        $public_title = function_exists( 'flosc_flow_public_title' )
-            ? flosc_flow_public_title( $flow_id )
-            : '';
-        $public_tagline = function_exists( 'flosc_flow_public_tagline' )
-            ? flosc_flow_public_tagline( $flow_id )
-            : '';
         if ( $public_title !== '' ) {
             $section .= "**Public offering title:** {$public_title}\n";
         } else {
