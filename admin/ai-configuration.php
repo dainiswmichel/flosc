@@ -596,6 +596,7 @@ endif;
             <input type="number" id="flow_ai_temperature" name="flow_ai_temperature" value="<?php echo esc_attr($flosc_ai_temperature); ?>" min="0" max="2" step="0.1" class="flosc-ai-temp-input">
             <p class="description">
                 Controls randomness. <strong>0.0</strong> = fully deterministic, <strong>0.3</strong> = recommended (precision/coaching), <strong>0.7</strong> = creative/balanced, <strong>1.5+</strong> = highly random. Lower values reduce hallucination.
+                <span class="flosc-overridden" id="flosc-overridden-temperature" hidden></span>
 
             </p>
         </td>
@@ -623,13 +624,16 @@ endif;
             <div class="flosc-param-help" id="flosc-param-help" hidden></div>
             <p class="description flosc-params-status" id="flosc-params-status"></p>
             <p class="description">
-                Anything the provider accepts, one <code>name: value</code> per line, or a JSON object pasted
-                from the provider's own documentation. FLOSC keeps no list of valid parameters — providers add
-                them faster than any list stays true — so a name FLOSC has never heard of is sent as written and
-                the provider decides. Its answer comes back word for word in Step 3.
-                <br>Numbers, <code>true</code>, <code>false</code> and JSON objects keep their type.
-                <code>model</code>, <code>messages</code> and <code>max_tokens</code> are set from the fields
-                above and cannot be overridden here.
+                This is the request FLOSC sends. The fields above are a convenience for writing into it —
+                name <code>temperature</code> or <code>max_tokens</code> here and it <strong>overrides</strong>
+                them, which the fields will say. One <code>name: value</code> per line, or a JSON object pasted
+                from the provider's own documentation.
+                <br>FLOSC keeps no list of valid parameters — providers add them faster than any list stays
+                true — so a name FLOSC has never heard of is sent as written and the provider decides. Its
+                answer comes back word for word in Step 3.
+                <br>Numbers, <code>true</code>, <code>false</code> and JSON objects keep their type. Only
+                <code>messages</code> and <code>stream</code> are refused: FLOSC assembles the conversation
+                itself, and cannot read a reply that streams.
                 <br><strong>Parameters differ by model, not just by provider.</strong> Measured on one Anthropic
                 key: Sonnet 4.5 accepts <code>temperature</code>, <code>top_p</code> and <code>top_k</code>;
                 Sonnet 5 refuses all three and accepts <code>thinking</code> instead. Use
@@ -643,6 +647,7 @@ endif;
             <input type="number" id="flow_ai_max_tokens" name="flow_ai_max_tokens" value="<?php echo esc_attr($flosc_ai_max_tokens); ?>" min="50" max="4096" step="50" class="flosc-ai-tokens-input">
             <p class="description">
                 Maximum response length. <strong>500</strong> = concise chat (default), <strong>1000</strong> = detailed explanations, <strong>2000+</strong> = long-form. Higher values cost more per response.
+                <span class="flosc-overridden" id="flosc-overridden-max_tokens" hidden></span>
             </p>
         </td>
     </tr>
@@ -1270,6 +1275,27 @@ jQuery(document).ready(function($) {
     // here is still sent, and says so.
     var floscParamRef = <?php echo wp_json_encode( function_exists( 'flosc_model_parameter_reference' ) ? flosc_model_parameter_reference() : array() ); ?>;
 
+    function floscMarkOverrides(names, values) {
+        ['temperature', 'max_tokens'].forEach(function (field) {
+            var i = names.indexOf(field);
+            var $note = $('#flosc-overridden-' + field);
+            var $input = $('#flow_ai_' + field);
+
+            if (i === -1) {
+                $note.attr('hidden', true).text('');
+                $input.removeClass('flosc-input-overridden');
+                return;
+            }
+
+            $note.removeAttr('hidden').text(
+                'Overridden by Extra model parameters below' +
+                (values && values[field] !== undefined ? ' — sending ' + JSON.stringify(values[field]) : '') +
+                '. This field is not what will be sent.'
+            );
+            $input.addClass('flosc-input-overridden');
+        });
+    }
+
     function floscExplainParams(names) {
         var $help = $('#flosc-param-help').empty();
 
@@ -1314,7 +1340,7 @@ jQuery(document).ready(function($) {
 
         $out.removeClass('flosc-key-state--none flosc-key-state--ok');
 
-        if (!raw) { $out.text(''); floscExplainParams([]); return; }
+        if (!raw) { $out.text(''); floscExplainParams([]); floscMarkOverrides([], {}); return; }
 
         if (raw.charAt(0) === '{') {
             try {
@@ -1322,33 +1348,39 @@ jQuery(document).ready(function($) {
                 var n = Object.keys(obj).length;
                 $out.addClass('flosc-key-state--ok').text('\u2713 Valid JSON — ' + n + (n === 1 ? ' parameter' : ' parameters') + ' will be sent.');
                 floscExplainParams(Object.keys(obj));
+                floscMarkOverrides(Object.keys(obj), obj);
             } catch (e) {
                 $out.addClass('flosc-key-state--none').text('\u2717 Not valid JSON: ' + e.message);
                 floscExplainParams([]);
+                floscMarkOverrides([], {});
             }
             return;
         }
 
-        var lines = raw.split(/\r\n|\r|\n/), names = [], bad = null;
+        var lines = raw.split(/\r\n|\r|\n/), names = [], values = {}, bad = null;
 
         lines.forEach(function (line) {
             line = line.trim();
             if (!line || line.charAt(0) === '#' || line.indexOf('//') === 0) { return; }
             var i = line.indexOf(':');
             if (i < 1) { bad = bad || line; return; }
-            names.push(line.slice(0, i).trim());
+            var nm = line.slice(0, i).trim();
+            names.push(nm);
+            values[nm] = line.slice(i + 1).trim().replace(/,$/, '');
         });
 
         if (bad) {
             $out.addClass('flosc-key-state--none').text('\u2717 This line is not "name: value" — ' + bad);
             floscExplainParams([]);
+            floscMarkOverrides([], {});
             return;
         }
 
-        if (!names.length) { $out.text(''); floscExplainParams([]); return; }
+        if (!names.length) { $out.text(''); floscExplainParams([]); floscMarkOverrides([], {}); return; }
 
         $out.addClass('flosc-key-state--ok').text('\u2713 ' + names.length + (names.length === 1 ? ' parameter' : ' parameters') + ' will be sent.');
         floscExplainParams(names);
+        floscMarkOverrides(names, values);
     }
 
     $('#flow_ai_model_params').on('input change', floscCheckParams);

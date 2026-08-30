@@ -7775,3 +7775,7 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
 .flosc-param-help__unknown { font-size: 13px; color: #7a5c00; }
 .flosc-param-help__meta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 3px; font-size: 12px; color: #646970; }
 .flosc-param-help__measured { color: #2c6349; font-weight: 600; }
+
+/* A field whose value is not what will be sent must not look authoritative. */
+.flosc-overridden { display: block; margin-top: 4px; font-weight: 600; color: #7a5c00; }
+.flosc-input-overridden { opacity: .55; text-decoration: line-through; }

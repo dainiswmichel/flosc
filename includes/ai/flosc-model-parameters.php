@@ -148,19 +148,25 @@ if ( ! function_exists( 'flosc_coerce_model_parameter_value' ) ) {
 
 if ( ! function_exists( 'flosc_validate_model_parameter_keys' ) ) {
 	/**
-	 * Refuse the few things that are never a parameter name, and nothing else.
+	 * Refuse only what would make the request malformed.
 	 *
-	 * FLOSC deliberately does not keep a list of allowed parameters. Providers
-	 * add them constantly and a list would be wrong within weeks — which is the
-	 * failure this whole field exists to avoid. What is blocked is the handful
-	 * of keys FLOSC itself owns, because letting them be overwritten here would
-	 * silently contradict the fields above.
+	 * The parameter set is the payload. Temperature and Max Tokens above are a
+	 * convenience for writing into it, not owners of it — so naming one of them
+	 * here overrides the field, which is what an operator typing a payload
+	 * expects. FLOSC shows that the override happened rather than pretending
+	 * the field still rules.
+	 *
+	 * FLOSC keeps no list of allowed parameters; a list would be wrong within
+	 * weeks, which is the failure this field exists to avoid. What is refused
+	 * is only what FLOSC must assemble for the request to be a request at all:
+	 * the conversation itself, and the streaming mode its parser depends on.
 	 *
 	 * @param array<string,mixed> $params Parsed parameters.
 	 * @return array<string,mixed>|WP_Error
 	 */
 	function flosc_validate_model_parameter_keys( $params ) {
-		$reserved = array( 'model', 'messages', 'system', 'stream', 'tools', 'max_tokens' );
+		// Not "FLOSC owns these" — "the request stops working without these".
+		$structural = array( 'messages', 'contents', 'stream' );
 
 		foreach ( $params as $key => $unused ) {
 			if ( ! is_string( $key ) || '' === trim( $key ) ) {
@@ -178,12 +184,12 @@ if ( ! function_exists( 'flosc_validate_model_parameter_keys' ) ) {
 				);
 			}
 
-			if ( in_array( strtolower( $key ), $reserved, true ) ) {
+			if ( in_array( strtolower( $key ), $structural, true ) ) {
 				return new WP_Error(
-					'flosc_params_reserved',
+					'flosc_params_structural',
 					sprintf(
-						/* translators: %s: the reserved parameter name. */
-						__( '%s is set by FLOSC from the fields above, so it cannot be overridden here.', 'flosc' ),
+						/* translators: %s: the parameter name. */
+						__( 'FLOSC builds %s from the conversation itself, and the reply cannot be read without it. Every other parameter is yours to set.', 'flosc' ),
 						$key
 					)
 				);
@@ -325,5 +331,31 @@ if ( ! function_exists( 'flosc_model_parameter_reference' ) ) {
 				'measured'  => false,
 			),
 		);
+	}
+}
+
+if ( ! function_exists( 'flosc_model_parameters_overriding' ) ) {
+	/**
+	 * Which of the visible tuning fields the parameter text is overriding.
+	 *
+	 * The fields above and this box write into the same payload, so one can
+	 * quietly replace the other. An operator is owed the word "overridden"
+	 * rather than a number on screen that is not the number being sent.
+	 *
+	 * @param string $provider FLOSC provider slug.
+	 * @return array<string,mixed> Field key => value the parameters will send.
+	 */
+	function flosc_model_parameters_overriding( $provider ) {
+		$params = flosc_get_model_parameters( $provider );
+		$fields = array( 'temperature', 'max_tokens', 'model' );
+		$out    = array();
+
+		foreach ( $fields as $field ) {
+			if ( array_key_exists( $field, $params ) ) {
+				$out[ $field ] = $params[ $field ];
+			}
+		}
+
+		return $out;
 	}
 }

@@ -66,6 +66,23 @@ ok( 'something absurdly long', is_wp_error( flosc_parse_model_parameters( str_re
 echo "temperature is the operator's to send, if their model takes it\n";
 ok( 'not blocked — Sonnet 4.5 accepts it', flosc_parse_model_parameters( "temperature: 0.3" ), array( 'temperature' => 0.3 ) );
 
+echo "YAML-style and true JSON are the same request\n";
+$yaml = "temperature: 0.7\ntop_p: 0.9\nseed: 42\nstop: [\"END\"]";
+$json = '{"temperature":0.7,"top_p":0.9,"seed":42,"stop":["END"]}';
+ok( 'the two forms parse identically', flosc_parse_model_parameters( $yaml ), flosc_parse_model_parameters( $json ) );
+ok( '  and both keep 0.7 a number', flosc_parse_model_parameters( $yaml )['temperature'], 0.7 );
+ok( '  and both keep the list a list', flosc_parse_model_parameters( $json )['stop'], array( 'END' ) );
+ok( 'JSON with quoted keys works', flosc_parse_model_parameters( '{"top_p": 0.9}' ), array( 'top_p' => 0.9 ) );
+ok( 'YAML without quoted keys works', flosc_parse_model_parameters( 'top_p: 0.9' ), array( 'top_p' => 0.9 ) );
+ok( 'a copied JSON block with newlines works', flosc_parse_model_parameters( "{\n  \"top_p\": 0.9,\n  \"top_k\": 40\n}" ), array( 'top_p' => 0.9, 'top_k' => 40 ) );
+
+echo "The payload rules; the fields above only write into it\n";
+ok( 'temperature can be set here', flosc_parse_model_parameters( 'temperature: 0.9' ), array( 'temperature' => 0.9 ) );
+ok( '  and so can max_tokens', flosc_parse_model_parameters( 'max_tokens: 2000' ), array( 'max_tokens' => 2000 ) );
+ok( 'messages is refused — FLOSC builds the conversation', is_wp_error( flosc_parse_model_parameters( 'messages: x' ) ), true );
+ok( '  and stream, because the reply could not be read', is_wp_error( flosc_parse_model_parameters( 'stream: true' ) ), true );
+ok( '  the refusal explains rather than scolds', strpos( flosc_parse_model_parameters( 'messages: x' )->get_error_message(), 'Every other parameter is yours' ) !== false, true );
+
 echo "The reference explains, and never gates\n";
 $ref = flosc_model_parameter_reference();
 ok( 'every entry says what it does', count( array_filter( $ref, static function ( $r ) { return '' !== trim( $r['what'] ); } ) ), count( $ref ) );
