@@ -1592,6 +1592,20 @@ jQuery(document).ready(function($) {
     var floscTuningTimer = null;
     var floscTuningInFlight = false;
 
+    // One slot for the save that has to happen next. A save already running is
+    // not a reason to throw the next one away — it is a reason to make it wait.
+    // Manual outranks automatic: a deliberate press is stronger intent than a
+    // background write, so it takes the slot even from an autosave already in it.
+    var floscTuningPending = null;
+
+    function floscQueueTuningSave($flash, source) {
+        source = (source === 'manual') ? 'manual' : 'auto';
+
+        if (!floscTuningPending || source === 'manual') {
+            floscTuningPending = { source: source, flash: $flash };
+        }
+    }
+
     // The save button is the state, rather than a button beside a state: at
     // rest it is a green statement that the tuning is stored, and it turns
     // back into something to press the moment that stops being true.
@@ -1651,13 +1665,30 @@ jQuery(document).ready(function($) {
     // values does not make a second round trip. A deliberate press always goes.
     var floscTuningLastSaved = '';
 
-    function floscTuningFingerprint() {
+    function floscTuningFingerprintOf(provider, temperature, maxTokens, params) {
         return JSON.stringify({
-            provider: floscCurrentProvider(),
-            temperature: String($('#flow_ai_temperature').val() || ''),
-            max_tokens: String($('#flow_ai_max_tokens').val() || ''),
-            params: String($('#flow_ai_model_params').val() || '')
+            provider: String(provider || ''),
+            temperature: String(temperature || ''),
+            max_tokens: String(maxTokens || ''),
+            params: String(params || '')
         });
+    }
+
+    function floscTuningFingerprint() {
+        return floscTuningFingerprintOf(
+            floscCurrentProvider(),
+            $('#flow_ai_temperature').val(),
+            $('#flow_ai_max_tokens').val(),
+            $('#flow_ai_model_params').val()
+        );
+    }
+
+    // One place that schedules an unattended save, so cancelling one is one call.
+    function floscScheduleTuningAutosave($field, delay) {
+        window.clearTimeout(floscTuningTimer);
+        floscTuningTimer = window.setTimeout(function () {
+            floscSaveTuning($field, 'auto');
+        }, (typeof delay === 'number') ? delay : 1400);
     }
 
     floscTuningLastSaved = floscTuningFingerprint();
@@ -1687,7 +1718,12 @@ jQuery(document).ready(function($) {
             return;
         }
 
-        if (floscTuningInFlight) { return; }
+        if (floscTuningInFlight) {
+            floscQueueTuningSave($flash, source);
+            $('#flosc-tuning-status').attr('class', 'flosc-tuning-status')
+                .text(source === 'manual' ? 'Save queued…' : 'Latest changes waiting to save…');
+            return;
+        }
 
         // A pause in typing and the blur that follows it are one edit, not two.
         // Writing the same values twice is a wasted round trip and makes the
@@ -1726,7 +1762,22 @@ jQuery(document).ready(function($) {
                 // Stamped by the server, which is the machine that did the
                 // writing. A browser clock can be wrong by hours, and "saved
                 // at" is a claim only the writer can make.
-                floscTuningLastSaved = fingerprint;
+                // What this request stored, taken from the answer rather than
+                // from what the browser assumed before sending it.
+                floscTuningLastSaved = floscTuningFingerprintOf(
+                    provider, d.temperature, d.max_tokens, d.params
+                );
+
+                // This answer describes the form as it was when the request
+                // left. If newer work is already waiting, that answer is now
+                // older than the screen, and painting it back would undo an
+                // edit the operator can see. Leave the screen alone and let the
+                // queued save — which carries the newer values — have the last
+                // word, including the last word on the label.
+                if (floscTuningPending) {
+                    return;
+                }
+
                 floscTuningState('saved', d.saved_at || '', source);
 
                 // What came back is what is stored, after the same fold the
@@ -1767,37 +1818,86 @@ jQuery(document).ready(function($) {
             },
             complete: function () {
                 floscTuningInFlight = false;
+
+                // Whatever was waiting goes now, on the next turn of the event
+                // loop so this handler is off the stack first.
+                if (floscTuningPending) {
+                    var pending = floscTuningPending;
+                    floscTuningPending = null;
+
+                    window.setTimeout(function () {
+                        floscSaveTuning(pending.flash, pending.source);
+                    }, 0);
+                }
             }
         });
     }
 
-    $('#flosc-save-tuning').on('click', function () {
+    $('#flosc-save-tuning').on('click', function (event) {
+        event.preventDefault();
         window.clearTimeout(floscTuningTimer);
         floscSaveTuning($('#flow_ai_model_params'), 'manual');
     });
 
-    // Committed edits save themselves. The numeric fields also save after a
-    // pause in typing; the request box does not, because half-written YAML
-    // would be refused on every keystroke and paint the status red while
-    // somebody is still typing it.
+    // Any edit makes the form dirty, including one made while a save is
+    // running. An in-flight request is an older snapshot of the form, not a
+    // reason to stop noticing that the form has moved on since — so newer work
+    // is marked, and queued behind the request that is already going.
     $('#flow_ai_temperature, #flow_ai_max_tokens, #flow_ai_model_params').on('input', function () {
-        if (floscSyncing || floscTuningInFlight) { return; }
+        var $field = $(this);
+
+        if (floscSyncing) { return; }
+
+        // Typing by hand cancels an autosave a chip or recipe had scheduled.
+        // Half a handwritten line is not something to send anywhere.
+        if ($field.is('#flow_ai_model_params')) {
+            window.clearTimeout(floscTuningTimer);
+        }
 
         floscTuningState('dirty');
+
+        if (floscTuningInFlight) {
+            floscQueueTuningSave($field, 'auto');
+        }
     });
 
+    // The numeric fields save after a pause in typing. The request box does
+    // not: half-written YAML would be refused on every keystroke and paint the
+    // status red under somebody still writing it.
     $('#flow_ai_temperature, #flow_ai_max_tokens').on('input', function () {
-        var $field = $(this);
+        if (floscSyncing) { return; }
 
-        window.clearTimeout(floscTuningTimer);
-        floscTuningTimer = window.setTimeout(function () { floscSaveTuning($field, 'auto'); }, 1400);
+        floscScheduleTuningAutosave($(this), 1400);
     });
 
-    $('#flow_ai_temperature, #flow_ai_max_tokens, #flow_ai_model_params').on('change', function () {
+    $('#flow_ai_temperature, #flow_ai_max_tokens').on('change', function () {
+        window.clearTimeout(floscTuningTimer);
+        floscSaveTuning($(this), 'auto');
+    });
+
+    // Leaving the request saves it — unless you left it by reaching for Save.
+    //
+    // This is where the label was going wrong, and it was never the label's
+    // fault. Pressing Save blurs the textarea first, so the textarea's own
+    // change handler started an autosave, disabled the button, and the click
+    // that caused all of it arrived to find a save already running. The press
+    // was discarded and the page reported Autosaved for a deliberate save.
+    //
+    // focusout fires before focus lands, so the answer to "where did they go?"
+    // is one turn of the event loop away. Waiting for it lets the click be the
+    // save it was meant to be.
+    $('#flow_ai_model_params').on('focusout', function () {
         var $field = $(this);
 
         window.clearTimeout(floscTuningTimer);
-        floscSaveTuning($field, 'auto');
+
+        window.setTimeout(function () {
+            var $save = $('#flosc-save-tuning');
+
+            if ($save.is(':focus') || $save.is(document.activeElement)) { return; }
+
+            floscSaveTuning($field, 'auto');
+        }, 0);
     });
 
     // ---- The parameter menu -------------------------------------------------
@@ -1879,6 +1979,10 @@ jQuery(document).ready(function($) {
                 $box.val(JSON.stringify(obj, null, 2));
                 floscCheckParams();
                 floscTuningState('dirty');
+                // FLOSC wrote this line, so it is known-good syntax and can
+                // save itself. A short pause, so clicking three chips is one
+                // save rather than three.
+                floscScheduleTuningAutosave($box, 900);
                 $box.trigger('focus');
                 return;
             }
@@ -1915,6 +2019,7 @@ jQuery(document).ready(function($) {
         $box.val(lines.filter(function (l) { return l.trim(); }).join('\n'));
         floscCheckParams();
         floscTuningState('dirty');
+        floscScheduleTuningAutosave($box, 900);
         $box.trigger('focus');
     }
 

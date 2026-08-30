@@ -304,6 +304,27 @@ if ( ! function_exists( 'flosc_store_model_tuning' ) ) {
 
 		update_option( $option, $settings, false );
 
+		// Read it back rather than trusting the return value: update_option()
+		// answers false both when the write failed and when the new value was
+		// identical to the old one, so it cannot tell those apart and neither
+		// could anything built on it. Reading the row proves the values are
+		// there. A save that reports success it cannot demonstrate is how an
+		// operator comes to distrust every green tick on the page.
+		$stored = get_option( $option, array() );
+		$stored = is_array( $stored ) ? $stored : array();
+
+		foreach ( $writes as $write_key => $unused ) {
+			if ( ! array_key_exists( $write_key, $stored )
+				|| (string) $stored[ $write_key ] !== (string) $settings[ $write_key ] ) {
+				return new WP_Error(
+					'flosc_tuning_write_failed',
+					__( 'WordPress did not keep the Model Tuning values FLOSC tried to save. Nothing here has been reported as saved that was not.', 'flosc' )
+				);
+			}
+		}
+
+		$settings = $stored;
+
 		if ( function_exists( 'flosc_bust_flow_option_rows_cache' ) ) {
 			flosc_bust_flow_option_rows_cache();
 		}

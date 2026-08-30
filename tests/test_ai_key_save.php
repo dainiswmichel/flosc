@@ -20,7 +20,14 @@ define( 'FLOSC_PLUGIN_DIR', dirname( __DIR__ ) . '/' );
 $OPTIONS = array();
 
 function get_option( $name, $default = false ) { global $OPTIONS; return array_key_exists( $name, $OPTIONS ) ? $OPTIONS[ $name ] : $default; }
-function update_option( $name, $value, $autoload = null ) { global $OPTIONS; $OPTIONS[ $name ] = $value; return true; }
+function update_option( $name, $value, $autoload = null ) {
+	global $OPTIONS;
+	// Storage that accepts the call and keeps nothing, which is the failure
+	// update_option()'s own return value cannot distinguish from a no-op.
+	if ( ! empty( $GLOBALS['FLOSC_SWALLOW_WRITES'] ) ) { return false; }
+	$OPTIONS[ $name ] = $value;
+	return true;
+}
 function delete_option( $name ) { global $OPTIONS; unset( $OPTIONS[ $name ] ); return true; }
 function sanitize_key( $k ) { return strtolower( preg_replace( '/[^a-z0-9_\-]/i', '', (string) $k ) ); }
 function __( $t, $d = null ) { return $t; }
@@ -215,6 +222,24 @@ flosc_store_model_tuning( $tune_ivr, 'openai', array( 'params' => 'presence_pena
 $row = get_option( $tune_option );
 ok( "OpenAI's request is stored under OpenAI", $row['ai_openai_params'], 'presence_penalty: 0.5' );
 ok( "  and Anthropic's is left as it was", $row['ai_anthropic_params'], $four_lines );
+
+echo "A save is reported only when the row proves it\n";
+// update_option() answers false for a failed write and for an unchanged one
+// alike, so the store reads the row back. Simulate storage that silently drops
+// what it was given and confirm the save refuses rather than reporting success.
+$GLOBALS['FLOSC_SWALLOW_WRITES'] = true;
+$swallowed = flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'params' => 'top_k: 40' ) );
+$GLOBALS['FLOSC_SWALLOW_WRITES'] = false;
+ok( 'storage that loses the write is reported as a failure', is_wp_error( $swallowed ), true );
+ok( '  and says so in the operator\'s terms',
+	strpos( $swallowed->get_error_message(), 'did not keep' ) !== false, true );
+ok( '  and the flow still holds what it held before', get_option( $tune_option )['ai_anthropic_params'], $four_lines );
+ok( '  a working write reports success',
+	is_wp_error( flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'params' => 'top_k: 40' ) ) ), false );
+// update_option() answers false when the value is unchanged, so a second
+// identical save must not be mistaken for a storage failure.
+ok( '  and saving the identical value again is success, not failure',
+	is_wp_error( flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'params' => 'top_k: 40' ) ) ), false );
 
 echo "The save is stamped by the machine that did the writing\n";
 ok( 'a Michel Time Stamp to the millisecond, in UTC',
