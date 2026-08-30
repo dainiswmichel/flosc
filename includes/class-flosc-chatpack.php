@@ -525,9 +525,9 @@ class FLOSC_Chatpack {
                 $section .= "Mission: {$ai_mission}\n";
             }
             if ( $public_title !== '' ) {
-                $section .= "Public offering title: {$public_title}\n";
+                $section .= "Public title: {$public_title}\n";
             } else {
-                $section .= "Public offering title: none. Not a course catalog. Do not invent a product or lesson brand.\n";
+                $section .= "Public title: none. Not a course catalog. Do not invent a product or lesson brand.\n";
             }
             if ( $public_tagline !== '' ) {
                 $section .= "Tagline: {$public_tagline}\n";
@@ -587,9 +587,9 @@ class FLOSC_Chatpack {
             . "That is ALL it stands for. Do not expand it any other way.\n\n";
 
         if ( $public_title !== '' ) {
-            $section .= "**Public offering title:** {$public_title}\n";
+            $section .= "**Public title:** {$public_title}\n";
         } else {
-            $section .= "**Public offering title:** none. This flow is not a course catalog and has no product or lesson brand. Do not invent one.\n";
+            $section .= "**Public title:** none. This flow is not a course catalog and has no product or lesson brand. Do not invent one.\n";
         }
         if ( $public_tagline !== '' ) {
             $section .= "**Tagline:** {$public_tagline}\n";
