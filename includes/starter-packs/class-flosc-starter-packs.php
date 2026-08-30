@@ -1590,6 +1590,68 @@ class FLOSC_Starter_Packs {
 	 * @return string
 	 */
 	/**
+	 * What a flow is called, according to the flow.
+	 *
+	 * A flow is not a voice. Naming one after the personality attached to it
+	 * produced cards reading "Default Friendly — curated by Friendly Guide":
+	 * the same fact twice, with the flow's own identity thrown away to say it.
+	 * Every shipped IVR file opens by declaring its name, so that is what a
+	 * card shows.
+	 *
+	 * Order of truth: what the operator saved, then what the file declares,
+	 * then the filename. The personality is never consulted.
+	 *
+	 * @param string $stem Flow stem.
+	 * @param string $path Absolute path to the IVR file.
+	 * @return string
+	 */
+	private static function flow_name_from_file( $stem, $path ) {
+		$stem = sanitize_key( (string) $stem );
+
+		// An operator who renamed this flow outranks the shipped file.
+		$bag = get_option( 'flosc_flow_' . $stem, array() );
+
+		if ( is_array( $bag ) ) {
+			$saved = trim( (string) ( $bag['identity']['name'] ?? $bag['name'] ?? '' ) );
+
+			if ( '' !== $saved ) {
+				return $saved;
+			}
+		}
+
+		// The file's opening heading: "# FLOSC Friendly Default — IVR Configuration".
+		if ( is_readable( $path ) ) {
+			$handle = @fopen( $path, 'r' ); // phpcs:ignore WordPress.WP.AlternativeFunctions -- reading one heading, not writing.
+
+			if ( $handle ) {
+				$guard = 0;
+
+				while ( $guard++ < 40 && false !== ( $line = fgets( $handle ) ) ) {
+					if ( ! preg_match( '/^#\s+(.+?)\s*$/', (string) $line, $m ) ) {
+						continue;
+					}
+
+					fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions
+
+					// Drop the boilerplate suffix; keep the name it qualifies.
+					$name = preg_replace( '/\s*[\x{2014}\x{2013}-]?\s*IVR Configuration\s*$/iu', '', $m[1] );
+					$name = trim( (string) $name );
+
+					if ( '' !== $name ) {
+						return $name;
+					}
+
+					return self::readable_stem( $stem );
+				}
+
+				fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions
+			}
+		}
+
+		return self::readable_stem( $stem );
+	}
+
+	/**
 	 * A flow stem as a person would read it: flosc_default_friendly_ivr → Default Friendly.
 	 *
 	 * The portability handler has a function that does this, but it lives in an
@@ -1747,7 +1809,7 @@ class FLOSC_Starter_Packs {
 				'stem'        => $stem,
 				'file'        => basename( $file ),
 				'path'        => $file,
-				'label'       => self::readable_stem( $stem ),
+				'label'       => self::flow_name_from_file( $stem, $file ),
 				'personality' => $personality,
 				'enabled'     => self::sample_flow_is_enabled( $stem ),
 			);
