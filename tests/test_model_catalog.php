@@ -71,6 +71,11 @@ check( 'gemini sends x-goog-api-key', flosc_model_catalog_request( 'gemini', 'AI
 check( 'gemini cursors with pageToken', strpos( flosc_model_catalog_request( 'gemini', 'k', 'p2' )['url'], 'pageToken=p2' ) !== false, true );
 check( 'an unknown provider has no request', flosc_model_catalog_request( 'nope', 'k' ), null );
 
+echo "The list is the provider's answer, not FLOSC's opinion of it\n";
+$shape = array_keys( flosc_model_catalog_page( 'openai', array( 'data' => array( array( 'id' => 'gpt-5.4' ) ) ) )['models'][0] );
+sort( $shape );
+check( 'a model row carries an id and a label, nothing else', $shape, array( 'id', 'label' ) );
+
 echo "Malformed input\n";
 check( 'a non-array body yields nothing', flosc_model_catalog_page( 'openai', 'garbage' )['models'], array() );
 check( 'a body with no rows yields nothing', flosc_model_catalog_page( 'openai', array() )['models'], array() );

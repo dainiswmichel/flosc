@@ -6,15 +6,10 @@
  * release models faster than any plugin updates — and a stale list is worse
  * than no list, because an id it does not contain cannot even be saved.
  *
- * Two different lists matter here and only one of them works:
- *
- *   what the provider account can see   — this file asks the provider
- *   what the installed plugin carries   — FLOSC_WP_AI_Client::plugin_can_use_model()
- *
- * A model can be live at the provider and absent from the installed WordPress
- * AI Provider plugin's catalog, which is exactly the case that reads as a bad
- * API key and is not one. So every id is returned with a flag saying whether
- * this site can really use it, and the admin sees the difference.
+ * The list this returns is what the provider says the key can use. That is the
+ * whole claim. Whether a given id then runs on this site is settled by making
+ * the call — the connection test does exactly that — not by FLOSC inspecting a
+ * provider plugin's registry and guessing on its behalf.
  *
  * Each request below follows the provider's own published reference, checked
  * rather than recalled:
@@ -265,7 +260,7 @@ if ( ! function_exists( 'flosc_fetch_model_catalog' ) ) {
 	 *
 	 * @param string $provider FLOSC provider slug.
 	 * @param string $api_key  The saved key.
-	 * @return array{models:array<int,array<string,mixed>>,checked:bool,provider:string}|WP_Error
+	 * @return array{models:array<int,array<string,mixed>>,provider:string}|WP_Error
 	 */
 	function flosc_fetch_model_catalog( $provider, $api_key ) {
 		$provider = sanitize_key( (string) $provider );
@@ -357,43 +352,8 @@ if ( ! function_exists( 'flosc_fetch_model_catalog' ) ) {
 			}
 		);
 
-		// Mark the ones the installed provider plugin can actually pin. An id
-		// the plugin does not carry cannot be used here, however live it is at
-		// the provider.
-		$checkable = class_exists( 'FLOSC_WP_AI_Client' )
-			&& method_exists( 'FLOSC_WP_AI_Client', 'plugin_can_use_model' )
-			&& FLOSC_WP_AI_Client::uses_official_plugin( $provider );
-
-		$usable_count = 0;
-
-		foreach ( $models as $index => $model ) {
-			$usable = $checkable
-				? FLOSC_WP_AI_Client::plugin_can_use_model( $provider, $model['id'] )
-				: true;
-
-			$models[ $index ]['usable'] = $usable;
-
-			if ( $usable ) {
-				$usable_count++;
-			}
-		}
-
-		// A check that rejects every single model is not evidence about the
-		// site — it is evidence about the check. An installed provider plugin
-		// that carried nothing could not answer a chat at all, so trust the
-		// provider's list, report it unfiltered, and never tell an operator
-		// with a working connection to go update a plugin that is fine.
-		if ( $checkable && 0 === $usable_count ) {
-			$checkable = false;
-
-			foreach ( $models as $index => $model ) {
-				$models[ $index ]['usable'] = true;
-			}
-		}
-
 		return array(
 			'models'   => $models,
-			'checked'  => $checkable,
 			'provider' => $provider,
 		);
 	}

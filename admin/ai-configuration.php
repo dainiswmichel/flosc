@@ -284,7 +284,7 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
                 <span class="description flosc-model-fetch-status" data-for="flow_ai_anthropic_model"></span>
             </p>
             <div class="flosc-model-picker" data-for="flow_ai_anthropic_model" hidden></div>
-            <p class="description">The model id to use for this flow. Suggestions are offered, but any id the installed AI Provider for Anthropic plugin carries will work — type it in.</p>
+            <p class="description">The model id to use for this flow. Fetch lists what this key can use; any current id can also be typed in.</p>
         </td>
     </tr>
 </table>
@@ -335,7 +335,7 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
                 <span class="description flosc-model-fetch-status" data-for="flow_ai_openai_model"></span>
             </p>
             <div class="flosc-model-picker" data-for="flow_ai_openai_model" hidden></div>
-            <p class="description">The model id to use for this flow. Suggestions are offered, but any id the installed AI Provider for OpenAI plugin carries will work — type it in.</p>
+            <p class="description">The model id to use for this flow. Fetch lists what this key can use; any current id can also be typed in.</p>
         </td>
     </tr>
 </table>
@@ -797,7 +797,7 @@ jQuery(document).ready(function($) {
         gemini:    'flow_ai_gemini_model'
     };
 
-    function floscRenderModelPicker($picker, targetId, models, checked, seen) {
+    function floscRenderModelPicker($picker, targetId, models) {
         var $field = $('#' + targetId);
 
         $picker.empty();
@@ -808,12 +808,7 @@ jQuery(document).ready(function($) {
         }
 
         var current = String($field.val() || '');
-        var heading = models.length + (models.length === 1 ? ' model' : ' models') + ' you can use here';
-
-        if (checked && seen && seen > models.length) {
-            heading += ' — ' + (seen - models.length) + ' more are live at the provider but ' +
-                'the installed provider plugin does not carry them';
-        }
+        var heading = models.length + (models.length === 1 ? ' model' : ' models') + ' this key can use';
 
         $('<p>').addClass('flosc-model-picker__intro').text(heading + '. Click one to use it:').appendTo($picker);
 
@@ -903,15 +898,10 @@ jQuery(document).ready(function($) {
                 }
 
                 var all = response.data.models || [];
-                var checked = !!response.data.checked;
-                var usable = checked ? all.filter(function (m) { return m.usable; }) : all;
-                var shown = floscRenderModelPicker($picker, targetId, usable, checked, all.length);
 
-                if (shown === 0) {
-                    $status.addClass('flosc-model-fetch-status--bad').text(
-                        'Your key can see ' + all.length + ' models, but the installed provider plugin ' +
-                        'carries none of them. Update the provider plugin.'
-                    );
+                if (floscRenderModelPicker($picker, targetId, all) === 0) {
+                    $status.addClass('flosc-model-fetch-status--bad')
+                        .text('The provider returned no models for this key.');
                     return;
                 }
 
@@ -967,22 +957,20 @@ jQuery(document).ready(function($) {
         var targetId = floscModelFieldFor[d.provider];
 
         lines.push('');
-        lines.push('✓ The key reached ' + (d.provider || 'the provider') + ' and can use ' +
-            models.length + (models.length === 1 ? ' model' : ' models') + ' here' +
-            (d.models_checked && d.models_seen > models.length
-                ? ' (' + (d.models_seen - models.length) + ' more exist at the provider but the installed provider plugin does not carry them)'
-                : '') + '.');
+        lines.push('\u2713 The key reached ' + (d.provider || 'the provider') + ', which lists ' +
+            models.length + (models.length === 1 ? ' model' : ' models') + ' for it.');
 
         if (d.model && models.length) {
-            var configured = models.some(function (m) { return m.id === d.model; });
-            lines.push(configured
-                ? '✓ "' + d.model + '" is one of them.'
-                : '✗ "' + d.model + '" is not one of them — that is what failed, not the key.');
+            var listed = models.some(function (m) { return m.id === d.model; });
+
+            if (!listed) {
+                lines.push('\u2717 "' + d.model + '" is not one of them.');
+            }
         }
 
         if (targetId) {
             $picker.attr('data-for', targetId);
-            floscRenderModelPicker($picker, targetId, models, !!d.models_checked, d.models_seen || models.length);
+            floscRenderModelPicker($picker, targetId, models);
         }
     }
 

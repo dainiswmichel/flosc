@@ -319,19 +319,17 @@ class FLOSC_WP_AI_Client {
 		$plugin_name  = self::plugin_name( $provider );
 		$model_wanted = (string) ( $args['model'] ?? '' );
 
-		// A model id the provider plugin does not carry cannot resolve, pinned
-		// or preferred. FLOSC does not quietly answer as some other model —
-		// the flow would then be curated by something nobody chose. It says
-		// which id failed and stops.
+		// The provider could not resolve this model id. FLOSC does not quietly
+		// answer as some other model — the flow would then be curated by
+		// something nobody chose. It names the id that failed and stops.
 		if ( ! $model_resolved ) {
 			return new WP_Error(
 				'flosc_wp_ai_unknown_model',
 				$test_mode
 					? sprintf(
-						"The model id \"%s\" is not in %s's catalog on this site.\n\n📝 Next steps:\n1. Open the AI tab and enter a model id the installed plugin offers\n2. Or update %s so it carries this one\n3. Save, then test again",
-						$model_wanted,
+						"%s could not resolve the model id \"%s\".\n\n📝 Next steps:\n1. Click \"Fetch models this key can use\" beside the model field\n2. Pick one of the ids it lists\n3. Save AI Settings, then test again",
 						$plugin_name,
-						$plugin_name
+						$model_wanted
 					)
 					: sprintf( 'The configured AI model is not available from %s.', $plugin_name ),
 				array( 'model' => $model_wanted )
@@ -493,8 +491,8 @@ class FLOSC_WP_AI_Client {
 			if ( $pinned ) {
 				$builder->using_model( $pinned );
 			} else {
-				// The provider plugin's catalog does not carry this id. Say so
-				// upward; a preference on an unknown model cannot resolve either.
+				// This id did not resolve. Say so upward rather than letting a
+				// preference silently answer as some other model.
 				$model_resolved = false;
 				$builder->using_model_preference( array( $wp_id, $model ) );
 			}
@@ -518,43 +516,6 @@ class FLOSC_WP_AI_Client {
 		return $builder;
 	}
 
-	/**
-	 * Whether the installed provider plugin can actually use a model id.
-	 *
-	 * The ids a provider account can see and the ids the installed WordPress
-	 * provider plugin carries are two different lists, and only the second one
-	 * works here. This is the check FLOSC's own dispatch makes, exposed so the
-	 * admin can be shown the difference before choosing.
-	 *
-	 * @param string $flosc_provider FLOSC slug.
-	 * @param string $model_id       Model id.
-	 * @return bool
-	 */
-	public static function plugin_can_use_model( $flosc_provider, $model_id ) {
-		$wp_id = self::wordpress_provider_id( $flosc_provider );
-
-		if ( '' === $wp_id || '' === (string) $model_id ) {
-			return false;
-		}
-
-		if ( ! self::core_client_exists() || ! self::is_provider_registered( $flosc_provider ) ) {
-			return false;
-		}
-
-		// Bind the key before asking, exactly as generate() does. The registry
-		// will not hand back a model for a provider it cannot authenticate, so
-		// asking cold returns null for every id — which reads as "the plugin
-		// carries none of these models" when the plugin carries all of them.
-		$api_key = function_exists( 'flosc_get_provider_api_key' )
-			? flosc_get_provider_api_key( $flosc_provider )
-			: flosc_get_setting( $flosc_provider . '_api_key', '' );
-
-		if ( '' !== (string) $api_key && is_wp_error( self::bind_flosc_key( $flosc_provider, (string) $api_key ) ) ) {
-			return false;
-		}
-
-		return null !== self::pin_model( $wp_id, (string) $model_id );
-	}
 
 	/**
 	 * Exact model instance from the official plugin, or null if the id is not in its catalog.

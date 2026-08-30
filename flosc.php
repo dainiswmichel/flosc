@@ -9717,18 +9717,18 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
     /**
      * Ask the provider which models this key can use — the test's first step.
      *
-     * This is not a consolation prize for a failed test. It is independent
-     * evidence, and it is the only step that isolates the key from everything
-     * built on top of it:
+     * This is the one step that isolates the key from everything built on top
+     * of it:
      *
      *   the call succeeds  → the key reaches the provider. Whatever fails
      *                        after this is not the key, and the returned ids
-     *                        are the choices that would work.
+     *                        are what the key is entitled to ask for.
      *   the call is 401    → the key itself is the problem, said plainly,
      *                        instead of a generation error that reads like one.
      *
-     * So it runs before generation is attempted, and its result travels with
-     * the test result either way.
+     * It reports the provider's list and nothing more. Whether a given id then
+     * runs here is answered by the generation call this test makes next, so
+     * FLOSC never has to speculate about it in the operator's UI.
      *
      * @param string $provider FLOSC provider slug.
      * @param string $api_key  The saved key.
@@ -9749,21 +9749,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             ];
         }
 
-        $models   = isset($catalog['models']) && is_array($catalog['models']) ? $catalog['models'] : [];
-        $checked  = !empty($catalog['checked']);
-        $usable   = [];
-
-        foreach ($models as $model) {
-            if (!$checked || !empty($model['usable'])) {
-                $usable[] = $model;
-            }
-        }
-
         return [
-            'models_probed'  => true,
-            'models'         => $usable,
-            'models_seen'    => count($models),
-            'models_checked' => $checked,
+            'models_probed' => true,
+            'models'        => isset($catalog['models']) && is_array($catalog['models']) ? $catalog['models'] : [],
         ];
     }
 
