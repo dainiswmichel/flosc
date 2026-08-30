@@ -972,3 +972,70 @@ if (!function_exists('flosc_config_glob')) {
     }
 }
 
+if (!function_exists('flosc_resolve_flow_option_key_for_ivr')) {
+    function flosc_resolve_flow_option_key_for_ivr($flosc_ivr_filename) {
+        $flosc_ivr_filename = basename((string) $flosc_ivr_filename);
+        $target_stem = sanitize_key(pathinfo($flosc_ivr_filename, PATHINFO_FILENAME));
+        $default_key = 'flosc_flow_' . $target_stem;
+
+        // Start with deterministic default key and score it conservatively.
+        $best_key = $default_key;
+        $best_score = -1;
+
+        // Scan flosc_flow_* (autoload=no) via cached prepared options scan.
+        $flosc_rows = function_exists( 'flosc_get_flow_option_rows' ) ? flosc_get_flow_option_rows() : array();
+        if ( ! is_array( $flosc_rows ) || empty( $flosc_rows ) ) {
+            return $default_key;
+        }
+
+        foreach ( $flosc_rows as $flosc_row ) {
+            $option_name = (string) ( $flosc_row['option_name'] ?? '' );
+            if ( $option_name === '' || strpos( $option_name, 'flosc_flow_' ) !== 0 ) {
+                continue;
+            }
+
+            $flosc_settings = maybe_unserialize( $flosc_row['option_value'] ?? '' );
+            if ( ! is_array( $flosc_settings ) ) {
+                continue;
+            }
+
+            $active = basename((string) ($flosc_settings['active_ivr_file'] ?? ''));
+            $primary = basename((string) ($flosc_settings['ivr_file'] ?? ''));
+            $matches_active = ($active !== '' && $active === $flosc_ivr_filename);
+            $matches_primary = ($primary !== '' && $primary === $flosc_ivr_filename);
+
+            // Only consider keys that are explicitly tied to this IVR filename.
+            if (!$matches_active && !$matches_primary && $option_name !== $default_key) {
+                continue;
+            }
+
+            $message_count = 0;
+            if (function_exists('flosc_flow_get_messages') && is_array($flosc_settings)) {
+                $message_count = count(flosc_flow_get_messages($flosc_settings));
+            } elseif (isset($flosc_settings['flow_messages']) && is_array($flosc_settings['flow_messages'])) {
+                $message_count = count($flosc_settings['flow_messages']);
+            }
+
+            $score = 0;
+            // Prefer rows explicitly bound to this IVR file over a plain default
+            // key, because legacy duplicate rows can leave default keys stale.
+            if ($matches_primary) {
+                $score += 2000;
+            }
+            if ($matches_active) {
+                $score += 1800;
+            }
+            if ($option_name === $default_key) {
+                $score += 200;
+            }
+            $score += min($message_count, 200);
+
+            if ($score > $best_score) {
+                $best_score = $score;
+                $best_key = $option_name;
+            }
+        }
+
+        return $best_key;
+    }
+}

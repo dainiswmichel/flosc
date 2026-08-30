@@ -1412,6 +1412,7 @@ class FLOSC_Framework {
         // v1.9.0: AI connection test AJAX
         add_action('wp_ajax_flosc_test_ai_connection', [$this, 'ajax_test_ai_connection']);
         add_action('wp_ajax_flosc_fetch_ai_models', [$this, 'ajax_fetch_ai_models']);
+        add_action('wp_ajax_flosc_save_ai_provider_key', [$this, 'ajax_save_ai_provider_key']);
 
         // Admin: send Guest Access Link to any email (Register & Login tab)
         add_action('wp_ajax_flosc_send_guest_link', [$this, 'ajax_send_guest_link']);
@@ -9699,11 +9700,27 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             $this->set_flow_context(pathinfo($ivr, PATHINFO_FILENAME));
         }
 
-        $api_key = function_exists('flosc_get_provider_api_key')
-            ? flosc_get_provider_api_key($provider)
-            : (string) flosc_get_setting($provider . '_api_key', '');
+        // The key on screen, if there is one, outranks the saved key. Asking an
+        // operator to save a whole settings page before FLOSC will read a key
+        // sitting directly above the button is a loop with no purpose: paste,
+        // fetch, "no key saved".
+        $typed = isset($post['api_key']) ? trim((string) $post['api_key']) : '';
 
-        $result = flosc_fetch_model_catalog($provider, (string) $api_key);
+        if ($typed !== '' && (strlen($typed) > 4096 || preg_match('/[\x00-\x1F\x7F]/', $typed))) {
+            wp_send_json_error(['message' => __('That API key contains characters an API key cannot contain.', 'flosc')]);
+        }
+
+        $api_key = $typed;
+
+        if ($api_key === '') {
+            $api_key = function_exists('flosc_get_provider_api_key')
+                ? flosc_get_provider_api_key($provider)
+                : (string) flosc_get_setting($provider . '_api_key', '');
+        }
+
+        $workspace = isset($post['workspace']) ? trim((string) $post['workspace']) : null;
+
+        $result = flosc_fetch_model_catalog($provider, (string) $api_key, $workspace);
 
         if (is_wp_error($result)) {
             wp_send_json_error([
@@ -9753,6 +9770,77 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'models_probed' => true,
             'models'        => isset($catalog['models']) && is_array($catalog['models']) ? $catalog['models'] : [],
         ];
+    }
+
+    /**
+     * Save one provider's API key on its own, without saving the whole tab.
+     *
+     * A key is the one setting an operator wants to commit the moment they
+     * paste it, and the only one where "did that save?" has to have an answer.
+     * The full-page Save is at the foot of a long tab and its confirmation
+     * banner renders at the top, so the answer arrived somewhere the operator
+     * was not looking. This writes the key, to this flow, and says so where
+     * the button is.
+     */
+    public function ajax_save_ai_provider_key() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Unauthorized', 'flosc')], 403);
+        }
+
+        check_ajax_referer('flosc_test_ai', 'nonce');
+
+        $post     = wp_unslash($_POST);
+        $provider = isset($post['provider']) ? sanitize_key((string) $post['provider']) : '';
+        $ivr      = isset($post['ivr']) ? sanitize_file_name((string) $post['ivr']) : '';
+        $api_key  = isset($post['api_key']) ? trim((string) $post['api_key']) : '';
+
+        $map = function_exists('flosc_available_providers_flow_key_map')
+            ? flosc_available_providers_flow_key_map()
+            : [];
+
+        if (!isset($map[$provider]) || !in_array($provider, ['anthropic', 'openai', 'xai', 'gemini'], true)) {
+            wp_send_json_error(['message' => __('Unknown AI provider.', 'flosc')], 400);
+        }
+
+        if ($api_key === '') {
+            wp_send_json_error(['message' => __('Paste an API key before saving.', 'flosc')], 400);
+        }
+
+        // Control characters and absurd lengths are not keys; they are paste accidents.
+        if (strlen($api_key) > 4096 || preg_match('/[\x00-\x1F\x7F]/', $api_key)) {
+            wp_send_json_error(['message' => __('That API key contains characters an API key cannot contain.', 'flosc')], 400);
+        }
+
+        $stem = sanitize_key(pathinfo($ivr, PATHINFO_FILENAME));
+
+        if ($stem === '') {
+            wp_send_json_error(['message' => __('No flow was selected, so there is nowhere to save this key.', 'flosc')], 400);
+        }
+
+        // The same resolver the Settings page uses. A plain flosc_flow_<stem>
+        // key is not always the row that page reads — legacy duplicate rows
+        // exist — so writing the stem key directly can store a key somewhere
+        // nothing looks, which is indistinguishable from not saving at all.
+        $option = function_exists('flosc_resolve_flow_option_key_for_ivr')
+            ? flosc_resolve_flow_option_key_for_ivr($ivr)
+            : 'flosc_flow_' . $stem;
+
+        $settings = get_option($option, []);
+        $settings = is_array($settings) ? $settings : [];
+
+        $settings[$map[$provider]] = $api_key;
+
+        update_option($option, $settings, false);
+
+        if (function_exists('flosc_bust_flow_option_rows_cache')) {
+            flosc_bust_flow_option_rows_cache();
+        }
+
+        wp_send_json_success([
+            'provider' => $provider,
+            'suffix'   => strlen($api_key) >= 4 ? substr($api_key, -4) : '',
+            'message'  => __('API key saved for this flow.', 'flosc'),
+        ]);
     }
 
     public function ajax_test_ai_connection() {

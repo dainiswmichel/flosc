@@ -985,6 +985,23 @@ class FLOSC_Starter_Packs {
 			);
 		}
 
+		// Everything the operator put on this flow outlives a reinstall or a
+		// repair. This used to write $bag over the whole settings row, so an
+		// API key saved on the flow was destroyed by the next Extract & Install
+		// — the key had saved correctly and then been deleted, which is worse
+		// than never saving, because nothing on screen says so.
+		//
+		// The pack owns the flow's structure. It does not own the operator's
+		// secrets, provider choice, model, or tuning.
+		$preserved = is_array( $existing_bag ) ? $existing_bag : array();
+		$bag       = array_merge( $preserved, $bag );
+
+		// A voice switched live is a decision, not a leftover. Seed one only
+		// when the flow has none, so a repair never undoes the switch.
+		if ( ! empty( $preserved['personality_library_id'] ) ) {
+			$bag['personality_library_id'] = $preserved['personality_library_id'];
+		}
+
 		if ( function_exists( 'flosc_normalize_content_item_flow_settings' ) ) {
 			$bag = flosc_normalize_content_item_flow_settings( $bag );
 		}
@@ -994,7 +1011,13 @@ class FLOSC_Starter_Packs {
 		$import = flosc_import_ivr_to_database( false, $flow_path, $flow_key, 'replace' );
 
 		if ( empty( $import['success'] ) ) {
-			delete_option( $flow_key );
+			// Put back what was here, rather than deleting a row that may have
+			// been carrying the operator's key before this attempt.
+			if ( array() !== $preserved ) {
+				update_option( $flow_key, $preserved, false );
+			} else {
+				delete_option( $flow_key );
+			}
 
 			return self::result(
 				false,

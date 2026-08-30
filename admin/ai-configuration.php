@@ -236,6 +236,70 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
     Configure the API key for your selected provider. Only the relevant section is shown.
 </p>
 
+<?php
+if ( ! function_exists( 'flosc_ai_key_state_line' ) ) :
+/**
+ * Say, on the page and permanently, whether a key is stored for this provider.
+ *
+ * The save confirmation is a banner at the top of a long tab. Pressing Save at
+ * the foot of the page and being scrolled to a notice you never see is not
+ * feedback — it leaves "did that work?" unanswered, and a key that is fine
+ * looks like a key that never saved. The field answers for itself instead.
+ *
+ * It also separates two things that look identical in an empty box: no key
+ * anywhere, and no key on THIS flow while an install-wide one is doing the work.
+ *
+ * @param string              $provider FLOSC provider slug.
+ * @param array<string,mixed> $bag      This flow's settings.
+ * @return void
+ */
+function flosc_ai_key_state_line( $provider, $bag ) {
+	$provider = sanitize_key( (string) $provider );
+	$on_flow  = trim( (string) ( $bag[ $provider . '_api_key' ] ?? '' ) );
+	$in_use   = function_exists( 'flosc_get_provider_api_key' )
+		? trim( (string) flosc_get_provider_api_key( $provider ) )
+		: $on_flow;
+
+	$tail = static function ( $key ) {
+		return strlen( $key ) >= 4 ? substr( $key, -4 ) : '';
+	};
+
+	if ( '' !== $on_flow ) {
+		printf(
+			'<p class="flosc-key-state flosc-key-state--ok">%s</p>',
+			esc_html(
+				sprintf(
+					/* translators: %s: last four characters of the saved key. */
+					__( 'Saved on this flow — ends %s', 'flosc' ),
+					$tail( $on_flow )
+				)
+			)
+		);
+		return;
+	}
+
+	if ( '' !== $in_use ) {
+		printf(
+			'<p class="flosc-key-state flosc-key-state--ok">%s</p>',
+			esc_html(
+				sprintf(
+					/* translators: %s: last four characters of the key in use. */
+					__( 'Nothing saved on this flow. The install-wide key is being used — ends %s', 'flosc' ),
+					$tail( $in_use )
+				)
+			)
+		);
+		return;
+	}
+
+	printf(
+		'<p class="flosc-key-state flosc-key-state--none">%s</p>',
+		esc_html__( 'No key saved yet. Paste one, then Save AI Settings.', 'flosc' )
+	);
+}
+endif;
+?>
+
 <!-- Anthropic -->
 <div class="flosc-ai-provider-section" data-provider="anthropic">
 <table class="form-table">
@@ -245,6 +309,13 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
         </th>
         <td>
             <input type="password" id="flow_anthropic_api_key" name="flow_anthropic_api_key" value="<?php echo esc_attr( function_exists('flosc_admin_secret_input_value') ? flosc_admin_secret_input_value( $flosc_flow_settings['anthropic_api_key'] ?? '' ) : ( current_user_can('manage_options') ? (string) ( $flosc_flow_settings['anthropic_api_key'] ?? '' ) : '' ) ); ?>" class="regular-text flosc-ai-key-input" placeholder="sk-ant-api03-...">
+            <p class="flosc-model-fetch-row">
+                <button type="button" class="button button-primary flosc-save-key" data-provider="anthropic" data-target="flow_anthropic_api_key">
+                    <?php echo esc_html__( 'Save Key', 'flosc' ); ?>
+                </button>
+                <span class="description flosc-save-key-status" data-for="flow_anthropic_api_key"></span>
+            </p>
+            <?php flosc_ai_key_state_line( 'anthropic', $flosc_flow_settings ); ?>
             <p class="description">
                 <a href="https://console.anthropic.com/settings/keys" target="_blank" class="button button-secondary flosc-ai-key-link">
                     📥 Get Your Anthropic API Key Here
@@ -278,16 +349,17 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
             // the ones the installed provider plugin carries — so the operator
             // must always be able to enter one FLOSC has never heard of.
             $flosc_anthropic_model_options = [
-                'claude-sonnet-5'           => 'Claude Sonnet 5',
-                'claude-opus-5'             => 'Claude Opus 5',
-                'claude-haiku-4-5-20251001' => 'Claude Haiku 4.5',
+                'claude-sonnet-4-5-20250929' => 'Claude Sonnet 4.5',
+                'claude-haiku-4-5-20251001'  => 'Claude Haiku 4.5',
+                'claude-sonnet-5'            => 'Claude Sonnet 5',
+                'claude-opus-5'              => 'Claude Opus 5',
             ];
             ?>
             <input type="text" name="flow_ai_anthropic_model" id="flow_ai_anthropic_model"
                 class="regular-text flosc-ai-model-select"
                 list="flosc-anthropic-model-list"
                 value="<?php echo esc_attr($flosc_ai_anthropic_model); ?>"
-                placeholder="claude-sonnet-5">
+                placeholder="claude-sonnet-4-5-20250929">
             <datalist id="flosc-anthropic-model-list">
                 <?php foreach ($flosc_anthropic_model_options as $flosc_a_id => $flosc_a_label) : ?>
                     <option value="<?php echo esc_attr($flosc_a_id); ?>"><?php echo esc_html($flosc_a_label); ?></option>
@@ -318,6 +390,13 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
         </th>
         <td>
             <input type="password" id="flow_openai_api_key" name="flow_openai_api_key" value="<?php echo esc_attr( function_exists('flosc_admin_secret_input_value') ? flosc_admin_secret_input_value( $flosc_flow_settings['openai_api_key'] ?? '' ) : ( current_user_can('manage_options') ? (string) ( $flosc_flow_settings['openai_api_key'] ?? '' ) : '' ) ); ?>" class="regular-text flosc-ai-key-input" placeholder="sk-proj-...">
+            <p class="flosc-model-fetch-row">
+                <button type="button" class="button button-primary flosc-save-key" data-provider="openai" data-target="flow_openai_api_key">
+                    <?php echo esc_html__( 'Save Key', 'flosc' ); ?>
+                </button>
+                <span class="description flosc-save-key-status" data-for="flow_openai_api_key"></span>
+            </p>
+            <?php flosc_ai_key_state_line( 'openai', $flosc_flow_settings ); ?>
             <p class="description">
                 <a href="https://platform.openai.com/api-keys" target="_blank" class="button button-secondary flosc-ai-key-link">
                     📥 Get Your OpenAI API Key Here
@@ -372,6 +451,13 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
         </th>
         <td>
             <input type="password" id="flow_xai_api_key" name="flow_xai_api_key" value="<?php echo esc_attr( function_exists('flosc_admin_secret_input_value') ? flosc_admin_secret_input_value( $flosc_flow_settings['xai_api_key'] ?? '' ) : ( current_user_can('manage_options') ? (string) ( $flosc_flow_settings['xai_api_key'] ?? '' ) : '' ) ); ?>" class="regular-text flosc-ai-key-input" placeholder="xai-...">
+            <p class="flosc-model-fetch-row">
+                <button type="button" class="button button-primary flosc-save-key" data-provider="xai" data-target="flow_xai_api_key">
+                    <?php echo esc_html__( 'Save Key', 'flosc' ); ?>
+                </button>
+                <span class="description flosc-save-key-status" data-for="flow_xai_api_key"></span>
+            </p>
+            <?php flosc_ai_key_state_line( 'xai', $flosc_flow_settings ); ?>
             <p class="description">
                 <a href="https://console.x.ai" target="_blank" class="button button-secondary flosc-ai-key-link">
                     📥 Get Your xAI API Key Here
@@ -432,6 +518,13 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
         </th>
         <td>
             <input type="password" id="flow_gemini_api_key" name="flow_gemini_api_key" value="<?php echo esc_attr( function_exists('flosc_admin_secret_input_value') ? flosc_admin_secret_input_value( $flosc_flow_settings['gemini_api_key'] ?? '' ) : ( current_user_can('manage_options') ? (string) ( $flosc_flow_settings['gemini_api_key'] ?? '' ) : '' ) ); ?>" class="regular-text flosc-ai-key-input" placeholder="AIza...">
+            <p class="flosc-model-fetch-row">
+                <button type="button" class="button button-primary flosc-save-key" data-provider="gemini" data-target="flow_gemini_api_key">
+                    <?php echo esc_html__( 'Save Key', 'flosc' ); ?>
+                </button>
+                <span class="description flosc-save-key-status" data-for="flow_gemini_api_key"></span>
+            </p>
+            <?php flosc_ai_key_state_line( 'gemini', $flosc_flow_settings ); ?>
             <p class="description">
                 <a href="https://aistudio.google.com/apikey" target="_blank" class="button button-secondary flosc-ai-key-link">
                     Get Your Gemini API Key Here
@@ -898,6 +991,66 @@ jQuery(document).ready(function($) {
             .text('Model set to ' + id + '. Save AI Settings to apply it.');
     });
 
+    // Save one key on its own. The full-page Save still works; this exists so
+    // "did the key save?" has an answer next to the field, at the moment it is
+    // pasted, instead of a banner at the top of a long tab.
+    $('.flosc-save-key').on('click', function () {
+        var $btn = $(this);
+        var provider = $btn.data('provider');
+        var targetId = $btn.data('target');
+        var $status = $('.flosc-save-key-status[data-for="' + targetId + '"]');
+        var key = String($('#' + targetId).val() || '').trim();
+
+        if (!key) {
+            $status.addClass('flosc-model-fetch-status--bad').text('Paste a key first.');
+            return;
+        }
+
+        $btn.prop('disabled', true);
+        $status.removeClass('flosc-model-fetch-status--bad').text('Saving…');
+
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'flosc_save_ai_provider_key',
+                nonce: '<?php echo esc_js( wp_create_nonce('flosc_test_ai') ); ?>',
+                provider: provider,
+                ivr: '<?php echo esc_js( $GLOBALS['flosc_current_ivr'] ?? '' ); ?>',
+                api_key: key
+            },
+            success: function (response) {
+                if (!response || !response.success) {
+                    $status.addClass('flosc-model-fetch-status--bad')
+                        .text((response && response.data && response.data.message) || 'Could not save the key.');
+                    return;
+                }
+
+                var d = response.data || {};
+                $status.text('Saved' + (d.suffix ? ' — ends ' + d.suffix : '') + '.');
+
+                // The test reads saved settings; this key is now one of them, so
+                // the unsaved-settings guard must stop calling it unsaved.
+                if (typeof floscSavedAi === 'object' && floscSavedAi) {
+                    floscSavedAi[targetId] = $('#' + targetId).val();
+                }
+
+                var $line = $('#' + targetId).closest('td').find('.flosc-key-state');
+
+                if ($line.length) {
+                    $line.removeClass('flosc-key-state--none').addClass('flosc-key-state--ok')
+                        .text('Saved on this flow' + (d.suffix ? ' — ends ' + d.suffix : ''));
+                }
+            },
+            error: function () {
+                $status.addClass('flosc-model-fetch-status--bad').text('Could not reach the server.');
+            },
+            complete: function () {
+                $btn.prop('disabled', false);
+            }
+        });
+    });
+
     $('.flosc-fetch-models').on('click', function () {
         var $btn = $(this);
         var provider = $btn.data('provider');
@@ -915,7 +1068,9 @@ jQuery(document).ready(function($) {
                 action: 'flosc_fetch_ai_models',
                 nonce: '<?php echo esc_js( wp_create_nonce('flosc_test_ai') ); ?>',
                 provider: provider,
-                ivr: '<?php echo esc_js( $GLOBALS['flosc_current_ivr'] ?? '' ); ?>'
+                ivr: '<?php echo esc_js( $GLOBALS['flosc_current_ivr'] ?? '' ); ?>',
+                api_key: $('#flow_' + provider + '_api_key').val() || '',
+                workspace: $('#flow_anthropic_workspace_id').val() || ''
             },
             success: function (response) {
                 if (!response || !response.success) {

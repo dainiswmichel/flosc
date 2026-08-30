@@ -396,7 +396,12 @@ if ( ! function_exists( 'flosc_default_model' ) ) {
 	 */
 	function flosc_default_model( $provider ) {
 		$defaults = array(
-			'anthropic' => 'claude-sonnet-5',
+			// Proven to resolve through AI Provider for Anthropic on a real
+			// install. A default is only worth what the installed provider
+			// plugin can actually pin — a newer id that the plugin cannot
+			// resolve turns a working connection into a failing one, which is
+			// exactly what changing this to claude-sonnet-5 did.
+			'anthropic' => 'claude-sonnet-4-5-20250929',
 			'openai'    => 'gpt-5.4-mini',
 			'xai'       => 'grok-4.6',
 			'gemini'    => 'gemini-3.7-flash',

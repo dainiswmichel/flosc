@@ -377,6 +377,44 @@ ok('so uninstall leaves the operator\'s category standing', (bool) get_term_by('
 ok('  while the pack\'s own posts are gone',
    count(array_filter(array_keys($POSTS), fn($id) => get_post_meta($id, '_flosc_starter_pack') === $slug)), 0);
 
+// The API key an operator saves on a pack's flow must survive Repair.
+// install() returns early when the pack is already installed, so Repair is
+// the path that re-registers the flow — and register_flow() used to write a
+// freshly built bag over the whole settings row, deleting the key that had
+// just been saved correctly.
+echo "\n== a key saved on the flow, then Repair ==\n";
+FLOSC_Starter_Packs::uninstall($slug);
+FLOSC_Starter_Packs::install($slug);
+
+$flow_option = 'flosc_flow_vlkit_ivr';
+$bag = get_option($flow_option, []);
+$bag = is_array($bag) ? $bag : [];
+ok('the pack registered its flow', !empty($bag['ivr_file']), true);
+
+$bag['anthropic_api_key'] = 'sk-ant-operator-key-PQAA';
+$bag['ai_provider'] = 'anthropic';
+$bag['personality_library_id'] = 'dadjokedan';
+update_option($flow_option, $bag, false);
+
+// Repair only re-registers a flow whose messages are gone — that is the one
+// path that rebuilds the settings row, so break it deliberately. A test that
+// runs against a healthy pack exercises an early return and proves nothing.
+$bag = get_option($flow_option, []);
+unset($bag['flow_messages']);
+update_option($flow_option, $bag, false);
+
+$rep = FLOSC_Starter_Packs::repair($slug);
+ok('Repair rebuilds the flow it found broken', !empty($rep['ok']), true);
+ok('  and the messages are back', !empty(get_option($flow_option, [])['flow_messages']), true);
+
+$after = get_option($flow_option, []);
+$after = is_array($after) ? $after : [];
+
+ok('the key survives Repair', $after['anthropic_api_key'] ?? '(gone)', 'sk-ant-operator-key-PQAA');
+ok('  so does the provider choice', $after['ai_provider'] ?? '(gone)', 'anthropic');
+ok('  and a voice switched live is not reset', $after['personality_library_id'] ?? '(gone)', 'dadjokedan');
+ok('  while the pack still owns the flow file', $after['ivr_file'] ?? '', 'vlkit_ivr.md');
+
 exec('rm -rf ' . escapeshellarg($TMP));
 echo "\n" . ($fail ? "$fail FAILURES\n" : "all checks passed\n");
 exit($fail ? 1 : 0);

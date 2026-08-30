@@ -7742,3 +7742,10 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
 .flosc-model-choice__label { display: block; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 11px; color: #646970; }
 .flosc-model-choice--current { border-color: #2271b1 !important; box-shadow: 0 0 0 1px #2271b1; }
 .flosc-model-choice--current .flosc-model-choice__label { color: #2271b1; }
+
+/* Whether a key is stored, said on the page instead of in a banner the
+   operator scrolls past. Saving at the foot of a long tab and being sent to a
+   notice at the top is not feedback. */
+.flosc-key-state { margin: 6px 0 0; font-size: 12px; font-weight: 600; }
+.flosc-key-state--ok { color: #2c6349; }
+.flosc-key-state--none { color: #8a2424; }
