@@ -7836,3 +7836,4 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
 .flosc-inline-notice { margin: 8px 0 16px; }
 .flosc-tight-line { margin: .2em 0; }
 .flosc-last-save { display: block; margin-top: 8px; font-size: 13px; color: #2c6349; font-weight: 600; }
+.flosc-last-save:empty { display: none; }

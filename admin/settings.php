@@ -2956,20 +2956,27 @@ if (function_exists('wp_add_inline_style')) {
                 Save Settings for <?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $flosc_selected_ivr); ?>
             </button>
             <?php
+            // Always say something. A line that appears only after the first
+            // save reads, on a flow that has never been saved, as the feature
+            // not working — which is the opposite of what it is here to do.
+            // Pressing Save always writes and always restamps, so the line
+            // always moves, and an operator can tell the press landed without
+            // having to remember what it said a moment ago.
             $flosc_last_save = trim((string) ($flosc_flow_settings['last_settings_save'] ?? ''));
-
-            if ($flosc_last_save !== '') :
-                ?>
-                <span class="flosc-last-save" id="flosc-last-save">
-                    <?php
+            ?>
+            <span class="flosc-last-save" id="flosc-last-save">
+                <?php
+                if ($flosc_last_save !== '') {
                     printf(
                         /* translators: %s: Michel Time Stamp of the last save, in UTC. */
                         esc_html__( 'Last save: %s', 'flosc' ),
                         esc_html( $flosc_last_save )
                     );
-                    ?>
-                </span>
-            <?php endif; ?>
+                } else {
+                    echo esc_html__( 'Not saved from this page yet.', 'flosc' );
+                }
+                ?>
+            </span>
         </p>
         <?php endif; ?>
         
