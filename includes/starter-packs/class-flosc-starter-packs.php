@@ -1641,9 +1641,16 @@ class FLOSC_Starter_Packs {
 		$stamp  = gmdate( 'Ymd-His' );
 		$backup = $dir . $name . '.replaced-' . $stamp . ( '' !== $ext ? '.' . $ext : '' );
 
-		$moved = @rename( $target, $backup ); // phpcs:ignore WordPress.PHP.NoSilentErrors -- failure is reported by the caller's write.
+		// Write the copy through the same guarded writer every other file in
+		// this class uses, then drop the original. rename() would bypass the
+		// uploads restriction that writer exists to enforce.
+		if ( ! self::place_file( $target, $backup ) ) {
+			return '';
+		}
 
-		return $moved ? basename( $backup ) : '';
+		wp_delete_file( $target );
+
+		return basename( $backup );
 	}
 
 	/**
@@ -1678,30 +1685,23 @@ class FLOSC_Starter_Packs {
 
 		// The file's opening heading: "# FLOSC Friendly Default — IVR Configuration".
 		if ( is_readable( $path ) ) {
-			$handle = @fopen( $path, 'r' ); // phpcs:ignore WordPress.WP.AlternativeFunctions -- reading one heading, not writing.
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading a flow file this plugin installed.
+			$raw = file_get_contents( $path );
 
-			if ( $handle ) {
-				$guard = 0;
+			if ( is_string( $raw ) && '' !== $raw ) {
+				// Only the opening lines can carry the title; do not scan a whole flow.
+				$head = explode( "\n", substr( $raw, 0, 4096 ) );
 
-				while ( $guard++ < 40 && false !== ( $line = fgets( $handle ) ) ) {
-					if ( ! preg_match( '/^#\s+(.+?)\s*$/', (string) $line, $m ) ) {
+				foreach ( array_slice( $head, 0, 40 ) as $line ) {
+					if ( ! preg_match( '/^#\\s+(.+?)\\s*$/', (string) $line, $m ) ) {
 						continue;
 					}
 
-					fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions
-
 					// Drop the boilerplate suffix; keep the name it qualifies.
-					$name = preg_replace( '/\s*[\x{2014}\x{2013}-]?\s*IVR Configuration\s*$/iu', '', $m[1] );
-					$name = trim( (string) $name );
+					$name = trim( (string) preg_replace( '/\\s*[\\x{2014}\\x{2013}-]?\\s*IVR Configuration\\s*$/iu', '', $m[1] ) );
 
-					if ( '' !== $name ) {
-						return $name;
-					}
-
-					return self::readable_stem( $stem );
+					return ( '' !== $name ) ? $name : self::readable_stem( $stem );
 				}
-
-				fclose( $handle ); // phpcs:ignore WordPress.WP.AlternativeFunctions
 			}
 		}
 

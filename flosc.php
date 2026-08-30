@@ -1414,6 +1414,7 @@ class FLOSC_Framework {
         add_action('wp_ajax_flosc_test_ai_connection', [$this, 'ajax_test_ai_connection']);
         add_action('wp_ajax_flosc_fetch_ai_models', [$this, 'ajax_fetch_ai_models']);
         add_action('wp_ajax_flosc_save_ai_provider_key', [$this, 'ajax_save_ai_provider_key']);
+        add_action('wp_ajax_flosc_save_ai_provider_model', [$this, 'ajax_save_ai_provider_model']);
 
         // Admin: send Guest Access Link to any email (Register & Login tab)
         add_action('wp_ajax_flosc_send_guest_link', [$this, 'ajax_send_guest_link']);
@@ -9810,6 +9811,38 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'provider' => $provider,
             'suffix'   => $stored['suffix'],
             'message'  => __('API key saved for this flow.', 'flosc'),
+        ]);
+    }
+
+    /**
+     * Save one provider's model id on its own.
+     *
+     * Choosing from the fetched list has to be the end of the job. A pick that
+     * only fills a form field, and is then lost unless the operator finds a
+     * page-wide Save, is not a choice — it is a suggestion.
+     */
+    public function ajax_save_ai_provider_model() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Unauthorized', 'flosc')], 403);
+        }
+
+        check_ajax_referer('flosc_test_ai', 'nonce');
+
+        $post     = wp_unslash($_POST);
+        $provider = isset($post['provider']) ? sanitize_key((string) $post['provider']) : '';
+        $ivr      = isset($post['ivr']) ? sanitize_file_name((string) $post['ivr']) : '';
+        $model    = isset($post['model']) ? trim((string) $post['model']) : '';
+
+        $stored = flosc_store_provider_model($ivr, $provider, $model);
+
+        if (is_wp_error($stored)) {
+            wp_send_json_error(['message' => $stored->get_error_message()], 400);
+        }
+
+        wp_send_json_success([
+            'provider' => $provider,
+            'model'    => $stored['model'],
+            'message'  => __('Model saved for this flow.', 'flosc'),
         ]);
     }
 

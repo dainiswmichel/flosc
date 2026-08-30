@@ -2,6 +2,10 @@
 # Keep release archives focused on runtime plugin code only.
 # ALWAYS build zips with ./build-dist-zip.sh (fail-closed). Never zip -r by hand.
 
+# Test harnesses. These stub WordPress on purpose — they define ABSPATH and
+# redeclare core functions — so they must never reach a running site.
+tests/
+
 # VCS and local editor state
 .git/
 .github/

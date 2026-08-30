@@ -971,7 +971,7 @@ jQuery(document).ready(function($) {
 
         $('<p>')
             .addClass('flosc-model-picker__note')
-            .text('Choosing one fills the model field. It takes effect after Save AI Settings.')
+            .text('Clicking one saves it for this flow straight away.')
             .appendTo($picker);
 
         $picker.removeAttr('hidden');
@@ -990,20 +990,52 @@ jQuery(document).ready(function($) {
         return models.length;
     }
 
+    // Choosing from the fetched list has to be the end of the job, so the pick
+    // is saved on the spot. A choice that only fills a field, and is lost
+    // unless a page-wide Save is found afterwards, is not a choice.
     $(document).on('click', '.flosc-model-choice', function () {
         var $b = $(this);
         var targetId = $b.data('target');
         var id = String($b.data('id'));
         var $field = $('#' + targetId);
+        var provider = String(targetId).replace(/^flow_ai_/, '').replace(/_model$/, '');
+        var $status = $('.flosc-model-fetch-status[data-for="' + targetId + '"]');
 
         if (!$field.length) { return; }
 
         $field.val(id).trigger('change').trigger('input');
         $('.flosc-model-choice[data-target="' + targetId + '"]').removeClass('flosc-model-choice--current');
-        $('.flosc-model-choice[data-target="' + targetId + '"][data-id="' + id + '"]').addClass('flosc-model-choice--current');
-        $('.flosc-model-fetch-status[data-for="' + targetId + '"]')
-            .removeClass('flosc-model-fetch-status--bad')
-            .text('Model set to ' + id + '. Save AI Settings to apply it.');
+        $b.addClass('flosc-model-choice--current');
+        $status.removeClass('flosc-model-fetch-status--bad flosc-save-key-status--ok').text('Saving ' + id + '…');
+
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'flosc_save_ai_provider_model',
+                nonce: '<?php echo esc_js( wp_create_nonce('flosc_test_ai') ); ?>',
+                provider: provider,
+                ivr: '<?php echo esc_js( $GLOBALS['flosc_current_ivr'] ?? '' ); ?>',
+                model: id
+            },
+            success: function (response) {
+                if (!response || !response.success) {
+                    $status.addClass('flosc-model-fetch-status--bad')
+                        .text((response && response.data && response.data.message) || 'Could not save the model.');
+                    return;
+                }
+
+                $status.addClass('flosc-save-key-status--ok').text('\u2713 Model saved — ' + id);
+
+                // The test reads saved settings; this model is now one of them.
+                if (typeof floscSavedAi === 'object' && floscSavedAi) {
+                    floscSavedAi[targetId] = id;
+                }
+            },
+            error: function () {
+                $status.addClass('flosc-model-fetch-status--bad').text('Could not reach the server.');
+            }
+        });
     });
 
     // Save one key on its own. The full-page Save still works; this exists so

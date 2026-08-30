@@ -1,6 +1,6 @@
 <?php
 /**
- * Storing one AI provider API key.
+ * Storing one AI provider's key and model.
  *
  * Pulled out of the AJAX handler so the rule can be stated once and tested:
  * a key is written into the flow settings row the Settings page reads, it
@@ -103,6 +103,74 @@ if ( ! function_exists( 'flosc_store_provider_api_key' ) ) {
 			'option'  => $option,
 			'setting' => $map[ $provider ],
 			'suffix'  => strlen( $api_key ) >= 4 ? substr( $api_key, -4 ) : '',
+		);
+	}
+}
+
+if ( ! function_exists( 'flosc_store_provider_model' ) ) {
+	/**
+	 * Save one provider's model id onto one flow.
+	 *
+	 * Same rule as the key: it lands in the row the Settings page reads, it
+	 * replaces only its own provider's model, and nothing else on the flow
+	 * moves. Picking a model from the fetched list is worth nothing if the
+	 * pick does not survive the click.
+	 *
+	 * @param string $ivr      IVR filename identifying the flow.
+	 * @param string $provider FLOSC provider slug.
+	 * @param string $model    Model id to store.
+	 * @return array{option:string,setting:string,model:string}|WP_Error
+	 */
+	function flosc_store_provider_model( $ivr, $provider, $model ) {
+		$provider = sanitize_key( (string) $provider );
+		$ivr      = basename( (string) $ivr );
+		$model    = trim( (string) $model );
+
+		$map = array(
+			'anthropic' => 'ai_anthropic_model',
+			'openai'    => 'ai_openai_model',
+			'xai'       => 'ai_xai_model',
+			'gemini'    => 'ai_gemini_model',
+		);
+
+		if ( ! isset( $map[ $provider ] ) ) {
+			return new WP_Error( 'flosc_model_provider', __( 'Unknown AI provider.', 'flosc' ) );
+		}
+
+		if ( '' === sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) ) ) {
+			return new WP_Error( 'flosc_model_no_flow', __( 'No flow was selected, so there is nowhere to save this model.', 'flosc' ) );
+		}
+
+		if ( '' === $model ) {
+			return new WP_Error( 'flosc_model_empty', __( 'Choose or type a model id before saving.', 'flosc' ) );
+		}
+
+		// Deliberately permissive. Providers invent id shapes constantly and
+		// FLOSC must never refuse one that works. Only what an id cannot be is
+		// rejected: whitespace inside it, control characters, absurd length.
+		if ( strlen( $model ) > 200 || preg_match( '/[\s\x00-\x1F\x7F]/', $model ) ) {
+			return new WP_Error( 'flosc_model_shape', __( 'That does not look like a model id.', 'flosc' ) );
+		}
+
+		$option = function_exists( 'flosc_resolve_flow_option_key_for_ivr' )
+			? flosc_resolve_flow_option_key_for_ivr( $ivr )
+			: 'flosc_flow_' . sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) );
+
+		$settings = get_option( $option, array() );
+		$settings = is_array( $settings ) ? $settings : array();
+
+		$settings[ $map[ $provider ] ] = $model;
+
+		update_option( $option, $settings, false );
+
+		if ( function_exists( 'flosc_bust_flow_option_rows_cache' ) ) {
+			flosc_bust_flow_option_rows_cache();
+		}
+
+		return array(
+			'option'  => $option,
+			'setting' => $map[ $provider ],
+			'model'   => $model,
 		);
 	}
 }

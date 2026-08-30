@@ -76,6 +76,7 @@ DENY_PATTERNS=(
   'da1ni5_personal_profitability'
   'build-dist-zip.sh'
   '.distignore'
+  'tests'
 )
 
 rsync_excludes=()
@@ -116,6 +117,8 @@ done < <(find "$STAGE/flosc" \( \
   -path '*/flosc_development_archives/*' -o \
   -path '*/sample-data' -o \
   -path '*/sample-data/*' -o \
+  -path '*/tests' -o \
+  -path '*/tests/*' -o \
   -name 'create-sample-data.php' -o \
   -path '*/vendor' -o \
   -path '*/vendor/*' -o \

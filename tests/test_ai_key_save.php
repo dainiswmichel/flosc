@@ -109,5 +109,34 @@ ok( '  and holds the key', get_option( 'flosc_flow_brand_new_ivr' )['gemini_api_
 
 function wp_json_stub( $v ) { return print_r( $v, true ); }
 
-echo $fail ? "\n$fail FAILURES\n" : "\nAI key saving: all checks passed\n";
+echo "Choosing a model, and changing it\n";
+$m = flosc_store_provider_model( $ivr, 'anthropic', 'claude-sonnet-4-5-20250929' );
+ok( 'a picked model stores', is_wp_error( $m ), false );
+ok( '  into the same row as the key', $m['option'], $option );
+ok( '  under the provider\'s model setting', $m['setting'], 'ai_anthropic_model' );
+ok( '  and is readable back', get_option( $option )['ai_anthropic_model'], 'claude-sonnet-4-5-20250929' );
+ok( '  the key is untouched by choosing a model', get_option( $option )['anthropic_api_key'], $odd );
+
+flosc_store_provider_model( $ivr, 'anthropic', 'claude-opus-5' );
+ok( 'changing the model overwrites it', get_option( $option )['ai_anthropic_model'], 'claude-opus-5' );
+ok( '  with no trace of the previous one', strpos( wp_json_stub( get_option( $option ) ), 'sonnet-4-5' ), false );
+
+flosc_store_provider_model( $ivr, 'openai', 'gpt-5.4-mini' );
+flosc_store_provider_model( $ivr, 'gemini', 'gemini-3.7-flash' );
+$bag = get_option( $option );
+ok( 'each provider keeps its own model', $bag['ai_anthropic_model'], 'claude-opus-5' );
+ok( '  openai', $bag['ai_openai_model'], 'gpt-5.4-mini' );
+ok( '  gemini', $bag['ai_gemini_model'], 'gemini-3.7-flash' );
+ok( '  and every key still stands', count( array_filter( array( $bag['anthropic_api_key'] ?? '', $bag['openai_api_key'] ?? '', $bag['xai_api_key'] ?? '', $bag['gemini_api_key'] ?? '' ) ) ), 4 );
+
+ok( 'an id FLOSC has never heard of is accepted', is_wp_error( flosc_store_provider_model( $ivr, 'anthropic', 'claude-something-2099-preview' ) ), false );
+ok( '  and stored verbatim', get_option( $option )['ai_anthropic_model'], 'claude-something-2099-preview' );
+
+ok( 'an empty model is refused', is_wp_error( flosc_store_provider_model( $ivr, 'anthropic', '' ) ), true );
+ok( '  one with a space in it', is_wp_error( flosc_store_provider_model( $ivr, 'anthropic', 'claude sonnet 5' ) ), true );
+ok( '  one carrying a newline', is_wp_error( flosc_store_provider_model( $ivr, 'anthropic', "claude\n5" ) ), true );
+ok( '  an unknown provider', is_wp_error( flosc_store_provider_model( $ivr, 'nope', 'x' ) ), true );
+ok( 'and a refusal leaves the stored model alone', get_option( $option )['ai_anthropic_model'], 'claude-something-2099-preview' );
+
+echo $fail ? "\n$fail FAILURES\n" : "\nAI key + model saving: all checks passed\n";
 exit( $fail ? 1 : 0 );

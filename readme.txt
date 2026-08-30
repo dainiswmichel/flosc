@@ -193,26 +193,29 @@ FLOSC core flow logic runs locally in WordPress. The services below power specif
 
 1. OpenAI (via WordPress AI Client + AI Provider for OpenAI, and FLOSC Whisper STT)
 Chat: when this flow attaches OpenAI, FLOSC sends prompts through `wp_ai_client_prompt()` to the official AI Provider for OpenAI plugin, which communicates with OpenAI. FLOSC does not call OpenAI chat endpoints itself.
+Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://api.openai.com/v1/models directly so the saved key can be offered the models it is entitled to. Only the API key is sent; no visitor or site content is included.
 Whisper: when OpenAI Whisper is selected as the STT provider, FLOSC transcribes audio at https://api.openai.com/v1/audio/transcriptions (the official OpenAI provider plugin does not implement transcription).
 Data sent: visitor prompt text, conversation context, and model parameters for chat; uploaded audio payloads for Whisper.
 Service terms: https://openai.com/policies/terms-of-use
 Privacy policy: https://openai.com/policies/privacy-policy
 
 2. Anthropic (via WordPress AI Client + AI Provider for Anthropic)
-When this flow attaches Anthropic, FLOSC sends prompts (including RAG tool declarations) through `wp_ai_client_prompt()` to the official AI Provider for Anthropic plugin, which communicates with Anthropic. FLOSC does not call Anthropic endpoints itself.
+When this flow attaches Anthropic, FLOSC sends prompts (including RAG tool declarations) through `wp_ai_client_prompt()` to the official AI Provider for Anthropic plugin, which communicates with Anthropic. FLOSC does not call Anthropic chat endpoints itself.
+Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://api.anthropic.com/v1/models directly so the saved key can be offered the models it is entitled to. Only the API key, the anthropic-version header and, where the administrator supplies one, the anthropic-workspace-id are sent; no visitor or site content is included.
 Data sent: visitor prompt text, conversation context, model parameters, and tool results when RAG is active.
 Service terms: https://www.anthropic.com/legal/consumer-terms
 Privacy policy: https://www.anthropic.com/legal/privacy
 
 3. xAI (for AI chat responses)
-Endpoint: https://api.x.ai/v1/chat/completions
-Purpose: generate real-time AI chat responses when xAI/Grok is selected as the AI provider. There is no official WordPress xAI provider plugin yet, so this hop is FLOSC-owned.
-Data sent: visitor prompt text, conversation context, and model parameters.
+Endpoints: https://api.x.ai/v1/chat/completions and https://api.x.ai/v1/language-models
+Purpose: generate real-time AI chat responses when xAI/Grok is selected as the AI provider. There is no official WordPress xAI provider plugin yet, so this hop is FLOSC-owned. The language-models endpoint is requested only when an administrator clicks "Fetch models this key can use" or runs the AI connection test, to list the chat models the saved key can use.
+Data sent: visitor prompt text, conversation context, and model parameters for chat; only the API key for the model list.
 Service terms: https://x.ai/legal/terms-of-service
 Privacy policy: https://x.ai/legal/privacy-policy
 
 4. Google Gemini (via WordPress AI Client + AI Provider for Google)
 When this flow attaches Gemini, FLOSC sends prompts through `wp_ai_client_prompt()` to the official AI Provider for Google plugin, which communicates with Google. FLOSC does not call Gemini generateContent itself. The compiled personality profile is sent as the system instruction.
+Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://generativelanguage.googleapis.com/v1beta/models directly so the saved key can be offered the models it is entitled to. Only the API key is sent; no visitor or site content is included.
 Data sent: visitor prompt text, conversation context, and model parameters.
 Service terms: https://developers.google.com/terms
 Privacy policy: https://policies.google.com/privacy
