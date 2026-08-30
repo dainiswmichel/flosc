@@ -364,10 +364,31 @@ if ( ! function_exists( 'flosc_fetch_model_catalog' ) ) {
 			&& method_exists( 'FLOSC_WP_AI_Client', 'plugin_can_use_model' )
 			&& FLOSC_WP_AI_Client::uses_official_plugin( $provider );
 
+		$usable_count = 0;
+
 		foreach ( $models as $index => $model ) {
-			$models[ $index ]['usable'] = $checkable
+			$usable = $checkable
 				? FLOSC_WP_AI_Client::plugin_can_use_model( $provider, $model['id'] )
 				: true;
+
+			$models[ $index ]['usable'] = $usable;
+
+			if ( $usable ) {
+				$usable_count++;
+			}
+		}
+
+		// A check that rejects every single model is not evidence about the
+		// site — it is evidence about the check. An installed provider plugin
+		// that carried nothing could not answer a chat at all, so trust the
+		// provider's list, report it unfiltered, and never tell an operator
+		// with a working connection to go update a plugin that is fine.
+		if ( $checkable && 0 === $usable_count ) {
+			$checkable = false;
+
+			foreach ( $models as $index => $model ) {
+				$models[ $index ]['usable'] = true;
+			}
 		}
 
 		return array(

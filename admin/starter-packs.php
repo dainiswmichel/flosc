@@ -203,7 +203,7 @@ if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
 			<?php foreach ( $flosc_sp_samples as $flosc_sp_sample ) : ?>
 				<div class="flosc-sp-voice-card<?php echo $flosc_sp_sample['enabled'] ? ' is-installed' : ''; ?>">
 					<h4>
-						<?php echo esc_html( (string) $flosc_sp_sample['label'] ); ?>
+						<span class="flosc-sp-voice-name"><?php echo esc_html( (string) $flosc_sp_sample['label'] ); ?></span>
 						<span class="flosc-sp-dot" aria-hidden="true"></span>
 						<span class="screen-reader-text">
 							<?php echo esc_html( $flosc_sp_sample['enabled'] ? __( 'Enabled', 'flosc' ) : __( 'Disabled', 'flosc' ) ); ?>

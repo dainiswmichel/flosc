@@ -1589,6 +1589,33 @@ class FLOSC_Starter_Packs {
 	 * @param array<string,mixed> $bag  The flow's settings.
 	 * @return string
 	 */
+	/**
+	 * A flow stem as a person would read it: flosc_default_friendly_ivr → Default Friendly.
+	 *
+	 * The portability handler has a function that does this, but it lives in an
+	 * admin upload handler that is only loaded while handling an upload. Reading
+	 * a name is not uploading anything, so every card that asked for one outside
+	 * that request got the raw stem instead — which is why sample flows rendered
+	 * as flosc_default_br3nda_emotional_support_ivr with their own filename
+	 * repeated underneath.
+	 *
+	 * @param string $stem Flow stem.
+	 * @return string
+	 */
+	private static function readable_stem( $stem ) {
+		$stem = (string) $stem;
+
+		if ( '' === $stem ) {
+			return '';
+		}
+
+		$display = preg_replace( '/_ivr$/i', '', $stem );
+		$display = str_replace( array( 'flosc_', 'flosc-', '_', '-' ), array( '', '', ' ', ' ' ), (string) $display );
+		$display = trim( (string) preg_replace( '/\s+/', ' ', (string) $display ) );
+
+		return ( '' !== $display ) ? ucwords( $display ) : $stem;
+	}
+
 	private static function flow_label( $stem, $bag ) {
 		$stem = sanitize_key( (string) $stem );
 
@@ -1612,12 +1639,10 @@ class FLOSC_Starter_Packs {
 			return basename( $file );
 		}
 
-		if ( function_exists( 'flosc_portability_display_name_from_stem' ) ) {
-			$display = trim( (string) flosc_portability_display_name_from_stem( $stem ) );
+		$display = self::readable_stem( $stem );
 
-			if ( '' !== $display ) {
-				return $display;
-			}
+		if ( '' !== $display ) {
+			return $display;
 		}
 
 		return $stem . '.md';
@@ -1722,9 +1747,7 @@ class FLOSC_Starter_Packs {
 				'stem'        => $stem,
 				'file'        => basename( $file ),
 				'path'        => $file,
-				'label'       => function_exists( 'flosc_portability_display_name_from_stem' )
-					? (string) flosc_portability_display_name_from_stem( $stem )
-					: $stem,
+				'label'       => self::readable_stem( $stem ),
 				'personality' => $personality,
 				'enabled'     => self::sample_flow_is_enabled( $stem ),
 			);

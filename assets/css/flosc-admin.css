@@ -7700,6 +7700,14 @@ label[for^="flosc_acc_q_"] {
 .flosc-sp-dot { width: 9px; height: 9px; border-radius: 50%; background: #dcdcde; border: 1px solid #c3c4c7; flex: none; }
 .flosc-sp-voice-card.is-installed .flosc-sp-dot { background: #2c6349; border-color: #2c6349; }
 .flosc-sp-voice-role { margin: 0 0 6px; font-size: 13px; color: #50575e; }
+/* Flow stems and filenames are one unbroken token — no spaces, and CSS does not
+   break on underscores — so without these they run straight out of the card and
+   over the one beside it. A flex item also refuses to shrink below its content
+   until min-width is cleared, which is what let the heading escape. */
+.flosc-sp-voice-card h4 { min-width: 0; }
+.flosc-sp-voice-name { min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
+.flosc-sp-voice-card .flosc-sp-dot { flex: 0 0 auto; }
+.flosc-sp-voice-role, .flosc-sp-voice-traits { overflow-wrap: anywhere; word-break: break-word; }
 .flosc-sp-voice-traits { margin: 0 0 12px; font-size: 12px; color: #646970; font-style: italic; }
 .flosc-sp-voice-actions { margin-top: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .flosc-sp-voice-actions form { margin: 0; }

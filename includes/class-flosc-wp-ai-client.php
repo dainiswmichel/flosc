@@ -541,6 +541,18 @@ class FLOSC_WP_AI_Client {
 			return false;
 		}
 
+		// Bind the key before asking, exactly as generate() does. The registry
+		// will not hand back a model for a provider it cannot authenticate, so
+		// asking cold returns null for every id — which reads as "the plugin
+		// carries none of these models" when the plugin carries all of them.
+		$api_key = function_exists( 'flosc_get_provider_api_key' )
+			? flosc_get_provider_api_key( $flosc_provider )
+			: flosc_get_setting( $flosc_provider . '_api_key', '' );
+
+		if ( '' !== (string) $api_key && is_wp_error( self::bind_flosc_key( $flosc_provider, (string) $api_key ) ) ) {
+			return false;
+		}
+
 		return null !== self::pin_model( $wp_id, (string) $model_id );
 	}
 
@@ -554,7 +566,7 @@ class FLOSC_WP_AI_Client {
 	private static function pin_model( $wp_id, $model_id ) {
 		try {
 			return AiClient::defaultRegistry()->getProviderModel( $wp_id, $model_id );
-		} catch ( Exception $e ) {
+		} catch ( Throwable $e ) {
 			return null;
 		}
 	}
@@ -582,7 +594,7 @@ class FLOSC_WP_AI_Client {
 
 		try {
 			AiClient::defaultRegistry()->setProviderRequestAuthentication( $wp_id, $auth );
-		} catch ( Exception $e ) {
+		} catch ( Throwable $e ) {
 			return new WP_Error( 'flosc_wp_ai_auth_bind', $e->getMessage() );
 		}
 		return true;
