@@ -7821,3 +7821,6 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
 	#flow_ai_temperature, #flow_ai_max_tokens, #flow_ai_model_params { transition: none; }
 }
 .flosc-param-doc { font-size: 12px; white-space: nowrap; }
+.flosc-tuning-save--saved { background: #edf7f2 !important; border-color: #2c6349 !important; color: #2c6349 !important; box-shadow: none !important; font-weight: 600; }
+.flosc-tuning-save--saved:hover, .flosc-tuning-save--saved:focus { background: #e0f0e8 !important; border-color: #2c6349 !important; color: #2c6349 !important; }
+.flosc-tuning-save--bad { border-color: #d63638 !important; color: #8a2424 !important; }

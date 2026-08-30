@@ -642,7 +642,7 @@ endif;
             </p>
             <p class="flosc-model-fetch-row">
                 <span class="description" id="flosc-params-lock-note">
-                    <?php echo esc_html__( 'Built from the fields above. Edit it to send anything they cannot express — what you write wins, and those fields follow it as you type.', 'flosc' ); ?>
+                    <?php echo esc_html__( 'This is what will be sent. Built from the fields above — click Edit the request to add anything they cannot express.', 'flosc' ); ?>
                 </span>
             </p>
             <div class="flosc-param-help" id="flosc-param-help" hidden></div>
@@ -1414,15 +1414,32 @@ jQuery(document).ready(function($) {
     // deliberate act, and from that point the operator's text is the truth.
     var floscParamsUnlocked = false;
 
+    // Two states, and a way back from each. Editing is not a door that shuts
+    // behind you: a save returns the request to rest, locked and complete,
+    // with Edit alive again for whoever wants another go at it.
     function floscUnlockParams(focus) {
-        if (floscParamsUnlocked) { return; }
+        if (floscParamsUnlocked) {
+            if (focus) { $('#flow_ai_model_params').trigger('focus'); }
+            return;
+        }
 
         floscParamsUnlocked = true;
         $('#flow_ai_model_params').prop('readonly', false).removeClass('flosc-params-locked');
         if (focus) { $('#flow_ai_model_params').trigger('focus'); }
-        $('#flosc-params-edit').prop('disabled', true);
+        $('#flosc-params-edit').prop('disabled', true).text('Editing…');
         $('#flosc-params-lock-note').text(
-            'Editing. What you write is what FLOSC sends — Temperature and Max Tokens above follow it as you type.'
+            'Editing. What you write is what FLOSC sends — Temperature and Max Tokens above follow it as ' +
+            'you type. It saves itself when you click away.'
+        );
+    }
+
+    function floscLockParams() {
+        floscParamsUnlocked = false;
+        $('#flow_ai_model_params').prop('readonly', true).addClass('flosc-params-locked');
+        $('#flosc-params-edit').prop('disabled', false).text('Edit the request');
+        $('#flosc-params-lock-note').text(
+            'This is what will be sent. Built from the fields above — click Edit the request to add ' +
+            'anything they cannot express.'
         );
     }
 
@@ -1548,6 +1565,46 @@ jQuery(document).ready(function($) {
     var floscTuningTimer = null;
     var floscTuningInFlight = false;
 
+    // The save button is the state, rather than a button beside a state: at
+    // rest it is a green statement that the tuning is stored, and it turns
+    // back into something to press the moment that stops being true.
+    function floscTuningState(state, detail) {
+        var $btn = $('#flosc-save-tuning');
+        var $status = $('#flosc-tuning-status');
+
+        $btn.removeClass('button-primary flosc-tuning-save--saved flosc-tuning-save--bad')
+            .prop('disabled', false);
+        $status.attr('class', 'flosc-tuning-status').text('');
+
+        if (state === 'saved') {
+            $btn.addClass('flosc-tuning-save--saved')
+                .html('&#10003; ' + (detail ? 'Autosaved ' + detail : 'Saved'))
+                .attr('title', 'Stored on this flow. Press to save again.');
+            return;
+        }
+
+        if (state === 'saving') {
+            $btn.prop('disabled', true).text('Saving…');
+            return;
+        }
+
+        if (state === 'bad') {
+            $btn.addClass('flosc-tuning-save--bad').text('Save Model Tuning')
+                .attr('title', 'Not saved.');
+            $status.addClass('flosc-tuning-status--bad').text('\u2717 ' + (detail || 'Not saved.'));
+            return;
+        }
+
+        // Dirty: something changed and has not reached the database yet.
+        $btn.addClass('button-primary').text('Save Model Tuning')
+            .attr('title', 'Save this flow\u2019s tuning now.');
+        $status.text(detail || 'Unsaved changes.');
+    }
+
+    // The page was rendered from what is stored, so at load that is exactly
+    // what the controls are showing.
+    floscTuningState('saved');
+
     function floscFlashSaved($el) {
         if (!$el || !$el.length) { return; }
 
@@ -1574,7 +1631,7 @@ jQuery(document).ready(function($) {
         if (floscTuningInFlight) { return; }
 
         floscTuningInFlight = true;
-        $status.attr('class', 'flosc-tuning-status').text('Saving\u2026');
+        floscTuningState('saving');
 
         $.ajax({
             url: ajaxurl,
@@ -1592,20 +1649,19 @@ jQuery(document).ready(function($) {
                 if (!response || !response.success) {
                     // Almost always a request that will not parse, and the
                     // message names the line that broke it. Nothing was written,
-                    // so nothing goes green.
-                    $status.attr('class', 'flosc-tuning-status flosc-tuning-status--bad')
-                        .text('\u2717 ' + ((response && response.data && response.data.message) || 'Not saved.'));
+                    // so nothing goes green and the request stays open for
+                    // editing — re-locking it here would hide the mistake.
+                    floscTuningState('bad', (response && response.data && response.data.message) || 'Not saved.');
                     return;
                 }
 
                 var d = response.data;
                 var now = new Date();
 
-                $status.attr('class', 'flosc-tuning-status flosc-tuning-status--ok')
-                    .text('\u2713 Saved ' +
-                        String(now.getHours()).padStart(2, '0') + ':' +
-                        String(now.getMinutes()).padStart(2, '0') + ':' +
-                        String(now.getSeconds()).padStart(2, '0'));
+                floscTuningState('saved',
+                    String(now.getHours()).padStart(2, '0') + ':' +
+                    String(now.getMinutes()).padStart(2, '0') + ':' +
+                    String(now.getSeconds()).padStart(2, '0'));
 
                 // What came back is what is stored, after the same fold the
                 // page-wide save performs. Showing it rather than what was
@@ -1629,6 +1685,14 @@ jQuery(document).ready(function($) {
                 floscCheckParams();
 
                 floscFlashSaved($flash && $flash.length ? $flash : $('#flow_ai_model_params'));
+
+                // Stored and complete, so the request goes back to being a
+                // statement of what will be sent — unless the operator is still
+                // inside it, in which case taking the box away mid-sentence
+                // would be the rudest thing this page could do.
+                if (floscParamsUnlocked && !$('#flow_ai_model_params').is(':focus')) {
+                    floscLockParams();
+                }
             },
             error: function () {
                 $status.attr('class', 'flosc-tuning-status flosc-tuning-status--bad')
@@ -1649,6 +1713,12 @@ jQuery(document).ready(function($) {
     // pause in typing; the request box does not, because half-written YAML
     // would be refused on every keystroke and paint the status red while
     // somebody is still typing it.
+    $('#flow_ai_temperature, #flow_ai_max_tokens, #flow_ai_model_params').on('input', function () {
+        if (floscSyncing || floscTuningInFlight) { return; }
+
+        floscTuningState('dirty');
+    });
+
     $('#flow_ai_temperature, #flow_ai_max_tokens').on('input', function () {
         var $field = $(this);
 
@@ -1741,6 +1811,7 @@ jQuery(document).ready(function($) {
 
                 $box.val(JSON.stringify(obj, null, 2));
                 floscCheckParams();
+                floscTuningState('dirty');
                 $box.trigger('focus');
                 return;
             }
@@ -1776,6 +1847,7 @@ jQuery(document).ready(function($) {
 
         $box.val(lines.filter(function (l) { return l.trim(); }).join('\n'));
         floscCheckParams();
+        floscTuningState('dirty');
         $box.trigger('focus');
     }
 
