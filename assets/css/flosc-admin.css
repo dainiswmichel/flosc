@@ -7749,3 +7749,10 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
 .flosc-key-state { margin: 6px 0 0; font-size: 12px; font-weight: 600; }
 .flosc-key-state--ok { color: #2c6349; }
 .flosc-key-state--none { color: #8a2424; }
+
+/* The answer to "did my key save?" has to be readable at a glance, next to
+   the button that was pressed — not fine print, and not a banner elsewhere. */
+.flosc-save-key-status { margin: 0; font-weight: 600; }
+.flosc-save-key-status--ok { color: #2c6349; }
+.flosc-show-all-keys-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 8px 0 16px; }
+.flosc-show-all-keys-row .description { margin: 0; }

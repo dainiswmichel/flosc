@@ -85,6 +85,7 @@ require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/flosc-data-paths.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-available-providers.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-wp-ai-client.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-model-catalog.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-provider-keys.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-personality-library.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-knowledge-bases.php';
 
@@ -9799,51 +9800,15 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         $ivr      = isset($post['ivr']) ? sanitize_file_name((string) $post['ivr']) : '';
         $api_key  = isset($post['api_key']) ? trim((string) $post['api_key']) : '';
 
-        $map = function_exists('flosc_available_providers_flow_key_map')
-            ? flosc_available_providers_flow_key_map()
-            : [];
+        $stored = flosc_store_provider_api_key($ivr, $provider, $api_key);
 
-        if (!isset($map[$provider]) || !in_array($provider, ['anthropic', 'openai', 'xai', 'gemini'], true)) {
-            wp_send_json_error(['message' => __('Unknown AI provider.', 'flosc')], 400);
-        }
-
-        if ($api_key === '') {
-            wp_send_json_error(['message' => __('Paste an API key before saving.', 'flosc')], 400);
-        }
-
-        // Control characters and absurd lengths are not keys; they are paste accidents.
-        if (strlen($api_key) > 4096 || preg_match('/[\x00-\x1F\x7F]/', $api_key)) {
-            wp_send_json_error(['message' => __('That API key contains characters an API key cannot contain.', 'flosc')], 400);
-        }
-
-        $stem = sanitize_key(pathinfo($ivr, PATHINFO_FILENAME));
-
-        if ($stem === '') {
-            wp_send_json_error(['message' => __('No flow was selected, so there is nowhere to save this key.', 'flosc')], 400);
-        }
-
-        // The same resolver the Settings page uses. A plain flosc_flow_<stem>
-        // key is not always the row that page reads — legacy duplicate rows
-        // exist — so writing the stem key directly can store a key somewhere
-        // nothing looks, which is indistinguishable from not saving at all.
-        $option = function_exists('flosc_resolve_flow_option_key_for_ivr')
-            ? flosc_resolve_flow_option_key_for_ivr($ivr)
-            : 'flosc_flow_' . $stem;
-
-        $settings = get_option($option, []);
-        $settings = is_array($settings) ? $settings : [];
-
-        $settings[$map[$provider]] = $api_key;
-
-        update_option($option, $settings, false);
-
-        if (function_exists('flosc_bust_flow_option_rows_cache')) {
-            flosc_bust_flow_option_rows_cache();
+        if (is_wp_error($stored)) {
+            wp_send_json_error(['message' => $stored->get_error_message()], 400);
         }
 
         wp_send_json_success([
             'provider' => $provider,
-            'suffix'   => strlen($api_key) >= 4 ? substr($api_key, -4) : '',
+            'suffix'   => $stored['suffix'],
             'message'  => __('API key saved for this flow.', 'flosc'),
         ]);
     }

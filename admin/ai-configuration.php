@@ -235,6 +235,13 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
 <p class="description">
     Configure the API key for your selected provider. Only the relevant section is shown.
 </p>
+<p class="flosc-show-all-keys-row">
+    <label>
+        <input type="checkbox" id="flosc-show-all-providers">
+        <?php echo esc_html__( 'Show every provider, so more than one key can be saved', 'flosc' ); ?>
+    </label>
+    <span class="description"><?php echo esc_html__( 'Each key saves on its own button and is kept separately. Which provider this flow uses is the setting above.', 'flosc' ); ?></span>
+</p>
 
 <?php
 if ( ! function_exists( 'flosc_ai_key_state_line' ) ) :
@@ -311,7 +318,7 @@ endif;
             <input type="password" id="flow_anthropic_api_key" name="flow_anthropic_api_key" value="<?php echo esc_attr( function_exists('flosc_admin_secret_input_value') ? flosc_admin_secret_input_value( $flosc_flow_settings['anthropic_api_key'] ?? '' ) : ( current_user_can('manage_options') ? (string) ( $flosc_flow_settings['anthropic_api_key'] ?? '' ) : '' ) ); ?>" class="regular-text flosc-ai-key-input" placeholder="sk-ant-api03-...">
             <p class="flosc-model-fetch-row">
                 <button type="button" class="button button-primary flosc-save-key" data-provider="anthropic" data-target="flow_anthropic_api_key">
-                    <?php echo esc_html__( 'Save Key', 'flosc' ); ?>
+                    <?php echo esc_html__( 'Save Anthropic Key', 'flosc' ); ?>
                 </button>
                 <span class="description flosc-save-key-status" data-for="flow_anthropic_api_key"></span>
             </p>
@@ -392,7 +399,7 @@ endif;
             <input type="password" id="flow_openai_api_key" name="flow_openai_api_key" value="<?php echo esc_attr( function_exists('flosc_admin_secret_input_value') ? flosc_admin_secret_input_value( $flosc_flow_settings['openai_api_key'] ?? '' ) : ( current_user_can('manage_options') ? (string) ( $flosc_flow_settings['openai_api_key'] ?? '' ) : '' ) ); ?>" class="regular-text flosc-ai-key-input" placeholder="sk-proj-...">
             <p class="flosc-model-fetch-row">
                 <button type="button" class="button button-primary flosc-save-key" data-provider="openai" data-target="flow_openai_api_key">
-                    <?php echo esc_html__( 'Save Key', 'flosc' ); ?>
+                    <?php echo esc_html__( 'Save OpenAI Key', 'flosc' ); ?>
                 </button>
                 <span class="description flosc-save-key-status" data-for="flow_openai_api_key"></span>
             </p>
@@ -453,7 +460,7 @@ endif;
             <input type="password" id="flow_xai_api_key" name="flow_xai_api_key" value="<?php echo esc_attr( function_exists('flosc_admin_secret_input_value') ? flosc_admin_secret_input_value( $flosc_flow_settings['xai_api_key'] ?? '' ) : ( current_user_can('manage_options') ? (string) ( $flosc_flow_settings['xai_api_key'] ?? '' ) : '' ) ); ?>" class="regular-text flosc-ai-key-input" placeholder="xai-...">
             <p class="flosc-model-fetch-row">
                 <button type="button" class="button button-primary flosc-save-key" data-provider="xai" data-target="flow_xai_api_key">
-                    <?php echo esc_html__( 'Save Key', 'flosc' ); ?>
+                    <?php echo esc_html__( 'Save xAI Key', 'flosc' ); ?>
                 </button>
                 <span class="description flosc-save-key-status" data-for="flow_xai_api_key"></span>
             </p>
@@ -520,7 +527,7 @@ endif;
             <input type="password" id="flow_gemini_api_key" name="flow_gemini_api_key" value="<?php echo esc_attr( function_exists('flosc_admin_secret_input_value') ? flosc_admin_secret_input_value( $flosc_flow_settings['gemini_api_key'] ?? '' ) : ( current_user_can('manage_options') ? (string) ( $flosc_flow_settings['gemini_api_key'] ?? '' ) : '' ) ); ?>" class="regular-text flosc-ai-key-input" placeholder="AIza...">
             <p class="flosc-model-fetch-row">
                 <button type="button" class="button button-primary flosc-save-key" data-provider="gemini" data-target="flow_gemini_api_key">
-                    <?php echo esc_html__( 'Save Key', 'flosc' ); ?>
+                    <?php echo esc_html__( 'Save Gemini Key', 'flosc' ); ?>
                 </button>
                 <span class="description flosc-save-key-status" data-for="flow_gemini_api_key"></span>
             </p>
@@ -853,9 +860,16 @@ jQuery(document).ready(function($) {
     // --- Provider section show/hide ---
     function updateProviderSections() {
         var selected = $('#flow_ai_provider').val();
+        // Showing only the selected provider hides the other key fields, which
+        // makes storing a second key look impossible. It never was — the keys
+        // are kept separately — so this reveals them on request.
+        var showAll = $('#flosc-show-all-providers').is(':checked');
+
         $('.flosc-ai-provider-section').each(function() {
             var provider = $(this).data('provider');
-            if (provider === selected) {
+            var keep = (provider === selected) || (showAll && provider !== 'ivr');
+
+            if (keep) {
                 $(this).removeClass('is-hidden');
             } else {
                 $(this).addClass('is-hidden');
@@ -863,6 +877,7 @@ jQuery(document).ready(function($) {
         });
     }
     $('#flow_ai_provider').on('change', updateProviderSections);
+    $('#flosc-show-all-providers').on('change', updateProviderSections);
     updateProviderSections();
 
     var attachSel = $('#flow_personality_library_id');
@@ -1002,12 +1017,13 @@ jQuery(document).ready(function($) {
         var key = String($('#' + targetId).val() || '').trim();
 
         if (!key) {
-            $status.addClass('flosc-model-fetch-status--bad').text('Paste a key first.');
+            $status.removeClass('flosc-save-key-status--ok')
+                .addClass('flosc-model-fetch-status--bad').text('Paste a key first.');
             return;
         }
 
         $btn.prop('disabled', true);
-        $status.removeClass('flosc-model-fetch-status--bad').text('Saving…');
+        $status.removeClass('flosc-model-fetch-status--bad flosc-save-key-status--ok').text('Saving…');
 
         $.ajax({
             url: ajaxurl,
@@ -1027,7 +1043,9 @@ jQuery(document).ready(function($) {
                 }
 
                 var d = response.data || {};
-                $status.text('Saved' + (d.suffix ? ' — ends ' + d.suffix : '') + '.');
+                $status.removeClass('flosc-model-fetch-status--bad')
+                    .addClass('flosc-save-key-status--ok')
+                    .text('✓ Saved' + (d.suffix ? ' — ends ' + d.suffix : '') + '.');
 
                 // The test reads saved settings; this key is now one of them, so
                 // the unsaved-settings guard must stop calling it unsaved.
