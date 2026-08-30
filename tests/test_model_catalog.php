@@ -72,6 +72,77 @@ check( 'gemini sends x-goog-api-key', flosc_model_catalog_request( 'gemini', 'AI
 check( 'gemini cursors with pageToken', strpos( flosc_model_catalog_request( 'gemini', 'k', 'p2' )['url'], 'pageToken=p2' ) !== false, true );
 check( 'an unknown provider has no request', flosc_model_catalog_request( 'nope', 'k' ), null );
 
+echo "Against a real answer from api.anthropic.com, not a doc example\n";
+// Captured from GET /v1/models with a workspace-scoped key on 2026-08-30.
+// Only the fields the parser reads are kept; no account data.
+$live = json_decode( <<<'JSON'
+{
+ "data": [
+  {
+   "id": "claude-opus-5",
+   "display_name": "Claude Opus 5",
+   "type": "model"
+  },
+  {
+   "id": "claude-sonnet-5",
+   "display_name": "Claude Sonnet 5",
+   "type": "model"
+  },
+  {
+   "id": "claude-fable-5",
+   "display_name": "Claude Fable 5",
+   "type": "model"
+  },
+  {
+   "id": "claude-opus-4-8",
+   "display_name": "Claude Opus 4.8",
+   "type": "model"
+  },
+  {
+   "id": "claude-opus-4-7",
+   "display_name": "Claude Opus 4.7",
+   "type": "model"
+  },
+  {
+   "id": "claude-sonnet-4-6",
+   "display_name": "Claude Sonnet 4.6",
+   "type": "model"
+  },
+  {
+   "id": "claude-opus-4-6",
+   "display_name": "Claude Opus 4.6",
+   "type": "model"
+  },
+  {
+   "id": "claude-opus-4-5-20251101",
+   "display_name": "Claude Opus 4.5",
+   "type": "model"
+  },
+  {
+   "id": "claude-haiku-4-5-20251001",
+   "display_name": "Claude Haiku 4.5",
+   "type": "model"
+  },
+  {
+   "id": "claude-sonnet-4-5-20250929",
+   "display_name": "Claude Sonnet 4.5",
+   "type": "model"
+  }
+ ],
+ "has_more": false,
+ "first_id": null,
+ "last_id": null
+}
+JSON
+, true );
+$page = flosc_model_catalog_page( 'anthropic', $live );
+check( 'every model comes through', count( $page['models'] ), 10 );
+check( 'ids are exact', ids( $page )[0], 'claude-opus-5' );
+check( '  including a dated one', in_array( 'claude-sonnet-4-5-20250929', ids( $page ), true ), true );
+check( 'display names come through', $page['models'][0]['label'], 'Claude Opus 5' );
+check( 'has_more false means no second page is fetched', $page['cursor'], '' );
+check( 'the default FLOSC ships is one the API really serves', in_array( flosc_default_model( 'anthropic' ), ids( $page ), true ), true );
+
 echo "The list is the provider's answer, not FLOSC's opinion of it\n";
 $shape = array_keys( flosc_model_catalog_page( 'openai', array( 'data' => array( array( 'id' => 'gpt-5.4' ) ) ) )['models'][0] );
 sort( $shape );
