@@ -67,7 +67,11 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 				// 400 "`temperature` is deprecated for this model", and all ten
 				// answer 200 without it.
 				'rejects_tuning'   => array( 'temperature' ),
-				'tuning_note'      => __( 'Anthropic has deprecated temperature on its newer models, so FLOSC leaves sampling to Claude.', 'flosc' ),
+				// Measured 2026-08-30 on claude-sonnet-4-5-20250929: each of
+				// temperature and top_p is accepted alone; the pair is 400
+				// "`temperature` and `top_p` cannot both be specified".
+				'sampling_exclusive' => array( 'temperature', 'top_p' ),
+				'tuning_note'      => __( 'Anthropic has deprecated temperature on its newer models, so FLOSC leaves sampling to Claude. Temperature and top_p cannot be sent together.', 'flosc' ),
 				// Measured against a live key on 2026-08-30: Sonnet 4.5 takes
 				// top_p and top_k, Sonnet 5 refuses them and takes thinking,
 				// stop_sequences works on both.
@@ -84,6 +88,8 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 					'claude-sonnet-4-5' => array(
 						'accepts' => array( 'temperature', 'top_p', 'top_k', 'stop_sequences' ),
 						'refuses' => array( 'thinking' ),
+						// Each accepts-entry is true alone. The pair is not.
+						'exclusive' => array( array( 'temperature', 'top_p' ) ),
 					),
 					'claude-sonnet-5'   => array(
 						'accepts' => array( 'stop_sequences', 'thinking' ),
@@ -342,5 +348,41 @@ if ( ! function_exists( 'flosc_model_rejects_tuning' ) ) {
 		}
 
 		return flosc_provider_rejects_tuning( $provider, $param );
+	}
+}
+
+if ( ! function_exists( 'flosc_sampling_conflicts_with_applied' ) ) {
+	/**
+	 * Whether adding $param would 400 because a sibling sampling control is already on the request.
+	 *
+	 * Anthropic Sonnet 4.5 accepts temperature and accepts top_p; it refuses
+	 * both on the same request. The first-class temperature field is applied
+	 * first, so this is how top_p from the request is held back rather than
+	 * sent and failed.
+	 *
+	 * @param string        $provider FLOSC provider slug.
+	 * @param string        $param    Parameter about to be applied.
+	 * @param array<int,string> $already_applied Names already on the builder.
+	 * @return bool
+	 */
+	function flosc_sampling_conflicts_with_applied( $provider, $param, $already_applied ) {
+		$param    = (string) $param;
+		$applied  = is_array( $already_applied ) ? $already_applied : array();
+		$profile  = flosc_provider_api_profile( $provider );
+		$group    = ( null !== $profile && isset( $profile['sampling_exclusive'] ) )
+			? (array) $profile['sampling_exclusive']
+			: array();
+
+		if ( count( $group ) < 2 || ! in_array( $param, $group, true ) ) {
+			return false;
+		}
+
+		foreach ( $group as $other ) {
+			if ( (string) $other !== $param && in_array( (string) $other, $applied, true ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

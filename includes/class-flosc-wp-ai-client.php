@@ -435,6 +435,16 @@ class FLOSC_WP_AI_Client {
 					continue;
 				}
 
+				// Anthropic 400s if temperature and top_p are both on the
+				// request. Temperature is already on the builder from the
+				// field above; sending top_p as well is the crash that
+				// turned visitor chat into flosc_chat_turn_exception.
+				if ( function_exists( 'flosc_sampling_conflicts_with_applied' )
+					&& flosc_sampling_conflicts_with_applied( $provider, (string) $flosc_param, self::$applied_parameters ) ) {
+					self::$unapplied_parameters[] = (string) $flosc_param . ' (cannot be sent with temperature on this model)';
+					continue;
+				}
+
 				$flosc_applied = self::apply_extra_parameter( $builder, $flosc_param, $flosc_value );
 
 				if ( is_wp_error( $flosc_applied ) ) {
