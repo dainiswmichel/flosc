@@ -254,6 +254,22 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
         </td>
     </tr>
     <tr>
+        <th scope="row">
+            <label for="flow_anthropic_workspace_id">Anthropic Workspace ID</label>
+        </th>
+        <td>
+            <input type="text" id="flow_anthropic_workspace_id" name="flow_anthropic_workspace_id"
+                value="<?php echo esc_attr( (string) ( $flosc_flow_settings['anthropic_workspace_id'] ?? '' ) ); ?>"
+                class="regular-text flosc-ai-workspace-input" placeholder="wrkspc_...">
+            <p class="description">
+                Leave this empty unless Anthropic asks for it. A key scoped to one workspace needs nothing here.
+                A key that spans several must name the workspace each request acts in, and Anthropic answers
+                <code>400 anthropic-workspace-id is required</code> until it does. Console → Settings → Workspaces
+                has the id; a workspace-scoped key avoids the question entirely.
+            </p>
+        </td>
+    </tr>
+    <tr>
         <th scope="row"><label for="flow_ai_anthropic_model">Anthropic Model</label></th>
         <td>
             <?php
@@ -280,6 +296,9 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
             <p class="flosc-model-fetch-row">
                 <button type="button" class="button flosc-fetch-models" data-provider="anthropic" data-target="flow_ai_anthropic_model">
                     <?php echo esc_html__( 'Fetch models this key can use', 'flosc' ); ?>
+                </button>
+                <button type="submit" name="flosc_save" value="1" form="flosc-settings-form" class="button button-primary">
+                    <?php echo esc_html__( 'Save AI Settings', 'flosc' ); ?>
                 </button>
                 <span class="description flosc-model-fetch-status" data-for="flow_ai_anthropic_model"></span>
             </p>
@@ -331,6 +350,9 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
             <p class="flosc-model-fetch-row">
                 <button type="button" class="button flosc-fetch-models" data-provider="openai" data-target="flow_ai_openai_model">
                     <?php echo esc_html__( 'Fetch models this key can use', 'flosc' ); ?>
+                </button>
+                <button type="submit" name="flosc_save" value="1" form="flosc-settings-form" class="button button-primary">
+                    <?php echo esc_html__( 'Save AI Settings', 'flosc' ); ?>
                 </button>
                 <span class="description flosc-model-fetch-status" data-for="flow_ai_openai_model"></span>
             </p>
@@ -385,6 +407,9 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
             <p class="flosc-model-fetch-row">
                 <button type="button" class="button flosc-fetch-models" data-provider="xai" data-target="flow_ai_xai_model">
                     <?php echo esc_html__( 'Fetch models this key can use', 'flosc' ); ?>
+                </button>
+                <button type="submit" name="flosc_save" value="1" form="flosc-settings-form" class="button button-primary">
+                    <?php echo esc_html__( 'Save AI Settings', 'flosc' ); ?>
                 </button>
                 <span class="description flosc-model-fetch-status" data-for="flow_ai_xai_model"></span>
             </p>
@@ -441,6 +466,9 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
             <p class="flosc-model-fetch-row">
                 <button type="button" class="button flosc-fetch-models" data-provider="gemini" data-target="flow_ai_gemini_model">
                     <?php echo esc_html__( 'Fetch models this key can use', 'flosc' ); ?>
+                </button>
+                <button type="submit" name="flosc_save" value="1" form="flosc-settings-form" class="button button-primary">
+                    <?php echo esc_html__( 'Save AI Settings', 'flosc' ); ?>
                 </button>
                 <span class="description flosc-model-fetch-status" data-for="flow_ai_gemini_model"></span>
             </p>
@@ -923,13 +951,13 @@ jQuery(document).ready(function($) {
     // the provider for it. Remember what was on the page when it loaded, and
     // stop the test if the operator has changed it since.
     var floscSavedAi = {};
-    $('.flosc-ai-key-input, #flow_ai_provider, .flosc-ai-model-select').each(function () {
+    $('.flosc-ai-key-input, #flow_ai_provider, .flosc-ai-model-select, .flosc-ai-workspace-input').each(function () {
         floscSavedAi[this.id] = $(this).val();
     });
 
     function floscUnsavedAiFields() {
         var changed = [];
-        $('.flosc-ai-key-input, #flow_ai_provider, .flosc-ai-model-select').each(function () {
+        $('.flosc-ai-key-input, #flow_ai_provider, .flosc-ai-model-select, .flosc-ai-workspace-input').each(function () {
             if (floscSavedAi[this.id] !== undefined && floscSavedAi[this.id] !== $(this).val()) {
                 var label = $('label[for="' + this.id + '"]').text().replace(/\s+/g, ' ').trim();
                 changed.push(label || this.id);
