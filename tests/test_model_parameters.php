@@ -55,10 +55,12 @@ ok( '  and so is one from another provider', flosc_parse_model_parameters( "freq
 echo "What is refused\n";
 ok( 'a line that is not name: value', is_wp_error( flosc_parse_model_parameters( "just some words" ) ), true );
 ok( '  and it says which line', strpos( flosc_parse_model_parameters( "just some words" )->get_error_message(), 'just some words' ) !== false, true );
-ok( 'a name FLOSC sets itself — model', is_wp_error( flosc_parse_model_parameters( "model: claude-opus-5" ) ), true );
-ok( '  messages', is_wp_error( flosc_parse_model_parameters( "messages: x" ) ), true );
-ok( '  max_tokens', is_wp_error( flosc_parse_model_parameters( "max_tokens: 999" ) ), true );
-ok( '  regardless of case', is_wp_error( flosc_parse_model_parameters( "MODEL: x" ) ), true );
+ok( 'the conversation itself — messages', is_wp_error( flosc_parse_model_parameters( "messages: x" ) ), true );
+ok( '  its Gemini name too', is_wp_error( flosc_parse_model_parameters( "contents: x" ) ), true );
+ok( '  and streaming, which the reply parser cannot read', is_wp_error( flosc_parse_model_parameters( "stream: true" ) ), true );
+ok( '  regardless of case', is_wp_error( flosc_parse_model_parameters( "MESSAGES: x" ) ), true );
+ok( 'but model is the operator\'s to override', flosc_parse_model_parameters( "model: claude-opus-5" ), array( 'model' => 'claude-opus-5' ) );
+ok( '  and so is max_tokens', flosc_parse_model_parameters( "max_tokens: 999" ), array( 'max_tokens' => 999 ) );
 ok( 'a name that is not a name', is_wp_error( flosc_parse_model_parameters( '{"has spaces":1}' ) ), true );
 ok( 'something absurdly long', is_wp_error( flosc_parse_model_parameters( str_repeat( 'a: 1
 ', 3000 ) ) ), true );
