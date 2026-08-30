@@ -1020,6 +1020,11 @@ jQuery(document).ready(function($) {
                 if (typeof floscSavedAi === 'object' && floscSavedAi) {
                     floscSavedAi[targetId] = id;
                 }
+
+                // Describe it now, unasked. What this model can do, and how long
+                // a reply it can give, is exactly what an operator needs at the
+                // moment they choose it — not after finding another button.
+                floscDescribeModel(provider, targetId, id, null, false);
             },
             error: function () {
                 $status.addClass('flosc-model-fetch-status--bad').text('Could not reach the server.');
@@ -1094,21 +1099,21 @@ jQuery(document).ready(function($) {
     // from the provider; FLOSC ranks nothing and invents nothing. The real
     // max output also raises the Max Tokens ceiling, which used to be a
     // hardcoded 4096 belonging to no model.
-    $('.flosc-describe-model').on('click', function () {
-        var $btn = $(this);
-        var provider = $btn.data('provider');
-        var targetId = $btn.data('target');
+    function floscDescribeModel(provider, targetId, model, $btn, announce) {
         var $detail = $('.flosc-model-detail[data-for="' + targetId + '"]');
         var $status = $('.flosc-model-fetch-status[data-for="' + targetId + '"]');
-        var model = String($('#' + targetId).val() || '').trim();
 
         if (!model) {
             $status.addClass('flosc-model-fetch-status--bad').text('Choose or type a model first.');
             return;
         }
 
-        $btn.prop('disabled', true);
-        $status.removeClass('flosc-model-fetch-status--bad flosc-save-key-status--ok').text('Asking the provider about ' + model + '…');
+        if ($btn) { $btn.prop('disabled', true); }
+
+        if (announce) {
+            $status.removeClass('flosc-model-fetch-status--bad flosc-save-key-status--ok')
+                .text('Asking the provider about ' + model + '…');
+        }
 
         $.ajax({
             url: ajaxurl,
@@ -1153,19 +1158,47 @@ jQuery(document).ready(function($) {
 
                 if ($mt.length && d.max_tokens > 0) {
                     $mt.attr('max', d.max_tokens);
+
                     $('<p>').addClass('flosc-model-detail__note')
-                        .text('Max Tokens below now accepts up to ' + n(d.max_tokens) + ' for this model. Temperature is not listed here because Anthropic does not publish sampling support — FLOSC does not send it to Claude at all.')
+                        .text('Temperature is not listed here because Anthropic does not publish sampling support, and FLOSC does not send it to Claude at all.')
                         .appendTo($detail);
+
+                    // Say it again where the number is actually typed.
+                    var current = parseInt($mt.val(), 10) || 0;
+                    var $mtNote = $('#flosc-max-tokens-live');
+
+                    if (!$mtNote.length) {
+                        $mtNote = $('<p>').attr('id', 'flosc-max-tokens-live').addClass('flosc-key-state');
+                        $mt.closest('td').append($mtNote);
+                    }
+
+                    if (current > d.max_tokens) {
+                        $mtNote.removeClass('flosc-key-state--ok').addClass('flosc-key-state--none')
+                            .text((d.display_name || d.id) + ' accepts at most ' + n(d.max_tokens) +
+                                  ' — ' + n(current) + ' is above that. Lower it, or the provider will reject the request.');
+                    } else {
+                        $mtNote.removeClass('flosc-key-state--none').addClass('flosc-key-state--ok')
+                            .text((d.display_name || d.id) + ' accepts up to ' + n(d.max_tokens) +
+                                  ' tokens per reply. Yours is ' + n(current) + '.');
+                    }
                 }
 
                 $detail.removeAttr('hidden');
-                $status.addClass('flosc-save-key-status--ok').text('\u2713 Described by the provider.');
+
+                if (announce) {
+                    $status.addClass('flosc-save-key-status--ok').text('\u2713 Described by the provider.');
+                }
             },
             error: function () {
                 $status.addClass('flosc-model-fetch-status--bad').text('Could not reach the server.');
             },
-            complete: function () { $btn.prop('disabled', false); }
+            complete: function () { if ($btn) { $btn.prop('disabled', false); } }
         });
+    }
+
+    $('.flosc-describe-model').on('click', function () {
+        var $btn = $(this);
+        floscDescribeModel($btn.data('provider'), $btn.data('target'), String($('#' + $btn.data('target')).val() || '').trim(), $btn, true);
     });
 
     $('.flosc-fetch-models').on('click', function () {
