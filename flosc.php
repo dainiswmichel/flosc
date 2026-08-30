@@ -9718,7 +9718,12 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 : (string) flosc_get_setting($provider . '_api_key', '');
         }
 
-        $workspace = isset($post['workspace']) ? trim((string) $post['workspace']) : null;
+        // Empty is not an answer, it is the absence of one. Passing '' would
+        // tell the catalog "there is no workspace id" and suppress the saved
+        // one, putting the 400 straight back.
+        $workspace = isset($post['workspace']) && trim((string) $post['workspace']) !== ''
+            ? trim((string) $post['workspace'])
+            : null;
 
         $result = flosc_fetch_model_catalog($provider, (string) $api_key, $workspace);
 
