@@ -7,6 +7,14 @@
  * recalled. If a provider changes shape, this is where it shows up.
  */
 
+// These files stub WordPress on purpose — they define ABSPATH and redeclare
+// core functions — so running one through a web server is never intended and
+// could execute on any host they are copied to. They are command line only.
+if ( PHP_SAPI !== 'cli' ) {
+	exit;
+}
+
+
 define( 'ABSPATH', __DIR__ );
 
 function sanitize_key( $key ) { return strtolower( preg_replace( '/[^a-z0-9_\-]/i', '', (string) $key ) ); }

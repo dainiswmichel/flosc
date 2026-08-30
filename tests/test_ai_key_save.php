@@ -6,6 +6,14 @@
  * saving one key never costs another, and saving over a key replaces it.
  */
 
+// These files stub WordPress on purpose — they define ABSPATH and redeclare
+// core functions — so running one through a web server is never intended and
+// could execute on any host they are copied to. They are command line only.
+if ( PHP_SAPI !== 'cli' ) {
+	exit;
+}
+
+
 define( 'ABSPATH', __DIR__ );
 define( 'FLOSC_PLUGIN_DIR', dirname( __DIR__ ) . '/' );
 

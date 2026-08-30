@@ -9,6 +9,14 @@
  * hands the result to node.
  */
 
+// These files stub WordPress on purpose — they define ABSPATH and redeclare
+// core functions — so running one through a web server is never intended and
+// could execute on any host they are copied to. They are command line only.
+if ( PHP_SAPI !== 'cli' ) {
+	exit;
+}
+
+
 $root  = dirname( __DIR__ );
 $files = array( $root . '/admin/ai-configuration.php' );
 $fail  = 0;
