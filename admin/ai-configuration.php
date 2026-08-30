@@ -620,14 +620,7 @@ endif;
             <textarea id="flow_ai_model_params" name="<?php echo esc_attr( 'flow_' . $flosc_params_key ); ?>"
                 rows="5" class="large-text code" spellcheck="false"
                 placeholder="<?php echo esc_attr( $flosc_params_example ); ?>"><?php echo esc_textarea( $flosc_params_raw ); ?></textarea>
-            <?php if ( '' !== $flosc_params_example ) : ?>
-                <p class="description">
-                    <?php echo esc_html__( 'Known to work on this provider:', 'flosc' ); ?>
-                    <code><?php echo esc_html( implode( ', ', array_map( static function ( $flosc_line ) {
-                        return trim( strtok( $flosc_line, ':' ) );
-                    }, explode( "\n", $flosc_params_example ) ) ) ); ?></code>
-                </p>
-            <?php endif; ?>
+            <div class="flosc-param-help" id="flosc-param-help" hidden></div>
             <p class="description flosc-params-status" id="flosc-params-status"></p>
             <p class="description">
                 Anything the provider accepts, one <code>name: value</code> per line, or a JSON object pasted
@@ -1272,6 +1265,45 @@ jQuery(document).ready(function($) {
     // Check what was typed before it is saved. The provider decides whether a
     // parameter is real; this only catches what could never reach a provider —
     // a line that is not name: value, or JSON that does not parse.
+    // What each parameter does, so the answer is in the field rather than in a
+    // provider's documentation in another tab. Never a gate: a name absent from
+    // here is still sent, and says so.
+    var floscParamRef = <?php echo wp_json_encode( function_exists( 'flosc_model_parameter_reference' ) ? flosc_model_parameter_reference() : array() ); ?>;
+
+    function floscExplainParams(names) {
+        var $help = $('#flosc-param-help').empty();
+
+        if (!names.length) { $help.attr('hidden', true); return; }
+
+        names.forEach(function (name) {
+            var ref = floscParamRef[name];
+            var $row = $('<div>').addClass('flosc-param-help__row').appendTo($help);
+
+            $('<code>').addClass('flosc-param-help__name').text(name).appendTo($row);
+
+            if (!ref) {
+                $('<span>').addClass('flosc-param-help__unknown')
+                    .text('FLOSC has no note on this one. It will be sent as written and ' +
+                          'the provider decides — its answer appears in Step 3.')
+                    .appendTo($row);
+                return;
+            }
+
+            $('<span>').addClass('flosc-param-help__what').text(ref.what).appendTo($row);
+
+            var $meta = $('<div>').addClass('flosc-param-help__meta').appendTo($row);
+            $('<span>').text('Range: ' + ref.range).appendTo($meta);
+            $('<span>').text(ref.providers).appendTo($meta);
+
+            if (ref.measured) {
+                $('<span>').addClass('flosc-param-help__measured')
+                    .text('measured against the live API').appendTo($meta);
+            }
+        });
+
+        $help.removeAttr('hidden');
+    }
+
     function floscCheckParams() {
         var $box = $('#flow_ai_model_params');
         var $out = $('#flosc-params-status');
@@ -1282,15 +1314,17 @@ jQuery(document).ready(function($) {
 
         $out.removeClass('flosc-key-state--none flosc-key-state--ok');
 
-        if (!raw) { $out.text(''); return; }
+        if (!raw) { $out.text(''); floscExplainParams([]); return; }
 
         if (raw.charAt(0) === '{') {
             try {
                 var obj = JSON.parse(raw);
                 var n = Object.keys(obj).length;
-                $out.addClass('flosc-key-state--ok').text('✓ Valid JSON — ' + n + (n === 1 ? ' parameter' : ' parameters') + ' will be sent.');
+                $out.addClass('flosc-key-state--ok').text('\u2713 Valid JSON — ' + n + (n === 1 ? ' parameter' : ' parameters') + ' will be sent.');
+                floscExplainParams(Object.keys(obj));
             } catch (e) {
-                $out.addClass('flosc-key-state--none').text('✗ Not valid JSON: ' + e.message);
+                $out.addClass('flosc-key-state--none').text('\u2717 Not valid JSON: ' + e.message);
+                floscExplainParams([]);
             }
             return;
         }
@@ -1306,13 +1340,15 @@ jQuery(document).ready(function($) {
         });
 
         if (bad) {
-            $out.addClass('flosc-key-state--none').text('✗ This line is not "name: value" — ' + bad);
+            $out.addClass('flosc-key-state--none').text('\u2717 This line is not "name: value" — ' + bad);
+            floscExplainParams([]);
             return;
         }
 
-        if (!names.length) { $out.text(''); return; }
+        if (!names.length) { $out.text(''); floscExplainParams([]); return; }
 
-        $out.addClass('flosc-key-state--ok').text('✓ ' + names.length + (names.length === 1 ? ' parameter' : ' parameters') + ' will be sent: ' + names.join(', '));
+        $out.addClass('flosc-key-state--ok').text('\u2713 ' + names.length + (names.length === 1 ? ' parameter' : ' parameters') + ' will be sent.');
+        floscExplainParams(names);
     }
 
     $('#flow_ai_model_params').on('input change', floscCheckParams);

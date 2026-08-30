@@ -66,5 +66,17 @@ ok( 'something absurdly long', is_wp_error( flosc_parse_model_parameters( str_re
 echo "temperature is the operator's to send, if their model takes it\n";
 ok( 'not blocked — Sonnet 4.5 accepts it', flosc_parse_model_parameters( "temperature: 0.3" ), array( 'temperature' => 0.3 ) );
 
+echo "The reference explains, and never gates\n";
+$ref = flosc_model_parameter_reference();
+ok( 'every entry says what it does', count( array_filter( $ref, static function ( $r ) { return '' !== trim( $r['what'] ); } ) ), count( $ref ) );
+ok( '  its range', count( array_filter( $ref, static function ( $r ) { return '' !== trim( $r['range'] ); } ) ), count( $ref ) );
+ok( '  and which providers take it', count( array_filter( $ref, static function ( $r ) { return '' !== trim( $r['providers'] ); } ) ), count( $ref ) );
+ok( 'the ones tested here are marked measured', $ref['temperature']['measured'], true );
+ok( '  including the correction to the published lists', $ref['seed']['measured'], true );
+ok( '  and seed is named as not an Anthropic parameter', strpos( $ref['seed']['providers'], 'Not an Anthropic parameter' ) !== false, true );
+ok( 'a documented name is still only documentation', flosc_parse_model_parameters( 'seed: 42' ), array( 'seed' => 42 ) );
+ok( 'an undocumented name is not refused for being absent', flosc_parse_model_parameters( 'not_in_the_reference: 1' ), array( 'not_in_the_reference' => 1 ) );
+ok( '  so the reference can never block a new parameter', array_key_exists( 'not_in_the_reference', $ref ), false );
+
 echo $fail ? "\n$fail FAILURES\n" : "\nModel parameters: all checks passed\n";
 exit( $fail ? 1 : 0 );

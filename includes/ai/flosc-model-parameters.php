@@ -216,3 +216,114 @@ if ( ! function_exists( 'flosc_get_model_parameters' ) ) {
 		return is_wp_error( $parsed ) ? array() : $parsed;
 	}
 }
+
+if ( ! function_exists( 'flosc_model_parameter_reference' ) ) {
+	/**
+	 * What each parameter does, for the operator typing it.
+	 *
+	 * Documentation, never a gate. A name absent from this list is still sent —
+	 * the provider rules on it. This exists so an operator does not have to
+	 * leave the page to find out what top_p means, or which providers take it.
+	 *
+	 * "measured" marks a claim verified against a live API from this codebase
+	 * rather than read from a reference. Where the two disagree, measurement
+	 * wins: several published lists put presence_penalty and seed under
+	 * Anthropic, and Anthropic answers "Extra inputs are not permitted".
+	 *
+	 * @return array<string,array{what:string,range:string,providers:string,measured:bool}>
+	 */
+	function flosc_model_parameter_reference() {
+		return array(
+			'temperature'       => array(
+				'what'      => __( 'Flattens or sharpens the odds across the next word. Low keeps the safest choice; high lets unlikely words through. 0 is the same answer every time.', 'flosc' ),
+				'range'     => '0.0 – 2.0',
+				'providers' => __( 'OpenAI, xAI, Gemini. Anthropic only on older models — Sonnet 5, Opus 5, Fable 5, Opus 4.8 and 4.7 refuse it.', 'flosc' ),
+				'measured'  => true,
+			),
+			'top_p'             => array(
+				'what'      => __( 'Nucleus sampling. Considers only the smallest set of words whose odds add up to this share, and ignores the rest. Use this or temperature, not both.', 'flosc' ),
+				'range'     => '0.0 – 1.0',
+				'providers' => __( 'OpenAI, xAI, Gemini, and Anthropic on Sonnet 4.5. Sonnet 5 refuses it.', 'flosc' ),
+				'measured'  => true,
+			),
+			'top_k'             => array(
+				'what'      => __( 'Considers only the k most likely next words. A blunter cut than top_p.', 'flosc' ),
+				'range'     => __( 'whole number, commonly 20 – 100', 'flosc' ),
+				'providers' => __( 'Anthropic on Sonnet 4.5 and Gemini. Sonnet 5 refuses it.', 'flosc' ),
+				'measured'  => true,
+			),
+			'stop_sequences'    => array(
+				'what'      => __( 'Text that ends the reply the moment it appears. Useful for keeping a bot from writing the visitor\'s next line.', 'flosc' ),
+				'range'     => __( 'list of strings', 'flosc' ),
+				'providers' => __( 'Anthropic, on every model tested.', 'flosc' ),
+				'measured'  => true,
+			),
+			'thinking'          => array(
+				'what'      => __( 'Claude\'s extended reasoning. Adaptive lets the model decide how long to think. Costs output tokens, so raise Max Tokens with it.', 'flosc' ),
+				'range'     => '{"type":"adaptive"}',
+				'providers' => __( 'Anthropic\'s newer models. Sonnet 4.5 refuses adaptive.', 'flosc' ),
+				'measured'  => true,
+			),
+			'stop'              => array(
+				'what'      => __( 'Same idea as stop_sequences, under the name the OpenAI-shaped APIs use.', 'flosc' ),
+				'range'     => __( 'string or list of strings', 'flosc' ),
+				'providers' => __( 'OpenAI, xAI.', 'flosc' ),
+				'measured'  => false,
+			),
+			'presence_penalty'  => array(
+				'what'      => __( 'Penalises a word for having appeared at all, pushing the model onto new subjects. Raise it when a bot circles the same topic.', 'flosc' ),
+				'range'     => '-2.0 – 2.0',
+				'providers' => __( 'OpenAI, xAI. Not an Anthropic parameter — Anthropic answers "Extra inputs are not permitted".', 'flosc' ),
+				'measured'  => true,
+			),
+			'frequency_penalty' => array(
+				'what'      => __( 'Penalises a word further each time it is reused. Raise it when a bot leans on the same phrases.', 'flosc' ),
+				'range'     => '-2.0 – 2.0',
+				'providers' => __( 'OpenAI, xAI. Not an Anthropic parameter.', 'flosc' ),
+				'measured'  => true,
+			),
+			'seed'              => array(
+				'what'      => __( 'Fixes the random draw so the same prompt returns the same reply. For testing, not for visitors.', 'flosc' ),
+				'range'     => __( 'any whole number', 'flosc' ),
+				'providers' => __( 'OpenAI, xAI. Not an Anthropic parameter.', 'flosc' ),
+				'measured'  => true,
+			),
+			'response_format'   => array(
+				'what'      => __( 'Forces the reply into a shape, usually JSON. FLOSC expects prose in chat, so this will likely break the bubble.', 'flosc' ),
+				'range'     => '{"type":"json_object"}',
+				'providers' => __( 'OpenAI.', 'flosc' ),
+				'measured'  => false,
+			),
+			'logit_bias'        => array(
+				'what'      => __( 'Pushes named tokens up or down by id. Precise, and easy to get wrong.', 'flosc' ),
+				'range'     => '{"50256": -100}',
+				'providers' => __( 'OpenAI.', 'flosc' ),
+				'measured'  => false,
+			),
+			'n'                 => array(
+				'what'      => __( 'Asks for several completions at once. FLOSC shows one and you pay for all of them.', 'flosc' ),
+				'range'     => __( 'whole number', 'flosc' ),
+				'providers' => __( 'OpenAI.', 'flosc' ),
+				'measured'  => false,
+			),
+			'user'              => array(
+				'what'      => __( 'An end-user label the provider records for abuse tracing. Do not put anything identifying here.', 'flosc' ),
+				'range'     => __( 'string', 'flosc' ),
+				'providers' => __( 'OpenAI, xAI.', 'flosc' ),
+				'measured'  => false,
+			),
+			'generationConfig'  => array(
+				'what'      => __( 'Gemini nests its sampling inside this rather than at the top level.', 'flosc' ),
+				'range'     => '{"temperature":0.4,"topP":0.95}',
+				'providers' => __( 'Gemini.', 'flosc' ),
+				'measured'  => false,
+			),
+			'safetySettings'    => array(
+				'what'      => __( 'Gemini\'s content thresholds per harm category.', 'flosc' ),
+				'range'     => '[{"category":"...","threshold":"..."}]',
+				'providers' => __( 'Gemini.', 'flosc' ),
+				'measured'  => false,
+			),
+		);
+	}
+}

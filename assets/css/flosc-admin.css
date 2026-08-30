@@ -7763,3 +7763,15 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
 .flosc-model-detail__list { margin: 0; padding-left: 18px; font-size: 13px; }
 .flosc-model-detail__list li { margin: 0 0 3px; }
 .flosc-model-detail__note { margin: 8px 0 0; font-size: 12px; color: #646970; }
+
+/* What a parameter does, said beside the box where it is typed. The operator
+   should never have to open a provider's documentation in another tab to find
+   out what top_p means. */
+.flosc-param-help { margin: 8px 0 4px; padding: 10px 12px; border: 1px solid #dcdcde; border-left: 3px solid #2271b1; background: #f6f7f7; border-radius: 3px; }
+.flosc-param-help__row { padding: 6px 0; border-bottom: 1px solid #e8e8e8; }
+.flosc-param-help__row:last-child { border-bottom: 0; }
+.flosc-param-help__name { font-weight: 600; margin-right: 8px; }
+.flosc-param-help__what { font-size: 13px; }
+.flosc-param-help__unknown { font-size: 13px; color: #7a5c00; }
+.flosc-param-help__meta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 3px; font-size: 12px; color: #646970; }
+.flosc-param-help__measured { color: #2c6349; font-weight: 600; }
