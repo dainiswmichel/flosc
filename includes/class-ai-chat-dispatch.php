@@ -1109,11 +1109,11 @@ class FLOSC_AI_Chat_Dispatch {
      */
     private function wp_ai_chat_request($provider, $message, $system_prompt, $context = [], $test_mode = false) {
         $model_keys = array(
-            'openai'    => array('ai_openai_model', 'gpt-4o-mini'),
-            'anthropic' => array('ai_anthropic_model', 'claude-sonnet-4-5-20250929'),
-            'gemini'    => array('ai_gemini_model', 'gemini-2.5-flash'),
+            'openai'    => array('ai_openai_model', flosc_default_model('openai')),
+            'anthropic' => array('ai_anthropic_model', flosc_default_model('anthropic')),
+            'gemini'    => array('ai_gemini_model', flosc_default_model('gemini')),
         );
-        $model_pair = isset($model_keys[$provider]) ? $model_keys[$provider] : array('ai_openai_model', 'gpt-4o-mini');
+        $model_pair = isset($model_keys[$provider]) ? $model_keys[$provider] : array('ai_openai_model', flosc_default_model('openai'));
         $model = (string) flosc_get_setting($model_pair[0], $model_pair[1]);
         if ($model === '') {
             $model = $model_pair[1];
@@ -1204,21 +1204,17 @@ class FLOSC_AI_Chat_Dispatch {
         $messages[] = ['role' => 'user', 'content' => $message];
 
         // v1.8.7: Per-flow model, temperature, max_tokens
-        // Default tracks current xAI chat flagship (see docs.x.ai/developers/models).
-        $model = (string) flosc_get_setting('ai_xai_model', 'grok-4.5');
+        $flosc_xai_default = flosc_default_model('xai');
+        $model = (string) flosc_get_setting('ai_xai_model', $flosc_xai_default);
         if ($model === '') {
-            $model = 'grok-4.5';
+            $model = $flosc_xai_default;
         }
-        // Retired slugs still stored on older installs — remap so chat works without re-save.
-        $flosc_xai_legacy = [
-            'grok-2-latest'    => 'grok-4.5',
-            'grok-2'           => 'grok-4.5',
-            'grok-2-1212'      => 'grok-4.5',
-            'grok-beta'        => 'grok-4.5',
-            'grok-vision-beta' => 'grok-4.5',
-        ];
-        if (isset($flosc_xai_legacy[$model])) {
-            $model = $flosc_xai_legacy[$model];
+        // Slugs xAI has retired. These cannot answer any request, so pointing
+        // them at the current default is the only way an install saved years
+        // ago still chats without a re-save. Every other id is sent as written.
+        $flosc_xai_retired = ['grok-2-latest', 'grok-2', 'grok-2-1212', 'grok-beta', 'grok-vision-beta'];
+        if (in_array($model, $flosc_xai_retired, true)) {
+            $model = $flosc_xai_default;
         }
         $temperature = (float) flosc_get_setting('ai_temperature', '0.3');
         $max_tokens = (int) flosc_get_setting('ai_max_tokens', '500');

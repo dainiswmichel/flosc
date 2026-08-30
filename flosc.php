@@ -4618,7 +4618,7 @@ Example good response:
             return "RAG tools require {$plugin_name}. Install it from {$plugin_url}, then try again.";
         }
         
-        $model = flosc_get_setting('ai_anthropic_model', 'claude-sonnet-4-5-20250929');
+        $model = flosc_get_setting('ai_anthropic_model', flosc_default_model('anthropic'));
         $access_level = $user_context['access_level'] ?? 'visitor';
 
         $result = FLOSC_WP_AI_Client::generate_with_tools(
@@ -9708,6 +9708,59 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         wp_send_json_success($result);
     }
 
+    /**
+     * Ask the provider which models this key can use — the test's first step.
+     *
+     * This is not a consolation prize for a failed test. It is independent
+     * evidence, and it is the only step that isolates the key from everything
+     * built on top of it:
+     *
+     *   the call succeeds  → the key reaches the provider. Whatever fails
+     *                        after this is not the key, and the returned ids
+     *                        are the choices that would work.
+     *   the call is 401    → the key itself is the problem, said plainly,
+     *                        instead of a generation error that reads like one.
+     *
+     * So it runs before generation is attempted, and its result travels with
+     * the test result either way.
+     *
+     * @param string $provider FLOSC provider slug.
+     * @param string $api_key  The saved key.
+     * @return array<string,mixed>
+     */
+    private function probe_provider_models($provider, $api_key) {
+        if ((string) $api_key === '' || !function_exists('flosc_fetch_model_catalog')) {
+            return ['models_probed' => false];
+        }
+
+        $catalog = flosc_fetch_model_catalog($provider, (string) $api_key);
+
+        if (is_wp_error($catalog)) {
+            return [
+                'models_probed' => true,
+                'models_error'  => $catalog->get_error_message(),
+                'models_code'   => $catalog->get_error_code(),
+            ];
+        }
+
+        $models   = isset($catalog['models']) && is_array($catalog['models']) ? $catalog['models'] : [];
+        $checked  = !empty($catalog['checked']);
+        $usable   = [];
+
+        foreach ($models as $model) {
+            if (!$checked || !empty($model['usable'])) {
+                $usable[] = $model;
+            }
+        }
+
+        return [
+            'models_probed'  => true,
+            'models'         => $usable,
+            'models_seen'    => count($models),
+            'models_checked' => $checked,
+        ];
+    }
+
     public function ajax_test_ai_connection() {
         $post = wp_unslash($_POST);
         if (!current_user_can('manage_options')) {
@@ -9773,6 +9826,11 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         ];
         $endpoint_url = $endpoint[$provider] ?? '';
 
+        // Step one: does this key reach the provider at all? Answering that
+        // before generation is attempted is what separates "the key is wrong"
+        // from "the key is fine and the model id is not carried here".
+        $model_probe = $this->probe_provider_models($provider, $key_raw);
+
         try {
             $ai_context = ['phase' => 'freeline', 'is_admin' => true];
             $system_prompt = $this->ai_chat_dispatch->build_system_prompt('freeline', $ai_context);
@@ -9780,7 +9838,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             $response_time = round((microtime(true) - $start_time) * 1000);
 
             if (is_wp_error($response)) {
-                wp_send_json_error([
+                wp_send_json_error(array_merge([
                     'message'           => $response->get_error_message(),
                     'provider'          => $provider,
                     'model'             => $configured_model,
@@ -9789,7 +9847,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                     'api_key_suffix'    => $key_suffix,
                     'response_time'     => $response_time,
                     'flow_ivr'          => $ivr,
-                ]);
+                ], $model_probe));
             }
 
             $billing = method_exists($this->ai_chat_dispatch, 'get_last_billing_meta')
@@ -9831,9 +9889,9 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 'flow_label'      => $flow_label,
                 'http_ok'         => true,
                 'test_message'    => $test_message,
-            ]);
+            ] + $model_probe);
         } catch (\Throwable $e) {
-            wp_send_json_error([
+            wp_send_json_error(array_merge([
                 'message'         => $e->getMessage(),
                 'provider'        => $provider,
                 'model'           => $configured_model,
@@ -9841,7 +9899,7 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 'api_key_present' => $key_present,
                 'api_key_suffix'  => $key_suffix,
                 'flow_ivr'        => $ivr,
-            ]);
+            ], $model_probe));
         }
     }
     public function ajax_flosc_get_chat_logs() {

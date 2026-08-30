@@ -61,14 +61,14 @@ if ( 'all' === $flosc_ai_view ) {
 }
 
 $flosc_ai_provider = $flosc_flow_settings['ai_provider'] ?? 'ivr';
-$flosc_ai_openai_model = $flosc_flow_settings['ai_openai_model'] ?? 'gpt-4o-mini';
-$flosc_ai_anthropic_model = $flosc_flow_settings['ai_anthropic_model'] ?? 'claude-sonnet-4-5-20250929';
-$flosc_ai_xai_model = $flosc_flow_settings['ai_xai_model'] ?? 'grok-4.5';
-$flosc_ai_gemini_model = $flosc_flow_settings['ai_gemini_model'] ?? 'gemini-2.5-flash';
+$flosc_ai_openai_model = $flosc_flow_settings['ai_openai_model'] ?? flosc_default_model('openai');
+$flosc_ai_anthropic_model = $flosc_flow_settings['ai_anthropic_model'] ?? flosc_default_model('anthropic');
+$flosc_ai_xai_model = $flosc_flow_settings['ai_xai_model'] ?? flosc_default_model('xai');
+$flosc_ai_gemini_model = $flosc_flow_settings['ai_gemini_model'] ?? flosc_default_model('gemini');
 // Retired xAI slugs no longer resolve on api.x.ai — surface current default in the UI.
 $flosc_xai_legacy_models = ['grok-2-latest', 'grok-2', 'grok-2-1212', 'grok-beta', 'grok-vision-beta'];
 if (in_array($flosc_ai_xai_model, $flosc_xai_legacy_models, true)) {
-    $flosc_ai_xai_model = 'grok-4.5';
+    $flosc_ai_xai_model = flosc_default_model('xai');
 }
 $flosc_ai_temperature = $flosc_flow_settings['ai_temperature'] ?? '0.3';
 $flosc_ai_max_tokens = $flosc_flow_settings['ai_max_tokens'] ?? '500';
@@ -262,17 +262,16 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
             // the ones the installed provider plugin carries — so the operator
             // must always be able to enter one FLOSC has never heard of.
             $flosc_anthropic_model_options = [
-                'claude-sonnet-4-5-20250929' => 'Claude Sonnet 4.5',
-                'claude-haiku-4-5-20251001'  => 'Claude Haiku 4.5',
-                'claude-opus-4-6'            => 'Claude Opus 4.6',
-                'claude-3-5-sonnet-20241022' => 'Claude 3.5 Sonnet',
+                'claude-sonnet-5'           => 'Claude Sonnet 5',
+                'claude-opus-5'             => 'Claude Opus 5',
+                'claude-haiku-4-5-20251001' => 'Claude Haiku 4.5',
             ];
             ?>
             <input type="text" name="flow_ai_anthropic_model" id="flow_ai_anthropic_model"
                 class="regular-text flosc-ai-model-select"
                 list="flosc-anthropic-model-list"
                 value="<?php echo esc_attr($flosc_ai_anthropic_model); ?>"
-                placeholder="claude-sonnet-4-5-20250929">
+                placeholder="claude-sonnet-5">
             <datalist id="flosc-anthropic-model-list">
                 <?php foreach ($flosc_anthropic_model_options as $flosc_a_id => $flosc_a_label) : ?>
                     <option value="<?php echo esc_attr($flosc_a_id); ?>"><?php echo esc_html($flosc_a_label); ?></option>
@@ -284,6 +283,7 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
                 </button>
                 <span class="description flosc-model-fetch-status" data-for="flow_ai_anthropic_model"></span>
             </p>
+            <div class="flosc-model-picker" data-for="flow_ai_anthropic_model" hidden></div>
             <p class="description">The model id to use for this flow. Suggestions are offered, but any id the installed AI Provider for Anthropic plugin carries will work — type it in.</p>
         </td>
     </tr>
@@ -312,18 +312,17 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
         <td>
             <?php
             $flosc_openai_model_options = [
-                'gpt-4o-mini'  => 'GPT-4o mini',
-                'gpt-4o'       => 'GPT-4o',
-                'gpt-4.1'      => 'GPT-4.1',
-                'gpt-4.1-mini' => 'GPT-4.1 mini',
-                'gpt-4.1-nano' => 'GPT-4.1 nano',
+                'gpt-5.5'       => 'GPT-5.5',
+                'gpt-5.4'       => 'GPT-5.4',
+                'gpt-5.4-mini'  => 'GPT-5.4 mini',
+                'gpt-5.4-nano'  => 'GPT-5.4 nano',
             ];
             ?>
             <input type="text" name="flow_ai_openai_model" id="flow_ai_openai_model"
                 class="regular-text flosc-ai-model-select"
                 list="flosc-openai-model-list"
                 value="<?php echo esc_attr($flosc_ai_openai_model); ?>"
-                placeholder="gpt-4o-mini">
+                placeholder="gpt-5.4-mini">
             <datalist id="flosc-openai-model-list">
                 <?php foreach ($flosc_openai_model_options as $flosc_o_id => $flosc_o_label) : ?>
                     <option value="<?php echo esc_attr($flosc_o_id); ?>"><?php echo esc_html($flosc_o_label); ?></option>
@@ -335,6 +334,7 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
                 </button>
                 <span class="description flosc-model-fetch-status" data-for="flow_ai_openai_model"></span>
             </p>
+            <div class="flosc-model-picker" data-for="flow_ai_openai_model" hidden></div>
             <p class="description">The model id to use for this flow. Suggestions are offered, but any id the installed AI Provider for OpenAI plugin carries will work — type it in.</p>
         </td>
     </tr>
@@ -361,29 +361,37 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
     <tr>
         <th scope="row"><label for="flow_ai_xai_model">xAI Model</label></th>
         <td>
-            <select name="flow_ai_xai_model" id="flow_ai_xai_model" class="flosc-ai-model-select">
-                <?php
-                $flosc_xai_model_options = [
-                    'grok-4.5'     => 'Grok 4.5 (Recommended — chat / coding)',
-                    'grok-4-0709'  => 'Grok 4 (0709)',
-                    'grok-4'       => 'Grok 4 (alias)',
-                    'grok-3'       => 'Grok 3 (legacy alias if still enabled on your account)',
-                    'grok-3-mini'  => 'Grok 3 Mini (legacy / budget)',
-                ];
-                $flosc_xai_known = array_keys($flosc_xai_model_options);
-                if ($flosc_ai_xai_model !== '' && !in_array($flosc_ai_xai_model, $flosc_xai_known, true)) {
-                    $flosc_xai_model_options[$flosc_ai_xai_model] = $flosc_ai_xai_model . ' (saved custom ID)';
-                }
-                foreach ($flosc_xai_model_options as $flosc_xai_id => $flosc_xai_label) :
-                    ?>
-                <option value="<?php echo esc_attr($flosc_xai_id); ?>" <?php selected($flosc_ai_xai_model, $flosc_xai_id); ?>><?php echo esc_html($flosc_xai_label); ?></option>
+            <?php
+            // Typed field with suggestions, not a fixed list — the ids that work
+            // are whichever ones xAI currently serves this key. Fetch asks.
+            // xAI aliases <modelname> to the latest stable release and
+            // <modelname>-latest to the newest, so the alias keeps working after
+            // a version turns over. Older ids retire on announced dates.
+            $flosc_xai_model_options = [
+                'grok-4.6'        => 'Grok 4.6',
+                'grok-4.6-latest' => 'Grok 4.6 (latest)',
+            ];
+            ?>
+            <input type="text" name="flow_ai_xai_model" id="flow_ai_xai_model"
+                class="regular-text flosc-ai-model-select"
+                list="flosc-xai-model-list"
+                value="<?php echo esc_attr($flosc_ai_xai_model); ?>"
+                placeholder="grok-4.6">
+            <datalist id="flosc-xai-model-list">
+                <?php foreach ($flosc_xai_model_options as $flosc_xai_id => $flosc_xai_label) : ?>
+                    <option value="<?php echo esc_attr($flosc_xai_id); ?>"><?php echo esc_html($flosc_xai_label); ?></option>
                 <?php endforeach; ?>
-            </select>
+            </datalist>
+            <p class="flosc-model-fetch-row">
+                <button type="button" class="button flosc-fetch-models" data-provider="xai" data-target="flow_ai_xai_model">
+                    <?php echo esc_html__( 'Fetch models this key can use', 'flosc' ); ?>
+                </button>
+                <span class="description flosc-model-fetch-status" data-for="flow_ai_xai_model"></span>
+            </p>
+            <div class="flosc-model-picker" data-for="flow_ai_xai_model" hidden></div>
             <p class="description">
-                API model ID sent to <code>api.x.ai</code>. Default: <code>grok-4.5</code>.
-                If a model is retired, xAI returns “Model not found” — pick a current ID from
-                <a href="https://docs.x.ai/developers/models" target="_blank" rel="noopener noreferrer">docs.x.ai/models</a>
-                and Save again.
+                The model ID sent to <code>api.x.ai</code>. Fetch lists what this key can use;
+                any current ID can also be typed in.
             </p>
         </td>
     </tr>
@@ -410,26 +418,36 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
     <tr>
         <th scope="row"><label for="flow_ai_gemini_model">Gemini Model</label></th>
         <td>
-            <select name="flow_ai_gemini_model" id="flow_ai_gemini_model" class="flosc-ai-model-select">
-                <?php
-                $flosc_gemini_model_options = [
-                    'gemini-2.5-flash'      => 'Gemini 2.5 Flash (Recommended)',
-                    'gemini-2.5-pro'        => 'Gemini 2.5 Pro',
-                    'gemini-2.5-flash-lite' => 'Gemini 2.5 Flash-Lite',
-                    'gemini-2.0-flash'      => 'Gemini 2.0 Flash (legacy)',
-                ];
-                $flosc_gemini_known = array_keys($flosc_gemini_model_options);
-                if ($flosc_ai_gemini_model !== '' && !in_array($flosc_ai_gemini_model, $flosc_gemini_known, true)) {
-                    $flosc_gemini_model_options[$flosc_ai_gemini_model] = $flosc_ai_gemini_model . ' (saved custom ID)';
-                }
-                foreach ($flosc_gemini_model_options as $flosc_g_id => $flosc_g_label) :
-                    ?>
-                <option value="<?php echo esc_attr($flosc_g_id); ?>" <?php selected($flosc_ai_gemini_model, $flosc_g_id); ?>><?php echo esc_html($flosc_g_label); ?></option>
+            <?php
+            // Stable text endpoints only. The image, TTS, embedding and video
+            // ids Google lists alongside these cannot hold a conversation.
+            $flosc_gemini_model_options = [
+                'gemini-3.7-flash'      => 'Gemini 3.7 Flash',
+                'gemini-3.6-flash'      => 'Gemini 3.6 Flash',
+                'gemini-3.5-flash'      => 'Gemini 3.5 Flash',
+                'gemini-3.5-flash-lite' => 'Gemini 3.5 Flash-Lite',
+            ];
+            ?>
+            <input type="text" name="flow_ai_gemini_model" id="flow_ai_gemini_model"
+                class="regular-text flosc-ai-model-select"
+                list="flosc-gemini-model-list"
+                value="<?php echo esc_attr($flosc_ai_gemini_model); ?>"
+                placeholder="gemini-3.7-flash">
+            <datalist id="flosc-gemini-model-list">
+                <?php foreach ($flosc_gemini_model_options as $flosc_g_id => $flosc_g_label) : ?>
+                    <option value="<?php echo esc_attr($flosc_g_id); ?>"><?php echo esc_html($flosc_g_label); ?></option>
                 <?php endforeach; ?>
-            </select>
+            </datalist>
+            <p class="flosc-model-fetch-row">
+                <button type="button" class="button flosc-fetch-models" data-provider="gemini" data-target="flow_ai_gemini_model">
+                    <?php echo esc_html__( 'Fetch models this key can use', 'flosc' ); ?>
+                </button>
+                <span class="description flosc-model-fetch-status" data-for="flow_ai_gemini_model"></span>
+            </p>
+            <div class="flosc-model-picker" data-for="flow_ai_gemini_model" hidden></div>
             <p class="description">
-                Model ID preferred through AI Provider for Google. Default: <code>gemini-2.5-flash</code>.
-                Catalog: <a href="https://ai.google.dev/gemini-api/docs/models" target="_blank" rel="noopener noreferrer">Gemini models</a>.
+                The model ID sent through AI Provider for Google. Fetch lists what this key can use;
+                any current ID can also be typed in.
             </p>
         </td>
     </tr>
@@ -566,6 +584,7 @@ if ( function_exists( 'flosc_render_personality_designer_accordion' ) ) {
     <div id="test-results" class="flosc-ai-test-results flosc-hidden">
         <div id="test-status"></div>
         <div id="test-details" class="flosc-ai-test-details"></div>
+        <div class="flosc-model-picker" data-for="" id="test-model-picker" hidden></div>
     </div>
     <div id="test-loading" class="flosc-ai-test-loading flosc-hidden">
         <span class="spinner is-active"></span>
@@ -763,19 +782,105 @@ jQuery(document).ready(function($) {
         $('#flosc-chain-config').toggle(this.checked);
     });
 
-    // --- Fetch the provider's model list ---
+    // --- The provider's model list, as something to click ---
     // Two lists matter and only one of them works here: what the API key can
     // see at the provider, and what the installed WordPress AI Provider plugin
     // carries. A model can be live at the provider and absent from the plugin's
     // catalog — which is the failure that reads as a bad key and is not one.
-    // So the list is fetched from the provider and each id is marked with
-    // whether this site can actually use it.
+    //
+    // A list nobody can click is not a choice. The ids go into the datalist for
+    // typing, and into a visible row of buttons that fill the field on click.
+    var floscModelFieldFor = {
+        anthropic: 'flow_ai_anthropic_model',
+        openai:    'flow_ai_openai_model',
+        xai:       'flow_ai_xai_model',
+        gemini:    'flow_ai_gemini_model'
+    };
+
+    function floscRenderModelPicker($picker, targetId, models, checked, seen) {
+        var $field = $('#' + targetId);
+
+        $picker.empty();
+
+        if (!$field.length || !models || !models.length) {
+            $picker.attr('hidden', true);
+            return 0;
+        }
+
+        var current = String($field.val() || '');
+        var heading = models.length + (models.length === 1 ? ' model' : ' models') + ' you can use here';
+
+        if (checked && seen && seen > models.length) {
+            heading += ' — ' + (seen - models.length) + ' more are live at the provider but ' +
+                'the installed provider plugin does not carry them';
+        }
+
+        $('<p>').addClass('flosc-model-picker__intro').text(heading + '. Click one to use it:').appendTo($picker);
+
+        var $list = $('<div>').addClass('flosc-model-picker__list').appendTo($picker);
+
+        models.forEach(function (m) {
+            var $b = $('<button>')
+                .attr('type', 'button')
+                .addClass('button flosc-model-choice')
+                .attr('data-id', m.id)
+                .attr('data-target', targetId)
+                .text(m.id);
+
+            if (m.label && m.label !== m.id) {
+                $('<span>').addClass('flosc-model-choice__label').text(m.label).appendTo($b);
+            }
+
+            if (m.id === current) {
+                $b.addClass('flosc-model-choice--current');
+            }
+
+            $b.appendTo($list);
+        });
+
+        $('<p>')
+            .addClass('flosc-model-picker__note')
+            .text('Choosing one fills the model field. It takes effect after Save AI Settings.')
+            .appendTo($picker);
+
+        $picker.removeAttr('hidden');
+
+        // Typing still works, and the suggestions now match reality.
+        var listId = $field.attr('list');
+
+        if (listId) {
+            var $dl = $('#' + listId).empty();
+
+            models.forEach(function (m) {
+                $('<option>').attr('value', m.id).text(m.label || m.id).appendTo($dl);
+            });
+        }
+
+        return models.length;
+    }
+
+    $(document).on('click', '.flosc-model-choice', function () {
+        var $b = $(this);
+        var targetId = $b.data('target');
+        var id = String($b.data('id'));
+        var $field = $('#' + targetId);
+
+        if (!$field.length) { return; }
+
+        $field.val(id).trigger('change').trigger('input');
+        $('.flosc-model-choice[data-target="' + targetId + '"]').removeClass('flosc-model-choice--current');
+        $('.flosc-model-choice[data-target="' + targetId + '"][data-id="' + id + '"]').addClass('flosc-model-choice--current');
+        $('.flosc-model-fetch-status[data-for="' + targetId + '"]')
+            .removeClass('flosc-model-fetch-status--bad')
+            .text('Model set to ' + id + '. Save AI Settings to apply it.');
+    });
+
     $('.flosc-fetch-models').on('click', function () {
         var $btn = $(this);
         var provider = $btn.data('provider');
         var targetId = $btn.data('target');
         var $status = $('.flosc-model-fetch-status[data-for="' + targetId + '"]');
-        var $field = $('#' + targetId);
+        var $picker = $('.flosc-model-picker[data-for="' + targetId + '"]');
 
         $btn.prop('disabled', true);
         $status.removeClass('flosc-model-fetch-status--bad').text('Asking the provider…');
@@ -791,42 +896,29 @@ jQuery(document).ready(function($) {
             },
             success: function (response) {
                 if (!response || !response.success) {
+                    $picker.attr('hidden', true).empty();
                     $status.addClass('flosc-model-fetch-status--bad')
                         .text((response && response.data && response.data.message) || 'Could not fetch the list.');
                     return;
                 }
 
-                var models = response.data.models || [];
+                var all = response.data.models || [];
                 var checked = !!response.data.checked;
-                var $list = $('#' + $field.attr('list'));
-                var usable = 0;
+                var usable = checked ? all.filter(function (m) { return m.usable; }) : all;
+                var shown = floscRenderModelPicker($picker, targetId, usable, checked, all.length);
 
-                $list.empty();
-
-                models.forEach(function (m) {
-                    if (checked && !m.usable) { return; }
-                    usable++;
-                    $('<option>').attr('value', m.id).text(m.label || m.id).appendTo($list);
-                });
-
-                if (checked && usable === 0) {
+                if (shown === 0) {
                     $status.addClass('flosc-model-fetch-status--bad').text(
-                        'Your key can see ' + models.length + ' models, but the installed provider plugin ' +
+                        'Your key can see ' + all.length + ' models, but the installed provider plugin ' +
                         'carries none of them. Update the provider plugin.'
                     );
                     return;
                 }
 
-                if (checked && usable < models.length) {
-                    $status.text(
-                        usable + ' of ' + models.length + ' models your key can see are also in the installed ' +
-                        'provider plugin. Only those work here, and only those are listed.'
-                    );
-                } else {
-                    $status.text(usable + ' models available. Click the field to choose one.');
-                }
+                $status.text('Your key reached the provider. Pick a model below.');
             },
             error: function () {
+                $picker.attr('hidden', true).empty();
                 $status.addClass('flosc-model-fetch-status--bad').text('Could not reach the server.');
             },
             complete: function () {
@@ -856,6 +948,44 @@ jQuery(document).ready(function($) {
         return changed;
     }
 
+    // The test asks the provider for its model list before it tries to generate.
+    // That call is the only step that isolates the key from everything built on
+    // top of it, so its result is reported whether the test passed or failed —
+    // and the ids it returns are rendered as buttons, not prose.
+    function floscTestModelReport(d, lines) {
+        var $picker = $('#test-model-picker').attr('hidden', true).empty();
+
+        if (!d || !d.models_probed) { return; }
+
+        if (d.models_error) {
+            lines.push('');
+            lines.push('Asking ' + (d.provider || 'the provider') + ' which models this key can use: ' + d.models_error);
+            return;
+        }
+
+        var models = d.models || [];
+        var targetId = floscModelFieldFor[d.provider];
+
+        lines.push('');
+        lines.push('✓ The key reached ' + (d.provider || 'the provider') + ' and can use ' +
+            models.length + (models.length === 1 ? ' model' : ' models') + ' here' +
+            (d.models_checked && d.models_seen > models.length
+                ? ' (' + (d.models_seen - models.length) + ' more exist at the provider but the installed provider plugin does not carry them)'
+                : '') + '.');
+
+        if (d.model && models.length) {
+            var configured = models.some(function (m) { return m.id === d.model; });
+            lines.push(configured
+                ? '✓ "' + d.model + '" is one of them.'
+                : '✗ "' + d.model + '" is not one of them — that is what failed, not the key.');
+        }
+
+        if (targetId) {
+            $picker.attr('data-for', targetId);
+            floscRenderModelPicker($picker, targetId, models, !!d.models_checked, d.models_seen || models.length);
+        }
+    }
+
     $('#test-ai-connection').on('click', function() {
         var $btn = $(this);
         var $loading = $('#test-loading');
@@ -878,6 +1008,7 @@ jQuery(document).ready(function($) {
         $btn.prop('disabled', true);
         $loading.show();
         $results.hide();
+        $('#test-model-picker').attr('hidden', true).empty();
 
         $.ajax({
             url: ajaxurl,
@@ -927,6 +1058,7 @@ jQuery(document).ready(function($) {
                         lines.push('or update the provider plugin, to use the one you configured.');
                     }
                     lines.push('Model reply: ' + (d.response || '(empty)'));
+                    floscTestModelReport(d, lines);
                     $flosc_status.html('<span class="flosc-pass-status flosc-pass-status--pass">✓ External API OK — key + model path verified</span>');
                     $details.text(lines.join('\n'));
                 } else {
@@ -957,6 +1089,7 @@ jQuery(document).ready(function($) {
                     if (ed.flow_ivr || ed.response_time != null) { elines.push(''); }
                     if (ed.flow_ivr) { elines.push('Flow: ' + ed.flow_ivr); }
                     if (ed.response_time != null) { elines.push('Round trip: ' + ed.response_time + ' ms'); }
+                    floscTestModelReport(ed, elines);
                     $details.text(elines.join('\n'));
                 }
             },

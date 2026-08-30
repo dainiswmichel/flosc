@@ -7722,3 +7722,15 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
 .flosc-model-fetch-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0 4px; }
 .flosc-model-fetch-status { margin: 0; }
 .flosc-model-fetch-status--bad { color: #8a2424; }
+
+/* Model picker — the fetched list as something to click, not read.
+   A datalist alone is not a choice: the browser decides whether to show it,
+   and an operator who does not know the id cannot type toward it. */
+.flosc-model-picker { margin: 8px 0 4px; padding: 12px; border: 1px solid #dcdcde; border-left: 3px solid #2271b1; background: #f6f7f7; border-radius: 3px; }
+.flosc-model-picker__intro { margin: 0 0 8px; font-size: 12px; color: #50575e; }
+.flosc-model-picker__list { display: flex; flex-wrap: wrap; gap: 6px; }
+.flosc-model-picker__note { margin: 8px 0 0; font-size: 12px; color: #646970; }
+.flosc-model-choice { font-family: Menlo, Consolas, monospace; font-size: 12px !important; height: auto !important; padding: 4px 10px !important; line-height: 1.6 !important; }
+.flosc-model-choice__label { display: block; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 11px; color: #646970; }
+.flosc-model-choice--current { border-color: #2271b1 !important; box-shadow: 0 0 0 1px #2271b1; }
+.flosc-model-choice--current .flosc-model-choice__label { color: #2271b1; }

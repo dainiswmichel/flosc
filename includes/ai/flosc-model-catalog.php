@@ -16,6 +16,29 @@
  * API key and is not one. So every id is returned with a flag saying whether
  * this site can really use it, and the admin sees the difference.
  *
+ * Each request below follows the provider's own published reference, checked
+ * rather than recalled:
+ *
+ *   Anthropic  GET /v1/models        headers x-api-key + anthropic-version,
+ *                                    limit 1..1000, pages via has_more/last_id
+ *                                    → { data: [ { id, display_name } ] }
+ *                                    platform.claude.com/docs/en/api/models-list
+ *   OpenAI     GET /v1/models        Bearer auth, no pagination
+ *                                    → { object: "list", data: [ { id } ] }
+ *                                    github.com/openai/openai-openapi openapi.yaml
+ *   Gemini     GET /v1beta/models    header x-goog-api-key, pageSize max 1000,
+ *                                    pages via nextPageToken
+ *                                    → { models: [ { name: "models/x",
+ *                                         displayName, supportedGenerationMethods } ] }
+ *                                    generativelanguage.googleapis.com discovery doc
+ *   xAI        GET /v1/language-models   Bearer auth, no pagination
+ *                                    → { models: [ { id, aliases } ] }
+ *                                    docs.x.ai rest-api-reference/inference/models
+ *                                    Not /v1/models: that one lists image and
+ *                                    video generation models alongside the chat
+ *                                    ones, and offering grok-imagine-image as a
+ *                                    conversation model would be a lie.
+ *
  * @package FLOSC
  */
 
@@ -23,22 +46,37 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-if ( ! function_exists( 'flosc_model_catalog_endpoint' ) ) {
+/**
+ * How many pages to walk before giving up. No provider comes close to this.
+ */
+if ( ! defined( 'FLOSC_MODEL_CATALOG_MAX_PAGES' ) ) {
+	define( 'FLOSC_MODEL_CATALOG_MAX_PAGES', 10 );
+}
+
+if ( ! function_exists( 'flosc_model_catalog_request' ) ) {
 	/**
-	 * Where each provider lists its models, and how it wants to be asked.
+	 * Build one page request for a provider's model list.
 	 *
 	 * @param string $provider FLOSC provider slug.
 	 * @param string $api_key  The key to authenticate with.
+	 * @param string $cursor   Page cursor from the previous page, or ''.
 	 * @return array{url:string,args:array<string,mixed>}|null
 	 */
-	function flosc_model_catalog_endpoint( $provider, $api_key ) {
+	function flosc_model_catalog_request( $provider, $api_key, $cursor = '' ) {
 		$provider = sanitize_key( (string) $provider );
 		$api_key  = (string) $api_key;
+		$cursor   = (string) $cursor;
 
 		switch ( $provider ) {
 			case 'anthropic':
+				$query = array( 'limit' => 1000 );
+
+				if ( '' !== $cursor ) {
+					$query['after_id'] = $cursor;
+				}
+
 				return array(
-					'url'  => 'https://api.anthropic.com/v1/models?limit=100',
+					'url'  => add_query_arg( $query, 'https://api.anthropic.com/v1/models' ),
 					'args' => array(
 						'headers' => array(
 							'x-api-key'         => $api_key,
@@ -55,13 +93,19 @@ if ( ! function_exists( 'flosc_model_catalog_endpoint' ) ) {
 
 			case 'xai':
 				return array(
-					'url'  => 'https://api.x.ai/v1/models',
+					'url'  => 'https://api.x.ai/v1/language-models',
 					'args' => array( 'headers' => array( 'Authorization' => 'Bearer ' . $api_key ) ),
 				);
 
 			case 'gemini':
+				$query = array( 'pageSize' => 1000 );
+
+				if ( '' !== $cursor ) {
+					$query['pageToken'] = $cursor;
+				}
+
 				return array(
-					'url'  => 'https://generativelanguage.googleapis.com/v1beta/models',
+					'url'  => add_query_arg( $query, 'https://generativelanguage.googleapis.com/v1beta/models' ),
 					'args' => array( 'headers' => array( 'x-goog-api-key' => $api_key ) ),
 				);
 		}
@@ -70,63 +114,148 @@ if ( ! function_exists( 'flosc_model_catalog_endpoint' ) ) {
 	}
 }
 
-if ( ! function_exists( 'flosc_model_catalog_parse' ) ) {
+if ( ! function_exists( 'flosc_model_catalog_page' ) ) {
 	/**
-	 * Pull model ids out of whichever shape the provider answered with.
+	 * Read one page of models out of whichever shape the provider answered with.
 	 *
-	 * Anthropic and the OpenAI-compatible providers return { data: [ { id } ] };
-	 * Gemini returns { models: [ { name: "models/x" } ] }.
+	 * Gemini's list is not only chat models — it carries embedding, TTS and
+	 * tuned entries too, and the provider says which is which in
+	 * supportedGenerationMethods. An id that cannot generateContent would only
+	 * fail later, so it is dropped here.
 	 *
-	 * @param array<string,mixed> $body Decoded response body.
-	 * @return array<int,array{id:string,label:string}>
+	 * @param string              $provider FLOSC provider slug.
+	 * @param array<string,mixed> $body     Decoded response body.
+	 * @return array{models:array<int,array{id:string,label:string}>,cursor:string}
 	 */
-	function flosc_model_catalog_parse( $body ) {
-		$out = array();
+	function flosc_model_catalog_page( $provider, $body ) {
+		$provider = sanitize_key( (string) $provider );
+		$models   = array();
+		$cursor   = '';
 
 		if ( ! is_array( $body ) ) {
-			return $out;
+			return array(
+				'models' => $models,
+				'cursor' => $cursor,
+			);
 		}
 
-		$rows = array();
+		if ( 'gemini' === $provider ) {
+			$rows = isset( $body['models'] ) && is_array( $body['models'] ) ? $body['models'] : array();
 
-		if ( isset( $body['data'] ) && is_array( $body['data'] ) ) {
-			$rows = $body['data'];
-		} elseif ( isset( $body['models'] ) && is_array( $body['models'] ) ) {
-			$rows = $body['models'];
+			foreach ( $rows as $row ) {
+				if ( ! is_array( $row ) ) {
+					continue;
+				}
+
+				$methods = isset( $row['supportedGenerationMethods'] ) && is_array( $row['supportedGenerationMethods'] )
+					? $row['supportedGenerationMethods']
+					: array();
+
+				if ( ! in_array( 'generateContent', $methods, true ) ) {
+					continue;
+				}
+
+				// Ids are resource names: "models/gemini-2.5-flash".
+				$id = (string) ( $row['name'] ?? '' );
+
+				if ( 0 === strpos( $id, 'models/' ) ) {
+					$id = substr( $id, strlen( 'models/' ) );
+				}
+
+				$id = trim( $id );
+
+				if ( '' === $id ) {
+					continue;
+				}
+
+				$models[] = array(
+					'id'    => $id,
+					'label' => trim( (string) ( $row['displayName'] ?? '' ) ),
+				);
+			}
+
+			$cursor = trim( (string) ( $body['nextPageToken'] ?? '' ) );
+
+			return array(
+				'models' => $models,
+				'cursor' => $cursor,
+			);
 		}
+
+		if ( 'xai' === $provider ) {
+			$rows = isset( $body['models'] ) && is_array( $body['models'] ) ? $body['models'] : array();
+
+			foreach ( $rows as $row ) {
+				if ( ! is_array( $row ) ) {
+					continue;
+				}
+
+				$id = trim( (string) ( $row['id'] ?? '' ) );
+
+				if ( '' === $id ) {
+					continue;
+				}
+
+				$models[] = array(
+					'id'    => $id,
+					'label' => '',
+				);
+
+				// xAI documents aliases as ids the model field accepts. An alias
+				// survives the next version turning over, so it is worth offering.
+				$aliases = isset( $row['aliases'] ) && is_array( $row['aliases'] ) ? $row['aliases'] : array();
+
+				foreach ( $aliases as $alias ) {
+					$alias = trim( (string) $alias );
+
+					if ( '' === $alias ) {
+						continue;
+					}
+
+					$models[] = array(
+						'id'    => $alias,
+						/* translators: %s: the model id this alias points at. */
+						'label' => sprintf( __( 'alias for %s', 'flosc' ), $id ),
+					);
+				}
+			}
+
+			// xAI does not page this endpoint.
+			return array(
+				'models' => $models,
+				'cursor' => '',
+			);
+		}
+
+		// Anthropic and OpenAI: { data: [ { id } ] }.
+		$rows = isset( $body['data'] ) && is_array( $body['data'] ) ? $body['data'] : array();
 
 		foreach ( $rows as $row ) {
 			if ( ! is_array( $row ) ) {
 				continue;
 			}
 
-			$id = (string) ( $row['id'] ?? $row['name'] ?? '' );
-
-			// Gemini prefixes its ids with "models/".
-			if ( 0 === strpos( $id, 'models/' ) ) {
-				$id = substr( $id, strlen( 'models/' ) );
-			}
-
-			$id = trim( $id );
+			$id = trim( (string) ( $row['id'] ?? '' ) );
 
 			if ( '' === $id ) {
 				continue;
 			}
 
-			$out[] = array(
+			$models[] = array(
 				'id'    => $id,
-				'label' => trim( (string) ( $row['display_name'] ?? $row['displayName'] ?? '' ) ),
+				'label' => trim( (string) ( $row['display_name'] ?? '' ) ),
 			);
 		}
 
-		usort(
-			$out,
-			static function ( $a, $b ) {
-				return strcmp( $a['id'], $b['id'] );
-			}
-		);
+		// Anthropic pages with has_more + last_id; OpenAI does not page.
+		if ( 'anthropic' === $provider && ! empty( $body['has_more'] ) ) {
+			$cursor = trim( (string) ( $body['last_id'] ?? '' ) );
+		}
 
-		return $out;
+		return array(
+			'models' => $models,
+			'cursor' => $cursor,
+		);
 	}
 }
 
@@ -136,7 +265,7 @@ if ( ! function_exists( 'flosc_fetch_model_catalog' ) ) {
 	 *
 	 * @param string $provider FLOSC provider slug.
 	 * @param string $api_key  The saved key.
-	 * @return array{models:array<int,array<string,mixed>>}|WP_Error
+	 * @return array{models:array<int,array<string,mixed>>,checked:bool,provider:string}|WP_Error
 	 */
 	function flosc_fetch_model_catalog( $provider, $api_key ) {
 		$provider = sanitize_key( (string) $provider );
@@ -148,46 +277,71 @@ if ( ! function_exists( 'flosc_fetch_model_catalog' ) ) {
 			);
 		}
 
-		$endpoint = flosc_model_catalog_endpoint( $provider, (string) $api_key );
-
-		if ( null === $endpoint ) {
+		if ( null === flosc_model_catalog_request( $provider, (string) $api_key ) ) {
 			return new WP_Error(
 				'flosc_models_unsupported',
 				__( 'This provider does not publish a model list FLOSC can read.', 'flosc' )
 			);
 		}
 
-		$args            = $endpoint['args'];
-		$args['timeout'] = 15;
+		$models = array();
+		$seen   = array();
+		$cursor = '';
 
-		$response = wp_remote_get( $endpoint['url'], $args );
+		for ( $page = 0; $page < FLOSC_MODEL_CATALOG_MAX_PAGES; $page++ ) {
+			$request = flosc_model_catalog_request( $provider, (string) $api_key, $cursor );
 
-		if ( is_wp_error( $response ) ) {
-			return $response;
-		}
-
-		$code = (int) wp_remote_retrieve_response_code( $response );
-		$body = json_decode( (string) wp_remote_retrieve_body( $response ), true );
-
-		if ( 200 !== $code ) {
-			$detail = '';
-
-			if ( is_array( $body ) ) {
-				$detail = (string) ( $body['error']['message'] ?? $body['message'] ?? '' );
+			if ( null === $request ) {
+				break;
 			}
 
-			return new WP_Error(
-				'flosc_models_http_' . $code,
-				sprintf(
-					/* translators: 1: HTTP status code, 2: the provider's own error text. */
-					__( 'The provider answered %1$d. %2$s', 'flosc' ),
-					$code,
-					$detail
-				)
-			);
-		}
+			$args            = $request['args'];
+			$args['timeout'] = 15;
 
-		$models = flosc_model_catalog_parse( $body );
+			$response = wp_remote_get( $request['url'], $args );
+
+			if ( is_wp_error( $response ) ) {
+				return $response;
+			}
+
+			$code = (int) wp_remote_retrieve_response_code( $response );
+			$body = json_decode( (string) wp_remote_retrieve_body( $response ), true );
+
+			if ( 200 !== $code ) {
+				$detail = '';
+
+				if ( is_array( $body ) ) {
+					$detail = (string) ( $body['error']['message'] ?? $body['message'] ?? '' );
+				}
+
+				return new WP_Error(
+					'flosc_models_http_' . $code,
+					sprintf(
+						/* translators: 1: HTTP status code, 2: the provider's own error text. */
+						__( 'The provider answered %1$d. %2$s', 'flosc' ),
+						$code,
+						$detail
+					)
+				);
+			}
+
+			$parsed = flosc_model_catalog_page( $provider, $body );
+
+			foreach ( $parsed['models'] as $model ) {
+				if ( isset( $seen[ $model['id'] ] ) ) {
+					continue;
+				}
+
+				$seen[ $model['id'] ] = true;
+				$models[]             = $model;
+			}
+
+			$cursor = (string) $parsed['cursor'];
+
+			if ( '' === $cursor ) {
+				break;
+			}
+		}
 
 		if ( empty( $models ) ) {
 			return new WP_Error(
@@ -195,6 +349,13 @@ if ( ! function_exists( 'flosc_fetch_model_catalog' ) ) {
 				__( 'The provider returned no models for this key.', 'flosc' )
 			);
 		}
+
+		usort(
+			$models,
+			static function ( $a, $b ) {
+				return strcmp( $a['id'], $b['id'] );
+			}
+		);
 
 		// Mark the ones the installed provider plugin can actually pin. An id
 		// the plugin does not carry cannot be used here, however live it is at
@@ -214,5 +375,33 @@ if ( ! function_exists( 'flosc_fetch_model_catalog' ) ) {
 			'checked'  => $checkable,
 			'provider' => $provider,
 		);
+	}
+}
+
+if ( ! function_exists( 'flosc_default_model' ) ) {
+	/**
+	 * The model id FLOSC uses for a provider when the operator has not chosen one.
+	 *
+	 * These used to be written out by hand in six different files, which is how
+	 * FLOSC ended up shipping ids their providers had already retired. A default
+	 * is a fact about the outside world, so it lives in one place and every
+	 * caller reads it from here.
+	 *
+	 * Current as of the references checked in this file's header. When one goes
+	 * stale the operator is not stranded: the model field says so by name and
+	 * "Fetch models this key can use" lists what the key can actually run.
+	 *
+	 * @param string $provider FLOSC provider slug.
+	 * @return string Empty when the provider has no default (IVR, or unknown).
+	 */
+	function flosc_default_model( $provider ) {
+		$defaults = array(
+			'anthropic' => 'claude-sonnet-5',
+			'openai'    => 'gpt-5.4-mini',
+			'xai'       => 'grok-4.6',
+			'gemini'    => 'gemini-3.7-flash',
+		);
+
+		return (string) ( $defaults[ sanitize_key( (string) $provider ) ] ?? '' );
 	}
 }
