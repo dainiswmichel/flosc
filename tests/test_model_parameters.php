@@ -85,6 +85,22 @@ ok( 'messages is refused — FLOSC builds the conversation', is_wp_error( flosc_
 ok( '  and stream, because the reply could not be read', is_wp_error( flosc_parse_model_parameters( 'stream: true' ) ), true );
 ok( '  the refusal explains rather than scolds', strpos( flosc_parse_model_parameters( 'messages: x' )->get_error_message(), 'Every other parameter is yours' ) !== false, true );
 
+echo "After a save, the fields show what the text said\n";
+function wp_json_encode( $v ) { return json_encode( $v ); }
+$settings = array( 'ai_temperature' => '0.3', 'ai_max_tokens' => '500', 'ai_anthropic_params' => "temperature: 0.9\nmax_tokens: 2000\ntop_p: 0.8" );
+$after = flosc_reconcile_model_parameters( $settings, 'anthropic' );
+ok( 'the Temperature field takes the written value', $after['ai_temperature'], '0.9' );
+ok( '  and Max Tokens too', $after['ai_max_tokens'], '2000' );
+ok( '  so neither is left duplicated in the text', $after['ai_anthropic_params'], "top_p: 0.8" );
+ok( '  while what no field represents stays put', flosc_parse_model_parameters( $after['ai_anthropic_params'] ), array( 'top_p' => 0.8 ) );
+
+$untouched = flosc_reconcile_model_parameters( array( 'ai_temperature' => '0.3', 'ai_anthropic_params' => 'top_k: 40' ), 'anthropic' );
+ok( 'a field nobody named is left alone', $untouched['ai_temperature'], '0.3' );
+
+$broken = flosc_reconcile_model_parameters( array( 'ai_temperature' => '0.3', 'ai_anthropic_params' => 'this is not a parameter' ), 'anthropic' );
+ok( 'text that will not parse is kept exactly as typed', $broken['ai_anthropic_params'], 'this is not a parameter' );
+ok( '  and changes no field on the way past', $broken['ai_temperature'], '0.3' );
+
 echo "The reference explains, and never gates\n";
 $ref = flosc_model_parameter_reference();
 ok( 'every entry says what it does', count( array_filter( $ref, static function ( $r ) { return '' !== trim( $r['what'] ); } ) ), count( $ref ) );

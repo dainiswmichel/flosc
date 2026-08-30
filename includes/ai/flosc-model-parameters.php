@@ -359,3 +359,114 @@ if ( ! function_exists( 'flosc_model_parameters_overriding' ) ) {
 		return $out;
 	}
 }
+
+if ( ! function_exists( 'flosc_build_model_parameter_preview' ) ) {
+	/**
+	 * The request as it stands, built from the fields plus anything extra.
+	 *
+	 * Same idea as the personality preview: the controls above compose it, and
+	 * an operator who wants something the controls cannot express edits it
+	 * directly. Reading it should answer "what will FLOSC actually send?"
+	 * without opening a network tab.
+	 *
+	 * @param string              $provider FLOSC provider slug.
+	 * @param array<string,mixed> $settings Flow settings.
+	 * @return string YAML-style lines.
+	 */
+	function flosc_build_model_parameter_preview( $provider, $settings ) {
+		$provider = sanitize_key( (string) $provider );
+		$lines    = array();
+
+		$temperature = trim( (string) ( $settings[ 'ai_temperature' ] ?? '' ) );
+		$max_tokens  = trim( (string) ( $settings[ 'ai_max_tokens' ] ?? '' ) );
+
+		// Temperature is only part of the request where the provider takes it.
+		$skips_temperature = function_exists( 'flosc_provider_rejects_tuning' )
+			&& flosc_provider_rejects_tuning( $provider, 'temperature' );
+
+		if ( '' !== $temperature && ! $skips_temperature ) {
+			$lines[] = 'temperature: ' . $temperature;
+		}
+
+		if ( '' !== $max_tokens ) {
+			$lines[] = 'max_tokens: ' . $max_tokens;
+		}
+
+		$extra = flosc_parse_model_parameters( (string) ( $settings[ 'ai_' . $provider . '_params' ] ?? '' ) );
+
+		if ( ! is_wp_error( $extra ) ) {
+			foreach ( $extra as $key => $value ) {
+				$lines[] = $key . ': ' . ( is_scalar( $value ) || null === $value
+					? var_export( $value, true )
+					: wp_json_encode( $value ) );
+			}
+		}
+
+		return implode( "\n", $lines );
+	}
+}
+
+if ( ! function_exists( 'flosc_reconcile_model_parameters' ) ) {
+	/**
+	 * Fold what the operator wrote back into the fields it names.
+	 *
+	 * The parameter text wins, so after a save the controls above must show
+	 * what it says — otherwise the page displays one number and sends another,
+	 * which is the confusion this whole arrangement exists to end.
+	 *
+	 * temperature and max_tokens move out of the text and into their fields.
+	 * Everything else stays in the text, because no field represents it.
+	 *
+	 * @param array<string,mixed> $settings Flow settings being saved.
+	 * @param string              $provider FLOSC provider slug.
+	 * @return array<string,mixed>
+	 */
+	function flosc_reconcile_model_parameters( $settings, $provider ) {
+		$provider = sanitize_key( (string) $provider );
+		$key      = 'ai_' . $provider . '_params';
+
+		if ( ! isset( $settings[ $key ] ) ) {
+			return $settings;
+		}
+
+		$parsed = flosc_parse_model_parameters( (string) $settings[ $key ] );
+
+		if ( is_wp_error( $parsed ) ) {
+			// Leave what they typed exactly as typed, so the error they see on
+			// the page is about the text in front of them.
+			return $settings;
+		}
+
+		$owned = array(
+			'temperature' => 'ai_temperature',
+			'max_tokens'  => 'ai_max_tokens',
+		);
+
+		foreach ( $owned as $param => $field ) {
+			if ( ! array_key_exists( $param, $parsed ) ) {
+				continue;
+			}
+
+			$value = $parsed[ $param ];
+
+			if ( is_scalar( $value ) ) {
+				$settings[ $field ] = (string) $value;
+			}
+
+			unset( $parsed[ $param ] );
+		}
+
+		// Write the remainder back in the notation it came in.
+		$lines = array();
+
+		foreach ( $parsed as $param => $value ) {
+			$lines[] = $param . ': ' . ( is_scalar( $value ) || null === $value
+				? var_export( $value, true )
+				: wp_json_encode( $value ) );
+		}
+
+		$settings[ $key ] = implode( "\n", $lines );
+
+		return $settings;
+	}
+}

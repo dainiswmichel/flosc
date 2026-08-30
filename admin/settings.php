@@ -708,6 +708,17 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
             $flosc_new_settings['logout_farewell_message'] = sanitize_textarea_field($flosc_new_settings['logout_farewell_message']);
         }
     }
+    // The AI tab's parameter box is the request; Temperature and Max Tokens are
+    // a way of writing into it. So after a save the fields must show what the
+    // text says, or the page displays one number and sends another.
+    if ($flosc_active_tab === 'ai' && function_exists('flosc_reconcile_model_parameters')) {
+        $flosc_param_provider = sanitize_key((string) ($flosc_new_settings['ai_provider'] ?? ''));
+
+        if ($flosc_param_provider !== '') {
+            $flosc_new_settings = flosc_reconcile_model_parameters($flosc_new_settings, $flosc_param_provider);
+        }
+    }
+
     if ($flosc_active_tab === 'engagement') {
         if (isset($flosc_new_settings['guest_access_days'])) {
             $flosc_new_settings['guest_access_days'] = max(0, min(365, intval($flosc_new_settings['guest_access_days'])));

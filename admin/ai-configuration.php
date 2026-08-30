@@ -602,7 +602,7 @@ endif;
         </td>
     </tr>
     <tr>
-        <th scope="row"><label for="flow_ai_model_params">Extra model parameters</label></th>
+        <th scope="row"><label for="flow_ai_model_params">The request FLOSC sends</label></th>
         <td>
             <?php
             $flosc_params_key = 'ai_' . sanitize_key( $flosc_ai_provider ) . '_params';
@@ -618,9 +618,27 @@ endif;
                 ? (string) ( $flosc_params_profile['example_params'] ?? '' )
                 : '';
             ?>
+            <?php
+            // Built from the fields above plus anything the operator added, the
+            // way the personality preview is built from its parts. Locked until
+            // they ask to edit it, so it reads as a statement of what will be
+            // sent rather than another box to fill in.
+            $flosc_params_preview = function_exists( 'flosc_build_model_parameter_preview' )
+                ? flosc_build_model_parameter_preview( $flosc_ai_provider, $flosc_flow_settings )
+                : $flosc_params_raw;
+            ?>
             <textarea id="flow_ai_model_params" name="<?php echo esc_attr( 'flow_' . $flosc_params_key ); ?>"
-                rows="5" class="large-text code" spellcheck="false"
-                placeholder="<?php echo esc_attr( $flosc_params_example ); ?>"><?php echo esc_textarea( $flosc_params_raw ); ?></textarea>
+                rows="6" class="large-text code flosc-params-locked" spellcheck="false" readonly
+                data-extra="<?php echo esc_attr( $flosc_params_raw ); ?>"
+                placeholder="<?php echo esc_attr( $flosc_params_example ); ?>"><?php echo esc_textarea( $flosc_params_preview ); ?></textarea>
+            <p class="flosc-model-fetch-row">
+                <button type="button" class="button" id="flosc-params-edit">
+                    <?php echo esc_html__( 'Edit the request', 'flosc' ); ?>
+                </button>
+                <span class="description" id="flosc-params-lock-note">
+                    <?php echo esc_html__( 'Built from the fields above. Edit it to send anything they cannot express — what you write wins, and those fields update to match when you save.', 'flosc' ); ?>
+                </span>
+            </p>
             <div class="flosc-param-help" id="flosc-param-help" hidden></div>
             <p class="description flosc-params-status" id="flosc-params-status"></p>
             <p class="description">
@@ -1275,6 +1293,48 @@ jQuery(document).ready(function($) {
     // here is still sent, and says so.
     var floscParamRef = <?php echo wp_json_encode( function_exists( 'flosc_model_parameter_reference' ) ? flosc_model_parameter_reference() : array() ); ?>;
 
+    // Locked, because it is a statement of what will be sent. Unlocking it is a
+    // deliberate act, and from that point the operator's text is the truth.
+    var floscParamsUnlocked = false;
+
+    $('#flosc-params-edit').on('click', function () {
+        floscParamsUnlocked = true;
+        $('#flow_ai_model_params').prop('readonly', false)
+            .removeClass('flosc-params-locked').trigger('focus');
+        $(this).prop('disabled', true);
+        $('#flosc-params-lock-note').text(
+            'Editing. What you write is what FLOSC sends — Temperature and Max Tokens above will be set from it when you save.'
+        );
+    });
+
+    // While it is still a preview, keep it honest as the fields change.
+    function floscRebuildPreview() {
+        if (floscParamsUnlocked) { return; }
+
+        var $box = $('#flow_ai_model_params');
+
+        if (!$box.length) { return; }
+
+        var provider = $('#flow_ai_provider').val();
+        var rejects = (floscProviderRejects[provider] || { params: [] }).params;
+        var lines = [];
+        var t = String($('#flow_ai_temperature').val() || '').trim();
+        var m = String($('#flow_ai_max_tokens').val() || '').trim();
+
+        if (t && rejects.indexOf('temperature') === -1) { lines.push('temperature: ' + t); }
+        if (m) { lines.push('max_tokens: ' + m); }
+
+        // Anything already stored that no field represents.
+        String($box.data('extra') || '').split(/\r\n|\r|\n/).forEach(function (line) {
+            if (line.trim()) { lines.push(line.trim()); }
+        });
+
+        $box.val(lines.join('\n'));
+        floscCheckParams();
+    }
+
+    $('#flow_ai_temperature, #flow_ai_max_tokens, #flow_ai_provider').on('input change', floscRebuildPreview);
+
     function floscMarkOverrides(names, values) {
         ['temperature', 'max_tokens'].forEach(function (field) {
             var i = names.indexOf(field);
@@ -1288,9 +1348,9 @@ jQuery(document).ready(function($) {
             }
 
             $note.removeAttr('hidden').text(
-                'Overridden by Extra model parameters below' +
-                (values && values[field] !== undefined ? ' — sending ' + JSON.stringify(values[field]) : '') +
-                '. This field is not what will be sent.'
+                'The request below sets this' +
+                (values && values[field] !== undefined ? ' to ' + values[field] : '') +
+                '. Saving will bring this field into line with it.'
             );
             $input.addClass('flosc-input-overridden');
         });
