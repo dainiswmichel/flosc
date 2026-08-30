@@ -332,22 +332,6 @@ endif;
         </td>
     </tr>
     <tr>
-        <th scope="row">
-            <label for="flow_anthropic_workspace_id">Anthropic Workspace ID</label>
-        </th>
-        <td>
-            <input type="text" id="flow_anthropic_workspace_id" name="flow_anthropic_workspace_id"
-                value="<?php echo esc_attr( (string) ( $flosc_flow_settings['anthropic_workspace_id'] ?? '' ) ); ?>"
-                class="regular-text flosc-ai-workspace-input" placeholder="wrkspc_...">
-            <p class="description">
-                Leave this empty unless Anthropic asks for it. A key scoped to one workspace needs nothing here.
-                A key that spans several must name the workspace each request acts in, and Anthropic answers
-                <code>400 anthropic-workspace-id is required</code> until it does. Console → Settings → Workspaces
-                has the id; a workspace-scoped key avoids the question entirely.
-            </p>
-        </td>
-    </tr>
-    <tr>
         <th scope="row"><label for="flow_ai_anthropic_model">Anthropic Model</label></th>
         <td>
             <?php
@@ -1119,8 +1103,7 @@ jQuery(document).ready(function($) {
                 nonce: '<?php echo esc_js( wp_create_nonce('flosc_test_ai') ); ?>',
                 provider: provider,
                 ivr: '<?php echo esc_js( $GLOBALS['flosc_current_ivr'] ?? '' ); ?>',
-                api_key: $('#flow_' + provider + '_api_key').val() || '',
-                workspace: $('#flow_anthropic_workspace_id').val() || ''
+                api_key: $('#flow_' + provider + '_api_key').val() || ''
             },
             success: function (response) {
                 if (!response || !response.success) {
@@ -1156,13 +1139,13 @@ jQuery(document).ready(function($) {
     // the provider for it. Remember what was on the page when it loaded, and
     // stop the test if the operator has changed it since.
     var floscSavedAi = {};
-    $('.flosc-ai-key-input, #flow_ai_provider, .flosc-ai-model-select, .flosc-ai-workspace-input').each(function () {
+    $('.flosc-ai-key-input, #flow_ai_provider, .flosc-ai-model-select').each(function () {
         floscSavedAi[this.id] = $(this).val();
     });
 
     function floscUnsavedAiFields() {
         var changed = [];
-        $('.flosc-ai-key-input, #flow_ai_provider, .flosc-ai-model-select, .flosc-ai-workspace-input').each(function () {
+        $('.flosc-ai-key-input, #flow_ai_provider, .flosc-ai-model-select').each(function () {
             if (floscSavedAi[this.id] !== undefined && floscSavedAi[this.id] !== $(this).val()) {
                 var label = $('label[for="' + this.id + '"]').text().replace(/\s+/g, ' ').trim();
                 changed.push(label || this.id);

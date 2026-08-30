@@ -14,10 +14,7 @@
  * Each request below follows the provider's own published reference, checked
  * rather than recalled:
  *
- *   Anthropic  GET /v1/models        headers x-api-key + anthropic-version, plus
- *                                    anthropic-workspace-id when the key spans
- *                                    more than one workspace (Anthropic rejects
- *                                    such a key with 400 without it),
+ *   Anthropic  GET /v1/models        headers x-api-key + anthropic-version,
  *                                    limit 1..1000, pages via has_more/last_id
  *                                    → { data: [ { id, display_name } ] }
  *                                    platform.claude.com/docs/en/api/models-list
@@ -60,11 +57,10 @@ if ( ! function_exists( 'flosc_model_catalog_request' ) ) {
 	 * @param string $cursor   Page cursor from the previous page, or ''.
 	 * @return array{url:string,args:array<string,mixed>}|null
 	 */
-	function flosc_model_catalog_request( $provider, $api_key, $cursor = '', $workspace = '' ) {
-		$provider  = sanitize_key( (string) $provider );
-		$api_key   = (string) $api_key;
-		$cursor    = (string) $cursor;
-		$workspace = trim( (string) $workspace );
+	function flosc_model_catalog_request( $provider, $api_key, $cursor = '' ) {
+		$provider = sanitize_key( (string) $provider );
+		$api_key  = (string) $api_key;
+		$cursor   = (string) $cursor;
 
 		switch ( $provider ) {
 			case 'anthropic':
@@ -74,21 +70,14 @@ if ( ! function_exists( 'flosc_model_catalog_request' ) ) {
 					$query['after_id'] = $cursor;
 				}
 
-				$headers = array(
-					'x-api-key'         => $api_key,
-					'anthropic-version' => '2023-06-01',
-				);
-
-				// A key scoped to one workspace needs nothing more. A key that
-				// spans several must name the workspace each request acts in,
-				// or Anthropic answers 400 and no model list comes back.
-				if ( '' !== $workspace ) {
-					$headers['anthropic-workspace-id'] = $workspace;
-				}
-
 				return array(
 					'url'  => add_query_arg( $query, 'https://api.anthropic.com/v1/models' ),
-					'args' => array( 'headers' => $headers ),
+					'args' => array(
+						'headers' => array(
+							'x-api-key'         => $api_key,
+							'anthropic-version' => '2023-06-01',
+						),
+					),
 				);
 
 			case 'openai':
@@ -273,16 +262,8 @@ if ( ! function_exists( 'flosc_fetch_model_catalog' ) ) {
 	 * @param string $api_key  The saved key.
 	 * @return array{models:array<int,array<string,mixed>>,provider:string}|WP_Error
 	 */
-	function flosc_fetch_model_catalog( $provider, $api_key, $workspace = null ) {
+	function flosc_fetch_model_catalog( $provider, $api_key ) {
 		$provider = sanitize_key( (string) $provider );
-
-		if ( null === $workspace ) {
-			$workspace = function_exists( 'flosc_get_setting' )
-				? (string) flosc_get_setting( $provider . '_workspace_id', '' )
-				: '';
-		}
-
-		$workspace = trim( (string) $workspace );
 
 		if ( '' === (string) $api_key ) {
 			return new WP_Error(
@@ -291,7 +272,7 @@ if ( ! function_exists( 'flosc_fetch_model_catalog' ) ) {
 			);
 		}
 
-		if ( null === flosc_model_catalog_request( $provider, (string) $api_key, '', $workspace ) ) {
+		if ( null === flosc_model_catalog_request( $provider, (string) $api_key ) ) {
 			return new WP_Error(
 				'flosc_models_unsupported',
 				__( 'This provider does not publish a model list FLOSC can read.', 'flosc' )
@@ -303,7 +284,7 @@ if ( ! function_exists( 'flosc_fetch_model_catalog' ) ) {
 		$cursor = '';
 
 		for ( $page = 0; $page < FLOSC_MODEL_CATALOG_MAX_PAGES; $page++ ) {
-			$request = flosc_model_catalog_request( $provider, (string) $api_key, $cursor, $workspace );
+			$request = flosc_model_catalog_request( $provider, (string) $api_key, $cursor );
 
 			if ( null === $request ) {
 				break;
@@ -336,7 +317,7 @@ if ( ! function_exists( 'flosc_fetch_model_catalog' ) ) {
 				if ( false !== stripos( $detail, 'anthropic-workspace-id' ) ) {
 					return new WP_Error(
 						'flosc_models_workspace_required',
-						__( 'This Anthropic key was created without a workspace, so Anthropic requires a workspace id on every request — including the chat requests the AI Provider for Anthropic plugin makes, which cannot send one. In the Anthropic Console the key list has a Workspace column: create a new key with a workspace chosen there and paste that instead. Nothing else needs changing, and the account the key is linked to makes no difference. If you must keep this key, put its workspace id in the Anthropic Workspace ID field above and FLOSC will send it on the requests FLOSC makes itself.', 'flosc' )
+						__( 'This Anthropic key is set to "All workspaces", and Anthropic then requires a workspace id on every request. The AI Provider for Anthropic plugin cannot send one, so this key cannot run chat here no matter how FLOSC is configured. In the Anthropic Console, create a key with a single workspace in the Workspace column instead of "All workspaces", and paste that one. Who the key was created for makes no difference.', 'flosc' )
 					);
 				}
 

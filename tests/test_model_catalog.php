@@ -64,20 +64,13 @@ echo "Request shapes\n";
 $a = flosc_model_catalog_request( 'anthropic', 'sk-test' );
 check( 'anthropic sends x-api-key', $a['args']['headers']['x-api-key'], 'sk-test' );
 check( 'anthropic pins the version header', $a['args']['headers']['anthropic-version'], '2023-06-01' );
+check( 'and sends nothing else — a workspace-scoped key needs no more', array_keys( $a['args']['headers'] ), array( 'x-api-key', 'anthropic-version' ) );
 check( 'anthropic asks for the documented max page', strpos( $a['url'], 'limit=1000' ) !== false, true );
 check( 'anthropic cursors with after_id', strpos( flosc_model_catalog_request( 'anthropic', 'k', 'abc' )['url'], 'after_id=abc' ) !== false, true );
 check( 'openai sends Bearer', flosc_model_catalog_request( 'openai', 'sk-o' )['args']['headers']['Authorization'], 'Bearer sk-o' );
 check( 'gemini sends x-goog-api-key', flosc_model_catalog_request( 'gemini', 'AIza' )['args']['headers']['x-goog-api-key'], 'AIza' );
 check( 'gemini cursors with pageToken', strpos( flosc_model_catalog_request( 'gemini', 'k', 'p2' )['url'], 'pageToken=p2' ) !== false, true );
 check( 'an unknown provider has no request', flosc_model_catalog_request( 'nope', 'k' ), null );
-
-echo "Anthropic workspace id (400 without it on a multi-workspace key)\n";
-$plain = flosc_model_catalog_request( 'anthropic', 'k' );
-check( 'omitted when there is none to send', isset( $plain['args']['headers']['anthropic-workspace-id'] ), false );
-$scoped = flosc_model_catalog_request( 'anthropic', 'k', '', 'wrkspc_123' );
-check( 'sent under the name Anthropic asks for', $scoped['args']['headers']['anthropic-workspace-id'], 'wrkspc_123' );
-check( '  and the key still goes with it', $scoped['args']['headers']['x-api-key'], 'k' );
-check( 'blank is treated as none', isset( flosc_model_catalog_request( 'anthropic', 'k', '', '   ' )['args']['headers']['anthropic-workspace-id'] ), false );
 
 echo "The list is the provider's answer, not FLOSC's opinion of it\n";
 $shape = array_keys( flosc_model_catalog_page( 'openai', array( 'data' => array( array( 'id' => 'gpt-5.4' ) ) ) )['models'][0] );
