@@ -140,10 +140,78 @@ class FLOSC_WP_AI_Client {
 	private static $unapplied_parameters = array();
 
 	/**
+	 * Parameters this request actually carried, as opposed to configured.
+	 *
+	 * @var array<int,string>
+	 */
+	private static $applied_parameters = array();
+
+	/**
 	 * @return array<int,string>
 	 */
 	public static function unapplied_parameters() {
 		return self::$unapplied_parameters;
+	}
+
+	/**
+	 * @return array<int,string>
+	 */
+	public static function applied_parameters() {
+		return self::$applied_parameters;
+	}
+
+	/**
+	 * Put one operator-named parameter onto the request builder.
+	 *
+	 * The builder is asked to do it rather than interrogated about whether it
+	 * can. method_exists() is the wrong question here: the WordPress AI Client's
+	 * Prompt_Builder routes its snake_case setters through __call(), so
+	 * method_exists( $builder, 'using_top_p' ) answers false for a call that is
+	 * exactly the supported API. FLOSC used to believe that answer and drop
+	 * top_p, top_k and stop_sequences without ever attempting them.
+	 *
+	 * Calling and catching is also strictly safer than asking: a setter that
+	 * genuinely does not exist raises Error, which is a Throwable, so the
+	 * failure is reported either way — and reported in the integration's own
+	 * words rather than as FLOSC's guess about it.
+	 *
+	 * @param object $builder Prompt builder.
+	 * @param string $name    Parameter name as the operator wrote it.
+	 * @param mixed  $value   Parsed value.
+	 * @return true|WP_Error
+	 */
+	private static function apply_extra_parameter( $builder, $name, $value ) {
+		$name = preg_replace( '/[^a-z0-9_]/', '', strtolower( (string) $name ) );
+
+		if ( '' === $name ) {
+			return new WP_Error( 'flosc_ai_param_name', __( 'That is not a parameter name.', 'flosc' ) );
+		}
+
+		$setter = 'using_' . $name;
+
+		try {
+			// A few setters take their values one per argument rather than as
+			// one array — using_stop_sequences( 'User:', 'Visitor:' ). Passing
+			// the array whole raises a TypeError, so the splat is tried first
+			// and the whole array kept as the fallback for any setter that does
+			// want it. Which of the two a given client wants is the client's
+			// business, and this asks it rather than assuming.
+			if ( is_array( $value ) && array_values( $value ) === $value ) {
+				try {
+					$builder->$setter( ...array_values( $value ) );
+				} catch ( TypeError $splat_failed ) {
+					$builder->$setter( $value );
+				} catch ( ArgumentCountError $splat_failed ) {
+					$builder->$setter( $value );
+				}
+			} else {
+				$builder->$setter( $value );
+			}
+		} catch ( Throwable $e ) {
+			return new WP_Error( 'flosc_ai_param_unapplied', $e->getMessage(), array( 'parameter' => $name ) );
+		}
+
+		return true;
 	}
 
 	/**
@@ -326,41 +394,57 @@ class FLOSC_WP_AI_Client {
 
 		$temperature = isset( $args['temperature'] ) ? (float) $args['temperature'] : 0.3;
 
-		// Whether a provider accepts temperature is a fact about that provider,
-		// so it is declared in includes/ai/flosc-provider-profiles.php rather
-		// than branched on here. A provider nobody has measured is sent what it
-		// was configured with; only a measured refusal suppresses a setting.
-		$flosc_skip_temperature = function_exists( 'flosc_provider_rejects_tuning' )
-			&& flosc_provider_rejects_tuning( $provider, 'temperature' );
+		// What this one request carried, gathered as it is built.
+		self::$applied_parameters   = array();
+		self::$unapplied_parameters = array();
+
+		// Whether temperature is accepted is a fact about the model first and
+		// the provider only second: Anthropic's Sonnet 4.5 takes it and its
+		// Sonnet 5 refuses it, and both are Anthropic. The resolver in
+		// includes/ai/flosc-provider-profiles.php answers from what has been
+		// measured on this model where anything has, and falls back to the
+		// provider-wide measurement where nothing has.
+		$flosc_model_id = (string) ( $args['model'] ?? '' );
+
+		$flosc_skip_temperature = function_exists( 'flosc_model_rejects_tuning' )
+			? flosc_model_rejects_tuning( $provider, $flosc_model_id, 'temperature' )
+			: ( function_exists( 'flosc_provider_rejects_tuning' )
+				&& flosc_provider_rejects_tuning( $provider, 'temperature' ) );
 
 		if ( ! $flosc_skip_temperature ) {
-			$builder->using_temperature( $temperature );
+			try {
+				$builder->using_temperature( $temperature );
+				self::$applied_parameters[] = 'temperature';
+			} catch ( Throwable $e ) {
+				self::$unapplied_parameters[] = 'temperature (' . $e->getMessage() . ')';
+			}
 		}
 
 		// Extra model parameters, named by the operator. FLOSC keeps no list of
 		// valid parameters — providers add them faster than any list survives —
 		// so each one is applied by convention: the builder names its setters
-		// using_<parameter>, so top_p reaches using_top_p. A parameter with no
-		// setter is not guessed at and not silently dropped; it is recorded so
-		// the connection test can say which ones this site could not send.
-		self::$unapplied_parameters = array();
-
+		// using_<parameter>, so top_p reaches using_top_p. What each one is
+		// worth is recorded either way, so the connection test can say what the
+		// request carried rather than what was configured.
 		if ( function_exists( 'flosc_get_model_parameters' ) ) {
 			foreach ( flosc_get_model_parameters( $provider ) as $flosc_param => $flosc_value ) {
-				$flosc_setter = 'using_' . preg_replace( '/[^a-z0-9_]/', '', strtolower( (string) $flosc_param ) );
-
-				if ( ! method_exists( $builder, $flosc_setter ) ) {
-					self::$unapplied_parameters[] = (string) $flosc_param;
+				// temperature and max_tokens have first-class setters above and
+				// were already applied from the fields that mirror them.
+				// Applying them twice would send one of them twice.
+				if ( in_array( (string) $flosc_param, array( 'temperature', 'max_tokens' ), true ) ) {
 					continue;
 				}
 
-				try {
-					$builder->$flosc_setter( $flosc_value );
-				} catch ( Throwable $e ) {
-					// The provider integration refused it. That is its answer to
-					// give, so carry it up rather than deciding on its behalf.
-					self::$unapplied_parameters[] = (string) $flosc_param . ' (' . $e->getMessage() . ')';
+				$flosc_applied = self::apply_extra_parameter( $builder, $flosc_param, $flosc_value );
+
+				if ( is_wp_error( $flosc_applied ) ) {
+					// The integration refused it. That is its answer to give,
+					// so carry it up rather than deciding on its behalf.
+					self::$unapplied_parameters[] = (string) $flosc_param . ' (' . $flosc_applied->get_error_message() . ')';
+					continue;
 				}
+
+				self::$applied_parameters[] = (string) $flosc_param;
 			}
 		}
 

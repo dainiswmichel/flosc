@@ -307,3 +307,40 @@ if ( ! function_exists( 'flosc_provider_param_doc_url' ) ) {
 		return sprintf( $template, rawurlencode( $param ) );
 	}
 }
+
+if ( ! function_exists( 'flosc_model_rejects_tuning' ) ) {
+	/**
+	 * Whether this model refuses a parameter — model first, provider second.
+	 *
+	 * Capability belongs to the model wherever a model has been measured.
+	 * Anthropic's Sonnet 4.5 accepts temperature and its Sonnet 5 refuses it,
+	 * so "does Anthropic take temperature" is the wrong question and answering
+	 * it provider-wide suppressed a setting that works.
+	 *
+	 * The order is: what was measured on this model, then what was measured on
+	 * the provider, then no. An unmeasured parameter on an unmeasured model is
+	 * sent as configured — FLOSC does not refuse on a guess, it lets the
+	 * provider answer and reports what it said.
+	 *
+	 * @param string $provider FLOSC provider slug.
+	 * @param string $model    Model id, may be empty.
+	 * @param string $param    Parameter name, e.g. 'temperature'.
+	 * @return bool
+	 */
+	function flosc_model_rejects_tuning( $provider, $model, $param ) {
+		$param = (string) $param;
+		$note  = flosc_provider_model_parameter_note( $provider, $model );
+
+		if ( '' !== $note['matched'] ) {
+			if ( in_array( $param, $note['accepts'], true ) ) {
+				return false;
+			}
+
+			if ( in_array( $param, $note['refuses'], true ) ) {
+				return true;
+			}
+		}
+
+		return flosc_provider_rejects_tuning( $provider, $param );
+	}
+}

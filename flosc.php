@@ -569,8 +569,44 @@ class FLOSC_Framework {
         return $this->first_party_auth->ajax_logout();
     }
 
-    public function clear_flosc_auth_token() {
-        return $this->first_party_auth->clear_flosc_auth_token();
+    /**
+     * Invalidate every FLOSC token a user holds. Called on password reset.
+     *
+     * @param WP_User|int $user The user whose tokens end here.
+     */
+    public function revoke_flosc_auth_tokens_for_user($user) {
+        $user_id = ($user instanceof WP_User) ? (int) $user->ID : absint($user);
+
+        if ($user_id) {
+            $this->first_party_auth->revoke_flosc_auth_tokens($user_id);
+        }
+    }
+
+    /**
+     * Invalidate FLOSC tokens when a profile update changed the password.
+     *
+     * profile_update fires for every profile save, so the old record is
+     * compared rather than revoking on a changed nickname.
+     *
+     * @param int     $user_id       The user being updated.
+     * @param WP_User $old_user_data Their record before the update.
+     */
+    public function revoke_flosc_auth_tokens_on_password_change($user_id, $old_user_data = null) {
+        $user_id = absint($user_id);
+
+        if (!$user_id || !($old_user_data instanceof WP_User)) {
+            return;
+        }
+
+        $user = get_userdata($user_id);
+
+        if ($user && $user->user_pass !== $old_user_data->user_pass) {
+            $this->first_party_auth->revoke_flosc_auth_tokens($user_id);
+        }
+    }
+
+    public function clear_flosc_auth_token($user_id = 0) {
+        return $this->first_party_auth->clear_flosc_auth_token($user_id);
     }
 
     public function set_entry_flow_cookie($flow_id) {
@@ -1185,7 +1221,15 @@ class FLOSC_Framework {
         add_filter('rest_authentication_errors', [$this, 'allow_flosc_token_auth'], 99);
 
         // v3.0.0: Clear FLOSC auth token on logout
-        add_action('wp_logout', [$this, 'clear_flosc_auth_token']);
+        // wp_logout passes the id of the user who just logged out. Taking it
+        // is what lets logout revoke that user's FLOSC tokens server-side
+        // rather than only clearing this browser's copy.
+        add_action('wp_logout', [$this, 'clear_flosc_auth_token'], 10, 1);
+
+        // A password reset ends every session that was opened under the old
+        // one. FLOSC tokens are sessions, so they end with it.
+        add_action('after_password_reset', [$this, 'revoke_flosc_auth_tokens_for_user'], 10, 1);
+        add_action('profile_update', [$this, 'revoke_flosc_auth_tokens_on_password_change'], 10, 2);
 
         // Specialty roles (the product, etc.) are created when that product is
         // imported/configured — not on every request for a generic install.
@@ -10144,15 +10188,23 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 $flow_label = pathinfo($ivr, PATHINFO_FILENAME);
             }
 
-            $sent_params = function_exists('flosc_get_model_parameters')
+            // Configured is what the flow stores. Applied is what this request
+            // actually carried. Reporting the first as the second is how the
+            // panel came to say a parameter was sent and could not be sent in
+            // the same breath.
+            $configured_params = function_exists('flosc_get_model_parameters')
                 ? array_keys(flosc_get_model_parameters($provider))
+                : [];
+            $applied = (class_exists('FLOSC_WP_AI_Client') && method_exists('FLOSC_WP_AI_Client', 'applied_parameters'))
+                ? FLOSC_WP_AI_Client::applied_parameters()
                 : [];
             $unapplied = (class_exists('FLOSC_WP_AI_Client') && method_exists('FLOSC_WP_AI_Client', 'unapplied_parameters'))
                 ? FLOSC_WP_AI_Client::unapplied_parameters()
                 : [];
 
             wp_send_json_success([
-                'params_sent'      => $sent_params,
+                'params_configured' => $configured_params,
+                'params_applied'    => $applied,
                 'params_unapplied' => $unapplied,
                 'provider'        => $provider,
                 'model'           => $model_used,

@@ -385,11 +385,78 @@ class FLOSC_First_Party_Authentication {
      * @return string Base64-encoded token
      */
     public function generate_flosc_auth_token($user_id, $ttl = DAY_IN_SECONDS) {
-        $expiry = time() + $ttl;
-        $payload = $user_id . ':' . $expiry;
+        $user_id    = absint($user_id);
+        // Floored, not absolute: absint() would turn a caller's negative
+        // lifetime into a token valid that far into the future, which is the
+        // opposite of what such a call meant.
+        $expiry     = time() + max(60, (int) $ttl);
+        $generation = $this->get_flosc_auth_generation($user_id);
+
+        // A nonce makes two tokens issued in the same second distinct, so a
+        // token is one credential rather than a value anybody holding the same
+        // second could reproduce.
+        $nonce = function_exists('wp_generate_password')
+            ? wp_generate_password(24, false, false)
+            : bin2hex(random_bytes(12));
+
+        $payload   = implode(':', ['v2', $user_id, $expiry, $generation, $nonce]);
         $signature = hash_hmac('sha256', $payload, flosc_token_secret());
+
         // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- binary/JWT token encoding, not obfuscation
         return base64_encode($payload . ':' . $signature);
+    }
+
+    /**
+     * This user's current token generation.
+     *
+     * A FLOSC token is signed rather than stored, which is what lets it work
+     * across a flow domain the WordPress cookie cannot reach. The cost of that
+     * is that clearing the browser copy on logout does not stop a copy someone
+     * else took: the signature stays valid until it expires.
+     *
+     * The generation closes that. It is carried inside the signature, so a
+     * token is only valid while it matches the number on the user. Logging out,
+     * or changing the password, increments the number, and every token issued
+     * before that stops validating everywhere at once.
+     *
+     * @param int $user_id WordPress user ID.
+     * @return int
+     */
+    private function get_flosc_auth_generation($user_id) {
+        $user_id = absint($user_id);
+
+        if (!$user_id) {
+            return 1;
+        }
+
+        $generation = (int) get_user_meta($user_id, '_flosc_auth_generation', true);
+
+        if ($generation < 1) {
+            $generation = 1;
+            update_user_meta($user_id, '_flosc_auth_generation', $generation);
+        }
+
+        return $generation;
+    }
+
+    /**
+     * Invalidate every FLOSC token this user currently holds.
+     *
+     * @param int $user_id WordPress user ID.
+     * @return void
+     */
+    public function revoke_flosc_auth_tokens($user_id) {
+        $user_id = absint($user_id);
+
+        if (!$user_id) {
+            return;
+        }
+
+        update_user_meta(
+            $user_id,
+            '_flosc_auth_generation',
+            $this->get_flosc_auth_generation($user_id) + 1
+        );
     }
 
     /**
@@ -399,28 +466,47 @@ class FLOSC_First_Party_Authentication {
      * @return int|false User ID if valid, false otherwise
      */
     public function validate_flosc_auth_token($token) {
+        $token = trim((string) $token);
+
+        // Nothing this long is a FLOSC token; refuse before decoding it.
+        if ($token === '' || strlen($token) > 1024) {
+            return false;
+        }
+
         // phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- binary/JWT token decoding, not obfuscation
         $decoded = base64_decode($token, true);
-        if ($decoded === false) {
+        if (!is_string($decoded) || $decoded === '') {
             return false;
         }
 
         $parts = explode(':', $decoded);
-        if (count($parts) !== 3) {
+
+        // v1 tokens (user:expiry:signature) carried no generation, so they
+        // could not be revoked. They are refused rather than honoured: a
+        // credential that cannot be withdrawn is the thing being fixed here,
+        // and one fresh login costs less than leaving that door open.
+        if (count($parts) !== 6 || $parts[0] !== 'v2') {
             return false;
         }
 
-        list($user_id, $expiry, $signature) = $parts;
-        $user_id = intval($user_id);
-        $expiry = intval($expiry);
+        list($version, $user_raw, $expiry_raw, $generation_raw, $nonce, $signature) = $parts;
 
-        // Check expiry
-        if (time() > $expiry) {
+        if (!ctype_digit($user_raw) || !ctype_digit($expiry_raw) || !ctype_digit($generation_raw)) {
             return false;
         }
 
-        // Verify HMAC signature
-        $expected = hash_hmac('sha256', $user_id . ':' . $expiry, flosc_token_secret());
+        $user_id    = absint($user_raw);
+        $expiry     = (int) $expiry_raw;
+        $generation = (int) $generation_raw;
+
+        if (!$user_id || $nonce === '' || time() > $expiry) {
+            return false;
+        }
+
+        // Verify HMAC signature over the payload exactly as it was signed.
+        $payload  = implode(':', [$version, $user_id, $expiry, $generation, $nonce]);
+        $expected = hash_hmac('sha256', $payload, flosc_token_secret());
+
         if (!hash_equals($expected, $signature)) {
             return false;
         }
@@ -428,6 +514,11 @@ class FLOSC_First_Party_Authentication {
         // Verify user exists
         $user = get_userdata($user_id);
         if (!$user || !$user->exists()) {
+            return false;
+        }
+
+        // Verify the token has not been revoked since it was issued.
+        if ($generation !== $this->get_flosc_auth_generation($user_id)) {
             return false;
         }
 
@@ -591,7 +682,12 @@ class FLOSC_First_Party_Authentication {
     /**
      * Action: wp_logout — Clear FLOSC auth token + entry-flow recall cookies.
      */
-    public function clear_flosc_auth_token() {
+    public function clear_flosc_auth_token($user_id = 0) {
+        // Logging out has to end the session everywhere, not only in this
+        // browser. Clearing the cookie below removes this copy of the token;
+        // this line invalidates every copy of it that exists.
+        $this->revoke_flosc_auth_tokens($user_id);
+
         if (headers_sent()) {
             return;
         }
@@ -635,23 +731,23 @@ class FLOSC_First_Party_Authentication {
      * @return WP_Error|null|true Modified auth result
      */
     public function allow_flosc_token_auth($result) {
-        // Don't override existing errors from other auth systems
-        if (is_wp_error($result)) {
+        // WordPress's contract for this filter: null means no authentication
+        // method has decided yet. Anything else is another method's decision —
+        // true that it authenticated somebody, a WP_Error that it refused — and
+        // is not FLOSC's to overrule. Returning $result untouched is what makes
+        // FLOSC a good neighbour to a security plugin running beside it.
+        if (null !== $result) {
             return $result;
         }
 
         // Limit the nonce short-circuit to FLOSC REST routes. A FLOSC token
         // must not alter authentication for unrelated WordPress endpoints.
         if (!$this->is_flosc_rest_request()) {
-            return $result;
+            return null;
         }
 
         // If FLOSC token was used, signal "auth succeeded" to skip nonce check
-        if ($this->flosc_token_auth_used) {
-            return true;
-        }
-
-        return $result;
+        return $this->flosc_token_auth_used ? true : null;
     }
 
     /**
@@ -673,6 +769,19 @@ class FLOSC_First_Party_Authentication {
 
         if ($route === '' && isset($GLOBALS['wp']->query_vars['rest_route'])) {
             $route = (string) $GLOBALS['wp']->query_vars['rest_route'];
+        }
+
+        // determine_current_user runs before the REST server has attached the
+        // current request, so neither source above is populated yet. Read the
+        // path directly in that window, through WordPress's own prefix so a
+        // site that renamed wp-json is still recognised.
+        if ($route === '' && isset($_SERVER['REQUEST_URI']) && function_exists('rest_get_url_prefix')) {
+            $path   = (string) wp_parse_url(esc_url_raw(wp_unslash($_SERVER['REQUEST_URI'])), PHP_URL_PATH);
+            $prefix = trim((string) rest_get_url_prefix(), '/');
+
+            if ($path !== '' && $prefix !== '' && preg_match('#/' . preg_quote($prefix, '#') . '(/.*)$#', $path, $m)) {
+                $route = $m[1];
+            }
         }
 
         return (bool) preg_match('#^/flosc/v1(?:/|$)#', $route);

@@ -974,10 +974,30 @@ jQuery(document).ready(function($) {
         echo wp_json_encode( $flosc_rejects );
     ?>;
 
+    // Model first, provider second — the same order the PHP resolver uses.
+    // Sonnet 4.5 takes temperature and Sonnet 5 refuses it, and both are
+    // Anthropic, so hiding the control by provider hid a control that works.
+    // floscModelNoteFor already does the longest-prefix model match; this only
+    // asks it the question.
+    function floscModelRejectsParam(provider, model, param) {
+        var note = (typeof floscModelNoteFor === 'function') ? floscModelNoteFor(provider, model) : null;
+
+        if (note) {
+            if ((note.accepts || []).indexOf(param) !== -1) { return false; }
+            if ((note.refuses || []).indexOf(param) !== -1) { return true; }
+        }
+
+        return ((floscProviderRejects[provider] || { params: [] }).params || []).indexOf(param) !== -1;
+    }
+
     function updateProviderSections() {
         var selected = $('#flow_ai_provider').val();
         var rejects = floscProviderRejects[selected] || { params: [], note: '' };
-        var noTemperature = rejects.params.indexOf('temperature') !== -1;
+        var selectedModelField = (typeof floscModelFieldFor === 'object' && floscModelFieldFor)
+            ? floscModelFieldFor[selected]
+            : '';
+        var selectedModel = selectedModelField ? String($('#' + selectedModelField).val() || '').trim() : '';
+        var noTemperature = floscModelRejectsParam(selected, selectedModel, 'temperature');
 
         // A control the provider will refuse is not a control. Hide it rather
         // than leave it on screen with a paragraph explaining it does nothing.
@@ -1543,7 +1563,12 @@ jQuery(document).ready(function($) {
         var provider = floscCurrentProvider();
 
         // A provider that refuses this one never carries it, typed or not.
-        if ((floscProviderRejects[provider] || { params: [] }).params.indexOf('temperature') !== -1) {
+        var field = (typeof floscModelFieldFor === 'object' && floscModelFieldFor)
+            ? floscModelFieldFor[provider]
+            : '';
+        var model = field ? String($('#' + field).val() || '').trim() : '';
+
+        if (floscModelRejectsParam(provider, model, 'temperature')) {
             return;
         }
 
@@ -1570,18 +1595,25 @@ jQuery(document).ready(function($) {
     // The save button is the state, rather than a button beside a state: at
     // rest it is a green statement that the tuning is stored, and it turns
     // back into something to press the moment that stops being true.
-    function floscTuningState(state, detail) {
+    function floscTuningState(state, detail, source) {
         var $btn = $('#flosc-save-tuning');
         var $status = $('#flosc-tuning-status');
+        var auto = (source === 'auto');
 
         $btn.removeClass('button-primary flosc-tuning-save--saved flosc-tuning-save--bad')
             .prop('disabled', false);
         $status.attr('class', 'flosc-tuning-status').text('');
 
         if (state === 'saved') {
+            // How the save happened, not whether a timestamp came back. Every
+            // successful save returns one, so reading the stamp as the source
+            // labelled a deliberate press of Save as something the page did on
+            // its own — which is exactly the confidence this is meant to give.
             $btn.addClass('flosc-tuning-save--saved')
-                .html(detail ? '&#10003; Autosaved' : '&#10003; Saved')
-                .attr('title', 'Stored on this flow. Press to save again.');
+                .html(auto ? '&#10003; Autosaved' : '&#10003; Saved')
+                .attr('title', auto
+                    ? 'Saved on its own. Press to save again.'
+                    : 'Saved on this flow. Press to save again.');
 
             // The stamp sits beside the button rather than inside it: it is a
             // full Michel Time Stamp, and a button that changes width every
@@ -1594,7 +1626,7 @@ jQuery(document).ready(function($) {
         }
 
         if (state === 'saving') {
-            $btn.prop('disabled', true).text('Saving…');
+            $btn.prop('disabled', true).text(auto ? 'Autosaving…' : 'Saving…');
             return;
         }
 
@@ -1612,8 +1644,23 @@ jQuery(document).ready(function($) {
     }
 
     // The page was rendered from what is stored, so at load that is exactly
-    // what the controls are showing.
-    floscTuningState('saved');
+    // what the controls are showing. Nothing was autosaved to get here.
+    floscTuningState('saved', '', 'manual');
+
+    // What was last written, so an autosave that would rewrite the identical
+    // values does not make a second round trip. A deliberate press always goes.
+    var floscTuningLastSaved = '';
+
+    function floscTuningFingerprint() {
+        return JSON.stringify({
+            provider: floscCurrentProvider(),
+            temperature: String($('#flow_ai_temperature').val() || ''),
+            max_tokens: String($('#flow_ai_max_tokens').val() || ''),
+            params: String($('#flow_ai_model_params').val() || '')
+        });
+    }
+
+    floscTuningLastSaved = floscTuningFingerprint();
 
     function floscFlashSaved($el) {
         if (!$el || !$el.length) { return; }
@@ -1628,7 +1675,9 @@ jQuery(document).ready(function($) {
         window.setTimeout(function () { $el.removeClass('flosc-saved-flash'); }, 1600);
     }
 
-    function floscSaveTuning($flash) {
+    function floscSaveTuning($flash, source) {
+        source = (source === 'manual') ? 'manual' : 'auto';
+
         var provider = floscCurrentProvider();
         var $status = $('#flosc-tuning-status');
 
@@ -1640,8 +1689,15 @@ jQuery(document).ready(function($) {
 
         if (floscTuningInFlight) { return; }
 
+        // A pause in typing and the blur that follows it are one edit, not two.
+        // Writing the same values twice is a wasted round trip and makes the
+        // indicator flicker for no reason anyone can see.
+        var fingerprint = floscTuningFingerprint();
+
+        if (source === 'auto' && fingerprint === floscTuningLastSaved) { return; }
+
         floscTuningInFlight = true;
-        floscTuningState('saving');
+        floscTuningState('saving', '', source);
 
         $.ajax({
             url: ajaxurl,
@@ -1661,7 +1717,7 @@ jQuery(document).ready(function($) {
                     // message names the line that broke it. Nothing was written,
                     // so nothing goes green and the request stays open for
                     // editing — re-locking it here would hide the mistake.
-                    floscTuningState('bad', (response && response.data && response.data.message) || 'Not saved.');
+                    floscTuningState('bad', (response && response.data && response.data.message) || 'Not saved.', source);
                     return;
                 }
 
@@ -1670,7 +1726,8 @@ jQuery(document).ready(function($) {
                 // Stamped by the server, which is the machine that did the
                 // writing. A browser clock can be wrong by hours, and "saved
                 // at" is a claim only the writer can make.
-                floscTuningState('saved', d.saved_at || '');
+                floscTuningLastSaved = fingerprint;
+                floscTuningState('saved', d.saved_at || '', source);
 
                 // What came back is what is stored, after the same fold the
                 // page-wide save performs. Showing it rather than what was
@@ -1704,8 +1761,9 @@ jQuery(document).ready(function($) {
                 }
             },
             error: function () {
-                $status.attr('class', 'flosc-tuning-status flosc-tuning-status--bad')
-                    .text('\u2717 The request did not complete.');
+                // Through the state machine, not around it: the button was
+                // disabled to say Saving, and something has to give it back.
+                floscTuningState('bad', 'The save request did not complete.', source);
             },
             complete: function () {
                 floscTuningInFlight = false;
@@ -1715,7 +1773,7 @@ jQuery(document).ready(function($) {
 
     $('#flosc-save-tuning').on('click', function () {
         window.clearTimeout(floscTuningTimer);
-        floscSaveTuning($('#flow_ai_model_params'));
+        floscSaveTuning($('#flow_ai_model_params'), 'manual');
     });
 
     // Committed edits save themselves. The numeric fields also save after a
@@ -1732,14 +1790,14 @@ jQuery(document).ready(function($) {
         var $field = $(this);
 
         window.clearTimeout(floscTuningTimer);
-        floscTuningTimer = window.setTimeout(function () { floscSaveTuning($field); }, 1400);
+        floscTuningTimer = window.setTimeout(function () { floscSaveTuning($field, 'auto'); }, 1400);
     });
 
     $('#flow_ai_temperature, #flow_ai_max_tokens, #flow_ai_model_params').on('change', function () {
         var $field = $(this);
 
         window.clearTimeout(floscTuningTimer);
-        floscSaveTuning($field);
+        floscSaveTuning($field, 'auto');
     });
 
     // ---- The parameter menu -------------------------------------------------
@@ -2070,6 +2128,13 @@ jQuery(document).ready(function($) {
 
     $('#flow_ai_provider, #flow_ai_anthropic_model, #flow_ai_openai_model, #flow_ai_xai_model, #flow_ai_gemini_model')
         .on('input change', floscRenderParamMenu);
+
+    // Changing the model can change which controls apply — Sonnet 4.5 takes
+    // temperature where Sonnet 5 refuses it — so the rows are re-decided too.
+    $('#flow_ai_anthropic_model, #flow_ai_openai_model, #flow_ai_xai_model, #flow_ai_gemini_model')
+        .on('input change', function () {
+            if (typeof updateProviderSections === 'function') { updateProviderSections(); }
+        });
 
     floscRenderParamMenu();
 
@@ -2422,12 +2487,15 @@ jQuery(document).ready(function($) {
                         lines.push('so the provider answered with ' + d.model + ' instead. Pick a model the plugin offers,');
                         lines.push('or update the provider plugin, to use the one you configured.');
                     }
-                    if (d.params_sent && d.params_sent.length) {
-                        lines.push('Extra parameters sent: ' + d.params_sent.join(', '));
+                    if (d.params_configured && d.params_configured.length) {
+                        lines.push('Extra parameters configured: ' + d.params_configured.join(', '));
+                    }
+                    if (d.params_applied && d.params_applied.length) {
+                        lines.push('\u2713 Carried by this request: ' + d.params_applied.join(', '));
                     }
                     if (d.params_unapplied && d.params_unapplied.length) {
-                        lines.push('✗ Could NOT be sent by this provider integration: ' + d.params_unapplied.join(', '));
-                        lines.push('  (the provider plugin has no setter for them — they were left out, not silently ignored)');
+                        lines.push('\u2717 Left out, with the reason each was refused:');
+                        d.params_unapplied.forEach(function (p) { lines.push('    ' + p); });
                     }
                     lines.push('Model reply: ' + (d.response || '(empty)'));
                     floscTestModelReport(d, lines);

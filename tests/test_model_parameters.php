@@ -212,5 +212,24 @@ foreach ( array( 'openai', 'xai', 'gemini' ) as $p ) {
 
 ok( 'a provider FLOSC knows nothing about still links nowhere', flosc_provider_param_doc_url( 'not_a_provider', 'top_p' ), '' );
 
+echo "Capability belongs to the model wherever a model has been measured\n";
+// The bug this closes: asking "does Anthropic take temperature" and suppressing
+// it everywhere, when Sonnet 4.5 accepts it and only the newer models do not.
+ok( 'Sonnet 4.5 is allowed its temperature',
+	flosc_model_rejects_tuning( 'anthropic', 'claude-sonnet-4-5-20250929', 'temperature' ), false );
+ok( '  and its top_p', flosc_model_rejects_tuning( 'anthropic', 'claude-sonnet-4-5-20250929', 'top_p' ), false );
+ok( '  while adaptive thinking is refused on it',
+	flosc_model_rejects_tuning( 'anthropic', 'claude-sonnet-4-5-20250929', 'thinking' ), true );
+ok( 'Sonnet 5 refuses temperature', flosc_model_rejects_tuning( 'anthropic', 'claude-sonnet-5', 'temperature' ), true );
+ok( '  and takes thinking instead', flosc_model_rejects_tuning( 'anthropic', 'claude-sonnet-5', 'thinking' ), false );
+ok( 'an unmeasured Anthropic model falls back to the provider measurement',
+	flosc_model_rejects_tuning( 'anthropic', 'claude-something-2099', 'temperature' ), true );
+ok( '  and a parameter nobody measured is never refused on a guess',
+	flosc_model_rejects_tuning( 'anthropic', 'claude-sonnet-4-5-20250929', 'a_2027_parameter' ), false );
+ok( 'a provider with no measurements refuses nothing',
+	flosc_model_rejects_tuning( 'openai', 'gpt-5.4-mini', 'temperature' ), false );
+ok( '  and no model id at all still answers from the provider',
+	flosc_model_rejects_tuning( 'anthropic', '', 'temperature' ), true );
+
 echo $fail ? "\n$fail FAILURES\n" : "\nModel parameters: all checks passed\n";
 exit( $fail ? 1 : 0 );
