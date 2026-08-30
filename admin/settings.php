@@ -2951,6 +2951,43 @@ if (function_exists('wp_add_inline_style')) {
         <?php endif; ?>
 
         <?php if ($flosc_active_tab !== 'documentation' && $flosc_active_tab !== 'autoprompts' && $flosc_active_tab !== 'da1' && $flosc_active_tab !== 'trajectories' && $flosc_active_tab !== 'concierge'): ?>
+        <?php
+        /*
+         * Submit the settings form from script rather than relying on the
+         * button's form="" attribute.
+         *
+         * The AI tab ends #flosc-settings-form partway down the page so its
+         * inline admin-post forms are siblings rather than nested ones, which
+         * leaves this button outside the form it saves. The form attribute is
+         * the standard answer to that and it is still on the button — but on
+         * this page it was not producing a submit at all: pressing Save did
+         * nothing, no request left the browser, and no amount of reading the
+         * markup explained why. So the association is made directly instead of
+         * being asked for, which does not depend on how any parser resolved
+         * the surrounding tags.
+         *
+         * The form posts exactly the fields it contains, the same set a native
+         * submit would have sent. flosc_save rides along as a hidden field
+         * because form.submit() does not carry the pressed button's own name.
+         */
+        wp_add_inline_script(
+            'flosc-admin',
+            "document.addEventListener('click', function (e) {\n"
+            . "    var t = e.target;\n"
+            . "    var btn = (t && t.closest) ? t.closest('button[name=\"flosc_save\"]') : null;\n"
+            . "    if (!btn || btn.disabled) { return; }\n"
+            . "    var form = document.getElementById('flosc-settings-form');\n"
+            . "    if (!form) { return; }\n"
+            . "    e.preventDefault();\n"
+            . "    if (!form.querySelector('input[name=\"flosc_save\"]')) {\n"
+            . "        var f = document.createElement('input');\n"
+            . "        f.type = 'hidden'; f.name = 'flosc_save'; f.value = '1';\n"
+            . "        form.appendChild(f);\n"
+            . "    }\n"
+            . "    form.submit();\n"
+            . "});"
+        );
+        ?>
         <p class="submit flosc-settings-submit-row">
             <?php // form= keeps submit bound if AI tab closed #flosc-settings-form early (no nested forms). ?>
             <button type="submit" name="flosc_save" value="1" form="flosc-settings-form" class="button button-primary button-large">
