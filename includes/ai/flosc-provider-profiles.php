@@ -34,6 +34,10 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 	 *   rejects_tuning      request parameters the provider refuses. FLOSC omits
 	 *                       these rather than sending them and failing.
 	 *   tuning_note         why, in one line, for the operator.
+	 *   example_params      a few parameters that provider is known to take,
+	 *                       shown as placeholder text. Examples only — FLOSC
+	 *                       sends whatever is typed and the provider rules on
+	 *                       it, so this list being incomplete costs nothing.
 	 *
 	 * @param string $provider FLOSC provider slug.
 	 * @return array<string,mixed>|null Null when FLOSC knows nothing about it.
@@ -48,6 +52,10 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 				// answer 200 without it.
 				'rejects_tuning'   => array( 'temperature' ),
 				'tuning_note'      => __( 'Anthropic has deprecated temperature on its newer models, so FLOSC leaves sampling to Claude.', 'flosc' ),
+				// Measured against a live key on 2026-08-30: Sonnet 4.5 takes
+				// top_p and top_k, Sonnet 5 refuses them and takes thinking,
+				// stop_sequences works on both.
+				'example_params'   => "top_p: 0.9\ntop_k: 40\nstop_sequences: [\"User:\"]\nthinking: {\"type\":\"adaptive\"}",
 			),
 			'openai'    => array(
 				// OpenAI's spec documents no per-model capability endpoint of
@@ -55,6 +63,7 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 				'model_detail_url' => '',
 				'rejects_tuning'   => array(),
 				'tuning_note'      => '',
+				'example_params'   => "top_p: 0.9\npresence_penalty: 0.5\nfrequency_penalty: 0.3\nseed: 42",
 			),
 			'xai'       => array(
 				// /v1/language-models/{id} exists per xAI's reference but has
@@ -62,6 +71,7 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 				'model_detail_url' => '',
 				'rejects_tuning'   => array(),
 				'tuning_note'      => '',
+				'example_params'   => "top_p: 0.9\npresence_penalty: 0.0\nfrequency_penalty: 0.0\nseed: 12345",
 			),
 			'gemini'    => array(
 				// GET /v1beta/models/{model} exists per Google's reference but
@@ -69,6 +79,9 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 				'model_detail_url' => '',
 				'rejects_tuning'   => array(),
 				'tuning_note'      => '',
+				// Gemini nests sampling inside generationConfig rather than
+				// putting it at the top level.
+				'example_params'   => "generationConfig: {\"temperature\":0.4,\"topP\":0.95}",
 			),
 		);
 

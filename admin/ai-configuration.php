@@ -607,9 +607,27 @@ endif;
             $flosc_params_key = 'ai_' . sanitize_key( $flosc_ai_provider ) . '_params';
             $flosc_params_raw = (string) ( $flosc_flow_settings[ $flosc_params_key ] ?? '' );
             ?>
+            <?php
+            // Examples for the provider actually selected, taken from the same
+            // profile table the request path reads.
+            $flosc_params_profile = function_exists( 'flosc_provider_api_profile' )
+                ? flosc_provider_api_profile( $flosc_ai_provider )
+                : null;
+            $flosc_params_example = is_array( $flosc_params_profile )
+                ? (string) ( $flosc_params_profile['example_params'] ?? '' )
+                : '';
+            ?>
             <textarea id="flow_ai_model_params" name="<?php echo esc_attr( 'flow_' . $flosc_params_key ); ?>"
                 rows="5" class="large-text code" spellcheck="false"
-                placeholder="top_p: 0.9&#10;top_k: 40&#10;stop_sequences: [&quot;END&quot;]"><?php echo esc_textarea( $flosc_params_raw ); ?></textarea>
+                placeholder="<?php echo esc_attr( $flosc_params_example ); ?>"><?php echo esc_textarea( $flosc_params_raw ); ?></textarea>
+            <?php if ( '' !== $flosc_params_example ) : ?>
+                <p class="description">
+                    <?php echo esc_html__( 'Known to work on this provider:', 'flosc' ); ?>
+                    <code><?php echo esc_html( implode( ', ', array_map( static function ( $flosc_line ) {
+                        return trim( strtok( $flosc_line, ':' ) );
+                    }, explode( "\n", $flosc_params_example ) ) ) ); ?></code>
+                </p>
+            <?php endif; ?>
             <p class="description flosc-params-status" id="flosc-params-status"></p>
             <p class="description">
                 Anything the provider accepts, one <code>name: value</code> per line, or a JSON object pasted
