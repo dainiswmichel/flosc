@@ -317,7 +317,7 @@ if ( ! function_exists( 'flosc_fetch_model_catalog' ) ) {
 				if ( false !== stripos( $detail, 'anthropic-workspace-id' ) ) {
 					return new WP_Error(
 						'flosc_models_workspace_required',
-						__( 'This Anthropic key is set to "All workspaces", and Anthropic then requires a workspace id on every request. The AI Provider for Anthropic plugin cannot send one, so this key cannot run chat here no matter how FLOSC is configured. In the Anthropic Console, create a key with a single workspace in the Workspace column instead of "All workspaces", and paste that one. Who the key was created for makes no difference.', 'flosc' )
+						__( 'This Anthropic key is set to "All workspaces", and Anthropic then requires a workspace id on every request. The AI Provider for Anthropic plugin cannot send one, so this key cannot run chat here no matter how FLOSC is configured. Make a new key in the Anthropic Console and set Scope to a single workspace — the dialog will say "This key only works in the ... workspace" — then paste that one. The key list shows the same thing in its Workspace column: anything other than "All workspaces" works. Who the key was created for makes no difference.', 'flosc' )
 					);
 				}
 
