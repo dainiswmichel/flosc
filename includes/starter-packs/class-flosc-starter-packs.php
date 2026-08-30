@@ -325,14 +325,12 @@ class FLOSC_Starter_Packs {
 			}
 
 			if ( file_exists( $target ) && ! self::owns_flow( $pack['slug'], $target ) ) {
-				return self::result(
-					false,
-					sprintf(
-						/* translators: %s: flow file name. */
-						__( 'A flow named %s already exists on this site and was not created by this starter pack. Rename or remove it first so nothing of yours is overwritten.', 'flosc' ),
-						basename( $target )
-					)
-				);
+				$kept = self::move_aside( $target );
+
+				if ( '' !== $kept ) {
+					/* translators: 1: flow file name, 2: name the old one was kept under. */
+					$detail[] = sprintf( __( 'A flow named %1$s was already here. It was kept as %2$s.', 'flosc' ), basename( $target ), $kept );
+				}
 			}
 
 			wp_mkdir_p( dirname( $target ) );
@@ -383,22 +381,20 @@ class FLOSC_Starter_Packs {
 
 			wp_mkdir_p( self::catalog_dir() );
 
-			// A catalog file this pack owns is overwritten with the shipped one;
-			// a key the operator uses for their own catalog is a real conflict.
-			$index      = get_option( 'flosc_da1_catalogs', array() );
-			$index      = is_array( $index ) ? $index : array();
-			$foreign    = isset( $index[ $catalog_key ] ) && empty( $index[ $catalog_key ]['starter_pack_id'] );
+			// A catalog file this pack owns is replaced with the shipped one.
+			// One the operator keeps under the same key is moved aside first,
+			// so their rows survive and the install still finishes.
+			$index   = get_option( 'flosc_da1_catalogs', array() );
+			$index   = is_array( $index ) ? $index : array();
+			$foreign = isset( $index[ $catalog_key ] ) && empty( $index[ $catalog_key ]['starter_pack_id'] );
 
 			if ( file_exists( $target ) && $foreign ) {
-				self::rollback( $record );
-				return self::result(
-					false,
-					sprintf(
-						/* translators: %s: catalog file name. */
-						__( 'A catalog named %s already exists on this site and was not created by this starter pack. Rename or remove it first.', 'flosc' ),
-						basename( $target )
-					)
-				);
+				$kept = self::move_aside( $target );
+
+				if ( '' !== $kept ) {
+					/* translators: 1: catalog file name, 2: name the old one was kept under. */
+					$detail[] = sprintf( __( 'A catalog named %1$s was already here. It was kept as %2$s.', 'flosc' ), basename( $target ), $kept );
+				}
 			}
 
 			if ( ! self::place_file( $source, $target ) ) {
@@ -515,11 +511,17 @@ class FLOSC_Starter_Packs {
 			return self::result( false, __( 'The pack content file names no categories.', 'flosc' ) ) + array( 'record' => array() );
 		}
 
-		// The flow references these category slugs by name, so they are the
-		// pack's to define. A category this pack already owns — left behind by
-		// a failed install or a half-finished removal — is adopted rather than
-		// treated as an obstacle. Only somebody else's category is a conflict.
-		$adopted = array();
+		// The flow references these category slugs by name, so a category with
+		// that slug is the one this pack means. An existing one is used, never
+		// treated as an obstacle — refusing to install over it stopped the whole
+		// journey from extracting because of a single term.
+		//
+		// What differs is what removal is then entitled to do. A category this
+		// pack created it may delete. A category that was already here is
+		// borrowed: the pack's posts and settings go in, and uninstall takes
+		// those back out again while leaving the category itself standing.
+		$adopted  = array();
+		$borrowed = array();
 
 		foreach ( $categories as $category ) {
 			$slug = sanitize_title( (string) ( $category['slug'] ?? '' ) );
@@ -534,24 +536,28 @@ class FLOSC_Starter_Packs {
 				continue;
 			}
 
-			if ( $pack['slug'] === get_term_meta( (int) $existing->term_id, self::TERM_STAMP, true ) ) {
-				$adopted[ $slug ] = (int) $existing->term_id;
+			$term_id = (int) $existing->term_id;
+
+			if ( $pack['slug'] === get_term_meta( $term_id, self::TERM_STAMP, true ) ) {
+				$adopted[ $slug ] = $term_id;
 				continue;
 			}
 
-			return self::result(
-				false,
-				sprintf(
-					/* translators: %s: category slug. */
-					__( 'A category %s already exists on this site and was not created by this starter pack. Rename or remove it first.', 'flosc' ),
-					$slug
-				)
-			) + array( 'record' => array() );
+			// Somebody else's category. Use it, apply the settings the journey
+			// needs, and remember that it is not ours to delete later.
+			$adopted[ $slug ]  = $term_id;
+			$borrowed[ $slug ] = $term_id;
+
+			if ( ! empty( $category['term_meta'] ) && is_array( $category['term_meta'] ) ) {
+				foreach ( $category['term_meta'] as $meta_key => $meta_value ) {
+					update_term_meta( $term_id, sanitize_key( (string) $meta_key ), sanitize_text_field( (string) $meta_value ) );
+				}
+			}
 		}
 
 		// Parents before children, so a child can resolve its parent's id.
 		$term_ids = $adopted;
-		$created  = array_values( $adopted );
+		$created  = array_values( array_diff_key( $adopted, $borrowed ) );
 		$pending  = array();
 
 		foreach ( $categories as $category ) {
@@ -1589,6 +1595,34 @@ class FLOSC_Starter_Packs {
 	 * @param array<string,mixed> $bag  The flow's settings.
 	 * @return string
 	 */
+	/**
+	 * Move a file out of the way instead of refusing to install over it.
+	 *
+	 * Installing a journey used to stop dead when any one file already existed,
+	 * which meant a single leftover blocked the whole extraction. Overwriting
+	 * outright is the other bad answer: an operator's own flow or catalog would
+	 * be gone. So the existing file is renamed and left sitting beside its
+	 * replacement, and the install carries on.
+	 *
+	 * @param string $target Path being installed to.
+	 * @return string Basename of the backup, or '' when there was nothing to move.
+	 */
+	private static function move_aside( $target ) {
+		if ( ! file_exists( $target ) ) {
+			return '';
+		}
+
+		$dir    = dirname( $target ) . '/';
+		$name   = pathinfo( $target, PATHINFO_FILENAME );
+		$ext    = pathinfo( $target, PATHINFO_EXTENSION );
+		$stamp  = gmdate( 'Ymd-His' );
+		$backup = $dir . $name . '.replaced-' . $stamp . ( '' !== $ext ? '.' . $ext : '' );
+
+		$moved = @rename( $target, $backup ); // phpcs:ignore WordPress.PHP.NoSilentErrors -- failure is reported by the caller's write.
+
+		return $moved ? basename( $backup ) : '';
+	}
+
 	/**
 	 * What a flow is called, according to the flow.
 	 *
