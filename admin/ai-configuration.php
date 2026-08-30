@@ -3170,7 +3170,7 @@ $flosc_acc_templates = array(
 );
 $flosc_acc_title_for_prompt = $flosc_acc_title !== ''
 	? $flosc_acc_title
-	: __( '(none — this flow has no public title; do not invent a course or product name)', 'flosc' );
+	: '(none)';
 $flosc_acc_var_map = array(
 	'{flow_name}'   => $flosc_acc_flow_name,
 	'{title}'       => $flosc_acc_title_for_prompt,
