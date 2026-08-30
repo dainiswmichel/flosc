@@ -2834,6 +2834,22 @@ if ( $flosc_sci_action === 'rebuilt' ) {
 	<div class="notice <?php echo esc_attr( $flosc_sci_action === 'error' ? 'notice-error' : 'notice-success' ); ?> inline flosc-margin-bottom-15"><p><?php echo esc_html( $flosc_sci_msg ); ?></p></div>
 <?php endif; ?>
 
+<?php
+// The rebuild control below is its own form posting to admin-post.php, so the
+// settings form has to end before it. That end tag has to be emitted HERE,
+// outside the table — a </form> written inside a <td>, for a form opened
+// outside the table, does not close anything: the HTML parser clears its form
+// pointer and leaves the element open. Everything after it then stayed inside
+// #flosc-settings-form, the inline form nested inside it was discarded (forms
+// cannot nest), and that inline form's own _wpnonce landed in the settings
+// form — overwriting the settings nonce, because PHP keeps the last value for
+// a repeated field name. wp_verify_nonce() then failed on every page-wide
+// Save, the handler never ran, and the button did nothing at all.
+if ( empty( $GLOBALS['flosc_settings_form_closed_early'] ) ) {
+	echo '</form>';
+	$GLOBALS['flosc_settings_form_closed_early'] = true;
+}
+?>
 <div class="flosc-card-soft flosc-margin-bottom-20">
 	<table class="form-table flosc-form-table-reset" role="presentation">
 		<tr>
@@ -2895,14 +2911,8 @@ if ( $flosc_sci_action === 'rebuilt' ) {
 		<tr>
 			<th scope="row"><?php echo esc_html__( 'Rebuild', 'flosc' ); ?></th>
 			<td>
-				<?php if ( empty( $GLOBALS['flosc_settings_form_closed_early'] ) ) : ?>
-					<?php
-					echo '</form>';
-					$GLOBALS['flosc_settings_form_closed_early'] = true;
-					?>
-				<?php endif; ?>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="flosc-inline-form">
-					<?php wp_nonce_field( 'flosc_site_index_rebuild' ); ?>
+					<?php wp_nonce_field( 'flosc_site_index_rebuild', 'flosc_sci_nonce' ); ?>
 					<input type="hidden" name="action" value="flosc_site_index_rebuild">
 					<input type="hidden" name="flosc_return_ivr" value="<?php echo esc_attr( $flosc_sci_ivr ); ?>">
 					<button type="submit" class="button button-primary">

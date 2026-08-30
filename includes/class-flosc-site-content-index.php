@@ -728,7 +728,10 @@ class FLOSC_Site_Content_Index {
 	 */
 	public function handle_rebuild() {
 		$this->require_admin();
-		check_admin_referer( 'flosc_site_index_rebuild' );
+		// Its own field name, not the default _wpnonce. This form renders on the
+		// same page as the settings form, and two fields called _wpnonce in one
+		// submission leave PHP holding only the last of them.
+		check_admin_referer( 'flosc_site_index_rebuild', 'flosc_sci_nonce' );
 		$ivr  = $this->ivr_from_request( wp_unslash( $_POST ) );
 		$stem = $this->stem_from_ivr( $ivr );
 		$result = $this->rebuild( $stem );

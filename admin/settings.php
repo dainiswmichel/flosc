@@ -1833,15 +1833,16 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
     }
     $flosc_new_settings['identity'] = $flosc_identity;
 
-    // When this flow was last saved from this page, stamped by the server that
-    // did the writing. Shown under the Save button so the answer to "did that
-    // take?" is on screen rather than inferred from the page not complaining.
-    if (function_exists('flosc_mts_utc')) {
-        $flosc_new_settings['last_settings_save'] = flosc_mts_utc();
-    }
-
     // Save flow settings (ALL tabs now per-flow)
     update_option($flosc_settings_key, $flosc_new_settings);
+
+    // Record the save in its own option, after the write it reports on. Keeping
+    // it inside $flosc_new_settings made it one more key in a bag that is
+    // rebuilt from POST, normalised on load and seeded when partial — a record
+    // of whether a write happened must not ride on the thing being written.
+    if (function_exists('flosc_stamp_flow_saved')) {
+        flosc_stamp_flow_saved($flosc_selected_ivr);
+    }
 
     // floscAvailableProviders: non-empty keys on this flow become available install-wide.
     if ( function_exists( 'flosc_available_providers_promote_from_flow' ) ) {
@@ -2962,7 +2963,15 @@ if (function_exists('wp_add_inline_style')) {
             // Pressing Save always writes and always restamps, so the line
             // always moves, and an operator can tell the press landed without
             // having to remember what it said a moment ago.
-            $flosc_last_save = trim((string) ($flosc_flow_settings['last_settings_save'] ?? ''));
+            $flosc_last_save = function_exists('flosc_flow_last_saved_at')
+                ? flosc_flow_last_saved_at($flosc_selected_ivr)
+                : '';
+
+            // Whether the save handler ran at all. It redirects with saved=1,
+            // so this separates "the button never submitted" from "it submitted
+            // and the write did not land" — two different faults that look
+            // identical on screen, and one screenshot now tells them apart.
+            $flosc_save_ran = isset($_GET['saved']) && '1' === sanitize_text_field(wp_unslash((string) $_GET['saved'])); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only display hint
             ?>
             <span class="flosc-last-save" id="flosc-last-save">
                 <?php
@@ -2972,6 +2981,8 @@ if (function_exists('wp_add_inline_style')) {
                         esc_html__( 'Last save: %s', 'flosc' ),
                         esc_html( $flosc_last_save )
                     );
+                } elseif ($flosc_save_ran) {
+                    echo esc_html__( 'Saved, but this site did not keep the time it happened.', 'flosc' );
                 } else {
                     echo esc_html__( 'Not saved from this page yet.', 'flosc' );
                 }

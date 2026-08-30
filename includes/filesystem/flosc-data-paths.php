@@ -1087,3 +1087,71 @@ if ( ! function_exists( 'flosc_da1_prune_flow_assignments' ) ) {
 		return $clean;
 	}
 }
+
+if ( ! function_exists( 'flosc_flow_last_save_option' ) ) {
+	/**
+	 * Where one flow records when it was last saved from the Settings page.
+	 *
+	 * Its own option rather than a key inside the flow settings bag. That bag
+	 * is rebuilt from POST on every save, normalised on load, seeded when
+	 * partial, and promoted between flows — any of which can drop a key it does
+	 * not know about. A record of whether a write happened must not depend on
+	 * the write it is reporting on.
+	 *
+	 * @param string $ivr Flow file.
+	 * @return string Option name, or '' when the flow cannot be identified.
+	 */
+	function flosc_flow_last_save_option( $ivr ) {
+		$stem = sanitize_key( pathinfo( basename( (string) $ivr ), PATHINFO_FILENAME ) );
+
+		return '' === $stem ? '' : 'flosc_last_save_' . $stem;
+	}
+}
+
+if ( ! function_exists( 'flosc_stamp_flow_saved' ) ) {
+	/**
+	 * Record that this flow was just saved, and answer with the stamp.
+	 *
+	 * @param string $ivr Flow file.
+	 * @return string The stamp written, or '' when there was nowhere to write it.
+	 */
+	function flosc_stamp_flow_saved( $ivr ) {
+		$option = flosc_flow_last_save_option( $ivr );
+
+		if ( '' === $option ) {
+			return '';
+		}
+
+		// The helper lives with the AI code and is loaded at plugin boot, but a
+		// record of a save must not go missing because a require moved. The
+		// same format either way.
+		if ( function_exists( 'flosc_mts_utc' ) ) {
+			$stamp = flosc_mts_utc();
+		} else {
+			$now   = microtime( true );
+			$secs  = (int) floor( $now );
+			$ms    = min( 999, (int) round( ( $now - $secs ) * 1000 ) );
+			$zone  = ( 0 === (int) gmdate( 'Z', $secs ) ) ? 'UTC' : 'T';
+			$stamp = gmdate( 'Y\y-m\m-d\d-', $secs ) . $zone . '-'
+				. gmdate( 'H\h-i\m-s\s-', $secs ) . sprintf( '%03dms', $ms );
+		}
+
+		update_option( $option, $stamp, false );
+
+		return $stamp;
+	}
+}
+
+if ( ! function_exists( 'flosc_flow_last_saved_at' ) ) {
+	/**
+	 * When this flow was last saved from the Settings page, or ''.
+	 *
+	 * @param string $ivr Flow file.
+	 * @return string
+	 */
+	function flosc_flow_last_saved_at( $ivr ) {
+		$option = flosc_flow_last_save_option( $ivr );
+
+		return '' === $option ? '' : trim( (string) get_option( $option, '' ) );
+	}
+}
