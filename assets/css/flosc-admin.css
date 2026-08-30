@@ -7756,3 +7756,10 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
 .flosc-save-key-status--ok { color: #2c6349; }
 .flosc-show-all-keys-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 8px 0 16px; }
 .flosc-show-all-keys-row .description { margin: 0; }
+
+/* What the provider says about a model — its numbers, not FLOSC's opinion. */
+.flosc-model-detail { margin: 8px 0 4px; padding: 12px; border: 1px solid #dcdcde; border-left: 3px solid #2c6349; background: #fbfdfc; border-radius: 3px; }
+.flosc-model-detail__name { margin: 0 0 6px; font-weight: 600; }
+.flosc-model-detail__list { margin: 0; padding-left: 18px; font-size: 13px; }
+.flosc-model-detail__list li { margin: 0 0 3px; }
+.flosc-model-detail__note { margin: 8px 0 0; font-size: 12px; color: #646970; }

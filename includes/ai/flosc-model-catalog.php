@@ -403,3 +403,149 @@ if ( ! function_exists( 'flosc_default_model' ) ) {
 		return (string) ( $defaults[ sanitize_key( (string) $provider ) ] ?? '' );
 	}
 }
+
+if ( ! function_exists( 'flosc_fetch_model_details' ) ) {
+	/**
+	 * Ask the provider to describe one model.
+	 *
+	 * Anthropic publishes a per-model endpoint carrying the real context
+	 * window, the real maximum output, and a capability tree. FLOSC used to
+	 * cap Max Tokens at a hardcoded 4096, a number belonging to no model —
+	 * Sonnet 5 allows 128,000 and Haiku 4.5 allows 64,000. Reading the limit
+	 * from the model beats inventing one.
+	 *
+	 * What this cannot answer: sampling. There is no temperature entry in the
+	 * capability tree, so whether a model accepts temperature is only knowable
+	 * by making a request. Do not present this as a complete settings list.
+	 *
+	 * @param string $provider FLOSC provider slug.
+	 * @param string $api_key  The saved key.
+	 * @param string $model    Model id to describe.
+	 * @return array<string,mixed>|WP_Error
+	 */
+	function flosc_fetch_model_details( $provider, $api_key, $model ) {
+		$provider = sanitize_key( (string) $provider );
+		$model    = trim( (string) $model );
+
+		if ( 'anthropic' !== $provider ) {
+			return new WP_Error(
+				'flosc_model_details_unsupported',
+				__( 'Only Anthropic publishes a per-model description FLOSC can read.', 'flosc' )
+			);
+		}
+
+		if ( '' === (string) $api_key ) {
+			return new WP_Error( 'flosc_model_details_no_key', __( 'Save an API key first — the description comes from the provider.', 'flosc' ) );
+		}
+
+		if ( '' === $model ) {
+			return new WP_Error( 'flosc_model_details_no_model', __( 'Choose a model first.', 'flosc' ) );
+		}
+
+		$response = wp_remote_get(
+			'https://api.anthropic.com/v1/models/' . rawurlencode( $model ),
+			array(
+				'timeout' => 15,
+				'headers' => array(
+					'x-api-key'         => (string) $api_key,
+					'anthropic-version' => '2023-06-01',
+				),
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$code = (int) wp_remote_retrieve_response_code( $response );
+		$body = json_decode( (string) wp_remote_retrieve_body( $response ), true );
+
+		if ( 200 !== $code || ! is_array( $body ) ) {
+			$detail = is_array( $body ) ? (string) ( $body['error']['message'] ?? '' ) : '';
+
+			return new WP_Error(
+				'flosc_model_details_http_' . $code,
+				sprintf(
+					/* translators: 1: HTTP status code, 2: the provider's own error text. */
+					__( 'The provider answered %1$d. %2$s', 'flosc' ),
+					$code,
+					$detail
+				)
+			);
+		}
+
+		return flosc_model_details_summarise( $body );
+	}
+}
+
+if ( ! function_exists( 'flosc_model_details_summarise' ) ) {
+	/**
+	 * Turn a model description into the few facts an operator acts on.
+	 *
+	 * @param array<string,mixed> $body Decoded model object.
+	 * @return array<string,mixed>
+	 */
+	function flosc_model_details_summarise( $body ) {
+		$caps = isset( $body['capabilities'] ) && is_array( $body['capabilities'] ) ? $body['capabilities'] : array();
+
+		$supported = static function ( $node ) {
+			return is_array( $node ) && ! empty( $node['supported'] );
+		};
+
+		$features = array();
+
+		if ( $supported( $caps['image_input'] ?? null ) ) {
+			$features[] = __( 'reads images', 'flosc' );
+		}
+
+		if ( $supported( $caps['pdf_input'] ?? null ) ) {
+			$features[] = __( 'reads PDFs', 'flosc' );
+		}
+
+		if ( $supported( $caps['structured_outputs'] ?? null ) ) {
+			$features[] = __( 'structured output', 'flosc' );
+		}
+
+		if ( $supported( $caps['citations'] ?? null ) ) {
+			$features[] = __( 'citations', 'flosc' );
+		}
+
+		if ( $supported( $caps['code_execution'] ?? null ) ) {
+			$features[] = __( 'code execution', 'flosc' );
+		}
+
+		if ( $supported( $caps['thinking'] ?? null ) ) {
+			$types = isset( $caps['thinking']['types'] ) && is_array( $caps['thinking']['types'] ) ? $caps['thinking']['types'] : array();
+			$names = array();
+
+			foreach ( array( 'adaptive', 'enabled' ) as $type ) {
+				if ( $supported( $types[ $type ] ?? null ) ) {
+					$names[] = $type;
+				}
+			}
+
+			$features[] = empty( $names )
+				? __( 'thinking', 'flosc' )
+				: sprintf( /* translators: %s: comma separated thinking types. */ __( 'thinking (%s)', 'flosc' ), implode( ', ', $names ) );
+		}
+
+		$levels = array();
+
+		if ( $supported( $caps['effort'] ?? null ) ) {
+			foreach ( array( 'low', 'medium', 'high', 'xhigh', 'max' ) as $level ) {
+				if ( $supported( $caps['effort'][ $level ] ?? null ) ) {
+					$levels[] = $level;
+				}
+			}
+		}
+
+		return array(
+			'id'               => (string) ( $body['id'] ?? '' ),
+			'display_name'     => (string) ( $body['display_name'] ?? '' ),
+			'max_input_tokens' => (int) ( $body['max_input_tokens'] ?? 0 ),
+			'max_tokens'       => (int) ( $body['max_tokens'] ?? 0 ),
+			'features'         => $features,
+			'effort_levels'    => $levels,
+		);
+	}
+}

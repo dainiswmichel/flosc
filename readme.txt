@@ -202,6 +202,7 @@ Privacy policy: https://openai.com/policies/privacy-policy
 2. Anthropic (via WordPress AI Client + AI Provider for Anthropic)
 When this flow attaches Anthropic, FLOSC sends prompts (including RAG tool declarations) through `wp_ai_client_prompt()` to the official AI Provider for Anthropic plugin, which communicates with Anthropic. FLOSC does not call Anthropic chat endpoints itself.
 Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://api.anthropic.com/v1/models directly so the saved key can be offered the models it is entitled to. Only the API key and the anthropic-version header are sent; no visitor or site content is included.
+Model description: when an administrator clicks "Describe this model", FLOSC requests https://api.anthropic.com/v1/models/{model_id} to read that model's context window, maximum reply length and capabilities. Only the API key and the anthropic-version header are sent.
 Data sent: visitor prompt text, conversation context, model parameters, and tool results when RAG is active.
 Service terms: https://www.anthropic.com/legal/consumer-terms
 Privacy policy: https://www.anthropic.com/legal/privacy

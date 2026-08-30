@@ -1415,6 +1415,7 @@ class FLOSC_Framework {
         add_action('wp_ajax_flosc_fetch_ai_models', [$this, 'ajax_fetch_ai_models']);
         add_action('wp_ajax_flosc_save_ai_provider_key', [$this, 'ajax_save_ai_provider_key']);
         add_action('wp_ajax_flosc_save_ai_provider_model', [$this, 'ajax_save_ai_provider_model']);
+        add_action('wp_ajax_flosc_describe_ai_model', [$this, 'ajax_describe_ai_model']);
 
         // Admin: send Guest Access Link to any email (Register & Login tab)
         add_action('wp_ajax_flosc_send_guest_link', [$this, 'ajax_send_guest_link']);
@@ -9837,6 +9838,48 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'model'    => $stored['model'],
             'message'  => __('Model saved for this flow.', 'flosc'),
         ]);
+    }
+
+    /**
+     * Ask the provider to describe the chosen model, and report it verbatim.
+     *
+     * Everything shown comes from the provider. FLOSC adds no judgement about
+     * which model is better, and does not claim the list is complete —
+     * sampling support, for one, is not in it.
+     */
+    public function ajax_describe_ai_model() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Unauthorized', 'flosc')], 403);
+        }
+
+        check_ajax_referer('flosc_test_ai', 'nonce');
+
+        $post     = wp_unslash($_POST);
+        $provider = isset($post['provider']) ? sanitize_key((string) $post['provider']) : '';
+        $ivr      = isset($post['ivr']) ? sanitize_file_name((string) $post['ivr']) : '';
+        $model    = isset($post['model']) ? trim((string) $post['model']) : '';
+        $typed    = isset($post['api_key']) ? trim((string) $post['api_key']) : '';
+
+        if ($ivr !== '') {
+            $GLOBALS['flosc_current_ivr'] = $ivr;
+            $this->set_flow_context(pathinfo($ivr, PATHINFO_FILENAME));
+        }
+
+        $api_key = $typed;
+
+        if ($api_key === '') {
+            $api_key = function_exists('flosc_get_provider_api_key')
+                ? flosc_get_provider_api_key($provider)
+                : (string) flosc_get_setting($provider . '_api_key', '');
+        }
+
+        $details = flosc_fetch_model_details($provider, (string) $api_key, $model);
+
+        if (is_wp_error($details)) {
+            wp_send_json_error(['message' => $details->get_error_message()]);
+        }
+
+        wp_send_json_success($details);
     }
 
     public function ajax_test_ai_connection() {

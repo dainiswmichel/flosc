@@ -360,12 +360,16 @@ endif;
                 <button type="button" class="button flosc-fetch-models" data-provider="anthropic" data-target="flow_ai_anthropic_model">
                     <?php echo esc_html__( 'Fetch models this key can use', 'flosc' ); ?>
                 </button>
+                <button type="button" class="button flosc-describe-model" data-provider="anthropic" data-target="flow_ai_anthropic_model">
+                    <?php echo esc_html__( 'Describe this model', 'flosc' ); ?>
+                </button>
                 <button type="submit" name="flosc_save" value="1" form="flosc-settings-form" class="button button-primary">
                     <?php echo esc_html__( 'Save AI Settings', 'flosc' ); ?>
                 </button>
                 <span class="description flosc-model-fetch-status" data-for="flow_ai_anthropic_model"></span>
             </p>
             <div class="flosc-model-picker" data-for="flow_ai_anthropic_model" hidden></div>
+            <div class="flosc-model-detail" data-for="flow_ai_anthropic_model" hidden></div>
             <p class="description">The model id to use for this flow. Fetch lists what this key can use; any current id can also be typed in.</p>
         </td>
     </tr>
@@ -1083,6 +1087,84 @@ jQuery(document).ready(function($) {
             complete: function () {
                 $btn.prop('disabled', false);
             }
+        });
+    });
+
+    // Ask the provider to describe the chosen model. Everything rendered comes
+    // from the provider; FLOSC ranks nothing and invents nothing. The real
+    // max output also raises the Max Tokens ceiling, which used to be a
+    // hardcoded 4096 belonging to no model.
+    $('.flosc-describe-model').on('click', function () {
+        var $btn = $(this);
+        var provider = $btn.data('provider');
+        var targetId = $btn.data('target');
+        var $detail = $('.flosc-model-detail[data-for="' + targetId + '"]');
+        var $status = $('.flosc-model-fetch-status[data-for="' + targetId + '"]');
+        var model = String($('#' + targetId).val() || '').trim();
+
+        if (!model) {
+            $status.addClass('flosc-model-fetch-status--bad').text('Choose or type a model first.');
+            return;
+        }
+
+        $btn.prop('disabled', true);
+        $status.removeClass('flosc-model-fetch-status--bad flosc-save-key-status--ok').text('Asking the provider about ' + model + '…');
+
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'flosc_describe_ai_model',
+                nonce: '<?php echo esc_js( wp_create_nonce('flosc_test_ai') ); ?>',
+                provider: provider,
+                ivr: '<?php echo esc_js( $GLOBALS['flosc_current_ivr'] ?? '' ); ?>',
+                model: model,
+                api_key: $('#flow_' + provider + '_api_key').val() || ''
+            },
+            success: function (response) {
+                if (!response || !response.success) {
+                    $detail.attr('hidden', true).empty();
+                    $status.addClass('flosc-model-fetch-status--bad')
+                        .text((response && response.data && response.data.message) || 'Could not describe the model.');
+                    return;
+                }
+
+                var d = response.data || {};
+                var n = function (v) { return Number(v || 0).toLocaleString(); };
+
+                $detail.empty();
+                $('<p>').addClass('flosc-model-detail__name')
+                    .text((d.display_name || d.id) + ' — as described by the provider').appendTo($detail);
+
+                var $ul = $('<ul>').addClass('flosc-model-detail__list').appendTo($detail);
+                $('<li>').text('Context window: ' + n(d.max_input_tokens) + ' tokens').appendTo($ul);
+                $('<li>').text('Longest reply it can produce: ' + n(d.max_tokens) + ' tokens').appendTo($ul);
+
+                if (d.features && d.features.length) {
+                    $('<li>').text('Can also: ' + d.features.join(', ')).appendTo($ul);
+                }
+
+                if (d.effort_levels && d.effort_levels.length) {
+                    $('<li>').text('Effort levels: ' + d.effort_levels.join(', ')).appendTo($ul);
+                }
+
+                // Let Max Tokens go as high as this model really allows.
+                var $mt = $('#flow_ai_max_tokens');
+
+                if ($mt.length && d.max_tokens > 0) {
+                    $mt.attr('max', d.max_tokens);
+                    $('<p>').addClass('flosc-model-detail__note')
+                        .text('Max Tokens below now accepts up to ' + n(d.max_tokens) + ' for this model. Temperature is not listed here because Anthropic does not publish sampling support — FLOSC does not send it to Claude at all.')
+                        .appendTo($detail);
+                }
+
+                $detail.removeAttr('hidden');
+                $status.addClass('flosc-save-key-status--ok').text('\u2713 Described by the provider.');
+            },
+            error: function () {
+                $status.addClass('flosc-model-fetch-status--bad').text('Could not reach the server.');
+            },
+            complete: function () { $btn.prop('disabled', false); }
         });
     });
 

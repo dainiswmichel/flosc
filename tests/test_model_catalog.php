@@ -155,6 +155,92 @@ check( 'rows that are not arrays are skipped', flosc_model_catalog_page( 'openai
 check( 'blank ids are skipped', flosc_model_catalog_page( 'openai', array( 'data' => array( array( 'id' => '  ' ) ) ) )['models'], array() );
 check( 'gemini rows with no methods are skipped', flosc_model_catalog_page( 'gemini', array( 'models' => array( array( 'name' => 'models/x' ) ) ) )['models'], array() );
 
+echo "Describing one model, from its real description\n";
+// Captured from GET /v1/models/claude-sonnet-5 on 2026-08-30.
+$detail = flosc_model_details_summarise( json_decode( <<<'JSON'
+{
+ "type": "model",
+ "id": "claude-sonnet-5",
+ "display_name": "Claude Sonnet 5",
+ "created_at": "2026-06-29T00:00:00Z",
+ "max_input_tokens": 1000000,
+ "max_tokens": 128000,
+ "capabilities": {
+  "batch": {
+   "supported": true
+  },
+  "citations": {
+   "supported": true
+  },
+  "code_execution": {
+   "supported": true
+  },
+  "context_management": {
+   "supported": true,
+   "clear_tool_uses_20250919": {
+    "supported": true
+   },
+   "clear_thinking_20251015": {
+    "supported": true
+   },
+   "compact_20260112": {
+    "supported": true
+   }
+  },
+  "effort": {
+   "supported": true,
+   "low": {
+    "supported": true
+   },
+   "medium": {
+    "supported": true
+   },
+   "high": {
+    "supported": true
+   },
+   "xhigh": {
+    "supported": true
+   },
+   "max": {
+    "supported": true
+   }
+  },
+  "image_input": {
+   "supported": true
+  },
+  "pdf_input": {
+   "supported": true
+  },
+  "structured_outputs": {
+   "supported": true
+  },
+  "thinking": {
+   "supported": true,
+   "types": {
+    "enabled": {
+     "supported": false
+    },
+    "adaptive": {
+     "supported": true
+    }
+   }
+  }
+ }
+}
+JSON
+, true ) );
+check( 'the id comes through', $detail['id'], 'claude-sonnet-5' );
+check( 'the real context window, not a guess', $detail['max_input_tokens'], 1000000 );
+check( 'the real maximum reply', $detail['max_tokens'], 128000 );
+check( '  which is far above the 4096 FLOSC used to hardcode', $detail['max_tokens'] > 4096, true );
+check( 'effort levels come from the provider', $detail['effort_levels'], array( 'low', 'medium', 'high', 'xhigh', 'max' ) );
+check( 'thinking is reported with only the types it supports', in_array( 'thinking (adaptive)', $detail['features'], true ), true );
+check( '  images', in_array( 'reads images', $detail['features'], true ), true );
+check( '  PDFs', in_array( 'reads PDFs', $detail['features'], true ), true );
+$empty = flosc_model_details_summarise( array() );
+check( 'a body with no capabilities describes nothing rather than guessing', $empty['features'], array() );
+check( '  and claims no limits', $empty['max_tokens'], 0 );
+
 echo "Defaults\n";
 check( 'every provider FLOSC offers has one', array_filter( array_map( 'flosc_default_model', array( 'anthropic', 'openai', 'xai', 'gemini' ) ) ) === array( 'claude-sonnet-4-5-20250929', 'gpt-5.4-mini', 'grok-4.6', 'gemini-3.7-flash' ), true );
 check( 'ivr has none', flosc_default_model( 'ivr' ), '' );
