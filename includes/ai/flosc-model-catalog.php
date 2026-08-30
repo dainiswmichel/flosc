@@ -336,7 +336,7 @@ if ( ! function_exists( 'flosc_fetch_model_catalog' ) ) {
 				if ( false !== stripos( $detail, 'anthropic-workspace-id' ) ) {
 					return new WP_Error(
 						'flosc_models_workspace_required',
-						__( 'This Anthropic key is linked to an identity rather than to one workspace, so Anthropic requires a workspace id on every request — including the chat requests the AI Provider for Anthropic plugin makes, which cannot send one. Create a key scoped to a single workspace in the Anthropic Console and paste that instead; nothing else needs changing. If you must keep this key, put its workspace id in the Anthropic Workspace ID field above and FLOSC will send it where FLOSC makes the request.', 'flosc' )
+						__( 'This Anthropic key was created without a workspace, so Anthropic requires a workspace id on every request — including the chat requests the AI Provider for Anthropic plugin makes, which cannot send one. In the Anthropic Console the key list has a Workspace column: create a new key with a workspace chosen there and paste that instead. Nothing else needs changing, and the account the key is linked to makes no difference. If you must keep this key, put its workspace id in the Anthropic Workspace ID field above and FLOSC will send it on the requests FLOSC makes itself.', 'flosc' )
 					);
 				}
 
