@@ -9689,8 +9689,14 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         $provider = isset($post['provider']) ? sanitize_key($post['provider']) : '';
         $ivr      = isset($post['ivr']) ? sanitize_file_name($post['ivr']) : '';
 
+        // Same flow context the connection test establishes. admin-ajax has no
+        // URL to detect the flow from, so without this the per-flow key is
+        // invisible and the install-wide one answers in its place — the button
+        // would then report "no key saved", or list models for a different key,
+        // while the test standing next to it reads the right one.
         if ($ivr !== '') {
             $GLOBALS['flosc_current_ivr'] = $ivr;
+            $this->set_flow_context(pathinfo($ivr, PATHINFO_FILENAME));
         }
 
         $api_key = function_exists('flosc_get_provider_api_key')
