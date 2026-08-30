@@ -635,6 +635,12 @@ endif;
                 <button type="button" class="button" id="flosc-params-edit">
                     <?php echo esc_html__( 'Edit the request', 'flosc' ); ?>
                 </button>
+                <button type="button" class="button button-primary" id="flosc-save-tuning">
+                    <?php echo esc_html__( 'Save Model Tuning', 'flosc' ); ?>
+                </button>
+                <span class="flosc-tuning-status" id="flosc-tuning-status" aria-live="polite"></span>
+            </p>
+            <p class="flosc-model-fetch-row">
                 <span class="description" id="flosc-params-lock-note">
                     <?php echo esc_html__( 'Built from the fields above. Edit it to send anything they cannot express — what you write wins, and those fields follow it as you type.', 'flosc' ); ?>
                 </span>
@@ -1513,6 +1519,132 @@ jQuery(document).ready(function($) {
     });
 
     $('#flow_ai_provider').on('change', floscRebuildPreview);
+
+    // ---- Saving Step 2b where it is typed -----------------------------------
+    //
+    // The page-wide Save at the foot of Settings still writes these. This is
+    // the same write, reachable from the controls themselves, and it runs on
+    // its own when a value is committed — a green flash on the field that
+    // changed, so the answer to "did that take?" is visible without scrolling
+    // to find out.
+
+    var floscTuningTimer = null;
+    var floscTuningInFlight = false;
+
+    function floscFlashSaved($el) {
+        if (!$el || !$el.length) { return; }
+
+        $el.removeClass('flosc-saved-flash');
+
+        // Reading offsetWidth restarts the CSS transition on an element that
+        // was flashed a moment ago; without it a second save shows nothing.
+        $el[0].offsetWidth;
+        $el.addClass('flosc-saved-flash');
+
+        window.setTimeout(function () { $el.removeClass('flosc-saved-flash'); }, 1600);
+    }
+
+    function floscSaveTuning($flash) {
+        var provider = floscCurrentProvider();
+        var $status = $('#flosc-tuning-status');
+
+        if (!provider || provider === 'ivr') {
+            $status.attr('class', 'flosc-tuning-status flosc-tuning-status--bad')
+                .text('Pick an AI provider for this flow first.');
+            return;
+        }
+
+        if (floscTuningInFlight) { return; }
+
+        floscTuningInFlight = true;
+        $status.attr('class', 'flosc-tuning-status').text('Saving\u2026');
+
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'flosc_save_model_tuning',
+                nonce: '<?php echo esc_js( wp_create_nonce('flosc_test_ai') ); ?>',
+                ivr: '<?php echo esc_js( $GLOBALS['flosc_current_ivr'] ?? '' ); ?>',
+                provider: provider,
+                temperature: String($('#flow_ai_temperature').val() || ''),
+                max_tokens: String($('#flow_ai_max_tokens').val() || ''),
+                params: String($('#flow_ai_model_params').val() || '')
+            },
+            success: function (response) {
+                if (!response || !response.success) {
+                    // Almost always a request that will not parse, and the
+                    // message names the line that broke it. Nothing was written,
+                    // so nothing goes green.
+                    $status.attr('class', 'flosc-tuning-status flosc-tuning-status--bad')
+                        .text('\u2717 ' + ((response && response.data && response.data.message) || 'Not saved.'));
+                    return;
+                }
+
+                var d = response.data;
+                var now = new Date();
+
+                $status.attr('class', 'flosc-tuning-status flosc-tuning-status--ok')
+                    .text('\u2713 Saved ' +
+                        String(now.getHours()).padStart(2, '0') + ':' +
+                        String(now.getMinutes()).padStart(2, '0') + ':' +
+                        String(now.getSeconds()).padStart(2, '0'));
+
+                // What came back is what is stored, after the same fold the
+                // page-wide save performs. Showing it rather than what was
+                // typed is the whole point: the page now displays the request
+                // that will actually be sent.
+                floscSyncing = true;
+
+                if (!$('#flow_ai_temperature').is(':focus')) {
+                    $('#flow_ai_temperature').val(d.temperature);
+                }
+
+                if (!$('#flow_ai_max_tokens').is(':focus')) {
+                    $('#flow_ai_max_tokens').val(d.max_tokens);
+                }
+
+                if (!$('#flow_ai_model_params').is(':focus') && d.preview !== undefined) {
+                    $('#flow_ai_model_params').val(d.preview).data('extra', d.params);
+                }
+
+                floscSyncing = false;
+                floscCheckParams();
+
+                floscFlashSaved($flash && $flash.length ? $flash : $('#flow_ai_model_params'));
+            },
+            error: function () {
+                $status.attr('class', 'flosc-tuning-status flosc-tuning-status--bad')
+                    .text('\u2717 The request did not complete.');
+            },
+            complete: function () {
+                floscTuningInFlight = false;
+            }
+        });
+    }
+
+    $('#flosc-save-tuning').on('click', function () {
+        window.clearTimeout(floscTuningTimer);
+        floscSaveTuning($('#flow_ai_model_params'));
+    });
+
+    // Committed edits save themselves. The numeric fields also save after a
+    // pause in typing; the request box does not, because half-written YAML
+    // would be refused on every keystroke and paint the status red while
+    // somebody is still typing it.
+    $('#flow_ai_temperature, #flow_ai_max_tokens').on('input', function () {
+        var $field = $(this);
+
+        window.clearTimeout(floscTuningTimer);
+        floscTuningTimer = window.setTimeout(function () { floscSaveTuning($field); }, 1400);
+    });
+
+    $('#flow_ai_temperature, #flow_ai_max_tokens, #flow_ai_model_params').on('change', function () {
+        var $field = $(this);
+
+        window.clearTimeout(floscTuningTimer);
+        floscSaveTuning($field);
+    });
 
     // ---- The parameter menu -------------------------------------------------
     //

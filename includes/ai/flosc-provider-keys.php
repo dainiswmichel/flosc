@@ -1,9 +1,9 @@
 <?php
 /**
- * Storing one AI provider's key and model.
+ * Storing one AI provider's key, model, and tuning.
  *
  * Pulled out of the AJAX handler so the rule can be stated once and tested:
- * a key is written into the flow settings row the Settings page reads, it
+ * a value is written into the flow settings row the Settings page reads, it
  * replaces only its own provider's entry, and everything else in that row —
  * the other providers' keys above all — is left exactly as it was.
  *
@@ -171,6 +171,118 @@ if ( ! function_exists( 'flosc_store_provider_model' ) ) {
 			'option'  => $option,
 			'setting' => $map[ $provider ],
 			'model'   => $model,
+		);
+	}
+}
+
+if ( ! function_exists( 'flosc_store_model_tuning' ) ) {
+	/**
+	 * Store Step 2b for one flow: temperature, max tokens, and the request.
+	 *
+	 * The page-wide Save at the foot of Settings already writes these. This is
+	 * the same write reachable from where they are typed, because a control
+	 * whose Save is a screen away is a control operators stop trusting: they
+	 * change a number, see nothing happen, and conclude it did not take.
+	 *
+	 * The parameter text is validated before anything is written. A request
+	 * that will not parse is refused with the line that broke it, and the
+	 * stored tuning is left exactly as it was — a half-saved request is worse
+	 * than an unsaved one. What survives is then reconciled the same way the
+	 * page-wide save reconciles it, so the fields and the text agree afterwards.
+	 *
+	 * @param string              $ivr      Flow file the tuning belongs to.
+	 * @param string              $provider FLOSC provider slug.
+	 * @param array<string,mixed> $tuning   temperature, max_tokens, params. A
+	 *                                      key left out is left alone.
+	 * @return array<string,mixed>|WP_Error The values as stored.
+	 */
+	function flosc_store_model_tuning( $ivr, $provider, $tuning ) {
+		$provider = sanitize_key( (string) $provider );
+		$ivr      = basename( (string) $ivr );
+		$tuning   = is_array( $tuning ) ? $tuning : array();
+
+		if ( ! in_array( $provider, array( 'anthropic', 'openai', 'xai', 'gemini' ), true ) ) {
+			return new WP_Error( 'flosc_tuning_provider', __( 'Pick an AI provider before saving its tuning.', 'flosc' ) );
+		}
+
+		if ( '' === sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) ) ) {
+			return new WP_Error( 'flosc_tuning_no_flow', __( 'No flow was selected, so there is nowhere to save this tuning.', 'flosc' ) );
+		}
+
+		$params_key = 'ai_' . $provider . '_params';
+		$writes     = array();
+
+		if ( array_key_exists( 'params', $tuning ) ) {
+			$raw = (string) $tuning['params'];
+
+			// Refused before anything is written, and refused in the operator's
+			// own words: flosc_parse_model_parameters names the line it could
+			// not read.
+			if ( function_exists( 'flosc_parse_model_parameters' ) ) {
+				$parsed = flosc_parse_model_parameters( $raw );
+
+				if ( is_wp_error( $parsed ) ) {
+					return $parsed;
+				}
+			}
+
+			$writes[ $params_key ] = $raw;
+		}
+
+		if ( array_key_exists( 'temperature', $tuning ) ) {
+			$temperature = trim( (string) $tuning['temperature'] );
+
+			if ( '' !== $temperature && ! is_numeric( $temperature ) ) {
+				return new WP_Error( 'flosc_tuning_temperature', __( 'Temperature has to be a number, or empty to leave sampling to the model.', 'flosc' ) );
+			}
+
+			$writes['ai_temperature'] = $temperature;
+		}
+
+		if ( array_key_exists( 'max_tokens', $tuning ) ) {
+			$max_tokens = trim( (string) $tuning['max_tokens'] );
+
+			if ( '' !== $max_tokens && ( ! ctype_digit( $max_tokens ) || 0 === (int) $max_tokens ) ) {
+				return new WP_Error( 'flosc_tuning_max_tokens', __( 'Max Tokens has to be a whole number above zero, or empty to use the model\'s own default.', 'flosc' ) );
+			}
+
+			$writes['ai_max_tokens'] = $max_tokens;
+		}
+
+		if ( ! $writes ) {
+			return new WP_Error( 'flosc_tuning_nothing', __( 'There was nothing to save.', 'flosc' ) );
+		}
+
+		$option = function_exists( 'flosc_resolve_flow_option_key_for_ivr' )
+			? flosc_resolve_flow_option_key_for_ivr( $ivr )
+			: 'flosc_flow_' . sanitize_key( pathinfo( $ivr, PATHINFO_FILENAME ) );
+
+		$settings = get_option( $option, array() );
+		$settings = is_array( $settings ) ? $settings : array();
+		$settings = array_merge( $settings, $writes );
+
+		// The same fold the page-wide save performs: a temperature or a
+		// max_tokens named in the request moves into its own field, so the
+		// controls never display one number while the request carries another.
+		if ( function_exists( 'flosc_reconcile_model_parameters' ) ) {
+			$settings = flosc_reconcile_model_parameters( $settings, $provider );
+		}
+
+		update_option( $option, $settings, false );
+
+		if ( function_exists( 'flosc_bust_flow_option_rows_cache' ) ) {
+			flosc_bust_flow_option_rows_cache();
+		}
+
+		return array(
+			'option'      => $option,
+			'provider'    => $provider,
+			'temperature' => (string) ( $settings['ai_temperature'] ?? '' ),
+			'max_tokens'  => (string) ( $settings['ai_max_tokens'] ?? '' ),
+			'params'      => (string) ( $settings[ $params_key ] ?? '' ),
+			'preview'     => function_exists( 'flosc_build_model_parameter_preview' )
+				? flosc_build_model_parameter_preview( $provider, $settings )
+				: '',
 		);
 	}
 }

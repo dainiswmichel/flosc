@@ -7807,3 +7807,16 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
 .flosc-param-menu__answer { margin-top: 10px; padding: 10px 12px; border-left: 3px solid #2c6349; background: #f6f7f7; font-size: 13px; }
 .flosc-param-menu__answer--bad { border-left-color: #d63638; color: #8a2424; }
 .flosc-param-menu__answersrc { margin-bottom: 6px; font-size: 12px; color: #646970; }
+
+/* Saving Step 2b where it is typed. The green is the answer to "did that
+   take?", so it has to arrive on the control that changed and then get out
+   of the way. */
+.flosc-tuning-status { margin-left: 10px; font-size: 13px; color: #646970; }
+.flosc-tuning-status--ok { color: #2c6349; font-weight: 600; }
+.flosc-tuning-status--bad { color: #8a2424; font-weight: 600; }
+#flow_ai_temperature, #flow_ai_max_tokens, #flow_ai_model_params { transition: border-color .6s ease, box-shadow .6s ease, background-color .6s ease; }
+#flow_ai_temperature.flosc-saved-flash, #flow_ai_max_tokens.flosc-saved-flash, #flow_ai_model_params.flosc-saved-flash { transition: none; border-color: #2c6349; box-shadow: 0 0 0 1px #2c6349, 0 0 0 4px rgba(44, 99, 73, .15); background-color: #f0f7f3; }
+
+@media (prefers-reduced-motion: reduce) {
+	#flow_ai_temperature, #flow_ai_max_tokens, #flow_ai_model_params { transition: none; }
+}

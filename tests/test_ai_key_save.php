@@ -38,6 +38,8 @@ class WP_Error {
 function is_wp_error( $t ) { return $t instanceof WP_Error; }
 
 require_once __DIR__ . '/../includes/ai/flosc-provider-keys.php';
+require_once __DIR__ . '/../includes/ai/flosc-provider-profiles.php';
+require_once __DIR__ . '/../includes/ai/flosc-model-parameters.php';
 
 $fail = 0;
 function ok( $label, $actual, $expected ) {
@@ -145,6 +147,56 @@ ok( '  one with a space in it', is_wp_error( flosc_store_provider_model( $ivr, '
 ok( '  one carrying a newline', is_wp_error( flosc_store_provider_model( $ivr, 'anthropic', "claude\n5" ) ), true );
 ok( '  an unknown provider', is_wp_error( flosc_store_provider_model( $ivr, 'nope', 'x' ) ), true );
 ok( 'and a refusal leaves the stored model alone', get_option( $option )['ai_anthropic_model'], 'claude-something-2099-preview' );
+
+
+echo "Step 2b saves from where it is typed\n";
+$tune_ivr    = 'tuning_ivr.md';
+$tune_option = 'flosc_flow_tuning_ivr';
+
+update_option( $tune_option, array(
+	'name'               => 'A flow already carrying settings',
+	'ai_provider'        => 'anthropic',
+	'anthropic_api_key'  => 'sk-ant-keep-me',
+	'ai_anthropic_model' => 'claude-sonnet-4-5-20250929',
+	'ai_temperature'     => '0.3',
+	'ai_max_tokens'      => '1200',
+), false );
+
+$saved = flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'max_tokens' => '1500' ) );
+ok( 'Max Tokens saves on its own', is_wp_error( $saved ) ? $saved->get_error_message() : $saved['max_tokens'], '1500' );
+$row = get_option( $tune_option );
+ok( '  and it is what the flow now stores', $row['ai_max_tokens'], '1500' );
+ok( '  the key beside it is untouched', $row['anthropic_api_key'], 'sk-ant-keep-me' );
+ok( '  so is the model', $row['ai_anthropic_model'], 'claude-sonnet-4-5-20250929' );
+ok( '  and so is a field this save never mentioned', $row['ai_temperature'], '0.3' );
+
+$saved = flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'params' => "top_p: 0.9\nmax_tokens: 900" ) );
+ok( 'a max_tokens written into the request wins', $saved['max_tokens'], '900' );
+ok( '  and is folded out of the request text', $saved['params'], 'top_p: 0.9' );
+ok( '  leaving the request showing what is sent', $saved['preview'], "max_tokens: 900\ntop_p: 0.9" );
+
+$before = get_option( $tune_option );
+$broken = flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'params' => 'this is not a parameter' ) );
+ok( 'a request that will not parse is refused', is_wp_error( $broken ), true );
+ok( '  naming the line that broke it', strpos( $broken->get_error_message(), 'this is not a parameter' ) !== false, true );
+ok( '  and nothing is written', get_option( $tune_option ) === $before, true );
+
+$bad = flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'max_tokens' => 'lots' ) );
+ok( 'Max Tokens has to be a number', is_wp_error( $bad ), true );
+ok( '  zero is not a reply length', is_wp_error( flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'max_tokens' => '0' ) ) ), true );
+ok( '  empty means the model decides', flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'max_tokens' => '' ) )['max_tokens'], '' );
+ok( 'Temperature has to be a number too', is_wp_error( flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'temperature' => 'warm' ) ) ), true );
+
+ok( 'a flow that was never named is refused', is_wp_error( flosc_store_model_tuning( '', 'anthropic', array( 'max_tokens' => '900' ) ) ), true );
+ok( 'so is a provider FLOSC cannot store for', is_wp_error( flosc_store_model_tuning( $tune_ivr, 'ivr', array( 'max_tokens' => '900' ) ) ), true );
+ok( 'and a save carrying nothing at all', is_wp_error( flosc_store_model_tuning( $tune_ivr, 'anthropic', array() ) ), true );
+
+// One provider's tuning must not reach another's.
+flosc_store_model_tuning( $tune_ivr, 'openai', array( 'params' => 'presence_penalty: 0.5' ) );
+$row = get_option( $tune_option );
+ok( "OpenAI's request is stored under OpenAI", $row['ai_openai_params'], 'presence_penalty: 0.5' );
+ok( "  and Anthropic's is left as it was", $row['ai_anthropic_params'], 'top_p: 0.9' );
+
 
 echo $fail ? "\n$fail FAILURES\n" : "\nAI key + model saving: all checks passed\n";
 exit( $fail ? 1 : 0 );

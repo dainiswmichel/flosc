@@ -1419,6 +1419,7 @@ class FLOSC_Framework {
         add_action('wp_ajax_flosc_save_ai_provider_model', [$this, 'ajax_save_ai_provider_model']);
         add_action('wp_ajax_flosc_describe_ai_model', [$this, 'ajax_describe_ai_model']);
         add_action('wp_ajax_flosc_explain_ai_parameter', [$this, 'ajax_explain_ai_parameter']);
+        add_action('wp_ajax_flosc_save_model_tuning', [$this, 'ajax_save_model_tuning']);
 
         // Admin: send Guest Access Link to any email (Register & Login tab)
         add_action('wp_ajax_flosc_send_guest_link', [$this, 'ajax_send_guest_link']);
@@ -9969,6 +9970,43 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
             'answer'   => $answer,
             'docs_url' => function_exists('flosc_provider_docs_url') ? flosc_provider_docs_url($provider) : '',
         ]);
+    }
+
+    /**
+     * Save Step 2b where it is typed, rather than at the foot of the page.
+     */
+    public function ajax_save_model_tuning() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Unauthorized', 'flosc')], 403);
+        }
+
+        check_ajax_referer('flosc_test_ai', 'nonce');
+
+        $post     = wp_unslash($_POST);
+        $ivr      = isset($post['ivr']) ? sanitize_file_name((string) $post['ivr']) : '';
+        $provider = isset($post['provider']) ? sanitize_key((string) $post['provider']) : '';
+
+        if (!function_exists('flosc_store_model_tuning')) {
+            wp_send_json_error(['message' => __('Model tuning storage is unavailable on this install.', 'flosc')]);
+        }
+
+        // Only what was posted is written. A field the form did not send is a
+        // field this save has no opinion about, and it is left as it stands.
+        $tuning = [];
+
+        foreach (['temperature', 'max_tokens', 'params'] as $field) {
+            if (isset($post[$field])) {
+                $tuning[$field] = (string) $post[$field];
+            }
+        }
+
+        $stored = flosc_store_model_tuning($ivr, $provider, $tuning);
+
+        if (is_wp_error($stored)) {
+            wp_send_json_error(['message' => $stored->get_error_message()]);
+        }
+
+        wp_send_json_success($stored);
     }
 
     public function ajax_test_ai_connection() {
