@@ -601,6 +601,32 @@ endif;
         </td>
     </tr>
     <tr>
+        <th scope="row"><label for="flow_ai_model_params">Extra model parameters</label></th>
+        <td>
+            <?php
+            $flosc_params_key = 'ai_' . sanitize_key( $flosc_ai_provider ) . '_params';
+            $flosc_params_raw = (string) ( $flosc_flow_settings[ $flosc_params_key ] ?? '' );
+            ?>
+            <textarea id="flow_ai_model_params" name="<?php echo esc_attr( 'flow_' . $flosc_params_key ); ?>"
+                rows="5" class="large-text code" spellcheck="false"
+                placeholder="top_p: 0.9&#10;top_k: 40&#10;stop_sequences: [&quot;END&quot;]"><?php echo esc_textarea( $flosc_params_raw ); ?></textarea>
+            <p class="description flosc-params-status" id="flosc-params-status"></p>
+            <p class="description">
+                Anything the provider accepts, one <code>name: value</code> per line, or a JSON object pasted
+                from the provider's own documentation. FLOSC keeps no list of valid parameters — providers add
+                them faster than any list stays true — so a name FLOSC has never heard of is sent as written and
+                the provider decides. Its answer comes back word for word in Step 3.
+                <br>Numbers, <code>true</code>, <code>false</code> and JSON objects keep their type.
+                <code>model</code>, <code>messages</code> and <code>max_tokens</code> are set from the fields
+                above and cannot be overridden here.
+                <br><strong>Parameters differ by model, not just by provider.</strong> Measured on one Anthropic
+                key: Sonnet 4.5 accepts <code>temperature</code>, <code>top_p</code> and <code>top_k</code>;
+                Sonnet 5 refuses all three and accepts <code>thinking</code> instead. Use
+                <em>Describe this model</em> above, then test.
+            </p>
+        </td>
+    </tr>
+    <tr>
         <th scope="row"><label for="flow_ai_max_tokens">Max Tokens</label></th>
         <td>
             <input type="number" id="flow_ai_max_tokens" name="flow_ai_max_tokens" value="<?php echo esc_attr($flosc_ai_max_tokens); ?>" min="50" max="4096" step="50" class="flosc-ai-tokens-input">
@@ -1225,6 +1251,55 @@ jQuery(document).ready(function($) {
         });
     }
 
+    // Check what was typed before it is saved. The provider decides whether a
+    // parameter is real; this only catches what could never reach a provider —
+    // a line that is not name: value, or JSON that does not parse.
+    function floscCheckParams() {
+        var $box = $('#flow_ai_model_params');
+        var $out = $('#flosc-params-status');
+
+        if (!$box.length) { return; }
+
+        var raw = String($box.val() || '').trim();
+
+        $out.removeClass('flosc-key-state--none flosc-key-state--ok');
+
+        if (!raw) { $out.text(''); return; }
+
+        if (raw.charAt(0) === '{') {
+            try {
+                var obj = JSON.parse(raw);
+                var n = Object.keys(obj).length;
+                $out.addClass('flosc-key-state--ok').text('✓ Valid JSON — ' + n + (n === 1 ? ' parameter' : ' parameters') + ' will be sent.');
+            } catch (e) {
+                $out.addClass('flosc-key-state--none').text('✗ Not valid JSON: ' + e.message);
+            }
+            return;
+        }
+
+        var lines = raw.split(/\r\n|\r|\n/), names = [], bad = null;
+
+        lines.forEach(function (line) {
+            line = line.trim();
+            if (!line || line.charAt(0) === '#' || line.indexOf('//') === 0) { return; }
+            var i = line.indexOf(':');
+            if (i < 1) { bad = bad || line; return; }
+            names.push(line.slice(0, i).trim());
+        });
+
+        if (bad) {
+            $out.addClass('flosc-key-state--none').text('✗ This line is not "name: value" — ' + bad);
+            return;
+        }
+
+        if (!names.length) { $out.text(''); return; }
+
+        $out.addClass('flosc-key-state--ok').text('✓ ' + names.length + (names.length === 1 ? ' parameter' : ' parameters') + ' will be sent: ' + names.join(', '));
+    }
+
+    $('#flow_ai_model_params').on('input change', floscCheckParams);
+    floscCheckParams();
+
     $('.flosc-describe-model').on('click', function () {
         var $btn = $(this);
         floscDescribeModel($btn.data('provider'), $btn.data('target'), String($('#' + $btn.data('target')).val() || '').trim(), $btn, true);
@@ -1405,6 +1480,13 @@ jQuery(document).ready(function($) {
                         lines.push('Note: "' + d.model_configured + '" is not in the installed provider plugin\'s catalog,');
                         lines.push('so the provider answered with ' + d.model + ' instead. Pick a model the plugin offers,');
                         lines.push('or update the provider plugin, to use the one you configured.');
+                    }
+                    if (d.params_sent && d.params_sent.length) {
+                        lines.push('Extra parameters sent: ' + d.params_sent.join(', '));
+                    }
+                    if (d.params_unapplied && d.params_unapplied.length) {
+                        lines.push('✗ Could NOT be sent by this provider integration: ' + d.params_unapplied.join(', '));
+                        lines.push('  (the provider plugin has no setter for them — they were left out, not silently ignored)');
                     }
                     lines.push('Model reply: ' + (d.response || '(empty)'));
                     floscTestModelReport(d, lines);

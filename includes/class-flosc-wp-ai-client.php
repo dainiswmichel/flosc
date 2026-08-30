@@ -130,6 +130,23 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+	 * Parameters the last request could not send, and why.
+	 *
+	 * Reported by the connection test. An operator who typed a parameter is
+	 * owed an answer about whether it arrived.
+	 *
+	 * @var array<int,string>
+	 */
+	private static $unapplied_parameters = array();
+
+	/**
+	 * @return array<int,string>
+	 */
+	public static function unapplied_parameters() {
+		return self::$unapplied_parameters;
+	}
+
+	/**
 	 * @return bool
 	 */
 	public static function core_client_exists() {
@@ -318,6 +335,33 @@ class FLOSC_WP_AI_Client {
 
 		if ( ! $flosc_skip_temperature ) {
 			$builder->using_temperature( $temperature );
+		}
+
+		// Extra model parameters, named by the operator. FLOSC keeps no list of
+		// valid parameters — providers add them faster than any list survives —
+		// so each one is applied by convention: the builder names its setters
+		// using_<parameter>, so top_p reaches using_top_p. A parameter with no
+		// setter is not guessed at and not silently dropped; it is recorded so
+		// the connection test can say which ones this site could not send.
+		self::$unapplied_parameters = array();
+
+		if ( function_exists( 'flosc_get_model_parameters' ) ) {
+			foreach ( flosc_get_model_parameters( $provider ) as $flosc_param => $flosc_value ) {
+				$flosc_setter = 'using_' . preg_replace( '/[^a-z0-9_]/', '', strtolower( (string) $flosc_param ) );
+
+				if ( ! method_exists( $builder, $flosc_setter ) ) {
+					self::$unapplied_parameters[] = (string) $flosc_param;
+					continue;
+				}
+
+				try {
+					$builder->$flosc_setter( $flosc_value );
+				} catch ( Throwable $e ) {
+					// The provider integration refused it. That is its answer to
+					// give, so carry it up rather than deciding on its behalf.
+					self::$unapplied_parameters[] = (string) $flosc_param . ' (' . $e->getMessage() . ')';
+				}
+			}
 		}
 
 		if ( ! $builder->is_supported_for_text_generation() ) {

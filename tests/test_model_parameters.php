@@ -1,0 +1,70 @@
+<?php
+/**
+ * Operator-written model parameters: parsed, typed, and never guessed at.
+ */
+
+define( 'ABSPATH', __DIR__ );
+
+if ( PHP_SAPI !== 'cli' ) {
+	exit;
+}
+
+function sanitize_key( $k ) { return strtolower( preg_replace( '/[^a-z0-9_\-]/i', '', (string) $k ) ); }
+function __( $t, $d = null ) { return $t; }
+
+class WP_Error {
+	public $code; public $message;
+	public function __construct( $code = '', $message = '' ) { $this->code = $code; $this->message = $message; }
+	public function get_error_code() { return $this->code; }
+	public function get_error_message() { return $this->message; }
+}
+function is_wp_error( $t ) { return $t instanceof WP_Error; }
+
+require_once __DIR__ . '/../includes/ai/flosc-model-parameters.php';
+
+$fail = 0;
+function ok( $label, $actual, $expected ) {
+	global $fail;
+	$pass = $actual === $expected;
+	if ( ! $pass ) { $fail++; }
+	printf( "%s %-54s %s%s\n", $pass ? 'ok  ' : 'FAIL', $label, var_export( $actual, true ), $pass ? '' : ' (want ' . var_export( $expected, true ) . ')' );
+}
+
+echo "name: value lines\n";
+ok( 'a float stays a float', flosc_parse_model_parameters( "top_p: 0.9" ), array( 'top_p' => 0.9 ) );
+ok( 'an integer stays an integer', flosc_parse_model_parameters( "top_k: 40" ), array( 'top_k' => 40 ) );
+ok( 'several at once', flosc_parse_model_parameters( "top_p: 0.9\ntop_k: 40" ), array( 'top_p' => 0.9, 'top_k' => 40 ) );
+ok( 'true is boolean, not the word', flosc_parse_model_parameters( "stream_hint: true" ), array( 'stream_hint' => true ) );
+ok( 'a string stays a string', flosc_parse_model_parameters( "mode: creative" ), array( 'mode' => 'creative' ) );
+ok( 'quotes are stripped', flosc_parse_model_parameters( 'mode: "creative"' ), array( 'mode' => 'creative' ) );
+ok( 'a nested object survives', flosc_parse_model_parameters( 'thinking: {"type":"adaptive"}' ), array( 'thinking' => array( 'type' => 'adaptive' ) ) );
+ok( 'an array survives', flosc_parse_model_parameters( 'stop_sequences: ["END","STOP"]' ), array( 'stop_sequences' => array( 'END', 'STOP' ) ) );
+ok( 'comments and blank lines are skipped', flosc_parse_model_parameters( "# tuning\n\ntop_p: 0.9\n// note" ), array( 'top_p' => 0.9 ) );
+ok( 'a trailing comma is forgiven', flosc_parse_model_parameters( "top_p: 0.9," ), array( 'top_p' => 0.9 ) );
+ok( 'nothing typed means nothing sent', flosc_parse_model_parameters( '   ' ), array() );
+
+echo "JSON pasted from a provider's docs\n";
+ok( 'an object parses', flosc_parse_model_parameters( '{"top_p":0.9,"top_k":40}' ), array( 'top_p' => 0.9, 'top_k' => 40 ) );
+ok( 'nested shapes survive', flosc_parse_model_parameters( '{"thinking":{"type":"adaptive"}}' ), array( 'thinking' => array( 'type' => 'adaptive' ) ) );
+ok( 'broken JSON is refused', is_wp_error( flosc_parse_model_parameters( '{"top_p":}' ) ), true );
+
+echo "A parameter FLOSC has never heard of is still sent\n";
+ok( 'invented today, carried anyway', flosc_parse_model_parameters( "reasoning_intensity_2027: 11" ), array( 'reasoning_intensity_2027' => 11 ) );
+ok( '  and so is one from another provider', flosc_parse_model_parameters( "frequency_penalty: 0.5" ), array( 'frequency_penalty' => 0.5 ) );
+
+echo "What is refused\n";
+ok( 'a line that is not name: value', is_wp_error( flosc_parse_model_parameters( "just some words" ) ), true );
+ok( '  and it says which line', strpos( flosc_parse_model_parameters( "just some words" )->get_error_message(), 'just some words' ) !== false, true );
+ok( 'a name FLOSC sets itself — model', is_wp_error( flosc_parse_model_parameters( "model: claude-opus-5" ) ), true );
+ok( '  messages', is_wp_error( flosc_parse_model_parameters( "messages: x" ) ), true );
+ok( '  max_tokens', is_wp_error( flosc_parse_model_parameters( "max_tokens: 999" ) ), true );
+ok( '  regardless of case', is_wp_error( flosc_parse_model_parameters( "MODEL: x" ) ), true );
+ok( 'a name that is not a name', is_wp_error( flosc_parse_model_parameters( '{"has spaces":1}' ) ), true );
+ok( 'something absurdly long', is_wp_error( flosc_parse_model_parameters( str_repeat( 'a: 1
+', 3000 ) ) ), true );
+
+echo "temperature is the operator's to send, if their model takes it\n";
+ok( 'not blocked — Sonnet 4.5 accepts it', flosc_parse_model_parameters( "temperature: 0.3" ), array( 'temperature' => 0.3 ) );
+
+echo $fail ? "\n$fail FAILURES\n" : "\nModel parameters: all checks passed\n";
+exit( $fail ? 1 : 0 );

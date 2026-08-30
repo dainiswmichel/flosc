@@ -86,6 +86,7 @@ require_once FLOSC_PLUGIN_DIR . 'includes/flosc-available-providers.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-wp-ai-client.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-model-catalog.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-provider-profiles.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-model-parameters.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-provider-keys.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-personality-library.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-knowledge-bases.php';
@@ -9994,7 +9995,16 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
                 $flow_label = pathinfo($ivr, PATHINFO_FILENAME);
             }
 
+            $sent_params = function_exists('flosc_get_model_parameters')
+                ? array_keys(flosc_get_model_parameters($provider))
+                : [];
+            $unapplied = (class_exists('FLOSC_WP_AI_Client') && method_exists('FLOSC_WP_AI_Client', 'unapplied_parameters'))
+                ? FLOSC_WP_AI_Client::unapplied_parameters()
+                : [];
+
             wp_send_json_success([
+                'params_sent'      => $sent_params,
+                'params_unapplied' => $unapplied,
                 'provider'        => $provider,
                 'model'           => $model_used,
                 'model_configured'=> $configured_model,

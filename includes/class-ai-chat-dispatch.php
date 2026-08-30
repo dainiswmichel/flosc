@@ -1225,12 +1225,18 @@ class FLOSC_AI_Chat_Dispatch {
                 'Authorization' => 'Bearer ' . $api_key,
                 'Content-Type' => 'application/json',
             ],
-            'body' => wp_json_encode([
+            // Whatever the operator named in Extra model parameters rides along.
+            // FLOSC keeps no list of valid xAI parameters — one would be stale
+            // within weeks — so an unknown name is xAI's to accept or refuse,
+            // and its refusal is reported verbatim below. What FLOSC owns
+            // (model, messages, max_tokens) cannot be overridden; the parser
+            // rejects those names before they are ever stored.
+            'body' => wp_json_encode(array_merge([
                 'model' => $model,
                 'messages' => $messages,
                 'max_tokens' => $max_tokens,
                 'temperature' => $temperature,
-            ]),
+            ], function_exists('flosc_get_model_parameters') ? flosc_get_model_parameters('xai') : [])),
             'timeout' => 30,
         ]);
 
