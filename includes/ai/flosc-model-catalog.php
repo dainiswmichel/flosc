@@ -328,6 +328,18 @@ if ( ! function_exists( 'flosc_fetch_model_catalog' ) ) {
 					$detail = (string) ( $body['error']['message'] ?? $body['message'] ?? '' );
 				}
 
+				// Anthropic refuses an identity-linked key that does not name a
+				// workspace, and refuses it for chat as well as for this list —
+				// so the operator is not one header away from working, they are
+				// using a kind of key the provider plugin cannot drive at all.
+				// Say that, rather than relaying a status code.
+				if ( false !== stripos( $detail, 'anthropic-workspace-id' ) ) {
+					return new WP_Error(
+						'flosc_models_workspace_required',
+						__( 'This Anthropic key is linked to an identity rather than to one workspace, so Anthropic requires a workspace id on every request — including the chat requests the AI Provider for Anthropic plugin makes, which cannot send one. Create a key scoped to a single workspace in the Anthropic Console and paste that instead; nothing else needs changing. If you must keep this key, put its workspace id in the Anthropic Workspace ID field above and FLOSC will send it where FLOSC makes the request.', 'flosc' )
+					);
+				}
+
 				return new WP_Error(
 					'flosc_models_http_' . $code,
 					sprintf(
