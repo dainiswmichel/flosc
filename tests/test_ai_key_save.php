@@ -197,6 +197,24 @@ $row = get_option( $tune_option );
 ok( "OpenAI's request is stored under OpenAI", $row['ai_openai_params'], 'presence_penalty: 0.5' );
 ok( "  and Anthropic's is left as it was", $row['ai_anthropic_params'], 'top_p: 0.9' );
 
+echo "The save is stamped by the machine that did the writing\n";
+ok( 'a Michel Time Stamp to the millisecond, in UTC',
+	flosc_mts_utc( 1787654321.472 ), '2026y-08m-25d-UTC-10h-38m-41s-472ms' );
+ok( '  milliseconds are rounded, not truncated',
+	substr( flosc_mts_utc( 1787654321.4999 ), -5 ), '500ms' );
+ok( '  and a rounded 1000 never prints the next second\'s millisecond',
+	substr( flosc_mts_utc( 1787654321.9999 ), -10 ), '-41s-999ms' );
+ok( '  midnight is all zeroes, not blanks',
+	flosc_mts_utc( 1767225600.0 ), '2026y-01m-01d-UTC-00h-00m-00s-000ms' );
+ok( '  every part carries its own unit',
+	(bool) preg_match( '/^\d{4}y-\d{2}m-\d{2}d-UTC-\d{2}h-\d{2}m-\d{2}s-\d{3}ms$/', flosc_mts_utc() ), true );
+ok( '  and it sorts as text in the order time runs',
+	flosc_mts_utc( 1767225600.0 ) < flosc_mts_utc( 1787654321.472 ), true );
+
+$stamped = flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'max_tokens' => '1100' ) );
+ok( 'every save carries one',
+	(bool) preg_match( '/^\d{4}y-\d{2}m-\d{2}d-UTC-\d{2}h-\d{2}m-\d{2}s-\d{3}ms$/', $stamped['saved_at'] ), true );
+
 
 echo $fail ? "\n$fail FAILURES\n" : "\nAI key + model saving: all checks passed\n";
 exit( $fail ? 1 : 0 );

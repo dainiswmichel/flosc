@@ -7824,3 +7824,4 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
 .flosc-tuning-save--saved { background: #edf7f2 !important; border-color: #2c6349 !important; color: #2c6349 !important; box-shadow: none !important; font-weight: 600; }
 .flosc-tuning-save--saved:hover, .flosc-tuning-save--saved:focus { background: #e0f0e8 !important; border-color: #2c6349 !important; color: #2c6349 !important; }
 .flosc-tuning-save--bad { border-color: #d63638 !important; color: #8a2424 !important; }
+.flosc-param-doc--none { color: #646970; white-space: normal; }

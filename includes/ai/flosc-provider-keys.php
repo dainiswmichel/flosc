@@ -175,6 +175,35 @@ if ( ! function_exists( 'flosc_store_provider_model' ) ) {
 	}
 }
 
+if ( ! function_exists( 'flosc_mts_utc' ) ) {
+	/**
+	 * The Michel Time Stamp, in UTC, to the millisecond.
+	 *
+	 * YYYYy-MMm-DDd-UTC-HHh-MMm-SSs-MMMms — for example
+	 * 2026y-08m-30d-UTC-10h-48m-31s-472ms. Sorts correctly as text, carries its
+	 * own units so no reader has to guess which number is the month, and names
+	 * its zone so a stamp read in Riga and a stamp read in California mean the
+	 * same instant.
+	 *
+	 * The server stamps its own writes. A browser clock can be wrong by hours,
+	 * and "saved at" is a claim about when the database was written, which only
+	 * the machine that wrote it can make.
+	 *
+	 * @param float|null $when Unix timestamp with fraction. Defaults to now.
+	 * @return string
+	 */
+	function flosc_mts_utc( $when = null ) {
+		$when = ( null === $when ) ? microtime( true ) : (float) $when;
+		$secs = (int) floor( $when );
+		// Rounded, not truncated: a float carrying .472 lands a hair under it,
+		// and floor would report 471. Clamped so a rounded 1000 cannot print a
+		// millisecond that belongs to the next second.
+		$ms = min( 999, (int) round( ( $when - $secs ) * 1000 ) );
+
+		return gmdate( 'Y\y-m\m-d\d-\U\T\C-H\h-i\m-s\s-', $secs ) . sprintf( '%03dms', $ms );
+	}
+}
+
 if ( ! function_exists( 'flosc_store_model_tuning' ) ) {
 	/**
 	 * Store Step 2b for one flow: temperature, max tokens, and the request.
@@ -277,6 +306,7 @@ if ( ! function_exists( 'flosc_store_model_tuning' ) ) {
 		return array(
 			'option'      => $option,
 			'provider'    => $provider,
+			'saved_at'    => flosc_mts_utc(),
 			'temperature' => (string) ( $settings['ai_temperature'] ?? '' ),
 			'max_tokens'  => (string) ( $settings['ai_max_tokens'] ?? '' ),
 			'params'      => (string) ( $settings[ $params_key ] ?? '' ),

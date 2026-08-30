@@ -1578,8 +1578,16 @@ jQuery(document).ready(function($) {
 
         if (state === 'saved') {
             $btn.addClass('flosc-tuning-save--saved')
-                .html('&#10003; ' + (detail ? 'Autosaved ' + detail : 'Saved'))
+                .html(detail ? '&#10003; Autosaved' : '&#10003; Saved')
                 .attr('title', 'Stored on this flow. Press to save again.');
+
+            // The stamp sits beside the button rather than inside it: it is a
+            // full Michel Time Stamp, and a button that changes width every
+            // time it is pressed moves the page under whoever pressed it.
+            if (detail) {
+                $status.addClass('flosc-tuning-status--ok').text(detail);
+            }
+
             return;
         }
 
@@ -1656,12 +1664,11 @@ jQuery(document).ready(function($) {
                 }
 
                 var d = response.data;
-                var now = new Date();
 
-                floscTuningState('saved',
-                    String(now.getHours()).padStart(2, '0') + ':' +
-                    String(now.getMinutes()).padStart(2, '0') + ':' +
-                    String(now.getSeconds()).padStart(2, '0'));
+                // Stamped by the server, which is the machine that did the
+                // writing. A browser clock can be wrong by hours, and "saved
+                // at" is a claim only the writer can make.
+                floscTuningState('saved', d.saved_at || '');
 
                 // What came back is what is stored, after the same fold the
                 // page-wide save performs. Showing it rather than what was
@@ -2115,16 +2122,23 @@ jQuery(document).ready(function($) {
 
         var page = floscProviderDocs[provider] || '';
 
-        if (!page) { return null; }
+        if (page) {
+            // No anchor scheme read off that provider's page, so the reader is
+            // sent to the page and told that is what this link is.
+            return $('<a>')
+                .addClass('flosc-param-doc')
+                .attr('href', page)
+                .attr('target', '_blank')
+                .attr('rel', 'noopener noreferrer')
+                .text(label + '\u2019s request reference \u2197');
+        }
 
-        // No anchor scheme read off that provider's page, so the reader is sent
-        // to the page and told that is what this link is.
-        return $('<a>')
-            .addClass('flosc-param-doc')
-            .attr('href', page)
-            .attr('target', '_blank')
-            .attr('rel', 'noopener noreferrer')
-            .text(label + '\u2019s request reference \u2197');
+        // Nowhere to send them. Say so in words rather than leave the note
+        // trailing off: an operator who finds nothing assumes there is nothing
+        // to find, and there is — it is just not somewhere FLOSC can point at.
+        return $('<span>')
+            .addClass('flosc-param-doc flosc-param-doc--none')
+            .text('For more on this parameter, see ' + label + '\u2019s own API reference.');
     }
 
     function floscExplainParams(names) {
