@@ -215,6 +215,22 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+	 * Anthropic 400 when temperature and top_p are on the same request.
+	 *
+	 * @param WP_Error $error Generation error.
+	 * @return bool
+	 */
+	private static function is_temperature_top_p_conflict( $error ) {
+		if ( ! is_wp_error( $error ) ) {
+			return false;
+		}
+		$msg = $error->get_error_message();
+		return false !== stripos( $msg, 'temperature' )
+			&& false !== stripos( $msg, 'top_p' )
+			&& false !== stripos( $msg, 'cannot both' );
+	}
+
+	/**
 	 * @return bool
 	 */
 	public static function core_client_exists() {
@@ -435,13 +451,13 @@ class FLOSC_WP_AI_Client {
 					continue;
 				}
 
-				// Anthropic 400s if temperature and top_p are both on the
-				// request. Temperature is already on the builder from the
-				// field above; sending top_p as well is the crash that
-				// turned visitor chat into flosc_chat_turn_exception.
-				if ( function_exists( 'flosc_sampling_conflicts_with_applied' )
-					&& flosc_sampling_conflicts_with_applied( $provider, (string) $flosc_param, self::$applied_parameters ) ) {
-					self::$unapplied_parameters[] = (string) $flosc_param . ' (cannot be sent with temperature on this model)';
+				// Anthropic 400: temperature and top_p cannot both be specified.
+				// Inline so this does not depend on a helper PHP-FPM may still
+				// be serving from an older cached copy of the profiles file.
+				if ( 'anthropic' === $provider
+					&& 'top_p' === (string) $flosc_param
+					&& in_array( 'temperature', self::$applied_parameters, true ) ) {
+					self::$unapplied_parameters[] = 'top_p (cannot be sent with temperature on this model)';
 					continue;
 				}
 
@@ -495,6 +511,31 @@ class FLOSC_WP_AI_Client {
 		}
 
 		$result = $builder->generate_text_result();
+		if ( is_wp_error( $result ) && self::is_temperature_top_p_conflict( $result ) ) {
+			self::$applied_parameters = array_values( array_diff( self::$applied_parameters, array( 'top_p' ) ) );
+			if ( ! in_array( 'top_p (cannot be sent with temperature on this model)', self::$unapplied_parameters, true ) ) {
+				self::$unapplied_parameters[] = 'top_p (cannot be sent with temperature on this model)';
+			}
+			$retry = self::make_builder( $args, $wp_id, $model_resolved );
+			if ( ! is_wp_error( $retry ) ) {
+				if ( ! $flosc_skip_temperature ) {
+					try {
+						$retry->using_temperature( $temperature );
+					} catch ( Throwable $e ) {
+						unset( $e );
+					}
+				}
+				if ( function_exists( 'flosc_get_model_parameters' ) ) {
+					foreach ( flosc_get_model_parameters( $provider ) as $flosc_param => $flosc_value ) {
+						if ( in_array( (string) $flosc_param, array( 'temperature', 'max_tokens', 'top_p' ), true ) ) {
+							continue;
+						}
+						self::apply_extra_parameter( $retry, $flosc_param, $flosc_value );
+					}
+				}
+				$result = $retry->generate_text_result();
+			}
+		}
 		if ( is_wp_error( $result ) ) {
 			if ( $test_mode ) {
 				return new WP_Error(
