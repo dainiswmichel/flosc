@@ -1748,10 +1748,17 @@ jQuery(document).ready(function($) {
         // Already stored. Nothing to write — but the button may be sitting in
         // Saving from the call that got us here, so say so rather than
         // returning into silence. No path out of a save may leave it there.
+        //
+        // The label describes the action that just finished, not the write that
+        // happened to be last. Reporting the stored source instead attributed a
+        // recipe click — an automatic path — to whatever had saved before it,
+        // so clicking Use this could read Saved when nobody had pressed
+        // anything. An autosave that finds the work already stored has still
+        // done an autosave's job, and says so.
         if (fingerprint === floscTuningLastSaved) {
-            if (source === 'manual') { floscTuningLastSaveSource = 'manual'; }
+            floscTuningLastSaveSource = source;
 
-            floscTuningState('saved', floscTuningLastSavedAt, floscTuningLastSaveSource);
+            floscTuningState('saved', floscTuningLastSavedAt, source);
             return;
         }
 
