@@ -1418,6 +1418,7 @@ class FLOSC_Framework {
         add_action('wp_ajax_flosc_save_ai_provider_key', [$this, 'ajax_save_ai_provider_key']);
         add_action('wp_ajax_flosc_save_ai_provider_model', [$this, 'ajax_save_ai_provider_model']);
         add_action('wp_ajax_flosc_describe_ai_model', [$this, 'ajax_describe_ai_model']);
+        add_action('wp_ajax_flosc_explain_ai_parameter', [$this, 'ajax_explain_ai_parameter']);
 
         // Admin: send Guest Access Link to any email (Register & Login tab)
         add_action('wp_ajax_flosc_send_guest_link', [$this, 'ajax_send_guest_link']);
@@ -9882,6 +9883,92 @@ if (defined('FLOSC_DEBUG') && FLOSC_DEBUG) flosc_log("FLOSC store-quiz-data: use
         }
 
         wp_send_json_success($details);
+    }
+
+    /**
+     * Ask the configured model what one of its own request parameters does.
+     *
+     * FLOSC ships notes on the parameters it has measured, and that list is out
+     * of date the day a provider adds one. This is the answer to that: the
+     * operator types a name FLOSC has never heard of, and the provider's own
+     * model is asked what it is. The answer is labelled as the model's, never
+     * as FLOSC's, because a model can be wrong about its own API and the
+     * operator has to know which of the two they are reading.
+     */
+    public function ajax_explain_ai_parameter() {
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => __('Unauthorized', 'flosc')], 403);
+        }
+
+        check_ajax_referer('flosc_test_ai', 'nonce');
+
+        $post  = wp_unslash($_POST);
+        $ivr   = isset($post['ivr']) ? sanitize_file_name((string) $post['ivr']) : '';
+        $param = isset($post['param']) ? trim((string) $post['param']) : '';
+
+        // A parameter name, not a prompt. Anything that is not one is refused
+        // rather than passed through to the provider as free text.
+        if ($param === '' || !preg_match('/^[A-Za-z0-9_.\[\]-]{1,64}$/', $param)) {
+            wp_send_json_error(['message' => __('That is not a parameter name.', 'flosc')]);
+        }
+
+        if ($ivr !== '') {
+            $GLOBALS['flosc_current_ivr'] = $ivr;
+            $this->set_flow_context(pathinfo($ivr, PATHINFO_FILENAME));
+        }
+
+        $provider = (string) flosc_get_setting('ai_provider', 'ivr');
+
+        if ($provider === '' || $provider === 'ivr') {
+            wp_send_json_error([
+                'message' => __('Pick an AI provider for this flow first — the answer comes from the provider\'s own model.', 'flosc'),
+            ]);
+        }
+
+        $model_setting_key = [
+            'openai'    => 'ai_openai_model',
+            'anthropic' => 'ai_anthropic_model',
+            'xai'       => 'ai_xai_model',
+            'gemini'    => 'ai_gemini_model',
+        ];
+        $model = isset($model_setting_key[$provider])
+            ? (string) flosc_get_setting($model_setting_key[$provider], '')
+            : '';
+
+        // Not the flow's personality. A factual question deserves the plainest
+        // system prompt available, and the flow's bot voice would only get in
+        // the way of it.
+        $system_prompt = 'You are answering a developer question about your own HTTP API. '
+            . 'Answer in at most four sentences of plain prose, no markdown, no code fences. '
+            . 'Say what the parameter does, what values are valid, and one situation it is worth setting. '
+            . 'If the named parameter is not part of this API, say so plainly in one sentence.';
+
+        $question = sprintf(
+            'In the %1$s API request body for model %2$s, what is the parameter "%3$s"?',
+            $provider,
+            $model !== '' ? $model : 'the model in use',
+            $param
+        );
+
+        $answer = $this->ai_chat_dispatch->get_response($question, $system_prompt, [], true);
+
+        if (is_wp_error($answer)) {
+            wp_send_json_error(['message' => $answer->get_error_message()]);
+        }
+
+        $answer = trim(wp_strip_all_tags((string) $answer));
+
+        if ($answer === '') {
+            wp_send_json_error(['message' => __('The model returned nothing.', 'flosc')]);
+        }
+
+        wp_send_json_success([
+            'param'    => $param,
+            'provider' => $provider,
+            'model'    => $model,
+            'answer'   => $answer,
+            'docs_url' => function_exists('flosc_provider_docs_url') ? flosc_provider_docs_url($provider) : '',
+        ]);
     }
 
     public function ajax_test_ai_connection() {

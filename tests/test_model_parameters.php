@@ -113,5 +113,54 @@ ok( 'a documented name is still only documentation', flosc_parse_model_parameter
 ok( 'an undocumented name is not refused for being absent', flosc_parse_model_parameters( 'not_in_the_reference: 1' ), array( 'not_in_the_reference' => 1 ) );
 ok( '  so the reference can never block a new parameter', array_key_exists( 'not_in_the_reference', $ref ), false );
 
+echo "The menu is per provider, and per model where it has been measured\n";
+require_once __DIR__ . '/../includes/ai/flosc-provider-profiles.php';
+
+$anth = flosc_model_parameters_for_provider( 'anthropic' );
+$oai  = flosc_model_parameters_for_provider( 'openai' );
+$gem  = flosc_model_parameters_for_provider( 'gemini' );
+ok( 'Anthropic is offered thinking', array_key_exists( 'thinking', $anth ), true );
+ok( '  and not OpenAI\'s penalties', array_key_exists( 'frequency_penalty', $anth ), false );
+ok( 'OpenAI is offered its penalties', array_key_exists( 'frequency_penalty', $oai ), true );
+ok( '  and not Claude\'s thinking', array_key_exists( 'thinking', $oai ), false );
+ok( 'Gemini is offered generationConfig', array_key_exists( 'generationConfig', $gem ), true );
+ok( 'max_tokens is offered to every provider', array_key_exists( 'max_tokens', $oai ) && array_key_exists( 'max_tokens', $gem ), true );
+ok( 'every offered row carries the line it writes', count( array_filter( $anth, static function ( $r ) { return '' !== trim( (string) $r['example'] ); } ) ), count( $anth ) );
+ok( '  and each of those lines parses', is_wp_error( flosc_parse_model_parameters( implode( "\n", array_column( $anth, 'example' ) ) ) ), false );
+
+$sonnet45 = flosc_provider_model_parameter_note( 'anthropic', 'claude-sonnet-4-5-20250929' );
+ok( 'a dated model id matches its family note', $sonnet45['matched'], 'claude-sonnet-4-5' );
+ok( '  Sonnet 4.5 takes temperature', in_array( 'temperature', $sonnet45['accepts'], true ), true );
+ok( '  and refuses adaptive thinking', in_array( 'thinking', $sonnet45['refuses'], true ), true );
+
+$sonnet5 = flosc_provider_model_parameter_note( 'anthropic', 'claude-sonnet-5' );
+ok( 'Sonnet 5 refuses temperature', in_array( 'temperature', $sonnet5['refuses'], true ), true );
+ok( '  and takes thinking instead', in_array( 'thinking', $sonnet5['accepts'], true ), true );
+ok( '  without 4.5\'s note bleeding onto it', in_array( 'temperature', $sonnet5['accepts'], true ), false );
+
+$unmeasured = flosc_provider_model_parameter_note( 'openai', 'gpt-5.4-mini' );
+ok( 'an unmeasured model claims nothing', $unmeasured['matched'], '' );
+ok( '  neither accepting', $unmeasured['accepts'], array() );
+ok( '  nor refusing', $unmeasured['refuses'], array() );
+
+echo "Sample setups are made of measured parameters only\n";
+foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $p ) {
+	$recipes = flosc_model_parameter_recipes( $p );
+	foreach ( $recipes as $r ) {
+		$parsed = flosc_parse_model_parameters( $r['params'] );
+		ok( $p . ': "' . $r['name'] . '" parses', is_wp_error( $parsed ), false );
+		ok( '  and says why it exists', '' !== trim( $r['why'] ), true );
+	}
+}
+$anth_recipes = flosc_model_parameter_recipes( 'anthropic' );
+ok( 'Anthropic has setups to offer', count( $anth_recipes ) > 0, true );
+ok( '  and each names the models it holds for', count( array_filter( $anth_recipes, static function ( $r ) { return '' !== trim( $r['models'] ); } ) ), count( $anth_recipes ) );
+
+echo "Every provider can be clicked through to its own reference\n";
+foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $p ) {
+	ok( $p . ' links to its request reference', strpos( flosc_provider_docs_url( $p ), 'https://' ) === 0, true );
+}
+ok( 'a provider FLOSC knows nothing about links nowhere', flosc_provider_docs_url( 'not_a_provider' ), '' );
+
 echo $fail ? "\n$fail FAILURES\n" : "\nModel parameters: all checks passed\n";
 exit( $fail ? 1 : 0 );

@@ -38,6 +38,16 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 	 *                       shown as placeholder text. Examples only — FLOSC
 	 *                       sends whatever is typed and the provider rules on
 	 *                       it, so this list being incomplete costs nothing.
+	 *   docs_url            where that provider documents its own request body,
+	 *                       for the parameter FLOSC has no note on. A link the
+	 *                       operator follows; FLOSC never fetches it.
+	 *   model_parameter_notes  measured per-model differences, keyed by the
+	 *                       leading part of a model id. Parameters differ
+	 *                       between two models of the same provider more often
+	 *                       than between providers, and only measurement can
+	 *                       say so — an empty list means nobody has measured
+	 *                       that provider's models here, not that its models
+	 *                       are all alike.
 	 *
 	 * @param string $provider FLOSC provider slug.
 	 * @return array<string,mixed>|null Null when FLOSC knows nothing about it.
@@ -56,6 +66,37 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 				// top_p and top_k, Sonnet 5 refuses them and takes thinking,
 				// stop_sequences works on both.
 				'example_params'   => "top_p: 0.9\ntop_k: 40\nstop_sequences: [\"User:\"]\nthinking: {\"type\":\"adaptive\"}",
+				'docs_url'         => 'https://docs.claude.com/en/api/messages',
+				// Measured 2026-08-30 against a live key, one request per
+				// parameter per model, reading the 200 or the 400 back.
+				'model_parameter_notes' => array(
+					'claude-sonnet-4-5' => array(
+						'accepts' => array( 'temperature', 'top_p', 'top_k', 'stop_sequences' ),
+						'refuses' => array( 'thinking' ),
+					),
+					'claude-sonnet-5'   => array(
+						'accepts' => array( 'stop_sequences', 'thinking' ),
+						'refuses' => array( 'temperature', 'top_p', 'top_k' ),
+					),
+					// The temperature 400 was seen on each of these; nothing
+					// else has been tried on them, so nothing else is claimed.
+					'claude-opus-5'     => array(
+						'accepts' => array(),
+						'refuses' => array( 'temperature' ),
+					),
+					'claude-fable-5'    => array(
+						'accepts' => array(),
+						'refuses' => array( 'temperature' ),
+					),
+					'claude-opus-4-8'   => array(
+						'accepts' => array(),
+						'refuses' => array( 'temperature' ),
+					),
+					'claude-opus-4-7'   => array(
+						'accepts' => array(),
+						'refuses' => array( 'temperature' ),
+					),
+				),
 			),
 			'openai'    => array(
 				// OpenAI's spec documents no per-model capability endpoint of
@@ -64,6 +105,8 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 				'rejects_tuning'   => array(),
 				'tuning_note'      => '',
 				'example_params'   => "top_p: 0.9\npresence_penalty: 0.5\nfrequency_penalty: 0.3\nseed: 42",
+				'docs_url'         => 'https://platform.openai.com/docs/api-reference/chat/create',
+				'model_parameter_notes' => array(),
 			),
 			'xai'       => array(
 				// /v1/language-models/{id} exists per xAI's reference but has
@@ -72,6 +115,8 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 				'rejects_tuning'   => array(),
 				'tuning_note'      => '',
 				'example_params'   => "top_p: 0.9\npresence_penalty: 0.0\nfrequency_penalty: 0.0\nseed: 12345",
+				'docs_url'         => 'https://docs.x.ai/docs/api-reference',
+				'model_parameter_notes' => array(),
 			),
 			'gemini'    => array(
 				// GET /v1beta/models/{model} exists per Google's reference but
@@ -82,6 +127,8 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 				// Gemini nests sampling inside generationConfig rather than
 				// putting it at the top level.
 				'example_params'   => "generationConfig: {\"temperature\":0.4,\"topP\":0.95}",
+				'docs_url'         => 'https://ai.google.dev/api/generate-content',
+				'model_parameter_notes' => array(),
 			),
 		);
 
@@ -131,5 +178,77 @@ if ( ! function_exists( 'flosc_provider_model_detail_url' ) ) {
 		}
 
 		return sprintf( $profile['model_detail_url'], rawurlencode( $model ) );
+	}
+}
+
+if ( ! function_exists( 'flosc_provider_docs_url' ) ) {
+	/**
+	 * Where the provider documents its own request body.
+	 *
+	 * For the parameter FLOSC has no note on — which is every parameter shipped
+	 * after this file was last edited. FLOSC never fetches this; the operator
+	 * opens it.
+	 *
+	 * @param string $provider FLOSC provider slug.
+	 * @return string URL, or '' when FLOSC has none for that provider.
+	 */
+	function flosc_provider_docs_url( $provider ) {
+		$profile = flosc_provider_api_profile( $provider );
+
+		return null === $profile ? '' : (string) ( $profile['docs_url'] ?? '' );
+	}
+}
+
+if ( ! function_exists( 'flosc_provider_model_parameter_note' ) ) {
+	/**
+	 * What has been measured about one model's parameters.
+	 *
+	 * Matched on the leading part of the model id, because providers date their
+	 * ids — claude-sonnet-4-5-20250929 is the model the note about
+	 * claude-sonnet-4-5 was measured on. The longest matching prefix wins, so a
+	 * note about a specific dated build beats a note about its family.
+	 *
+	 * An unmeasured model answers with empty lists. The caller must show that
+	 * as "not measured", never as "accepts nothing".
+	 *
+	 * @param string $provider FLOSC provider slug.
+	 * @param string $model    Model id.
+	 * @return array{accepts:array<int,string>,refuses:array<int,string>,matched:string}
+	 */
+	function flosc_provider_model_parameter_note( $provider, $model ) {
+		$empty   = array(
+			'accepts' => array(),
+			'refuses' => array(),
+			'matched' => '',
+		);
+		$profile = flosc_provider_api_profile( $provider );
+		$model   = trim( (string) $model );
+
+		if ( null === $profile || '' === $model ) {
+			return $empty;
+		}
+
+		$notes = isset( $profile['model_parameter_notes'] ) ? (array) $profile['model_parameter_notes'] : array();
+		$best  = $empty;
+
+		foreach ( $notes as $prefix => $note ) {
+			$prefix = (string) $prefix;
+
+			if ( 0 !== strpos( $model, $prefix ) ) {
+				continue;
+			}
+
+			if ( strlen( $prefix ) <= strlen( $best['matched'] ) ) {
+				continue;
+			}
+
+			$best = array(
+				'accepts' => array_values( (array) ( $note['accepts'] ?? array() ) ),
+				'refuses' => array_values( (array) ( $note['refuses'] ?? array() ) ),
+				'matched' => $prefix,
+			);
+		}
+
+		return $best;
 	}
 }

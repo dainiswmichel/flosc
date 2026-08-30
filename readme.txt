@@ -191,6 +191,8 @@ Put it in FLOSC (this flow's AI tab, or All Flows AI API Management). FLOSC bind
 
 FLOSC core flow logic runs locally in WordPress. The services below power specific FLOSC features. When those features are enabled, calling these services is intentional and required for full functionality.
 
+Note on "Ask the model what it does": in Settings -> AI, an administrator can ask the flow's own configured model what one of that provider's request parameters means. This sends a one-sentence question containing the parameter name to whichever provider is selected below, through the same chat path that provider's row already describes. It is never automatic; it happens only on that button click, and no visitor or site content is included.
+
 1. OpenAI (via WordPress AI Client + AI Provider for OpenAI, and FLOSC Whisper STT)
 Chat: when this flow attaches OpenAI, FLOSC sends prompts through `wp_ai_client_prompt()` to the official AI Provider for OpenAI plugin, which communicates with OpenAI. FLOSC does not call OpenAI chat endpoints itself.
 Model list: when an administrator clicks "Fetch models this key can use", or runs the AI connection test, FLOSC requests https://api.openai.com/v1/models directly so the saved key can be offered the models it is entitled to. Only the API key is sent; no visitor or site content is included.

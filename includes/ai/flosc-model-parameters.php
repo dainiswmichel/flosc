@@ -228,109 +228,275 @@ if ( ! function_exists( 'flosc_model_parameter_reference' ) ) {
 	 * What each parameter does, for the operator typing it.
 	 *
 	 * Documentation, never a gate. A name absent from this list is still sent —
-	 * the provider rules on it. This exists so an operator does not have to
-	 * leave the page to find out what top_p means, or which providers take it.
+	 * the provider rules on it, and its answer comes back in the connection
+	 * test. That is what keeps this list from going stale in a way that costs
+	 * anything: when a provider ships a parameter tomorrow, it works in FLOSC
+	 * tomorrow, and only the note beside it is missing. For that case the panel
+	 * offers to ask the configured model itself what the parameter is.
 	 *
-	 * "measured" marks a claim verified against a live API from this codebase
-	 * rather than read from a reference. Where the two disagree, measurement
-	 * wins: several published lists put presence_penalty and seed under
-	 * Anthropic, and Anthropic answers "Extra inputs are not permitted".
+	 * Fields:
+	 *   what      one paragraph, in the operator's language, not the spec's.
+	 *   range     what a sane value looks like.
+	 *   providers who takes it, in prose, including the exceptions.
+	 *   measured  true when FLOSC has watched a live API accept or refuse it.
+	 *   applies   provider slugs to list it under. Documentation again: a
+	 *             parameter absent here can still be typed and sent.
+	 *   example   the line clicking it writes into the request.
 	 *
-	 * @return array<string,array{what:string,range:string,providers:string,measured:bool}>
+	 * @return array<string,array<string,mixed>>
 	 */
 	function flosc_model_parameter_reference() {
 		return array(
+			'max_tokens'        => array(
+				'what'      => __( 'The longest reply you will pay for. The model stops there whether or not it was finished, so too low truncates mid-sentence.', 'flosc' ),
+				'range'     => __( 'whole number, up to the model\'s own ceiling', 'flosc' ),
+				'providers' => __( 'Every provider. This is the Max Tokens field above; naming it here overrides that field.', 'flosc' ),
+				'measured'  => true,
+				'applies'   => array( 'anthropic', 'openai', 'xai', 'gemini' ),
+				'example'   => 'max_tokens: 1200',
+			),
 			'temperature'       => array(
 				'what'      => __( 'Flattens or sharpens the odds across the next word. Low keeps the safest choice; high lets unlikely words through. 0 is the same answer every time.', 'flosc' ),
 				'range'     => '0.0 – 2.0',
 				'providers' => __( 'OpenAI, xAI, Gemini. Anthropic only on older models — Sonnet 5, Opus 5, Fable 5, Opus 4.8 and 4.7 refuse it.', 'flosc' ),
 				'measured'  => true,
+				'applies'   => array( 'anthropic', 'openai', 'xai', 'gemini' ),
+				'example'   => 'temperature: 0.7',
 			),
 			'top_p'             => array(
 				'what'      => __( 'Nucleus sampling. Considers only the smallest set of words whose odds add up to this share, and ignores the rest. Use this or temperature, not both.', 'flosc' ),
 				'range'     => '0.0 – 1.0',
 				'providers' => __( 'OpenAI, xAI, Gemini, and Anthropic on Sonnet 4.5. Sonnet 5 refuses it.', 'flosc' ),
 				'measured'  => true,
+				'applies'   => array( 'anthropic', 'openai', 'xai', 'gemini' ),
+				'example'   => 'top_p: 0.9',
 			),
 			'top_k'             => array(
 				'what'      => __( 'Considers only the k most likely next words. A blunter cut than top_p.', 'flosc' ),
 				'range'     => __( 'whole number, commonly 20 – 100', 'flosc' ),
 				'providers' => __( 'Anthropic on Sonnet 4.5 and Gemini. Sonnet 5 refuses it.', 'flosc' ),
 				'measured'  => true,
+				'applies'   => array( 'anthropic', 'gemini' ),
+				'example'   => 'top_k: 40',
 			),
 			'stop_sequences'    => array(
 				'what'      => __( 'Text that ends the reply the moment it appears. Useful for keeping a bot from writing the visitor\'s next line.', 'flosc' ),
 				'range'     => __( 'list of strings', 'flosc' ),
 				'providers' => __( 'Anthropic, on every model tested.', 'flosc' ),
 				'measured'  => true,
+				'applies'   => array( 'anthropic' ),
+				'example'   => 'stop_sequences: ["User:"]',
 			),
 			'thinking'          => array(
 				'what'      => __( 'Claude\'s extended reasoning. Adaptive lets the model decide how long to think. Costs output tokens, so raise Max Tokens with it.', 'flosc' ),
 				'range'     => '{"type":"adaptive"}',
 				'providers' => __( 'Anthropic\'s newer models. Sonnet 4.5 refuses adaptive.', 'flosc' ),
 				'measured'  => true,
+				'applies'   => array( 'anthropic' ),
+				'example'   => 'thinking: {"type":"adaptive"}',
 			),
 			'stop'              => array(
 				'what'      => __( 'Same idea as stop_sequences, under the name the OpenAI-shaped APIs use.', 'flosc' ),
 				'range'     => __( 'string or list of strings', 'flosc' ),
 				'providers' => __( 'OpenAI, xAI.', 'flosc' ),
 				'measured'  => false,
+				'applies'   => array( 'openai', 'xai' ),
+				'example'   => 'stop: ["User:"]',
 			),
 			'presence_penalty'  => array(
 				'what'      => __( 'Penalises a word for having appeared at all, pushing the model onto new subjects. Raise it when a bot circles the same topic.', 'flosc' ),
 				'range'     => '-2.0 – 2.0',
 				'providers' => __( 'OpenAI, xAI. Not an Anthropic parameter — Anthropic answers "Extra inputs are not permitted".', 'flosc' ),
 				'measured'  => true,
+				'applies'   => array( 'openai', 'xai' ),
+				'example'   => 'presence_penalty: 0.5',
 			),
 			'frequency_penalty' => array(
 				'what'      => __( 'Penalises a word further each time it is reused. Raise it when a bot leans on the same phrases.', 'flosc' ),
 				'range'     => '-2.0 – 2.0',
 				'providers' => __( 'OpenAI, xAI. Not an Anthropic parameter.', 'flosc' ),
 				'measured'  => true,
+				'applies'   => array( 'openai', 'xai' ),
+				'example'   => 'frequency_penalty: 0.3',
 			),
 			'seed'              => array(
 				'what'      => __( 'Fixes the random draw so the same prompt returns the same reply. For testing, not for visitors.', 'flosc' ),
 				'range'     => __( 'any whole number', 'flosc' ),
 				'providers' => __( 'OpenAI, xAI. Not an Anthropic parameter.', 'flosc' ),
 				'measured'  => true,
+				'applies'   => array( 'openai', 'xai' ),
+				'example'   => 'seed: 42',
 			),
 			'response_format'   => array(
 				'what'      => __( 'Forces the reply into a shape, usually JSON. FLOSC expects prose in chat, so this will likely break the bubble.', 'flosc' ),
 				'range'     => '{"type":"json_object"}',
 				'providers' => __( 'OpenAI.', 'flosc' ),
 				'measured'  => false,
+				'applies'   => array( 'openai' ),
+				'example'   => 'response_format: {"type":"json_object"}',
 			),
 			'logit_bias'        => array(
 				'what'      => __( 'Pushes named tokens up or down by id. Precise, and easy to get wrong.', 'flosc' ),
 				'range'     => '{"50256": -100}',
 				'providers' => __( 'OpenAI.', 'flosc' ),
 				'measured'  => false,
+				'applies'   => array( 'openai' ),
+				'example'   => 'logit_bias: {"50256": -100}',
 			),
 			'n'                 => array(
 				'what'      => __( 'Asks for several completions at once. FLOSC shows one and you pay for all of them.', 'flosc' ),
 				'range'     => __( 'whole number', 'flosc' ),
 				'providers' => __( 'OpenAI.', 'flosc' ),
 				'measured'  => false,
+				'applies'   => array( 'openai' ),
+				'example'   => 'n: 1',
 			),
 			'user'              => array(
 				'what'      => __( 'An end-user label the provider records for abuse tracing. Do not put anything identifying here.', 'flosc' ),
 				'range'     => __( 'string', 'flosc' ),
 				'providers' => __( 'OpenAI, xAI.', 'flosc' ),
 				'measured'  => false,
+				'applies'   => array( 'openai', 'xai' ),
+				'example'   => 'user: flosc-visitor',
 			),
 			'generationConfig'  => array(
 				'what'      => __( 'Gemini nests its sampling inside this rather than at the top level.', 'flosc' ),
 				'range'     => '{"temperature":0.4,"topP":0.95}',
 				'providers' => __( 'Gemini.', 'flosc' ),
 				'measured'  => false,
+				'applies'   => array( 'gemini' ),
+				'example'   => 'generationConfig: {"temperature":0.4,"topP":0.95}',
 			),
 			'safetySettings'    => array(
 				'what'      => __( 'Gemini\'s content thresholds per harm category.', 'flosc' ),
 				'range'     => '[{"category":"...","threshold":"..."}]',
 				'providers' => __( 'Gemini.', 'flosc' ),
 				'measured'  => false,
+				'applies'   => array( 'gemini' ),
+				'example'   => 'safetySettings: [{"category":"HARM_CATEGORY_HARASSMENT","threshold":"BLOCK_ONLY_HIGH"}]',
 			),
 		);
+	}
+}
+
+if ( ! function_exists( 'flosc_model_parameters_for_provider' ) ) {
+	/**
+	 * The reference rows worth showing for one provider.
+	 *
+	 * A filter over documentation, not over what can be sent. An unknown
+	 * provider gets the whole list rather than an empty one — better to show
+	 * everything FLOSC knows than to imply a provider takes nothing.
+	 *
+	 * @param string $provider FLOSC provider slug.
+	 * @return array<string,array<string,mixed>>
+	 */
+	function flosc_model_parameters_for_provider( $provider ) {
+		$provider = sanitize_key( (string) $provider );
+		$all      = flosc_model_parameter_reference();
+
+		if ( '' === $provider ) {
+			return $all;
+		}
+
+		$rows = array();
+
+		foreach ( $all as $name => $ref ) {
+			$applies = isset( $ref['applies'] ) ? (array) $ref['applies'] : array();
+
+			if ( ! $applies || in_array( $provider, $applies, true ) ) {
+				$rows[ $name ] = $ref;
+			}
+		}
+
+		return $rows ? $rows : $all;
+	}
+}
+
+if ( ! function_exists( 'flosc_model_parameter_recipes' ) ) {
+	/**
+	 * Whole parameter sets that do a named job, for a provider.
+	 *
+	 * A parameter on its own asks the operator to work out what to combine it
+	 * with. These are the combinations, each with the reason it exists, so a
+	 * setup that takes an afternoon of reading can be arrived at in one click
+	 * and then edited.
+	 *
+	 * Every recipe here is composed only of parameters FLOSC has watched that
+	 * provider accept. A provider nobody has measured gets none, which is the
+	 * honest answer rather than a plausible-looking guess.
+	 *
+	 * @param string $provider FLOSC provider slug.
+	 * @return array<int,array<string,string>> name, why, params.
+	 */
+	function flosc_model_parameter_recipes( $provider ) {
+		$recipes = array(
+			'anthropic' => array(
+				array(
+					'name'   => __( 'Tight and factual', 'flosc' ),
+					'why'    => __( 'Narrows the word choice so the bot stays on what it was told. For a flow that quotes prices, hours or policy.', 'flosc' ),
+					'params' => "top_p: 0.7\nmax_tokens: 800",
+					'models' => __( 'Sonnet 4.5. Sonnet 5 and newer refuse top_p.', 'flosc' ),
+				),
+				array(
+					'name'   => __( 'Never writes the visitor\'s line', 'flosc' ),
+					'why'    => __( 'Cuts the reply the moment the model starts inventing the other half of the conversation. The classic chat-bubble fix.', 'flosc' ),
+					'params' => "stop_sequences: [\"User:\", \"Visitor:\", \"Human:\"]",
+					'models' => __( 'Every Anthropic model tested.', 'flosc' ),
+				),
+				array(
+					'name'   => __( 'Thinks before it answers', 'flosc' ),
+					'why'    => __( 'Lets Claude reason at length before replying. Slower and dearer, and worth it where the answer has to be worked out rather than recalled.', 'flosc' ),
+					'params' => "thinking: {\"type\":\"adaptive\"}\nmax_tokens: 4000",
+					'models' => __( 'Sonnet 5, Opus 5 and newer. Sonnet 4.5 refuses adaptive thinking.', 'flosc' ),
+				),
+			),
+			'openai'    => array(
+				array(
+					'name'   => __( 'Tight and factual', 'flosc' ),
+					'why'    => __( 'Low randomness for a flow that has to keep saying the same true thing.', 'flosc' ),
+					'params' => "temperature: 0.2\nmax_tokens: 800",
+					'models' => '',
+				),
+				array(
+					'name'   => __( 'Stops repeating itself', 'flosc' ),
+					'why'    => __( 'For a bot that circles the same phrases across a long conversation.', 'flosc' ),
+					'params' => "frequency_penalty: 0.4\npresence_penalty: 0.3",
+					'models' => '',
+				),
+				array(
+					'name'   => __( 'Same answer every time', 'flosc' ),
+					'why'    => __( 'For testing a flow, so a change you see is a change you made. Not for visitors.', 'flosc' ),
+					'params' => "temperature: 0\nseed: 42",
+					'models' => '',
+				),
+			),
+			'xai'       => array(
+				array(
+					'name'   => __( 'Tight and factual', 'flosc' ),
+					'why'    => __( 'Low randomness for a flow that has to keep saying the same true thing.', 'flosc' ),
+					'params' => "temperature: 0.2\nmax_tokens: 800",
+					'models' => '',
+				),
+				array(
+					'name'   => __( 'Same answer every time', 'flosc' ),
+					'why'    => __( 'For testing a flow, so a change you see is a change you made.', 'flosc' ),
+					'params' => "temperature: 0\nseed: 42",
+					'models' => '',
+				),
+			),
+			'gemini'    => array(
+				array(
+					'name'   => __( 'Tight and factual', 'flosc' ),
+					'why'    => __( 'Gemini keeps its sampling inside generationConfig rather than at the top level, so a whole block is set at once.', 'flosc' ),
+					'params' => "generationConfig: {\"temperature\":0.2,\"topP\":0.8}",
+					'models' => '',
+				),
+			),
+		);
+
+		$provider = sanitize_key( (string) $provider );
+
+		return isset( $recipes[ $provider ] ) ? $recipes[ $provider ] : array();
 	}
 }
 

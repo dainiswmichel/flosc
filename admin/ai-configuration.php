@@ -641,6 +641,45 @@ endif;
             </p>
             <div class="flosc-param-help" id="flosc-param-help" hidden></div>
             <p class="description flosc-params-status" id="flosc-params-status"></p>
+
+            <?php
+            // The catalogue, below the request it writes into. Rendered by the
+            // browser from every provider's rows at once so that switching
+            // provider or model changes what is listed without a page load —
+            // the parameters a flow can use are a property of the model it is
+            // pointed at, and the operator is pointing it at one right here.
+            ?>
+            <div class="flosc-param-menu" id="flosc-param-menu">
+                <p class="flosc-param-menu__head">
+                    <strong><?php echo esc_html__( 'Parameters you can add', 'flosc' ); ?></strong>
+                    <span class="flosc-param-menu__where" id="flosc-param-menu-where"></span>
+                </p>
+                <p class="flosc-param-menu__measured" id="flosc-param-menu-measured" hidden></p>
+                <div class="flosc-param-menu__chips" id="flosc-param-menu-chips"></div>
+                <div class="flosc-param-menu__note" id="flosc-param-menu-note" hidden></div>
+
+                <p class="flosc-param-menu__head">
+                    <strong><?php echo esc_html__( 'Sample setups', 'flosc' ); ?></strong>
+                    <span class="flosc-param-menu__where"><?php echo esc_html__( 'whole combinations that do one named job', 'flosc' ); ?></span>
+                </p>
+                <div class="flosc-param-menu__recipes" id="flosc-param-menu-recipes"></div>
+
+                <div class="flosc-param-menu__ask">
+                    <p class="flosc-param-menu__askline">
+                        <?php echo esc_html__( 'Somewhere below is a parameter your provider shipped after this plugin did. Type it into the request above and FLOSC sends it as written — and to find out what it does before you do:', 'flosc' ); ?>
+                    </p>
+                    <p class="flosc-model-fetch-row">
+                        <input type="text" id="flosc-param-ask-name" class="regular-text code"
+                            placeholder="<?php echo esc_attr__( 'parameter name', 'flosc' ); ?>"
+                            autocomplete="off" spellcheck="false">
+                        <button type="button" class="button" id="flosc-param-ask">
+                            <?php echo esc_html__( 'Ask the model what it does', 'flosc' ); ?>
+                        </button>
+                        <a href="#" class="flosc-param-menu__docs" id="flosc-param-docs" target="_blank" rel="noopener noreferrer" hidden></a>
+                    </p>
+                    <div class="flosc-param-menu__answer" id="flosc-param-answer" hidden></div>
+                </div>
+            </div>
             <p class="description">
                 This is the request FLOSC sends. The fields above are a convenience for writing into it —
                 name <code>temperature</code> or <code>max_tokens</code> here and it <strong>overrides</strong>
@@ -1293,19 +1332,77 @@ jQuery(document).ready(function($) {
     // here is still sent, and says so.
     var floscParamRef = <?php echo wp_json_encode( function_exists( 'flosc_model_parameter_reference' ) ? flosc_model_parameter_reference() : array() ); ?>;
 
+    // The same reference, split by provider, plus the whole-set recipes and the
+    // measured per-model notes. All four providers are handed over at once so
+    // that changing provider or model re-renders the menu from data already in
+    // the page rather than from another round trip.
+    var floscParamsByProvider = <?php
+        $flosc_menu = array();
+        foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_menu_provider ) {
+            $flosc_menu[ $flosc_menu_provider ] = function_exists( 'flosc_model_parameters_for_provider' )
+                ? flosc_model_parameters_for_provider( $flosc_menu_provider )
+                : array();
+        }
+        echo wp_json_encode( $flosc_menu );
+    ?>;
+
+    var floscParamRecipes = <?php
+        $flosc_recipes = array();
+        foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_menu_provider ) {
+            $flosc_recipes[ $flosc_menu_provider ] = function_exists( 'flosc_model_parameter_recipes' )
+                ? flosc_model_parameter_recipes( $flosc_menu_provider )
+                : array();
+        }
+        echo wp_json_encode( $flosc_recipes );
+    ?>;
+
+    var floscParamModelNotes = <?php
+        $flosc_notes = array();
+        foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_menu_provider ) {
+            $flosc_note_profile = function_exists( 'flosc_provider_api_profile' )
+                ? flosc_provider_api_profile( $flosc_menu_provider )
+                : null;
+            $flosc_notes[ $flosc_menu_provider ] = is_array( $flosc_note_profile )
+                ? (array) ( $flosc_note_profile['model_parameter_notes'] ?? array() )
+                : array();
+        }
+        echo wp_json_encode( $flosc_notes );
+    ?>;
+
+    var floscProviderDocs = <?php
+        $flosc_docs = array();
+        foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_menu_provider ) {
+            $flosc_docs[ $flosc_menu_provider ] = function_exists( 'flosc_provider_docs_url' )
+                ? flosc_provider_docs_url( $flosc_menu_provider )
+                : '';
+        }
+        echo wp_json_encode( $flosc_docs );
+    ?>;
+
+    var floscProviderLabels = {
+        anthropic: 'Anthropic',
+        openai:    'OpenAI',
+        xai:       'xAI',
+        gemini:    'Gemini'
+    };
+
     // Locked, because it is a statement of what will be sent. Unlocking it is a
     // deliberate act, and from that point the operator's text is the truth.
     var floscParamsUnlocked = false;
 
-    $('#flosc-params-edit').on('click', function () {
+    function floscUnlockParams(focus) {
+        if (floscParamsUnlocked) { return; }
+
         floscParamsUnlocked = true;
-        $('#flow_ai_model_params').prop('readonly', false)
-            .removeClass('flosc-params-locked').trigger('focus');
-        $(this).prop('disabled', true);
+        $('#flow_ai_model_params').prop('readonly', false).removeClass('flosc-params-locked');
+        if (focus) { $('#flow_ai_model_params').trigger('focus'); }
+        $('#flosc-params-edit').prop('disabled', true);
         $('#flosc-params-lock-note').text(
             'Editing. What you write is what FLOSC sends — Temperature and Max Tokens above will be set from it when you save.'
         );
-    });
+    }
+
+    $('#flosc-params-edit').on('click', function () { floscUnlockParams(true); });
 
     // While it is still a preview, keep it honest as the fields change.
     function floscRebuildPreview() {
@@ -1334,6 +1431,321 @@ jQuery(document).ready(function($) {
     }
 
     $('#flow_ai_temperature, #flow_ai_max_tokens, #flow_ai_provider').on('input change', floscRebuildPreview);
+
+    // ---- The parameter menu -------------------------------------------------
+    //
+    // Pullable, visible, explained, usable: every parameter FLOSC has a note on
+    // is a button that writes itself into the request, the note is beside it,
+    // the whole-set recipes are one click, and for the parameter that arrived
+    // after this plugin did there is the provider's own reference and the
+    // provider's own model to ask.
+
+    function floscCurrentProvider() {
+        return String($('#flow_ai_provider').val() || '');
+    }
+
+    function floscCurrentModel() {
+        var field = floscModelFieldFor[floscCurrentProvider()];
+
+        return field ? String($('#' + field).val() || '').trim() : '';
+    }
+
+    // Same longest-prefix rule the PHP side uses: providers date their model
+    // ids, so a note measured on claude-sonnet-4-5 covers -20250929.
+    function floscModelNoteFor(provider, model) {
+        var notes = floscParamModelNotes[provider] || {};
+        var best = null, bestLen = -1;
+
+        Object.keys(notes).forEach(function (prefix) {
+            if (model.indexOf(prefix) === 0 && prefix.length > bestLen) {
+                best = notes[prefix];
+                bestLen = prefix.length;
+            }
+        });
+
+        return best;
+    }
+
+    // One 'name: value' line into either notation the box may be holding.
+    function floscSplitParamLine(line) {
+        var i = String(line).indexOf(':');
+
+        if (i === -1) { return null; }
+
+        return {
+            name: line.slice(0, i).trim(),
+            raw:  line.slice(i + 1).trim()
+        };
+    }
+
+    function floscInsertParamLines(text) {
+        var $box = $('#flow_ai_model_params');
+
+        if (!$box.length) { return; }
+
+        floscUnlockParams(false);
+
+        var current = String($box.val() || '').trim();
+        var incoming = String(text).split(/\r\n|\r|\n/).filter(function (l) { return l.trim(); });
+
+        if (current.charAt(0) === '{') {
+            // Already JSON. Put the parameters inside the object rather than
+            // appending lines that would stop it parsing.
+            var obj;
+
+            try { obj = JSON.parse(current); } catch (e) { obj = null; }
+
+            if (obj) {
+                incoming.forEach(function (line) {
+                    var bit = floscSplitParamLine(line);
+
+                    if (!bit) { return; }
+
+                    var value;
+
+                    try { value = JSON.parse(bit.raw); } catch (e2) { value = bit.raw; }
+
+                    obj[bit.name] = value;
+                });
+
+                $box.val(JSON.stringify(obj, null, 2));
+                floscCheckParams();
+                $box.trigger('focus');
+                return;
+            }
+        }
+
+        var lines = current ? current.split(/\r\n|\r|\n/) : [];
+        var have = {};
+
+        lines.forEach(function (line) {
+            var bit = floscSplitParamLine(line);
+
+            if (bit) { have[bit.name] = true; }
+        });
+
+        incoming.forEach(function (line) {
+            var bit = floscSplitParamLine(line);
+
+            if (bit && have[bit.name]) {
+                // Replace rather than duplicate — two lines naming the same
+                // parameter is not a request any provider can read.
+                lines = lines.map(function (existing) {
+                    var e = floscSplitParamLine(existing);
+
+                    return (e && e.name === bit.name) ? line : existing;
+                });
+                return;
+            }
+
+            lines.push(line);
+
+            if (bit) { have[bit.name] = true; }
+        });
+
+        $box.val(lines.filter(function (l) { return l.trim(); }).join('\n'));
+        floscCheckParams();
+        $box.trigger('focus');
+    }
+
+    function floscRenderParamMenu() {
+        var provider = floscCurrentProvider();
+        var model = floscCurrentModel();
+
+        // IVR is the scripted local flow. It sends no request, so there is no
+        // request to add parameters to.
+        if (!provider || provider === 'ivr') {
+            $('#flosc-param-menu').attr('hidden', true);
+            return;
+        }
+
+        $('#flosc-param-menu').removeAttr('hidden');
+        var label = floscProviderLabels[provider] || provider || 'this provider';
+        var rows = floscParamsByProvider[provider] || {};
+        var names = Object.keys(rows);
+
+        $('#flosc-param-menu-where').text(
+            model ? '— ' + label + ' · ' + model : '— ' + label
+        );
+
+        // What has actually been watched happen on this model, which is a
+        // different and better fact than what the provider takes in general.
+        var note = floscModelNoteFor(provider, model);
+        var $measured = $('#flosc-param-menu-measured').empty();
+
+        if (note && ((note.accepts && note.accepts.length) || (note.refuses && note.refuses.length))) {
+            var parts = [];
+
+            if (note.accepts && note.accepts.length) { parts.push('accepts ' + note.accepts.join(', ')); }
+            if (note.refuses && note.refuses.length) { parts.push('refuses ' + note.refuses.join(', ')); }
+
+            $measured.text('Measured on this model: ' + parts.join(' · ') + '.').removeAttr('hidden');
+        } else if (model) {
+            $measured.text(
+                'Nothing has been measured on ' + model + ' here. The list below is what ' + label +
+                ' is known to take; the model decides, and its answer comes back in Step 3.'
+            ).removeAttr('hidden');
+        } else {
+            $measured.attr('hidden', true);
+        }
+
+        var refused = {};
+
+        if (note && note.refuses) {
+            note.refuses.forEach(function (n) { refused[n] = true; });
+        }
+
+        var $chips = $('#flosc-param-menu-chips').empty();
+
+        if (!names.length) {
+            $('<p>').addClass('description').text('FLOSC has no notes for this provider yet.').appendTo($chips);
+        }
+
+        names.forEach(function (name) {
+            var ref = rows[name];
+            var $chip = $('<button>')
+                .attr('type', 'button')
+                .addClass('button flosc-param-chip')
+                .attr('data-param', name)
+                .attr('data-insert', ref.example || (name + ': '))
+                .text(name);
+
+            if (refused[name]) {
+                $chip.addClass('flosc-param-chip--refused')
+                    .attr('title', model + ' refuses this one.');
+            }
+
+            $chip.appendTo($chips);
+        });
+
+        var $recipes = $('#flosc-param-menu-recipes').empty();
+        var recipes = floscParamRecipes[provider] || [];
+
+        if (!recipes.length) {
+            $('<p>').addClass('description')
+                .text('No setups for ' + label + ' yet — none of its models have been measured here, and a plausible guess is worth less than nothing.')
+                .appendTo($recipes);
+        }
+
+        recipes.forEach(function (recipe, i) {
+            var $r = $('<div>').addClass('flosc-param-recipe').appendTo($recipes);
+            var $head = $('<div>').addClass('flosc-param-recipe__head').appendTo($r);
+
+            $('<strong>').text(recipe.name).appendTo($head);
+            $('<button>')
+                .attr('type', 'button')
+                .addClass('button button-small flosc-param-recipe__use')
+                .attr('data-recipe', i)
+                .text('Use this')
+                .appendTo($head);
+
+            $('<p>').addClass('flosc-param-recipe__why').text(recipe.why).appendTo($r);
+            $('<pre>').addClass('flosc-param-recipe__params').text(recipe.params).appendTo($r);
+
+            if (recipe.models) {
+                $('<p>').addClass('flosc-param-recipe__models').text(recipe.models).appendTo($r);
+            }
+        });
+
+        var docs = floscProviderDocs[provider] || '';
+        var $docs = $('#flosc-param-docs');
+
+        if (docs) {
+            $docs.attr('href', docs).text('Open ' + label + '\u2019s own request reference \u2197').removeAttr('hidden');
+        } else {
+            $docs.attr('hidden', true);
+        }
+
+        $('#flosc-param-menu-note').attr('hidden', true).empty();
+    }
+
+    $('#flosc-param-menu-chips').on('click', '.flosc-param-chip', function () {
+        var name = $(this).data('param');
+        var ref = (floscParamsByProvider[floscCurrentProvider()] || {})[name];
+
+        floscInsertParamLines(String($(this).data('insert')));
+
+        // The explanation lands where the click did, not only in the list of
+        // what is currently typed further up.
+        var $note = $('#flosc-param-menu-note').empty();
+
+        if (ref) {
+            $('<code>').text(name).appendTo($note);
+            $('<span>').addClass('flosc-param-menu__what').text(' ' + ref.what).appendTo($note);
+            $('<div>').addClass('flosc-param-menu__meta')
+                .text('Range: ' + ref.range + ' · ' + ref.providers +
+                      (ref.measured ? ' · measured against the live API' : ''))
+                .appendTo($note);
+            $note.removeAttr('hidden');
+        }
+    });
+
+    $('#flosc-param-menu-recipes').on('click', '.flosc-param-recipe__use', function () {
+        var recipes = floscParamRecipes[floscCurrentProvider()] || [];
+        var recipe = recipes[parseInt($(this).data('recipe'), 10)];
+
+        if (recipe) { floscInsertParamLines(recipe.params); }
+    });
+
+    // The parameter FLOSC has never heard of: ask the provider's own model,
+    // through the key already configured on this flow. Labelled as the model's
+    // answer, because a model can be wrong about its own API.
+    $('#flosc-param-ask').on('click', function () {
+        var $btn = $(this);
+        var name = String($('#flosc-param-ask-name').val() || '').trim();
+        var $out = $('#flosc-param-answer').removeClass('flosc-param-menu__answer--bad');
+
+        if (!name) {
+            $out.text('Type a parameter name first.').addClass('flosc-param-menu__answer--bad').removeAttr('hidden');
+            return;
+        }
+
+        $btn.prop('disabled', true);
+        $out.text('Asking ' + (floscCurrentModel() || 'the model') + '\u2026').removeAttr('hidden');
+
+        $.ajax({
+            url: ajaxurl,
+            type: 'POST',
+            data: {
+                action: 'flosc_explain_ai_parameter',
+                nonce: '<?php echo esc_js( wp_create_nonce('flosc_test_ai') ); ?>',
+                ivr: '<?php echo esc_js( $GLOBALS['flosc_current_ivr'] ?? '' ); ?>',
+                param: name
+            },
+            success: function (response) {
+                if (!response || !response.success) {
+                    $out.text((response && response.data && response.data.message) || 'The provider did not answer.')
+                        .addClass('flosc-param-menu__answer--bad');
+                    return;
+                }
+
+                var d = response.data;
+
+                $out.empty();
+                $('<div>').addClass('flosc-param-menu__answersrc')
+                    .text('Answered by ' + (d.model || d.provider) + ' just now — this is the model\u2019s account of its own API, not FLOSC\u2019s.')
+                    .appendTo($out);
+                $('<p>').text(d.answer).appendTo($out);
+                $('<button>')
+                    .attr('type', 'button')
+                    .addClass('button button-small')
+                    .text('Add ' + d.param + ' to the request')
+                    .on('click', function () { floscInsertParamLines(d.param + ': '); })
+                    .appendTo($out);
+            },
+            error: function () {
+                $out.text('The request did not complete.').addClass('flosc-param-menu__answer--bad');
+            },
+            complete: function () {
+                $btn.prop('disabled', false);
+            }
+        });
+    });
+
+    $('#flow_ai_provider, #flow_ai_anthropic_model, #flow_ai_openai_model, #flow_ai_xai_model, #flow_ai_gemini_model')
+        .on('input change', floscRenderParamMenu);
+
+    floscRenderParamMenu();
 
     function floscMarkOverrides(names, values) {
         ['temperature', 'max_tokens'].forEach(function (field) {
