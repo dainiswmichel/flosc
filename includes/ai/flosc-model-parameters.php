@@ -280,8 +280,8 @@ if ( ! function_exists( 'flosc_model_parameter_reference' ) ) {
 				'example'   => 'top_k: 40',
 			),
 			'stop_sequences'    => array(
-				'what'      => __( 'Text that ends the reply the moment it appears. Useful for keeping a bot from writing the visitor\'s next line.', 'flosc' ),
-				'range'     => __( 'list of strings', 'flosc' ),
+				'what'      => __( 'Text that cuts the reply off the moment the model writes it. ["User:"] means: if the bot starts writing "User:" — inventing the visitor\'s next turn — stop there and send only what came before it. The list can hold several, and the text is matched exactly, capitals and colon included.', 'flosc' ),
+				'range'     => __( 'a list of strings in square brackets, each in double quotes', 'flosc' ),
 				'providers' => __( 'Anthropic, on every model tested.', 'flosc' ),
 				'measured'  => true,
 				'applies'   => array( 'anthropic' ),

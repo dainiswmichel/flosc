@@ -1376,6 +1376,23 @@ jQuery(document).ready(function($) {
         echo wp_json_encode( $flosc_notes );
     ?>;
 
+    // Where each provider explains one parameter, in its own words. A template
+    // taking the parameter name where the anchor scheme has been read off the
+    // live page, '' where it has not — and the caller falls back to the
+    // provider's page rather than inventing an anchor.
+    var floscProviderParamDocs = <?php
+        $flosc_param_docs = array();
+        foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_menu_provider ) {
+            $flosc_param_profile = function_exists( 'flosc_provider_api_profile' )
+                ? flosc_provider_api_profile( $flosc_menu_provider )
+                : null;
+            $flosc_param_docs[ $flosc_menu_provider ] = is_array( $flosc_param_profile )
+                ? (string) ( $flosc_param_profile['param_doc_url'] ?? '' )
+                : '';
+        }
+        echo wp_json_encode( $flosc_param_docs );
+    ?>;
+
     var floscProviderDocs = <?php
         $flosc_docs = array();
         foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_menu_provider ) {
@@ -1886,10 +1903,15 @@ jQuery(document).ready(function($) {
         if (ref) {
             $('<code>').text(name).appendTo($note);
             $('<span>').addClass('flosc-param-menu__what').text(' ' + ref.what).appendTo($note);
-            $('<div>').addClass('flosc-param-menu__meta')
+
+            var $meta = $('<div>').addClass('flosc-param-menu__meta')
                 .text('Range: ' + ref.range + ' · ' + ref.providers +
                       (ref.measured ? ' · measured against the live API' : ''))
                 .appendTo($note);
+            var $link = floscParamDocLink(name);
+
+            if ($link) { $meta.append(document.createTextNode(' ')).append($link); }
+
             $note.removeAttr('hidden');
         }
     });
@@ -1940,12 +1962,21 @@ jQuery(document).ready(function($) {
                     .text('Answered by ' + (d.model || d.provider) + ' just now — this is the model\u2019s account of its own API, not FLOSC\u2019s.')
                     .appendTo($out);
                 $('<p>').text(d.answer).appendTo($out);
+
+                var $row = $('<p>').appendTo($out);
+
                 $('<button>')
                     .attr('type', 'button')
                     .addClass('button button-small')
                     .text('Add ' + d.param + ' to the request')
                     .on('click', function () { floscInsertParamLines(d.param + ': '); })
-                    .appendTo($out);
+                    .appendTo($row);
+
+                // Somewhere to check the model against, which matters most for
+                // exactly the parameter nobody here has a note on.
+                var $link = floscParamDocLink(d.param);
+
+                if ($link) { $row.append(document.createTextNode(' ')).append($link); }
             },
             error: function () {
                 $out.text('The request did not complete.').addClass('flosc-param-menu__answer--bad');
@@ -1993,6 +2024,37 @@ jQuery(document).ready(function($) {
         floscSyncing = false;
     }
 
+    // FLOSC's note on a parameter is a paraphrase written for an operator, not
+    // the authority. Every note carries the way out to the provider's own
+    // entry for that exact parameter, in a new tab so nothing typed is lost.
+    function floscParamDocLink(name) {
+        var provider = floscCurrentProvider();
+        var template = floscProviderParamDocs[provider] || '';
+        var label = floscProviderLabels[provider] || provider;
+
+        if (template) {
+            return $('<a>')
+                .addClass('flosc-param-doc')
+                .attr('href', template.replace('%s', encodeURIComponent(name)))
+                .attr('target', '_blank')
+                .attr('rel', 'noopener noreferrer')
+                .text(label + ' on ' + name + ' \u2197');
+        }
+
+        var page = floscProviderDocs[provider] || '';
+
+        if (!page) { return null; }
+
+        // No anchor scheme read off that provider's page, so the reader is sent
+        // to the page and told that is what this link is.
+        return $('<a>')
+            .addClass('flosc-param-doc')
+            .attr('href', page)
+            .attr('target', '_blank')
+            .attr('rel', 'noopener noreferrer')
+            .text(label + '\u2019s request reference \u2197');
+    }
+
     function floscExplainParams(names) {
         var $help = $('#flosc-param-help').empty();
 
@@ -2001,6 +2063,7 @@ jQuery(document).ready(function($) {
         names.forEach(function (name) {
             var ref = floscParamRef[name];
             var $row = $('<div>').addClass('flosc-param-help__row').appendTo($help);
+            var $link = floscParamDocLink(name);
 
             $('<code>').addClass('flosc-param-help__name').text(name).appendTo($row);
 
@@ -2009,6 +2072,11 @@ jQuery(document).ready(function($) {
                     .text('FLOSC has no note on this one. It will be sent as written and ' +
                           'the provider decides — its answer appears in Step 3.')
                     .appendTo($row);
+
+                if ($link) {
+                    $('<div>').addClass('flosc-param-help__meta').append($link).appendTo($row);
+                }
+
                 return;
             }
 
@@ -2022,6 +2090,8 @@ jQuery(document).ready(function($) {
                 $('<span>').addClass('flosc-param-help__measured')
                     .text('measured against the live API').appendTo($meta);
             }
+
+            if ($link) { $link.appendTo($meta); }
         });
 
         $help.removeAttr('hidden');

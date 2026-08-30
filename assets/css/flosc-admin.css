@@ -7820,3 +7820,4 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
 @media (prefers-reduced-motion: reduce) {
 	#flow_ai_temperature, #flow_ai_max_tokens, #flow_ai_model_params { transition: none; }
 }
+.flosc-param-doc { font-size: 12px; white-space: nowrap; }

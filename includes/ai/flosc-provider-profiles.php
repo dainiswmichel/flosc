@@ -41,6 +41,12 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 	 *   docs_url            where that provider documents its own request body,
 	 *                       for the parameter FLOSC has no note on. A link the
 	 *                       operator follows; FLOSC never fetches it.
+	 *   param_doc_url       sprintf template taking a parameter name, landing on
+	 *                       that provider's entry for it rather than the top of
+	 *                       the page. Filled in only where the anchor scheme has
+	 *                       been read off the live page; '' everywhere else, and
+	 *                       the caller falls back to docs_url rather than
+	 *                       inventing an anchor that would land nowhere.
 	 *   model_parameter_notes  measured per-model differences, keyed by the
 	 *                       leading part of a model id. Parameters differ
 	 *                       between two models of the same provider more often
@@ -66,7 +72,12 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 				// top_p and top_k, Sonnet 5 refuses them and takes thinking,
 				// stop_sequences works on both.
 				'example_params'   => "top_p: 0.9\ntop_k: 40\nstop_sequences: [\"User:\"]\nthinking: {\"type\":\"adaptive\"}",
-				'docs_url'         => 'https://docs.claude.com/en/api/messages',
+				'docs_url'         => 'https://platform.claude.com/docs/en/api/messages/create',
+				// Read off that page on 2026-08-30: every top-level body
+				// parameter it documents is anchored #create.<name>, all
+				// nineteen of them, so a parameter added later is reachable by
+				// the same template rather than by another edit here.
+				'param_doc_url'    => 'https://platform.claude.com/docs/en/api/messages/create#create.%s',
 				// Measured 2026-08-30 against a live key, one request per
 				// parameter per model, reading the 200 or the 400 back.
 				'model_parameter_notes' => array(
@@ -106,6 +117,9 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 				'tuning_note'      => '',
 				'example_params'   => "top_p: 0.9\npresence_penalty: 0.5\nfrequency_penalty: 0.3\nseed: 42",
 				'docs_url'         => 'https://platform.openai.com/docs/api-reference/chat/create',
+				// Anchor scheme not read off the live page, so no per-parameter
+				// link is offered and the reader is sent to the page itself.
+				'param_doc_url'    => '',
 				'model_parameter_notes' => array(),
 			),
 			'xai'       => array(
@@ -116,6 +130,9 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 				'tuning_note'      => '',
 				'example_params'   => "top_p: 0.9\npresence_penalty: 0.0\nfrequency_penalty: 0.0\nseed: 12345",
 				'docs_url'         => 'https://docs.x.ai/docs/api-reference',
+				// Anchor scheme not read off the live page, so no per-parameter
+				// link is offered and the reader is sent to the page itself.
+				'param_doc_url'    => '',
 				'model_parameter_notes' => array(),
 			),
 			'gemini'    => array(
@@ -128,6 +145,9 @@ if ( ! function_exists( 'flosc_provider_api_profile' ) ) {
 				// putting it at the top level.
 				'example_params'   => "generationConfig: {\"temperature\":0.4,\"topP\":0.95}",
 				'docs_url'         => 'https://ai.google.dev/api/generate-content',
+				// Anchor scheme not read off the live page, so no per-parameter
+				// link is offered and the reader is sent to the page itself.
+				'param_doc_url'    => '',
 				'model_parameter_notes' => array(),
 			),
 		);
@@ -250,5 +270,40 @@ if ( ! function_exists( 'flosc_provider_model_parameter_note' ) ) {
 		}
 
 		return $best;
+	}
+}
+
+if ( ! function_exists( 'flosc_provider_param_doc_url' ) ) {
+	/**
+	 * Where the provider explains one parameter, in the provider's own words.
+	 *
+	 * FLOSC's note beside a parameter is a paraphrase written for an operator.
+	 * It is not the authority and should never be mistaken for it, so every
+	 * note carries the way out to the reference it was written from.
+	 *
+	 * Falls back to the provider's request reference where the anchor scheme
+	 * has not been read off the live page — a page the reader has to scan is
+	 * still the right page, and an invented anchor lands nowhere and reads as
+	 * a broken link.
+	 *
+	 * @param string $provider FLOSC provider slug.
+	 * @param string $param    Parameter name.
+	 * @return string URL, or '' when FLOSC has nowhere to send them.
+	 */
+	function flosc_provider_param_doc_url( $provider, $param ) {
+		$profile = flosc_provider_api_profile( $provider );
+		$param   = trim( (string) $param );
+
+		if ( null === $profile ) {
+			return '';
+		}
+
+		$template = (string) ( $profile['param_doc_url'] ?? '' );
+
+		if ( '' === $template || '' === $param ) {
+			return (string) ( $profile['docs_url'] ?? '' );
+		}
+
+		return sprintf( $template, rawurlencode( $param ) );
 	}
 }

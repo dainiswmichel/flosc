@@ -162,5 +162,26 @@ foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $p ) {
 }
 ok( 'a provider FLOSC knows nothing about links nowhere', flosc_provider_docs_url( 'not_a_provider' ), '' );
 
+echo "And to the provider's entry for one parameter, where the anchors were read\n";
+ok( 'Anthropic links straight at stop_sequences',
+	flosc_provider_param_doc_url( 'anthropic', 'stop_sequences' ),
+	'https://platform.claude.com/docs/en/api/messages/create#create.stop_sequences' );
+ok( '  and at temperature', flosc_provider_param_doc_url( 'anthropic', 'temperature' ),
+	'https://platform.claude.com/docs/en/api/messages/create#create.temperature' );
+ok( '  including a parameter FLOSC has no note on, by the same scheme',
+	flosc_provider_param_doc_url( 'anthropic', 'service_tier' ),
+	'https://platform.claude.com/docs/en/api/messages/create#create.service_tier' );
+ok( '  and a name needing escaping cannot break the URL',
+	strpos( flosc_provider_param_doc_url( 'anthropic', 'a b' ), ' ' ),
+	false );
+
+// The three whose anchor scheme has not been read: the page, never a guess.
+foreach ( array( 'openai', 'xai', 'gemini' ) as $p ) {
+	ok( $p . ' falls back to its request page', flosc_provider_param_doc_url( $p, 'top_p' ), flosc_provider_docs_url( $p ) );
+	ok( '  with no invented anchor on it', strpos( flosc_provider_param_doc_url( $p, 'top_p' ), '#' ), false );
+}
+
+ok( 'a provider FLOSC knows nothing about still links nowhere', flosc_provider_param_doc_url( 'not_a_provider', 'top_p' ), '' );
+
 echo $fail ? "\n$fail FAILURES\n" : "\nModel parameters: all checks passed\n";
 exit( $fail ? 1 : 0 );
