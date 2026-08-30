@@ -544,6 +544,22 @@ class FLOSC_Chatpack {
             . "FLOSC is a white-label WordPress plugin framework. "
             . "That is ALL it stands for. Do not expand it any other way.\n\n";
 
+        $public_title = function_exists( 'flosc_flow_public_title' )
+            ? flosc_flow_public_title( $flow_id )
+            : '';
+        $public_tagline = function_exists( 'flosc_flow_public_tagline' )
+            ? flosc_flow_public_tagline( $flow_id )
+            : '';
+        if ( $public_title !== '' ) {
+            $section .= "**Public offering title:** {$public_title}\n";
+        } else {
+            $section .= "**Public offering title:** none. This flow is not a course catalog and has no product or lesson brand. Do not invent one.\n";
+        }
+        if ( $public_tagline !== '' ) {
+            $section .= "**Tagline:** {$public_tagline}\n";
+        }
+        $section .= "\n";
+
         if ( $compiled_profile === '' ) {
             $section .= "\n**Your Persona:**\n";
             $section .= "- Name: {$ai_name}\n";

@@ -3168,9 +3168,12 @@ $flosc_acc_templates = array(
 	'If someone asks for details you do not have about this floscFlow, what do you do instead of inventing them?',
 	'What is this floscFlow about: title {title}, tagline {tagline}, and how you help? Based on the title and tagline, what is going on here?',
 );
+$flosc_acc_title_for_prompt = $flosc_acc_title !== ''
+	? $flosc_acc_title
+	: __( '(none — this flow has no public offering title; do not invent a course or product name)', 'flosc' );
 $flosc_acc_var_map = array(
 	'{flow_name}'   => $flosc_acc_flow_name,
-	'{title}'       => $flosc_acc_title,
+	'{title}'       => $flosc_acc_title_for_prompt,
 	'{tagline}'     => $flosc_acc_tagline,
 	'{topic_scope}' => $flosc_acc_scope,
 	'{site_name}'   => $flosc_acc_site,
