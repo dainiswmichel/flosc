@@ -499,13 +499,47 @@ class FLOSC_WP_AI_Client {
 	}
 
 	/**
+	 * Tool-calling chat loop. No provider/tool Throwable may escape into REST.
+	 *
+	 * @param array    $args     Generate args plus tools.
+	 * @param callable $executor Tool runner.
+	 * @return array|WP_Error
+	 */
+	public static function generate_with_tools( $args, $executor ) {
+		try {
+			return self::generate_with_tools_inner( $args, $executor );
+		} catch ( Throwable $e ) {
+			if ( function_exists( 'flosc_log' ) ) {
+				flosc_log(
+					sprintf(
+						'AI tool loop failed: %s in %s:%d — %s',
+						get_class( $e ),
+						$e->getFile(),
+						$e->getLine(),
+						$e->getMessage()
+					)
+				);
+			}
+
+			return new WP_Error(
+				'flosc_wp_ai_tool_exception',
+				__( 'The AI tool request could not be completed.', 'flosc' ),
+				array(
+					'exception' => get_class( $e ),
+					'detail'    => $e->getMessage(),
+				)
+			);
+		}
+	}
+
+	/**
 	 * Tool loop. $executor is function( $name, $input_array, $call_id ): string.
 	 *
 	 * @param array    $args     Same as generate(), plus tools.
 	 * @param callable $executor Tool runner.
 	 * @return array|WP_Error
 	 */
-	public static function generate_with_tools( $args, $executor ) {
+	private static function generate_with_tools_inner( $args, $executor ) {
 		$args     = is_array( $args ) ? $args : array();
 		$history  = self::history_to_messages( isset( $args['history'] ) && is_array( $args['history'] ) ? $args['history'] : array() );
 		$message  = (string) ( $args['message'] ?? '' );

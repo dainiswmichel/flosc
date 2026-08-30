@@ -277,10 +277,11 @@ class FLOSC_RAG_Chat_Handler {
         );
 
         if ( is_wp_error( $flosc_result ) ) {
-            if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG ) {
+            if ( defined( 'FLOSC_DEBUG' ) && FLOSC_DEBUG && function_exists( 'flosc_log' ) ) {
                 flosc_log( 'FLOSC RAG: ' . $flosc_result->get_error_message() );
             }
-            return "Sorry, I'm having trouble connecting. Please try again.";
+
+            return null;
         }
 
         $flosc_usage = isset( $flosc_result['usage'] ) && is_array( $flosc_result['usage'] ) ? $flosc_result['usage'] : array();

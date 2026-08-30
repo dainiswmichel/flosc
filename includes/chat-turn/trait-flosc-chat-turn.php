@@ -34,11 +34,19 @@ trait FLOSC_Chat_Turn_Trait {
                 ));
             }
 
-            return new WP_REST_Response([
-                'success'  => false,
-                'response' => __('Something went wrong on our side just then. Please try that again.', 'flosc'),
-                'error'    => 'flosc_chat_turn_exception',
-            ], 200);
+            $flosc_error_code = 'flosc_chat_turn_exception';
+            $flosc_friendly_message = __( 'Something went wrong on our side just then. Please try that again.', 'flosc' );
+
+            return new WP_REST_Response(
+                array(
+                    'success'    => false,
+                    'message'    => $flosc_friendly_message,
+                    'response'   => $flosc_friendly_message, // Backward compatibility.
+                    'error'      => $flosc_error_code,        // Backward compatibility / machine code.
+                    'error_code' => $flosc_error_code,
+                ),
+                200
+            );
         }
     }
 
@@ -1079,11 +1087,19 @@ trait FLOSC_Chat_Turn_Trait {
                 ));
             }
 
-            return new WP_REST_Response([
-                'success'  => false,
-                'response' => __('Something went wrong on our side just then. Please try that again.', 'flosc'),
-                'error'    => 'flosc_chat_turn_exception',
-            ], 200);
+            $flosc_error_code = 'flosc_chat_turn_exception';
+            $flosc_friendly_message = __( 'Something went wrong on our side just then. Please try that again.', 'flosc' );
+
+            return new WP_REST_Response(
+                array(
+                    'success'    => false,
+                    'message'    => $flosc_friendly_message,
+                    'response'   => $flosc_friendly_message, // Backward compatibility.
+                    'error'      => $flosc_error_code,        // Backward compatibility / machine code.
+                    'error_code' => $flosc_error_code,
+                ),
+                200
+            );
         }
     }
 
