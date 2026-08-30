@@ -7778,7 +7778,6 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
 
 /* A field whose value is not what will be sent must not look authoritative. */
 .flosc-overridden { display: block; margin-top: 4px; font-weight: 600; color: #7a5c00; }
-.flosc-input-overridden { opacity: .55; text-decoration: line-through; }
 
 /* The request preview reads as a statement until the operator asks to edit it. */
 .flosc-params-locked { background: #f6f7f7 !important; color: #3c434a; cursor: default; }

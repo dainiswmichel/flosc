@@ -636,7 +636,7 @@ endif;
                     <?php echo esc_html__( 'Edit the request', 'flosc' ); ?>
                 </button>
                 <span class="description" id="flosc-params-lock-note">
-                    <?php echo esc_html__( 'Built from the fields above. Edit it to send anything they cannot express — what you write wins, and those fields update to match when you save.', 'flosc' ); ?>
+                    <?php echo esc_html__( 'Built from the fields above. Edit it to send anything they cannot express — what you write wins, and those fields follow it as you type.', 'flosc' ); ?>
                 </span>
             </p>
             <div class="flosc-param-help" id="flosc-param-help" hidden></div>
@@ -681,16 +681,17 @@ endif;
                 </div>
             </div>
             <p class="description">
-                This is the request FLOSC sends. The fields above are a convenience for writing into it —
-                name <code>temperature</code> or <code>max_tokens</code> here and it <strong>overrides</strong>
-                them, which the fields will say. One <code>name: value</code> per line, or a JSON object pasted
-                from the provider's own documentation.
+                This is the request FLOSC sends. The fields above are a second view of it, not a rival to
+                it: change Max Tokens and the <code>max_tokens</code> line changes with it, and every other
+                line stays exactly as you wrote it. Edit that line instead and the field follows. One
+                <code>name: value</code> per line, or a JSON object pasted from the provider's own
+                documentation.
                 <br>FLOSC keeps no list of valid parameters — providers add them faster than any list stays
                 true — so a name FLOSC has never heard of is sent as written and the provider decides. Its
                 answer comes back word for word in Step 3.
                 <br>Numbers, <code>true</code>, <code>false</code> and JSON objects keep their type. Only
-                <code>messages</code> and <code>stream</code> are refused: FLOSC assembles the conversation
-                itself, and cannot read a reply that streams.
+                <code>messages</code>, <code>contents</code> and <code>stream</code> are refused: FLOSC
+                assembles the conversation itself, and cannot read a reply that streams.
                 <br><strong>Parameters differ by model, not just by provider.</strong> Measured on one Anthropic
                 key: Sonnet 4.5 accepts <code>temperature</code>, <code>top_p</code> and <code>top_k</code>;
                 Sonnet 5 refuses all three and accepts <code>thinking</code> instead. Use
@@ -1398,7 +1399,7 @@ jQuery(document).ready(function($) {
         if (focus) { $('#flow_ai_model_params').trigger('focus'); }
         $('#flosc-params-edit').prop('disabled', true);
         $('#flosc-params-lock-note').text(
-            'Editing. What you write is what FLOSC sends — Temperature and Max Tokens above will be set from it when you save.'
+            'Editing. What you write is what FLOSC sends — Temperature and Max Tokens above follow it as you type.'
         );
     }
 
@@ -1430,7 +1431,88 @@ jQuery(document).ready(function($) {
         floscCheckParams();
     }
 
-    $('#flow_ai_temperature, #flow_ai_max_tokens, #flow_ai_provider').on('input change', floscRebuildPreview);
+    // Guards the two-way sync between a field and the line that carries it, so
+    // writing one does not bounce back and rewrite the other.
+    var floscSyncing = false;
+
+    // Set one parameter in the request and leave every other line exactly as
+    // the operator wrote it — same name, same place, same ordering. An empty
+    // field removes its line rather than sending an empty value.
+    function floscSetParamValue(name, value) {
+        var $box = $('#flow_ai_model_params');
+
+        if (!$box.length || floscSyncing) { return; }
+
+        floscSyncing = true;
+
+        var current = String($box.val() || '').trim();
+        value = String(value).trim();
+
+        if (current.charAt(0) === '{') {
+            var obj = null;
+
+            try { obj = JSON.parse(current); } catch (e) { obj = null; }
+
+            if (obj) {
+                if (value === '') {
+                    delete obj[name];
+                } else {
+                    var typed;
+
+                    try { typed = JSON.parse(value); } catch (e2) { typed = value; }
+
+                    obj[name] = typed;
+                }
+
+                $box.val(JSON.stringify(obj, null, 2));
+                floscSyncing = false;
+                floscCheckParams();
+                return;
+            }
+        }
+
+        var lines = current ? current.split(/\r\n|\r|\n/) : [];
+        var found = false;
+
+        lines = lines.filter(function (line) {
+            var bit = floscSplitParamLine(line);
+
+            if (!bit || bit.name !== name) { return true; }
+
+            found = true;
+
+            return value !== '';
+        }).map(function (line) {
+            var bit = floscSplitParamLine(line);
+
+            return (bit && bit.name === name) ? name + ': ' + value : line;
+        });
+
+        if (!found && value !== '') {
+            lines.push(name + ': ' + value);
+        }
+
+        $box.val(lines.filter(function (l) { return l.trim(); }).join('\n'));
+        floscSyncing = false;
+        floscCheckParams();
+    }
+
+    $('#flow_ai_temperature').on('input change', function () {
+        var provider = floscCurrentProvider();
+
+        // A provider that refuses this one never carries it, typed or not.
+        if ((floscProviderRejects[provider] || { params: [] }).params.indexOf('temperature') !== -1) {
+            return;
+        }
+
+        floscSetParamValue('temperature', $(this).val());
+    });
+
+    $('#flow_ai_max_tokens').on('input change', function () {
+        floscSetParamValue('max_tokens', $(this).val());
+    });
+
+    $('#flow_ai_provider').on('change', floscRebuildPreview);
 
     // ---- The parameter menu -------------------------------------------------
     //
@@ -1747,25 +1829,36 @@ jQuery(document).ready(function($) {
 
     floscRenderParamMenu();
 
+    // The field and the line that carries it are two views of one value, so
+    // they are kept equal as they are typed rather than argued over at save
+    // time. Nothing is struck through and nothing is warned about, because
+    // there is never a moment where the two disagree.
     function floscMarkOverrides(names, values) {
+        if (floscSyncing) { return; }
+
+        floscSyncing = true;
+
         ['temperature', 'max_tokens'].forEach(function (field) {
-            var i = names.indexOf(field);
-            var $note = $('#flosc-overridden-' + field);
             var $input = $('#flow_ai_' + field);
 
-            if (i === -1) {
-                $note.attr('hidden', true).text('');
-                $input.removeClass('flosc-input-overridden');
-                return;
-            }
+            $('#flosc-overridden-' + field).attr('hidden', true).text('');
+            $input.removeClass('flosc-input-overridden');
 
-            $note.removeAttr('hidden').text(
-                'The request below sets this' +
-                (values && values[field] !== undefined ? ' to ' + values[field] : '') +
-                '. Saving will bring this field into line with it.'
-            );
-            $input.addClass('flosc-input-overridden');
+            // Never rewrite a field while it is being typed into: the value
+            // is half-entered, and correcting "0.30" to "0.3" under the cursor
+            // is the sort of help nobody asked for.
+            if (!$input.length || $input.is(':focus') || names.indexOf(field) === -1) { return; }
+
+            var value = values ? values[field] : undefined;
+
+            if (value === undefined || value === null || typeof value === 'object') { return; }
+
+            if (String($input.val()) !== String(value)) {
+                $input.val(String(value));
+            }
         });
+
+        floscSyncing = false;
     }
 
     function floscExplainParams(names) {
