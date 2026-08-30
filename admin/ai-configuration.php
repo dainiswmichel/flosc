@@ -987,7 +987,10 @@ jQuery(document).ready(function($) {
             if ((note.refuses || []).indexOf(param) !== -1) { return true; }
         }
 
-        return ((floscProviderRejects[provider] || { params: [] }).params || []).indexOf(param) !== -1;
+        // Same reason as above: this runs during setup, before the map exists.
+        var wide = (floscProviderRejects && floscProviderRejects[provider]) || { params: [] };
+
+        return (wide.params || []).indexOf(param) !== -1;
     }
 
     function updateProviderSections() {
@@ -1598,6 +1601,18 @@ jQuery(document).ready(function($) {
     // background write, so it takes the slot even from an autosave already in it.
     var floscTuningPending = null;
 
+    // What the last completed save stored, so a no-op can still report a real
+    // state instead of leaving the button mid-sentence.
+    var floscTuningLastSavedAt = '';
+    var floscTuningLastSaveSource = 'manual';
+
+    // Raised on pointerdown, which happens before the textarea loses focus.
+    // Asking afterwards whether Save has focus cannot work: pressing Save
+    // disables Save, and disabling a focused element takes its focus away — so
+    // the check answered "they didn't click Save" about the click that was
+    // running it. Intent is captured, never inferred after the fact.
+    var floscManualSaveArmed = false;
+
     function floscQueueTuningSave($flash, source) {
         source = (source === 'manual') ? 'manual' : 'auto';
 
@@ -1730,7 +1745,15 @@ jQuery(document).ready(function($) {
         // indicator flicker for no reason anyone can see.
         var fingerprint = floscTuningFingerprint();
 
-        if (source === 'auto' && fingerprint === floscTuningLastSaved) { return; }
+        // Already stored. Nothing to write — but the button may be sitting in
+        // Saving from the call that got us here, so say so rather than
+        // returning into silence. No path out of a save may leave it there.
+        if (fingerprint === floscTuningLastSaved) {
+            if (source === 'manual') { floscTuningLastSaveSource = 'manual'; }
+
+            floscTuningState('saved', floscTuningLastSavedAt, floscTuningLastSaveSource);
+            return;
+        }
 
         floscTuningInFlight = true;
         floscTuningState('saving', '', source);
@@ -1774,7 +1797,20 @@ jQuery(document).ready(function($) {
                 // edit the operator can see. Leave the screen alone and let the
                 // queued save — which carries the newer values — have the last
                 // word, including the last word on the label.
+                floscTuningLastSavedAt = d.saved_at || '';
+                floscTuningLastSaveSource = source;
+
                 if (floscTuningPending) {
+                    // This answer is older than the screen, so it must not be
+                    // painted back over newer work — but it must still hand the
+                    // button back. The queued save has the last word on the
+                    // label; until it lands, the page says what is true.
+                    $('#flosc-tuning-status').attr('class', 'flosc-tuning-status')
+                        .text('Latest changes waiting to save…');
+                    $('#flosc-save-tuning').prop('disabled', false)
+                        .removeClass('flosc-tuning-save--saved flosc-tuning-save--bad')
+                        .addClass('button-primary')
+                        .text('Save Model Tuning');
                     return;
                 }
 
@@ -1833,10 +1869,19 @@ jQuery(document).ready(function($) {
         });
     }
 
+    $('#flosc-save-tuning').on('pointerdown mousedown touchstart', function () {
+        floscManualSaveArmed = true;
+        window.clearTimeout(floscTuningTimer);
+    });
+
     $('#flosc-save-tuning').on('click', function (event) {
         event.preventDefault();
         window.clearTimeout(floscTuningTimer);
         floscSaveTuning($('#flow_ai_model_params'), 'manual');
+
+        // Held through the focus transition that produced this click, then
+        // released so the next blur is an ordinary blur again.
+        window.setTimeout(function () { floscManualSaveArmed = false; }, 0);
     });
 
     // Any edit makes the form dirty, including one made while a save is
@@ -1886,18 +1931,24 @@ jQuery(document).ready(function($) {
     // focusout fires before focus lands, so the answer to "where did they go?"
     // is one turn of the event loop away. Waiting for it lets the click be the
     // save it was meant to be.
-    $('#flow_ai_model_params').on('focusout', function () {
+    $('#flow_ai_model_params').on('focusout', function (event) {
         var $field = $(this);
 
         window.clearTimeout(floscTuningTimer);
 
-        window.setTimeout(function () {
-            var $save = $('#flosc-save-tuning');
+        // Leaving by way of Save is a manual save, and it is already running.
+        // relatedTarget names where focus is going, before it gets there.
+        var next = event.relatedTarget || null;
 
-            if ($save.is(':focus') || $save.is(document.activeElement)) { return; }
+        if (floscManualSaveArmed || (next && next.id === 'flosc-save-tuning')) {
+            return;
+        }
+
+        floscTuningTimer = window.setTimeout(function () {
+            if (floscManualSaveArmed) { return; }
 
             floscSaveTuning($field, 'auto');
-        }, 0);
+        }, 150);
     });
 
     // ---- The parameter menu -------------------------------------------------
@@ -1921,8 +1972,17 @@ jQuery(document).ready(function($) {
     // Same longest-prefix rule the PHP side uses: providers date their model
     // ids, so a note measured on claude-sonnet-4-5 covers -20250929.
     function floscModelNoteFor(provider, model) {
-        var notes = floscParamModelNotes[provider] || {};
+        // These maps are `var`s assigned further down this block, but callers
+        // run during setup — updateProviderSections() is invoked long before
+        // this line is reached. Hoisting makes the function callable while its
+        // data is still undefined, and reading a property off that threw, which
+        // aborted setup and left every handler after it unbound. A guard here
+        // rather than a rule about ordering: this must answer safely whenever
+        // it is asked, including before the page has finished assembling.
+        var notes = (floscParamModelNotes && floscParamModelNotes[provider]) || {};
         var best = null, bestLen = -1;
+
+        model = String(model || '');
 
         Object.keys(notes).forEach(function (prefix) {
             if (model.indexOf(prefix) === 0 && prefix.length > bestLen) {
