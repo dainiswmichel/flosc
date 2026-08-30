@@ -576,7 +576,7 @@ endif;
     🎛️ Step 2b: Model Tuning
 </h3>
 <p class="description">
-    Fine-tune AI behavior for this flow. These settings apply to whichever provider is selected above.
+    Fine-tune AI behavior for this flow. Max Tokens applies to every provider. Temperature applies to OpenAI, xAI and Gemini.
 </p>
 
 <table class="form-table">
@@ -586,6 +586,7 @@ endif;
             <input type="number" id="flow_ai_temperature" name="flow_ai_temperature" value="<?php echo esc_attr($flosc_ai_temperature); ?>" min="0" max="2" step="0.1" class="flosc-ai-temp-input">
             <p class="description">
                 Controls randomness. <strong>0.0</strong> = fully deterministic, <strong>0.3</strong> = recommended (precision/coaching), <strong>0.7</strong> = creative/balanced, <strong>1.5+</strong> = highly random. Lower values reduce hallucination.
+                <br><strong>Not sent to Anthropic.</strong> Claude's newer models reject <code>temperature</code> outright — Opus 5, Sonnet 5, Fable 5, Opus 4.8 and Opus 4.7 all refuse a request carrying it — so FLOSC leaves sampling to Claude's own default and every Claude model stays usable.
             </p>
         </td>
     </tr>
