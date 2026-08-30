@@ -200,7 +200,18 @@ if ( ! function_exists( 'flosc_mts_utc' ) ) {
 		// millisecond that belongs to the next second.
 		$ms = min( 999, (int) round( ( $when - $secs ) * 1000 ) );
 
-		return gmdate( 'Y\y-m\m-d\d-\U\T\C-H\h-i\m-s\s-', $secs ) . sprintf( '%03dms', $ms );
+		// Only say UTC when it is UTC. gmdate() derives the zone from the Unix
+		// epoch rather than from a server setting, so on a sound install this
+		// always holds — and it is checked rather than assumed, because a stamp
+		// that names a zone it is not in is worse than one that names none.
+		// Where the check cannot be satisfied the separator is a bare T, which
+		// marks the boundary without claiming a zone.
+		$zone = ( gmdate( 'e', $secs ) === 'UTC' || 0 === (int) gmdate( 'Z', $secs ) ) ? 'UTC' : 'T';
+
+		return gmdate( 'Y\y-m\m-d\d-', $secs )
+			. $zone . '-'
+			. gmdate( 'H\h-i\m-s\s-', $secs )
+			. sprintf( '%03dms', $ms );
 	}
 }
 

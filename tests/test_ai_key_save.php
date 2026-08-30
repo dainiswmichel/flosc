@@ -250,6 +250,10 @@ ok( '  and a rounded 1000 never prints the next second\'s millisecond',
 	substr( flosc_mts_utc( 1787654321.9999 ), -10 ), '-41s-999ms' );
 ok( '  midnight is all zeroes, not blanks',
 	flosc_mts_utc( 1767225600.0 ), '2026y-01m-01d-UTC-00h-00m-00s-000ms' );
+ok( '  the zone is named only because it is that zone',
+	strpos( flosc_mts_utc( 1787654321.472 ), '-UTC-' ) !== false, true );
+ok( '  and a stamp never carries both a zone and a bare T',
+	strpos( flosc_mts_utc(), '-T-' ), false );
 ok( '  every part carries its own unit',
 	(bool) preg_match( '/^\d{4}y-\d{2}m-\d{2}d-UTC-\d{2}h-\d{2}m-\d{2}s-\d{3}ms$/', flosc_mts_utc() ), true );
 ok( '  and it sorts as text in the order time runs',

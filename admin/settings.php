@@ -1833,6 +1833,13 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
     }
     $flosc_new_settings['identity'] = $flosc_identity;
 
+    // When this flow was last saved from this page, stamped by the server that
+    // did the writing. Shown under the Save button so the answer to "did that
+    // take?" is on screen rather than inferred from the page not complaining.
+    if (function_exists('flosc_mts_utc')) {
+        $flosc_new_settings['last_settings_save'] = flosc_mts_utc();
+    }
+
     // Save flow settings (ALL tabs now per-flow)
     update_option($flosc_settings_key, $flosc_new_settings);
 
@@ -2948,6 +2955,21 @@ if (function_exists('wp_add_inline_style')) {
             <button type="submit" name="flosc_save" value="1" form="flosc-settings-form" class="button button-primary button-large">
                 Save Settings for <?php echo esc_html($flosc_flow_settings['identity']['name'] ?? $flosc_selected_ivr); ?>
             </button>
+            <?php
+            $flosc_last_save = trim((string) ($flosc_flow_settings['last_settings_save'] ?? ''));
+
+            if ($flosc_last_save !== '') :
+                ?>
+                <span class="flosc-last-save" id="flosc-last-save">
+                    <?php
+                    printf(
+                        /* translators: %s: Michel Time Stamp of the last save, in UTC. */
+                        esc_html__( 'Last save: %s', 'flosc' ),
+                        esc_html( $flosc_last_save )
+                    );
+                    ?>
+                </span>
+            <?php endif; ?>
         </p>
         <?php endif; ?>
         
