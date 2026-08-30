@@ -85,14 +85,43 @@ ok( 'messages is refused — FLOSC builds the conversation', is_wp_error( flosc_
 ok( '  and stream, because the reply could not be read', is_wp_error( flosc_parse_model_parameters( 'stream: true' ) ), true );
 ok( '  the refusal explains rather than scolds', strpos( flosc_parse_model_parameters( 'messages: x' )->get_error_message(), 'Every other parameter is yours' ) !== false, true );
 
-echo "After a save, the fields show what the text said\n";
-function wp_json_encode( $v ) { return json_encode( $v ); }
-$settings = array( 'ai_temperature' => '0.3', 'ai_max_tokens' => '500', 'ai_anthropic_params' => "temperature: 0.9\nmax_tokens: 2000\ntop_p: 0.8" );
+echo "A save mirrors into the fields and never edits the request\n";
+function wp_json_encode( $v, $f = 0 ) { return json_encode( $v, $f ); }
+if ( ! defined( 'JSON_PRESERVE_ZERO_FRACTION' ) ) { define( 'JSON_PRESERVE_ZERO_FRACTION', 1024 ); }
+$typed    = "temperature: 0.9\nmax_tokens: 2000\ntop_p: 0.8";
+$settings = array( 'ai_temperature' => '0.3', 'ai_max_tokens' => '500', 'ai_anthropic_params' => $typed );
 $after = flosc_reconcile_model_parameters( $settings, 'anthropic' );
 ok( 'the Temperature field takes the written value', $after['ai_temperature'], '0.9' );
 ok( '  and Max Tokens too', $after['ai_max_tokens'], '2000' );
-ok( '  so neither is left duplicated in the text', $after['ai_anthropic_params'], "top_p: 0.8" );
-ok( '  while what no field represents stays put', flosc_parse_model_parameters( $after['ai_anthropic_params'] ), array( 'top_p' => 0.8 ) );
+ok( 'THE REQUEST COMES BACK BYTE FOR BYTE', $after['ai_anthropic_params'], $typed );
+ok( '  same lines, same order, nothing lifted out', flosc_parse_model_parameters( $after['ai_anthropic_params'] ),
+	array( 'temperature' => 0.9, 'max_tokens' => 2000, 'top_p' => 0.8 ) );
+
+// The exact four lines from the resubmission checklist. Save, read back, compare.
+$round_trip = "max_tokens: 1250\ntemperature: 0.7\ntop_p: 0.9\nstop_sequences: [\"User:\"]";
+$saved_rt = flosc_reconcile_model_parameters( array( 'ai_anthropic_params' => $round_trip ), 'anthropic' );
+ok( 'the four-line request survives a save unchanged', $saved_rt['ai_anthropic_params'], $round_trip );
+ok( '  and the preview shows it, not a rebuild of it',
+	flosc_build_model_parameter_preview( 'anthropic', $saved_rt ), $round_trip );
+ok( '  temperature is not dropped on a provider that refuses it',
+	strpos( flosc_build_model_parameter_preview( 'anthropic', $saved_rt ), 'temperature: 0.7' ) !== false, true );
+ok( '  and 0.9 is still 0.9', strpos( flosc_build_model_parameter_preview( 'anthropic', $saved_rt ), 'top_p: 0.9' ) !== false, true );
+
+echo "Numbers are printed the way they were typed\n";
+ok( '0.9 does not become its binary expansion', flosc_format_model_parameter_value( 0.9 ), '0.9' );
+ok( '  0.1 either', flosc_format_model_parameter_value( 0.1 ), '0.1' );
+ok( '  a whole number stays whole', flosc_format_model_parameter_value( 1250 ), '1250' );
+ok( '  true is a word, not 1', flosc_format_model_parameter_value( true ), 'true' );
+ok( '  false is a word, not an empty string', flosc_format_model_parameter_value( false ), 'false' );
+ok( '  a list stays JSON', flosc_format_model_parameter_value( array( 'User:' ) ), '["User:"]' );
+
+echo "A first request is composed only when there is none\n";
+ok( 'an empty flow gets one built from its fields',
+	flosc_build_model_parameter_preview( 'openai', array( 'ai_temperature' => '0.3', 'ai_max_tokens' => '500' ) ),
+	"temperature: 0.3\nmax_tokens: 500" );
+ok( '  and a flow that has one keeps it, fields or no fields',
+	flosc_build_model_parameter_preview( 'openai', array( 'ai_temperature' => '0.3', 'ai_openai_params' => 'seed: 42' ) ),
+	'seed: 42' );
 
 $untouched = flosc_reconcile_model_parameters( array( 'ai_temperature' => '0.3', 'ai_anthropic_params' => 'top_k: 40' ), 'anthropic' );
 ok( 'a field nobody named is left alone', $untouched['ai_temperature'], '0.3' );

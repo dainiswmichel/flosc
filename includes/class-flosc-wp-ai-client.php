@@ -207,7 +207,7 @@ class FLOSC_WP_AI_Client {
 				. '</p></div>';
 		}
 
-		$html  = '<table class="widefat striped" style="max-width:720px;margin:12px 0;">';
+		$html  = '<table class="widefat striped flosc-provider-status-table">';
 		$html .= '<thead><tr>';
 		$html .= '<th>' . esc_html__( 'FLOSC provider', 'flosc' ) . '</th>';
 		$html .= '<th>' . esc_html__( 'Official plugin', 'flosc' ) . '</th>';

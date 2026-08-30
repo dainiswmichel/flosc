@@ -255,7 +255,12 @@ if ( ! function_exists( 'flosc_store_model_tuning' ) ) {
 				}
 			}
 
-			$writes[ $params_key ] = $raw;
+			// Plain text, one parameter per line. sanitize_textarea_field keeps
+			// the newlines that are the format and strips what has no business
+			// in a request body.
+			$writes[ $params_key ] = function_exists( 'sanitize_textarea_field' )
+				? sanitize_textarea_field( $raw )
+				: $raw;
 		}
 
 		if ( array_key_exists( 'temperature', $tuning ) ) {

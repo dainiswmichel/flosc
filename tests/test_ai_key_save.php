@@ -25,6 +25,9 @@ function delete_option( $name ) { global $OPTIONS; unset( $OPTIONS[ $name ] ); r
 function sanitize_key( $k ) { return strtolower( preg_replace( '/[^a-z0-9_\-]/i', '', (string) $k ) ); }
 function __( $t, $d = null ) { return $t; }
 function maybe_unserialize( $v ) { return $v; }
+function wp_json_encode( $v, $f = 0 ) { return json_encode( $v, $f ); }
+function sanitize_textarea_field( $v ) { return (string) $v; }
+if ( ! defined( 'JSON_PRESERVE_ZERO_FRACTION' ) ) { define( 'JSON_PRESERVE_ZERO_FRACTION', 1024 ); }
 function flosc_available_providers_flow_key_map() {
 	return array( 'anthropic' => 'anthropic_api_key', 'openai' => 'openai_api_key', 'xai' => 'xai_api_key', 'gemini' => 'gemini_api_key', 'assemblyai' => 'assemblyai_api_key' );
 }
@@ -37,6 +40,8 @@ class WP_Error {
 }
 function is_wp_error( $t ) { return $t instanceof WP_Error; }
 
+require_once __DIR__ . '/../includes/ai/flosc-provider-profiles.php';
+require_once __DIR__ . '/../includes/ai/flosc-model-parameters.php';
 require_once __DIR__ . '/../includes/ai/flosc-provider-keys.php';
 require_once __DIR__ . '/../includes/ai/flosc-provider-profiles.php';
 require_once __DIR__ . '/../includes/ai/flosc-model-parameters.php';
@@ -170,10 +175,19 @@ ok( '  the key beside it is untouched', $row['anthropic_api_key'], 'sk-ant-keep-
 ok( '  so is the model', $row['ai_anthropic_model'], 'claude-sonnet-4-5-20250929' );
 ok( '  and so is a field this save never mentioned', $row['ai_temperature'], '0.3' );
 
-$saved = flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'params' => "top_p: 0.9\nmax_tokens: 900" ) );
-ok( 'a max_tokens written into the request wins', $saved['max_tokens'], '900' );
-ok( '  and is folded out of the request text', $saved['params'], 'top_p: 0.9' );
-ok( '  leaving the request showing what is sent', $saved['preview'], "max_tokens: 900\ntop_p: 0.9" );
+$typed_request = "top_p: 0.9\nmax_tokens: 900";
+$saved = flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'params' => $typed_request ) );
+ok( 'a max_tokens written into the request reaches its field', $saved['max_tokens'], '900' );
+ok( '  and the request itself comes back byte for byte', $saved['params'], $typed_request );
+ok( '  which is also what the page will show', $saved['preview'], $typed_request );
+
+// The failure this whole change exists to stop: Save eating the work.
+$four_lines = "max_tokens: 1250\ntemperature: 0.7\ntop_p: 0.9\nstop_sequences: [\"User:\"]";
+$kept = flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'params' => $four_lines ) );
+ok( 'four lines in, four lines out', $kept['params'], $four_lines );
+ok( '  temperature survives on a provider that refuses it', strpos( $kept['params'], 'temperature: 0.7' ) !== false, true );
+ok( '  0.9 is not reprinted as its binary expansion', strpos( $kept['params'], '0.90000000' ), false );
+ok( '  and reading it back from the flow changes nothing', get_option( $tune_option )['ai_anthropic_params'], $four_lines );
 
 $before = get_option( $tune_option );
 $broken = flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'params' => 'this is not a parameter' ) );
@@ -184,7 +198,12 @@ ok( '  and nothing is written', get_option( $tune_option ) === $before, true );
 $bad = flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'max_tokens' => 'lots' ) );
 ok( 'Max Tokens has to be a number', is_wp_error( $bad ), true );
 ok( '  zero is not a reply length', is_wp_error( flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'max_tokens' => '0' ) ) ), true );
-ok( '  empty means the model decides', flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'max_tokens' => '' ) )['max_tokens'], '' );
+ok( '  empty is allowed through rather than refused', is_wp_error( flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'max_tokens' => '' ) ) ), false );
+// Clearing the field alone cannot unsay a max_tokens the request still names:
+// the request is the truth, so the field is set back from it. In the page both
+// move together, because clearing the field also removes that line.
+ok( '  but a request still naming it wins over the empty field',
+	flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'max_tokens' => '' ) )['max_tokens'], '1250' );
 ok( 'Temperature has to be a number too', is_wp_error( flosc_store_model_tuning( $tune_ivr, 'anthropic', array( 'temperature' => 'warm' ) ) ), true );
 
 ok( 'a flow that was never named is refused', is_wp_error( flosc_store_model_tuning( '', 'anthropic', array( 'max_tokens' => '900' ) ) ), true );
@@ -195,7 +214,7 @@ ok( 'and a save carrying nothing at all', is_wp_error( flosc_store_model_tuning(
 flosc_store_model_tuning( $tune_ivr, 'openai', array( 'params' => 'presence_penalty: 0.5' ) );
 $row = get_option( $tune_option );
 ok( "OpenAI's request is stored under OpenAI", $row['ai_openai_params'], 'presence_penalty: 0.5' );
-ok( "  and Anthropic's is left as it was", $row['ai_anthropic_params'], 'top_p: 0.9' );
+ok( "  and Anthropic's is left as it was", $row['ai_anthropic_params'], $four_lines );
 
 echo "The save is stamped by the machine that did the writing\n";
 ok( 'a Michel Time Stamp to the millisecond, in UTC',

@@ -7825,3 +7825,13 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
 .flosc-tuning-save--saved:hover, .flosc-tuning-save--saved:focus { background: #e0f0e8 !important; border-color: #2c6349 !important; color: #2c6349 !important; }
 .flosc-tuning-save--bad { border-color: #d63638 !important; color: #8a2424 !important; }
 .flosc-param-doc--none { color: #646970; white-space: normal; }
+
+/* Layout widths that used to ride on style="" attributes. Plugin Check flags
+   inline styles, and a rule with a name is easier to change once than six
+   attributes are to find. */
+.flosc-measure-48 { max-width: 48rem; }
+.flosc-measure-44 { max-width: 44rem; }
+.flosc-measure-42 { max-width: 42rem; }
+.flosc-provider-status-table { max-width: 720px; margin: 12px 0; }
+.flosc-inline-notice { margin: 8px 0 16px; }
+.flosc-tight-line { margin: .2em 0; }

@@ -32,7 +32,7 @@ if (empty($GLOBALS['flosc_suppress_tab_header'])) {
 <div class="flosc-guide-section">
     <h3>Where floscAdmin configures AI (streamlined dual view)</h3>
     <p>The <strong>AI</strong> admin tab has two views. Use the buttons at the top of the tab to switch.</p>
-    <table class="widefat striped" style="max-width:48rem">
+    <table class="widefat striped flosc-measure-48">
         <thead>
             <tr>
                 <th>View</th>

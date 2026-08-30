@@ -1039,3 +1039,51 @@ if (!function_exists('flosc_resolve_flow_option_key_for_ivr')) {
         return $best_key;
     }
 }
+
+if ( ! function_exists( 'flosc_da1_prune_flow_assignments' ) ) {
+	/**
+	 * Keep only the DA1 catalog attributions that name an actual flow.
+	 *
+	 * FLOSC flows are files named *_ivr.md. The same directory also holds this
+	 * plugin's own backups of them — *_ivr_bak_*.md and ivr-backup-*.md — and
+	 * those are not flows: Switch Flow has always refused to list them. An
+	 * earlier form of the v8 catalog migration walked every .md it found, so
+	 * those backups ended up stored as DA1 attributions and DA1 duly displayed
+	 * them, which is where the names nobody recognised came from.
+	 *
+	 * This drops those records and nothing else. Catalogs, .tsv uploads and
+	 * flow files are untouched; only the list saying which flow uses which
+	 * catalog is cleaned.
+	 *
+	 * @param mixed $assignments Stored flow => catalog-slug map.
+	 * @return array<string,array<int,string>>
+	 */
+	function flosc_da1_prune_flow_assignments( $assignments ) {
+		$clean = array();
+
+		if ( ! is_array( $assignments ) ) {
+			return $clean;
+		}
+
+		foreach ( $assignments as $flow => $catalogs ) {
+			$flow = sanitize_file_name( (string) $flow );
+
+			// A flow file, not a backup of one and not a stray .md.
+			if ( '' === $flow || ! preg_match( '/^[A-Za-z0-9._-]+_ivr\.md$/', $flow ) ) {
+				continue;
+			}
+
+			if ( ! is_array( $catalogs ) ) {
+				continue;
+			}
+
+			$slugs = array_values( array_unique( array_filter( array_map( 'sanitize_key', $catalogs ) ) ) );
+
+			if ( $slugs ) {
+				$clean[ $flow ] = $slugs;
+			}
+		}
+
+		return $clean;
+	}
+}

@@ -620,6 +620,15 @@ if (!is_array($flosc_da1_flow_assignments)) {
     $flosc_da1_flow_assignments = [];
 }
 
+// Show only attributions naming a flow that exists. Switch Flow has always
+// filtered backups out; this page used to render whatever was stored, which is
+// how backup filenames came to appear under "Attributed to". Filtering here as
+// well as at the source means a record written by some older build, or by hand,
+// cannot put a name on this page that the rest of FLOSC would not recognise.
+if (function_exists('flosc_da1_prune_flow_assignments')) {
+    $flosc_da1_flow_assignments = flosc_da1_prune_flow_assignments($flosc_da1_flow_assignments);
+}
+
 $flosc_known_flow_scopes = ['all'];
 if (isset($flosc_ivr_files) && is_array($flosc_ivr_files)) {
     foreach ($flosc_ivr_files as $flosc_ivr_file) {

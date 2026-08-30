@@ -526,6 +526,43 @@ if ( ! function_exists( 'flosc_model_parameters_overriding' ) ) {
 	}
 }
 
+if ( ! function_exists( 'flosc_format_model_parameter_value' ) ) {
+	/**
+	 * One parameter value, written the way a person would write it.
+	 *
+	 * var_export() on a float prints its full binary expansion — 0.9 comes back
+	 * as 0.90000000000000002220446049250313080847263336181640625, which is the
+	 * same number and an unusable thing to show anybody. json_encode gives the
+	 * shortest decimal that round-trips, which is what was typed.
+	 *
+	 * @param mixed $value Parsed parameter value.
+	 * @return string
+	 */
+	function flosc_format_model_parameter_value( $value ) {
+		if ( null === $value ) {
+			return 'null';
+		}
+
+		if ( is_bool( $value ) ) {
+			return $value ? 'true' : 'false';
+		}
+
+		if ( is_int( $value ) ) {
+			return (string) $value;
+		}
+
+		if ( is_float( $value ) ) {
+			return (string) wp_json_encode( $value, JSON_PRESERVE_ZERO_FRACTION );
+		}
+
+		if ( is_array( $value ) || is_object( $value ) ) {
+			return (string) wp_json_encode( $value );
+		}
+
+		return (string) $value;
+	}
+}
+
 if ( ! function_exists( 'flosc_build_model_parameter_preview' ) ) {
 	/**
 	 * The request as it stands, built from the fields plus anything extra.
@@ -541,12 +578,23 @@ if ( ! function_exists( 'flosc_build_model_parameter_preview' ) ) {
 	 */
 	function flosc_build_model_parameter_preview( $provider, $settings ) {
 		$provider = sanitize_key( (string) $provider );
-		$lines    = array();
+		$stored   = (string) ( $settings[ 'ai_' . $provider . '_params' ] ?? '' );
 
-		$temperature = trim( (string) ( $settings[ 'ai_temperature' ] ?? '' ) );
-		$max_tokens  = trim( (string) ( $settings[ 'ai_max_tokens' ] ?? '' ) );
+		// The stored request is the request. If there is one, it is shown as it
+		// was written — same lines, same order, same spelling of every number.
+		// Composing a replacement from the fields is what used to drop a
+		// temperature line the moment a provider was known to refuse that
+		// parameter, which read as Save deleting the operator's work.
+		if ( '' !== trim( $stored ) ) {
+			return $stored;
+		}
 
-		// Temperature is only part of the request where the provider takes it.
+		// Nothing stored yet, so compose a first one from the fields. This is
+		// the only moment FLOSC writes this text rather than the operator.
+		$lines       = array();
+		$temperature = trim( (string) ( $settings['ai_temperature'] ?? '' ) );
+		$max_tokens  = trim( (string) ( $settings['ai_max_tokens'] ?? '' ) );
+
 		$skips_temperature = function_exists( 'flosc_provider_rejects_tuning' )
 			&& flosc_provider_rejects_tuning( $provider, 'temperature' );
 
@@ -556,16 +604,6 @@ if ( ! function_exists( 'flosc_build_model_parameter_preview' ) ) {
 
 		if ( '' !== $max_tokens ) {
 			$lines[] = 'max_tokens: ' . $max_tokens;
-		}
-
-		$extra = flosc_parse_model_parameters( (string) ( $settings[ 'ai_' . $provider . '_params' ] ?? '' ) );
-
-		if ( ! is_wp_error( $extra ) ) {
-			foreach ( $extra as $key => $value ) {
-				$lines[] = $key . ': ' . ( is_scalar( $value ) || null === $value
-					? var_export( $value, true )
-					: wp_json_encode( $value ) );
-			}
 		}
 
 		return implode( "\n", $lines );
@@ -580,8 +618,14 @@ if ( ! function_exists( 'flosc_reconcile_model_parameters' ) ) {
 	 * what it says — otherwise the page displays one number and sends another,
 	 * which is the confusion this whole arrangement exists to end.
 	 *
-	 * temperature and max_tokens move out of the text and into their fields.
-	 * Everything else stays in the text, because no field represents it.
+	 * temperature and max_tokens are copied into the fields that display them.
+	 * The text itself is never touched. That is the whole rule: a save may
+	 * refuse, and a save that succeeds may not rewrite, reorder, renumber or
+	 * delete a single character of what was typed. FLOSC used to lift those two
+	 * parameters out of the text and rebuild the rest from its own parser,
+	 * which reordered the lines, reprinted 0.9 as its full binary expansion,
+	 * and — on a provider known to refuse temperature — dropped that line on
+	 * the floor. Every one of those looked like Save eating the work.
 	 *
 	 * @param array<string,mixed> $settings Flow settings being saved.
 	 * @param string              $provider FLOSC provider slug.
@@ -603,36 +647,20 @@ if ( ! function_exists( 'flosc_reconcile_model_parameters' ) ) {
 			return $settings;
 		}
 
-		$owned = array(
+		$mirrors = array(
 			'temperature' => 'ai_temperature',
 			'max_tokens'  => 'ai_max_tokens',
 		);
 
-		foreach ( $owned as $param => $field ) {
-			if ( ! array_key_exists( $param, $parsed ) ) {
+		foreach ( $mirrors as $param => $field ) {
+			if ( ! array_key_exists( $param, $parsed ) || ! is_scalar( $parsed[ $param ] ) ) {
 				continue;
 			}
 
-			$value = $parsed[ $param ];
-
-			if ( is_scalar( $value ) ) {
-				$settings[ $field ] = (string) $value;
-			}
-
-			unset( $parsed[ $param ] );
+			$settings[ $field ] = flosc_format_model_parameter_value( $parsed[ $param ] );
 		}
 
-		// Write the remainder back in the notation it came in.
-		$lines = array();
-
-		foreach ( $parsed as $param => $value ) {
-			$lines[] = $param . ': ' . ( is_scalar( $value ) || null === $value
-				? var_export( $value, true )
-				: wp_json_encode( $value ) );
-		}
-
-		$settings[ $key ] = implode( "\n", $lines );
-
+		// $settings[ $key ] is deliberately left alone.
 		return $settings;
 	}
 }

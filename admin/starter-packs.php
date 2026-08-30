@@ -78,7 +78,7 @@ if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
 	<p class="description flosc-sp-global-note">
 		<?php esc_html_e( 'This page is global. What you install here belongs to the whole site, not to the flow selected in Switch Flow.', 'flosc' ); ?>
 	</p>
-	<p class="description" style="max-width:44rem">
+	<p class="description flosc-measure-44">
 		<?php esc_html_e( 'A starter pack installs a complete journey — the flow, the content it talks about, and the access gating — so you can see FLOSC working before you configure anything. Install one, choose a personality, connect an AI provider, and your bot is live.', 'flosc' ); ?>
 	</p>
 
@@ -86,7 +86,7 @@ if ( ! function_exists( 'flosc_sp_tab_url' ) ) {
 		<div class="notice <?php echo esc_attr( $flosc_sp_notice['ok'] ? 'notice-success' : 'notice-error' ); ?>">
 			<p><strong><?php echo esc_html( $flosc_sp_notice['message'] ); ?></strong></p>
 			<?php foreach ( (array) $flosc_sp_notice['detail'] as $flosc_sp_line ) : ?>
-				<p style="margin:.2em 0"><?php echo esc_html( $flosc_sp_line ); ?></p>
+				<p class="flosc-tight-line"><?php echo esc_html( $flosc_sp_line ); ?></p>
 			<?php endforeach; ?>
 			<?php if ( $flosc_sp_notice['ok'] ) : ?>
 				<p>

@@ -646,6 +646,10 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
             $flosc_is_textarea = in_array($flosc_setting_key, $flosc_textarea_flow_keys, true)
                 || strpos($flosc_setting_key, 'quiz_content_') === 0
                 || strpos($flosc_setting_key, '_template_') !== false
+                // The AI request per provider: one parameter per line, so the
+                // newlines are the format. sanitize_text_field would collapse
+                // a four-line request into one unreadable line and lose it.
+                || (bool) preg_match('/^ai_[a-z0-9_]+_params$/', $flosc_setting_key)
                 || substr($flosc_setting_key, -5) === '_body'; // email bodies (guest/member/newsletter) — preserve newlines
             if (in_array($flosc_setting_key, $flosc_identity_html_keys, true)) {
                 $flosc_new_settings[$flosc_setting_key] = wp_kses_post($flosc_value);

@@ -37,7 +37,7 @@
 <p>All three refer to one side of the turn — not three roles. Prefer <strong>assistantMessage</strong> in structured data; <strong>AI response</strong> is fine in floscAdmin UI copy.</p>
 
 <h3 id="term-message-pair">Message vs response (quick map)</h3>
-<table class="widefat striped" style="max-width:42rem">
+<table class="widefat striped flosc-measure-42">
 	<thead>
 		<tr>
 			<th>Role</th>

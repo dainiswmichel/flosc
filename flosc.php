@@ -1298,7 +1298,14 @@ class FLOSC_Framework {
 
             // Only pin when the file the old fallback pointed at actually exists.
             if (file_exists($flosc_da1_legacy_file) && function_exists('flosc_data_dir')) {
-                $flosc_da1_flow_files = glob(trailingslashit(flosc_data_dir()) . '*.md');
+                // Flows are named *_ivr.md. Every .md beside them is not a flow:
+                // the data directory also holds this plugin's own backups —
+                // dainis_net_ivr_bak_companion_hubs_20260807.md,
+                // ivr-backup-2026-07-03_05-48-20.md — and an earlier build of
+                // this migration pinned a catalog to each of them, which is why
+                // DA1's "Attributed to" list has been naming files Switch Flow
+                // correctly refuses to show.
+                $flosc_da1_flow_files = glob(trailingslashit(flosc_data_dir()) . '*_ivr.md');
                 if (is_array($flosc_da1_flow_files)) {
                     foreach ($flosc_da1_flow_files as $flosc_da1_flow_path) {
                         $flosc_da1_flow_name = basename($flosc_da1_flow_path);
@@ -1311,6 +1318,23 @@ class FLOSC_Framework {
             }
 
             update_option('flosc_da1_explicit_catalogs_v800', true);
+        }
+
+        // v8.0.0: clear up after the migration above, on sites that already ran
+        // its earlier form. This removes attribution records naming files that
+        // are not flows; it never touches a catalog, a .tsv, or a flow file.
+        if (!get_option('flosc_da1_assignments_pruned_v800')) {
+            $flosc_da1_stored = get_option('flosc_da1_flow_catalogs', []);
+
+            if (is_array($flosc_da1_stored) && function_exists('flosc_da1_prune_flow_assignments')) {
+                $flosc_da1_pruned = flosc_da1_prune_flow_assignments($flosc_da1_stored);
+
+                if ($flosc_da1_pruned !== $flosc_da1_stored) {
+                    update_option('flosc_da1_flow_catalogs', $flosc_da1_pruned, false);
+                }
+            }
+
+            update_option('flosc_da1_assignments_pruned_v800', true);
         }
 
         // v8.0.0: Upgrade is the profile-bar feature button — strip purchase rows from guest/member menus.
