@@ -309,18 +309,17 @@ class FLOSC_WP_AI_Client {
 
 		$temperature = isset( $args['temperature'] ) ? (float) $args['temperature'] : 0.3;
 
-		// Anthropic has deprecated sampling parameters on its newer models.
-		// Measured against a live key on 2026-08-30: of the ten models that key
-		// lists, five answer 400 "`temperature` is deprecated for this model"
-		// when temperature is sent — Opus 5, Sonnet 5, Fable 5, Opus 4.8 and
-		// Opus 4.7 — and all ten answer 200 when it is omitted. Sending it would
-		// make the newest models unusable and look like a FLOSC failure, so this
-		// hop leaves sampling to Claude's own default, which is what readme.txt
-		// has always said FLOSC does. Temperature still applies to every other
-		// provider.
-		if ( 'anthropic' !== $wp_id ) {
+		// Whether a provider accepts temperature is a fact about that provider,
+		// so it is declared in includes/ai/flosc-provider-profiles.php rather
+		// than branched on here. A provider nobody has measured is sent what it
+		// was configured with; only a measured refusal suppresses a setting.
+		$flosc_skip_temperature = function_exists( 'flosc_provider_rejects_tuning' )
+			&& flosc_provider_rejects_tuning( $provider, 'temperature' );
+
+		if ( ! $flosc_skip_temperature ) {
 			$builder->using_temperature( $temperature );
 		}
+
 		if ( ! $builder->is_supported_for_text_generation() ) {
 			$builder = self::make_builder( $args, $wp_id, $model_resolved );
 			if ( is_wp_error( $builder ) ) {

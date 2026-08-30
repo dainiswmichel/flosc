@@ -85,6 +85,7 @@ require_once FLOSC_PLUGIN_DIR . 'includes/filesystem/flosc-data-paths.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-available-providers.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/class-flosc-wp-ai-client.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-model-catalog.php';
+require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-provider-profiles.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/ai/flosc-provider-keys.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-personality-library.php';
 require_once FLOSC_PLUGIN_DIR . 'includes/flosc-knowledge-bases.php';

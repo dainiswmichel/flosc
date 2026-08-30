@@ -427,10 +427,14 @@ if ( ! function_exists( 'flosc_fetch_model_details' ) ) {
 		$provider = sanitize_key( (string) $provider );
 		$model    = trim( (string) $model );
 
-		if ( 'anthropic' !== $provider ) {
+		$url = function_exists( 'flosc_provider_model_detail_url' )
+			? flosc_provider_model_detail_url( $provider, $model )
+			: '';
+
+		if ( '' === $url ) {
 			return new WP_Error(
 				'flosc_model_details_unsupported',
-				__( 'Only Anthropic publishes a per-model description FLOSC can read.', 'flosc' )
+				__( 'FLOSC has no measured way to ask this provider about one model yet.', 'flosc' )
 			);
 		}
 
@@ -442,16 +446,18 @@ if ( ! function_exists( 'flosc_fetch_model_details' ) ) {
 			return new WP_Error( 'flosc_model_details_no_model', __( 'Choose a model first.', 'flosc' ) );
 		}
 
-		$response = wp_remote_get(
-			'https://api.anthropic.com/v1/models/' . rawurlencode( $model ),
-			array(
-				'timeout' => 15,
-				'headers' => array(
-					'x-api-key'         => (string) $api_key,
-					'anthropic-version' => '2023-06-01',
-				),
-			)
-		);
+		// Reuse the same auth the list call uses, so a provider's credentials
+		// are described in exactly one place.
+		$list = flosc_model_catalog_request( $provider, (string) $api_key );
+
+		if ( null === $list ) {
+			return new WP_Error( 'flosc_model_details_unsupported', __( 'FLOSC cannot authenticate against this provider.', 'flosc' ) );
+		}
+
+		$args            = $list['args'];
+		$args['timeout'] = 15;
+
+		$response = wp_remote_get( $url, $args );
 
 		if ( is_wp_error( $response ) ) {
 			return $response;

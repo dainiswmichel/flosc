@@ -13,6 +13,7 @@ function sanitize_key( $key ) { return strtolower( preg_replace( '/[^a-z0-9_\-]/
 function __( $text, $domain = null ) { return $text; }
 function add_query_arg( $args, $url ) { return $url . ( strpos( $url, '?' ) === false ? '?' : '&' ) . http_build_query( $args ); }
 
+require_once __DIR__ . '/../includes/ai/flosc-provider-profiles.php';
 require_once __DIR__ . '/../includes/ai/flosc-model-catalog.php';
 
 $failures = 0;
@@ -240,6 +241,27 @@ check( '  PDFs', in_array( 'reads PDFs', $detail['features'], true ), true );
 $empty = flosc_model_details_summarise( array() );
 check( 'a body with no capabilities describes nothing rather than guessing', $empty['features'], array() );
 check( '  and claims no limits', $empty['max_tokens'], 0 );
+
+echo "Every provider FLOSC offers has a row, none is implied\n";
+$offered = array( 'anthropic', 'openai', 'xai', 'gemini' );
+foreach ( $offered as $slug ) {
+	$profile = flosc_provider_api_profile( $slug );
+	check( "  $slug has a profile", is_array( $profile ), true );
+	check( "  $slug declares its detail endpoint", array_key_exists( 'model_detail_url', (array) $profile ), true );
+	check( "  $slug declares what it rejects", is_array( $profile['rejects_tuning'] ), true );
+}
+check( 'a provider FLOSC does not offer has none', flosc_provider_api_profile( 'notaprovider' ), null );
+
+echo "Measured facts, and the absence of them, are both explicit\n";
+check( 'anthropic rejects temperature — measured', flosc_provider_rejects_tuning( 'anthropic', 'temperature' ), true );
+check( 'openai is not assumed to reject it', flosc_provider_rejects_tuning( 'openai', 'temperature' ), false );
+check( '  nor xai', flosc_provider_rejects_tuning( 'xai', 'temperature' ), false );
+check( '  nor gemini', flosc_provider_rejects_tuning( 'gemini', 'temperature' ), false );
+check( 'an unknown provider suppresses nothing', flosc_provider_rejects_tuning( 'notaprovider', 'temperature' ), false );
+check( 'anthropic can be asked about one model', flosc_provider_model_detail_url( 'anthropic', 'claude-sonnet-5' ), 'https://api.anthropic.com/v1/models/claude-sonnet-5' );
+check( '  and a model id is escaped into the path', flosc_provider_model_detail_url( 'anthropic', 'a/b c' ), 'https://api.anthropic.com/v1/models/a%2Fb%20c' );
+check( 'a provider with no measured endpoint returns none', flosc_provider_model_detail_url( 'openai', 'gpt-5.4-mini' ), '' );
+check( '  and so does an empty model', flosc_provider_model_detail_url( 'anthropic', '' ), '' );
 
 echo "Defaults\n";
 check( 'every provider FLOSC offers has one', array_filter( array_map( 'flosc_default_model', array( 'anthropic', 'openai', 'xai', 'gemini' ) ) ) === array( 'claude-sonnet-4-5-20250929', 'gpt-5.4-mini', 'grok-4.6', 'gemini-3.7-flash' ), true );
