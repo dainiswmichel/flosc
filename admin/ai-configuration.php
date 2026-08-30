@@ -580,17 +580,23 @@ endif;
     🎛️ Step 2b: Model Tuning
 </h3>
 <p class="description">
-    Fine-tune AI behavior for this flow. Max Tokens applies to every provider. Temperature applies to OpenAI, xAI and Gemini.
+    Fine-tune AI behavior for this flow. Only settings the selected provider accepts are shown.
 </p>
 
 <table class="form-table">
-    <tr>
+    <tr id="flosc-temperature-absent" hidden>
+        <th scope="row">Temperature</th>
+        <td>
+            <p class="description" id="flosc-temperature-absent-note"></p>
+        </td>
+    </tr>
+    <tr id="flosc-temperature-row">
         <th scope="row"><label for="flow_ai_temperature">Temperature</label></th>
         <td>
             <input type="number" id="flow_ai_temperature" name="flow_ai_temperature" value="<?php echo esc_attr($flosc_ai_temperature); ?>" min="0" max="2" step="0.1" class="flosc-ai-temp-input">
             <p class="description">
                 Controls randomness. <strong>0.0</strong> = fully deterministic, <strong>0.3</strong> = recommended (precision/coaching), <strong>0.7</strong> = creative/balanced, <strong>1.5+</strong> = highly random. Lower values reduce hallucination.
-                <br><strong>Not sent to Anthropic.</strong> Claude's newer models reject <code>temperature</code> outright — Opus 5, Sonnet 5, Fable 5, Opus 4.8 and Opus 4.7 all refuse a request carrying it — so FLOSC leaves sampling to Claude's own default and every Claude model stays usable.
+
             </p>
         </td>
     </tr>
@@ -847,8 +853,31 @@ endif;
 <?php ob_start(); ?>
 jQuery(document).ready(function($) {
     // --- Provider section show/hide ---
+    // Which provider refuses which setting is data, declared once in
+    // includes/ai/flosc-provider-profiles.php. The tab reads it rather than
+    // naming a provider here, so filling in a row there is all it takes.
+    var floscProviderRejects = <?php
+        $flosc_rejects = array();
+        foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_slug ) {
+            $flosc_profile = function_exists( 'flosc_provider_api_profile' ) ? flosc_provider_api_profile( $flosc_slug ) : null;
+            $flosc_rejects[ $flosc_slug ] = array(
+                'params' => is_array( $flosc_profile ) ? array_values( (array) $flosc_profile['rejects_tuning'] ) : array(),
+                'note'   => is_array( $flosc_profile ) ? (string) $flosc_profile['tuning_note'] : '',
+            );
+        }
+        echo wp_json_encode( $flosc_rejects );
+    ?>;
+
     function updateProviderSections() {
         var selected = $('#flow_ai_provider').val();
+        var rejects = floscProviderRejects[selected] || { params: [], note: '' };
+        var noTemperature = rejects.params.indexOf('temperature') !== -1;
+
+        // A control the provider will refuse is not a control. Hide it rather
+        // than leave it on screen with a paragraph explaining it does nothing.
+        $('#flosc-temperature-row').prop('hidden', noTemperature);
+        $('#flosc-temperature-absent').prop('hidden', !noTemperature);
+        $('#flosc-temperature-absent-note').text(rejects.note || '');
         // Showing only the selected provider hides the other key fields, which
         // makes storing a second key look impossible. It never was — the keys
         // are kept separately — so this reveals them on request.
