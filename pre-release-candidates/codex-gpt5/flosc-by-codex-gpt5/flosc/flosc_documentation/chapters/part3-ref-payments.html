@@ -1,0 +1,172 @@
+<h1 id="ref-payments">Part 3: Reference — Payments & Offers</h1>
+<p class="skeleton-marker">Payment processing, offer management, sale tracking. Content pending.</p>
+
+<h2 id="sale-manager">class-sale-manager.php — Sale Orchestration</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sale-manager-purpose">What It Does — Coordinates the Purchase Flow</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sale-manager-lifecycle">Sale Lifecycle — Create → Process → Complete</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sale-manager-post-purchase">Post-Purchase Actions — Access Granting, Emails</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sale-manager-components">Component Access — offers(), usage(), access()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sale-manager-providers">Provider System — register_providers(), get_providers(), get_active_providers()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sale-manager-recommendations">get_available_offer() & get_recommended_offer() — Smart Offer Selection</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="sale-manager-credits">Credit System — has_credits(), deduct_credits()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="offer-manager">class-offer-manager.php — Offer Configuration</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="offer-manager-purpose">What It Does — Defines What Users Can Buy</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="offer-manager-structure">Offer Structure — ID, Price, Product Name, Description</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h4 id="offer-manager-full-access">full_access_001 — The Default Offer</h4>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="offer-manager-display">Offer Display — How Offers Render in Chat</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="offer-manager-types-constants">Offer Type Constants — TYPE_ONE_TIME, TYPE_SUBSCRIPTION, TYPE_TOKENS, TYPE_HYBRID</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="offer-manager-intervals">Subscription Intervals — INTERVAL_MONTHLY, INTERVAL_YEARLY, INTERVAL_WEEKLY</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="offer-manager-crud">CRUD Operations — create_offer(), update_offer(), delete_offer()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="offer-manager-validation">validate_offer_data() — Input Validation</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="offer-manager-display-formats">get_display_formats() — Card, Pill, Compact, Banner, Featured, Text</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="offer-manager-pricing">Pricing Methods — get_offer_price(), get_offer_by_product()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="offer-manager-member-level">get_member_level_for_product() — What Access a Purchase Grants</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="offer-manager-product-ids">get_product_ids() & get_product_metadata() — External Product Mapping</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="payment-provider">class-payment-provider.php — Abstract Base</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="payment-provider-contract">The Provider Contract — What Every Payment Method Must Implement</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="payment-provider-config">Configuration Pattern — get_flow_setting()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="payment-provider-abstract-methods">14 Abstract Methods — The Full Provider Interface</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="paypal-provider">class-paypal-provider.php — PayPal Integration</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="paypal-purpose">What It Does — PayPal JavaScript SDK Integration</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="paypal-config">Configuration — Client ID, Secret, Sandbox vs Live</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="paypal-create-order">create_order() — Server-Side Order Creation</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="paypal-capture">capture_order() — Completing the Payment</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="paypal-sandbox">Sandbox Mode — Testing Without Real Money</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="stripe-provider">class-stripe-provider.php — Stripe Integration</h2>
+<p>First-class native card checkout. Publishable key is exposed to the frontend via <code>FLOSC_CONFIG.stripeKey</code>; secret key stays server-side. Stripe.js is enqueued when a publishable key is present on the flow’s Payments settings.</p>
+
+<h3 id="stripe-purpose">What It Does</h3>
+<p>Creates Payment Intents from offer price or Stripe Price ID, confirms with Stripe.js Elements, then grants access via <code>complete-purchase</code> and/or webhooks. Configure keys under Payments; set offer processor to <code>stripe</code> on Offers.</p>
+
+<h3 id="stripe-status">Status — First-Class (Not Experimental)</h3>
+<p>Stripe is a first-class processor alongside PayPal. Older “disabled pending verification” notes are obsolete: if keys are set and the offer processor is Stripe, checkout uses native Stripe.</p>
+
+<h2 id="checkout-paths">Checkout Paths — Native vs External</h2>
+<p><strong>Native:</strong> PayPal (JS SDK, intent <code>capture</code> for one-time or <code>subscription</code> when an active offer is subscription) and Stripe (Payment Intents). Credentials live in per-flow WPDB Payments settings.</p>
+<p><strong>External / Redirect:</strong> WooCommerce, Shopify, ThriveCart, membership platforms, or any cart URL. Offer processor = <code>redirect</code> + Checkout URL. FLOSC is not a full PSP for those carts; grant access after payment via Access Code, webhook integration, or manual member level.</p>
+<p><strong>Free:</strong> processor <code>free</code> or zero price without a paid processor — grant without payment.</p>
+
+<h2 id="other-providers">Other Payment Providers</h2>
+<p>ClickBank and affiliate providers remain available for specialized funnels. Token provider is virtual currency inside FLOSC, not a card network.</p>
+
+<h3 id="clickbank-provider">class-clickbank-provider.php</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="affiliate-provider">class-affiliate-provider.php</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="token-provider">class-token-provider.php</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="access-manager-sale">class-access-manager.php (sale/) — Purchase-Based Access</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="access-manager-sale-purpose">What It Does — Links Payments to Content Access</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="access-manager-sale-grant">grant_from_offer() — How a Purchase Enables Access</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="access-manager-sale-features">Feature Methods — grant_feature(), revoke_feature(), has_feature()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="access-manager-sale-subscription">Subscription Management — update_subscription(), cancel_subscription()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="access-manager-sale-revoke">revoke_all() — Complete Access Removal</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="access-manager-sale-state">get_simple_state() — User Access Summary</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h2 id="usage-tracker">class-usage-tracker.php</h2>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="usage-tracker-purpose">What It Does — Tracks Feature Usage</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="usage-tracker-tracking">track() — Recording Usage Events</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="usage-tracker-queries">Usage Queries — get_current_usage(), get_event_count(), get_event_quantity()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="usage-tracker-quotas">Quota System — has_quota(), get_remaining(), consume()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="usage-tracker-limits">Limit Management — set_limits(), get_limits(), get_default_limits()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="usage-tracker-unlimited">grant_unlimited() — Unlimited Access</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="usage-tracker-period">reset_period_usage() — Period-Based Quota Reset</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="usage-tracker-admin">Admin Methods — get_global_usage(), get_top_users(), get_user_summary()</h3>
+<p class="skeleton-marker">Content pending.</p>
+
+<h3 id="usage-tracker-cleanup">cleanup_old_data() — Data Retention</h3>
+<p class="skeleton-marker">Content pending.</p>

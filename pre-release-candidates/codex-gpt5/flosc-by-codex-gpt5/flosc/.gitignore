@@ -1,0 +1,20 @@
+# Local junk — never commit, never ship.
+.DS_Store
+Thumbs.db
+*.swp
+*.log
+*.zip
+*.bundle
+
+# Composer / PHPCS tooling (local only; .distignore + build-dist-zip deny)
+vendor/
+composer.json
+composer.lock
+.venv/
+node_modules/
+
+# Dev / review scratch — NEVER ship (hard deny in build-dist-zip.sh)
+flosc_development_worknotes/
+flosc_development_archives/
+tmp/
+zip-files/

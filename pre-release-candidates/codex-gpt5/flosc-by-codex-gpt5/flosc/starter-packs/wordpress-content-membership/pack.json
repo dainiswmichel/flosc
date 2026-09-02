@@ -1,0 +1,21 @@
+{
+  "slug": "wordpress-content-membership",
+  "name": "WordPress Content Membership Journey",
+  "summary": "One hundred deliberately silly WordPress posts, gated as a real membership library. Visitors read items 1–10, guests reach 1–30, members reach all 100 — including item 46, Why Pigeons Never Pay Parking Tickets.",
+  "conversion": "Membership — the complete 100-post library",
+  "personality": "bubblybetty",
+  "installs": [
+    "A flow: wcmj_ivr.md, in BubblyBetty's voice",
+    "100 posts across four FLOSC Starter categories",
+    "Gated 10 Freeline / 20 Guest / 70 Member",
+    "A membership offer you price yourself"
+  ],
+  "flow": {
+    "file": "flow_ivr.md",
+    "install_as": "wcmj_ivr.md"
+  },
+  "content": {
+    "file": "content.json"
+  },
+  "needs_configuration": "The membership offer ships without a price. Set price, currency and processor under Offers, then activate it."
+}

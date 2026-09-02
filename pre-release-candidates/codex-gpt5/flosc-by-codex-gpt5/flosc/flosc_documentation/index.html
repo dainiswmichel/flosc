@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FLOSC — Educational Technology Reference Manual</title>
+    <link rel="stylesheet" href="techref.css">
+</head>
+<body>
+    <div class="techref-layout">
+
+        <!-- Sidebar -->
+        <nav class="techref-sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1 class="sidebar-title">FLOSC Techref</h1>
+                <span class="sidebar-version">v1.9.7</span>
+                <button class="sidebar-toggle" id="sidebar-toggle" aria-label="Toggle sidebar">☰</button>
+            </div>
+            <div class="sidebar-search">
+                <input type="text" id="toc-search" placeholder="Search headings…" autocomplete="off">
+            </div>
+            <div class="toc-container" id="toc-container">
+                <!-- Auto-generated TOC will be inserted here -->
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="techref-content" id="content">
+            <div class="content-header">
+                <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Open menu">☰</button>
+                <div class="breadcrumb" id="breadcrumb"></div>
+            </div>
+            <article id="chapter-content">
+                <!-- Landing / welcome page -->
+                <div class="welcome-page">
+                    <h1>FLOSC Educational Technology Reference Manual</h1>
+                    <p class="subtitle">A deep-dive into the architecture, decisions, and implementation of the FLOSC conversational learning platform.</p>
+
+                    <div class="parts-overview">
+                        <a href="#" class="part-card" data-chapter="part1-journey">
+                            <span class="part-number">Part 1</span>
+                            <span class="part-title">The Journey</span>
+                            <span class="part-desc">Why FLOSC exists — decision archaeology, the problems it solves, roads not taken</span>
+                            <span class="part-pages">~15 pages</span>
+                        </a>
+                        <a href="#" class="part-card" data-chapter="part2-architecture">
+                            <span class="part-number">Part 2</span>
+                            <span class="part-title">Architecture</span>
+                            <span class="part-desc">How the pieces fit — data flow, the IVR system, WordPress integration</span>
+                            <span class="part-pages">~10 pages</span>
+                        </a>
+                        <a href="#" class="part-card" data-chapter="part3-ref-core">
+                            <span class="part-number">Part 3</span>
+                            <span class="part-title">Reference</span>
+                            <span class="part-desc">Per-class deep dives — every PHP class, JS module, CSS layer explained</span>
+                            <span class="part-pages">~30 pages</span>
+                        </a>
+                        <a href="#" class="part-card" data-chapter="part4-security">
+                            <span class="part-number">Part 4</span>
+                            <span class="part-title">Security</span>
+                            <span class="part-desc">Authentication, nonces, API key handling, access control model</span>
+                            <span class="part-pages">~5 pages</span>
+                        </a>
+                        <a href="#" class="part-card" data-chapter="part5-glossary">
+                            <span class="part-number">Part 5</span>
+                            <span class="part-title">Glossary</span>
+                            <span class="part-desc">Every FLOSC-specific term defined once, with cross-references</span>
+                            <span class="part-pages">~5 pages</span>
+                        </a>
+                        <a href="#" class="part-card" data-chapter="part6-development">
+                            <span class="part-number">Part 6</span>
+                            <span class="part-title">Development</span>
+                            <span class="part-desc">Team practices, devnotes conventions, and planned future features</span>
+                            <span class="part-pages">~3 pages</span>
+                        </a>
+                    </div>
+
+                    <div class="welcome-meta">
+                        <p><strong>Audience:</strong> The curious learner — someone who wants to understand <em>why</em> things work this way, not just <em>what</em> the code does.</p>
+                        <p><strong>Format:</strong> Michel Date Stamp Innovation dates (YYYY-MMm-DDd). Decision archaeology throughout.</p>
+                        <p><strong>Last updated:</strong> 2026-02m-24d</p>
+                    </div>
+                </div>
+            </article>
+        </main>
+
+    </div>
+
+    <script src="techref.js"></script>
+</body>
+</html>

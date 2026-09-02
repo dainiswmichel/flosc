@@ -1,0 +1,38 @@
+{
+  "candidate": "codex-gpt5",
+  "creator": "Codex — /root primary agent (GPT-5)",
+  "status": "BUILD_COMPLETE_AWAITING_REMOTE_WORDPRESS_VALIDATION",
+  "baseline_commit": "03f4b926c5502b7d2af0136fc1bac8359286b9f8",
+  "plugin_source": "flosc-by-codex-gpt5/flosc",
+  "artifact": "flosc.zip",
+  "artifact_root": "flosc/",
+  "artifact_sha256": "fa70fe16d34f76414af38d9b66fe346a8a41113c3375a1ea7c11604fc7c973a3",
+  "artifact_files": 275,
+  "implemented_phases": {
+    "P0": "baseline pinned; live reproduction deferred",
+    "P1": "implemented",
+    "P2": "implemented runtime fingerprint contract",
+    "P3": "implemented full-profile continuity",
+    "P4": "implemented fresh per-turn resolution path",
+    "P5": "baseline model-aware tuning retained",
+    "P6": "baseline complete Starter Pack retained",
+    "P7": "Br3nda remains outside the personality library critical path",
+    "P8": "static and artifact checks only; remote runtime gates deferred"
+  },
+  "verification": {
+    "php_syntax_all_files": "passed",
+    "existing_php_test_suite": "passed",
+    "candidate_contract_test": "passed",
+    "javascript_syntax": "passed",
+    "inline_admin_javascript": "passed",
+    "admin_javascript_bindings": "passed",
+    "zip_integrity": "passed",
+    "zip_single_top_level_flosc": "passed",
+    "zip_prohibited_path_scan": "passed",
+    "wordpress_runtime": "DEFERRED — AUTHORIZED REMOTE TEST REQUIRED",
+    "wordpress_plugin_check": "DEFERRED — AUTHORIZED REMOTE TEST REQUIRED",
+    "live_ai_provider_calls": "DEFERRED — AUTHORIZED REMOTE TEST REQUIRED"
+  },
+  "remote_tests": "DEFERRED — AUTHORIZED REMOTE TEST REQUIRED",
+  "canonical_source_modified": false
+}
