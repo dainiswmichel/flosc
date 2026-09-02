@@ -38,9 +38,3 @@ dev_notes.md
 flosc_development_worknotes/*
 flosc_development_worknotes/**/*
 flosc_coding_standard.md
-
-# Pre-release deployment candidates (opencode-big-pickle, etc).
-# Complete, self-contained per-agent deployments incl. their installable
-# flosc.zip artifacts; intentionally pushed for cross-agent comparison.
-pre-release-candidates/*
-pre-release-candidates/**/*

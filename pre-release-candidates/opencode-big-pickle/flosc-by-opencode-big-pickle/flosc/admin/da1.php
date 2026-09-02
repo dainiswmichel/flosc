@@ -1,0 +1,1878 @@
+<?php
+/**
+ * FLOSC Admin — DA1 Catalog Manager
+ *
+ * DA1 Catalogs are flow-scoped structured datasets used by FLOSC to deliver
+ * curated records, media references, fallback content, and response material
+ * without hard-coding project-specific data into plugin PHP.
+ *
+ * Catalogs are stored as TSV files under wp-content/uploads/flosc-catalogs
+ * and assigned to flows by the floscAdmin.
+ *
+ * v8.0.1 foundation:
+ * - Multi-catalog TSV management
+ * - Parent/child row model (85, 85.1, 85.2)
+ * - Required control columns with safe defaults
+ * - Status model: active / paused
+ * - Upload and export catalog actions
+ */
+
+if (!defined('ABSPATH')) {
+    exit;
+}
+if (!current_user_can('manage_options')) {
+    return;
+}
+
+if (!function_exists('flosc_da1_safe_json_decode')) {
+    function flosc_da1_safe_json_decode($raw, $max_bytes = 200000, $depth = 32) {
+        $raw = (string) $raw;
+        if ($raw === '' || strlen($raw) > $max_bytes) {
+            return new WP_Error('flosc_da1_payload_too_large', 'Payload is invalid or too large.');
+        }
+
+        $decoded = json_decode($raw, true, $depth);
+        if (JSON_ERROR_NONE !== json_last_error() || !is_array($decoded)) {
+            return new WP_Error('flosc_da1_payload_invalid', 'Invalid catalog payload.');
+        }
+
+        return $decoded;
+    }
+}
+
+$flosc_upload_dir = wp_upload_dir();
+$flosc_basedir = trailingslashit($flosc_upload_dir['basedir']);
+$flosc_catalog_dir = $flosc_basedir . 'flosc-catalogs';
+if (!wp_mkdir_p($flosc_catalog_dir)) {
+    echo '<div class="notice notice-error"><p>Could not create catalog directory in uploads.</p></div>';
+    return;
+}
+
+$flosc_catalog_index_option = 'flosc_da1_catalogs';
+$flosc_catalog_assign_option = 'flosc_da1_flow_catalogs';
+
+$flosc_required_columns = [
+    'Row Key',
+    'Parent Key',
+    'Catalog Key',
+    'Item Type',
+    'Flow Scope',
+    'VGM',
+    'Delivery Instruction',
+    'Delivery Rule',
+    'Fallback Order',
+    'Status',
+];
+
+/*
+ * Dublin Core compatibility vocabulary. These are recognized/suggested payload
+ * fields, not required columns and not injected into catalogs automatically.
+ * Catalogs may use any additional payload/parameter columns they need.
+ */
+$flosc_dublin_core_columns = [
+    'Title',
+    'Creator',
+    'Subject',
+    'Description',
+    'Publisher',
+    'Contributor',
+    'Date',
+    'Type',
+    'Format',
+    'Identifier',
+    'Source',
+    'Language',
+    'Relation',
+    'Coverage',
+    'Rights',
+];
+
+$flosc_control_defaults = [
+    'Parent Key' => '',
+    // apply_defaults() always writes the open catalog's key over this.
+    'Catalog Key' => '',
+    'Item Type' => 'item',
+    'Flow Scope' => 'all',
+    'VGM' => 'Visitor Guest Member',
+    'Delivery Instruction' => 'intent match',
+    'Delivery Rule' => 'preference',
+    'Fallback Order' => 'text',
+    'Status' => 'active',
+];
+
+// Prefer request arrays prepared by settings.php; avoid re-touching superglobals.
+if ( ! isset( $flosc_get ) || ! is_array( $flosc_get ) ) {
+	$flosc_get = array();
+}
+if ( ! isset( $flosc_post ) || ! is_array( $flosc_post ) ) {
+	$flosc_post = array();
+}
+$flosc_da1_get  = $flosc_get;
+$flosc_da1_post = $flosc_post;
+
+function flosc_da1_slugify($value) {
+    $value = strtolower(trim((string) $value));
+    $value = preg_replace('/[^a-z0-9_-]+/', '-', $value);
+    $value = trim((string) $value, '-');
+    return $value === '' ? 'catalog' : $value;
+}
+
+function flosc_da1_normalize_key($value) {
+    $value = strtolower(trim((string) $value));
+    if ($value === '') {
+        return '';
+    }
+    return preg_replace('/[^a-z0-9._-]/', '', $value);
+}
+
+function flosc_da1_parse_tsv($flosc_da1_content) {
+    $flosc_da1_rows = [];
+    $flosc_da1_row = [];
+    $field = '';
+    $in_quotes = false;
+    $len = strlen($flosc_da1_content);
+
+    for ($flosc_da1_i = 0; $flosc_da1_i < $len; $flosc_da1_i++) {
+        $ch = $flosc_da1_content[$flosc_da1_i];
+        if ($in_quotes) {
+            if ($ch === '"') {
+                if ($flosc_da1_i + 1 < $len && $flosc_da1_content[$flosc_da1_i + 1] === '"') {
+                    $field .= '"';
+                    $flosc_da1_i++;
+                } else {
+                    $in_quotes = false;
+                }
+            } else {
+                $field .= $ch;
+            }
+        } elseif ($ch === '"') {
+            $in_quotes = true;
+        } elseif ($ch === "\t") {
+            $flosc_da1_row[] = $field;
+            $field = '';
+        } elseif ($ch === "\n") {
+            $flosc_da1_row[] = $field;
+            $field = '';
+            if (!empty($flosc_da1_row)) {
+                $flosc_da1_rows[] = $flosc_da1_row;
+            }
+            $flosc_da1_row = [];
+        } elseif ($ch !== "\r") {
+            $field .= $ch;
+        }
+    }
+
+    if ($field !== '' || !empty($flosc_da1_row)) {
+        $flosc_da1_row[] = $field;
+        $flosc_da1_rows[] = $flosc_da1_row;
+    }
+
+    return $flosc_da1_rows;
+}
+
+function flosc_da1_tsv_cell($value) {
+    $value = str_replace(["\r\n", "\r"], "\n", (string) $value);
+    if (strpos($value, "\t") !== false || strpos($value, "\n") !== false || strpos($value, '"') !== false) {
+        $value = '"' . str_replace('"', '""', $value) . '"';
+    }
+    return $value;
+}
+
+function flosc_da1_normalize_columns($flosc_da1_columns, $required_columns) {
+    $payload_columns = [];
+
+    foreach ((array) $flosc_da1_columns as $flosc_da1_column) {
+        $flosc_da1_column = trim((string) $flosc_da1_column);
+        if ($flosc_da1_column === '') {
+            continue;
+        }
+
+        // Backward compatibility: old DA1 catalogs used Record Type.
+        if ($flosc_da1_column === 'Record Type') {
+            $flosc_da1_column = 'Item Type';
+        }
+
+        if (
+            !in_array($flosc_da1_column, $required_columns, true)
+            && !in_array($flosc_da1_column, $payload_columns, true)
+        ) {
+            $payload_columns[] = $flosc_da1_column;
+        }
+    }
+
+    return array_merge($required_columns, $payload_columns);
+}
+
+function flosc_da1_sanitize_payload_columns($value, $required_columns) {
+    $columns = preg_split('/[,\r\n]+/', (string) $value);
+    $clean = [];
+
+    foreach ((array) $columns as $column) {
+        $column = sanitize_text_field(trim((string) $column));
+        if ($column === '') {
+            continue;
+        }
+        if ($column === 'Record Type') {
+            $column = 'Item Type';
+        }
+        if (!in_array($column, $required_columns, true) && !in_array($column, $clean, true)) {
+            $clean[] = $column;
+        }
+    }
+
+    return $clean;
+}
+
+function flosc_da1_col_index_map($flosc_da1_columns) {
+    $map = [];
+    foreach ($flosc_da1_columns as $flosc_da1_i => $flosc_da1_col) {
+        $map[$flosc_da1_col] = (int) $flosc_da1_i;
+    }
+    return $map;
+}
+
+function flosc_da1_next_parent_key($flosc_da1_rows, $row_idx_key) {
+    $max = 0;
+    foreach ($flosc_da1_rows as $flosc_da1_row) {
+        $flosc_da1_k = isset($flosc_da1_row[$row_idx_key]) ? trim((string) $flosc_da1_row[$row_idx_key]) : '';
+        if ($flosc_da1_k !== '' && preg_match('/^[0-9]+$/', $flosc_da1_k)) {
+            $n = (int) $flosc_da1_k;
+            if ($n > $max) {
+                $max = $n;
+            }
+        }
+    }
+    return (string) ($max + 1);
+}
+
+function flosc_da1_next_child_key($flosc_da1_rows, $row_idx_key, $flosc_da1_parent_key) {
+    $max = 0;
+    $prefix = trim((string) $flosc_da1_parent_key) . '.';
+    foreach ($flosc_da1_rows as $flosc_da1_row) {
+        $flosc_da1_k = isset($flosc_da1_row[$row_idx_key]) ? trim((string) $flosc_da1_row[$row_idx_key]) : '';
+        if ($flosc_da1_k !== '' && strpos($flosc_da1_k, $prefix) === 0) {
+            $suffix = substr($flosc_da1_k, strlen($prefix));
+            if (preg_match('/^[0-9]+$/', $suffix)) {
+                $n = (int) $suffix;
+                if ($n > $max) {
+                    $max = $n;
+                }
+            }
+        }
+    }
+    return $prefix . ($max + 1);
+}
+
+function flosc_da1_normalize_vgm($value) {
+    $flosc_da1_raw = strtolower(trim((string) $value));
+    if ($flosc_da1_raw === '') {
+        return '';
+    }
+
+    $compact = preg_replace('/[^a-z]/', '', $flosc_da1_raw);
+    if ($compact === 'all' || $compact === 'vgm') {
+        return 'Visitor Guest Member';
+    }
+
+    $tokens = preg_split('/[\s,;\/\-_]+/', $flosc_da1_raw);
+    if (!is_array($tokens)) {
+        $tokens = [];
+    }
+
+    $flags = ['v' => false, 'g' => false, 'm' => false];
+    foreach ($tokens as $token) {
+        $t = strtolower(trim((string) $token));
+        if ($t === '') {
+            continue;
+        }
+        if ($t === 'visitor' || $t === 'v') {
+            $flags['v'] = true;
+            continue;
+        }
+        if ($t === 'guest' || $t === 'g') {
+            $flags['g'] = true;
+            continue;
+        }
+        if ($t === 'member' || $t === 'm') {
+            $flags['m'] = true;
+            continue;
+        }
+        if (preg_match('/^[vgm]+$/', $t)) {
+            if (strpos($t, 'v') !== false) $flags['v'] = true;
+            if (strpos($t, 'g') !== false) $flags['g'] = true;
+            if (strpos($t, 'm') !== false) $flags['m'] = true;
+            continue;
+        }
+        return '';
+    }
+
+    $out = [];
+    if ($flags['v']) $out[] = 'Visitor';
+    if ($flags['g']) $out[] = 'Guest';
+    if ($flags['m']) $out[] = 'Member';
+    return implode(' ', $out);
+}
+
+function flosc_da1_apply_defaults(&$flosc_da1_row, $flosc_da1_columns, $flosc_da1_col_idx, $defaults, $catalog_key) {
+    foreach ($flosc_da1_columns as $flosc_da1_ci => $column) {
+        if (!isset($flosc_da1_row[$flosc_da1_ci])) {
+            $flosc_da1_row[$flosc_da1_ci] = '';
+        }
+        if (trim((string) $flosc_da1_row[$flosc_da1_ci]) !== '') {
+            continue;
+        }
+        if ($column === 'Catalog Key') {
+            $flosc_da1_row[$flosc_da1_ci] = $catalog_key;
+            continue;
+        }
+        if (isset($defaults[$column])) {
+            $flosc_da1_row[$flosc_da1_ci] = $defaults[$column];
+        }
+    }
+
+    if (isset($flosc_da1_col_idx['Status'])) {
+        $flosc_s = strtolower(trim((string) ($flosc_da1_row[$flosc_da1_col_idx['Status']] ?? '')));
+        if ($flosc_s === '' || ($flosc_s !== 'active' && $flosc_s !== 'paused')) {
+            $flosc_da1_row[$flosc_da1_col_idx['Status']] = 'active';
+        }
+    }
+    if (isset($flosc_da1_col_idx['VGM'])) {
+        $normalized_vgm = flosc_da1_normalize_vgm((string) ($flosc_da1_row[$flosc_da1_col_idx['VGM']] ?? ''));
+        if ($normalized_vgm === '') {
+            $normalized_vgm = 'Visitor Guest Member';
+        }
+        $flosc_da1_row[$flosc_da1_col_idx['VGM']] = $normalized_vgm;
+    }
+}
+
+function flosc_da1_catalog_file($catalog_dir, $catalog_key) {
+    return trailingslashit($catalog_dir) . 'flosc_da1_catalog_' . $catalog_key . '.tsv';
+}
+
+function flosc_da1_is_allowed_catalog_path($path, $catalog_dir) {
+    $catalog_dir = wp_normalize_path(trailingslashit((string) $catalog_dir));
+    $path = wp_normalize_path((string) $path);
+
+    return 0 === strpos($path, $catalog_dir) && '.tsv' === strtolower(substr($path, -4));
+}
+
+/**
+ * Shared FLOSC_Filesystem for DA1 catalog I/O (one instance per request).
+ *
+ * @return FLOSC_Filesystem|null
+ */
+function flosc_da1_filesystem() {
+	static $flosc_da1_fs_singleton = null;
+	if ( null === $flosc_da1_fs_singleton && class_exists( 'FLOSC_Filesystem' ) ) {
+		$flosc_da1_fs_singleton = new FLOSC_Filesystem();
+	}
+	return $flosc_da1_fs_singleton instanceof FLOSC_Filesystem ? $flosc_da1_fs_singleton : null;
+}
+
+// Catalog dir is under uploads — block direct HTTP access to TSV files.
+$flosc_da1_fs = flosc_da1_filesystem();
+if ( $flosc_da1_fs ) {
+	$flosc_da1_fs->protect_uploads_dir_with_htaccess( $flosc_catalog_dir );
+}
+
+/**
+ * Atomic write of a catalog TSV under uploads/flosc-catalogs.
+ *
+ * @param string $path        Absolute catalog path.
+ * @param string $content     TSV body.
+ * @param string $catalog_dir Allowed catalog directory.
+ * @return true|WP_Error
+ */
+function flosc_da1_write_catalog_file( $path, $content, $catalog_dir ) {
+	if ( ! flosc_da1_is_allowed_catalog_path( $path, $catalog_dir ) ) {
+		return new WP_Error( 'flosc_da1_invalid_catalog_path', __( 'Invalid DA1 catalog path.', 'flosc' ) );
+	}
+
+	$content = (string) $content;
+	if ( '' === trim( $content ) ) {
+		return new WP_Error( 'flosc_da1_empty_catalog', __( 'DA1 catalog content cannot be empty.', 'flosc' ) );
+	}
+
+	$flosc_da1_fs = flosc_da1_filesystem();
+	if ( ! $flosc_da1_fs ) {
+		return new WP_Error( 'flosc_da1_filesystem_unavailable', __( 'Filesystem API unavailable while writing DA1 catalog file.', 'flosc' ) );
+	}
+
+	if ( ! $flosc_da1_fs->write_text_atomic( $path, $content ) ) {
+		return new WP_Error( 'flosc_da1_write_failed', __( 'Could not write DA1 catalog file.', 'flosc' ) );
+	}
+
+	return true;
+}
+
+/**
+ * Read a catalog TSV under uploads/flosc-catalogs.
+ *
+ * @param string $path        Absolute catalog path.
+ * @param string $catalog_dir Allowed catalog directory.
+ * @return string|WP_Error Empty string if missing; WP_Error on failure.
+ */
+function flosc_da1_read_catalog_file( $path, $catalog_dir ) {
+	if ( ! flosc_da1_is_allowed_catalog_path( $path, $catalog_dir ) ) {
+		return new WP_Error( 'flosc_da1_invalid_catalog_path', __( 'Invalid DA1 catalog path.', 'flosc' ) );
+	}
+
+	if ( ! file_exists( $path ) ) {
+		return '';
+	}
+
+	$flosc_da1_fs = flosc_da1_filesystem();
+	if ( ! $flosc_da1_fs ) {
+		return new WP_Error( 'flosc_da1_read_failed', __( 'Could not read DA1 catalog file.', 'flosc' ) );
+	}
+
+	$content = $flosc_da1_fs->read_file_safely( $path );
+	if ( false === $content ) {
+		return new WP_Error( 'flosc_da1_read_failed', __( 'Could not read DA1 catalog file.', 'flosc' ) );
+	}
+
+	return $content;
+}
+
+/**
+ * Read the shipped sample catalog (plugin sample-data only).
+ *
+ * @param string $sample_path Absolute path under FLOSC_PLUGIN_DIR/sample-data/.
+ * @return string|false
+ */
+function flosc_da1_read_shipped_sample( $sample_path ) {
+	$sample_path = wp_normalize_path( (string) $sample_path );
+	$allowed     = wp_normalize_path( trailingslashit( FLOSC_PLUGIN_DIR ) . 'sample-data/' );
+	if ( $sample_path === '' || 0 !== strpos( $sample_path, $allowed ) ) {
+		return false;
+	}
+	if ( ! file_exists( $sample_path ) ) {
+		return false;
+	}
+	$flosc_da1_fs = flosc_da1_filesystem();
+	if ( ! $flosc_da1_fs ) {
+		return false;
+	}
+	// Sample lives in the plugin tree (not uploads) — use read_contents after path allowlist.
+	return $flosc_da1_fs->read_contents( $sample_path );
+}
+
+/**
+ * Read a PHP upload temp file after is_uploaded_file() verification.
+ *
+ * @param string $tmp_name Raw $_FILES['…']['tmp_name'] (do not path-sanitize).
+ * @return string|false
+ */
+function flosc_da1_read_uploaded_tmp( $tmp_name ) {
+	$tmp_name = (string) $tmp_name;
+	if ( $tmp_name === '' || ! is_uploaded_file( $tmp_name ) ) {
+		return false;
+	}
+	$flosc_da1_fs = flosc_da1_filesystem();
+	if ( ! $flosc_da1_fs ) {
+		return false;
+	}
+	return $flosc_da1_fs->read_contents( $tmp_name );
+}
+
+/**
+ * A catalog's description — free text the operator writes, never its identity.
+ *
+ * Stored under 'description'. Entries written before descriptions existed used
+ * 'label', so that is read as a fallback and rewritten as 'description' on the
+ * next save. Empty is a legitimate answer: a catalog is identified by its
+ * filename, so a description is optional.
+ *
+ * @param array $catalog One entry from the catalog index.
+ * @return string
+ */
+function flosc_da1_catalog_description($catalog) {
+    if (!is_array($catalog)) {
+        return '';
+    }
+    if (isset($catalog['description']) && $catalog['description'] !== '') {
+        return (string) $catalog['description'];
+    }
+    if (isset($catalog['label']) && $catalog['label'] !== '') {
+        return (string) $catalog['label'];
+    }
+    return '';
+}
+
+/**
+ * Catalog .tsv files actually present in the catalogs folder, keyed by catalog key.
+ *
+ * A catalog key is produced by flosc_da1_slugify(), whose charset is [a-z0-9_-] —
+ * no dots. That single rule separates real catalogs from their backup siblings:
+ * flosc_da1_catalog_default.tsv is a catalog, while
+ * flosc_da1_catalog_default.backup-2026-07-02.tsv carries a dot in the key
+ * position and is a copy. Listing copies as catalogs would invite editing a
+ * backup by mistake, so they are skipped.
+ *
+ * @param string $catalog_dir Absolute path to the catalogs folder.
+ * @return array<string,string> key => filename.
+ */
+function flosc_da1_catalog_files_on_disk($catalog_dir) {
+    $found = [];
+    $paths = glob(trailingslashit($catalog_dir) . 'flosc_da1_catalog_*.tsv');
+    if (!is_array($paths)) {
+        return $found;
+    }
+    foreach ($paths as $flosc_da1_path) {
+        $flosc_da1_name = basename($flosc_da1_path);
+        if (!preg_match('/^flosc_da1_catalog_([a-z0-9_-]+)\.tsv$/', $flosc_da1_name, $flosc_da1_m)) {
+            continue;
+        }
+        $flosc_da1_disk_key = $flosc_da1_m[1];
+        if (!isset($found[$flosc_da1_disk_key])) {
+            $found[$flosc_da1_disk_key] = $flosc_da1_name;
+        }
+    }
+    return $found;
+}
+
+/**
+ * Number of data rows in a catalog, or null when it cannot be counted cheaply.
+ *
+ * Counting by newline would be wrong: flosc_da1_tsv_cell() quotes cells that
+ * contain a newline rather than escaping them, so one record can span several
+ * lines. The real parser is used instead, and files past a sane ceiling report
+ * null rather than being parsed just to render one number.
+ *
+ * @param string $path        Absolute catalog path.
+ * @param string $catalog_dir Absolute path to the catalogs folder.
+ * @return int|null
+ */
+function flosc_da1_catalog_row_count($path, $catalog_dir) {
+    if (!file_exists($path)) {
+        return null;
+    }
+    $flosc_da1_size = filesize($path);
+    if ($flosc_da1_size === false || $flosc_da1_size > 2097152) {
+        return null;
+    }
+    $flosc_da1_body = flosc_da1_read_catalog_file($path, $catalog_dir);
+    if (is_wp_error($flosc_da1_body) || !is_string($flosc_da1_body) || $flosc_da1_body === '') {
+        return null;
+    }
+    $flosc_da1_parsed = flosc_da1_parse_tsv($flosc_da1_body);
+    if (!is_array($flosc_da1_parsed) || count($flosc_da1_parsed) < 1) {
+        return null;
+    }
+    // First parsed row is the header.
+    return max(0, count($flosc_da1_parsed) - 1);
+}
+
+$flosc_da1_catalogs = get_option($flosc_catalog_index_option, []);
+if (!is_array($flosc_da1_catalogs)) {
+    $flosc_da1_catalogs = [];
+}
+$flosc_da1_requested_catalog_key = '';
+if (isset($flosc_da1_post['catalog'])) {
+    $flosc_da1_requested_catalog_key = flosc_da1_normalize_key(sanitize_text_field((string) $flosc_da1_post['catalog']));
+} elseif (isset($flosc_da1_get['catalog'])) {
+    $flosc_da1_requested_catalog_key = flosc_da1_normalize_key(sanitize_text_field((string) $flosc_da1_get['catalog']));
+}
+/*
+ * A catalog is a .tsv file in the catalogs folder. The index option only carries
+ * optional presentation — a label, when someone has given one — so discovery reads
+ * the folder and treats anything found there as real, whether the option knows
+ * about it or not. Files with no index entry are marked so the UI can offer to
+ * record a label rather than pretending they are unregistered.
+ */
+$flosc_da1_disk_catalogs = flosc_da1_catalog_files_on_disk($flosc_catalog_dir);
+foreach ($flosc_da1_disk_catalogs as $flosc_da1_disk_key => $flosc_da1_disk_name) {
+    if (!isset($flosc_da1_catalogs[$flosc_da1_disk_key])) {
+        // Found on disk with nothing recorded about it: no description invented.
+        $flosc_da1_catalogs[$flosc_da1_disk_key] = [
+            'description' => '',
+            'key' => $flosc_da1_disk_key,
+            'filename' => $flosc_da1_disk_name,
+            'created_at' => '',
+        ];
+    }
+}
+ksort($flosc_da1_catalogs);
+
+/*
+ * DA1 has two views, matching the Flow tab's vocabulary so one URL habit works
+ * across tabs: "single" edits the rows of one catalog, "all" manages every
+ * catalog and which flows each one serves.
+ */
+$flosc_da1_view_raw = isset($flosc_da1_get['view']) ? sanitize_key((string) $flosc_da1_get['view']) : '';
+$flosc_da1_view = ($flosc_da1_view_raw === 'all') ? 'all' : 'single';
+
+/*
+ * With no catalog named in the URL, open the first one there is. No catalog is
+ * privileged — this is alphabetical order, not a designated default.
+ */
+if ($flosc_da1_requested_catalog_key === '' || !isset($flosc_da1_catalogs[$flosc_da1_requested_catalog_key])) {
+    $flosc_da1_catalog_keys = array_keys($flosc_da1_catalogs);
+    $flosc_da1_requested_catalog_key = $flosc_da1_catalog_keys === [] ? '' : (string) $flosc_da1_catalog_keys[0];
+}
+
+$flosc_da1_notice_success = '';
+$flosc_da1_notice_error = '';
+
+$flosc_da1_selected_ivr = isset($flosc_selected_ivr) ? sanitize_file_name((string) $flosc_selected_ivr) : '';
+$flosc_da1_flow_assignments = get_option($flosc_catalog_assign_option, []);
+if (!is_array($flosc_da1_flow_assignments)) {
+    $flosc_da1_flow_assignments = [];
+}
+
+// Show only attributions naming a flow that exists. Switch Flow has always
+// filtered backups out; this page used to render whatever was stored, which is
+// how backup filenames came to appear under "Attributed to". Filtering here as
+// well as at the source means a record written by some older build, or by hand,
+// cannot put a name on this page that the rest of FLOSC would not recognise.
+if (function_exists('flosc_da1_prune_flow_assignments')) {
+    $flosc_da1_flow_assignments = flosc_da1_prune_flow_assignments($flosc_da1_flow_assignments);
+}
+
+$flosc_known_flow_scopes = ['all'];
+if (isset($flosc_ivr_files) && is_array($flosc_ivr_files)) {
+    foreach ($flosc_ivr_files as $flosc_ivr_file) {
+        $flosc_scope_key = flosc_da1_normalize_key(pathinfo((string) $flosc_ivr_file, PATHINFO_FILENAME));
+        if ($flosc_scope_key !== '' && !in_array($flosc_scope_key, $flosc_known_flow_scopes, true)) {
+            $flosc_known_flow_scopes[] = $flosc_scope_key;
+        }
+    }
+}
+
+if (isset($flosc_da1_post['flosc_da1_create_catalog'])) {
+    check_admin_referer('flosc_da1_catalog_manage');
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to manage DA1 catalogs.', 'flosc'));
+    }
+    $flosc_da1_label = sanitize_text_field((string) ($flosc_da1_post['flosc_new_catalog_label'] ?? ''));
+    $flosc_da1_key_raw = sanitize_text_field((string) ($flosc_da1_post['flosc_new_catalog_key'] ?? ''));
+    $flosc_da1_payload_columns = flosc_da1_sanitize_payload_columns(
+        (string) ($flosc_da1_post['flosc_new_catalog_fields'] ?? 'Title, Description'),
+        $flosc_required_columns
+    );
+    if (empty($flosc_da1_payload_columns)) {
+        $flosc_da1_payload_columns = ['Title', 'Description'];
+    }
+    $flosc_da1_key = flosc_da1_slugify($flosc_da1_key_raw !== '' ? $flosc_da1_key_raw : $flosc_da1_label);
+    if ($flosc_da1_key === '') {
+        $flosc_da1_notice_error = 'Catalog key is required.';
+    } elseif (isset($flosc_da1_catalogs[$flosc_da1_key])) {
+        $flosc_da1_notice_error = 'Catalog key already exists.';
+    } else {
+        $flosc_da1_catalogs[$flosc_da1_key] = [
+            'description' => $flosc_da1_label,
+            'key' => $flosc_da1_key,
+            'filename' => 'flosc_da1_catalog_' . $flosc_da1_key . '.tsv',
+            'payload_columns' => $flosc_da1_payload_columns,
+            'created_at' => current_time('mysql'),
+        ];
+        update_option($flosc_catalog_index_option, $flosc_da1_catalogs, false);
+        $flosc_da1_requested_catalog_key = $flosc_da1_key;
+        $flosc_da1_notice_success = 'Catalog created.';
+    }
+}
+
+if (isset($flosc_da1_post['flosc_da1_assign_catalogs']) && $flosc_da1_selected_ivr !== '') {
+    check_admin_referer('flosc_da1_catalog_manage');
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to assign DA1 catalogs.', 'flosc'));
+    }
+    $flosc_da1_assigned = sanitize_text_field((string) ($flosc_da1_post['flosc_flow_catalogs'] ?? ''));
+    $flosc_da1_parts = array_filter(array_map('trim', explode(',', (string) $flosc_da1_assigned)));
+    $flosc_da1_clean = [];
+    foreach ($flosc_da1_parts as $flosc_da1_p) {
+        $flosc_da1_k = flosc_da1_normalize_key($flosc_da1_p);
+        if ($flosc_da1_k !== '' && isset($flosc_da1_catalogs[$flosc_da1_k]) && !in_array($flosc_da1_k, $flosc_da1_clean, true)) {
+            $flosc_da1_clean[] = $flosc_da1_k;
+        }
+    }
+    $flosc_da1_flow_assignments[$flosc_da1_selected_ivr] = $flosc_da1_clean;
+    update_option($flosc_catalog_assign_option, $flosc_da1_flow_assignments, false);
+    $flosc_da1_notice_success = 'Flow catalog assignment saved.';
+}
+
+/*
+ * Attachment matrix from the all-catalogs view: one row per catalog, one checkbox
+ * per flow. The stored shape stays exactly as the runtime expects it —
+ * flosc_da1_flow_catalogs[ flow file ] = ordered list of catalog keys, read by
+ * FLOSC_DA1_Catalogs::load_rows_for_flow() — so this screen edits membership
+ * without inventing a second source of truth.
+ *
+ * Two properties are deliberate. Existing order is preserved, because the order of
+ * a flow's list is its catalog priority and this screen has no opinion about
+ * priority: retained keys keep their position and newly checked ones are appended.
+ * And only the catalogs actually rendered are considered, so a key that was not on
+ * screen is never silently dropped from a flow.
+ */
+if (isset($flosc_da1_post['flosc_da1_attach_flows'])) {
+    check_admin_referer('flosc_da1_catalog_manage');
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to assign DA1 catalogs.', 'flosc'));
+    }
+
+    $flosc_da1_rendered_catalogs = [];
+    if (isset($flosc_da1_post['flosc_da1_rendered_catalogs']) && is_array($flosc_da1_post['flosc_da1_rendered_catalogs'])) {
+        foreach ($flosc_da1_post['flosc_da1_rendered_catalogs'] as $flosc_da1_rc) {
+            $flosc_da1_rc_key = flosc_da1_normalize_key(sanitize_text_field((string) $flosc_da1_rc));
+            if ($flosc_da1_rc_key !== '' && isset($flosc_da1_catalogs[$flosc_da1_rc_key]) && !in_array($flosc_da1_rc_key, $flosc_da1_rendered_catalogs, true)) {
+                $flosc_da1_rendered_catalogs[] = $flosc_da1_rc_key;
+            }
+        }
+    }
+
+    $flosc_da1_known_flows = (isset($flosc_ivr_files) && is_array($flosc_ivr_files)) ? $flosc_ivr_files : [];
+    $flosc_da1_rendered_flows = [];
+    if (isset($flosc_da1_post['flosc_da1_rendered_flows']) && is_array($flosc_da1_post['flosc_da1_rendered_flows'])) {
+        foreach ($flosc_da1_post['flosc_da1_rendered_flows'] as $flosc_da1_rf) {
+            $flosc_da1_rf_file = sanitize_file_name((string) $flosc_da1_rf);
+            if ($flosc_da1_rf_file !== '' && in_array($flosc_da1_rf_file, $flosc_da1_known_flows, true) && !in_array($flosc_da1_rf_file, $flosc_da1_rendered_flows, true)) {
+                $flosc_da1_rendered_flows[] = $flosc_da1_rf_file;
+            }
+        }
+    }
+
+    $flosc_da1_checked = (isset($flosc_da1_post['flosc_da1_attach']) && is_array($flosc_da1_post['flosc_da1_attach']))
+        ? $flosc_da1_post['flosc_da1_attach']
+        : [];
+
+    foreach ($flosc_da1_rendered_flows as $flosc_da1_flow_file) {
+        // Which of the rendered catalogs the operator ticked for this flow.
+        $flosc_da1_wanted = [];
+        foreach ($flosc_da1_rendered_catalogs as $flosc_da1_cat_key_in) {
+            if (!isset($flosc_da1_checked[$flosc_da1_cat_key_in]) || !is_array($flosc_da1_checked[$flosc_da1_cat_key_in])) {
+                continue;
+            }
+            foreach ($flosc_da1_checked[$flosc_da1_cat_key_in] as $flosc_da1_checked_flow) {
+                if (sanitize_file_name((string) $flosc_da1_checked_flow) === $flosc_da1_flow_file) {
+                    $flosc_da1_wanted[] = $flosc_da1_cat_key_in;
+                    break;
+                }
+            }
+        }
+
+        $flosc_da1_existing = [];
+        if (isset($flosc_da1_flow_assignments[$flosc_da1_flow_file]) && is_array($flosc_da1_flow_assignments[$flosc_da1_flow_file])) {
+            foreach ($flosc_da1_flow_assignments[$flosc_da1_flow_file] as $flosc_da1_ex) {
+                $flosc_da1_ex_key = flosc_da1_normalize_key((string) $flosc_da1_ex);
+                if ($flosc_da1_ex_key !== '' && !in_array($flosc_da1_ex_key, $flosc_da1_existing, true)) {
+                    $flosc_da1_existing[] = $flosc_da1_ex_key;
+                }
+            }
+        }
+
+        $flosc_da1_next = [];
+        foreach ($flosc_da1_existing as $flosc_da1_ex_key) {
+            if (!in_array($flosc_da1_ex_key, $flosc_da1_rendered_catalogs, true)) {
+                // Not on screen, so not this screen's business — carry it through.
+                $flosc_da1_next[] = $flosc_da1_ex_key;
+                continue;
+            }
+            if (in_array($flosc_da1_ex_key, $flosc_da1_wanted, true)) {
+                $flosc_da1_next[] = $flosc_da1_ex_key;
+            }
+        }
+        foreach ($flosc_da1_wanted as $flosc_da1_add_key) {
+            if (!in_array($flosc_da1_add_key, $flosc_da1_next, true)) {
+                $flosc_da1_next[] = $flosc_da1_add_key;
+            }
+        }
+
+        $flosc_da1_flow_assignments[$flosc_da1_flow_file] = array_values($flosc_da1_next);
+    }
+
+    update_option($flosc_catalog_assign_option, $flosc_da1_flow_assignments, false);
+
+    /*
+     * Descriptions ride along with the same Save. Writing one is also what records
+     * a catalog that was only ever a file on disk: the index exists to hold the
+     * description, so there is no separate "register this catalog" step.
+     */
+    if (isset($flosc_da1_post['flosc_da1_description']) && is_array($flosc_da1_post['flosc_da1_description'])) {
+        $flosc_da1_index_save = get_option($flosc_catalog_index_option, []);
+        if (!is_array($flosc_da1_index_save)) {
+            $flosc_da1_index_save = [];
+        }
+        $flosc_da1_disk_now = flosc_da1_catalog_files_on_disk($flosc_catalog_dir);
+
+        foreach ($flosc_da1_post['flosc_da1_description'] as $flosc_da1_desc_key => $flosc_da1_desc_val) {
+            $flosc_da1_dk = flosc_da1_normalize_key(sanitize_text_field((string) $flosc_da1_desc_key));
+            if ($flosc_da1_dk === '' || !in_array($flosc_da1_dk, $flosc_da1_rendered_catalogs, true)) {
+                continue;
+            }
+            $flosc_da1_desc = sanitize_text_field((string) $flosc_da1_desc_val);
+
+            if ($flosc_da1_desc === '') {
+                // Cleared description: drop the entry rather than store an empty one.
+                unset($flosc_da1_index_save[$flosc_da1_dk]);
+                continue;
+            }
+
+            $flosc_da1_existing_entry = isset($flosc_da1_index_save[$flosc_da1_dk]) && is_array($flosc_da1_index_save[$flosc_da1_dk])
+                ? $flosc_da1_index_save[$flosc_da1_dk]
+                : [];
+            unset($flosc_da1_existing_entry['label']);
+
+            $flosc_da1_index_save[$flosc_da1_dk] = array_merge($flosc_da1_existing_entry, [
+                'description' => $flosc_da1_desc,
+                'key' => $flosc_da1_dk,
+                'filename' => $flosc_da1_disk_now[$flosc_da1_dk] ?? ('flosc_da1_catalog_' . $flosc_da1_dk . '.tsv'),
+            ]);
+            if (!isset($flosc_da1_index_save[$flosc_da1_dk]['created_at']) || $flosc_da1_index_save[$flosc_da1_dk]['created_at'] === '') {
+                $flosc_da1_index_save[$flosc_da1_dk]['created_at'] = current_time('mysql');
+            }
+        }
+
+        update_option($flosc_catalog_index_option, $flosc_da1_index_save, false);
+    }
+
+    $flosc_da1_notice_success = __('Catalog descriptions and attributions saved.', 'flosc');
+}
+
+$flosc_da1_catalog_path = flosc_da1_catalog_file($flosc_catalog_dir, $flosc_da1_requested_catalog_key);
+$flosc_da1_selected_catalog_label = flosc_da1_catalog_description($flosc_da1_catalogs[$flosc_da1_requested_catalog_key] ?? []);
+
+if (isset($flosc_da1_post['flosc_da1_upload_catalog'])) {
+    check_admin_referer('flosc_da1_catalog_manage');
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to upload DA1 catalogs.', 'flosc'));
+    }
+
+    $flosc_da1_name  = isset( $_FILES['flosc_da1_upload_file']['name'] )
+        ? sanitize_file_name( wp_unslash( (string) $_FILES['flosc_da1_upload_file']['name'] ) )
+        : '';
+    $flosc_da1_error = isset( $_FILES['flosc_da1_upload_file']['error'] )
+        ? absint( $_FILES['flosc_da1_upload_file']['error'] )
+        : UPLOAD_ERR_NO_FILE;
+    $flosc_da1_size  = isset( $_FILES['flosc_da1_upload_file']['size'] )
+        ? absint( $_FILES['flosc_da1_upload_file']['size'] )
+        : 0;
+    // tmp_name: unslash + sanitize_text_field for PHPCS; still validated via is_uploaded_file() in reader.
+    $flosc_da1_tmp = isset( $_FILES['flosc_da1_upload_file']['tmp_name'] )
+        ? sanitize_text_field( wp_unslash( (string) $_FILES['flosc_da1_upload_file']['tmp_name'] ) )
+        : '';
+
+    if ( UPLOAD_ERR_OK !== $flosc_da1_error || $flosc_da1_name === '' ) {
+        $flosc_da1_notice_error = 'Choose a valid TSV file to upload.';
+    } elseif ( '.tsv' !== strtolower( substr( $flosc_da1_name, -4 ) ) ) {
+        $flosc_da1_notice_error = 'DA1 uploads must be .tsv files.';
+    } elseif ( $flosc_da1_size <= 0 || $flosc_da1_size > 1024 * 1024 ) {
+        $flosc_da1_notice_error = 'DA1 catalog uploads must be between 1 byte and 1 MB.';
+    } else {
+        $flosc_da1_content = flosc_da1_read_uploaded_tmp( $flosc_da1_tmp );
+        if ( false === $flosc_da1_content || trim( (string) $flosc_da1_content ) === '' ) {
+            $flosc_da1_notice_error = 'Uploaded DA1 catalog is empty or unreadable.';
+        } else {
+            $flosc_da1_write_result = flosc_da1_write_catalog_file( $flosc_da1_catalog_path, $flosc_da1_content, $flosc_catalog_dir );
+            if ( is_wp_error( $flosc_da1_write_result ) ) {
+                $flosc_da1_notice_error = $flosc_da1_write_result->get_error_message();
+            } else {
+                $flosc_da1_notice_success = 'Catalog uploaded.';
+            }
+        }
+    }
+}
+
+if (isset($flosc_da1_post['da1_save_catalog'])) {
+    check_admin_referer('da1_catalog_save');
+    if (!current_user_can('manage_options')) {
+        wp_die(esc_html__('You do not have permission to save DA1 catalogs.', 'flosc'));
+    }
+}
+
+
+$flosc_da1_columns = [];
+$flosc_da1_rows = [];
+$flosc_da1_catalog_meta = $flosc_da1_catalogs[$flosc_da1_requested_catalog_key] ?? [];
+$flosc_da1_new_payload_columns = isset($flosc_da1_catalog_meta['payload_columns']) && is_array($flosc_da1_catalog_meta['payload_columns'])
+    ? $flosc_da1_catalog_meta['payload_columns']
+    : ['Title', 'Description'];
+
+if (file_exists($flosc_da1_catalog_path)) {
+    $flosc_da1_loaded_content = flosc_da1_read_catalog_file($flosc_da1_catalog_path, $flosc_catalog_dir);
+    if (is_wp_error($flosc_da1_loaded_content)) {
+        $flosc_da1_notice_error = $flosc_da1_loaded_content->get_error_message();
+        $flosc_da1_parsed = [];
+    } else {
+        $flosc_da1_parsed = flosc_da1_parse_tsv((string) $flosc_da1_loaded_content);
+    }
+    $flosc_da1_columns = flosc_da1_normalize_columns($flosc_da1_parsed[0] ?? [], $flosc_required_columns);
+    $flosc_da1_rows = array_slice($flosc_da1_parsed, 1);
+} else {
+    $flosc_da1_columns = flosc_da1_normalize_columns($flosc_da1_new_payload_columns, $flosc_required_columns);
+    $flosc_da1_rows = [];
+}
+
+$flosc_da1_col_idx = flosc_da1_col_index_map($flosc_da1_columns);
+$flosc_da1_ncols = count($flosc_da1_columns);
+
+foreach ($flosc_da1_rows as &$flosc_da1_row) {
+    while (count($flosc_da1_row) < $flosc_da1_ncols) {
+        $flosc_da1_row[] = '';
+    }
+    flosc_da1_apply_defaults($flosc_da1_row, $flosc_da1_columns, $flosc_da1_col_idx, $flosc_control_defaults, $flosc_da1_requested_catalog_key);
+}
+unset($flosc_da1_row);
+
+if (isset($flosc_da1_col_idx['Row Key'])) {
+    foreach ($flosc_da1_rows as $flosc_da1_i => $flosc_da1_row) {
+        $flosc_da1_row_key = trim((string) ($flosc_da1_row[$flosc_da1_col_idx['Row Key']] ?? ''));
+        $flosc_da1_parent_key = isset($flosc_da1_col_idx['Parent Key']) ? trim((string) ($flosc_da1_row[$flosc_da1_col_idx['Parent Key']] ?? '')) : '';
+        if ($flosc_da1_row_key !== '') {
+            continue;
+        }
+        if ($flosc_da1_parent_key !== '') {
+            $flosc_da1_rows[$flosc_da1_i][$flosc_da1_col_idx['Row Key']] = flosc_da1_next_child_key($flosc_da1_rows, $flosc_da1_col_idx['Row Key'], $flosc_da1_parent_key);
+        } else {
+            $flosc_da1_rows[$flosc_da1_i][$flosc_da1_col_idx['Row Key']] = flosc_da1_next_parent_key($flosc_da1_rows, $flosc_da1_col_idx['Row Key']);
+        }
+    }
+}
+
+if (isset($flosc_da1_post['da1_save_catalog'])) {
+    $flosc_post = $flosc_da1_post;
+    // Large catalogs exceed PHP max_input_vars when posted as per-cell fields.
+    // The grid submits the whole table as one JSON field instead; decode it
+    // into the shape the rest of this handler expects.
+    if (!empty($flosc_post['da1_payload'])) {
+        $flosc_da1_decoded = flosc_da1_safe_json_decode((string) $flosc_post['da1_payload']);
+        if (is_array($flosc_da1_decoded)) {
+            if (isset($flosc_da1_decoded['columns']) && is_array($flosc_da1_decoded['columns'])) {
+                $flosc_post['da1_columns'] = $flosc_da1_decoded['columns'];
+            }
+            if (isset($flosc_da1_decoded['rows']) && is_array($flosc_da1_decoded['rows'])) {
+                $flosc_post['da1_rows'] = $flosc_da1_decoded['rows'];
+            }
+        }
+    }
+    $flosc_da1_saved_columns = isset($flosc_post['da1_columns']) && is_array($flosc_post['da1_columns']) ? array_values(array_map('sanitize_text_field', $flosc_post['da1_columns'])) : $flosc_da1_columns;
+    $flosc_da1_saved_columns = flosc_da1_normalize_columns($flosc_da1_saved_columns, $flosc_required_columns);
+    $flosc_da1_saved_col_idx = flosc_da1_col_index_map($flosc_da1_saved_columns);
+
+    foreach ($flosc_required_columns as $flosc_da1_req_col) {
+        if (!isset($flosc_da1_saved_col_idx[$flosc_da1_req_col])) {
+            $flosc_da1_notice_error = 'Missing required column: ' . $flosc_da1_req_col;
+            break;
+        }
+    }
+
+    if ($flosc_da1_notice_error === '') {
+        $flosc_da1_rows_post = $flosc_post['da1_rows'] ?? [];
+        $flosc_da1_lines = [];
+        $flosc_da1_lines[] = implode("\t", array_map('flosc_da1_tsv_cell', $flosc_da1_saved_columns));
+        $flosc_da1_validation_errors = [];
+        $flosc_da1_required_value_columns = [
+            'Row Key',
+            'Catalog Key',
+            'Item Type',
+            'Flow Scope',
+            'VGM',
+            'Delivery Instruction',
+            'Delivery Rule',
+            'Fallback Order',
+            'Status',
+        ];
+
+        foreach ($flosc_da1_rows_post as $flosc_da1_row_post) {
+            $flosc_da1_cells = [];
+            $flosc_da1_all_empty = true;
+            $flosc_da1_row_values = [];
+            foreach ($flosc_da1_saved_columns as $flosc_da1_ci => $flosc_da1_col) {
+                $flosc_da1_raw = isset($flosc_da1_row_post[$flosc_da1_ci]) ? (string) $flosc_da1_row_post[$flosc_da1_ci] : '';
+                $flosc_da1_is_payload = !in_array($flosc_da1_col, $flosc_required_columns, true);
+                $flosc_da1_val = $flosc_da1_is_payload ? sanitize_textarea_field($flosc_da1_raw) : sanitize_text_field($flosc_da1_raw);
+                $flosc_da1_val = str_replace(["\r\n", "\r"], "\n", $flosc_da1_val);
+
+                if ($flosc_da1_col === 'Status') {
+                    $flosc_da1_val = strtolower(trim($flosc_da1_val));
+                }
+                if ($flosc_da1_col === 'VGM') {
+                    $flosc_da1_val = flosc_da1_normalize_vgm($flosc_da1_val);
+                }
+                if ($flosc_da1_col === 'Catalog Key') {
+                    $flosc_da1_val = $flosc_da1_requested_catalog_key;
+                }
+
+                // Never block a floscAdmin's save on a missing control value:
+                // fill the column's safe default so edits always save. Status is
+                // always "active" unless explicitly "paused".
+                if (trim($flosc_da1_val) === '' && isset($flosc_control_defaults[$flosc_da1_col])) {
+                    $flosc_da1_val = $flosc_control_defaults[$flosc_da1_col];
+                }
+                if ($flosc_da1_col === 'Status') {
+                    $flosc_da1_val = ($flosc_da1_val === 'paused') ? 'paused' : 'active';
+                }
+
+                if (trim($flosc_da1_val) !== '') {
+                    $flosc_da1_all_empty = false;
+                }
+                $flosc_da1_row_values[$flosc_da1_col] = $flosc_da1_val;
+                $flosc_da1_cells[] = flosc_da1_tsv_cell($flosc_da1_val);
+            }
+
+            if (!$flosc_da1_all_empty) {
+                $flosc_da1_row_key_idx = $flosc_da1_saved_col_idx['Row Key'];
+                $flosc_da1_incoming_parent = trim((string) ($flosc_da1_row_values['Parent Key'] ?? ''));
+                if (trim((string) ($flosc_da1_row_post[$flosc_da1_row_key_idx] ?? '')) === '') {
+                    if ($flosc_da1_incoming_parent !== '') {
+                        $flosc_da1_row_values['Row Key'] = flosc_da1_next_child_key($flosc_da1_rows, $flosc_da1_saved_col_idx['Row Key'], $flosc_da1_incoming_parent);
+                    } else {
+                        $flosc_da1_row_values['Row Key'] = flosc_da1_next_parent_key($flosc_da1_rows, $flosc_da1_saved_col_idx['Row Key']);
+                    }
+                    $flosc_da1_cells[$flosc_da1_row_key_idx] = flosc_da1_tsv_cell($flosc_da1_row_values['Row Key']);
+                }
+
+                foreach ($flosc_da1_required_value_columns as $flosc_da1_required_col) {
+                    if (trim((string) ($flosc_da1_row_values[$flosc_da1_required_col] ?? '')) === '') {
+                        $flosc_da1_validation_errors[] = 'Row ' . $flosc_da1_row_values['Row Key'] . ': ' . $flosc_da1_required_col . ' is required.';
+                    }
+                }
+
+                $flosc_da1_row_key = trim((string) ($flosc_da1_row_values['Row Key'] ?? ''));
+                $flosc_da1_parent_key = trim((string) ($flosc_da1_row_values['Parent Key'] ?? ''));
+                if ($flosc_da1_row_key !== '' && !preg_match('/^[0-9]+(\.[0-9]+)?$/', $flosc_da1_row_key)) {
+                    $flosc_da1_validation_errors[] = 'Row ' . $flosc_da1_row_key . ': Row Key must use numeric format like 85 or 85.1.';
+                }
+                if ($flosc_da1_parent_key !== '' && !preg_match('/^[0-9]+$/', $flosc_da1_parent_key)) {
+                    $flosc_da1_validation_errors[] = 'Row ' . $flosc_da1_row_key . ': Parent Key must be numeric like 85.';
+                }
+                if ($flosc_da1_parent_key !== '' && strpos($flosc_da1_row_key, $flosc_da1_parent_key . '.') !== 0) {
+                    $flosc_da1_validation_errors[] = 'Row ' . $flosc_da1_row_key . ': child Row Key must begin with Parent Key plus dot.';
+                }
+
+                $flosc_status = strtolower(trim((string) ($flosc_da1_row_values['Status'] ?? '')));
+                if ($flosc_status !== 'active' && $flosc_status !== 'paused') {
+                    $flosc_da1_validation_errors[] = 'Row ' . $flosc_da1_row_key . ': Status must be active or paused.';
+                }
+
+                $flosc_da1_scope_csv = strtolower(trim((string) ($flosc_da1_row_values['Flow Scope'] ?? '')));
+                $flosc_da1_scope_parts = array_filter(array_map('trim', explode(',', $flosc_da1_scope_csv)));
+                if (empty($flosc_da1_scope_parts)) {
+                    $flosc_da1_validation_errors[] = 'Row ' . $flosc_da1_row_key . ': Flow Scope is required.';
+                } else {
+                    foreach ($flosc_da1_scope_parts as $flosc_da1_scope_part) {
+                        if (!in_array($flosc_da1_scope_part, $flosc_known_flow_scopes, true)) {
+                            $flosc_da1_validation_errors[] = 'Row ' . $flosc_da1_row_key . ': Flow Scope value "' . $flosc_da1_scope_part . '" is not a known flow key.';
+                        }
+                    }
+                }
+
+                $flosc_da1_vgm = strtolower(trim((string) ($flosc_da1_row_values['VGM'] ?? '')));
+                if ($flosc_da1_vgm === '') {
+                    $flosc_da1_validation_errors[] = 'Row ' . $flosc_da1_row_key . ': VGM must include at least one of Visitor, Guest, Member.';
+                }
+
+                $flosc_da1_lines[] = implode("\t", $flosc_da1_cells);
+
+                $flosc_da1_materialized_row = [];
+                foreach ($flosc_da1_saved_columns as $flosc_da1_ci => $flosc_da1_col) {
+                    $flosc_da1_materialized_row[$flosc_da1_ci] = trim((string) ($flosc_da1_row_values[$flosc_da1_col] ?? ''));
+                }
+                $flosc_da1_rows[] = $flosc_da1_materialized_row;
+            }
+        }
+
+        if (!empty($flosc_da1_validation_errors)) {
+            $flosc_da1_notice_error = 'Catalog not saved. Fix these issues: ' . implode(' | ', array_slice($flosc_da1_validation_errors, 0, 8));
+        }
+
+        if ($flosc_da1_notice_error === '') {
+            $flosc_da1_content = implode("\n", $flosc_da1_lines) . "\n";
+            $flosc_da1_write_result = flosc_da1_write_catalog_file($flosc_da1_catalog_path, $flosc_da1_content, $flosc_catalog_dir);
+            if (is_wp_error($flosc_da1_write_result)) {
+                $flosc_da1_notice_error = $flosc_da1_write_result->get_error_message();
+            } else {
+                $flosc_da1_notice_success = 'Catalog saved.';
+                $flosc_da1_parsed = flosc_da1_parse_tsv($flosc_da1_content);
+                $flosc_da1_columns = flosc_da1_normalize_columns($flosc_da1_parsed[0] ?? [], $flosc_required_columns);
+                $flosc_da1_col_idx = flosc_da1_col_index_map($flosc_da1_columns);
+                $flosc_da1_rows = array_slice($flosc_da1_parsed, 1);
+                $flosc_da1_ncols = count($flosc_da1_columns);
+                foreach ($flosc_da1_rows as &$flosc_da1_row) {
+                    while (count($flosc_da1_row) < $flosc_da1_ncols) {
+                        $flosc_da1_row[] = '';
+                    }
+                    flosc_da1_apply_defaults($flosc_da1_row, $flosc_da1_columns, $flosc_da1_col_idx, $flosc_control_defaults, $flosc_da1_requested_catalog_key);
+                }
+                unset($flosc_da1_row);
+            }
+        }
+    }
+}
+
+$flosc_da1_multiline_idx = [];
+foreach ($flosc_da1_columns as $flosc_da1_ci => $flosc_da1_col) {
+    if (!in_array($flosc_da1_col, $flosc_required_columns, true)) {
+        $flosc_da1_multiline_idx[] = $flosc_da1_ci;
+    }
+}
+
+if (empty($flosc_da1_rows)) {
+    $flosc_da1_rows = [array_fill(0, count($flosc_da1_columns), '')];
+    flosc_da1_apply_defaults($flosc_da1_rows[0], $flosc_da1_columns, $flosc_da1_col_idx, $flosc_control_defaults, $flosc_da1_requested_catalog_key);
+    if (isset($flosc_da1_col_idx['Row Key'])) {
+        $flosc_da1_rows[0][$flosc_da1_col_idx['Row Key']] = '1';
+    }
+}
+
+$flosc_da1_flow_assigned = ($flosc_da1_selected_ivr !== '' && isset($flosc_da1_flow_assignments[$flosc_da1_selected_ivr]))
+    ? implode(',', (array) $flosc_da1_flow_assignments[$flosc_da1_selected_ivr])
+    : '';
+$flosc_da1_export_url = add_query_arg([
+    'page' => 'flosc-settings',
+    'tab' => 'da1',
+    'catalog' => $flosc_da1_requested_catalog_key,
+    'da1_export' => '1',
+    '_wpnonce' => wp_create_nonce('flosc_da1_export_' . $flosc_da1_requested_catalog_key),
+], admin_url('admin.php'));
+
+$flosc_da1_form_action_args = [
+    'page' => 'flosc-settings',
+    'tab' => 'da1',
+    'catalog' => $flosc_da1_requested_catalog_key,
+];
+if ($flosc_da1_selected_ivr !== '') {
+    $flosc_da1_form_action_args['ivr'] = $flosc_da1_selected_ivr;
+}
+if (!empty($flosc_identity_view)) {
+    $flosc_da1_form_action_args['view'] = $flosc_identity_view;
+}
+$flosc_da1_form_action = add_query_arg($flosc_da1_form_action_args, admin_url('admin.php'));
+
+/*
+ * View toggle targets. Both keep the open catalog and the current flow in the URL
+ * so switching view never loses the operator's place.
+ */
+$flosc_da1_view_url = function ($flosc_da1_target_view) use ($flosc_da1_requested_catalog_key, $flosc_da1_selected_ivr) {
+    $flosc_da1_args = [
+        'page' => 'flosc-settings',
+        'tab' => 'da1',
+        'catalog' => $flosc_da1_requested_catalog_key,
+        'view' => $flosc_da1_target_view,
+    ];
+    if ($flosc_da1_selected_ivr !== '') {
+        $flosc_da1_args['ivr'] = $flosc_da1_selected_ivr;
+    }
+    return add_query_arg($flosc_da1_args, admin_url('admin.php'));
+};
+
+/*
+ * Which flows use each catalog — the reverse of the stored per-flow lists, built
+ * once so the all-catalogs table can render a row per catalog without re-scanning
+ * the assignments for every checkbox.
+ */
+$flosc_da1_flows_by_catalog = [];
+foreach ($flosc_da1_flow_assignments as $flosc_da1_assigned_flow => $flosc_da1_assigned_keys) {
+    if (!is_array($flosc_da1_assigned_keys)) {
+        continue;
+    }
+    $flosc_da1_assigned_flow = sanitize_file_name((string) $flosc_da1_assigned_flow);
+    foreach ($flosc_da1_assigned_keys as $flosc_da1_assigned_key) {
+        $flosc_da1_ak = flosc_da1_normalize_key((string) $flosc_da1_assigned_key);
+        if ($flosc_da1_ak === '') {
+            continue;
+        }
+        if (!isset($flosc_da1_flows_by_catalog[$flosc_da1_ak])) {
+            $flosc_da1_flows_by_catalog[$flosc_da1_ak] = [];
+        }
+        if (!in_array($flosc_da1_assigned_flow, $flosc_da1_flows_by_catalog[$flosc_da1_ak], true)) {
+            $flosc_da1_flows_by_catalog[$flosc_da1_ak][] = $flosc_da1_assigned_flow;
+        }
+    }
+}
+
+$flosc_da1_all_flows = (isset($flosc_ivr_files) && is_array($flosc_ivr_files)) ? $flosc_ivr_files : [];
+
+if ( isset( $flosc_da1_get['da1_export'] ) && (string) $flosc_da1_get['da1_export'] === '1' ) {
+	$flosc_da1_nonce = sanitize_text_field( (string) ( $flosc_da1_get['_wpnonce'] ?? '' ) );
+	if ( ! wp_verify_nonce( $flosc_da1_nonce, 'flosc_da1_export_' . $flosc_da1_requested_catalog_key ) ) {
+		wp_die( esc_html__( 'Invalid export link.', 'flosc' ) );
+	}
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( 'You do not have permission to export DA1 catalogs.', 'flosc' ) );
+	}
+
+	$flosc_export_body = flosc_da1_read_catalog_file( $flosc_da1_catalog_path, $flosc_catalog_dir );
+	if ( is_wp_error( $flosc_export_body ) || ! is_string( $flosc_export_body ) || $flosc_export_body === '' ) {
+		wp_die( esc_html__( 'Could not read DA1 catalog for export.', 'flosc' ) );
+	}
+
+	$flosc_da1_fs = flosc_da1_filesystem();
+	if ( ! $flosc_da1_fs ) {
+		wp_die( esc_html__( 'Filesystem unavailable for export.', 'flosc' ) );
+	}
+	$flosc_da1_fs->stream_plain_download_and_exit(
+		$flosc_export_body,
+		'text/tab-separated-values; charset=utf-8',
+		'flosc_da1_catalog_' . sanitize_file_name( $flosc_da1_requested_catalog_key ) . '.tsv'
+	);
+}
+?>
+
+<div class="flosc-da1-wrap">
+    <?php if ($flosc_da1_notice_success !== ''): ?>
+        <div class="notice notice-success is-dismissible flosc-da1-notice"><p><?php echo esc_html($flosc_da1_notice_success); ?></p></div>
+    <?php endif; ?>
+    <?php if ($flosc_da1_notice_error !== ''): ?>
+        <div class="notice notice-error flosc-da1-notice"><p><strong>Save blocked.</strong> <?php echo esc_html($flosc_da1_notice_error); ?></p></div>
+    <?php endif; ?>
+
+    <div class="flosc-da1-header">
+        <div>
+            <h2 class="flosc-da1-title"><?php echo esc_html($flosc_da1_view === 'all' ? 'DA1 Catalogs' : 'DA1 Catalog'); ?></h2>
+            <p class="flosc-da1-meta">
+                <?php if ($flosc_da1_view === 'all'): ?>
+                    <?php
+                    /*
+                     * Two counts, two plural decisions. One _n() cannot serve both —
+                     * choosing its form from the flow count is what produced
+                     * "1 catalogs across 8 flows".
+                     */
+                    $flosc_da1_count_catalogs = count($flosc_da1_catalogs);
+                    $flosc_da1_count_flows = count($flosc_da1_all_flows);
+                    echo esc_html(sprintf(
+                        /* translators: 1: catalog count phrase, 2: flow count phrase */
+                        __('%1$s across %2$s', 'flosc'),
+                        sprintf(
+                            /* translators: %d: number of catalogs */
+                            _n('%d catalog', '%d catalogs', $flosc_da1_count_catalogs, 'flosc'),
+                            $flosc_da1_count_catalogs
+                        ),
+                        sprintf(
+                            /* translators: %d: number of flows */
+                            _n('%d flow', '%d flows', $flosc_da1_count_flows, 'flosc'),
+                            $flosc_da1_count_flows
+                        )
+                    ));
+                    ?>
+                <?php else: ?>
+                    <?php if ($flosc_da1_selected_catalog_label !== ''): ?>
+                        <?php echo esc_html($flosc_da1_selected_catalog_label); ?>
+                        &mdash;
+                    <?php endif; ?>
+                    <code class="flosc-da1-filename"><?php echo esc_html(basename($flosc_da1_catalog_path)); ?></code>
+                <?php endif; ?>
+            </p>
+        </div>
+        <div class="flosc-da1-actions-top">
+            <?php // View toggle mirrors the Flow tab: one catalog's rows, or every catalog and its flows. ?>
+            <span class="flosc-da1-view-toggle">
+                <a href="<?php echo esc_url($flosc_da1_view_url('single')); ?>" class="button <?php echo esc_attr($flosc_da1_view === 'single' ? 'button-primary' : ''); ?>"><?php echo esc_html__('Single catalog', 'flosc'); ?></a>
+                <a href="<?php echo esc_url($flosc_da1_view_url('all')); ?>" class="button <?php echo esc_attr($flosc_da1_view === 'all' ? 'button-primary' : ''); ?>"><?php echo esc_html__('All catalogs', 'flosc'); ?></a>
+            </span>
+            <?php if ($flosc_da1_view === 'single'): ?>
+                <a href="<?php echo esc_url($flosc_da1_export_url); ?>" class="button">Export TSV</a>
+                <button type="button" class="button button-primary da1-save-trigger" data-form-id="da1-catalog-form">Save Catalog</button>
+            <?php endif; ?>
+        </div>
+    </div>
+
+    <?php
+    /*
+     * Toolbar. Every tool is a row in one grid — label column, control column,
+     * action column — so the labels line up and each row reads left to right
+     * instead of each form inventing its own alignment.
+     */
+    ?>
+    <div class="flosc-da1-catalog-tools">
+        <?php if ($flosc_da1_view === 'single'): ?>
+            <form method="get" action="<?php echo esc_url(admin_url('admin.php')); ?>" class="flosc-da1-tool-form">
+                <input type="hidden" name="page" value="flosc-settings">
+                <input type="hidden" name="tab" value="da1">
+                <input type="hidden" name="view" value="single">
+                <?php if ($flosc_da1_selected_ivr !== ''): ?>
+                    <input type="hidden" name="ivr" value="<?php echo esc_attr($flosc_da1_selected_ivr); ?>">
+                <?php endif; ?>
+                <label class="flosc-da1-tool-label" for="flosc-da1-catalog-select"><?php echo esc_html__('Catalog', 'flosc'); ?></label>
+                <div class="flosc-da1-tool-controls">
+                    <select id="flosc-da1-catalog-select" name="catalog">
+                        <?php foreach ($flosc_da1_catalogs as $flosc_da1_cat_key => $flosc_cat): ?>
+                            <option value="<?php echo esc_attr($flosc_da1_cat_key); ?>" <?php selected($flosc_da1_cat_key, $flosc_da1_requested_catalog_key); ?>>
+                                <?php
+                                $flosc_da1_opt_desc = flosc_da1_catalog_description($flosc_cat);
+                                echo esc_html($flosc_da1_opt_desc !== ''
+                                    ? $flosc_da1_opt_desc . ' — ' . ($flosc_cat['filename'] ?? ($flosc_da1_cat_key . '.tsv'))
+                                    : (string) ($flosc_cat['filename'] ?? $flosc_da1_cat_key));
+                                ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="flosc-da1-tool-action">
+                    <button type="submit" class="button"><?php echo esc_html__('Open', 'flosc'); ?></button>
+                </div>
+            </form>
+
+            <form method="post" enctype="multipart/form-data" class="flosc-da1-tool-form">
+                <?php wp_nonce_field('flosc_da1_catalog_manage'); ?>
+                <input type="hidden" name="flosc_da1_upload_catalog" value="1">
+                <label class="flosc-da1-tool-label" for="flosc-da1-upload-file"><?php echo esc_html__('Replace rows', 'flosc'); ?></label>
+                <div class="flosc-da1-tool-controls">
+                    <input type="file" id="flosc-da1-upload-file" name="flosc_da1_upload_file" accept=".tsv,text/tab-separated-values,text/plain">
+                    <span class="description"><?php
+                    /* translators: %s: catalog key the upload replaces */
+                    printf(esc_html__('Replaces the rows of %s.', 'flosc'), '<code>' . esc_html($flosc_da1_requested_catalog_key) . '</code>');
+                    ?></span>
+                </div>
+                <div class="flosc-da1-tool-action">
+                    <button type="submit" class="button"><?php echo esc_html__('Upload TSV', 'flosc'); ?></button>
+                </div>
+            </form>
+
+            <?php
+            $flosc_da1_this_catalog_flows = $flosc_da1_flows_by_catalog[$flosc_da1_requested_catalog_key] ?? [];
+            ?>
+            <div class="flosc-da1-tool-form flosc-da1-tool-form--static">
+                <span class="flosc-da1-tool-label"><?php echo esc_html__('Attributed to', 'flosc'); ?></span>
+                <div class="flosc-da1-tool-controls">
+                    <?php if (empty($flosc_da1_this_catalog_flows)): ?>
+                        <span class="description"><?php echo esc_html__('Not attributed to any flow yet.', 'flosc'); ?></span>
+                    <?php else: ?>
+                        <span class="flosc-da1-flow-chips">
+                            <?php foreach ($flosc_da1_this_catalog_flows as $flosc_da1_used_flow): ?>
+                                <code class="flosc-da1-flow-chip"><?php echo esc_html($flosc_da1_used_flow); ?></code>
+                            <?php endforeach; ?>
+                        </span>
+                    <?php endif; ?>
+                </div>
+                <div class="flosc-da1-tool-action">
+                    <a href="<?php echo esc_url($flosc_da1_view_url('all')); ?>" class="button"><?php echo esc_html__('Edit attributions', 'flosc'); ?></a>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <form method="post" class="flosc-da1-tool-form">
+            <?php wp_nonce_field('flosc_da1_catalog_manage'); ?>
+            <input type="hidden" name="flosc_da1_create_catalog" value="1">
+            <label class="flosc-da1-tool-label" for="flosc-da1-new-label"><?php echo esc_html__('New catalog', 'flosc'); ?></label>
+            <div class="flosc-da1-tool-controls">
+                <input type="text" id="flosc-da1-new-label" name="flosc_new_catalog_label" placeholder="<?php echo esc_attr__('Description (e.g. Music Core)', 'flosc'); ?>">
+                <input type="text" name="flosc_new_catalog_key" placeholder="<?php echo esc_attr__('File name (e.g. works_catalog)', 'flosc'); ?>">
+                <input type="text" name="flosc_new_catalog_fields" value="Title, Description" placeholder="<?php echo esc_attr__('Payload fields, comma-separated', 'flosc'); ?>">
+                <span class="description"><?php echo esc_html__('Creates flosc_da1_catalog_<file name>.tsv. Dublin Core fields are supported but optional; custom fields are unrestricted.', 'flosc'); ?></span>
+            </div>
+            <div class="flosc-da1-tool-action">
+                <button type="submit" class="button"><?php echo esc_html__('Create', 'flosc'); ?></button>
+            </div>
+        </form>
+    </div>
+
+    <?php if ($flosc_da1_view === 'all'): ?>
+        <?php
+        /*
+         * One row per catalog, one column per flow. Ticking a box attaches that
+         * catalog to that flow; the stored order (a flow's catalog priority) is
+         * left alone by the handler.
+         */
+        ?>
+        <form method="post" class="flosc-da1-manage-form">
+            <?php wp_nonce_field('flosc_da1_catalog_manage'); ?>
+            <input type="hidden" name="flosc_da1_attach_flows" value="1">
+
+            <?php if (empty($flosc_da1_all_flows)): ?>
+                <p class="description"><?php echo esc_html__('No flows exist yet, so there is nothing to attribute catalogs to.', 'flosc'); ?></p>
+            <?php else: ?>
+                <?php
+                /*
+                 * What this screen showed, declared before the table. The handler
+                 * treats these two lists as its scope: a flow or catalog absent
+                 * here is left exactly as it was, so an unchecked box means
+                 * "detach" only for rows that were actually on screen.
+                 *
+                 * They live outside the table on purpose — a hidden input placed in
+                 * tbody outside a tr is hoisted out of the table by the parser and
+                 * can land outside the form.
+                 */
+                ?>
+                <?php foreach ($flosc_da1_all_flows as $flosc_da1_rf_out): ?>
+                    <input type="hidden" name="flosc_da1_rendered_flows[]" value="<?php echo esc_attr($flosc_da1_rf_out); ?>">
+                <?php endforeach; ?>
+                <?php foreach (array_keys($flosc_da1_catalogs) as $flosc_da1_rc_out): ?>
+                    <input type="hidden" name="flosc_da1_rendered_catalogs[]" value="<?php echo esc_attr($flosc_da1_rc_out); ?>">
+                <?php endforeach; ?>
+
+                <div class="flosc-da1-manage-wrap">
+                    <table class="widefat striped flosc-da1-manage-table">
+                        <thead>
+                            <tr>
+                                <th scope="col" class="flosc-da1-manage-col-catalog"><?php echo esc_html__('Catalog', 'flosc'); ?></th>
+                                <th scope="col" class="flosc-da1-manage-col-num"><?php echo esc_html__('Rows', 'flosc'); ?></th>
+                                <th scope="col" class="flosc-da1-manage-col-num"><?php echo esc_html__('Size', 'flosc'); ?></th>
+                                <?php foreach ($flosc_da1_all_flows as $flosc_da1_head_flow): ?>
+                                    <th scope="col" class="flosc-da1-manage-col-flow">
+                                        <span class="flosc-da1-manage-flow-name"><?php echo esc_html(pathinfo($flosc_da1_head_flow, PATHINFO_FILENAME)); ?></span>
+                                    </th>
+                                <?php endforeach; ?>
+                                <th scope="col" class="flosc-da1-manage-col-actions"><?php echo esc_html__('Actions', 'flosc'); ?></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($flosc_da1_catalogs as $flosc_da1_row_key => $flosc_da1_row_cat): ?>
+                            <?php
+                            $flosc_da1_row_path = flosc_da1_catalog_file($flosc_catalog_dir, $flosc_da1_row_key);
+                            $flosc_da1_row_exists = file_exists($flosc_da1_row_path);
+                            $flosc_da1_row_rows = $flosc_da1_row_exists ? flosc_da1_catalog_row_count($flosc_da1_row_path, $flosc_catalog_dir) : null;
+                            $flosc_da1_row_size = $flosc_da1_row_exists ? filesize($flosc_da1_row_path) : false;
+                            $flosc_da1_row_used = $flosc_da1_flows_by_catalog[$flosc_da1_row_key] ?? [];
+                            $flosc_da1_row_open_args = [
+                                'page' => 'flosc-settings',
+                                'tab' => 'da1',
+                                'catalog' => $flosc_da1_row_key,
+                                'view' => 'single',
+                            ];
+                            if ($flosc_da1_selected_ivr !== '') {
+                                $flosc_da1_row_open_args['ivr'] = $flosc_da1_selected_ivr;
+                            }
+                            ?>
+                            <tr>
+                                <td class="flosc-da1-manage-col-catalog">
+                                    <?php
+                                    /*
+                                     * The filename is the catalog's identity, so it is stated plainly and
+                                     * cannot be edited here. The description is free text the operator owns,
+                                     * editable in place and saved with the attributions below.
+                                     */
+                                    ?>
+                                    <code class="flosc-da1-manage-file"><?php echo esc_html(basename($flosc_da1_row_path)); ?></code>
+                                    <?php if (!$flosc_da1_row_exists): ?>
+                                        <span class="flosc-da1-badge flosc-da1-badge--missing"><?php echo esc_html__('file missing', 'flosc'); ?></span>
+                                    <?php endif; ?>
+                                    <label class="screen-reader-text" for="flosc-da1-desc-<?php echo esc_attr($flosc_da1_row_key); ?>">
+                                        <?php echo esc_html__('Catalog description', 'flosc'); ?>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        class="flosc-da1-manage-desc"
+                                        id="flosc-da1-desc-<?php echo esc_attr($flosc_da1_row_key); ?>"
+                                        name="flosc_da1_description[<?php echo esc_attr($flosc_da1_row_key); ?>]"
+                                        value="<?php echo esc_attr(flosc_da1_catalog_description($flosc_da1_row_cat)); ?>"
+                                        placeholder="<?php echo esc_attr__('Describe this catalog', 'flosc'); ?>"
+                                    >
+                                </td>
+                                <td class="flosc-da1-manage-col-num"><?php echo esc_html($flosc_da1_row_rows === null ? '—' : number_format_i18n($flosc_da1_row_rows)); ?></td>
+                                <td class="flosc-da1-manage-col-num"><?php echo esc_html($flosc_da1_row_size === false ? '—' : size_format($flosc_da1_row_size)); ?></td>
+                                <?php foreach ($flosc_da1_all_flows as $flosc_da1_cell_flow): ?>
+                                    <td class="flosc-da1-manage-col-flow">
+                                        <label class="flosc-da1-manage-check">
+                                            <input
+                                                type="checkbox"
+                                                name="flosc_da1_attach[<?php echo esc_attr($flosc_da1_row_key); ?>][]"
+                                                value="<?php echo esc_attr($flosc_da1_cell_flow); ?>"
+                                                <?php checked(in_array($flosc_da1_cell_flow, $flosc_da1_row_used, true)); ?>
+                                            >
+                                            <span class="screen-reader-text">
+                                                <?php echo esc_html(sprintf(
+                                                    /* translators: 1: catalog key, 2: flow file */
+                                                    __('Attribute %1$s to %2$s', 'flosc'),
+                                                    $flosc_da1_row_key,
+                                                    $flosc_da1_cell_flow
+                                                )); ?>
+                                            </span>
+                                        </label>
+                                    </td>
+                                <?php endforeach; ?>
+                                <td class="flosc-da1-manage-col-actions">
+                                    <a href="<?php echo esc_url(add_query_arg($flosc_da1_row_open_args, admin_url('admin.php'))); ?>" class="button button-small"><?php echo esc_html__('Edit rows', 'flosc'); ?></a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <p class="flosc-da1-manage-submit">
+                    <button type="submit" class="button button-primary"><?php echo esc_html__('Save attributions', 'flosc'); ?></button>
+                    <span class="description"><?php echo esc_html__('A flow with nothing ticked contributes no DA1 rows.', 'flosc'); ?></span>
+                </p>
+            <?php endif; ?>
+        </form>
+    <?php endif; ?>
+
+    <?php if ($flosc_da1_view === 'single'): ?>
+    <form id="da1-catalog-form" method="post" action="<?php echo esc_url($flosc_da1_form_action); ?>">
+        <input type="hidden" name="page" value="flosc-settings">
+        <input type="hidden" name="tab" value="da1">
+        <input type="hidden" name="view" value="single">
+        <input type="hidden" name="catalog" value="<?php echo esc_attr($flosc_da1_requested_catalog_key); ?>">
+        <?php if ($flosc_da1_selected_ivr !== ''): ?>
+            <input type="hidden" name="ivr" value="<?php echo esc_attr($flosc_da1_selected_ivr); ?>">
+        <?php endif; ?>
+        <?php if (!empty($flosc_identity_view)): ?>
+            <input type="hidden" name="view" value="<?php echo esc_attr($flosc_identity_view); ?>">
+        <?php endif; ?>
+        <?php wp_nonce_field('da1_catalog_save'); ?>
+        <input type="hidden" name="da1_save_catalog" value="1">
+        <input type="hidden" name="da1_payload" value="">
+
+        <?php foreach ($flosc_da1_columns as $flosc_da1_ci => $flosc_da1_col): ?>
+            <input type="hidden" name="da1_columns[<?php echo esc_attr((string) $flosc_da1_ci); ?>]" value="<?php echo esc_attr($flosc_da1_col); ?>">
+        <?php endforeach; ?>
+
+        <div class="flosc-da1-table-wrap">
+            <table id="da1-table" class="flosc-da1-table">
+                <thead>
+                    <tr class="flosc-da1-head-row">
+                        <?php foreach ($flosc_da1_columns as $flosc_da1_col): ?>
+                            <th class="flosc-da1-head-cell <?php echo in_array($flosc_da1_col, $flosc_required_columns, true) ? 'flosc-da1-head-cell-control' : 'flosc-da1-head-cell-payload'; ?>"><?php echo esc_html($flosc_da1_col); ?></th>
+                        <?php endforeach; ?>
+                        <th class="flosc-da1-head-cell flosc-da1-head-cell-actions"></th>
+                    </tr>
+                </thead>
+                <tbody id="da1-tbody">
+                    <?php foreach ($flosc_da1_rows as $flosc_da1_ri => $flosc_da1_row): ?>
+                        <tr class="da1-row flosc-da1-row">
+                            <?php foreach ($flosc_da1_columns as $flosc_da1_ci => $flosc_da1_col):
+                                $flosc_da1_val = stripslashes($flosc_da1_row[$flosc_da1_ci] ?? '');
+                                $flosc_da1_is_multi = in_array($flosc_da1_ci, $flosc_da1_multiline_idx, true);
+                                $flosc_da1_name = 'da1_rows[' . $flosc_da1_ri . '][' . $flosc_da1_ci . ']';
+                            ?>
+                                <td class="flosc-da1-cell <?php echo in_array($flosc_da1_col, $flosc_required_columns, true) ? 'flosc-da1-cell-control' : 'flosc-da1-cell-payload'; ?>" data-col="<?php echo esc_attr($flosc_da1_col); ?>">
+                                    <?php if ($flosc_da1_is_multi): ?>
+                                        <textarea name="<?php echo esc_attr($flosc_da1_name); ?>" rows="3" class="flosc-da1-input flosc-da1-textarea"><?php echo esc_textarea($flosc_da1_val); ?></textarea>
+                                    <?php else: ?>
+                                        <input type="text" name="<?php echo esc_attr($flosc_da1_name); ?>" value="<?php echo esc_attr($flosc_da1_val); ?>" class="flosc-da1-input">
+                                    <?php endif; ?>
+                                </td>
+                            <?php endforeach; ?>
+                            <td class="flosc-da1-cell flosc-da1-cell-actions">
+                                <button type="button" class="da1-open-modal button button-small flosc-da1-edit-btn">Edit</button>
+                                <button type="button" class="da1-add-related button button-small">+ Child Entry</button>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flosc-da1-actions-bottom">
+            <button type="button" id="da1-add-entry-bottom" class="button">+ Add Entry</button>
+            <span class="description"><?php echo esc_html__('Payload fields are catalog-defined. DA1 preserves them without imposing a content schema.', 'flosc'); ?></span>
+            <button type="button" class="button button-primary button-large da1-save-trigger" data-form-id="da1-catalog-form">Save Catalog</button>
+        </div>
+
+        <p class="description flosc-da1-search-note">
+            <?php echo esc_html__( 'How rows get found: catalog search weights Title highest, then Item Type, then Subject, then Description, then any other payload field. A row is only findable by words it actually contains — flow Keywords lines do not reach catalog search.', 'flosc' ); ?>
+            <?php echo esc_html__( 'So put the words people will really type into a Subject column, including common names in other languages. A row titled only in Latvian will not answer an English question until the English name appears somewhere in the row.', 'flosc' ); ?>
+        </p>
+    </form>
+    <?php endif; ?>
+</div>
+
+<?php
+/*
+ * Row-editor behaviour. Bound to #da1-catalog-form and #da1-table, so it is only
+ * emitted for the single-catalog view — the all-catalogs view renders neither, and
+ * the script dereferences the form directly when wiring Save.
+ */
+if ($flosc_da1_view === 'single'):
+?>
+<?php ob_start(); ?>
+(function () {
+    var COLUMNS = <?php echo wp_json_encode(array_values($flosc_da1_columns)); ?>;
+    var NCOLS = <?php echo (int) $flosc_da1_ncols; ?>;
+    var MULTILINE = <?php echo wp_json_encode(array_values($flosc_da1_multiline_idx)); ?>;
+
+    function colIndex(name) {
+        return COLUMNS.indexOf(name);
+    }
+
+    function nextIndex() {
+        return document.querySelectorAll('#da1-tbody .da1-row').length;
+    }
+
+    function nextParentKey() {
+        var iRow = colIndex('Row Key');
+        var maxVal = 0;
+        document.querySelectorAll('#da1-tbody .da1-row').forEach(function (tr) {
+            var input = tr.querySelector('[name*="[' + iRow + ']"]');
+            if (!input) return;
+            var v = (input.value || '').trim();
+            if (/^[0-9]+$/.test(v)) {
+                var n = parseInt(v, 10);
+                if (n > maxVal) maxVal = n;
+            }
+        });
+        return String(maxVal + 1);
+    }
+
+    function nextChildKey(parentKey) {
+        var iRow = colIndex('Row Key');
+        var maxSuffix = 0;
+        var pattern = new RegExp('^' + parentKey.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.(\\d+)$');
+        document.querySelectorAll('#da1-tbody .da1-row').forEach(function (tr) {
+            var input = tr.querySelector('[name*="[' + iRow + ']"]');
+            if (!input) return;
+            var m = (input.value || '').trim().match(pattern);
+            if (m) {
+                var s = parseInt(m[1], 10);
+                if (s > maxSuffix) maxSuffix = s;
+            }
+        });
+        return parentKey + '.' + String(maxSuffix + 1);
+    }
+
+    function createInput(ci, name, value) {
+        if (MULTILINE.indexOf(ci) !== -1) {
+            var ta = document.createElement('textarea');
+            ta.name = name;
+            ta.rows = 3;
+            ta.className = 'flosc-da1-input flosc-da1-textarea';
+            ta.value = value || '';
+            return ta;
+        }
+        var inp = document.createElement('input');
+        inp.type = 'text';
+        inp.name = name;
+        inp.className = 'flosc-da1-input';
+        inp.value = value || '';
+        return inp;
+    }
+
+    function makeRow(seed) {
+        var ri = nextIndex();
+        var tr = document.createElement('tr');
+        tr.className = 'da1-row flosc-da1-row';
+
+        for (var ci = 0; ci < NCOLS; ci++) {
+            var td = document.createElement('td');
+            td.className = 'flosc-da1-cell';
+            var name = 'da1_rows[' + ri + '][' + ci + ']';
+            var col = COLUMNS[ci];
+            var val = (seed && seed[col]) ? seed[col] : '';
+            td.appendChild(createInput(ci, name, val));
+            tr.appendChild(td);
+        }
+
+        var tdBtn = document.createElement('td');
+        tdBtn.className = 'flosc-da1-cell flosc-da1-cell-actions';
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'da1-open-modal button button-small flosc-da1-edit-btn';
+        btn.textContent = 'Edit';
+        tdBtn.appendChild(btn);
+        tr.appendChild(tdBtn);
+
+        return tr;
+    }
+
+    function readRowObj(tr) {
+        var obj = {};
+        COLUMNS.forEach(function (col, ci) {
+            var f = tr.querySelector('[name*="[' + ci + ']"]');
+            obj[col] = f ? f.value : '';
+        });
+        return obj;
+    }
+
+    function addEntryRow() {
+        var rowKey = nextParentKey();
+        var seed = {
+            'Row Key': rowKey,
+            'Parent Key': '',
+            'Item Type': 'item',
+            'Status': 'active',
+            'VGM': 'Visitor Guest Member',
+            'Flow Scope': 'all'
+        };
+        var tr = makeRow(seed);
+        document.getElementById('da1-tbody').appendChild(tr);
+        openModal(tr);
+    }
+
+    function addRelatedRowFrom(baseTr) {
+        var data = readRowObj(baseTr);
+        var parent = (data['Parent Key'] || '').trim();
+        var rowKey = (data['Row Key'] || '').trim();
+        if (rowKey === '') {
+            rowKey = nextParentKey();
+            var iRowKey = colIndex('Row Key');
+            var keyInput = baseTr.querySelector('[name*="[' + iRowKey + ']"]');
+            if (keyInput) {
+                keyInput.value = rowKey;
+            }
+        }
+        var parentKey = parent !== '' ? parent : rowKey;
+        if (parentKey === '') {
+            alert('Entry key is required before adding a child entry.');
+            return;
+        }
+        var seed = {
+            'Row Key': nextChildKey(parentKey),
+            'Parent Key': parentKey,
+            'Catalog Key': data['Catalog Key'] || '',
+            'Item Type': data['Item Type'] || 'item',
+            'Flow Scope': data['Flow Scope'] || 'all',
+            'VGM': data['VGM'] || 'Visitor Guest Member',
+            'Delivery Instruction': data['Delivery Instruction'] || 'intent match',
+            'Delivery Rule': data['Delivery Rule'] || 'preference',
+            'Fallback Order': data['Fallback Order'] || 'text',
+            'Status': 'active'
+        };
+        var tr = makeRow(seed);
+        document.getElementById('da1-tbody').appendChild(tr);
+        openModal(tr);
+    }
+
+    var overlay = null;
+    var body = null;
+    var titleNode = null;
+    var activeRow = null;
+
+    function ensureModal() {
+        if (overlay) return;
+        overlay = document.createElement('div');
+        overlay.className = 'flosc-da1-modal-overlay';
+        overlay.id = 'da1-modal-overlay';
+        overlay.innerHTML = [
+            '<div class="flosc-da1-modal">',
+            '<div class="flosc-da1-modal-header">',
+            '<span id="da1-modal-title">Edit Row</span>',
+            '<button type="button" id="da1-modal-close" class="flosc-da1-modal-close">&times;</button>',
+            '</div>',
+            '<div id="da1-modal-body" class="flosc-da1-modal-body"></div>',
+            '<div class="flosc-da1-modal-footer">',
+            '<button type="button" id="da1-modal-delete" class="flosc-da1-modal-delete">Delete this row</button>',
+            '<div class="flosc-da1-modal-actions">',
+            '<button type="button" id="da1-modal-cancel" class="button">Cancel</button>',
+            '<button type="button" id="da1-modal-save" class="button button-primary">Save</button>',
+            '</div>',
+            '</div>',
+            '</div>'
+        ].join('');
+        document.body.appendChild(overlay);
+        body = document.getElementById('da1-modal-body');
+        titleNode = document.getElementById('da1-modal-title');
+
+        document.getElementById('da1-modal-save').addEventListener('click', saveModal);
+        document.getElementById('da1-modal-cancel').addEventListener('click', closeModal);
+        document.getElementById('da1-modal-close').addEventListener('click', closeModal);
+        document.getElementById('da1-modal-delete').addEventListener('click', function () {
+            if (activeRow) {
+                activeRow.remove();
+            }
+            closeModal();
+        });
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) {
+                closeModal();
+            }
+        });
+    }
+
+    function getRowFields(tr) {
+        return Array.prototype.slice.call(tr.querySelectorAll('input[name*="da1_rows"], textarea[name*="da1_rows"]'));
+    }
+
+    function openModal(tr) {
+        ensureModal();
+        activeRow = tr;
+        body.innerHTML = '';
+        var fields = getRowFields(tr);
+        var title = '';
+        var tIdx = colIndex('Title');
+        if (tIdx >= 0 && fields[tIdx]) {
+            title = fields[tIdx].value.trim();
+        }
+        titleNode.textContent = title || 'Edit Row';
+
+        COLUMNS.forEach(function (col, ci) {
+            var wrap = document.createElement('div');
+            wrap.className = 'flosc-da1-modal-field';
+            var lbl = document.createElement('label');
+            lbl.className = 'flosc-da1-modal-label';
+            lbl.setAttribute('for', 'da1m-' + ci);
+            lbl.textContent = col;
+            wrap.appendChild(lbl);
+
+            var input;
+            if (MULTILINE.indexOf(ci) !== -1) {
+                input = document.createElement('textarea');
+                input.rows = 6;
+                input.className = 'flosc-da1-modal-input flosc-da1-modal-textarea';
+            } else {
+                input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'flosc-da1-modal-input';
+            }
+            input.id = 'da1m-' + ci;
+            input.setAttribute('data-ci', String(ci));
+            input.value = fields[ci] ? fields[ci].value : '';
+            wrap.appendChild(input);
+
+            if (col === 'Status') {
+                var hint = document.createElement('p');
+                hint.className = 'flosc-da1-modal-hint';
+                hint.textContent = 'Allowed values: active, paused.';
+                wrap.appendChild(hint);
+            }
+            body.appendChild(wrap);
+        });
+
+        overlay.style.display = 'flex';
+    }
+
+    function saveModal() {
+        if (!activeRow) return;
+        var fields = getRowFields(activeRow);
+        body.querySelectorAll('[data-ci]').forEach(function (el) {
+            var ci = parseInt(el.getAttribute('data-ci'), 10);
+            if (fields[ci]) {
+                fields[ci].value = el.value;
+            }
+        });
+        closeModal();
+    }
+
+    function closeModal() {
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
+        activeRow = null;
+    }
+
+    var btnAddEntry = document.getElementById('da1-add-entry-bottom');
+    if (btnAddEntry) {
+        btnAddEntry.addEventListener('click', addEntryRow);
+    }
+
+    document.getElementById('da1-tbody').addEventListener('click', function (e) {
+        var row = e.target.closest('.da1-row');
+        if (row) {
+            document.querySelectorAll('#da1-tbody .da1-row.is-da1-active-row').forEach(function (r) {
+                r.classList.remove('is-da1-active-row');
+            });
+            row.classList.add('is-da1-active-row');
+        }
+        var edit = e.target.closest('.da1-open-modal');
+        if (edit) {
+            openModal(edit.closest('.da1-row'));
+            return;
+        }
+        var plus = e.target.closest('.da1-add-related');
+        if (plus) {
+            addRelatedRowFrom(plus.closest('.da1-row'));
+        }
+    });
+
+    // Save: serialize the whole table into one JSON field and disable the
+    // per-cell inputs, so the POST carries a few fields instead of thousands
+    // (PHP max_input_vars). Works for a catalog of any size.
+    Array.prototype.forEach.call(document.querySelectorAll('.da1-save-trigger'), function (btn) {
+        btn.addEventListener('click', function () {
+            var form = document.getElementById('da1-catalog-form');
+            if (!form) return;
+            var rows = [];
+            document.querySelectorAll('#da1-tbody .da1-row').forEach(function (tr) {
+                var cells = [];
+                tr.querySelectorAll('[name^="da1_rows"]').forEach(function (f) { cells.push(f.value); });
+                rows.push(cells);
+            });
+            var payload = form.querySelector('input[name="da1_payload"]');
+            if (payload) { payload.value = JSON.stringify({ columns: COLUMNS, rows: rows }); }
+            form.querySelectorAll('[name^="da1_rows"], [name^="da1_columns"]').forEach(function (el) { el.disabled = true; });
+            form.submit();
+        });
+    });
+})();
+<?php
+wp_add_inline_script('flosc-admin', ob_get_clean());
+endif;

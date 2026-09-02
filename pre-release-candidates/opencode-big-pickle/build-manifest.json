@@ -1,0 +1,76 @@
+{
+  "agent": {
+    "name": "opencode",
+    "exact_agent_model": "opencode/big-pickle",
+    "slug": "opencode-big-pickle"
+  },
+  "assignment": {
+    "baseline_commit": "03f4b926c5502b7d2af0136fc1bac8359286b9f8",
+    "category": "complete-independently-deployable-plugin",
+    "source_path": "pre-release-candidates/opencode-big-pickle/flosc-by-opencode-big-pickle/flosc",
+    "artifact_path": "pre-release-candidates/opencode-big-pickle/flosc.zip"
+  },
+  "artifact": {
+    "filename": "flosc.zip",
+    "sha256": "2b2fc16e3849b0fa0e66d9476dd21f5626645bbab0d34bd992b044f6b3befda3",
+    "entry_count": 275,
+    "top_level_dirs": [
+      "flosc"
+    ],
+    "contains_git": false,
+    "contains_forbidden_paths": false
+  },
+  "candidate_status": "candidate",
+  "phases_implemented": {
+    "p0": "not-applicable-to-code-candidate",
+    "p1": "partial",
+    "p2": "implemented",
+    "p3": "partial",
+    "p4": "implemented",
+    "p5": "not-started",
+    "p6": "deferred-runtime-verification",
+    "p7": "not-mutated",
+    "p8": "partial"
+  },
+  "files_subsystems_changed": [
+    "includes/flosc-personality-library.php",
+    "includes/class-flosc-chatpack.php",
+    "includes/chat-turn/trait-flosc-chat-turn.php"
+  ],
+  "tests": {
+    "checks_run": [
+      "php -l (syntax) on all three changed files",
+      "isolated deterministic-compiler unit test (rich-profile preservation, synthesis determinism, hash consistency, distinctness)",
+      "ZIP structure inspection (single top-level flosc/, no forbidden paths, artifact contains all three changes)"
+    ],
+    "checks_passed": [
+      "php -l syntax on includes/flosc-personality-library.php",
+      "php -l syntax on includes/class-flosc-chatpack.php",
+      "php -l syntax on includes/chat-turn/trait-flosc-chat-turn.php",
+      "deterministic compiler: rich profile preserved, synthesis deterministic, hash consistent, distinct genomes differ",
+      "ZIP top-level = flosc/ only; no .git/.github/composer/sample-data/tests/forgeable nesting; artifact contains all three source changes"
+    ],
+    "checks_failed": [],
+    "checks_deferred": [
+      "WordPress installation and activation",
+      "Plugin Check (requires WordPress)",
+      "WP_DEBUG runtime behavior",
+      "Live AI provider requests",
+      "Real database persistence",
+      "Browser behavior / admin-visitor parity",
+      "Betty -> Dan -> Betty mid-conversation interaction",
+      "RAG and provider failure simulations",
+      "Accessibility interaction testing",
+      "Starter Pack install/repair/remove/reinstall on a fresh database"
+    ]
+  },
+  "known_defects": [
+    "Bundled BubblyBetty (~6.3KB) and DadJokeDan (~6.4KB) profiles duplicate shared FLOSC sales/truth policy inline (baseline bloat). Not refactored out of the heredocs in this pass to avoid regressing the working first-turn voice; flagged as future work to split into Layer-2 shared policy.",
+    "Follow-up identity re-anchors the current personality voice but truncates the profile at FOLLOWUP_IDENTITY_BYTES (1400) when it exceeds the bound, to keep per-turn token cost controlled. Truncation is on a byte boundary and may cut a longer profile mid-instruction; verified that the two bundled profiles remain distinct within the first 1400 bytes.",
+    "profile_hash is computed for newly saved/upgraded entries; pre-existing library rows saved before this candidate ship without a stored hash until next save (resolver falls back to hashing the live profile at read time)."
+  ],
+  "canonical_source_modified": false,
+  "other_candidates_modified": false,
+  "wordpress_versions_tested": "DEFERRED - AUTHORIZED REMOTE TEST REQUIRED (no local WordPress)",
+  "php_versions_tested": "php 8 CLI syntax only (runtime deferred)"
+}
