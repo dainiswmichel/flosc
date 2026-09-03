@@ -1802,7 +1802,7 @@ $flosc_total_count = count($flosc_messages);
         $flosc_safe_id = esc_attr($flosc_msg_id);
     ?>
     <div class="flosc-msg-card <?php echo esc_attr( $flosc_is_open ? 'is-open' : '' ); ?>" id="card-<?php echo esc_attr( $flosc_safe_id ); ?>">
-        <div class="flosc-msg-card-header" data-flosc-action="toggle-msg-card" data-msg-id="<?php echo esc_attr($flosc_msg_id); ?>">
+        <div class="flosc-msg-card-header">
             <span class="flosc-msg-toggle">▶</span>
             <span class="flosc-msg-name"><?php echo esc_html($flosc_msg['name'] ?? $flosc_msg_id); ?></span>
             <span class="flosc-msg-id"><?php echo esc_html($flosc_msg_id); ?></span>

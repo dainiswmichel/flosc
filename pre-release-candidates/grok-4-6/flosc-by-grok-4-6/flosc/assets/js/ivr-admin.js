@@ -18,6 +18,15 @@
                 $(e.currentTarget).closest('.ivr-phase-section').toggleClass('collapsed');
             });
 
+            // Message editors are rendered server-side on the IVR Management tab.
+            // Keep this dedicated binding independent of generic inline admin scripts.
+            $(document).on('click', '.flosc-msg-card-header', (e) => {
+                if ($(e.target).closest('.flosc-msg-delete').length) {
+                    return;
+                }
+                $(e.currentTarget).closest('.flosc-msg-card').toggleClass('is-open');
+            });
+
             // Add message buttons
             $('.ivr-add-message').on('click', (e) => this.addMessage(e));
 
