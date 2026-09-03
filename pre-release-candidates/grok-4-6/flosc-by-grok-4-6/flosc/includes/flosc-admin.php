@@ -856,6 +856,19 @@ trait FLOSC_Admin_Trait {
             }
         }
 
+        if ($flosc_tab === 'ivr-messages') {
+            $flosc_ivr_admin_js_path = FLOSC_PLUGIN_DIR . 'assets/js/ivr-admin.js';
+            if (file_exists($flosc_ivr_admin_js_path)) {
+                wp_enqueue_script(
+                    'flosc-ivr-admin',
+                    FLOSC_PLUGIN_URL . 'assets/js/ivr-admin.js',
+                    ['jquery'],
+                    filemtime($flosc_ivr_admin_js_path),
+                    true
+                );
+            }
+        }
+
         /*
          * Flow Portability kit drop zone: dedicated stylesheet (the whole zone,
          * staged-file panel and action row) plus its vanilla-JS staging script.
