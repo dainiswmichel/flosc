@@ -6,7 +6,7 @@
   "plugin_source": "flosc-by-grok-4-6/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "9f104544370a16be1ab0fdae07599179417ac22173799fc45efc984a7b3f7687",
+  "artifact_sha256": "002de167b3bedd4b4742c788e12a444a2cf3332fca60f6ecf12cae3719917f25",
   "artifact_files": 275,
   "implemented": {
     "designer_any_row": "Design is available on every library row; URL carries persona id so a new genome boots even when it is not yet attached",
@@ -16,7 +16,8 @@
     "dispatch_truthfulness": "RAG failure falls through to ordinary AI; provider errors are labeled fallback",
     "showcase_reseed": "unedited BubblyBetty/DadJokeDan rows matching known shipped hashes are restored to concise profiles",
     "public_request_protection": "Administration settings replace account-plan metadata and control public and metered request limits; HTTP 429 retry is off by default",
-    "ivr_personality_variables": "IVR content can resolve the current personality name and role plus flow, title, tagline, and site variables"
+    "ivr_personality_variables": "IVR content can resolve the current personality name and role plus flow, title, tagline, and site variables",
+    "public_chat_method_contract": "FLOSC_Framework defines the no-hedge methods called by ordinary and RAG chat turns"
   },
   "verification": {
     "php_syntax_changed_files": "passed",
@@ -24,6 +25,7 @@
     "isolated_personality_contract_test": "passed",
     "request_protection_settings_contract": "passed",
     "ivr_personality_variable_contract": "passed",
+    "public_chat_framework_method_contract": "passed",
     "zip_integrity": "passed",
     "zip_single_top_level_flosc": "passed",
     "zip_prohibited_path_scan": "passed",
