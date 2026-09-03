@@ -962,6 +962,24 @@ jQuery(document).ready(function($) {
     // Which provider refuses which setting is data, declared once in
     // includes/ai/flosc-provider-profiles.php. The tab reads it rather than
     // naming a provider here, so filling in a row there is all it takes.
+    // Sampling controls a provider refuses on the same request. Anthropic takes
+    // temperature alone and top_p alone, and answers 400 to both together —
+    // which is how visitor chat came to fail while the panel showed a request
+    // that looked fine. The runtime holds one back; this is so the page says so
+    // rather than displaying a request it knows will not be sent as written.
+    var floscSamplingExclusive = <?php
+        $flosc_excl = array();
+        foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_excl_provider ) {
+            $flosc_excl_profile = function_exists( 'flosc_provider_api_profile' )
+                ? flosc_provider_api_profile( $flosc_excl_provider )
+                : null;
+            $flosc_excl[ $flosc_excl_provider ] = is_array( $flosc_excl_profile )
+                ? array_values( (array) ( $flosc_excl_profile['sampling_exclusive'] ?? array() ) )
+                : array();
+        }
+        echo wp_json_encode( $flosc_excl );
+    ?>;
+
     var floscProviderRejects = <?php
         $flosc_rejects = array();
         foreach ( array( 'anthropic', 'openai', 'xai', 'gemini' ) as $flosc_slug ) {
@@ -2380,6 +2398,32 @@ jQuery(document).ready(function($) {
             .text('For more on this parameter, see ' + label + '\u2019s own API reference.');
     }
 
+    // Two sampling controls the provider will not take together. Named in the
+    // order they appear, because that is the order the request applies them in:
+    // the first one reaches the model and the rest are held back.
+    function floscExplainSamplingClash($help, names) {
+        var provider = floscCurrentProvider();
+        var group = floscSamplingExclusive[provider] || [];
+
+        if (group.length < 2) { return; }
+
+        var present = names.filter(function (n) { return group.indexOf(n) !== -1; });
+
+        if (present.length < 2) { return; }
+
+        var kept = present[0];
+        var held = present.slice(1);
+        var label = floscProviderLabels[provider] || provider;
+        var $row = $('<div>').addClass('flosc-param-help__row flosc-param-clash').prependTo($help);
+
+        $('<strong>').text(label + ' will not take ' + present.join(' and ') + ' on the same request.').appendTo($row);
+        $('<div>').addClass('flosc-param-help__meta').text(
+            'It answers 400 to both, so FLOSC sends ' + kept + ' and holds back ' +
+            held.join(', ') + '. Remove ' + held.join(' and ') +
+            ' to make this request say what is actually sent.'
+        ).appendTo($row);
+    }
+
     function floscExplainParams(names) {
         var $help = $('#flosc-param-help').empty();
 
@@ -2418,6 +2462,8 @@ jQuery(document).ready(function($) {
 
             if ($link) { $link.appendTo($meta); }
         });
+
+        floscExplainSamplingClash($help, names);
 
         $help.removeAttr('hidden');
     }

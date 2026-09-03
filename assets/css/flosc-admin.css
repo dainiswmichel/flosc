@@ -7837,3 +7837,5 @@ details.flosc-flow-block:not([open]) > summary.flosc-flow-block__header { margin
 .flosc-tight-line { margin: .2em 0; }
 .flosc-last-save { display: block; margin-top: 8px; font-size: 13px; color: #2c6349; font-weight: 600; }
 .flosc-last-save:empty { display: none; }
+.flosc-param-clash { border-left: 3px solid #d63638; padding-left: 10px; margin-bottom: 8px; color: #8a2424; }
+.flosc-param-clash .flosc-param-help__meta { color: #8a2424; }
