@@ -303,9 +303,22 @@ class FLOSC_Chatpack {
         // a generic FLOSC voice, i.e. one flow bleeding into another. The identity
         // section is flow-scoped, so re-sending it on every turn keeps each chatbot
         // firmly inside its own flow. (Cheap insurance; flow isolation is the point.)
-        // Full compiled profile (v5.7-scale) is first-turn only. Re-sending it
-        // on every visitor hop bills thousands of input tokens per turn.
-        $sections[] = self::build_identity_section((string) ($eval_context['flow_id'] ?? ''), true);
+        // The full compiled profile goes on EVERY turn, including this one.
+        //
+        // Sending a short anchor instead saved input tokens and cost the product
+        // its point. Two things broke at once. The character thinned from turn 2
+        // — name, role and traits are a label, not a voice, and Betty stopped
+        // being bubbly the moment the profile stopped arriving. And switching
+        // personality mid-conversation became impossible: the anchor told the
+        // model it was "the same person as the opening turn", so changing the
+        // attached personality changed the name on the bubble and nothing else.
+        // That switch is the demonstration this release is built around.
+        //
+        // Identity can change between any two turns, so it cannot be inferred
+        // from an earlier one. The answer to a 23KB profile is a smaller
+        // profile, decided when it is compiled — not a prompt that leaves out
+        // the part that makes the personality a personality.
+        $sections[] = self::build_identity_section((string) ($eval_context['flow_id'] ?? ''), false);
         $followup_flow = (string) ($eval_context['flow_id'] ?? '');
         $sections[] = self::build_user_section($eval_context);
         $sections[] = self::build_flow_section($phase, $eval_context, $followup_flow);
@@ -512,7 +525,10 @@ class FLOSC_Chatpack {
             : '';
 
         if ( $compact ) {
-            $section  = "## 1. IDENTITY (continue — same person as the opening turn)\n\n";
+            // No claim about an earlier turn: the attached personality may have
+            // been changed since, and asserting continuity would tell the model
+            // to keep being whoever it was before the switch.
+            $section  = "## 1. IDENTITY\n\n";
             $section .= "You are {$ai_name}";
             if ( $ai_role ) {
                 $section .= " — {$ai_role}";
@@ -537,7 +553,7 @@ class FLOSC_Chatpack {
             }
             $section .= "FLOSC = Freeline, Login, Offer, Sale, Content only when the software is the topic.\n";
             $section .= "Never invent facts, titles, URLs, prices, or contact details. Never guess.\n";
-            $section .= "The opening-turn profile (voice, prohibitions, contact gate) still applies. Do not leak Dainis contact details until name + email + phone are in this conversation.\n";
+            $section .= "Do not leak contact details until name + email + phone are in this conversation.\n";
             return $section;
         }
 
