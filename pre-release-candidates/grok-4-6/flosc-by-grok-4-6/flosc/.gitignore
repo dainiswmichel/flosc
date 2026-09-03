@@ -6,9 +6,6 @@ Thumbs.db
 *.zip
 *.bundle
 
-# Pre-release candidate installable artifacts: intentionally tracked.
-!pre-release-candidates/**/*.zip
-
 # Composer / PHPCS tooling (local only; .distignore + build-dist-zip deny)
 vendor/
 composer.json
