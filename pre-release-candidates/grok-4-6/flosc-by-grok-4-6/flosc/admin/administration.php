@@ -2,7 +2,7 @@
 /**
  * FLOSC Administration Tab
  *
- * Global controls for account plan and debug mode.
+ * Global controls for request protection and debug mode.
  */
 
 if (!defined('ABSPATH')) exit;
@@ -22,13 +22,17 @@ $flosc_first_name = $flosc_user_id > 0 ? (string) get_user_meta($flosc_user_id, 
 $flosc_last_name = $flosc_user_id > 0 ? (string) get_user_meta($flosc_user_id, 'last_name', true) : '';
 $flosc_roles = (!empty($flosc_user->roles) && is_array($flosc_user->roles)) ? implode(', ', $flosc_user->roles) : '';
 
-$flosc_account_plan = get_option('flosc_account_plan', 'free');
-if (!in_array($flosc_account_plan, ['free', 'paid', 'enterprise'], true)) {
-    $flosc_account_plan = 'free';
-}
-
-$flosc_manual_purchases_raw = (string) get_option('flosc_account_purchases_manual', '');
-$flosc_manual_purchase_lines = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $flosc_manual_purchases_raw))));
+$flosc_protection_defaults = [
+    'enabled'                  => '1',
+    'anonymous_chat_limit'     => 60,
+    'authenticated_chat_limit' => 120,
+    'anonymous_ivr_limit'      => 120,
+    'metered_compute_limit'    => 20,
+    'visitor_compute_limit'    => 5,
+    'retry_after_429'          => '0',
+];
+$flosc_protection = get_option('flosc_public_request_protection', []);
+$flosc_protection = is_array($flosc_protection) ? array_merge($flosc_protection_defaults, $flosc_protection) : $flosc_protection_defaults;
 
 $flosc_debug_mode = get_option('flosc_debug_mode', 'inherit');
 if (!in_array($flosc_debug_mode, ['inherit', 'on', 'off'], true)) {
@@ -70,7 +74,7 @@ if ($flosc_can_assign_editors) {
         <a href="<?php echo esc_url($flosc_administration_docs_url); ?>" class="flosc-admin-docs-link">Docs</a>
     </h2>
     <p class="description flosc-admin-subtitle">
-        Central account and debug controls.
+        Public request protection and debug controls.
     </p>
 
     <table class="widefat striped flosc-admin-status-table">
@@ -88,14 +92,6 @@ if ($flosc_can_assign_editors) {
             <tr>
                 <td>Current access level</td>
                 <td><?php echo esc_html(ucfirst($flosc_runtime_access)); ?></td>
-            </tr>
-            <tr>
-                <td>Configured account plan</td>
-                <td><?php echo esc_html(ucfirst($flosc_account_plan)); ?></td>
-            </tr>
-            <tr>
-                <td>Configured purchased items</td>
-                <td><?php echo esc_html((string)count($flosc_manual_purchase_lines)); ?></td>
             </tr>
             <tr>
                 <td>WP_DEBUG</td>
@@ -175,40 +171,40 @@ if ($flosc_can_assign_editors) {
         </tbody>
     </table>
 
-    <h3 class="flosc-admin-section-title flosc-admin-section-title-topless">Account Management</h3>
+    <h3 class="flosc-admin-section-title flosc-admin-section-title-topless">Public Request Protection</h3>
     <table class="form-table flosc-admin-form-table">
         <tr>
-            <th scope="row"><label for="flosc_account_plan">Account plan</label></th>
+            <th scope="row">Public request protection</th>
             <td>
-                <select id="flosc_account_plan" name="flosc_account_plan">
-                    <option value="free" <?php selected($flosc_account_plan, 'free'); ?>>Free</option>
-                    <option value="paid" <?php selected($flosc_account_plan, 'paid'); ?>>Paid</option>
-                    <option value="enterprise" <?php selected($flosc_account_plan, 'enterprise'); ?>>Enterprise</option>
-                </select>
-                <p class="description">Stored as FLOSC account metadata.</p>
+                <label><input type="checkbox" name="flosc_public_request_protection[enabled]" value="1" <?php checked($flosc_protection['enabled'], '1'); ?>> Enable request-rate protection</label>
+                <p class="description">Rate limits public requests by visitor identity. Keep enabled outside controlled testing.</p>
             </td>
         </tr>
         <tr>
-            <th scope="row"><label for="flosc_account_purchases_manual">Purchased items (manual)</label></th>
-            <td>
-                <textarea id="flosc_account_purchases_manual" name="flosc_account_purchases_manual" rows="6" class="large-text" placeholder="One item per line, e.g.&#10;Pronunciation Advanced Bundle&#10;Member Access"><?php echo esc_textarea($flosc_manual_purchases_raw); ?></textarea>
-                <p class="description">Enter one item per line.</p>
-            </td>
+            <th scope="row"><label for="flosc_anonymous_chat_limit">Anonymous chat</label></th>
+            <td><input id="flosc_anonymous_chat_limit" name="flosc_public_request_protection[anonymous_chat_limit]" type="number" min="1" max="10000" value="<?php echo esc_attr((string)$flosc_protection['anonymous_chat_limit']); ?>"> requests per hour</td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="flosc_authenticated_chat_limit">Authenticated chat</label></th>
+            <td><input id="flosc_authenticated_chat_limit" name="flosc_public_request_protection[authenticated_chat_limit]" type="number" min="1" max="10000" value="<?php echo esc_attr((string)$flosc_protection['authenticated_chat_limit']); ?>"> requests per hour</td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="flosc_anonymous_ivr_limit">Anonymous IVR reads</label></th>
+            <td><input id="flosc_anonymous_ivr_limit" name="flosc_public_request_protection[anonymous_ivr_limit]" type="number" min="1" max="10000" value="<?php echo esc_attr((string)$flosc_protection['anonymous_ivr_limit']); ?>"> requests per hour</td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="flosc_metered_compute_limit">Metered compute</label></th>
+            <td><input id="flosc_metered_compute_limit" name="flosc_public_request_protection[metered_compute_limit]" type="number" min="1" max="10000" value="<?php echo esc_attr((string)$flosc_protection['metered_compute_limit']); ?>"> requests per hour</td>
+        </tr>
+        <tr>
+            <th scope="row"><label for="flosc_visitor_compute_limit">Visitor compute</label></th>
+            <td><input id="flosc_visitor_compute_limit" name="flosc_public_request_protection[visitor_compute_limit]" type="number" min="1" max="10000" value="<?php echo esc_attr((string)$flosc_protection['visitor_compute_limit']); ?>"> requests per hour</td>
+        </tr>
+        <tr>
+            <th scope="row">Retry after HTTP 429</th>
+            <td><label><input type="checkbox" name="flosc_public_request_protection[retry_after_429]" value="1" <?php checked($flosc_protection['retry_after_429'], '1'); ?>> Retry after refreshing the REST nonce</label></td>
         </tr>
     </table>
-
-    <h3 class="flosc-admin-section-title">Configured Purchased Items</h3>
-    <div class="card flosc-admin-purchases-card">
-        <?php if (!empty($flosc_manual_purchase_lines)): ?>
-            <ol class="flosc-admin-purchases-list">
-                <?php foreach ($flosc_manual_purchase_lines as $flosc_item): ?>
-                    <li><?php echo esc_html($flosc_item); ?></li>
-                <?php endforeach; ?>
-            </ol>
-        <?php else: ?>
-            <p class="flosc-admin-purchases-empty">No items listed.</p>
-        <?php endif; ?>
-    </div>
 
     <?php if ($flosc_can_assign_editors): ?>
         <h3 class="flosc-admin-section-title flosc-admin-editors-title">Assign floscEditors for This Flow</h3>

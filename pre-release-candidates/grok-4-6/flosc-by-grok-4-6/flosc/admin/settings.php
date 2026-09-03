@@ -1752,15 +1752,30 @@ if (isset($flosc_post['flosc_save']) && wp_verify_nonce(sanitize_text_field($flo
 
     if ($flosc_active_tab === 'administration') {
         if (current_user_can('manage_options')) {
-            $flosc_allowed_plans = ['free', 'paid', 'enterprise'];
-            $flosc_plan = sanitize_key($flosc_post['flosc_account_plan'] ?? 'free');
-            if (!in_array($flosc_plan, $flosc_allowed_plans, true)) {
-                $flosc_plan = 'free';
+            $flosc_protection_defaults = [
+                'enabled'                  => '1',
+                'anonymous_chat_limit'     => 60,
+                'authenticated_chat_limit' => 120,
+                'anonymous_ivr_limit'      => 120,
+                'metered_compute_limit'    => 20,
+                'visitor_compute_limit'    => 5,
+                'retry_after_429'          => '0',
+            ];
+            $flosc_protection = get_option('flosc_public_request_protection', []);
+            $flosc_protection = is_array($flosc_protection) ? $flosc_protection : [];
+            foreach ($flosc_protection_defaults as $flosc_protection_key => $flosc_protection_default) {
+                if ($flosc_protection_key === 'enabled' || $flosc_protection_key === 'retry_after_429') {
+                    $flosc_protection[$flosc_protection_key] = isset($flosc_post['flosc_public_request_protection'][$flosc_protection_key])
+                        ? '1'
+                        : '0';
+                    continue;
+                }
+                $flosc_protection[$flosc_protection_key] = max(
+                    1,
+                    min(10000, absint($flosc_post['flosc_public_request_protection'][$flosc_protection_key] ?? $flosc_protection_default))
+                );
             }
-            update_option('flosc_account_plan', $flosc_plan);
-
-            $flosc_manual_purchases = sanitize_textarea_field($flosc_post['flosc_account_purchases_manual'] ?? '');
-            update_option('flosc_account_purchases_manual', $flosc_manual_purchases);
+            update_option('flosc_public_request_protection', $flosc_protection, false);
 
             $flosc_allowed_debug_modes = ['inherit', 'on', 'off'];
             $flosc_debug_mode = sanitize_key($flosc_post['flosc_debug_mode'] ?? 'inherit');
