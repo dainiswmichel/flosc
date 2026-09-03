@@ -30,7 +30,10 @@ The source under `flosc-by-codex-gpt5/flosc/` is this candidate's complete owned
 - Provider errors remain internal while visitors receive safe fallback copy and listeners receive accurate failure events.
 - Personality genome and compiled runtime profile are fingerprinted together with version and modification metadata on save.
 - Existing model-aware tuning remains optional expression control; personality behavior does not depend on non-default sampling settings.
+- Restored `flosc_enforce_no_hedge_response()` and `flosc_contains_forbidden_hedge()` on `FLOSC_Framework`; the public chat trait requires both methods before it can return a visitor response.
 
 ## Verification boundary
 
 Static and packaging checks are recorded in `build-manifest.json`. Installation, activation, live provider calls, WordPress Plugin Check, Starter Pack lifecycle, database persistence, and Betty → Dan → Betty browser tests are marked **DEFERRED — AUTHORIZED REMOTE TEST REQUIRED**. They are not represented as passed.
+
+Repair worknote: `flosc_development_worknotes/codex-gpt5-public-chat-repair-2026-09m-03d.md`.
