@@ -6,16 +6,18 @@
   "plugin_source": "flosc-by-github-copilot/flosc",
   "artifact": "flosc.zip",
   "artifact_root": "flosc/",
-  "artifact_sha256": "4da7d3e38a8a1842120a6dacb4d82db6cbe17fdfc19f74c9bb739afcc492291e",
+  "artifact_sha256": "50f27baa6faac8524e4fad35394a16833239785c1b4b7233d94ce10d111d5938",
   "artifact_files": 241,
   "implemented": {
     "per_turn_personality_delivery": "complete current personality identity is resolved by flow ID on follow-up turns",
-    "profile_fingerprint": "saved workshop genome and deployed profile are versioned and hashed together"
+    "profile_fingerprint": "saved workshop genome and deployed profile are versioned and hashed together",
+    "dispatch_truthfulness": "RAG failure falls through to ordinary AI and provider errors are labeled as fallback"
   },
   "verification": {
     "php_syntax_all_candidate_files": "passed",
     "followup_identity_call_path": "passed",
     "profile_save_contract": "passed",
+    "dispatch_syntax_and_source_contract": "passed",
     "zip_integrity": "passed",
     "zip_single_top_level_flosc": "passed",
     "zip_prohibited_path_scan": "passed",

@@ -39,6 +39,10 @@ Each library save now stores these fields with the sanitized `workshop_json` gen
 
 `profile_hash` is SHA-256 over the saved genome and deployed runtime profile. This gives previews, diagnostics, and later regression fixtures a stable identifier for the exact personality configuration being served. An explicitly authored `ai_base_prompt` remains unchanged.
 
+### Truthful AI delivery and fallback
+
+Production dispatch now returns an explicit result with content, source, provider, error code, and internal error detail. The chat turn treats a failed RAG retrieval as a reason to try ordinary AI before any fallback. A provider error or empty provider response is recorded as `fallback`, not mislabeled as an AI personality response.
+
 ## Checks run
 
 - `php -l includes/class-flosc-chatpack.php`: passed.
@@ -48,6 +52,9 @@ Each library save now stores these fields with the sanitized `workshop_json` gen
   - authored profile preserved
   - SHA-256 profile hash generated
   - repeated save produced the same hash
+- `php -l includes/class-ai-chat-dispatch.php`: passed.
+- `php -l includes/chat-turn/trait-flosc-chat-turn.php`: passed.
+- Focused dispatch-path check: RAG failure falls through to ordinary AI and provider failures are explicitly labeled: passed.
 
 ## Checks deferred
 
@@ -64,7 +71,7 @@ These require an authorized WordPress runtime and are not represented as passed:
 
 The installable artifact is [flosc.zip](flosc.zip). It contains 241 entries under one top-level `flosc/` directory.
 
-- SHA-256: `4da7d3e38a8a1842120a6dacb4d82db6cbe17fdfc19f74c9bb739afcc492291e`
+- SHA-256: `50f27baa6faac8524e4fad35394a16833239785c1b4b7233d94ce10d111d5938`
 - Checksum file: [SHA256SUMS](SHA256SUMS)
 - Build metadata: [build-manifest.json](build-manifest.json)
 

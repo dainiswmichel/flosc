@@ -791,7 +791,7 @@ class FLOSC_AI_Chat_Dispatch {
      * Get AI Response
      * @param bool $test_mode If true, return WP_Error on failure instead of falling back to IVR
      */
-    public function get_response($message, $system_prompt = '', $context = [], $test_mode = false) {
+    public function get_response($message, $system_prompt = '', $context = [], $test_mode = false, $return_errors = false) {
         $this->last_billing_meta = [];
 
         // v5.0.2 FIX: Read provider fresh at call time so flow context (set by handle_chat
@@ -828,7 +828,7 @@ class FLOSC_AI_Chat_Dispatch {
         if ($chaining_enabled) {
             $response = $this->get_chained_response($message, $system_prompt, $context);
         } else {
-            $response = $this->call_provider($provider, $message, $system_prompt, $context, $test_mode);
+            $response = $this->call_provider($provider, $message, $system_prompt, $context, $test_mode || $return_errors);
         }
 
         // v1.9.2: Reduced cache TTL from 1 hour to 5 minutes.
@@ -860,6 +860,38 @@ class FLOSC_AI_Chat_Dispatch {
         }
 
         return $response;
+    }
+
+    /**
+     * Production dispatch with an explicit, inspectable outcome.
+     *
+     * Provider details remain internal; callers decide visitor copy, logging, and
+     * administrator diagnostics separately.
+     *
+     * @return array{content:string,source:string,provider:string,error_code:string,error:string}
+     */
+    public function get_response_result($message, $system_prompt = '', $context = []) {
+        $provider = (string) flosc_get_setting('ai_provider', 'ivr');
+        $response = $this->get_response($message, $system_prompt, $context, false, true);
+
+        if (is_wp_error($response)) {
+            return [
+                'content'    => '',
+                'source'     => 'fallback',
+                'provider'   => sanitize_key($provider),
+                'error_code' => sanitize_key((string) $response->get_error_code()),
+                'error'      => sanitize_text_field($response->get_error_message()),
+            ];
+        }
+
+        $content = is_string($response) ? trim($response) : '';
+        return [
+            'content'    => $content,
+            'source'     => $content !== '' ? 'ai' : 'fallback',
+            'provider'   => sanitize_key($provider),
+            'error_code' => $content !== '' ? '' : 'flosc_empty_ai_response',
+            'error'      => $content !== '' ? '' : __('The provider returned an empty response.', 'flosc'),
+        ];
     }
 
     /**
