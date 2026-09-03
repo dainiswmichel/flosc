@@ -3021,7 +3021,7 @@ if (function_exists('wp_add_inline_style')) {
                 } elseif ($flosc_save_ran) {
                     echo esc_html__( 'Saved, but this site did not keep the time it happened.', 'flosc' );
                 } else {
-                    echo esc_html__( 'Not saved from this page yet.', 'flosc' );
+                    echo esc_html__( 'Not saved from this button yet.', 'flosc' );
                 }
                 ?>
             </span>
