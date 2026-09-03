@@ -1,0 +1,5779 @@
+/* ========================================
+   FLOSC CHAT INTERFACE STYLES
+   General chat messages, prompts, layout
+   ======================================== */
+
+.flosc-chat-container {
+    max-width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.flosc-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.message {
+    margin-bottom: 20px;
+    display: flex;
+    gap: 12px;
+}
+
+.message.user {
+    justify-content: flex-end;
+}
+
+.message.assistant {
+    justify-content: flex-start;
+}
+
+.message.assistant .flosc-depleted-form-wrap {
+    width: min(100%, 620px);
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    border-radius: 14px;
+    padding: 1rem;
+    background: #fff;
+}
+
+.message.assistant .flosc-depleted-form-wrap h4 {
+    margin: 0 0 0.4rem;
+    font-size: 1.1rem;
+}
+
+.message.assistant .flosc-depleted-form-intro {
+    margin: 0 0 0.8rem;
+    font-size: 0.94rem;
+    color: #334155;
+}
+
+.message.assistant .flosc-depleted-contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.message.assistant .flosc-depleted-contact-form input,
+.message.assistant .flosc-depleted-contact-form textarea {
+    width: 100%;
+    border: 1px solid rgba(15, 23, 42, 0.2) !important;
+    border-radius: 10px;
+    padding: 0.7rem 0.75rem;
+    background: #fff !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+    font-size: 1rem;
+}
+
+.message.assistant .flosc-depleted-contact-form textarea {
+    min-height: 165px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 1.06rem;
+}
+
+.message.assistant .flosc-depleted-submit {
+    border: 0;
+    border-radius: 999px;
+    padding: 0.72rem 1.2rem;
+    font-weight: 700;
+    font-size: 0.98rem;
+    color: #fff;
+    background: #1f6feb;
+    cursor: pointer;
+    align-self: flex-start;
+}
+
+.message.assistant .flosc-depleted-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+.message.assistant .flosc-depleted-submit-contact {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    border: 1px solid #1f6feb;
+    border-radius: 999px;
+    padding: 0 1.2rem;
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #1f6feb;
+    background: #fff;
+    cursor: pointer;
+}
+
+.message.assistant .flosc-depleted-form-status {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #1f2937;
+}
+
+.message.assistant .flosc-depleted-success-notice {
+    width: min(100%, 620px);
+    margin: 0;
+    padding: 1.05rem 1.1rem;
+    border-radius: 12px;
+    border: 1px solid #86efac;
+    background: linear-gradient(180deg, #f2fff7 0%, #e6f9ef 100%);
+    color: #065f46;
+    font-size: 1.08rem;
+    font-weight: 650;
+    line-height: 1.45;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+}
+
+.message.assistant .flosc-depleted-hp {
+    position: absolute !important;
+    left: -9999px !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+}
+
+/* ========================================
+   LEGACY CHAT RENDER BRIDGE (INLINE FOLD-IN)
+   Flattened from flosc-layout.css and flosc-theme.css
+   to preserve current rendering while chat/offers split.
+   ======================================== */
+/* ===== BEGIN FLOSC LEGACY: flosc-layout.css ===== */
+
+/**
+ * FLOSC App Layout (v1.4.6) — Ultra Pro Edition
+ * ==============================================
+ * Updated: 2026-02m-06d
+ * 
+ * LAYOUT ONLY — No colors, no theme styles.
+ * All visual styling comes from flosc-theme.css + chat-style-*.css presets.
+ * 
+ * ARCHITECTURE:
+ * 1. flosc-layout.css  — Structure, positioning, flexbox (this file)
+ * 2. flosc-theme.css   — Variable consumption, theming
+ * 3. chat-style-*.css  — Variable definitions (light/dark/claude/chatgpt/grok)
+ * 
+ * BACKWARD COMPATIBILITY:
+ * Supports both legacy class names and new flosc- prefixed names.
+ * Legacy selectors are grouped with new selectors using CSS commas.
+ * 
+ * ============================================================================
+ * ⚠️  HARD-LEARNED LESSON: SVG ICON VISIBILITY (2026-01m-25d)
+ * ============================================================================
+ * AI tools repeatedly broke icon visibility by adding incorrect CSS rules.
+ * After 6+ failed AI attempts and hours of debugging, here's what works:
+ * 
+ * THE PATTERN THAT WORKS:
+ * ┌─────────────────────────────────────────────────────────────────────────┐
+ * │  HTML (in flosc-app.php):                                               │
+ * │  <button class="my-button">                                             │
+ * │      <svg fill="none" stroke="currentColor" stroke-width="2">          │
+ * │          <path d="..."></path>                                          │
+ * │      </svg>                                                              │
+ * │  </button>                                                               │
+ * ├─────────────────────────────────────────────────────────────────────────┤
+ * │  CSS Layout (this file):                                                │
+ * │  .my-button { display: flex; align-items: center; ... }                 │
+ * │  .my-button svg { width: 20px; height: 20px; display: block; }          │
+ * ├─────────────────────────────────────────────────────────────────────────┤
+ * │  CSS Theme (flosc-theme.css):                                           │
+ * │  .my-button { color: var(--some-color); }  -- EXPLICIT color --        │
+ * │  .my-button:hover { color: var(--hover-color); }                        │
+ * └─────────────────────────────────────────────────────────────────────────┘
+ * 
+ * WHY THIS WORKS:
+ * - stroke="currentColor" makes SVG inherit color from parent element
+ * - Parent button MUST have explicit color (not inherit/initial/unset)
+ * - display: block on SVG prevents inline whitespace issues
+ * - Hover on button changes color, SVG automatically updates
+ * 
+ * WHAT BREAKS IT (AI kept doing these):
+ * ✗ Adding stroke: currentColor in CSS (already in HTML, causes specificity wars)
+ * ✗ Using fill instead of stroke for line-art icons
+ * ✗ Omitting color on button and relying on inheritance
+ * ✗ Adding !important everywhere (masks the real problem)
+ * ✗ Inline styles to "fix" visibility (breaks theming)
+ * 
+ * ============================================================================
+ */
+
+/* ============================================
+   RESET & BASE
+   ============================================ */
+
+/* v1.6.1: Scoped to .flosc-app to avoid WordPress theme collisions */
+.flosc-app, .flosc-app *, .flosc-app *::before, .flosc-app *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* v1.6.9: Lock viewport so nothing overflows below screen edge */
+html, body {
+    height: 100%;
+    max-height: 100%;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+.flosc-app {
+    height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* v1.7.6: Chat scale via admin setting (--flosc-scale set as a root CSS custom property)
+ * Scales the chat messages area and composer — NOT the sidebar or header,
+ * which should remain a fixed, predictable size. */
+.flosc-messages,
+.messages {
+    font-size: calc(15px * var(--flosc-scale, 100%) / 100);
+}
+
+.flosc-input-composer,
+.flosc_input_composer {
+    font-size: calc(15px * var(--flosc-scale, 100%) / 100);
+}
+
+/* ============================================
+   UTILITY CLASSES — display state (no !important)
+   Hidden: .flosc-hidden
+   Shown:  data-flosc-display="block|flex|inline-flex" (set by setDisplayState)
+   Attribute + :not(.flosc-hidden) beats single-class defaults via cascade.
+   ============================================ */
+
+.flosc-hidden {
+    display: none;
+}
+
+/* Legacy class aliases (prefer data-flosc-display via setDisplayState). */
+.flosc-visible {
+    display: block;
+}
+
+.flosc-visible-flex {
+    display: flex;
+}
+
+.flosc-visible-inline-flex {
+    display: inline-flex;
+}
+
+[data-flosc-display="block"]:not(.flosc-hidden) {
+    display: block;
+}
+
+[data-flosc-display="flex"]:not(.flosc-hidden) {
+    display: flex;
+}
+
+[data-flosc-display="inline-flex"]:not(.flosc-hidden) {
+    display: inline-flex;
+}
+
+/* ============================================
+   APP CONTAINER
+   ============================================ */
+
+.flosc-app {
+    display: flex;
+    height: 100vh;
+    height: 100dvh; /* v1.8.2: dynamic viewport height — handles Safari toolbar correctly */
+    max-height: 100vh;
+    max-height: 100dvh;
+    overflow: hidden;
+}
+
+/* v1.7.0: Account for WordPress admin bar (32px desktop, 46px mobile) */
+.admin-bar .flosc-app,
+.admin-bar.flosc-app {
+    height: calc(100vh - 32px);
+    height: calc(100dvh - 32px);
+    max-height: calc(100vh - 32px);
+    max-height: calc(100dvh - 32px);
+}
+
+@media screen and (max-width: 782px) {
+    .admin-bar .flosc-app,
+    .admin-bar.flosc-app {
+        height: calc(100vh - 46px);
+        height: calc(100dvh - 46px);
+        max-height: calc(100vh - 46px);
+        max-height: calc(100dvh - 46px);
+    }
+}
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+
+.flosc-sidebar {
+    width: 280px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    /* v8.0.1: Minimum bottom padding prevents profile bar clipping on iPad Safari */
+    padding-bottom: max(1px, env(safe-area-inset-bottom, 1px));
+}
+
+/* v1.9.5: Desktop sidebar collapse — full hide (Grok pattern).
+   Sidebar transitions to 0px width; overflow: hidden clips all content.
+   Header's mobile-menu-btn becomes visible to reopen sidebar. */
+.flosc-sidebar.collapsed {
+    width: 0;
+    padding-bottom: 0;
+    border: none;
+}
+
+/* Header: hide logo text, keep only toggle button centered */
+.flosc-sidebar.collapsed .sidebar-header {
+    padding: 12px 8px;
+    justify-content: center;
+}
+
+.flosc-sidebar.collapsed .logo {
+    display: none;
+}
+
+.flosc-sidebar.collapsed .sidebar-header-actions {
+    width: 100%;
+    justify-content: center;
+}
+
+/* Hide restart button when collapsed — only toggle visible */
+.flosc-sidebar.collapsed .sidebar-action-btn {
+    display: none;
+}
+
+/* New Chat: icon-only, centered */
+.flosc-sidebar.collapsed .new-chat-btn {
+    margin: 4px 8px;
+    padding: 10px;
+    justify-content: center;
+}
+
+.flosc-sidebar.collapsed .new-chat-btn span {
+    display: none;
+}
+
+/* Session list: hide text, show only icons */
+.flosc-sidebar.collapsed .flosc_app_session_list {
+    padding: 4px;
+}
+
+.flosc-sidebar.collapsed .session-group-title {
+    display: none;
+}
+
+.flosc-sidebar.collapsed .session-item {
+    padding: 10px 0;
+    justify-content: center;
+}
+
+.flosc-sidebar.collapsed .session-item-title {
+    display: none;
+}
+
+.flosc-sidebar.collapsed .session-item-actions {
+    display: none;
+}
+
+/* Profile bar: avatar-only, centered */
+.flosc-sidebar.collapsed .user-profile-bar {
+    padding: 4px;
+}
+
+.flosc-sidebar.collapsed .profile-button {
+    padding: 8px 0;
+    justify-content: center;
+}
+
+.flosc-sidebar.collapsed .profile-info {
+    display: none;
+}
+
+.flosc-sidebar.collapsed .dropdown-icon {
+    display: none;
+}
+
+/* v1.9.5: When sidebar is 0px, dropdown is unreachable — user reopens sidebar first */
+.flosc-sidebar.collapsed .profile-dropdown {
+    display: none;
+}
+
+/* Sidebar Header */
+.flosc-sidebar-header,
+.flosc-sidebar .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    min-height: 56px;
+}
+
+/* Sidebar Logo */
+.flosc-sidebar-logo,
+.flosc-sidebar .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 18px;
+}
+
+.flosc-sidebar-logo-emoji,
+.flosc-sidebar .logo-emoji {
+    font-size: 24px;
+}
+
+.flosc-sidebar .logo-text {
+    font-weight: 600;
+}
+
+.flosc-sidebar .logo-img {
+    height: 32px;
+    width: auto;
+}
+
+/* Sidebar Header Actions */
+.flosc-sidebar-actions,
+.flosc-sidebar .sidebar-header-actions {
+    display: flex;
+    gap: 4px;
+}
+
+/* Sidebar Action Buttons
+ * ICON BUTTON PATTERN — see header comment for SVG lesson.
+ */
+.flosc-sidebar-action-btn,
+.flosc-sidebar .sidebar-action-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: #667;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flosc-sidebar-action-btn svg,
+.flosc-sidebar .sidebar-action-btn svg {
+    width: 18px;
+    height: 18px;
+    display: block; /* CRITICAL: prevents inline whitespace issues */
+}
+
+/* Animation: Spin for restart button */
+.flosc-sidebar-action-btn.spinning svg,
+.flosc-sidebar .sidebar-action-btn.spinning svg {
+    animation: spin 0.6s linear;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Sidebar Close/Toggle Button */
+.flosc-sidebar-toggle,
+.flosc_app_sidebar_toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s ease;
+}
+
+.flosc_app_sidebar_toggle svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+    stroke: #6b7280;
+    stroke-width: 2;
+    fill: none;
+}
+
+.flosc_app_sidebar_toggle:hover svg {
+    stroke: #374151;
+}
+
+/* New Chat Button */
+.flosc-new-chat-btn,
+.flosc-sidebar .new-chat-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 16px;
+    padding: 11px 16px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* ============================================
+   SESSION LIST
+   ============================================ */
+
+.flosc-session-list,
+.flosc_app_session_list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.flosc-session-group {
+    margin-bottom: 16px;
+}
+
+.flosc-session-group-title,
+.session-group-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 8px 12px 4px;
+}
+
+.flosc-session-item,
+.session-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.15s ease;
+}
+
+.flosc-session-item-icon,
+.session-item-icon {
+    font-size: 16px;
+}
+
+.flosc-session-item-title,
+.session-item-title {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.flosc-session-item-actions,
+.session-item-actions {
+    display: none;
+    gap: 4px;
+}
+
+.flosc-session-item:hover .flosc-session-item-actions,
+.flosc-session-item:hover .session-item-actions,
+.session-item:hover .session-item-actions {
+    display: flex;
+}
+
+/* ============================================
+   USER PROFILE BAR
+   One bar, 3 states: visitor | guest | member
+   Content toggled via [data-show] + [data-user-state]
+   ============================================ */
+
+.flosc_app_session_list {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.user-profile-bar {
+    margin-top: auto; /* push to bottom of sidebar flex column */
+    padding: 12px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 12px));
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    flex-shrink: 0;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    /* v1.8.2: Prevent avatar (36px) from being clipped by sidebar overflow:hidden */
+    min-height: 70px;
+}
+
+/* data-show visibility: visitor content vs logged-in content (cascade, no !important) */
+/* Specificity must beat .flosc-app .user-profile-bar img.flosc-profile-avatar { display:block } */
+.flosc-app[data-user-state="visitor"] .user-profile-bar [data-show="logged-in"],
+.flosc-app[data-user-state="visitor"] .user-profile-bar img#flosc_profile_avatar,
+.flosc-app[data-user-state="visitor"] .user-profile-bar #flosc_profile_avatar_icon,
+[data-user-state="visitor"] [data-show="logged-in"],
+[data-user-state="guest"] [data-show="visitor"],
+[data-user-state="member"] [data-show="visitor"] {
+    display: none;
+}
+
+/* Shown branch: block so <img> avatars size correctly (not inline). */
+[data-user-state="visitor"] [data-show="visitor"],
+[data-user-state="guest"] [data-show="logged-in"],
+[data-user-state="member"] [data-show="logged-in"] {
+    display: block;
+}
+
+/* Visitor avatar is a flex box (emoji / image), not a block img shell. */
+.flosc-app[data-user-state="visitor"] .user-profile-bar .visitor-avatar[data-show="visitor"] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    background: transparent;
+    color: inherit;
+    box-shadow: none;
+}
+
+.flosc-app[data-user-state="visitor"] .user-profile-bar .visitor-avatar .flosc-visitor-avatar-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 20px;
+    line-height: 1;
+}
+
+.flosc-app[data-user-state="visitor"] .user-profile-bar .visitor-avatar img.flosc-visitor-avatar-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: inherit;
+    background: transparent;
+    display: block;
+}
+
+.flosc-app[data-user-state="visitor"] .user-profile-bar .visitor-avatar.is-image-failed img.flosc-visitor-avatar-img,
+.flosc-app[data-user-state="visitor"] .user-profile-bar .visitor-avatar img.flosc-visitor-avatar-img[data-failed="1"] {
+    display: none;
+}
+
+/* Upgrade container: guest only */
+[data-user-state="member"] .upgrade-container,
+[data-user-state="visitor"] .upgrade-container {
+    display: none;
+}
+
+.user-profile-bar .profile-button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-radius: 8px;
+    text-align: left;
+    transition: background 0.15s ease;
+}
+
+/* v1.8.3: Avatar shape controlled by CSS custom properties set in admin UI
+   --flosc-avatar-width   (default 36px) — rectangle support
+   --flosc-avatar-height  (default 36px) — rectangle support
+   --flosc-avatar-radius  (default 50%) — 50%=circle, 8px=rounded, 0=sharp */
+.flosc-profile-avatar,
+.flosc-user-avatar,
+.profile-avatar {
+    width: var(--flosc-avatar-width, 36px);
+    height: var(--flosc-avatar-height, 36px);
+    min-width: var(--flosc-avatar-width, 36px);
+    min-height: var(--flosc-avatar-height, 36px);
+    border-radius: var(--flosc-avatar-radius, 50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+/* Avatar sizing: scoped under .flosc-app .user-profile-bar (no !important). */
+.flosc-app .user-profile-bar .flosc-profile-avatar,
+.flosc-app .user-profile-bar img.flosc-profile-avatar {
+    width: var(--flosc-avatar-width, 36px);
+    height: var(--flosc-avatar-height, 36px);
+    min-width: var(--flosc-avatar-width, 36px);
+    min-height: var(--flosc-avatar-height, 36px);
+    max-width: var(--flosc-avatar-width, 36px);
+    max-height: var(--flosc-avatar-height, 36px);
+    border-radius: var(--flosc-avatar-radius, 50%);
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.flosc-app .user-profile-bar img.flosc-profile-avatar {
+    display: block;
+}
+
+/* .flosc-hidden must beat the img display:block rule above (never show both tiles). */
+.flosc-app .user-profile-bar .flosc-profile-avatar.flosc-hidden,
+.flosc-app .user-profile-bar img.flosc-profile-avatar.flosc-hidden,
+.flosc-app .user-profile-bar #flosc_profile_avatar.flosc-hidden,
+.flosc-app .user-profile-bar #flosc_profile_avatar_icon.flosc-hidden {
+    display: none;
+}
+
+/* Logged-in avatar: show icon OR image, never both */
+.user-profile-bar #flosc_profile_avatar_icon[data-flosc-display]:not(.flosc-hidden) ~ #flosc_profile_avatar,
+.user-profile-bar #flosc_profile_avatar_icon.flosc-visible-flex ~ #flosc_profile_avatar,
+.user-profile-bar #flosc_profile_avatar_icon.flosc-visible ~ #flosc_profile_avatar,
+.flosc-app .user-profile-bar #flosc_profile_avatar_icon[data-flosc-display]:not(.flosc-hidden) ~ #flosc_profile_avatar {
+    display: none;
+}
+
+/*
+ * Double-icon flash fix: hide both avatar nodes until setDisplayState marks one.
+ */
+[data-user-state="guest"] .user-profile-bar #flosc_profile_avatar:not([data-flosc-display]):not(.flosc-visible),
+[data-user-state="member"] .user-profile-bar #flosc_profile_avatar:not([data-flosc-display]):not(.flosc-visible),
+[data-user-state="guest"] .user-profile-bar #flosc_profile_avatar_icon:not([data-flosc-display]):not(.flosc-visible):not(.flosc-visible-flex),
+[data-user-state="member"] .user-profile-bar #flosc_profile_avatar_icon:not([data-flosc-display]):not(.flosc-visible):not(.flosc-visible-flex) {
+    display: none;
+}
+
+.flosc-profile-avatar.visitor-avatar,
+.profile-avatar.visitor-avatar {
+    background: transparent;
+    font-size: 20px;
+}
+
+.flosc-user-info,
+.profile-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.flosc-user-name,
+.profile-name {
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.profile-name .flosc-visitor-label-text {
+    color: inherit;
+    font-weight: 600;
+}
+
+.flosc-visitor-token-count {
+    color: var(--flosc-sidebar-text-muted, #7b828d);
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.flosc-user-email,
+.profile-badge {
+    font-size: 12px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.7;
+}
+
+/* Dropdown icon styling */
+.profile-button .dropdown-icon {
+    width: 16px;
+    height: 16px;
+    opacity: 0.5;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.profile-button:hover .dropdown-icon {
+    opacity: 0.8;
+}
+
+.profile-dropdown.open ~ .profile-button .dropdown-icon,
+.profile-button[aria-expanded="true"] .dropdown-icon {
+    transform: rotate(180deg);
+}
+
+/* Profile Dropdown */
+.profile-dropdown {
+    position: absolute;
+    bottom: 100%;
+    left: 8px;
+    right: 8px;
+    margin-bottom: 8px;
+    border-radius: 12px;
+    overflow: hidden;
+    display: none;
+    z-index: 100;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.profile-dropdown.open {
+    display: block;
+    animation: dropdownIn 0.15s ease;
+}
+
+@keyframes dropdownIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.profile-dropdown-header {
+    padding: 12px 16px;
+}
+
+.dropdown-name {
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.dropdown-email {
+    font-size: 12px;
+}
+
+.profile-dropdown-item {
+    display: block;
+    padding: 10px 16px;
+    font-size: 14px;
+    text-decoration: none;
+}
+
+.upgrade-container {
+    padding: 8px 16px 16px;
+}
+
+.upgrade-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* ============================================
+   MAIN CONTENT AREA
+   ============================================ */
+
+.flosc-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+
+.flosc-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    height: 48px;
+}
+
+.flosc-header-title,
+.header-title {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.header-left,
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.mobile-menu-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    color: var(--flosc-text-primary, #374151);
+}
+
+.mobile-menu-btn svg {
+    stroke: currentColor;
+}
+
+/* v1.8.0: Only show hamburger + mobile logo on mobile when sidebar is hidden */
+@media (max-width: 768px) {
+    .mobile-menu-btn {
+        display: flex;
+    }
+}
+
+/* v1.9.5: When sidebar is collapsed to 0px (Grok pattern), show hamburger + mobile logo
+   in the header so user can reopen sidebar from the main content area. */
+.flosc-sidebar.collapsed ~ .flosc-main .mobile-menu-btn {
+    display: flex;
+}
+.flosc-sidebar.collapsed ~ .flosc-main .logo-mobile {
+    display: flex;
+}
+
+/* v1.8.0: Hide mobile logo on desktop (sidebar already shows branding) */
+.logo-mobile {
+    display: none;
+    align-items: center;
+    gap: 8px;
+}
+
+.logo-mobile__img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+}
+
+@media (max-width: 768px) {
+    .logo-mobile {
+        display: flex;
+    }
+}
+
+.auth-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.flosc-share-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+/* ============================================
+   CHAT CONTAINER
+   ============================================ */
+
+.flosc-chat-container,
+.chat-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+/* ============================================
+   VISITOR BAR (v1.7.9)
+   ============================================ */
+
+.flosc-visitor-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    width: 100%;
+    border-bottom: 1px solid var(--flosc-visitor-bar-border, #bfdbfe);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: slideDown 0.3s ease-out;
+}
+
+.flosc-visitor-bar-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    max-width: 800px;
+    width: 100%;
+}
+
+.flosc-visitor-bar-text {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.flosc-visitor-bar-cta {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.flosc-visitor-bar-cta:hover {
+    opacity: 0.9;
+}
+
+.flosc-visitor-bar-dismiss {
+    padding: 4px 8px;
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.flosc-visitor-bar-dismiss:hover {
+    opacity: 1;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Mobile adjustments */
+@media (max-width: 600px) {
+    .flosc-visitor-bar-content {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+    }
+
+    .flosc-visitor-bar-text {
+        text-align: center;
+    }
+
+    .flosc-visitor-bar-dismiss {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+    }
+}
+
+/* ============================================
+   MESSAGES AREA
+   ============================================ */
+
+.flosc-messages,
+.messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    scroll-behavior: smooth;
+}
+
+.flosc-messages-inner,
+.messages-inner {
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* v1.9.5: Messages area — always flex:1 for stable layout.
+   Landing state collapses via flosc-hidden when user sends first message. */
+
+/* ============================================
+   GREETING / WELCOME
+   ============================================ */
+
+.flosc-greeting,
+.greeting {
+    text-align: center;
+    padding: 16px 24px 12px;
+}
+
+.flosc-greeting-emoji,
+.greeting-emoji {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.flosc-greeting-title,
+.greeting-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: -0.03em;
+}
+
+.flosc-greeting-subtitle,
+.greeting-subtitle {
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+.flosc-welcome-badge-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 16px 0 18px;
+}
+
+.flosc-welcome-badge {
+    display: block;
+    width: min(320px, 72vw);
+    max-width: 100%;
+    height: auto;
+    border: 3px solid rgba(184, 148, 68, 0.82);
+    border-radius: 14px;
+    box-shadow:
+        0 0 0 1px rgba(255, 223, 135, 0.34),
+        0 10px 26px rgba(14, 16, 22, 0.28);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 6px;
+}
+
+/* v1.9.5: Landing state — compact centered identity block.
+   Vertically centered when no messages. Hidden when user sends first message.
+   Layout: [icon] FLOSC  tagline  (one line)
+           Freeline → Login → Offer → Sale → Content  (below) */
+.landing-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    gap: 12px;
+    padding: 24px;
+    transition: opacity 0.2s ease;
+}
+
+/* When messages exist alongside, landing state shrinks to content height
+   and sits at top instead of competing for 50% of the viewport. */
+.chat-container:has(.messages .message) .landing-state {
+    flex: 0 0 auto;
+    justify-content: flex-start;
+    padding: 16px 24px 8px;
+}
+
+.landing-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.landing-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    flex-shrink: 0;
+}
+
+.landing-emoji {
+    font-size: 28px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.landing-title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    white-space: nowrap;
+}
+
+.landing-subtitle {
+    font-size: 14px;
+    opacity: 0.6;
+    white-space: nowrap;
+}
+
+.landing-tagline {
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    opacity: 0.35;
+}
+
+/* ============================================
+   MESSAGE ROW
+   ============================================ */
+
+.flosc-message,
+.message {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    align-items: flex-start;
+    width: 100%;
+    animation: messageIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes messageIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.flosc-message-user,
+.message.user {
+    flex-direction: row-reverse;
+}
+
+/* ============================================
+   MESSAGE AVATAR
+   ============================================ */
+
+.flosc-message-avatar,
+.message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* ============================================
+   MESSAGE CONTENT
+   ============================================ */
+
+/* v1.9.5: Assistant messages use full column width (Grok pattern).
+   User messages constrained to 75% via user-specific rule below.
+   v2.0.4: flex-grow:1 ensures content stretches to fill available width
+   so centered elements (badge) center relative to the full chat area. */
+.flosc-message-content,
+.message-content {
+    max-width: 100%;
+    min-width: 0;
+    flex-grow: 1;
+}
+
+/* v1.7.5: Rich cards expand full width within chat area */
+.message-content:has(.flosc-quiz-result),
+.message-content:has(.flosc-sandbox-payment),
+.message-content:has(.flosc-quiz-gate),
+.message-content:has(.flosc-sandbox-success),
+.message-content:has(.flosc-offer-card),
+.message-content:has(.flosc-offer-featured),
+.message-content:has(.flosc-offer-banner),
+.message-content:has(.flosc-offer-compact),
+.message-content:has(.flosc-checkout-inline),
+.message-content:has(.flosc-quiz-question),
+.flosc-message-content:has(.flosc-quiz-result),
+.flosc-message-content:has(.flosc-sandbox-payment),
+.flosc-message-content:has(.flosc-quiz-gate),
+.flosc-message-content:has(.flosc-sandbox-success),
+.flosc-message-content:has(.flosc-offer-card),
+.flosc-message-content:has(.flosc-offer-featured),
+.flosc-message-content:has(.flosc-offer-banner),
+.flosc-message-content:has(.flosc-offer-compact),
+.flosc-message-content:has(.flosc-checkout-inline),
+.flosc-message-content:has(.flosc-quiz-question) {
+    max-width: 100%;
+}
+
+.flosc-message-user .flosc-message-content,
+.flosc-message-user .message-content,
+.message.user .message-content {
+    max-width: 75%;
+    text-align: right;
+}
+
+/* ============================================
+   MESSAGE TEXT (Bubble)
+   ============================================ */
+
+.flosc-message-text,
+.message-text {
+    font-size: 15px;
+    line-height: 1.7;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    letter-spacing: -0.006em;
+    /* v2.0.5: Ensure full width so centered badge images align to
+       the full message area, not just the text content width. */
+    width: 100%;
+}
+
+.flosc-message-user .flosc-message-text,
+.flosc-message-user .message-text,
+.message.user .message-text {
+    display: inline-block;
+    text-align: left;
+    padding: 12px 18px;
+    border-radius: 20px 20px 4px 20px;
+}
+
+.flosc-message-text p,
+.message-text p {
+    margin-bottom: 14px;
+}
+
+.flosc-message-text p:last-child,
+.message-text p:last-child {
+    margin-bottom: 0;
+}
+
+.flosc-message-text ul,
+.flosc-message-text ol,
+.message-text ul,
+.message-text ol {
+    margin: 14px 0;
+    padding-left: 24px;
+}
+
+.flosc-message-text li,
+.message-text li {
+    margin-bottom: 6px;
+    line-height: 1.6;
+}
+
+.flosc-message-text code,
+.message-text code {
+    font-size: 0.88em;
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-family: 'SF Mono', 'JetBrains Mono', Monaco, 'Courier New', monospace;
+}
+
+.flosc-message-text pre,
+.message-text pre {
+    margin: 14px 0;
+    padding: 14px 16px;
+    border-radius: 10px;
+    overflow-x: auto;
+}
+
+.flosc-message-text pre code,
+.message-text pre code {
+    padding: 0;
+    background: none;
+}
+
+/* ============================================
+   INPUT COMPOSER
+   ============================================ */
+
+/* v2.0.1: Reduced top padding to tighten gap with AutoPromptPanel */
+.flosc-input-composer,
+.flosc_input_composer {
+    padding: 8px 24px 16px;
+}
+
+.flosc-input-composer-inner,
+.flosc_input_composer_inner {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flosc-input-field,
+.flosc_input_composer textarea,
+#flosc_input_chat_field {
+    flex: 1;
+    resize: none;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    line-height: 24px;
+    max-height: 150px;
+    min-height: 36px;
+    padding: 6px 0;
+    font-family: inherit;
+    letter-spacing: -0.006em;
+}
+
+.flosc-send-btn,
+.flosc_input_chat_send_button {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 18px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flosc_input_chat_send_button svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+
+/* ============================================
+   USER AUTOPROMPTS / PILLS & CARDS
+   ============================================ */
+
+/* v2.0.2: Tighter vertical spacing — reduced padding and gap */
+.flosc-user-autoprompts,
+.flosc-user-autoprompts-container,
+#flosc_input_user_autoprompts_panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px 24px 4px;
+    max-width: 800px;
+    margin: 0 auto;
+    justify-content: center;
+}
+
+/* v2.0.2: Slightly tighter pills */
+.flosc-pill,
+.flosc-style-pill {
+    padding: 6px 14px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-height: 56px;
+}
+
+.flosc-card,
+.flosc-style-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 22px 14px;
+    border-radius: 14px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
+    overflow: hidden;
+    word-break: break-word;
+    /* v2.0.1: Clamp long text to 3 lines */
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    line-clamp: 4;
+}
+
+/* v1.6.5: Button (CTA-style) layout */
+.flosc-style-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 22px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+}
+
+/* Prompt Panel (Inline) */
+/* v2.0.2: Tighter panel — reduce vertical padding */
+/* v8.1.0: overflow visible required for DA1NI5 Duck and Show chevron in ducked state */
+.prompt-panel {
+    padding: 4px 16px;
+    flex-shrink: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow: visible;
+}
+
+.prompt-panel-inline {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* v1.7.0: Ensure carousel container respects parent width */
+.prompt-panel .flosc-carousel-container {
+    max-width: 100%;
+}
+
+.prompt-panel .flosc-carousel-track {
+    overflow: hidden;
+}
+
+/* ============================================
+   CAROUSEL (for user autoprompts)
+   ============================================ */
+
+.flosc-carousel-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    overflow: hidden;
+}
+
+.flosc-carousel-track {
+    display: flex;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;          /* v1.7.0: CRITICAL — allows flex item to shrink below content width */
+    padding: 4px 0;
+    overflow: hidden;       /* v1.7.0: clip pills during translateX carousel animation */
+}
+
+/* Pills container inside carousel track */
+.flosc-carousel-track.flosc-pills-container {
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+}
+
+/* Pills don't shrink in carousel */
+.flosc-carousel-track.flosc-pills-container .flosc-style-pill {
+    flex-shrink: 0;
+}
+
+/* Cards container inside carousel track */
+.flosc-carousel-track.flosc-cards-container {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 12px;
+    overflow-x: auto;
+}
+
+/* Fixed width cards in carousel */
+.flosc-carousel-track.flosc-cards-container .flosc-style-card {
+    flex-shrink: 0;
+    width: 180px;
+    min-width: 180px;
+}
+
+.flosc-carousel-track::-webkit-scrollbar {
+    display: none;
+}
+
+/* Carousel Arrows — hidden by default, shown on overflow */
+.flosc-carousel-arrow {
+    display: none;
+    background: white;
+    border: 1px solid var(--flosc-border-color, #e5e7eb);
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 24px;
+    color: var(--flosc-text-secondary, #6b7280);
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 0;
+    line-height: 1;
+}
+
+/* Show arrows when container has overflow (set by JS) */
+.flosc-carousel-container.has-overflow .flosc-carousel-arrow {
+    display: flex;
+}
+
+.flosc-carousel-arrow:hover {
+    background: var(--flosc-bg-hover, #f3f4f6);
+    border-color: var(--flosc-primary, #4f46e5);
+    color: var(--flosc-primary, #4f46e5);
+    box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15);
+}
+
+.flosc-carousel-arrow:active {
+    opacity: 0.8;
+}
+
+/* Pills container (standalone, no carousel) */
+.flosc-pills-container:not(.flosc-carousel-track) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    width: 100%;
+    justify-content: flex-start;
+}
+
+/* Cards container (standalone) */
+.flosc-cards-container:not(.flosc-carousel-track) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+    gap: 14px;
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .flosc-carousel-arrow {
+        width: 32px;
+        height: 32px;
+        font-size: 20px;
+    }
+    
+    .flosc-carousel-container {
+        gap: 8px;
+    }
+    
+    /* Stack cards on mobile */
+    .flosc-carousel-track.flosc-cards-container,
+    .flosc-cards-container:not(.flosc-carousel-track) {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ============================================
+   TYPING INDICATOR
+   ============================================ */
+
+.flosc-typing-indicator,
+.typing-indicator {
+    display: none;
+    gap: 12px;
+    padding: 0 24px;
+    margin-bottom: 22px;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    align-items: flex-start;
+}
+
+.flosc-typing-indicator.show,
+.typing-indicator.show {
+    display: flex;
+}
+
+.typing-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.flosc-typing-dots,
+.typing-dots {
+    display: flex;
+    gap: 5px;
+    padding: 12px 16px;
+}
+
+.flosc-typing-dot,
+.typing-dots span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: flosc-typing 1.4s infinite;
+}
+
+.flosc-typing-dot:nth-child(2),
+.typing-dots span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.flosc-typing-dot:nth-child(3),
+.typing-dots span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes flosc-typing {
+    0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+    30% { opacity: 1; transform: scale(1); }
+}
+
+/* ============================================
+   RESPONSIVE — TABLET (1024px)
+   ============================================ */
+
+@media (max-width: 1024px) {
+    .flosc-sidebar {
+        width: 260px;
+    }
+}
+
+/* ============================================
+   RESPONSIVE — MOBILE (768px)
+   ============================================ */
+
+@media (max-width: 768px) {
+    .flosc-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 50;
+        transform: translateX(-100%);
+        width: 280px;
+        height: 100vh;
+        height: 100dvh; /* v8.0.1: dynamic viewport height — avoids Safari toolbar clipping */
+    }
+
+    /* v1.8.1: Account for WP admin bar on mobile */
+    .admin-bar .flosc-sidebar {
+        top: 46px;
+        height: calc(100vh - 46px);
+        height: calc(100dvh - 46px);
+    }
+
+    .flosc-sidebar.open {
+        transform: translateX(0);
+    }
+
+    /* Sidebar toggle already visible by default — no mobile override needed */
+
+    .flosc-header {
+        display: flex;
+    }
+
+    .flosc-main {
+        padding-top: 0;
+    }
+
+    .flosc-messages,
+    .messages {
+        padding: 16px;
+    }
+
+    .flosc-input-composer,
+    .flosc_input_composer {
+        padding: 12px 16px 16px;
+    }
+
+    .flosc-message-content,
+    .message-content {
+        max-width: 85%;
+    }
+
+    .message.assistant .message-content,
+    .flosc-message-assistant .flosc-message-content {
+        max-width: 100%;
+    }
+
+    .flosc-user-autoprompts,
+    .flosc-user-autoprompts-container,
+    #flosc_input_user_autoprompts_panel {
+        padding: 12px 16px;
+    }
+
+    .flosc-greeting,
+    .greeting {
+        padding: 40px 16px 32px;
+    }
+
+    .flosc-greeting-title,
+    .greeting-title {
+        font-size: 22px;
+    }
+
+    .landing-title {
+        font-size: 24px;
+    }
+}
+
+/* ============================================
+   OVERLAY (Mobile sidebar)
+   ============================================ */
+
+.flosc-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+}
+
+.flosc-overlay.active {
+    display: block;
+}
+
+/* ============================================
+   MODAL SYSTEM
+   ============================================ */
+
+/* Closed by default; open via setDisplayState(..., true, 'flex') → data-flosc-display. */
+.flosc-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.flosc-modal-overlay.show,
+.flosc-modal-overlay[data-flosc-display="flex"]:not(.flosc-hidden) {
+    display: flex;
+}
+
+.flosc-modal {
+    background: var(--flosc-bg, white);
+    border-radius: 16px;
+    max-width: 440px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.25);
+}
+
+@keyframes modalIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.flosc-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--flosc-border, #e5e7eb);
+}
+
+.flosc-modal-header h3 {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+    color: var(--flosc-text, #111827);
+    letter-spacing: -0.02em;
+}
+
+.flosc-modal-close {
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    color: var(--flosc-text-muted, #6b7280);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.flosc-modal-close:hover {
+    background: var(--flosc-sidebar-hover, #f3f4f6);
+    color: var(--flosc-text, #111827);
+}
+
+.flosc-modal-body {
+    padding: 22px;
+}
+
+/* ============================================
+   QUIZ MODAL
+   ============================================ */
+
+.flosc-recording-modal {
+    max-width: 400px;
+}
+
+.flosc-recording-instructions {
+    text-align: center;
+    color: var(--flosc-text-muted, #6b7280);
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+
+.waveform-container {
+    background: var(--flosc-sidebar-hover, #f3f4f6);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+#waveformCanvas {
+    width: 100%;
+    height: 60px;
+}
+
+.flosc-recording-timer {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    margin-bottom: 20px;
+    color: var(--flosc-text, #111827);
+}
+
+.flosc-recording-controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.flosc-record-btn, .flosc-stop-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 28px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.flosc-record-btn {
+    background: #ef4444;
+    color: white;
+}
+
+.flosc-record-btn:hover {
+    background: #dc2626;
+}
+
+.flosc-stop-btn {
+    background: var(--flosc-text, #111827);
+    color: white;
+}
+
+.flosc-recording-playback {
+    margin-top: 20px;
+}
+
+.flosc-recording-playback audio {
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.playback-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.playback-actions button {
+    flex: 1;
+}
+
+.flosc-recording-error {
+    text-align: center;
+    color: #ef4444;
+    padding: 20px;
+}
+
+/* Quiz Prompt */
+.quiz-prompt {
+    border-radius: 14px;
+    padding: 22px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.quiz-prompt-label {
+    font-size: 14px;
+    margin: 0 0 10px 0;
+}
+
+.quiz-sequence {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin: 0;
+}
+
+/* Quiz Tabs */
+.quiz-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.quiz-tab-btn {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+/* Quiz Panels */
+.quiz-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.quiz-text-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid;
+    border-radius: 12px;
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: 2px;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.quiz-text-input:focus {
+    outline: none;
+}
+
+.quiz-submit-btn,
+.flosc-quiz-submit-btn {
+    width: 100%;
+    margin-top: 4px;
+    padding: 14px 24px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* Quiz Audio Panel */
+.quiz-audio-panel {
+    flex-direction: column;
+    align-items: center;
+}
+
+.quiz-waveform {
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.quiz-timer {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    font-variant-numeric: tabular-nums;
+}
+
+.quiz-recording-controls {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.quiz-record-btn,
+.quiz-stop-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 28px;
+    border: none;
+    border-radius: 28px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.quiz-recording-status {
+    font-size: 14px;
+    text-align: center;
+    min-height: 20px;
+    margin-top: 12px;
+}
+
+.quiz-playback {
+    margin-top: 16px;
+    width: 100%;
+}
+
+.quiz-playback-audio {
+    width: 100%;
+}
+
+.quiz-playback-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.quiz-playback-actions button {
+    flex: 1;
+}
+
+.quiz-error {
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-top: 16px;
+}
+
+.quiz-error p {
+    margin: 0;
+}
+
+/* Quiz Result */
+.quiz-result-panel {
+    text-align: center;
+    padding: 22px;
+}
+
+.quiz-score-display {
+    font-size: 52px;
+    font-weight: 800;
+    margin-bottom: 12px;
+    letter-spacing: -0.04em;
+}
+
+.quiz-result-message {
+    margin-bottom: 22px;
+    line-height: 1.6;
+}
+
+.quiz-continue-btn {
+    padding: 14px 32px;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+/* ============================================
+   QUIZ RESULTS — Premium Card (v1.4.6)
+   ============================================ */
+
+.flosc-quiz-result {
+    border-radius: 18px;
+    padding: 32px;
+    text-align: center;
+    margin: 12px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.flosc-quiz-result-score {
+    font-size: 68px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
+    letter-spacing: -0.04em;
+}
+
+.flosc-quiz-result-label {
+    font-size: 17px;
+    margin-bottom: 22px;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+.flosc-quiz-result-cta {
+    padding: 13px 30px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid;
+    display: inline-block;
+}
+
+/* ============================================
+   SANDBOX PAYMENT (v1.4.6)
+   ============================================ */
+
+.flosc-sandbox-payment {
+    border-radius: 18px;
+    padding: 28px;
+    text-align: center;
+    margin: 16px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.flosc-sandbox-payment h3 {
+    margin: 0 0 8px;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.flosc-sandbox-payment p {
+    margin: 0 0 16px;
+}
+
+.flosc-sandbox-amount {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.flosc-sandbox-amount span {
+    font-size: 26px;
+    font-weight: 800;
+}
+
+.flosc-sandbox-amount input {
+    font-size: 30px;
+    font-weight: 800;
+    width: 180px;
+    text-align: right;
+    border: 2px solid;
+    border-radius: 12px;
+    padding: 10px 14px;
+    transition: all 0.2s ease;
+}
+
+.flosc-sandbox-amount input:focus {
+    outline: none;
+}
+
+.flosc-sandbox-presets {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.flosc-sandbox-presets button {
+    padding: 7px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.flosc-sandbox-pay-btn {
+    border: none;
+    padding: 15px 36px;
+    border-radius: 999px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    letter-spacing: -0.01em;
+}
+
+.flosc-sandbox-success {
+    padding: 32px;
+    border-radius: 18px;
+    text-align: center;
+}
+
+.flosc-sandbox-success h3 {
+    font-size: 28px;
+    margin: 0 0 8px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.flosc-sandbox-success .amount {
+    font-size: 52px;
+    font-weight: 800;
+    margin: 16px 0;
+    letter-spacing: -0.04em;
+}
+
+/* ============================================
+   SHARE MODAL
+   ============================================ */
+
+.flosc-share-text {
+    color: var(--flosc-text-muted, #6b7280);
+    margin-bottom: 16px;
+    line-height: 1.6;
+}
+
+.flosc-share-link-container {
+    display: flex;
+    gap: 8px;
+}
+
+.flosc-share-link-input {
+    flex: 1;
+    padding: 10px 14px;
+    border: 1px solid var(--flosc-border, #e5e7eb);
+    border-radius: 8px;
+    font-size: 14px;
+    background: var(--flosc-sidebar-hover, #f3f4f6);
+    color: var(--flosc-text, #111827);
+}
+
+.flosc-copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    background: var(--flosc-accent, #2563eb);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.15s ease;
+}
+
+.flosc-copy-btn:hover {
+    background: var(--flosc-accent-hover, #1d4ed8);
+}
+
+/* ============================================
+   PAYMENT MODAL
+   ============================================ */
+
+.flosc-payment-modal {
+    max-width: 420px;
+}
+
+.flosc-payment-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px;
+    background: var(--flosc-sidebar-hover, #f3f4f6);
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.flosc-payment-product {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.flosc-product-icon {
+    font-size: 32px;
+}
+
+.flosc-product-icon--image {
+    display: block;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    object-fit: contain !important;
+    flex-shrink: 0;
+}
+
+/* Payment modal summary: keep product row compact even if theme img rules fight us */
+.flosc-payment-modal .flosc-payment-summary,
+.flosc-payment-modal .flosc-payment-product {
+    max-width: 100%;
+    overflow: hidden;
+}
+.flosc-payment-modal .flosc-product-icon--image {
+    width: 40px !important;
+    height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+}
+
+.flosc-product-name {
+    font-weight: 600;
+    color: var(--flosc-text, #111827);
+}
+
+.flosc-product-desc {
+    font-size: 13px;
+    color: var(--flosc-text-muted, #6b7280);
+}
+
+.flosc-payment-price {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--flosc-text, #111827);
+}
+
+.flosc-payment-form {
+    margin-bottom: 20px;
+}
+
+.flosc-payment-form label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 8px;
+    color: var(--flosc-text, #111827);
+}
+
+.flosc-stripe-card-element {
+    padding: 12px;
+    border: 1px solid var(--flosc-border, #e5e7eb);
+    border-radius: 8px;
+    background: white;
+}
+
+.flosc-stripe-errors {
+    color: #ef4444;
+    font-size: 13px;
+    margin-top: 8px;
+    min-height: 20px;
+}
+
+.flosc-pay-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--flosc-accent, #2563eb);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.flosc-pay-btn:hover:not(:disabled) {
+    background: var(--flosc-accent-hover, #1d4ed8);
+}
+
+.flosc-pay-btn:disabled {
+    background: var(--flosc-text-muted, #6b7280);
+    cursor: not-allowed;
+}
+
+.flosc-pay-btn.loading .flosc-pay-btn-text {
+    visibility: hidden;
+}
+
+.flosc-pay-btn-spinner {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid white;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spinner 0.8s linear infinite;
+}
+
+.flosc-pay-btn.loading .flosc-pay-btn-spinner {
+    display: block;
+}
+
+@keyframes spinner {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.flosc-payment-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+    color: var(--flosc-text-muted, #6b7280);
+    font-size: 13px;
+}
+
+/* v1.6.9: PayPal + Stripe payment separator */
+.flosc-payment-separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 16px 0;
+    color: var(--flosc-text-muted, #9ca3af);
+    font-size: 13px;
+}
+
+.flosc-payment-separator::before,
+.flosc-payment-separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--flosc-border, #e5e7eb);
+}
+
+.flosc-payment-separator span {
+    padding: 0 12px;
+}
+
+.flosc-paypal-buttons {
+    min-height: 45px;
+}
+
+.flosc-paypal-buttons--spaced {
+    margin-bottom: 16px;
+}
+
+.flosc-access-code-trigger {
+    text-align: center;
+    margin-top: 14px;
+}
+
+.flosc-access-code-link {
+    color: #aaa;
+    font-size: 12px;
+    text-decoration: none;
+}
+
+/* ============================================
+   LOGIN GATE
+   ============================================ */
+
+/* v1.7.0: Quiz results gate (inline in chat for visitors) */
+.flosc-quiz-gate {
+    text-align: center;
+    padding: 24px 20px;
+    border-radius: 14px;
+    background: var(--flosc-bg-secondary, #f9fafb);
+    border: 1px solid var(--flosc-border, #e5e7eb);
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.flosc-gate-icon {
+    font-size: 36px;
+    margin-bottom: 8px;
+}
+
+.flosc-gate-title {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--flosc-text-primary, #111827);
+}
+
+.flosc-gate-text {
+    font-size: 14px;
+    color: var(--flosc-text-muted, #6b7280);
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.flosc-gate-btn {
+    display: inline-block;
+    padding: 14px 32px;
+    background: #2563eb !important;
+    color: #ffffff !important;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+    text-decoration: none;
+    letter-spacing: -0.01em;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+}
+
+.flosc-gate-btn:hover {
+    background: #1d4ed8 !important;
+    color: #ffffff !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.5);
+    text-decoration: none;
+}
+
+.flosc-gate-btn:active {
+    transform: translateY(0);
+}
+
+/* Login gate modal */
+.flosc-login-gate-body {
+    text-align: center;
+}
+
+.flosc-login-gate-body p {
+    color: var(--flosc-text-muted, #6b7280);
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+
+.flosc-login-gate-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.flosc-login-gate-buttons .btn-primary,
+.flosc-login-gate-buttons .btn-large {
+    padding: 14px 24px;
+    background: var(--flosc-accent, #2563eb);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.flosc-login-gate-buttons .btn-primary:hover {
+    background: var(--flosc-accent-hover, #1d4ed8);
+}
+
+.flosc-login-gate-buttons .btn-secondary {
+    padding: 14px 24px;
+    background: transparent;
+    color: var(--flosc-accent, #2563eb);
+    border: 1px solid var(--flosc-accent, #2563eb);
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.flosc-login-gate-buttons .btn-secondary:hover {
+    background: rgba(37, 99, 235, 0.1);
+}
+
+/* ============================================
+   CONTENT PROTECTION LAYOUT
+   ============================================ */
+
+.flosc-protected-content {
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+}
+
+.flosc-protected-content.flosc-teaser .flosc-teaser-excerpt {
+    line-height: 1.7;
+    margin-bottom: 1rem;
+}
+
+.flosc-protected-content.flosc-preview .flosc-preview-content {
+    line-height: 1.7;
+}
+
+.flosc-protected-notice {
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+    text-align: center;
+}
+
+.flosc-protected-notice p {
+    margin: 0;
+}
+
+.flosc-chatbot-cta {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.flosc-cta-button {
+    display: inline-block;
+    padding: 0.85rem 1.75rem;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15px;
+}
+
+/* ============================================
+   SIDEBAR OVERLAY (Mobile)
+   ============================================ */
+
+/* v2.0.5: z-index must be LOWER than mobile sidebar (50) so overlay
+   darkens the main content but doesn't block sidebar interaction. */
+.flosc-sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 49;
+}
+
+.flosc-sidebar-overlay.show {
+    display: block;
+}
+
+/* ============================================
+   USER STATE VISIBILITY (cascade, no !important)
+   Profile bar is always visible (content toggled via data-show).
+   Hide rules only — shown state comes from component base styles.
+   ============================================ */
+
+[data-user-state="visitor"] .session-history,
+[data-user-state="visitor"] .flosc-share-btn,
+[data-user-state="visitor"] .flosc_app_session_list,
+[data-user-state="visitor"] .new-chat-btn {
+    display: none;
+}
+
+[data-user-state="guest"] .auth-buttons,
+[data-user-state="member"] .auth-buttons {
+    display: none;
+}
+
+[data-user-state="member"] .upgrade-banner,
+[data-user-state="visitor"] .upgrade-banner {
+    display: none;
+}
+
+/* ============================================
+   LOADING STATES
+   ============================================ */
+
+.flosc-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+.flosc-sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* Focus visible for keyboard navigation */
+.flosc-app *:focus-visible {
+    outline: 2px solid var(--flosc-accent, #2563eb);
+    outline-offset: 2px;
+}
+
+/* ============================================
+   PROMPT PANEL / INTRO PANEL
+   v8.1.0: DA1NI5 Michel Duck and Show Chevron
+   https://github.com/dainismichel/DA1NI5_michel_duck_and_show_chevron
+   ============================================ */
+
+.prompt-panel,
+.intro-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4px 16px 8px;
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
+    align-self: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    border-radius: 16px;
+    /* DA1NI5 Duck and Show — whisper of green */
+    --da1-line-1: #e8f2e6;
+    --da1-line-2: #a8b8a5;
+    --da1-line-3: #5a6858;
+    --da1-line-1-hover: #d8ecd4;
+    --da1-line-2-hover: #8eaa89;
+    --da1-line-3-hover: #7a9475;
+}
+
+.prompt-panel-inline,
+.intro-panel-inline {
+    max-width: 1100px;
+    width: 100%;
+    margin: 4px auto 0;
+    align-items: stretch;
+    padding: 4px 16px 8px;
+    border-radius: 16px;
+}
+
+/* --- DA1NI5 Michel Duck and Show — X Close Button ---------------------- */
+
+.da1-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.06);
+    border: none;
+    border-radius: 0 16px 0 8px;
+    color: #999;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 3;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.da1-close:hover {
+    background: rgba(0, 0, 0, 0.12);
+    color: #666;
+}
+
+.da1-close:focus-visible {
+    outline: 2px solid var(--da1-focus-color, #4f46e5);
+    outline-offset: -2px;
+}
+
+/* Hide X when ducked or closed */
+[data-da1-state="ducked"] .da1-close,
+[data-da1-state="closed"] .da1-close {
+    display: none;
+}
+
+/* --- DA1NI5 Michel Duck and Show Chevron -------------------------------- */
+
+.da1-chevron {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 18px;
+    padding: 4px 0;
+    margin: 0 auto;
+    background: none;
+    border: none;
+    cursor: pointer;
+    z-index: 2;
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+}
+
+.da1-chevron:focus-visible {
+    outline: 2px solid var(--da1-focus-color, #4f46e5);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* Down-pointing V (::after) — always has down clip-path, visible in shown state */
+.da1-chevron::after {
+    content: '';
+    display: block;
+    width: var(--da1-chevron-width, 40px);
+    height: var(--da1-chevron-height, 10px);
+    clip-path: polygon(
+        0%  0%,
+        50% 100%,
+        100% 0%,
+        84% 0%,
+        50% 62%,
+        16% 0%
+    );
+    background: linear-gradient(
+        to bottom,
+        var(--da1-line-1, #ffffff) 0%,
+        var(--da1-line-1, #ffffff) 30%,
+        var(--da1-line-2, #aaaaaa) 30%,
+        var(--da1-line-2, #aaaaaa) 60%,
+        var(--da1-line-3, #555555) 60%,
+        var(--da1-line-3, #555555) 100%
+    );
+}
+
+/* Up-pointing V (::before) — always has up clip-path, hidden by default */
+.da1-chevron::before {
+    content: '';
+    display: none;
+    width: var(--da1-chevron-width, 40px);
+    height: var(--da1-chevron-height, 10px);
+    clip-path: polygon(
+        0%  100%,
+        50% 0%,
+        100% 100%,
+        84% 100%,
+        50% 38%,
+        16% 100%
+    );
+    background: linear-gradient(
+        to top,
+        var(--da1-line-1, #ffffff) 0%,
+        var(--da1-line-1, #ffffff) 30%,
+        var(--da1-line-2, #aaaaaa) 30%,
+        var(--da1-line-2, #aaaaaa) 60%,
+        var(--da1-line-3, #555555) 60%,
+        var(--da1-line-3, #555555) 100%
+    );
+}
+
+/* Ducked: swap pseudo-elements — hide ::after (down), show ::before (up) */
+[data-da1-state="ducked"] .da1-chevron::after {
+    display: none;
+}
+
+[data-da1-state="ducked"] .da1-chevron::before {
+    display: block;
+}
+
+/* Hover states for both pseudo-elements */
+.da1-chevron:hover::after {
+    background: linear-gradient(
+        to bottom,
+        var(--da1-line-1-hover, var(--da1-line-1, #ffffff)) 0%,
+        var(--da1-line-1-hover, var(--da1-line-1, #ffffff)) 30%,
+        var(--da1-line-2-hover, var(--da1-line-2, #999999)) 30%,
+        var(--da1-line-2-hover, var(--da1-line-2, #999999)) 60%,
+        var(--da1-line-3-hover, var(--da1-line-3, #444444)) 60%,
+        var(--da1-line-3-hover, var(--da1-line-3, #444444)) 100%
+    );
+}
+
+.da1-chevron:hover::before {
+    background: linear-gradient(
+        to top,
+        var(--da1-line-1-hover, var(--da1-line-1, #ffffff)) 0%,
+        var(--da1-line-1-hover, var(--da1-line-1, #ffffff)) 30%,
+        var(--da1-line-2-hover, var(--da1-line-2, #999999)) 30%,
+        var(--da1-line-2-hover, var(--da1-line-2, #999999)) 60%,
+        var(--da1-line-3-hover, var(--da1-line-3, #444444)) 60%,
+        var(--da1-line-3-hover, var(--da1-line-3, #444444)) 100%
+    );
+}
+
+.da1-content {
+    display: grid;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows var(--da1-transition-ms, 0.3s) cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%;
+}
+
+.da1-content-inner {
+    overflow: hidden;
+}
+
+/* Ducked: panel becomes transparent sliver — only chevron visible, near input */
+[data-da1-state="ducked"] {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 auto -10px !important;
+    min-height: 0;
+    border-radius: 0;
+    /* Push chevron to bottom so it sits right against the composer */
+    justify-content: flex-end;
+}
+
+[data-da1-state="ducked"] .da1-chevron {
+    padding: 1px 0 0;
+    order: 2;
+}
+
+[data-da1-state="ducked"] .da1-content {
+    grid-template-rows: 0fr;
+    height: 0;
+    overflow: hidden;
+    order: 1;
+}
+
+/* ============================================
+   BUTTON ICON FIX (legacy v9.2.3 compat)
+   ============================================ */
+
+/* Sidebar action buttons */
+.sidebar-action-btn {
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    color: #667;
+    border-radius: 8px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-action-btn:hover {
+    background: #f5f5f5;
+    color: #1a1a1a;
+}
+
+.sidebar-action-btn:active {
+    transform: scale(0.95);
+}
+
+/* Send button */
+.flosc_input_chat_send_button {
+    background: #4f46e5;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    color: white;
+    border-radius: 10px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flosc_input_chat_send_button:hover {
+    background: #4338ca;
+}
+
+/* Sidebar toggle */
+.flosc_app_sidebar_toggle {
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    color: var(--flosc-text-secondary, #6b7280);
+    border-radius: 8px;
+}
+
+.flosc_app_sidebar_toggle:hover {
+    background: var(--flosc-hover, #f5f5f5);
+    color: var(--flosc-text-primary, #374151);
+}
+
+/* ============================================
+   LESSON LIST & CONTENT
+   ============================================ */
+
+.flosc-lesson-list {
+    max-width: 680px;
+    margin: 16px 0;
+}
+
+.flosc-lesson-list-header {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--flosc-border, #e5e7eb);
+}
+
+.flosc-lesson-list-header h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+}
+
+.flosc-lesson-list-header p {
+    font-size: 14px;
+    color: var(--flosc-text-muted, #6b7280);
+    margin: 0;
+}
+
+.flosc-lesson-items {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.flosc-lesson-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--flosc-surface, #ffffff);
+    border: 1px solid var(--flosc-border, #e5e7eb);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.flosc-lesson-item:hover {
+    border-color: var(--flosc-primary, #4f46e5);
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.08);
+}
+
+.flosc-lesson-item-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.flosc-lesson-item-title {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--flosc-text, #1f2937);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.flosc-lesson-item-excerpt {
+    font-size: 13px;
+    color: var(--flosc-text-muted, #6b7280);
+    margin: 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.flosc-lesson-item-arrow {
+    font-size: 18px;
+    color: var(--flosc-text-muted, #9ca3af);
+    margin-left: 12px;
+    flex-shrink: 0;
+}
+
+.flosc-lesson-item:hover .flosc-lesson-item-arrow {
+    color: var(--flosc-primary, #4f46e5);
+}
+
+/* v3.0.8: Compact titles-only list for large libraries (65+10 = 75 lessons) */
+.flosc-lesson-items--compact {
+    gap: 2px;
+}
+
+.flosc-lesson-item--title-only {
+    padding: 6px 10px;
+    border-radius: 5px;
+    border: none;
+    box-shadow: none;
+    background: transparent;
+}
+
+.flosc-lesson-item--title-only:hover {
+    background: var(--flosc-surface-hover, #f3f4f6);
+    box-shadow: none;
+    border-color: transparent;
+}
+
+.flosc-lesson-item--title-only .flosc-lesson-item-title {
+    font-size: 13.5px;
+    font-weight: 400;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.flosc-lesson-item--title-only .flosc-lesson-item-arrow {
+    font-size: 14px;
+    color: var(--flosc-text-muted, #d1d5db);
+    margin-left: 6px;
+}
+
+/* WordPress Lesson Content */
+.flosc-wp-lesson {
+    max-width: 680px;
+    margin: 16px 0;
+}
+
+.flosc-wp-lesson-header {
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--flosc-border, #e5e7eb);
+}
+
+.flosc-wp-lesson-header h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+    color: var(--flosc-text, #1f2937);
+}
+
+/* WordPress content renders with its own theme styling — no overrides */
+.flosc-wp-lesson-content img {
+    max-width: 100%;
+    height: auto;
+}
+
+.flosc-wp-lesson-footer {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid var(--flosc-border, #e5e7eb);
+}
+
+.flosc-back-to-lessons-btn {
+    padding: 10px 20px;
+    background: var(--flosc-bg-hover, #f3f4f6);
+    color: var(--flosc-text, #374151);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.flosc-back-to-lessons-btn:hover {
+    background: var(--flosc-border, #e5e7eb);
+    color: var(--flosc-text, #1f2937);
+}
+
+@media (max-width: 768px) {
+    .flosc-lesson-list,
+    .flosc-wp-lesson {
+        max-width: 100%;
+    }
+
+    .flosc-lesson-item {
+        padding: 10px 12px;
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   v1.9.0: AI Feedback Flag Button + Modal (admin-only)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Flag button — appears on hover of assistant messages */
+.flosc-feedback-flag {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--flosc-text-muted, #94a3b8);
+    opacity: 0;
+    transition: opacity 0.2s, color 0.2s;
+    padding: 2px 6px;
+    border-radius: 4px;
+    line-height: 1;
+}
+
+.message.assistant .message-content {
+    position: relative;
+}
+
+/* Admin feedback wrapper — holds praise + flag buttons */
+.flosc-admin-feedback {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    display: flex;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.message.assistant:hover .flosc-admin-feedback {
+    opacity: 0.6;
+}
+
+.message.assistant:hover .flosc-admin-feedback:hover {
+    opacity: 1;
+}
+
+/* Legacy standalone flag — still hide on hover */
+.message.assistant:hover .flosc-feedback-flag {
+    opacity: 0.6;
+}
+
+.flosc-feedback-flag:hover {
+    opacity: 1 !important;
+    color: var(--flosc-warning, #f59e0b);
+    background: var(--flosc-surface-hover, rgba(0, 0, 0, 0.05));
+}
+
+/* Praise button */
+.flosc-praise-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--flosc-text-muted, #94a3b8);
+    padding: 2px 6px;
+    border-radius: 4px;
+    line-height: 1;
+    transition: opacity 0.2s, color 0.2s;
+}
+
+.flosc-praise-btn:hover {
+    color: var(--flosc-success, #22c55e);
+    background: var(--flosc-surface-hover, rgba(0, 0, 0, 0.05));
+}
+
+/* Praise modal header — green accent */
+.flosc-praise-header {
+    border-bottom-color: #bbf7d0;
+}
+
+/* Praise good response preview — green */
+.flosc-feedback-preview.flosc-praise-good {
+    border-color: #86efac;
+    background: #f0fdf4;
+}
+
+/* Praise submit button — green */
+.flosc-praise-submit-btn {
+    background: #22c55e !important;
+}
+
+.flosc-praise-submit-btn:hover {
+    background: #16a34a !important;
+}
+
+/* Modal overlay */
+.flosc-feedback-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100000;
+    padding: 20px;
+}
+
+/* Modal container */
+.flosc-feedback-modal {
+    background: var(--flosc-surface, #fff);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 540px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.flosc-feedback-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--flosc-border, #e2e8f0);
+}
+
+.flosc-feedback-modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--flosc-text, #1e293b);
+}
+
+.flosc-feedback-modal-close {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: var(--flosc-text-muted, #94a3b8);
+    padding: 0 4px;
+    line-height: 1;
+}
+
+.flosc-feedback-modal-close:hover {
+    color: var(--flosc-text, #1e293b);
+}
+
+.flosc-feedback-modal-body {
+    padding: 20px;
+}
+
+.flosc-feedback-field {
+    margin-bottom: 16px;
+}
+
+.flosc-feedback-field label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--flosc-text, #1e293b);
+    margin-bottom: 6px;
+}
+
+.flosc-feedback-field .required {
+    color: #ef4444;
+}
+
+.flosc-feedback-field .optional {
+    color: var(--flosc-text-muted, #94a3b8);
+    font-weight: 400;
+}
+
+.flosc-feedback-preview {
+    background: var(--flosc-surface-alt, #f8fafc);
+    border: 1px solid var(--flosc-border, #e2e8f0);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--flosc-text, #1e293b);
+    max-height: 100px;
+    overflow-y: auto;
+    line-height: 1.5;
+}
+
+.flosc-feedback-preview.flosc-feedback-bad {
+    border-color: #fca5a5;
+    background: #fef2f2;
+}
+
+.flosc-feedback-field textarea {
+    width: 100%;
+    border: 1px solid var(--flosc-border, #e2e8f0);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 13px;
+    font-family: inherit;
+    resize: vertical;
+    color: var(--flosc-text, #1e293b);
+    background: var(--flosc-surface, #fff);
+    box-sizing: border-box;
+}
+
+.flosc-feedback-field textarea:focus {
+    outline: none;
+    border-color: var(--flosc-primary, #4f46e5);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.flosc-feedback-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding: 14px 20px;
+    border-top: 1px solid var(--flosc-border, #e2e8f0);
+}
+
+.flosc-feedback-cancel {
+    padding: 8px 16px;
+    border: 1px solid var(--flosc-border, #e2e8f0);
+    background: var(--flosc-surface, #fff);
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--flosc-text, #1e293b);
+}
+
+.flosc-feedback-cancel:hover {
+    background: var(--flosc-surface-alt, #f8fafc);
+}
+
+.flosc-feedback-submit {
+    padding: 8px 20px;
+    border: none;
+    background: var(--flosc-primary, #4f46e5);
+    color: #fff;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.flosc-feedback-submit:hover {
+    opacity: 0.9;
+}
+
+.flosc-feedback-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ==========================================
+   Free Lesson Cards — v8.0.1
+   ========================================== */
+
+.flosc-free-lesson-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.flosc-free-lesson-intro {
+    margin: 0 0 4px;
+    font-size: 14px;
+    color: var(--flosc-text-secondary, #555);
+}
+
+.flosc-free-lesson-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--flosc-surface, #f5f5f5);
+    border: 1px solid var(--flosc-border, #e0e0e0);
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--flosc-text, #222);
+    transition: background 0.15s, border-color 0.15s;
+    width: 100%;
+}
+
+.flosc-free-lesson-card:hover {
+    background: var(--flosc-primary-light, #ede9fe);
+    border-color: var(--flosc-primary, #4f46e5);
+}
+
+.flosc-free-lesson-card-icon { font-size: 20px; flex-shrink: 0; }
+.flosc-free-lesson-card-title { flex: 1; }
+
+
+/* ===== END FLOSC LEGACY: flosc-layout.css ===== */
+
+
+
+/* ===== BEGIN FLOSC LEGACY: flosc-theme.css ===== */
+
+/**
+ * FLOSC Theme Layer (v1.6.1) — Ultra Pro Edition
+ * ===============================================
+ * Updated: 2026-02m-06d
+ * 
+ * Premium visual layer: refined typography, subtle glass effects,
+ * smooth micro-interactions, and polished surface treatments.
+ *
+ * ARCHITECTURE (unchanged):
+ * 1. flosc-layout.css  — Structure (flexbox, grid, sizing)
+ * 2. flosc-theme.css   — Visual polish (this file)
+ * 3. chat-style-*.css  — Variable definitions (presets)
+ *
+ * BACKWARD COMPATIBILITY: Supports both legacy + flosc- prefixed classes.
+ * ============================================================================
+ */
+
+/* ============================================
+   VARIABLE DEFAULTS (Fallbacks)
+   ============================================ */
+:root {
+    /* Global */
+    --flosc-bg: #fafafa;
+    --flosc-text: #18181b;
+    --flosc-text-muted: #71717a;
+    --flosc-text-secondary: #666666;      /* v1.7.7: Auth modal + layout secondary text */
+    --flosc-surface: #ffffff;              /* v1.7.7: Generic surface background */
+    --flosc-surface-hover: #f0f0f0;       /* v1.7.7: Surface hover state */
+    --flosc-border: #e4e4e7;
+    --flosc-accent: #2563eb;
+    --flosc-accent-hover: #1d4ed8;
+    --flosc-accent-subtle: rgba(37, 99, 235, 0.06);
+
+    /* User Message */
+    --flosc-user-message-bg: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    --flosc-user-message-text: #ffffff;
+    --flosc-user-message-radius: 20px 20px 4px 20px;
+    --flosc-user-avatar-bg: #2563eb;
+    --flosc-user-avatar-text: #ffffff;
+
+    /* Assistant Message */
+    --flosc-assistant-message-bg: transparent;
+    --flosc-assistant-message-text: #18181b;
+    --flosc-assistant-message-border: none;
+    --flosc-assistant-message-radius: 4px 20px 20px 20px;
+    --flosc-assistant-avatar-bg: #f4f4f5;
+    --flosc-assistant-avatar-text: #52525b;
+
+    /* Input */
+    --flosc-input-bg: #fafafa;
+    --flosc-input-field-bg: #ffffff;
+    --flosc-input-field-border: #e4e4e7;
+    --flosc-input-field-text: #18181b;
+    --flosc-input-placeholder: #a1a1aa;
+    --flosc-send-btn-bg: #2563eb;
+    --flosc-send-btn-text: #ffffff;
+
+    /* Sidebar */
+    --flosc-sidebar-bg: #ffffff;
+    --flosc-sidebar-text: #3f3f46;
+    --flosc-sidebar-text-muted: #71717a;
+    --flosc-sidebar-hover: #f4f4f5;
+    --flosc-sidebar-active: #eff6ff;
+    --flosc-sidebar-border: #e4e4e7;
+
+    /* Pills / User AutoPrompts */
+    --flosc-pill-bg: #ffffff;
+    --flosc-pill-text: #3f3f46;
+    --flosc-pill-border: #e4e4e7;
+    --flosc-pill-hover-bg: #eff6ff;
+    --flosc-pill-hover-text: var(--flosc-accent);
+    --flosc-pill-hover-border: #93c5fd;
+
+    /* Visitor Bar (v1.7.9) */
+    --flosc-visitor-bar-bg: #f0f9ff;
+    --flosc-visitor-bar-border: #bfdbfe;
+    --flosc-visitor-bar-text: #1e40af;
+
+    /* Cards */
+    --flosc-card-bg: #ffffff;
+    --flosc-card-text: #3f3f46;
+    --flosc-card-border: #e4e4e7;
+    --flosc-card-hover-bg: #fafafa;
+    --flosc-card-hover-text: var(--flosc-accent);
+    --flosc-card-hover-border: #93c5fd;
+    --flosc-card-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+    --flosc-card-hover-shadow: 0 8px 25px rgba(0,0,0,0.08), 0 4px 10px rgba(0,0,0,0.04);
+
+    /* Panels */
+    --flosc-panel-bg: rgba(255, 255, 255, 0.72);
+    --flosc-panel-border: rgba(0, 0, 0, 0.04);
+    --flosc-panel-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    --flosc-panel-header-text: var(--flosc-text);
+    --flosc-panel-eyebrow-text: var(--flosc-text-muted);
+    --flosc-panel-close-bg: rgba(255, 255, 255, 0.9);
+    --flosc-panel-close-border: rgba(0, 0, 0, 0.06);
+    --flosc-panel-close-text: var(--flosc-text-muted);
+    --flosc-panel-close-hover-bg: #ffffff;
+    --flosc-panel-close-hover-border: rgba(0, 0, 0, 0.12);
+
+    /* Content Formatting */
+    --flosc-content-link: var(--flosc-accent);
+    --flosc-content-link-hover: var(--flosc-accent-hover);
+    --flosc-content-blockquote-border: var(--flosc-accent);
+    --flosc-content-blockquote-bg: var(--flosc-accent-subtle, rgba(37, 99, 235, 0.04));
+    --flosc-content-blockquote-text: var(--flosc-text-muted);
+    --flosc-content-hr: var(--flosc-border);
+    --flosc-content-table-border: var(--flosc-border);
+    --flosc-content-table-header-bg: #f4f4f5;
+    --flosc-content-table-stripe-bg: #fafafa;
+    --flosc-content-list-marker: var(--flosc-text-muted);
+
+    /* Code Blocks */
+    --flosc-code-bg: #f4f4f5;
+    --flosc-code-text: #18181b;
+
+    /* Quiz Modal */
+    --flosc-quiz-prompt-bg: #f8fafc;
+    --flosc-quiz-prompt-border: #e2e8f0;
+    --flosc-quiz-sequence-text: #0f172a;
+    --flosc-quiz-tab-bg: #ffffff;
+    --flosc-quiz-tab-border: #e4e4e7;
+    --flosc-quiz-tab-text: #71717a;
+    --flosc-quiz-tab-active-bg: var(--flosc-accent);
+    --flosc-quiz-tab-active-text: #ffffff;
+    --flosc-quiz-input-bg: #ffffff;
+    --flosc-quiz-input-border: #e4e4e7;
+    --flosc-quiz-input-focus-border: var(--flosc-accent);
+    --flosc-quiz-record-bg: #dc2626;
+    --flosc-quiz-record-hover-bg: #b91c1c;
+    --flosc-quiz-stop-bg: #52525b;
+    --flosc-quiz-stop-hover-bg: #3f3f46;
+    --flosc-quiz-waveform-bg: #f8fafc;
+    --flosc-quiz-success: #059669;
+    --flosc-quiz-warning: #d97706;
+    --flosc-quiz-error-bg: #fef2f2;
+    --flosc-quiz-error-text: #991b1b;
+    --flosc-quiz-error-border: #fecaca;
+
+    /* v1.7.7: Offer Cards & Checkout */
+    --flosc-offer-gradient-start: #667eea;
+    --flosc-offer-gradient-end: #764ba2;
+    --flosc-offer-gradient: linear-gradient(135deg, var(--flosc-offer-gradient-start) 0%, var(--flosc-offer-gradient-end) 100%);
+    --flosc-offer-shadow: rgba(102, 126, 234, 0.4);
+    --flosc-offer-cta-bg: #10b981;
+    --flosc-offer-cta-hover-bg: #059669;
+    --flosc-offer-badge-bg: #ef4444;
+    --flosc-offer-text-bg: #f0f4ff;
+    --flosc-offer-text-color: #4338ca;
+    --flosc-offer-text-link: #667eea;
+    --flosc-offer-text-link-hover: #4338ca;
+    --flosc-offer-timer-expired: #fca5a5;
+
+    /* v1.7.7: Checkout */
+    --flosc-checkout-bg: #ffffff;
+    --flosc-checkout-border: #e5e7eb;
+    --flosc-checkout-product-name: #1f2937;
+    --flosc-checkout-product-desc: #6b7280;
+    --flosc-checkout-product-price: #10b981;
+    --flosc-checkout-label: #374151;
+    --flosc-checkout-input-border: #d1d5db;
+    --flosc-checkout-footer-text: #6b7280;
+    --flosc-checkout-error: #ef4444;
+    --flosc-checkout-success: #10b981;
+
+    /* v1.7.7: In-Chat Quiz */
+    --flosc-quiz-inline-bg: #f0f9ff;
+    --flosc-quiz-inline-border: #bae6fd;
+    --flosc-quiz-inline-accent: #0ea5e9;
+    --flosc-quiz-inline-header: #0369a1;
+    --flosc-quiz-inline-text: #0c4a6e;
+    --flosc-quiz-inline-option-border: #e0f2fe;
+    --flosc-quiz-inline-option-hover-border: #38bdf8;
+    --flosc-quiz-inline-progress-bg: #e0f2fe;
+    --flosc-quiz-result-high-start: #059669;
+    --flosc-quiz-result-high-end: #10b981;
+    --flosc-quiz-result-low-start: #dc2626;
+    --flosc-quiz-result-low-end: #ef4444;
+    --flosc-quiz-result-mid-start: #d97706;
+    --flosc-quiz-result-mid-end: #f59e0b;
+    --flosc-quiz-result-cta-text: #059669;
+    --flosc-quiz-result-correct: #d1fae5;
+    --flosc-quiz-result-incorrect: #fecaca;
+    --flosc-quiz-score-ring: #e5e7eb;
+
+    /* Scrollbar */
+    --flosc-scrollbar-thumb: #d4d4d8;
+    --flosc-scrollbar-thumb-hover: #a1a1aa;
+}
+
+/* ============================================
+   APP CONTAINER
+   ============================================ */
+.flosc-app {
+    background: var(--flosc-bg);
+    color: var(--flosc-text);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================
+   SIDEBAR
+   ============================================ */
+.flosc-sidebar {
+    background: var(--flosc-sidebar-bg);
+    border-right: 1px solid var(--flosc-sidebar-border);
+}
+
+.flosc-sidebar-header,
+.flosc-sidebar .sidebar-header {
+    border-bottom: 1px solid var(--flosc-sidebar-border);
+}
+
+.flosc-sidebar-logo,
+.flosc-sidebar .logo {
+    color: var(--flosc-text);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+/* Sidebar Action Buttons */
+.flosc-sidebar-action-btn,
+.flosc-sidebar .sidebar-action-btn {
+    background: transparent;
+    color: var(--flosc-sidebar-text-muted);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flosc-sidebar-action-btn:hover,
+.flosc-sidebar .sidebar-action-btn:hover {
+    background: var(--flosc-sidebar-hover);
+    color: var(--flosc-sidebar-text);
+}
+
+/* Mobile Sidebar Toggle */
+.flosc-sidebar-toggle,
+.flosc_app_sidebar_toggle {
+    background: var(--flosc-bg);
+    color: var(--flosc-text);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(8px);
+}
+
+/* New Chat Button */
+.flosc-new-chat-btn,
+.flosc-sidebar .new-chat-btn {
+    background: var(--flosc-accent);
+    color: #ffffff;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.2);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flosc-new-chat-btn:hover,
+.flosc-sidebar .new-chat-btn:hover {
+    background: var(--flosc-accent-hover);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    transform: translateY(-1px);
+}
+
+/* ============================================
+   SESSION LIST
+   ============================================ */
+.flosc-session-group-title,
+.session-group-title {
+    color: var(--flosc-sidebar-text-muted);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+}
+
+.flosc-session-item,
+.session-item {
+    color: var(--flosc-sidebar-text);
+    transition: all 0.15s ease;
+}
+
+.flosc-session-item:hover,
+.session-item:hover {
+    background: var(--flosc-sidebar-hover);
+}
+
+.flosc-session-item.active,
+.session-item.active {
+    background: var(--flosc-sidebar-active);
+    color: var(--flosc-accent);
+    font-weight: 500;
+}
+
+/* ============================================
+   USER PROFILE
+   ============================================ */
+.user-profile-bar {
+    border-top: 1px solid var(--flosc-sidebar-border);
+    background: var(--flosc-sidebar-bg);
+}
+
+.user-profile-bar .profile-avatar {
+    background: var(--flosc-accent);
+    color: #ffffff;
+}
+
+/* v1.8.1: Visitor avatar — no circle, no ring, just the emoji */
+.user-profile-bar .profile-avatar.visitor-avatar {
+    background: transparent;
+    color: inherit;
+    box-shadow: none;
+}
+
+.user-profile-bar .profile-name {
+    color: var(--flosc-sidebar-text);
+    font-weight: 600;
+}
+
+.user-profile-bar .dropdown-email {
+    color: var(--flosc-sidebar-text-muted);
+}
+
+/* ============================================
+   HEADER
+   ============================================ */
+.flosc-header {
+    background: var(--flosc-bg);
+    border-bottom: none;
+    backdrop-filter: blur(12px);
+}
+
+.flosc-header-title,
+.flosc-header .header-title {
+    color: var(--flosc-text);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+/* ============================================
+   CHAT CONTAINER / MESSAGES
+   ============================================ */
+.flosc-chat-container,
+.chat-container {
+    background: var(--flosc-bg);
+}
+
+.flosc-messages,
+.messages {
+    background: var(--flosc-bg);
+}
+
+/* ============================================
+   GREETING / WELCOME
+   ============================================ */
+.flosc-greeting-title,
+.greeting-title {
+    color: var(--flosc-text);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+.flosc-greeting-subtitle,
+.greeting-subtitle,
+.landing-subtitle {
+    color: var(--flosc-text-muted);
+}
+
+/* ============================================
+   MESSAGES — Shared
+   ============================================ */
+.flosc-message,
+.message {
+    background: transparent !important;
+    border: none !important;
+}
+
+.flosc-message-user,
+.message.user {
+    flex-direction: row-reverse;
+}
+
+/* ============================================
+   USER MESSAGE
+   ============================================ */
+.flosc-message-user .flosc-message-avatar,
+.flosc-message-user .message-avatar,
+.message.user .message-avatar {
+    background: var(--flosc-user-avatar-bg);
+    color: var(--flosc-user-avatar-text);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    flex-shrink: 0;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+}
+
+.flosc-message-user .flosc-message-text,
+.flosc-message-user .message-text,
+.message.user .message-text {
+    background: var(--flosc-user-message-bg);
+    color: var(--flosc-user-message-text);
+    padding: 12px 18px;
+    border-radius: var(--flosc-user-message-radius);
+    box-shadow: 0 1px 4px rgba(37, 99, 235, 0.12);
+}
+
+/* ============================================
+   ASSISTANT MESSAGE
+   ============================================ */
+.flosc-message-assistant .flosc-message-avatar,
+.flosc-message-assistant .message-avatar,
+.message.assistant .message-avatar {
+    background: var(--flosc-assistant-avatar-bg);
+    color: var(--flosc-assistant-avatar-text);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 14px;
+}
+
+.flosc-message-assistant .flosc-message-text,
+.flosc-message-assistant .message-text,
+.message.assistant .message-text {
+    background: var(--flosc-assistant-message-bg);
+    color: var(--flosc-assistant-message-text);
+    border: var(--flosc-assistant-message-border);
+    border-radius: var(--flosc-assistant-message-radius);
+    padding: 0;
+}
+
+/* ============================================
+   MESSAGE TYPOGRAPHY
+   ============================================ */
+.flosc-message-text,
+.message-text {
+    font-size: 15px;
+    line-height: 1.7;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    letter-spacing: -0.006em;
+}
+
+.flosc-message-text p,
+.message-text p {
+    margin: 0 0 14px 0;
+}
+
+.flosc-message-text p:last-child,
+.message-text p:last-child {
+    margin-bottom: 0;
+}
+
+/* Code Blocks */
+.flosc-message-text code,
+.message-text code {
+    background: var(--flosc-code-bg);
+    color: var(--flosc-code-text);
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-size: 0.88em;
+    font-family: 'SF Mono', 'JetBrains Mono', Monaco, 'Courier New', monospace;
+    font-weight: 500;
+}
+
+.flosc-message-text pre,
+.message-text pre {
+    background: var(--flosc-code-bg);
+    padding: 14px 16px;
+    border-radius: 10px;
+    overflow-x: auto;
+    margin: 14px 0;
+    border: 1px solid var(--flosc-border);
+}
+
+.flosc-message-text pre code,
+.message-text pre code {
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+
+/* Links */
+.flosc-message-text a,
+.message-text a {
+    color: var(--flosc-content-link);
+    text-decoration: none;
+    font-weight: 500;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.15s ease;
+}
+
+.flosc-message-text a:hover,
+.message-text a:hover {
+    color: var(--flosc-content-link-hover);
+    border-bottom-color: var(--flosc-content-link-hover);
+}
+
+/* Strong & Emphasis */
+.flosc-message-text strong,
+.message-text strong {
+    font-weight: 650;
+    color: var(--flosc-text);
+}
+
+/* Blockquotes */
+.flosc-message-text blockquote,
+.message-text blockquote {
+    border-left: 3px solid var(--flosc-content-blockquote-border);
+    background: var(--flosc-content-blockquote-bg);
+    color: var(--flosc-content-blockquote-text);
+    margin: 14px 0;
+    padding: 10px 18px;
+    border-radius: 0 8px 8px 0;
+    font-style: italic;
+}
+
+.flosc-message-text blockquote p:last-child,
+.message-text blockquote p:last-child {
+    margin-bottom: 0;
+}
+
+/* Horizontal Rules */
+.flosc-message-text hr,
+.message-text hr {
+    border: none;
+    border-top: 1px solid var(--flosc-content-hr);
+    margin: 20px 0;
+}
+
+/* Tables */
+.flosc-message-text table,
+.message-text table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 0.9em;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--flosc-content-table-border);
+}
+
+.flosc-message-text th,
+.message-text th,
+.flosc-message-text td,
+.message-text td {
+    border: 1px solid var(--flosc-content-table-border);
+    padding: 10px 14px;
+    text-align: left;
+}
+
+.flosc-message-text th,
+.message-text th {
+    background: var(--flosc-content-table-header-bg);
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.flosc-message-text tr:nth-child(even),
+.message-text tr:nth-child(even) {
+    background: var(--flosc-content-table-stripe-bg);
+}
+
+/* List Markers */
+.flosc-message-text ul,
+.message-text ul {
+    list-style-type: disc;
+}
+
+.flosc-message-text ol,
+.message-text ol {
+    list-style-type: decimal;
+}
+
+.flosc-message-text li::marker,
+.message-text li::marker {
+    color: var(--flosc-content-list-marker);
+}
+
+/* ============================================
+   INPUT COMPOSER
+   ============================================ */
+.flosc-input-composer,
+.flosc_input_composer {
+    background: var(--flosc-input-bg);
+    border-top: none;
+}
+
+.flosc-input-wrapper,
+.flosc_input_composer_inner {
+    background: var(--flosc-input-field-bg);
+    border: 1px solid var(--flosc-input-field-border);
+    border-radius: 14px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flosc-input-wrapper:focus-within,
+.flosc_input_composer_inner:focus-within {
+    border-color: var(--flosc-accent);
+    box-shadow: 0 0 0 3px var(--flosc-accent-subtle, rgba(37, 99, 235, 0.08)), 0 1px 4px rgba(0,0,0,0.03);
+}
+
+.flosc-input-field,
+.flosc_input_composer textarea,
+#flosc_input_chat_field {
+    background: transparent;
+    color: var(--flosc-input-field-text);
+    border: none;
+    outline: none;
+}
+
+.flosc-input-field::placeholder,
+.flosc_input_composer textarea::placeholder,
+#flosc_input_chat_field::placeholder {
+    color: var(--flosc-input-placeholder);
+}
+
+/* Send Button */
+.flosc-send-btn,
+.flosc_input_chat_send_button {
+    background: var(--flosc-send-btn-bg);
+    color: var(--flosc-send-btn-text);
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.18);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.flosc-send-btn:hover:not(:disabled),
+.flosc_input_chat_send_button:hover:not(:disabled) {
+    background: var(--flosc-accent-hover);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+    transform: translateY(-1px);
+}
+
+.flosc-send-btn:disabled,
+.flosc_input_chat_send_button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* ============================================
+   PILLS / USER AUTOPROMPTS
+   ============================================ */
+.flosc-pills-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+}
+
+.flosc-pill,
+.flosc-style-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--flosc-pill-bg);
+    color: var(--flosc-pill-text);
+    border: 1px solid var(--flosc-pill-border);
+    border-radius: 999px;
+    padding: 9px 18px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    letter-spacing: -0.005em;
+}
+
+.flosc-pill:hover,
+.flosc-style-pill:hover {
+    background: var(--flosc-pill-hover-bg);
+    color: var(--flosc-pill-hover-text);
+    border-color: var(--flosc-pill-hover-border);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+    transform: translateY(-1px);
+}
+
+.flosc-pill .flosc-autoprompt-icon,
+.flosc-style-pill .flosc-autoprompt-icon {
+    font-size: 16px;
+}
+
+.flosc-pill .flosc-autoprompt-label,
+.flosc-style-pill .flosc-autoprompt-label {
+    font-size: 14px;
+}
+
+/* ============================================
+   BUTTONS (CTA-style autoprompts)
+   v1.6.5: MessageStyle: button — styled as accent-colored CTA
+   ============================================ */
+.flosc-style-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--flosc-accent, #4f46e5);
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+}
+
+.flosc-style-button:hover {
+    background: var(--flosc-accent-hover, #4338ca);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+    transform: translateY(-1px);
+}
+
+.flosc-style-button .flosc-autoprompt-icon {
+    font-size: 16px;
+}
+
+.flosc-style-button .flosc-autoprompt-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+/* ============================================
+   CARDS (autoprompts, offers)
+   ============================================ */
+.flosc-cards-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    max-width: 600px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.flosc-card,
+.flosc-style-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 22px 18px;
+    background: var(--flosc-card-bg);
+    color: var(--flosc-card-text);
+    border: 1px solid var(--flosc-card-border);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--flosc-card-shadow);
+    text-align: center;
+}
+
+.flosc-card:hover,
+.flosc-style-card:hover {
+    background: var(--flosc-card-hover-bg);
+    color: var(--flosc-card-hover-text);
+    border-color: var(--flosc-card-hover-border);
+    box-shadow: var(--flosc-card-hover-shadow);
+    transform: translateY(-3px);
+}
+
+.flosc-card .flosc-autoprompt-icon,
+.flosc-style-card .flosc-autoprompt-icon {
+    font-size: 26px;
+    margin-bottom: 4px;
+}
+
+.flosc-card .flosc-autoprompt-label,
+.flosc-style-card .flosc-autoprompt-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--flosc-card-text);
+    letter-spacing: -0.01em;
+}
+
+/* ============================================
+   PANELS
+   ============================================ */
+.prompt-panel-inline,
+.intro-panel-inline {
+    background: var(--flosc-panel-bg);
+    border: 1px solid var(--flosc-panel-border);
+    box-shadow: var(--flosc-panel-shadow);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.prompt-panel-header,
+.intro-panel-header {
+    color: var(--flosc-panel-header-text);
+}
+
+.prompt-panel-eyebrow,
+.intro-panel-eyebrow {
+    color: var(--flosc-panel-eyebrow-text);
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    font-size: 11px;
+}
+
+.prompt-panel-title,
+.intro-panel-title {
+    color: var(--flosc-panel-header-text);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.prompt-panel-close,
+.intro-panel-close {
+    background: var(--flosc-panel-close-bg);
+    border: 1px solid var(--flosc-panel-close-border);
+    color: var(--flosc-panel-close-text);
+    backdrop-filter: blur(4px);
+    transition: all 0.15s ease;
+}
+
+.prompt-panel-close:hover,
+.intro-panel-close:hover {
+    background: var(--flosc-panel-close-hover-bg);
+    border-color: var(--flosc-panel-close-hover-border);
+    color: var(--flosc-text);
+}
+
+/* ============================================
+   TYPING INDICATOR
+   ============================================ */
+.flosc-typing-dot,
+.typing-dots span {
+    background: var(--flosc-text-muted);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+.flosc-messages::-webkit-scrollbar,
+.messages::-webkit-scrollbar {
+    width: 5px;
+}
+
+.flosc-messages::-webkit-scrollbar-track,
+.messages::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.flosc-messages::-webkit-scrollbar-thumb,
+.messages::-webkit-scrollbar-thumb {
+    background: var(--flosc-scrollbar-thumb);
+    border-radius: 3px;
+}
+
+.flosc-messages::-webkit-scrollbar-thumb:hover,
+.messages::-webkit-scrollbar-thumb:hover {
+    background: var(--flosc-scrollbar-thumb-hover);
+}
+
+.flosc-session-list::-webkit-scrollbar,
+.flosc_app_session_list::-webkit-scrollbar {
+    width: 4px;
+}
+
+.flosc-session-list::-webkit-scrollbar-track,
+.flosc_app_session_list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.flosc-session-list::-webkit-scrollbar-thumb,
+.flosc_app_session_list::-webkit-scrollbar-thumb {
+    background: var(--flosc-scrollbar-thumb);
+    border-radius: 2px;
+}
+
+/* ============================================
+   OVERLAY (Mobile Sidebar)
+   ============================================ */
+.flosc-overlay {
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+/* ============================================
+   AUTH BUTTONS (Header)
+   ============================================ */
+.auth-buttons .btn-primary {
+    background: var(--flosc-accent);
+    color: #ffffff;
+    border: none;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.18);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.auth-buttons .btn-primary:hover {
+    background: var(--flosc-accent-hover);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+    transform: translateY(-1px);
+}
+
+.auth-buttons .btn-secondary {
+    background: transparent;
+    color: var(--flosc-text);
+    border: 1px solid var(--flosc-border);
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 14px;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+}
+
+.auth-buttons .btn-secondary:hover {
+    background: var(--flosc-sidebar-hover);
+    border-color: var(--flosc-accent);
+    color: var(--flosc-accent);
+}
+
+/* ============================================
+   LANDING STATE
+   ============================================ */
+.landing-title {
+    font-size: 30px;
+    font-weight: 700;
+    color: var(--flosc-text);
+    letter-spacing: -0.03em;
+    margin-bottom: 8px;
+}
+
+/* ============================================
+   PROFILE DROPDOWN
+   ============================================ */
+.profile-dropdown {
+    background: var(--flosc-bg);
+    border: 1px solid var(--flosc-border);
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(12px);
+}
+
+.profile-dropdown-item {
+    color: var(--flosc-text);
+    padding: 10px 16px;
+    display: block;
+    text-decoration: none;
+    transition: background 0.12s ease;
+}
+
+.profile-dropdown-item:hover {
+    background: var(--flosc-sidebar-hover);
+}
+
+/* ============================================
+   UPGRADE BUTTON
+   ============================================ */
+.upgrade-btn {
+    background: linear-gradient(135deg, var(--flosc-accent) 0%, var(--flosc-accent-hover) 100%);
+    color: #ffffff;
+    border: none;
+    padding: 11px 18px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.upgrade-btn:hover {
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.3);
+    transform: translateY(-1px);
+}
+
+/* ============================================
+   QUIZ MODAL
+   ============================================ */
+.quiz-prompt {
+    background: var(--flosc-quiz-prompt-bg);
+    border: 1px solid var(--flosc-quiz-prompt-border);
+    border-radius: 14px;
+}
+
+.quiz-prompt-label {
+    color: var(--flosc-text-muted);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+}
+
+.quiz-sequence {
+    color: var(--flosc-quiz-sequence-text);
+    font-weight: 700;
+}
+
+.quiz-tab-btn {
+    background: var(--flosc-quiz-tab-bg);
+    border-color: var(--flosc-quiz-tab-border);
+    color: var(--flosc-quiz-tab-text);
+    border-radius: 10px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+}
+
+.quiz-tab-btn:hover {
+    border-color: var(--flosc-accent);
+    color: var(--flosc-accent);
+}
+
+.quiz-tab-btn.active {
+    background: var(--flosc-quiz-tab-active-bg);
+    border-color: var(--flosc-quiz-tab-active-bg);
+    color: var(--flosc-quiz-tab-active-text);
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);
+}
+
+.quiz-text-input {
+    background: var(--flosc-quiz-input-bg);
+    border-color: var(--flosc-quiz-input-border);
+    color: var(--flosc-text);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.quiz-text-input:focus {
+    border-color: var(--flosc-quiz-input-focus-border);
+    box-shadow: 0 0 0 3px var(--flosc-accent-subtle, rgba(37, 99, 235, 0.08));
+}
+
+.quiz-text-input::placeholder {
+    color: var(--flosc-input-placeholder);
+}
+
+.quiz-submit-btn,
+.flosc-quiz-submit-btn {
+    background: var(--flosc-accent);
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.18);
+    transition: all 0.2s ease;
+}
+
+.quiz-submit-btn:hover,
+.flosc-quiz-submit-btn:hover {
+    background: var(--flosc-accent-hover);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+}
+
+.quiz-waveform {
+    background: var(--flosc-quiz-waveform-bg);
+    border: 1px solid var(--flosc-quiz-prompt-border);
+    border-radius: 12px;
+}
+
+.quiz-timer {
+    color: var(--flosc-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.quiz-record-btn {
+    background: var(--flosc-quiz-record-bg);
+    color: #ffffff;
+    border-radius: 28px;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+    transition: all 0.2s ease;
+}
+
+.quiz-record-btn:hover {
+    background: var(--flosc-quiz-record-hover-bg);
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+}
+
+.quiz-stop-btn {
+    background: var(--flosc-quiz-stop-bg);
+    color: #ffffff;
+    border-radius: 28px;
+    font-weight: 600;
+}
+
+.quiz-stop-btn:hover {
+    background: var(--flosc-quiz-stop-hover-bg);
+}
+
+.quiz-recording-status {
+    color: var(--flosc-text-muted);
+    font-size: 14px;
+    text-align: center;
+    min-height: 20px;
+}
+
+.quiz-recording-status.recording {
+    color: var(--flosc-quiz-record-bg);
+}
+
+.quiz-error {
+    background: var(--flosc-quiz-error-bg);
+    color: var(--flosc-quiz-error-text);
+    border: 1px solid var(--flosc-quiz-error-border);
+    border-radius: 10px;
+}
+
+.quiz-result-panel {
+    background: var(--flosc-bg);
+}
+
+.quiz-score-display {
+    color: var(--flosc-text);
+    font-weight: 800;
+}
+
+.quiz-score-display.passed {
+    color: var(--flosc-quiz-success);
+}
+
+.quiz-score-display.failed {
+    color: var(--flosc-quiz-warning);
+}
+
+.quiz-result-message {
+    color: var(--flosc-text-muted);
+    line-height: 1.6;
+}
+
+.quiz-continue-btn {
+    background: var(--flosc-accent);
+    color: #ffffff;
+    font-weight: 600;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.18);
+}
+
+.quiz-continue-btn:hover {
+    background: var(--flosc-accent-hover);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+}
+
+.quiz-playback-actions .btn-secondary {
+    background: var(--flosc-bg);
+    color: var(--flosc-text);
+    border: 1px solid var(--flosc-border);
+    border-radius: 10px;
+}
+
+.quiz-playback-actions .btn-secondary:hover {
+    background: var(--flosc-sidebar-hover);
+}
+
+/* ============================================
+   INLINE-STYLE REMEDIATION SUPPORT
+   ============================================ */
+
+.flosc-admin-message-text {
+    background: var(--flosc-admin-message-bg, linear-gradient(135deg, #c7edd5 0%, #e7f7ee 100%));
+    border: 1px solid var(--flosc-admin-message-border, #6fbe8f);
+    border-radius: 10px;
+    padding: 8px 12px;
+    box-shadow: 0 1px 0 rgba(23, 97, 58, 0.08), 0 8px 18px rgba(23, 97, 58, 0.08);
+    color: var(--flosc-admin-message-color, #0f4f2e);
+    font-style: italic; /* the admin's message body reads as an italic aside */
+}
+
+.flosc-admin-message-meta {
+    font-size: 12px;
+    color: var(--flosc-admin-message-meta, #13683b);
+    font-weight: 700; /* profile name in bold */
+    font-style: normal; /* name stays upright; only the (admin) tag is italic via <em> */
+    margin-bottom: 3px;
+}
+
+.message.assistant .message-text.flosc-admin-message-text,
+.message.assistant .flosc-admin-message-text {
+    background: var(--flosc-admin-message-bg, linear-gradient(135deg, #c7edd5 0%, #e7f7ee 100%));
+    border: 1px solid var(--flosc-admin-message-border, #6fbe8f);
+    border-radius: 10px;
+    padding: 8px 12px;
+    box-shadow: 0 1px 0 rgba(23, 97, 58, 0.08), 0 8px 18px rgba(23, 97, 58, 0.08);
+    color: var(--flosc-admin-message-color, #0f4f2e);
+    font-style: italic;
+}
+
+.message.assistant .flosc-admin-message-meta {
+    font-size: 12px;
+    color: var(--flosc-admin-message-meta, #13683b);
+    font-weight: 700;
+    font-style: normal;
+    margin-bottom: 3px;
+}
+
+.flosc-admin-panel-header {
+    padding: 6px 10px;
+    border-bottom: 1px solid #e5e7eb;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.flosc-admin-panel-eyebrow {
+    font-size: 10px;
+    letter-spacing: 0.5px;
+}
+
+.flosc-admin-panel-stats {
+    font-size: 10px;
+    color: #9ca3af;
+    margin-top: 2px;
+}
+
+.flosc-admin-panel-chevron {
+    font-size: 16px;
+    color: #6b7280;
+    transition: transform 0.2s;
+}
+
+.flosc-admin-panel-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    max-height: 40vh;
+    overflow-y: auto;
+    padding: 5px;
+}
+
+.flosc-admin-panel-body.flosc-hidden {
+    display: none;
+}
+
+.flosc-admin-pill-group {
+    border-radius: 8px;
+    padding: 7px 10px;
+    margin-bottom: 5px;
+}
+
+.flosc-admin-pill-group-visitor {
+    background: #f0f0f1;
+    border: 1px solid #c3c4c7;
+}
+
+.flosc-admin-pill-group-guest,
+.flosc-admin-pill-group-offer {
+    background: #fef3c7;
+    border: 1px solid #f59e0b;
+}
+
+.flosc-admin-pill-group-member {
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+}
+
+.flosc-admin-pill-group-quiz {
+    background: #ede9fe;
+    border: 1px solid #a78bfa;
+}
+
+.flosc-admin-pill-group-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+
+.flosc-admin-pill-group-visitor .flosc-admin-pill-group-title {
+    color: #3c434a;
+}
+
+.flosc-admin-pill-group-guest .flosc-admin-pill-group-title,
+.flosc-admin-pill-group-offer .flosc-admin-pill-group-title {
+    color: #92400e;
+}
+
+.flosc-admin-pill-group-member .flosc-admin-pill-group-title {
+    color: #166534;
+}
+
+.flosc-admin-pill-group-quiz .flosc-admin-pill-group-title {
+    color: #5b21b6;
+}
+
+.flosc-admin-pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.flosc-admin-pill-offer {
+    background: #fef3c7;
+    border-color: #f59e0b;
+    color: #92400e;
+}
+
+.flosc-admin-pill-quiz {
+    background: #ede9fe;
+    border-color: #a78bfa;
+    color: #5b21b6;
+}
+
+/* Welcome badge and in-chat oEmbed player styles are defined in
+   flosc-layout.css, the stylesheet loaded on every chat surface. */
+
+.flosc-profile-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 360px;
+    font-family: inherit;
+}
+
+.flosc-profile-title {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+}
+
+.flosc-profile-name,
+.flosc-profile-password {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+}
+
+.flosc-profile-name {
+    margin-bottom: 16px;
+}
+
+.flosc-profile-password {
+    flex: 1;
+    font-family: monospace;
+}
+
+.flosc-profile-label {
+    margin: 0 0 8px;
+    font-size: 14px;
+    color: #374151;
+}
+
+.flosc-profile-password-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.flosc-profile-copy {
+    padding: 9px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #f9fafb;
+    font-size: 13px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.flosc-profile-help {
+    margin: 0 0 16px;
+    font-size: 12px;
+    color: #6b7280;
+}
+
+.flosc-profile-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.flosc-profile-save {
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.flosc-profile-skip {
+    font-size: 13px;
+    color: #6b7280;
+    text-decoration: none;
+}
+
+.flosc-profile-error {
+    display: none;
+    margin: 10px 0 0;
+    font-size: 13px;
+    color: #dc2626;
+}
+
+.flosc-load-more-btn-inline {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin-top: 4px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #4b5563;
+}
+
+.flosc-quiz-library-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.flosc-sandbox-membership-note {
+    opacity: 0.9;
+}
+
+.flosc-session-empty {
+    padding: 16px;
+    text-align: center;
+    font-size: 13px;
+    color: #999;
+}
+
+.flosc-access-code-panel {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.flosc-access-code-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 16px;
+}
+
+.flosc-access-code-input {
+    font-size: 18px;
+    text-align: center;
+    letter-spacing: 3px;
+    padding: 10px 16px;
+    border: 2px solid #d1d5db;
+    border-radius: 8px;
+    width: 180px;
+    text-transform: uppercase;
+}
+
+.flosc-access-code-actions {
+    margin-top: 14px;
+}
+
+.flosc-access-code-submit {
+    background: #10b981;
+    color: #fff;
+    border: none;
+    padding: 10px 28px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.flosc-access-code-error {
+    color: #dc2626;
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+.flosc-access-code-error.is-success {
+    color: #10b981;
+}
+
+/* ============================================
+   QUIZ RESULTS v1.4.6 — Premium Card
+   ============================================ */
+.flosc-quiz-result {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border-radius: 18px;
+    padding: 32px;
+    text-align: center;
+    color: white;
+    margin: 12px 0;
+    animation: flosc-result-appear 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 30px rgba(99, 102, 241, 0.25);
+    position: relative;
+    overflow: hidden;
+}
+
+.flosc-quiz-result::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+.flosc-quiz-result.high-score {
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    box-shadow: 0 8px 30px rgba(5, 150, 105, 0.25);
+}
+
+.flosc-quiz-result.medium-score {
+    background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+    box-shadow: 0 8px 30px rgba(217, 119, 6, 0.25);
+}
+
+.flosc-quiz-result.low-score {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    box-shadow: 0 8px 30px rgba(99, 102, 241, 0.25);
+}
+
+.flosc-quiz-result-score {
+    font-size: 68px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.15);
+    animation: flosc-score-pop 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
+    letter-spacing: -0.04em;
+}
+
+.flosc-quiz-result-label {
+    font-size: 17px;
+    opacity: 0.92;
+    margin-bottom: 22px;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+.flosc-quiz-result-cta {
+    background: rgba(255,255,255,0.18);
+    border: 2px solid rgba(255,255,255,0.4);
+    color: white;
+    padding: 13px 30px;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(4px);
+}
+
+.flosc-quiz-result-cta:hover {
+    background: rgba(255,255,255,0.28);
+    border-color: rgba(255,255,255,0.7);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+}
+
+@keyframes flosc-result-appear {
+    from { opacity: 0; transform: scale(0.92) translateY(16px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes flosc-score-pop {
+    0% { transform: scale(0); opacity: 0; }
+    60% { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.flosc-quiz-result.high-score::before {
+    content: '🎉';
+    position: absolute;
+    font-size: 40px;
+    top: -8px;
+    left: 20px;
+    animation: flosc-confetti-left 1s ease-out;
+    background: none;
+    width: auto;
+    height: auto;
+}
+
+.flosc-quiz-result.high-score::after {
+    content: '🎊';
+    position: absolute;
+    font-size: 40px;
+    top: -8px;
+    right: 20px;
+    animation: flosc-confetti-right 1s ease-out;
+}
+
+@keyframes flosc-confetti-left {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(-30px) rotate(-20deg); opacity: 0; }
+}
+
+@keyframes flosc-confetti-right {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(-30px) rotate(20deg); opacity: 0; }
+}
+
+/* ============================================
+   SANDBOX PAYMENT v1.4.6 — Premium Edition
+   ============================================ */
+.flosc-sandbox-payment {
+    background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+    border-radius: 18px;
+    padding: 28px;
+    text-align: center;
+    color: #7c2d12;
+    margin: 16px 0;
+    box-shadow: 0 8px 30px rgba(245, 158, 11, 0.2);
+    position: relative;
+    overflow: hidden;
+}
+
+.flosc-sandbox-payment::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+.flosc-sandbox-payment h3 {
+    margin: 0 0 8px;
+    font-size: 22px;
+    font-weight: 700;
+    color: #7c2d12;
+    letter-spacing: -0.02em;
+}
+
+.flosc-sandbox-payment p {
+    margin: 0 0 16px;
+    opacity: 0.85;
+    font-weight: 500;
+}
+
+.flosc-sandbox-amount {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.flosc-sandbox-amount span {
+    font-size: 26px;
+    font-weight: 800;
+}
+
+.flosc-sandbox-amount input {
+    font-size: 30px;
+    font-weight: 800;
+    width: 180px;
+    text-align: right;
+    border: 2px solid rgba(124, 45, 18, 0.2);
+    border-radius: 12px;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.85);
+    color: #7c2d12;
+    backdrop-filter: blur(4px);
+    transition: all 0.2s ease;
+}
+
+.flosc-sandbox-amount input:focus {
+    border-color: #7c2d12;
+    box-shadow: 0 0 0 3px rgba(124, 45, 18, 0.1);
+    outline: none;
+}
+
+.flosc-sandbox-presets {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.flosc-sandbox-presets button {
+    background: rgba(255,255,255,0.4);
+    border: 2px solid rgba(124, 45, 18, 0.2);
+    padding: 7px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    color: #7c2d12;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(4px);
+}
+
+.flosc-sandbox-presets button:hover {
+    background: rgba(255,255,255,0.7);
+    border-color: #7c2d12;
+    transform: translateY(-1px);
+}
+
+.flosc-sandbox-pay-btn {
+    background: #7c2d12;
+    color: #fef3c7;
+    border: none;
+    padding: 15px 36px;
+    border-radius: 999px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 14px rgba(124, 45, 18, 0.25);
+    letter-spacing: -0.01em;
+}
+
+.flosc-sandbox-pay-btn:hover {
+    background: #92400e;
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 8px 24px rgba(124, 45, 18, 0.3);
+}
+
+.flosc-sandbox-success {
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    color: white;
+    padding: 32px;
+    border-radius: 18px;
+    text-align: center;
+    animation: flosc-result-appear 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 8px 30px rgba(5, 150, 105, 0.2);
+}
+
+.flosc-sandbox-success h3 {
+    font-size: 28px;
+    margin: 0 0 8px;
+    color: white;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.flosc-sandbox-success .amount {
+    font-size: 52px;
+    font-weight: 800;
+    margin: 16px 0;
+    letter-spacing: -0.04em;
+}
+
+/* ============================================
+   CONTENT PROTECTION — Visibility Tiers
+   ============================================ */
+.flosc-protected-content {
+    background: var(--flosc-bg);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin: 1rem 0;
+}
+
+.flosc-protected-content.flosc-hidden {
+    background: var(--flosc-sidebar-bg);
+    border: 1px dashed var(--flosc-border);
+    text-align: center;
+    border-radius: 12px;
+}
+
+.flosc-protected-content.flosc-teaser .flosc-teaser-excerpt {
+    color: var(--flosc-text);
+    line-height: 1.7;
+    margin-bottom: 1rem;
+}
+
+.flosc-protected-content.flosc-preview .flosc-preview-content {
+    color: var(--flosc-text);
+    line-height: 1.7;
+}
+
+.flosc-protected-notice {
+    background: #fffbeb;
+    border: 1px solid #fcd34d;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0;
+    text-align: center;
+}
+
+.flosc-protected-notice p {
+    margin: 0;
+    color: var(--flosc-text);
+    font-weight: 600;
+}
+
+.flosc-chatbot-cta {
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.flosc-cta-button {
+    display: inline-block;
+    background: var(--flosc-accent);
+    color: #ffffff !important;
+    padding: 0.85rem 1.75rem;
+    border-radius: 10px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.2);
+    font-size: 15px;
+}
+
+.flosc-cta-button:hover {
+    background: var(--flosc-accent-hover);
+    text-decoration: none;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+}
+
+/* ============================================
+   v1.5.4: Extracted inline styles
+   ============================================ */
+
+/* Payment error message (was inline in flosc-app.js) */
+.flosc-payment-error {
+    color: #dc2626;
+    padding: 8px 12px;
+    text-align: center;
+    font-size: 14px;
+}
+
+/* Sandbox payment text (was inline in flosc-app.js) */
+.flosc-sandbox-text {
+    font-size: 13px;
+    opacity: 0.8;
+}
+
+/* Sandbox subtext (was inline in flosc-app.js) */
+.flosc-sandbox-subtext {
+    font-size: 12px;
+    opacity: 0.8;
+    margin-top: 10px;
+}
+
+/* Purchase success detail (was inline in flosc-app.js) */
+.flosc-success-detail {
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+/* Purchase celebration message (was inline in flosc-app.js) */
+.flosc-celebration {
+    font-size: 13px;
+    margin-top: 15px;
+}
+
+/* Public post CTA box (was inline in class-content-protection.php) */
+.flosc-public-post-cta {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff;
+    padding: 24px;
+    border-radius: 12px;
+    margin: 24px 0;
+    text-align: center;
+}
+
+.flosc-public-post-cta p:first-child {
+    font-size: 18px;
+    margin: 0 0 12px;
+    font-weight: 500;
+}
+
+.flosc-public-post-cta p:nth-child(2) {
+    margin: 0 0 16px;
+    opacity: 0.9;
+}
+
+.flosc-public-post-cta a {
+    display: inline-block;
+    background: #fff;
+    color: #667eea;
+    padding: 12px 28px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+/* ============================================
+   VISITOR BAR (v1.7.9)
+   ============================================ */
+
+.flosc-visitor-bar {
+    background: var(--flosc-visitor-bar-bg);
+}
+
+.flosc-visitor-bar-text {
+    color: var(--flosc-visitor-bar-text);
+}
+
+.flosc-visitor-bar-cta {
+    background: var(--flosc-accent);
+    color: #ffffff;
+}
+
+.flosc-visitor-bar-cta:hover {
+    background: var(--flosc-accent-hover);
+}
+
+.flosc-visitor-bar-dismiss {
+    color: var(--flosc-visitor-bar-text);
+}
+
+/* v3.0.8: Quiz topic list */
+.flosc-quiz-topics {
+    padding: 4px 0;
+}
+.flosc-quiz-topics h3 {
+    margin: 0 0 10px;
+    font-size: 15px;
+    font-weight: 600;
+}
+.flosc-quiz-topic-list {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 14px;
+    line-height: 1.9;
+}
+.flosc-quiz-topic-list li {
+    color: var(--flosc-text);
+}
+
+/* ── Free Lesson Title Cards ── */
+.flosc-free-lesson-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.flosc-free-lesson-intro {
+    margin: 0 0 4px 0;
+    font-size: 15px;
+    color: var(--flosc-text);
+}
+.flosc-free-lesson-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--flosc-surface, rgba(59, 130, 246, 0.08));
+    border: 1px solid var(--flosc-border, rgba(59, 130, 246, 0.2));
+    border-radius: 10px;
+    cursor: pointer;
+    text-align: left;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--flosc-text);
+    transition: background 0.15s, border-color 0.15s;
+}
+.flosc-free-lesson-card:hover {
+    background: var(--flosc-surface-hover, rgba(59, 130, 246, 0.15));
+    border-color: var(--flosc-primary, #3b82f6);
+}
+.flosc-free-lesson-card-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+.flosc-free-lesson-card-title {
+    font-weight: 600;
+}
+
+/* ============================================
+   AUTH MODAL (migrated from JS-injected styles)
+   ============================================ */
+
+.flosc-auth-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(12, 18, 28, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(10px);
+    padding: 20px;
+}
+
+.flosc-auth-modal {
+    background:
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.08), transparent 35%),
+        linear-gradient(180deg, rgba(18, 26, 41, 0.98) 0%, rgba(12, 18, 28, 0.98) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 36px;
+    width: 90%;
+    max-width: 480px;
+    max-height: calc(100vh - 40px);
+    overflow: auto;
+    box-shadow: 0 28px 90px rgba(0, 0, 0, 0.45);
+    position: relative;
+    color: var(--flosc-surface-text, #f4f7fb);
+}
+
+.flosc-auth-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.82);
+    cursor: pointer;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 999px;
+    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.flosc-auth-close:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.18);
+    transform: scale(1.04);
+}
+
+.flosc-auth-header {
+    text-align: center;
+    margin-bottom: 26px;
+}
+
+.flosc-auth-header h2 {
+    margin: 0 0 10px;
+    color: #f7fbff;
+    font-weight: 800;
+    font-family: 'Atkinson Hyperlegible Next', sans-serif;
+    font-size: 30px;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+}
+
+.flosc-auth-header p {
+    margin: 0;
+    color: rgba(244, 247, 251, 0.78);
+    font-family: 'Atkinson Hyperlegible Next', sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+}
+
+.flosc-auth-form {
+    margin-bottom: 22px;
+}
+
+.flosc-auth-field {
+    margin-bottom: 14px;
+}
+
+.flosc-auth-field label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: rgba(244, 247, 251, 0.92);
+}
+
+.flosc-auth-field input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    font-size: 16px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #f7fbff;
+    box-sizing: border-box;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.flosc-auth-field input:focus {
+    outline: none;
+    border-color: rgba(112, 193, 255, 0.85);
+    background: rgba(255, 255, 255, 0.09);
+    box-shadow: 0 0 0 4px rgba(64, 156, 255, 0.18);
+}
+
+.flosc-auth-submit {
+    width: 100%;
+    padding: 15px 24px;
+    background: linear-gradient(135deg, var(--flosc-primary, #4f46e5) 0%, var(--flosc-primary-hover, #4338ca) 100%);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+    box-shadow: 0 14px 34px rgba(79, 70, 229, 0.28);
+}
+
+.flosc-auth-submit:hover {
+    filter: brightness(1.04);
+    transform: translateY(-1px);
+    box-shadow: 0 18px 38px rgba(79, 70, 229, 0.34);
+}
+
+.flosc-auth-divider {
+    position: relative;
+    text-align: center;
+    margin: 22px 0;
+}
+
+.flosc-auth-divider::before,
+.flosc-auth-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: calc(50% - 70px);
+    height: 1px;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.flosc-auth-divider::before { left: 0; }
+.flosc-auth-divider::after { right: 0; }
+
+.flosc-auth-divider span {
+    background: rgba(12, 18, 28, 0.98);
+    padding: 0 12px;
+    color: rgba(244, 247, 251, 0.72);
+    font-size: 13px;
+    letter-spacing: 0.02em;
+}
+
+.flosc-sso-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.flosc-sso-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    padding: 13px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.07);
+    color: #f7fbff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+
+.flosc-sso-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.18);
+    transform: translateY(-1px);
+}
+
+.flosc-sso-icon {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.flosc-sso-icon svg {
+    width: 20px;
+    height: 20px;
+    display: block;
+}
+
+.flosc-auth-terms {
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.5;
+    color: rgba(244, 247, 251, 0.66);
+    margin-top: 16px;
+    margin-bottom: 0;
+}
+
+@media (max-width: 560px) {
+    .flosc-auth-modal-overlay {
+        padding: 12px;
+    }
+
+    .flosc-auth-modal {
+        width: 100%;
+        max-height: calc(100vh - 24px);
+        padding: 28px 20px 22px;
+        border-radius: 20px;
+    }
+
+    .flosc-auth-header h2 {
+        font-size: 24px;
+    }
+
+    .flosc-auth-field input {
+        padding: 13px 14px;
+    }
+}
+
+
+/* ===== END FLOSC LEGACY: flosc-theme.css ===== */
+
+/* ============================================
+   DISPLAY UTILITIES — cascade last (no !important)
+   Re-declared at file end so equal-specificity
+   component rules above cannot resurrect a hidden node.
+   ============================================ */
+
+.flosc-hidden {
+    display: none;
+}
+
+[data-flosc-display="block"]:not(.flosc-hidden) {
+    display: block;
+}
+
+[data-flosc-display="flex"]:not(.flosc-hidden) {
+    display: flex;
+}
+
+[data-flosc-display="inline-flex"]:not(.flosc-hidden) {
+    display: inline-flex;
+}

@@ -1,0 +1,27 @@
+{
+  "candidate": "github-copilot",
+  "creator": "GitHub Copilot (Coding Engineer)",
+  "status": "BUILD_COMPLETE_AWAITING_REMOTE_WORDPRESS_VALIDATION",
+  "baseline_commit": "a27db3b9f90cf72cf5bd965c52557828c396b98b",
+  "plugin_source": "flosc-by-github-copilot/flosc",
+  "artifact": "flosc.zip",
+  "artifact_root": "flosc/",
+  "artifact_sha256": "4da7d3e38a8a1842120a6dacb4d82db6cbe17fdfc19f74c9bb739afcc492291e",
+  "artifact_files": 241,
+  "implemented": {
+    "per_turn_personality_delivery": "complete current personality identity is resolved by flow ID on follow-up turns",
+    "profile_fingerprint": "saved workshop genome and deployed profile are versioned and hashed together"
+  },
+  "verification": {
+    "php_syntax_all_candidate_files": "passed",
+    "followup_identity_call_path": "passed",
+    "profile_save_contract": "passed",
+    "zip_integrity": "passed",
+    "zip_single_top_level_flosc": "passed",
+    "zip_prohibited_path_scan": "passed",
+    "wordpress_runtime": "DEFERRED - AUTHORIZED REMOTE TEST REQUIRED",
+    "wordpress_plugin_check": "DEFERRED - AUTHORIZED REMOTE TEST REQUIRED",
+    "live_ai_provider_calls": "DEFERRED - AUTHORIZED REMOTE TEST REQUIRED"
+  },
+  "canonical_source_modified": false
+}
