@@ -3122,6 +3122,11 @@ class floscApp {
 
         content = content.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
         content = content.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+        content = content
+            .replace(/\\n/g, '\n')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/\r\n?/g, '\n')
+            .replace(/\n/g, '<br>');
 
         const isWelcomeMessage = !!(msg && msg.name && String(msg.name).includes('welcome'));
         if (this.state === 'visitor' && isWelcomeMessage && !/flosc-welcome-badge/i.test(content)) {

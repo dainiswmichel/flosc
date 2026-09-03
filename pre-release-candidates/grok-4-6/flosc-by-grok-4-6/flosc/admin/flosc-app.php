@@ -554,9 +554,6 @@ if ( ! empty( $flosc_is_companion_embed ) ) {
                     ?>
                         <img src="<?php echo esc_url($flosc_landing_logo); ?>" alt="" class="landing-icon" width="36" height="36" decoding="async">
                     <span class="landing-title"><?php echo esc_html($flosc_visitor_name); ?></span>
-                    <?php if (!empty($identity['title'])): ?>
-                        <span class="landing-subtitle"><?php echo esc_html($identity['title']); ?></span>
-                    <?php endif; ?>
                 </div>
                 <?php if (!empty($identity['tagline'])): ?>
                     <div class="landing-tagline"><?php echo esc_html($identity['tagline']); ?></div>
