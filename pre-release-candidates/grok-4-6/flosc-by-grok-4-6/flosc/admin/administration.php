@@ -177,7 +177,7 @@ if ($flosc_can_assign_editors) {
             <th scope="row">Public request protection</th>
             <td>
                 <label><input type="checkbox" name="flosc_public_request_protection[enabled]" value="1" <?php checked($flosc_protection['enabled'], '1'); ?>> Enable request-rate protection</label>
-                <p class="description">Rate limits public requests by visitor identity. Keep enabled outside controlled testing.</p>
+                <p class="description">Global for this FLOSC installation: rate limits public requests by visitor identity across every floscFlow. Keep enabled outside controlled testing.</p>
             </td>
         </tr>
         <tr>

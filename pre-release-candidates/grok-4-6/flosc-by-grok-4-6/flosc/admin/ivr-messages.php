@@ -1890,7 +1890,7 @@ $flosc_total_count = count($flosc_messages);
                         <th>Chatbot Response Content</th>
                         <td>
                             <textarea name="message_content" rows="4" class="large-text"><?php echo esc_textarea($flosc_msg['content'] ?? ''); ?></textarea>
-                            <p class="description">Variables: {name}, {score}, {product_name}, {title}, {tagline}, {price}</p>
+                            <p class="description">Personality and flow variables: <code>{personality_name}</code>, <code>{personality_role}</code>, <code>{flow_name}</code>, <code>{public_title}</code>, <code>{tagline}</code>, <code>{site_name}</code>. Other variables: <code>{name}</code>, <code>{score}</code>, <code>{product_name}</code>, <code>{title}</code>, <code>{price}</code>.</p>
                         </td>
                     </tr>
                     <tr>
